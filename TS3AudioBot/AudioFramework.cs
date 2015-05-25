@@ -123,7 +123,7 @@ namespace TS3AudioBot
 		{
 			if (StartScript("StopTsBot.sh"))
 			{
-				ts3clientrunning = true;
+				ts3clientrunning = false;
 			}
 		}
 
