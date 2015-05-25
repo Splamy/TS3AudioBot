@@ -26,7 +26,7 @@ namespace TS3AudioBot
 		QueryConnection queryConnection;
 		YoutubeFramework youtubeFramework;
 		Func<TextMessage, Task<bool>> awatingResponse = null;
-		
+
 		public MainBot()
 		{
 			// Read Config File
@@ -54,7 +54,16 @@ namespace TS3AudioBot
 			bool run = true;
 			while (run)
 			{
-				string input = Console.ReadLine();
+				string input;
+				try
+				{
+					input = Console.ReadLine();
+				}
+				catch
+				{
+					Task.Delay(1000).Wait();
+					continue;
+				}
 				string[] command = input.Split(' ');
 
 				switch (command[0])
