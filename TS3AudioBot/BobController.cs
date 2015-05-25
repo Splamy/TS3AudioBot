@@ -7,17 +7,17 @@ namespace TS3AudioBot
 {
 	class BobController
 	{
-		BobControllerData data;
-		Task timerTask;
-		CancellationTokenSource cancellationTokenSource;
-		CancellationToken cancellationToken;
-		DateTime lastUpdate = DateTime.Now;
-		bool quality = false;
-		bool sending = true;
+		private BobControllerData data;
+		private Task timerTask;
+		private CancellationTokenSource cancellationTokenSource;
+		private CancellationToken cancellationToken;
+		private DateTime lastUpdate = DateTime.Now;
+		private bool quality = false;
+		private bool sending = true;
 
-		StreamWriter outStream;
+		private StreamWriter outStream;
 
-		readonly object lockObject = new object();
+		private readonly object lockObject = new object();
 
 		public bool IsRunning
 		{
@@ -32,11 +32,7 @@ namespace TS3AudioBot
 
 		public bool Quality
 		{
-			get
-			{
-				return quality;
-			}
-
+			get { return quality; }
 			set
 			{
 				if (quality != value)
@@ -49,11 +45,7 @@ namespace TS3AudioBot
 
 		public bool Sending
 		{
-			get
-			{
-				return sending;
-			}
-
+			get { return sending; }
 			set
 			{
 				if (sending != value)
@@ -69,7 +61,7 @@ namespace TS3AudioBot
 			this.data = data;
 		}
 
-		void Timer()
+		private void Timer()
 		{
 			while (!cancellationToken.IsCancellationRequested && IsRunning)
 			{
@@ -81,7 +73,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		void SendMessage(string message)
+		private void SendMessage(string message)
 		{
 			lock (lockObject)
 			{
@@ -105,12 +97,12 @@ namespace TS3AudioBot
 			{
 				if (!IsRunning && Util.Execute("StartTsBot.sh"))
 				{
-					// Wait some time to increase the change that the Bob is running
+					// Wait some time to increase the chance that the Bob is running
 					Task.Delay(1000).Wait();
-					FileInfo info = new FileInfo(data.File);
+					FileInfo info = new FileInfo(data.file);
 					if (!info.Exists)
 					{
-						Console.WriteLine("Can't open file {0}", data.File);
+						Console.WriteLine("Can't open file {0}", data.file);
 						return;
 					}
 					try
@@ -119,7 +111,7 @@ namespace TS3AudioBot
 					}
 					catch (IOException ex)
 					{
-						Console.WriteLine("Can't open the file {0} ({1})", data.File, ex);
+						Console.WriteLine("Can't open the file {0} ({1})", data.file, ex);
 						outStream = null;
 						return;
 					}
@@ -147,7 +139,8 @@ namespace TS3AudioBot
 		{
 			if (outStream != null)
 			{
-				Console.WriteLine("Stoping Bob...");
+				Console.WriteLine("Stopping Bob...");
+				Quality = false;
 				SendMessage("exit");
 				lock (lockObject)
 				{
@@ -166,6 +159,6 @@ namespace TS3AudioBot
 	public struct BobControllerData
 	{
 		[InfoAttribute("the pipe file for communication between the TS3AudioBot and the TeamSpeak3 Client plugin")]
-		public string File;
+		public string file;
 	}
 }
