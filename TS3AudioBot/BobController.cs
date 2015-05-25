@@ -130,6 +130,7 @@ namespace TS3AudioBot
 
 	public struct BobControllerData
 	{
+		[InfoAttribute("the pipe file for communication between the TS3AudioBot and the TeamSpeak3 Client plugin")]
 		public string File;
 	}
 }

@@ -88,8 +88,11 @@ namespace TS3AudioBot
 
 	public struct QueryConnectionData
 	{
+		[InfoAttribute("the address of the TeamSpeak3 Query")]
 		public string host;
+		[InfoAttribute("the user for the TeamSpeak3 Query")]
 		public string user;
+		[InfoAttribute("the password for the TeamSpeak3 Query")]
 		public string passwd;
 	}
 

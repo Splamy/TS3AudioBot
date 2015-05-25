@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="AudioFramework.cs" />
     <Compile Include="ConfigFile.cs" />
+    <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

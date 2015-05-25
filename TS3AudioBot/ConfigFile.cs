@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Collections.Generic;
 
 namespace TS3AudioBot
@@ -60,7 +61,7 @@ namespace TS3AudioBot
 
 			if (!File.Exists(pPath))
 			{
-				Console.WriteLine("Consfig file does not exist");
+				Console.WriteLine("Config file does not exist");
 				return null;
 			}
 
@@ -111,11 +112,12 @@ namespace TS3AudioBot
 			{
 				if (field.FieldType != typeof(string)) // TODO for more types
 					continue;
+				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
 				string entryName = assocName + "::" + field.Name;
 				string value = string.Empty;
 				if (cfgFile == null || (!cfgFile.ReadKey(entryName, out value) && askForInput))
 				{
-					Console.Write("Please enter the {0}: ", entryName);
+					Console.Write("Please enter {0}: ", iAtt != null ? iAtt.Description : entryName);
 					value = Console.ReadLine();
 					if (cfgFile != null)
 					{
