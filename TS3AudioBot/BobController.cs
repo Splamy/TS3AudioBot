@@ -41,7 +41,7 @@ namespace TS3AudioBot
 				if (inactiveSeconds > 30)
 					Stop();
 				else
-					Task.Delay(30, cancellationToken).Wait();
+					Task.Delay(TimeSpan.FromSeconds(30), cancellationToken).Wait();
 			}
 		}
 
@@ -93,7 +93,7 @@ namespace TS3AudioBot
 					}
 					cancellationTokenSource = new CancellationTokenSource();
 					cancellationToken = cancellationTokenSource.Token;
-					timerTask = Task.Run(Timer, cancellationToken);
+					timerTask = Task.Run((Action)Timer, cancellationToken);
 				}
 			}
 		}

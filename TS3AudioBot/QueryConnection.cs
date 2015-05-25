@@ -47,7 +47,7 @@ namespace TS3AudioBot
 
 				connected = true;
 
-				keepAliveTask = Task.Run(KeepAlivePoke);
+				keepAliveTask = Task.Run((Action)KeepAlivePoke);
 			}
 		}
 
