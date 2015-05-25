@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using System.Reflection;
 
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
@@ -23,8 +20,8 @@ namespace TS3AudioBot
 		private const string configFilePath = "configTS3AudioBot.cfg";
 
 		AudioFramework audioFramework;
-		QueryConnection queryConnection;
 		BobController bobController;
+		QueryConnection queryConnection;
 		YoutubeFramework youtubeFramework;
 		Func<TextMessage, Task<bool>> awatingResponse = null;
 
@@ -46,10 +43,10 @@ namespace TS3AudioBot
 
 			youtubeFramework = new YoutubeFramework();
 
+			bobController = new BobController(bcd);
 			queryConnection = new QueryConnection(qcd);
 			queryConnection.Callback = TextCallback;
 			queryConnection.Connect();
-			bobController = new BobController(bcd);
 		}
 
 		public void Run()
@@ -72,6 +69,7 @@ namespace TS3AudioBot
 					Task.Delay(1000).Wait();
 					continue;
 				}
+				bobController.HasUpdate();
 
 				string[] command = input.Split(' ');
 
@@ -115,6 +113,7 @@ namespace TS3AudioBot
 			if (!tm.Message.StartsWith("!"))
 				return;
 			string[] command = tm.Message.Substring(1).Split(' ');
+			bobController.HasUpdate();
 
 			GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
 
@@ -168,7 +167,6 @@ namespace TS3AudioBot
 				break;
 			case "stop":
 				audioFramework.Stop();
-				bobController.Stop();
 				break;
 			case "history":
 				//TODO
@@ -262,6 +260,8 @@ namespace TS3AudioBot
 					GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
 					WriteClient(client, "The network stream could not be played...");
 				}
+				else
+					bobController.Start();
 			}
 			return true;
 		}

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
@@ -15,6 +14,7 @@ namespace TS3AudioBot
 		private int PingEverySeconds = 60;
 
 		public TeamSpeakClient TSClient { get; protected set; }
+
 		public Action<TextMessage> Callback { get; set; }
 
 		private bool connected = false;
@@ -41,13 +41,13 @@ namespace TS3AudioBot
 				await TSClient.RegisterTextPrivateNotification();
 				await TSClient.RegisterTextServerNotification();
 
-				TSClient.Subscribe<TextMessage>(data => data.ForEach(c => ProcessMessage(c)));
+				TSClient.Subscribe<TextMessage>(data => data.ForEach(ProcessMessage));
 				TSClient.Subscribe<ClientEnterView>(data => clientbufferoutdated = true);
 				TSClient.Subscribe<ClientLeftView>(data => clientbufferoutdated = true);
 
 				connected = true;
 
-				keepAliveTask = Task.Run((Action)KeepAlivePoke);
+				keepAliveTask = Task.Run(KeepAlivePoke);
 			}
 		}
 
