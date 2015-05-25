@@ -8,12 +8,12 @@ namespace TS3AudioBot
 {
 	class AudioFramework
 	{
-		private bool ts3clientrunning = false;
 		private AudioRessource currentRessource = null;
 		private List<AudioRessource> ressourceLog = null;
 		public IPlayerConnection playerConnection;
 
 		public bool SuppressOutput { get; set; }
+
 		public bool Loop { get; set; }
 
 		public AudioFramework()
@@ -69,8 +69,6 @@ namespace TS3AudioBot
 
 		public void Close()
 		{
-			Console.WriteLine("Closing TSClient...");
-			StopBotClient();
 			Console.WriteLine("Closing Mediaplayer...");
 			playerConnection.Close();
 		}
@@ -81,25 +79,14 @@ namespace TS3AudioBot
 				ressourceLog = new List<AudioRessource>();
 			ressourceLog.Add(ar);
 		}
-
-		public void StartBotClient()
-		{
-			if (!ts3clientrunning)
-			{
-				Util.Execute("StartTsBot.sh");
-			}
-		}
-
-		public void StopBotClient()
-		{
-			ts3clientrunning &= Util.Execute("StopTsBot.sh");
-		}
 	}
 
 	abstract class AudioRessource
 	{
 		public abstract AudioType AudioType { get; }
+
 		public string RessourceName { get; private set; }
+
 		public abstract bool Play(IPlayerConnection mediaPlayer);
 
 		public AudioRessource(string ressourceName)
@@ -112,7 +99,10 @@ namespace TS3AudioBot
 	{
 		public override AudioType AudioType { get { return AudioType.MediaLink; } }
 
-		public MediaRessource(string path) : base(path) { }
+		public MediaRessource(string path)
+			: base(path)
+		{
+		}
 
 		public override bool Play(IPlayerConnection mediaPlayer)
 		{

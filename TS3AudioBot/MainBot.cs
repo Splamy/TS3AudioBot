@@ -24,6 +24,7 @@ namespace TS3AudioBot
 
 		AudioFramework audioFramework;
 		QueryConnection queryConnection;
+		BobController bobController;
 		YoutubeFramework youtubeFramework;
 		Func<TextMessage, Task<bool>> awatingResponse = null;
 
@@ -37,6 +38,7 @@ namespace TS3AudioBot
 				cfgFile = ConfigFile.Create(configFilePath);
 			}
 			QueryConnectionData qcd = ConfigFile.GetStructData<QueryConnectionData>(cfgFile, typeof(QueryConnection), true);
+			BobControllerData bcd = ConfigFile.GetStructData<BobControllerData>(cfgFile, typeof(BobController), true);
 			cfgFile.Close();
 
 			// Initialize Modules
@@ -47,6 +49,7 @@ namespace TS3AudioBot
 			queryConnection = new QueryConnection(qcd);
 			queryConnection.Callback = TextCallback;
 			queryConnection.Connect();
+			bobController = new BobController(bcd);
 		}
 
 		public void Run()
@@ -64,6 +67,12 @@ namespace TS3AudioBot
 					Task.Delay(1000).Wait();
 					continue;
 				}
+				if (input == null)
+				{
+					Task.Delay(1000).Wait();
+					continue;
+				}
+
 				string[] command = input.Split(' ');
 
 				switch (command[0])
@@ -78,6 +87,7 @@ namespace TS3AudioBot
 					run = false;
 					audioFramework.Close();
 					queryConnection.Close();
+					bobController.Stop();
 					continue;
 
 				case "vlc":
@@ -102,7 +112,8 @@ namespace TS3AudioBot
 				}
 			}
 
-			if (!tm.Message.StartsWith("!")) return;
+			if (!tm.Message.StartsWith("!"))
+				return;
 			string[] command = tm.Message.Substring(1).Split(' ');
 
 			GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
@@ -157,15 +168,16 @@ namespace TS3AudioBot
 				break;
 			case "stop":
 				audioFramework.Stop();
+				bobController.Stop();
 				break;
 			case "history":
 				//TODO
 				break;
 			case "startbot":
-				audioFramework.StartBotClient();
+				bobController.Start();
 				break;
 			case "stopbot":
-				audioFramework.StopBotClient();
+				bobController.Stop();
 				break;
 			default:
 				if (client != null)
@@ -202,6 +214,8 @@ namespace TS3AudioBot
 			string netlinkurl = ExtractUrlFromBB(message);
 			if (!audioFramework.StartRessource(new MediaRessource(netlinkurl)))
 				WriteClient(client, "The local file could not be played...");
+			else
+				bobController.Start();
 		}
 
 		private void PlayYoutube(GetClientsInfo client, string message)
@@ -232,8 +246,10 @@ namespace TS3AudioBot
 		private async Task<bool> YoutubeAwait(TextMessage tm)
 		{
 			string[] command = tm.Message.Split(' ');
-			if (command[0] != "!f") return false;
-			if (command.Length != 2) return true;
+			if (command[0] != "!f")
+				return false;
+			if (command.Length != 2)
+				return true;
 			int entry;
 			if (int.TryParse(command[1], out entry))
 			{

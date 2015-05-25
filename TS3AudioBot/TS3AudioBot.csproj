@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -40,9 +40,8 @@
     <Reference Include="System.Drawing" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.XML" />
-    <Reference Include="TeamSpeak3QueryApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="System.Xml" />
+    <Reference Include="TeamSpeak3QueryApi">
       <HintPath>lib\TeamSpeak3QueryApi.dll</HintPath>
     </Reference>
   </ItemGroup>
@@ -56,6 +55,7 @@
     <Compile Include="Util.cs" />
     <Compile Include="VLCConnection.cs" />
     <Compile Include="YoutubeFramework.cs" />
+    <Compile Include="BobController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
