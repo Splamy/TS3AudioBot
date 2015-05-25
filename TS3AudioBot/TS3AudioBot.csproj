@@ -41,8 +41,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.XML" />
-    <Reference Include="TeamSpeak3QueryApi">
-      <HintPath>bin\Release\TeamSpeak3QueryApi.dll</HintPath>
+    <Reference Include="TeamSpeak3QueryApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\TeamSpeak3QueryApi.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
