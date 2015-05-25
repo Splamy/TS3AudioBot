@@ -11,7 +11,6 @@ namespace TS3AudioBot
 {
 	class VLCConnection : IPlayerConnection
 	{
-		private string vlcLocation;
 		private string botLocation;
 		private bool connected;
 		private string password;
@@ -26,10 +25,6 @@ namespace TS3AudioBot
 		{
 			connected = false;
 			botLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-			if (Util.IsLinux)
-				vlcLocation = "vlc";
-			else
-				vlcLocation = @"D:\VideoLAN\VLC\vlc.exe";
 		}
 
 		public void Start()
@@ -148,7 +143,7 @@ namespace TS3AudioBot
 				password = generatePassword();
 				ProcessStartInfo psi = new ProcessStartInfo()
 				{
-					FileName = vlcLocation,
+					FileName = Util.GetSubTaskPath(SubTask.VLC),
 					Arguments = "--intf telnet"
 								+ " --telnet-password " + password
 								+ " --vout none"

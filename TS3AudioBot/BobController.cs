@@ -95,7 +95,7 @@ namespace TS3AudioBot
 		{
 			lock (lockObject)
 			{
-				if (!IsRunning && Util.Execute("StartTsBot.sh"))
+				if (!IsRunning && Util.Execute(SubTask.StartTsBot))
 				{
 					// Wait some time to increase the chance that the Bob is running
 					Task.Delay(1000).Wait();
