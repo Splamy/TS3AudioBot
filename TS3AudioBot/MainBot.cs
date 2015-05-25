@@ -44,6 +44,17 @@ namespace TS3AudioBot
 			youtubeFramework = new YoutubeFramework();
 
 			bobController = new BobController(bcd);
+			audioFramework.RessourceStarted += (audioRessource) =>
+			{
+				bobController.Start();
+				bobController.Sending = true;
+				bobController.Quality = true;
+			};
+			audioFramework.RessourceStopped += () =>
+			{
+				bobController.StartEndTimer();
+				bobController.Sending = false;
+			};
 			queryConnection = new QueryConnection(qcd);
 			queryConnection.Callback = TextCallback;
 			queryConnection.Connect();
@@ -212,8 +223,6 @@ namespace TS3AudioBot
 			string netlinkurl = ExtractUrlFromBB(message);
 			if (!audioFramework.StartRessource(new MediaRessource(netlinkurl)))
 				WriteClient(client, "The local file could not be played...");
-			else
-				bobController.Start();
 		}
 
 		private void PlayYoutube(GetClientsInfo client, string message)
@@ -260,8 +269,6 @@ namespace TS3AudioBot
 					GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
 					WriteClient(client, "The network stream could not be played...");
 				}
-				else
-					bobController.Start();
 			}
 			return true;
 		}

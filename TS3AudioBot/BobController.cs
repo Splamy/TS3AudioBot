@@ -12,6 +12,8 @@ namespace TS3AudioBot
 		CancellationTokenSource cancellationTokenSource;
 		CancellationToken cancellationToken;
 		DateTime lastUpdate = DateTime.Now;
+		bool quality = false;
+		bool sending = true;
 
 		StreamWriter outStream;
 
@@ -24,6 +26,40 @@ namespace TS3AudioBot
 				lock (lockObject)
 				{
 					return outStream != null;
+				}
+			}
+		}
+
+		public bool Quality
+		{
+			get
+			{
+				return quality;
+			}
+
+			set
+			{
+				if (quality != value)
+				{
+					quality = value;
+					SendMessage("quality " + (value ? "on" : "off"));
+				}
+			}
+		}
+
+		public bool Sending
+		{
+			get
+			{
+				return sending;
+			}
+
+			set
+			{
+				if (sending != value)
+				{
+					sending = value;
+					SendMessage("audio " + (value ? "on" : "off"));
 				}
 			}
 		}
@@ -41,7 +77,7 @@ namespace TS3AudioBot
 				if (inactiveSeconds > 30)
 					Stop();
 				else
-					Task.Delay(TimeSpan.FromSeconds(30), cancellationToken).Wait();
+					Task.Delay(TimeSpan.FromSeconds(30 - inactiveSeconds), cancellationToken).Wait();
 			}
 		}
 
@@ -69,6 +105,8 @@ namespace TS3AudioBot
 			{
 				if (!IsRunning && Util.Execute("StartTsBot.sh"))
 				{
+					// Wait some time to increase the change that the Bob is running
+					Task.Delay(1000).Wait();
 					FileInfo info = new FileInfo(data.File);
 					if (!info.Exists)
 					{
@@ -86,16 +124,23 @@ namespace TS3AudioBot
 						return;
 					}
 
-					if (!timerTask.IsCompleted)
-					{
+					if (timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
 						cancellationTokenSource.Cancel();
-						timerTask.Wait();
-					}
-					cancellationTokenSource = new CancellationTokenSource();
-					cancellationToken = cancellationTokenSource.Token;
-					timerTask = Task.Run((Action)Timer, cancellationToken);
 				}
 			}
+		}
+
+		public void StartEndTimer()
+		{
+			if (timerTask != null && !timerTask.IsCompleted)
+			{
+				if (cancellationToken.CanBeCanceled)
+					cancellationTokenSource.Cancel();
+				timerTask.Wait();
+			}
+			cancellationTokenSource = new CancellationTokenSource();
+			cancellationToken = cancellationTokenSource.Token;
+			timerTask = Task.Run((Action)Timer, cancellationToken);
 		}
 
 		public void Stop()
@@ -115,16 +160,6 @@ namespace TS3AudioBot
 				cancellationTokenSource.Cancel();
 				timerTask.Wait();
 			}
-		}
-
-		public void SetAudio(bool isOn)
-		{
-			SendMessage("audio " + (isOn ? "on" : "off"));
-		}
-
-		public void SetQuality(bool isOn)
-		{
-			SendMessage("quality " + (isOn ? "on" : "off"));
 		}
 	}
 

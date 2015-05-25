@@ -5,9 +5,16 @@ namespace TS3AudioBot
 {
 	class AudioFramework
 	{
+		public delegate void RessourceStartedDelegate(AudioRessource audioRessource);
+
+		public delegate void RessourceStoppedDelegate();
+
 		private AudioRessource currentRessource = null;
 		private List<AudioRessource> ressourceLog = null;
 		public IPlayerConnection playerConnection;
+
+		public event RessourceStartedDelegate RessourceStarted;
+		public event RessourceStoppedDelegate RessourceStopped;
 
 		public bool SuppressOutput { get; set; }
 
@@ -52,6 +59,9 @@ namespace TS3AudioBot
 			if (!audioRessource.Play(playerConnection))
 				return false;
 
+			if (RessourceStarted != null)
+				RessourceStarted(audioRessource);
+
 			currentRessource = audioRessource;
 			return true;
 		}
@@ -61,6 +71,8 @@ namespace TS3AudioBot
 			if (currentRessource != null)
 			{
 				playerConnection.AudioStop();
+				if (RessourceStopped != null)
+					RessourceStopped();
 			}
 		}
 
