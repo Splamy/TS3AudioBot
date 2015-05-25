@@ -11,11 +11,12 @@ namespace TS3AudioBot
 	class YoutubeFramework
 	{
 		WebClient wc;
-		public IList<VideoType> bufferedList { get; protected set; }
+		public YoutubeRessource LoadedRessource { get; protected set; }
 
 		public YoutubeFramework()
 		{
 			wc = new WebClient();
+			LoadedRessource = null;
 		}
 
 		public bool ExtractedURL(string ytlink, bool filterOutInvalid = true)
@@ -35,7 +36,7 @@ namespace TS3AudioBot
 			}
 			MatchCollection matches = Regex.Matches(resulthtml, @"<a href=\""(http:\/\/[a-z]\d{1,4}---[^\""]+?)\"".*?<br \/>");
 
-			IList<VideoType> videotypes = new List<VideoType>();
+			List<VideoType> videotypes = new List<VideoType>();
 			foreach (Match match in matches)
 			{
 				VideoType vt = new VideoType();
@@ -54,8 +55,8 @@ namespace TS3AudioBot
 				vt.qualitydesciption = qualitydesc;
 				videotypes.Add(vt);
 			}
-			bufferedList = videotypes;
-			return bufferedList.Count > 0;
+			YoutubeRessource youtubeRessource = new YoutubeRessource(ytlink, "<Unknown>", videotypes.AsReadOnly());
+			return youtubeRessource.AvailableTypes.Count > 0;
 		}
 	}
 
@@ -68,6 +69,31 @@ namespace TS3AudioBot
 		public override string ToString()
 		{
 			return qualitydesciption + " @ " + codec + " - " + link;
+		}
+	}
+
+	class YoutubeRessource : AudioRessource
+	{
+		public string YoutubeName { get; protected set; }
+		public IReadOnlyList<VideoType> AvailableTypes { get; protected set; }
+		public int Selected { get; set; }
+
+		public override AudioType AudioType { get { return AudioType.Youtube; } }
+
+		public YoutubeRessource(string link, string youtubeName, IReadOnlyList<VideoType> availableTypes)
+			: base(link)
+		{
+			YoutubeName = youtubeName;
+			AvailableTypes = availableTypes;
+			Selected = 0;
+		}
+
+		public override bool Play(IPlayerConnection mediaPlayer)
+		{
+			if (Selected < 0 && Selected >= AvailableTypes.Count)
+				return false;
+			mediaPlayer.AudioPlay(AvailableTypes[1].link);
+			return true;
 		}
 	}
 

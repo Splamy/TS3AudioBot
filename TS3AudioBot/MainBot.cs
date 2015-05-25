@@ -109,34 +109,34 @@ namespace TS3AudioBot
 
 			switch (command[0])
 			{
-			#region pm
 			case "pm":
 				WriteClient(client, "Hi " + client.NickName);
 				break;
-			#endregion
-			#region kickme
 			case "kickme":
 				if (client != null)
 					await queryConnection.TSClient.KickClient(client, KickOrigin.Channel);
 				break;
-			#endregion
-			#region help
 			case "help":
 				WriteClient(client, "\n" +
 					"!pm: Get private audience with the AudioBot\n" +
 					"!kickme: Does exactly what you think it does...\n" +
+					"!play: Plays any file or media/youtube url [p]\n" +
 					"!youtube: Plays a video from youtube [yt]\n" +
-					//"!bassnet: Plays a mp3/wav media file from url [bnet, bn]\n" +
-					"!vlcnet: Plays any media file from url [vnet, vn]\n" +
-					//"!basslocal: Plays a mp3/wav from the server [blocal, bl]\n" +
-					"!vlclocal: Plays any media from the server [vlocal, vl]\n" +
+					"!link: Plays any media from the server [vlocal, vl]\n" +
 					"!stop: Stops the current song\n" +
 					"!startbot: Connects the MusicBot to TeamSpeak\n" +
 					"!stopbot: Disconnects the MusicBot from TeamSpeak\n" +
 					"!history: Shows you the last played songs\n");
 				break;
-			#endregion
-			#region youtube
+			case "p":
+			case "play":
+				if (command.Length != 2)
+				{
+					WriteClient(client, "Missing or too many parameter. Usage !play <url/path>");
+					break;
+				}
+				PlayAuto(client, command[1]);
+				break;
 			case "yt":
 			case "youtube":
 				if (command.Length != 2)
@@ -144,81 +144,89 @@ namespace TS3AudioBot
 					WriteClient(client, "Missing or too many parameter. Usage !yt <youtube-url>");
 					break;
 				}
-				string yturl = Regex.Match(command[1], @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
-				if (!youtubeFramework.ExtractedURL(yturl))
-				{
-					WriteClient(client, "Invalid URL or no media found...");
-					break;
-				}
-				StringBuilder strb = new StringBuilder();
-				strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
-				for (int i = 0; i < youtubeFramework.bufferedList.Count; i++)
-				{
-					strb.Append("[");
-					strb.Append(i);
-					strb.Append("] ");
-					strb.Append(youtubeFramework.bufferedList[i].codec.ToString());
-					strb.Append(" @ ");
-					strb.AppendLine(youtubeFramework.bufferedList[i].qualitydesciption);
-				}
-				WriteClient(client, strb.ToString());
-				awatingResponse = YoutubeAwait;
+				PlayYoutube(client, command[1]);
 				break;
-			#endregion
-			#region vlcnet
-			case "vn":
-			case "vnet":
-			case "vlcnet":
+			case "l":
+			case "link":
 				if (command.Length != 2)
 				{
-					WriteClient(client, "Missing or too many parameter. Usage !vlcnet <url>");
+					WriteClient(client, "Missing or too many parameter. Usage !link <url/path>");
 					break;
 				}
-				string netlinkurl = Regex.Match(command[1], @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
-				if (!audioFramework.OpenNetworkVLC(netlinkurl))
-					WriteClient(client, "The network file could not be played...");
+				PlayLink(client, command[1]);
 				break;
-			#endregion
-			#region vlclocal
-			case "vl":
-			case "vlocal":
-			case "vlclocal":
-				if (command.Length != 2)
-				{
-					WriteClient(client, "Missing or too many parameter. Usage !vlclocal <path>");
-					break;
-				}
-				if (!audioFramework.OpenLocalVLC(command[1]))
-					WriteClient(client, "The local file could not be played...");
-				break;
-			#endregion
-			#region stop
 			case "stop":
 				audioFramework.Stop();
 				break;
-			#endregion
-			#region history
 			case "history":
 				//TODO
 				break;
-			#endregion
-			#region startbot
 			case "startbot":
 				audioFramework.StartBotClient();
 				break;
-			#endregion
-			#region stopbot
 			case "stopbot":
 				audioFramework.StopBotClient();
 				break;
-			#endregion
-			#region default
 			default:
 				if (client != null)
 					await queryConnection.TSClient.SendMessage("Unknown command!", client);
 				break;
-			#endregion
 			}
+		}
+
+		private string ExtractUrlFromBB(string ts3link)
+		{
+			if (ts3link.Contains("[URL]"))
+				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
+			else
+				return ts3link;
+		}
+
+		private void PlayAuto(GetClientsInfo client, string message)
+		{
+			string netlinkurl = ExtractUrlFromBB(message);
+			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
+			{
+				//Is a youtube link
+				PlayYoutube(client, message);
+			}
+			else
+			{
+				//Is a youtube link
+				PlayLink(client, message);
+			}
+		}
+
+		private void PlayLink(GetClientsInfo client, string message)
+		{
+			string netlinkurl = ExtractUrlFromBB(message);
+			if (!audioFramework.StartRessource(new MediaRessource(netlinkurl)))
+				WriteClient(client, "The local file could not be played...");
+		}
+
+		private void PlayYoutube(GetClientsInfo client, string message)
+		{
+			string netlinkurl = ExtractUrlFromBB(message);
+			// TODO: lookup in history...
+			if (!youtubeFramework.ExtractedURL(netlinkurl))
+			{
+				WriteClient(client, "Invalid URL or no media found...");
+				return;
+			}
+			StringBuilder strb = new StringBuilder();
+			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
+			int count = 0;
+			foreach (var videoType in youtubeFramework.LoadedRessource.AvailableTypes)
+			{
+				strb.Append("[");
+				strb.Append(count++);
+				strb.Append("] ");
+				strb.Append(videoType.codec.ToString());
+				strb.Append(" @ ");
+				strb.AppendLine(videoType.qualitydesciption);
+			}
+			WriteClient(client, strb.ToString());
+			awatingResponse = YoutubeAwait;
 		}
 
 		private async Task<bool> YoutubeAwait(TextMessage tm)
@@ -229,10 +237,11 @@ namespace TS3AudioBot
 			int entry;
 			if (int.TryParse(command[1], out entry))
 			{
-				if (entry < 0 || entry >= youtubeFramework.bufferedList.Count)
+				YoutubeRessource ytRessource = youtubeFramework.LoadedRessource;
+				if (entry < 0 || entry >= ytRessource.AvailableTypes.Count)
 					return true;
-				string networkstr = youtubeFramework.bufferedList[entry].link;
-				if (!audioFramework.OpenNetworkVLC(networkstr))
+				ytRessource.Selected = entry;
+				if (!audioFramework.StartRessource(ytRessource))
 				{
 					GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
 					WriteClient(client, "The network stream could not be played...");

@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
 using System.Collections.Generic;
 
 namespace TS3AudioBot
@@ -44,39 +43,17 @@ namespace TS3AudioBot
 			}
 		}
 
-		public bool OpenLocalVLC(string path)
+		public bool StartRessource(AudioRessource audioRessource)
 		{
-			AudioRessource ar = new AudioRessource()
-			{
-				path = path,
-				audioType = AudioType.LocalVLC,
-			};
-			return StartRessource(ar);
-		}
+			if (audioRessource == null)
+				return false;
 
-		public bool OpenNetworkVLC(string path)
-		{
-			AudioRessource ar = new AudioRessource()
-			{
-				path = path,
-				audioType = AudioType.NetworkVLC,
-			};
-			return StartRessource(ar);
-		}
-
-		private bool StartRessource(AudioRessource audioRessource)
-		{
 			LogAudioRessource(audioRessource);
 
 			Stop();
 
-			switch (audioRessource.audioType)
-			{
-			case AudioType.LocalVLC:
-			case AudioType.NetworkVLC:
-				playerConnection.AudioPlay(audioRessource.path);
-				break;
-			}
+			if (!audioRessource.Play(playerConnection))
+				return false;
 
 			currentRessource = audioRessource;
 			return true;
@@ -86,13 +63,7 @@ namespace TS3AudioBot
 		{
 			if (currentRessource != null)
 			{
-				switch (currentRessource.audioType)
-				{
-				case AudioType.LocalVLC:
-				case AudioType.NetworkVLC:
-					playerConnection.AudioStop();
-					break;
-				}
+				playerConnection.AudioStop();
 			}
 		}
 
@@ -115,54 +86,44 @@ namespace TS3AudioBot
 		{
 			if (!ts3clientrunning)
 			{
-				StartScript("StartTsBot.sh");
+				Util.Execute("StartTsBot.sh");
 			}
 		}
 
 		public void StopBotClient()
 		{
-			if (StartScript("StopTsBot.sh"))
-			{
-				ts3clientrunning = false;
-			}
+			ts3clientrunning &= Util.Execute("StopTsBot.sh");
 		}
+	}
 
-		private bool StartScript(string name)
+	abstract class AudioRessource
+	{
+		public abstract AudioType AudioType { get; }
+		public string RessourceName { get; private set; }
+		public abstract bool Play(IPlayerConnection mediaPlayer);
+
+		public AudioRessource(string ressourceName)
 		{
-			try
-			{
-				Process tmproc = new Process();
-				ProcessStartInfo psi = new ProcessStartInfo()
-				{
-					FileName = name,
-				};
-				tmproc.StartInfo = psi;
-				tmproc.Start();
-				return true;
-			}
-			catch (Exception)
-			{
-				Console.WriteLine("Error! {0} couldn't be run/found", name);
-				return false;
-			}
+			RessourceName = ressourceName;
 		}
 	}
 
-	class AudioRessource
+	class MediaRessource : AudioRessource
 	{
-		public AudioType audioType;
-		public string path;
-	}
+		public override AudioType AudioType { get { return AudioType.MediaLink; } }
 
-	class YoutubeRessource : AudioRessource
-	{
-		public IReadOnlyList<VideoType> availableTypes;
-		public int lastSelected;
+		public MediaRessource(string path) : base(path) { }
+
+		public override bool Play(IPlayerConnection mediaPlayer)
+		{
+			mediaPlayer.AudioPlay(RessourceName);
+			return true;
+		}
 	}
 
 	enum AudioType
 	{
-		LocalVLC,
-		NetworkVLC,
+		MediaLink,
+		Youtube,
 	}
 }
