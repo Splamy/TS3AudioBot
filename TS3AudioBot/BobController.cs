@@ -45,6 +45,19 @@ namespace TS3AudioBot
 			}
 		}
 
+		void SendMessage(string message)
+		{
+			lock (lockObject)
+			{
+				if (outStream != null)
+				{
+					outStream.Write(message);
+					outStream.Write('\n');
+					outStream.Flush();
+				}
+			}
+		}
+
 		public void HasUpdate()
 		{
 			lastUpdate = DateTime.Now;
@@ -56,13 +69,20 @@ namespace TS3AudioBot
 			{
 				if (!IsRunning && Util.Execute("StartTsBot.sh"))
 				{
+					FileInfo info = new FileInfo(data.File);
+					if (!info.Exists)
+					{
+						Console.WriteLine("Can't open file {0}", data.File);
+						return;
+					}
 					try
 					{
-						outStream = new StreamWriter(File.Open(data.File, FileMode.Append));
+						outStream = new StreamWriter(info.OpenWrite());
 					}
 					catch (IOException ex)
 					{
 						Console.WriteLine("Can't open the file {0} ({1})", data.File, ex);
+						outStream = null;
 						return;
 					}
 
@@ -80,39 +100,31 @@ namespace TS3AudioBot
 
 		public void Stop()
 		{
-			lock (lockObject)
+			if (outStream != null)
 			{
-				if (outStream != null)
+				Console.WriteLine("Stoping Bob...");
+				SendMessage("exit");
+				lock (lockObject)
 				{
-					Console.WriteLine("Stoping Bob...");
-					outStream.WriteLine("exit");
 					outStream.Close();
 					outStream = null;
 				}
-				if (cancellationToken.CanBeCanceled)
-				{
-					cancellationTokenSource.Cancel();
-					timerTask.Wait();
-				}
+			}
+			if (cancellationToken.CanBeCanceled)
+			{
+				cancellationTokenSource.Cancel();
+				timerTask.Wait();
 			}
 		}
 
 		public void SetAudio(bool isOn)
 		{
-			lock (lockObject)
-			{
-				if (outStream != null)
-					outStream.WriteLine("audio " + (isOn ? "on" : "off"));
-			}
+			SendMessage("audio " + (isOn ? "on" : "off"));
 		}
 
 		public void SetQuality(bool isOn)
 		{
-			lock (lockObject)
-			{
-				if (outStream != null)
-					outStream.WriteLine("quality " + (isOn ? "on" : "off"));
-			}
+			SendMessage("quality " + (isOn ? "on" : "off"));
 		}
 	}
 

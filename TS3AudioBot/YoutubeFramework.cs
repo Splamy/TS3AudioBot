@@ -11,6 +11,7 @@ namespace TS3AudioBot
 	class YoutubeFramework
 	{
 		WebClient wc;
+
 		public YoutubeRessource LoadedRessource { get; protected set; }
 
 		public YoutubeFramework()
@@ -44,19 +45,31 @@ namespace TS3AudioBot
 				string codecname = Regex.Match(match.Value, @"Download ([A-Z0-9]+) ").Groups[1].Value;
 				switch (codecname)
 				{
-				case "MP4": vt.codec = VideoCodec.MP4; break;
-				case "M4A": vt.codec = VideoCodec.M4A; break;
-				case "FLV": vt.codec = VideoCodec.FLV; break;
-				case "3GP": vt.codec = VideoCodec.ThreeGP; break;
-				case "WEBM": vt.codec = VideoCodec.WEBM; break;
-				default: vt.codec = VideoCodec.Unknow; break;
+				case "MP4":
+					vt.codec = VideoCodec.MP4;
+					break;
+				case "M4A":
+					vt.codec = VideoCodec.M4A;
+					break;
+				case "FLV":
+					vt.codec = VideoCodec.FLV;
+					break;
+				case "3GP":
+					vt.codec = VideoCodec.ThreeGP;
+					break;
+				case "WEBM":
+					vt.codec = VideoCodec.WEBM;
+					break;
+				default:
+					vt.codec = VideoCodec.Unknow;
+					break;
 				}
 				string qualitydesc = Regex.Match(match.Value, @"<b>([\w\(\)\s]+)<\/b>").Groups[1].Value;
 				vt.qualitydesciption = qualitydesc;
 				videotypes.Add(vt);
 			}
-			YoutubeRessource youtubeRessource = new YoutubeRessource(ytlink, "<Unknown>", videotypes.AsReadOnly());
-			return youtubeRessource.AvailableTypes.Count > 0;
+			LoadedRessource = new YoutubeRessource(ytlink, "<Unknown>", videotypes.AsReadOnly());
+			return LoadedRessource.AvailableTypes.Count > 0;
 		}
 	}
 
@@ -75,7 +88,9 @@ namespace TS3AudioBot
 	class YoutubeRessource : AudioRessource
 	{
 		public string YoutubeName { get; protected set; }
+
 		public IReadOnlyList<VideoType> AvailableTypes { get; protected set; }
+
 		public int Selected { get; set; }
 
 		public override AudioType AudioType { get { return AudioType.Youtube; } }
