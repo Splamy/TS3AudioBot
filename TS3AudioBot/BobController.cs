@@ -115,10 +115,9 @@ namespace TS3AudioBot
 						outStream = null;
 						return;
 					}
-
-					if (timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
-						cancellationTokenSource.Cancel();
 				}
+				if (IsRunning && timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
+					cancellationTokenSource.Cancel();
 			}
 		}
 
