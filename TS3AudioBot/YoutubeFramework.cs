@@ -107,7 +107,7 @@ namespace TS3AudioBot
 		{
 			if (Selected < 0 && Selected >= AvailableTypes.Count)
 				return false;
-			mediaPlayer.AudioPlay(AvailableTypes[1].link);
+			mediaPlayer.AudioStart(AvailableTypes[1].link);
 			return true;
 		}
 	}

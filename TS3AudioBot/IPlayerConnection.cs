@@ -8,13 +8,16 @@ namespace TS3AudioBot
 {
 	interface IPlayerConnection
 	{
-		Action<string> TextCallback { get; set; }
 		void Start();
 		void Close();
 
+		bool IsPlaying();
+		int GetLength();
+		int GetPosition();
+		void SetPosition(int position);
+		void SetLoop(bool enabled);
+
 		void AudioStop();
-		void AudioPlay(string url);
-		void AudioLogin();
-		void SendCommandRaw(string msg);
+		void AudioStart(string url);
 	}
 }

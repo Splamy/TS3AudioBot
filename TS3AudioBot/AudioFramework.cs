@@ -16,35 +16,12 @@ namespace TS3AudioBot
 		public event RessourceStartedDelegate RessourceStarted;
 		public event RessourceStoppedDelegate RessourceStopped;
 
-		public bool SuppressOutput { get; set; }
-
 		public bool Loop { get; set; }
 
 		public AudioFramework()
 		{
-			SuppressOutput = true;
 			playerConnection = new VLCConnection();
 			playerConnection.Start();
-			playerConnection.TextCallback = ProcessVLCOutput;
-		}
-
-		private void ProcessVLCOutput(string text)
-		{
-			if (text.StartsWith("Password:"))
-			{
-				playerConnection.AudioLogin();
-			}
-			else if (!SuppressOutput)
-			{
-				if (text.StartsWith(">"))
-				{
-					Console.Write(text);
-				}
-				else
-				{
-					Console.WriteLine(text);
-				}
-			}
 		}
 
 		public bool StartRessource(AudioRessource audioRessource)
@@ -115,7 +92,7 @@ namespace TS3AudioBot
 
 		public override bool Play(IPlayerConnection mediaPlayer)
 		{
-			mediaPlayer.AudioPlay(RessourceName);
+			mediaPlayer.AudioStart(RessourceName);
 			return true;
 		}
 	}

@@ -99,8 +99,8 @@ namespace TS3AudioBot
 					bobController.Stop();
 					continue;
 
-				case "vlc":
-					audioFramework.playerConnection.SendCommandRaw(input.Substring(command[0].Length + 1));
+				case "vlctest":
+					Console.WriteLine(audioFramework.playerConnection.IsPlaying());
 					break;
 
 				default:
@@ -179,6 +179,14 @@ namespace TS3AudioBot
 			case "stop":
 				audioFramework.Stop();
 				break;
+			case "seek":
+				if (command.Length != 2)
+				{
+					WriteClient(client, "Missing or too many parameter. Usage !seek <int>");
+					break;
+				}
+				AudioSeek(client, command[1]);
+				break;
 			case "history":
 				//TODO
 				break;
@@ -201,6 +209,43 @@ namespace TS3AudioBot
 				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
 			else
 				return ts3link;
+		}
+
+		private void AudioSeek(GetClientsInfo client, string message)
+		{
+			int seconds = -1;
+			bool parsed = false;
+			if (message.Contains(":"))
+			{
+				string[] splittime = message.Split(':');
+				if (splittime.Length == 2)
+				{
+					int minutes = -1;
+					parsed = int.TryParse(splittime[0], out minutes) && int.TryParse(splittime[1], out seconds);
+					if (parsed)
+					{
+						seconds = (int)(TimeSpan.FromSeconds(seconds) + TimeSpan.FromMinutes(minutes)).TotalSeconds;
+					}
+				}
+			}
+			else
+			{
+				parsed = int.TryParse(message, out seconds);
+			}
+
+			if (!parsed)
+			{
+				WriteClient(client, "The parameter is not a valid second integer.");
+				return;
+			}
+
+			// TODO: move method call to audioframework
+			if (seconds < 0 || seconds > audioFramework.playerConnection.GetLength())
+			{
+				WriteClient(client, "The point of time is not within the songlenth.");
+				return;
+			}
+			audioFramework.playerConnection.SetPosition(seconds);
 		}
 
 		private void PlayAuto(GetClientsInfo client, string message)

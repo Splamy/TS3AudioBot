@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Diagnostics;
@@ -19,7 +20,14 @@ namespace TS3AudioBot
 		private StreamReader streamRead;
 		private NetworkStream netStream;
 		private Task textCallbackTask;
-		public Action<string> TextCallback { get; set; }
+
+		private readonly object attributeLock = new object();
+		private readonly object responseLock = new object();
+
+		private AwaitingResponse currentResponse = AwaitingResponse.None;
+		private bool isPlaying = false;
+		private int getLength = -1;
+		private int getPosition = -1;
 
 		public VLCConnection()
 		{
@@ -59,22 +67,68 @@ namespace TS3AudioBot
 
 		// VLC Commands
 
+		public bool IsPlaying()
+		{
+			SendResponseLocked(AwaitingResponse.IsPlaing, "is_playing");
+			return isPlaying;
+		}
+
+		public int GetLength()
+		{
+			SendResponseLocked(AwaitingResponse.GetLength, "get_length");
+			return getLength;
+		}
+
+		public int GetPosition()
+		{
+			SendResponseLocked(AwaitingResponse.GetPosition, "get_time");
+			return getPosition;
+		}
+
+		public void SetPosition(int position)
+		{
+			SendCommandLocked("seek " + position);
+		}
+
+		public void SetLoop(bool enabled)
+		{
+			SendCommandLocked("loop " + (enabled ? "on" : "off"));
+		}
+
 		public void AudioStop()
 		{
-			SendCommandRaw("stop");
+			SendCommandLocked("stop");
 		}
 
-		public void AudioPlay(string url)
+		public void AudioStart(string url)
 		{
-			SendCommandRaw("add " + url);
+			SendCommandLocked("add " + url);
 		}
 
-		public void AudioLogin()
+		// Lock and textsend methods
+
+		private void SendResponseLocked(AwaitingResponse resp, string msg)
 		{
-			SendCommandRaw(password);
+			lock (attributeLock)
+			{
+				lock (responseLock)
+				{
+					currentResponse = resp;
+					SendTextRaw(msg);
+					Monitor.Wait(responseLock);
+				}
+			}
 		}
 
-		public void SendCommandRaw(string msg)
+		private void SendCommandLocked(string msg)
+		{
+			lock (attributeLock)
+			{
+				SendTextRaw(msg);
+			}
+		}
+
+		private void SendTextRaw(string msg)
 		{
 			Byte[] cmd = System.Text.Encoding.ASCII.GetBytes(msg + "\n");
 			netStream.Write(cmd, 0, cmd.Length);
@@ -127,12 +181,51 @@ namespace TS3AudioBot
 								break;
 							sb.Append((char)b);
 						} while (netStream.DataAvailable);
-						if (TextCallback != null)
-							TextCallback(sb.ToString());
+						ProcessMessage(sb.ToString());
 					}
 				}
 				catch (Exception ex) { Console.WriteLine("Disconnected ({0})...", ex.Message); }
 			});
+		}
+
+		private void ProcessMessage(string msg)
+		{
+			if (msg.StartsWith("Password:"))
+			{
+				SendCommandLocked(password);
+			}
+			else
+			{
+				switch (currentResponse)
+				{
+				case AwaitingResponse.GetLength:
+					int get_length = -1;
+					if (int.TryParse(msg, out get_length))
+						getLength = get_length;
+					else
+						getLength = -1;
+					break;
+				case AwaitingResponse.GetPosition:
+					int get_position = -1;
+					if (int.TryParse(msg, out get_position))
+						getPosition = get_position;
+					else
+						getPosition = -1;
+					break;
+				case AwaitingResponse.IsPlaing:
+					int is_plaing = -1;
+					if (int.TryParse(msg, out is_plaing))
+						isPlaying = is_plaing != 0;
+					else
+						isPlaying = false;
+					break;
+				}
+				currentResponse = AwaitingResponse.None;
+			}
+			lock (responseLock)
+			{
+				Monitor.Pulse(responseLock);
+			}
 		}
 
 		private Process GetVlcProc()
@@ -174,6 +267,14 @@ namespace TS3AudioBot
 				strb.Append(alphnum[rnd.Next(0, alphnum.Length)]);
 			}
 			return strb.ToString();
+		}
+
+		private enum AwaitingResponse
+		{
+			None,
+			GetLength,
+			GetPosition,
+			IsPlaing,
 		}
 	}
 }
