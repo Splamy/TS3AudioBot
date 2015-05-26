@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 namespace TS3AudioBot
@@ -39,7 +36,9 @@ namespace TS3AudioBot
 				};
 				tmproc.StartInfo = psi;
 				tmproc.Start();
-				return true;
+				// Test if it was started successfully
+				// True if the process runs for more than 10 ms or the exit code is 0
+				return !tmproc.WaitForExit(10) || tmproc.ExitCode == 0;
 			}
 			catch (Exception ex)
 			{

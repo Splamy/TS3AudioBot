@@ -13,7 +13,7 @@ namespace TS3AudioBot
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
 		private bool quality = false;
-		private bool sending = true;
+		private bool sending = false;
 
 		private StreamWriter outStream;
 
@@ -35,11 +35,8 @@ namespace TS3AudioBot
 			get { return quality; }
 			set
 			{
-				if (quality != value)
-				{
-					quality = value;
-					SendMessage("quality " + (value ? "on" : "off"));
-				}
+				quality = value;
+				SendMessage("quality " + (value ? "on" : "off"));
 			}
 		}
 
@@ -48,11 +45,8 @@ namespace TS3AudioBot
 			get { return sending; }
 			set
 			{
-				if (sending != value)
-				{
-					sending = value;
-					SendMessage("audio " + (value ? "on" : "off"));
-				}
+				sending = value;
+				SendMessage("audio " + (value ? "on" : "off"));
 			}
 		}
 
@@ -63,13 +57,22 @@ namespace TS3AudioBot
 
 		private void Timer()
 		{
-			while (!cancellationToken.IsCancellationRequested && IsRunning)
+			try
 			{
-				double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
-				if (inactiveSeconds > 30)
-					Stop();
-				else
-					Task.Delay(TimeSpan.FromSeconds(30 - inactiveSeconds), cancellationToken).Wait();
+				while (!cancellationToken.IsCancellationRequested && IsRunning)
+				{
+					double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
+					if (inactiveSeconds > 30)
+						Stop();
+					else
+						Task.Delay(TimeSpan.FromSeconds(30 - inactiveSeconds), cancellationToken).Wait();
+				}
+			}
+			catch (TaskCanceledException)
+			{
+			}
+			catch (AggregateException)
+			{
 			}
 		}
 

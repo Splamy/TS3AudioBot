@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using System.Threading;
 
 namespace TS3AudioBot
 {
 	class QueryConnection
 	{
 		private QueryConnectionData connectionData;
-		private int PingEverySeconds = 60;
+		private const int PingEverySeconds = 60;
 
 		public TeamSpeakClient TSClient { get; protected set; }
 
@@ -22,6 +23,8 @@ namespace TS3AudioBot
 		private bool clientbufferoutdated = true;
 
 		private Task keepAliveTask;
+		private CancellationTokenSource keepAliveTokenSource;
+		private CancellationToken keepAliveToken;
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
@@ -47,18 +50,27 @@ namespace TS3AudioBot
 
 				connected = true;
 
+				keepAliveTokenSource = new CancellationTokenSource();
+				keepAliveToken = keepAliveTokenSource.Token;
 				keepAliveTask = Task.Run((Action)KeepAlivePoke);
 			}
 		}
 
 		private void KeepAlivePoke()
 		{
-			while (connected)
+			try
 			{
-				Console.WriteLine("Piinnngggg.....");
-				TSClient.WhoAmI();
-				for (int i = 0; i < PingEverySeconds && connected; i++)
-					Task.Delay(1000).Wait();
+				while (!keepAliveToken.IsCancellationRequested)
+				{
+					TSClient.WhoAmI();
+					Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken).Wait();
+				}
+			}
+			catch (TaskCanceledException)
+			{
+			}
+			catch (AggregateException)
+			{
 			}
 		}
 
@@ -70,9 +82,15 @@ namespace TS3AudioBot
 
 		public void Close()
 		{
-			Console.WriteLine("Closing Queryconnection...");
-			connected = false;
-			keepAliveTask.Wait();
+			if (connected)
+			{
+				connected = false;
+				Console.WriteLine("Closing Queryconnection...");
+				if (keepAliveToken.CanBeCanceled)
+					keepAliveTokenSource.Cancel();
+				if (!keepAliveTask.IsCompleted)
+					keepAliveTask.Wait();
+			}
 		}
 
 		public async Task<GetClientsInfo> GetClientById(int uid)
