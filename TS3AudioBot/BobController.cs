@@ -7,6 +7,11 @@ namespace TS3AudioBot
 {
 	class BobController
 	{
+		/// <summary>
+		/// After TIMEOUT seconds, the bob disconnects.
+		/// </summary>
+		private const int TIMEOUT = 60;
+
 		private BobControllerData data;
 		private Task timerTask;
 		private CancellationTokenSource cancellationTokenSource;
@@ -62,10 +67,10 @@ namespace TS3AudioBot
 				while (!cancellationToken.IsCancellationRequested && IsRunning)
 				{
 					double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
-					if (inactiveSeconds > 30)
+					if (inactiveSeconds > TIMEOUT)
 						Stop();
 					else
-						Task.Delay(TimeSpan.FromSeconds(30 - inactiveSeconds), cancellationToken).Wait();
+						Task.Delay(TimeSpan.FromSeconds(TIMEOUT - inactiveSeconds), cancellationToken).Wait();
 				}
 			}
 			catch (TaskCanceledException)
@@ -119,9 +124,9 @@ namespace TS3AudioBot
 						return;
 					}
 				}
-				if (IsRunning && timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
-					cancellationTokenSource.Cancel();
 			}
+			if (IsRunning && timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
+				cancellationTokenSource.Cancel();
 		}
 
 		public void StartEndTimer()

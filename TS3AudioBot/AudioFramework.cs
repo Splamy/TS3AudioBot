@@ -11,8 +11,6 @@ namespace TS3AudioBot
 
 		public delegate void RessourceStoppedDelegate();
 
-		private object ressourceLockObject = new object();
-
 		private Task ressourceEndTask;
 		/// <summary>
 		/// This token is used to cancel a WaitNotifyEnd task, don't change it while the task is running!
@@ -78,36 +76,30 @@ namespace TS3AudioBot
 			if (RessourceStarted != null)
 				RessourceStarted(audioRessource);
 
-			lock (ressourceLockObject)
+			// Start task to get the end notified when the ressource ends
+			if (ressourceEndTask != null && !ressourceEndTask.IsCompleted)
 			{
-				// Start task to get the end notified when the ressource ends
-				if (ressourceEndTask != null && !ressourceEndTask.IsCompleted)
-				{
-					ressourceEndTokenSource.Cancel();
-					ressourceEndTask.Wait();
-				}
-				ressourceEndTokenSource = new CancellationTokenSource();
-				ressourceEndToken = ressourceEndTokenSource.Token;
-				ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
-
-				currentRessource = audioRessource;
-				return true;
+				ressourceEndTokenSource.Cancel();
+				ressourceEndTask.Wait();
 			}
+			ressourceEndTokenSource = new CancellationTokenSource();
+			ressourceEndToken = ressourceEndTokenSource.Token;
+			ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
+
+			currentRessource = audioRessource;
+			return true;
 		}
 
 		public void Stop()
 		{
-			lock (ressourceLockObject)
+			if (currentRessource != null)
 			{
-				if (currentRessource != null)
-				{
-					currentRessource = null;
-					playerConnection.AudioStop();
-					if (!ressourceEndTask.IsCompleted)
-						ressourceEndTokenSource.Cancel();
-					if (RessourceStopped != null)
-						RessourceStopped();
-				}
+				currentRessource = null;
+				playerConnection.AudioStop();
+				if (!ressourceEndTask.IsCompleted)
+					ressourceEndTokenSource.Cancel();
+				if (RessourceStopped != null)
+					RessourceStopped();
 			}
 		}
 
