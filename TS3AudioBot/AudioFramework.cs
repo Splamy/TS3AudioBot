@@ -65,20 +65,21 @@ namespace TS3AudioBot
 
 		public bool StartRessource(AudioRessource audioRessource)
 		{
+			if (audioRessource == null)
+				return false;
+
+			LogAudioRessource(audioRessource);
+
+			Stop();
+
+			if (!audioRessource.Play(playerConnection))
+				return false;
+
+			if (RessourceStarted != null)
+				RessourceStarted(audioRessource);
+
 			lock (ressourceLockObject)
 			{
-				if (audioRessource == null)
-					return false;
-
-				LogAudioRessource(audioRessource);
-
-				Stop();
-
-				if (!audioRessource.Play(playerConnection))
-					return false;
-
-				if (RessourceStarted != null)
-					RessourceStarted(audioRessource);
 				// Start task to get the end notified when the ressource ends
 				if (ressourceEndTask != null && !ressourceEndTask.IsCompleted)
 				{
