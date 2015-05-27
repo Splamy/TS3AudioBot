@@ -110,23 +110,76 @@ namespace TS3AudioBot
 			var fields = typeof(T).GetFields();
 			foreach (var field in fields)
 			{
-				if (field.FieldType != typeof(string)) // TODO for more types
-					continue;
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
 				string entryName = assocName + "::" + field.Name;
-				string value = string.Empty;
-				if (cfgFile == null || (!cfgFile.ReadKey(entryName, out value) && askForInput))
+				string rawvalue = string.Empty;
+				object inpValue = null;
+				if (cfgFile == null || (!cfgFile.ReadKey(entryName, out rawvalue) && askForInput))
 				{
 					Console.Write("Please enter {0}: ", iAtt != null ? iAtt.Description : entryName);
-					value = Console.ReadLine();
-					if (cfgFile != null)
+					rawvalue = Console.ReadLine();
+					inpValue = ReadValueFromConsole(field.FieldType, rawvalue);
+					if (cfgFile != null && inpValue != null)
 					{
-						cfgFile.WriteKey(entryName, value);
+						WriteValueToConfig(cfgFile, entryName, inpValue);
 					}
 				}
-				field.SetValue(dataStruct, value);
+				field.SetValue(dataStruct, inpValue);
 			}
 			return (T)dataStruct;
+		}
+
+		public static object ReadValueFromConsole(Type targetType, string value)
+		{
+			if (targetType == typeof(string))
+				return value;
+			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
+			if (mi == null)
+				throw new Exception("The value of the DataStruct couldn't be parsed.");
+			object[] result = new object[] { value, null };
+			object success = mi.Invoke(null, result);
+			if (!(bool)success)
+				return null;
+			return result[1];
+		}
+
+		private static bool WriteValueToConfig(ConfigFile cfgFile, string entryName, object value)
+		{
+			if (value == null)
+				return false;
+			Type tType = value.GetType();
+			if (tType == typeof(string))
+			{
+				cfgFile.WriteKey(entryName, (string)value);
+			}
+			if (IsNumeric(tType) || tType == typeof(char))
+			{
+				cfgFile.WriteKey(entryName, value.ToString());
+			}
+			else if (tType == typeof(bool))
+			{
+				cfgFile.WriteKey(entryName, ((bool)value) ? "true" : "false");
+			}
+			else
+			{
+				return false;
+			}
+			return true;
+		}
+
+		private static bool IsNumeric(Type T)
+		{
+			return T == typeof(sbyte)
+				|| T == typeof(byte)
+				|| T == typeof(short)
+				|| T == typeof(ushort)
+				|| T == typeof(int)
+				|| T == typeof(uint)
+				|| T == typeof(long)
+				|| T == typeof(ulong)
+				|| T == typeof(float)
+				|| T == typeof(double)
+				|| T == typeof(decimal);
 		}
 
 		public void Close()
