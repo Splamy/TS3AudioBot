@@ -112,35 +112,26 @@ namespace TS3AudioBot
 			{
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
 				string entryName = assocName + "::" + field.Name;
-				string rawvalue = string.Empty;
+				string rawValue = string.Empty;
 				object inpValue = null;
-				if (cfgFile == null || (!cfgFile.ReadKey(entryName, out rawvalue) && askForInput))
+				bool gotConsoleInput = false;
+				if (cfgFile == null)
 				{
-					Console.Write("Please enter {0}: ", iAtt != null ? iAtt.Description : entryName);
-					rawvalue = Console.ReadLine();
-					inpValue = ReadValueFromConsole(field.FieldType, rawvalue);
-					if (cfgFile != null && inpValue != null)
+					gotConsoleInput = (!cfgFile.ReadKey(entryName, out rawValue) && askForInput);
+					if (gotConsoleInput)
 					{
-						WriteValueToConfig(cfgFile, entryName, inpValue);
+						Console.Write("Please enter {0}: ", iAtt != null ? iAtt.Description : entryName);
+						rawValue = Console.ReadLine();
 					}
+				}
+				inpValue = ParseToType(field.FieldType, rawValue);
+				if (gotConsoleInput && cfgFile != null && inpValue != null)
+				{
+					WriteValueToConfig(cfgFile, entryName, inpValue);
 				}
 				field.SetValue(dataStruct, inpValue);
 			}
 			return (T)dataStruct;
-		}
-
-		public static object ReadValueFromConsole(Type targetType, string value)
-		{
-			if (targetType == typeof(string))
-				return value;
-			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
-			if (mi == null)
-				throw new Exception("The value of the DataStruct couldn't be parsed.");
-			object[] result = new object[] { value, null };
-			object success = mi.Invoke(null, result);
-			if (!(bool)success)
-				return null;
-			return result[1];
 		}
 
 		private static bool WriteValueToConfig(ConfigFile cfgFile, string entryName, object value)
@@ -152,19 +143,29 @@ namespace TS3AudioBot
 			{
 				cfgFile.WriteKey(entryName, (string)value);
 			}
-			if (IsNumeric(tType) || tType == typeof(char))
+			if (IsNumeric(tType) || tType == typeof(char) || tType == typeof(bool))
 			{
 				cfgFile.WriteKey(entryName, value.ToString());
-			}
-			else if (tType == typeof(bool))
-			{
-				cfgFile.WriteKey(entryName, ((bool)value) ? "true" : "false");
 			}
 			else
 			{
 				return false;
 			}
 			return true;
+		}
+
+		private static object ParseToType(Type targetType, string value)
+		{
+			if (targetType == typeof(string))
+				return value;
+			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
+			if (mi == null)
+				throw new Exception("The value of the DataStruct couldn't be parsed.");
+			object[] result = new object[] { value, null };
+			object success = mi.Invoke(null, result);
+			if (!(bool)success)
+				return null;
+			return result[1];
 		}
 
 		private static bool IsNumeric(Type T)
