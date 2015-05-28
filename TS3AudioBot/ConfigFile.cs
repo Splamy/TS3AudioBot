@@ -8,48 +8,13 @@ namespace TS3AudioBot
 	class ConfigFile
 	{
 		private string path;
-		Dictionary<string, string> data;
+		private Dictionary<string, string> data;
 		private bool changed;
 
 		private ConfigFile()
 		{
 			changed = false;
 			data = new Dictionary<string, string>();
-		}
-
-		public void WriteKey(string name, string value)
-		{
-			changed = true;
-
-			if (data.ContainsKey(name))
-			{
-				data[name] = value;
-			}
-			else
-			{
-				data.Add(name, value);
-			}
-		}
-
-		public string ReadKey(string name)
-		{
-			string value;
-			ReadKey(name, out value);
-			return value;
-		}
-
-		public bool ReadKey(string name, out string value)
-		{
-			if (!data.ContainsKey(name))
-			{
-				value = null;
-				return false;
-			}
-			else
-			{
-				value = data[name];
-				return true;
-			}
 		}
 
 		public static ConfigFile Open(string pPath)
@@ -98,12 +63,50 @@ namespace TS3AudioBot
 			}
 		}
 
-		public T GetStructData<T>(Type associatedClass, bool askForInput = false) where T : struct
+		/// <summary> Creates a dummy object which cannot save or read values.
+		/// Its only purpose is to show the console dialog and create a DataStruct </summary>
+		/// <returns>Returns a dummy-ConfigFile</returns>
+		public static ConfigFile GetDummy()
 		{
-			return GetStructData<T>(this, associatedClass, askForInput);
+			return new DummyConfigFile();
 		}
 
-		public static T GetStructData<T>(ConfigFile cfgFile, Type associatedClass, bool askForInput = false) where T : struct
+		public virtual void WriteKey(string name, string value)
+		{
+			changed = true;
+
+			if (data.ContainsKey(name))
+			{
+				data[name] = value;
+			}
+			else
+			{
+				data.Add(name, value);
+			}
+		}
+
+		public string ReadKey(string name)
+		{
+			string value;
+			ReadKey(name, out value);
+			return value;
+		}
+
+		public virtual bool ReadKey(string name, out string value)
+		{
+			if (!data.ContainsKey(name))
+			{
+				value = null;
+				return false;
+			}
+			else
+			{
+				value = data[name];
+				return true;
+			}
+		}
+
+		public T GetDataStruct<T>(Type associatedClass, bool defaultIfPossible = false) where T : struct
 		{
 			object dataStruct = new T();
 			string assocName = associatedClass.Name;
@@ -113,39 +116,53 @@ namespace TS3AudioBot
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
 				string entryName = assocName + "::" + field.Name;
 				string rawValue = string.Empty;
-				object inpValue = null;
-				bool gotConsoleInput = false;
-				if (cfgFile == null)
+				object parsedValue = null;
+
+				// determine the raw data string, wether from Console or File
+				bool gotInput = ReadKey(entryName, out rawValue);
+				bool manualInput = false;
+				if (!gotInput)
 				{
-					gotConsoleInput = (!cfgFile.ReadKey(entryName, out rawValue) && askForInput);
-					if (gotConsoleInput)
+					// Check if we can use the default value
+					if (iAtt != null && defaultIfPossible && iAtt.HasDefault)
+						rawValue = iAtt.DefaultValue;
+					else
 					{
 						Console.Write("Please enter {0}: ", iAtt != null ? iAtt.Description : entryName);
 						rawValue = Console.ReadLine();
+						manualInput = true;
 					}
+					gotInput = true;
 				}
-				inpValue = ParseToType(field.FieldType, rawValue);
-				if (gotConsoleInput && cfgFile != null && inpValue != null)
+
+				// Try to parse it and save if necessary
+				parsedValue = ParseToType(field.FieldType, rawValue);
+				if (parsedValue == null)
 				{
-					WriteValueToConfig(cfgFile, entryName, inpValue);
+					Console.WriteLine("Input parse failed [Ignoring]");
+					continue;
 				}
-				field.SetValue(dataStruct, inpValue);
+				if (manualInput)
+					WriteValueToConfig(entryName, parsedValue);
+
+				// finally set the value to our object
+				field.SetValue(dataStruct, parsedValue);
 			}
 			return (T)dataStruct;
 		}
 
-		private static bool WriteValueToConfig(ConfigFile cfgFile, string entryName, object value)
+		protected bool WriteValueToConfig(string entryName, object value)
 		{
 			if (value == null)
 				return false;
 			Type tType = value.GetType();
 			if (tType == typeof(string))
 			{
-				cfgFile.WriteKey(entryName, (string)value);
+				WriteKey(entryName, (string)value);
 			}
 			if (IsNumeric(tType) || tType == typeof(char) || tType == typeof(bool))
 			{
-				cfgFile.WriteKey(entryName, value.ToString());
+				WriteKey(entryName, value.ToString());
 			}
 			else
 			{
@@ -154,7 +171,7 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		private static object ParseToType(Type targetType, string value)
+		protected object ParseToType(Type targetType, string value)
 		{
 			if (targetType == typeof(string))
 				return value;
@@ -168,7 +185,7 @@ namespace TS3AudioBot
 			return result[1];
 		}
 
-		private static bool IsNumeric(Type T)
+		protected bool IsNumeric(Type T)
 		{
 			return T == typeof(sbyte)
 				|| T == typeof(byte)
@@ -183,7 +200,7 @@ namespace TS3AudioBot
 				|| T == typeof(decimal);
 		}
 
-		public void Close()
+		public virtual void Close()
 		{
 			if (!changed)
 			{
@@ -200,6 +217,13 @@ namespace TS3AudioBot
 			}
 			output.Flush();
 			fs.Close();
+		}
+
+		private class DummyConfigFile : ConfigFile
+		{
+			public override void Close() { }
+			public override bool ReadKey(string name, out string value) { value = null; return false; }
+			public override void WriteKey(string name, string value) { }
 		}
 	}
 }

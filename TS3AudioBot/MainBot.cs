@@ -30,12 +30,11 @@ namespace TS3AudioBot
 			// Read Config File
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath);
 			if (cfgFile == null)
-			{
-				// Careful, cfgFile can still be null even after the Create call!
 				cfgFile = ConfigFile.Create(configFilePath);
-			}
-			QueryConnectionData qcd = ConfigFile.GetStructData<QueryConnectionData>(cfgFile, typeof(QueryConnection), true);
-			BobControllerData bcd = ConfigFile.GetStructData<BobControllerData>(cfgFile, typeof(BobController), true);
+			if (cfgFile == null)
+				cfgFile = ConfigFile.GetDummy();
+			QueryConnectionData qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
+			BobControllerData bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
 			cfgFile.Close();
 
 			// Initialize Modules
