@@ -48,7 +48,7 @@ namespace TS3AudioBot
 			{
 				bobController.Start();
 				bobController.Sending = true;
-				bobController.Quality = true;
+				//bobController.Quality = true;
 			};
 			audioFramework.RessourceStopped += () =>
 			{
