@@ -266,7 +266,7 @@ namespace TS3AudioBot
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
 			if (!audioFramework.StartRessource(new MediaRessource(netlinkurl)))
-				WriteClient(client, "The local file could not be played...");
+				WriteClient(client, "The ressource could not be played...");
 		}
 
 		private void PlayYoutube(GetClientsInfo client, string message)

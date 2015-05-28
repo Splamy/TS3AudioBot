@@ -26,13 +26,7 @@ namespace TS3AudioBot
 
 		public bool IsRunning
 		{
-			get
-			{
-				lock (lockObject)
-				{
-					return outStream != null;
-				}
-			}
+			get { return outStream != null; }
 		}
 
 		public bool Quality
@@ -137,6 +131,7 @@ namespace TS3AudioBot
 					cancellationTokenSource.Cancel();
 				timerTask.Wait();
 			}
+			HasUpdate();
 			cancellationTokenSource = new CancellationTokenSource();
 			cancellationToken = cancellationTokenSource.Token;
 			timerTask = Task.Run((Action)Timer, cancellationToken);
@@ -155,11 +150,8 @@ namespace TS3AudioBot
 					outStream = null;
 				}
 			}
-			if (cancellationToken.CanBeCanceled)
-			{
+			if (IsRunning && timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
 				cancellationTokenSource.Cancel();
-				timerTask.Wait();
-			}
 		}
 	}
 

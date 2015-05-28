@@ -43,6 +43,7 @@ namespace TS3AudioBot
 				await TSClient.RegisterServerNotification();
 				await TSClient.RegisterTextPrivateNotification();
 				await TSClient.RegisterTextServerNotification();
+				await TSClient.RegisterTextChannelNotification();
 
 				TSClient.Subscribe<TextMessage>(data => data.ForEach(ProcessMessage));
 				TSClient.Subscribe<ClientEnterView>(data => clientbufferoutdated = true);

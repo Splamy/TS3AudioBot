@@ -82,11 +82,10 @@ namespace TS3AudioBot
 				ressourceEndTokenSource.Cancel();
 				ressourceEndTask.Wait();
 			}
+			currentRessource = audioRessource;
 			ressourceEndTokenSource = new CancellationTokenSource();
 			ressourceEndToken = ressourceEndTokenSource.Token;
 			ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
-
-			currentRessource = audioRessource;
 			return true;
 		}
 
