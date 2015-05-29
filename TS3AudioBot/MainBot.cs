@@ -189,12 +189,13 @@ namespace TS3AudioBot
 			case "history":
 				//TODO
 				break;
-			case "startbot":
-				bobController.Start();
-				break;
-			case "stopbot":
-				bobController.Stop();
-				break;
+			// Move to admin commands
+			//case "startbot":
+			//	bobController.Start();
+			//	break;
+			//case "stopbot":
+			//	bobController.Stop();
+			//	break;
 			default:
 				if (client != null)
 					await queryConnection.TSClient.SendMessage("Unknown command!", client);

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using LockCheck;
 
 namespace TS3AudioBot
 {
@@ -29,6 +30,11 @@ namespace TS3AudioBot
 			get { return outStream != null; }
 		}
 
+		public bool IsTimingOut
+		{
+			get { return timerTask != null && !timerTask.IsCompleted; }
+		}
+
 		public bool Quality
 		{
 			get { return quality; }
@@ -54,27 +60,7 @@ namespace TS3AudioBot
 			this.data = data;
 		}
 
-		private void Timer()
-		{
-			try
-			{
-				while (!cancellationToken.IsCancellationRequested && IsRunning)
-				{
-					double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
-					if (inactiveSeconds > TIMEOUT)
-						Stop();
-					else
-						Task.Delay(TimeSpan.FromSeconds(TIMEOUT - inactiveSeconds), cancellationToken).Wait();
-				}
-			}
-			catch (TaskCanceledException)
-			{
-			}
-			catch (AggregateException)
-			{
-			}
-		}
-
+		[LockCritical("lockObject")]
 		private void SendMessage(string message)
 		{
 			lock (lockObject)
@@ -93,6 +79,7 @@ namespace TS3AudioBot
 			lastUpdate = DateTime.Now;
 		}
 
+		[LockCritical("lockObject")]
 		public void Start()
 		{
 			lock (lockObject)
@@ -118,30 +105,55 @@ namespace TS3AudioBot
 						return;
 					}
 				}
+				if (IsRunning && IsTimingOut)
+					cancellationTokenSource.Cancel();
 			}
-			if (IsRunning && timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
-				cancellationTokenSource.Cancel();
 		}
 
 		public void StartEndTimer()
 		{
-			if (timerTask != null && !timerTask.IsCompleted)
-			{
-				if (cancellationToken.CanBeCanceled)
-					cancellationTokenSource.Cancel();
-				timerTask.Wait();
-			}
 			HasUpdate();
-			cancellationTokenSource = new CancellationTokenSource();
-			cancellationToken = cancellationTokenSource.Token;
-			timerTask = Task.Run((Action)Timer, cancellationToken);
+			if (IsRunning)
+			{
+				if (IsTimingOut)
+				{
+					cancellationTokenSource.Cancel();
+					timerTask.Wait();
+				}
+				InternalStartEndTimer();
+			}
 		}
 
+		private void InternalStartEndTimer()
+		{
+			cancellationTokenSource = new CancellationTokenSource();
+			cancellationToken = cancellationTokenSource.Token;
+			timerTask = Task.Run(() =>
+				{
+					try
+					{
+						while (!cancellationToken.IsCancellationRequested)
+						{
+							double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
+							if (inactiveSeconds > TIMEOUT)
+							{
+								Stop();
+								break;
+							}
+							else
+								Task.Delay(TimeSpan.FromSeconds(TIMEOUT - inactiveSeconds), cancellationToken).Wait();
+						}
+					}
+					catch (TaskCanceledException) { }
+				}, cancellationToken);
+		}
+
+		[LockCritical("lockObject")]
 		public void Stop()
 		{
-			if (outStream != null)
+			Console.WriteLine("Stopping Bob...");
+			if (IsRunning)
 			{
-				Console.WriteLine("Stopping Bob...");
 				Quality = false;
 				SendMessage("exit");
 				lock (lockObject)
@@ -150,7 +162,7 @@ namespace TS3AudioBot
 					outStream = null;
 				}
 			}
-			if (IsRunning && timerTask != null && !timerTask.IsCompleted && cancellationToken.CanBeCanceled)
+			if (IsTimingOut)
 				cancellationTokenSource.Cancel();
 		}
 	}

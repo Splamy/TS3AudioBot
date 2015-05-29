@@ -50,6 +50,9 @@
     <Compile Include="ConfigFile.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
+    <Compile Include="LockCheck\LockChecker.cs" />
+    <Compile Include="LockCheck\MethodBaseRocks.cs" />
+    <Compile Include="LockCheck\LockCriticalAttribute.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryConnection.cs" />
