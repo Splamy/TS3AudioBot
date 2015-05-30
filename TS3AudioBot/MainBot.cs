@@ -28,11 +28,7 @@ namespace TS3AudioBot
 		public MainBot()
 		{
 			// Read Config File
-			ConfigFile cfgFile = ConfigFile.Open(configFilePath);
-			if (cfgFile == null)
-				cfgFile = ConfigFile.Create(configFilePath);
-			if (cfgFile == null)
-				cfgFile = ConfigFile.GetDummy();
+			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.GetDummy();
 			QueryConnectionData qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
 			BobControllerData bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
 			cfgFile.Close();
@@ -99,7 +95,7 @@ namespace TS3AudioBot
 					continue;
 
 				case "vlctest":
-					Console.WriteLine(audioFramework.playerConnection.IsPlaying());
+					//Console.WriteLine(audioFramework.playerConnection.IsPlaying());
 					break;
 
 				default:
@@ -175,6 +171,17 @@ namespace TS3AudioBot
 				}
 				PlayLink(client, command[1]);
 				break;
+			case "loop":
+				if (command.Length != 2)
+				{
+					WriteClient(client, "Missing or too many parameter. Usage !loop (on|off)");
+					break;
+				}
+				if (command[1] == "on")
+					audioFramework.Loop = true;
+				else if (command[1] == "off")
+					audioFramework.Loop = true;
+				break;
 			case "stop":
 				audioFramework.Stop();
 				break;
@@ -239,13 +246,8 @@ namespace TS3AudioBot
 				return;
 			}
 
-			// TODO: move method call to audioframework
-			if (seconds < 0 || seconds > audioFramework.playerConnection.GetLength())
-			{
+			if (!audioFramework.Seek(seconds))
 				WriteClient(client, "The point of time is not within the songlenth.");
-				return;
-			}
-			audioFramework.playerConnection.SetPosition(seconds);
 		}
 
 		private void PlayAuto(GetClientsInfo client, string message)
@@ -274,7 +276,7 @@ namespace TS3AudioBot
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
 			// TODO: lookup in history...
-			if (!youtubeFramework.ExtractedURL(netlinkurl))
+			if (youtubeFramework.ExtractedURL(netlinkurl) != ResultCode.Success)
 			{
 				WriteClient(client, "Invalid URL or no media found...");
 				return;

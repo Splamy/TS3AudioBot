@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TeamSpeak3QueryApi.Net;
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
@@ -39,11 +40,11 @@ namespace TS3AudioBot
 				await TSClient.Connect();
 				await TSClient.Login(connectionData.user, connectionData.passwd);
 				await TSClient.UseServer(1);
+				await ChangeName("TS3AudioBot");
 
 				await TSClient.RegisterServerNotification();
 				await TSClient.RegisterTextPrivateNotification();
 				await TSClient.RegisterTextServerNotification();
-				await TSClient.RegisterTextChannelNotification();
 
 				TSClient.Subscribe<TextMessage>(data => data.ForEach(ProcessMessage));
 				TSClient.Subscribe<ClientEnterView>(data => clientbufferoutdated = true);
@@ -83,15 +84,27 @@ namespace TS3AudioBot
 
 		public void Close()
 		{
+			Console.WriteLine("Closing Queryconnection...");
 			if (connected)
 			{
 				connected = false;
-				Console.WriteLine("Closing Queryconnection...");
+				Diconnect();
 				if (keepAliveToken.CanBeCanceled)
 					keepAliveTokenSource.Cancel();
 				if (!keepAliveTask.IsCompleted)
 					keepAliveTask.Wait();
 			}
+		}
+
+		public async Task ChangeName(string newName)
+		{
+			await TSClient.Client.Send("clientupdate", new Parameter("client_nickname", newName));
+		}
+
+		private void Diconnect()
+		{
+			if (TSClient.Client.IsConnected)
+				TSClient.Client.Send("quit").Wait();
 		}
 
 		public async Task<GetClientsInfo> GetClientById(int uid)

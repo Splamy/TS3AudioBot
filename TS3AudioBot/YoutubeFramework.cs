@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net;
+using System.Web;
 using System.Text.RegularExpressions;
 
 namespace TS3AudioBot
 {
 	class YoutubeFramework
 	{
-		WebClient wc;
+		private WebClient wc;
 
 		public YoutubeRessource LoadedRessource { get; protected set; }
 
@@ -20,56 +20,137 @@ namespace TS3AudioBot
 			LoadedRessource = null;
 		}
 
-		public bool ExtractedURL(string ytlink, bool filterOutInvalid = true)
+		public ResultCode ExtractedURL(string ytLink, bool filterOutInvalid = true)
 		{
-			string escaped = Uri.EscapeDataString(ytlink);
-			string keepvidlink = "http://keepvid.com/?url=" + escaped;
-
 			string resulthtml = string.Empty;
+			Match matchYtId = Regex.Match(ytLink, @"(&|\?)v=([a-zA-Z0-9\-_]+)");
+			if (!matchYtId.Success)
+				return ResultCode.YtIdNotFound;
+			string ytID = matchYtId.Groups[2].Value;
+
 			try
 			{
-				resulthtml = wc.DownloadString(keepvidlink);
+				resulthtml = wc.DownloadString(string.Format("http://www.youtube.com/get_video_info?video_id={0}&el=info", ytID));
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Kevidrequest failed: " + ex.Message);
-				return false;
+				Console.WriteLine("Youtube downloadreqest failed: " + ex.Message);
+				return ResultCode.NoYtConnection;
 			}
-			MatchCollection matches = Regex.Matches(resulthtml, @"<a href=\""(http:\/\/[a-z]\d{1,4}---[^\""]+?)\"".*?<br \/>");
 
-			List<VideoType> videotypes = new List<VideoType>();
-			foreach (Match match in matches)
+			List<VideoType> videoTypes = new List<VideoType>();
+			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
+
+			string vTitle = dataParse["title"];
+			if (vTitle == null)
+				vTitle = string.Empty;
+
+			string videoDataUnsplit = dataParse["url_encoded_fmt_stream_map"];
+			if (videoDataUnsplit == null)
+				return ResultCode.NoFMT;
+			string[] videoData = videoDataUnsplit.Split(',');
+
+			foreach (string vdat in videoData)
 			{
+				NameValueCollection videoparse = HttpUtility.ParseQueryString(vdat);
+
+				string vLink = videoparse["url"];
+				if (vLink == null)
+					continue;
+				
+				string vType = videoparse["type"];
+				if (vType == null)
+					continue;
+
+				string vQuality = videoparse["quality"];
+				if (vQuality == null)
+					continue;
+
 				VideoType vt = new VideoType();
-				vt.link = match.Groups[1].Value;
-				string codecname = Regex.Match(match.Value, @"Download ([A-Z0-9]+) ").Groups[1].Value;
-				switch (codecname)
-				{
-				case "MP4":
-					vt.codec = VideoCodec.MP4;
-					break;
-				case "M4A":
-					vt.codec = VideoCodec.M4A;
-					break;
-				case "FLV":
-					vt.codec = VideoCodec.FLV;
-					break;
-				case "3GP":
-					vt.codec = VideoCodec.ThreeGP;
-					break;
-				case "WEBM":
-					vt.codec = VideoCodec.WEBM;
-					break;
-				default:
-					vt.codec = VideoCodec.Unknow;
-					break;
-				}
-				string qualitydesc = Regex.Match(match.Value, @"<b>([\w\(\)\s]+)<\/b>").Groups[1].Value;
-				vt.qualitydesciption = qualitydesc;
-				videotypes.Add(vt);
+				vt.link = vLink;
+				vt.codec = GetCodec(vType);
+				vt.qualitydesciption = vQuality;
+				videoTypes.Add(vt);
 			}
-			LoadedRessource = new YoutubeRessource(ytlink, "<Unknown>", videotypes.AsReadOnly());
-			return LoadedRessource.AvailableTypes.Count > 0;
+
+			videoDataUnsplit = dataParse["adaptive_fmts"];
+			if (videoDataUnsplit == null)
+				return ResultCode.NoFMTS;
+			videoData = videoDataUnsplit.Split(',');
+
+			foreach (string vdat in videoData)
+			{
+				NameValueCollection videoparse = HttpUtility.ParseQueryString(vdat);
+
+				string vType = videoparse["type"];
+				if (vType == null)
+					continue;
+
+				bool audioOnly = false;
+				if (vType.StartsWith("video/") && filterOutInvalid)
+					continue;
+				else if (vType.StartsWith("audio/"))
+					audioOnly = true;
+
+				string vLink = videoparse["url"];
+				if (vLink == null)
+					continue;
+
+				VideoType vt = new VideoType();
+				vt.codec = GetCodec(vType);
+				vt.qualitydesciption = vType;
+				vt.link = vLink;
+				if (audioOnly)
+					vt.audioOnly = true;
+				else
+					vt.videoOnly = true;
+				videoTypes.Add(vt);
+			}
+
+			LoadedRessource = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
+			if (LoadedRessource.AvailableTypes.Count > 0)
+				return ResultCode.Success;
+			else
+				return ResultCode.NoVideosExtracted;
+		}
+
+		private VideoCodec GetCodec(string type)
+		{
+			string lowtype = type.ToLower();
+			bool audioOnly = false;
+			string codecSubStr;
+			if (lowtype.StartsWith("video/"))
+				codecSubStr = lowtype.Substring("video/".Length);
+			else if (lowtype.StartsWith("audio/"))
+			{
+				codecSubStr = lowtype.Substring("audio/".Length);
+				audioOnly = true;
+			}
+			else
+				return VideoCodec.Unknown;
+
+			string extractedCodec;
+			int codecEnd;
+			if ((codecEnd = codecSubStr.IndexOf(';')) >= 0)
+				extractedCodec = codecSubStr.Substring(0, codecEnd);
+			else
+				extractedCodec = codecSubStr;
+
+			switch (extractedCodec)
+			{
+			case "mp4":
+				if (audioOnly)
+					return VideoCodec.M4A;
+				return VideoCodec.MP4;
+			case "x-flv":
+				return VideoCodec.FLV;
+			case "3gpp":
+				return VideoCodec.ThreeGP;
+			case "webm":
+				return VideoCodec.WEBM;
+			default:
+				return VideoCodec.Unknown;
+			}
 		}
 	}
 
@@ -78,6 +159,8 @@ namespace TS3AudioBot
 		public string link;
 		public string qualitydesciption;
 		public VideoCodec codec;
+		public bool audioOnly = false;
+		public bool videoOnly = false;
 
 		public override string ToString()
 		{
@@ -114,11 +197,21 @@ namespace TS3AudioBot
 
 	enum VideoCodec
 	{
+		Unknown,
 		MP4,
 		M4A,
 		WEBM,
 		FLV,
 		ThreeGP,
-		Unknow,
+	}
+
+	enum ResultCode
+	{
+		Success,
+		YtIdNotFound,
+		NoYtConnection,
+		NoVideosExtracted,
+		NoFMT,
+		NoFMTS,
 	}
 }

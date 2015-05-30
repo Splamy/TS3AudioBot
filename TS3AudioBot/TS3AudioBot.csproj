@@ -40,6 +40,7 @@
     <Reference Include="System.Drawing" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="TeamSpeak3QueryApi">
       <HintPath>lib\TeamSpeak3QueryApi.dll</HintPath>

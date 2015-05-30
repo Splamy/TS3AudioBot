@@ -20,12 +20,21 @@ namespace TS3AudioBot
 
 		private AudioRessource currentRessource = null;
 		private List<AudioRessource> ressourceLog = null;
-		public IPlayerConnection playerConnection;
+		private IPlayerConnection playerConnection;
 
 		public event RessourceStartedDelegate RessourceStarted;
 		public event RessourceStoppedDelegate RessourceStopped;
 
-		public bool Loop { get; set; }
+		private bool loop = false;
+		public bool Loop { get { return loop; } set { playerConnection.SetLoop(value); loop = value; } }
+
+		public bool Seek(int pos)
+		{
+			if (pos < 0 || pos > playerConnection.GetLength())
+				return false;
+			playerConnection.SetPosition(pos);
+			return true;
+		}
 
 		public AudioFramework()
 		{
@@ -135,9 +144,7 @@ namespace TS3AudioBot
 		public override AudioType AudioType { get { return AudioType.MediaLink; } }
 
 		public MediaRessource(string path)
-			: base(path)
-		{
-		}
+			: base(path) { }
 
 		public override bool Play(IPlayerConnection mediaPlayer)
 		{
