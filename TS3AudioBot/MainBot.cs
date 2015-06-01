@@ -31,10 +31,11 @@ namespace TS3AudioBot
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.GetDummy();
 			QueryConnectionData qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
 			BobControllerData bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
+			AudioFrameworkData afd = cfgFile.GetDataStruct<AudioFrameworkData>(typeof(AudioFramework), true);
 			cfgFile.Close();
 
 			// Initialize Modules
-			audioFramework = new AudioFramework();
+			audioFramework = new AudioFramework(afd);
 
 			youtubeFramework = new YoutubeFramework();
 
@@ -148,6 +149,7 @@ namespace TS3AudioBot
 					"!stopbot: Disconnects the MusicBot from TeamSpeak\n" +
 					"!history: Shows you the last played songs\n");
 				break;
+
 			case "history":
 				//TODO
 				break;
@@ -224,6 +226,13 @@ namespace TS3AudioBot
 				audioFramework.Stop();
 				break;
 
+			case "volume":
+				if (command.Length == 2)
+					SetVolume(client, command[1]);
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !volume <int>(0-200)");
+				break;
+
 			case "yt":
 			case "youtube":
 				if (command.Length == 2)
@@ -245,6 +254,15 @@ namespace TS3AudioBot
 				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
 			else
 				return ts3link;
+		}
+
+		private void SetVolume(GetClientsInfo client, string message)
+		{
+			int volume;
+			if (int.TryParse(message, out volume) && (volume >= 0 && volume <= 200))
+				audioFramework.Volume = volume;
+			else
+				WriteClient(client, "The parameter is not a valid integer.");
 		}
 
 		private void KickClient(GetClientsInfo client, string message)
@@ -286,7 +304,7 @@ namespace TS3AudioBot
 
 			if (!parsed)
 			{
-				WriteClient(client, "The parameter is not a valid second integer.");
+				WriteClient(client, "The parameter is not a valid integer.");
 				return;
 			}
 

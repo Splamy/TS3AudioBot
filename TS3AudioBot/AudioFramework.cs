@@ -11,6 +11,7 @@ namespace TS3AudioBot
 
 		public delegate void RessourceStoppedDelegate();
 
+		private AudioFrameworkData audioFrameworkData;
 		private Task ressourceEndTask;
 		/// <summary>
 		/// This token is used to cancel a WaitNotifyEnd task, don't change it while the task is running!
@@ -80,15 +81,16 @@ namespace TS3AudioBot
 
 		// Audioframework
 
+		public AudioFramework(AudioFrameworkData afd)
+		{
+			audioFrameworkData = afd;
+			playerConnection = new VLCConnection();
+			playerConnection.Start();
+		}
+
 		private void GetHistory(int index, int backcount)
 		{
 			// TODO
-		}
-
-		public AudioFramework()
-		{
-			playerConnection = new VLCConnection();
-			playerConnection.Start();
 		}
 
 		/// <summary>
@@ -125,6 +127,7 @@ namespace TS3AudioBot
 
 			Stop();
 
+			Volume = audioFrameworkData.defaultVolume;
 			if (audioRessource.Enqueue)
 			{
 				if (!audioRessource.Play(ar => playerConnection.AudioAdd(ar)))
@@ -208,11 +211,13 @@ namespace TS3AudioBot
 		}
 	}
 
-	/*public struct AudioFrameworkData
+	public struct AudioFrameworkData
 	{
-		[InfoAttribute("the absolute or relative path to the local music folder")]
-		public string localAudioPath;
-	}*/
+		//[InfoAttribute("the absolute or relative path to the local music folder")]
+		//public string localAudioPath;
+		[InfoAttribute("the default volume a song should start with")]
+		public int defaultVolume;
+	}
 
 	enum AudioType
 	{
