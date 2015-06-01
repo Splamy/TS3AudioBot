@@ -11,13 +11,19 @@ namespace TS3AudioBot
 		void Start();
 		void Close();
 
-		bool IsPlaying();
+		void AudioAdd(string url);
+		void AudioClear();
+		void AudioNext();
+		void AudioPlay();
+		void AudioPrevious();
+		void AudioStart(string url);
+		void AudioStop();
 		int GetLength();
 		int GetPosition();
-		void SetPosition(int position);
+		bool IsPlaying();
 		void SetLoop(bool enabled);
-
-		void AudioStop();
-		void AudioStart(string url);
+		void SetPosition(int position);
+		void SetRepeat(bool enabled);
+		void SetVolume(int value);
 	}
 }

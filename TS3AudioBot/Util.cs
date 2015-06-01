@@ -12,7 +12,7 @@ namespace TS3AudioBot
 		{
 			subTaskDict = new Dictionary<SubTask, string>();
 			subTaskDict.Add(SubTask.VLC, IsLinux ? "vlc" : @"D:\VideoLAN\VLC\vlc.exe");
-			subTaskDict.Add(SubTask.StartTsBot, IsLinux ? "StartTsBot.sh" : "");
+			subTaskDict.Add(SubTask.StartTsBot, IsLinux ? "StartTsBot.sh" : "ping");
 		}
 
 		public static bool IsLinux

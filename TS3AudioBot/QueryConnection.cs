@@ -40,7 +40,8 @@ namespace TS3AudioBot
 				await TSClient.Connect();
 				await TSClient.Login(connectionData.user, connectionData.passwd);
 				await TSClient.UseServer(1);
-				await ChangeName("TS3AudioBot");
+				try { await ChangeName("TS3AudioBot"); }
+				catch { Console.WriteLine("TS3AudioBot name already in use!"); }
 
 				await TSClient.RegisterServerNotification();
 				await TSClient.RegisterTextPrivateNotification();
@@ -68,12 +69,8 @@ namespace TS3AudioBot
 					Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken).Wait();
 				}
 			}
-			catch (TaskCanceledException)
-			{
-			}
-			catch (AggregateException)
-			{
-			}
+			catch (TaskCanceledException) { }
+			catch (AggregateException) { }
 		}
 
 		private void ProcessMessage(TextMessage tm)

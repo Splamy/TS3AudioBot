@@ -68,10 +68,39 @@ namespace TS3AudioBot
 
 		// VLC Commands
 
-		public bool IsPlaying()
+		public void AudioAdd(string url)
 		{
-			SendResponseLocked(AwaitingResponse.IsPlaing, "is_playing");
-			return isPlaying;
+			SendCommandLocked("enqueue " + url);
+		}
+
+		public void AudioClear()
+		{
+			SendCommandLocked("clear");
+		}
+
+		public void AudioNext()
+		{
+			SendCommandLocked("next");
+		}
+
+		public void AudioPrevious()
+		{
+			SendCommandLocked("prev");
+		}
+
+		public void AudioStart(string url)
+		{
+			SendCommandLocked("add " + url);
+		}
+
+		public void AudioPlay()
+		{
+			SendCommandLocked("play");
+		}
+
+		public void AudioStop()
+		{
+			SendCommandLocked("stop");
 		}
 
 		public int GetLength()
@@ -86,9 +115,10 @@ namespace TS3AudioBot
 			return getPosition;
 		}
 
-		public void SetPosition(int position)
+		public bool IsPlaying()
 		{
-			SendCommandLocked("seek " + position);
+			SendResponseLocked(AwaitingResponse.IsPlaing, "is_playing");
+			return isPlaying;
 		}
 
 		public void SetLoop(bool enabled)
@@ -96,14 +126,19 @@ namespace TS3AudioBot
 			SendCommandLocked("loop " + (enabled ? "on" : "off"));
 		}
 
-		public void AudioStop()
+		public void SetPosition(int position)
 		{
-			SendCommandLocked("stop");
+			SendCommandLocked("seek " + position);
 		}
 
-		public void AudioStart(string url)
+		public void SetRepeat(bool enabled)
 		{
-			SendCommandLocked("add " + url);
+			SendCommandLocked("repeat " + (enabled ? "on" : "off"));
+		}
+
+		public void SetVolume(int value)
+		{
+			SendCommandLocked("volume " + value);
 		}
 
 		// Lock and textsend methods
@@ -133,8 +168,19 @@ namespace TS3AudioBot
 
 		private void SendTextRaw(string msg)
 		{
-			Byte[] cmd = System.Text.Encoding.ASCII.GetBytes(msg + "\n");
-			netStream.Write(cmd, 0, cmd.Length);
+			if (connected)
+			{
+				try
+				{
+					Byte[] cmd = System.Text.Encoding.ASCII.GetBytes(msg + "\n");
+					netStream.Write(cmd, 0, cmd.Length);
+				}
+				catch (Exception ex)
+				{
+					connected = false;
+					Console.WriteLine("VLCConnection: Unexpected write failure ({0})", ex);
+				}
+			}
 		}
 
 		// Internal stuff

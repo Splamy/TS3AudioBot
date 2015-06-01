@@ -23,7 +23,7 @@ namespace TS3AudioBot
 		BobController bobController;
 		QueryConnection queryConnection;
 		YoutubeFramework youtubeFramework;
-		Func<TextMessage, Task<bool>> awatingResponse = null;
+		Func<TextMessage, Task<bool>> awaitingResponse = null;
 
 		public MainBot()
 		{
@@ -107,11 +107,11 @@ namespace TS3AudioBot
 
 		public async void TextCallback(TextMessage tm)
 		{
-			if (awatingResponse != null)
+			if (awaitingResponse != null)
 			{
-				if (await awatingResponse(tm))
+				if (await awaitingResponse(tm))
 				{
-					awatingResponse = null;
+					awaitingResponse = null;
 					return;
 				}
 			}
@@ -123,15 +123,19 @@ namespace TS3AudioBot
 
 			GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
 
-			switch (command[0])
+			switch (command[0].ToLower())
 			{
-			case "pm":
-				WriteClient(client, "Hi " + client.NickName);
+			case "add":
+				if (command.Length == 2)
+					PlayAuto(client, command[1], true);
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !add <url/path>");
 				break;
-			case "kickme":
-				if (client != null)
-					await queryConnection.TSClient.KickClient(client, KickOrigin.Channel);
+
+			case "clear":
+				audioFramework.Clear();
 				break;
+
 			case "help":
 				WriteClient(client, "\n" +
 					"!pm: Get private audience with the AudioBot\n" +
@@ -144,65 +148,90 @@ namespace TS3AudioBot
 					"!stopbot: Disconnects the MusicBot from TeamSpeak\n" +
 					"!history: Shows you the last played songs\n");
 				break;
-			case "p":
-			case "play":
-				if (command.Length != 2)
-				{
-					WriteClient(client, "Missing or too many parameter. Usage !play <url/path>");
-					break;
-				}
-				PlayAuto(client, command[1]);
-				break;
-			case "yt":
-			case "youtube":
-				if (command.Length != 2)
-				{
-					WriteClient(client, "Missing or too many parameter. Usage !yt <youtube-url>");
-					break;
-				}
-				PlayYoutube(client, command[1]);
-				break;
-			case "l":
-			case "link":
-				if (command.Length != 2)
-				{
-					WriteClient(client, "Missing or too many parameter. Usage !link <url/path>");
-					break;
-				}
-				PlayLink(client, command[1]);
-				break;
-			case "loop":
-				if (command.Length != 2)
-				{
-					WriteClient(client, "Missing or too many parameter. Usage !loop (on|off)");
-					break;
-				}
-				if (command[1] == "on")
-					audioFramework.Loop = true;
-				else if (command[1] == "off")
-					audioFramework.Loop = true;
-				break;
-			case "stop":
-				audioFramework.Stop();
-				break;
-			case "seek":
-				if (command.Length != 2)
-				{
-					WriteClient(client, "Missing or too many parameter. Usage !seek <int>");
-					break;
-				}
-				AudioSeek(client, command[1]);
-				break;
 			case "history":
 				//TODO
 				break;
-			// Move to admin commands
-			//case "startbot":
-			//	bobController.Start();
-			//	break;
-			//case "stopbot":
-			//	bobController.Stop();
-			//	break;
+
+			case "kickme":
+				if (command.Length == 1)
+					KickClient(client, null);
+				else if (command.Length == 2)
+					KickClient(client, command[1]);
+				break;
+
+			case "l":
+			case "link":
+				if (command.Length == 2)
+					PlayLink(client, command[1], false);
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !link <url/path>");
+				break;
+
+			case "loop":
+				if (command.Length == 2)
+				{
+					if (command[1] == "on")
+						audioFramework.Loop = true;
+					else if (command[1] == "off")
+						audioFramework.Loop = false;
+				}
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !loop (on|off)");
+				break;
+
+			case "next":
+				audioFramework.Next();
+				break;
+
+			case "pm":
+				WriteClient(client, "Hi " + client.NickName);
+				break;
+
+			case "p":
+			case "play":
+				if (command.Length == 1)
+					audioFramework.Play();
+				else if (command.Length == 2)
+					PlayAuto(client, command[1], false);
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !play [<url/path>]");
+				break;
+
+			case "prev":
+				audioFramework.Previous();
+				break;
+
+			case "repeat":
+				if (command.Length == 2)
+				{
+					if (command[1] == "on")
+						audioFramework.Repeat = true;
+					else if (command[1] == "off")
+						audioFramework.Repeat = false;
+				}
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !repeat (on|off)");
+				break;
+
+			case "seek":
+				if (command.Length == 2)
+					AudioSeek(client, command[1]);
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !seek [<min>:]<sek>");
+				break;
+
+			case "stop":
+				audioFramework.Stop();
+				break;
+
+			case "yt":
+			case "youtube":
+				if (command.Length == 2)
+					PlayYoutube(client, command[1], false);
+				else
+					WriteClient(client, "Missing or too many parameter. Usage !yt <youtube-url>");
+				break;
+
 			default:
 				if (client != null)
 					await queryConnection.TSClient.SendMessage("Unknown command!", client);
@@ -216,6 +245,21 @@ namespace TS3AudioBot
 				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
 			else
 				return ts3link;
+		}
+
+		private void KickClient(GetClientsInfo client, string message)
+		{
+			if (client != null)
+			{
+				try
+				{
+					if (message == null)
+						queryConnection.TSClient.KickClient(client, KickOrigin.Channel).Wait();
+					else if (message == "far")
+						queryConnection.TSClient.KickClient(client, KickOrigin.Server).Wait();
+				}
+				catch (Exception ex) { Console.WriteLine("Could not kick: {0}", ex); }
+			}
 		}
 
 		private void AudioSeek(GetClientsInfo client, string message)
@@ -250,37 +294,40 @@ namespace TS3AudioBot
 				WriteClient(client, "The point of time is not within the songlenth.");
 		}
 
-		private void PlayAuto(GetClientsInfo client, string message)
+		private void PlayAuto(GetClientsInfo client, string message, bool enqueue)
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
 			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
 			{
 				//Is a youtube link
-				PlayYoutube(client, message);
+				PlayYoutube(client, message, enqueue);
 			}
 			else
 			{
 				//Is a youtube link
-				PlayLink(client, message);
+				PlayLink(client, message, enqueue);
 			}
 		}
 
-		private void PlayLink(GetClientsInfo client, string message)
+		private void PlayLink(GetClientsInfo client, string message, bool enqueue)
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
-			if (!audioFramework.StartRessource(new MediaRessource(netlinkurl)))
+			var mediaRessource = new MediaRessource(netlinkurl);
+			mediaRessource.Enqueue = enqueue;
+			if (!audioFramework.StartRessource(mediaRessource))
 				WriteClient(client, "The ressource could not be played...");
 		}
 
-		private void PlayYoutube(GetClientsInfo client, string message)
+		private void PlayYoutube(GetClientsInfo client, string message, bool enqueue)
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
 			// TODO: lookup in history...
-			if (youtubeFramework.ExtractedURL(netlinkurl) != ResultCode.Success)
+			if (youtubeFramework.ExtractURL(netlinkurl) != ResultCode.Success)
 			{
 				WriteClient(client, "Invalid URL or no media found...");
 				return;
 			}
+			youtubeFramework.LoadedRessource.Enqueue = enqueue;
 			StringBuilder strb = new StringBuilder();
 			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
 			int count = 0;
@@ -294,7 +341,7 @@ namespace TS3AudioBot
 				strb.AppendLine(videoType.qualitydesciption);
 			}
 			WriteClient(client, strb.ToString());
-			awatingResponse = YoutubeAwait;
+			awaitingResponse = YoutubeAwait;
 		}
 
 		private async Task<bool> YoutubeAwait(TextMessage tm)
@@ -326,5 +373,4 @@ namespace TS3AudioBot
 				await queryConnection.TSClient.SendMessage(message, client);
 		}
 	}
-
 }

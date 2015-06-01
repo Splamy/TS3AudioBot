@@ -145,6 +145,7 @@ namespace TS3AudioBot
 						}
 					}
 					catch (TaskCanceledException) { }
+					catch (AggregateException) { }
 				}, cancellationToken);
 		}
 

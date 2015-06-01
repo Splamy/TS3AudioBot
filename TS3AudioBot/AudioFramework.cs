@@ -25,8 +25,30 @@ namespace TS3AudioBot
 		public event RessourceStartedDelegate RessourceStarted;
 		public event RessourceStoppedDelegate RessourceStopped;
 
+		// Playerproperties
+
 		private bool loop = false;
-		public bool Loop { get { return loop; } set { playerConnection.SetLoop(value); loop = value; } }
+		public bool Loop
+		{
+			get { return loop; }
+			set { playerConnection.SetLoop(value); loop = value; }
+		}
+
+		private bool repeat = false;
+		public bool Repeat
+		{
+			get { return repeat; }
+			set { playerConnection.SetRepeat(value); repeat = value; }
+		}
+
+		private int volume = -1;
+		public int Volume
+		{
+			get { return volume; }
+			set { if (value != volume) { playerConnection.SetVolume(value); volume = value; } }
+		}
+
+		// Playermethods
 
 		public bool Seek(int pos)
 		{
@@ -34,6 +56,33 @@ namespace TS3AudioBot
 				return false;
 			playerConnection.SetPosition(pos);
 			return true;
+		}
+
+		public void Next()
+		{
+			playerConnection.AudioNext();
+		}
+
+		public void Previous()
+		{
+			playerConnection.AudioPrevious();
+		}
+
+		public void Clear()
+		{
+			playerConnection.AudioClear();
+		}
+
+		public void Play()
+		{
+			playerConnection.AudioPlay();
+		}
+
+		// Audioframework
+
+		private void GetHistory(int index, int backcount)
+		{
+			// TODO
 		}
 
 		public AudioFramework()
@@ -55,19 +104,16 @@ namespace TS3AudioBot
 				Task.Delay(1000, ressourceEndToken).Wait();
 				if (currentRessource != null && playerConnection.IsPlaying() && !ressourceEndToken.IsCancellationRequested)
 				{
-					Task.Delay(playerConnection.GetLength() - 2, ressourceEndToken).Wait();
+					int waitTime = Math.Max(playerConnection.GetLength() - 2, 0);
+					Task.Delay(waitTime, ressourceEndToken).Wait();
 					while (currentRessource != null && playerConnection.IsPlaying() && !ressourceEndToken.IsCancellationRequested)
 						Task.Delay(1000, ressourceEndToken).Wait();
 					if (!ressourceEndToken.IsCancellationRequested)
 						Stop();
 				}
 			}
-			catch (TaskCanceledException)
-			{
-			}
-			catch (AggregateException)
-			{
-			}
+			catch (TaskCanceledException) { }
+			catch (AggregateException) { }
 		}
 
 		public bool StartRessource(AudioRessource audioRessource)
@@ -79,8 +125,17 @@ namespace TS3AudioBot
 
 			Stop();
 
-			if (!audioRessource.Play(playerConnection))
-				return false;
+			if (audioRessource.Enqueue)
+			{
+				if (!audioRessource.Play(ar => playerConnection.AudioAdd(ar)))
+					return false;
+				audioRessource.Enqueue = false;
+			}
+			else
+			{
+				if (!audioRessource.Play(ar => playerConnection.AudioStart(ar)))
+					return false;
+			}
 
 			if (RessourceStarted != null)
 				RessourceStarted(audioRessource);
@@ -128,10 +183,10 @@ namespace TS3AudioBot
 	abstract class AudioRessource
 	{
 		public abstract AudioType AudioType { get; }
-
 		public string RessourceName { get; private set; }
+		public bool Enqueue { get; set; }
 
-		public abstract bool Play(IPlayerConnection mediaPlayer);
+		public abstract bool Play(Action<string> setMedia);
 
 		public AudioRessource(string ressourceName)
 		{
@@ -146,12 +201,18 @@ namespace TS3AudioBot
 		public MediaRessource(string path)
 			: base(path) { }
 
-		public override bool Play(IPlayerConnection mediaPlayer)
+		public override bool Play(Action<string> setMedia)
 		{
-			mediaPlayer.AudioStart(RessourceName);
+			setMedia(RessourceName);
 			return true;
 		}
 	}
+
+	/*public struct AudioFrameworkData
+	{
+		[InfoAttribute("the absolute or relative path to the local music folder")]
+		public string localAudioPath;
+	}*/
 
 	enum AudioType
 	{

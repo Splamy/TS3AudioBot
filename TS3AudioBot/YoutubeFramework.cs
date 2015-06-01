@@ -20,7 +20,7 @@ namespace TS3AudioBot
 			LoadedRessource = null;
 		}
 
-		public ResultCode ExtractedURL(string ytLink, bool filterOutInvalid = true)
+		public ResultCode ExtractURL(string ytLink, bool filterOutInvalid = true)
 		{
 			string resulthtml = string.Empty;
 			Match matchYtId = Regex.Match(ytLink, @"(&|\?)v=([a-zA-Z0-9\-_]+)");
@@ -57,7 +57,7 @@ namespace TS3AudioBot
 				string vLink = videoparse["url"];
 				if (vLink == null)
 					continue;
-				
+
 				string vType = videoparse["type"];
 				if (vType == null)
 					continue;
@@ -112,6 +112,17 @@ namespace TS3AudioBot
 				return ResultCode.Success;
 			else
 				return ResultCode.NoVideosExtracted;
+		}
+
+		public ResultCode ExtractPlayList()
+		{
+			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json
+			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json&start-index=1&max-results=1
+
+			//totalResults":{"\$t":(\d+)}
+
+			//"url"\w*:\w*"(https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9\-_]+&)
+			return ResultCode.Success;
 		}
 
 		private VideoCodec GetCodec(string type)
@@ -186,11 +197,11 @@ namespace TS3AudioBot
 			Selected = 0;
 		}
 
-		public override bool Play(IPlayerConnection mediaPlayer)
+		public override bool Play(Action<string> setMedia)
 		{
 			if (Selected < 0 && Selected >= AvailableTypes.Count)
 				return false;
-			mediaPlayer.AudioStart(AvailableTypes[1].link);
+			setMedia(AvailableTypes[1].link);
 			return true;
 		}
 	}
