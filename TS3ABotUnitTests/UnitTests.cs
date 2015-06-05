@@ -1,13 +1,13 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LockCheck;
+using NUnit.Framework;
 
 namespace TS3ABotUnitTests
 {
-	[TestClass]
+	[TestFixture]
 	public class UnitTests
 	{
-		[TestMethod]
+		[Test]
 		public void DeadLockCheck()
 		{
 			var warnings = LockChecker.CheckAll("TS3AudioBot", true);

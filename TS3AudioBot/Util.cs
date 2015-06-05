@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace TS3AudioBot
 {
-	class Util
+	static class Util
 	{
 		private static Dictionary<SubTask, string> subTaskDict;
 

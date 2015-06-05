@@ -29,7 +29,7 @@ namespace LockCheck
 		/// <typeparam name="T">The class to check</typeparam>
 		/// <param name="print">True if the warnings should be printed to Console</param>
 		/// <returns>Returns a list of all possible deadlock calls</returns>
-		public static IReadOnlyList<LockCriticalWarning> Check<T>(bool print = false)
+		public static IReadOnlyList<LockCriticalWarning> Check<T>(bool print)
 		{
 			return DoCheck(lc => lc.CheckInternal(typeof(T)), null, print);
 		}
@@ -38,7 +38,7 @@ namespace LockCheck
 		/// <param name="nameSpace">The namespace containing all classes to be checked</param>
 		/// <param name="print">True if the warnings should be printed to Console</param>
 		/// <returns>Returns a list of all possible deadlock calls</returns>
-		public static IReadOnlyList<LockCriticalWarning> CheckAll(string nameSpace, bool print = false)
+		public static IReadOnlyList<LockCriticalWarning> CheckAll(string nameSpace, bool print)
 		{
 			return DoCheck((lc => lc.CheckAllInternal()), nameSpace, print);
 		}

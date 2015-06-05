@@ -11,7 +11,7 @@ namespace LockCheck
 	/// To get the evaluation, call the <see cref="LockChecker.Check(bool)"/> or <see cref="LockChecker.CheckAll(string, bool)"/> method from the <see cref="LockChecker"/>
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-	class LockCriticalAttribute : Attribute
+	sealed class LockCriticalAttribute : Attribute
 	{
 		public IReadOnlyCollection<string> LocksUsed { get; private set; }
 

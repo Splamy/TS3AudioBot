@@ -309,7 +309,7 @@ namespace TS3AudioBot
 
 		private string generatePassword(int lenght = 5)
 		{
-			string alphnum = "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+			const string alphnum = "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 			Random rnd = new Random();
 			StringBuilder strb = new StringBuilder();
 			for (int i = 0; i < lenght; i++)
