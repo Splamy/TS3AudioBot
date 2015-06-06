@@ -17,8 +17,6 @@ namespace TS3AudioBot
 			bot.Run();
 		}
 
-		private const string configFilePath = "configTS3AudioBot.cfg";
-
 		AudioFramework audioFramework;
 		BobController bobController;
 		QueryConnection queryConnection;
@@ -28,6 +26,7 @@ namespace TS3AudioBot
 		public MainBot()
 		{
 			// Read Config File
+			string configFilePath = Util.GetFilePath(FilePath.ConfigFile);
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.GetDummy();
 			QueryConnectionData qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
 			BobControllerData bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
@@ -40,13 +39,13 @@ namespace TS3AudioBot
 			youtubeFramework = new YoutubeFramework();
 
 			bobController = new BobController(bcd);
-			audioFramework.RessourceStarted += (audioRessource) =>
+			audioFramework.OnRessourceStarted += (audioRessource) =>
 			{
 				bobController.Start();
 				bobController.Sending = true;
 				//bobController.Quality = true;
 			};
-			audioFramework.RessourceStopped += () =>
+			audioFramework.OnRessourceStopped += () =>
 			{
 				bobController.StartEndTimer();
 				bobController.Sending = false;
@@ -119,7 +118,9 @@ namespace TS3AudioBot
 
 			if (!tm.Message.StartsWith("!"))
 				return;
-			string[] command = tm.Message.Substring(1).Split(' ');
+			string commandSubstring = tm.Message.Substring(1);
+			string[] command = commandSubstring.Split(' ');
+			string argumentUncut = commandSubstring.Substring(command[0].Length);
 			bobController.HasUpdate();
 
 			GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
@@ -163,8 +164,8 @@ namespace TS3AudioBot
 
 			case "l":
 			case "link":
-				if (command.Length == 2)
-					PlayLink(client, command[1], false);
+				if (command.Length >= 2)
+					PlayLink(client, argumentUncut, false);
 				else
 					WriteClient(client, "Missing or too many parameter. Usage !link <url/path>");
 				break;
@@ -193,8 +194,8 @@ namespace TS3AudioBot
 			case "play":
 				if (command.Length == 1)
 					audioFramework.Play();
-				else if (command.Length == 2)
-					PlayAuto(client, command[1], false);
+				else if (command.Length >= 2)
+					PlayAuto(client, argumentUncut, false);
 				else
 					WriteClient(client, "Missing or too many parameter. Usage !play [<url/path>]");
 				break;
@@ -235,8 +236,8 @@ namespace TS3AudioBot
 
 			case "yt":
 			case "youtube":
-				if (command.Length == 2)
-					PlayYoutube(client, command[1], false);
+				if (command.Length >= 2)
+					PlayYoutube(client, argumentUncut, false);
 				else
 					WriteClient(client, "Missing or too many parameter. Usage !yt <youtube-url>");
 				break;
@@ -259,7 +260,7 @@ namespace TS3AudioBot
 		private void SetVolume(GetClientsInfo client, string message)
 		{
 			int volume;
-			if (int.TryParse(message, out volume) && (volume >= 0 && volume <= 200))
+			if (int.TryParse(message, out volume) && (volume >= 0 && volume <= AudioFramework.MAXVOLUME))
 				audioFramework.Volume = volume;
 			else
 				WriteClient(client, "The parameter is not a valid integer.");

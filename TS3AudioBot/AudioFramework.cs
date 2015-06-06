@@ -7,9 +7,9 @@ namespace TS3AudioBot
 {
 	class AudioFramework
 	{
-		public delegate void RessourceStartedDelegate(AudioRessource audioRessource);
-
-		public delegate void RessourceStoppedDelegate();
+		public const int MAXVOLUME = 200;
+		private const int TIMEOUT_MS = 30000;
+		private const int TIMEOUT_INTERVAL_MS = 100;
 
 		private AudioFrameworkData audioFrameworkData;
 		private Task ressourceEndTask;
@@ -23,8 +23,10 @@ namespace TS3AudioBot
 		private List<AudioRessource> ressourceLog = null;
 		private IPlayerConnection playerConnection;
 
-		public event RessourceStartedDelegate RessourceStarted;
-		public event RessourceStoppedDelegate RessourceStopped;
+		public delegate void RessourceStartedDelegate(AudioRessource audioRessource);
+		public delegate void RessourceStoppedDelegate();
+		public event RessourceStartedDelegate OnRessourceStarted;
+		public event RessourceStoppedDelegate OnRessourceStopped;
 
 		// Playerproperties
 
@@ -100,11 +102,15 @@ namespace TS3AudioBot
 		/// </summary>
 		private void WaitNotifyEnd()
 		{
-			// Wait a second until the music hopefully started
 			try
 			{
-				Task.Delay(1000, ressourceEndToken).Wait();
-				if (currentRessource != null && playerConnection.IsPlaying() && !ressourceEndToken.IsCancellationRequested)
+				int timeoutcnt = TIMEOUT_MS / TIMEOUT_INTERVAL_MS;
+				do
+				{
+					Task.Delay(TIMEOUT_INTERVAL_MS, ressourceEndToken).Wait();
+				} while (!playerConnection.IsPlaying() && timeoutcnt-- > 0);
+
+				if (timeoutcnt > 0 && currentRessource != null && !ressourceEndToken.IsCancellationRequested)
 				{
 					int waitTime = Math.Max(playerConnection.GetLength() - 2, 0);
 					Task.Delay(waitTime, ressourceEndToken).Wait();
@@ -127,7 +133,9 @@ namespace TS3AudioBot
 
 			Stop();
 
-			Volume = audioFrameworkData.defaultVolume;
+			if (audioRessource.Volume == -1)
+				audioRessource.Volume = audioFrameworkData.defaultVolume;
+			Volume = audioRessource.Volume;
 			if (audioRessource.Enqueue)
 			{
 				if (!audioRessource.Play(ar => playerConnection.AudioAdd(ar)))
@@ -140,8 +148,8 @@ namespace TS3AudioBot
 					return false;
 			}
 
-			if (RessourceStarted != null)
-				RessourceStarted(audioRessource);
+			if (OnRessourceStarted != null)
+				OnRessourceStarted(audioRessource);
 
 			// Start task to get the end notified when the ressource ends
 			if (ressourceEndTask != null && !ressourceEndTask.IsCompleted)
@@ -164,8 +172,8 @@ namespace TS3AudioBot
 				playerConnection.AudioStop();
 				if (!ressourceEndTask.IsCompleted)
 					ressourceEndTokenSource.Cancel();
-				if (RessourceStopped != null)
-					RessourceStopped();
+				if (OnRessourceStopped != null)
+					OnRessourceStopped();
 			}
 		}
 
@@ -185,6 +193,7 @@ namespace TS3AudioBot
 
 	abstract class AudioRessource
 	{
+		public int Volume { get; set; }
 		public abstract AudioType AudioType { get; }
 		public string RessourceName { get; private set; }
 		public bool Enqueue { get; set; }
@@ -193,6 +202,7 @@ namespace TS3AudioBot
 
 		public AudioRessource(string ressourceName)
 		{
+			Volume = -1;
 			RessourceName = ressourceName;
 		}
 	}

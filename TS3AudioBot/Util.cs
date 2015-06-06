@@ -6,13 +6,14 @@ namespace TS3AudioBot
 {
 	static class Util
 	{
-		private static Dictionary<SubTask, string> subTaskDict;
+		private static Dictionary<FilePath, string> filePathDict;
 
 		static Util()
 		{
-			subTaskDict = new Dictionary<SubTask, string>();
-			subTaskDict.Add(SubTask.VLC, IsLinux ? "vlc" : @"D:\VideoLAN\VLC\vlc.exe");
-			subTaskDict.Add(SubTask.StartTsBot, IsLinux ? "StartTsBot.sh" : "ping");
+			filePathDict = new Dictionary<FilePath, string>();
+			filePathDict.Add(FilePath.VLC, IsLinux ? "vlc" : @"D:\VideoLAN\VLC\vlc.exe");
+			filePathDict.Add(FilePath.StartTsBot, IsLinux ? "StartTsBot.sh" : "ping");
+			filePathDict.Add(FilePath.StartTsBot, "configTS3AudioBot.cfg");
 		}
 
 		public static bool IsLinux
@@ -24,11 +25,11 @@ namespace TS3AudioBot
 			}
 		}
 
-		public static bool Execute(SubTask subTask)
+		public static bool Execute(FilePath filePath)
 		{
 			try
 			{
-				string name = GetSubTaskPath(subTask);
+				string name = GetFilePath(filePath);
 				Process tmproc = new Process();
 				ProcessStartInfo psi = new ProcessStartInfo()
 				{
@@ -42,22 +43,23 @@ namespace TS3AudioBot
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Error! {0} couldn't be run/found ({1})", subTask, ex);
+				Console.WriteLine("Error! {0} couldn't be run/found ({1})", filePath, ex);
 				return false;
 			}
 		}
 
-		public static string GetSubTaskPath(SubTask subTask)
+		public static string GetFilePath(FilePath filePath)
 		{
-			if (subTaskDict.ContainsKey(subTask))
-				return subTaskDict[subTask];
+			if (filePathDict.ContainsKey(filePath))
+				return filePathDict[filePath];
 			return null;
 		}
 	}
 
-	public enum SubTask
+	public enum FilePath
 	{
 		VLC,
 		StartTsBot,
+		ConfigFile,
 	}
 }
