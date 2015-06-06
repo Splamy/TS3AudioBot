@@ -13,7 +13,7 @@ namespace TS3AudioBot
 			filePathDict = new Dictionary<FilePath, string>();
 			filePathDict.Add(FilePath.VLC, IsLinux ? "vlc" : @"D:\VideoLAN\VLC\vlc.exe");
 			filePathDict.Add(FilePath.StartTsBot, IsLinux ? "StartTsBot.sh" : "ping");
-			filePathDict.Add(FilePath.StartTsBot, "configTS3AudioBot.cfg");
+			filePathDict.Add(FilePath.ConfigFile, "configTS3AudioBot.cfg");
 		}
 
 		public static bool IsLinux
