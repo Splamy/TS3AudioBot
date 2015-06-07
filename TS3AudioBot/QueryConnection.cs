@@ -33,15 +33,21 @@ namespace TS3AudioBot
 			TSClient = new TeamSpeakClient(connectionData.host);
 		}
 
-		public async void Connect()
+		public async Task Connect()
 		{
 			if (!connected)
 			{
 				await TSClient.Connect();
 				await TSClient.Login(connectionData.user, connectionData.passwd);
 				await TSClient.UseServer(1);
-				try { await ChangeName("TS3AudioBot"); }
-				catch { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
+				try
+				{
+					await ChangeName("TS3AudioBot");
+				}
+				catch
+				{
+					Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!");
+				}
 
 				await TSClient.RegisterServerNotification();
 				await TSClient.RegisterTextPrivateNotification();
@@ -69,8 +75,12 @@ namespace TS3AudioBot
 					Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken).Wait();
 				}
 			}
-			catch (TaskCanceledException) { }
-			catch (AggregateException) { }
+			catch (TaskCanceledException)
+			{
+			}
+			catch (AggregateException)
+			{
+			}
 		}
 
 		private void ProcessMessage(TextMessage tm)

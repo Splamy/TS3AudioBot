@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using LockCheck;
+using TeamSpeak3QueryApi.Net.Specialized.Responses;
 
 namespace TS3AudioBot
 {
@@ -12,37 +13,28 @@ namespace TS3AudioBot
 		/// After TIMEOUT seconds, the bob disconnects.
 		/// </summary>
 		private const int TIMEOUT = 60;
+		/// <summary>
+		/// The name of the file which is used to tell our own server client id to the Bob.
+		/// </summary>
+		private const string FILENAME = "queryId";
 
 		private BobControllerData data;
 		private Task timerTask;
 		private CancellationTokenSource cancellationTokenSource;
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
-		private bool quality = false;
 		private bool sending = false;
-
-		private StreamWriter outStream;
 
 		private readonly object lockObject = new object();
 
-		public bool IsRunning
-		{
-			get { return outStream != null; }
-		}
+		public QueryConnection Query;
+		public GetClientsInfo BobClient;
+
+		public bool IsRunning { get; private set; }
 
 		public bool IsTimingOut
 		{
 			get { return timerTask != null && !timerTask.IsCompleted; }
-		}
-
-		public bool Quality
-		{
-			get { return quality; }
-			set
-			{
-				quality = value;
-				SendMessage("quality " + (value ? "on" : "off"));
-			}
 		}
 
 		public bool Sending
@@ -65,11 +57,10 @@ namespace TS3AudioBot
 		{
 			lock (lockObject)
 			{
-				if (outStream != null)
+				if (IsRunning)
 				{
-					outStream.Write(message);
-					outStream.Write('\n');
-					outStream.Flush();
+					//TODO Somehow we need to get a reference to the bob
+					Query.TSClient.SendMessage(message, BobClient);
 				}
 			}
 		}
@@ -84,26 +75,26 @@ namespace TS3AudioBot
 		{
 			lock (lockObject)
 			{
-				if (!IsRunning && Util.Execute(FilePath.StartTsBot))
+				if (!IsRunning)
 				{
-					// Wait some time to increase the chance that the Bob is running
-					Task.Delay(1000).Wait();
-					FileInfo info = new FileInfo(data.file);
-					if (!info.Exists)
-					{
-						Console.WriteLine("Can't open file {0}", data.file);
-						return;
-					}
+					// Write own server query id into file
+					string filepath = Path.Combine(data.folder, FILENAME);
 					try
 					{
-						outStream = new StreamWriter(info.OpenWrite());
+						using (StreamWriter output = File.CreateText(filepath))
+						{
+							output.WriteLine(Query.TSClient.WhoAmI().Result.ClientId);
+						}
 					}
 					catch (IOException ex)
 					{
-						Console.WriteLine("Can't open the file {0} ({1})", data.file, ex);
-						outStream = null;
+						Console.WriteLine("Can't open file {0}", filepath);
+						Console.WriteLine(ex);
 						return;
 					}
+					if (!Util.Execute(FilePath.StartTsBot))
+						return;
+					IsRunning = true;
 				}
 				if (IsRunning && IsTimingOut)
 					cancellationTokenSource.Cancel();
@@ -144,23 +135,26 @@ namespace TS3AudioBot
 								Task.Delay(TimeSpan.FromSeconds(TIMEOUT - inactiveSeconds), cancellationToken).Wait();
 						}
 					}
-					catch (TaskCanceledException) { }
-					catch (AggregateException) { }
+					catch (TaskCanceledException)
+					{
+					}
+					catch (AggregateException)
+					{
+					}
 				}, cancellationToken);
 		}
 
 		[LockCritical("lockObject")]
 		public void Stop()
 		{
-			Log.Write(Log.Level.Info, "Stopping Bob...");
+			Log.Write(Log.Level.Info, "Stopping Bob");
 			if (IsRunning)
 			{
-				Quality = false;
+				// FIXME We should lock these two calls in between too
 				SendMessage("exit");
 				lock (lockObject)
 				{
-					outStream.Close();
-					outStream = null;
+					IsRunning = false;
 				}
 			}
 			if (IsTimingOut)
@@ -180,7 +174,8 @@ namespace TS3AudioBot
 
 	public struct BobControllerData
 	{
-		[InfoAttribute("the pipe file for communication between the TS3AudioBot and the TeamSpeak3 Client plugin")]
-		public string file;
+		[InfoAttribute("the folder that contains the clientId file of this server query for " +
+			"communication between the TS3AudioBot and the TeamSpeak3 Client plugin")]
+		public string folder;
 	}
 }

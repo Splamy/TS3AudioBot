@@ -50,7 +50,6 @@ namespace TS3AudioBot
 			{
 				bobController.Start();
 				bobController.Sending = true;
-				//bobController.Quality = true;
 			};
 			audioFramework.OnRessourceStopped += () =>
 			{
@@ -59,6 +58,7 @@ namespace TS3AudioBot
 			};
 			queryConnection = new QueryConnection(qcd);
 			queryConnection.Callback = TextCallback;
+			bobController.Query = queryConnection;
 			queryConnection.Connect();
 		}
 
@@ -298,7 +298,10 @@ namespace TS3AudioBot
 					else if (message == "far")
 						queryConnection.TSClient.KickClient(client, KickOrigin.Server).Wait();
 				}
-				catch (Exception ex) { Log.Write(Log.Level.Info, "Could not kick: {0}", ex); }
+				catch (Exception ex)
+				{
+					Log.Write(Log.Level.Info, "Could not kick: {0}", ex);
+				}
 			}
 		}
 
