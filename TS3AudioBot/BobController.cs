@@ -152,7 +152,7 @@ namespace TS3AudioBot
 		[LockCritical("lockObject")]
 		public void Stop()
 		{
-			Console.WriteLine("Stopping Bob...");
+			Log.Write(Log.Level.Info, "Stopping Bob...");
 			if (IsRunning)
 			{
 				Quality = false;

@@ -34,7 +34,7 @@ namespace TS3AudioBot
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Youtube downloadreqest failed: " + ex.Message);
+				Log.Write(Log.Level.Warning, "Youtube downloadreqest failed: " + ex.Message);
 				return ResultCode.NoYtConnection;
 			}
 

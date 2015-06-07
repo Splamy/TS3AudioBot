@@ -41,7 +41,7 @@ namespace TS3AudioBot
 				await TSClient.Login(connectionData.user, connectionData.passwd);
 				await TSClient.UseServer(1);
 				try { await ChangeName("TS3AudioBot"); }
-				catch { Console.WriteLine("TS3AudioBot name already in use!"); }
+				catch { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
 
 				await TSClient.RegisterServerNotification();
 				await TSClient.RegisterTextPrivateNotification();
@@ -81,7 +81,7 @@ namespace TS3AudioBot
 
 		public void Close()
 		{
-			Console.WriteLine("Closing Queryconnection...");
+			Log.Write(Log.Level.Info, "Closing Queryconnection...");
 			if (connected)
 			{
 				connected = false;

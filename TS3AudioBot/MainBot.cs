@@ -1,11 +1,13 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 using TeamSpeak3QueryApi.Net.Specialized;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
 namespace TS3AudioBot
 {
@@ -14,9 +16,11 @@ namespace TS3AudioBot
 		static void Main(string[] args)
 		{
 			MainBot bot = new MainBot();
-			bot.Run();
+			bot.Run(args);
 		}
 
+		bool run = true;
+		MainBotData mainBotData;
 		AudioFramework audioFramework;
 		BobController bobController;
 		QueryConnection queryConnection;
@@ -31,6 +35,7 @@ namespace TS3AudioBot
 			QueryConnectionData qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
 			BobControllerData bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
 			AudioFrameworkData afd = cfgFile.GetDataStruct<AudioFrameworkData>(typeof(AudioFramework), true);
+			mainBotData = cfgFile.GetDataStruct<MainBotData>(typeof(MainBot), true);
 			cfgFile.Close();
 
 			// Initialize Modules
@@ -55,54 +60,74 @@ namespace TS3AudioBot
 			queryConnection.Connect();
 		}
 
-		public void Run()
+		public void Run(string[] args)
 		{
-			bool run = true;
+			HashSet<string> launchParameter = new HashSet<string>();
+			foreach (string parameter in args)
+				launchParameter.Add(parameter);
+			if (launchParameter.Contains("--help") || launchParameter.Contains("-h"))
+			{
+				Console.WriteLine(" --NoInput -I     Deactivates reading from stdin to enable background running.");
+				Console.WriteLine(" --Silent -S      Deactivates all output to stdout.");
+				Console.WriteLine(" --NoLog -L       Deactivates writing to the logfile.");
+				Console.WriteLine(" --help -h        Prints this help....");
+				return;
+			}
+			bool noInput = launchParameter.Contains("--NoInput") || launchParameter.Contains("-I");
+			bool silent = launchParameter.Contains("--Silent") || launchParameter.Contains("-S");
+			bool noLog = launchParameter.Contains("--NoLog") || launchParameter.Contains("-L");
+
+			if (!silent)
+			{
+				Log.OnLog += (lvl, info, detailed) => { Console.WriteLine(info); };
+			}
+
+			if (!noLog)
+			{
+				Log.OnLog += (lvl, info, detailed) => { File.AppendAllText(mainBotData.logFile, detailed, Encoding.UTF8); };
+			}
+
 			while (run)
 			{
-				string input;
-				try
-				{
-					input = Console.ReadLine();
-				}
-				catch
+				if (noInput)
 				{
 					Task.Delay(1000).Wait();
-					continue;
 				}
-				if (input == null)
+				else
 				{
-					Task.Delay(1000).Wait();
-					continue;
-				}
-				bobController.HasUpdate();
-
-				string[] command = input.Split(' ');
-
-				switch (command[0])
-				{
-				case "help":
-					Console.WriteLine("nOTHING!1!!!!!");
-					break;
-
-				case "q":
-				case "quit":
-					Console.WriteLine("Exiting...");
-					run = false;
-					audioFramework.Close();
-					queryConnection.Close();
-					bobController.Stop();
-					continue;
-
-				case "vlctest":
-					//Console.WriteLine(audioFramework.playerConnection.IsPlaying());
-					break;
-
-				default:
-					Console.WriteLine("Unknow command type help for more info.");
-					break;
+					ReadConsole();
 				}
 			}
+		}
+
+		private void ReadConsole()
+		{
+			string input;
+			try
+			{
+				input = Console.ReadLine();
+			}
+			catch
+			{
+				Task.Delay(1000).Wait();
+				return;
+			}
+			if (input == null)
+			{
+				Task.Delay(1000).Wait();
+				return;
+			}
+			if (input == "quit")
+				Quit();
+		}
+
+		public void Quit()
+		{
+			Log.Write(Log.Level.Info, "Exiting...");
+			audioFramework.Close();
+			queryConnection.Close();
+			bobController.Stop();
+			run = false;
 		}
 
 		public async void TextCallback(TextMessage tm)
@@ -277,7 +302,7 @@ namespace TS3AudioBot
 					else if (message == "far")
 						queryConnection.TSClient.KickClient(client, KickOrigin.Server).Wait();
 				}
-				catch (Exception ex) { Console.WriteLine("Could not kick: {0}", ex); }
+				catch (Exception ex) { Log.Write(Log.Level.Info, "Could not kick: {0}", ex); }
 			}
 		}
 
@@ -391,5 +416,11 @@ namespace TS3AudioBot
 			if (client != null)
 				await queryConnection.TSClient.SendMessage(message, client);
 		}
+	}
+
+	struct MainBotData
+	{
+		[InfoAttribute("path to the logfile", "log_ts3audiobot")]
+		public string logFile;
 	}
 }

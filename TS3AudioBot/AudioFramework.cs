@@ -179,7 +179,7 @@ namespace TS3AudioBot
 
 		public void Close()
 		{
-			Console.WriteLine("Closing Mediaplayer...");
+			Log.Write(Log.Level.Info, "Closing Mediaplayer...");
 			playerConnection.Close();
 		}
 

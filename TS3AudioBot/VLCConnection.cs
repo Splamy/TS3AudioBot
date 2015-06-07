@@ -178,7 +178,7 @@ namespace TS3AudioBot
 				catch (Exception ex)
 				{
 					connected = false;
-					Console.WriteLine("VLCConnection: Unexpected write failure ({0})", ex);
+					Log.Write(Log.Level.Warning, "VLCConnection: Unexpected write failure ({0})", ex);
 				}
 			}
 		}
@@ -201,18 +201,18 @@ namespace TS3AudioBot
 					catch (Exception)
 					{
 						Task.Delay(1000).Wait();
-						Console.WriteLine("Retry: Connect to VLC");
+						Log.Write(Log.Level.Warning, "Retry: Connect to VLC");
 					}
 				}
 
 				if (!connected)
 				{
-					Console.WriteLine("Could not connect to VLC...");
+					Log.Write(Log.Level.Error, "Could not connect to VLC...");
 					return;
 				}
 				else
 				{
-					Console.WriteLine("Connected to VLC");
+					Log.Write(Log.Level.Info, "Connected to VLC");
 				}
 
 				netStream = vlcInterface.GetStream();
@@ -233,7 +233,7 @@ namespace TS3AudioBot
 						ProcessMessage(sb.ToString());
 					}
 				}
-				catch (Exception ex) { Console.WriteLine("Disconnected ({0})...", ex.Message); }
+				catch (Exception ex) { Log.Write(Log.Level.Warning, "Disconnected ({0})...", ex.Message); }
 			});
 		}
 
@@ -300,7 +300,7 @@ namespace TS3AudioBot
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Could not start VLC: " + ex.Message);
+				Log.Write(Log.Level.Error, "Could not start VLC: " + ex.Message);
 				tmproc = null;
 			}
 

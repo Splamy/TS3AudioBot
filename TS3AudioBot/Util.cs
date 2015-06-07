@@ -43,7 +43,7 @@ namespace TS3AudioBot
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Error! {0} couldn't be run/found ({1})", filePath, ex);
+				Log.Write(Log.Level.Error, "{0} couldn't be run/found ({1})", filePath, ex);
 				return false;
 			}
 		}

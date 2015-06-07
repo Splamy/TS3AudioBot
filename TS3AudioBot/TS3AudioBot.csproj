@@ -95,6 +95,7 @@
   <ItemGroup>
     <Compile Include="AudioFramework.cs" />
     <Compile Include="ConfigFile.cs" />
+    <Compile Include="ErrorLogger.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="LockCheck\LockChecker.cs" />

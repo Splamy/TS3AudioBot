@@ -106,7 +106,8 @@ namespace TS3AudioBot
 			}
 		}
 
-		public T GetDataStruct<T>(Type associatedClass, bool defaultIfPossible = false) where T : struct
+		// TODO xmldoc
+		public T GetDataStruct<T>(Type associatedClass, bool defaultIfPossible) where T : struct
 		{
 			object dataStruct = new T();
 			string assocName = associatedClass.Name;
@@ -144,6 +145,7 @@ namespace TS3AudioBot
 				}
 				if (manualInput)
 					WriteValueToConfig(entryName, parsedValue);
+				//TODO write outcommented line inf config file
 
 				// finally set the value to our object
 				field.SetValue(dataStruct, parsedValue);
@@ -185,7 +187,7 @@ namespace TS3AudioBot
 			return result[1];
 		}
 
-		protected bool IsNumeric(Type T)
+		protected static bool IsNumeric(Type T)
 		{
 			return T == typeof(sbyte)
 				|| T == typeof(byte)
