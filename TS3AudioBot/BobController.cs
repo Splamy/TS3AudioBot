@@ -6,7 +6,7 @@ using LockCheck;
 
 namespace TS3AudioBot
 {
-	class BobController
+	class BobController : IDisposable
 	{
 		/// <summary>
 		/// After TIMEOUT seconds, the bob disconnects.
@@ -165,6 +165,16 @@ namespace TS3AudioBot
 			}
 			if (IsTimingOut)
 				cancellationTokenSource.Cancel();
+		}
+
+		public void Dispose()
+		{
+			Stop();
+			if (cancellationTokenSource != null)
+			{
+				cancellationTokenSource.Dispose();
+				cancellationTokenSource = null;
+			}
 		}
 	}
 

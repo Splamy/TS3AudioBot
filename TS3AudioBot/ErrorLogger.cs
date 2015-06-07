@@ -10,7 +10,7 @@ namespace TS3AudioBot
 	{
 		public static bool Active { get; set; }
 		public static int StackLevel { get; set; }
-		public delegate void LogDelegate(Level lvl, string infoMessage, string detailedMessage);
+		public delegate void LogDelegate(object sender, LogEventArgs e);
 		public static event LogDelegate OnLog;
 
 		private static string[] spaceup;
@@ -66,7 +66,13 @@ namespace TS3AudioBot
 			}
 			strb.Append(inputbuffer);
 			strb.AppendLine();
-			OnLog(lvl, inputbuffer, strb.ToString());
+			LogEventArgs lea = new LogEventArgs()
+			{
+				Level = lvl,
+				InfoMessage = inputbuffer,
+				DetailedMessage = strb.ToString(),
+			};
+			OnLog(null, lea);
 		}
 
 		public enum Level : int
@@ -76,5 +82,12 @@ namespace TS3AudioBot
 			Warning,
 			Error,
 		}
+	}
+
+	public class LogEventArgs : EventArgs
+	{
+		public Log.Level Level { get; set; }
+		public string InfoMessage { get; set; }
+		public string DetailedMessage { get; set; }
 	}
 }

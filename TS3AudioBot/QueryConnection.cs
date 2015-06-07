@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace TS3AudioBot
 {
-	class QueryConnection
+	class QueryConnection : IDisposable
 	{
 		private QueryConnectionData connectionData;
 		private const int PingEverySeconds = 60;
@@ -79,20 +79,6 @@ namespace TS3AudioBot
 				Callback(tm);
 		}
 
-		public void Close()
-		{
-			Log.Write(Log.Level.Info, "Closing Queryconnection...");
-			if (connected)
-			{
-				connected = false;
-				Diconnect();
-				if (keepAliveToken.CanBeCanceled)
-					keepAliveTokenSource.Cancel();
-				if (!keepAliveTask.IsCompleted)
-					keepAliveTask.Wait();
-			}
-		}
-
 		public async Task ChangeName(string newName)
 		{
 			await TSClient.Client.Send("clientupdate", new Parameter("client_nickname", newName));
@@ -112,6 +98,25 @@ namespace TS3AudioBot
 				clientbufferoutdated = false;
 			}
 			return clientbuffer.FirstOrDefault(client => client.Id == uid);
+		}
+
+		public void Dispose()
+		{
+			Log.Write(Log.Level.Info, "Closing Queryconnection...");
+			if (connected)
+			{
+				connected = false;
+				Diconnect();
+				if (keepAliveToken.CanBeCanceled)
+					keepAliveTokenSource.Cancel();
+				if (!keepAliveTask.IsCompleted)
+					keepAliveTask.Wait();
+				if (keepAliveTokenSource != null)
+				{
+					keepAliveTokenSource.Dispose();
+					keepAliveTokenSource = null;
+				}
+			}
 		}
 	}
 

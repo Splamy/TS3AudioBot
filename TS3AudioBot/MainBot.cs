@@ -11,12 +11,14 @@ using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
 namespace TS3AudioBot
 {
-	public class MainBot
+	public sealed class MainBot : IDisposable
 	{
 		static void Main(string[] args)
 		{
-			MainBot bot = new MainBot();
-			bot.Run(args);
+			using (MainBot bot = new MainBot())
+			{
+				bot.Run(args);
+			}
 		}
 
 		bool run = true;
@@ -79,12 +81,12 @@ namespace TS3AudioBot
 
 			if (!silent)
 			{
-				Log.OnLog += (lvl, info, detailed) => { Console.WriteLine(info); };
+				Log.OnLog += (o, e) => { Console.WriteLine(e.InfoMessage); };
 			}
 
 			if (!noLog)
 			{
-				Log.OnLog += (lvl, info, detailed) => { File.AppendAllText(mainBotData.logFile, detailed, Encoding.UTF8); };
+				Log.OnLog += (o, e) => { File.AppendAllText(mainBotData.logFile, e.DetailedMessage, Encoding.UTF8); };
 			}
 
 			while (run)
@@ -118,16 +120,10 @@ namespace TS3AudioBot
 				return;
 			}
 			if (input == "quit")
-				Quit();
-		}
-
-		public void Quit()
-		{
-			Log.Write(Log.Level.Info, "Exiting...");
-			audioFramework.Close();
-			queryConnection.Close();
-			bobController.Stop();
-			run = false;
+			{
+				run = false;
+				return;
+			}
 		}
 
 		public async void TextCallback(TextMessage tm)
@@ -415,6 +411,32 @@ namespace TS3AudioBot
 		{
 			if (client != null)
 				await queryConnection.TSClient.SendMessage(message, client);
+		}
+
+		public void Dispose()
+		{
+			Log.Write(Log.Level.Info, "Exiting...");
+			run = false;
+			if (audioFramework != null)
+			{
+				audioFramework.Dispose();
+				audioFramework = null;
+			}
+			if (queryConnection != null)
+			{
+				queryConnection.Dispose();
+				queryConnection = null;
+			}
+			if (bobController != null)
+			{
+				bobController.Dispose();
+				bobController = null;
+			}
+			if (youtubeFramework != null)
+			{
+				youtubeFramework.Dispose();
+				youtubeFramework = null;
+			}
 		}
 	}
 

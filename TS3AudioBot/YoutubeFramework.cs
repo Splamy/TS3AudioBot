@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace TS3AudioBot
 {
-	class YoutubeFramework
+	class YoutubeFramework : IDisposable
 	{
 		private WebClient wc;
 
@@ -161,6 +161,15 @@ namespace TS3AudioBot
 				return VideoCodec.WEBM;
 			default:
 				return VideoCodec.Unknown;
+			}
+		}
+
+		public void Dispose()
+		{
+			if (wc != null)
+			{
+				wc.Dispose();
+				wc = null;
 			}
 		}
 	}

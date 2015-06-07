@@ -45,27 +45,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void Close()
-		{
-			if (streamRead != null)
-				streamRead.Close();
-			if (netStream != null)
-				netStream.Close();
-			if (vlcInterface != null)
-			{
-				if (vlcInterface.Connected)
-					vlcInterface.Close();
-				vlcInterface = null;
-			}
-
-			if (vlcproc != null && !vlcproc.HasExited)
-				vlcproc.Kill();
-			vlcproc = null;
-
-			if (textCallbackTask != null)
-				textCallbackTask.Wait();
-		}
-
 		// VLC Commands
 
 		public void AudioAdd(string url)
@@ -317,6 +296,37 @@ namespace TS3AudioBot
 				strb.Append(alphnum[rnd.Next(0, alphnum.Length)]);
 			}
 			return strb.ToString();
+		}
+
+		public void Dispose()
+		{
+			if (streamRead != null)
+			{
+				streamRead.Dispose();
+				streamRead = null;
+			}
+			if (netStream != null)
+			{
+				netStream.Dispose();
+				netStream = null;
+			}
+			if (vlcInterface != null)
+			{
+				if (vlcInterface.Connected)
+					vlcInterface.Close();
+				vlcInterface = null;
+			}
+			if (vlcproc != null)
+			{
+				if (!vlcproc.HasExited)
+					vlcproc.Kill();
+				vlcproc = null;
+			}
+			if (textCallbackTask != null)
+			{
+				textCallbackTask.Wait();
+				textCallbackTask = null;
+			}
 		}
 
 		private enum AwaitingResponse

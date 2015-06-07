@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace TS3AudioBot
 {
-	class AudioFramework
+	class AudioFramework : IDisposable
 	{
 		public const int MAXVOLUME = 200;
 		private const int TIMEOUT_MS = 30000;
@@ -177,17 +177,26 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void Close()
-		{
-			Log.Write(Log.Level.Info, "Closing Mediaplayer...");
-			playerConnection.Close();
-		}
-
 		private void LogAudioRessource(AudioRessource ar)
 		{
 			if (ressourceLog == null)
 				ressourceLog = new List<AudioRessource>();
 			ressourceLog.Add(ar);
+		}
+
+		public void Dispose()
+		{
+			Log.Write(Log.Level.Info, "Closing Mediaplayer...");
+			if (playerConnection != null)
+			{
+				playerConnection.Dispose();
+				playerConnection = null;
+			}
+			if (ressourceEndTokenSource != null)
+			{
+				ressourceEndTokenSource.Dispose();
+				ressourceEndTokenSource = null;
+			}
 		}
 	}
 

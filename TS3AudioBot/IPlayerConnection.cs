@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace TS3AudioBot
 {
-	interface IPlayerConnection
+	interface IPlayerConnection : IDisposable
 	{
 		void Start();
-		void Close();
 
 		void AudioAdd(string url);
 		void AudioClear();
