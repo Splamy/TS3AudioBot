@@ -20,6 +20,13 @@ bld/
 [Bb]in/
 [Oo]bj/
 
+# C++ Build results
+*.o
+*.obj
+*.so
+*.lib
+*.dll
+
 # Roslyn cache directories
 *.ide/
 
@@ -27,7 +34,7 @@ bld/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
-#NUNIT
+# NUNIT
 *.VisualState.xml
 TestResult.xml
 
