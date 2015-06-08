@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -285,13 +286,13 @@ int ts3plugin_apiVersion()
 // Author of this plugin
 const char* ts3plugin_author()
 {
-	return "Sebi";
+	return "Seebi";
 }
 
 // Description of this plugin
 const char* ts3plugin_description()
 {
-	return "Let the TS3AudioBot control the TS3AudioBobPlugin.";
+	return "Lets the TS3AudioBot control the TS3AudioBobPlugin.";
 }
 
 // Set the callback function pointers
@@ -316,20 +317,22 @@ int ts3plugin_init()
 
 	// App and Resources path are empty for a console client
 	// We take all of them with a priority
-	std::vector<char[PATH_SIZE]> paths(4);
+	char paths[4][PATH_SIZE];
 	ts3Functions.getAppPath(paths[0], PATH_SIZE);
 	ts3Functions.getResourcesPath(paths[1], PATH_SIZE);
 	ts3Functions.getPluginPath(paths[2], PATH_SIZE);
 	ts3Functions.getConfigPath(paths[3], PATH_SIZE);
 
 	// Get the server query id from a file
-	for(std::vector<char[PATH_SIZE]>::const_iterator it = paths.cbegin(); it != paths.end(); it++)
+	for(std::size_t i = 0; i < 4; i++)
 	{
-		std::ifstream in(std::string(*it) + "/" + FILENAME);
-		int id;
+		std::string file = std::string(paths[i]) + FILENAME;
+		std::ifstream in(file);
+		int id = 0;
 		if(in)
 			in >> id;
-		if(in)
+
+		if(id != 0 && in)
 		{
 			// Successfully read id
 			serverBotId = id;
