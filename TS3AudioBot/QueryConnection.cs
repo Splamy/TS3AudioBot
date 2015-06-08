@@ -12,20 +12,22 @@ namespace TS3AudioBot
 {
 	class QueryConnection : IDisposable
 	{
-		private QueryConnectionData connectionData;
-		private const int PingEverySeconds = 60;
-
-		public TeamSpeakClient TSClient { get; protected set; }
-
-		public Action<TextMessage> Callback { get; set; }
+		public delegate void MessageReceivedDelegate(object sender, TextMessage e);
+		public event MessageReceivedDelegate OnMessageReceived;
+		public delegate void ClientDelegate(object sender, ClientEnterView e);
+		public event ClientDelegate OnClientConnect;
 
 		private bool connected = false;
 		private IReadOnlyList<GetClientsInfo> clientbuffer;
 		private bool clientbufferoutdated = true;
 
+		private QueryConnectionData connectionData;
+		private const int PingEverySeconds = 60;
 		private Task keepAliveTask;
 		private CancellationTokenSource keepAliveTokenSource;
 		private CancellationToken keepAliveToken;
+
+		public TeamSpeakClient TSClient { get; protected set; }
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
@@ -40,21 +42,30 @@ namespace TS3AudioBot
 				await TSClient.Connect();
 				await TSClient.Login(connectionData.user, connectionData.passwd);
 				await TSClient.UseServer(1);
-				try
-				{
-					await ChangeName("TS3AudioBot");
-				}
-				catch
-				{
+				if (!(await ChangeName("TS3AudioBot")))
 					Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!");
-				}
 
 				await TSClient.RegisterServerNotification();
 				await TSClient.RegisterTextPrivateNotification();
 				await TSClient.RegisterTextServerNotification();
 
-				TSClient.Subscribe<TextMessage>(data => data.ForEach(ProcessMessage));
-				TSClient.Subscribe<ClientEnterView>(data => clientbufferoutdated = true);
+				TSClient.Subscribe<TextMessage>(data =>
+					{
+						if (OnMessageReceived != null)
+						{
+							foreach (var textMessage in data)
+								OnMessageReceived(this, textMessage);
+						}
+					});
+				TSClient.Subscribe<ClientEnterView>(data =>
+					{
+						clientbufferoutdated = true;
+						if (OnClientConnect != null)
+						{
+							foreach (var clientdata in data)
+								OnClientConnect(this, clientdata);
+						}
+					});
 				TSClient.Subscribe<ClientLeftView>(data => clientbufferoutdated = true);
 
 				connected = true;
@@ -83,15 +94,17 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void ProcessMessage(TextMessage tm)
+		public async Task<bool> ChangeName(string newName)
 		{
-			if (Callback != null)
-				Callback(tm);
-		}
-
-		public async Task ChangeName(string newName)
-		{
-			await TSClient.Client.Send("clientupdate", new Parameter("client_nickname", newName));
+			try
+			{
+				await TSClient.Client.Send("clientupdate", new Parameter("client_nickname", newName));
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
 		}
 
 		private void Diconnect()

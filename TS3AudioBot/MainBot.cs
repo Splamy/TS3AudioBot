@@ -57,8 +57,8 @@ namespace TS3AudioBot
 				bobController.Sending = false;
 			};
 			queryConnection = new QueryConnection(qcd);
-			queryConnection.Callback = TextCallback;
-			bobController.Query = queryConnection;
+			queryConnection.OnMessageReceived += TextCallback;
+			bobController.QueryConnection = queryConnection;
 			queryConnection.Connect();
 		}
 
@@ -126,7 +126,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public async void TextCallback(TextMessage tm)
+		public async void TextCallback(object sender, TextMessage tm)
 		{
 			if (awaitingResponse != null)
 			{

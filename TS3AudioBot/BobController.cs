@@ -1,18 +1,22 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using LockCheck;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
 namespace TS3AudioBot
 {
 	class BobController : IDisposable
 	{
+		private const int CONNECT_TIMEOUT_MS = 10000;
+		private const int CONNECT_TIMEOUT_INTERVAL_MS = 100;
 		/// <summary>
 		/// After TIMEOUT seconds, the bob disconnects.
 		/// </summary>
-		private const int TIMEOUT = 60;
+		private const int BOB_TIMEOUT = 60;
 		/// <summary>
 		/// The name of the file which is used to tell our own server client id to the Bob.
 		/// </summary>
@@ -26,9 +30,8 @@ namespace TS3AudioBot
 		private bool sending = false;
 
 		private readonly object lockObject = new object();
-
-		public QueryConnection Query;
-		public GetClientsInfo BobClient;
+		public QueryConnection QueryConnection { get; set; }
+		private GetClientsInfo bobClient;
 
 		public bool IsRunning { get; private set; }
 
@@ -55,12 +58,16 @@ namespace TS3AudioBot
 		[LockCritical("lockObject")]
 		private void SendMessage(string message)
 		{
+			if (bobClient == null)
+			{
+				Log.Write(Log.Level.Warning, "bobClient is null!");
+				return;
+			}
 			lock (lockObject)
 			{
 				if (IsRunning)
 				{
-					//TODO Somehow we need to get a reference to the bob
-					Query.TSClient.SendMessage(message, BobClient);
+					QueryConnection.TSClient.SendMessage(message, bobClient);
 				}
 			}
 		}
@@ -79,24 +86,35 @@ namespace TS3AudioBot
 				{
 					// Write own server query id into file
 					string filepath = Path.Combine(data.folder, FILENAME);
+					string myId = QueryConnection.TSClient.WhoAmI().Result.ClientId.ToString();
 					try
 					{
-						using (StreamWriter output = File.CreateText(filepath))
-						{
-							output.WriteLine(Query.TSClient.WhoAmI().Result.ClientId);
-						}
+						File.WriteAllText(filepath, myId, Encoding.UTF8);
 					}
 					catch (IOException ex)
 					{
-						Console.WriteLine("Can't open file {0}", filepath);
-						Console.WriteLine(ex);
+						Log.Write(Log.Level.Error, "Can't open file {0} ({1})", filepath, ex);
 						return;
 					}
+					// register callback to know immediatly when the bob connects
+					QueryConnection.OnClientConnect += AwaitBobConnect;
 					if (!Util.Execute(FilePath.StartTsBot))
+					{
+						QueryConnection.OnClientConnect -= AwaitBobConnect;
 						return;
-					IsRunning = true;
+					}
 				}
-				if (IsRunning && IsTimingOut)
+			}
+		}
+
+		private void AwaitBobConnect(object sender, ClientEnterView e)
+		{
+			Log.Write(Log.Level.Debug, "User entere with GrId {0}", e.ServerGroups);
+			if (e.ServerGroups == "15")
+			{
+				bobClient = QueryConnection.GetClientById(e.Id).Result;
+				IsRunning = true;
+				if (IsTimingOut)
 					cancellationTokenSource.Cancel();
 			}
 		}
@@ -126,13 +144,13 @@ namespace TS3AudioBot
 						while (!cancellationToken.IsCancellationRequested)
 						{
 							double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
-							if (inactiveSeconds > TIMEOUT)
+							if (inactiveSeconds > BOB_TIMEOUT)
 							{
 								Stop();
 								break;
 							}
 							else
-								Task.Delay(TimeSpan.FromSeconds(TIMEOUT - inactiveSeconds), cancellationToken).Wait();
+								Task.Delay(TimeSpan.FromSeconds(BOB_TIMEOUT - inactiveSeconds), cancellationToken).Wait();
 						}
 					}
 					catch (TaskCanceledException)
