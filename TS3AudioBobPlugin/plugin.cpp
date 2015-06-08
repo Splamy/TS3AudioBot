@@ -28,15 +28,20 @@ struct Server
 	}
 };
 
+struct BotAdmin
+{
+	anyID clientID;
+};
+
 // Attributes
 static const std::string FILENAME = "queryId";
 static const std::vector<std::string> quitMessages = { "I'm outta here", "You're boring", "Have a nice day", "Bye" };
 static std::vector<uint64> whisperChannels;
 static std::vector<anyID> whisperUsers;
-static bool useWhispering = true;
 static bool audioOn = false;
 static std::vector<Server> servers;
-static anyID serverBotId = 0;
+static std::vector<BotAdmin> admins;
+static anyID serverBotID = 0;
 
 // Methods declarations
 template<typename... Args>
@@ -108,7 +113,12 @@ static int getRandomNumber(int min, int max)
 
 
 // Library functions
-static void switchAudio(bool on)
+static bool useWhispering()
+{
+	return !whisperChannels.empty() || !whisperUsers.empty();
+}
+
+static void setAudio(bool on)
 {
 	std::vector<uint64> targets(whisperChannels);
 	targets.emplace_back(0);
@@ -118,7 +128,7 @@ static void switchAudio(bool on)
 	{
 		if(on)
 		{
-			if(useWhispering)
+			if(useWhispering())
 				handleTsError(ts3Functions.requestClientSetWhisperList(
 					it->handlerID, 0, targets.data(), targetClients.data(), NULL));
 			else
@@ -132,7 +142,7 @@ static void switchAudio(bool on)
 	audioOn = on;
 }
 
-static void switchQuality(bool on)
+static void setQuality(bool on)
 {
 	for(std::vector<Server>::iterator it = servers.begin(); it != servers.end(); it++)
 	{
@@ -168,7 +178,7 @@ static void switchQuality(bool on)
 
 static void closeBob()
 {
-	switchQuality(false);
+	setQuality(false);
 	std::string msg = quitMessages[getRandomNumber(0, quitMessages.size())];
 	for(std::vector<Server>::const_iterator it = servers.cbegin(); it != servers.cend(); it++)
 		handleTsError(ts3Functions.stopConnection(it->handlerID, msg.c_str()));
@@ -179,7 +189,7 @@ static void closeBob()
 template<typename... Args>
 static void sendCommand(uint64 handlerID, const char *message, Args... args)
 {
-	if (serverBotId == 0)
+	if (serverBotID == 0)
 	{
 		log("The serverbot id is unknown :( Tried to write the following:");
 		log(message, args...);
@@ -188,7 +198,7 @@ static void sendCommand(uint64 handlerID, const char *message, Args... args)
 		// Create string
 		std::vector<char> buf(1 + std::snprintf(NULL, 0, message, args...));
 		std::snprintf(buf.data(), buf.size(), message, args...);
-		handleTsError(ts3Functions.requestSendPrivateTextMsg(handlerID, buf.data(), serverBotId, NULL));
+		handleTsError(ts3Functions.requestSendPrivateTextMsg(handlerID, buf.data(), serverBotID, NULL));
 	}
 }
 
@@ -214,48 +224,60 @@ static void sendCommand(const char *message, Args... args)
 
 static void handleCommand(std::string cmd)
 {
+	//log("Handling message %s", cmd.c_str());
 	if(cmd == "exit")
 		closeBob();
 	else if(cmd == "help")
 	{
-		//TODO send more
-		sendCommand("help \n\taudio [on|off]\n\tquality [on|off]\n\twhisper [on|off]\n\twhisper clear");
+		sendCommand("help \n"
+			"\taudio [on|off]\n"
+			"\tquality [on|off]\n"
+			"\twhisper [on|off]\n"
+			"\twhisper [add|remove] client <clientID>\n"
+			"\twhisper [add|remove] channel <channelID>\n"
+			"\twhisper clear\n"
+			"\tstatus audio\n"
+			"\tstatus whisper"
+		);
 	} else if(cmd == "audio on")
-		switchAudio(true);
+		setAudio(true);
 	else if(cmd == "audio off")
-		switchAudio(false);
+		setAudio(false);
 	else if(cmd == "quality on")
-		switchQuality(true);
+		setQuality(true);
 	else if(cmd == "quality off")
-		switchQuality(false);
-	else if(cmd == "whisper on")
-		useWhispering = true;
-	else if(cmd == "whisper off")
-		useWhispering = false;
+		setQuality(false);
 	else if(cmd == "whisper clear")
 	{
 		whisperChannels.clear();
 		whisperUsers.clear();
-	} else if(startsWith(cmd, "whisper channel"))
+		// Update send status
+		setAudio(audioOn);
+	} else if(startsWith(cmd, "whisper add channel"))
 	{
 		uint64 id;
-		if(std::sscanf(cmd.c_str(), "whisper channel %lu", &id) == 1)
+		if(std::sscanf(cmd.c_str(), "whisper channel %llu", &id) == 1)
 			whisperChannels.emplace_back(id);
-	} else if(startsWith(cmd, "whisper client"))
+		setAudio(audioOn);
+	} else if(startsWith(cmd, "whisper add client"))
 	{
 		anyID id;
 		if(std::sscanf(cmd.c_str(), "whisper client %hu", &id) == 1)
 			whisperUsers.emplace_back(id);
+		setAudio(audioOn);
 	} else if(cmd == "status audio")
 		sendCommand("status audio %s", audioOn ? "on" : "off");
 	else if(cmd == "status whisper")
 	{
-		sendCommand("status whisper %s", useWhispering ? "on" : "off");
-		// TODO write clients and channels
+		sendCommand("status whisper %s", useWhispering() ? "on" : "off");
+		// Write clients and channels that are set in the whisperlist
+		for(std::vector<uint64>::const_iterator it = whisperChannels.cbegin(); it != whisperChannels.cend(); it++)
+			sendCommand("status whisper channel %llu", *it);
+		for(std::vector<anyID>::const_iterator it = whisperUsers.cbegin(); it != whisperUsers.cend(); it++)
+			sendCommand("status whisper client %hu", *it);
 	} else if(cmd == "unknown command")
-	{
 		log("Loop detected, have fun");
-	} else
+	else
 	{
 		log("Unknown command");
 		sendCommand("unknown command");
@@ -313,7 +335,7 @@ int ts3plugin_init()
 		servers.emplace_back(*handlerID);
 	ts3Functions.freeMemory(handlerIDs);
 
-	switchAudio(audioOn);
+	setAudio(audioOn);
 
 	// App and Resources path are empty for a console client
 	// We take all of them with a priority
@@ -335,11 +357,11 @@ int ts3plugin_init()
 		if(id != 0 && in)
 		{
 			// Successfully read id
-			serverBotId = id;
+			serverBotID = id;
 			break;
 		}
 	}
-	if(serverBotId == 0)
+	if(serverBotID == 0)
 	{
 		log("Query id file not found, aborting");
 		closeBob();
@@ -381,7 +403,7 @@ void ts3plugin_onConnectStatusChangeEvent(uint64 scHandlerID, int newStatus, uns
 		break;
 	case STATUS_CONNECTION_ESTABLISHED:
 		servers.emplace_back(scHandlerID);
-		switchAudio(audioOn);
+		setAudio(audioOn);
 		break;
 	}
 }
@@ -404,11 +426,16 @@ int ts3plugin_onTextMessageEvent(uint64 scHandlerID, anyID targetMode, anyID toI
 		// Check if this message is from an authorized client
 		if(targetMode == TextMessageTarget_CLIENT)
 		{
+			// Get database id
+			uint64 clientID;
+			//handleTsError(ts3Functions.requestClientDBIDfromUID(scHandlerID, fromUniqueIdentifier, NULL));
+			// Get assigned server groups
+			//handleTsError(ts3Functions.requestServerGroupsByClientID(scHandlerID, clientID, NULL));
 #ifndef UNSECURE
-			if(fromID == serverBotId)
+			if(fromID == serverBotID)
 			{
 #else
-			serverBotId = fromID;
+			serverBotID = fromID;
 #endif
 				handleCommand(message);
 #ifndef UNSECURE
