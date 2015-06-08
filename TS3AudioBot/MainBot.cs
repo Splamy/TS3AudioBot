@@ -128,6 +128,8 @@ namespace TS3AudioBot
 
 		public async void TextCallback(object sender, TextMessage tm)
 		{
+			Log.Write(Log.Level.Debug, "Got from {0} message: {1}", tm.InvokerName, tm.Message);
+
 			if (awaitingResponse != null)
 			{
 				if (await awaitingResponse(tm))

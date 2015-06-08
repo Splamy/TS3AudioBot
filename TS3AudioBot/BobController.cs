@@ -60,13 +60,14 @@ namespace TS3AudioBot
 		{
 			if (bobClient == null)
 			{
-				Log.Write(Log.Level.Warning, "bobClient is null!");
+				Log.Write(Log.Level.Debug, "bobClient is null! Message is lost: {0}", message);
 				return;
 			}
 			lock (lockObject)
 			{
 				if (IsRunning)
 				{
+					Log.Write(Log.Level.Debug, "BC sending to bobC: {0}", message);
 					QueryConnection.TSClient.SendMessage(message, bobClient);
 				}
 			}
@@ -97,10 +98,12 @@ namespace TS3AudioBot
 						return;
 					}
 					// register callback to know immediatly when the bob connects
+					Log.Write(Log.Level.Debug, "Registering callback");
 					QueryConnection.OnClientConnect += AwaitBobConnect;
 					if (!Util.Execute(FilePath.StartTsBot))
 					{
 						QueryConnection.OnClientConnect -= AwaitBobConnect;
+						Log.Write(Log.Level.Debug, "callback canceled");
 						return;
 					}
 				}
@@ -112,7 +115,9 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Debug, "User entere with GrId {0}", e.ServerGroups);
 			if (e.ServerGroups == "15")
 			{
+				Log.Write(Log.Level.Debug, "User with correct UID found");
 				bobClient = QueryConnection.GetClientById(e.Id).Result;
+				QueryConnection.OnClientConnect -= AwaitBobConnect;
 				IsRunning = true;
 				if (IsTimingOut)
 					cancellationTokenSource.Cancel();
@@ -127,8 +132,11 @@ namespace TS3AudioBot
 				if (IsTimingOut)
 				{
 					cancellationTokenSource.Cancel();
+					Log.Write(Log.Level.Debug, "BC cTS raised");
 					timerTask.Wait();
+					Log.Write(Log.Level.Debug, "BC tT completed");
 				}
+				Log.Write(Log.Level.Debug, "BC start timeout");
 				InternalStartEndTimer();
 			}
 		}
@@ -146,6 +154,7 @@ namespace TS3AudioBot
 							double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
 							if (inactiveSeconds > BOB_TIMEOUT)
 							{
+								Log.Write(Log.Level.Debug, "Timeout ran out...");
 								Stop();
 								break;
 							}
@@ -162,19 +171,12 @@ namespace TS3AudioBot
 				}, cancellationToken);
 		}
 
-		[LockCritical("lockObject")]
+		//[LockCritical("lockObject")]
 		public void Stop()
 		{
 			Log.Write(Log.Level.Info, "Stopping Bob");
-			if (IsRunning)
-			{
-				// FIXME We should lock these two calls in between too
-				SendMessage("exit");
-				lock (lockObject)
-				{
-					IsRunning = false;
-				}
-			}
+			SendMessage("exit");
+			IsRunning = false;
 			if (IsTimingOut)
 				cancellationTokenSource.Cancel();
 		}

@@ -191,11 +191,13 @@ namespace TS3AudioBot
 			{
 				playerConnection.Dispose();
 				playerConnection = null;
+				Log.Write(Log.Level.Debug, "AF playerConnection disposed");
 			}
 			if (ressourceEndTokenSource != null)
 			{
 				ressourceEndTokenSource.Dispose();
 				ressourceEndTokenSource = null;
+				Log.Write(Log.Level.Debug, "AF rETS disposed");
 			}
 		}
 	}

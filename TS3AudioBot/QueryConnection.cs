@@ -51,6 +51,7 @@ namespace TS3AudioBot
 
 				TSClient.Subscribe<TextMessage>(data =>
 					{
+						Log.Write(Log.Level.Debug, "TextMessage event raised");
 						if (OnMessageReceived != null)
 						{
 							foreach (var textMessage in data)
@@ -59,6 +60,7 @@ namespace TS3AudioBot
 					});
 				TSClient.Subscribe<ClientEnterView>(data =>
 					{
+						Log.Write(Log.Level.Debug, "ClientEnterView event raised");
 						clientbufferoutdated = true;
 						if (OnClientConnect != null)
 						{
@@ -115,6 +117,7 @@ namespace TS3AudioBot
 
 		public async Task<GetClientsInfo> GetClientById(int uid)
 		{
+			Log.Write(Log.Level.Debug, "QC GetClientById called");
 			if (clientbufferoutdated)
 			{
 				clientbuffer = await TSClient.GetClients();
@@ -125,15 +128,21 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
-			Log.Write(Log.Level.Info, "Closing Queryconnection...");
+			Log.Write(Log.Level.Info, "Closing QueryConnection...");
 			if (connected)
 			{
 				connected = false;
+				Log.Write(Log.Level.Debug, "QC disconnecting...");
 				Diconnect();
+				Log.Write(Log.Level.Debug, "QC disconnected");
 				if (keepAliveToken.CanBeCanceled)
+				{ 
 					keepAliveTokenSource.Cancel();
+					Log.Write(Log.Level.Debug, "QC kAT cancel raised");
+				}
 				if (!keepAliveTask.IsCompleted)
 					keepAliveTask.Wait();
+				Log.Write(Log.Level.Debug, "QC kAT ended");
 				if (keepAliveTokenSource != null)
 				{
 					keepAliveTokenSource.Dispose();
