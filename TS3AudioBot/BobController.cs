@@ -78,34 +78,34 @@ namespace TS3AudioBot
 			lastUpdate = DateTime.Now;
 		}
 
-		[LockCritical("lockObject")]
-		public void Start()
+		//[LockCritical("lockObject")]
+		public async void Start()
 		{
-			lock (lockObject)
+			if (!IsRunning)
 			{
-				if (!IsRunning)
+				// Write own server query id into file
+				string filepath = Path.Combine(data.folder, FILENAME);
+				Log.Write(Log.Level.Debug, "requesting whoAmI");
+				WhoAmI whoAmI = await QueryConnection.TSClient.WhoAmI();
+				Log.Write(Log.Level.Debug, "got whoAmI");
+				string myId = whoAmI.ClientId.ToString();
+				try
 				{
-					// Write own server query id into file
-					string filepath = Path.Combine(data.folder, FILENAME);
-					string myId = QueryConnection.TSClient.WhoAmI().Result.ClientId.ToString();
-					try
-					{
-						File.WriteAllText(filepath, myId, Encoding.UTF8);
-					}
-					catch (IOException ex)
-					{
-						Log.Write(Log.Level.Error, "Can't open file {0} ({1})", filepath, ex);
-						return;
-					}
-					// register callback to know immediatly when the bob connects
-					Log.Write(Log.Level.Debug, "Registering callback");
-					QueryConnection.OnClientConnect += AwaitBobConnect;
-					if (!Util.Execute(FilePath.StartTsBot))
-					{
-						QueryConnection.OnClientConnect -= AwaitBobConnect;
-						Log.Write(Log.Level.Debug, "callback canceled");
-						return;
-					}
+										File.WriteAllText(filepath, myId, new UTF8Encoding(false));
+				}
+				catch (IOException ex)
+				{
+					Log.Write(Log.Level.Error, "Can't open file {0} ({1})", filepath, ex);
+					return;
+				}
+				// register callback to know immediatly when the bob connects
+				Log.Write(Log.Level.Debug, "Registering callback");
+				QueryConnection.OnClientConnect += AwaitBobConnect;
+				if (!Util.Execute(FilePath.StartTsBot))
+				{
+					QueryConnection.OnClientConnect -= AwaitBobConnect;
+					Log.Write(Log.Level.Debug, "callback canceled");
+					return;
 				}
 			}
 		}
