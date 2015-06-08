@@ -51,7 +51,7 @@ namespace TS3AudioBot
 
 				TSClient.Subscribe<TextMessage>(data =>
 					{
-						Log.Write(Log.Level.Debug, "TextMessage event raised");
+						Log.Write(Log.Level.Debug, "QC TextMessage event raised");
 						if (OnMessageReceived != null)
 						{
 							foreach (var textMessage in data)
@@ -60,7 +60,7 @@ namespace TS3AudioBot
 					});
 				TSClient.Subscribe<ClientEnterView>(data =>
 					{
-						Log.Write(Log.Level.Debug, "ClientEnterView event raised");
+						Log.Write(Log.Level.Debug, "QC ClientEnterView event raised");
 						clientbufferoutdated = true;
 						if (OnClientConnect != null)
 						{
@@ -112,10 +112,10 @@ namespace TS3AudioBot
 		private void Diconnect()
 		{
 			if (TSClient.Client.IsConnected)
-				TSClient.Client.Send("quit").Wait();
+				TSClient.Client.Send("quit");
 		}
 
-		public async Task<GetClientsInfo> GetClientById(int uid)
+		public async Task<GetClientsInfo> GetClientById(int id)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientById called");
 			if (clientbufferoutdated)
@@ -123,7 +123,7 @@ namespace TS3AudioBot
 				clientbuffer = await TSClient.GetClients();
 				clientbufferoutdated = false;
 			}
-			return clientbuffer.FirstOrDefault(client => client.Id == uid);
+			return clientbuffer.FirstOrDefault(client => client.Id == id);
 		}
 
 		public void Dispose()
@@ -136,7 +136,7 @@ namespace TS3AudioBot
 				Diconnect();
 				Log.Write(Log.Level.Debug, "QC disconnected");
 				if (keepAliveToken.CanBeCanceled)
-				{ 
+				{
 					keepAliveTokenSource.Cancel();
 					Log.Write(Log.Level.Debug, "QC kAT cancel raised");
 				}

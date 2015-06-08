@@ -210,7 +210,8 @@ namespace TS3AudioBot
 		{
 			if (Selected < 0 && Selected >= AvailableTypes.Count)
 				return false;
-			setMedia(AvailableTypes[1].link);
+			setMedia(AvailableTypes[Selected].link);
+			Log.Write(Log.Level.Debug, "YT Playing: {0}", AvailableTypes[Selected]);
 			return true;
 		}
 	}

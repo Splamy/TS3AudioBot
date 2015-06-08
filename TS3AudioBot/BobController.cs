@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using LockCheck;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
@@ -27,11 +29,13 @@ namespace TS3AudioBot
 		private CancellationTokenSource cancellationTokenSource;
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
-		private bool sending = false;
 
+		private HashSet<int> whisperChannel;
+		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
-		public QueryConnection QueryConnection { get; set; }
 		private GetClientsInfo bobClient;
+
+		public QueryConnection QueryConnection { get; set; }
 
 		public bool IsRunning { get; private set; }
 
@@ -40,6 +44,7 @@ namespace TS3AudioBot
 			get { return timerTask != null && !timerTask.IsCompleted; }
 		}
 
+		private bool sending = false;
 		public bool Sending
 		{
 			get { return sending; }
@@ -52,25 +57,47 @@ namespace TS3AudioBot
 
 		public BobController(BobControllerData data)
 		{
+			IsRunning = false;
 			this.data = data;
+			commandQueue = new Queue<string>();
+			whisperChannel = new HashSet<int>();
 		}
 
 		[LockCritical("lockObject")]
 		private void SendMessage(string message)
 		{
-			if (bobClient == null)
-			{
-				Log.Write(Log.Level.Debug, "bobClient is null! Message is lost: {0}", message);
-				return;
-			}
 			lock (lockObject)
 			{
 				if (IsRunning)
 				{
-					Log.Write(Log.Level.Debug, "BC sending to bobC: {0}", message);
-					QueryConnection.TSClient.SendMessage(message, bobClient);
+					if (bobClient == null)
+					{
+						Log.Write(Log.Level.Debug, "BC bobClient is null! Message is lost: {0}", message);
+						return;
+					}
+					var sendTask = SendMessageRaw(message);
+				}
+				else
+				{
+					Log.Write(Log.Level.Debug, "BC Enqueing: {0}", message);
+					commandQueue.Enqueue(message);
 				}
 			}
+		}
+
+		private async Task SendMessageRaw(string message)
+		{
+			Log.Write(Log.Level.Debug, "BC sending to bobC: {0}", message);
+			await QueryConnection.TSClient.SendMessage(message, bobClient);
+		}
+
+		private async Task SendQueue()
+		{
+			if (!IsRunning)
+				throw new InvalidOperationException("The bob must run to send the commandQueue");
+
+			while (commandQueue.Count > 0)
+				await SendMessageRaw(commandQueue.Dequeue());
 		}
 
 		public void HasUpdate()
@@ -85,13 +112,13 @@ namespace TS3AudioBot
 			{
 				// Write own server query id into file
 				string filepath = Path.Combine(data.folder, FILENAME);
-				Log.Write(Log.Level.Debug, "requesting whoAmI");
+				Log.Write(Log.Level.Debug, "BC requesting whoAmI");
 				WhoAmI whoAmI = await QueryConnection.TSClient.WhoAmI();
-				Log.Write(Log.Level.Debug, "got whoAmI");
+				Log.Write(Log.Level.Debug, "BC got whoAmI");
 				string myId = whoAmI.ClientId.ToString();
 				try
 				{
-										File.WriteAllText(filepath, myId, new UTF8Encoding(false));
+					File.WriteAllText(filepath, myId, new UTF8Encoding(false));
 				}
 				catch (IOException ex)
 				{
@@ -99,26 +126,59 @@ namespace TS3AudioBot
 					return;
 				}
 				// register callback to know immediatly when the bob connects
-				Log.Write(Log.Level.Debug, "Registering callback");
+				Log.Write(Log.Level.Debug, "BC registering callback");
 				QueryConnection.OnClientConnect += AwaitBobConnect;
 				if (!Util.Execute(FilePath.StartTsBot))
 				{
 					QueryConnection.OnClientConnect -= AwaitBobConnect;
-					Log.Write(Log.Level.Debug, "callback canceled");
+					Log.Write(Log.Level.Debug, "BC callback canceled");
 					return;
 				}
+				WhisperChannelSubscribe(4);
+				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 			}
 		}
 
-		private void AwaitBobConnect(object sender, ClientEnterView e)
+		//[LockCritical("lockObject")]
+		public void Stop()
 		{
-			Log.Write(Log.Level.Debug, "User entere with GrId {0}", e.ServerGroups);
-			if (e.ServerGroups == "15")
+			Log.Write(Log.Level.Info, "Stopping Bob");
+			SendMessage("exit");
+			IsRunning = false;
+			whisperChannel.Clear();
+			commandQueue.Clear();
+			Log.Write(Log.Level.Debug, "BC bob is now officially dead");
+			if (IsTimingOut)
+				cancellationTokenSource.Cancel();
+		}
+
+		public void WhisperChannelSubscribe(int channel)
+		{
+			if (whisperChannel.Contains(channel))
+				return;
+			SendMessage("whisper add channel " + channel);
+			whisperChannel.Add(channel);
+		}
+
+		public void WhisperChannelUnsubscribe(int channel)
+		{
+			if (!whisperChannel.Contains(channel))
+				return;
+			SendMessage("whisper remove channel " + channel);
+			whisperChannel.Remove(channel);
+		}
+
+		private async void AwaitBobConnect(object sender, ClientEnterView e)
+		{
+			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
+			if (e.ServerGroups.Split(',').Contains(data.bobGroupId))
 			{
-				Log.Write(Log.Level.Debug, "User with correct UID found");
-				bobClient = QueryConnection.GetClientById(e.Id).Result;
+				Log.Write(Log.Level.Debug, "BC user with correct UID found");
+				bobClient = await QueryConnection.GetClientById(e.Id);
 				QueryConnection.OnClientConnect -= AwaitBobConnect;
 				IsRunning = true;
+				Log.Write(Log.Level.Debug, "BC bob is now officially running");
+				await SendQueue();
 				if (IsTimingOut)
 					cancellationTokenSource.Cancel();
 			}
@@ -154,7 +214,7 @@ namespace TS3AudioBot
 							double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
 							if (inactiveSeconds > BOB_TIMEOUT)
 							{
-								Log.Write(Log.Level.Debug, "Timeout ran out...");
+								Log.Write(Log.Level.Debug, "BC Timeout ran out...");
 								Stop();
 								break;
 							}
@@ -169,16 +229,6 @@ namespace TS3AudioBot
 					{
 					}
 				}, cancellationToken);
-		}
-
-		//[LockCritical("lockObject")]
-		public void Stop()
-		{
-			Log.Write(Log.Level.Info, "Stopping Bob");
-			SendMessage("exit");
-			IsRunning = false;
-			if (IsTimingOut)
-				cancellationTokenSource.Cancel();
 		}
 
 		public void Dispose()
@@ -197,5 +247,7 @@ namespace TS3AudioBot
 		[InfoAttribute("the folder that contains the clientId file of this server query for " +
 			"communication between the TS3AudioBot and the TeamSpeak3 Client plugin")]
 		public string folder;
+		[InfoAttribute("ServerGroupID of the ServerBob")]
+		public string bobGroupId;
 	}
 }

@@ -59,7 +59,7 @@ namespace TS3AudioBot
 			queryConnection = new QueryConnection(qcd);
 			queryConnection.OnMessageReceived += TextCallback;
 			bobController.QueryConnection = queryConnection;
-			queryConnection.Connect();
+			var connectTask = queryConnection.Connect();
 		}
 
 		public void Run(string[] args)
@@ -128,7 +128,7 @@ namespace TS3AudioBot
 
 		public async void TextCallback(object sender, TextMessage tm)
 		{
-			Log.Write(Log.Level.Debug, "Got from {0} message: {1}", tm.InvokerName, tm.Message);
+			Log.Write(Log.Level.Debug, "MB Got from {0} message: {1}", tm.InvokerName, tm.Message);
 
 			if (awaitingResponse != null)
 			{
@@ -373,6 +373,14 @@ namespace TS3AudioBot
 				return;
 			}
 			youtubeFramework.LoadedRessource.Enqueue = enqueue;
+
+			if (youtubeFramework.LoadedRessource.AvailableTypes.Count == 1)
+			{
+				if (!audioFramework.StartRessource(youtubeFramework.LoadedRessource))
+					WriteClient(client, "The ressource could not be played...");
+				return;
+			}
+
 			StringBuilder strb = new StringBuilder();
 			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
 			int count = 0;
@@ -427,15 +435,15 @@ namespace TS3AudioBot
 				audioFramework.Dispose();
 				audioFramework = null;
 			}
-			if (queryConnection != null)
-			{
-				queryConnection.Dispose();
-				queryConnection = null;
-			}
 			if (bobController != null)
 			{
 				bobController.Dispose();
 				bobController = null;
+			}
+			if (queryConnection != null)
+			{
+				queryConnection.Dispose();
+				queryConnection = null;
 			}
 			if (youtubeFramework != null)
 			{
