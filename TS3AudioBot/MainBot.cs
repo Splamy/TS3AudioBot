@@ -66,7 +66,7 @@ namespace TS3AudioBot
 		private void InitializeCommands()
 		{
 			commandDict = new Dictionary<string, Command>();
-			commandDict.Add("add", new Command(false, ));
+			commandDict.Add("add", new Command(false, CommandAdd));
 			
 		}
 
