@@ -27,7 +27,8 @@ namespace TS3AudioBot
 		BobController bobController;
 		QueryConnection queryConnection;
 		YoutubeFramework youtubeFramework;
-		Func<TextMessage, Task<bool>> awaitingResponse = null;
+		Dictionary<string, Command> commandDict;
+		List<PrivateSession> sessions;
 
 		public MainBot()
 		{
@@ -60,6 +61,13 @@ namespace TS3AudioBot
 			queryConnection.OnMessageReceived += TextCallback;
 			bobController.QueryConnection = queryConnection;
 			var connectTask = queryConnection.Connect();
+		}
+
+		private void InitializeCommands()
+		{
+			commandDict = new Dictionary<string, Command>();
+			commandDict.Add("add", new Command(false, ));
+			
 		}
 
 		public void Run(string[] args)
@@ -126,27 +134,44 @@ namespace TS3AudioBot
 			}
 		}
 
-		public async void TextCallback(object sender, TextMessage tm)
+		public async void TextCallback(object sender, TextMessage textMessage)
 		{
-			Log.Write(Log.Level.Debug, "MB Got from {0} message: {1}", tm.InvokerName, tm.Message);
+			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
 			if (awaitingResponse != null)
 			{
-				if (await awaitingResponse(tm))
+				if (await awaitingResponse(textMessage))
 				{
 					awaitingResponse = null;
 					return;
 				}
 			}
 
-			if (!tm.Message.StartsWith("!"))
+			if (!textMessage.Message.StartsWith("!"))
 				return;
-			string commandSubstring = tm.Message.Substring(1);
-			string[] command = commandSubstring.Split(' ');
-			string argumentUncut = commandSubstring.Substring(command[0].Length);
 			bobController.HasUpdate();
 
-			GetClientsInfo client = await queryConnection.GetClientById(tm.InvokerId);
+			GetClientsInfo client;
+			string commandSubstring = textMessage.Message.Substring(1);
+			string[] command = commandSubstring.Split(' ');
+			if (!commandDict.ContainsKey(command[0]))
+			{
+				client = await queryConnection.GetClientById(textMessage.InvokerId);
+				WriteClient(client, "Unknown command!");
+			}
+			Command cmd = commandDict[commandSubstring];
+			if (cmd.NeedsClient)
+			{
+				client = await queryConnection.GetClientById(textMessage.InvokerId);
+				cmd.CommandCTM(client, textMessage);
+			}
+			else
+			{
+				cmd.CommandTM(textMessage);
+			}
+
+			string argumentUncut = commandSubstring.Substring(command[0].Length);
+
 
 			switch (command[0].ToLower())
 			{
@@ -264,12 +289,12 @@ namespace TS3AudioBot
 				else
 					WriteClient(client, "Missing or too many parameter. Usage !yt <youtube-url>");
 				break;
-
-			default:
-				if (client != null)
-					await queryConnection.TSClient.SendMessage("Unknown command!", client);
-				break;
 			}
+		}
+
+		private void CommandAdd(PrivateSession privateSession, TextMessage textMessage)
+		{
+			
 		}
 
 		private string ExtractUrlFromBB(string ts3link)
@@ -450,6 +475,23 @@ namespace TS3AudioBot
 				youtubeFramework.Dispose();
 				youtubeFramework = null;
 			}
+		}
+	}
+
+	class Command
+	{
+		public Action<PrivateSession, TextMessage> Command { get; private set; }
+		public bool IsAdminCommand { get; private set; }
+
+		private Command(bool isAdminCommand)
+		{
+			IsAdminCommand = isAdminCommand;
+		}
+
+		public Command(bool isAdminCommand, Action<PrivateSession, TextMessage> command)
+			: this(isAdminCommand)
+		{
+			Command = command;
 		}
 	}
 

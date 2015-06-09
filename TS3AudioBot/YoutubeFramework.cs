@@ -190,8 +190,6 @@ namespace TS3AudioBot
 
 	class YoutubeRessource : AudioRessource
 	{
-		public string YoutubeName { get; protected set; }
-
 		public IReadOnlyList<VideoType> AvailableTypes { get; protected set; }
 
 		public int Selected { get; set; }
@@ -199,9 +197,8 @@ namespace TS3AudioBot
 		public override AudioType AudioType { get { return AudioType.Youtube; } }
 
 		public YoutubeRessource(string link, string youtubeName, IReadOnlyList<VideoType> availableTypes)
-			: base(link)
+			: base(link, youtubeName)
 		{
-			YoutubeName = youtubeName;
 			AvailableTypes = availableTypes;
 			Selected = 0;
 		}

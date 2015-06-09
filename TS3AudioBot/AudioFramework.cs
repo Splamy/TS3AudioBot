@@ -151,7 +151,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource.RessourceName);
+				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource.RessourceURL);
 				if (!audioRessource.Play(ar => playerConnection.AudioStart(ar)))
 					return false;
 			}
@@ -214,15 +214,22 @@ namespace TS3AudioBot
 	{
 		public int Volume { get; set; }
 		public abstract AudioType AudioType { get; }
-		public string RessourceName { get; private set; }
+		public string RessourceTitle { get; private set; }
+		public string RessourceURL { get; private set; }
 		public bool Enqueue { get; set; }
 
 		public abstract bool Play(Action<string> setMedia);
 
-		public AudioRessource(string ressourceName)
+		public AudioRessource(string ressourceURL, string ressourceTitle)
 		{
 			Volume = -1;
-			RessourceName = ressourceName;
+			RessourceURL = ressourceURL;
+			RessourceTitle = ressourceTitle;
+		}
+
+		public override string ToString()
+		{
+			return string.Format("{0} (@{1}) - {2}", RessourceTitle, Volume, AudioType);
 		}
 	}
 
@@ -230,12 +237,12 @@ namespace TS3AudioBot
 	{
 		public override AudioType AudioType { get { return AudioType.MediaLink; } }
 
-		public MediaRessource(string path)
-			: base(path) { }
+		public MediaRessource(string path, string name)
+			: base(path, name) { }
 
 		public override bool Play(Action<string> setMedia)
 		{
-			setMedia(RessourceName);
+			setMedia(RessourceURL);
 			return true;
 		}
 	}
