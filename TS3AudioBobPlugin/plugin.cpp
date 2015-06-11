@@ -4,7 +4,8 @@
 #include <cstring>
 #include <fstream>
 #include <functional>
-#include <map>
+#include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -14,9 +15,30 @@
 
 static struct TS3Functions ts3Functions;
 #define PATH_SIZE 1024
+#ifdef _WIN32
+#	if __cplusplus < 201103L
+#		define override
+#	endif
+#else
+#	if defined __GNUC__ && (__GNUC__ <= 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 7))
+#		define override
+#	endif
+#endif
 // Activate this to allow control messages from everyong
-//#define UNSECURE
+#define UNSECURE
 
+
+// Methods declarations
+template<class... Args>
+static void log(const std::string &format, Args... args);
+template<class... Args>
+static void sendCommand(uint64 handlerID, const std::string &message, Args... args);
+template<class... Args>
+static void sendCommandAll(const std::string &message, Args... args);
+static bool isSpace(char c);
+static std::string strip(const std::string &input);
+
+// Type declarations
 struct Server
 {
 	uint64 handlerID;
@@ -41,36 +63,86 @@ class AbstractCommandExecutor
 {
 public:
 	// Returns if the command was handled
-	virtual bool operator() (uint64 sender, const std::string &message) = 0;
+	virtual bool operator()(uint64 sender, const std::string &message) = 0;
 };
 
 template<class... Args>
 class CommandExecutor : public AbstractCommandExecutor
 {
+public:
+	typedef std::function<bool(uint64 sender, const std::string &message, Args...)> FuncType;
+
 private:
-	std::function<bool(uint64 sender, const std::string &message, Args...)> fun;
+	/** The function that should be invoked by this command. */
+	FuncType fun;
+	/** True, if this command should ignore arguments that can't be passed to the method. */
+	bool ignoreMore;
 
 public:
-	// Calls fun by adding parameters recursively
-	bool execute(std::string message, std::function<bool()> f)
+	CommandExecutor(FuncType f, bool ignore = false) :
+		fun(f),
+		ignoreMore(ignore)
 	{
+	}
+
+private:
+	// Calls fun by adding parameters recursively
+	bool execute(uint64 sender, std::string message, std::function<bool()> f)
+	{
+		if(!message.empty() && !ignoreMore)
+		{
+			log("Too many parameters");
+			sendCommand(sender, "error too many parameters");
+			return false;
+		}
 		return f();
 	}
 
 	template<class P, class... Params>
-	bool execute(std::string message, std::function<bool(P p, Params... params)> f)
+	bool execute(uint64 sender, std::string message, std::function<bool(P p, Params... params)> f)
 	{
-		return execute(std::bind(NULL, f));
+		P p;
+		std::istringstream input(message);
+		input >> p;
+		return input && execute(sender, message, std::bind(p, f));
 	}
 
-	bool operator() (uint64 sender, const std::string &message)
+public:
+	bool operator()(uint64 sender, const std::string &message) override
 	{
-		return execute(message, std::bind(sender, message, fun));
+		return execute(sender, message, std::function<bool(Args...)>(std::bind(fun, sender, message)));
 	}
 };
 
-// TODO pass some parameters: arguments, sender, command
-typedef std::map<std::string, std::function<void(const std::string &command)> > CommandMap;
+template<class... Args>
+class StringCommandExecutor : public CommandExecutor<Args...>
+{
+public:
+	typedef typename CommandExecutor<Args...>::FuncType FuncType;
+
+private:
+	/** The string that identities this command in lowercase. */
+	std::string command;
+
+public:
+	StringCommandExecutor(const std::string &c, FuncType f, bool ignore = false) :
+		CommandExecutor<Args...>(f, ignore),
+		command(c)
+	{
+	}
+
+	bool operator()(uint64 sender, const std::string &message) override
+	{
+		const std::string msg = strip(message);
+		auto pos = std::find_if(msg.begin(), msg.end(), isSpace);
+		std::string cmd = strip(pos == msg.end() ? msg : std::string(msg.begin(), pos));
+		const std::string args = pos == msg.end() ? "" : strip(std::string(pos, msg.end()));
+		std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
+		return cmd == command && CommandExecutor<Args...>::operator()(sender, args);
+	}
+};
+
+typedef std::vector<std::unique_ptr<AbstractCommandExecutor> > Commands;
 
 // Attributes
 static const std::string FILENAME = "queryId";
@@ -80,15 +152,9 @@ static std::vector<anyID> whisperUsers;
 static bool audioOn = false;
 static std::vector<Server> servers;
 static std::vector<BotAdmin> admins;
-static CommandMap commands;
+static Commands commands;
 // TODO configure for multiple identities
 static anyID serverBotID = 0;
-
-// Methods declarations
-template<class... Args>
-static void sendCommand(uint64 handlerID, const std::string &message, Args... args);
-template<class... Args>
-static void sendCommand(const std::string &message, Args... args);
 
 // Method implementations
 // Replaces occurences of a string in-place
@@ -112,10 +178,15 @@ static std::string strip(const std::string &input)
 	return std::move(std::string(start, end));
 }
 
+static bool isSpace(char c)
+{
+	return std::isspace(c);
+}
 
-// Only print ascii chars and no control characters (apparently there can be problems
-// with Remote Code Execution)
-static std::string onlyAscii(const std::string &input)
+
+// Only print ascii chars and no control characters (maybe there can be problems
+// with Remote Code Execution, that has to be verified)
+/*static std::string onlyAscii(const std::string &input)
 {
 	char *result = new char[input.size()];
 	int j = 0;
@@ -130,7 +201,7 @@ static std::string onlyAscii(const std::string &input)
 	std::string str = result;
 	delete[] result;
 	return std::move(str);
-}
+}*/
 
 bool startsWith(const std::string &string, const std::string &prefix)
 {
@@ -156,7 +227,8 @@ static bool handleTsError(unsigned int error)
 			std::string msg = errorMsg;
 			ts3Functions.freeMemory(errorMsg);
 			replace(msg, "\n", "\\n");
-			sendCommand("error %s", msg.c_str());
+			// Broadcast error to all clients
+			sendCommandAll("error %s", msg.c_str());
 		} else
 			log("TeamSpeak-double-error");
 		return false;
@@ -252,7 +324,7 @@ static void closeBob()
 }
 
 template<class... Args>
-static void sendCommand(uint64 handlerID, const std::string &message, Args... args)
+static void sendCommand(uint64 handlerID, uint64 userID, const std::string &message, Args... args)
 {
 	if (serverBotID == 0)
 		log("The serverbot id is unknown :( Tried to write the following command: " + message, args...);
@@ -261,27 +333,37 @@ static void sendCommand(uint64 handlerID, const std::string &message, Args... ar
 		// Create string
 		std::vector<char> buf(1 + std::snprintf(NULL, 0, message.c_str(), args...));
 		std::snprintf(buf.data(), buf.size(), message.c_str(), args...);
-		handleTsError(ts3Functions.requestSendPrivateTextMsg(handlerID, buf.data(), serverBotID, NULL));
+		handleTsError(ts3Functions.requestSendPrivateTextMsg(handlerID, buf.data(), userID, NULL));
 	}
 }
 
 template<class... Args>
-static void sendCommand(const std::string &message, Args... args)
+static void sendCommand(uint64 userID, const std::string &message, Args... args)
 {
 	for(std::vector<Server>::const_iterator it = servers.cbegin(); it != servers.cend(); it++)
-		sendCommand(it->handlerID, message, args...);
+		sendCommand(it->handlerID, userID, message, args...);
 }
 
-static void unknownCommand(const std::string &command)
+template<class... Args>
+static void sendCommandAll(const std::string &message, Args... args)
 {
-	log("Unknown command: %s", command.c_str());
-	sendCommand("error unknown command");
+	for(std::vector<Server>::const_iterator it = servers.cbegin(); it != servers.cend(); it++)
+		sendCommand(it->handlerID, serverBotID, message, args...);
+}
+
+static void unknownCommand(const std::string& message)
+{
+	log("Unknown command: %s", message.c_str());
+	std::string msg = message;
+	replace(msg, "\n", "\\n");
+	// Broadcast error to all clients
+	sendCommandAll("error unknown command %s", msg.c_str());
 }
 
 // Commands
-static void helpCommand(const std::string &command)
+static bool helpCommand(uint64 sender, const std::string& /*message*/)
 {
-	sendCommand("help \n"
+	sendCommand(sender, "help \n"
 		"\taudio   [on|off]\n"
 		"\tquality [on|off]\n"
 		"\twhisper [on|off]\n"
@@ -291,64 +373,55 @@ static void helpCommand(const std::string &command)
 		"\tstatus  audio\n"
 		"\tstatus  whisper"
 	);
+	return true;
 }
 
-static void pingCommand(const std::string &command)
+static bool pingCommand(uint64 sender, const std::string& /*message*/)
 {
-	sendCommand("pong");
+	sendCommand(sender, "pong");
+	return true;
 }
 
-static void exitCommand(const std::string &command)
+static bool exitCommand(uint64 /*sender*/, const std::string& /*message*/)
 {
 	closeBob();
+	return true;
 }
 
-static void loopCommand(const std::string &message)
+static bool audioCommand(uint64 /*sender*/, const std::string& /*message*/, bool on)
+{
+	setAudio(on);
+	return true;
+}
+
+static bool loopCommand(uint64 /*sender*/, const std::string& message)
 {
 	std::string msg = message;
 	std::transform(msg.begin(), msg.end(), msg.begin(), ::tolower);
-	if(msg == "error unknown command" || msg == "unknown command")
-		log("Loop detected, have fun");
-}
-
-static bool isSpace(char c)
-{
-	return std::isspace(c);
-}
-static void handleCommand(const std::string &message)
-{
-	// Extract command part
-	std::string msg = strip(message);
-	std::string::iterator pos = std::find_if(msg.begin(), msg.end(), isSpace);
-	std::string command = strip(pos == msg.end() ? msg : std::string(msg.begin(), pos));
-	std::transform(command.begin(), command.end(), command.begin(), ::tolower);
-	//TODO Get arguments
-	//std::string args = strip(pos == msg.end() ? "" : std::string(pos, msg.end()));
-	//log("Handling message %s", message.c_str());
-
-	CommandMap::iterator it = commands.find(command);
-	if(it != commands.end())
+	if(startsWith(msg, "error unknown") || startsWith(msg, "unknown command"))
 	{
-		CommandMap::mapped_type fun = it->second;
-		fun(msg);
+		log("Loop detected, have fun");
+		return true;
 	} else
+		return false;
+}
+
+static void handleCommand(uint64 sender, const std::string &message)
+{
+	//log("Handling message %s", message.c_str());
+	bool found = false;
+	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
+	{
+		if((**it)(sender, message))
+		{
+			found = true;
+			break;
+		}
+	}
+	if(!found)
 		unknownCommand(message);
 
-	/*if(cmd == "exit")
-		closeBob();
-	else if(cmd == "help")
-	{
-		sendCommand("help \n"
-			"\taudio [on|off]\n"
-			"\tquality [on|off]\n"
-			"\twhisper [on|off]\n"
-			"\twhisper [add|remove] client <clientID>\n"
-			"\twhisper [add|remove] channel <channelID>\n"
-			"\twhisper clear\n"
-			"\tstatus audio\n"
-			"\tstatus whisper"
-		);
-	} else if(cmd == "audio on")
+	/*if(cmd == "audio on")
 		setAudio(true);
 	else if(cmd == "audio off")
 		setAudio(false);
@@ -418,12 +491,6 @@ static void handleCommand(const std::string &message)
 			sendCommand("status whisper channel %lu", *it);
 		for(std::vector<anyID>::const_iterator it = whisperUsers.cbegin(); it != whisperUsers.cend(); it++)
 			sendCommand("status whisper client %hu", *it);
-	} else if(cmd == "unknown command")
-		log("Loop detected, have fun");
-	else
-	{
-		log("Unknown command");
-		sendCommand("error unknown command");
 	}*/
 }
 
@@ -472,9 +539,29 @@ void ts3plugin_setFunctionPointers(const struct TS3Functions funcs)
 int ts3plugin_init()
 {
 	// Register commands
-	commands.emplace("help", helpCommand);
+#define ADD_STRING_COMMAND(name, function) commands.push_back(\
+	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<>(name, function)))
+	// Add simple commands
+	ADD_STRING_COMMAND("help",    helpCommand);
+	ADD_STRING_COMMAND("ping",    pingCommand);
+	ADD_STRING_COMMAND("exit",    exitCommand);
+#undef ADD_STRING_COMMAND
+#define ADD_STRING_COMMAND(name, function, args) commands.push_back(\
+	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<args>(name, function)))
+	// Add commands with arguments
+	commands.push_back(std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<bool>("audio", audioCommand)));
+	//ADD_STRING_COMMAND("audio",   audioCommand, bool);
+#undef ADD_STRING_COMMAND
+#define ADD_STRING_COMMAND(name, function) commands.push_back(\
+	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<>(name, function, true)))
+	// Ignore more arguments for the following commands
+	ADD_STRING_COMMAND("error",   loopCommand);
+	ADD_STRING_COMMAND("unknown", loopCommand);
+#undef ADD_STRING_COMMAND
+
+	/*commands.emplace("help", helpCommand);
 	commands.emplace("ping", pingCommand);
-	commands.emplace("exit", exitCommand);
+	commands.emplace("exit", exitCommand);*/
 	//commands.emplace("audio", []() { sendCommand("pong"); });
 	//commands.emplace("quality", []() { sendCommand("pong"); });
 	//commands.emplace("whisper", []() { sendCommand("pong"); });
@@ -484,9 +571,9 @@ int ts3plugin_init()
 		// TODO test for command
 		log("Loop detected, have fun");
 	};*/
-	commands.emplace("Unknown", loopCommand);
+	/*commands.emplace("Unknown", loopCommand);
 	commands.emplace("unknown", loopCommand);
-	commands.emplace("error", loopCommand);
+	commands.emplace("error", loopCommand);*/
 
 	// Get currently active connections
 	uint64 *handlerIDs;
@@ -544,7 +631,7 @@ int ts3plugin_requestAutoload()
 }
 
 // Callbacks executed by the TeamSpeak when an event occurs
-void ts3plugin_onConnectStatusChangeEvent(uint64 scHandlerID, int newStatus, unsigned int errorNumber)
+void ts3plugin_onConnectStatusChangeEvent(uint64 scHandlerID, int newStatus, unsigned int /*errorNumber*/)
 {
 	switch(newStatus)
 	{
@@ -576,7 +663,7 @@ void ts3plugin_onConnectStatusChangeEvent(uint64 scHandlerID, int newStatus, uns
 
 // Gets called when a text message is incoming or outgoing
 // Returns 0 if the message should be handled normally, 1 if it should be ignored
-int ts3plugin_onTextMessageEvent(uint64 scHandlerID, anyID targetMode, anyID toID, anyID fromID, const char* fromName, const char* fromUniqueIdentifier, const char* message, int ffIgnored)
+int ts3plugin_onTextMessageEvent(uint64 scHandlerID, anyID targetMode, anyID /*toID*/, anyID fromID, const char* /*fromName*/, const char* /*fromUniqueIdentifier*/, const char* message, int ffIgnored)
 {
 	// Friend/Foe manager would ignore the message, shouldn't matter for this plugin
 	if(ffIgnored)
@@ -598,7 +685,7 @@ int ts3plugin_onTextMessageEvent(uint64 scHandlerID, anyID targetMode, anyID toI
 #else
 			serverBotID = fromID;
 #endif
-				handleCommand(message);
+				handleCommand(fromID, message);
 #ifndef UNSECURE
 			}
 #endif
