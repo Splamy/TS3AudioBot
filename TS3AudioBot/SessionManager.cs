@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 
@@ -19,24 +20,31 @@ namespace TS3AudioBot
 			openSessions = new List<PrivateSession>();
 		}
 
-		public async Task<BotSession> CreateSession(QueryConnection queryConnection, TextMessage textMessage)
+		public async Task<BotSession> CreateSession(QueryConnection queryConnection, int invokerId)
 		{
-			if (ExistsSession(textMessage))
-				return GetSession(textMessage);
-			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
-			var newSession = new PrivateSession(queryConnection, client, false);
+			if (ExistsSession(invokerId))
+				return GetSession(MessageTarget.Private, invokerId);
+			GetClientsInfo client = await queryConnection.GetClientById(invokerId);
+			var newSession = new PrivateSession(queryConnection, client);
 			openSessions.Add(newSession);
 			return newSession;
 		}
 
-		public bool ExistsSession(TextMessage textMessage)
+		public bool ExistsSession(int invokerId)
 		{
-			return openSessions.Any((bs) => bs.client.Id == textMessage.InvokerId);
+			return openSessions.Any((ps) => ps.client.Id == invokerId);
 		}
 
-		public BotSession GetSession(TextMessage textMessage)
+		public BotSession GetSession(MessageTarget target, int invokerId)
 		{
-			return openSessions.FirstOrDefault((bs) => bs.client.Id == textMessage.InvokerId) ?? defaultSession;
+			if (target == MessageTarget.Server)
+				return defaultSession;
+			return openSessions.FirstOrDefault((bs) => bs.client.Id == invokerId) ?? defaultSession;
+		}
+
+		public void RemoveSession(int invokerId)
+		{
+			openSessions.RemoveAll((ps) => ps.client.Id == invokerId);
 		}
 	}
 }

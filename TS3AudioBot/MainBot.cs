@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -107,10 +108,15 @@ namespace TS3AudioBot
 				bobController.Sending = false;
 			};
 
+			// register callback for all messages happeing
 			queryConnection.OnMessageReceived += TextCallback;
+			// register callback to remove open private sessions, when user disconnects
+			queryConnection.OnClientDisconnect += (s, e) => sessionManager.RemoveSession(e.InvokerId);
+			// give the bobController a reference to the query so he can communicate with the queryClient
 			bobController.QueryConnection = queryConnection;
+			// create a default session for all users in all chat
 			sessionManager.defaultSession = new PublicSession(queryConnection);
-
+			// connect the query after everyting is set up
 			var connectTask = queryConnection.Connect();
 		}
 
@@ -139,6 +145,7 @@ namespace TS3AudioBot
 			commandDict.Add("repeat", new BotCommand(CommandRights.Private, CommandRepeat));
 			commandDict.Add("seek", new BotCommand(CommandRights.Private, CommandSeek));
 			commandDict.Add("stop", new BotCommand(CommandRights.Private, CommandStop));
+			commandDict.Add("test", new BotCommand(CommandRights.Private, CommandTest));
 			commandDict.Add("volume", new BotCommand(CommandRights.AnyVisibility, CommandVolume));
 			tmp = new BotCommand(CommandRights.Private, CommandYoutube);
 			commandDict.Add("youtube", tmp);
@@ -185,7 +192,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void TextCallback(object sender, TextMessage textMessage)
+		public async void TextCallback(object sender, TextMessage textMessage)
 		{
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
@@ -193,7 +200,7 @@ namespace TS3AudioBot
 				return;
 			bobController.HasUpdate();
 
-			BotSession session = sessionManager.GetSession(textMessage);
+			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
 
 			string commandSubstring = textMessage.Message.Substring(1);
 			string[] commandSplit = commandSubstring.Split(new[] { ' ' }, 2);
@@ -204,27 +211,30 @@ namespace TS3AudioBot
 				return;
 			}
 
-			// check if we need admin rights
-			if (true)// admin -> false | else -> true
+			string reason = string.Empty;
+			bool allowed = false;
+			// check if the command need certain rights/specs
+			switch (command.CommandRights)
 			{
-				// check if the command must be written in a private/public session
-				switch (command.CommandRights)
-				{
-				case CommandRights.Public:
-					if (session.IsPrivate)
-					{
-						session.Write("Command must be used in public mode!");
-						return;
-					}
-					break;
-				case CommandRights.Private:
-					if (!session.IsPrivate)
-					{
-						session.Write("Command must be used in a private session!");
-						return;
-					}
-					break;
-				}
+			case CommandRights.Admin:
+				reason = "Command must be invoked by an admin!";
+				break;
+			case CommandRights.Public:
+				reason = "Command must be used in public mode!";
+				allowed = textMessage.TargetMode == MessageTarget.Server;
+				break;
+			case CommandRights.Private:
+				reason = "Command must be used in a private session!";
+				allowed = textMessage.TargetMode == MessageTarget.Private;
+				break;
+			case CommandRights.AnyVisibility:
+				allowed = true;
+				break;
+			}
+			if (!allowed && !await HasInvokerAdminRights(textMessage))
+			{
+				session.Write(reason);
+				return;
 			}
 
 			// check if the user has an open request
@@ -258,6 +268,15 @@ namespace TS3AudioBot
 			default:
 				break;
 			}
+		}
+
+		private async Task<bool> HasInvokerAdminRights(TextMessage textMessage)
+		{
+			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
+			if (client == null)
+				return false;
+			int[] clientSgIds = queryConnection.GetClientServerGroups(client).Result;
+			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 
 		private void CommandAdd(BotSession session, string parameter)
@@ -295,9 +314,11 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Channel);
-				// TODO determine furter stuff here
-				//await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Server);
+				string[] split = textMessage.Message.Split(new[] { ' ' }, 2);
+				if (split.Length <= 1)
+					await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Channel);
+				else if (split[1] == "far")
+					await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Server);
 			}
 			catch (Exception ex)
 			{
@@ -327,7 +348,7 @@ namespace TS3AudioBot
 
 		private async void CommandPM(BotSession session, TextMessage textMessage)
 		{
-			BotSession ownSession = await sessionManager.CreateSession(queryConnection, textMessage);
+			BotSession ownSession = await sessionManager.CreateSession(queryConnection, textMessage.InvokerId);
 			ownSession.Write("Hi " + textMessage.InvokerName);
 		}
 
@@ -346,7 +367,12 @@ namespace TS3AudioBot
 
 		private void CommandQuit(BotSession session)
 		{
-			//TODO
+			if (!noInput)
+			{
+				session.Write("The TS3AudioBot is open in console-mode. Please close it in the opened terminal.");
+				return;
+			}
+			this.Dispose();
 			Log.Write(Log.Level.Info, "Exiting...");
 		}
 
@@ -395,6 +421,17 @@ namespace TS3AudioBot
 		private void CommandStop(BotSession session, string parameter)
 		{
 			audioFramework.Stop();
+		}
+
+		private async void CommandTest(BotSession session)
+		{
+			PrivateSession ps = session as PrivateSession;
+			if (ps == null)
+			{
+				session.Write("Please use as private, admins too!");
+				return;
+			}
+			await queryConnection.GetClientServerGroups(ps.client);
 		}
 
 		private void CommandVolume(BotSession session, string parameter)
@@ -590,5 +627,7 @@ namespace TS3AudioBot
 	{
 		[InfoAttribute("path to the logfile", "log_ts3audiobot")]
 		public string logFile;
+		[InfoAttribute("group able to execute admin commands from the bot")]
+		public int adminGroupId;
 	}
 }

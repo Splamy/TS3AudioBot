@@ -171,7 +171,7 @@ namespace TS3AudioBot
 		private async void AwaitBobConnect(object sender, ClientEnterView e)
 		{
 			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
-			if (e.ServerGroups.Split(',').Contains(data.bobGroupId))
+			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
 				bobClient = await QueryConnection.GetClientById(e.Id);
@@ -248,6 +248,6 @@ namespace TS3AudioBot
 			"communication between the TS3AudioBot and the TeamSpeak3 Client plugin")]
 		public string folder;
 		[InfoAttribute("ServerGroupID of the ServerBob")]
-		public string bobGroupId;
+		public int bobGroupId;
 	}
 }

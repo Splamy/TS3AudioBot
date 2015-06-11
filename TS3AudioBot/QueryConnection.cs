@@ -14,8 +14,10 @@ namespace TS3AudioBot
 	{
 		public delegate void MessageReceivedDelegate(object sender, TextMessage e);
 		public event MessageReceivedDelegate OnMessageReceived;
-		public delegate void ClientDelegate(object sender, ClientEnterView e);
-		public event ClientDelegate OnClientConnect;
+		public delegate void ClientEnterDelegate(object sender, ClientEnterView e);
+		public event ClientEnterDelegate OnClientConnect;
+		public delegate void ClientQuitDelegate(object sender, ClientLeftView e);
+		public event ClientQuitDelegate OnClientDisconnect;
 
 		private bool connected = false;
 		private IReadOnlyList<GetClientsInfo> clientbuffer;
@@ -68,7 +70,16 @@ namespace TS3AudioBot
 								OnClientConnect(this, clientdata);
 						}
 					});
-				TSClient.Subscribe<ClientLeftView>(data => clientbufferoutdated = true);
+				TSClient.Subscribe<ClientLeftView>(data =>
+				{
+					Log.Write(Log.Level.Debug, "QC ClientQuitView event raised");
+					clientbufferoutdated = true;
+					if (OnClientDisconnect != null)
+					{
+						foreach (var clientdata in data)
+							OnClientDisconnect(this, clientdata);
+					}
+				});
 
 				connected = true;
 
@@ -124,6 +135,16 @@ namespace TS3AudioBot
 				clientbufferoutdated = false;
 			}
 			return clientbuffer.FirstOrDefault(client => client.Id == id);
+		}
+
+		public async Task<int[]> GetClientServerGroups(GetClientsInfo client)
+		{
+			QueryResponseDictionary[] result = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
+			if (result.Length <= 0)
+				return new int[0];
+			Dictionary<string, object> resultDict = result[0];
+			string sgids = (string)resultDict["sgid"];
+			return sgids.Split(',').ToList().ConvertAll(x => int.Parse(x)).ToArray();
 		}
 
 		public void Dispose()

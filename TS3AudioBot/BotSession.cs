@@ -19,7 +19,6 @@ namespace TS3AudioBot
 		public object responseData { get; set; }
 
 		public abstract bool IsPrivate { get; }
-		public abstract bool HasAdminRights { get; }
 
 		public abstract void Write(string message);
 
@@ -35,11 +34,17 @@ namespace TS3AudioBot
 	sealed class PublicSession : BotSession
 	{
 		public override bool IsPrivate { get { return false; } }
-		public override bool HasAdminRights { get { return false; } }
 
 		public override async void Write(string message)
 		{
-			await queryConnection.TSClient.SendGlobalMessage(message);
+			try
+			{
+				await queryConnection.TSClient.SendGlobalMessage(message);
+			}
+			catch (Exception ex)
+			{
+				Log.Write(Log.Level.Error, "Could not write public message ({0})", ex);
+			}
 		}
 
 		public PublicSession(QueryConnection queryConnection)
@@ -50,21 +55,18 @@ namespace TS3AudioBot
 	sealed class PrivateSession : BotSession
 	{
 		public GetClientsInfo client { get; private set; }
-		private bool hasAdminRights;
 
 		public override bool IsPrivate { get { return true; } }
-		public override bool HasAdminRights { get { return hasAdminRights; } }
 
 		public override async void Write(string message)
 		{
 			await queryConnection.TSClient.SendMessage(message, client);
 		}
 
-		public PrivateSession(QueryConnection queryConnection, GetClientsInfo client, bool hasAdminRights)
+		public PrivateSession(QueryConnection queryConnection, GetClientsInfo client)
 			: base(queryConnection)
 		{
 			this.client = client;
-			this.hasAdminRights = hasAdminRights;
 		}
 	}
 }
