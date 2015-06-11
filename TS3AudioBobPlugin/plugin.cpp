@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -256,15 +257,49 @@ static void handleCommand(std::string cmd)
 	} else if(startsWith(cmd, "whisper add channel"))
 	{
 		uint64 id;
-		if(std::sscanf(cmd.c_str(), "whisper channel %llu", &id) == 1)
+		if(std::sscanf(cmd.c_str(), "whisper add channel %lu", &id) == 1)
+		{
 			whisperChannels.emplace_back(id);
-		setAudio(audioOn);
+			setAudio(audioOn);
+		} else
+			sendCommand("error parsing channel id");
 	} else if(startsWith(cmd, "whisper add client"))
 	{
 		anyID id;
-		if(std::sscanf(cmd.c_str(), "whisper client %hu", &id) == 1)
+		if(std::sscanf(cmd.c_str(), "whisper add client %hu", &id) == 1)
+		{
 			whisperUsers.emplace_back(id);
-		setAudio(audioOn);
+			setAudio(audioOn);
+		} else
+			sendCommand("error parsing client id");
+	} else if(startsWith(cmd, "whisper remove client"))
+	{
+		anyID id;
+		if(std::sscanf(cmd.c_str(), "whisper remove client %hu", &id) == 1)
+		{
+			std::vector<anyID>::iterator it = std::find(whisperUsers.begin(), whisperUsers.end(), id);
+			if(it != whisperUsers.end())
+			{
+				whisperUsers.erase(it);
+				setAudio(audioOn);
+			} else
+				sendCommand("error finding client id");
+		} else
+			sendCommand("error parsing client id");
+	} else if(startsWith(cmd, "whisper remove channel"))
+	{
+		uint64 id;
+		if(std::sscanf(cmd.c_str(), "whisper remove channel %lu", &id) == 1)
+		{
+			std::vector<uint64>::iterator it = std::find(whisperChannels.begin(), whisperChannels.end(), id);
+			if(it != whisperChannels.end())
+			{
+				whisperChannels.erase(it);
+				setAudio(audioOn);
+			} else
+				sendCommand("error finding channel id");
+		} else
+			sendCommand("error parsing channel id");
 	} else if(cmd == "status audio")
 		sendCommand("status audio %s", audioOn ? "on" : "off");
 	else if(cmd == "status whisper")
@@ -272,7 +307,7 @@ static void handleCommand(std::string cmd)
 		sendCommand("status whisper %s", useWhispering() ? "on" : "off");
 		// Write clients and channels that are set in the whisperlist
 		for(std::vector<uint64>::const_iterator it = whisperChannels.cbegin(); it != whisperChannels.cend(); it++)
-			sendCommand("status whisper channel %llu", *it);
+			sendCommand("status whisper channel %lu", *it);
 		for(std::vector<anyID>::const_iterator it = whisperUsers.cbegin(); it != whisperUsers.cend(); it++)
 			sendCommand("status whisper client %hu", *it);
 	} else if(cmd == "unknown command")
@@ -280,7 +315,7 @@ static void handleCommand(std::string cmd)
 	else
 	{
 		log("Unknown command");
-		sendCommand("unknown command");
+		sendCommand("error unknown command");
 	}
 }
 
@@ -404,6 +439,11 @@ void ts3plugin_onConnectStatusChangeEvent(uint64 scHandlerID, int newStatus, uns
 	case STATUS_CONNECTION_ESTABLISHED:
 		servers.emplace_back(scHandlerID);
 		setAudio(audioOn);
+		// Query connected clients
+		// TODO Get database id
+		//handleTsError(ts3Functions.requestClientDBIDfromUID(scHandlerID, fromUniqueIdentifier, NULL));
+		// Get assigned server groups
+		//handleTsError(ts3Functions.requestServerGroupsByClientID(scHandlerID, clientID, NULL));
 		break;
 	}
 }
@@ -426,11 +466,6 @@ int ts3plugin_onTextMessageEvent(uint64 scHandlerID, anyID targetMode, anyID toI
 		// Check if this message is from an authorized client
 		if(targetMode == TextMessageTarget_CLIENT)
 		{
-			// Get database id
-			uint64 clientID;
-			//handleTsError(ts3Functions.requestClientDBIDfromUID(scHandlerID, fromUniqueIdentifier, NULL));
-			// Get assigned server groups
-			//handleTsError(ts3Functions.requestServerGroupsByClientID(scHandlerID, clientID, NULL));
 #ifndef UNSECURE
 			if(fromID == serverBotID)
 			{
