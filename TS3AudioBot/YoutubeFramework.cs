@@ -12,16 +12,14 @@ namespace TS3AudioBot
 	{
 		private WebClient wc;
 
-		public YoutubeRessource LoadedRessource { get; protected set; }
-
 		public YoutubeFramework()
 		{
 			wc = new WebClient();
-			LoadedRessource = null;
 		}
 
-		public ResultCode ExtractURL(string ytLink, bool filterOutInvalid = true)
+		public ResultCode ExtractURL(string ytLink, out YoutubeRessource result, bool filterOutInvalid = true)
 		{
+			result = null;
 			string resulthtml = string.Empty;
 			Match matchYtId = Regex.Match(ytLink, @"(&|\?)v=([a-zA-Z0-9\-_]+)");
 			if (!matchYtId.Success)
@@ -107,8 +105,8 @@ namespace TS3AudioBot
 				videoTypes.Add(vt);
 			}
 
-			LoadedRessource = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
-			if (LoadedRessource.AvailableTypes.Count > 0)
+			result = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
+			if (result.AvailableTypes.Count > 0)
 				return ResultCode.Success;
 			else
 				return ResultCode.NoVideosExtracted;
