@@ -10,7 +10,7 @@ namespace TS3AudioBot
 	{
 		public static int[] ToIntArray(this string value)
 		{
-			return Array.ConvertAll(value.Split(','), int.Parse);
+			return Array.ConvertAll(value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries), int.Parse);
 		}
 	}
 }

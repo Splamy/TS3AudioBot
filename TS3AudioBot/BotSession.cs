@@ -15,8 +15,8 @@ namespace TS3AudioBot
 		protected QueryConnection queryConnection;
 
 		public AudioRessource userRessource { get; set; }
-		public Func<BotSession, TextMessage, bool> responseProcessor { get; set; }
-		public object responseData { get; set; }
+		public Func<BotSession, TextMessage, bool> responseProcessor { get; protected set; }
+		public object responseData { get; protected set; }
 
 		public abstract bool IsPrivate { get; }
 
@@ -28,6 +28,12 @@ namespace TS3AudioBot
 			userRessource = null;
 			responseProcessor = null;
 			responseData = null;
+		}
+
+		public void SetResponse(Func<BotSession, TextMessage, bool> responseProcessor, object responseData)
+		{
+			this.responseProcessor = responseProcessor;
+			this.responseData = responseData;
 		}
 	}
 

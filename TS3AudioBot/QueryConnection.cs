@@ -140,12 +140,11 @@ namespace TS3AudioBot
 		public async Task<int[]> GetClientServerGroups(GetClientsInfo client)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			QueryResponseDictionary[] result = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			if (result.Length <= 0)
+			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
+			if (response.Length <= 0)
 				return new int[0];
-			Dictionary<string, object> resultDict = result[0];
-			string sgids = (string)resultDict["sgid"];
-			return sgids.ToIntArray();
+
+			return response.Select<QueryResponseDictionary, int>((dict) => (int)dict["sgid"]).ToArray();
 		}
 
 		public void Dispose()

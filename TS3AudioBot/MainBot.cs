@@ -43,7 +43,7 @@ namespace TS3AudioBot
 
 		public MainBot()
 		{
-			run = true; 
+			run = true;
 			noInput = false;
 			silent = false;
 			noLog = false;
@@ -128,7 +128,7 @@ namespace TS3AudioBot
 			commandDict.Add("clear", new BotCommand(CommandRights.Admin, CommandClear));
 			commandDict.Add("help", new BotCommand(CommandRights.AnyVisibility, CommandHelp));
 			commandDict.Add("history", new BotCommand(CommandRights.Private, CommandHistory));
-			commandDict.Add("kickme", new BotCommand(CommandRights.Private, CommandKickme));
+			commandDict.Add("kickme", new BotCommand(CommandRights.AnyVisibility, CommandKickme));
 			tmp = new BotCommand(CommandRights.Private, CommandLink);
 			commandDict.Add("link", tmp);
 			commandDict.Add("l", tmp);
@@ -202,6 +202,16 @@ namespace TS3AudioBot
 
 			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
 
+			// check if the user has an open request
+			if (session.responseProcessor != null)
+			{
+				if (session.responseProcessor(session, textMessage))
+				{
+					session.SetResponse(null, null);
+					return;
+				}
+			}
+
 			string commandSubstring = textMessage.Message.Substring(1);
 			string[] commandSplit = commandSubstring.Split(new[] { ' ' }, 2);
 			BotCommand command = null;
@@ -235,16 +245,6 @@ namespace TS3AudioBot
 			{
 				session.Write(reason);
 				return;
-			}
-
-			// check if the user has an open request
-			if (session.responseProcessor != null)
-			{
-				if (session.responseProcessor(session, textMessage))
-				{
-					session.responseProcessor = null;
-					return;
-				}
 			}
 
 			switch (command.CommandParameter)
@@ -512,12 +512,13 @@ namespace TS3AudioBot
 				strb.AppendLine(videoType.qualitydesciption);
 			}
 			session.Write(strb.ToString());
-			session.responseProcessor = ResponseYoutube;
+			session.userRessource = youtubeRessource;
+			session.SetResponse(ResponseYoutube, null);
 		}
 
 		private bool ResponseYoutube(BotSession session, TextMessage tm)
 		{
-			string[] command = tm.Message.Split(' ');
+			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			if (command[0] != "!f")
 				return false;
 			if (command.Length != 2)
@@ -525,7 +526,12 @@ namespace TS3AudioBot
 			int entry;
 			if (int.TryParse(command[1], out entry))
 			{
-				YoutubeRessource ytRessource = (YoutubeRessource)session.responseData;
+				YoutubeRessource ytRessource = session.userRessource as YoutubeRessource;
+				if (ytRessource == null)
+				{
+					session.Write("An unexpected error with the ytressource occured: null");
+					return true;
+				}
 				if (entry < 0 || entry >= ytRessource.AvailableTypes.Count)
 					return true;
 				ytRessource.Selected = entry;
