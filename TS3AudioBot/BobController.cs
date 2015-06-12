@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using LockCheck;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
@@ -63,7 +62,6 @@ namespace TS3AudioBot
 			whisperChannel = new HashSet<int>();
 		}
 
-		[LockCritical("lockObject")]
 		private void SendMessage(string message)
 		{
 			lock (lockObject)
@@ -105,7 +103,6 @@ namespace TS3AudioBot
 			lastUpdate = DateTime.Now;
 		}
 
-		//[LockCritical("lockObject")]
 		public async void Start()
 		{
 			if (!IsRunning)
@@ -139,7 +136,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		//[LockCritical("lockObject")]
 		public void Stop()
 		{
 			Log.Write(Log.Level.Info, "Stopping Bob");

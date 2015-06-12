@@ -43,7 +43,7 @@ namespace TS3AudioBot
 
 		public MainBot()
 		{
-			run = true;
+			run = true; 
 			noInput = false;
 			silent = false;
 			noLog = false;
@@ -275,7 +275,7 @@ namespace TS3AudioBot
 			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
 			if (client == null)
 				return false;
-			int[] clientSgIds = queryConnection.GetClientServerGroups(client).Result;
+			int[] clientSgIds = await queryConnection.GetClientServerGroups(client);
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 

@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Diagnostics;
-using LockCheck;
 
 namespace TS3AudioBot
 {
@@ -121,8 +120,6 @@ namespace TS3AudioBot
 		}
 
 		// Lock and textsend methods
-
-		[LockCritical("attributeLock", "responseLock")]
 		private void SendResponseLocked(AwaitingResponse resp, string msg)
 		{
 			lock (attributeLock)
@@ -136,7 +133,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		[LockCritical("attributeLock")]
 		private void SendCommandLocked(string msg)
 		{
 			lock (attributeLock)
@@ -216,7 +212,6 @@ namespace TS3AudioBot
 			});
 		}
 
-		[LockCritical("responseLock")]
 		private void ProcessMessage(string msg)
 		{
 			if (msg.StartsWith("Password:"))
