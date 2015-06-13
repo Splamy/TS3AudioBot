@@ -24,8 +24,36 @@ static struct TS3Functions ts3Functions;
 #		define override
 #	endif
 #endif
-// Activate this to allow control messages from everyong
-#define UNSECURE
+// Activate this to allow control messages from everyone and not only from the
+// server query user (his ID is read from a file)
+//#define UNSECURE
+
+// Define things that are used to bind parameters to a variadic template function
+/** A sequence of integers */
+template<int...>
+struct IntSequence{};
+/** Used to create a sequence of integers recursively from 0 - (I - 1)
+    (including I and appending Is if they exist) */
+template<int I, int... Is>
+struct IntSequenceCreator : IntSequenceCreator<I - 1, I - 1, Is...> {};
+/** Final template instanciation of the recursion
+    (break the recursion when 0 is reached) */
+template<int... Is>
+struct IntSequenceCreator<0, Is...> : IntSequence<Is...>{};
+/** A placeholder that holds an int.
+    It should be used with the IntSequenceCreator to generate a sequence of placeholders */
+template<int>
+struct Placeholder{};
+
+// Define it as placeholder for the standard library so we can still bind the
+// left over parameters
+namespace std
+{
+	// The index of the placeholder will be its stored integer
+	// Increment the indices because the placeholder expects 1 for the first placeholder
+	template<int I>
+	struct is_placeholder<Placeholder<I> > : integral_constant<int, I + 1>{};
+}
 
 
 // Methods declarations
@@ -36,7 +64,9 @@ static void sendCommand(uint64 handlerID, const std::string &message, Args... ar
 template<class... Args>
 static void sendCommandAll(const std::string &message, Args... args);
 static bool isSpace(char c);
-static std::string strip(const std::string &input);
+static std::string strip(const std::string &input, bool left = true, bool right = true);
+template<class R, class... Args, class P, class P2, int... Is>
+static std::function<R(Args...)> myBind(const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>);
 
 // Type declarations
 struct Server
@@ -64,6 +94,7 @@ class AbstractCommandExecutor
 public:
 	// Returns if the command was handled
 	virtual bool operator()(uint64 sender, const std::string &message) = 0;
+	virtual std::string getHelp() = 0;
 };
 
 template<class... Args>
@@ -87,30 +118,63 @@ public:
 
 private:
 	// Calls fun by adding parameters recursively
-	bool execute(uint64 sender, std::string message, std::function<bool()> f)
+	/** The function that is the last layer of the recursion. */
+	template<int... Is>
+	bool execute(uint64 sender, std::string message, std::function<bool()> f, IntSequence<Is...>)
 	{
 		if(!message.empty() && !ignoreMore)
 		{
 			log("Too many parameters");
-			sendCommand(sender, "error too many parameters");
+			sendCommand(sender, "error too many parameters: '%s'", message.c_str());
 			return false;
 		}
 		return f();
 	}
 
-	template<class P, class... Params>
-	bool execute(uint64 sender, std::string message, std::function<bool(P p, Params... params)> f)
+	template<class P, class... Params, int... Is>
+	bool execute(uint64 sender, std::string message, std::function<bool(P p, Params... params)> f, IntSequence<Is...>)
 	{
+		const std::string msg = strip(message, true, false);
 		P p;
-		std::istringstream input(message);
-		input >> p;
-		return input && execute(sender, message, std::bind(p, f));
+		std::istringstream input(msg);
+		// Read booleans as true/false
+		input >> std::boolalpha >> p;
+		// Bind this parameter
+		std::function<bool(Params...)> f2 = myBind(f, p, IntSequenceCreator<sizeof...(Params)>{});
+		int pos;
+		// Test if it was successful
+		if(input.eof())
+			pos = -1;
+		else if(!input)
+			return false;
+		else
+			pos = input.tellg();
+		// Drop the already read part of the message
+		return input && execute(sender, pos == -1 ? "" : msg.substr(pos), f2, IntSequenceCreator<sizeof...(Params)>{});
+	}
+
+	template<int... Is>
+	std::function<bool(Args...)> bind(uint64 sender, const std::string &message, IntSequence<Is...>)
+	{
+		// Custom bind function for the first two arguments because it is relatively easy
+		// and I wasn't able to use myBind
+		return std::bind(fun, sender, message, Placeholder<Is>{}...);
 	}
 
 public:
 	bool operator()(uint64 sender, const std::string &message) override
 	{
-		return execute(sender, message, std::function<bool(Args...)>(std::bind(fun, sender, message)));
+		// Bind sender
+		//std::function<bool(const std::string&)> f1 = myBind(fun, sender, IntSequence<0>{});
+		std::function<bool(const std::string&, Args...)> f1 = myBind(fun, sender, IntSequenceCreator<sizeof...(Args) + 1>{});
+		//std::function<bool(const std::string&, Args...)> f1 = std::bind(fun, sender, Placeholder<0>{});
+		// Bind message
+		std::function<bool(Args...)> f = myBind(f1, message, IntSequenceCreator<sizeof...(Args)>{});
+		//std::function<bool()> f = myBind(f1, message, IntSequence<>{});
+		//std::function<bool()> f = std::bind(f1, message);
+		// FIXME Unfortunately I can't get this to work, something is probably wrong with the second call...
+		//std::function<bool(Args...)> f = bind(sender, message, IntSequenceCreator<sizeof...(Args)>{});
+		return execute(sender, message, f, IntSequenceCreator<sizeof...(Args)>{});
 	}
 };
 
@@ -122,12 +186,14 @@ public:
 
 private:
 	/** The string that identities this command in lowercase. */
-	std::string command;
+	const std::string command;
+	const std::string help;
 
 public:
-	StringCommandExecutor(const std::string &c, FuncType f, bool ignore = false) :
+	StringCommandExecutor(const std::string &command, const std::string &help, FuncType f, bool ignore = false) :
 		CommandExecutor<Args...>(f, ignore),
-		command(c)
+		command(command),
+		help(help)
 	{
 	}
 
@@ -139,6 +205,11 @@ public:
 		const std::string args = pos == msg.end() ? "" : strip(std::string(pos, msg.end()));
 		std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
 		return cmd == command && CommandExecutor<Args...>::operator()(sender, args);
+	}
+
+	std::string getHelp() override
+	{
+		return help;
 	}
 };
 
@@ -153,11 +224,11 @@ static bool audioOn = false;
 static std::vector<Server> servers;
 static std::vector<BotAdmin> admins;
 static Commands commands;
-// TODO configure for multiple identities
+// TODO configure for multiple identities and use groups to get the rights
 static anyID serverBotID = 0;
 
 // Method implementations
-// Replaces occurences of a string in-place
+/** Replaces occurences of a string in-place. */
 static std::string& replace(std::string &input, const std::string &target, const std::string &replacement)
 {
 	std::size_t pos;
@@ -166,16 +237,21 @@ static std::string& replace(std::string &input, const std::string &target, const
 	return input;
 }
 
-// Returns a string with all whitespaces stripped at the beginning and the end
-static std::string strip(const std::string &input)
+/** Returns a string with all whitespaces stripped at the beginning and the end. */
+static std::string strip(const std::string &input, bool left, bool right)
 {
 	std::string::const_iterator start = input.begin();
 	std::string::const_iterator end = input.end();
-	while(std::isspace(*start))
-		start++;
-	while(std::isspace(*end))
-		end--;
-	return std::move(std::string(start, end));
+	if(left)
+	{
+		while(start <= end && std::isspace(*start))
+			start++;
+	}
+	if(right)
+		while(end > start && std::isspace(*--end));
+	if(start == end)
+		return "";
+	return std::string(start, end + 1);
 }
 
 static bool isSpace(char c)
@@ -183,6 +259,11 @@ static bool isSpace(char c)
 	return std::isspace(c);
 }
 
+template<class R, class... Args, class P, class P2, int... Is>
+static std::function<R(Args...)> myBind(const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>)
+{
+	return std::bind(fun, p, Placeholder<Is>{}...);
+}
 
 // Only print ascii chars and no control characters (maybe there can be problems
 // with Remote Code Execution, that has to be verified)
@@ -242,7 +323,7 @@ static int getRandomNumber(int min, int max)
 	// Generate random number
 	//std::random_device random;
 	//std::mt19937 generator(random());
-	//std::uniform_int_distribution<int>  uniform(min, max);
+	//std::uniform_int_distribution<int> uniform(min, max);
 	//return uniform(generator);
 	return rand() % (max - min) + min;
 }
@@ -276,6 +357,11 @@ static void setAudio(bool on)
 			on ? INPUT_ACTIVE : INPUT_DEACTIVATED));
 	}
 	audioOn = on;
+}
+
+static void refreshSending()
+{
+	setAudio(audioOn);
 }
 
 static void setQuality(bool on)
@@ -404,6 +490,13 @@ static bool loopCommand(uint64 /*sender*/, const std::string& message)
 		return true;
 	} else
 		return false;
+}
+
+// TODO sense
+static bool statusCommand(uint64 sender, const std::string& message, std::string a, int i)
+{
+	sendCommand(sender, "It works \\o/ : %s, %d", a.c_str(), i);
+	return true;
 }
 
 static void handleCommand(uint64 sender, const std::string &message)
@@ -539,24 +632,24 @@ void ts3plugin_setFunctionPointers(const struct TS3Functions funcs)
 int ts3plugin_init()
 {
 	// Register commands
-#define ADD_STRING_COMMAND(name, function) commands.push_back(\
-	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<>(name, function)))
+#define ADD_STRING_COMMAND(name, function, help) commands.push_back(\
+	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<>(name, help, function)))
 	// Add simple commands
-	ADD_STRING_COMMAND("help",    helpCommand);
-	ADD_STRING_COMMAND("ping",    pingCommand);
-	ADD_STRING_COMMAND("exit",    exitCommand);
+	ADD_STRING_COMMAND("help",	helpCommand, "Gives you this handy command list");
+	ADD_STRING_COMMAND("ping",	pingCommand, "Returns with a pong if the Bob is alive");
+	ADD_STRING_COMMAND("exit",	exitCommand, "Let the Bob go home");
 #undef ADD_STRING_COMMAND
-#define ADD_STRING_COMMAND(name, function, args) commands.push_back(\
-	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<args>(name, function)))
+#define ADD_STRING_COMMAND(name, function, args, help) commands.push_back(\
+	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<args>(name, help, function)))
 	// Add commands with arguments
-	commands.push_back(std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<bool>("audio", audioCommand)));
-	//ADD_STRING_COMMAND("audio",   audioCommand, bool);
+	ADD_STRING_COMMAND("audio",   audioCommand, bool, "");
+	commands.push_back(std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<std::string, int>("status", "", statusCommand, true)));
 #undef ADD_STRING_COMMAND
-#define ADD_STRING_COMMAND(name, function) commands.push_back(\
-	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<>(name, function, true)))
+#define ADD_STRING_COMMAND(name, function, help) commands.push_back(\
+	std::unique_ptr<AbstractCommandExecutor>(new StringCommandExecutor<>(name, help, function, true)))
 	// Ignore more arguments for the following commands
-	ADD_STRING_COMMAND("error",   loopCommand);
-	ADD_STRING_COMMAND("unknown", loopCommand);
+	ADD_STRING_COMMAND("error",   loopCommand, "");
+	ADD_STRING_COMMAND("unknown", loopCommand, "");
 #undef ADD_STRING_COMMAND
 
 	/*commands.emplace("help", helpCommand);
