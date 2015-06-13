@@ -134,11 +134,13 @@ namespace TS3AudioBot
 				WhisperChannelSubscribe(4);
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 			}
+			if (IsTimingOut)
+				cancellationTokenSource.Cancel();
 		}
 
 		public void Stop()
 		{
-			Log.Write(Log.Level.Info, "Stopping Bob");
+			Log.Write(Log.Level.Info, "BC Stopping Bob");
 			SendMessage("exit");
 			IsRunning = false;
 			whisperChannel.Clear();
@@ -175,8 +177,6 @@ namespace TS3AudioBot
 				IsRunning = true;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
 				await SendQueue();
-				if (IsTimingOut)
-					cancellationTokenSource.Cancel();
 			}
 		}
 

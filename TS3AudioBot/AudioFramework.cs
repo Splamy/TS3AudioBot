@@ -105,22 +105,25 @@ namespace TS3AudioBot
 			try
 			{
 				Log.Write(Log.Level.Debug, "AF Wait for start");
-				int timeoutcnt = TIMEOUT_MS / TIMEOUT_INTERVAL_MS;
-				while (!playerConnection.IsPlaying() && timeoutcnt-- > 0)
+				int timeoutmax = TIMEOUT_MS / TIMEOUT_INTERVAL_MS;
+				int timeoutcur = timeoutmax;
+
+				while (timeoutcur-- > 0 && currentRessource != null && !ressourceEndToken.IsCancellationRequested)
 				{
-					Task.Delay(TIMEOUT_INTERVAL_MS, ressourceEndToken).Wait();
+					if (playerConnection.IsPlaying())
+					{
+						timeoutcur = timeoutmax;
+						Task.Delay(TIMEOUT_MS, ressourceEndToken).Wait();
+					}
+					else
+					{
+						Task.Delay(TIMEOUT_INTERVAL_MS, ressourceEndToken).Wait();
+						Log.Write(Log.Level.Debug, "AF Timeout running: {0}/{1}", timeoutcur, timeoutmax);
+					}
 				}
-				Log.Write(Log.Level.Debug, "AF Timeout or start (IsPlaying:{0})", playerConnection.IsPlaying());
-				if (timeoutcnt > 0 && currentRessource != null && !ressourceEndToken.IsCancellationRequested)
-				{
-					int waitTime = Math.Max(playerConnection.GetLength() - 2, 0);
-					Log.Write(Log.Level.Debug, "AF Waiting for end ({0})", waitTime);
-					Task.Delay(waitTime, ressourceEndToken).Wait();
-					while (currentRessource != null && playerConnection.IsPlaying() && !ressourceEndToken.IsCancellationRequested)
-						Task.Delay(1000, ressourceEndToken).Wait();
-					if (!ressourceEndToken.IsCancellationRequested)
-						Stop();
-				}
+				Log.Write(Log.Level.Debug, "AF Timeout or stopped (IsPlaying:{0})", timeoutcur);
+				if (!ressourceEndToken.IsCancellationRequested)
+					Stop();
 			}
 			catch (TaskCanceledException) { }
 			catch (AggregateException) { }
@@ -138,6 +141,8 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Debug, "AF stop old");
 			Stop();
+
+			playerConnection.AudioClear();
 
 			if (audioRessource.Volume == -1)
 				audioRessource.Volume = audioFrameworkData.defaultVolume;
