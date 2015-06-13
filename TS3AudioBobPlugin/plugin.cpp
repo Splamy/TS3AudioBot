@@ -140,7 +140,7 @@ private:
 		// Read booleans as true/false
 		input >> std::boolalpha >> p;
 		// Bind this parameter
-		std::function<bool(Params...)> f2 = myBind(f, p, IntSequenceCreator<sizeof...(Params)>{});
+		std::function<bool(Params...)> f2 = myBind(f, p, IntSequenceCreator<sizeof...(Params)>());
 		int pos;
 		// Test if it was successful
 		if(input.eof())
@@ -150,31 +150,17 @@ private:
 		else
 			pos = input.tellg();
 		// Drop the already read part of the message
-		return input && execute(sender, pos == -1 ? "" : msg.substr(pos), f2, IntSequenceCreator<sizeof...(Params)>{});
-	}
-
-	template<int... Is>
-	std::function<bool(Args...)> bind(uint64 sender, const std::string &message, IntSequence<Is...>)
-	{
-		// Custom bind function for the first two arguments because it is relatively easy
-		// and I wasn't able to use myBind
-		return std::bind(fun, sender, message, Placeholder<Is>{}...);
+		return input && execute(sender, pos == -1 ? "" : msg.substr(pos), f2, IntSequenceCreator<sizeof...(Params)>());
 	}
 
 public:
 	bool operator()(uint64 sender, const std::string &message) override
 	{
 		// Bind sender
-		//std::function<bool(const std::string&)> f1 = myBind(fun, sender, IntSequence<0>{});
-		std::function<bool(const std::string&, Args...)> f1 = myBind(fun, sender, IntSequenceCreator<sizeof...(Args) + 1>{});
-		//std::function<bool(const std::string&, Args...)> f1 = std::bind(fun, sender, Placeholder<0>{});
+		std::function<bool(const std::string&, Args...)> f1 = myBind(fun, sender, IntSequenceCreator<sizeof...(Args) + 1>());
 		// Bind message
-		std::function<bool(Args...)> f = myBind(f1, message, IntSequenceCreator<sizeof...(Args)>{});
-		//std::function<bool()> f = myBind(f1, message, IntSequence<>{});
-		//std::function<bool()> f = std::bind(f1, message);
-		// FIXME Unfortunately I can't get this to work, something is probably wrong with the second call...
-		//std::function<bool(Args...)> f = bind(sender, message, IntSequenceCreator<sizeof...(Args)>{});
-		return execute(sender, message, f, IntSequenceCreator<sizeof...(Args)>{});
+		std::function<bool(Args...)> f = myBind(f1, message, IntSequenceCreator<sizeof...(Args)>());
+		return execute(sender, message, f, IntSequenceCreator<sizeof...(Args)>());
 	}
 };
 
@@ -262,7 +248,7 @@ static bool isSpace(char c)
 template<class R, class... Args, class P, class P2, int... Is>
 static std::function<R(Args...)> myBind(const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>)
 {
-	return std::bind(fun, p, Placeholder<Is>{}...);
+	return std::bind(fun, p, Placeholder<Is>()...);
 }
 
 // Only print ascii chars and no control characters (maybe there can be problems
