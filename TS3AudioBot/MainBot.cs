@@ -33,7 +33,7 @@ namespace TS3AudioBot
 		bool silent;
 		bool noLog;
 		MainBotData mainBotData;
-		Dictionary<string, BotCommand> commandDict;
+		Trie<BotCommand> commandDict;
 
 		AudioFramework audioFramework;
 		BobController bobController;
@@ -47,7 +47,7 @@ namespace TS3AudioBot
 			noInput = false;
 			silent = false;
 			noLog = false;
-			commandDict = new Dictionary<string, BotCommand>();
+			commandDict = new Trie<BotCommand>();
 		}
 
 		public bool ReadParameter(string[] args)
@@ -122,24 +122,16 @@ namespace TS3AudioBot
 
 		public void InitializeCommands()
 		{
-			BotCommand tmp;
-
 			commandDict.Add("add", new BotCommand(CommandRights.Private, CommandAdd));
 			commandDict.Add("clear", new BotCommand(CommandRights.Admin, CommandClear));
 			commandDict.Add("help", new BotCommand(CommandRights.AnyVisibility, CommandHelp));
 			commandDict.Add("history", new BotCommand(CommandRights.Private, CommandHistory));
 			commandDict.Add("kickme", new BotCommand(CommandRights.AnyVisibility, CommandKickme));
-			tmp = new BotCommand(CommandRights.Private, CommandLink);
-			commandDict.Add("link", tmp);
-			commandDict.Add("l", tmp);
-			tmp = null;
+			commandDict.Add("link", new BotCommand(CommandRights.Private, CommandLink));
 			commandDict.Add("loop", new BotCommand(CommandRights.Private, CommandLoop));
 			commandDict.Add("next", new BotCommand(CommandRights.Private, CommandNext));
 			commandDict.Add("pm", new BotCommand(CommandRights.Public, CommandPM));
-			tmp = new BotCommand(CommandRights.Private, CommandPlay);
-			commandDict.Add("play", tmp);
-			commandDict.Add("p", tmp);
-			tmp = null;
+			commandDict.Add("play", new BotCommand(CommandRights.Private, CommandPlay));
 			commandDict.Add("prev", new BotCommand(CommandRights.Private, CommandPrev));
 			commandDict.Add("quit", new BotCommand(CommandRights.Admin, CommandQuit));
 			commandDict.Add("repeat", new BotCommand(CommandRights.Private, CommandRepeat));
@@ -147,10 +139,8 @@ namespace TS3AudioBot
 			commandDict.Add("stop", new BotCommand(CommandRights.Private, CommandStop));
 			commandDict.Add("test", new BotCommand(CommandRights.Private, CommandTest));
 			commandDict.Add("volume", new BotCommand(CommandRights.AnyVisibility, CommandVolume));
-			tmp = new BotCommand(CommandRights.Private, CommandYoutube);
-			commandDict.Add("youtube", tmp);
-			commandDict.Add("yt", tmp);
-			tmp = null;
+			commandDict.Add("youtube", new BotCommand(CommandRights.Private, CommandYoutube));
+			Log.Write(Log.Level.Debug, commandDict.ToString());
 		}
 
 		public void Run()
@@ -431,6 +421,10 @@ namespace TS3AudioBot
 				session.Write("Please use as private, admins too!");
 				return;
 			}
+			else
+			{
+				ps.Write("Good boy!");
+			}
 			await queryConnection.GetClientServerGroups(ps.client);
 		}
 
@@ -577,9 +571,10 @@ namespace TS3AudioBot
 		public Action<BotSession> CommandN { get; private set; }
 		public Action<BotSession, string> CommandS { get; private set; }
 		public Action<BotSession, TextMessage> CommandTM { get; private set; }
-		public CommandParameter CommandParameter { get; private set; }
 
+		public CommandParameter CommandParameter { get; private set; }
 		public CommandRights CommandRights { get; private set; }
+		public string Description { get; private set; }
 
 		private BotCommand(CommandRights commandRights)
 		{

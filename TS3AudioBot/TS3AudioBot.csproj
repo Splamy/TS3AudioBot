@@ -105,6 +105,7 @@
     <Compile Include="QueryConnection.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="TextUtil.cs" />
+    <Compile Include="Trie.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="VLCConnection.cs" />
     <Compile Include="YoutubeFramework.cs" />

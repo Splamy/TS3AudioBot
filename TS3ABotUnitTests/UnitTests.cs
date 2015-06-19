@@ -1,8 +1,9 @@
-﻿using System;
-using LockCheck;
-using NUnit.Framework;
+﻿using LockCheck;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using NUnit.Framework;
+using System;
+using TS3AudioBot;
 
 namespace TS3ABotUnitTests
 {
@@ -52,6 +53,14 @@ namespace TS3ABotUnitTests
 						return null;
 					}));
 			Assert.IsNull(firstresult, "Task.Result must not be used!");
+		}
+
+		[Test]
+		public void TrieStructureTests()
+		{
+			Trie<string> trie = new Trie<string>();
+			trie.Add("hans", "val1");
+			Assert.True(trie.ToString() == "+(h*(a*(n*(s[val]))))")
 		}
 	}
 }
