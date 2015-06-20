@@ -43,7 +43,7 @@ namespace TS3ABotUnitTests
 							if (typRefCalled == null)
 								continue;
 
-							// if its not a monitor we dont want it
+							// if its not a task we dont want it
 							if (!typRefCalled.FullName.StartsWith("System.Threading.Tasks.Task`1"))
 								continue;
 
@@ -59,8 +59,19 @@ namespace TS3ABotUnitTests
 		public void TrieStructureTests()
 		{
 			Trie<string> trie = new Trie<string>();
-			trie.Add("hans", "val1");
-			Assert.True(trie.ToString() == "+(h*(a*(n*(s[val]))))")
+			string[] values = new string[] { "val1", "val2", "val3", "val4", "val5" };
+			int adix = 0;
+
+			trie.Add("hans", values[adix++]);
+			Assert.AreEqual(string.Format("+(h*(a*(n*(s[{0}]))))", values), trie.ToString());
+			trie.Add("hani", values[adix++]);
+			Assert.AreEqual(string.Format("+(h(a(n(i[{1}]s[{0}]))))", values), trie.ToString());
+			trie.Add("hana", values[adix++]);
+			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}]))))", values), trie.ToString());
+			trie.Add("hansolo", values[adix++]);
+			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}](o*(l*(o[{3}])))))))", values), trie.ToString());
+			trie.Add("hansololo", values[adix++]);
+			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}](o(l(o[{3}](l*(o[{4}])))))))))", values), trie.ToString());
 		}
 	}
 }

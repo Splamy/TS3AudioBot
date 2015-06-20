@@ -7,7 +7,8 @@ namespace TS3AudioBot
 {
 	class AudioFramework : IDisposable
 	{
-		public const int MAXVOLUME = 200;
+		public const int MAXUSERVOLUME = 200;
+		public const int MAXVOLUME = 512;
 		private const int TIMEOUT_MS = 30000;
 		private const int TIMEOUT_INTERVAL_MS = 100;
 
@@ -118,7 +119,6 @@ namespace TS3AudioBot
 					else
 					{
 						Task.Delay(TIMEOUT_INTERVAL_MS, ressourceEndToken).Wait();
-						Log.Write(Log.Level.Debug, "AF Timeout running: {0}/{1}", timeoutcur, timeoutmax);
 					}
 				}
 				Log.Write(Log.Level.Debug, "AF Timeout or stopped (IsPlaying:{0})", timeoutcur);

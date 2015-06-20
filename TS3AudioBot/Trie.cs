@@ -14,6 +14,7 @@ namespace TS3AudioBot
 		public Trie()
 		{
 			root = new TrieNode(null, '+', null);
+			root.unique = false;
 		}
 
 		public void Add(string key, T value)
@@ -28,7 +29,8 @@ namespace TS3AudioBot
 				}
 				else
 				{
-					current.data = null;
+					if (!current.hasData)
+						current.data = null;
 					current.unique = false;
 				}
 				TrieNode child = current.children[index];

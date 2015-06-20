@@ -140,7 +140,6 @@ namespace TS3AudioBot
 			commandDict.Add("test", new BotCommand(CommandRights.Private, CommandTest));
 			commandDict.Add("volume", new BotCommand(CommandRights.AnyVisibility, CommandVolume));
 			commandDict.Add("youtube", new BotCommand(CommandRights.Private, CommandYoutube));
-			Log.Write(Log.Level.Debug, commandDict.ToString());
 		}
 
 		public void Run()
@@ -192,12 +191,14 @@ namespace TS3AudioBot
 
 			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
 
+			var isAdmin = new AsyncLazy<bool>(() => HasInvokerAdminRights(textMessage));
+
 			// check if the user has an open request
 			if (session.responseProcessor != null)
 			{
-				if (session.responseProcessor(session, textMessage))
+				if (session.responseProcessor(session, textMessage, session.adminResponse ? await isAdmin.Value : false))
 				{
-					session.SetResponse(null, null);
+					session.ClearResponse();
 					return;
 				}
 			}
@@ -231,7 +232,7 @@ namespace TS3AudioBot
 				allowed = true;
 				break;
 			}
-			if (!allowed && !await HasInvokerAdminRights(textMessage))
+			if (!allowed && !await isAdmin.Value)
 			{
 				session.Write(reason);
 				return;
@@ -262,6 +263,7 @@ namespace TS3AudioBot
 
 		private async Task<bool> HasInvokerAdminRights(TextMessage textMessage)
 		{
+			Log.Write(Log.Level.Debug, "AdminCheck called!");
 			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
 			if (client == null)
 				return false;
@@ -431,10 +433,22 @@ namespace TS3AudioBot
 		private void CommandVolume(BotSession session, string parameter)
 		{
 			int volume;
-			if (int.TryParse(parameter, out volume) && (volume >= 0 && volume <= AudioFramework.MAXVOLUME))
-				audioFramework.Volume = volume;
-			else
-				session.Write("The parameter is not valid. Usage !volume <int>(0-200)");
+			if (int.TryParse(parameter, out volume) && volume >= 0)
+			{
+				if (volume <= AudioFramework.MAXUSERVOLUME)
+				{
+					audioFramework.Volume = volume;
+					return;
+				}
+				else if (volume <= AudioFramework.MAXVOLUME)
+				{
+					session.Write("Careful you are requesting a very high volume! Do you want to apply this? !(y|n)");
+					session.SetResponse(ResponseVolume, volume, true);
+					return;
+				}
+			}
+
+			session.Write("The parameter is not valid. Usage !volume <int>(0-200)");
 		}
 
 		private void CommandYoutube(BotSession session, string parameter)
@@ -507,10 +521,10 @@ namespace TS3AudioBot
 			}
 			session.Write(strb.ToString());
 			session.userRessource = youtubeRessource;
-			session.SetResponse(ResponseYoutube, null);
+			session.SetResponse(ResponseYoutube, null, false);
 		}
 
-		private bool ResponseYoutube(BotSession session, TextMessage tm)
+		private bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
 		{
 			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			if (command[0] != "!f")
@@ -533,6 +547,32 @@ namespace TS3AudioBot
 					session.Write("The youtube stream could not be played...");
 			}
 			return true;
+		}
+
+		private bool ResponseVolume(BotSession session, TextMessage tm, bool isAdmin)
+		{
+			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			if (command[0] == "!y" || command[0] == "!n")
+			{
+				if (isAdmin)
+				{
+					if (!(session.responseData is int))
+					{
+						Log.Write(Log.Level.Error, "responseData is not an int.");
+						return true;
+					}
+					if (command[0] == "!y")
+					{
+						audioFramework.Volume = (int)session.responseData;
+					}
+				}
+				else
+				{
+					session.Write("Command can only be answered by an admin.");
+				}
+				return true;
+			}
+			return false;
 		}
 
 		public void Dispose()

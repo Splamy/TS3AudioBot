@@ -8,6 +8,8 @@ using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
+using Response = System.Func<TS3AudioBot.BotSession, TeamSpeak3QueryApi.Net.Specialized.Notifications.TextMessage, bool, bool>;
+
 namespace TS3AudioBot
 {
 	abstract class BotSession
@@ -15,7 +17,8 @@ namespace TS3AudioBot
 		protected QueryConnection queryConnection;
 
 		public AudioRessource userRessource { get; set; }
-		public Func<BotSession, TextMessage, bool> responseProcessor { get; protected set; }
+		public Response responseProcessor { get; protected set; }
+		public bool adminResponse { get; protected set; }
 		public object responseData { get; protected set; }
 
 		public abstract bool IsPrivate { get; }
@@ -30,10 +33,18 @@ namespace TS3AudioBot
 			responseData = null;
 		}
 
-		public void SetResponse(Func<BotSession, TextMessage, bool> responseProcessor, object responseData)
+		public void SetResponse(Response responseProcessor, object responseData, bool requiresAdminCheck)
 		{
 			this.responseProcessor = responseProcessor;
 			this.responseData = responseData;
+			this.adminResponse = requiresAdminCheck;
+		}
+
+		public void ClearResponse()
+		{
+			responseProcessor = null;
+			responseData = null;
+			adminResponse = false;
 		}
 	}
 
