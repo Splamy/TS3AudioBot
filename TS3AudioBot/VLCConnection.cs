@@ -295,6 +295,7 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
+			Log.Write(Log.Level.Info, "Closing VLC...");
 			if (streamRead != null)
 			{
 				streamRead.Dispose();

@@ -51,12 +51,11 @@ namespace TS3AudioBot
 			foreach (char c in key)
 			{
 				int index = ValidateChar(c);
-				if (current.children == null)
+				if (current.children == null || (current = current.children[index]) == null)
 				{
 					value = null;
 					return false;
 				}
-				current = current.children[index];
 				if (current.unique) break;
 			}
 			value = current.data;
