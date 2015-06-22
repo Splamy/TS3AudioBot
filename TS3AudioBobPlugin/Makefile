@@ -1,4 +1,4 @@
-CXXFLAGS = -std=c++0x -fPIC -fvisibility=hidden -Wall -Wextra -Wfatal-errors -Wno-format-security -g -Iinclude -I.
+CXXFLAGS = -std=c++0x -fPIC -fvisibility=hidden -Wall -Wextra -Wfatal-errors -Wno-format-security -Wno-missing-braces -g -Iinclude -I.
 
 objects = Plugin.o ServerBob.o Utils.o Command.o ServerConnection.o
 

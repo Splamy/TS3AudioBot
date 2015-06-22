@@ -2,6 +2,7 @@
 #define UTILS_HPP
 
 #include <functional>
+#include <string>
 #include <vector>
 
 namespace Utils

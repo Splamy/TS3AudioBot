@@ -2,11 +2,21 @@
 
 #include <public_errors.h>
 
-ServerConnection::ServerConnection(std::shared_ptr<ServerBob> bob, uint64 handlerID,
+ServerConnection::ServerConnection(ServerBob *bob, uint64 handlerID,
 	CodecType channelCodec, int channelQuality, bool hasGoodQuality) :
 	handlerID(handlerID), channelCodec(channelCodec), channelQuality(channelQuality),
 	hasGoodQuality(hasGoodQuality), bob(bob)
 {
+	// Query connected clients
+	// TODO Get database id
+	//handleTsError(ts3Functions.requestClientDBIDfromUID(scHandlerID, fromUniqueIdentifier, NULL));
+	// Get assigned server groups
+	//handleTsError(ts3Functions.requestServerGroupsByClientID(scHandlerID, clientID, NULL));
+}
+
+uint64 ServerConnection::getHandlerID()
+{
+	return handlerID;
 }
 
 bool ServerConnection::handleTsError(unsigned int error)

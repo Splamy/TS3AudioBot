@@ -17,14 +17,15 @@ private:
 	int channelQuality;
 	bool hasGoodQuality;
 	std::vector<anyID> admins;
-	std::shared_ptr<ServerBob> bob;
+	ServerBob *bob;
 	std::vector<uint64> whisperChannels;
 	std::vector<anyID> whisperUsers;
 
 public:
-	ServerConnection(std::shared_ptr<ServerBob> bob, uint64 handlerID, CodecType channelCodec = CODEC_OPUS_VOICE,
+	ServerConnection(ServerBob *bob, uint64 handlerID, CodecType channelCodec = CODEC_OPUS_VOICE,
 		int channelQuality = 7, bool hasGoodQuality = false);
 
+	uint64 getHandlerID();
 	bool handleTsError(unsigned int error);
 	bool shouldWhisper();
 	void setAudio(bool on);
@@ -32,7 +33,7 @@ public:
 	void close(const std::string &quitMessage);
 
 	template<class... Args>
-	void sendCommand(uint64 userID, const std::string &message, Args... args)
+	void sendCommand(anyID userID, const std::string &message, Args... args)
 	{
 		handleTsError(bob->functions.requestSendPrivateTextMsg(handlerID,
 			Utils::format(message, args...).c_str(), userID, NULL));

@@ -7,6 +7,7 @@
 #include <public_definitions.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -18,7 +19,7 @@ struct CommandResult
 	bool success;
 	std::shared_ptr<std::string> errorMessage;
 
-	CommandResult(bool success = true, std::shared_ptr<std::string> errorMessage = NULL) :
+	CommandResult(bool success = true, std::shared_ptr<std::string> errorMessage = std::shared_ptr<std::string>()) :
 		success(success),
 		errorMessage(errorMessage)
 	{
@@ -29,7 +30,7 @@ class AbstractCommandExecutor
 {
 public:
 	// Returns if the command was handled
-	virtual CommandResult operator()(ServerConnection *connection, uint64 sender, const std::string &message) = 0;
+	virtual CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) = 0;
 	virtual std::string getHelp() const = 0;
 };
 
@@ -37,7 +38,7 @@ template<class... Args>
 class CommandExecutor : public AbstractCommandExecutor
 {
 public:
-	typedef std::function<CommandResult(ServerConnection *connection, uint64 sender, const std::string &message, Args...)> FuncType;
+	typedef std::function<CommandResult(ServerConnection *connection, anyID sender, const std::string &message, Args...)> FuncType;
 
 private:
 	/** The function that should be invoked by this command. */
@@ -50,6 +51,55 @@ public:
 		fun(fun),
 		ignoreMore(ignoreMore)
 	{
+	}
+
+protected:
+	/** Extracts an argument from a string and returns the parsed argument
+	 *  and the leftover string.
+	 *  If the parsing failed, the resulting message is undefined.
+	 *
+	 *  @return If the parsing was successful.
+	 */
+	template<class T>
+	bool parseArgument(std::string &message, T *result)
+	{
+		// Default conversion with a string stream
+		std::istringstream input(message);
+		input >> *result;
+		if(input.eof())
+			message.clear();
+		else if(!input)
+			return false;
+		else
+			message.erase(message.begin(), message.begin() + input.tellg());
+		return true;
+	}
+
+	/** A specialisation for bool to allow more, better values. */
+	bool parseArgument(std::string &message, bool *result)
+	{
+		// Default conversion with a string stream
+		std::istringstream input(message);
+		std::string str;
+		input >> str;
+		if(input.eof())
+			message.clear();
+		else if(!input)
+			return false;
+		else
+			message.erase(message.begin(), message.begin() + input.tellg());
+		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+		// Possible true and false values
+		const static std::array<std::string, 3> yes = { "on", "true", "yes" };
+		const static std::array<std::string, 3> no = { "off", "false", "no" };
+		if(std::find(yes.cbegin(), yes.cend(), message))
+			*result = true;
+		else if(std::find(no.cbegin(), no.cend(), message))
+			*result = false;
+		else
+			// Value not found
+			return false;
+		return true;
 	}
 
 private:
@@ -69,31 +119,20 @@ private:
 	CommandResult execute(std::string message,
 		std::function<CommandResult(P p, Params... params)> f, Utils::IntSequence<Is...>)
 	{
-		const std::string msg = Utils::strip(message, true, false);
+		std::string msg = Utils::strip(message, true, false);
 		P p;
-		std::istringstream input(msg);
-		// Read booleans as true/false
-		input >> std::boolalpha >> p;
+		if(!parseArgument(msg, &p))
+			return CommandResult(false, std::shared_ptr<std::string>(new std::string("error wrong parameter type")));
 		// Bind this parameter
 		std::function<CommandResult(Params...)> f2 = myBind(f, p, Utils::IntSequenceCreator<sizeof...(Params)>());
-		int pos;
-		// Test if it was successful
-		if(input.eof())
-			pos = -1;
-		else if(!input)
-			return CommandResult(false, std::shared_ptr<std::string>(new std::string("error wrong parameter type")));
-		else
-			pos = input.tellg();
-		// Drop the already read part of the message
-		return input && execute(pos == -1 ? "" : msg.substr(pos), f2,
-			Utils::IntSequenceCreator<sizeof...(Params)>());
+		return execute(msg, f2, Utils::IntSequenceCreator<sizeof...(Params)>());
 	}
 
 public:
-	CommandResult operator()(ServerConnection *connection, uint64 sender, const std::string &message) override
+	CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) override
 	{
 		// Bind connection
-		std::function<CommandResult(uint64, const std::string&, Args...)> f1 = myBind(fun, connection,
+		std::function<CommandResult(anyID, const std::string&, Args...)> f1 = myBind(fun, connection,
 			Utils::IntSequenceCreator<sizeof...(Args) + 2>());
 		// Bind sender
 		std::function<CommandResult(const std::string&, Args...)> f2 = myBind(f1, sender,
@@ -123,7 +162,7 @@ public:
 	{
 	}
 
-	CommandResult operator()(ServerConnection *connection, uint64 sender, const std::string &message) override
+	CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) override
 	{
 		const std::string msg = Utils::strip(message);
 		std::string::const_iterator pos = std::find_if(msg.begin(), msg.end(), Utils::isSpace);
