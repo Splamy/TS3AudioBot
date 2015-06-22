@@ -26,7 +26,7 @@ private:
 	bool qualityOn;
 
 public:
-	ServerBob();
+	ServerBob(TS3Functions &functions);
 
 	void addServer(uint64 handlerID);
 	void removeServer(uint64 handlerID);

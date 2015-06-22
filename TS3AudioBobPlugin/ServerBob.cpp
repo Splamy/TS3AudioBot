@@ -11,16 +11,17 @@ static const std::string FILENAME = "queryId";
 const std::vector<std::string> ServerBob::quitMessages =
 	{ "I'm outta here", "You're boring", "Have a nice day", "Bye" };
 
-ServerBob::ServerBob() :
+ServerBob::ServerBob(TS3Functions &functions) :
+	functions(functions),
 	audioOn(false)
 {
 	// Register commands
-	addCommand("help", &ServerBob::helpCommand, "help  Gives you this handy command list");
-	addCommand("ping", &ServerBob::pingCommand, "ping  Returns with a pong if the Bob is alive");
-	addCommand("exit", &ServerBob::exitCommand, "exit  Let the Bob go home");
+	addCommand("help", &ServerBob::helpCommand,      "help  Gives you this handy command list");
+	addCommand("ping", &ServerBob::pingCommand,      "ping  Returns with a pong if the Bob is alive");
+	addCommand("exit", &ServerBob::exitCommand,      "exit  Let the Bob go home");
 	addCommand("audio",   &ServerBob::audioCommand,  "audio [on|off]  Let the bob send or be silent");
-	addCommand("error",   &ServerBob::loopCommand,   "");
-	addCommand("unknown", &ServerBob::loopCommand,   "");
+	addCommand("error",   &ServerBob::loopCommand,   "", true);
+	addCommand("unknown", &ServerBob::loopCommand,   "", true);
 
 	// Get currently active connections
 	uint64 *handlerIDs;
@@ -90,15 +91,19 @@ void ServerBob::handleCommand(uint64 handlerID, anyID sender, const std::string 
 	// TODO Check if this message is from an authorized client
 	//Utils::log("Handling message %s", message.c_str());
 	CommandResult res;
+	bool printedMessage = false;
 	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
 	{
 		res = (**it)(&(*connection), sender, message);
 		if(res.success)
 			break;
 		else if (res.errorMessage)
+		{
+			printedMessage = true;
 			connection->sendCommand(sender, *res.errorMessage);
+		}
 	}
-	if(!res.success)
+	if(!res.success && !printedMessage)
 		unknownCommand(&(*connection), sender, message);
 }
 

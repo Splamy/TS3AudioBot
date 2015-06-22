@@ -2,12 +2,12 @@
 
 using namespace Utils;
 
-bool isSpace(char c)
+bool Utils::isSpace(char c)
 {
 	return std::isspace(c);
 }
 
-std::string strip(const std::string &input, bool left, bool right)
+std::string Utils::strip(const std::string &input, bool left, bool right)
 {
 	std::string::const_iterator start = input.begin();
 	std::string::const_iterator end = input.end();
@@ -23,7 +23,7 @@ std::string strip(const std::string &input, bool left, bool right)
 	return std::string(start, end + 1);
 }
 
-std::string& replace(std::string &input, const std::string &target, const std::string &replacement)
+std::string& Utils::replace(std::string &input, const std::string &target, const std::string &replacement)
 {
 	std::size_t pos;
 	while((pos = input.find(target)) != std::string::npos)
@@ -31,14 +31,14 @@ std::string& replace(std::string &input, const std::string &target, const std::s
 	return input;
 }
 
-bool startsWith(const std::string &string, const std::string &prefix)
+bool Utils::startsWith(const std::string &string, const std::string &prefix)
 {
 	return prefix.size() <= string.size() && std::equal(prefix.begin(), prefix.end(), string.begin());
 }
 
 // Only print ascii chars and no control characters (maybe there can be problems
 // with Remote Code Execution, that has to be verified)
-std::string onlyAscii(const std::string &input)
+std::string Utils::onlyAscii(const std::string &input)
 {
 	char *result = new char[input.size()];
 	int j = 0;

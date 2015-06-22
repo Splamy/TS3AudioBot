@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -72,6 +73,7 @@ protected:
 			return false;
 		else
 			message.erase(message.begin(), message.begin() + input.tellg());
+		Utils::log(":()");
 		return true;
 	}
 
@@ -92,13 +94,33 @@ protected:
 		// Possible true and false values
 		const static std::array<std::string, 3> yes = { "on", "true", "yes" };
 		const static std::array<std::string, 3> no = { "off", "false", "no" };
-		if(std::find(yes.cbegin(), yes.cend(), message))
-			*result = true;
-		else if(std::find(no.cbegin(), no.cend(), message))
-			*result = false;
-		else
-			// Value not found
-			return false;
+		Utils::log("Searching for '%s'", str.c_str());
+		bool found = false;
+		// std::find(yes.cbegin(), yes.cend(), str) != yes.cend()
+		for(std::array<std::string, 3>::const_iterator it = yes.cbegin(); it != yes.cend(); it++)
+		{
+			if(*it == str)
+			{
+				*result = true;
+				found = true;
+			} else
+				Utils::log("'%s' != '%s'", it->c_str(), str.c_str());
+		}
+		if(!found)
+		{
+			for(std::array<std::string, 3>::const_iterator it = no.cbegin(); it != no.cend(); it++)
+			{
+				if(*it == str)
+				{
+					*result = false;
+					found = true;
+				} else
+					Utils::log("'%s' != '%s'", it->c_str(), str.c_str());
+			}
+			if(!found)
+				// Value not found
+				return false;
+		}
 		return true;
 	}
 
@@ -123,6 +145,7 @@ private:
 		P p;
 		if(!parseArgument(msg, &p))
 			return CommandResult(false, std::shared_ptr<std::string>(new std::string("error wrong parameter type")));
+		
 		// Bind this parameter
 		std::function<CommandResult(Params...)> f2 = myBind(f, p, Utils::IntSequenceCreator<sizeof...(Params)>());
 		return execute(msg, f2, Utils::IntSequenceCreator<sizeof...(Params)>());

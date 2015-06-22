@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+static TS3Functions ts3Functions;
+
 // Activate this to allow control messages from everyone and not only from the
 // server query user (his ID is read from a file)
 //#define UNSECURE
@@ -59,14 +61,14 @@ const char* ts3plugin_description()
 // Set the callback function pointers
 void ts3plugin_setFunctionPointers(const struct TS3Functions funcs)
 {
-	serverBob->functions = funcs;
+	ts3Functions = funcs;
 }
 
 // Initialize the plugin
 // Return 0 on success or 1 if an error occurs
 int ts3plugin_init()
 {
-	serverBob.reset(new ServerBob());
+	serverBob.reset(new ServerBob(ts3Functions));
 	return 0;
 }
 
