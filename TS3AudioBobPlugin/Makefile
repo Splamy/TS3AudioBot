@@ -1,11 +1,11 @@
-CXXFLAGS = -std=c++0x -fPIC -Wall -Wextra -Wfatal-errors -Wno-format-security -g -Iinclude
+CXXFLAGS = -std=c++0x -fPIC -fvisibility=hidden -Wall -Wextra -Wfatal-errors -Wno-format-security -g -Iinclude -I.
 
-objects = plugin.o
+objects = Plugin.o ServerBob.o Utils.o Command.o ServerConnection.o
 
-all: plugin.so
+all: libts3audiobob.so
 
-plugin.so: plugin.o Makefile
-	$(CXX) -shared  $(objects) -o plugin.so
+libts3audiobob.so: $(objects) Makefile
+	$(CXX) -shared  $(objects) -o libts3audiobob.so
 
 %.o : %.cpp %.hpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
