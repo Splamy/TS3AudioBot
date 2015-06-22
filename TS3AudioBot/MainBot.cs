@@ -19,6 +19,15 @@ namespace TS3AudioBot
 		{
 			using (MainBot bot = new MainBot())
 			{
+				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+				{
+					var ex = e.ExceptionObject as Exception;
+					if (ex != null)
+						Log.Write(Log.Level.Error, "Critical program failure: {0}", ex);
+					if (bot != null)
+						bot.Dispose();
+				};
+
 				if (!bot.ReadParameter(args))
 				{
 					bot.InitializeBot();
@@ -415,7 +424,7 @@ namespace TS3AudioBot
 			audioFramework.Stop();
 		}
 
-		private async void CommandTest(BotSession session)
+		private void CommandTest(BotSession session)
 		{
 			PrivateSession ps = session as PrivateSession;
 			if (ps == null)
@@ -426,8 +435,8 @@ namespace TS3AudioBot
 			else
 			{
 				ps.Write("Good boy!");
+				//await queryConnection.GetClientServerGroups(ps.client);
 			}
-			await queryConnection.GetClientServerGroups(ps.client);
 		}
 
 		private void CommandVolume(BotSession session, string parameter)
