@@ -37,7 +37,8 @@ private:
 	template<class... Args>
 	void addCommand(const std::string &name, CommandResult (ServerBob::*fun)
 		(ServerConnection*, anyID, const std::string&, Args...),
-		const std::string &help, bool ignoreArguments = false);
+		const std::string &help, const std::string *commandString = NULL,
+		bool ignoreArguments = false, bool showHelp = true);
 
 	void setAudio(bool on);
 	void setQuality(bool on);
@@ -45,17 +46,17 @@ private:
 
 	// Commands
 	CommandResult unknownCommand       (ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult loopCommand          (ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult audioCommand         (ServerConnection *connection, anyID sender, const std::string &message, bool on);
-	CommandResult qualityCommand       (ServerConnection *connection, anyID sender, const std::string &message, bool on);
-	CommandResult whisperClientCommand (ServerConnection *connection, anyID sender, const std::string &message, std::string client);
-	CommandResult whisperChannelCommand(ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult whisperClearCommand  (ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult statusAudioCommand   (ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult statusWhisperCommand (ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult helpCommand          (ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult pingCommand          (ServerConnection *connection, anyID sender, const std::string &message);
-	CommandResult exitCommand          (ServerConnection *connection, anyID sender, const std::string &message);
+	CommandResult loopCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult audioCommand         (ServerConnection *connection, anyID sender, const std::string &message, std::string command, bool on);
+	CommandResult qualityCommand       (ServerConnection *connection, anyID sender, const std::string &message, std::string command, bool on);
+	CommandResult whisperClientCommand (ServerConnection *connection, anyID sender, const std::string &message, std::string command, std::string client);
+	CommandResult whisperChannelCommand(ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult whisperClearCommand  (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult statusAudioCommand   (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult statusWhisperCommand (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult helpCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult pingCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult exitCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
 };
 
 #endif

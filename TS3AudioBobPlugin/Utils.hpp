@@ -55,7 +55,7 @@ namespace Utils
 	{
 		std::vector<char> buf(1 + std::snprintf(NULL, 0, format.c_str(), args...));
 		std::snprintf(buf.data(), buf.size(), format.c_str(), args...);
-		return std::string(buf.cbegin(), buf.cend());
+		return std::string(buf.cbegin(), buf.cend() - 1);
 	}
 
 	// max is not contained in the result range

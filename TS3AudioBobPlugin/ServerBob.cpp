@@ -4,6 +4,7 @@
 #include <Utils.hpp>
 
 #include <public_errors.h>
+#include <sstream>
 #include <stdexcept>
 
 static const std::string FILENAME = "queryId";
@@ -16,12 +17,13 @@ ServerBob::ServerBob(TS3Functions &functions) :
 	audioOn(false)
 {
 	// Register commands
-	addCommand("help", &ServerBob::helpCommand,      "help  Gives you this handy command list");
-	addCommand("ping", &ServerBob::pingCommand,      "ping  Returns with a pong if the Bob is alive");
-	addCommand("exit", &ServerBob::exitCommand,      "exit  Let the Bob go home");
-	addCommand("audio",   &ServerBob::audioCommand,  "audio [on|off]  Let the bob send or be silent");
-	addCommand("error",   &ServerBob::loopCommand,   "", true);
-	addCommand("unknown", &ServerBob::loopCommand,   "", true);
+	addCommand("help", &ServerBob::helpCommand,      "Gives you this handy command list");
+	addCommand("ping", &ServerBob::pingCommand,      "Returns with a pong if the Bob is alive");
+	addCommand("exit", &ServerBob::exitCommand,      "Let the Bob go home");
+	std::string commandString = "audio [on|off]";
+	addCommand("audio",   &ServerBob::audioCommand,  "Let the bob send or be silent", &commandString);
+	addCommand("error",   &ServerBob::loopCommand,   "", NULL, true, false);
+	addCommand("unknown", &ServerBob::loopCommand,   "", NULL, true, false);
 
 	// Get currently active connections
 	uint64 *handlerIDs;
@@ -89,7 +91,6 @@ void ServerBob::handleCommand(uint64 handlerID, anyID sender, const std::string 
 	}
 
 	// TODO Check if this message is from an authorized client
-	//Utils::log("Handling message %s", message.c_str());
 	CommandResult res;
 	bool printedMessage = false;
 	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
@@ -111,14 +112,15 @@ template<class... Args>
 void ServerBob::addCommand(const std::string &name,
 	CommandResult (ServerBob::*fun)(ServerConnection*, anyID,
 	const std::string&, Args...),
-	const std::string &help, bool ignoreArguments)
+	const std::string &help, const std::string *commandString, bool ignoreArguments,
+	bool showHelp)
 {
 	commands.push_back(std::unique_ptr<AbstractCommandExecutor>(
 		new StringCommandExecutor<Args...>(name, help, myBind(
 		static_cast<std::function<CommandResult(ServerBob*, ServerConnection*,
 		anyID, const std::string&, Args...)> >(fun),
 		this, Utils::IntSequenceCreator<sizeof...(Args) + 3>()),
-		ignoreArguments)));
+		commandString, ignoreArguments, showHelp)));
 }
 
 
@@ -161,9 +163,11 @@ CommandResult ServerBob::unknownCommand(ServerConnection *connection, anyID send
 	return CommandResult(false, std::shared_ptr<std::string>(new std::string(formatted)));
 }
 
-CommandResult ServerBob::loopCommand(ServerConnection * /*connection*/, anyID /*sender*/, const std::string &message)
+CommandResult ServerBob::loopCommand(ServerConnection * /*connection*/, anyID /*sender*/, const std::string &message, std::string /*command*/)
 {
-	if(Utils::startsWith(message, "error unknown") || Utils::startsWith(message, "unknown command"))
+	std::string msg = message;
+	std::transform(msg.begin(), msg.end(), msg.begin(), ::tolower);
+	if(Utils::startsWith(msg, "error unknown") || Utils::startsWith(msg, "unknown command"))
 	{
 		Utils::log("Loop detected, have fun");
 		return CommandResult();
@@ -171,27 +175,49 @@ CommandResult ServerBob::loopCommand(ServerConnection * /*connection*/, anyID /*
 	return CommandResult(false);
 }
 
-CommandResult ServerBob::audioCommand(ServerConnection * /*connection*/, anyID /*sender*/, const std::string &/*message*/, bool on)
+CommandResult ServerBob::audioCommand(ServerConnection * /*connection*/, anyID /*sender*/, const std::string &/*message*/, std::string /*command*/, bool on)
 {
 	setAudio(on);
 	return CommandResult();
 }
 
-CommandResult ServerBob::qualityCommand(ServerConnection * /*connection*/, anyID /*sender*/, const std::string &/*message*/, bool on)
+CommandResult ServerBob::qualityCommand(ServerConnection * /*connection*/, anyID /*sender*/, const std::string &/*message*/, std::string /*command*/, bool on)
 {
 	setQuality(on);
 	return CommandResult();
 }
 
-CommandResult ServerBob::helpCommand(ServerConnection *connection, anyID sender, const std::string& /*message*/)
+CommandResult ServerBob::helpCommand(ServerConnection *connection, anyID sender, const std::string& /*message*/, std::string /*command*/)
 {
-	std::string result = "help";
+	std::ostringstream output;
+	output << "help";
+	std::size_t maxLength = 0;
 	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
 	{
-		result += "\n\t";
-		result += (*it)->getHelp();
+		if((*it)->getHelp() && (*it)->getCommandName())
+		{
+			std::size_t s = (*it)->getCommandName()->size();
+			if(s > maxLength)
+				maxLength = s;
+		}
 	}
-	connection->sendCommand(sender, result);
+	std::ostringstream fStream;
+	fStream << "\n%-" << maxLength << "s  %s";
+	const std::string format = fStream.str();
+	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
+	{
+		if((*it)->getHelp() && (*it)->getCommandName())
+		{
+			std::string s = Utils::format(format, (*it)->getCommandName()->c_str(), (*it)->getHelp()->c_str());
+			Utils::log(s);
+			Utils::log("Num: %d", s.back());
+			output << s;
+		}
+	}
+
+	Utils::log("All");
+	Utils::log(output.str());
+	connection->sendCommand(sender, output.str());
 	/*connection->sendCommand(sender, "help \n"
 		"\taudio   [on|off]\n"
 		"\tquality [on|off]\n"
@@ -204,13 +230,13 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, anyID sender,
 	return CommandResult();
 }
 
-CommandResult ServerBob::pingCommand(ServerConnection *connection, anyID sender, const std::string& /*message*/)
+CommandResult ServerBob::pingCommand(ServerConnection *connection, anyID sender, const std::string& /*message*/, std::string /*command*/)
 {
 	connection->sendCommand(sender, "pong");
 	return CommandResult();
 }
 
-CommandResult ServerBob::exitCommand(ServerConnection* /*connection*/, anyID /*sender*/, const std::string& /*message*/)
+CommandResult ServerBob::exitCommand(ServerConnection* /*connection*/, anyID /*sender*/, const std::string& /*message*/, std::string /*command*/)
 {
 	close();
 	return CommandResult();

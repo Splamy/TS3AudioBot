@@ -32,7 +32,8 @@ class AbstractCommandExecutor
 public:
 	// Returns if the command was handled
 	virtual CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) = 0;
-	virtual std::string getHelp() const = 0;
+	virtual std::shared_ptr<const std::string> getCommandName() const = 0;
+	virtual std::shared_ptr<const std::string> getHelp() const = 0;
 };
 
 template<class... Args>
@@ -73,7 +74,21 @@ protected:
 			return false;
 		else
 			message.erase(message.begin(), message.begin() + input.tellg());
-		Utils::log(":()");
+		return true;
+	}
+
+	/** A specialisation for std::string to strip 0 characters. */
+	bool parseArgument(std::string &message, std::string *result)
+	{
+		// Default conversion with a string stream
+		std::istringstream input(message);
+		input >> *result;
+		if(input.eof())
+			message.clear();
+		else if(!input)
+			return false;
+		else
+			message.erase(message.begin(), message.begin() + input.tellg());
 		return true;
 	}
 
@@ -81,46 +96,19 @@ protected:
 	bool parseArgument(std::string &message, bool *result)
 	{
 		// Default conversion with a string stream
-		std::istringstream input(message);
 		std::string str;
-		input >> str;
-		if(input.eof())
-			message.clear();
-		else if(!input)
+		if(!parseArgument(message, &str))
 			return false;
-		else
-			message.erase(message.begin(), message.begin() + input.tellg());
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 		// Possible true and false values
 		const static std::array<std::string, 3> yes = { "on", "true", "yes" };
 		const static std::array<std::string, 3> no = { "off", "false", "no" };
-		Utils::log("Searching for '%s'", str.c_str());
-		bool found = false;
-		// std::find(yes.cbegin(), yes.cend(), str) != yes.cend()
-		for(std::array<std::string, 3>::const_iterator it = yes.cbegin(); it != yes.cend(); it++)
-		{
-			if(*it == str)
-			{
-				*result = true;
-				found = true;
-			} else
-				Utils::log("'%s' != '%s'", it->c_str(), str.c_str());
-		}
-		if(!found)
-		{
-			for(std::array<std::string, 3>::const_iterator it = no.cbegin(); it != no.cend(); it++)
-			{
-				if(*it == str)
-				{
-					*result = false;
-					found = true;
-				} else
-					Utils::log("'%s' != '%s'", it->c_str(), str.c_str());
-			}
-			if(!found)
-				// Value not found
-				return false;
-		}
+		if(std::find(yes.cbegin(), yes.cend(), str) != yes.cend())
+			*result = true;
+		else if(std::find(no.cbegin(), no.cend(), str) != no.cend())
+			*result = false;
+		else
+			return false;
 		return true;
 	}
 
@@ -145,7 +133,7 @@ private:
 		P p;
 		if(!parseArgument(msg, &p))
 			return CommandResult(false, std::shared_ptr<std::string>(new std::string("error wrong parameter type")));
-		
+
 		// Bind this parameter
 		std::function<CommandResult(Params...)> f2 = myBind(f, p, Utils::IntSequenceCreator<sizeof...(Params)>());
 		return execute(msg, f2, Utils::IntSequenceCreator<sizeof...(Params)>());
@@ -175,13 +163,17 @@ public:
 private:
 	/** The string that identities this command in lowercase. */
 	const std::string command;
-	const std::string help;
+	const std::shared_ptr<const std::string> commandString;
+	const std::shared_ptr<const std::string> help;
 
 public:
 	StringCommandExecutor(const std::string &command, const std::string &help,
-		FuncType fun, bool ignore = false) : CommandExecutor<Args...>(fun, ignore),
+		FuncType fun, const std::string *commandString = NULL,
+		bool ignore = false, bool showHelp = true) : CommandExecutor<Args...>(fun, ignore),
 		command(command),
-		help(help)
+		commandString(showHelp ? (commandString ? new std::string(*commandString) :
+			new std::string(command)) : NULL),
+		help(showHelp ? new std::string(help) : NULL)
 	{
 	}
 
@@ -190,14 +182,18 @@ public:
 		const std::string msg = Utils::strip(message);
 		std::string::const_iterator pos = std::find_if(msg.begin(), msg.end(), Utils::isSpace);
 		std::string cmd = Utils::strip(pos == msg.end() ? msg : std::string(msg.begin(), pos));
-		const std::string args = pos == msg.end() ? "" : Utils::strip(std::string(pos, msg.end()));
 		std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
 		if(cmd != command)
 			return CommandResult(false);
-		return CommandExecutor<Args...>::operator()(connection, sender, args);
+		return CommandExecutor<Args...>::operator()(connection, sender, message);
 	}
 
-	std::string getHelp() const override
+	std::shared_ptr<const std::string> getCommandName() const override
+	{
+		return commandString;
+	}
+
+	std::shared_ptr<const std::string> getHelp() const override
 	{
 		return help;
 	}

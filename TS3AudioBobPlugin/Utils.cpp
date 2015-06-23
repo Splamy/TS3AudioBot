@@ -17,7 +17,9 @@ std::string Utils::strip(const std::string &input, bool left, bool right)
 			start++;
 	}
 	if(right)
-		while(end > start && std::isspace(*--end));
+		while(end > start && std::isspace(*(--end)));
+	else
+		end--;
 	if(start == end)
 		return "";
 	return std::string(start, end + 1);

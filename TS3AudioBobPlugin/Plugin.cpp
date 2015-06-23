@@ -116,7 +116,10 @@ int ts3plugin_onTextMessageEvent(uint64 scHandlerID, anyID targetMode, anyID /*t
 	if(fromID != myID)
 	{
 		if(targetMode == TextMessageTarget_CLIENT)
-			serverBob->handleCommand(scHandlerID, fromID, message);
+		{
+			std::string msg(message);
+			serverBob->handleCommand(scHandlerID, fromID, msg);
+		}
 	}
 
 	return 0;
