@@ -78,12 +78,12 @@ namespace TS3AudioBot
 
 			if (!silent)
 			{
-				Log.OnLog += (o, e) => { Console.WriteLine(e.InfoMessage); };
+				Log.OnLog += (o, e) => Console.WriteLine(e.InfoMessage);
 			}
 
 			if (!noLog)
 			{
-				Log.OnLog += (o, e) => { File.AppendAllText(mainBotData.logFile, e.DetailedMessage, Encoding.UTF8); };
+				Log.OnLog += (o, e) => File.AppendAllText(mainBotData.logFile, e.DetailedMessage, Encoding.UTF8);
 			}
 			return false;
 		}
@@ -620,7 +620,6 @@ namespace TS3AudioBot
 		public Action<BotSession> CommandN { get; private set; }
 		public Action<BotSession, string> CommandS { get; private set; }
 		public Action<BotSession, TextMessage> CommandTM { get; private set; }
-
 		public CommandParameter CommandParameter { get; private set; }
 		public CommandRights CommandRights { get; private set; }
 		public string Description { get; private set; }
@@ -632,7 +631,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-						  Action<BotSession> command)
+		                  Action<BotSession> command)
 			: this(commandRights)
 		{
 			CommandN = command;
@@ -640,7 +639,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-						  Action<BotSession, string> command)
+		                  Action<BotSession, string> command)
 			: this(commandRights)
 		{
 			CommandS = command;
@@ -648,7 +647,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-						  Action<BotSession, TextMessage> command)
+		                  Action<BotSession, TextMessage> command)
 			: this(commandRights)
 		{
 			CommandTM = command;

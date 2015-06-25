@@ -18,10 +18,6 @@ namespace TS3AudioBot
 		/// After TIMEOUT seconds, the bob disconnects.
 		/// </summary>
 		private const int BOB_TIMEOUT = 60;
-		/// <summary>
-		/// The name of the file which is used to tell our own server client id to the Bob.
-		/// </summary>
-		private const string FILENAME = "queryId";
 
 		private BobControllerData data;
 		private Task timerTask;
@@ -44,6 +40,7 @@ namespace TS3AudioBot
 		}
 
 		private bool sending = false;
+
 		public bool Sending
 		{
 			get { return sending; }
@@ -103,25 +100,10 @@ namespace TS3AudioBot
 			lastUpdate = DateTime.Now;
 		}
 
-		public async void Start()
+		public void Start()
 		{
 			if (!IsRunning)
 			{
-				// Write own server query id into file
-				string filepath = Path.Combine(data.folder, FILENAME);
-				Log.Write(Log.Level.Debug, "BC requesting whoAmI");
-				WhoAmI whoAmI = await QueryConnection.TSClient.WhoAmI();
-				Log.Write(Log.Level.Debug, "BC got whoAmI");
-				string myId = whoAmI.ClientId.ToString();
-				try
-				{
-					File.WriteAllText(filepath, myId, new UTF8Encoding(false));
-				}
-				catch (IOException ex)
-				{
-					Log.Write(Log.Level.Error, "Can't open file {0} ({1})", filepath, ex);
-					return;
-				}
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
 				QueryConnection.OnClientConnect += AwaitBobConnect;
@@ -240,9 +222,6 @@ namespace TS3AudioBot
 
 	public struct BobControllerData
 	{
-		[InfoAttribute("the folder that contains the clientId file of this server query for " +
-			"communication between the TS3AudioBot and the TeamSpeak3 Client plugin")]
-		public string folder;
 		[InfoAttribute("ServerGroupID of the ServerBob")]
 		public int bobGroupId;
 	}
