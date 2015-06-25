@@ -17,13 +17,21 @@ ServerBob::ServerBob(TS3Functions &functions) :
 	audioOn(false)
 {
 	// Register commands
-	addCommand("help", &ServerBob::helpCommand,      "Gives you this handy command list");
-	addCommand("ping", &ServerBob::pingCommand,      "Returns with a pong if the Bob is alive");
-	addCommand("exit", &ServerBob::exitCommand,      "Let the Bob go home");
+	addCommand("help", &ServerBob::helpCommand,              "Gives you this handy command list");
+	addCommand("ping", &ServerBob::pingCommand,              "Returns with a pong if the Bob is alive");
+	addCommand("exit", &ServerBob::exitCommand,              "Let the Bob go home");
 	std::string commandString = "audio [on|off]";
-	addCommand("audio",   &ServerBob::audioCommand,  "Let the bob send or be silent", &commandString);
-	addCommand("error",   &ServerBob::loopCommand,   "", NULL, true, false);
-	addCommand("unknown", &ServerBob::loopCommand,   "", NULL, true, false);
+	addCommand("audio", &ServerBob::audioCommand,            "Let the bob send or be silent", &commandString);
+	commandString = "whisper clear";
+	addCommand("whisper", &ServerBob::whisperClearCommand,   "", &commandString);
+	commandString = "whisper [client|channel] [add|remove] <id>";
+	addCommand("whisper", &ServerBob::whisperClientCommand,  "Control the whisperlist of the Bob", &commandString);
+	addCommand("whisper", &ServerBob::whisperChannelCommand, "", NULL, false, false);
+	commandString = "status [whisper|audio]";
+	addCommand("status", &ServerBob::statusAudioCommand,     "Get status information", &commandString);
+	addCommand("status", &ServerBob::statusWhisperCommand,   "", NULL, false, false);
+	addCommand("error", &ServerBob::loopCommand,             "", NULL, true, false);
+	addCommand("unknown", &ServerBob::loopCommand,           "", NULL, true, false);
 
 	// Get currently active connections
 	uint64 *handlerIDs;
@@ -92,20 +100,22 @@ void ServerBob::handleCommand(uint64 handlerID, anyID sender, const std::string 
 
 	// TODO Check if this message is from an authorized client
 	CommandResult res;
-	bool printedMessage = false;
+	std::shared_ptr<std::string> errorMessage;
 	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
 	{
 		res = (**it)(&(*connection), sender, message);
 		if(res.success)
 			break;
 		else if (res.errorMessage)
-		{
-			printedMessage = true;
-			connection->sendCommand(sender, *res.errorMessage);
-		}
+			errorMessage = res.errorMessage;
 	}
-	if(!res.success && !printedMessage)
-		unknownCommand(&(*connection), sender, message);
+	if(!res.success)
+	{
+		if(errorMessage)
+			connection->sendCommand(sender, *errorMessage);
+		else
+			unknownCommand(&(*connection), sender, message);
+	}
 }
 
 template<class... Args>
@@ -122,7 +132,6 @@ void ServerBob::addCommand(const std::string &name,
 		this, Utils::IntSequenceCreator<sizeof...(Args) + 3>()),
 		commandString, ignoreArguments, showHelp)));
 }
-
 
 void ServerBob::setAudio(bool on)
 {
@@ -160,7 +169,7 @@ CommandResult ServerBob::unknownCommand(ServerConnection *connection, anyID send
 	Utils::log(formatted);
 	// Send error message
 	connection->sendCommand(sender, "error unknown command %s", msg.c_str());
-	return CommandResult(false, std::shared_ptr<std::string>(new std::string(formatted)));
+	return CommandResult(false, std::make_shared<std::string>(formatted));
 }
 
 CommandResult ServerBob::loopCommand(ServerConnection * /*connection*/, anyID /*sender*/, const std::string &message, std::string /*command*/)
@@ -187,6 +196,80 @@ CommandResult ServerBob::qualityCommand(ServerConnection * /*connection*/, anyID
 	return CommandResult();
 }
 
+CommandResult ServerBob::whisperClientCommand(ServerConnection *connection, anyID /*sender*/, const std::string &/*message*/, std::string /*command*/, std::string client, std::string action, int id)
+{
+	std::transform(client.begin(), client.end(), client.begin(), ::tolower);
+	std::transform(action.begin(), action.end(), action.begin(), ::tolower);
+	if(client != "client")
+		return CommandResult(false);
+	if(id < 0)
+		return CommandResult(false, std::make_shared<std::string>("error client id can't be negative"));
+	if(action == "add")
+		connection->addWhisperUser(id);
+	else if(action == "remove")
+	{
+		if(!connection->removeWhisperUser(id))
+			return CommandResult(false, std::make_shared<std::string>("error client id not found"));
+	} else
+		return CommandResult(false, std::make_shared<std::string>("error unknown action"));
+	return CommandResult();
+}
+
+CommandResult ServerBob::whisperChannelCommand(ServerConnection *connection, anyID /*sender*/, const std::string &/*message*/, std::string /*command*/, std::string channel, std::string action, int id)
+{
+	std::transform(channel.begin(), channel.end(), channel.begin(), ::tolower);
+	std::transform(action.begin(), action.end(), action.begin(), ::tolower);
+	if(channel != "channel")
+		return CommandResult(false);
+	if(id < 0)
+		return CommandResult(false, std::make_shared<std::string>("error client id can't be negative"));
+	if(action == "add")
+		connection->addWhisperChannel(id);
+	else if(action == "remove")
+	{
+		if(!connection->removeWhisperChannel(id))
+			return CommandResult(false, std::make_shared<std::string>("error channel id not found"));
+	} else
+		return CommandResult(false, std::make_shared<std::string>("error unknown action"));
+	return CommandResult();
+}
+
+CommandResult ServerBob::whisperClearCommand(ServerConnection *connection, anyID /*sender*/, const std::string &/*message*/, std::string /*command*/, std::string clear)
+{
+	std::transform(clear.begin(), clear.end(), clear.begin(), ::tolower);
+	if(clear != "clear")
+		return CommandResult(false);
+	connection->clearWhisper();
+	return CommandResult();
+}
+
+CommandResult ServerBob::statusAudioCommand(ServerConnection *connection, anyID sender, const std::string &/*message*/, std::string /*command*/, std::string audio)
+{
+	std::transform(audio.begin(), audio.end(), audio.begin(), ::tolower);
+	if(audio != "audio")
+		return CommandResult(false);
+	connection->sendCommand(sender, std::string("status audio ") + (audioOn ? "on" : "off"));
+	return CommandResult();
+}
+
+CommandResult ServerBob::statusWhisperCommand(ServerConnection *connection, anyID sender, const std::string &/*message*/, std::string /*command*/, std::string whisper)
+{
+	std::transform(whisper.begin(), whisper.end(), whisper.begin(), ::tolower);
+	if(whisper != "whisper")
+		return CommandResult(false);
+	std::ostringstream out;
+	out << "status whisper clients";
+	const std::vector<anyID> *users = connection->getWhisperUsers();
+	for(std::vector<anyID>::const_iterator it = users->cbegin(); it != users->cend(); it++)
+		out << " " << *it;
+	out << "\nstatus whisper channels";
+	const std::vector<uint64> *channels = connection->getWhisperChannels();
+	for(std::vector<uint64>::const_iterator it = channels->cbegin(); it != channels->cend(); it++)
+		out << " " << *it;
+	connection->sendCommand(sender, out.str());
+	return CommandResult();
+}
+
 CommandResult ServerBob::helpCommand(ServerConnection *connection, anyID sender, const std::string& /*message*/, std::string /*command*/)
 {
 	std::ostringstream output;
@@ -207,26 +290,10 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, anyID sender,
 	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
 	{
 		if((*it)->getHelp() && (*it)->getCommandName())
-		{
-			std::string s = Utils::format(format, (*it)->getCommandName()->c_str(), (*it)->getHelp()->c_str());
-			Utils::log(s);
-			Utils::log("Num: %d", s.back());
-			output << s;
-		}
+			output << Utils::format(format, (*it)->getCommandName()->c_str(), (*it)->getHelp()->c_str());
 	}
 
-	Utils::log("All");
-	Utils::log(output.str());
 	connection->sendCommand(sender, output.str());
-	/*connection->sendCommand(sender, "help \n"
-		"\taudio   [on|off]\n"
-		"\tquality [on|off]\n"
-		"\twhisper [add|remove] client <clientID>\n"
-		"\twhisper [add|remove] channel <channelID>\n"
-		"\twhisper clear\n"
-		"\tstatus  audio\n"
-		"\tstatus  whisper"
-	);*/
 	return CommandResult();
 }
 

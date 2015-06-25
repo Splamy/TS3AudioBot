@@ -49,11 +49,11 @@ private:
 	CommandResult loopCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
 	CommandResult audioCommand         (ServerConnection *connection, anyID sender, const std::string &message, std::string command, bool on);
 	CommandResult qualityCommand       (ServerConnection *connection, anyID sender, const std::string &message, std::string command, bool on);
-	CommandResult whisperClientCommand (ServerConnection *connection, anyID sender, const std::string &message, std::string command, std::string client);
-	CommandResult whisperChannelCommand(ServerConnection *connection, anyID sender, const std::string &message, std::string command);
-	CommandResult whisperClearCommand  (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
-	CommandResult statusAudioCommand   (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
-	CommandResult statusWhisperCommand (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
+	CommandResult whisperClientCommand (ServerConnection *connection, anyID sender, const std::string &message, std::string command, std::string client, std::string action, int id);
+	CommandResult whisperChannelCommand(ServerConnection *connection, anyID sender, const std::string &message, std::string command, std::string channel, std::string action, int id);
+	CommandResult whisperClearCommand  (ServerConnection *connection, anyID sender, const std::string &message, std::string command, std::string clear);
+	CommandResult statusAudioCommand   (ServerConnection *connection, anyID sender, const std::string &message, std::string command, std::string audio);
+	CommandResult statusWhisperCommand (ServerConnection *connection, anyID sender, const std::string &message, std::string command, std::string whisper);
 	CommandResult helpCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
 	CommandResult pingCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);
 	CommandResult exitCommand          (ServerConnection *connection, anyID sender, const std::string &message, std::string command);

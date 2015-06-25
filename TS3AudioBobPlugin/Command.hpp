@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <array>
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -121,7 +120,7 @@ private:
 		Utils::IntSequence<Is...>)
 	{
 		if(!message.empty() && !ignoreMore)
-			return CommandResult(false, std::shared_ptr<std::string>(new std::string("error too many parameters")));
+			return CommandResult(false, std::make_shared<std::string>("error too many parameters"));
 		return f();
 	}
 
@@ -129,10 +128,12 @@ private:
 	CommandResult execute(std::string message,
 		std::function<CommandResult(P p, Params... params)> f, Utils::IntSequence<Is...>)
 	{
+		if(message.empty())
+			return CommandResult(false, std::make_shared<std::string>("error too few parameters"));
 		std::string msg = Utils::strip(message, true, false);
 		P p;
 		if(!parseArgument(msg, &p))
-			return CommandResult(false, std::shared_ptr<std::string>(new std::string("error wrong parameter type")));
+			return CommandResult(false, std::make_shared<std::string>("error wrong parameter type"));
 
 		// Bind this parameter
 		std::function<CommandResult(Params...)> f2 = myBind(f, p, Utils::IntSequenceCreator<sizeof...(Params)>());

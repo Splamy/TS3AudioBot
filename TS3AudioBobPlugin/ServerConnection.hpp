@@ -16,6 +16,7 @@ private:
 	CodecType channelCodec;
 	int channelQuality;
 	bool hasGoodQuality;
+	bool audioOn;
 	std::vector<anyID> admins;
 	ServerBob *bob;
 	std::vector<uint64> whisperChannels;
@@ -30,6 +31,13 @@ public:
 	bool shouldWhisper();
 	void setAudio(bool on);
 	void setQuality(bool on);
+	void addWhisperUser(anyID client);
+	void addWhisperChannel(uint64 channel);
+	bool removeWhisperUser(anyID client);
+	bool removeWhisperChannel(uint64 channel);
+	void clearWhisper();
+	const std::vector<anyID>* getWhisperUsers() const;
+	const std::vector<uint64>* getWhisperChannels() const;
 	void close(const std::string &quitMessage);
 
 	template<class... Args>

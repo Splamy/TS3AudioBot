@@ -9,18 +9,22 @@ bool Utils::isSpace(char c)
 
 std::string Utils::strip(const std::string &input, bool left, bool right)
 {
+	if(input.empty())
+		return std::string();
+
 	std::string::const_iterator start = input.begin();
-	std::string::const_iterator end = input.end();
+	std::string::const_iterator end = input.end() - 1;
 	if(left)
 	{
 		while(start <= end && std::isspace(*start))
 			start++;
 	}
 	if(right)
-		while(end > start && std::isspace(*(--end)));
-	else
-		end--;
-	if(start == end)
+	{
+		while(end >= start && std::isspace(*end))
+			end--;
+	}
+	if(start > end)
 		return "";
 	return std::string(start, end + 1);
 }
@@ -42,7 +46,7 @@ bool Utils::startsWith(const std::string &string, const std::string &prefix)
 // with Remote Code Execution, that has to be verified)
 std::string Utils::onlyAscii(const std::string &input)
 {
-	char *result = new char[input.size()];
+	std::vector<char> result(input.size());
 	int j = 0;
 	char c;
 	for(int i = 0; (c = input[i]); i++)
@@ -52,8 +56,7 @@ std::string Utils::onlyAscii(const std::string &input)
 			result[j++] = c;
 	}
 	result[j] = '\0';
-	std::string str = result;
-	delete[] result;
+	std::string str(result.data());
 	return std::move(str);
 }
 

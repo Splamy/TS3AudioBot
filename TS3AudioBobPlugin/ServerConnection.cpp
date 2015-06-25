@@ -5,7 +5,7 @@
 ServerConnection::ServerConnection(ServerBob *bob, uint64 handlerID,
 	CodecType channelCodec, int channelQuality, bool hasGoodQuality) :
 	handlerID(handlerID), channelCodec(channelCodec), channelQuality(channelQuality),
-	hasGoodQuality(hasGoodQuality), bob(bob)
+	hasGoodQuality(hasGoodQuality), audioOn(false), bob(bob)
 {
 	// Query connected clients
 	// TODO Get database id
@@ -40,8 +40,14 @@ bool ServerConnection::handleTsError(unsigned int error)
 	return true;
 }
 
+bool ServerConnection::shouldWhisper()
+{
+	return !whisperChannels.empty() || !whisperUsers.empty();
+}
+
 void ServerConnection::setAudio(bool on)
 {
+	audioOn = on;
 	if(on)
 	{
 		if(shouldWhisper())
@@ -90,9 +96,53 @@ void ServerConnection::setQuality(bool on)
 	}
 }
 
-bool ServerConnection::shouldWhisper()
+void ServerConnection::addWhisperUser(anyID client)
 {
-	return !whisperChannels.empty() || !whisperUsers.empty();
+	whisperUsers.push_back(client);
+	setAudio(audioOn);
+}
+
+void ServerConnection::addWhisperChannel(uint64 channel)
+{
+	whisperChannels.push_back(channel);
+	setAudio(audioOn);
+}
+
+bool ServerConnection::removeWhisperUser(anyID client)
+{
+	std::vector<anyID>::iterator it = std::find(whisperUsers.begin(), whisperUsers.end(), client);
+	if(it == whisperUsers.end())
+		return false;
+	whisperUsers.erase(it);
+	setAudio(audioOn);
+	return true;
+}
+
+bool ServerConnection::removeWhisperChannel(uint64 channel)
+{
+	std::vector<uint64>::iterator it = std::find(whisperChannels.begin(), whisperChannels.end(), channel);
+	if(it == whisperChannels.end())
+		return false;
+	whisperChannels.erase(it);
+	setAudio(audioOn);
+	return true;
+}
+
+void ServerConnection::clearWhisper()
+{
+	whisperUsers.clear();
+	whisperChannels.clear();
+	setAudio(audioOn);
+}
+
+const std::vector<anyID>* ServerConnection::getWhisperUsers() const
+{
+	return &whisperUsers;
+}
+
+const std::vector<uint64>* ServerConnection::getWhisperChannels() const
+{
+	return &whisperChannels;
 }
 
 void ServerConnection::close(const std::string &quitMessage)
