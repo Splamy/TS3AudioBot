@@ -115,18 +115,16 @@ private:
 	/** Calls fun by adding parameters recursively.
 	 *  The function that is the last layer of the recursion.
 	 */
-	template<int... Is>
-	CommandResult execute(std::string message, std::function<CommandResult()> f,
-		Utils::IntSequence<Is...>)
+	CommandResult execute(std::string message, std::function<CommandResult()> f)
 	{
 		if(!message.empty() && !ignoreMore)
 			return CommandResult(false, std::make_shared<std::string>("error too many parameters"));
 		return f();
 	}
 
-	template<class P, class... Params, int... Is>
+	template<class P, class... Params>
 	CommandResult execute(std::string message,
-		std::function<CommandResult(P p, Params... params)> f, Utils::IntSequence<Is...>)
+		std::function<CommandResult(P p, Params... params)> f)
 	{
 		if(message.empty())
 			return CommandResult(false, std::make_shared<std::string>("error too few parameters"));
@@ -136,22 +134,22 @@ private:
 			return CommandResult(false, std::make_shared<std::string>("error wrong parameter type"));
 
 		// Bind this parameter
-		std::function<CommandResult(Params...)> f2 = myBind(f, p, Utils::IntSequenceCreator<sizeof...(Params)>());
-		return execute(msg, f2, Utils::IntSequenceCreator<sizeof...(Params)>());
+		std::function<CommandResult(Params...)> f2 = Utils::myBind(f, p);
+		return execute(msg, f2);
 	}
 
 public:
 	CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) override
 	{
 		// Bind connection
-		std::function<CommandResult(anyID, const std::string&, Args...)> f1 = myBind(fun, connection,
-			Utils::IntSequenceCreator<sizeof...(Args) + 2>());
+		std::function<CommandResult(anyID, const std::string&, Args...)> f1 = Utils::myBind(fun, connection);
 		// Bind sender
-		std::function<CommandResult(const std::string&, Args...)> f2 = myBind(f1, sender,
-			Utils::IntSequenceCreator<sizeof...(Args) + 1>());
+		std::function<CommandResult(const std::string&, Args...)> f2 = Utils::myBind(f1, sender);
 		// Bind message
-		std::function<CommandResult(Args...)> f = myBind(f2, message, Utils::IntSequenceCreator<sizeof...(Args)>());
-		return execute(message, f, Utils::IntSequenceCreator<sizeof...(Args)>());
+		std::function<CommandResult(Args...)> f = Utils::myBind(f2, message);
+		// Would work on a newer compiler
+		//f = Utils::myBind(fun, connection, sender, message);
+		return execute(message, f);
 	}
 };
 

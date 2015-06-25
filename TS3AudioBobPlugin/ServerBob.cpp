@@ -112,7 +112,7 @@ void ServerBob::handleCommand(uint64 handlerID, anyID sender, const std::string 
 	if(!res.success)
 	{
 		if(errorMessage)
-			connection->sendCommand(sender, *errorMessage);
+			connection->sendCommand(sender,"error teamspeak %s", errorMessage->c_str());
 		else
 			unknownCommand(&(*connection), sender, message);
 	}
@@ -126,10 +126,9 @@ void ServerBob::addCommand(const std::string &name,
 	bool showHelp)
 {
 	commands.push_back(std::unique_ptr<AbstractCommandExecutor>(
-		new StringCommandExecutor<Args...>(name, help, myBind(
+		new StringCommandExecutor<Args...>(name, help, Utils::myBind(
 		static_cast<std::function<CommandResult(ServerBob*, ServerConnection*,
-		anyID, const std::string&, Args...)> >(fun),
-		this, Utils::IntSequenceCreator<sizeof...(Args) + 3>()),
+		anyID, const std::string&, Args...)> >(fun), this),
 		commandString, ignoreArguments, showHelp)));
 }
 
@@ -166,7 +165,6 @@ CommandResult ServerBob::unknownCommand(ServerConnection *connection, anyID send
 	std::string msg = message;
 	Utils::replace(msg, "\n", "\\n");
 	std::string formatted = Utils::format("Unknown command: %s", msg.c_str());
-	Utils::log(formatted);
 	// Send error message
 	connection->sendCommand(sender, "error unknown command %s", msg.c_str());
 	return CommandResult(false, std::make_shared<std::string>(formatted));
@@ -248,7 +246,7 @@ CommandResult ServerBob::statusAudioCommand(ServerConnection *connection, anyID 
 	std::transform(audio.begin(), audio.end(), audio.begin(), ::tolower);
 	if(audio != "audio")
 		return CommandResult(false);
-	connection->sendCommand(sender, std::string("status audio ") + (audioOn ? "on" : "off"));
+	connection->sendCommand(sender, "status audio %s", audioOn ? "on" : "off");
 	return CommandResult();
 }
 

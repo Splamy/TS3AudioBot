@@ -24,14 +24,31 @@ namespace Utils
 	template<int>
 	struct Placeholder{};
 
-	/** Binds a parameter to a function.
-	 *  TODO write an example (can be seen in CommandExecutor) and maybe improve that function.
-	 */
 	template<class R, class... Args, class P, class P2, int... Is>
-	std::function<R(Args...)> myBind(const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>)
+	std::function<R(Args...)> myBindIntern(const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>)
 	{
-		return std::bind(fun, p, Placeholder<Is>()...);
+		std::function<R(Args...)> f = std::bind(fun, p, Placeholder<Is>()...);
+		return f;
 	}
+
+	/** Binds a parameter to a function.
+	 *  A real life example can be seen in CommandExecutor (Command.hpp).
+	 */
+	template<class R, class... Args, class P, class P2>
+	std::function<R(Args...)> myBind(const std::function<R(P, Args...)> &fun, P2 p)
+	{
+		return myBindIntern(fun, p, IntSequenceCreator<sizeof...(Args)>());
+	}
+
+	// FIXME Only for more up-to-date compilers than we have on the server...
+	/*template<typename I, class P, class... Ps>
+	auto myBind(const std::function<I> &fun, P p, Ps... ps) -> decltype(myBind(myBind(fun, p), ps...));
+
+	template<typename I, class P, class... Ps>
+	auto myBind(const std::function<I> &fun, P p, Ps... ps) -> decltype(myBind(myBind(fun, p), ps...))
+	{
+		return myBind(myBind(fun, p), ps...);
+	}*/
 
 	bool isSpace(char c);
 	/** Returns a string with all whitespaces stripped at the beginning and the end. */
