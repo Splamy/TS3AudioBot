@@ -136,7 +136,7 @@ namespace TS3AudioBot
 		{
 			if (whisperChannel.Contains(channel))
 				return;
-			SendMessage("whisper add channel " + channel);
+			SendMessage("whisper channel add " + channel);
 			whisperChannel.Add(channel);
 		}
 
@@ -144,7 +144,7 @@ namespace TS3AudioBot
 		{
 			if (!whisperChannel.Contains(channel))
 				return;
-			SendMessage("whisper remove channel " + channel);
+			SendMessage("whisper channel remove " + channel);
 			whisperChannel.Remove(channel);
 		}
 
