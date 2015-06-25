@@ -7,6 +7,8 @@
 *.userosscache
 *.sln.docstates
 *.userprefs
+.buildvars.py
+.sconsign.dblite
 
 # Build results
 [Dd]ebug/

@@ -1,0 +1,23 @@
+# Define global variables
+project = "TS3AudioBobPlugin"
+versionFile = "src/Plugin.cpp"
+#enableGettext = False
+#enableClangLib = False
+#winUse32 = False
+
+# Setup environment
+import os
+rootDirectory = os.getcwd() + os.sep
+execfile(rootDirectory + "Tools/SConstructLib.py")
+
+# We use an old compiler...
+env.Replace(CXXFLAGS = "-std=c++0x")
+
+# Execute subscripts
+SConscript("src/SConscript", variant_dir = buildPrefix, duplicate = 0)
+
+# Create Visual Studio solution
+if doMSVS():
+	SConscript("src/SConscript")
+
+finish()

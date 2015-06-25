@@ -1,0 +1,11 @@
+# Setup environment
+Import("rootDirectory")
+folder = "src"
+execfile(rootDirectory + "Tools/SConscriptLib.py")
+
+curenv.Append(CCFLAGS = ["-fPIC", "-fvisibility=hidden", "-Wno-format-security", "-Wno-missing-braces"])
+curenv.Append(CPPPATH = [getAbsolutePath(p) for p in ["Include"]])
+
+createLibrary("libts3audiobob")
+program = libts3audiobob
+Export("program")

@@ -19,6 +19,8 @@
 
 static TS3Functions ts3Functions;
 
+static const char *VERSION = "2.0";
+
 // Activate this to allow control messages from everyone and not only from the
 // server query user (his ID is read from a file)
 //#define UNSECURE
@@ -37,7 +39,7 @@ const char* ts3plugin_name()
 // Version of this plugin
 const char* ts3plugin_version()
 {
-	return "1.0";
+	return VERSION;
 }
 
 // API version of this plugin
