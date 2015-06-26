@@ -20,6 +20,9 @@
 static TS3Functions ts3Functions;
 
 static const char *VERSION = "2.0";
+static const std::string CONFIG_FILE = "../Bot/configTS3AudioBot.cfg";
+static const std::string ADMIN_ID_CONFIG_STRING = "MainBot::adminGroupId=";
+static const std::size_t PATH_SIZE = 1024;
 
 // Activate this to allow control messages from everyone and not only from the
 // server query user (his ID is read from a file)
@@ -70,7 +73,49 @@ void ts3plugin_setFunctionPointers(const struct TS3Functions funcs)
 // Return 0 on success or 1 if an error occurs
 int ts3plugin_init()
 {
-	serverBob.reset(new ServerBob(ts3Functions));
+	// App and Resources path are empty for a console client
+	// We take all of them with a priority
+	char paths[4][PATH_SIZE];
+	ts3Functions.getAppPath(paths[0], PATH_SIZE);
+	ts3Functions.getResourcesPath(paths[1], PATH_SIZE);
+	ts3Functions.getPluginPath(paths[2], PATH_SIZE);
+	ts3Functions.getConfigPath(paths[3], PATH_SIZE);
+
+	// Get the server query id from a file
+	for(std::size_t i = 0; i < 4; i++)
+	{
+		std::string file = std::string(paths[i]) + CONFIG_FILE;
+		std::ifstream configFile(file);
+		if(configFile)
+		{
+			// Read the config file to get the admin group id
+			std::string line;
+			while(std::getline(configFile, line))
+			{
+				if(!Utils::startsWith(line, ";") && !Utils::startsWith(line, "//") &&
+					!Utils::startsWith(line, "#") && Utils::startsWith(line, ADMIN_ID_CONFIG_STRING))
+				{
+					std::istringstream parse(line.substr(ADMIN_ID_CONFIG_STRING.size()));
+					anyID id;
+					parse >> id;
+					if(!parse)
+						Utils::log("Couldn't parse admin group id");
+					else
+						serverBob.reset(new ServerBob(ts3Functions, id));
+					break;
+				}
+			}
+			if(!serverBob)
+				Utils::log("Couldn't find admin group id field");
+			break;
+		}
+	}
+	if(!serverBob)
+	{
+		Utils::log("Couldn't read config file");
+		// We don't want an uncontrollable Bob
+		exit(1)
+	}
 	return 0;
 }
 

@@ -4,6 +4,7 @@
 #include <Command.hpp>
 
 #include <ts3_functions.h>
+#include <istream>
 #include <string>
 #include <vector>
 
@@ -24,9 +25,10 @@ private:
 	std::vector<ServerConnection> connections;
 	bool audioOn;
 	bool qualityOn;
+	anyID botAdminID;
 
 public:
-	ServerBob(TS3Functions &functions);
+	ServerBob(TS3Functions &functions, anyID botAdminID);
 
 	void addServer(uint64 handlerID);
 	void removeServer(uint64 handlerID);

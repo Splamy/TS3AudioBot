@@ -31,8 +31,6 @@ bool ServerConnection::handleTsError(unsigned int error)
 			std::string msg = errorMsg;
 			bob->functions.freeMemory(errorMsg);
 			Utils::replace(msg, "\n", "\\n");
-			// Broadcast error to all clients
-			sendCommandAdmins("error %s", msg.c_str());
 		} else
 			Utils::log("TeamSpeak-double-error");
 		return false;
@@ -143,6 +141,11 @@ const std::vector<anyID>* ServerConnection::getWhisperUsers() const
 const std::vector<uint64>* ServerConnection::getWhisperChannels() const
 {
 	return &whisperChannels;
+}
+
+ServerBob* ServerConnection::getServerBob() const
+{
+	return bob;
 }
 
 void ServerConnection::close(const std::string &quitMessage)

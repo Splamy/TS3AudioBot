@@ -1,20 +1,20 @@
 #include "ServerBob.hpp"
 
 #include <ServerConnection.hpp>
+#include <User.hpp>
 #include <Utils.hpp>
 
 #include <public_errors.h>
 #include <sstream>
 #include <stdexcept>
 
-static const std::string FILENAME = "queryId";
-
 const std::vector<std::string> ServerBob::quitMessages =
 	{ "I'm outta here", "You're boring", "Have a nice day", "Bye" };
 
-ServerBob::ServerBob(TS3Functions &functions) :
+ServerBob::ServerBob(TS3Functions &functions, anyID botAdminID) :
 	functions(functions),
-	audioOn(false)
+	audioOn(false),
+	botAdminID(botAdminID)
 {
 	// Register commands
 	addCommand("help", &ServerBob::helpCommand,              "Gives you this handy command list");
@@ -98,7 +98,16 @@ void ServerBob::handleCommand(uint64 handlerID, anyID sender, const std::string 
 		return;
 	}
 
-	// TODO Check if this message is from an authorized client
+	// Check if this message is from an authorized client
+	User u(&(*connection), sender);
+	if(!u.inGroup(botAdminID))
+	{
+		Utils::log("Unauthorized access from %d", sender);
+		connection->sendCommand(sender, "error access denied");
+		return;
+	}
+
+	// Search the right command
 	CommandResult res;
 	std::shared_ptr<std::string> errorMessage;
 	for(Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
@@ -112,7 +121,7 @@ void ServerBob::handleCommand(uint64 handlerID, anyID sender, const std::string 
 	if(!res.success)
 	{
 		if(errorMessage)
-			connection->sendCommand(sender,"error teamspeak %s", errorMessage->c_str());
+			connection->sendCommand(sender, errorMessage->c_str());
 		else
 			unknownCommand(&(*connection), sender, message);
 	}

@@ -17,7 +17,6 @@ private:
 	int channelQuality;
 	bool hasGoodQuality;
 	bool audioOn;
-	std::vector<anyID> admins;
 	ServerBob *bob;
 	std::vector<uint64> whisperChannels;
 	std::vector<anyID> whisperUsers;
@@ -38,6 +37,7 @@ public:
 	void clearWhisper();
 	const std::vector<anyID>* getWhisperUsers() const;
 	const std::vector<uint64>* getWhisperChannels() const;
+	ServerBob* getServerBob() const;
 	void close(const std::string &quitMessage);
 
 	template<class... Args>
@@ -45,12 +45,6 @@ public:
 	{
 		handleTsError(bob->functions.requestSendPrivateTextMsg(handlerID,
 			Utils::format(message, args...).c_str(), userID, NULL));
-	}
-	template<class... Args>
-	void sendCommandAdmins(const std::string &message, Args... args)
-	{
-		for (std::vector<anyID>::const_iterator it = admins.cbegin(); it != admins.cend(); it++)
-			sendCommand(*it, message, args...);
 	}
 };
 
