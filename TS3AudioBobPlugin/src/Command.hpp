@@ -13,13 +13,15 @@
 #include <string>
 
 class ServerConnection;
+class User;
 
 struct CommandResult
 {
 	bool success;
 	std::shared_ptr<std::string> errorMessage;
 
-	CommandResult(bool success = true, std::shared_ptr<std::string> errorMessage = std::shared_ptr<std::string>()) :
+	CommandResult(bool success = true, std::shared_ptr<std::string>
+		errorMessage = std::shared_ptr<std::string>()) :
 		success(success),
 		errorMessage(errorMessage)
 	{
@@ -30,21 +32,25 @@ class AbstractCommandExecutor
 {
 public:
 	// Returns if the command was handled
-	virtual CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) = 0;
+	virtual CommandResult operator()(ServerConnection *connection, User *sender,
+		const std::string &message) = 0;
 	virtual std::shared_ptr<const std::string> getCommandName() const = 0;
 	virtual std::shared_ptr<const std::string> getHelp() const = 0;
 };
 
-template<class... Args>
+template <class... Args>
 class CommandExecutor : public AbstractCommandExecutor
 {
 public:
-	typedef std::function<CommandResult(ServerConnection *connection, anyID sender, const std::string &message, Args...)> FuncType;
+	typedef std::function<CommandResult(ServerConnection *connection,
+		User *sender, const std::string &message, Args...)> FuncType;
 
 private:
 	/** The function that should be invoked by this command. */
 	FuncType fun;
-	/** True, if this command should ignore arguments that can't be passed to the method. */
+	/** True, if this command should ignore arguments that can't be passed to
+	 *  the method.
+	 */
 	bool ignoreMore;
 
 public:
@@ -61,30 +67,15 @@ protected:
 	 *
 	 *  @return If the parsing was successful.
 	 */
-	template<class T>
+	template <class T>
 	bool parseArgument(std::string &message, T *result)
 	{
 		// Default conversion with a string stream
 		std::istringstream input(message);
 		input >> *result;
-		if(input.eof())
+		if (input.eof())
 			message.clear();
-		else if(!input)
-			return false;
-		else
-			message.erase(message.begin(), message.begin() + input.tellg());
-		return true;
-	}
-
-	/** A specialisation for std::string to strip 0 characters. */
-	bool parseArgument(std::string &message, std::string *result)
-	{
-		// Default conversion with a string stream
-		std::istringstream input(message);
-		input >> *result;
-		if(input.eof())
-			message.clear();
-		else if(!input)
+		else if (!input)
 			return false;
 		else
 			message.erase(message.begin(), message.begin() + input.tellg());
@@ -96,15 +87,15 @@ protected:
 	{
 		// Default conversion with a string stream
 		std::string str;
-		if(!parseArgument(message, &str))
+		if (!parseArgument(message, &str))
 			return false;
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 		// Possible true and false values
 		const static std::array<std::string, 3> yes = { "on", "true", "yes" };
 		const static std::array<std::string, 3> no = { "off", "false", "no" };
-		if(std::find(yes.cbegin(), yes.cend(), str) != yes.cend())
+		if (std::find(yes.cbegin(), yes.cend(), str) != yes.cend())
 			*result = true;
-		else if(std::find(no.cbegin(), no.cend(), str) != no.cend())
+		else if (std::find(no.cbegin(), no.cend(), str) != no.cend())
 			*result = false;
 		else
 			return false;
@@ -118,20 +109,23 @@ private:
 	CommandResult execute(std::string message, std::function<CommandResult()> f)
 	{
 		if(!message.empty() && !ignoreMore)
-			return CommandResult(false, std::make_shared<std::string>("error too many parameters"));
+			return CommandResult(false,
+				std::make_shared<std::string>("error too many parameters"));
 		return f();
 	}
 
-	template<class P, class... Params>
+	template <class P, class... Params>
 	CommandResult execute(std::string message,
 		std::function<CommandResult(P p, Params... params)> f)
 	{
-		if(message.empty())
-			return CommandResult(false, std::make_shared<std::string>("error too few parameters"));
+		if (message.empty())
+			return CommandResult(false,
+				std::make_shared<std::string>("error too few parameters"));
 		std::string msg = Utils::strip(message, true, false);
 		P p;
-		if(!parseArgument(msg, &p))
-			return CommandResult(false, std::make_shared<std::string>("error wrong parameter type"));
+		if (!parseArgument(msg, &p))
+			return CommandResult(false,
+				std::make_shared<std::string>("error wrong parameter type"));
 
 		// Bind this parameter
 		std::function<CommandResult(Params...)> f2 = Utils::myBind(f, p);
@@ -139,21 +133,24 @@ private:
 	}
 
 public:
-	CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) override
+	CommandResult operator()(ServerConnection *connection, User *sender,
+		const std::string &message) override
 	{
 		// Bind connection
-		std::function<CommandResult(anyID, const std::string&, Args...)> f1 = Utils::myBind(fun, connection);
+		std::function<CommandResult(User*, const std::string&, Args...)> f1 =
+			Utils::myBind(fun, connection);
 		// Bind sender
-		std::function<CommandResult(const std::string&, Args...)> f2 = Utils::myBind(f1, sender);
+		std::function<CommandResult(const std::string&, Args...)> f2 =
+			Utils::myBind(f1, sender);
 		// Bind message
 		std::function<CommandResult(Args...)> f = Utils::myBind(f2, message);
-		// Would work on a newer compiler
+		// FIXME Would work on a newer compiler
 		//f = Utils::myBind(fun, connection, sender, message);
 		return execute(message, f);
 	}
 };
 
-template<class... Args>
+template <class... Args>
 class StringCommandExecutor : public CommandExecutor<Args...>
 {
 public:
@@ -168,21 +165,25 @@ private:
 public:
 	StringCommandExecutor(const std::string &command, const std::string &help,
 		FuncType fun, const std::string *commandString = NULL,
-		bool ignore = false, bool showHelp = true) : CommandExecutor<Args...>(fun, ignore),
+		bool ignore = false, bool showHelp = true) :
+		CommandExecutor<Args...>(fun, ignore),
 		command(command),
-		commandString(showHelp ? (commandString ? new std::string(*commandString) :
-			new std::string(command)) : NULL),
+		commandString(showHelp ? (commandString ?
+			new std::string(*commandString) : new std::string(command)) : NULL),
 		help(showHelp ? new std::string(help) : NULL)
 	{
 	}
 
-	CommandResult operator()(ServerConnection *connection, anyID sender, const std::string &message) override
+	CommandResult operator()(ServerConnection *connection, User *sender,
+		const std::string &message) override
 	{
 		const std::string msg = Utils::strip(message);
-		std::string::const_iterator pos = std::find_if(msg.begin(), msg.end(), Utils::isSpace);
-		std::string cmd = Utils::strip(pos == msg.end() ? msg : std::string(msg.begin(), pos));
+		std::string::const_iterator pos = std::find_if(msg.begin(), msg.end(),
+			Utils::isSpace);
+		std::string cmd = Utils::strip(pos == msg.end() ? msg :
+			std::string(msg.begin(), pos));
 		std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
-		if(cmd != command)
+		if (cmd != command)
 			return CommandResult(false);
 		return CommandExecutor<Args...>::operator()(connection, sender, message);
 	}

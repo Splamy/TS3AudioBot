@@ -2,6 +2,7 @@
 #define SERVER_CONNECTION_HPP
 
 #include <ServerBob.hpp>
+#include <User.hpp>
 #include <Utils.hpp>
 
 #include <public_definitions.h>
@@ -12,39 +13,50 @@
 class ServerConnection
 {
 private:
-	uint64 handlerID;
+	uint64 handlerId;
 	CodecType channelCodec;
 	int channelQuality;
 	bool hasGoodQuality;
 	bool audioOn;
-	ServerBob *bob;
+	std::vector<User> users;
 	std::vector<uint64> whisperChannels;
-	std::vector<anyID> whisperUsers;
+	std::vector<const User*> whisperUsers;
 
 public:
-	ServerConnection(ServerBob *bob, uint64 handlerID, CodecType channelCodec = CODEC_OPUS_VOICE,
-		int channelQuality = 7, bool hasGoodQuality = false);
+	ServerBob *bob;
 
-	uint64 getHandlerID();
+	ServerConnection(ServerBob *bob, uint64 handlerId,
+		CodecType channelCodec = CODEC_OPUS_VOICE, int channelQuality = 7,
+		bool hasGoodQuality = false);
+	/** Don't copy this object. */
+	ServerConnection(ServerConnection&) = delete;
+	ServerConnection(ServerConnection &&con);
+	ServerConnection& operator = (ServerConnection &&con);
+
+	uint64 getHandlerId();
 	bool handleTsError(unsigned int error);
 	bool shouldWhisper();
 	void setAudio(bool on);
 	void setQuality(bool on);
-	void addWhisperUser(anyID client);
+	User* getUser(const std::string &uniqueId);
+	User* getUser(uint64 dbId);
+	User* getUser(anyID userId);
+	// TODO remove users again
+	void addUser(anyID id, const std::string &uniqueId);
+	void addWhisperUser(const User *user);
 	void addWhisperChannel(uint64 channel);
-	bool removeWhisperUser(anyID client);
+	bool removeWhisperUser(const User *user);
 	bool removeWhisperChannel(uint64 channel);
 	void clearWhisper();
-	const std::vector<anyID>* getWhisperUsers() const;
+	const std::vector<const User*>* getWhisperUsers() const;
 	const std::vector<uint64>* getWhisperChannels() const;
-	ServerBob* getServerBob() const;
 	void close(const std::string &quitMessage);
 
-	template<class... Args>
-	void sendCommand(anyID userID, const std::string &message, Args... args)
+	template <class... Args>
+	void sendCommand(const User *user, const std::string &message, Args... args)
 	{
-		handleTsError(bob->functions.requestSendPrivateTextMsg(handlerID,
-			Utils::format(message, args...).c_str(), userID, NULL));
+		handleTsError(bob->functions.requestSendPrivateTextMsg(handlerId,
+			Utils::format(message, args...).c_str(), user->getId(), NULL));
 	}
 };
 

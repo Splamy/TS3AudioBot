@@ -7,6 +7,7 @@
 #include <ts3_functions.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -21,12 +22,8 @@ static TS3Functions ts3Functions;
 
 static const char *VERSION = "2.0";
 static const std::string CONFIG_FILE = "../Bot/configTS3AudioBot.cfg";
-static const std::string ADMIN_ID_CONFIG_STRING = "MainBot::adminGroupId=";
+static const std::string ADMIN_Id_CONFIG_STRING = "MainBot::adminGroupId=";
 static const std::size_t PATH_SIZE = 1024;
-
-// Activate this to allow control messages from everyone and not only from the
-// server query user (his ID is read from a file)
-//#define UNSECURE
 
 static std::unique_ptr<ServerBob> serverBob;
 
@@ -74,47 +71,53 @@ void ts3plugin_setFunctionPointers(const struct TS3Functions funcs)
 int ts3plugin_init()
 {
 	// App and Resources path are empty for a console client
-	// We take all of them with a priority
-	char paths[4][PATH_SIZE];
-	ts3Functions.getAppPath(paths[0], PATH_SIZE);
-	ts3Functions.getResourcesPath(paths[1], PATH_SIZE);
-	ts3Functions.getPluginPath(paths[2], PATH_SIZE);
-	ts3Functions.getConfigPath(paths[3], PATH_SIZE);
+	// We take all available paths with a priority
+	std::array<char[PATH_SIZE], 4> paths;
+	ts3Functions.getPluginPath(paths[0], PATH_SIZE);
+	ts3Functions.getConfigPath(paths[1], PATH_SIZE);
+	ts3Functions.getAppPath(paths[2], PATH_SIZE);
+	ts3Functions.getResourcesPath(paths[3], PATH_SIZE);
 
 	// Get the server query id from a file
-	for(std::size_t i = 0; i < 4; i++)
+	for (std::array<char[PATH_SIZE], 4>::const_iterator it = paths.cbegin();
+	     it != paths.cend(); it++)
 	{
-		std::string file = std::string(paths[i]) + CONFIG_FILE;
+		std::string file = std::string(*it) + CONFIG_FILE;
 		std::ifstream configFile(file);
-		if(configFile)
+		if (configFile)
 		{
 			// Read the config file to get the admin group id
 			std::string line;
-			while(std::getline(configFile, line))
+			while (std::getline(configFile, line))
 			{
-				if(!Utils::startsWith(line, ";") && !Utils::startsWith(line, "//") &&
-					!Utils::startsWith(line, "#") && Utils::startsWith(line, ADMIN_ID_CONFIG_STRING))
+				if (!Utils::startsWith(line, ";") &&
+				    !Utils::startsWith(line, "//") &&
+				    !Utils::startsWith(line, "#") &&
+				    Utils::startsWith(line, ADMIN_Id_CONFIG_STRING))
 				{
-					std::istringstream parse(line.substr(ADMIN_ID_CONFIG_STRING.size()));
+					std::istringstream parse(
+						line.substr(ADMIN_Id_CONFIG_STRING.size()));
 					anyID id;
 					parse >> id;
-					if(!parse)
-						Utils::log("Couldn't parse admin group id");
+					if (!parse)
+						ts3Functions.logMessage("Couldn't parse admin group id",
+							LogLevel_ERROR, "", 0);
 					else
 						serverBob.reset(new ServerBob(ts3Functions, id));
 					break;
 				}
 			}
-			if(!serverBob)
-				Utils::log("Couldn't find admin group id field");
+			if (!serverBob)
+				ts3Functions.logMessage("Couldn't find admin group id field",
+					LogLevel_ERROR, "", 0);
 			break;
 		}
 	}
-	if(!serverBob)
+	if (!serverBob)
 	{
-		Utils::log("Couldn't read config file");
+		ts3Functions.logMessage("Couldn't read config file", LogLevel_ERROR, "", 0);
 		// We don't want an uncontrollable Bob
-		exit(1)
+		exit(1);
 	}
 	return 0;
 }
@@ -122,6 +125,7 @@ int ts3plugin_init()
 // Unload the plugin
 void ts3plugin_shutdown()
 {
+	serverBob.reset();
 }
 
 // Optional functions
@@ -132,42 +136,57 @@ int ts3plugin_requestAutoload()
 }
 
 // Callbacks executed by the TeamSpeak when an event occurs
-void ts3plugin_onConnectStatusChangeEvent(uint64 scHandlerID, int newStatus, unsigned int /*errorNumber*/)
+void ts3plugin_onConnectStatusChangeEvent(uint64 scHandlerId, int newStatus,
+	unsigned int /*errorNumber*/)
 {
-	switch(newStatus)
+	switch (newStatus)
 	{
 	case STATUS_DISCONNECTED:
-		serverBob->removeServer(scHandlerID);
+		serverBob->removeServer(scHandlerId);
 		break;
 	case STATUS_CONNECTED:
+		serverBob->addServer(scHandlerId);
 		break;
 	case STATUS_CONNECTION_ESTABLISHED:
-		serverBob->addServer(scHandlerID);
 		break;
 	}
 }
 
 // Gets called when a text message is incoming or outgoing
-// Returns 0 if the message should be handled normally, 1 if it should be ignored
-int ts3plugin_onTextMessageEvent(uint64 scHandlerID, anyID targetMode, anyID /*toID*/, anyID fromID, const char* /*fromName*/, const char* /*fromUniqueIdentifier*/, const char* message, int ffIgnored)
+// Returns 0 if the message should be handled normally, 1 if it should be
+// ignored
+int ts3plugin_onTextMessageEvent(uint64 scHandlerId, anyID targetMode,
+	anyID /*toId*/, anyID fromId, const char * /*fromName*/,
+	const char *fromUniqueIdentifier, const char *message, int ffIgnored)
 {
-	// Friend/Foe manager would ignore the message, shouldn't matter for this plugin
-	if(ffIgnored)
+	// Friend/Foe manager would ignore the message, shouldn't matter for this
+	// plugin
+	if (ffIgnored)
 		return 0;
 
-	anyID myID;
-	if(!serverBob->handleTsError(serverBob->functions.getClientID(scHandlerID, &myID)))
+	anyID myId;
+	if (!serverBob->handleTsError(serverBob->functions.getClientID(scHandlerId,
+	    &myId)))
 		return 0;
 
 	// Do nothing when source is own client (outgoing message)
-	if(fromID != myID)
+	if (fromId != myId && targetMode == TextMessageTarget_CLIENT)
 	{
-		if(targetMode == TextMessageTarget_CLIENT)
-		{
-			std::string msg(message);
-			serverBob->handleCommand(scHandlerID, fromID, msg);
-		}
+		std::string msg(message);
+		serverBob->handleCommand(scHandlerId, fromId, fromUniqueIdentifier, msg);
 	}
 
 	return 0;
+}
+
+void ts3plugin_onClientDBIDfromUIDEvent(uint64 scHandlerId,
+	const char *uniqueClientIdentifier, uint64 clientDatabaseId)
+{
+	serverBob->gotDbId(scHandlerId, uniqueClientIdentifier, clientDatabaseId);
+}
+
+void ts3plugin_onServerGroupByClientIDEvent(uint64 scHandlerId,
+	const char * /*name*/, uint64 serverGroup, uint64 clientDatabaseId)
+{
+	serverBob->gotServerGroup(scHandlerId, clientDatabaseId, serverGroup);
 }
