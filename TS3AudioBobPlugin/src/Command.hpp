@@ -136,16 +136,9 @@ public:
 	CommandResult operator()(ServerConnection *connection, User *sender,
 		const std::string &message) override
 	{
-		// Bind connection
-		std::function<CommandResult(User*, const std::string&, Args...)> f1 =
-			Utils::myBind(fun, connection);
-		// Bind sender
-		std::function<CommandResult(const std::string&, Args...)> f2 =
-			Utils::myBind(f1, sender);
-		// Bind message
-		std::function<CommandResult(Args...)> f = Utils::myBind(f2, message);
-		// FIXME Would work on a newer compiler
-		//f = Utils::myBind(fun, connection, sender, message);
+		// Bind already known arguments
+		std::function<CommandResult(Args...)> f = Utils::myBind(fun, connection,
+			sender, message);
 		return execute(message, f);
 	}
 };

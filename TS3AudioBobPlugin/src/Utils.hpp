@@ -41,15 +41,15 @@ namespace Utils
 		return myBindIntern(fun, p, IntSequenceCreator<sizeof...(Args)>());
 	}
 
-	// FIXME Only for more up-to-date compilers than we have on the server...
-	/*template <typename I, class P, class... Ps>
+	// Bind more than one Argument at once
+	template <typename I, class P, class... Ps>
 	auto myBind(const std::function<I> &fun, P p, Ps... ps) -> decltype(myBind(myBind(fun, p), ps...));
 
 	template <typename I, class P, class... Ps>
 	auto myBind(const std::function<I> &fun, P p, Ps... ps) -> decltype(myBind(myBind(fun, p), ps...))
 	{
 		return myBind(myBind(fun, p), ps...);
-	}*/
+	}
 
 	bool isSpace(char c);
 	/** Returns a string with all whitespaces stripped at the beginning and the end. */
