@@ -2,9 +2,7 @@
 
 #include <ServerBob.hpp>
 #include <ServerConnection.hpp>
-
-#include <public_errors.h>
-#include <ts3_functions.h>
+#include <TsApi.hpp>
 
 #include <algorithm>
 #include <array>
@@ -18,14 +16,16 @@
 #include <string>
 #include <vector>
 
-static TS3Functions ts3Functions;
-
-static const char *VERSION = "2.0";
-static const std::string CONFIG_FILE = "../Bot/configTS3AudioBot.cfg";
+namespace
+{
+static const char *VERSION = "2.1";
+static const std::string CONFIG_FILE = "../Bot/Bot/configTS3AudioBot.cfg";
 static const std::string ADMIN_Id_CONFIG_STRING = "MainBot::adminGroupId=";
 static const std::size_t PATH_SIZE = 1024;
 
 static std::unique_ptr<ServerBob> serverBob;
+static std::shared_ptr<TsApi> tsApi;
+}
 
 // TeamSpeak library functions
 // Required functions
@@ -63,7 +63,7 @@ const char* ts3plugin_description()
 // Set the callback function pointers
 void ts3plugin_setFunctionPointers(const struct TS3Functions funcs)
 {
-	ts3Functions = funcs;
+	tsApi.reset(new TsApi(funcs));
 }
 
 // Initialize the plugin
@@ -73,16 +73,15 @@ int ts3plugin_init()
 	// App and Resources path are empty for a console client
 	// We take all available paths with a priority
 	std::array<char[PATH_SIZE], 4> paths;
-	ts3Functions.getPluginPath(paths[0], PATH_SIZE);
-	ts3Functions.getConfigPath(paths[1], PATH_SIZE);
-	ts3Functions.getAppPath(paths[2], PATH_SIZE);
-	ts3Functions.getResourcesPath(paths[3], PATH_SIZE);
+	tsApi->getFunctions().getPluginPath(paths[0], PATH_SIZE);
+	tsApi->getFunctions().getConfigPath(paths[1], PATH_SIZE);
+	tsApi->getFunctions().getAppPath(paths[2], PATH_SIZE);
+	tsApi->getFunctions().getResourcesPath(paths[3], PATH_SIZE);
 
 	// Get the server query id from a file
-	for (std::array<char[PATH_SIZE], 4>::const_iterator it = paths.cbegin();
-	     it != paths.cend(); it++)
+	for (const char (&path)[PATH_SIZE] : paths)
 	{
-		std::string file = std::string(*it) + CONFIG_FILE;
+		std::string file = std::string(path) + CONFIG_FILE;
 		std::ifstream configFile(file);
 		if (configFile)
 		{
@@ -100,24 +99,23 @@ int ts3plugin_init()
 					anyID id;
 					parse >> id;
 					if (!parse)
-						ts3Functions.logMessage("Couldn't parse admin group id",
-							LogLevel_ERROR, "", 0);
+						tsApi->log("Couldn't parse admin group id");
 					else
-						serverBob.reset(new ServerBob(ts3Functions, id));
+						serverBob.reset(new ServerBob(tsApi, id));
 					break;
 				}
 			}
 			if (!serverBob)
-				ts3Functions.logMessage("Couldn't find admin group id field",
-					LogLevel_ERROR, "", 0);
+				tsApi->log("Couldn't find admin group id field");
 			break;
 		}
 	}
 	if (!serverBob)
 	{
-		ts3Functions.logMessage("Couldn't read config file", LogLevel_ERROR, "", 0);
+		tsApi->log("Couldn't read config file");
 		// We don't want an uncontrollable Bob
-		exit(1);
+		tsApi.reset();
+		exit(EXIT_FAILURE);
 	}
 	return 0;
 }
@@ -125,6 +123,7 @@ int ts3plugin_init()
 // Unload the plugin
 void ts3plugin_shutdown()
 {
+	tsApi.reset();
 	serverBob.reset();
 }
 
@@ -165,7 +164,7 @@ int ts3plugin_onTextMessageEvent(uint64 scHandlerId, anyID targetMode,
 		return 0;
 
 	anyID myId;
-	if (!serverBob->handleTsError(serverBob->functions.getClientID(scHandlerId,
+	if (!tsApi->handleTsError(tsApi->getFunctions().getClientID(scHandlerId,
 	    &myId)))
 		return 0;
 

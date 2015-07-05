@@ -108,7 +108,7 @@ private:
 	 */
 	CommandResult execute(std::string message, std::function<CommandResult()> f)
 	{
-		if(!message.empty() && !ignoreMore)
+		if (!message.empty() && !ignoreMore)
 			return CommandResult(false,
 				std::make_shared<std::string>("error too many parameters"));
 		return f();

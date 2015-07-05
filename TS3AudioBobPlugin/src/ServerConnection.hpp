@@ -1,11 +1,10 @@
 #ifndef SERVER_CONNECTION_HPP
 #define SERVER_CONNECTION_HPP
 
-#include <ServerBob.hpp>
+#include <TsApi.hpp>
 #include <User.hpp>
 #include <Utils.hpp>
 
-#include <public_definitions.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,6 +12,7 @@
 class ServerConnection
 {
 private:
+	std::shared_ptr<TsApi> tsApi;
 	uint64 handlerId;
 	CodecType channelCodec;
 	int channelQuality;
@@ -23,9 +23,7 @@ private:
 	std::vector<const User*> whisperUsers;
 
 public:
-	ServerBob *bob;
-
-	ServerConnection(ServerBob *bob, uint64 handlerId,
+	ServerConnection(std::shared_ptr<TsApi> tsApi, uint64 handlerId,
 		CodecType channelCodec = CODEC_OPUS_VOICE, int channelQuality = 7,
 		bool hasGoodQuality = false);
 	/** Don't copy this object. */
@@ -33,9 +31,8 @@ public:
 	ServerConnection(ServerConnection &&con);
 	ServerConnection& operator = (ServerConnection &&con);
 
-	uint64 getHandlerId();
-	bool handleTsError(unsigned int error);
-	bool shouldWhisper();
+	uint64 getHandlerId() const;
+	bool shouldWhisper() const;
 	void setAudio(bool on);
 	void setQuality(bool on);
 	User* getUser(const std::string &uniqueId);
@@ -55,8 +52,9 @@ public:
 	template <class... Args>
 	void sendCommand(const User *user, const std::string &message, Args... args)
 	{
-		handleTsError(bob->functions.requestSendPrivateTextMsg(handlerId,
-			Utils::format(message, args...).c_str(), user->getId(), NULL));
+		tsApi->handleTsError(tsApi->getFunctions().requestSendPrivateTextMsg(
+			handlerId, Utils::format(message, args...).c_str(), user->getId(),
+			NULL));
 	}
 };
 

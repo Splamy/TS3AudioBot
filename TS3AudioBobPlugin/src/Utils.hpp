@@ -3,12 +3,14 @@
 
 #include <functional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace Utils
 {
-	// Define things that are used to bind parameters to a variadic template function
+	// Define things that are used to bind parameters to a variadic template
+	// function
 	/** A sequence of integers */
 	template <int...>
 	struct IntSequence{};
@@ -21,12 +23,15 @@ namespace Utils
 	template <int... Is>
 	struct IntSequenceCreator<0, Is...> : IntSequence<Is...>{};
 	/** A placeholder that holds an int.
-		It should be used with the IntSequenceCreator to generate a sequence of placeholders */
+	 *  It should be used with the IntSequenceCreator to generate a sequence of
+	 *  placeholders.
+	 */
 	template <int>
 	struct Placeholder{};
 
 	template <class R, class... Args, class P, class P2, int... Is>
-	std::function<R(Args...)> myBindIntern(const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>)
+	std::function<R(Args...)> myBindIntern(
+		const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>)
 	{
 		std::function<R(Args...)> f = std::bind(fun, p, Placeholder<Is>()...);
 		return f;
@@ -36,37 +41,140 @@ namespace Utils
 	 *  A real life example can be seen in CommandExecutor (Command.hpp).
 	 */
 	template <class R, class... Args, class P, class P2>
-	std::function<R(Args...)> myBind(const std::function<R(P, Args...)> &fun, P2 p)
+	std::function<R(Args...)> myBind(const std::function<R(P, Args...)> &fun,
+		P2 p)
 	{
 		return myBindIntern(fun, p, IntSequenceCreator<sizeof...(Args)>());
 	}
 
 	// Bind more than one Argument at once
 	template <typename I, class P, class... Ps>
-	auto myBind(const std::function<I> &fun, P p, Ps... ps) -> decltype(myBind(myBind(fun, p), ps...));
+	auto myBind(const std::function<I> &fun, P p, Ps... ps)
+		-> decltype(myBind(myBind(fun, p), ps...));
 
 	template <typename I, class P, class... Ps>
-	auto myBind(const std::function<I> &fun, P p, Ps... ps) -> decltype(myBind(myBind(fun, p), ps...))
+	auto myBind(const std::function<I> &fun, P p, Ps... ps)
+		-> decltype(myBind(myBind(fun, p), ps...))
 	{
 		return myBind(myBind(fun, p), ps...);
 	}
 
+	/** Convert an object to a string with the possibility to format the object.
+	 */
+	std::string formatArgument(const std::string &format, const std::string &arg);
+
+	template <class T>
+	std::string formatArgument(const std::string &/*format*/, T t)
+	{
+		std::ostringstream out;
+		out << t;
+		return out.str();
+	}
+
+	/** A function that throws an exception, used for the next function. */
+	std::string getFormattedString(const std::string &format, std::size_t index);
+
+	/** Extract an argument from a variadic template list and converts it to a
+	 *  string.
+	 */
+	template <class T, class... Args>
+	std::string getFormattedString(const std::string &format, std::size_t index, T t, Args... args)
+	{
+		if (index == 0)
+			return formatArgument(format, t);
+		else
+			return getFormattedString(format, index - 1, args...);
+	}
+
 	bool isSpace(char c);
-	/** Returns a string with all whitespaces stripped at the beginning and the end. */
-	std::string strip(const std::string &input, bool left = true, bool right = true);
+	/** Returns a string with all whitespaces stripped at the beginning and the
+	 *  end.
+	 */
+	std::string strip(const std::string &input, bool left = true,
+		bool right = true);
 	/** Replaces occurences of a string in-place. */
-	std::string& replace(std::string &input, const std::string &target, const std::string &replacement);
+	std::string& replace(std::string &input, const std::string &target,
+		const std::string &replacement);
 	/** Checks if the beginning of a string is another string. */
 	bool startsWith(const std::string &string, const std::string &prefix);
-	/** Creates a string without non-ascii and control characters. */
-	std::string onlyAscii(const std::string &input);
 
+	/** Only print readable ascii characters and no control characters (there
+	 *  can be problems with terminals that interpret characters and we don't
+	 *  want to have possible vulnerabilities).
+	 */
+	std::string sanitizeAscii(const std::string &input);
+
+	/** A function that returns the argument. It is used if format is called
+	 *  without any arguments that should be formatted. This is useful if you
+	 *  e.g. want to print user input and pass that to a log function that
+	 *  calls format(), so you don't have to use format("{0}", argument).
+	 *
+	 *  Be aware that this function also ignore brackets, so you shouldn't
+	 *  escape them if you don't pass other arguments to format().
+	 */
+	std::string format(const std::string &format);
+
+	/** This function inserts arguments into a string with the usage of streams.
+	 *  The format string can contain normal characters, arguments are inserted
+	 *  by {n} where n is the number of the argument that should be inserted,
+	 *  starting with 0. For inserting the character literals { or }, use {{ or
+	 *  }}.
+	 *  To format an argument you can pass properties with the index like this:
+	 *  {0:-15} to format a string to the length 15 and prepend spaces if
+	 *  necessary.
+	 *
+	 *  @param format The string that contains the information how to format
+	 *                the given arguments.
+	 *  @param args   The arguments that will be used to format the string.
+	 *  @return The formatted string.
+	 */
 	template <class... Args>
 	std::string format(const std::string &format, Args... args)
 	{
-		std::vector<char> buf(1 + std::snprintf(NULL, 0, format.c_str(), args...));
-		std::snprintf(buf.data(), buf.size(), format.c_str(), args...);
-		return std::string(buf.cbegin(), buf.cend() - 1);
+		std::ostringstream out;
+		for (std::string::size_type i = 0; i < format.size(); i++)
+		{
+			if (format[i] == '{')
+			{
+				i++;
+				if (format[i] == '{')
+					// Escaped opening bracket
+					out << '{';
+				else
+				{
+					std::string::size_type split = format.find(':', i);
+					std::string::size_type end = format.find('}', i);
+					if (end == std::string::npos)
+						throw std::invalid_argument("Error when formatting a "
+							"string, are you missing the closing bracket?");
+					std::string fmt = split > end ? "" : format.substr(
+						split + 1, end);
+					std::istringstream in(format.substr(i, split > end ?
+						end - i : split - i));
+					std::size_t index;
+					in >> index;
+					if ((!in &&  !in.eof()) || index > sizeof...(args))
+						throw std::invalid_argument("Error when formatting a "
+							"string, index coun't be parsed or is out of range.");
+
+					// Insert the argument at the specified index
+					out << getFormattedString(fmt, index, args...);
+
+					i = end;
+				}
+			} else if (format[i] == '}')
+			{
+				// Escaped closing bracket
+				i++;
+				if (format[i] != '}')
+					throw std::invalid_argument("Error when formatting a "
+						"string, are you missing the opening bracket?");
+				out << '}';
+			} else
+				// Normal character
+				out << format[i];
+		}
+		return out.str();
 	}
 
 	template <class T>
@@ -80,19 +188,21 @@ namespace Utils
 		while (!in.eof())
 		{
 			in >> t;
-			if(!in && !in.eof())
+			if (!in && !in.eof())
 				return;
 			result.push_back(t);
 			// Read the comma
 			in >> c;
-			if(!in && !in.eof())
+			if (!in && !in.eof())
 				return;
 		}
 		*success = true;
 		return result;
 	}
 
-	// max is not contained in the result range
+	/** Creates a new random number from the range [min, max] (can contain min
+	 *  and max).
+	 */
 	int getRandomNumber(int min, int max);
 }
 
@@ -100,10 +210,13 @@ namespace Utils
 // left over parameters
 namespace std
 {
-	// The index of the placeholder will be its stored integer
-	// Increment the indices because the placeholder expects 1 for the first placeholder
+	/** The index of the placeholder will be its stored integer
+	 *  Increment the indices because the placeholder expects 1 for the first
+	 *  placeholder.
+	 */
 	template <int I>
-	struct is_placeholder<Utils::Placeholder<I> > : integral_constant<int, I + 1>{};
+	struct is_placeholder<Utils::Placeholder<I> > :
+		integral_constant<int, I + 1>{};
 }
 
 #endif

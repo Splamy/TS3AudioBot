@@ -10,7 +10,9 @@
 const std::chrono::seconds User::GROUP_WAIT_TIME(3);
 const std::chrono::seconds User::GROUP_REFRESH_TIME(10);
 
-User::User(ServerConnection *connection, anyID id, const std::string &uniqueId) :
+User::User(ServerConnection *connection, std::shared_ptr<TsApi> tsApi, anyID id,
+	const std::string &uniqueId) :
+	tsApi(std::move(tsApi)),
 	connection(connection),
 	id(id),
 	uniqueId(uniqueId),
@@ -23,6 +25,7 @@ User::User(ServerConnection *connection, anyID id, const std::string &uniqueId) 
 }
 
 User::User(User &&user) :
+	tsApi(std::move(user.tsApi)),
 	connection(user.connection),
 	id(user.id),
 	uniqueId(std::move(user.uniqueId)),
@@ -39,6 +42,7 @@ User::User(User &&user) :
 
 User& User::operator = (User &&user)
 {
+	tsApi = std::move(user.tsApi);
 	connection = user.connection;
 	id = user.id;
 	uniqueId = std::move(user.uniqueId);
@@ -55,8 +59,8 @@ User& User::operator = (User &&user)
 
 void User::requestDbId()
 {
-	connection->handleTsError(connection->bob->functions.
-		requestClientDBIDfromUID(connection->getHandlerId(), uniqueId.c_str(), NULL));
+	tsApi->handleTsError(tsApi->getFunctions().requestClientDBIDfromUID(
+		connection->getHandlerId(), uniqueId.c_str(), NULL));
 }
 
 void User::requestGroupUpdate()
@@ -65,7 +69,7 @@ void User::requestGroupUpdate()
 	{
 		// Request client information
 		groups.clear();
-		connection->handleTsError(connection->bob->functions.
+		tsApi->handleTsError(tsApi->getFunctions().
 			requestServerGroupsByClientID(connection->getHandlerId(), dbId,
 			NULL));
 		groupUpdateRequested = false;

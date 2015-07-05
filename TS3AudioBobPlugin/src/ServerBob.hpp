@@ -2,8 +2,8 @@
 #define SERVER_BOB_HPP
 
 #include <Command.hpp>
+#include <TsApi.hpp>
 
-#include <ts3_functions.h>
 #include <istream>
 #include <string>
 #include <vector>
@@ -16,8 +16,6 @@ class ServerBob
 public:
 	typedef std::vector<std::unique_ptr<AbstractCommandExecutor> > Commands;
 
-	const TS3Functions functions;
-
 private:
 	static const std::vector<std::string> quitMessages;
 
@@ -27,8 +25,10 @@ private:
 	bool qualityOn;
 	uint64 botAdminGroup;
 
+	std::shared_ptr<TsApi> tsApi;
+
 public:
-	ServerBob(const TS3Functions &functions, uint64 botAdminGroup);
+	ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup);
 	/** Don't copy this object. */
 	ServerBob(ServerBob&) = delete;
 	ServerBob(ServerBob &&bob);
@@ -38,20 +38,10 @@ public:
 	void addServer(uint64 handlerId);
 	void removeServer(uint64 handlerId);
 	ServerConnection* getServer(uint64 handlerId);
-	bool handleTsError(unsigned int error);
 	void handleCommand(uint64 handlerId, anyID sender, const char *uniqueId,
 		const std::string &message);
 	void executeCommand(ServerConnection *connection, User *sender,
 		const std::string &message);
-
-	/** Prints a message into the TeamSpeak log. */
-	template <class... Args>
-	void log(const std::string &format, Args... args)
-	{
-		std::string message = Utils::format(format, args...);
-		if (!handleTsError(functions.logMessage(message.c_str(), LogLevel_WARNING, "", 0)))
-			printf("%s\n", message.c_str());
-	}
 
 private:
 	template <class... Args>

@@ -1,8 +1,10 @@
 #ifndef USER_HPP
 #define USER_HPP
 
-#include <public_definitions.h>
+#include <TsApi.hpp>
+
 #include <chrono>
+#include <memory>
 #include <queue>
 #include <string>
 
@@ -14,6 +16,7 @@ private:
 	static const std::chrono::seconds GROUP_WAIT_TIME;
 	static const std::chrono::seconds GROUP_REFRESH_TIME;
 
+	std::shared_ptr<TsApi> tsApi;
 	ServerConnection *connection;
 	anyID id;
 	std::string uniqueId;
@@ -27,7 +30,7 @@ private:
 	std::queue<std::string> commandQueue;
 
 public:
-	User(ServerConnection *connection, anyID id, const std::string &uniqueId);
+	User(ServerConnection *connection, std::shared_ptr<TsApi> tsApi, anyID id, const std::string &uniqueId);
 	/** Don't copy this object. */
 	User(User&) = delete;
 	User(User &&user);

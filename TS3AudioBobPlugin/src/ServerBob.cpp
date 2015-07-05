@@ -9,13 +9,23 @@
 #include <sstream>
 #include <stdexcept>
 
-const std::vector<std::string> ServerBob::quitMessages =
-	{ "I'm outta here", "You're boring", "Have a nice day", "Bye" };
+namespace
+{
+static bool connectionIdEqual(uint64 handlerId, ServerConnection &connection)
+{
+	return handlerId == connection.getHandlerId();
+}
+}
 
-ServerBob::ServerBob(const TS3Functions &functions, uint64 botAdminGroup) :
-	functions(functions),
+const std::vector<std::string> ServerBob::quitMessages =
+	{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
+	  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet...",
+	  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz" };
+
+ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup) :
 	audioOn(false),
-	botAdminGroup(botAdminGroup)
+	botAdminGroup(botAdminGroup),
+	tsApi(tsApi)
 {
 	// Register commands
 	addCommand("help", &ServerBob::helpCommand,              "Gives you this handy command list");
@@ -24,7 +34,7 @@ ServerBob::ServerBob(const TS3Functions &functions, uint64 botAdminGroup) :
 	std::string commandString = "audio [on|off]";
 	addCommand("audio", &ServerBob::audioCommand,            "Let the bob send or be silent", &commandString);
 	commandString = "whisper clear";
-	addCommand("whisper", &ServerBob::whisperClearCommand,   "", &commandString);
+	addCommand("whisper", &ServerBob::whisperClearCommand,   "Clears the whisperlist", &commandString);
 	commandString = "whisper [client|channel] [add|remove] <id>";
 	addCommand("whisper", &ServerBob::whisperClientCommand,  "Control the whisperlist of the Bob", &commandString);
 	addCommand("whisper", &ServerBob::whisperChannelCommand, "", NULL, false, false);
@@ -36,23 +46,23 @@ ServerBob::ServerBob(const TS3Functions &functions, uint64 botAdminGroup) :
 
 	// Get currently active connections
 	uint64 *handlerIds;
-	if (!handleTsError(functions.getServerConnectionHandlerList(&handlerIds)))
+	if (!this->tsApi->handleTsError(this->tsApi->getFunctions().getServerConnectionHandlerList(&handlerIds)))
 		throw std::runtime_error("Can't fetch server connections");
 	for (uint64 *handlerId = handlerIds; *handlerId != 0; handlerId++)
-		connections.emplace_back(this, *handlerId);
-	functions.freeMemory(handlerIds);
+		connections.emplace_back(tsApi, *handlerId);
+	this->tsApi->getFunctions().freeMemory(handlerIds);
 
 	// Set audio to default state
 	setAudio(audioOn);
 }
 
 ServerBob::ServerBob(ServerBob &&bob) :
-	functions(bob.functions),
 	commands(std::move(bob.commands)),
 	connections(std::move(bob.connections)),
 	audioOn(bob.audioOn),
 	qualityOn(bob.qualityOn),
-	botAdminGroup(bob.botAdminGroup)
+	botAdminGroup(bob.botAdminGroup),
+	tsApi(std::move(bob.tsApi))
 {
 }
 
@@ -79,12 +89,12 @@ void ServerBob::gotServerGroup(uint64 handlerId, uint64 dbId, uint64 serverGroup
 				executeCommand(connection, user, user->dequeueCommand());
 		}
 	} else
-		log("User not found");
+		tsApi->log("User not found");
 }
 
 void ServerBob::addServer(uint64 handlerId)
 {
-	connections.emplace_back(this, handlerId);
+	connections.emplace_back(tsApi, handlerId);
 	connections.back().setAudio(audioOn);
 }
 
@@ -99,52 +109,30 @@ void ServerBob::removeServer(uint64 handlerId)
 			return;
 		}
 	}
-	log("Can't find server id to remove");
+	tsApi->log("Can't find server id to remove");
 }
 
 ServerConnection* ServerBob::getServer(uint64 handlerId)
 {
-	for (std::vector<ServerConnection>::iterator it = connections.begin();
-	     it != connections.end(); it++)
+	for (ServerConnection &connection : connections)
 	{
-		if (it->getHandlerId() == handlerId)
-			return &(*it);
+		if (connection.getHandlerId() == handlerId)
+			return &connection;
 	}
 	return NULL;
-}
-
-bool ServerBob::handleTsError(unsigned int error)
-{
-	if (error != ERROR_ok)
-	{
-		char* errorMsg;
-		if (functions.getErrorMessage(error, &errorMsg) == ERROR_ok)
-		{
-			log("TeamSpeak-error: %s", errorMsg);
-			// Send the message to the bot
-			std::string msg = errorMsg;
-			functions.freeMemory(errorMsg);
-			Utils::replace(msg, "\n", "\\n");
-		} else
-			log("TeamSpeak-double-error");
-		return false;
-	}
-	return true;
 }
 
 void ServerBob::handleCommand(uint64 handlerId, anyID sender,
 	const char *uniqueId, const std::string &message)
 {
 	// Search the connection and the user
-	std::vector<ServerConnection>::iterator connection = connections.begin();
-	for (; connection != connections.end(); connection++)
-	{
-		if (connection->getHandlerId() == handlerId)
-			break;
-	}
+	std::vector<ServerConnection>::iterator connection =
+		std::find_if(connections.begin(), connections.end(),
+		std::bind(connectionIdEqual, handlerId, std::placeholders::_1));
+
 	if (connection == connections.end())
 	{
-		log("Server connection for command not found");
+		tsApi->log("Server connection for command not found");
 		return;
 	}
 
@@ -159,7 +147,7 @@ void ServerBob::handleCommand(uint64 handlerId, anyID sender,
 	user->enqueueCommand(message);
 	std::string noNewline = message;
 	Utils::replace(noNewline, "\n", "\\n");
-	log("Enqueued command '%s'", noNewline.c_str());
+	tsApi->log("Enqueued command '{0}'", noNewline);
 	// Execute commands
 	while (user->hasCommands())
 		executeCommand(&(*connection), user, user->dequeueCommand());
@@ -170,20 +158,20 @@ void ServerBob::executeCommand(ServerConnection *connection, User *sender,
 {
 	if (!sender->inGroup(botAdminGroup))
 	{
-		log("Unauthorized access from %d", sender->getId());
+		tsApi->log("Unauthorized access from {0}", sender->getId());
 		connection->sendCommand(sender, "error access denied");
 		return;
 	}
 	std::string noNewline = message;
 	Utils::replace(noNewline, "\n", "\\n");
-	log("Executing command '%s'", noNewline.c_str());
+	tsApi->log("Executing command '{0}'", noNewline);
 
 	// Search the right command
 	CommandResult res;
 	std::shared_ptr<std::string> errorMessage;
-	for (Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
+	for (Commands::reference command : commands)
 	{
-		res = (**it)(connection, sender, message);
+		res = (*command)(connection, sender, message);
 		if (res.success)
 			break;
 		else if (res.errorMessage)
@@ -192,7 +180,7 @@ void ServerBob::executeCommand(ServerConnection *connection, User *sender,
 	if (!res.success)
 	{
 		if (errorMessage)
-			connection->sendCommand(sender, errorMessage->c_str());
+			connection->sendCommand(sender, *errorMessage);
 		else
 			unknownCommand(connection, sender, message);
 	}
@@ -215,28 +203,25 @@ void ServerBob::addCommand(const std::string &name,
 void ServerBob::setAudio(bool on)
 {
 	audioOn = on;
-	for (std::vector<ServerConnection>::iterator it = connections.begin();
-	     it != connections.end(); it++)
-		it->setAudio(on);
+	for (ServerConnection &connection : connections)
+		connection.setAudio(on);
 }
 
 void ServerBob::setQuality(bool on)
 {
 	qualityOn = on;
-	for (std::vector<ServerConnection>::iterator it = connections.begin();
-	     it != connections.end(); it++)
-		it->setQuality(on);
+	for (ServerConnection &connection : connections)
+		connection.setQuality(on);
 }
 
 void ServerBob::close()
 {
-	std::string msg = quitMessages[Utils::getRandomNumber(0, quitMessages.size())];
-	for (std::vector<ServerConnection>::iterator it = connections.begin();
-	     it != connections.end(); it++)
-		it->close(msg);
+	std::string msg = quitMessages[Utils::getRandomNumber(0, quitMessages.size() - 1)];
+	for (ServerConnection &connection : connections)
+		connection.close(msg);
 	connections.clear();
 	// "Graceful" exit
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 // Commands
@@ -245,16 +230,16 @@ CommandResult ServerBob::unknownCommand(ServerConnection *connection,
 {
 	std::string msg = message;
 	Utils::replace(msg, "\n", "\\n");
-	std::string formatted = Utils::format("Unknown command: %s", msg.c_str());
+	std::string formatted = Utils::format("Unknown command: {0}", msg);
 	// Send error message
-	connection->sendCommand(sender, "error unknown command %s", msg.c_str());
+	connection->sendCommand(sender, "error unknown command {0}", msg);
 	return CommandResult(false, std::make_shared<std::string>(formatted));
 }
 
 CommandResult ServerBob::loopCommand(ServerConnection * /*connection*/,
-	User * /*sender*/, const std::string &message, std::string /*command*/)
+	User * /*sender*/, const std::string &/*message*/, std::string /*command*/)
 {
-	log("Loop detected, have fun (%s)", message.c_str());
+	tsApi->log("Loop detected, have fun");
 	return CommandResult();
 }
 
@@ -288,7 +273,7 @@ CommandResult ServerBob::whisperClientCommand(ServerConnection *connection,
 	if (action == "add")
 	{
 		User *user = connection->getUser(static_cast<anyID>(id));
-		if(user)
+		if (user)
 			connection->addWhisperUser(user);
 		else
 			return CommandResult(false,
@@ -349,7 +334,7 @@ CommandResult ServerBob::statusAudioCommand(ServerConnection *connection,
 	std::transform(audio.begin(), audio.end(), audio.begin(), ::tolower);
 	if (audio != "audio")
 		return CommandResult(false);
-	connection->sendCommand(sender, "status audio %s", audioOn ? "on" : "off");
+	connection->sendCommand(sender, "status audio {0}", audioOn ? "on" : "off");
 	return CommandResult();
 }
 
@@ -362,15 +347,11 @@ CommandResult ServerBob::statusWhisperCommand(ServerConnection *connection,
 		return CommandResult(false);
 	std::ostringstream out;
 	out << "status whisper clients";
-	const std::vector<const User*> *users = connection->getWhisperUsers();
-	for (std::vector<const User*>::const_iterator it = users->cbegin();
-	     it != users->cend(); it++)
-		out << " " << *it;
+	for (const User *user : *connection->getWhisperUsers())
+		out << " " << user->getId();
 	out << "\nstatus whisper channels";
-	const std::vector<uint64> *channels = connection->getWhisperChannels();
-	for (std::vector<uint64>::const_iterator it = channels->cbegin();
-	     it != channels->cend(); it++)
-		out << " " << *it;
+	for (const uint64 channel : *connection->getWhisperChannels())
+		out << " " << channel;
 	connection->sendCommand(sender, out.str());
 	return CommandResult();
 }
@@ -381,24 +362,24 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 	std::ostringstream output;
 	output << "help";
 	std::size_t maxLength = 0;
-	for (Commands::const_iterator it = commands.cbegin(); it != commands.cend(); it++)
+	for (Commands::const_reference command : commands)
 	{
-		if ((*it)->getHelp() && (*it)->getCommandName())
+		if (command->getHelp() && command->getCommandName())
 		{
-			std::size_t s = (*it)->getCommandName()->size();
+			std::size_t s = command->getCommandName()->size();
 			if (s > maxLength)
 				maxLength = s;
 		}
 	}
 	std::ostringstream fStream;
-	fStream << "\n%-" << maxLength << "s  %s";
+	// FIXME align the output to s characters
+	fStream << "\n{0:-" << maxLength << "}    {1}";
 	const std::string format = fStream.str();
-	for (Commands::const_iterator it = commands.cbegin(); it != commands.cend();
-	     it++)
+	for (Commands::const_reference command : commands)
 	{
-		if ((*it)->getHelp() && (*it)->getCommandName())
-			output << Utils::format(format, (*it)->getCommandName()->c_str(),
-				(*it)->getHelp()->c_str());
+		if (command->getHelp() && command->getCommandName())
+			output << Utils::format(format, *command->getCommandName(),
+				*command->getHelp());
 	}
 
 	connection->sendCommand(sender, output.str());

@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <functional>
 
+namespace
+{
 // Simple functions used to pass to standard functions
 static anyID getUserId(const User *u)
 {
@@ -14,29 +16,35 @@ static bool userIdEqual(anyID id, const User *u)
 {
 	return id == u->getId();
 }
+}
 
-ServerConnection::ServerConnection(ServerBob *bob, uint64 handlerId,
-	CodecType channelCodec, int channelQuality, bool hasGoodQuality) :
-	handlerId(handlerId), channelCodec(channelCodec),
-	channelQuality(channelQuality), hasGoodQuality(hasGoodQuality),
-	audioOn(false), bob(bob)
+ServerConnection::ServerConnection(std::shared_ptr<TsApi> tsApi,
+	uint64 handlerId, CodecType channelCodec, int channelQuality,
+	bool hasGoodQuality) :
+	tsApi(std::move(tsApi)),
+	handlerId(handlerId),
+	channelCodec(channelCodec),
+	channelQuality(channelQuality),
+	hasGoodQuality(hasGoodQuality),
+	audioOn(false)
 {
 }
 
 ServerConnection::ServerConnection(ServerConnection &&con) :
+	tsApi(std::move(con.tsApi)),
 	handlerId(con.handlerId),
 	channelCodec(con.channelCodec),
 	hasGoodQuality(con.hasGoodQuality),
 	audioOn(con.audioOn),
 	users(std::move(con.users)),
 	whisperChannels(std::move(con.whisperChannels)),
-	whisperUsers(std::move(con.whisperUsers)),
-	bob(con.bob)
+	whisperUsers(std::move(con.whisperUsers))
 {
 }
 
 ServerConnection& ServerConnection::operator = (ServerConnection &&con)
 {
+	tsApi = std::move(con.tsApi);
 	handlerId = con.handlerId;
 	channelCodec = con.channelCodec;
 	hasGoodQuality = con.hasGoodQuality;
@@ -44,35 +52,15 @@ ServerConnection& ServerConnection::operator = (ServerConnection &&con)
 	users = std::move(con.users);
 	whisperChannels = std::move(con.whisperChannels);
 	whisperUsers = std::move(con.whisperUsers);
-	bob = con.bob;
 	return *this;
 }
 
-uint64 ServerConnection::getHandlerId()
+uint64 ServerConnection::getHandlerId() const
 {
 	return handlerId;
 }
 
-bool ServerConnection::handleTsError(unsigned int error)
-{
-	if (error != ERROR_ok)
-	{
-		char* errorMsg;
-		if (bob->functions.getErrorMessage(error, &errorMsg) == ERROR_ok)
-		{
-			bob->log("TeamSpeak-error: %s", errorMsg);
-			// Send the message to the bot
-			std::string msg = errorMsg;
-			bob->functions.freeMemory(errorMsg);
-			Utils::replace(msg, "\n", "\\n");
-		} else
-			bob->log("TeamSpeak-double-error");
-		return false;
-	}
-	return true;
-}
-
-bool ServerConnection::shouldWhisper()
+bool ServerConnection::shouldWhisper() const
 {
 	return !whisperChannels.empty() || !whisperUsers.empty();
 }
@@ -90,15 +78,17 @@ void ServerConnection::setAudio(bool on)
 			targetUsers.back() = 0;
 			std::vector<uint64> targetChannels(whisperChannels);
 			targetChannels.emplace_back(0);
-			handleTsError(bob->functions.requestClientSetWhisperList(
-				handlerId, 0, targetChannels.data(), targetUsers.data(), NULL));
+			tsApi->handleTsError(tsApi->getFunctions().
+				requestClientSetWhisperList(handlerId, 0, targetChannels.data(),
+				targetUsers.data(), NULL));
 		} else
 			// Unset whisperlist
-			handleTsError(bob->functions.requestClientSetWhisperList(
-				handlerId, 0, NULL, NULL, NULL));
+			tsApi->handleTsError(tsApi->getFunctions().
+				requestClientSetWhisperList(handlerId, 0, NULL, NULL, NULL));
 	}
-	handleTsError(bob->functions.setClientSelfVariableAsInt(handlerId,
-		CLIENT_INPUT_DEACTIVATED, on ? INPUT_ACTIVE : INPUT_DEACTIVATED));
+	tsApi->handleTsError(tsApi->getFunctions().setClientSelfVariableAsInt(
+		handlerId, CLIENT_INPUT_DEACTIVATED,
+		on ? INPUT_ACTIVE : INPUT_DEACTIVATED));
 }
 
 void ServerConnection::setQuality(bool on)
@@ -107,68 +97,71 @@ void ServerConnection::setQuality(bool on)
 	{
 		anyID clientId;
 		uint64 channelId;
-		if (!handleTsError(bob->functions.getClientID(handlerId, &clientId)) ||
-		    !handleTsError(bob->functions.getChannelOfClient(handlerId,
-		    clientId, &channelId)))
+		if (!tsApi->handleTsError(tsApi->getFunctions().getClientID(handlerId,
+		    &clientId)) ||
+		    !tsApi->handleTsError(tsApi->getFunctions().getChannelOfClient(
+		    handlerId, clientId, &channelId)))
 			return;
 		if (on)
 		{
 			// Save codec and quality
 			int codec;
-			if (!handleTsError(bob->functions.getChannelVariableAsInt(handlerId,
-			    channelId, CHANNEL_CODEC, &codec)))
+			if (!tsApi->handleTsError(tsApi->getFunctions().
+			    getChannelVariableAsInt(handlerId, channelId, CHANNEL_CODEC,
+			    &codec)))
 				return;
 			channelCodec = static_cast<CodecType>(codec);
-			if (!handleTsError(bob->functions.getChannelVariableAsInt(handlerId,
-			    channelId, CHANNEL_CODEC_QUALITY, &channelQuality)))
+			if (!tsApi->handleTsError(tsApi->getFunctions().
+			    getChannelVariableAsInt(handlerId, channelId,
+			    CHANNEL_CODEC_QUALITY, &channelQuality)))
 				return;
 		}
-		handleTsError(bob->functions.setChannelVariableAsInt(handlerId,
-			channelId, CHANNEL_CODEC, on ? CODEC_OPUS_MUSIC : channelCodec));
-		handleTsError(bob->functions.setChannelVariableAsInt(handlerId,
-			channelId, CHANNEL_CODEC_QUALITY, on ? 7 : channelQuality));
+		tsApi->handleTsError(tsApi->getFunctions().setChannelVariableAsInt(
+			handlerId, channelId, CHANNEL_CODEC,
+			on ? CODEC_OPUS_MUSIC : channelCodec));
+		tsApi->handleTsError(tsApi->getFunctions().setChannelVariableAsInt(
+			handlerId, channelId, CHANNEL_CODEC_QUALITY,
+			on ? 7 : channelQuality));
 		char c;
-		handleTsError(bob->functions.flushChannelUpdates(handlerId, channelId, &c));
+		tsApi->handleTsError(tsApi->getFunctions().flushChannelUpdates(
+			handlerId, channelId, &c));
 		hasGoodQuality = on;
 	}
 }
 
 User* ServerConnection::getUser(const std::string &uniqueId)
 {
-	for (std::vector<User>::iterator it = users.begin();
-	     it != users.end(); it++)
+	for (User &user : users)
 	{
-		if (it->getUniqueId() == uniqueId)
-			return &(*it);
+		if (user.getUniqueId() == uniqueId)
+			return &user;
 	}
 	return NULL;
 }
 
 User* ServerConnection::getUser(uint64 dbId)
 {
-	for (std::vector<User>::iterator it = users.begin();
-	     it != users.end(); it++)
+	for (User &user : users)
 	{
-		if (it->getDbId() == dbId)
-			return &(*it);
+		if (user.getDbId() == dbId)
+			return &user;
 	}
 	return NULL;
 }
 
 User* ServerConnection::getUser(anyID userId)
 {
-	for (std::vector<User>::iterator it = users.begin();
-	     it != users.end(); it++)
+	for (User &user : users)
 	{
-		if (it->getId() == userId)
-			return &(*it);
+		if (user.getId() == userId)
+			return &user;
 	}
 	return NULL;
 }
 
 void ServerConnection::addUser(anyID userId, const std::string &uniqueId)
 {
-	users.emplace_back(this, userId, uniqueId);
+	users.emplace_back(this, tsApi, userId, uniqueId);
 }
 
 void ServerConnection::addWhisperUser(const User *user)
@@ -227,5 +220,6 @@ const std::vector<uint64>* ServerConnection::getWhisperChannels() const
 void ServerConnection::close(const std::string &quitMessage)
 {
 	setQuality(false);
-	handleTsError(bob->functions.stopConnection(handlerId, quitMessage.c_str()));
+	tsApi->handleTsError(tsApi->getFunctions().stopConnection(handlerId,
+		quitMessage.c_str()));
 }

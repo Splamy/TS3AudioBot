@@ -1,5 +1,32 @@
 #include "Utils.hpp"
 
+#include <random>
+
+std::string Utils::formatArgument(const std::string &format, const std::string &arg)
+{
+	if (format.empty())
+		return arg;
+	std::string::size_type start = format[0] == '-' ? 1 : 0;
+	std::istringstream in(format.substr(start));
+	std::string::size_type size;
+	in >> size;
+	if (!in && !in.eof())
+		throw std::invalid_argument("Unknown string formatting options");
+	if (size <= arg.size())
+		return arg;
+	std::string fill(size - arg.size(), ' ');
+	if (format[0] == '-')
+		return fill + arg;
+	else
+		return arg + fill;
+}
+
+std::string Utils::getFormattedString(const std::string &/*format*/, std::size_t /*index*/)
+{
+	throw std::invalid_argument("Can't find the argument at the specified "
+		"index.");
+}
+
 bool Utils::isSpace(char c)
 {
 	return std::isspace(c);
@@ -42,9 +69,7 @@ bool Utils::startsWith(const std::string &string, const std::string &prefix)
 		prefix.end(), string.begin());
 }
 
-// Only print ascii chars and no control characters (maybe there can be problems
-// with Remote Code Execution, that has to be verified)
-std::string Utils::onlyAscii(const std::string &input)
+std::string Utils::sanitizeAscii(const std::string &input)
 {
 	std::vector<char> result(input.size());
 	int j = 0;
@@ -60,12 +85,15 @@ std::string Utils::onlyAscii(const std::string &input)
 	return std::move(str);
 }
 
+std::string Utils::format(const std::string &format)
+{
+	return format;
+}
+
 int Utils::getRandomNumber(int min, int max)
 {
-	// Generate random number
-	//std::random_device random;
-	//std::mt19937 generator(random());
-	//std::uniform_int_distribution<int> uniform(min, max);
-	//return uniform(generator);
-	return rand() % (max - min) + min;
+	std::random_device random;
+	std::mt19937 generator(random());
+	std::uniform_int_distribution<> uniform(min, max);
+	return uniform(generator);
 }
