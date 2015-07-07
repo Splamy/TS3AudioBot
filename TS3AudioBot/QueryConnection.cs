@@ -141,10 +141,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			if (response.Length <= 0)
-				return new int[0];
-
-			return response.Select<QueryResponseDictionary, int>((dict) => (int)dict["sgid"]).ToArray();
+			return response.Length <= 0 ? new int[0] : response.Select<QueryResponseDictionary, int> (dict => (int)dict ["sgid"]).ToArray();
 		}
 
 		public void Dispose()
@@ -183,7 +180,7 @@ namespace TS3AudioBot
 		public string passwd;
 	}
 
-	internal static class ReadOnlyCollectionExtensions
+	static class ReadOnlyCollectionExtensions
 	{
 		public static void ForEach<T>(this IReadOnlyCollection<T> collection, Action<T> action)
 		{

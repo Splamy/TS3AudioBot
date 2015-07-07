@@ -106,7 +106,7 @@ namespace TS3AudioBot
 			try
 			{
 				Log.Write(Log.Level.Debug, "AF Wait for start");
-				int timeoutmax = TIMEOUT_MS / TIMEOUT_INTERVAL_MS;
+				const int timeoutmax = TIMEOUT_MS / TIMEOUT_INTERVAL_MS;
 				int timeoutcur = timeoutmax;
 
 				while (timeoutcur-- > 0 && currentRessource != null && !ressourceEndToken.IsCancellationRequested)
@@ -150,14 +150,14 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 			if (audioRessource.Enqueue)
 			{
-				if (!audioRessource.Play(ar => playerConnection.AudioAdd(ar)))
+				if (!audioRessource.Play (playerConnection.AudioAdd))
 					return false;
 				audioRessource.Enqueue = false;
 			}
 			else
 			{
 				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource.RessourceURL);
-				if (!audioRessource.Play(ar => playerConnection.AudioStart(ar)))
+				if (!audioRessource.Play (playerConnection.AudioStart))
 					return false;
 			}
 
@@ -225,7 +225,7 @@ namespace TS3AudioBot
 
 		public abstract bool Play(Action<string> setMedia);
 
-		public AudioRessource(string ressourceURL, string ressourceTitle)
+		protected AudioRessource(string ressourceURL, string ressourceTitle)
 		{
 			Volume = -1;
 			RessourceURL = ressourceURL;

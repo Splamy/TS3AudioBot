@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace TS3AudioBot
 {
@@ -62,7 +59,7 @@ namespace TS3AudioBot
 			return current.hasData || current.unique;
 		}
 
-		private int ValidateChar(char c)
+		private static int ValidateChar(char c)
 		{
 			if (c >= 'a' && c <= 'z')
 				return c - 'a';

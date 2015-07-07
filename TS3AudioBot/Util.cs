@@ -2,14 +2,12 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Linq.Expressions;
 
 namespace TS3AudioBot
 {
 	static class Util
 	{
-		private static Dictionary<FilePath, string> filePathDict;
+		private readonly static Dictionary<FilePath, string> filePathDict;
 
 		static Util()
 		{
@@ -56,19 +54,19 @@ namespace TS3AudioBot
 		{
 			if (filePathDict.ContainsKey(filePath))
 				return filePathDict[filePath];
-			return null;
+			throw new ApplicationException();
 		}
 	}
 
 	internal class AsyncLazy<T>
 	{
-		protected T result;
-		protected Func<Task<T>> lazyMethod;
+		protected T Result;
+		protected Func<Task<T>> LazyMethod;
 		public bool Evaluated { get; protected set; }
 
 		private AsyncLazy(Func<Task<T>> method)
 		{
-			lazyMethod = method;
+			LazyMethod = method;
 		}
 
 		public static AsyncLazy<T> CreateAsyncLazy(Func<Task<T>> method)
@@ -85,13 +83,13 @@ namespace TS3AudioBot
 		{
 			if (Evaluated)
 			{
-				return result;
+				return Result;
 			}
 			else
 			{
-				result = await lazyMethod();
+				Result = await LazyMethod();
 				Evaluated = true;
-				return result;
+				return Result;
 			}
 		}
 	}

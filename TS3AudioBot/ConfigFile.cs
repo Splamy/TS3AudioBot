@@ -8,7 +8,7 @@ namespace TS3AudioBot
 	class ConfigFile
 	{
 		private string path;
-		private Dictionary<string, string> data;
+		private readonly Dictionary<string, string> data;
 		private bool changed;
 
 		private ConfigFile()
@@ -51,7 +51,7 @@ namespace TS3AudioBot
 			{
 				FileStream fs = File.Create(pPath);
 				fs.Close();
-				return new ConfigFile()
+				return new ConfigFile 
 				{
 					path = pPath,
 				};
@@ -106,7 +106,12 @@ namespace TS3AudioBot
 			}
 		}
 
-		// TODO xmldoc
+		/// <summary>Reads an object from the currently loaded file.</summary>
+		/// <returns>A new struct instance with the read values.</returns>
+		/// <param name="associatedClass">Class the DataStruct is associated to.</param>
+		/// <param name="defaultIfPossible">If set to <c>true</c> the method will use the default value from the InfoAttribute if it exists,
+		/// if no default value exists or set to <c>false</c> it will ask for the value on the console.</param>
+		/// <typeparam name="T">Struct to be read from the file.</typeparam>
 		public T GetDataStruct<T>(Type associatedClass, bool defaultIfPossible) where T : struct
 		{
 			object dataStruct = new T();
@@ -180,26 +185,26 @@ namespace TS3AudioBot
 			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
 			if (mi == null)
 				throw new Exception("The value of the DataStruct couldn't be parsed.");
-			object[] result = new object[] { value, null };
+			object[] result = { value, null };
 			object success = mi.Invoke(null, result);
 			if (!(bool)success)
 				return null;
 			return result[1];
 		}
 
-		protected static bool IsNumeric(Type T)
+		protected static bool IsNumeric(Type type)
 		{
-			return T == typeof(sbyte)
-				|| T == typeof(byte)
-				|| T == typeof(short)
-				|| T == typeof(ushort)
-				|| T == typeof(int)
-				|| T == typeof(uint)
-				|| T == typeof(long)
-				|| T == typeof(ulong)
-				|| T == typeof(float)
-				|| T == typeof(double)
-				|| T == typeof(decimal);
+			return type == typeof(sbyte)
+				|| type == typeof(byte)
+				|| type == typeof(short)
+				|| type == typeof(ushort)
+				|| type == typeof(int)
+				|| type == typeof(uint)
+				|| type == typeof(long)
+				|| type == typeof(ulong)
+				|| type == typeof(float)
+				|| type == typeof(double)
+				|| type == typeof(decimal);
 		}
 
 		public virtual void Close()

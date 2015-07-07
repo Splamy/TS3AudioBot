@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -124,7 +123,7 @@ namespace TS3AudioBot
 			// give the bobController a reference to the query so he can communicate with the queryClient
 			bobController.QueryConnection = queryConnection;
 			// create a default session for all users in all chat
-			sessionManager.defaultSession = new PublicSession(queryConnection);
+			sessionManager.DefaultSession = new PublicSession(queryConnection);
 			// connect the query after everyting is set up
 			var connectTask = queryConnection.Connect();
 		}
@@ -203,9 +202,9 @@ namespace TS3AudioBot
 			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy<TextMessage>(HasInvokerAdminRights, textMessage);
 
 			// check if the user has an open request
-			if (session.responseProcessor != null)
+			if (session.ResponseProcessor != null)
 			{
-				if (session.responseProcessor(session, textMessage, session.adminResponse && await isAdmin.GetValue()))
+				if (session.ResponseProcessor(session, textMessage, session.AdminResponse && await isAdmin.GetValue()))
 				{
 					session.ClearResponse();
 					return;
@@ -270,7 +269,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async Task<bool> HasInvokerAdminRights(TextMessage textMessage)
+		private async Task<bool> HasInvokerAdminRights(InvokerInformation textMessage)
 		{
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
 			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
@@ -470,7 +469,7 @@ namespace TS3AudioBot
 
 		// HELPER
 
-		private string ExtractUrlFromBB(string ts3link)
+		private static string ExtractUrlFromBB(string ts3link)
 		{
 			if (ts3link.Contains("[URL]"))
 				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
@@ -534,7 +533,7 @@ namespace TS3AudioBot
 				strb.AppendLine(videoType.qualitydesciption);
 			}
 			session.Write(strb.ToString());
-			session.userRessource = youtubeRessource;
+			session.UserRessource = youtubeRessource;
 			session.SetResponse(ResponseYoutube, null, false);
 		}
 
@@ -550,7 +549,7 @@ namespace TS3AudioBot
 			int entry;
 			if (int.TryParse(command[1], out entry))
 			{
-				YoutubeRessource ytRessource = session.userRessource as YoutubeRessource;
+				YoutubeRessource ytRessource = session.UserRessource as YoutubeRessource;
 				if (ytRessource == null)
 				{
 					session.Write("An unexpected error with the ytressource occured: null");
@@ -572,14 +571,14 @@ namespace TS3AudioBot
 			{
 				if (isAdmin)
 				{
-					if (!(session.responseData is int))
+					if (!(session.ResponseData is int))
 					{
 						Log.Write(Log.Level.Error, "responseData is not an int.");
 						return true;
 					}
 					if (command[0] == "!y")
 					{
-						audioFramework.Volume = (int)session.responseData;
+						audioFramework.Volume = (int)session.ResponseData;
 					}
 				}
 				else

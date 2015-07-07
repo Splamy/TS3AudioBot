@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 using TeamSpeak3QueryApi.Net.Specialized;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 
 namespace TS3AudioBot
 {
 	class SessionManager
 	{
-		public BotSession defaultSession { get; set; }
-		private List<PrivateSession> openSessions;
+		public BotSession DefaultSession { get; set; }
+		private readonly List<PrivateSession> openSessions;
 
 		public SessionManager()
 		{
@@ -32,19 +29,19 @@ namespace TS3AudioBot
 
 		public bool ExistsSession(int invokerId)
 		{
-			return openSessions.Any((ps) => ps.client.Id == invokerId);
+			return openSessions.Any((ps) => ps.Client.Id == invokerId);
 		}
 
 		public BotSession GetSession(MessageTarget target, int invokerId)
 		{
 			if (target == MessageTarget.Server)
-				return defaultSession;
-			return openSessions.FirstOrDefault((bs) => bs.client.Id == invokerId) ?? defaultSession;
+				return DefaultSession;
+			return openSessions.FirstOrDefault((bs) => bs.Client.Id == invokerId) ?? DefaultSession;
 		}
 
 		public void RemoveSession(int invokerId)
 		{
-			openSessions.RemoveAll((ps) => ps.client.Id == invokerId);
+			openSessions.RemoveAll((ps) => ps.Client.Id == invokerId);
 		}
 	}
 }
