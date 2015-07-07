@@ -106,13 +106,12 @@ namespace TS3AudioBot
 			{
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
-				QueryConnection.OnClientConnect += AwaitBobConnect;
 				if (!Util.Execute(FilePath.StartTsBot))
 				{
-					QueryConnection.OnClientConnect -= AwaitBobConnect;
 					Log.Write(Log.Level.Debug, "BC callback canceled");
 					return;
 				}
+				QueryConnection.OnClientConnect += AwaitBobConnect;
 				WhisperChannelSubscribe(4);
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 			}

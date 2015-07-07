@@ -141,7 +141,7 @@ namespace TS3AudioBot
 			commandDict.Add("next", new BotCommand(CommandRights.Private, CommandNext));
 			commandDict.Add("pm", new BotCommand(CommandRights.Public, CommandPM));
 			commandDict.Add("play", new BotCommand(CommandRights.Private, CommandPlay));
-			commandDict.Add("prev", new BotCommand(CommandRights.Private, CommandPrev));
+			commandDict.Add("previous", new BotCommand(CommandRights.Private, CommandPrevious));
 			commandDict.Add("quit", new BotCommand(CommandRights.Admin, CommandQuit));
 			commandDict.Add("repeat", new BotCommand(CommandRights.Private, CommandRepeat));
 			commandDict.Add("seek", new BotCommand(CommandRights.Private, CommandSeek));
@@ -200,12 +200,12 @@ namespace TS3AudioBot
 
 			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
 
-			var isAdmin = new AsyncLazy<bool>(() => HasInvokerAdminRights(textMessage));
+			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy<TextMessage>(HasInvokerAdminRights, textMessage);
 
 			// check if the user has an open request
 			if (session.responseProcessor != null)
 			{
-				if (session.responseProcessor(session, textMessage, session.adminResponse ? await isAdmin.Value : false))
+				if (session.responseProcessor(session, textMessage, session.adminResponse && await isAdmin.GetValue()))
 				{
 					session.ClearResponse();
 					return;
@@ -241,7 +241,7 @@ namespace TS3AudioBot
 				allowed = true;
 				break;
 			}
-			if (!allowed && !await isAdmin.Value)
+			if (!allowed && !await isAdmin.GetValue())
 			{
 				session.Write(reason);
 				return;
@@ -279,6 +279,8 @@ namespace TS3AudioBot
 			int[] clientSgIds = await queryConnection.GetClientServerGroups(client);
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
+
+		// COMMANDS
 
 		private void CommandAdd(BotSession session, string parameter)
 		{
@@ -361,7 +363,7 @@ namespace TS3AudioBot
 				PlayAuto(session, parameter, false);
 		}
 
-		private void CommandPrev(BotSession session, string parameter)
+		private void CommandPrevious(BotSession session, string parameter)
 		{
 			audioFramework.Previous();
 		}
@@ -373,6 +375,7 @@ namespace TS3AudioBot
 				session.Write("The TS3AudioBot is open in console-mode. Please close it in the opened terminal.");
 				return;
 			}
+			Task.WaitAll(new[] { Task.Run(() => session.Write("Goodbye!")) }, 500);
 			this.Dispose();
 			Log.Write(Log.Level.Info, "Exiting...");
 		}
@@ -465,6 +468,8 @@ namespace TS3AudioBot
 			PlayYoutube(session, parameter, false);
 		}
 
+		// HELPER
+
 		private string ExtractUrlFromBB(string ts3link)
 		{
 			if (ts3link.Contains("[URL]"))
@@ -532,6 +537,8 @@ namespace TS3AudioBot
 			session.userRessource = youtubeRessource;
 			session.SetResponse(ResponseYoutube, null, false);
 		}
+
+		// RESPONSES
 
 		private bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
 		{
