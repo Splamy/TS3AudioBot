@@ -101,7 +101,7 @@ namespace TS3AudioBot
 		/// It calls the stop event when a ressource is finished.
 		/// This task can be cancelled by cancelling ressourceEndToken.
 		/// </summary>
-		private void WaitNotifyEnd()
+		private async void WaitNotifyEnd()
 		{
 			try
 			{
@@ -114,11 +114,11 @@ namespace TS3AudioBot
 					if (playerConnection.IsPlaying())
 					{
 						timeoutcur = timeoutmax;
-						Task.Delay(TIMEOUT_MS, ressourceEndToken).Wait();
+						await Task.Delay(TIMEOUT_MS, ressourceEndToken);
 					}
 					else
 					{
-						Task.Delay(TIMEOUT_INTERVAL_MS, ressourceEndToken).Wait();
+						await Task.Delay(TIMEOUT_INTERVAL_MS, ressourceEndToken);
 					}
 				}
 				Log.Write(Log.Level.Debug, "AF Timeout or stopped (IsPlaying:{0})", timeoutcur);

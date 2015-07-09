@@ -77,12 +77,12 @@ namespace TS3AudioBot
 
 			if (!silent)
 			{
-				Log.OnLog += (o, e) => Console.WriteLine(e.InfoMessage);
+				Log.RegisterLogger("", "", Console.WriteLine);
 			}
 
 			if (!noLog)
 			{
-				Log.OnLog += (o, e) => File.AppendAllText(mainBotData.logFile, e.DetailedMessage, Encoding.UTF8);
+				//Log.RegisterLogger("", "", (msg) => File.AppendAllText(mainBotData.logFile, msg, Encoding.UTF8));
 			}
 			return false;
 		}
