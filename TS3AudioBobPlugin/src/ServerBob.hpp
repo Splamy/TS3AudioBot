@@ -66,6 +66,8 @@ private:
 	CommandResult statusWhisperCommand (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string whisper);
 	CommandResult helpCommand          (ServerConnection *connection, User *sender, const std::string &message, std::string command);
 	CommandResult pingCommand          (ServerConnection *connection, User *sender, const std::string &message, std::string command);
+	CommandResult listClientsCommand   (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string clients);
+	CommandResult listChannelsCommand  (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string channels);
 	CommandResult exitCommand          (ServerConnection *connection, User *sender, const std::string &message, std::string command);
 };
 

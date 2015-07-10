@@ -19,7 +19,7 @@
 namespace
 {
 static const char *VERSION = "2.1";
-static const std::string CONFIG_FILE = "../Bot/Bot/configTS3AudioBot.cfg";
+static const std::string CONFIG_FILE = "../configTS3AudioBot.cfg";
 static const std::string ADMIN_Id_CONFIG_STRING = "MainBot::adminGroupId=";
 static const std::size_t PATH_SIZE = 1024;
 

@@ -42,6 +42,9 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup) :
 	addCommand("status", &ServerBob::statusAudioCommand,     "Get status information", &commandString);
 	addCommand("status", &ServerBob::statusWhisperCommand,   "", NULL, false, false);
 	addCommand("error", &ServerBob::loopCommand,             "", NULL, true, false);
+	commandString = "list [clients|channels]";
+	addCommand("list", &ServerBob::listClientsCommand,       "Lists all connected clients", &commandString);
+	addCommand("list", &ServerBob::listChannelsCommand,      "Lists all existing channels", NULL, false, false);
 	addCommand("unknown", &ServerBob::loopCommand,           "", NULL, true, false);
 
 	// Get currently active connections
@@ -372,7 +375,7 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 		}
 	}
 	std::ostringstream fStream;
-	// FIXME align the output to s characters
+	// Align the output to s characters
 	fStream << "\n{0:-" << maxLength << "}    {1}";
 	const std::string format = fStream.str();
 	for (Commands::const_reference command : commands)
@@ -390,6 +393,86 @@ CommandResult ServerBob::pingCommand(ServerConnection *connection, User *sender,
 	const std::string& /*message*/, std::string /*command*/)
 {
 	connection->sendCommand(sender, "pong");
+	return CommandResult();
+}
+
+CommandResult ServerBob::listClientsCommand(ServerConnection *connection,
+	User *sender, const std::string &/*message*/, std::string /*command*/,
+	std::string clients)
+{
+	std::transform(clients.begin(), clients.end(), clients.begin(), ::tolower);
+	if (clients != "clients")
+		return CommandResult(false);
+	std::vector<anyID> clientIds;
+	std::vector<std::string> clientNames;
+	std::size_t maxLength = 0;
+	anyID *clientList;
+	tsApi->getFunctions().getClientList(connection->getHandlerId(), &clientList);
+	anyID *currentClient = clientList;
+	while (*currentClient != 0)
+	{
+		char *name;
+		tsApi->getFunctions().getClientVariableAsString(
+			connection->getHandlerId(), *currentClient, CLIENT_NICKNAME, &name);
+		std::string n = name;
+		tsApi->getFunctions().freeMemory(name);
+		clientNames.push_back(n);
+		clientIds.push_back(*currentClient);
+		if (n.size() > maxLength)
+			maxLength = n.size();
+		currentClient++;
+	}
+	tsApi->getFunctions().freeMemory(clientList);
+
+	std::ostringstream fStream;
+	// Align the output to s characters
+	fStream << "\n{0:" << maxLength << "} {1}";
+	const std::string format = fStream.str();
+	std::ostringstream output;
+	output << "clients";
+	for (std::size_t i = 0; i < clientIds.size(); i++)
+		output << Utils::format(format, clientNames[i], clientIds[i]);
+	connection->sendCommand(sender, output.str());
+	return CommandResult();
+}
+
+CommandResult ServerBob::listChannelsCommand(ServerConnection *connection,
+	User *sender, const std::string &/*message*/, std::string /*command*/,
+	std::string channels)
+{
+	std::transform(channels.begin(), channels.end(), channels.begin(), ::tolower);
+	if (channels != "channels")
+		return CommandResult(false);
+	std::vector<uint64> channelIds;
+	std::vector<std::string> channelNames;
+	std::size_t maxLength = 0;
+	uint64 *channelList;
+	tsApi->getFunctions().getChannelList(connection->getHandlerId(), &channelList);
+	uint64 *currentChannel = channelList;
+	while (*currentChannel != 0)
+	{
+		char *name;
+		tsApi->getFunctions().getChannelVariableAsString(
+			connection->getHandlerId(), *currentChannel, CHANNEL_NAME, &name);
+		std::string n = name;
+		tsApi->getFunctions().freeMemory(name);
+		channelNames.push_back(n);
+		channelIds.push_back(*currentChannel);
+		if (n.size() > maxLength)
+			maxLength = n.size();
+		currentChannel++;
+	}
+	tsApi->getFunctions().freeMemory(channelList);
+
+	std::ostringstream fStream;
+	// Align the output to s characters
+	fStream << "\n{0:" << maxLength << "} {1}";
+	const std::string format = fStream.str();
+	std::ostringstream output;
+	output << "channels";
+	for (std::size_t i = 0; i < channelIds.size(); i++)
+		output << Utils::format(format, channelNames[i], channelIds[i]);
+	connection->sendCommand(sender, output.str());
 	return CommandResult();
 }
 
