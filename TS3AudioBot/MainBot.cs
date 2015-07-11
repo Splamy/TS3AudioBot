@@ -16,12 +16,6 @@ namespace TS3AudioBot
 	{
 		static void Main(string[] args)
 		{
-			new MainBot().ReadParameter(args);
-
-			Log.Write(Log.Level.Info, "I'm {0}", "crazy");
-
-			return;
-
 			using (MainBot bot = new MainBot())
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
@@ -83,12 +77,16 @@ namespace TS3AudioBot
 
 			if (!silent)
 			{
-				Log.RegisterLogger("", "", Console.WriteLine);
+				Log.RegisterLogger("[%T]%L:%M", "", Console.WriteLine);
 			}
 
 			if (!noLog)
 			{
-				Log.RegisterLogger("", "", (msg) => File.AppendAllText(mainBotData.logFile, msg, Encoding.UTF8));
+				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
+				{
+					if (!string.IsNullOrEmpty(mainBotData.logFile))
+						File.AppendAllText(mainBotData.logFile, msg, Encoding.UTF8);
+				});
 			}
 			return false;
 		}

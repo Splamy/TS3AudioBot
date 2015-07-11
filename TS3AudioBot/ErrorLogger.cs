@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TS3AudioBot
 {
@@ -11,9 +12,12 @@ namespace TS3AudioBot
 	{
 		public static bool Active { get; set; }
 		public static int StackLevel { get; set; }
-		public delegate void cbDelegate(string result);
-		private delegate void LogGenerate(LogHelper lh);
-		private static LogGenerate[] callbacks;
+
+		private static int callbackCount = 0;
+		public delegate void callbackActionDelegate(string result);
+		private static callbackActionDelegate[] callbackAction;
+		private delegate void callbackProcessorDelegate(LogHelper lh);
+		private static callbackProcessorDelegate[] callbackProcessor;
 
 		private static int longestelem = 0;
 		private static string[] spaceup;
@@ -44,9 +48,49 @@ namespace TS3AudioBot
 			}
 		}
 
-		public static void RegisterLogger(string format, string linebreakIndent, cbDelegate callback)
+		public static void RegisterLogger(string format, string linebreakIndent, callbackActionDelegate callback)
 		{
-			DynamicMethod dynLog = new DynamicMethod("LogWrite", typeof(void), new[] { typeof(LogHelper) }, typeof(Log), true);
+			var validator = new List<Tuple<MethodBuildToken, string>>();
+
+			int starttext = 0;
+			for (int c = 0; c < format.Length; c++)
+			{
+				bool specSymbol = format[c] == '%';
+				bool endoftext = c >= format.Length - 1;
+
+				if ((specSymbol && c - starttext > 0) || endoftext)
+				{
+					if (endoftext) c++;
+					validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.Text, format.Substring(starttext, c - starttext)));
+				}
+
+				if (specSymbol)
+				{
+					if (c + 1 < format.Length)
+					{
+						switch (format[c + 1])
+						{
+						case 'M':
+							validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.ErrorTextFormatted, null));
+							break;
+						case 'T':
+							validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.DateFormatted, null));
+							break;
+						case 'L':
+							validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.LogLevelSpaced, null));
+							break;
+						}
+						c++;
+						starttext = c + 1;
+					}
+					else
+					{
+						throw new ArgumentException("Missing variable name after '%' at char: " + c);
+					}
+				}
+			}
+
+			DynamicMethod dynLog = new DynamicMethod("LogWrite" + callbackCount, typeof(void), new[] { typeof(LogHelper) }, typeof(Log), true);
 			var ilGen = dynLog.GetILGenerator();
 			var localStrb = ilGen.DeclareLocal(typeof(StringBuilder));
 
@@ -56,57 +100,82 @@ namespace TS3AudioBot
 
 			// common InfosTypes
 			MethodInfo miStringBuilder_Append_String = typeof(StringBuilder).GetMethod("Append", argsString);
+			MethodInfo miLog_GenLogLevelSpaced = typeof(LogHelper).GetMethod("GenLogLevelSpaced");
+			MethodInfo miLog_GenDateFormatted = typeof(LogHelper).GetMethod("GenDateFormatted");
+			MethodInfo miLog_GenErrorTextFormatted = typeof(LogHelper).GetMethod("GenErrorTextFormatted", argsInt);
 
+			// prepare callback invoke
+			ilGen.Emit(OpCodes.Ldsfld, typeof(Log).GetField("callbackAction", BindingFlags.NonPublic | BindingFlags.Static));
+			ilGen.Emit(OpCodes.Ldc_I4, callbackCount);
+			ilGen.Emit(OpCodes.Ldelem_Ref);
 
 			// Load stringbuilder
 			ilGen.Emit(OpCodes.Newobj, typeof(StringBuilder).GetConstructor(Type.EmptyTypes));
 			ilGen.Emit(OpCodes.Stloc, localStrb);
-
-			// Append LogLevelSpaced
 			ilGen.Emit(OpCodes.Ldloc, localStrb);
-			ilGen.Emit(OpCodes.Ldarg_0);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(LogHelper).GetMethod("GenLogLevelSpaced"), null);
-			ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
 
-			// add a little seperator
-			//ilGen.Emit(OpCodes.Ldloc, localStrb); // strb after Append on stack
-			ilGen.Emit(OpCodes.Ldstr, ": ");
-			ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
+			foreach (var part in validator)
+			{
+				switch (part.Item1)
+				{
+				case MethodBuildToken.Text:
+					ilGen.Emit(OpCodes.Ldstr, part.Item2);
+					break;
+				case MethodBuildToken.LogLevelSpaced:
+					ilGen.Emit(OpCodes.Ldarg_0);
+					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenLogLevelSpaced, null);
+					break;
+				case MethodBuildToken.ErrorTextFormatted:
+					ilGen.Emit(OpCodes.Ldarg_0);
+					ilGen.Emit(OpCodes.Ldc_I4_0);
+					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenErrorTextFormatted, null);
+					break;
+				case MethodBuildToken.DateFormatted:
+					ilGen.Emit(OpCodes.Ldarg_0);
+					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenDateFormatted, null);
+					break;
+				case MethodBuildToken.StackFormatted:
+					throw new NotImplementedException();
+				//break;
+				default:
+					throw new InvalidProgramException("Undefined MethodBuildToken occoured");
+				}
+				ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
+			}
 
-			// add the message
-			//ilGen.Emit(OpCodes.Ldloc, localStrb); // strb after Append on stack
-			ilGen.Emit(OpCodes.Ldarg_0);
-			ilGen.Emit(OpCodes.Ldc_I4_0);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(LogHelper).GetMethod("GenErrorTextFormatted", argsInt), null);
-			ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
-
-			// call the callback method
-			//ilGen.Emit(OpCodes.Ldloc, localStrb); // strb after Append on stack
+			// call ToString and the callback method
 			ilGen.EmitCall(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("ToString", Type.EmptyTypes), null);
-			ilGen.EmitCall(OpCodes.Callvirt, callback.Method, null);
+			ilGen.EmitCall(OpCodes.Callvirt, typeof(callbackActionDelegate).GetMethod("Invoke", argsString), null);
 
 			ilGen.Emit(OpCodes.Ret);
 
 			// Redim the calllist array
-			if (callbacks == null)
+			if (callbackProcessor == null)
 			{
-				callbacks = new LogGenerate[1];
+				callbackProcessor = new callbackProcessorDelegate[1];
+				callbackAction = new callbackActionDelegate[1];
 			}
 			else
 			{
-				LogGenerate[] tmpcopy = new LogGenerate[callbacks.Length + 1];
-				Array.Copy(callbacks, tmpcopy, callbacks.Length);
-				callbacks = tmpcopy;
+				callbackProcessorDelegate[] tempProcessorArray = new callbackProcessorDelegate[callbackCount + 1];
+				callbackActionDelegate[] tempActionArray = new callbackActionDelegate[callbackCount + 1];
+				Array.Copy(callbackProcessor, tempProcessorArray, callbackCount);
+				Array.Copy(callbackAction, tempActionArray, callbackCount);
+				callbackProcessor = tempProcessorArray;
+				callbackAction = tempActionArray;
 			}
 
 			//Store event call in the calllist
-			callbacks[callbacks.Length - 1] = (LogGenerate)dynLog.CreateDelegate(typeof(LogGenerate));
+			callbackProcessor[callbackCount] = (callbackProcessorDelegate)dynLog.CreateDelegate(typeof(callbackProcessorDelegate));
+			callbackAction[callbackCount] = callback;
+
+			callbackCount++;
 		}
 
-		private static void DefaultTest(LogHelper lh, cbDelegate callback)
+		private static void DefaultTest(LogHelper lh)
 		{
 			StringBuilder strb = new StringBuilder();
-			callback(strb.Append(lh.GenLogLevelSpaced())
+			Log.callbackAction[0](strb.Append(lh.GenLogLevelSpaced())
 			.Append(": ")
 			.Append(lh.GenErrorTextFormatted(0)).ToString());
 		}
@@ -117,8 +186,17 @@ namespace TS3AudioBot
 				return;
 
 			LogHelper lh = new LogHelper(lvl, new StackTrace(1), errText, infos);
-			foreach (var callback in callbacks)
-				callback(lh);
+			foreach (var callbackProc in callbackProcessor)
+				callbackProc(lh);
+		}
+
+		private enum MethodBuildToken
+		{
+			Text,
+			LogLevelSpaced,
+			ErrorTextFormatted,
+			DateFormatted,
+			StackFormatted,
 		}
 
 		public enum Level : int
