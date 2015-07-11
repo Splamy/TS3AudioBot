@@ -11,6 +11,7 @@ namespace TS3AudioBot
 	{
 		public static bool Active { get; set; }
 		public static int StackLevel { get; set; }
+		public delegate void cbDelegate(string result);
 		private delegate void LogGenerate(LogHelper lh);
 		private static LogGenerate[] callbacks;
 
@@ -43,7 +44,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public static void RegisterLogger(string format, string linebreakIndent, Action<string> callback)
+		public static void RegisterLogger(string format, string linebreakIndent, cbDelegate callback)
 		{
 			DynamicMethod dynLog = new DynamicMethod("LogWrite", typeof(void), new[] { typeof(LogHelper) }, typeof(Log), true);
 			var ilGen = dynLog.GetILGenerator();
@@ -68,21 +69,23 @@ namespace TS3AudioBot
 			ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
 
 			// add a little seperator
-			ilGen.Emit(OpCodes.Ldloc, localStrb);
+			//ilGen.Emit(OpCodes.Ldloc, localStrb); // strb after Append on stack
 			ilGen.Emit(OpCodes.Ldstr, ": ");
 			ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
 
 			// add the message
-			ilGen.Emit(OpCodes.Ldloc, localStrb);
+			//ilGen.Emit(OpCodes.Ldloc, localStrb); // strb after Append on stack
 			ilGen.Emit(OpCodes.Ldarg_0);
 			ilGen.Emit(OpCodes.Ldc_I4_0);
 			ilGen.EmitCall(OpCodes.Callvirt, typeof(LogHelper).GetMethod("GenErrorTextFormatted", argsInt), null);
 			ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
 
 			// call the callback method
-			ilGen.Emit(OpCodes.Ldloc, localStrb);
-			ilGen.EmitCall(OpCodes.Call, typeof(StringBuilder).GetMethod("ToString", Type.EmptyTypes), null);
-			ilGen.EmitCall(OpCodes.Call, callback.Method, null);
+			//ilGen.Emit(OpCodes.Ldloc, localStrb); // strb after Append on stack
+			ilGen.EmitCall(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("ToString", Type.EmptyTypes), null);
+			ilGen.EmitCall(OpCodes.Callvirt, callback.Method, null);
+
+			ilGen.Emit(OpCodes.Ret);
 
 			// Redim the calllist array
 			if (callbacks == null)
@@ -100,18 +103,18 @@ namespace TS3AudioBot
 			callbacks[callbacks.Length - 1] = (LogGenerate)dynLog.CreateDelegate(typeof(LogGenerate));
 		}
 
-		private static void DefaultTest(LogHelper lh)
+		private static void DefaultTest(LogHelper lh, cbDelegate callback)
 		{
 			StringBuilder strb = new StringBuilder();
-			strb.Append(lh.GenLogLevelSpaced());
-			strb.Append(": ");
-			strb.Append(lh.GenErrorTextFormatted(0));
-			// callbackmeth
+			callback(strb.Append(lh.GenLogLevelSpaced())
+			.Append(": ")
+			.Append(lh.GenErrorTextFormatted(0)).ToString());
 		}
 
 		public static void Write(Level lvl, string errText, params object[] infos)
 		{
-			if (!Active) return;
+			if (!Active)
+				return;
 
 			LogHelper lh = new LogHelper(lvl, new StackTrace(1), errText, infos);
 			foreach (var callback in callbacks)
