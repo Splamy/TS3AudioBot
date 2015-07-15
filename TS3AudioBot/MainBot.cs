@@ -77,15 +77,16 @@ namespace TS3AudioBot
 
 			if (!silent)
 			{
-				Log.RegisterLogger("[%T]%L:%M", "", Console.WriteLine);
+				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
 			}
 
 			if (!noLog)
 			{
+				var encoding = new UTF8Encoding(false);
 				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
 				{
 					if (!string.IsNullOrEmpty(mainBotData.logFile))
-						File.AppendAllText(mainBotData.logFile, msg, Encoding.UTF8);
+						File.AppendAllText(mainBotData.logFile, msg, encoding);
 				});
 			}
 			return false;
@@ -641,7 +642,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-		                  Action<BotSession> command)
+						  Action<BotSession> command)
 			: this(commandRights)
 		{
 			CommandN = command;
@@ -649,7 +650,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-		                  Action<BotSession, string> command)
+						  Action<BotSession, string> command)
 			: this(commandRights)
 		{
 			CommandS = command;
@@ -657,7 +658,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-		                  Action<BotSession, TextMessage> command)
+						  Action<BotSession, TextMessage> command)
 			: this(commandRights)
 		{
 			CommandTM = command;
