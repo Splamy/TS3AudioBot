@@ -30,7 +30,7 @@
 // Defines override if it's not defined
 #ifdef _WIN32
 	#if __cplusplus < 201103L
-		#define override
+		//#define override
 	#endif
 #else
 	#if defined __GNUC__ && (__GNUC__ <= 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 7))

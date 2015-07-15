@@ -33,6 +33,8 @@ def createLibrary(programName, projectName = ""):
 		Import(programName)
 		# Dirty hack with globals to set a variable whos name is only knows at runtime
 		prog = globals()[programName]
+		if not isinstance(prog, str):
+			prog = prog[0]
 		msvsprojs.append(curenv.MSVSProject(target = "{0}.vcxproj".format(projectName),
 			srcs = map(str, recursiveGlob(sourceFiles)),
 			incs = map(str, recursiveGlob(headerFiles)),
