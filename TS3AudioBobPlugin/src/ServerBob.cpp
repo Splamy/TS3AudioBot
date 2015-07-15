@@ -197,9 +197,7 @@ void ServerBob::addCommand(const std::string &name,
 	bool showHelp)
 {
 	commands.push_back(std::unique_ptr<AbstractCommandExecutor>(
-		new StringCommandExecutor<Args...>(name, help, Utils::myBind(
-		static_cast<std::function<CommandResult(ServerBob*, ServerConnection*,
-		User*, const std::string&, Args...)> >(fun), this),
+		new StringCommandExecutor<Args...>(name, help, Utils::myBindMember(fun, this),
 		commandString, ignoreArguments, showHelp)));
 }
 

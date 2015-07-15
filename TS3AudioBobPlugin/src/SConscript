@@ -5,6 +5,8 @@ execfile(rootDirectory + "Tools/SConscriptLib.py")
 
 if not iswin:
 	curenv.Append(CCFLAGS = ["-fPIC", "-fvisibility=hidden", "-Wno-format-security", "-Wno-missing-braces"])
+else:
+	curenv.Append(LINKFLAGS = ["/subsystem:console"])
 curenv.Append(CPPPATH = [getAbsolutePath(p) for p in ["Include"]])
 
 createLibrary("libts3audiobob")

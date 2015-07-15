@@ -3,18 +3,10 @@
 
 // Define macros for exporting and importing functions to/from a library
 #if defined _WIN32 || defined __CYGWIN__
-	#ifdef BUILDING_DLL
-		#ifdef __GNUC__
-			#define DLL_PUBLIC __attribute__ ((dllexport))
-		#else
-			#define DLL_PUBLIC __declspec(dllexport)
-		#endif
+	#ifdef __GNUC__
+		#define DLL_PUBLIC __attribute__ ((dllexport))
 	#else
-		#ifdef __GNUC__
-			#define DLL_PUBLIC __attribute__ ((dllimport))
-		#else
-			#define DLL_PUBLIC __declspec(dllimport)
-		#endif
+		#define DLL_PUBLIC __declspec(dllexport)
 	#endif
 	#define DLL_LOCAL
 #else

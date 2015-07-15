@@ -1,5 +1,6 @@
 #include "Utils.hpp"
 
+#include <cctype>
 #include <random>
 
 std::string Utils::formatArgument(const std::string &format, const std::string &arg)

@@ -29,12 +29,26 @@ namespace Utils
 	template <int>
 	struct Placeholder{};
 
+	template <class C, class R, class... Args, int... Is>
+	std::function<R(Args...)> myBindMemberIntern(R(C::*fun)(Args...),
+		C *c, IntSequence<Is...>)
+	{
+		std::function<R(Args...)> f = std::bind(fun, c, Placeholder<Is>()...);
+		return f;
+	}
+
+	/** Binds an object to a member function. */
+	template <class C, class R, class... Args>
+	std::function<R(Args...)> myBindMember(R(C::*fun)(Args...), C *c)
+	{
+		return myBindMemberIntern(fun, c, IntSequenceCreator<sizeof...(Args)>());
+	}
+
 	template <class R, class... Args, class P, class P2, int... Is>
 	std::function<R(Args...)> myBindIntern(
 		const std::function<R(P, Args...)> &fun, P2 p, IntSequence<Is...>)
 	{
-		std::function<R(Args...)> f = std::bind(fun, p, Placeholder<Is>()...);
-		return f;
+		return std::bind(fun, p, Placeholder<Is>()...);
 	}
 
 	/** Binds a parameter to a function.
@@ -48,12 +62,12 @@ namespace Utils
 	}
 
 	// Bind more than one Argument at once
-	template <typename I, class P, class... Ps>
-	auto myBind(const std::function<I> &fun, P p, Ps... ps)
+	template <typename F, class P, class... Ps>
+	auto myBind(const std::function<F> &fun, P p, Ps... ps)
 		-> decltype(myBind(myBind(fun, p), ps...));
 
-	template <typename I, class P, class... Ps>
-	auto myBind(const std::function<I> &fun, P p, Ps... ps)
+	template <typename F, class P, class... Ps>
+	auto myBind(const std::function<F> &fun, P p, Ps... ps)
 		-> decltype(myBind(myBind(fun, p), ps...))
 	{
 		return myBind(myBind(fun, p), ps...);
