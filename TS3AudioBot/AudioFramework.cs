@@ -21,11 +21,10 @@ namespace TS3AudioBot
 		private CancellationToken ressourceEndToken;
 
 		private AudioRessource currentRessource = null;
-		private List<AudioRessource> ressourceLog = null;
 		private IPlayerConnection playerConnection;
 
 		public delegate void RessourceStartedDelegate(AudioRessource audioRessource);
-		public delegate void RessourceStoppedDelegate();
+		public delegate void RessourceStoppedDelegate(bool restart);
 		public event RessourceStartedDelegate OnRessourceStarted;
 		public event RessourceStoppedDelegate OnRessourceStopped;
 
@@ -123,7 +122,7 @@ namespace TS3AudioBot
 				}
 				Log.Write(Log.Level.Debug, "AF Timeout or stopped (IsPlaying:{0})", timeoutcur);
 				if (!ressourceEndToken.IsCancellationRequested)
-					Stop();
+					Stop(false);
 			}
 			catch (TaskCanceledException) { }
 			catch (AggregateException) { }
@@ -137,10 +136,8 @@ namespace TS3AudioBot
 				return false;
 			}
 
-			LogAudioRessource(audioRessource);
-
 			Log.Write(Log.Level.Debug, "AF stop old");
-			Stop();
+			Stop(true);
 
 			playerConnection.AudioClear();
 
@@ -179,6 +176,11 @@ namespace TS3AudioBot
 
 		public void Stop()
 		{
+			Stop(false);
+		}
+
+		private void Stop(bool restart)
+		{
 			if (currentRessource != null)
 			{
 				currentRessource = null;
@@ -186,15 +188,8 @@ namespace TS3AudioBot
 				if (!ressourceEndTask.IsCompleted)
 					ressourceEndTokenSource.Cancel();
 				if (OnRessourceStopped != null)
-					OnRessourceStopped();
+					OnRessourceStopped(restart);
 			}
-		}
-
-		private void LogAudioRessource(AudioRessource ar)
-		{
-			if (ressourceLog == null)
-				ressourceLog = new List<AudioRessource>();
-			ressourceLog.Add(ar);
 		}
 
 		public void Dispose()

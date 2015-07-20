@@ -37,6 +37,11 @@ namespace TS3AudioBot
 			createLogTableCommand.Connection = sqlConnection;
 			createLogTableCommand.ExecuteNonQuery();
 		}
+
+		public void LogAudioRessource(AudioRessource ar)
+		{
+			//...
+		}
 	}
 
 	class AudioLogEntry

@@ -48,6 +48,7 @@ namespace TS3AudioBot
 		QueryConnection queryConnection;
 		SessionManager sessionManager;
 		YoutubeFramework youtubeFramework;
+		HistoryManager historyManager;
 
 		public MainBot()
 		{
@@ -109,17 +110,13 @@ namespace TS3AudioBot
 			queryConnection = new QueryConnection(qcd);
 			sessionManager = new SessionManager();
 			youtubeFramework = new YoutubeFramework();
+			historyManager = new HistoryManager();
 
-			audioFramework.OnRessourceStarted += (audioRessource) =>
-			{
-				bobController.Start();
-				bobController.Sending = true;
-			};
-			audioFramework.OnRessourceStopped += () =>
-			{
-				bobController.StartEndTimer();
-				bobController.Sending = false;
-			};
+			// Register callbacks
+			audioFramework.OnRessourceStarted += historyManager.LogAudioRessource;
+			audioFramework.OnRessourceStarted += bobController.OnRessourceStarted;
+			audioFramework.OnRessourceStopped += bobController.OnRessourceStopped;
+
 
 			// register callback for all messages happeing
 			queryConnection.OnMessageReceived += TextCallback;
@@ -203,6 +200,11 @@ namespace TS3AudioBot
 			bobController.HasUpdate();
 
 			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
+			if (textMessage.TargetMode == MessageTarget.Private && session == sessionManager.DefaultSession)
+			{
+				Log.Write(Log.Level.Debug, "MB User {0} created auto-private session with the bot", textMessage.InvokerName);
+				session = await sessionManager.CreateSession(queryConnection, textMessage.InvokerId);
+			}
 
 			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy<TextMessage>(HasInvokerAdminRights, textMessage);
 

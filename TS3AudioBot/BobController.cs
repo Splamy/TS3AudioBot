@@ -98,6 +98,21 @@ namespace TS3AudioBot
 			lastUpdate = DateTime.Now;
 		}
 
+		public void OnRessourceStarted(AudioRessource ar)
+		{
+			Start();
+			Sending = true;
+		}
+
+		public void OnRessourceStopped(bool restart)
+		{
+			if (!restart)
+			{
+				StartEndTimer();
+				Sending = false;
+			}
+		}
+
 		public void Start()
 		{
 			if (!IsRunning)
