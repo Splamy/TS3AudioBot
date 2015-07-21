@@ -23,7 +23,6 @@ namespace TS3AudioBot
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
 
-		private HashSet<int> whisperChannel;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private GetClientsInfo bobClient;
@@ -54,7 +53,6 @@ namespace TS3AudioBot
 			IsRunning = false;
 			this.data = data;
 			commandQueue = new Queue<string>();
-			whisperChannel = new HashSet<int>();
 		}
 
 		private void SendMessage(string message)
@@ -104,11 +102,11 @@ namespace TS3AudioBot
 			Sending = true;
 		}
 
-		public void OnRessourceStopped(bool restart)
+		public async void OnRessourceStopped(bool restart)
 		{
 			if (!restart)
 			{
-				StartEndTimer();
+				await StartEndTimer();
 				Sending = false;
 			}
 		}
@@ -137,7 +135,6 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "BC Stopping Bob");
 			SendMessage("exit");
 			IsRunning = false;
-			whisperChannel.Clear();
 			commandQueue.Clear();
 			Log.Write(Log.Level.Debug, "BC bob is now officially dead");
 			if (IsTimingOut)
@@ -146,18 +143,22 @@ namespace TS3AudioBot
 
 		public void WhisperChannelSubscribe(int channel)
 		{
-			if (whisperChannel.Contains(channel))
-				return;
 			SendMessage("whisper channel add " + channel);
-			whisperChannel.Add(channel);
 		}
 
 		public void WhisperChannelUnsubscribe(int channel)
 		{
-			if (!whisperChannel.Contains(channel))
-				return;
 			SendMessage("whisper channel remove " + channel);
-			whisperChannel.Remove(channel);
+		}
+
+		public void WhisperClientSubscribe(int userID)
+		{
+			SendMessage("whisper client add " + userID);
+		}
+
+		public void WhisperClientUnsubscribe(int userID)
+		{
+			SendMessage("whisper client remove " + userID);
 		}
 
 		private async void AwaitBobConnect(object sender, ClientEnterView e)
@@ -174,7 +175,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void StartEndTimer()
+		public async Task StartEndTimer()
 		{
 			HasUpdate();
 			if (IsRunning)
@@ -183,7 +184,7 @@ namespace TS3AudioBot
 				{
 					cancellationTokenSource.Cancel();
 					Log.Write(Log.Level.Debug, "BC cTS raised");
-					timerTask.Wait();
+					await timerTask;
 					Log.Write(Log.Level.Debug, "BC tT completed");
 				}
 				Log.Write(Log.Level.Debug, "BC start timeout");
@@ -195,7 +196,7 @@ namespace TS3AudioBot
 		{
 			cancellationTokenSource = new CancellationTokenSource();
 			cancellationToken = cancellationTokenSource.Token;
-			timerTask = Task.Run(() =>
+			timerTask = Task.Run(async () =>
 				{
 					try
 					{
@@ -209,7 +210,7 @@ namespace TS3AudioBot
 								break;
 							}
 							else
-								Task.Delay(TimeSpan.FromSeconds(BOB_TIMEOUT - inactiveSeconds), cancellationToken).Wait();
+								await Task.Delay(TimeSpan.FromSeconds(BOB_TIMEOUT - inactiveSeconds), cancellationToken);
 						}
 					}
 					catch (TaskCanceledException)

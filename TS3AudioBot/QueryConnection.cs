@@ -89,14 +89,14 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void KeepAlivePoke()
+		private async void KeepAlivePoke()
 		{
 			try
 			{
 				while (!keepAliveToken.IsCancellationRequested)
 				{
-					TSClient.WhoAmI();
-					Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken).Wait();
+					await TSClient.WhoAmI();
+					await Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken);
 				}
 			}
 			catch (TaskCanceledException)
@@ -167,6 +167,13 @@ namespace TS3AudioBot
 					keepAliveTokenSource = null;
 				}
 			}
+		}
+
+		public async Task<int> GetClientIdByName(string name)
+		{
+			await GetClientById(-1); // Refresh client list, diry but no race conditions
+			GetClientsInfo gci = clientbuffer.FirstOrDefault(user => user.NickName == name);
+			return gci != null ? gci.Id : -1;
 		}
 	}
 

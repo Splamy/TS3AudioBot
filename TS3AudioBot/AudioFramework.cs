@@ -161,16 +161,14 @@ namespace TS3AudioBot
 			if (OnRessourceStarted != null)
 				OnRessourceStarted(audioRessource);
 
-			// Start task to get the end notified when the ressource ends
-			if (ressourceEndTask != null && !ressourceEndTask.IsCompleted)
-			{
-				ressourceEndTokenSource.Cancel();
-				ressourceEndTask.Wait();
-			}
 			currentRessource = audioRessource;
-			ressourceEndTokenSource = new CancellationTokenSource();
-			ressourceEndToken = ressourceEndTokenSource.Token;
-			ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
+			if (ressourceEndTask == null || ressourceEndTask.IsCompleted || ressourceEndTask.IsCanceled || ressourceEndTask.IsFaulted)
+			{
+				ressourceEndTokenSource.Dispose();
+				ressourceEndTokenSource = new CancellationTokenSource();
+				ressourceEndToken = ressourceEndTokenSource.Token;
+				ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
+			}
 			return true;
 		}
 

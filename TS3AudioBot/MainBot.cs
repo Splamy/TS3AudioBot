@@ -134,6 +134,7 @@ namespace TS3AudioBot
 		{
 			commandDict.Add("add", new BotCommand(CommandRights.Private, CommandAdd));
 			commandDict.Add("clear", new BotCommand(CommandRights.Admin, CommandClear));
+			commandDict.Add("getuserid", new BotCommand(CommandRights.Admin, CommandGetUserId));
 			commandDict.Add("help", new BotCommand(CommandRights.AnyVisibility, CommandHelp));
 			commandDict.Add("history", new BotCommand(CommandRights.Private, CommandHistory));
 			commandDict.Add("kickme", new BotCommand(CommandRights.AnyVisibility, CommandKickme));
@@ -146,8 +147,10 @@ namespace TS3AudioBot
 			commandDict.Add("quit", new BotCommand(CommandRights.Admin, CommandQuit));
 			commandDict.Add("repeat", new BotCommand(CommandRights.Private, CommandRepeat));
 			commandDict.Add("seek", new BotCommand(CommandRights.Private, CommandSeek));
+			commandDict.Add("subscribe", new BotCommand(CommandRights.Private, CommandSubscribe));
 			commandDict.Add("stop", new BotCommand(CommandRights.Private, CommandStop));
 			commandDict.Add("test", new BotCommand(CommandRights.Private, CommandTest));
+			commandDict.Add("unsubscribe", new BotCommand(CommandRights.Private, CommandUnsubscribe));
 			commandDict.Add("volume", new BotCommand(CommandRights.AnyVisibility, CommandVolume));
 			commandDict.Add("youtube", new BotCommand(CommandRights.Private, CommandYoutube));
 		}
@@ -298,6 +301,15 @@ namespace TS3AudioBot
 			audioFramework.Clear();
 		}
 
+		private async void CommandGetUserId(BotSession session, string parameter)
+		{
+			int id = await queryConnection.GetClientIdByName(parameter);
+			if (id == -1)
+				session.Write("No user found...");
+			else
+				session.Write("UserID: " + id);
+		}
+
 		private void CommandHelp(BotSession session)
 		{
 			//TODO rework to use the new sysytem
@@ -433,6 +445,11 @@ namespace TS3AudioBot
 			audioFramework.Stop();
 		}
 
+		private void CommandSubscribe(BotSession session, TextMessage textMessage)
+		{
+			bobController.WhisperClientSubscribe(textMessage.InvokerId);
+		}
+
 		private void CommandTest(BotSession session)
 		{
 			PrivateSession ps = session as PrivateSession;
@@ -446,6 +463,11 @@ namespace TS3AudioBot
 				ps.Write("Good boy!");
 				//await queryConnection.GetClientServerGroups(ps.client);
 			}
+		}
+
+		private void CommandUnsubscribe(BotSession session, TextMessage textMessage)
+		{
+			bobController.WhisperClientUnsubscribe(textMessage.InvokerId);
 		}
 
 		private void CommandVolume(BotSession session, string parameter)
