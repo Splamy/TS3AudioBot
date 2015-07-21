@@ -147,14 +147,14 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 			if (audioRessource.Enqueue)
 			{
-				if (!audioRessource.Play (playerConnection.AudioAdd))
+				if (!audioRessource.Play(playerConnection.AudioAdd))
 					return false;
 				audioRessource.Enqueue = false;
 			}
 			else
 			{
 				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource.RessourceURL);
-				if (!audioRessource.Play (playerConnection.AudioStart))
+				if (!audioRessource.Play(playerConnection.AudioStart))
 					return false;
 			}
 
@@ -164,7 +164,10 @@ namespace TS3AudioBot
 			currentRessource = audioRessource;
 			if (ressourceEndTask == null || ressourceEndTask.IsCompleted || ressourceEndTask.IsCanceled || ressourceEndTask.IsFaulted)
 			{
-				ressourceEndTokenSource.Dispose();
+				if (ressourceEndTask != null)
+					ressourceEndTask.Dispose();
+				if (ressourceEndTokenSource != null)
+					ressourceEndTokenSource.Dispose();
 				ressourceEndTokenSource = new CancellationTokenSource();
 				ressourceEndToken = ressourceEndTokenSource.Token;
 				ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
