@@ -50,6 +50,8 @@ namespace TS3AudioBot
 		YoutubeFramework youtubeFramework;
 		HistoryManager historyManager;
 
+		bool quizMode = false;
+
 		public MainBot()
 		{
 			run = true;
@@ -147,6 +149,7 @@ namespace TS3AudioBot
 			commandDict.Add("quit", new BotCommand(CommandRights.Admin, CommandQuit));
 			commandDict.Add("repeat", new BotCommand(CommandRights.Private, CommandRepeat));
 			commandDict.Add("seek", new BotCommand(CommandRights.Private, CommandSeek));
+			commandDict.Add("song", new BotCommand(CommandRights.AnyVisibility, CommandSong));
 			commandDict.Add("subscribe", new BotCommand(CommandRights.Private, CommandSubscribe));
 			commandDict.Add("stop", new BotCommand(CommandRights.Private, CommandStop));
 			commandDict.Add("test", new BotCommand(CommandRights.Private, CommandTest));
@@ -303,11 +306,11 @@ namespace TS3AudioBot
 
 		private async void CommandGetUserId(BotSession session, string parameter)
 		{
-			int id = await queryConnection.GetClientIdByName(parameter);
-			if (id == -1)
+			GetClientsInfo client = await queryConnection.GetClientByName(parameter);
+			if (client == null)
 				session.Write("No user found...");
 			else
-				session.Write("UserID: " + id);
+				session.Write(string.Format("Client: UID:{0} DBID:{1} ChanID:{2}", client.Id, client.DatabaseId, client.ChannelId));
 		}
 
 		private void CommandHelp(BotSession session)
@@ -438,6 +441,19 @@ namespace TS3AudioBot
 
 			if (!audioFramework.Seek(seconds))
 				session.Write("The point of time is not within the songlenth.");
+		}
+
+		private void CommandSong(BotSession session)
+		{
+			if (quizMode)
+			{
+				// TODO (WIP)
+			}
+			else
+			{
+				if (audioFramework.currentRessource != null)
+					session.Write(audioFramework.currentRessource.RessourceTitle);
+			}
 		}
 
 		private void CommandStop(BotSession session, string parameter)

@@ -20,7 +20,7 @@ namespace TS3AudioBot
 		private CancellationTokenSource ressourceEndTokenSource;
 		private CancellationToken ressourceEndToken;
 
-		private AudioRessource currentRessource = null;
+		public AudioRessource currentRessource { get; protected set; }
 		private IPlayerConnection playerConnection;
 
 		public delegate void RessourceStartedDelegate(AudioRessource audioRessource);
@@ -31,6 +31,7 @@ namespace TS3AudioBot
 		// Playerproperties
 
 		private bool loop = false;
+		/// <summary>Loop state for the entire playlist.</summary>
 		public bool Loop
 		{
 			get { return loop; }
@@ -38,6 +39,7 @@ namespace TS3AudioBot
 		}
 
 		private bool repeat = false;
+		/// <summary>Loop state for the current song.</summary>
 		public bool Repeat
 		{
 			get { return repeat; }
@@ -53,6 +55,9 @@ namespace TS3AudioBot
 
 		// Playermethods
 
+		/// <summary>Jumps to the position in the audiostream if available.</summary>
+		/// <param name="pos">Position in seconds from the start.</param>
+		/// <returns>True if the seek request was valid, false otherwise.</returns>
 		public bool Seek(int pos)
 		{
 			if (pos < 0 || pos > playerConnection.GetLength())
@@ -61,21 +66,25 @@ namespace TS3AudioBot
 			return true;
 		}
 
+		/// <summary>Plays the next song in the playlist.</summary>
 		public void Next()
 		{
 			playerConnection.AudioNext();
 		}
 
+		/// <summary>Plays the previous song in the playlist.</summary>
 		public void Previous()
 		{
 			playerConnection.AudioPrevious();
 		}
 
+		/// <summary>Clears the current playlist</summary>
 		public void Clear()
 		{
 			playerConnection.AudioClear();
 		}
 
+		/// <summary>Starts or resumes the current song.</summary>
 		public void Play()
 		{
 			playerConnection.AudioPlay();
@@ -83,6 +92,8 @@ namespace TS3AudioBot
 
 		// Audioframework
 
+		/// <summary>Creates a new AudioFramework</summary>
+		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
 		public AudioFramework(AudioFrameworkData afd)
 		{
 			audioFrameworkData = afd;
@@ -96,9 +107,9 @@ namespace TS3AudioBot
 		}
 
 		/// <summary>
-		/// Gets started at the beginning of a new ressource.
-		/// It calls the stop event when a ressource is finished.
-		/// This task can be cancelled by cancelling ressourceEndToken.
+		/// <para>Gets started at the beginning of a new ressource.</para>
+		/// <para>It calls the stop event when a ressource is finished.</para>
+		/// <para>This task can be cancelled by cancelling ressourceEndToken.</para>
 		/// </summary>
 		private async void WaitNotifyEnd()
 		{
@@ -128,6 +139,12 @@ namespace TS3AudioBot
 			catch (AggregateException) { }
 		}
 
+		/// <summary>
+		/// <para>Stops the old ressource and starts the new one.</para>
+		/// <para>The volume gets resetted and the OnStartEvent gets triggered.</para>
+		/// </summary>
+		/// <param name="audioRessource">The audio ressource to start.</param>
+		/// <returns>True if the audio ressource started successfully, false otherwise.</returns>
 		public bool StartRessource(AudioRessource audioRessource)
 		{
 			if (audioRessource == null)
@@ -180,6 +197,11 @@ namespace TS3AudioBot
 			Stop(false);
 		}
 
+		/// <summary>
+		/// Stops the currently played song.
+		/// </summary>
+		/// <param name="restart">When set to true, the AudioBob won't be notified aubout the stop.
+		/// Use this parameter to prevent fast off-on switching.</param>
 		private void Stop(bool restart)
 		{
 			if (currentRessource != null)

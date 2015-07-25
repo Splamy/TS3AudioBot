@@ -169,11 +169,10 @@ namespace TS3AudioBot
 			}
 		}
 
-		public async Task<int> GetClientIdByName(string name)
+		public async Task<GetClientsInfo> GetClientByName(string name)
 		{
 			await GetClientById(-1); // Refresh client list, diry but no race conditions
-			GetClientsInfo gci = clientbuffer.FirstOrDefault(user => user.NickName == name);
-			return gci != null ? gci.Id : -1;
+			return clientbuffer.FirstOrDefault(user => user.NickName == name);
 		}
 	}
 
