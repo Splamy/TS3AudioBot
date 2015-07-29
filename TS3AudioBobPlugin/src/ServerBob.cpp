@@ -37,15 +37,15 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup) :
 	addCommand("whisper", &ServerBob::whisperClearCommand,   "Clears the whisperlist", &commandString);
 	commandString = "whisper [client|channel] [add|remove] <id>";
 	addCommand("whisper", &ServerBob::whisperClientCommand,  "Control the whisperlist of the Bob", &commandString);
-	addCommand("whisper", &ServerBob::whisperChannelCommand, "", NULL, false, false);
+	addCommand("whisper", &ServerBob::whisperChannelCommand, "", nullptr, false, false);
 	commandString = "status [whisper|audio]";
 	addCommand("status", &ServerBob::statusAudioCommand,     "Get status information", &commandString);
-	addCommand("status", &ServerBob::statusWhisperCommand,   "", NULL, false, false);
-	addCommand("error", &ServerBob::loopCommand,             "", NULL, true, false);
+	addCommand("status", &ServerBob::statusWhisperCommand,   "", nullptr, false, false);
+	addCommand("error", &ServerBob::loopCommand,             "", nullptr, true, false);
 	commandString = "list [clients|channels]";
 	addCommand("list", &ServerBob::listClientsCommand,       "Lists all connected clients", &commandString);
-	addCommand("list", &ServerBob::listChannelsCommand,      "Lists all existing channels", NULL, false, false);
-	addCommand("unknown", &ServerBob::loopCommand,           "", NULL, true, false);
+	addCommand("list", &ServerBob::listChannelsCommand,      "Lists all existing channels", nullptr, false, false);
+	addCommand("unknown", &ServerBob::loopCommand,           "", nullptr, true, false);
 
 	// Get currently active connections
 	uint64 *handlerIds;
@@ -122,7 +122,7 @@ ServerConnection* ServerBob::getServer(uint64 handlerId)
 		if (connection.getHandlerId() == handlerId)
 			return &connection;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void ServerBob::handleCommand(uint64 handlerId, anyID sender,

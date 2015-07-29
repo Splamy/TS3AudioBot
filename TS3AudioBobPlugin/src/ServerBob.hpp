@@ -47,7 +47,7 @@ private:
 	template <class... Args>
 	void addCommand(const std::string &name, CommandResult (ServerBob::*fun)
 		(ServerConnection*, User*, const std::string&, Args...),
-		const std::string &help, const std::string *commandString = NULL,
+		const std::string &help, const std::string *commandString = nullptr,
 		bool ignoreArguments = false, bool showHelp = true);
 
 	void setAudio(bool on);

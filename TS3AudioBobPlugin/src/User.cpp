@@ -60,7 +60,7 @@ User& User::operator = (User &&user)
 void User::requestDbId()
 {
 	tsApi->handleTsError(tsApi->getFunctions().requestClientDBIDfromUID(
-		connection->getHandlerId(), uniqueId.c_str(), NULL));
+		connection->getHandlerId(), uniqueId.c_str(), nullptr));
 }
 
 void User::requestGroupUpdate()
@@ -71,7 +71,7 @@ void User::requestGroupUpdate()
 		groups.clear();
 		tsApi->handleTsError(tsApi->getFunctions().
 			requestServerGroupsByClientID(connection->getHandlerId(), dbId,
-			NULL));
+			nullptr));
 		groupUpdateRequested = false;
 		groupsInitialized = false;
 	} else

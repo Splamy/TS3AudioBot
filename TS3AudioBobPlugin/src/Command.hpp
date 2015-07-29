@@ -157,13 +157,13 @@ private:
 
 public:
 	StringCommandExecutor(const std::string &command, const std::string &help,
-		FuncType fun, const std::string *commandString = NULL,
+		FuncType fun, const std::string *commandString = nullptr,
 		bool ignore = false, bool showHelp = true) :
 		CommandExecutor<Args...>(fun, ignore),
 		command(command),
 		commandString(showHelp ? (commandString ?
-			new std::string(*commandString) : new std::string(command)) : NULL),
-		help(showHelp ? new std::string(help) : NULL)
+			new std::string(*commandString) : new std::string(command)) : nullptr),
+		help(showHelp ? new std::string(help) : nullptr)
 	{
 	}
 

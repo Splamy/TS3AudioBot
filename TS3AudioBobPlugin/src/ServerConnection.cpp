@@ -80,11 +80,11 @@ void ServerConnection::setAudio(bool on)
 			targetChannels.emplace_back(0);
 			tsApi->handleTsError(tsApi->getFunctions().
 				requestClientSetWhisperList(handlerId, 0, targetChannels.data(),
-				targetUsers.data(), NULL));
+				targetUsers.data(), nullptr));
 		} else
 			// Unset whisperlist
 			tsApi->handleTsError(tsApi->getFunctions().
-				requestClientSetWhisperList(handlerId, 0, NULL, NULL, NULL));
+				requestClientSetWhisperList(handlerId, 0, nullptr, nullptr, nullptr));
 	}
 	tsApi->handleTsError(tsApi->getFunctions().setClientSelfVariableAsInt(
 		handlerId, CLIENT_INPUT_DEACTIVATED,
@@ -136,7 +136,7 @@ User* ServerConnection::getUser(const std::string &uniqueId)
 		if (user.getUniqueId() == uniqueId)
 			return &user;
 	}
-	return NULL;
+	return nullptr;
 }
 
 User* ServerConnection::getUser(uint64 dbId)
@@ -146,7 +146,7 @@ User* ServerConnection::getUser(uint64 dbId)
 		if (user.getDbId() == dbId)
 			return &user;
 	}
-	return NULL;
+	return nullptr;
 }
 
 User* ServerConnection::getUser(anyID userId)
@@ -156,7 +156,7 @@ User* ServerConnection::getUser(anyID userId)
 		if (user.getId() == userId)
 			return &user;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void ServerConnection::addUser(anyID userId, const std::string &uniqueId)

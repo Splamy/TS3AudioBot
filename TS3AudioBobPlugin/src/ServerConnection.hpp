@@ -54,7 +54,7 @@ public:
 	{
 		tsApi->handleTsError(tsApi->getFunctions().requestSendPrivateTextMsg(
 			handlerId, Utils::format(message, args...).c_str(), user->getId(),
-			NULL));
+			nullptr));
 	}
 };
 
