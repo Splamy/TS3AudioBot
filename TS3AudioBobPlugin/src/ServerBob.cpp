@@ -274,11 +274,20 @@ CommandResult ServerBob::whisperClientCommand(ServerConnection *connection,
 	if (action == "add")
 	{
 		User *user = connection->getUser(static_cast<anyID>(id));
-		if (user)
-			connection->addWhisperUser(user);
-		else
-			return CommandResult(false,
-				std::make_shared<std::string>("error client id not found"));
+		if (!user)
+		{
+			// Try to add that user
+			char *clientUid;
+			if (!tsApi->handleTsError(tsApi->getFunctions().
+			    getClientVariableAsString(connection->getHandlerId(),
+			    static_cast<anyID>(id), CLIENT_UNIQUE_IDENTIFIER, &clientUid)))
+				return CommandResult(false,
+					std::make_shared<std::string>("error client id not found"));
+			connection->addUser(id, clientUid);
+			tsApi->getFunctions().freeMemory(clientUid);
+			user = connection->getUser(static_cast<anyID>(id));
+		}
+		connection->addWhisperUser(user);
 	} else if (action == "remove")
 	{
 		User *user = connection->getUser(static_cast<anyID>(id));
