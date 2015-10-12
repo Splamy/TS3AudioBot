@@ -108,6 +108,9 @@ int ts3plugin_init()
 			if (!serverBob)
 				tsApi->log("Couldn't find admin group id field");
 			break;
+		} else
+		{
+			tsApi->log("Couldn't find config file at {0}", file);
 		}
 	}
 	if (!serverBob)
