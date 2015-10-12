@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -49,6 +48,9 @@ namespace TS3AudioBot
 		QueryConnection queryConnection;
 		SessionManager sessionManager;
 		YoutubeFramework youtubeFramework;
+		HistoryManager historyManager;
+
+		bool quizMode = false;
 
 		public MainBot()
 		{
@@ -78,12 +80,17 @@ namespace TS3AudioBot
 
 			if (!silent)
 			{
-				Log.OnLog += (o, e) => Console.WriteLine(e.InfoMessage);
+				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
 			}
 
 			if (!noLog)
 			{
-				Log.OnLog += (o, e) => File.AppendAllText(mainBotData.logFile, e.DetailedMessage, Encoding.UTF8);
+				var encoding = new UTF8Encoding(false);
+				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
+				{
+					if (!string.IsNullOrEmpty(mainBotData.logFile))
+						File.AppendAllText(mainBotData.logFile, msg, encoding);
+				});
 			}
 			return false;
 		}
@@ -105,17 +112,13 @@ namespace TS3AudioBot
 			queryConnection = new QueryConnection(qcd);
 			sessionManager = new SessionManager();
 			youtubeFramework = new YoutubeFramework();
+			historyManager = new HistoryManager();
 
-			audioFramework.OnRessourceStarted += (audioRessource) =>
-			{
-				bobController.Start();
-				bobController.Sending = true;
-			};
-			audioFramework.OnRessourceStopped += () =>
-			{
-				bobController.StartEndTimer();
-				bobController.Sending = false;
-			};
+			// Register callbacks
+			audioFramework.OnRessourceStarted += historyManager.LogAudioRessource;
+			audioFramework.OnRessourceStarted += bobController.OnRessourceStarted;
+			audioFramework.OnRessourceStopped += bobController.OnRessourceStopped;
+
 
 			// register callback for all messages happeing
 			queryConnection.OnMessageReceived += TextCallback;
@@ -124,7 +127,7 @@ namespace TS3AudioBot
 			// give the bobController a reference to the query so he can communicate with the queryClient
 			bobController.QueryConnection = queryConnection;
 			// create a default session for all users in all chat
-			sessionManager.defaultSession = new PublicSession(queryConnection);
+			sessionManager.DefaultSession = new PublicSession(queryConnection);
 			// connect the query after everyting is set up
 			var connectTask = queryConnection.Connect();
 		}
@@ -133,6 +136,7 @@ namespace TS3AudioBot
 		{
 			commandDict.Add("add", new BotCommand(CommandRights.Private, CommandAdd));
 			commandDict.Add("clear", new BotCommand(CommandRights.Admin, CommandClear));
+			commandDict.Add("getuserid", new BotCommand(CommandRights.Admin, CommandGetUserId));
 			commandDict.Add("help", new BotCommand(CommandRights.AnyVisibility, CommandHelp));
 			commandDict.Add("history", new BotCommand(CommandRights.Private, CommandHistory));
 			commandDict.Add("kickme", new BotCommand(CommandRights.AnyVisibility, CommandKickme));
@@ -141,12 +145,15 @@ namespace TS3AudioBot
 			commandDict.Add("next", new BotCommand(CommandRights.Private, CommandNext));
 			commandDict.Add("pm", new BotCommand(CommandRights.Public, CommandPM));
 			commandDict.Add("play", new BotCommand(CommandRights.Private, CommandPlay));
-			commandDict.Add("prev", new BotCommand(CommandRights.Private, CommandPrev));
+			commandDict.Add("previous", new BotCommand(CommandRights.Private, CommandPrevious));
 			commandDict.Add("quit", new BotCommand(CommandRights.Admin, CommandQuit));
 			commandDict.Add("repeat", new BotCommand(CommandRights.Private, CommandRepeat));
 			commandDict.Add("seek", new BotCommand(CommandRights.Private, CommandSeek));
+			commandDict.Add("song", new BotCommand(CommandRights.AnyVisibility, CommandSong));
+			commandDict.Add("subscribe", new BotCommand(CommandRights.Private, CommandSubscribe));
 			commandDict.Add("stop", new BotCommand(CommandRights.Private, CommandStop));
 			commandDict.Add("test", new BotCommand(CommandRights.Private, CommandTest));
+			commandDict.Add("unsubscribe", new BotCommand(CommandRights.Private, CommandUnsubscribe));
 			commandDict.Add("volume", new BotCommand(CommandRights.AnyVisibility, CommandVolume));
 			commandDict.Add("youtube", new BotCommand(CommandRights.Private, CommandYoutube));
 		}
@@ -199,13 +206,18 @@ namespace TS3AudioBot
 			bobController.HasUpdate();
 
 			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
+			if (textMessage.TargetMode == MessageTarget.Private && session == sessionManager.DefaultSession)
+			{
+				Log.Write(Log.Level.Debug, "MB User {0} created auto-private session with the bot", textMessage.InvokerName);
+				session = await sessionManager.CreateSession(queryConnection, textMessage.InvokerId);
+			}
 
-			var isAdmin = new AsyncLazy<bool>(() => HasInvokerAdminRights(textMessage));
+			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy<TextMessage>(HasInvokerAdminRights, textMessage);
 
 			// check if the user has an open request
-			if (session.responseProcessor != null)
+			if (session.ResponseProcessor != null)
 			{
-				if (session.responseProcessor(session, textMessage, session.adminResponse ? await isAdmin.Value : false))
+				if (session.ResponseProcessor(session, textMessage, session.AdminResponse && await isAdmin.GetValue()))
 				{
 					session.ClearResponse();
 					return;
@@ -241,7 +253,7 @@ namespace TS3AudioBot
 				allowed = true;
 				break;
 			}
-			if (!allowed && !await isAdmin.Value)
+			if (!allowed && !await isAdmin.GetValue())
 			{
 				session.Write(reason);
 				return;
@@ -270,7 +282,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async Task<bool> HasInvokerAdminRights(TextMessage textMessage)
+		private async Task<bool> HasInvokerAdminRights(InvokerInformation textMessage)
 		{
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
 			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
@@ -280,6 +292,8 @@ namespace TS3AudioBot
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 
+		// COMMANDS
+
 		private void CommandAdd(BotSession session, string parameter)
 		{
 			PlayAuto(session, parameter, true);
@@ -288,6 +302,15 @@ namespace TS3AudioBot
 		private void CommandClear(BotSession session, string parameter)
 		{
 			audioFramework.Clear();
+		}
+
+		private async void CommandGetUserId(BotSession session, string parameter)
+		{
+			GetClientsInfo client = await queryConnection.GetClientByName(parameter);
+			if (client == null)
+				session.Write("No user found...");
+			else
+				session.Write(string.Format("Client: UID:{0} DBID:{1} ChanID:{2}", client.Id, client.DatabaseId, client.ChannelId));
 		}
 
 		private void CommandHelp(BotSession session)
@@ -361,7 +384,7 @@ namespace TS3AudioBot
 				PlayAuto(session, parameter, false);
 		}
 
-		private void CommandPrev(BotSession session, string parameter)
+		private void CommandPrevious(BotSession session, string parameter)
 		{
 			audioFramework.Previous();
 		}
@@ -373,6 +396,7 @@ namespace TS3AudioBot
 				session.Write("The TS3AudioBot is open in console-mode. Please close it in the opened terminal.");
 				return;
 			}
+			Task.WaitAll(new[] { Task.Run(() => session.Write("Goodbye!")) }, 500);
 			this.Dispose();
 			Log.Write(Log.Level.Info, "Exiting...");
 		}
@@ -419,9 +443,27 @@ namespace TS3AudioBot
 				session.Write("The point of time is not within the songlenth.");
 		}
 
+		private void CommandSong(BotSession session)
+		{
+			if (quizMode)
+			{
+				// TODO (WIP)
+			}
+			else
+			{
+				if (audioFramework.currentRessource != null)
+					session.Write(audioFramework.currentRessource.RessourceTitle);
+			}
+		}
+
 		private void CommandStop(BotSession session, string parameter)
 		{
 			audioFramework.Stop();
+		}
+
+		private void CommandSubscribe(BotSession session, TextMessage textMessage)
+		{
+			bobController.WhisperClientSubscribe(textMessage.InvokerId);
 		}
 
 		private void CommandTest(BotSession session)
@@ -437,6 +479,11 @@ namespace TS3AudioBot
 				ps.Write("Good boy!");
 				//await queryConnection.GetClientServerGroups(ps.client);
 			}
+		}
+
+		private void CommandUnsubscribe(BotSession session, TextMessage textMessage)
+		{
+			bobController.WhisperClientUnsubscribe(textMessage.InvokerId);
 		}
 
 		private void CommandVolume(BotSession session, string parameter)
@@ -465,7 +512,9 @@ namespace TS3AudioBot
 			PlayYoutube(session, parameter, false);
 		}
 
-		private string ExtractUrlFromBB(string ts3link)
+		// HELPER
+
+		private static string ExtractUrlFromBB(string ts3link)
 		{
 			if (ts3link.Contains("[URL]"))
 				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
@@ -529,9 +578,11 @@ namespace TS3AudioBot
 				strb.AppendLine(videoType.qualitydesciption);
 			}
 			session.Write(strb.ToString());
-			session.userRessource = youtubeRessource;
+			session.UserRessource = youtubeRessource;
 			session.SetResponse(ResponseYoutube, null, false);
 		}
+
+		// RESPONSES
 
 		private bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
 		{
@@ -543,7 +594,7 @@ namespace TS3AudioBot
 			int entry;
 			if (int.TryParse(command[1], out entry))
 			{
-				YoutubeRessource ytRessource = session.userRessource as YoutubeRessource;
+				YoutubeRessource ytRessource = session.UserRessource as YoutubeRessource;
 				if (ytRessource == null)
 				{
 					session.Write("An unexpected error with the ytressource occured: null");
@@ -565,14 +616,14 @@ namespace TS3AudioBot
 			{
 				if (isAdmin)
 				{
-					if (!(session.responseData is int))
+					if (!(session.ResponseData is int))
 					{
 						Log.Write(Log.Level.Error, "responseData is not an int.");
 						return true;
 					}
 					if (command[0] == "!y")
 					{
-						audioFramework.Volume = (int)session.responseData;
+						audioFramework.Volume = (int)session.ResponseData;
 					}
 				}
 				else
@@ -631,7 +682,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-		                  Action<BotSession> command)
+						  Action<BotSession> command)
 			: this(commandRights)
 		{
 			CommandN = command;
@@ -639,7 +690,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-		                  Action<BotSession, string> command)
+						  Action<BotSession, string> command)
 			: this(commandRights)
 		{
 			CommandS = command;
@@ -647,7 +698,7 @@ namespace TS3AudioBot
 		}
 
 		public BotCommand(CommandRights commandRights,
-		                  Action<BotSession, TextMessage> command)
+						  Action<BotSession, TextMessage> command)
 			: this(commandRights)
 		{
 			CommandTM = command;

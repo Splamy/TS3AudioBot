@@ -147,7 +147,7 @@ namespace TS3AudioBot
 			{
 				try
 				{
-					Byte[] cmd = System.Text.Encoding.ASCII.GetBytes(msg + "\n");
+					Byte[] cmd = Encoding.ASCII.GetBytes(msg + "\n");
 					netStream.Write(cmd, 0, cmd.Length);
 				}
 				catch (Exception ex)
@@ -223,25 +223,16 @@ namespace TS3AudioBot
 				switch (currentResponse)
 				{
 				case AwaitingResponse.GetLength:
-					int get_length = -1;
-					if (int.TryParse(msg, out get_length))
-						getLength = get_length;
-					else
-						getLength = -1;
+					int get_length;
+					getLength = int.TryParse (msg, out get_length) ? get_length : -1;
 					break;
 				case AwaitingResponse.GetPosition:
-					int get_position = -1;
-					if (int.TryParse(msg, out get_position))
-						getPosition = get_position;
-					else
-						getPosition = -1;
+					int get_position;
+					getPosition = int.TryParse (msg, out get_position) ? get_position : -1;
 					break;
 				case AwaitingResponse.IsPlaing:
-					int is_plaing = -1;
-					if (int.TryParse(msg, out is_plaing))
-						isPlaying = is_plaing != 0;
-					else
-						isPlaying = false;
+					int is_plaing;
+					isPlaying = int.TryParse (msg, out is_plaing) && is_plaing != 0;
 					break;
 				}
 				currentResponse = AwaitingResponse.None;
@@ -281,7 +272,7 @@ namespace TS3AudioBot
 			return tmproc;
 		}
 
-		private string generatePassword(int lenght = 5)
+		private static string generatePassword(int lenght = 5)
 		{
 			const string alphnum = "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 			Random rnd = new Random();

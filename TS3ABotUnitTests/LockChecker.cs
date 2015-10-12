@@ -186,15 +186,10 @@ namespace LockCheck
 					if (typRefCalled.FullName != "System.Threading.Monitor")
 						continue;
 
-					//System.Threading.Monitor.Enter(new object());
-					//bool blob = false;
-					//System.Threading.Monitor.Enter(new object(), ref blob);
-
 					if (metDefCalled.Name == "Enter")
 					{
 						if (lcd == null) lcd = new LockCritialData(method);
 						MemberReference memref = GetPushStackObj(instruction, metDefCalled.Parameters.Count == 1 ? MONITOR_ENTER_1 : MONITOR_ENTER_2);
-						// this == ldarg.0 ?
 						if (memref != null)
 							lcd.lockObjects.Add(memref);
 						else

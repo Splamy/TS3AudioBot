@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
 using Response = System.Func<TS3AudioBot.BotSession, TeamSpeak3QueryApi.Net.Specialized.Notifications.TextMessage, bool, bool>;
 
@@ -14,37 +8,37 @@ namespace TS3AudioBot
 {
 	abstract class BotSession
 	{
-		protected QueryConnection queryConnection;
+		protected QueryConnection QueryConnection;
 
-		public AudioRessource userRessource { get; set; }
-		public Response responseProcessor { get; protected set; }
-		public bool adminResponse { get; protected set; }
-		public object responseData { get; protected set; }
+		public AudioRessource UserRessource { get; set; }
+		public Response ResponseProcessor { get; protected set; }
+		public bool AdminResponse { get; protected set; }
+		public object ResponseData { get; protected set; }
 
 		public abstract bool IsPrivate { get; }
 
 		public abstract void Write(string message);
 
-		public BotSession(QueryConnection queryConnection)
+		protected BotSession(QueryConnection queryConnection)
 		{
-			this.queryConnection = queryConnection;
-			userRessource = null;
-			responseProcessor = null;
-			responseData = null;
+			QueryConnection = queryConnection;
+			UserRessource = null;
+			ResponseProcessor = null;
+			ResponseData = null;
 		}
 
 		public void SetResponse(Response responseProcessor, object responseData, bool requiresAdminCheck)
 		{
-			this.responseProcessor = responseProcessor;
-			this.responseData = responseData;
-			this.adminResponse = requiresAdminCheck;
+			ResponseProcessor = responseProcessor;
+			ResponseData = responseData;
+			AdminResponse = requiresAdminCheck;
 		}
 
 		public void ClearResponse()
 		{
-			responseProcessor = null;
-			responseData = null;
-			adminResponse = false;
+			ResponseProcessor = null;
+			ResponseData = null;
+			AdminResponse = false;
 		}
 	}
 
@@ -56,7 +50,7 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				await queryConnection.TSClient.SendGlobalMessage(message);
+				await QueryConnection.TSClient.SendGlobalMessage(message);
 			}
 			catch (Exception ex)
 			{
@@ -71,19 +65,19 @@ namespace TS3AudioBot
 
 	sealed class PrivateSession : BotSession
 	{
-		public GetClientsInfo client { get; private set; }
+		public GetClientsInfo Client { get; private set; }
 
 		public override bool IsPrivate { get { return true; } }
 
 		public override async void Write(string message)
 		{
-			await queryConnection.TSClient.SendMessage(message, client);
+			await QueryConnection.TSClient.SendMessage(message, Client);
 		}
 
 		public PrivateSession(QueryConnection queryConnection, GetClientsInfo client)
 			: base(queryConnection)
 		{
-			this.client = client;
+			Client = client;
 		}
 	}
 }

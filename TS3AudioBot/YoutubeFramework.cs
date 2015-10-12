@@ -39,9 +39,7 @@ namespace TS3AudioBot
 			List<VideoType> videoTypes = new List<VideoType>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
 
-			string vTitle = dataParse["title"];
-			if (vTitle == null)
-				vTitle = string.Empty;
+			string vTitle = dataParse["title"] ?? string.Empty;
 
 			string videoDataUnsplit = dataParse["url_encoded_fmt_stream_map"];
 			if (videoDataUnsplit == null)
@@ -106,10 +104,7 @@ namespace TS3AudioBot
 			}
 
 			result = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
-			if (result.AvailableTypes.Count > 0)
-				return ResultCode.Success;
-			else
-				return ResultCode.NoVideosExtracted;
+			return result.AvailableTypes.Count > 0 ? ResultCode.Success : ResultCode.NoVideosExtracted;
 		}
 
 		public ResultCode ExtractPlayList()
@@ -140,10 +135,7 @@ namespace TS3AudioBot
 
 			string extractedCodec;
 			int codecEnd;
-			if ((codecEnd = codecSubStr.IndexOf(';')) >= 0)
-				extractedCodec = codecSubStr.Substring(0, codecEnd);
-			else
-				extractedCodec = codecSubStr;
+			extractedCodec = (codecEnd = codecSubStr.IndexOf (';')) >= 0 ? codecSubStr.Substring (0, codecEnd) : codecSubStr;
 
 			switch (extractedCodec)
 			{

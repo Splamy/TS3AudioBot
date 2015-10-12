@@ -7,7 +7,7 @@ namespace TS3AudioBot
 {
 	static class Util
 	{
-		private static Dictionary<FilePath, string> filePathDict;
+		private readonly static Dictionary<FilePath, string> filePathDict;
 
 		static Util()
 		{
@@ -15,6 +15,7 @@ namespace TS3AudioBot
 			filePathDict.Add(FilePath.VLC, IsLinux ? "vlc" : @"D:\VideoLAN\VLC\vlc.exe");
 			filePathDict.Add(FilePath.StartTsBot, IsLinux ? "StartTsBot.sh" : "ping");
 			filePathDict.Add(FilePath.ConfigFile, "configTS3AudioBot.cfg");
+			filePathDict.Add(FilePath.HistoryFile, "audioLog.sqlite");
 		}
 
 		public static bool IsLinux
@@ -53,16 +54,44 @@ namespace TS3AudioBot
 		{
 			if (filePathDict.ContainsKey(filePath))
 				return filePathDict[filePath];
-			return null;
+			throw new ApplicationException();
 		}
 	}
 
-	public class AsyncLazy<T> : Lazy<Task<T>>
+	internal class AsyncLazy<T>
 	{
-		public AsyncLazy(Func<T> valueFactory) :
-			base(() => Task.Factory.StartNew(valueFactory)) { }
-		public AsyncLazy(Func<Task<T>> taskFactory) :
-			base(() => Task.Factory.StartNew(() => taskFactory()).Unwrap()) { }
+		protected T Result;
+		protected Func<Task<T>> LazyMethod;
+		public bool Evaluated { get; protected set; }
+
+		private AsyncLazy(Func<Task<T>> method)
+		{
+			LazyMethod = method;
+		}
+
+		public static AsyncLazy<T> CreateAsyncLazy(Func<Task<T>> method)
+		{
+			return new AsyncLazy<T>(method);
+		}
+
+		public static AsyncLazy<T> CreateAsyncLazy<TIn1>(Func<TIn1, Task<T>> method, TIn1 param1)
+		{
+			return new AsyncLazy<T>(() => method(param1));
+		}
+
+		public async Task<T> GetValue()
+		{
+			if (Evaluated)
+			{
+				return Result;
+			}
+			else
+			{
+				Result = await LazyMethod();
+				Evaluated = true;
+				return Result;
+			}
+		}
 	}
 
 	public enum FilePath
@@ -70,5 +99,6 @@ namespace TS3AudioBot
 		VLC,
 		StartTsBot,
 		ConfigFile,
+		HistoryFile,
 	}
 }

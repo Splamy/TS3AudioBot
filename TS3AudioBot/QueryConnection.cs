@@ -89,14 +89,14 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void KeepAlivePoke()
+		private async void KeepAlivePoke()
 		{
 			try
 			{
 				while (!keepAliveToken.IsCancellationRequested)
 				{
-					TSClient.WhoAmI();
-					Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken).Wait();
+					await TSClient.WhoAmI();
+					await Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken);
 				}
 			}
 			catch (TaskCanceledException)
@@ -141,10 +141,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			if (response.Length <= 0)
-				return new int[0];
-
-			return response.Select<QueryResponseDictionary, int>((dict) => (int)dict["sgid"]).ToArray();
+			return response.Length <= 0 ? new int[0] : response.Select<QueryResponseDictionary, int> (dict => (int)dict ["sgid"]).ToArray();
 		}
 
 		public void Dispose()
@@ -171,6 +168,12 @@ namespace TS3AudioBot
 				}
 			}
 		}
+
+		public async Task<GetClientsInfo> GetClientByName(string name)
+		{
+			await GetClientById(-1); // Refresh client list, diry but no race conditions
+			return clientbuffer.FirstOrDefault(user => user.NickName == name);
+		}
 	}
 
 	public struct QueryConnectionData
@@ -183,7 +186,7 @@ namespace TS3AudioBot
 		public string passwd;
 	}
 
-	internal static class ReadOnlyCollectionExtensions
+	static class ReadOnlyCollectionExtensions
 	{
 		public static void ForEach<T>(this IReadOnlyCollection<T> collection, Action<T> action)
 		{
