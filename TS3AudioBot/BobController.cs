@@ -61,11 +61,6 @@ namespace TS3AudioBot
 			{
 				if (IsRunning)
 				{
-					if (bobClient == null)
-					{
-						Log.Write(Log.Level.Debug, "BC bobClient is null! Message is lost: {0}", message);
-						return;
-					}
 					var sendTask = SendMessageRaw(message);
 				}
 				else
@@ -78,6 +73,12 @@ namespace TS3AudioBot
 
 		private async Task SendMessageRaw(string message)
 		{
+			if (bobClient == null)
+			{
+				Log.Write(Log.Level.Debug, "BC bobClient is null! Message is lost: {0}", message);
+				return;
+			}
+
 			Log.Write(Log.Level.Debug, "BC sending to bobC: {0}", message);
 			await QueryConnection.TSClient.SendMessage(message, bobClient);
 		}
