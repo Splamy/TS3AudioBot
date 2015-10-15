@@ -38,8 +38,8 @@ namespace TS3AudioBot
 
 		bool run;
 		bool noInput;
-		bool silent;
-		bool noLog;
+		bool consoleOutput;
+		bool writeLog;
 		MainBotData mainBotData;
 		Trie<BotCommand> commandDict;
 
@@ -56,8 +56,8 @@ namespace TS3AudioBot
 		{
 			run = true;
 			noInput = false;
-			silent = false;
-			noLog = false;
+			consoleOutput = false;
+			writeLog = false;
 			commandDict = new Trie<BotCommand>();
 		}
 
@@ -75,15 +75,15 @@ namespace TS3AudioBot
 				return true;
 			}
 			noInput = launchParameter.Contains("--NoInput") || launchParameter.Contains("-I");
-			silent = launchParameter.Contains("--Silent") || launchParameter.Contains("-S");
-			noLog = launchParameter.Contains("--NoLog") || launchParameter.Contains("-L");
+			consoleOutput = !(launchParameter.Contains("--Silent") || launchParameter.Contains("-S"));
+			writeLog = !(launchParameter.Contains("--NoLog") || launchParameter.Contains("-L"));
 
-			if (!silent)
+			if (consoleOutput)
 			{
 				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
 			}
 
-			if (!noLog)
+			if (writeLog)
 			{
 				var encoding = new UTF8Encoding(false);
 				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
