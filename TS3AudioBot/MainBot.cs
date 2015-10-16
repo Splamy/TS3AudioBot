@@ -10,6 +10,8 @@ using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
+using static TS3AudioBot.CommandRights;
+
 namespace TS3AudioBot
 {
 	public sealed class MainBot : IDisposable
@@ -42,6 +44,7 @@ namespace TS3AudioBot
 		bool writeLog;
 		MainBotData mainBotData;
 		Trie<BotCommand> commandDict;
+		BotCommand[] allCommands;
 
 		AudioFramework audioFramework;
 		BobController bobController;
@@ -134,28 +137,44 @@ namespace TS3AudioBot
 
 		public void InitializeCommands()
 		{
-			commandDict.Add("add", new BotCommand(CommandRights.Private, CommandAdd));
-			commandDict.Add("clear", new BotCommand(CommandRights.Admin, CommandClear));
-			commandDict.Add("getuserid", new BotCommand(CommandRights.Admin, CommandGetUserId));
-			commandDict.Add("help", new BotCommand(CommandRights.AnyVisibility, CommandHelp));
-			commandDict.Add("history", new BotCommand(CommandRights.Private, CommandHistory));
-			commandDict.Add("kickme", new BotCommand(CommandRights.AnyVisibility, CommandKickme));
-			commandDict.Add("link", new BotCommand(CommandRights.Private, CommandLink));
-			commandDict.Add("loop", new BotCommand(CommandRights.Private, CommandLoop));
-			commandDict.Add("next", new BotCommand(CommandRights.Private, CommandNext));
-			commandDict.Add("pm", new BotCommand(CommandRights.Public, CommandPM));
-			commandDict.Add("play", new BotCommand(CommandRights.Private, CommandPlay));
-			commandDict.Add("previous", new BotCommand(CommandRights.Private, CommandPrevious));
-			commandDict.Add("quit", new BotCommand(CommandRights.Admin, CommandQuit));
-			commandDict.Add("repeat", new BotCommand(CommandRights.Private, CommandRepeat));
-			commandDict.Add("seek", new BotCommand(CommandRights.Private, CommandSeek));
-			commandDict.Add("song", new BotCommand(CommandRights.AnyVisibility, CommandSong));
-			commandDict.Add("subscribe", new BotCommand(CommandRights.Private, CommandSubscribe));
-			commandDict.Add("stop", new BotCommand(CommandRights.Private, CommandStop));
-			commandDict.Add("test", new BotCommand(CommandRights.Private, CommandTest));
-			commandDict.Add("unsubscribe", new BotCommand(CommandRights.Private, CommandUnsubscribe));
-			commandDict.Add("volume", new BotCommand(CommandRights.AnyVisibility, CommandVolume));
-			commandDict.Add("youtube", new BotCommand(CommandRights.Private, CommandYoutube));
+			var allCommandsList = new List<BotCommand>();
+
+			var builder = new BotCommand.Builder(botCommand =>
+			{
+				commandDict.Add(botCommand.InvokeName, botCommand);
+				allCommandsList.Add(botCommand);
+			});
+
+			// [...] = Optional
+			// <name> = Placeholder for a text
+			// [text] = Option for fixed text
+			// (a|b) = either or switch
+
+			builder.New("add").Action(CommandAdd).Permission(Private).HelpData("Adds a new song to the queue.", "<link>").Finish();
+			builder.New("clear").Action(CommandClear).Permission(Private).HelpData("Removes all songs from the current playlist.").Finish();
+			builder.New("getuserid").Action(CommandGetUserId).Permission(Private).HelpData("Gets the unique Id of a user.", "<username>").Finish();
+			builder.New("help").Action(CommandHelp).Permission(Private).HelpData("Shows all commands or detailed help about a specific command.", "[<command>]").Finish();
+			builder.New("history").Action(CommandHistory).Permission(Private).HelpData("Shows recently played songs.").Finish();
+			builder.New("kickme").Action(CommandKickme).Permission(Private).HelpData("Guess what?", "[far]").Finish();
+			builder.New("link").Action(CommandLink).Permission(Private).HelpData("Plays any direct ressource link.", "<link>").Finish();
+			builder.New("loop").Action(CommandLoop).Permission(Private).HelpData("Sets wether of not to loop the entire playlist.", "(on|off)").Finish();
+			builder.New("next").Action(CommandNext).Permission(Private).HelpData("Plays the next song in the playlist.").Finish();
+			builder.New("pm").Action(CommandPM).Permission(Public).HelpData("Reuests private session with the ServerBot so you can invoke private commands.").Finish();
+			builder.New("play").Action(CommandPlay).Permission(Private)
+				.HelpData("Automatically tries to decide wether the link is a special ressource (like youtube) or a direct ressource (like ./hello.mp3) and starts it", "<link>").Finish();
+			builder.New("previous").Action(CommandPrevious).Permission(Private).HelpData("Plays the previous song in the playlist.").Finish();
+			builder.New("quit").Action(CommandQuit).Permission(Admin).HelpData("Closes the TS3AudioBot application.").Finish();
+			builder.New("repeat").Action(CommandRepeat).Permission(Private).HelpData("Sets wether or not to loop a single song", "(on|off)").Finish();
+			builder.New("seek").Action(CommandSeek).Permission(Private).HelpData("Jumps to a timemark within the current song.", "(<time in seconds>|<seconds>:<minutes>)").Finish();
+			builder.New("song").Action(CommandSong).Permission(AnyVisibility).HelpData("Tells you the name of the current song.").Finish();
+			builder.New("subscribe").Action(CommandSubscribe).Permission(Private).HelpData("Lets you hear the music independent from the channel you are in.").Finish();
+			builder.New("stop").Action(CommandStop).Permission(Private).HelpData("Stops the current song.").Finish();
+			builder.New("test").Action(CommandTest).Permission(Admin).HelpData("Only for debugging purposes").Finish();
+			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(Private).HelpData("Only lets you hear the music in active channels again.").Finish();
+			builder.New("volume").Action(CommandVolume).Permission(AnyVisibility).HelpData("Sets the volume level of the music.", "<level(0-200)>").Finish();
+			builder.New("youtube").Action(CommandYoutube).Permission(Private).HelpData("Resolves the link as a youtube video to play it for you.").Finish();
+
+			allCommands = allCommandsList.ToArray();
 		}
 
 		public void Run()
@@ -212,7 +231,7 @@ namespace TS3AudioBot
 				session = await sessionManager.CreateSession(queryConnection, textMessage.InvokerId);
 			}
 
-			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy<TextMessage>(HasInvokerAdminRights, textMessage);
+			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy(HasInvokerAdminRights, textMessage);
 
 			// check if the user has an open request
 			if (session.ResponseProcessor != null)
@@ -313,20 +332,33 @@ namespace TS3AudioBot
 				session.Write(string.Format("Client: UID:{0} DBID:{1} ChanID:{2}", client.Id, client.DatabaseId, client.ChannelId));
 		}
 
-		private void CommandHelp(BotSession session)
+		private void CommandHelp(BotSession session, string parameter)
 		{
-			//TODO rework to use the new sysytem
-			// add a description to each command (+ in command class)
-			session.Write("\n" +
-				"!pm: Get private audience with the AudioBot\n" +
-				"!kickme: Does exactly what you think it does...\n" +
-				"!play: Plays any file or media/youtube url [p]\n" +
-				"!youtube: Plays a video from youtube [yt]\n" +
-				"!link: Plays any media from the server [vlocal, vl]\n" +
-				"!stop: Stops the current song\n" +
-				"!startbot: Connects the MusicBot to TeamSpeak\n" +
-				"!stopbot: Disconnects the MusicBot from TeamSpeak\n" +
-				"!history: Shows you the last played songs\n");
+			var strb = new StringBuilder();
+			if (string.IsNullOrEmpty(parameter))
+			{
+				strb.Append("\n========= Welcome to the TS3AudioBot ========="
+					+ "\nIf you need any help with a special command use !help commandName."
+					+ "\nHere are all possible commands:\n");
+				foreach (var command in allCommands)
+					strb.Append(command.InvokeName).Append(", ");
+			}
+			else
+			{
+				BotCommand command = null;
+				if (!commandDict.TryGetValue(parameter, out command))
+				{
+					session.Write("No matching command found! Try !help to get a list of all commands.");
+					return;
+				}
+				strb.Append(command.GetHelp());
+				if (command.InvokeName == "help")
+				{
+					strb.Append("\nProtips:\n> You can truncate any command as long as it stays unique:"
+						+ "\nfor example: !subscribe can be shortened with !sub or even !su");
+				}
+			}
+			session.Write(strb.ToString());
 		}
 
 		private void CommandHistory(BotSession session, string parameter)
@@ -668,41 +700,145 @@ namespace TS3AudioBot
 
 	class BotCommand
 	{
+		public string InvokeName { get; private set; }
+
 		public Action<BotSession> CommandN { get; private set; }
 		public Action<BotSession, string> CommandS { get; private set; }
 		public Action<BotSession, TextMessage> CommandTM { get; private set; }
 		public CommandParameter CommandParameter { get; private set; }
 		public CommandRights CommandRights { get; private set; }
+
+		private string outputCache = null;
 		public string Description { get; private set; }
+		public string[] ParameterList { get; private set; }
 
-		private BotCommand(CommandRights commandRights)
+		private BotCommand() { }
+
+		public string GetHelp()
 		{
-			CommandRights = commandRights;
-			CommandParameter = CommandParameter.Undefined;
+			if (outputCache == null)
+			{
+				StringBuilder strb = new StringBuilder();
+				strb.Append("\nUsage: ").Append('!').Append(InvokeName);
+				foreach (string para in ParameterList)
+					strb.Append(" ").Append(para);
+				strb.Append('\n').Append(Description);
+				outputCache = strb.ToString();
+			}
+			return outputCache;
 		}
 
-		public BotCommand(CommandRights commandRights,
-						  Action<BotSession> command)
-			: this(commandRights)
+		public override string ToString()
 		{
-			CommandN = command;
-			CommandParameter = CommandParameter.Nothing;
+			return $"!{InvokeName} - {CommandParameter} - {CommandRights} : {ParameterList}";
 		}
 
-		public BotCommand(CommandRights commandRights,
-						  Action<BotSession, string> command)
-			: this(commandRights)
+		public class Builder
 		{
-			CommandS = command;
-			CommandParameter = CommandParameter.Remainder;
-		}
+			private bool buildMode;
+			private Action<BotCommand> registerAction;
 
-		public BotCommand(CommandRights commandRights,
-						  Action<BotSession, TextMessage> command)
-			: this(commandRights)
-		{
-			CommandTM = command;
-			CommandParameter = CommandParameter.TextMessage;
+			// Default values
+			private const CommandRights defaultCommandRights = Admin;
+			private const string defaultDescription = "<no info>";
+			private static readonly string[] defaultParameters = new string[0];
+
+			// List of configurations for each command
+			private string name;
+
+			private bool setAction = false;
+			private Action<BotSession> commandN;
+			private Action<BotSession, string> commandS;
+			private Action<BotSession, TextMessage> commandTM;
+			private CommandParameter commandParameter;
+
+			private bool setRights = false;
+			private CommandRights commandRights;
+
+			private bool setHelp = false;
+			private string description;
+			private string[] parameters;
+
+			private Builder(Action<BotCommand> registerAction, bool buildMode)
+			{
+				this.buildMode = buildMode;
+				this.registerAction = registerAction;
+			}
+
+			public Builder(Action<BotCommand> registerAction) : this(registerAction, false) { }
+
+			public Builder New(string invokeName)
+			{
+				var cb = new Builder(registerAction, true);
+				cb.name = invokeName;
+				return cb;
+			}
+
+			private void CheckAction()
+			{
+				if (setAction) throw new InvalidOperationException();
+				setAction = true;
+			}
+
+			public Builder Action(Action<BotSession> commandN)
+			{
+				CheckAction();
+				this.commandN = commandN;
+				commandParameter = CommandParameter.Nothing;
+				return this;
+			}
+
+			public Builder Action(Action<BotSession, string> commandS)
+			{
+				CheckAction();
+				this.commandS = commandS;
+				commandParameter = CommandParameter.Remainder;
+				return this;
+			}
+
+			public Builder Action(Action<BotSession, TextMessage> commandTM)
+			{
+				CheckAction();
+				this.commandTM = commandTM;
+				commandParameter = CommandParameter.TextMessage;
+				return this;
+			}
+
+			public Builder Permission(CommandRights requiredRights)
+			{
+				if (setRights) throw new InvalidOperationException();
+				commandRights = requiredRights;
+				setRights = true;
+				return this;
+			}
+
+			public Builder HelpData(string description, params string[] parameters)
+			{
+				if (setHelp) throw new InvalidOperationException();
+				this.description = description;
+				this.parameters = parameters;
+				setHelp = true;
+				return this;
+			}
+
+			public BotCommand Finish()
+			{
+				if (!setAction) throw new InvalidProgramException($"No action defined for {name}");
+
+				var command = new BotCommand()
+				{
+					InvokeName = name,
+					CommandN = commandN,
+					CommandS = commandS,
+					CommandTM = commandTM,
+					CommandParameter = commandParameter,
+					CommandRights = setRights ? commandRights : defaultCommandRights,
+					Description = setHelp ? description : defaultDescription,
+					ParameterList = setHelp ? parameters : defaultParameters,
+				};
+				registerAction(command);
+				return command;
+			}
 		}
 	}
 
