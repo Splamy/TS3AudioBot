@@ -10,8 +10,6 @@ using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
-using static TS3AudioBot.CommandRights;
-
 namespace TS3AudioBot
 {
 	public sealed class MainBot : IDisposable
@@ -150,29 +148,29 @@ namespace TS3AudioBot
 			// [text] = Option for fixed text
 			// (a|b) = either or switch
 
-			builder.New("add").Action(CommandAdd).Permission(Private).HelpData("Adds a new song to the queue.", "<link>").Finish();
-			builder.New("clear").Action(CommandClear).Permission(Private).HelpData("Removes all songs from the current playlist.").Finish();
-			builder.New("getuserid").Action(CommandGetUserId).Permission(Private).HelpData("Gets the unique Id of a user.", "<username>").Finish();
-			builder.New("help").Action(CommandHelp).Permission(Private).HelpData("Shows all commands or detailed help about a specific command.", "[<command>]").Finish();
-			builder.New("history").Action(CommandHistory).Permission(Private).HelpData("Shows recently played songs.").Finish();
-			builder.New("kickme").Action(CommandKickme).Permission(Private).HelpData("Guess what?", "[far]").Finish();
-			builder.New("link").Action(CommandLink).Permission(Private).HelpData("Plays any direct ressource link.", "<link>").Finish();
-			builder.New("loop").Action(CommandLoop).Permission(Private).HelpData("Sets wether of not to loop the entire playlist.", "(on|off)").Finish();
-			builder.New("next").Action(CommandNext).Permission(Private).HelpData("Plays the next song in the playlist.").Finish();
-			builder.New("pm").Action(CommandPM).Permission(Public).HelpData("Reuests private session with the ServerBot so you can invoke private commands.").Finish();
-			builder.New("play").Action(CommandPlay).Permission(Private)
+			builder.New("add").Action(CommandAdd).Permission(CommandRights.Private).HelpData("Adds a new song to the queue.", "<link>").Finish();
+			builder.New("clear").Action(CommandClear).Permission(CommandRights.Private).HelpData("Removes all songs from the current playlist.").Finish();
+			builder.New("getuserid").Action(CommandGetUserId).Permission(CommandRights.Private).HelpData("Gets the unique Id of a user.", "<username>").Finish();
+			builder.New("help").Action(CommandHelp).Permission(CommandRights.Private).HelpData("Shows all commands or detailed help about a specific command.", "[<command>]").Finish();
+			builder.New("history").Action(CommandHistory).Permission(CommandRights.Private).HelpData("Shows recently played songs.").Finish();
+			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private).HelpData("Guess what?", "[far]").Finish();
+			builder.New("link").Action(CommandLink).Permission(CommandRights.Private).HelpData("Plays any direct ressource link.", "<link>").Finish();
+			builder.New("loop").Action(CommandLoop).Permission(CommandRights.Private).HelpData("Sets wether of not to loop the entire playlist.", "(on|off)").Finish();
+			builder.New("next").Action(CommandNext).Permission(CommandRights.Private).HelpData("Plays the next song in the playlist.").Finish();
+			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public).HelpData("Reuests private session with the ServerBot so you can invoke private commands.").Finish();
+			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
 				.HelpData("Automatically tries to decide wether the link is a special ressource (like youtube) or a direct ressource (like ./hello.mp3) and starts it", "<link>").Finish();
-			builder.New("previous").Action(CommandPrevious).Permission(Private).HelpData("Plays the previous song in the playlist.").Finish();
-			builder.New("quit").Action(CommandQuit).Permission(Admin).HelpData("Closes the TS3AudioBot application.").Finish();
-			builder.New("repeat").Action(CommandRepeat).Permission(Private).HelpData("Sets wether or not to loop a single song", "(on|off)").Finish();
-			builder.New("seek").Action(CommandSeek).Permission(Private).HelpData("Jumps to a timemark within the current song.", "(<time in seconds>|<seconds>:<minutes>)").Finish();
-			builder.New("song").Action(CommandSong).Permission(AnyVisibility).HelpData("Tells you the name of the current song.").Finish();
-			builder.New("subscribe").Action(CommandSubscribe).Permission(Private).HelpData("Lets you hear the music independent from the channel you are in.").Finish();
-			builder.New("stop").Action(CommandStop).Permission(Private).HelpData("Stops the current song.").Finish();
-			builder.New("test").Action(CommandTest).Permission(Admin).HelpData("Only for debugging purposes").Finish();
-			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(Private).HelpData("Only lets you hear the music in active channels again.").Finish();
-			builder.New("volume").Action(CommandVolume).Permission(AnyVisibility).HelpData("Sets the volume level of the music.", "<level(0-200)>").Finish();
-			builder.New("youtube").Action(CommandYoutube).Permission(Private).HelpData("Resolves the link as a youtube video to play it for you.").Finish();
+			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private).HelpData("Plays the previous song in the playlist.").Finish();
+			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin).HelpData("Closes the TS3AudioBot application.").Finish();
+			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private).HelpData("Sets wether or not to loop a single song", "(on|off)").Finish();
+			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private).HelpData("Jumps to a timemark within the current song.", "(<time in seconds>|<seconds>:<minutes>)").Finish();
+			builder.New("song").Action(CommandSong).Permission(CommandRights.AnyVisibility).HelpData("Tells you the name of the current song.").Finish();
+			builder.New("subscribe").Action(CommandSubscribe).Permission(CommandRights.Private).HelpData("Lets you hear the music independent from the channel you are in.").Finish();
+			builder.New("stop").Action(CommandStop).Permission(CommandRights.Private).HelpData("Stops the current song.").Finish();
+			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin).HelpData("Only for debugging purposes").Finish();
+			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(CommandRights.Private).HelpData("Only lets you hear the music in active channels again.").Finish();
+			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility).HelpData("Sets the volume level of the music.", "<level(0-200)>").Finish();
+			builder.New("youtube").Action(CommandYoutube).Permission(CommandRights.Private).HelpData("Resolves the link as a youtube video to play it for you.").Finish();
 
 			allCommands = allCommandsList.ToArray();
 		}
@@ -730,7 +728,7 @@ namespace TS3AudioBot
 
 		public override string ToString()
 		{
-			return $"!{InvokeName} - {CommandParameter} - {CommandRights} : {ParameterList}";
+			return string.Format("!{0} - {1} - {2} : {3}", InvokeName, CommandParameter, CommandRights, ParameterList);
 		}
 
 		public class Builder
@@ -739,7 +737,7 @@ namespace TS3AudioBot
 			private Action<BotCommand> registerAction;
 
 			// Default values
-			private const CommandRights defaultCommandRights = Admin;
+			private const CommandRights defaultCommandRights = CommandRights.Admin;
 			private const string defaultDescription = "<no info>";
 			private static readonly string[] defaultParameters = new string[0];
 
@@ -823,7 +821,7 @@ namespace TS3AudioBot
 
 			public BotCommand Finish()
 			{
-				if (!setAction) throw new InvalidProgramException($"No action defined for {name}");
+				if (!setAction) throw new InvalidProgramException("No action defined for " + name);
 
 				var command = new BotCommand()
 				{
