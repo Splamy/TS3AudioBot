@@ -521,7 +521,7 @@ namespace TS3AudioBot
 			int volume;
 			if (int.TryParse(parameter, out volume) && volume >= 0)
 			{
-				if (volume <= AudioFramework.MAXUSERVOLUME)
+				if (volume <= AudioFramework.MAXUSERVOLUME || volume < audioFramework.Volume)
 				{
 					audioFramework.Volume = volume;
 					return;
@@ -588,8 +588,13 @@ namespace TS3AudioBot
 			}
 			youtubeRessource.Enqueue = enqueue;
 
-			if (youtubeRessource.AvailableTypes.Count == 1)
+			var availList = youtubeRessource.AvailableTypes.ToList();
+			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
+			if (autoselectIndex == -1)
+				autoselectIndex = availList.FindIndex(t => t.audioOnly);
+			if (autoselectIndex != -1)
 			{
+				youtubeRessource.Selected = autoselectIndex;
 				if (!audioFramework.StartRessource(youtubeRessource))
 					session.Write("The ressource could not be played...");
 				return;

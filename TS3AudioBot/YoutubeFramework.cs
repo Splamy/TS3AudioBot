@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Net;
 using System.Web;
 using System.Text.RegularExpressions;
@@ -135,7 +134,7 @@ namespace TS3AudioBot
 
 			string extractedCodec;
 			int codecEnd;
-			extractedCodec = (codecEnd = codecSubStr.IndexOf (';')) >= 0 ? codecSubStr.Substring (0, codecEnd) : codecSubStr;
+			extractedCodec = (codecEnd = codecSubStr.IndexOf(';')) >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
 
 			switch (extractedCodec)
 			{
@@ -180,13 +179,13 @@ namespace TS3AudioBot
 
 	class YoutubeRessource : AudioRessource
 	{
-		public IReadOnlyList<VideoType> AvailableTypes { get; protected set; }
+		public IList<VideoType> AvailableTypes { get; protected set; }
 
 		public int Selected { get; set; }
 
 		public override AudioType AudioType { get { return AudioType.Youtube; } }
 
-		public YoutubeRessource(string link, string youtubeName, IReadOnlyList<VideoType> availableTypes)
+		public YoutubeRessource(string link, string youtubeName, IList<VideoType> availableTypes)
 			: base(link, youtubeName)
 		{
 			AvailableTypes = availableTypes;
