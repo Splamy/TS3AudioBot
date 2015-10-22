@@ -29,7 +29,9 @@ namespace TS3AudioBot
 		private CancellationTokenSource keepAliveTokenSource;
 		private CancellationToken keepAliveToken;
 
-		public TeamSpeakClient TSClient { get; protected set; }
+		private Task sendQueueTask;
+
+		public TeamSpeakClient TSClient { get; private set; }
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
@@ -80,6 +82,12 @@ namespace TS3AudioBot
 							OnClientDisconnect(this, clientdata);
 					}
 				});
+				// TODO TEST !!
+				TSClient.Subscribe<ClientMoved>(data =>
+				{
+					// this is required to update the channel field of the user
+					clientbufferoutdated = true;
+				});
 
 				connected = true;
 
@@ -126,6 +134,22 @@ namespace TS3AudioBot
 				TSClient.Client.Send("quit");
 		}
 
+		public void SendMessage(string message, GetClientsInfo client)
+		{
+			if (sendQueueTask != null && !sendQueueTask.IsCompleted)
+				sendQueueTask = sendQueueTask.ContinueWith(t => TSClient.SendMessage(message, client));
+			else
+				sendQueueTask = TSClient.SendMessage(message, client);
+		}
+
+		public void SendGlobalMessage(string message)
+		{
+			if (sendQueueTask != null && !sendQueueTask.IsCompleted)
+				sendQueueTask = sendQueueTask.ContinueWith(t => TSClient.SendGlobalMessage(message));
+			else
+				sendQueueTask = TSClient.SendGlobalMessage(message);
+		}
+
 		public async Task<GetClientsInfo> GetClientById(int id)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientById called");
@@ -141,7 +165,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			return response.Length <= 0 ? new int[0] : response.Select<QueryResponseDictionary, int> (dict => (int)dict ["sgid"]).ToArray();
+			return response.Length <= 0 ? new int[0] : response.Select<QueryResponseDictionary, int>(dict => (int)dict["sgid"]).ToArray();
 		}
 
 		public void Dispose()

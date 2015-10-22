@@ -22,8 +22,7 @@ namespace TS3AudioBot
 		private CancellationTokenSource cancellationTokenSource;
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
-
-		private Task sendTask;
+		
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private GetClientsInfo bobClient;
@@ -65,10 +64,7 @@ namespace TS3AudioBot
 			{
 				if (IsRunning)
 				{
-					if (sendTask != null && !sendTask.IsCompleted)
-						sendTask = sendTask.ContinueWith(t => SendMessageRaw(message));
-					else
-						sendTask = SendMessageRaw(message);
+					SendMessageRaw(message);
 				}
 				else
 				{
@@ -78,7 +74,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async Task SendMessageRaw(string message)
+		private void SendMessageRaw(string message)
 		{
 			//TODO lock here instead of sendmessage
 			if (bobClient == null)
@@ -88,16 +84,16 @@ namespace TS3AudioBot
 			}
 
 			Log.Write(Log.Level.Debug, "BC sending to bobC: {0}", message);
-			await QueryConnection.TSClient.SendMessage(message, bobClient);
+			QueryConnection.SendMessage(message, bobClient);
 		}
 
-		private async Task SendQueue()
+		private void SendQueue()
 		{
 			if (!IsRunning)
 				throw new InvalidOperationException("The bob must run to send the commandQueue");
 
 			while (commandQueue.Count > 0)
-				await SendMessageRaw(commandQueue.Dequeue());
+				SendMessageRaw(commandQueue.Dequeue());
 		}
 
 		public void HasUpdate()
@@ -217,7 +213,7 @@ namespace TS3AudioBot
 				QueryConnection.OnClientConnect -= AwaitBobConnect;
 				IsRunning = true;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
-				await SendQueue();
+				SendQueue();
 			}
 		}
 

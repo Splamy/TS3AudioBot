@@ -46,11 +46,11 @@ namespace TS3AudioBot
 	{
 		public override bool IsPrivate { get { return false; } }
 
-		public override async void Write(string message)
+		public override void Write(string message)
 		{
 			try
 			{
-				await QueryConnection.TSClient.SendGlobalMessage(message);
+				QueryConnection.SendGlobalMessage(message);
 			}
 			catch (Exception ex)
 			{
@@ -69,9 +69,9 @@ namespace TS3AudioBot
 
 		public override bool IsPrivate { get { return true; } }
 
-		public override async void Write(string message)
+		public override void Write(string message)
 		{
-			await QueryConnection.TSClient.SendMessage(message, Client);
+			QueryConnection.SendMessage(message, Client);
 		}
 
 		public PrivateSession(QueryConnection queryConnection, GetClientsInfo client)
