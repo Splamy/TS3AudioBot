@@ -23,6 +23,7 @@ namespace TS3AudioBot
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
 
+		private Task sendTask;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private GetClientsInfo bobClient;
@@ -64,7 +65,10 @@ namespace TS3AudioBot
 			{
 				if (IsRunning)
 				{
-					var sendTask = SendMessageRaw(message);
+					if (sendTask != null && !sendTask.IsCompleted)
+						sendTask = sendTask.ContinueWith(t => SendMessageRaw(message));
+					else
+						sendTask = SendMessageRaw(message);
 				}
 				else
 				{
@@ -76,6 +80,7 @@ namespace TS3AudioBot
 
 		private async Task SendMessageRaw(string message)
 		{
+			//TODO lock here instead of sendmessage
 			if (bobClient == null)
 			{
 				Log.Write(Log.Level.Debug, "BC bobClient is null! Message is lost: {0}", message);
@@ -103,6 +108,7 @@ namespace TS3AudioBot
 		public void OnRessourceStarted(AudioRessource ar)
 		{
 			Start();
+			Sending = true;
 			WhisperChannelSubscribe(ar.InvokingUser.ChannelId, false);
 			foreach (var data in channelSubscriptions)
 			{
@@ -114,7 +120,6 @@ namespace TS3AudioBot
 						WhisperChannelUnsubscribe(data.Value.Id, false);
 				}
 			}
-			Sending = true;
 		}
 
 		public async void OnRessourceStopped(bool restart)

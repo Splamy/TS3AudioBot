@@ -509,6 +509,11 @@ namespace TS3AudioBot
 
 		private void CommandTest(BotSession session)
 		{
+			// stresstest
+			for (int i = 0; i < 10; i++)
+				session.Write(i.ToString());
+
+			return;
 			PrivateSession ps = session as PrivateSession;
 			if (ps == null)
 			{

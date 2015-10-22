@@ -13,7 +13,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void DeadLockCheck()
 		{
-			var warnings = LockChecker.CheckAll<TS3AudioBot.MainBot>(true);
+			var warnings = LockChecker.CheckAll<MainBot>(true);
 			Assert.IsTrue(warnings.Count == 0, "At least one possible deadlock detected");
 		}
 
