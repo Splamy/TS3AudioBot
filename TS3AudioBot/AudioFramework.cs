@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
+using TeamSpeak3QueryApi.Net.Specialized.Responses;
 
 namespace TS3AudioBot
 {
@@ -145,34 +145,38 @@ namespace TS3AudioBot
 		/// </summary>
 		/// <param name="audioRessource">The audio ressource to start.</param>
 		/// <returns>True if the audio ressource started successfully, false otherwise.</returns>
-		public bool StartRessource(AudioRessource audioRessource)
+		public AudioResultCode StartRessource(AudioRessource audioRessource, GetClientsInfo invoker)
 		{
 			if (audioRessource == null)
 			{
 				Log.Write(Log.Level.Debug, "AF audioRessource is null");
-				return false;
+				return AudioResultCode.NoNewRessource;
 			}
 
-			Log.Write(Log.Level.Debug, "AF stop old");
+			audioRessource.InvokingUser = invoker;
+
+			Log.Write(Log.Level.Debug, "AF Invoker: " + invoker.Id);
+
 			Stop(true);
 
 			playerConnection.AudioClear();
 
 			if (audioRessource.Volume == -1)
 				audioRessource.Volume = audioFrameworkData.defaultVolume;
-			Volume = audioRessource.Volume;
-			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 			if (audioRessource.Enqueue)
 			{
 				if (!audioRessource.Play(playerConnection.AudioAdd))
-					return false;
+					return AudioResultCode.RessouceInternalError;
 				audioRessource.Enqueue = false;
 			}
 			else
 			{
 				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource.RessourceURL);
 				if (!audioRessource.Play(playerConnection.AudioStart))
-					return false;
+					return AudioResultCode.RessouceInternalError;
+
+				Volume = audioRessource.Volume;
+				Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 			}
 
 			if (OnRessourceStarted != null)
@@ -189,7 +193,7 @@ namespace TS3AudioBot
 				ressourceEndToken = ressourceEndTokenSource.Token;
 				ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
 			}
-			return true;
+			return AudioResultCode.Success;
 		}
 
 		public void Stop()
@@ -204,6 +208,7 @@ namespace TS3AudioBot
 		/// Use this parameter to prevent fast off-on switching.</param>
 		private void Stop(bool restart)
 		{
+			Log.Write(Log.Level.Debug, string.Format("AF stop old (restart:{0})", restart));
 			if (currentRessource != null)
 			{
 				currentRessource = null;
@@ -240,6 +245,7 @@ namespace TS3AudioBot
 		public string RessourceTitle { get; private set; }
 		public string RessourceURL { get; private set; }
 		public bool Enqueue { get; set; }
+		public GetClientsInfo InvokingUser { get; set; }
 
 		public abstract bool Play(Action<string> setMedia);
 
@@ -261,7 +267,8 @@ namespace TS3AudioBot
 		public override AudioType AudioType { get { return AudioType.MediaLink; } }
 
 		public MediaRessource(string path, string name)
-			: base(path, name) { }
+			: base(path, name)
+		{ }
 
 		public override bool Play(Action<string> setMedia)
 		{
@@ -282,5 +289,12 @@ namespace TS3AudioBot
 	{
 		MediaLink,
 		Youtube,
+	}
+
+	enum AudioResultCode
+	{
+		Success,
+		NoNewRessource,
+		RessouceInternalError,
 	}
 }

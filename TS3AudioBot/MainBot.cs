@@ -293,9 +293,16 @@ namespace TS3AudioBot
 				command.CommandTM(session, textMessage);
 				break;
 
+			case CommandParameter.MessageAndRemainder:
+				if (commandSplit.Length < 2)
+					command.CommandTMS(session, textMessage, string.Empty);
+				else
+					command.CommandTMS(session, textMessage, commandSplit[1]);
+				break;
+
 			case CommandParameter.Undefined:
 			default:
-				break;
+				throw new InvalidOperationException("Command with no process");
 			}
 		}
 
@@ -311,9 +318,10 @@ namespace TS3AudioBot
 
 		// COMMANDS
 
-		private void CommandAdd(BotSession session, string parameter)
+		private async void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
-			PlayAuto(session, parameter, true);
+			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
+			PlayAuto(session, client, parameter, true);
 		}
 
 		private void CommandClear(BotSession session, string parameter)
@@ -364,14 +372,13 @@ namespace TS3AudioBot
 			//TODO
 		}
 
-		private async void CommandKickme(BotSession session, TextMessage textMessage)
+		private async void CommandKickme(BotSession session, TextMessage textMessage, string parameter)
 		{
 			try
 			{
-				string[] split = textMessage.Message.Split(new[] { ' ' }, 2);
-				if (split.Length <= 1)
+				if (string.IsNullOrEmpty(parameter))
 					await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Channel);
-				else if (split[1] == "far")
+				else if (parameter == "far")
 					await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Server);
 			}
 			catch (Exception ex)
@@ -380,9 +387,10 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void CommandLink(BotSession session, string parameter)
+		private async void CommandLink(BotSession session, TextMessage textMessage, string parameter)
 		{
-			PlayLink(session, parameter, false);
+			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
+			PlayLink(session, client, parameter, false);
 		}
 
 		private void CommandLoop(BotSession session, string parameter)
@@ -406,12 +414,15 @@ namespace TS3AudioBot
 			ownSession.Write("Hi " + textMessage.InvokerName);
 		}
 
-		private void CommandPlay(BotSession session, string parameter)
+		private async void CommandPlay(BotSession session, TextMessage textMessage, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
 				audioFramework.Play();
 			else
-				PlayAuto(session, parameter, false);
+			{
+				GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
+				PlayAuto(session, client, parameter, false);
+			}
 		}
 
 		private void CommandPrevious(BotSession session, string parameter)
@@ -537,9 +548,10 @@ namespace TS3AudioBot
 			session.Write("The parameter is not valid. Usage !volume <int>(0-200)");
 		}
 
-		private void CommandYoutube(BotSession session, string parameter)
+		private async void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
 		{
-			PlayYoutube(session, parameter, false);
+			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
+			PlayYoutube(session, client, parameter, false);
 		}
 
 		// HELPER
@@ -552,36 +564,37 @@ namespace TS3AudioBot
 				return ts3link;
 		}
 
-		private void PlayAuto(BotSession session, string message, bool enqueue)
+		private void PlayAuto(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
 			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
 			{
 				//Is a youtube link
-				PlayYoutube(session, message, enqueue);
+				PlayYoutube(session, invoker, message, enqueue);
 			}
 			else
 			{
 				//Is any media link
-				PlayLink(session, message, enqueue);
+				PlayLink(session, invoker, message, enqueue);
 			}
 		}
 
-		private void PlayLink(BotSession session, string message, bool enqueue)
+		private void PlayLink(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
 			var mediaRessource = new MediaRessource(netlinkurl, netlinkurl); // TODO better media-name
 			mediaRessource.Enqueue = enqueue;
-			if (!audioFramework.StartRessource(mediaRessource))
-				session.Write("The ressource could not be played...");
+			var result = audioFramework.StartRessource(mediaRessource, invoker);
+			if (result != AudioResultCode.Success)
+				session.Write(string.Format("The ressource could not be played ({0}).", result));
 		}
 
-		private void PlayYoutube(BotSession session, string message, bool enqueue)
+		private void PlayYoutube(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
 		{
 			string netlinkurl = ExtractUrlFromBB(message);
 			// TODO: lookup in history...
 			YoutubeRessource youtubeRessource = null;
-			if (youtubeFramework.ExtractURL(netlinkurl, out youtubeRessource) != ResultCode.Success)
+			if (youtubeFramework.ExtractURL(netlinkurl, out youtubeRessource) != YoutubeResultCode.Success)
 			{
 				session.Write("Invalid URL or no media found...");
 				return;
@@ -595,8 +608,9 @@ namespace TS3AudioBot
 			if (autoselectIndex != -1)
 			{
 				youtubeRessource.Selected = autoselectIndex;
-				if (!audioFramework.StartRessource(youtubeRessource))
-					session.Write("The ressource could not be played...");
+				var result = audioFramework.StartRessource(youtubeRessource, invoker);
+				if (result != AudioResultCode.Success)
+					session.Write(string.Format("The ressource could not be played ({0}).", result));
 				return;
 			}
 
@@ -638,8 +652,12 @@ namespace TS3AudioBot
 				if (entry < 0 || entry >= ytRessource.AvailableTypes.Count)
 					return true;
 				ytRessource.Selected = entry;
-				if (!audioFramework.StartRessource(ytRessource))
-					session.Write("The youtube stream could not be played...");
+
+				GetClientsInfo client = queryConnection.GetClientById(tm.InvokerId).Result; // TODO fix hack !!!!!!!
+
+				var result = audioFramework.StartRessource(ytRessource, client);
+				if (result != AudioResultCode.Success)
+					session.Write(string.Format("The youtube stream could not be played ({0}).", result));
 			}
 			return true;
 		}
@@ -708,6 +726,7 @@ namespace TS3AudioBot
 		public Action<BotSession> CommandN { get; private set; }
 		public Action<BotSession, string> CommandS { get; private set; }
 		public Action<BotSession, TextMessage> CommandTM { get; private set; }
+		public Action<BotSession, TextMessage, string> CommandTMS { get; private set; }
 		public CommandParameter CommandParameter { get; private set; }
 		public CommandRights CommandRights { get; private set; }
 
@@ -753,6 +772,7 @@ namespace TS3AudioBot
 			private Action<BotSession> commandN;
 			private Action<BotSession, string> commandS;
 			private Action<BotSession, TextMessage> commandTM;
+			private Action<BotSession, TextMessage, string> commandTMS;
 			private CommandParameter commandParameter;
 
 			private bool setRights = false;
@@ -762,13 +782,13 @@ namespace TS3AudioBot
 			private string description;
 			private string[] parameters;
 
-			private Builder(Action<BotCommand> registerAction, bool buildMode)
+			private Builder(Action<BotCommand> finishAction, bool buildMode)
 			{
 				this.buildMode = buildMode;
-				this.registerAction = registerAction;
+				this.registerAction = finishAction;
 			}
 
-			public Builder(Action<BotCommand> registerAction) : this(registerAction, false) { }
+			public Builder(Action<BotCommand> finishAction) : this(finishAction, false) { }
 
 			public Builder New(string invokeName)
 			{
@@ -807,6 +827,14 @@ namespace TS3AudioBot
 				return this;
 			}
 
+			public Builder Action(Action<BotSession, TextMessage, string> commandTMS)
+			{
+				CheckAction();
+				this.commandTMS = commandTMS;
+				commandParameter = CommandParameter.MessageAndRemainder;
+				return this;
+			}
+
 			public Builder Permission(CommandRights requiredRights)
 			{
 				if (setRights) throw new InvalidOperationException();
@@ -834,12 +862,14 @@ namespace TS3AudioBot
 					CommandN = commandN,
 					CommandS = commandS,
 					CommandTM = commandTM,
+					CommandTMS = commandTMS,
 					CommandParameter = commandParameter,
 					CommandRights = setRights ? commandRights : defaultCommandRights,
 					Description = setHelp ? description : defaultDescription,
 					ParameterList = setHelp ? parameters : defaultParameters,
 				};
-				registerAction(command);
+				if (registerAction != null)
+					registerAction(command);
 				return command;
 			}
 		}
@@ -851,6 +881,7 @@ namespace TS3AudioBot
 		Nothing,
 		Remainder,
 		TextMessage,
+		MessageAndRemainder
 	}
 
 	[Flags]

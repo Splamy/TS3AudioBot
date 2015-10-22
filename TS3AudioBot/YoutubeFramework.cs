@@ -16,13 +16,13 @@ namespace TS3AudioBot
 			wc = new WebClient();
 		}
 
-		public ResultCode ExtractURL(string ytLink, out YoutubeRessource result, bool filterOutInvalid = true)
+		public YoutubeResultCode ExtractURL(string ytLink, out YoutubeRessource result, bool filterOutInvalid = true)
 		{
 			result = null;
 			string resulthtml = string.Empty;
 			Match matchYtId = Regex.Match(ytLink, @"(&|\?)v=([a-zA-Z0-9\-_]+)");
 			if (!matchYtId.Success)
-				return ResultCode.YtIdNotFound;
+				return YoutubeResultCode.YtIdNotFound;
 			string ytID = matchYtId.Groups[2].Value;
 
 			try
@@ -32,7 +32,7 @@ namespace TS3AudioBot
 			catch (Exception ex)
 			{
 				Log.Write(Log.Level.Warning, "Youtube downloadreqest failed: " + ex.Message);
-				return ResultCode.NoYtConnection;
+				return YoutubeResultCode.NoYtConnection;
 			}
 
 			List<VideoType> videoTypes = new List<VideoType>();
@@ -42,7 +42,7 @@ namespace TS3AudioBot
 
 			string videoDataUnsplit = dataParse["url_encoded_fmt_stream_map"];
 			if (videoDataUnsplit == null)
-				return ResultCode.NoFMT;
+				return YoutubeResultCode.NoFMT;
 			string[] videoData = videoDataUnsplit.Split(',');
 
 			foreach (string vdat in videoData)
@@ -70,7 +70,7 @@ namespace TS3AudioBot
 
 			videoDataUnsplit = dataParse["adaptive_fmts"];
 			if (videoDataUnsplit == null)
-				return ResultCode.NoFMTS;
+				return YoutubeResultCode.NoFMTS;
 			videoData = videoDataUnsplit.Split(',');
 
 			foreach (string vdat in videoData)
@@ -103,10 +103,10 @@ namespace TS3AudioBot
 			}
 
 			result = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
-			return result.AvailableTypes.Count > 0 ? ResultCode.Success : ResultCode.NoVideosExtracted;
+			return result.AvailableTypes.Count > 0 ? YoutubeResultCode.Success : YoutubeResultCode.NoVideosExtracted;
 		}
 
-		public ResultCode ExtractPlayList()
+		public YoutubeResultCode ExtractPlayList()
 		{
 			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json
 			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json&start-index=1&max-results=1
@@ -114,7 +114,7 @@ namespace TS3AudioBot
 			//totalResults":{"\$t":(\d+)}
 
 			//"url"\w*:\w*"(https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9\-_]+&)
-			return ResultCode.Success;
+			return YoutubeResultCode.Success;
 		}
 
 		private VideoCodec GetCodec(string type)
@@ -212,7 +212,7 @@ namespace TS3AudioBot
 		ThreeGP,
 	}
 
-	enum ResultCode
+	enum YoutubeResultCode
 	{
 		Success,
 		YtIdNotFound,

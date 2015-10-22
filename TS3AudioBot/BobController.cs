@@ -27,6 +27,8 @@ namespace TS3AudioBot
 		private readonly object lockObject = new object();
 		private GetClientsInfo bobClient;
 
+		private Dictionary<int, SubscriptionData> channelSubscriptions;
+
 		public QueryConnection QueryConnection { get; set; }
 
 		public bool IsRunning { get; private set; }
@@ -53,6 +55,7 @@ namespace TS3AudioBot
 			IsRunning = false;
 			this.data = data;
 			commandQueue = new Queue<string>();
+			channelSubscriptions = new Dictionary<int, SubscriptionData>();
 		}
 
 		private void SendMessage(string message)
@@ -100,6 +103,17 @@ namespace TS3AudioBot
 		public void OnRessourceStarted(AudioRessource ar)
 		{
 			Start();
+			WhisperChannelSubscribe(ar.InvokingUser.ChannelId, false);
+			foreach (var data in channelSubscriptions)
+			{
+				if (data.Value.Enabled)
+				{
+					if (data.Value.Manual)
+						WhisperChannelSubscribe(data.Value.Id, false);
+					else if (!data.Value.Manual && ar.InvokingUser.ChannelId != data.Value.Id)
+						WhisperChannelUnsubscribe(data.Value.Id, false);
+				}
+			}
 			Sending = true;
 		}
 
@@ -107,8 +121,8 @@ namespace TS3AudioBot
 		{
 			if (!restart)
 			{
-				await StartEndTimer();
 				Sending = false;
+				await StartEndTimer();
 			}
 		}
 
@@ -124,7 +138,6 @@ namespace TS3AudioBot
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
 				QueryConnection.OnClientConnect += AwaitBobConnect;
-				WhisperChannelSubscribe(4);
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 			}
 			if (IsTimingOut)
@@ -142,14 +155,41 @@ namespace TS3AudioBot
 				cancellationTokenSource.Cancel();
 		}
 
-		public void WhisperChannelSubscribe(int channel)
+		/// <summary>Adds a channel to the audio streaming list.</summary>
+		/// <param name="channel">The id of the channel.</param>
+		/// <param name="manual">Should be true if the command was invoked by a user,
+		/// or false if the channel is added automatically by a play command.</param>
+		public void WhisperChannelSubscribe(int channel, bool manual)
 		{
 			SendMessage("whisper channel add " + channel);
+			SubscriptionData data;
+			if (!channelSubscriptions.TryGetValue(channel, out data))
+			{
+				data = new SubscriptionData { Id = channel, Manual = manual };
+				channelSubscriptions.Add(channel, data);
+			}
+			data.Enabled = true;
+			data.Manual = data.Manual || manual;
 		}
 
-		public void WhisperChannelUnsubscribe(int channel)
+		/// <summary>Removes a channel from the audio streaming list.</summary>
+		/// <param name="channel">The id of the channel.</param>
+		/// <param name="manual">Should be true if the command was invoked by a user,
+		/// or false if the channel was removed automatically by an internal stop.</param>
+		public void WhisperChannelUnsubscribe(int channel, bool manual)
 		{
 			SendMessage("whisper channel remove " + channel);
+			SubscriptionData data;
+			if (!channelSubscriptions.TryGetValue(channel, out data))
+			{
+				data = new SubscriptionData { Id = channel, Manual = false };
+				channelSubscriptions.Add(channel, data);
+			}
+			if (manual)
+			{
+				data.Enabled = false;
+				data.Manual = true;
+			}
 		}
 
 		public void WhisperClientSubscribe(int userID)
@@ -231,6 +271,13 @@ namespace TS3AudioBot
 				cancellationTokenSource.Dispose();
 				cancellationTokenSource = null;
 			}
+		}
+
+		private class SubscriptionData
+		{
+			public int Id { get; set; }
+			public bool Enabled { get; set; }
+			public bool Manual { get; set; }
 		}
 	}
 
