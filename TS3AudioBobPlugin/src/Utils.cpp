@@ -83,7 +83,7 @@ std::string Utils::sanitizeAscii(const std::string &input)
 	}
 	result[j] = '\0';
 	std::string str(result.data());
-	return std::move(str);
+	return str;
 }
 
 std::string Utils::format(const std::string &format)

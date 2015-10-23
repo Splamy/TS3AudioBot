@@ -143,7 +143,7 @@ User* ServerConnection::getUser(uint64 dbId)
 {
 	for (User &user : users)
 	{
-		if (user.getDbId() == dbId)
+		if (user.hasDbId() && user.getDbId() == dbId)
 			return &user;
 	}
 	return nullptr;

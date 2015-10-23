@@ -90,6 +90,11 @@ const std::string& User::getUniqueId() const
 	return uniqueId;
 }
 
+bool User::hasDbId() const
+{
+	return dbIdInitialized;
+}
+
 uint64 User::getDbId() const
 {
 	if (!dbIdInitialized)

@@ -40,6 +40,7 @@ public:
 	/** Requests TeamSpeak to update the server group list. */
 	void requestGroupUpdate();
 	const std::string& getUniqueId() const;
+	bool hasDbId() const;
 	uint64 getDbId() const;
 	void setDbId(uint64 dbId);
 	anyID getId() const;
