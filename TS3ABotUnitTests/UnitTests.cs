@@ -20,7 +20,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void AsyncResultMustNotBeUsed()
 		{
-			var asmDef = MonoUtil.GetAsmDefOfType(typeof(TS3AudioBot.MainBot));
+			var asmDef = MonoUtil.GetAsmDefOfType(typeof(MainBot));
 
 			object firstresult = MonoUtil.ScanAllTypes(asmDef,
 				(type) => MonoUtil.ScanAllMethods(type,
@@ -30,7 +30,8 @@ namespace TS3ABotUnitTests
 							return null;
 						foreach (var instruction in method.Body.Instructions)
 						{
-							if (instruction.OpCode != OpCodes.Call)
+							if (instruction.OpCode != OpCodes.Call &&
+								instruction.OpCode != OpCodes.Callvirt)
 								continue;
 
 							// see if we can resolve the call

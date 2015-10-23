@@ -51,7 +51,7 @@ namespace TS3AudioBot
 		YoutubeFramework youtubeFramework;
 		HistoryManager historyManager;
 
-		bool quizMode = false;
+		bool QuizMode { get; set; }
 
 		public MainBot()
 		{
@@ -162,6 +162,7 @@ namespace TS3AudioBot
 				.HelpData("Automatically tries to decide wether the link is a special ressource (like youtube) or a direct ressource (like ./hello.mp3) and starts it", "<link>").Finish();
 			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private).HelpData("Plays the previous song in the playlist.").Finish();
 			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin).HelpData("Closes the TS3AudioBot application.").Finish();
+			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public).HelpData("Enable to hide the songnames and let your friends guess the title.", "(on|off)").Finish();
 			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private).HelpData("Sets wether or not to loop a single song", "(on|off)").Finish();
 			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private).HelpData("Jumps to a timemark within the current song.", "(<time in seconds>|<seconds>:<minutes>)").Finish();
 			builder.New("song").Action(CommandSong).Permission(CommandRights.AnyVisibility).HelpData("Tells you the name of the current song.").Finish();
@@ -221,6 +222,8 @@ namespace TS3AudioBot
 			if (!textMessage.Message.StartsWith("!"))
 				return;
 			bobController.HasUpdate();
+
+			await queryConnection.RefreshClientBuffer(true);
 
 			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
 			if (textMessage.TargetMode == MessageTarget.Private && session == sessionManager.DefaultSession)
@@ -400,7 +403,7 @@ namespace TS3AudioBot
 			else if (parameter == "off")
 				audioFramework.Loop = false;
 			else
-				session.Write("Unkown parameter. Usage !loop (on|off)");
+				CommandHelp(session, "loop");
 		}
 
 		private void CommandNext(BotSession session)
@@ -442,6 +445,16 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "Exiting...");
 		}
 
+		private void CommandQuiz(BotSession session, string parameter)
+		{
+			if (parameter == "on")
+				QuizMode = true;
+			else if (parameter == "off")
+				QuizMode = false;
+			else
+				CommandHelp(session, "quiz");
+		}
+
 		private void CommandRepeat(BotSession session, string parameter)
 		{
 			if (parameter == "on")
@@ -449,7 +462,7 @@ namespace TS3AudioBot
 			else if (parameter == "off")
 				audioFramework.Repeat = false;
 			else
-				session.Write("Unkown parameter. Usage !repeat (on|off)");
+				CommandHelp(session, "repeat");
 		}
 
 		private void CommandSeek(BotSession session, string parameter)
@@ -476,7 +489,7 @@ namespace TS3AudioBot
 
 			if (!parsed)
 			{
-				session.Write("The parameter is not valid. Usage !seek [<min>:]<sek>");
+				CommandHelp(session, "seek");
 				return;
 			}
 
@@ -484,17 +497,18 @@ namespace TS3AudioBot
 				session.Write("The point of time is not within the songlenth.");
 		}
 
-		private void CommandSong(BotSession session)
+		private void CommandSong(BotSession session, TextMessage textMessage)
 		{
-			if (quizMode)
+			if (audioFramework.currentRessource == null)
 			{
-				// TODO (WIP)
+				session.Write("There is nothing on right now...");
+				return;
 			}
+
+			if (QuizMode && audioFramework.currentRessource.InvokingUser.Id != textMessage.InvokerId)
+				session.Write("Sorry, you have to guess!");
 			else
-			{
-				if (audioFramework.currentRessource != null)
-					session.Write(audioFramework.currentRessource.RessourceTitle);
-			}
+				session.Write(audioFramework.currentRessource.RessourceTitle);
 		}
 
 		private void CommandStop(BotSession session, string parameter)
@@ -550,7 +564,7 @@ namespace TS3AudioBot
 				}
 			}
 
-			session.Write("The parameter is not valid. Usage !volume <int>(0-200)");
+			CommandHelp(session, "volume");
 		}
 
 		private async void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
@@ -658,8 +672,7 @@ namespace TS3AudioBot
 					return true;
 				ytRessource.Selected = entry;
 
-				GetClientsInfo client = queryConnection.GetClientById(tm.InvokerId).Result; // TODO fix hack !!!!!!!
-
+				GetClientsInfo client = queryConnection.GetClientByIdBuffer(tm.InvokerId);
 				var result = audioFramework.StartRessource(ytRessource, client);
 				if (result != AudioResultCode.Success)
 					session.Write(string.Format("The youtube stream could not be played ({0}).", result));

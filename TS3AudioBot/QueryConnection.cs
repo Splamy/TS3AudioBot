@@ -82,12 +82,6 @@ namespace TS3AudioBot
 							OnClientDisconnect(this, clientdata);
 					}
 				});
-				// TODO TEST !!
-				TSClient.Subscribe<ClientMoved>(data =>
-				{
-					// this is required to update the channel field of the user
-					clientbufferoutdated = true;
-				});
 
 				connected = true;
 
@@ -137,7 +131,7 @@ namespace TS3AudioBot
 		public void SendMessage(string message, GetClientsInfo client)
 		{
 			if (sendQueueTask != null && !sendQueueTask.IsCompleted)
-				sendQueueTask = sendQueueTask.ContinueWith(t => TSClient.SendMessage(message, client));
+				sendQueueTask = sendQueueTask.ContinueWith((t) => TSClient.SendMessage(message, client).Wait());
 			else
 				sendQueueTask = TSClient.SendMessage(message, client);
 		}
@@ -145,7 +139,7 @@ namespace TS3AudioBot
 		public void SendGlobalMessage(string message)
 		{
 			if (sendQueueTask != null && !sendQueueTask.IsCompleted)
-				sendQueueTask = sendQueueTask.ContinueWith(t => TSClient.SendGlobalMessage(message));
+				sendQueueTask = sendQueueTask.ContinueWith(t => TSClient.SendGlobalMessage(message).Wait());
 			else
 				sendQueueTask = TSClient.SendGlobalMessage(message);
 		}
@@ -153,12 +147,30 @@ namespace TS3AudioBot
 		public async Task<GetClientsInfo> GetClientById(int id)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientById called");
+			await RefreshClientBuffer(false);
+			return clientbuffer.FirstOrDefault(client => client.Id == id);
+		}
+
+		public GetClientsInfo GetClientByIdBuffer(int id)
+		{
 			if (clientbufferoutdated)
+				Log.Write(Log.Level.Warning, "QC clientbuffer was outdated");
+			return clientbuffer.FirstOrDefault(client => client.Id == id);
+		}
+
+		public async Task<GetClientsInfo> GetClientByName(string name)
+		{
+			await RefreshClientBuffer(false);
+			return clientbuffer.FirstOrDefault(user => user.NickName == name);
+		}
+
+		public async Task RefreshClientBuffer(bool force)
+		{
+			if (clientbufferoutdated || force)
 			{
 				clientbuffer = await TSClient.GetClients();
 				clientbufferoutdated = false;
 			}
-			return clientbuffer.FirstOrDefault(client => client.Id == id);
 		}
 
 		public async Task<int[]> GetClientServerGroups(GetClientsInfo client)
@@ -191,12 +203,6 @@ namespace TS3AudioBot
 					keepAliveTokenSource = null;
 				}
 			}
-		}
-
-		public async Task<GetClientsInfo> GetClientByName(string name)
-		{
-			await GetClientById(-1); // Refresh client list, diry but no race conditions
-			return clientbuffer.FirstOrDefault(user => user.NickName == name);
 		}
 	}
 

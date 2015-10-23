@@ -22,7 +22,7 @@ namespace TS3AudioBot
 		private CancellationTokenSource cancellationTokenSource;
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
-		
+
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private GetClientsInfo bobClient;
@@ -188,8 +188,12 @@ namespace TS3AudioBot
 			}
 			if (manual)
 			{
-				data.Enabled = false;
 				data.Manual = true;
+				data.Enabled = false;
+			}
+			else if (!data.Manual)
+			{
+				data.Enabled = false;
 			}
 		}
 

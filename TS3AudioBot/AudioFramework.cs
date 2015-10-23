@@ -155,8 +155,6 @@ namespace TS3AudioBot
 
 			audioRessource.InvokingUser = invoker;
 
-			Log.Write(Log.Level.Debug, "AF Invoker: " + invoker.Id);
-
 			Stop(true);
 
 			playerConnection.AudioClear();
@@ -201,14 +199,12 @@ namespace TS3AudioBot
 			Stop(false);
 		}
 
-		/// <summary>
-		/// Stops the currently played song.
-		/// </summary>
+		/// <summary>Stops the currently played song.</summary>
 		/// <param name="restart">When set to true, the AudioBob won't be notified aubout the stop.
 		/// Use this parameter to prevent fast off-on switching.</param>
 		private void Stop(bool restart)
 		{
-			Log.Write(Log.Level.Debug, string.Format("AF stop old (restart:{0})", restart));
+			Log.Write(Log.Level.Debug, "AF stop old (restart:{0})", restart);
 			if (currentRessource != null)
 			{
 				currentRessource = null;
@@ -240,21 +236,25 @@ namespace TS3AudioBot
 
 	abstract class AudioRessource
 	{
-		public int Volume { get; set; }
 		public abstract AudioType AudioType { get; }
 		public string RessourceTitle { get; private set; }
 		public string RessourceURL { get; private set; }
+
+		public int Volume { get; set; }
 		public bool Enqueue { get; set; }
 		public GetClientsInfo InvokingUser { get; set; }
 
-		public abstract bool Play(Action<string> setMedia);
-
 		protected AudioRessource(string ressourceURL, string ressourceTitle)
 		{
-			Volume = -1;
 			RessourceURL = ressourceURL;
 			RessourceTitle = ressourceTitle;
+
+			Volume = -1;
+			Enqueue = false;
+			InvokingUser = null;
 		}
+
+		public abstract bool Play(Action<string> setMedia);
 
 		public override string ToString()
 		{

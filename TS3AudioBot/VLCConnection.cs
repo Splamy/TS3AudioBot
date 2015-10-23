@@ -122,6 +122,7 @@ namespace TS3AudioBot
 		// Lock and textsend methods
 		private void SendResponseLocked(AwaitingResponse resp, string msg)
 		{
+			if (!connected) return;
 			lock (attributeLock)
 			{
 				lock (responseLock)
@@ -135,6 +136,7 @@ namespace TS3AudioBot
 
 		private void SendCommandLocked(string msg)
 		{
+			if (!connected) return;
 			lock (attributeLock)
 			{
 				SendTextRaw(msg);
@@ -143,18 +145,16 @@ namespace TS3AudioBot
 
 		private void SendTextRaw(string msg)
 		{
-			if (connected)
+			if (!connected) return;
+			try
 			{
-				try
-				{
-					Byte[] cmd = Encoding.ASCII.GetBytes(msg + "\n");
-					netStream.Write(cmd, 0, cmd.Length);
-				}
-				catch (Exception ex)
-				{
-					connected = false;
-					Log.Write(Log.Level.Warning, "VLCConnection: Unexpected write failure ({0})", ex);
-				}
+				byte[] cmd = Encoding.ASCII.GetBytes(msg + "\n");
+				netStream.Write(cmd, 0, cmd.Length);
+			}
+			catch (Exception ex)
+			{
+				connected = false;
+				Log.Write(Log.Level.Warning, "VLCConnection: Unexpected write failure ({0})", ex);
 			}
 		}
 
@@ -224,15 +224,15 @@ namespace TS3AudioBot
 				{
 				case AwaitingResponse.GetLength:
 					int get_length;
-					getLength = int.TryParse (msg, out get_length) ? get_length : -1;
+					getLength = int.TryParse(msg, out get_length) ? get_length : -1;
 					break;
 				case AwaitingResponse.GetPosition:
 					int get_position;
-					getPosition = int.TryParse (msg, out get_position) ? get_position : -1;
+					getPosition = int.TryParse(msg, out get_position) ? get_position : -1;
 					break;
 				case AwaitingResponse.IsPlaing:
 					int is_plaing;
-					isPlaying = int.TryParse (msg, out is_plaing) && is_plaing != 0;
+					isPlaying = int.TryParse(msg, out is_plaing) && is_plaing != 0;
 					break;
 				}
 				currentResponse = AwaitingResponse.None;
