@@ -44,14 +44,17 @@ namespace TS3AudioBot
 		Trie<BotCommand> commandDict;
 		BotCommand[] allCommands;
 
+		StreamWriter logStream;
+
 		AudioFramework audioFramework;
 		BobController bobController;
 		QueryConnection queryConnection;
 		SessionManager sessionManager;
 		YoutubeFramework youtubeFramework;
+		SoundcloudFramework soundcloudFramework;
 		HistoryManager historyManager;
 
-		bool QuizMode { get; set; }
+		public bool QuizMode { get; set; }
 
 		public MainBot()
 		{
@@ -78,21 +81,6 @@ namespace TS3AudioBot
 			noInput = launchParameter.Contains("--NoInput") || launchParameter.Contains("-I");
 			consoleOutput = !(launchParameter.Contains("--Silent") || launchParameter.Contains("-S"));
 			writeLog = !(launchParameter.Contains("--NoLog") || launchParameter.Contains("-L"));
-
-			if (consoleOutput)
-			{
-				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
-			}
-
-			if (writeLog)
-			{
-				var encoding = new UTF8Encoding(false);
-				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
-				{
-					if (!string.IsNullOrEmpty(mainBotData.logFile))
-						File.AppendAllText(mainBotData.logFile, msg, encoding);
-				});
-			}
 			return false;
 		}
 
@@ -107,12 +95,39 @@ namespace TS3AudioBot
 			mainBotData = cfgFile.GetDataStruct<MainBotData>(typeof(MainBot), true);
 			cfgFile.Close();
 
+			if (consoleOutput)
+			{
+				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
+			}
+
+			if (writeLog && !string.IsNullOrEmpty(mainBotData.logFile))
+			{
+				var encoding = new UTF8Encoding(false);
+				logStream = new StreamWriter(File.Open(mainBotData.logFile, FileMode.Append, FileAccess.Write, FileShare.Read), encoding);
+				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
+				{
+					if (logStream != null)
+					{
+						logStream.Write(msg);
+						logStream.Flush();
+					}
+				});
+			}
+			
+			Log.Write(Log.Level.Info, "[============ TS3AudioBot started =============]");
+			string dateStr = DateTime.Now.ToLongDateString();
+			Log.Write(Log.Level.Info, "[=== Date: {0}{1} ===]", new string(' ', Math.Max(0, 32 - dateStr.Length)), dateStr);
+			string timeStr = DateTime.Now.ToLongTimeString();
+			Log.Write(Log.Level.Info, "[=== Time: {0}{1} ===]", new string(' ', Math.Max(0, 32 - timeStr.Length)), timeStr);
+			Log.Write(Log.Level.Info, "[==============================================]");
+
 			// Initialize Modules
 			audioFramework = new AudioFramework(afd);
 			bobController = new BobController(bcd);
 			queryConnection = new QueryConnection(qcd);
 			sessionManager = new SessionManager();
 			youtubeFramework = new YoutubeFramework();
+			soundcloudFramework = new SoundcloudFramework();
 			historyManager = new HistoryManager();
 
 			// Register callbacks
@@ -166,6 +181,7 @@ namespace TS3AudioBot
 			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private).HelpData("Sets wether or not to loop a single song", "(on|off)").Finish();
 			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private).HelpData("Jumps to a timemark within the current song.", "(<time in seconds>|<seconds>:<minutes>)").Finish();
 			builder.New("song").Action(CommandSong).Permission(CommandRights.AnyVisibility).HelpData("Tells you the name of the current song.").Finish();
+			builder.New("soundcloud").Action(CommandYoutube).Permission(CommandRights.Private).HelpData("").Finish();
 			builder.New("subscribe").Action(CommandSubscribe).Permission(CommandRights.Private).HelpData("Lets you hear the music independent from the channel you are in.").Finish();
 			builder.New("stop").Action(CommandStop).Permission(CommandRights.Private).HelpData("Stops the current song.").Finish();
 			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin).HelpData("Only for debugging purposes").Finish();
@@ -511,6 +527,12 @@ namespace TS3AudioBot
 				session.Write(audioFramework.currentRessource.RessourceTitle);
 		}
 
+		private async void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
+		{
+			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
+			PlaySoundcloud(session, client, parameter, false);
+		}
+
 		private void CommandStop(BotSession session, string parameter)
 		{
 			audioFramework.Stop();
@@ -591,6 +613,10 @@ namespace TS3AudioBot
 				//Is a youtube link
 				PlayYoutube(session, invoker, message, enqueue);
 			}
+			else if (Regex.IsMatch(netlinkurl, @"^https?\:\/\/(www\.)?soundcloud\."))
+			{
+				PlaySoundcloud(session, invoker, message, enqueue);
+			}
 			else
 			{
 				//Is any media link
@@ -604,6 +630,20 @@ namespace TS3AudioBot
 			var mediaRessource = new MediaRessource(netlinkurl, netlinkurl); // TODO better media-name
 			mediaRessource.Enqueue = enqueue;
 			var result = audioFramework.StartRessource(mediaRessource, invoker);
+			if (result != AudioResultCode.Success)
+				session.Write(string.Format("The ressource could not be played ({0}).", result));
+		}
+
+		private void PlaySoundcloud(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
+		{
+			string netlinkurl = ExtractUrlFromBB(message);
+			SoundcloudRessource soundcloudRessource = null;
+			if (!soundcloudFramework.GetSCRessource(netlinkurl, out soundcloudRessource))
+			{
+				session.Write("Invalid URL or no media found...");
+				return;
+			}
+			var result = audioFramework.StartRessource(soundcloudRessource, invoker);
 			if (result != AudioResultCode.Success)
 				session.Write(string.Format("The ressource could not be played ({0}).", result));
 		}
@@ -733,6 +773,11 @@ namespace TS3AudioBot
 			{
 				//sessionManager.Dispose();
 				sessionManager = null;
+			}
+			if (logStream != null)
+			{
+				logStream.Dispose();
+				logStream = null;
 			}
 		}
 	}

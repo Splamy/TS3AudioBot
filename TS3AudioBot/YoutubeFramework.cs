@@ -16,7 +16,7 @@ namespace TS3AudioBot
 			wc = new WebClient();
 		}
 
-		public YoutubeResultCode ExtractURL(string ytLink, out YoutubeRessource result, bool filterOutInvalid = true)
+		public YoutubeResultCode ExtractURL(string ytLink, out YoutubeRessource result)
 		{
 			result = null;
 			string resulthtml = string.Empty;
@@ -82,7 +82,7 @@ namespace TS3AudioBot
 					continue;
 
 				bool audioOnly = false;
-				if (vType.StartsWith("video/") && filterOutInvalid)
+				if (vType.StartsWith("video/"))
 					continue;
 				else if (vType.StartsWith("audio/"))
 					audioOnly = true;
@@ -106,7 +106,7 @@ namespace TS3AudioBot
 			return result.AvailableTypes.Count > 0 ? YoutubeResultCode.Success : YoutubeResultCode.NoVideosExtracted;
 		}
 
-		public YoutubeResultCode ExtractPlayList()
+		public YoutubeResultCode ExtractPlaylist()
 		{
 			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json
 			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json&start-index=1&max-results=1

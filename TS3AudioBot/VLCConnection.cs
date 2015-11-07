@@ -17,7 +17,6 @@ namespace TS3AudioBot
 		private string password;
 		private Process vlcproc = null;
 		private TcpClient vlcInterface;
-		private StreamReader streamRead;
 		private NetworkStream netStream;
 		private Task textCallbackTask;
 
@@ -191,7 +190,6 @@ namespace TS3AudioBot
 				}
 
 				netStream = vlcInterface.GetStream();
-				streamRead = new StreamReader(netStream);
 
 				try
 				{
@@ -287,11 +285,6 @@ namespace TS3AudioBot
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing VLC...");
-			if (streamRead != null)
-			{
-				streamRead.Dispose();
-				streamRead = null;
-			}
 			if (netStream != null)
 			{
 				netStream.Dispose();

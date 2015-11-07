@@ -289,6 +289,7 @@ namespace TS3AudioBot
 	{
 		MediaLink,
 		Youtube,
+		Soundcloud,
 	}
 
 	enum AudioResultCode
