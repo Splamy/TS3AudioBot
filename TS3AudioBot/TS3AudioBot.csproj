@@ -119,12 +119,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryConnection.cs" />
     <Compile Include="SessionManager.cs" />
-    <Compile Include="SoundcloudFramework.cs" />
+    <Compile Include="SoundcloudFactory.cs" />
     <Compile Include="TextUtil.cs" />
     <Compile Include="Trie.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="VLCConnection.cs" />
-    <Compile Include="YoutubeFramework.cs" />
+    <Compile Include="YoutubeFactory.cs" />
     <Compile Include="BobController.cs" />
   </ItemGroup>
   <ItemGroup>

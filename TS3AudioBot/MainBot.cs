@@ -53,8 +53,8 @@ namespace TS3AudioBot
 		internal HistoryManager HistoryManager { get; private set; }
 
 		IRessourceFactory mediaFactory;
-		IRessourceFactory youtubeFramework;
-		IRessourceFactory soundcloudFramework;
+		IRessourceFactory youtubeFactory;
+		IRessourceFactory soundcloudFactory;
 
 		public bool QuizMode { get; set; }
 
@@ -131,8 +131,8 @@ namespace TS3AudioBot
 			HistoryManager = new HistoryManager();
 
 			mediaFactory = new MediaFactory();
-			youtubeFramework = new YoutubeFramework();
-			soundcloudFramework = new SoundcloudFramework();
+			youtubeFactory = new YoutubeFactory();
+			soundcloudFactory = new SoundcloudFactory();
 
 			// Register callbacks
 			AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
@@ -534,7 +534,7 @@ namespace TS3AudioBot
 		private async void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
 		{
 			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
-			LoadAndPlay(soundcloudFramework, new PlayData(session, client, parameter, false));
+			LoadAndPlay(soundcloudFactory, new PlayData(session, client, parameter, false));
 		}
 
 		private void CommandStop(BotSession session, string parameter)
@@ -596,7 +596,7 @@ namespace TS3AudioBot
 		private async void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
 		{
 			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
-			LoadAndPlay(youtubeFramework, new PlayData(session, client, parameter, false));
+			LoadAndPlay(youtubeFactory, new PlayData(session, client, parameter, false));
 		}
 
 		// HELPER
@@ -614,9 +614,9 @@ namespace TS3AudioBot
 			string netlinkurl = ExtractUrlFromBB(data.Message);
 			IRessourceFactory factory = null;
 			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
-				factory = youtubeFramework;
+				factory = youtubeFactory;
 			else if (Regex.IsMatch(netlinkurl, @"^https?\:\/\/(www\.)?soundcloud\."))
-				factory = soundcloudFramework;
+				factory = soundcloudFactory;
 			else
 				factory = mediaFactory;
 			LoadAndPlay(factory, data);
@@ -696,10 +696,10 @@ namespace TS3AudioBot
 				QueryConnection.Dispose();
 				QueryConnection = null;
 			}
-			if (youtubeFramework != null)
+			if (youtubeFactory != null)
 			{
-				youtubeFramework.Dispose();
-				youtubeFramework = null;
+				youtubeFactory.Dispose();
+				youtubeFactory = null;
 			}
 			if (SessionManager != null)
 			{

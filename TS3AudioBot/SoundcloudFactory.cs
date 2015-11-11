@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace TS3AudioBot
 {
-	class SoundcloudFramework : IRessourceFactory
+	class SoundcloudFactory : IRessourceFactory
 	{
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;
 
 		public string SoundcloudClientID { get; private set; }
 
-		public SoundcloudFramework()
+		public SoundcloudFactory()
 		{
 			wc = new WebClient();
 			jsonParser = new JavaScriptSerializer();

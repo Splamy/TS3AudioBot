@@ -10,11 +10,11 @@ using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
 namespace TS3AudioBot
 {
-	class YoutubeFramework : IRessourceFactory
+	class YoutubeFactory : IRessourceFactory
 	{
 		private WebClient wc;
 
-		public YoutubeFramework()
+		public YoutubeFactory()
 		{
 			wc = new WebClient();
 		}
