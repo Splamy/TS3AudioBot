@@ -1,16 +1,15 @@
 ﻿using System;
 
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
-
-using Response = System.Func<TS3AudioBot.BotSession, TeamSpeak3QueryApi.Net.Specialized.Notifications.TextMessage, bool, bool>;
-
 namespace TS3AudioBot
 {
+	using TeamSpeak3QueryApi.Net.Specialized.Responses;
+	using Response = Func<BotSession, TeamSpeak3QueryApi.Net.Specialized.Notifications.TextMessage, bool, bool>;
+
 	abstract class BotSession
 	{
-		protected QueryConnection QueryConnection;
+		public MainBot Bot { get; private set; }
 
-		public AudioRessource UserRessource { get; set; }
+		public PlayData UserRessource { get; set; }
 		public Response ResponseProcessor { get; protected set; }
 		public bool AdminResponse { get; protected set; }
 		public object ResponseData { get; protected set; }
@@ -19,9 +18,9 @@ namespace TS3AudioBot
 
 		public abstract void Write(string message);
 
-		protected BotSession(QueryConnection queryConnection)
+		protected BotSession(MainBot bot)
 		{
-			QueryConnection = queryConnection;
+			Bot = bot;
 			UserRessource = null;
 			ResponseProcessor = null;
 			ResponseData = null;
@@ -50,7 +49,7 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				QueryConnection.SendGlobalMessage(message);
+				Bot.QueryConnection.SendGlobalMessage(message);
 			}
 			catch (Exception ex)
 			{
@@ -58,8 +57,8 @@ namespace TS3AudioBot
 			}
 		}
 
-		public PublicSession(QueryConnection queryConnection)
-			: base(queryConnection)
+		public PublicSession(MainBot bot)
+			: base(bot)
 		{ }
 	}
 
@@ -71,11 +70,11 @@ namespace TS3AudioBot
 
 		public override void Write(string message)
 		{
-			QueryConnection.SendMessage(message, Client);
+			Bot.QueryConnection.SendMessage(message, Client);
 		}
 
-		public PrivateSession(QueryConnection queryConnection, GetClientsInfo client)
-			: base(queryConnection)
+		public PrivateSession(MainBot bot, GetClientsInfo client)
+			: base(bot)
 		{
 			Client = client;
 		}

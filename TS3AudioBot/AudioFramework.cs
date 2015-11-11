@@ -262,21 +262,6 @@ namespace TS3AudioBot
 		}
 	}
 
-	class MediaRessource : AudioRessource
-	{
-		public override AudioType AudioType { get { return AudioType.MediaLink; } }
-
-		public MediaRessource(string path, string name)
-			: base(path, name)
-		{ }
-
-		public override bool Play(Action<string> setMedia)
-		{
-			setMedia(RessourceURL);
-			return true;
-		}
-	}
-
 	public struct AudioFrameworkData
 	{
 		//[InfoAttribute("the absolute or relative path to the local music folder")]

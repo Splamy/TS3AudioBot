@@ -4,16 +4,27 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Web;
 using System.Text.RegularExpressions;
+using System.Linq;
+using System.Text;
+using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
 namespace TS3AudioBot
 {
-	class YoutubeFramework : IDisposable
+	class YoutubeFramework : IRessourceFactory
 	{
 		private WebClient wc;
 
 		public YoutubeFramework()
 		{
 			wc = new WebClient();
+		}
+
+		public bool GetRessource(string url, out AudioRessource ressource)
+		{
+			YoutubeRessource ytRessource;
+			var resultCode = ExtractURL(url, out ytRessource);
+			ressource = ytRessource;
+			return resultCode == YoutubeResultCode.Success;
 		}
 
 		public YoutubeResultCode ExtractURL(string ytLink, out YoutubeRessource result)
@@ -115,6 +126,66 @@ namespace TS3AudioBot
 
 			//"url"\w*:\w*"(https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9\-_]+&)
 			return YoutubeResultCode.Success;
+		}
+
+		public void PostProcess(PlayData data, out bool abortPlay)
+		{
+			YoutubeRessource ytRessource = (YoutubeRessource)data.Ressource;
+
+			var availList = ytRessource.AvailableTypes.ToList();
+			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
+			if (autoselectIndex == -1)
+				autoselectIndex = availList.FindIndex(t => t.audioOnly);
+			if (autoselectIndex != -1)
+			{
+				ytRessource.Selected = autoselectIndex;
+				abortPlay = false;
+				return;
+			}
+
+			StringBuilder strb = new StringBuilder();
+			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
+			int count = 0;
+			foreach (var videoType in ytRessource.AvailableTypes)
+			{
+				strb.Append("[");
+				strb.Append(count++);
+				strb.Append("] ");
+				strb.Append(videoType.codec.ToString());
+				strb.Append(" @ ");
+				strb.AppendLine(videoType.qualitydesciption);
+			}
+			// TODO: SET RESPONSE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			data.Session.Write(strb.ToString());
+			data.Session.UserRessource = data;
+			data.Session.SetResponse(ResponseYoutube, null, false);
+			abortPlay = true;
+		}
+
+		private bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
+		{
+			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			if (command[0] != "!f")
+				return false;
+			if (command.Length != 2)
+				return true;
+			int entry;
+			if (int.TryParse(command[1], out entry))
+			{
+				PlayData data = session.UserRessource;
+				if (data == null || data.Ressource as YoutubeRessource == null)
+				{
+					session.Write("An unexpected error with the ytressource occured: null");
+					return true;
+				}
+				YoutubeRessource ytRessource = (YoutubeRessource)data.Ressource;
+				if (entry < 0 || entry >= ytRessource.AvailableTypes.Count)
+					return true;
+				ytRessource.Selected = entry;
+
+				session.Bot.Play(data);
+			}
+			return true;
 		}
 
 		private VideoCodec GetCodec(string type)

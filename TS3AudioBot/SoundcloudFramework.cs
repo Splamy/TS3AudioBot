@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace TS3AudioBot
 {
-	class SoundcloudFramework : IDisposable
+	class SoundcloudFramework : IRessourceFactory
 	{
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;
@@ -19,7 +19,7 @@ namespace TS3AudioBot
 			SoundcloudClientID = "a9dd3403f858e105d7e266edc162a0c5";
 		}
 
-		public bool GetSCRessource(string link, out SoundcloudRessource ressource)
+		public bool GetRessource(string link, out AudioRessource ressource)
 		{
 			string jsonResponse;
 			try
@@ -42,6 +42,11 @@ namespace TS3AudioBot
 			string finalRequest = string.Format("https://api.soundcloud.com/tracks/{0}/stream?client_id={1}", id, SoundcloudClientID);
 			ressource = new SoundcloudRessource(finalRequest, title);
 			return true;
+		}
+
+		public void PostProcess(PlayData data, out bool abortPlay)
+		{
+			abortPlay = false;
 		}
 
 		public void Dispose()

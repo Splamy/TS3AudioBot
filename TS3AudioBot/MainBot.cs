@@ -46,13 +46,15 @@ namespace TS3AudioBot
 
 		StreamWriter logStream;
 
-		AudioFramework audioFramework;
-		BobController bobController;
-		QueryConnection queryConnection;
-		SessionManager sessionManager;
-		YoutubeFramework youtubeFramework;
-		SoundcloudFramework soundcloudFramework;
-		HistoryManager historyManager;
+		internal AudioFramework AudioFramework { get; private set; }
+		internal BobController BobController { get; private set; }
+		internal QueryConnection QueryConnection { get; private set; }
+		internal SessionManager SessionManager { get; private set; }
+		internal HistoryManager HistoryManager { get; private set; }
+
+		IRessourceFactory mediaFactory;
+		IRessourceFactory youtubeFramework;
+		IRessourceFactory soundcloudFramework;
 
 		public bool QuizMode { get; set; }
 
@@ -113,7 +115,7 @@ namespace TS3AudioBot
 					}
 				});
 			}
-			
+
 			Log.Write(Log.Level.Info, "[============ TS3AudioBot started =============]");
 			string dateStr = DateTime.Now.ToLongDateString();
 			Log.Write(Log.Level.Info, "[=== Date: {0}{1} ===]", new string(' ', Math.Max(0, 32 - dateStr.Length)), dateStr);
@@ -122,30 +124,32 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[==============================================]");
 
 			// Initialize Modules
-			audioFramework = new AudioFramework(afd);
-			bobController = new BobController(bcd);
-			queryConnection = new QueryConnection(qcd);
-			sessionManager = new SessionManager();
+			AudioFramework = new AudioFramework(afd);
+			BobController = new BobController(bcd);
+			QueryConnection = new QueryConnection(qcd);
+			SessionManager = new SessionManager();
+			HistoryManager = new HistoryManager();
+
+			mediaFactory = new MediaFactory();
 			youtubeFramework = new YoutubeFramework();
 			soundcloudFramework = new SoundcloudFramework();
-			historyManager = new HistoryManager();
 
 			// Register callbacks
-			audioFramework.OnRessourceStarted += historyManager.LogAudioRessource;
-			audioFramework.OnRessourceStarted += bobController.OnRessourceStarted;
-			audioFramework.OnRessourceStopped += bobController.OnRessourceStopped;
+			AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
+			AudioFramework.OnRessourceStarted += BobController.OnRessourceStarted;
+			AudioFramework.OnRessourceStopped += BobController.OnRessourceStopped;
 
 
 			// register callback for all messages happeing
-			queryConnection.OnMessageReceived += TextCallback;
+			QueryConnection.OnMessageReceived += TextCallback;
 			// register callback to remove open private sessions, when user disconnects
-			queryConnection.OnClientDisconnect += (s, e) => sessionManager.RemoveSession(e.InvokerId);
+			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerId);
 			// give the bobController a reference to the query so he can communicate with the queryClient
-			bobController.QueryConnection = queryConnection;
+			BobController.QueryConnection = QueryConnection;
 			// create a default session for all users in all chat
-			sessionManager.DefaultSession = new PublicSession(queryConnection);
+			SessionManager.DefaultSession = new PublicSession(this);
 			// connect the query after everyting is set up
-			var connectTask = queryConnection.Connect();
+			var connectTask = QueryConnection.Connect();
 		}
 
 		public void InitializeCommands()
@@ -237,15 +241,15 @@ namespace TS3AudioBot
 
 			if (!textMessage.Message.StartsWith("!"))
 				return;
-			bobController.HasUpdate();
+			BobController.HasUpdate();
 
-			await queryConnection.RefreshClientBuffer(true);
+			await QueryConnection.RefreshClientBuffer(true);
 
-			BotSession session = sessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
-			if (textMessage.TargetMode == MessageTarget.Private && session == sessionManager.DefaultSession)
+			BotSession session = SessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
+			if (textMessage.TargetMode == MessageTarget.Private && session == SessionManager.DefaultSession)
 			{
 				Log.Write(Log.Level.Debug, "MB User {0} created auto-private session with the bot", textMessage.InvokerName);
-				session = await sessionManager.CreateSession(queryConnection, textMessage.InvokerId);
+				session = await SessionManager.CreateSession(this, textMessage.InvokerId);
 			}
 
 			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy(HasInvokerAdminRights, textMessage);
@@ -328,10 +332,10 @@ namespace TS3AudioBot
 		private async Task<bool> HasInvokerAdminRights(InvokerInformation textMessage)
 		{
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
-			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
+			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
 			if (client == null)
 				return false;
-			int[] clientSgIds = await queryConnection.GetClientServerGroups(client);
+			int[] clientSgIds = await QueryConnection.GetClientServerGroups(client);
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 
@@ -339,18 +343,18 @@ namespace TS3AudioBot
 
 		private async void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
-			PlayAuto(session, client, parameter, true);
+			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			LoadAndPlayAuto(new PlayData(session, client, parameter, true));
 		}
 
 		private void CommandClear(BotSession session, string parameter)
 		{
-			audioFramework.Clear();
+			AudioFramework.Clear();
 		}
 
 		private async void CommandGetUserId(BotSession session, string parameter)
 		{
-			GetClientsInfo client = await queryConnection.GetClientByName(parameter);
+			GetClientsInfo client = await QueryConnection.GetClientByName(parameter);
 			if (client == null)
 				session.Write("No user found...");
 			else
@@ -396,9 +400,9 @@ namespace TS3AudioBot
 			try
 			{
 				if (string.IsNullOrEmpty(parameter))
-					await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Channel);
+					await QueryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Channel);
 				else if (parameter == "far")
-					await queryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Server);
+					await QueryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Server);
 			}
 			catch (Exception ex)
 			{
@@ -408,45 +412,45 @@ namespace TS3AudioBot
 
 		private async void CommandLink(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
-			PlayLink(session, client, parameter, false);
+			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			LoadAndPlay(mediaFactory, new PlayData(session, client, parameter, false));
 		}
 
 		private void CommandLoop(BotSession session, string parameter)
 		{
 			if (parameter == "on")
-				audioFramework.Loop = true;
+				AudioFramework.Loop = true;
 			else if (parameter == "off")
-				audioFramework.Loop = false;
+				AudioFramework.Loop = false;
 			else
 				CommandHelp(session, "loop");
 		}
 
 		private void CommandNext(BotSession session)
 		{
-			audioFramework.Next();
+			AudioFramework.Next();
 		}
 
 		private async void CommandPM(BotSession session, TextMessage textMessage)
 		{
-			BotSession ownSession = await sessionManager.CreateSession(queryConnection, textMessage.InvokerId);
+			BotSession ownSession = await SessionManager.CreateSession(this, textMessage.InvokerId);
 			ownSession.Write("Hi " + textMessage.InvokerName);
 		}
 
 		private async void CommandPlay(BotSession session, TextMessage textMessage, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
-				audioFramework.Play();
+				AudioFramework.Play();
 			else
 			{
-				GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
-				PlayAuto(session, client, parameter, false);
+				GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+				LoadAndPlayAuto(new PlayData(session, client, parameter, false));
 			}
 		}
 
 		private void CommandPrevious(BotSession session, string parameter)
 		{
-			audioFramework.Previous();
+			AudioFramework.Previous();
 		}
 
 		private void CommandQuit(BotSession session)
@@ -474,9 +478,9 @@ namespace TS3AudioBot
 		private void CommandRepeat(BotSession session, string parameter)
 		{
 			if (parameter == "on")
-				audioFramework.Repeat = true;
+				AudioFramework.Repeat = true;
 			else if (parameter == "off")
-				audioFramework.Repeat = false;
+				AudioFramework.Repeat = false;
 			else
 				CommandHelp(session, "repeat");
 		}
@@ -509,38 +513,38 @@ namespace TS3AudioBot
 				return;
 			}
 
-			if (!audioFramework.Seek(seconds))
+			if (!AudioFramework.Seek(seconds))
 				session.Write("The point of time is not within the songlenth.");
 		}
 
 		private void CommandSong(BotSession session, TextMessage textMessage)
 		{
-			if (audioFramework.currentRessource == null)
+			if (AudioFramework.currentRessource == null)
 			{
 				session.Write("There is nothing on right now...");
 				return;
 			}
 
-			if (QuizMode && audioFramework.currentRessource.InvokingUser.Id != textMessage.InvokerId)
+			if (QuizMode && AudioFramework.currentRessource.InvokingUser.Id != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
-				session.Write(audioFramework.currentRessource.RessourceTitle);
+				session.Write(AudioFramework.currentRessource.RessourceTitle);
 		}
 
 		private async void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
-			PlaySoundcloud(session, client, parameter, false);
+			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			LoadAndPlay(soundcloudFramework, new PlayData(session, client, parameter, false));
 		}
 
 		private void CommandStop(BotSession session, string parameter)
 		{
-			audioFramework.Stop();
+			AudioFramework.Stop();
 		}
 
 		private void CommandSubscribe(BotSession session, TextMessage textMessage)
 		{
-			bobController.WhisperClientSubscribe(textMessage.InvokerId);
+			BobController.WhisperClientSubscribe(textMessage.InvokerId);
 		}
 
 		private void CommandTest(BotSession session)
@@ -565,7 +569,7 @@ namespace TS3AudioBot
 
 		private void CommandUnsubscribe(BotSession session, TextMessage textMessage)
 		{
-			bobController.WhisperClientUnsubscribe(textMessage.InvokerId);
+			BobController.WhisperClientUnsubscribe(textMessage.InvokerId);
 		}
 
 		private void CommandVolume(BotSession session, string parameter)
@@ -573,9 +577,9 @@ namespace TS3AudioBot
 			int volume;
 			if (int.TryParse(parameter, out volume) && volume >= 0)
 			{
-				if (volume <= AudioFramework.MAXUSERVOLUME || volume < audioFramework.Volume)
+				if (volume <= AudioFramework.MAXUSERVOLUME || volume < AudioFramework.Volume)
 				{
-					audioFramework.Volume = volume;
+					AudioFramework.Volume = volume;
 					return;
 				}
 				else if (volume <= AudioFramework.MAXVOLUME)
@@ -591,8 +595,8 @@ namespace TS3AudioBot
 
 		private async void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await queryConnection.GetClientById(textMessage.InvokerId);
-			PlayYoutube(session, client, parameter, false);
+			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			LoadAndPlay(youtubeFramework, new PlayData(session, client, parameter, false));
 		}
 
 		// HELPER
@@ -605,120 +609,48 @@ namespace TS3AudioBot
 				return ts3link;
 		}
 
-		private void PlayAuto(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
+		private void LoadAndPlayAuto(PlayData data)
 		{
-			string netlinkurl = ExtractUrlFromBB(message);
+			string netlinkurl = ExtractUrlFromBB(data.Message);
+			IRessourceFactory factory = null;
 			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
-			{
-				//Is a youtube link
-				PlayYoutube(session, invoker, message, enqueue);
-			}
+				factory = youtubeFramework;
 			else if (Regex.IsMatch(netlinkurl, @"^https?\:\/\/(www\.)?soundcloud\."))
-			{
-				PlaySoundcloud(session, invoker, message, enqueue);
-			}
+				factory = soundcloudFramework;
 			else
-			{
-				//Is any media link
-				PlayLink(session, invoker, message, enqueue);
-			}
+				factory = mediaFactory;
+			LoadAndPlay(factory, data);
 		}
 
-		private void PlayLink(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
+		private void LoadAndPlay(IRessourceFactory factory, PlayData data)
 		{
-			string netlinkurl = ExtractUrlFromBB(message);
-			var mediaRessource = new MediaRessource(netlinkurl, netlinkurl); // TODO better media-name
-			mediaRessource.Enqueue = enqueue;
-			var result = audioFramework.StartRessource(mediaRessource, invoker);
+			string netlinkurl = ExtractUrlFromBB(data.Message);
+
+			if (data.Ressource == null)
+			{
+				AudioRessource ressource;
+				if (!factory.GetRessource(netlinkurl, out ressource))
+				{
+					data.Session.Write("Invalid URL or no media found...");
+					return;
+				}
+				data.Ressource = ressource;
+			}
+
+			bool abortPlay;
+			factory.PostProcess(data, out abortPlay);
+			Play(data);
+		}
+
+		internal void Play(PlayData data)
+		{
+			data.Ressource.Enqueue = data.Enqueue;
+			var result = AudioFramework.StartRessource(data.Ressource, data.Invoker);
 			if (result != AudioResultCode.Success)
-				session.Write(string.Format("The ressource could not be played ({0}).", result));
-		}
-
-		private void PlaySoundcloud(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
-		{
-			string netlinkurl = ExtractUrlFromBB(message);
-			SoundcloudRessource soundcloudRessource = null;
-			if (!soundcloudFramework.GetSCRessource(netlinkurl, out soundcloudRessource))
-			{
-				session.Write("Invalid URL or no media found...");
-				return;
-			}
-			var result = audioFramework.StartRessource(soundcloudRessource, invoker);
-			if (result != AudioResultCode.Success)
-				session.Write(string.Format("The ressource could not be played ({0}).", result));
-		}
-
-		private void PlayYoutube(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
-		{
-			string netlinkurl = ExtractUrlFromBB(message);
-			// TODO: lookup in history...
-			YoutubeRessource youtubeRessource = null;
-			if (youtubeFramework.ExtractURL(netlinkurl, out youtubeRessource) != YoutubeResultCode.Success)
-			{
-				session.Write("Invalid URL or no media found...");
-				return;
-			}
-			youtubeRessource.Enqueue = enqueue;
-
-			var availList = youtubeRessource.AvailableTypes.ToList();
-			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
-			if (autoselectIndex == -1)
-				autoselectIndex = availList.FindIndex(t => t.audioOnly);
-			if (autoselectIndex != -1)
-			{
-				youtubeRessource.Selected = autoselectIndex;
-				var result = audioFramework.StartRessource(youtubeRessource, invoker);
-				if (result != AudioResultCode.Success)
-					session.Write(string.Format("The ressource could not be played ({0}).", result));
-				return;
-			}
-
-			StringBuilder strb = new StringBuilder();
-			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
-			int count = 0;
-			foreach (var videoType in youtubeRessource.AvailableTypes)
-			{
-				strb.Append("[");
-				strb.Append(count++);
-				strb.Append("] ");
-				strb.Append(videoType.codec.ToString());
-				strb.Append(" @ ");
-				strb.AppendLine(videoType.qualitydesciption);
-			}
-			session.Write(strb.ToString());
-			session.UserRessource = youtubeRessource;
-			session.SetResponse(ResponseYoutube, null, false);
+				data.Session.Write(string.Format("The ressource could not be played ({0}).", result));
 		}
 
 		// RESPONSES
-
-		private bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
-		{
-			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-			if (command[0] != "!f")
-				return false;
-			if (command.Length != 2)
-				return true;
-			int entry;
-			if (int.TryParse(command[1], out entry))
-			{
-				YoutubeRessource ytRessource = session.UserRessource as YoutubeRessource;
-				if (ytRessource == null)
-				{
-					session.Write("An unexpected error with the ytressource occured: null");
-					return true;
-				}
-				if (entry < 0 || entry >= ytRessource.AvailableTypes.Count)
-					return true;
-				ytRessource.Selected = entry;
-
-				GetClientsInfo client = queryConnection.GetClientByIdBuffer(tm.InvokerId);
-				var result = audioFramework.StartRessource(ytRessource, client);
-				if (result != AudioResultCode.Success)
-					session.Write(string.Format("The youtube stream could not be played ({0}).", result));
-			}
-			return true;
-		}
 
 		private bool ResponseVolume(BotSession session, TextMessage tm, bool isAdmin)
 		{
@@ -734,7 +666,7 @@ namespace TS3AudioBot
 					}
 					if (command[0] == "!y")
 					{
-						audioFramework.Volume = (int)session.ResponseData;
+						AudioFramework.Volume = (int)session.ResponseData;
 					}
 				}
 				else
@@ -749,36 +681,54 @@ namespace TS3AudioBot
 		public void Dispose()
 		{
 			run = false;
-			if (audioFramework != null)
+			if (AudioFramework != null)
 			{
-				audioFramework.Dispose();
-				audioFramework = null;
+				AudioFramework.Dispose();
+				AudioFramework = null;
 			}
-			if (bobController != null)
+			if (BobController != null)
 			{
-				bobController.Dispose();
-				bobController = null;
+				BobController.Dispose();
+				BobController = null;
 			}
-			if (queryConnection != null)
+			if (QueryConnection != null)
 			{
-				queryConnection.Dispose();
-				queryConnection = null;
+				QueryConnection.Dispose();
+				QueryConnection = null;
 			}
 			if (youtubeFramework != null)
 			{
 				youtubeFramework.Dispose();
 				youtubeFramework = null;
 			}
-			if (sessionManager != null)
+			if (SessionManager != null)
 			{
 				//sessionManager.Dispose();
-				sessionManager = null;
+				SessionManager = null;
 			}
 			if (logStream != null)
 			{
 				logStream.Dispose();
 				logStream = null;
 			}
+		}
+	}
+
+	class PlayData
+	{
+		public BotSession Session { get; private set; }
+		public GetClientsInfo Invoker { get; private set; }
+		public string Message { get; private set; }
+		public bool Enqueue { get; private set; }
+		public AudioRessource Ressource { get; set; }
+
+		public PlayData(BotSession session, GetClientsInfo invoker, string message, bool enqueue)
+		{
+			Session = session;
+			Invoker = invoker;
+			Message = message;
+			Enqueue = enqueue;
+			Ressource = null;
 		}
 	}
 
