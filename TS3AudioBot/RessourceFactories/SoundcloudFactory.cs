@@ -3,7 +3,7 @@ using System.Net;
 using System.Web.Script.Serialization;
 using System.Collections.Generic;
 
-namespace TS3AudioBot
+namespace TS3AudioBot.RessourceFactories
 {
 	class SoundcloudFactory : IRessourceFactory
 	{
