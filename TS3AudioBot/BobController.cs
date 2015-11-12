@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TS3AudioBot.RessourceFactories;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {

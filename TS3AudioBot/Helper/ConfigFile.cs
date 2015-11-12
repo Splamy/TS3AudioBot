@@ -3,7 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 
-namespace TS3AudioBot
+namespace TS3AudioBot.Helper
 {
 	class ConfigFile
 	{

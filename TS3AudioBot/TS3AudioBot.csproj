@@ -107,11 +107,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AudioFramework.cs" />
-    <Compile Include="ConfigFile.cs" />
+    <Compile Include="Helper\AsyncLazy.cs" />
+    <Compile Include="Helper\ConfigFile.cs" />
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="HistoryManager.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
+    <Compile Include="RessourceFactories\AudioRessource.cs" />
     <Compile Include="RessourceFactories\IRessourceFactory.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="BotSession.cs" />
@@ -120,9 +122,9 @@
     <Compile Include="QueryConnection.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="RessourceFactories\SoundcloudFactory.cs" />
-    <Compile Include="TextUtil.cs" />
-    <Compile Include="Trie.cs" />
-    <Compile Include="Util.cs" />
+    <Compile Include="Helper\TextUtil.cs" />
+    <Compile Include="Helper\Trie.cs" />
+    <Compile Include="Helper\Util.cs" />
     <Compile Include="VLCConnection.cs" />
     <Compile Include="RessourceFactories\YoutubeFactory.cs" />
     <Compile Include="BobController.cs" />

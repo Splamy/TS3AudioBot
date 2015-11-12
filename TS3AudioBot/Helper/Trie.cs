@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace TS3AudioBot
+namespace TS3AudioBot.Helper
 {
 	public class Trie<T> where T : class
 	{

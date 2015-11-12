@@ -10,6 +10,7 @@ using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
+using TS3AudioBot.Helper;
 using TS3AudioBot.RessourceFactories;
 
 namespace TS3AudioBot

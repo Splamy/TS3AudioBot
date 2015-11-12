@@ -249,7 +249,7 @@ namespace TS3AudioBot
 				password = generatePassword();
 				ProcessStartInfo psi = new ProcessStartInfo()
 				{
-					FileName = Util.GetFilePath(FilePath.VLC),
+					FileName = Helper.Util.GetFilePath(Helper.FilePath.VLC),
 					Arguments = "--intf telnet"
 								+ " --telnet-password " + password
 								+ " --vout none"

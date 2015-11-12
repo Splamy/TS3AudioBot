@@ -27,7 +27,7 @@ namespace TS3AudioBot
 
 		public void LoadDatabase()
 		{
-			string dbPath = Util.GetFilePath(FilePath.HistoryFile);
+			string dbPath = Helper.Util.GetFilePath(Helper.FilePath.HistoryFile);
 
 			if (!File.Exists(dbPath))
 			{
