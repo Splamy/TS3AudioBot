@@ -640,7 +640,8 @@ namespace TS3AudioBot
 
 			bool abortPlay;
 			factory.PostProcess(data, out abortPlay);
-			Play(data);
+			if (!abortPlay)
+				Play(data);
 		}
 
 		internal void Play(PlayData data)

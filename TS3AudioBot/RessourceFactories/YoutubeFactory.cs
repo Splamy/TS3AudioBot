@@ -73,7 +73,7 @@ namespace TS3AudioBot.RessourceFactories
 			}
 
 			videoDataUnsplit = dataParse["adaptive_fmts"];
-			if (videoDataUnsplit == null)
+			if (videoDataUnsplit != null)
 			{
 				string[] videoData = videoDataUnsplit.Split(',');
 
