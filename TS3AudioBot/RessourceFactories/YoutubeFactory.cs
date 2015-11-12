@@ -19,21 +19,13 @@ namespace TS3AudioBot.RessourceFactories
 			wc = new WebClient();
 		}
 
-		public bool GetRessource(string url, out AudioRessource ressource)
-		{
-			YoutubeRessource ytRessource;
-			var resultCode = ExtractURL(url, out ytRessource);
-			ressource = ytRessource;
-			return resultCode == YoutubeResultCode.Success;
-		}
-
-		public YoutubeResultCode ExtractURL(string ytLink, out YoutubeRessource result)
+		public RResultCode GetRessource(string ytLink, out AudioRessource result)
 		{
 			result = null;
 			string resulthtml = string.Empty;
 			Match matchYtId = Regex.Match(ytLink, @"(&|\?)v=([a-zA-Z0-9\-_]+)");
 			if (!matchYtId.Success)
-				return YoutubeResultCode.YtIdNotFound;
+				return RResultCode.YtIdNotFound;
 			string ytID = matchYtId.Groups[2].Value;
 
 			try
@@ -43,7 +35,7 @@ namespace TS3AudioBot.RessourceFactories
 			catch (Exception ex)
 			{
 				Log.Write(Log.Level.Warning, "Youtube downloadreqest failed: " + ex.Message);
-				return YoutubeResultCode.NoYtConnection;
+				return RResultCode.YtNoConnection;
 			}
 
 			List<VideoType> videoTypes = new List<VideoType>();
@@ -52,72 +44,75 @@ namespace TS3AudioBot.RessourceFactories
 			string vTitle = dataParse["title"] ?? string.Empty;
 
 			string videoDataUnsplit = dataParse["url_encoded_fmt_stream_map"];
-			if (videoDataUnsplit == null)
-				return YoutubeResultCode.NoFMT;
-			string[] videoData = videoDataUnsplit.Split(',');
-
-			foreach (string vdat in videoData)
+			if (videoDataUnsplit != null)
 			{
-				NameValueCollection videoparse = HttpUtility.ParseQueryString(vdat);
+				string[] videoData = videoDataUnsplit.Split(',');
 
-				string vLink = videoparse["url"];
-				if (vLink == null)
-					continue;
+				foreach (string vdat in videoData)
+				{
+					NameValueCollection videoparse = HttpUtility.ParseQueryString(vdat);
 
-				string vType = videoparse["type"];
-				if (vType == null)
-					continue;
+					string vLink = videoparse["url"];
+					if (vLink == null)
+						continue;
 
-				string vQuality = videoparse["quality"];
-				if (vQuality == null)
-					continue;
+					string vType = videoparse["type"];
+					if (vType == null)
+						continue;
 
-				VideoType vt = new VideoType();
-				vt.link = vLink;
-				vt.codec = GetCodec(vType);
-				vt.qualitydesciption = vQuality;
-				videoTypes.Add(vt);
+					string vQuality = videoparse["quality"];
+					if (vQuality == null)
+						continue;
+
+					VideoType vt = new VideoType();
+					vt.link = vLink;
+					vt.codec = GetCodec(vType);
+					vt.qualitydesciption = vQuality;
+					videoTypes.Add(vt);
+				}
 			}
 
 			videoDataUnsplit = dataParse["adaptive_fmts"];
 			if (videoDataUnsplit == null)
-				return YoutubeResultCode.NoFMTS;
-			videoData = videoDataUnsplit.Split(',');
-
-			foreach (string vdat in videoData)
 			{
-				NameValueCollection videoparse = HttpUtility.ParseQueryString(vdat);
+				string[] videoData = videoDataUnsplit.Split(',');
 
-				string vType = videoparse["type"];
-				if (vType == null)
-					continue;
+				foreach (string vdat in videoData)
+				{
+					NameValueCollection videoparse = HttpUtility.ParseQueryString(vdat);
 
-				bool audioOnly = false;
-				if (vType.StartsWith("video/"))
-					continue;
-				else if (vType.StartsWith("audio/"))
-					audioOnly = true;
+					string vType = videoparse["type"];
+					if (vType == null)
+						continue;
 
-				string vLink = videoparse["url"];
-				if (vLink == null)
-					continue;
+					bool audioOnly = false;
+					if (vType.StartsWith("video/"))
+						continue;
+					else if (vType.StartsWith("audio/"))
+						audioOnly = true;
 
-				VideoType vt = new VideoType();
-				vt.codec = GetCodec(vType);
-				vt.qualitydesciption = vType;
-				vt.link = vLink;
-				if (audioOnly)
-					vt.audioOnly = true;
-				else
-					vt.videoOnly = true;
-				videoTypes.Add(vt);
+					string vLink = videoparse["url"];
+					if (vLink == null)
+						continue;
+
+					VideoType vt = new VideoType();
+					vt.codec = GetCodec(vType);
+					vt.qualitydesciption = vType;
+					vt.link = vLink;
+					if (audioOnly)
+						vt.audioOnly = true;
+					else
+						vt.videoOnly = true;
+					videoTypes.Add(vt);
+				}
 			}
 
-			result = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
-			return result.AvailableTypes.Count > 0 ? YoutubeResultCode.Success : YoutubeResultCode.NoVideosExtracted;
+			var ytResult = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
+			result = ytResult;
+			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
 
-		public YoutubeResultCode ExtractPlaylist()
+		public RResultCode ExtractPlaylist()
 		{
 			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json
 			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json&start-index=1&max-results=1
@@ -125,7 +120,7 @@ namespace TS3AudioBot.RessourceFactories
 			//totalResults":{"\$t":(\d+)}
 
 			//"url"\w*:\w*"(https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9\-_]+&)
-			return YoutubeResultCode.Success;
+			return RResultCode.UnknowError;
 		}
 
 		public void PostProcess(PlayData data, out bool abortPlay)
@@ -155,14 +150,14 @@ namespace TS3AudioBot.RessourceFactories
 				strb.Append(" @ ");
 				strb.AppendLine(videoType.qualitydesciption);
 			}
-			// TODO: SET RESPONSE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+			abortPlay = true;
 			data.Session.Write(strb.ToString());
 			data.Session.UserRessource = data;
 			data.Session.SetResponse(ResponseYoutube, null, false);
-			abortPlay = true;
 		}
 
-		private bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
+		private static bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
 		{
 			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			if (command[0] != "!f")
@@ -281,15 +276,5 @@ namespace TS3AudioBot.RessourceFactories
 		WEBM,
 		FLV,
 		ThreeGP,
-	}
-
-	enum YoutubeResultCode
-	{
-		Success,
-		YtIdNotFound,
-		NoYtConnection,
-		NoVideosExtracted,
-		NoFMT,
-		NoFMTS,
 	}
 }

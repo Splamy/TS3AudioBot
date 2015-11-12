@@ -120,6 +120,7 @@
     <Compile Include="RessourceFactories\MediaFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryConnection.cs" />
+    <Compile Include="RessourceFactories\RResultCode.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="RessourceFactories\SoundcloudFactory.cs" />
     <Compile Include="Helper\TextUtil.cs" />

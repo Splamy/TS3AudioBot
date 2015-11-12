@@ -552,11 +552,6 @@ namespace TS3AudioBot
 
 		private void CommandTest(BotSession session)
 		{
-			// stresstest
-			for (int i = 0; i < 10; i++)
-				session.Write(i.ToString());
-
-			return;
 			PrivateSession ps = session as PrivateSession;
 			if (ps == null)
 			{
@@ -566,7 +561,9 @@ namespace TS3AudioBot
 			else
 			{
 				ps.Write("Good boy!");
-				//await queryConnection.GetClientServerGroups(ps.client);
+				// stresstest
+				for (int i = 0; i < 10; i++)
+					session.Write(i.ToString());
 			}
 		}
 
@@ -632,9 +629,10 @@ namespace TS3AudioBot
 			if (data.Ressource == null)
 			{
 				AudioRessource ressource;
-				if (!factory.GetRessource(netlinkurl, out ressource))
+				RResultCode result = factory.GetRessource(netlinkurl, out ressource);
+				if (result != RResultCode.Success)
 				{
-					data.Session.Write("Invalid URL or no media found...");
+					data.Session.Write(string.Format("Could not play ({0})", result));
 					return;
 				}
 				data.Ressource = ressource;

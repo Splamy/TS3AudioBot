@@ -107,17 +107,7 @@ namespace TS3AudioBot
 		{
 			Start();
 			Sending = true;
-			WhisperChannelSubscribe(ar.InvokingUser.ChannelId, false);
-			foreach (var data in channelSubscriptions)
-			{
-				if (data.Value.Enabled)
-				{
-					if (data.Value.Manual)
-						WhisperChannelSubscribe(data.Value.Id, false);
-					else if (!data.Value.Manual && ar.InvokingUser.ChannelId != data.Value.Id)
-						WhisperChannelUnsubscribe(data.Value.Id, false);
-				}
-			}
+			RestoreSubscriptions(ar.InvokingUser);
 		}
 
 		public async void OnRessourceStopped(bool restart)
@@ -133,15 +123,17 @@ namespace TS3AudioBot
 		{
 			if (!IsRunning)
 			{
-				if (!Util.Execute(FilePath.StartTsBot))
-				{
-					Log.Write(Log.Level.Debug, "BC could not start bob");
-					return;
-				}
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
 				QueryConnection.OnClientConnect += AwaitBobConnect;
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
+
+				if (!Util.Execute(FilePath.StartTsBot))
+				{
+					Log.Write(Log.Level.Debug, "BC could not start bob");
+					QueryConnection.OnClientConnect -= AwaitBobConnect;
+					return;
+				}
 			}
 			if (IsTimingOut)
 				cancellationTokenSource.Cancel();
@@ -207,6 +199,21 @@ namespace TS3AudioBot
 		public void WhisperClientUnsubscribe(int userID)
 		{
 			SendMessage("whisper client remove " + userID);
+		}
+
+		private void RestoreSubscriptions(GetClientsInfo invokingUser)
+		{
+			WhisperChannelSubscribe(invokingUser.ChannelId, false);
+			foreach (var data in channelSubscriptions)
+			{
+				if (data.Value.Enabled)
+				{
+					if (data.Value.Manual)
+						WhisperChannelSubscribe(data.Value.Id, false);
+					else if (!data.Value.Manual && invokingUser.ChannelId != data.Value.Id)
+						WhisperChannelUnsubscribe(data.Value.Id, false);
+				}
+			}
 		}
 
 		private async void AwaitBobConnect(object sender, ClientEnterView e)

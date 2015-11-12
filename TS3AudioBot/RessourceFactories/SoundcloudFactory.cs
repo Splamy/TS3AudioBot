@@ -19,7 +19,7 @@ namespace TS3AudioBot.RessourceFactories
 			SoundcloudClientID = "a9dd3403f858e105d7e266edc162a0c5";
 		}
 
-		public bool GetRessource(string link, out AudioRessource ressource)
+		public RResultCode GetRessource(string link, out AudioRessource ressource)
 		{
 			string jsonResponse;
 			try
@@ -32,7 +32,7 @@ namespace TS3AudioBot.RessourceFactories
 			catch
 			{
 				ressource = null;
-				return false;
+				return RResultCode.ScInvalidLink;
 			}
 
 			var parsedDict = (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
@@ -41,7 +41,7 @@ namespace TS3AudioBot.RessourceFactories
 
 			string finalRequest = string.Format("https://api.soundcloud.com/tracks/{0}/stream?client_id={1}", id, SoundcloudClientID);
 			ressource = new SoundcloudRessource(finalRequest, title);
-			return true;
+			return RResultCode.Success;
 		}
 
 		public void PostProcess(PlayData data, out bool abortPlay)
