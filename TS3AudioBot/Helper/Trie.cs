@@ -44,11 +44,12 @@ namespace TS3AudioBot.Helper
 
 		public bool TryGetValue(string key, out T value)
 		{
-			TrieNode current = root;
+			key = key.ToLower();
+            TrieNode current = root;
 			foreach (char c in key)
 			{
 				int index = ValidateChar(c);
-				if (current.children == null || (current = current.children[index]) == null)
+				if (index == -1 || current.children == null || (current = current.children[index]) == null)
 				{
 					value = null;
 					return false;
@@ -63,7 +64,7 @@ namespace TS3AudioBot.Helper
 		{
 			if (c >= 'a' && c <= 'z')
 				return c - 'a';
-			throw new ArgumentException("Key must be lowercase 'a'-'z'.");
+			return -1;
 		}
 
 		public override string ToString()

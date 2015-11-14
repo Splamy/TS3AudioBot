@@ -302,33 +302,40 @@ namespace TS3AudioBot
 				return;
 			}
 
-			switch (command.CommandParameter)
+			try
 			{
-			case CommandParameter.Nothing:
-				command.CommandN(session);
-				break;
+				switch (command.CommandParameter)
+				{
+				case CommandParameter.Nothing:
+					command.CommandN(session);
+					break;
 
-			case CommandParameter.Remainder:
-				if (commandSplit.Length < 2)
-					command.CommandS(session, string.Empty);
-				else
-					command.CommandS(session, commandSplit[1]);
-				break;
+				case CommandParameter.Remainder:
+					if (commandSplit.Length < 2)
+						command.CommandS(session, string.Empty);
+					else
+						command.CommandS(session, commandSplit[1]);
+					break;
 
-			case CommandParameter.TextMessage:
-				command.CommandTM(session, textMessage);
-				break;
+				case CommandParameter.TextMessage:
+					command.CommandTM(session, textMessage);
+					break;
 
-			case CommandParameter.MessageAndRemainder:
-				if (commandSplit.Length < 2)
-					command.CommandTMS(session, textMessage, string.Empty);
-				else
-					command.CommandTMS(session, textMessage, commandSplit[1]);
-				break;
+				case CommandParameter.MessageAndRemainder:
+					if (commandSplit.Length < 2)
+						command.CommandTMS(session, textMessage, string.Empty);
+					else
+						command.CommandTMS(session, textMessage, commandSplit[1]);
+					break;
 
-			case CommandParameter.Undefined:
-			default:
-				throw new InvalidOperationException("Command with no process");
+				case CommandParameter.Undefined:
+				default:
+					throw new InvalidOperationException("Command with no process");
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.Write(Log.Level.Error, "Critical command error: " + ex.Message);
 			}
 		}
 
@@ -702,6 +709,16 @@ namespace TS3AudioBot
 			{
 				youtubeFactory.Dispose();
 				youtubeFactory = null;
+			}
+			if (mediaFactory != null)
+			{
+				mediaFactory.Dispose();
+				mediaFactory = null;
+			}
+			if (soundcloudFactory != null)
+			{
+				soundcloudFactory.Dispose();
+				soundcloudFactory = null;
 			}
 			if (SessionManager != null)
 			{
