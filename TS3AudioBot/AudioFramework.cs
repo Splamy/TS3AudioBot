@@ -162,18 +162,20 @@ namespace TS3AudioBot
 
 			if (audioRessource.Volume == -1)
 				audioRessource.Volume = audioFrameworkData.defaultVolume;
+
+			string ressourceLink = audioRessource.Play();
+			if (string.IsNullOrWhiteSpace(ressourceLink))
+				return AudioResultCode.RessouceInternalError;
+
 			if (audioRessource.Enqueue)
 			{
-				if (!audioRessource.Play(playerConnection.AudioAdd))
-					return AudioResultCode.RessouceInternalError;
+				playerConnection.AudioAdd(ressourceLink);
 				audioRessource.Enqueue = false;
 			}
 			else
 			{
-				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource.RessourceURL);
-				if (!audioRessource.Play(playerConnection.AudioStart))
-					return AudioResultCode.RessouceInternalError;
-
+				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource);
+				playerConnection.AudioStart(ressourceLink);
 				Volume = audioRessource.Volume;
 				Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 			}

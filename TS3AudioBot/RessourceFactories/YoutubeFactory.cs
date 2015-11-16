@@ -14,6 +14,8 @@ namespace TS3AudioBot.RessourceFactories
 	{
 		private WebClient wc;
 
+		public AudioType FactoryFor { get { return AudioType.MediaLink; } }
+
 		public YoutubeFactory()
 		{
 			wc = new WebClient();
@@ -21,13 +23,18 @@ namespace TS3AudioBot.RessourceFactories
 
 		public RResultCode GetRessource(string ytLink, out AudioRessource result)
 		{
-			result = null;
-			string resulthtml = string.Empty;
 			Match matchYtId = Regex.Match(ytLink, @"(&|\?)v=([a-zA-Z0-9\-_]+)");
 			if (!matchYtId.Success)
+			{
+				result = null;
 				return RResultCode.YtIdNotFound;
-			string ytID = matchYtId.Groups[2].Value;
+			}
+			return GetRessourceById(matchYtId.Groups[2].Value, null, out result);
+		}
 
+		public RResultCode GetRessourceById(string ytID, string name, out AudioRessource result)
+		{
+			string resulthtml = string.Empty;
 			try
 			{
 				resulthtml = wc.DownloadString(string.Format("http://www.youtube.com/get_video_info?video_id={0}&el=info", ytID));
@@ -35,14 +42,13 @@ namespace TS3AudioBot.RessourceFactories
 			catch (Exception ex)
 			{
 				Log.Write(Log.Level.Warning, "Youtube downloadreqest failed: " + ex.Message);
+				result = null;
 				return RResultCode.YtNoConnection;
 			}
 
 			List<VideoType> videoTypes = new List<VideoType>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
-
-			string vTitle = dataParse["title"] ?? string.Empty;
-
+			
 			string videoDataUnsplit = dataParse["url_encoded_fmt_stream_map"];
 			if (videoDataUnsplit != null)
 			{
@@ -107,7 +113,8 @@ namespace TS3AudioBot.RessourceFactories
 				}
 			}
 
-			var ytResult = new YoutubeRessource(ytID, vTitle, videoTypes.AsReadOnly());
+			string finalName = name ?? dataParse["title"] ?? string.Format("<YT - no title : {0}>", ytID);
+			var ytResult = new YoutubeRessource(ytID, finalName, videoTypes.AsReadOnly());
 			result = ytResult;
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
@@ -251,20 +258,19 @@ namespace TS3AudioBot.RessourceFactories
 
 		public override AudioType AudioType { get { return AudioType.Youtube; } }
 
-		public YoutubeRessource(string link, string youtubeName, IList<VideoType> availableTypes)
-			: base(link, youtubeName)
+		public YoutubeRessource(string ytId, string youtubeName, IList<VideoType> availableTypes)
+			: base(ytId, youtubeName)
 		{
 			AvailableTypes = availableTypes;
 			Selected = 0;
 		}
 
-		public override bool Play(Action<string> setMedia)
+		public override string Play()
 		{
 			if (Selected < 0 && Selected >= AvailableTypes.Count)
-				return false;
-			setMedia(AvailableTypes[Selected].link);
+				return null;
 			Log.Write(Log.Level.Debug, "YT Playing: {0}", AvailableTypes[Selected]);
-			return true;
+			return AvailableTypes[Selected].link;
 		}
 	}
 

@@ -10,6 +10,7 @@ namespace TS3AudioBot.RessourceFactories
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;
 
+		public AudioType FactoryFor { get { return AudioType.MediaLink; } }
 		public string SoundcloudClientID { get; private set; }
 
 		public SoundcloudFactory()
@@ -38,9 +39,13 @@ namespace TS3AudioBot.RessourceFactories
 			var parsedDict = (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
+			return GetRessourceById(id.ToString(), title, out ressource);
+		}
 
+		public RResultCode GetRessourceById(string id, string name, out AudioRessource ressource)
+		{
 			string finalRequest = string.Format("https://api.soundcloud.com/tracks/{0}/stream?client_id={1}", id, SoundcloudClientID);
-			ressource = new SoundcloudRessource(finalRequest, title);
+			ressource = new SoundcloudRessource(id, name, finalRequest);
 			return RResultCode.Success;
 		}
 
@@ -63,14 +68,17 @@ namespace TS3AudioBot.RessourceFactories
 	{
 		public override AudioType AudioType { get { return AudioType.Soundcloud; } }
 
-		public SoundcloudRessource(string path, string name)
-			: base(path, name)
-		{ }
+		public string RessourceURL { get; private set; }
 
-		public override bool Play(Action<string> setMedia)
+		public SoundcloudRessource(string id, string name, string url)
+			: base(id, name)
 		{
-			setMedia(RessourceURL);
-			return true;
+			RessourceURL = url;
+		}
+
+		public override string Play()
+		{
+			return RessourceURL;
 		}
 	}
 }

@@ -1,48 +1,59 @@
 ﻿using System;
-using System.Data.SQLite;
 using System.IO;
 using TS3AudioBot.RessourceFactories;
+using System.Collections.Generic;
 
 namespace TS3AudioBot
 {
 	class HistoryManager
 	{
-		SQLiteConnection sqlConnection;
-
-		readonly SQLiteCommand createLogTableCommand = new SQLiteCommand(
-			@"create table if not exists AudioLogTable
-			(
-			Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-			UserInvokeId INTEGER,
-			AudioType INTEGER,
-			Ressource TEXT,
-			Timestamp DATETIME,
-			Title TEXT
-			)");
+		HistoryFile file;
 
 		public HistoryManager()
 		{
 
 		}
 
-		public void LoadDatabase()
-		{
-			string dbPath = Helper.Util.GetFilePath(Helper.FilePath.HistoryFile);
-
-			if (!File.Exists(dbPath))
-			{
-				SQLiteConnection.CreateFile(dbPath);
-			}
-			sqlConnection = new SQLiteConnection("Data Source=" + dbPath + ";Version=3;");
-			sqlConnection.Open();
-			createLogTableCommand.Connection = sqlConnection;
-			createLogTableCommand.ExecuteNonQuery();
-		}
-
 		public void LogAudioRessource(AudioRessource ar)
 		{
-			//...
+			file.Store(ar);
 		}
+	}
+
+	class HistoryFile
+	{
+		List<int> FileEntryIndices;
+		private const int CacheSize = 64;
+		public string Path { get; private set; }
+
+		// Cache tree/dict/array
+
+		private void LoadFile(string path)
+		{
+			Path = path;
+		}
+
+		public AudioLogEntry GetEntryAt(int id)
+		{
+			throw new NotImplementedException();
+		}
+
+		public AudioLogEntry[] GetLastEntrys(int idFrom, int idAmount)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Store(AudioRessource ressource)
+		{
+			throw new NotImplementedException();
+		}
+
+		/* 
+		- int[] index references for entries
+		- lazy load last x entrys
+		- > load all if >x
+
+		*/
 	}
 
 	class AudioLogEntry
@@ -52,7 +63,7 @@ namespace TS3AudioBot
 		//[Indexed]
 		public int UserInvokeId { get; set; }
 		public AudioType AudioType { get; set; }
-		public string Ressource { get; set; }
+		public string RessourceId { get; set; }
 		public DateTime Timestamp { get; set; }
 		public string Title { get; set; }
 	}

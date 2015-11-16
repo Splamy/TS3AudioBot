@@ -7,10 +7,17 @@ namespace TS3AudioBot.RessourceFactories
 {
 	class MediaFactory : IRessourceFactory
 	{
+		public AudioType FactoryFor { get { return AudioType.MediaLink; } }
+
 		public RResultCode GetRessource(string uri, out AudioRessource ressource)
 		{
-			var result = ValidateUri(uri);
-			ressource = new MediaRessource(uri, uri, result);
+			return GetRessourceById(uri, uri, out ressource);
+		}
+
+		public RResultCode GetRessourceById(string id, string name, out AudioRessource ressource)
+		{
+			var result = ValidateUri(id);
+			ressource = new MediaRessource(id, name, id, result);
 			// brach here if we have a final ErrorCode
 			if (result == RResultCode.MediaNoWebResponse)
 				return result;
@@ -114,18 +121,19 @@ namespace TS3AudioBot.RessourceFactories
 	{
 		public override AudioType AudioType { get { return AudioType.MediaLink; } }
 
+		public string RessourceURL { get; private set; }
 		public RResultCode InternalResultCode { get; private set; }
 
-		public MediaRessource(string path, string name, RResultCode internalRC)
-			: base(path, name)
+		public MediaRessource(string id, string name, string url, RResultCode internalRC)
+			: base(id, name)
 		{
+			RessourceURL = url;
 			InternalResultCode = internalRC;
 		}
 
-		public override bool Play(Action<string> setMedia)
+		public override string Play()
 		{
-			setMedia(RessourceURL);
-			return true;
+			return RessourceURL;
 		}
 	}
 }
