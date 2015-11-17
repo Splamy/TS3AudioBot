@@ -111,6 +111,8 @@
   <ItemGroup>
     <Compile Include="AudioFramework.cs" />
     <Compile Include="Helper\AsyncLazy.cs" />
+    <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
+    <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\ConfigFile.cs" />
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="HistoryManager.cs" />

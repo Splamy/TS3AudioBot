@@ -138,7 +138,7 @@ namespace TS3AudioBot
 			soundcloudFactory = new SoundcloudFactory();
 
 			// Register callbacks
-			AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
+			// AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
 			AudioFramework.OnRessourceStarted += BobController.OnRessourceStarted;
 			AudioFramework.OnRessourceStopped += BobController.OnRessourceStopped;
 
