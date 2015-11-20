@@ -669,8 +669,8 @@ namespace TS3AudioBot
 
 		private bool ResponseVolume(BotSession session, TextMessage tm, bool isAdmin)
 		{
-			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-			if (command[0] == "!y" || command[0] == "!n")
+			Answer answer = TextUtil.GetAnswer(tm.Message);
+			if (answer == Answer.Yes)
 			{
 				if (isAdmin)
 				{
@@ -679,18 +679,14 @@ namespace TS3AudioBot
 						Log.Write(Log.Level.Error, "responseData is not an int.");
 						return true;
 					}
-					if (command[0] == "!y")
-					{
-						AudioFramework.Volume = (int)session.ResponseData;
-					}
+					AudioFramework.Volume = (int)session.ResponseData;
 				}
 				else
 				{
 					session.Write("Command can only be answered by an admin.");
 				}
-				return true;
 			}
-			return false;
+			return answer != Answer.Unknown;
 		}
 
 		public void Dispose()

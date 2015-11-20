@@ -3,6 +3,7 @@ using System.Net;
 using System.IO;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TS3AudioBot.Helper.AudioTags;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.RessourceFactories
 {
@@ -129,21 +130,18 @@ namespace TS3AudioBot.RessourceFactories
 
 		private static bool ResponseValidation(BotSession session, TextMessage tm, bool isAdmin)
 		{
-			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-			if (command[0] == "!y")
+			Answer answer = TextUtil.GetAnswer(tm.Message);
+			if (answer == Answer.Yes)
 			{
 				PlayData data = session.UserRessource;
 				session.Bot.Play(data);
-				return true;
 			}
-			else if (command[0] == "!n")
+			else if (answer == Answer.No)
 			{
 				session.UserRessource = null;
-				return true;
 			}
-			else
-				return false;
-		}
+			return answer != Answer.Unknown;
+        }
 
 		public void Dispose()
 		{
