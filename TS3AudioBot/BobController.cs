@@ -268,12 +268,8 @@ namespace TS3AudioBot
 								await Task.Delay(TimeSpan.FromSeconds(BOB_TIMEOUT - inactiveSeconds), cancellationToken);
 						}
 					}
-					catch (TaskCanceledException)
-					{
-					}
-					catch (AggregateException)
-					{
-					}
+					catch (TaskCanceledException) { }
+					catch (AggregateException) { }
 				}, cancellationToken);
 		}
 

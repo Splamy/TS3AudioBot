@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.IO;
+using System.ComponentModel;
 
 namespace TS3AudioBot.Helper
 {
@@ -44,7 +45,7 @@ namespace TS3AudioBot.Helper
 				// True if the process runs for more than 10 ms or the exit code is 0
 				return !tmproc.WaitForExit(10) || tmproc.ExitCode == 0;
 			}
-			catch (Exception ex)
+			catch (Win32Exception ex)
 			{
 				Log.Write(Log.Level.Error, "{0} couldn't be run/found ({1})", filePath, ex);
 				return false;

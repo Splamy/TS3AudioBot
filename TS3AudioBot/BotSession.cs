@@ -1,4 +1,5 @@
 ﻿using System;
+using TeamSpeak3QueryApi.Net;
 
 namespace TS3AudioBot
 {
@@ -51,7 +52,7 @@ namespace TS3AudioBot
 			{
 				Bot.QueryConnection.SendGlobalMessage(message);
 			}
-			catch (Exception ex)
+			catch (QueryException ex)
 			{
 				Log.Write(Log.Level.Error, "Could not write public message ({0})", ex);
 			}

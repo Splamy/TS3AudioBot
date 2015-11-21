@@ -101,12 +101,8 @@ namespace TS3AudioBot
 					await Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken);
 				}
 			}
-			catch (TaskCanceledException)
-			{
-			}
-			catch (AggregateException)
-			{
-			}
+			catch (TaskCanceledException) { }
+			catch (AggregateException) { }
 		}
 
 		public async Task<bool> ChangeName(string newName)
@@ -116,10 +112,7 @@ namespace TS3AudioBot
 				await TSClient.Client.Send("clientupdate", new Parameter("client_nickname", newName));
 				return true;
 			}
-			catch
-			{
-				return false;
-			}
+			catch (QueryException) { return false; }
 		}
 
 		private void Diconnect()

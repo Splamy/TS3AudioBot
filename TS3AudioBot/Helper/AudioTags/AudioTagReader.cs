@@ -27,7 +27,11 @@ namespace TS3AudioBot.Helper.AudioTags
 			string tag = Encoding.ASCII.GetString(sr.ReadBytes(3));
 			Tag tagHeader;
 			if (tagDict.TryGetValue(tag, out tagHeader))
-				return tagHeader.GetTitle(sr);
+			{
+				try { return tagHeader.GetTitle(sr); }
+				catch (IOException) { }
+				catch (FormatException) { }
+			}
 			return null;
 		}
 
@@ -74,16 +78,16 @@ namespace TS3AudioBot.Helper.AudioTags
 				byte version_minor = fileStream.ReadByte(); //               >01 bytes
 				byte data_flags = fileStream.ReadByte(); //                  >01 bytes
 				byte[] tag_size = fileStream.ReadBytes(4); //                >04 bytes
-				int tag_size_int = 0;									     
-				for (int i = 0; i < 4; i++)								     
-					tag_size_int |= tag_size[3 - i] << (i * 7);			     
-				read_count += 10;										     
-																		     
+				int tag_size_int = 0;
+				for (int i = 0; i < 4; i++)
+					tag_size_int |= tag_size[3 - i] << (i * 7);
+				read_count += 10;
+
 				#region ID3v2											     
-				if (version_major == 2)									     
-				{														     
-					while (read_count < tag_size_int + 10)				     
-					{													     
+				if (version_major == 2)
+				{
+					while (read_count < tag_size_int + 10)
+					{
 						// frame header                                      [06 bytes]
 						int frame_id = fileStream.ReadInt24BE(); //          >03 bytes
 						int frame_size = fileStream.ReadInt24BE(); //        >03 bytes

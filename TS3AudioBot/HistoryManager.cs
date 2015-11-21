@@ -193,8 +193,13 @@ namespace TS3AudioBot
 			if (index == -1)
 			{
 				var ale = CreateLogEntry(resource);
-				AddToMemoryIndex(ale);
-				AppendToFile(ale);
+				if (ale != null)
+				{
+					AddToMemoryIndex(ale);
+					AppendToFile(ale);
+				}
+				else
+					Log.Write(Log.Level.Error, "AudioRessource could not be created!");
 			}
 			else
 			{
@@ -204,11 +209,13 @@ namespace TS3AudioBot
 
 		private AudioLogEntry CreateLogEntry(AudioRessource resource)
 		{
+			if (string.IsNullOrWhiteSpace(resource.RessourceTitle))
+				return null;
 			var ale = new AudioLogEntry(currentID, resource.AudioType, resource.RessourceId, fileStream.Position)
 			{
 				UserInvokeId = resource.InvokingUser.DatabaseId,
 				Timestamp = GetNow(),
-				Title = resource.RessourceTitle
+				Title = resource.RessourceTitle,
 			};
 			currentID++;
 

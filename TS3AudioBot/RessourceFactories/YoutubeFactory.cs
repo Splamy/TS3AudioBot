@@ -39,7 +39,7 @@ namespace TS3AudioBot.RessourceFactories
 			{
 				resulthtml = wc.DownloadString(string.Format("http://www.youtube.com/get_video_info?video_id={0}&el=info", ytID));
 			}
-			catch (Exception ex)
+			catch (WebException ex)
 			{
 				Log.Write(Log.Level.Warning, "Youtube downloadreqest failed: " + ex.Message);
 				result = null;

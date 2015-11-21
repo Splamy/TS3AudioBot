@@ -30,7 +30,7 @@ namespace TS3AudioBot.RessourceFactories
 					Uri.EscapeUriString(link),
 					SoundcloudClientID));
 			}
-			catch
+			catch (WebException)
 			{
 				ressource = null;
 				return RResultCode.ScInvalidLink;

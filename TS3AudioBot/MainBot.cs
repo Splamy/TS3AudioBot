@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
+using TeamSpeak3QueryApi.Net;
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
@@ -222,7 +223,7 @@ namespace TS3AudioBot
 			{
 				input = Console.ReadLine();
 			}
-			catch
+			catch (IOException)
 			{
 				Task.Delay(1000).Wait();
 				return;
@@ -331,7 +332,8 @@ namespace TS3AudioBot
 
 				case CommandParameter.Undefined:
 				default:
-					throw new InvalidOperationException("Command with no process");
+					Log.Write(Log.Level.Error, "Command with no process: " + command);
+					break;
 				}
 			}
 			catch (Exception ex)
@@ -444,7 +446,7 @@ namespace TS3AudioBot
 				else if (parameter == "far")
 					await QueryConnection.TSClient.KickClient(textMessage.InvokerId, KickOrigin.Server);
 			}
-			catch (Exception ex)
+			catch (QueryException ex)
 			{
 				Log.Write(Log.Level.Info, "Could not kick: {0}", ex);
 			}

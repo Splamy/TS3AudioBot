@@ -35,8 +35,8 @@ namespace TS3AudioBot.RessourceFactories
 				{
 					if (peekStream != null)
 					{
-						try { name = AudioTagReader.GetTitle(peekStream); }
-						catch { name = id; }
+						name = AudioTagReader.GetTitle(peekStream);
+						name = string.IsNullOrWhiteSpace(name) ? id : name;
 					}
 					else
 						name = id;
@@ -71,14 +71,12 @@ namespace TS3AudioBot.RessourceFactories
 					return RResultCode.MediaUnknownUri;
 				}
 			}
-			catch
-			{
-				return ValidateFile(uri, out stream);
-			}
+			catch (InvalidOperationException) { return ValidateFile(uri, out stream); }
 		}
 
 		private RResultCode ValidateWeb(string link, out Stream stream)
 		{
+			stream = null;
 			var request = WebRequest.Create(link);
 			//if (request.Method == "GET")
 			//	request.Method = "HEAD";
@@ -88,19 +86,17 @@ namespace TS3AudioBot.RessourceFactories
 				stream = response.GetResponseStream();
 				return RResultCode.Success;
 			}
-			catch
-			{
-				stream = null;
-				return RResultCode.MediaNoWebResponse;
-			}
+			catch (WebException) { return RResultCode.MediaNoWebResponse; }
+			catch (ProtocolViolationException) { return RResultCode.MediaNoWebResponse; }
 		}
 
 		private RResultCode ValidateFile(string path, out Stream stream)
 		{
 			if (File.Exists(path))
 			{
-				try { stream = new FileStream(path, FileMode.Open, FileAccess.Read); }
-				catch { stream = null; }
+
+				try { stream = File.Open(path, FileMode.Open, FileAccess.Read); }
+				catch (Exception) { stream = null; }
 				return RResultCode.Success;
 			}
 			else
@@ -141,7 +137,7 @@ namespace TS3AudioBot.RessourceFactories
 				session.UserRessource = null;
 			}
 			return answer != Answer.Unknown;
-        }
+		}
 
 		public void Dispose()
 		{

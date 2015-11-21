@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Diagnostics;
+using System.ComponentModel;
 
 namespace TS3AudioBot
 {
@@ -148,7 +149,11 @@ namespace TS3AudioBot
 				byte[] cmd = Encoding.ASCII.GetBytes(msg + "\n");
 				netStream.Write(cmd, 0, cmd.Length);
 			}
-			catch (Exception ex)
+			catch (EncoderFallbackException ex)
+			{
+				Log.Write(Log.Level.Warning, "VLCConnection: invalid message \"{0}\", {1}", msg, ex);
+			}
+			catch (IOException ex)
 			{
 				connected = false;
 				Log.Write(Log.Level.Warning, "VLCConnection: Unexpected write failure ({0})", ex);
@@ -170,7 +175,7 @@ namespace TS3AudioBot
 						vlcInterface.Connect(hostname, port);
 						connected = true;
 					}
-					catch (Exception)
+					catch (SocketException)
 					{
 						Task.Delay(1000).Wait();
 						Log.Write(Log.Level.Warning, "Retry: Connect to VLC");
@@ -204,7 +209,7 @@ namespace TS3AudioBot
 						ProcessMessage(sb.ToString());
 					}
 				}
-				catch (Exception ex) { Log.Write(Log.Level.Warning, "Disconnected ({0})...", ex.Message); }
+				catch (IOException ex) { Log.Write(Log.Level.Warning, "Disconnected ({0})...", ex.Message); }
 			});
 		}
 
@@ -259,7 +264,7 @@ namespace TS3AudioBot
 				tmproc.StartInfo = psi;
 				tmproc.Start();
 			}
-			catch (Exception ex)
+			catch (Win32Exception ex)
 			{
 				Log.Write(Log.Level.Error, "Could not start VLC: " + ex.Message);
 				tmproc = null;
