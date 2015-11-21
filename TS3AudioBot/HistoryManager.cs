@@ -158,7 +158,7 @@ namespace TS3AudioBot
 
 		public IList<AudioLogEntry> SeachTillTime(DateTime time)
 		{
-			int index = Array.BinarySearch((DateTime[])timeFilter.Keys, time);
+			int index = timeFilter.Keys.ToList().BinarySearch(time);
 
 			if (index > 0)
 			{
@@ -250,8 +250,6 @@ namespace TS3AudioBot
 
 		private void ReWriteToFile(AudioLogEntry logEntry)
 		{
-			long curPos = fileStream.Position;
-
 			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
 			byte[] curLine = FileEncoding.GetBytes(fileReader.ReadLine());
 			byte[] newLine = FileEncoding.GetBytes(logEntry.ToFileString());
