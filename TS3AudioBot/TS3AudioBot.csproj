@@ -98,6 +98,7 @@
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\ConfigFile.cs" />
     <Compile Include="ErrorLogger.cs" />
+    <Compile Include="Helper\PositionedStreamReader.cs" />
     <Compile Include="HistoryManager.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />

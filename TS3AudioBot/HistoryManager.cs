@@ -86,7 +86,7 @@ namespace TS3AudioBot
 		private static readonly byte[] NewLineArray = FileEncoding.GetBytes(Environment.NewLine);
 		private FileStream fileStream;
 		//private StreamWriter fileWriter;
-		private StreamReader fileReader;
+		private PositionedStreamReader fileReader;
 		public string Path { get; private set; }
 
 		public HistoryFile()
@@ -111,7 +111,7 @@ namespace TS3AudioBot
 			Clear();
 
 			fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-			fileReader = new StreamReader(fileStream, FileEncoding);
+			fileReader = new PositionedStreamReader(fileStream, FileEncoding);
 			RestoreFromFile();
 		}
 
@@ -130,7 +130,7 @@ namespace TS3AudioBot
 					if (ale.Id >= currentID)
 						currentID = ale.Id + 1;
 				}
-				readIndex = fileReader.GetReadPos();
+				readIndex = fileReader.ReadPosition;
 			}
 		}
 

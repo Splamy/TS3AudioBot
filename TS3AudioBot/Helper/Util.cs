@@ -58,13 +58,6 @@ namespace TS3AudioBot.Helper
 				return filePathDict[filePath];
 			throw new ApplicationException();
 		}
-
-		private static readonly FieldInfo sr_charPos_fld = typeof(StreamReader).GetField("charPos", BindingFlags.Instance | BindingFlags.NonPublic);
-		private static readonly FieldInfo sr_charLen_fld = typeof(StreamReader).GetField("charLen", BindingFlags.Instance | BindingFlags.NonPublic);
-		public static long GetReadPos(this StreamReader sr)
-		{
-			return sr.BaseStream.Position - (int)sr_charLen_fld.GetValue(sr) + (int)sr_charPos_fld.GetValue(sr);
-		}
 	}
 
 	public enum FilePath
