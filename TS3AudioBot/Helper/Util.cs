@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
+using System.IO;
 
 namespace TS3AudioBot.Helper
 {
 	static class Util
 	{
-		private readonly static Dictionary<FilePath, string> filePathDict;
+		private static readonly Dictionary<FilePath, string> filePathDict;
 
 		static Util()
 		{
@@ -54,6 +56,13 @@ namespace TS3AudioBot.Helper
 			if (filePathDict.ContainsKey(filePath))
 				return filePathDict[filePath];
 			throw new ApplicationException();
+		}
+
+		private static readonly FieldInfo sr_charPos_fld = typeof(StreamReader).GetField("charPos", BindingFlags.Instance | BindingFlags.NonPublic);
+		private static readonly FieldInfo sr_charLen_fld = typeof(StreamReader).GetField("charLen", BindingFlags.Instance | BindingFlags.NonPublic);
+		public static long GetReadPos(this StreamReader sr)
+		{
+			return sr.BaseStream.Position - (int)sr_charLen_fld.GetValue(sr) + (int)sr_charPos_fld.GetValue(sr);
 		}
 	}
 

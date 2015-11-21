@@ -90,6 +90,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithm\ISubstringSearch.cs" />
+    <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
     <Compile Include="AudioFramework.cs" />
     <Compile Include="Helper\AsyncLazy.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
@@ -110,7 +112,7 @@
     <Compile Include="SessionManager.cs" />
     <Compile Include="RessourceFactories\SoundcloudFactory.cs" />
     <Compile Include="Helper\TextUtil.cs" />
-    <Compile Include="Helper\Trie.cs" />
+    <Compile Include="Algorithm\Trie.cs" />
     <Compile Include="Helper\Util.cs" />
     <Compile Include="VLCConnection.cs" />
     <Compile Include="RessourceFactories\YoutubeFactory.cs" />

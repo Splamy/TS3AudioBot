@@ -59,7 +59,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void TrieStructureTests()
 		{
-			var trie = new TS3AudioBot.Helper.Trie<string>();
+			var trie = new TS3AudioBot.Algorithm.Trie<string>();
 			string[] values = new string[] { "val1", "val2", "val3", "val4", "val5" };
 			int adix = 0;
 

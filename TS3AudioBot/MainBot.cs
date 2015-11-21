@@ -11,6 +11,7 @@ using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 
 using TS3AudioBot.Helper;
+using TS3AudioBot.Algorithm;
 using TS3AudioBot.RessourceFactories;
 
 namespace TS3AudioBot
@@ -138,7 +139,7 @@ namespace TS3AudioBot
 			soundcloudFactory = new SoundcloudFactory();
 
 			// Register callbacks
-			// AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
+			AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
 			AudioFramework.OnRessourceStarted += BobController.OnRessourceStarted;
 			AudioFramework.OnRessourceStopped += BobController.OnRessourceStopped;
 
@@ -402,7 +403,36 @@ namespace TS3AudioBot
 
 		private void CommandHistory(BotSession session, string parameter)
 		{
-			//TODO
+			try
+			{
+				var args = parameter.Split(' ');
+				var sQuery = new SeachQuery();
+
+				for (int i = 0; i < args.Length; i++)
+				{
+					if (args[i].StartsWith("title:"))
+						sQuery.TitlePart = args[i].Substring(6);
+					else if (args[i].StartsWith("user:"))
+						sQuery.UserId = int.Parse(args[i].Substring(5));
+					else if (args[i].StartsWith("last:"))
+						sQuery.LastInvokedAfter = DateTime.Parse(args[i].Substring(5));
+					else if (args[i].StartsWith("max:"))
+						sQuery.MaxResults = int.Parse(args[i].Substring(4));
+				}
+				var sw = new System.Diagnostics.Stopwatch();
+				sw.Start();
+				var results = HistoryManager.Search(sQuery);
+				sw.Stop();
+
+				StringBuilder strb = new StringBuilder();
+				strb.Append("Look what I found in ").Append(sw.ElapsedMilliseconds).AppendLine("ms :");
+				foreach (var result in results)
+				{
+					strb.AppendLine(result.ToString());
+				}
+				session.Write(strb.ToString());
+			}
+			catch { }
 		}
 
 		private async void CommandKickme(BotSession session, TextMessage textMessage, string parameter)
