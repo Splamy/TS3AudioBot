@@ -29,12 +29,17 @@ namespace TS3AudioBot
 		private CancellationTokenSource keepAliveTokenSource;
 		private CancellationToken keepAliveToken;
 
-		private Task sendQueueTask;
+		private Task queueProcessor;
+		private Queue<Func<Task>> workQueue;
+		private bool queueDone = false;
 
 		public TeamSpeakClient TSClient { get; private set; }
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
+			queueProcessor = null;
+			workQueue = new Queue<Func<Task>>();
+
 			connectionData = qcd;
 			TSClient = new TeamSpeakClient(connectionData.host);
 		}
@@ -59,7 +64,8 @@ namespace TS3AudioBot
 						if (OnMessageReceived != null)
 						{
 							foreach (var textMessage in data)
-								OnMessageReceived(this, textMessage);
+								foreach(MessageReceivedDelegate tmSubscriber in OnMessageReceived.GetInvocationList())
+									QueueTask(() => Task.Run(() => tmSubscriber(this, textMessage)));
 						}
 					});
 				TSClient.Subscribe<ClientEnterView>(data =>
@@ -123,19 +129,63 @@ namespace TS3AudioBot
 
 		public void SendMessage(string message, GetClientsInfo client)
 		{
-			if (sendQueueTask != null && !sendQueueTask.IsCompleted)
-				sendQueueTask = sendQueueTask.ContinueWith((t) => TSClient.SendMessage(message, client).Wait());
-			else
-				sendQueueTask = TSClient.SendMessage(message, client);
+			QueueTask(() => TSClient.SendMessage(message, client));
 		}
 
 		public void SendGlobalMessage(string message)
 		{
-			if (sendQueueTask != null && !sendQueueTask.IsCompleted)
-				sendQueueTask = sendQueueTask.ContinueWith(t => TSClient.SendGlobalMessage(message).Wait());
-			else
-				sendQueueTask = TSClient.SendGlobalMessage(message);
+			QueueTask(() => TSClient.SendGlobalMessage(message));
 		}
+
+		// SMART QUEUE ////////////////////
+
+		private async void DoQueueWork()
+		{
+			while (true)
+			{
+				Func<Task> workTask;
+				lock (workQueue)
+				{
+					if (workQueue.Count == 0)
+					{
+						queueDone = true;
+						return;
+					}
+					else
+					{
+						workTask = workQueue.Dequeue();
+					}
+				}
+				await workTask.Invoke();
+			}
+		}
+
+		private void QueueTask(Func<Task> work)
+		{
+			if (queueProcessor == null)
+				EnqueInternal(work);
+			else
+			{
+				lock (workQueue)
+				{
+					if (queueDone)
+						EnqueInternal(work);
+					else
+						workQueue.Enqueue(work);
+				}
+			}
+		}
+
+		/// <summary>Do NOT call this method directly.
+		/// Use QueueTask(Func<Task>) instead.</summary>
+		private void EnqueInternal(Func<Task> work)
+		{
+			workQueue.Enqueue(work);
+			queueDone = false;
+			queueProcessor = Task.Run((Action)DoQueueWork);
+		}
+
+		///////////////////////////////////
 
 		public async Task<GetClientsInfo> GetClientById(int id)
 		{
@@ -170,7 +220,9 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			return response.Length <= 0 ? new int[0] : response.Select<QueryResponseDictionary, int>(dict => (int)dict["sgid"]).ToArray();
+			if (response.Length <= 0 || !response.First().ContainsKey("sgid"))
+				return new int[0];
+			return response.Select<QueryResponseDictionary, int>(dict => (int)dict["sgid"]).ToArray();
 		}
 
 		public void Dispose()
