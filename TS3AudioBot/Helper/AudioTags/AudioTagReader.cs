@@ -28,7 +28,7 @@ namespace TS3AudioBot.Helper.AudioTags
 			Tag tagHeader;
 			if (tagDict.TryGetValue(tag, out tagHeader))
 			{
-				try { return tagHeader.GetTitle(sr); }
+				try { return tagHeader.GetTitle(sr).TrimEnd('\0'); }
 				catch (IOException) { }
 				catch (FormatException) { }
 			}
@@ -98,7 +98,7 @@ namespace TS3AudioBot.Helper.AudioTags
 							string title;
 							byte[] textBuffer = fileStream.ReadBytes(frame_size);
 							if (textBuffer[0] == 0)
-								title = Encoding.GetEncoding(28591).GetString(textBuffer, 1, frame_size - 1).TrimEnd('\0');
+								title = Encoding.GetEncoding(28591).GetString(textBuffer, 1, frame_size - 1);
 							else
 								throw new FormatException("The id3 tag is damaged");
 							return title;

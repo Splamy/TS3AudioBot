@@ -180,7 +180,7 @@ namespace TS3AudioBot
 		{
 			if (idAmount <= 0)
 				return noResult;
-			var aleArray = (AudioLogEntry[])timeFilter.Values;
+			var aleArray = (AudioLogEntry[])timeFilter.Values; // TODO fix ? probably not an array
 			var result = new AudioLogEntry[idAmount];
 			aleArray.CopyTo(result, aleArray.Length - idAmount);
 			return result;

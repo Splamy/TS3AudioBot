@@ -64,8 +64,7 @@ namespace TS3AudioBot
 						if (OnMessageReceived != null)
 						{
 							foreach (var textMessage in data)
-								foreach(MessageReceivedDelegate tmSubscriber in OnMessageReceived.GetInvocationList())
-									QueueTask(() => Task.Run(() => tmSubscriber(this, textMessage)));
+								OnMessageReceived(this, textMessage);
 						}
 					});
 				TSClient.Subscribe<ClientEnterView>(data =>
