@@ -12,8 +12,8 @@ namespace TS3AudioBot
 {
 	class HistoryManager
 	{
-		HistoryFile historyFile;
-		IEnumerable<AudioLogEntry> lastResult;
+		private HistoryFile historyFile;
+		private IEnumerable<AudioLogEntry> lastResult;
 
 		public HistoryManager()
 		{
@@ -44,13 +44,23 @@ namespace TS3AudioBot
 				if (query.LastInvokedAfter != DateTime.MinValue)
 					filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter);
 			}
-			if (query.LastInvokedAfter != DateTime.MinValue)
+			else if (query.LastInvokedAfter != DateTime.MinValue)
 			{
 				filteredHistory = historyFile.SeachTillTime(query.LastInvokedAfter);
 			}
+			else if (query.MaxResults >= 0)
+			{
+				lastResult = historyFile.GetLastXEntrys(query.MaxResults);
+				return lastResult;
+			}
 
 			lastResult = filteredHistory;
-			return filteredHistory.Take(query.MaxResults);
+			return filteredHistory.TakeLast(query.MaxResults);
+		}
+
+		public AudioLogEntry GetEntryById(int id)
+		{
+			return historyFile.GetEntryById(id);
 		}
 	}
 
@@ -98,6 +108,7 @@ namespace TS3AudioBot
 			timeFilter = new SortedList<DateTime, AudioLogEntry>();
 		}
 
+
 		public void LoadFile(string path)
 		{
 			Path = path;
@@ -134,7 +145,28 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int Contains(AudioRessource resource)
+
+		public void Store(AudioRessource resource)
+		{
+			int index = Contains(resource);
+			if (index == -1)
+			{
+				var ale = CreateLogEntry(resource);
+				if (ale != null)
+				{
+					AddToMemoryIndex(ale);
+					AppendToFile(ale);
+				}
+				else
+					Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
+			}
+			else
+			{
+				UpdateLogEntry(index, resource);
+			}
+		}
+
+		private int Contains(AudioRessource resource)
 		{
 			int rId;
 			if (resIdToId.TryGetValue(resource.RessourceId, out rId))
@@ -142,6 +174,19 @@ namespace TS3AudioBot
 			return -1;
 		}
 
+		/// <summary>Gets an AudioLogEntry by its unique id or null if not exising.</summary>
+		/// <param name="id">The id of the AudioLogEntry</param>
+		public AudioLogEntry GetEntryById(int id)
+		{
+			AudioLogEntry ale;
+			if (idFilter.TryGetValue(id, out ale))
+				return ale;
+			return null;
+		}
+
+		/// <summary></summary>
+		/// <param name="titlePart"></param>
+		/// <returns></returns>
 		public IList<AudioLogEntry> SearchTitle(string titlePart)
 		{
 			return titleFilter.GetValues(titlePart.ToLower());
@@ -186,26 +231,6 @@ namespace TS3AudioBot
 			return result;
 		}
 
-
-		public void Store(AudioRessource resource)
-		{
-			int index = Contains(resource);
-			if (index == -1)
-			{
-				var ale = CreateLogEntry(resource);
-				if (ale != null)
-				{
-					AddToMemoryIndex(ale);
-					AppendToFile(ale);
-				}
-				else
-					Log.Write(Log.Level.Error, "AudioRessource could not be created!");
-			}
-			else
-			{
-				UpdateLogEntry(index, resource);
-			}
-		}
 
 		private AudioLogEntry CreateLogEntry(AudioRessource resource)
 		{
@@ -379,7 +404,7 @@ namespace TS3AudioBot
 
 		public override string ToString()
 		{
-			return string.Format("{0} @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, RessourceId);
+			return string.Format("[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, RessourceId);
 		}
 	}
 }

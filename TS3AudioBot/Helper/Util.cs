@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.IO;
 using System.ComponentModel;
+using System.Linq;
 
 namespace TS3AudioBot.Helper
 {
@@ -57,6 +58,11 @@ namespace TS3AudioBot.Helper
 			if (filePathDict.ContainsKey(filePath))
 				return filePathDict[filePath];
 			throw new ApplicationException();
+		}
+
+		public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int amount)
+		{
+			return source.Skip(Math.Max(0, source.Count() - amount));
 		}
 	}
 

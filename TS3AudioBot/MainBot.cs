@@ -405,9 +405,80 @@ namespace TS3AudioBot
 
 		private void CommandHistory(BotSession session, string parameter)
 		{
+			var args = parameter.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			if (args.Length == 0)
+				return; // OPtionally print help
+			else if (args.Length >= 1)
+			{
+				switch (args[0])
+				{
+				case "help":
+
+					//TODO
+					break;
+				case "play": // [id]
+					int id;
+					if (args.Length >= 2 && int.TryParse(args[1], out id))
+					{
+						var ale = HistoryManager.GetEntryById(id);
+						if (ale != null)
+						{
+							RestoreAndPlay(ale);
+						}
+						else
+						{
+							session.Write("Could not find track with this id");
+						}
+					}
+					else
+					{
+						session.Write("Missing or invalid track Id.");
+					}
+					break;
+
+				case "last": // [(x entries:] -> default to 1
+					int amount;
+					if (args.Length >= 2 && int.TryParse(args[1], out amount))
+					{
+						var aleList = HistoryManager.Search(new SeachQuery { MaxResults = amount }); // TODO smart output
+						foreach(var ale in aleList)
+						{
+							
+						}
+					}
+					else
+					{
+						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
+						if (ale != null)
+						{
+							RestoreAndPlay(ale);
+						}
+					}
+
+					break;
+				case "till": // [time]
+
+
+					break;
+				case "title": // substr
+
+
+					break;
+				case "where":
+
+
+					break;
+				case "from": // <user> <last x>
+
+
+					break;
+				default:
+					break;
+				}
+			}
+
 			try
 			{
-				var args = parameter.Split(' ');
 				var sQuery = new SeachQuery();
 
 				for (int i = 0; i < args.Length; i++)
@@ -687,6 +758,11 @@ namespace TS3AudioBot
 			factory.PostProcess(data, out abortPlay);
 			if (!abortPlay)
 				Play(data);
+		}
+
+		private void RestoreAndPlay(AudioLogEntry logEntry)
+		{
+
 		}
 
 		internal void Play(PlayData data)

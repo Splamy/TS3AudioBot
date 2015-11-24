@@ -259,15 +259,4 @@ namespace TS3AudioBot
 		[InfoAttribute("the password for the TeamSpeak3 Query")]
 		public string passwd;
 	}
-
-	static class ReadOnlyCollectionExtensions
-	{
-		public static void ForEach<T>(this IReadOnlyCollection<T> collection, Action<T> action)
-		{
-			if (action == null)
-				throw new ArgumentNullException("action");
-			foreach (var i in collection)
-				action(i);
-		}
-	}
 }
