@@ -440,11 +440,11 @@ namespace TS3AudioBot
 					int amount;
 					if (args.Length >= 2 && int.TryParse(args[1], out amount))
 					{
-						var aleList = HistoryManager.Search(new SeachQuery { MaxResults = amount }); // TODO smart output
-						foreach (var ale in aleList)
-						{
-
-						}
+						var query = new SeachQuery { MaxResults = amount };
+						var aleList = HistoryManager.Search(query); // TODO smart output
+						var shf = new SmartHistoryFormatter();
+						string resultStr = shf.ProcessQuery(query, aleList);
+						session.Write(resultStr);
 					}
 					else
 					{
