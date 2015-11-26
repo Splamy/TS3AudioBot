@@ -476,7 +476,7 @@ namespace TS3AudioBot
 					break;
 				}
 			}
-
+			return;
 			try
 			{
 				var sQuery = new SeachQuery();

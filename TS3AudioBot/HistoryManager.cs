@@ -396,8 +396,8 @@ namespace TS3AudioBot
 
 		public static AudioLogEntry Parse(string line, long readIndex)
 		{
-			string[] strParts = line.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-			if (strParts.Length != 6)
+			string[] strParts = line.Split(',');
+			if (strParts.Length != 7)
 				return null;
 			// Array.ForEach(strParts) // check if spacetrims are needed
 			int index = 0;

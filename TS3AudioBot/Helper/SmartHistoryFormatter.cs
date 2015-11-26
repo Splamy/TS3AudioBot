@@ -22,12 +22,15 @@ namespace TS3AudioBot.Helper
 
 			int currentLength = header.Length;
 			int maxLimit = header.Length;
+			int skip = 0;
 			foreach (var entry in entries)
 			{
 				var lb = new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString());
 				lines.Add(lb);
 				currentLength += lb.Length;
-				maxLimit = lb.MinLength;
+				maxLimit += lb.MinLength;
+				if (maxLimit > TS3_MAXLENGTH)
+					maxLimit -= lines[skip++].Length;
 			}
 
 			StringBuilder strb;
@@ -44,23 +47,20 @@ namespace TS3AudioBot.Helper
 				for (int i = 0; i < lines.Count; i++)
 					lines[i].Append(strb);
 			}
-			else if (maxLimit < TS3_MAXLENGTH)
-			{
-				int limitTo = (TS3_MAXLENGTH - header.Length) / lines.Count;
-				for (int i = 0; i < lines.Count; i++)
-				{
-					lines[i].LimitTo = limitTo;
-					lines[i].Append(strb);
-				}
-			}
 			else
 			{
-				int maxAdd = (TS3_MAXLENGTH - header.Length) / LineBuilder.MIN_TITLE_LENGTH;
-				int limitTo = (TS3_MAXLENGTH - header.Length) / lines.Count;
-				for (int i = 0; i < maxAdd; i++)
+				int limitTo;
+				int linesLeft = lines.Count - skip;
+				foreach (var line in lines.Skip(skip))
 				{
-					lines[i].LimitTo = limitTo;
-					lines[i].Append(strb);
+					if (skip > 0)
+						limitTo = 0;  // minimal size per line
+					else
+						limitTo = (TS3_MAXLENGTH - strb.Length) / linesLeft;
+					linesLeft--;
+
+					line.LimitTo = limitTo;
+					line.Append(strb);
 				}
 			}
 			return strb.ToString();
@@ -68,45 +68,48 @@ namespace TS3AudioBot.Helper
 
 		class LineBuilder
 		{
-			private const int FORMAT_LENGTH = 5;
+			private const int TITLE_MIN_LENGTH = 10;
+
 			private const int NEWLINE_LENGTH = 2;
+			private const int FORMAT_CHARS_LENGTH = 5 + NEWLINE_LENGTH;
 			private const int DOTS_LENGTH = 3;
-			public const int MIN_TITLE_LENGTH = 10 + DOTS_LENGTH; // 10 = <min title len>, 3 = "..."
+			public const int FORMAT_MIN_LENGTH = TITLE_MIN_LENGTH + DOTS_LENGTH;
 
 			public string Id { get; private set; }
-			private string title;
-			public string Title
+			public string Title { get; private set; }
+			public string User { get; private set; }
+
+			public string TitleFinal
 			{
 				get
 				{
-					if (LimitTo > -1)
-						return title.Substring(Math.Min(title.Length, Math.Max(LimitTo - DOTS_LENGTH, MIN_TITLE_LENGTH))) + "...";
+					if (LimitTo < 0 || Title.Length + ConstLength < LimitTo)
+						return Title;
 					else
-						return title;
+					{
+						int titleForceLen = Math.Max(LimitTo - (ConstLength + DOTS_LENGTH), TITLE_MIN_LENGTH);
+						return Title.Substring(0, titleForceLen) + "...";
+					}
 				}
 			}
-			public string User { get; private set; }
+			public int Length { get { return ConstLength + TitleFinal.Length; } }
+			public int MinLength { get { return ConstLength + Math.Min(Title.Length, FORMAT_MIN_LENGTH); } }
+			private int ConstLength { get { return Id.Length + User.Length + FORMAT_CHARS_LENGTH; } }
+
+			public int LimitTo { get; set; }
 
 			public LineBuilder(string id, string title, string user)
 			{
 				Id = id;
-				this.title = title;
+				this.Title = title;
 				User = user;
 				LimitTo = -1;
 				// <ID> (<USER>): <TITLE> = 5
 			}
 
-			public int Length
-			{
-				get { return Id.Length + title.Length + User.Length + FORMAT_LENGTH + NEWLINE_LENGTH; }
-			}
-			public bool CanLimitTitle { get { return title.Length > MIN_TITLE_LENGTH; } }
-			public int LimitTo { get; set; }
-			public int MinLength { get { return Math.Min(title.Length, MIN_TITLE_LENGTH); } }
-
 			public void Append(StringBuilder strb)
 			{
-				strb.Append(Id).Append(" (").Append(User).Append("): ").AppendLine(Title);
+				strb.Append(Id).Append(" (").Append(User).Append("): ").AppendLine(TitleFinal);
 			}
 		}
 	}
