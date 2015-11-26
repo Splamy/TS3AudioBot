@@ -102,6 +102,7 @@
     <Compile Include="HistoryManager.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
+    <Compile Include="IQueryConnection.cs" />
     <Compile Include="RessourceFactories\AudioRessource.cs" />
     <Compile Include="RessourceFactories\IRessourceFactory.cs" />
     <Compile Include="MainBot.cs" />

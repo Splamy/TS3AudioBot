@@ -184,14 +184,19 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		/// <summary></summary>
-		/// <param name="titlePart"></param>
-		/// <returns></returns>
+		/// <summary>Gets all Entrys containing the requested string.<\br>
+		/// Sort: Random</summary>
+		/// <param name="titlePart">Any part of the title</param>
+		/// <returns>A list of all found entries.</returns>
 		public IList<AudioLogEntry> SearchTitle(string titlePart)
 		{
 			return titleFilter.GetValues(titlePart.ToLower());
 		}
 
+		/// <summary>Gets all Entrys last called from a user.<\br>
+		/// Sort: By id ascending.</summary>
+		/// <param name="userId">TeamSpeak 3 Database UID of the user.</param>
+		/// <returns>A list of all found entries.</returns>
 		public IList<AudioLogEntry> SeachByUser(int userId)
 		{
 			IList<AudioLogEntry> result;
@@ -201,6 +206,10 @@ namespace TS3AudioBot
 				return noResult;
 		}
 
+		/// <summary>Gets all Entries until a certain datetime.<\br>
+		/// Sort: By call time ascending.</summary>
+		/// <param name="time">Included last time of an entry called.</param>
+		/// <returns>A list of all found entries.</returns>
 		public IList<AudioLogEntry> SeachTillTime(DateTime time)
 		{
 			int index = timeFilter.Keys.ToList().BinarySearch(time);
@@ -221,6 +230,10 @@ namespace TS3AudioBot
 			}
 		}
 
+		/// <summary>Gets the last played entries.<\br>
+		/// Sort: By call time ascending.</summary>
+		/// <param name="idAmount">The maximal amount of entries.</param>
+		/// <returns>A list of all found entries.</returns>
 		public IList<AudioLogEntry> GetLastXEntrys(int idAmount)
 		{
 			if (idAmount <= 0)
@@ -342,10 +355,12 @@ namespace TS3AudioBot
 	{
 		public int Id { get; private set; }
 		public int UserInvokeId { get; set; }
+		public int PlayCount { get; set; }
+		public DateTime Timestamp { get; set; }
 		public AudioType AudioType { get; private set; }
 		public string RessourceId { get; private set; }
-		public DateTime Timestamp { get; set; }
 		public string Title { get; set; }
+
 		public long FilePosIndex { get; private set; }
 
 		public AudioLogEntry(int id, AudioType audioType, string resId, long fileIndex)
@@ -363,6 +378,8 @@ namespace TS3AudioBot
 			strb.Append(AsHex(Id));
 			strb.Append(",");
 			strb.Append(AsHex(UserInvokeId));
+			strb.Append(",");
+			strb.Append(AsHex(PlayCount));
 			strb.Append(",");
 			strb.Append(AsHex(Timestamp.ToFileTime()));
 			strb.Append(",");
@@ -382,17 +399,21 @@ namespace TS3AudioBot
 			string[] strParts = line.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 			if (strParts.Length != 6)
 				return null;
-			int id = int.Parse(strParts[0], NumberStyles.HexNumber);
-			int userInvId = int.Parse(strParts[1], NumberStyles.HexNumber);
-			long dtStamp = long.Parse(strParts[2], NumberStyles.HexNumber);
+			// Array.ForEach(strParts) // check if spacetrims are needed
+			int index = 0;
+			int id = int.Parse(strParts[index++], NumberStyles.HexNumber);
+			int userInvId = int.Parse(strParts[index++], NumberStyles.HexNumber);
+			int playCount = int.Parse(strParts[index++], NumberStyles.HexNumber);
+			long dtStamp = long.Parse(strParts[index++], NumberStyles.HexNumber);
 			DateTime dateTime = DateTime.FromFileTime(dtStamp);
 			AudioType audioType;
-			if (!Enum.TryParse(strParts[3], out audioType))
+			if (!Enum.TryParse(strParts[index++], out audioType))
 				return null;
-			string resId = Uri.UnescapeDataString(strParts[4]);
-			string title = Uri.UnescapeDataString(strParts[5]);
+			string resId = Uri.UnescapeDataString(strParts[index++]);
+			string title = Uri.UnescapeDataString(strParts[index++]);
 			return new AudioLogEntry(id, audioType, resId, readIndex)
 			{
+				PlayCount = playCount,
 				Timestamp = dateTime,
 				Title = title,
 				UserInvokeId = userInvId,

@@ -25,22 +25,20 @@ namespace TS3AudioBot
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
 
+		private bool sending = false;
+		private bool isRunning;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private GetClientsInfo bobClient;
 
 		private Dictionary<int, SubscriptionData> channelSubscriptions;
 
-		public QueryConnection QueryConnection { get; set; }
+		public IQueryConnection QueryConnection { get; set; }
 
-		public bool IsRunning { get; private set; }
-
-		public bool IsTimingOut
+		private bool IsTimingOut
 		{
 			get { return timerTask != null && !timerTask.IsCompleted; }
 		}
-
-		private bool sending = false;
 
 		public bool Sending
 		{
@@ -54,7 +52,7 @@ namespace TS3AudioBot
 
 		public BobController(BobControllerData data)
 		{
-			IsRunning = false;
+			isRunning = false;
 			this.data = data;
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
@@ -64,7 +62,7 @@ namespace TS3AudioBot
 		{
 			lock (lockObject)
 			{
-				if (IsRunning)
+				if (isRunning)
 				{
 					SendMessageRaw(message);
 				}
@@ -91,7 +89,7 @@ namespace TS3AudioBot
 
 		private void SendQueue()
 		{
-			if (!IsRunning)
+			if (!isRunning)
 				throw new InvalidOperationException("The bob must run to send the commandQueue");
 
 			while (commandQueue.Count > 0)
@@ -121,7 +119,7 @@ namespace TS3AudioBot
 
 		public void Start()
 		{
-			if (!IsRunning)
+			if (!isRunning)
 			{
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
@@ -143,7 +141,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Info, "BC Stopping Bob");
 			SendMessage("exit");
-			IsRunning = false;
+			isRunning = false;
 			commandQueue.Clear();
 			Log.Write(Log.Level.Debug, "BC bob is now officially dead");
 			if (IsTimingOut)
@@ -224,16 +222,16 @@ namespace TS3AudioBot
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
 				bobClient = await QueryConnection.GetClientById(e.Id);
 				QueryConnection.OnClientConnect -= AwaitBobConnect;
-				IsRunning = true;
+				isRunning = true;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
 				SendQueue();
 			}
 		}
 
-		public async Task StartEndTimer()
+		private async Task StartEndTimer()
 		{
 			HasUpdate();
-			if (IsRunning)
+			if (isRunning)
 			{
 				if (IsTimingOut)
 				{

@@ -41,25 +41,25 @@ namespace TS3AudioBot
 			}
 		}
 
-		bool run;
-		bool noInput;
-		bool consoleOutput;
-		bool writeLog;
-		MainBotData mainBotData;
-		Trie<BotCommand> commandDict;
-		BotCommand[] allCommands;
+		private bool run;
+		private bool noInput;
+		private bool consoleOutput;
+		private bool writeLog;
+		private MainBotData mainBotData;
+		private Trie<BotCommand> commandDict;
+		private BotCommand[] allCommands;
 
-		StreamWriter logStream;
+		private StreamWriter logStream;
 
 		internal AudioFramework AudioFramework { get; private set; }
 		internal BobController BobController { get; private set; }
-		internal QueryConnection QueryConnection { get; private set; }
+		internal IQueryConnection QueryConnection { get; private set; }
 		internal SessionManager SessionManager { get; private set; }
 		internal HistoryManager HistoryManager { get; private set; }
 
-		IRessourceFactory mediaFactory;
-		IRessourceFactory youtubeFactory;
-		IRessourceFactory soundcloudFactory;
+		private IRessourceFactory mediaFactory;
+		private IRessourceFactory youtubeFactory;
+		private IRessourceFactory soundcloudFactory;
 
 		public bool QuizMode { get; set; }
 
@@ -441,9 +441,9 @@ namespace TS3AudioBot
 					if (args.Length >= 2 && int.TryParse(args[1], out amount))
 					{
 						var aleList = HistoryManager.Search(new SeachQuery { MaxResults = amount }); // TODO smart output
-						foreach(var ale in aleList)
+						foreach (var ale in aleList)
 						{
-							
+
 						}
 					}
 					else

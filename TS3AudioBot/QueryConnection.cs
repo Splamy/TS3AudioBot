@@ -1,22 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TeamSpeak3QueryApi.Net;
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
-using System.Threading;
 
 namespace TS3AudioBot
 {
-	class QueryConnection : IDisposable
+	class QueryConnection : IQueryConnection
 	{
-		public delegate void MessageReceivedDelegate(object sender, TextMessage e);
 		public event MessageReceivedDelegate OnMessageReceived;
-		public delegate void ClientEnterDelegate(object sender, ClientEnterView e);
 		public event ClientEnterDelegate OnClientConnect;
-		public delegate void ClientQuitDelegate(object sender, ClientLeftView e);
 		public event ClientQuitDelegate OnClientDisconnect;
 
 		private bool connected = false;
@@ -110,7 +107,7 @@ namespace TS3AudioBot
 			catch (AggregateException) { }
 		}
 
-		public async Task<bool> ChangeName(string newName)
+		private async Task<bool> ChangeName(string newName)
 		{
 			try
 			{
