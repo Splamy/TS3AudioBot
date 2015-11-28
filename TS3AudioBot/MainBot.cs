@@ -185,9 +185,11 @@ namespace TS3AudioBot
 			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
 				.HelpData("Automatically tries to decide whether the link is a special ressource (like youtube) or a direct ressource (like ./hello.mp3) and starts it", "<link>").Finish();
 			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private).HelpData("Plays the previous song in the playlist.").Finish();
+			builder.New("queuefix").Action(CommandQueuefix).Permission(CommandRights.Admin).HelpData("Flushes the message queue in case of deadlocks.").Finish();
 			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin).HelpData("Closes the TS3AudioBot application.").Finish();
 			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public).HelpData("Enable to hide the songnames and let your friends guess the title.", "(on|off)").Finish();
-			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private).HelpData("Sets whether or not to loop a single song", "(on|off)").Finish();
+			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private).HelpData("Sets whether or not to loop a single song.", "(on|off)").Finish();
+			builder.New("rng").Action(CommandRng).Permission(CommandRights.AnyVisibility).HelpData("Gets a random number.", "(_|<max>|<min> <max>)").Finish();
 			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private).HelpData("Jumps to a timemark within the current song.", "(<time in seconds>|<seconds>:<minutes>)").Finish();
 			builder.New("song").Action(CommandSong).Permission(CommandRights.AnyVisibility).HelpData("Tells you the name of the current song.").Finish();
 			builder.New("soundcloud").Action(CommandSoundcloud).Permission(CommandRights.Private).HelpData("Resolves the link as a soundcloud song to play it for you.").Finish();
@@ -405,7 +407,7 @@ namespace TS3AudioBot
 
 		private void CommandHistory(BotSession session, TextMessage textMessage, string parameter)
 		{
-			var args = parameter.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			var args = parameter.SplitNoEmpty(' ');
 			if (args.Length == 0)
 				return; // OPtionally print help
 			else if (args.Length >= 1)
@@ -613,6 +615,13 @@ namespace TS3AudioBot
 			AudioFramework.Previous();
 		}
 
+		private void CommandQueuefix(BotSession session)
+		{
+			var qc = QueryConnection as QueryConnection;
+			if (qc != null)
+				qc.QueueFix();
+		}
+
 		private void CommandQuit(BotSession session)
 		{
 			if (!noInput)
@@ -649,6 +658,18 @@ namespace TS3AudioBot
 				AudioFramework.Repeat = false;
 			else
 				CommandHelp(session, "repeat");
+		}
+
+		private void CommandRng(BotSession session, string parameter)
+		{
+			var rngArgs = parameter.SplitNoEmpty(' ');
+			int first, second;
+			if (rngArgs.Length <= 0)
+				session.Write(new Random().Next().ToString());
+			else if (int.TryParse(rngArgs[0], out first) && rngArgs.Length == 1)
+				session.Write(new Random().Next(first).ToString());
+			else if (int.TryParse(rngArgs[1], out second) && first <= second)
+				session.Write(new Random().Next(first, second).ToString());
 		}
 
 		private void CommandSeek(BotSession session, string parameter)

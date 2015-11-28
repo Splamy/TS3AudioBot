@@ -135,6 +135,26 @@ namespace TS3AudioBot
 
 		// SMART QUEUE ////////////////////
 
+		public void QueueFix()
+		{
+			if (queueProcessor == null) return;
+			bool taken = false;
+			for (int i = 0; i < 100 && !taken; i++)
+			{
+				Monitor.TryEnter(workQueue, ref taken);
+				if (taken)
+				{
+					workQueue.Clear();
+					try { queueProcessor.Dispose(); }
+					catch { }
+					queueProcessor = null;
+					queueDone = false;
+				}
+				else Thread.Sleep(1);
+				if (taken) Monitor.Exit(workQueue);
+			}
+		}
+
 		private async void DoQueueWork()
 		{
 			while (true)

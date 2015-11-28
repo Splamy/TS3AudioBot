@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.RessourceFactories
 {
@@ -48,7 +49,7 @@ namespace TS3AudioBot.RessourceFactories
 
 			List<VideoType> videoTypes = new List<VideoType>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
-			
+
 			string videoDataUnsplit = dataParse["url_encoded_fmt_stream_map"];
 			if (videoDataUnsplit != null)
 			{
@@ -166,7 +167,7 @@ namespace TS3AudioBot.RessourceFactories
 
 		private static bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
 		{
-			string[] command = tm.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			string[] command = tm.Message.SplitNoEmpty(' ');
 			if (command[0] != "!f")
 				return false;
 			if (command.Length != 2)
