@@ -30,7 +30,8 @@ namespace TS3AudioBot.Helper.AudioTags
 			{
 				try { return tagHeader.GetTitle(sr).TrimEnd('\0'); }
 				catch (IOException) { }
-				catch (FormatException) { }
+				catch (FormatException fex) { Log.Write(Log.Level.Debug, "ATR FEX: " + fex.Message); }
+				catch (NullReferenceException) { Log.Write(Log.Level.Debug, "ATR Unparsed Link!"); }
 			}
 			return null;
 		}
@@ -109,6 +110,7 @@ namespace TS3AudioBot.Helper.AudioTags
 							read_count += frame_size;
 						}
 					}
+					throw new FormatException("The id3 tag contains no title");
 				}
 				#endregion
 				#region ID3v3/4
@@ -151,6 +153,7 @@ namespace TS3AudioBot.Helper.AudioTags
 							read_count += frame_size;
 						}
 					}
+					throw new FormatException("The id3 tag contains no title");
 				}
 				#endregion
 				return null;
