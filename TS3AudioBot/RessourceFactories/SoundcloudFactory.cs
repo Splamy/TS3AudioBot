@@ -10,7 +10,7 @@ namespace TS3AudioBot.RessourceFactories
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;
 
-		public AudioType FactoryFor { get { return AudioType.MediaLink; } }
+		public AudioType FactoryFor { get { return AudioType.Soundcloud; } }
 		public string SoundcloudClientID { get; private set; }
 
 		public SoundcloudFactory()

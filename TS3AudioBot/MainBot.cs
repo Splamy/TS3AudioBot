@@ -354,9 +354,9 @@ namespace TS3AudioBot
 
 		// COMMANDS
 
-		private async void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
+		private void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
 			LoadAndPlayAuto(new PlayData(session, client, parameter, true));
 		}
 
@@ -403,7 +403,7 @@ namespace TS3AudioBot
 			session.Write(strb.ToString());
 		}
 
-		private void CommandHistory(BotSession session, string parameter)
+		private void CommandHistory(BotSession session, TextMessage textMessage, string parameter)
 		{
 			var args = parameter.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			if (args.Length == 0)
@@ -413,9 +413,9 @@ namespace TS3AudioBot
 				switch (args[0])
 				{
 				case "help":
-
-					//TODO
 					break;
+
+				#region play
 				case "play": // [id]
 					int id;
 					if (args.Length >= 2 && int.TryParse(args[1], out id))
@@ -423,7 +423,8 @@ namespace TS3AudioBot
 						var ale = HistoryManager.GetEntryById(id);
 						if (ale != null)
 						{
-							RestoreAndPlay(ale);
+							GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+							RestoreAndPlay(ale, new PlayData(session, client, null, false));
 						}
 						else
 						{
@@ -435,15 +436,15 @@ namespace TS3AudioBot
 						session.Write("Missing or invalid track Id.");
 					}
 					break;
+				#endregion
 
+				#region last
 				case "last": // [(x entries:] -> default to 1
 					int amount;
 					if (args.Length >= 2 && int.TryParse(args[1], out amount))
 					{
 						var query = new SeachQuery { MaxResults = amount };
-						var aleList = HistoryManager.Search(query); // TODO smart output
-						var shf = new SmartHistoryFormatter();
-						string resultStr = shf.ProcessQuery(query, aleList);
+						string resultStr = HistoryManager.SearchParsed(query);
 						session.Write(resultStr);
 					}
 					else
@@ -451,19 +452,65 @@ namespace TS3AudioBot
 						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
 						if (ale != null)
 						{
-							RestoreAndPlay(ale);
+							GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+							RestoreAndPlay(ale, new PlayData(session, client, null, false));
 						}
 					}
-
 					break;
+				#endregion
+
+				#region till
 				case "till": // [time]
-
-
+					DateTime tillTime;
+					if (args.Length >= 2)
+					{
+						switch (args[1].ToLower())
+						{
+						case "hour": tillTime = DateTime.Now.AddHours(-1); break;
+						case "today": tillTime = DateTime.Today; break;
+						case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
+						case "week": tillTime = DateTime.Today.AddDays(-7); break;
+						default:
+							string timeStr = string.Join(" ", args, 1, args.Length - 1);
+							if (!DateTime.TryParse(timeStr, out tillTime))
+								tillTime = DateTime.MinValue;
+							break;
+						}
+						if (tillTime != DateTime.MinValue)
+						{
+							var query = new SeachQuery { LastInvokedAfter = tillTime };
+							string resultStr = HistoryManager.SearchParsed(query);
+							session.Write(resultStr);
+						}
+						else
+						{
+							session.Write("The date could not be parsed.");
+						}
+					}
+					else
+					{
+						session.Write("Missing time or date.");
+					}
 					break;
+				#endregion
+
+				#region title
 				case "title": // substr
-
-
+					if (args.Length >= 2)
+					{
+						int startSubstr = parameter.IndexOf("title");
+						string titleStr = parameter.Substring(startSubstr + 5).Trim(); // len of title + space
+						var query = new SeachQuery { TitlePart = titleStr };
+						string resultStr = HistoryManager.SearchParsed(query);
+						session.Write(resultStr);
+					}
+					else
+					{
+						session.Write("Missing title to search.");
+					}
 					break;
+				#endregion
+
 				case "where":
 
 
@@ -523,9 +570,9 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async void CommandLink(BotSession session, TextMessage textMessage, string parameter)
+		private void CommandLink(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
 			LoadAndPlay(mediaFactory, new PlayData(session, client, parameter, false));
 		}
 
@@ -550,13 +597,13 @@ namespace TS3AudioBot
 			ownSession.Write("Hi " + textMessage.InvokerName);
 		}
 
-		private async void CommandPlay(BotSession session, TextMessage textMessage, string parameter)
+		private void CommandPlay(BotSession session, TextMessage textMessage, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
 				AudioFramework.Play();
 			else
 			{
-				GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+				GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
 				LoadAndPlayAuto(new PlayData(session, client, parameter, false));
 			}
 		}
@@ -650,9 +697,9 @@ namespace TS3AudioBot
 				session.Write(AudioFramework.currentRessource.RessourceTitle);
 		}
 
-		private async void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
+		private void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
 			LoadAndPlay(soundcloudFactory, new PlayData(session, client, parameter, false));
 		}
 
@@ -709,9 +756,9 @@ namespace TS3AudioBot
 			CommandHelp(session, "volume");
 		}
 
-		private async void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
+		private void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
 			LoadAndPlay(youtubeFactory, new PlayData(session, client, parameter, false));
 		}
 
@@ -740,10 +787,10 @@ namespace TS3AudioBot
 
 		private void LoadAndPlay(IRessourceFactory factory, PlayData data)
 		{
-			string netlinkurl = ExtractUrlFromBB(data.Message);
-
 			if (data.Ressource == null)
 			{
+				string netlinkurl = ExtractUrlFromBB(data.Message);
+
 				AudioRessource ressource;
 				RResultCode result = factory.GetRessource(netlinkurl, out ressource);
 				if (result != RResultCode.Success)
@@ -760,9 +807,29 @@ namespace TS3AudioBot
 				Play(data);
 		}
 
-		private void RestoreAndPlay(AudioLogEntry logEntry)
+		private void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
 		{
+			//TODO: make ressourceFactoryManager !!!
+			IRessourceFactory factory;
+			if (youtubeFactory.FactoryFor == logEntry.AudioType)
+				factory = youtubeFactory;
+			else if (soundcloudFactory.FactoryFor == logEntry.AudioType)
+				factory = soundcloudFactory;
+			else if (mediaFactory.FactoryFor == logEntry.AudioType)
+				factory = mediaFactory;
+			else
+				throw new InvalidOperationException();
 
+			AudioRessource ressource;
+			RResultCode result = factory.GetRessourceById(logEntry.RessourceId, logEntry.Title, out ressource);
+			if (result != RResultCode.Success)
+			{
+				data.Session.Write(string.Format("Could not restore ({0})", result));
+				return;
+			}
+			data.Ressource = ressource;
+
+			Play(data);
 		}
 
 		internal void Play(PlayData data)

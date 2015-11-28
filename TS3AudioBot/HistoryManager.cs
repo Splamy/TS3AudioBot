@@ -14,9 +14,11 @@ namespace TS3AudioBot
 	{
 		private HistoryFile historyFile;
 		private IEnumerable<AudioLogEntry> lastResult;
+		public SmartHistoryFormatter Formatter { get; private set; }
 
 		public HistoryManager()
 		{
+			Formatter = new SmartHistoryFormatter();
 			historyFile = new HistoryFile();
 			historyFile.LoadFile("history.axe");
 		}
@@ -56,6 +58,12 @@ namespace TS3AudioBot
 
 			lastResult = filteredHistory;
 			return filteredHistory.TakeLast(query.MaxResults);
+		}
+
+		public string SearchParsed(SeachQuery query)
+		{
+			var aleList = Search(query);
+			return Formatter.ProcessQuery(query, aleList);
 		}
 
 		public AudioLogEntry GetEntryById(int id)

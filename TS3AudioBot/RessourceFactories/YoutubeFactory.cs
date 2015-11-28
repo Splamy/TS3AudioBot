@@ -14,7 +14,7 @@ namespace TS3AudioBot.RessourceFactories
 	{
 		private WebClient wc;
 
-		public AudioType FactoryFor { get { return AudioType.MediaLink; } }
+		public AudioType FactoryFor { get { return AudioType.Youtube; } }
 
 		public YoutubeFactory()
 		{
