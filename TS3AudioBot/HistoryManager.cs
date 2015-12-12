@@ -262,6 +262,7 @@ namespace TS3AudioBot
 				UserInvokeId = (uint)resource.InvokingUser.DatabaseId,
 				Timestamp = GetNow(),
 				Title = resource.RessourceTitle,
+				PlayCount = 1,
 			};
 			currentID++;
 
@@ -282,6 +283,8 @@ namespace TS3AudioBot
 			timeFilter.Remove(ale.Timestamp);
 			ale.Timestamp = GetNow();
 			timeFilter.Add(ale.Timestamp, ale);
+
+			ale.PlayCount++;
 
 			ReWriteToFile(ale);
 		}

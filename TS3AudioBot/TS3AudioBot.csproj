@@ -93,6 +93,7 @@
     <Compile Include="Algorithm\ISubstringSearch.cs" />
     <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
     <Compile Include="AudioFramework.cs" />
+    <Compile Include="Helper\AsyncHelpers.cs" />
     <Compile Include="Helper\AsyncLazy.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
