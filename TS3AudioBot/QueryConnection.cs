@@ -18,7 +18,8 @@ namespace TS3AudioBot
 
 		private bool connected = false;
 		private IReadOnlyList<GetClientsInfo> clientbuffer;
-		private bool clientbufferoutdated = true;
+		private bool clientbufferOutdated = true;
+		private IDictionary<ulong, string> clientDbNames;
 
 		private QueryConnectionData connectionData;
 		private const int PingEverySeconds = 60;
@@ -36,6 +37,8 @@ namespace TS3AudioBot
 		{
 			queueProcessor = null;
 			workQueue = new Queue<Func<Task>>();
+
+			clientDbNames = new Dictionary<ulong, string>();
 
 			connectionData = qcd;
 			TSClient = new TeamSpeakClient(connectionData.host);
@@ -67,7 +70,7 @@ namespace TS3AudioBot
 				TSClient.Subscribe<ClientEnterView>(data =>
 					{
 						Log.Write(Log.Level.Debug, "QC ClientEnterView event raised");
-						clientbufferoutdated = true;
+						clientbufferOutdated = true;
 						if (OnClientConnect != null)
 						{
 							foreach (var clientdata in data)
@@ -77,7 +80,7 @@ namespace TS3AudioBot
 				TSClient.Subscribe<ClientLeftView>(data =>
 				{
 					Log.Write(Log.Level.Debug, "QC ClientQuitView event raised");
-					clientbufferoutdated = true;
+					clientbufferOutdated = true;
 					if (OnClientDisconnect != null)
 					{
 						foreach (var clientdata in data)
@@ -212,7 +215,7 @@ namespace TS3AudioBot
 
 		public GetClientsInfo GetClientByIdBuffer(int id)
 		{
-			if (clientbufferoutdated)
+			if (clientbufferOutdated)
 				Log.Write(Log.Level.Warning, "QC clientbuffer was outdated");
 			return clientbuffer.FirstOrDefault(client => client.Id == id);
 		}
@@ -225,10 +228,10 @@ namespace TS3AudioBot
 
 		public async Task RefreshClientBuffer(bool force)
 		{
-			if (clientbufferoutdated || force)
+			if (clientbufferOutdated || force)
 			{
 				clientbuffer = await TSClient.GetClients();
-				clientbufferoutdated = false;
+				clientbufferOutdated = false;
 			}
 		}
 
@@ -236,9 +239,29 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			if (response.Length <= 0 || !response.First().ContainsKey("sgid"))
+			if (!response.Any() || !response.First().ContainsKey("sgid"))
 				return new int[0];
 			return response.Select<QueryResponseDictionary, int>(dict => (int)dict["sgid"]).ToArray();
+		}
+
+		public async Task<string> GetNameByDbId(ulong clientDbId)
+		{
+			string name;
+			if (!clientDbNames.TryGetValue(clientDbId, out name))
+			{
+				QueryResponseDictionary[] response = await TSClient.Client.Send("clientdbinfo", new Parameter("cldbid", (ParameterValueEx)clientDbId));
+				if (!response.Any() || !response.First().ContainsKey("client_nickname"))
+				{
+					name = response.First()["client_nickname"] as string;
+					if (name != null)
+						clientDbNames.Add(clientDbId, name);
+				}
+				else
+				{
+					name = string.Empty;
+				}
+			}
+			return name;
 		}
 
 		public void Dispose()
@@ -263,6 +286,19 @@ namespace TS3AudioBot
 					keepAliveTokenSource.Dispose();
 					keepAliveTokenSource = null;
 				}
+			}
+		}
+
+		class ParameterValueEx : ParameterValue
+		{
+			public ParameterValueEx(ulong value)
+			{
+				Value = value.ToString();
+			}
+
+			public static implicit operator ParameterValueEx(ulong fromParameter)
+			{
+				return new ParameterValueEx(fromParameter);
 			}
 		}
 	}

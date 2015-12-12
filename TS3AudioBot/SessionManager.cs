@@ -17,11 +17,11 @@ namespace TS3AudioBot
 			openSessions = new List<PrivateSession>();
 		}
 
-		public async Task<BotSession> CreateSession(MainBot bot, int invokerId)
+		public BotSession CreateSession(MainBot bot, int invokerId)
 		{
 			if (ExistsSession(invokerId))
 				return GetSession(MessageTarget.Private, invokerId);
-			GetClientsInfo client = await bot.QueryConnection.GetClientById(invokerId);
+			GetClientsInfo client = bot.QueryConnection.GetClientByIdBuffer(invokerId);
 			var newSession = new PrivateSession(bot, client);
 			openSessions.Add(newSession);
 			return newSession;

@@ -35,20 +35,20 @@ namespace TS3AudioBot
 			if (!string.IsNullOrEmpty(query.TitlePart))
 			{
 				filteredHistory = historyFile.SearchTitle(query.TitlePart);
-				if (query.UserId != -1)
-					filteredHistory = filteredHistory.Where(ald => ald.UserInvokeId == query.UserId);
-				if (query.LastInvokedAfter != DateTime.MinValue)
-					filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter);
+				if (query.UserId != null)
+					filteredHistory = filteredHistory.Where(ald => ald.UserInvokeId == query.UserId.Value);
+				if (query.LastInvokedAfter != null)
+					filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter.Value);
 			}
-			else if (query.UserId != -1)
+			else if (query.UserId != null)
 			{
-				filteredHistory = historyFile.SeachByUser(query.UserId);
-				if (query.LastInvokedAfter != DateTime.MinValue)
-					filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter);
+				filteredHistory = historyFile.SeachByUser(query.UserId.Value);
+				if (query.LastInvokedAfter != null)
+					filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter.Value);
 			}
-			else if (query.LastInvokedAfter != DateTime.MinValue)
+			else if (query.LastInvokedAfter != null)
 			{
-				filteredHistory = historyFile.SeachTillTime(query.LastInvokedAfter);
+				filteredHistory = historyFile.SeachTillTime(query.LastInvokedAfter.Value);
 			}
 			else if (query.MaxResults >= 0)
 			{
@@ -63,10 +63,10 @@ namespace TS3AudioBot
 		public string SearchParsed(SeachQuery query)
 		{
 			var aleList = Search(query);
-			return Formatter.ProcessQuery(query, aleList);
+			return Formatter.ProcessQuery(aleList);
 		}
 
-		public AudioLogEntry GetEntryById(int id)
+		public AudioLogEntry GetEntryById(uint id)
 		{
 			return historyFile.GetEntryById(id);
 		}
@@ -75,28 +75,28 @@ namespace TS3AudioBot
 	class SeachQuery
 	{
 		public string TitlePart;
-		public int UserId;
-		public DateTime LastInvokedAfter;
+		public uint? UserId;
+		public DateTime? LastInvokedAfter;
 		public int MaxResults;
 
 		public SeachQuery()
 		{
 			TitlePart = null;
-			UserId = -1;
-			LastInvokedAfter = DateTime.MinValue;
+			UserId = null;
+			LastInvokedAfter = null;
 			MaxResults = 10;
 		}
 	}
 
 	class HistoryFile
 	{
-		private IDictionary<string, int> resIdToId;
-		private IDictionary<int, AudioLogEntry> idFilter;
+		private IDictionary<string, uint> resIdToId;
+		private IDictionary<uint, AudioLogEntry> idFilter;
 		private ISubstringSearch<AudioLogEntry> titleFilter;
-		private IDictionary<int, IList<AudioLogEntry>> userIdFilter;
+		private IDictionary<uint, IList<AudioLogEntry>> userIdFilter;
 		private SortedList<DateTime, AudioLogEntry> timeFilter;
 
-		private int currentID = 0;
+		private uint currentID = 0;
 
 		private readonly IList<AudioLogEntry> noResult = new List<AudioLogEntry>().AsReadOnly();
 
@@ -109,10 +109,10 @@ namespace TS3AudioBot
 
 		public HistoryFile()
 		{
-			resIdToId = new Dictionary<string, int>();
-			idFilter = new SortedList<int, AudioLogEntry>();
+			resIdToId = new Dictionary<string, uint>();
+			idFilter = new SortedList<uint, AudioLogEntry>();
 			titleFilter = new SimpleSubstringFinder<AudioLogEntry>();
-			userIdFilter = new SortedList<int, IList<AudioLogEntry>>();
+			userIdFilter = new SortedList<uint, IList<AudioLogEntry>>();
 			timeFilter = new SortedList<DateTime, AudioLogEntry>();
 		}
 
@@ -156,8 +156,8 @@ namespace TS3AudioBot
 
 		public void Store(AudioRessource resource)
 		{
-			int index = Contains(resource);
-			if (index == -1)
+			uint? index = Contains(resource);
+			if (index == null)
 			{
 				var ale = CreateLogEntry(resource);
 				if (ale != null)
@@ -170,21 +170,21 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				UpdateLogEntry(index, resource);
+				UpdateLogEntry(index.Value, resource);
 			}
 		}
 
-		private int Contains(AudioRessource resource)
+		private uint? Contains(AudioRessource resource)
 		{
-			int rId;
+			uint rId;
 			if (resIdToId.TryGetValue(resource.RessourceId, out rId))
 				return rId;
-			return -1;
+			return null;
 		}
 
 		/// <summary>Gets an AudioLogEntry by its unique id or null if not exising.</summary>
 		/// <param name="id">The id of the AudioLogEntry</param>
-		public AudioLogEntry GetEntryById(int id)
+		public AudioLogEntry GetEntryById(uint id)
 		{
 			AudioLogEntry ale;
 			if (idFilter.TryGetValue(id, out ale))
@@ -205,7 +205,7 @@ namespace TS3AudioBot
 		/// Sort: By id ascending.</summary>
 		/// <param name="userId">TeamSpeak 3 Database UID of the user.</param>
 		/// <returns>A list of all found entries.</returns>
-		public IList<AudioLogEntry> SeachByUser(int userId)
+		public IList<AudioLogEntry> SeachByUser(uint userId)
 		{
 			IList<AudioLogEntry> result;
 			if (userIdFilter.TryGetValue(userId, out result))
@@ -259,7 +259,7 @@ namespace TS3AudioBot
 				return null;
 			var ale = new AudioLogEntry(currentID, resource.AudioType, resource.RessourceId, fileStream.Position)
 			{
-				UserInvokeId = resource.InvokingUser.DatabaseId,
+				UserInvokeId = (uint)resource.InvokingUser.DatabaseId,
 				Timestamp = GetNow(),
 				Title = resource.RessourceTitle,
 			};
@@ -268,14 +268,14 @@ namespace TS3AudioBot
 			return ale;
 		}
 
-		private void UpdateLogEntry(int index, AudioRessource resource)
+		private void UpdateLogEntry(uint index, AudioRessource resource)
 		{
 			AudioLogEntry ale = idFilter[index];
 
-			if (resource.InvokingUser.DatabaseId == ale.UserInvokeId)
+			if (resource.InvokingUser.DatabaseId != ale.UserInvokeId) // TODO: test
 			{
 				userIdFilter[ale.UserInvokeId].Remove(ale);
-				ale.UserInvokeId = resource.InvokingUser.DatabaseId;
+				ale.UserInvokeId = (uint)resource.InvokingUser.DatabaseId;
 				AutoAdd(userIdFilter, ale);
 			}
 
@@ -333,7 +333,7 @@ namespace TS3AudioBot
 			timeFilter.Add(logEntry.Timestamp, logEntry);
 		}
 
-		private static void AutoAdd(IDictionary<int, IList<AudioLogEntry>> dict, AudioLogEntry value)
+		private static void AutoAdd(IDictionary<uint, IList<AudioLogEntry>> dict, AudioLogEntry value)
 		{
 			IList<AudioLogEntry> uidList;
 			if (!dict.TryGetValue(value.UserInvokeId, out uidList))
@@ -361,9 +361,9 @@ namespace TS3AudioBot
 
 	class AudioLogEntry
 	{
-		public int Id { get; private set; }
-		public int UserInvokeId { get; set; }
-		public int PlayCount { get; set; }
+		public uint Id { get; private set; }
+		public uint UserInvokeId { get; set; }
+		public uint PlayCount { get; set; }
 		public DateTime Timestamp { get; set; }
 		public AudioType AudioType { get; private set; }
 		public string RessourceId { get; private set; }
@@ -371,9 +371,10 @@ namespace TS3AudioBot
 
 		public long FilePosIndex { get; private set; }
 
-		public AudioLogEntry(int id, AudioType audioType, string resId, long fileIndex)
+		public AudioLogEntry(uint id, AudioType audioType, string resId, long fileIndex)
 		{
 			Id = id;
+			PlayCount = 0;
 			AudioType = audioType;
 			RessourceId = resId;
 			FilePosIndex = fileIndex;
@@ -409,9 +410,9 @@ namespace TS3AudioBot
 				return null;
 			// Array.ForEach(strParts) // check if spacetrims are needed
 			int index = 0;
-			int id = int.Parse(strParts[index++], NumberStyles.HexNumber);
-			int userInvId = int.Parse(strParts[index++], NumberStyles.HexNumber);
-			int playCount = int.Parse(strParts[index++], NumberStyles.HexNumber);
+			uint id = uint.Parse(strParts[index++], NumberStyles.HexNumber);
+			uint userInvId = uint.Parse(strParts[index++], NumberStyles.HexNumber);
+			uint playCount = uint.Parse(strParts[index++], NumberStyles.HexNumber);
 			long dtStamp = long.Parse(strParts[index++], NumberStyles.HexNumber);
 			DateTime dateTime = DateTime.FromFileTime(dtStamp);
 			AudioType audioType;
@@ -428,7 +429,7 @@ namespace TS3AudioBot
 			};
 		}
 
-		private string AsHex(int num) { return num.ToString("X8"); }
+		private string AsHex(uint num) { return num.ToString("X8"); }
 		private string AsHex(long num) { return num.ToString("X16"); }
 
 		public override string ToString()

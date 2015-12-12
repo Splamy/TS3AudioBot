@@ -10,12 +10,12 @@ namespace TS3AudioBot.Helper
 	{
 		private const int TS3_MAXLENGTH = 1024;
 
-		public void ProcessQuery(SeachQuery query, AudioLogEntry entry)
+		public string ProcessQuery(AudioLogEntry entry)
 		{
-
+			return ProcessQuery(new[] { entry });
 		}
 
-		public string ProcessQuery(SeachQuery query, IEnumerable<AudioLogEntry> entries)
+		public string ProcessQuery(IEnumerable<AudioLogEntry> entries)
 		{
 			const string header = "Look what I found:";
 			List<LineBuilder> lines = new List<LineBuilder>();
@@ -35,7 +35,9 @@ namespace TS3AudioBot.Helper
 
 			StringBuilder strb;
 			if (lines.Count == 0)
+			{
 				return "I found nothing!";
+			}
 			else
 			{
 				strb = new StringBuilder(TS3_MAXLENGTH);
@@ -101,7 +103,7 @@ namespace TS3AudioBot.Helper
 			public LineBuilder(string id, string title, string user)
 			{
 				Id = id;
-				this.Title = title;
+				Title = title;
 				User = user;
 				LimitTo = -1;
 				// <ID> (<USER>): <TITLE> = 5

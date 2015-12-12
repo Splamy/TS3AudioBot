@@ -256,7 +256,7 @@ namespace TS3AudioBot
 			if (textMessage.TargetMode == MessageTarget.Private && session == SessionManager.DefaultSession)
 			{
 				Log.Write(Log.Level.Debug, "MB User {0} created auto-private session with the bot", textMessage.InvokerName);
-				session = await SessionManager.CreateSession(this, textMessage.InvokerId);
+				session = SessionManager.CreateSession(this, textMessage.InvokerId);
 			}
 
 			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy(HasInvokerAdminRights, textMessage);
@@ -306,6 +306,19 @@ namespace TS3AudioBot
 				return;
 			}
 
+			InvokeCommand(command, session, textMessage, commandSplit);
+		}
+
+		private void ParseCommandRequest(string request)
+		{
+			for (int strPtr = 0; strPtr < request.Length; strPtr++)
+			{
+
+			}
+		}
+
+		private void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, string[] commandSplit)
+		{
 			try
 			{
 				switch (command.CommandParameter)
@@ -347,7 +360,7 @@ namespace TS3AudioBot
 		private async Task<bool> HasInvokerAdminRights(InvokerInformation textMessage)
 		{
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
-			GetClientsInfo client = await QueryConnection.GetClientById(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
 			if (client == null)
 				return false;
 			int[] clientSgIds = await QueryConnection.GetClientServerGroups(client);
@@ -362,7 +375,7 @@ namespace TS3AudioBot
 			LoadAndPlayAuto(new PlayData(session, client, parameter, true));
 		}
 
-		private void CommandClear(BotSession session, string parameter)
+		private void CommandClear(BotSession session)
 		{
 			AudioFramework.Clear();
 		}
@@ -412,15 +425,65 @@ namespace TS3AudioBot
 				return; // OPtionally print help
 			else if (args.Length >= 1)
 			{
+				#region switch local variables
+				uint id;
+				int amount;
+				DateTime tillTime;
+				#endregion
+
 				switch (args[0])
 				{
+				case "from": // <user> <last x>
+					break;
+
 				case "help":
 					break;
 
+				#region id
+				case "id": // [id]
+					if (args.Length >= 2 && uint.TryParse(args[1], out id))
+					{
+						var ale = HistoryManager.GetEntryById(id);
+						if (ale != null)
+						{
+							string resultStr = HistoryManager.Formatter.ProcessQuery(ale);
+							session.Write(resultStr);
+						}
+						else
+						{
+							session.Write("Could not find track with this id");
+						}
+					}
+					else
+					{
+						session.Write("Missing or invalid track Id.");
+					}
+					break;
+				#endregion
+
+				#region last
+				case "last": // [(x entries:] -> default to 1
+					if (args.Length >= 2 && int.TryParse(args[1], out amount))
+					{
+						var query = new SeachQuery { MaxResults = amount };
+						string resultStr = HistoryManager.SearchParsed(query);
+						session.Write(resultStr);
+					}
+					else
+					{
+						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
+						if (ale != null)
+						{
+							GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+							RestoreAndPlay(ale, new PlayData(session, client, null, false));
+						}
+					}
+					break;
+				#endregion
+
 				#region play
 				case "play": // [id]
-					int id;
-					if (args.Length >= 2 && int.TryParse(args[1], out id))
+					if (args.Length >= 2 && uint.TryParse(args[1], out id))
 					{
 						var ale = HistoryManager.GetEntryById(id);
 						if (ale != null)
@@ -440,30 +503,8 @@ namespace TS3AudioBot
 					break;
 				#endregion
 
-				#region last
-				case "last": // [(x entries:] -> default to 1
-					int amount;
-					if (args.Length >= 2 && int.TryParse(args[1], out amount))
-					{
-						var query = new SeachQuery { MaxResults = amount };
-						string resultStr = HistoryManager.SearchParsed(query);
-						session.Write(resultStr);
-					}
-					else
-					{
-						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
-						if (ale != null)
-						{
-							GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
-							RestoreAndPlay(ale, new PlayData(session, client, null, false));
-						}
-					}
-					break;
-				#endregion
-
 				#region till
 				case "till": // [time]
-					DateTime tillTime;
 					if (args.Length >= 2)
 					{
 						switch (args[1].ToLower())
@@ -514,47 +555,12 @@ namespace TS3AudioBot
 				#endregion
 
 				case "where":
-
-
 					break;
-				case "from": // <user> <last x>
 
-
-					break;
 				default:
 					break;
 				}
 			}
-			return;
-			try
-			{
-				var sQuery = new SeachQuery();
-
-				for (int i = 0; i < args.Length; i++)
-				{
-					if (args[i].StartsWith("title:"))
-						sQuery.TitlePart = args[i].Substring(6);
-					else if (args[i].StartsWith("user:"))
-						sQuery.UserId = int.Parse(args[i].Substring(5));
-					else if (args[i].StartsWith("last:"))
-						sQuery.LastInvokedAfter = DateTime.Parse(args[i].Substring(5));
-					else if (args[i].StartsWith("max:"))
-						sQuery.MaxResults = int.Parse(args[i].Substring(4));
-				}
-				var sw = new System.Diagnostics.Stopwatch();
-				sw.Start();
-				var results = HistoryManager.Search(sQuery);
-				sw.Stop();
-
-				StringBuilder strb = new StringBuilder();
-				strb.Append("Look what I found in ").Append(sw.ElapsedMilliseconds).AppendLine("ms :");
-				foreach (var result in results)
-				{
-					strb.AppendLine(result.ToString());
-				}
-				session.Write(strb.ToString());
-			}
-			catch { }
 		}
 
 		private async void CommandKickme(BotSession session, TextMessage textMessage, string parameter)
@@ -593,9 +599,9 @@ namespace TS3AudioBot
 			AudioFramework.Next();
 		}
 
-		private async void CommandPM(BotSession session, TextMessage textMessage)
+		private void CommandPM(BotSession session, TextMessage textMessage)
 		{
-			BotSession ownSession = await SessionManager.CreateSession(this, textMessage.InvokerId);
+			BotSession ownSession = SessionManager.CreateSession(this, textMessage.InvokerId);
 			ownSession.Write("Hi " + textMessage.InvokerName);
 		}
 
@@ -610,7 +616,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void CommandPrevious(BotSession session, string parameter)
+		private void CommandPrevious(BotSession session)
 		{
 			AudioFramework.Previous();
 		}
@@ -724,7 +730,7 @@ namespace TS3AudioBot
 			LoadAndPlay(soundcloudFactory, new PlayData(session, client, parameter, false));
 		}
 
-		private void CommandStop(BotSession session, string parameter)
+		private void CommandStop(BotSession session)
 		{
 			AudioFramework.Stop();
 		}
