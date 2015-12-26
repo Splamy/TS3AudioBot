@@ -185,7 +185,6 @@ namespace TS3AudioBot
 			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
 				.HelpData("Automatically tries to decide whether the link is a special ressource (like youtube) or a direct ressource (like ./hello.mp3) and starts it", "<link>").Finish();
 			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private).HelpData("Plays the previous song in the playlist.").Finish();
-			builder.New("queuefix").Action(CommandQueuefix).Permission(CommandRights.Admin).HelpData("Flushes the message queue in case of deadlocks.").Finish();
 			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin).HelpData("Closes the TS3AudioBot application.").Finish();
 			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public).HelpData("Enable to hide the songnames and let your friends guess the title.", "(on|off)").Finish();
 			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private).HelpData("Sets whether or not to loop a single song.", "(on|off)").Finish();
@@ -619,13 +618,6 @@ namespace TS3AudioBot
 		private void CommandPrevious(BotSession session)
 		{
 			AudioFramework.Previous();
-		}
-
-		private void CommandQueuefix(BotSession session)
-		{
-			var qc = QueryConnection as QueryConnection;
-			if (qc != null)
-				qc.QueueFix();
 		}
 
 		private void CommandQuit(BotSession session)

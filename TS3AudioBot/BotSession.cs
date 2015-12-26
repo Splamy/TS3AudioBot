@@ -1,10 +1,8 @@
-﻿using System;
-using TeamSpeak3QueryApi.Net;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using TeamSpeak3QueryApi.Net;
 	using TeamSpeak3QueryApi.Net.Specialized.Responses;
-	using Response = Func<BotSession, TeamSpeak3QueryApi.Net.Specialized.Notifications.TextMessage, bool, bool>;
+	using Response = System.Func<BotSession, TeamSpeak3QueryApi.Net.Specialized.Notifications.TextMessage, bool, bool>;
 
 	abstract class BotSession
 	{

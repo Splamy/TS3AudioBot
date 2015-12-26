@@ -7,6 +7,7 @@ using TeamSpeak3QueryApi.Net;
 using TeamSpeak3QueryApi.Net.Specialized;
 using TeamSpeak3QueryApi.Net.Specialized.Notifications;
 using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {
@@ -26,18 +27,11 @@ namespace TS3AudioBot
 		private Task keepAliveTask;
 		private CancellationTokenSource keepAliveTokenSource;
 		private CancellationToken keepAliveToken;
-
-		private Task queueProcessor;
-		private Queue<Func<Task>> workQueue;
-		private bool queueDone = false;
-
+		
 		public TeamSpeakClient TSClient { get; private set; }
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
-			queueProcessor = null;
-			workQueue = new Queue<Func<Task>>();
-
 			clientDbNames = new Dictionary<ulong, string>();
 
 			connectionData = qcd;
@@ -128,84 +122,14 @@ namespace TS3AudioBot
 
 		public void SendMessage(string message, GetClientsInfo client)
 		{
-			QueueTask(() => TSClient.SendMessage(message, client));
+			Sync.Run(() => TSClient.SendMessage(message, client));
 		}
 
 		public void SendGlobalMessage(string message)
 		{
-			QueueTask(() => TSClient.SendGlobalMessage(message));
+			Sync.Run(() => TSClient.SendGlobalMessage(message));
 		}
-
-		// SMART QUEUE ////////////////////
-
-		public void QueueFix()
-		{
-			if (queueProcessor == null) return;
-			bool taken = false;
-			for (int i = 0; i < 100 && !taken; i++)
-			{
-				Monitor.TryEnter(workQueue, ref taken);
-				if (taken)
-				{
-					workQueue.Clear();
-					try { queueProcessor.Dispose(); }
-					catch { }
-					queueProcessor = null;
-					queueDone = false;
-				}
-				else Thread.Sleep(1);
-				if (taken) Monitor.Exit(workQueue);
-			}
-		}
-
-		private async void DoQueueWork()
-		{
-			while (true)
-			{
-				Func<Task> workTask;
-				lock (workQueue)
-				{
-					if (workQueue.Count == 0)
-					{
-						queueDone = true;
-						return;
-					}
-					else
-					{
-						workTask = workQueue.Dequeue();
-					}
-				}
-				await workTask.Invoke();
-			}
-		}
-
-		private void QueueTask(Func<Task> work)
-		{
-			if (queueProcessor == null)
-				EnqueInternal(work);
-			else
-			{
-				lock (workQueue)
-				{
-					if (queueDone)
-						EnqueInternal(work);
-					else
-						workQueue.Enqueue(work);
-				}
-			}
-		}
-
-		/// <summary>Do NOT call this method directly.
-		/// Use QueueTask(Func<Task>) instead.</summary>
-		private void EnqueInternal(Func<Task> work)
-		{
-			workQueue.Enqueue(work);
-			queueDone = false;
-			queueProcessor = Task.Run((Action)DoQueueWork);
-		}
-
-		///////////////////////////////////
-
+		
 		public async Task<GetClientsInfo> GetClientById(int id)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientById called");
