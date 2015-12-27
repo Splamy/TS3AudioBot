@@ -2,7 +2,6 @@
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using NUnit.Framework;
-using System;
 using TS3AudioBot;
 
 namespace TS3ABotUnitTests

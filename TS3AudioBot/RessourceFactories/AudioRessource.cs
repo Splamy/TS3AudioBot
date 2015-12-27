@@ -1,5 +1,4 @@
-﻿using System;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+﻿using TeamSpeak3QueryApi.Net.Specialized.Responses;
 
 namespace TS3AudioBot.RessourceFactories
 {
