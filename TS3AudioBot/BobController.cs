@@ -214,13 +214,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async void AwaitBobConnect(object sender, ClientEnterView e)
+		private void AwaitBobConnect(object sender, ClientEnterView e)
 		{
 			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
 			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = await QueryConnection.GetClientById(e.Id);
+				bobClient = QueryConnection.GetClientById(e.Id);
 				QueryConnection.OnClientConnect -= AwaitBobConnect;
 				isRunning = true;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");

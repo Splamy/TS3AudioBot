@@ -20,7 +20,7 @@ namespace TS3AudioBot
 		{
 			if (ExistsSession(invokerId))
 				return GetSession(MessageTarget.Private, invokerId);
-			GetClientsInfo client = bot.QueryConnection.GetClientByIdBuffer(invokerId);
+			GetClientsInfo client = bot.QueryConnection.GetClientById(invokerId);
 			var newSession = new PrivateSession(bot, client);
 			openSessions.Add(newSession);
 			return newSession;

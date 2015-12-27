@@ -241,7 +241,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public async void TextCallback(object sender, TextMessage textMessage)
+		public void TextCallback(object sender, TextMessage textMessage)
 		{
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
@@ -249,7 +249,7 @@ namespace TS3AudioBot
 				return;
 			BobController.HasUpdate();
 
-			await QueryConnection.RefreshClientBuffer(true);
+			QueryConnection.RefreshClientBuffer(true);
 
 			BotSession session = SessionManager.GetSession(textMessage.TargetMode, textMessage.InvokerId);
 			if (textMessage.TargetMode == MessageTarget.Private && session == SessionManager.DefaultSession)
@@ -258,12 +258,13 @@ namespace TS3AudioBot
 				session = SessionManager.CreateSession(this, textMessage.InvokerId);
 			}
 
-			var isAdmin = AsyncLazy<bool>.CreateAsyncLazy(HasInvokerAdminRights, textMessage);
+			var isAdmin = new Lazy<bool>(() => HasInvokerAdminRights(textMessage));
+			//var isAdmin = AsyncLazy<bool>.CreateAsyncLazy(HasInvokerAdminRights, textMessage);
 
 			// check if the user has an open request
 			if (session.ResponseProcessor != null)
 			{
-				if (session.ResponseProcessor(session, textMessage, session.AdminResponse && await isAdmin.GetValue()))
+				if (session.ResponseProcessor(session, textMessage, session.AdminResponse && isAdmin.Value))
 				{
 					session.ClearResponse();
 					return;
@@ -299,7 +300,7 @@ namespace TS3AudioBot
 				allowed = true;
 				break;
 			}
-			if (!allowed && !await isAdmin.GetValue())
+			if (!allowed && !isAdmin.Value)
 			{
 				session.Write(reason);
 				return;
@@ -356,13 +357,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async Task<bool> HasInvokerAdminRights(InvokerInformation textMessage)
+		private bool HasInvokerAdminRights(InvokerInformation textMessage)
 		{
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
-			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 			if (client == null)
 				return false;
-			int[] clientSgIds = await QueryConnection.GetClientServerGroups(client);
+			int[] clientSgIds = QueryConnection.GetClientServerGroups(client);
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 
@@ -370,7 +371,7 @@ namespace TS3AudioBot
 
 		private void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 			LoadAndPlayAuto(new PlayData(session, client, parameter, true));
 		}
 
@@ -379,9 +380,9 @@ namespace TS3AudioBot
 			AudioFramework.Clear();
 		}
 
-		private async void CommandGetUserId(BotSession session, string parameter)
+		private void CommandGetUserId(BotSession session, string parameter)
 		{
-			GetClientsInfo client = await QueryConnection.GetClientByName(parameter);
+			GetClientsInfo client = QueryConnection.GetClientByName(parameter);
 			if (client == null)
 				session.Write("No user found...");
 			else
@@ -473,7 +474,7 @@ namespace TS3AudioBot
 						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
 						if (ale != null)
 						{
-							GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+							GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 							RestoreAndPlay(ale, new PlayData(session, client, null, false));
 						}
 					}
@@ -487,7 +488,7 @@ namespace TS3AudioBot
 						var ale = HistoryManager.GetEntryById(id);
 						if (ale != null)
 						{
-							GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+							GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 							RestoreAndPlay(ale, new PlayData(session, client, null, false));
 						}
 						else
@@ -579,7 +580,7 @@ namespace TS3AudioBot
 
 		private void CommandLink(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 			LoadAndPlay(mediaFactory, new PlayData(session, client, parameter, false));
 		}
 
@@ -610,7 +611,7 @@ namespace TS3AudioBot
 				AudioFramework.Play();
 			else
 			{
-				GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+				GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 				LoadAndPlayAuto(new PlayData(session, client, parameter, false));
 			}
 		}
@@ -718,7 +719,7 @@ namespace TS3AudioBot
 
 		private void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 			LoadAndPlay(soundcloudFactory, new PlayData(session, client, parameter, false));
 		}
 
@@ -777,7 +778,7 @@ namespace TS3AudioBot
 
 		private void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
 		{
-			GetClientsInfo client = QueryConnection.GetClientByIdBuffer(textMessage.InvokerId);
+			GetClientsInfo client = QueryConnection.GetClientById(textMessage.InvokerId);
 			LoadAndPlay(youtubeFactory, new PlayData(session, client, parameter, false));
 		}
 

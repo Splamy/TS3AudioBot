@@ -27,7 +27,7 @@ namespace TS3AudioBot
 		private Task keepAliveTask;
 		private CancellationTokenSource keepAliveTokenSource;
 		private CancellationToken keepAliveToken;
-		
+
 		public TeamSpeakClient TSClient { get; private set; }
 
 		public QueryConnection(QueryConnectionData qcd)
@@ -122,47 +122,39 @@ namespace TS3AudioBot
 
 		public void SendMessage(string message, GetClientsInfo client)
 		{
-			Sync.Run(() => TSClient.SendMessage(message, client));
+			Sync.Run(TSClient.SendMessage(message, client));
 		}
 
 		public void SendGlobalMessage(string message)
 		{
-			Sync.Run(() => TSClient.SendGlobalMessage(message));
+			Sync.Run(TSClient.SendGlobalMessage(message));
 		}
-		
-		public async Task<GetClientsInfo> GetClientById(int id)
+
+		public GetClientsInfo GetClientById(int id)
 		{
-			Log.Write(Log.Level.Debug, "QC GetClientById called");
-			await RefreshClientBuffer(false);
+			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(client => client.Id == id);
 		}
 
-		public GetClientsInfo GetClientByIdBuffer(int id)
+		public GetClientsInfo GetClientByName(string name)
 		{
-			if (clientbufferOutdated)
-				Log.Write(Log.Level.Warning, "QC clientbuffer was outdated");
-			return clientbuffer.FirstOrDefault(client => client.Id == id);
-		}
-
-		public async Task<GetClientsInfo> GetClientByName(string name)
-		{
-			await RefreshClientBuffer(false);
+			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(user => user.NickName == name);
 		}
 
-		public async Task RefreshClientBuffer(bool force)
+		public void RefreshClientBuffer(bool force)
 		{
 			if (clientbufferOutdated || force)
 			{
-				clientbuffer = await TSClient.GetClients();
+				clientbuffer = Sync.Run<IReadOnlyList<GetClientsInfo>>(TSClient.GetClients());
 				clientbufferOutdated = false;
 			}
 		}
 
-		public async Task<int[]> GetClientServerGroups(GetClientsInfo client)
+		public int[] GetClientServerGroups(GetClientsInfo client)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
+			QueryResponseDictionary[] response = Sync.Run(TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId)));
 			if (!response.Any() || !response.First().ContainsKey("sgid"))
 				return new int[0];
 			return response.Select<QueryResponseDictionary, int>(dict => (int)dict["sgid"]).ToArray();

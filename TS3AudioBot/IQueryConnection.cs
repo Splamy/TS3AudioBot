@@ -18,11 +18,10 @@ namespace TS3AudioBot
 		void SendMessage(string message, GetClientsInfo client);
 		void SendGlobalMessage(string message);
 
-		Task<GetClientsInfo> GetClientById(int id);
-		GetClientsInfo GetClientByIdBuffer(int id);
-		Task<GetClientsInfo> GetClientByName(string name);
-		Task RefreshClientBuffer(bool force);
-		Task<int[]> GetClientServerGroups(GetClientsInfo client);
+		GetClientsInfo GetClientById(int id);
+		GetClientsInfo GetClientByName(string name);
+		void RefreshClientBuffer(bool force);
+		int[] GetClientServerGroups(GetClientsInfo client);
 	}
 
 	public delegate void MessageReceivedDelegate(object sender, TextMessage e);
