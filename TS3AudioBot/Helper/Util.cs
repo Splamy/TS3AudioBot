@@ -8,16 +8,7 @@ namespace TS3AudioBot.Helper
 {
 	static class Util
 	{
-		private static readonly Dictionary<FilePath, string> filePathDict;
-
-		static Util()
-		{
-			filePathDict = new Dictionary<FilePath, string>();
-			filePathDict.Add(FilePath.VLC, IsLinux ? "vlc" : @"D:\VideoLAN\VLC\vlc.exe");
-			filePathDict.Add(FilePath.StartTsBot, IsLinux ? "StartTsBot.sh" : "ping");
-			filePathDict.Add(FilePath.ConfigFile, "configTS3AudioBot.cfg");
-			filePathDict.Add(FilePath.HistoryFile, "audioLog.sqlite");
-		}
+		static Util() { }
 
 		public static bool IsLinux
 		{
@@ -28,16 +19,12 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static bool Execute(FilePath filePath)
+		public static bool Execute(string path)
 		{
 			try
 			{
-				string name = GetFilePath(filePath);
 				Process tmproc = new Process();
-				ProcessStartInfo psi = new ProcessStartInfo()
-				{
-					FileName = name,
-				};
+				ProcessStartInfo psi = new ProcessStartInfo() { FileName = path, };
 				tmproc.StartInfo = psi;
 				tmproc.Start();
 				// Test if it was started successfully
@@ -46,29 +33,14 @@ namespace TS3AudioBot.Helper
 			}
 			catch (Win32Exception ex)
 			{
-				Log.Write(Log.Level.Error, "{0} couldn't be run/found ({1})", filePath, ex);
+				Log.Write(Log.Level.Error, "\"{0}\" couldn't be run/found ({1})", path, ex);
 				return false;
 			}
-		}
-
-		public static string GetFilePath(FilePath filePath)
-		{
-			if (filePathDict.ContainsKey(filePath))
-				return filePathDict[filePath];
-			throw new ApplicationException();
 		}
 
 		public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int amount)
 		{
 			return source.Skip(Math.Max(0, source.Count() - amount));
 		}
-	}
-
-	public enum FilePath
-	{
-		VLC,
-		StartTsBot,
-		ConfigFile,
-		HistoryFile,
 	}
 }

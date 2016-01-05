@@ -5,7 +5,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
+using TS3Query.Messages;
 using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.RessourceFactories

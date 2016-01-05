@@ -16,11 +16,11 @@ namespace TS3AudioBot
 		private IEnumerable<AudioLogEntry> lastResult;
 		public SmartHistoryFormatter Formatter { get; private set; }
 
-		public HistoryManager()
+		public HistoryManager(HistoryManagerData hmd)
 		{
 			Formatter = new SmartHistoryFormatter();
 			historyFile = new HistoryFile();
-			historyFile.LoadFile("history.axe");
+			historyFile.LoadFile(hmd.historyFile);
 		}
 
 		public void LogAudioRessource(AudioRessource ar)
@@ -439,5 +439,11 @@ namespace TS3AudioBot
 		{
 			return string.Format("[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, RessourceId);
 		}
+	}
+
+	public struct HistoryManagerData
+	{
+		[Info("the absolute or relative path to the history database file")]
+		public string historyFile;
 	}
 }

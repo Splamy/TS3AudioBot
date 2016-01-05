@@ -6,6 +6,8 @@ namespace TS3AudioBot
 	{
 		void Start();
 
+		//bool SupportsEndCallback { get; }
+
 		void AudioAdd(string url);
 		void AudioClear();
 		void AudioNext();

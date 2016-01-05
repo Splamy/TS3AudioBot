@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.IO;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
+using TS3Query.Messages;
 using TS3AudioBot.Helper.AudioTags;
 using TS3AudioBot.Helper;
 

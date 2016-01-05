@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3Query.Messages;
 using TS3AudioBot.RessourceFactories;
 using TS3AudioBot.Helper;
 
@@ -29,7 +28,7 @@ namespace TS3AudioBot
 		private bool isRunning;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
-		private GetClientsInfo bobClient;
+		private ClientData bobClient;
 
 		private Dictionary<int, SubscriptionData> channelSubscriptions;
 
@@ -126,7 +125,7 @@ namespace TS3AudioBot
 				QueryConnection.OnClientConnect += AwaitBobConnect;
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 
-				if (!Util.Execute(FilePath.StartTsBot))
+				if (!Util.Execute(data.startTSClient))
 				{
 					Log.Write(Log.Level.Debug, "BC could not start bob");
 					QueryConnection.OnClientConnect -= AwaitBobConnect;
@@ -199,7 +198,7 @@ namespace TS3AudioBot
 			SendMessage("whisper client remove " + userID);
 		}
 
-		private void RestoreSubscriptions(GetClientsInfo invokingUser)
+		private void RestoreSubscriptions(ClientData invokingUser)
 		{
 			WhisperChannelSubscribe(invokingUser.ChannelId, false);
 			foreach (var data in channelSubscriptions)
@@ -220,7 +219,7 @@ namespace TS3AudioBot
 			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = QueryConnection.GetClientById(e.Id);
+				bobClient = QueryConnection.GetClientById(e.ClientId);
 				QueryConnection.OnClientConnect -= AwaitBobConnect;
 				isRunning = true;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
@@ -291,7 +290,9 @@ namespace TS3AudioBot
 
 	public struct BobControllerData
 	{
-		[InfoAttribute("ServerGroupID of the ServerBob")]
+		[Info("ServerGroupID of the ServerBob")]
 		public int bobGroupId;
+		[Info("the path to a launch script or the teamspeak3 executable itself")]
+		public string startTSClient;
 	}
 }

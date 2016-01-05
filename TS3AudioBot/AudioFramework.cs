@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3Query.Messages;
 using TS3AudioBot.RessourceFactories;
 
 namespace TS3AudioBot
@@ -98,13 +98,8 @@ namespace TS3AudioBot
 		public AudioFramework(AudioFrameworkData afd)
 		{
 			audioFrameworkData = afd;
-			playerConnection = new VLCConnection();
+			playerConnection = new VLCConnection(afd.vlcLocation);
 			playerConnection.Start();
-		}
-
-		private void GetHistory(int index, int backcount)
-		{
-			// TODO
 		}
 
 		/// <summary>
@@ -146,7 +141,7 @@ namespace TS3AudioBot
 		/// </summary>
 		/// <param name="audioRessource">The audio ressource to start.</param>
 		/// <returns>True if the audio ressource started successfully, false otherwise.</returns>
-		public AudioResultCode StartRessource(AudioRessource audioRessource, GetClientsInfo invoker)
+		public AudioResultCode StartRessource(AudioRessource audioRessource, ClientData invoker)
 		{
 			if (audioRessource == null)
 			{
@@ -241,8 +236,10 @@ namespace TS3AudioBot
 	{
 		//[InfoAttribute("the absolute or relative path to the local music folder")]
 		//public string localAudioPath;
-		[InfoAttribute("the default volume a song should start with")]
+		[Info("the default volume a song should start with")]
 		public int defaultVolume;
+		[Info("the location of the vlc player (if the vlc backend is used)", "vlc")]
+		public string vlcLocation;
 	}
 
 	enum AudioType

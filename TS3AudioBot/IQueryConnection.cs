@@ -1,30 +1,25 @@
 ﻿using System;
-using System.Threading.Tasks;
-using TeamSpeak3QueryApi.Net.Specialized;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3Query;
+using TS3Query.Messages;
 
 namespace TS3AudioBot
 {
 	public interface IQueryConnection : IDisposable
 	{
-		event MessageReceivedDelegate OnMessageReceived;
-		event ClientEnterDelegate OnClientConnect;
-		event ClientQuitDelegate OnClientDisconnect;
+		event EventHandler<TextMessage> OnMessageReceived;
+		event EventHandler<ClientEnterView> OnClientConnect;
+		event EventHandler<ClientLeftView> OnClientDisconnect;
+		
+		void Connect();
 
-		TeamSpeakClient TSClient { get; }
-
-		Task Connect();
-		void SendMessage(string message, GetClientsInfo client);
+		void SendMessage(string message, ClientData client);
 		void SendGlobalMessage(string message);
+		void KickClientFromServer(int clientId);
+		void KickClientFromChannel(int clientId);
 
-		GetClientsInfo GetClientById(int id);
-		GetClientsInfo GetClientByName(string name);
+		ClientData GetClientById(int id);
+		ClientData GetClientByName(string name);
 		void RefreshClientBuffer(bool force);
-		int[] GetClientServerGroups(GetClientsInfo client);
+		int[] GetClientServerGroups(ClientData client);
 	}
-
-	public delegate void MessageReceivedDelegate(object sender, TextMessage e);
-	public delegate void ClientEnterDelegate(object sender, ClientEnterView e);
-	public delegate void ClientQuitDelegate(object sender, ClientLeftView e);
 }

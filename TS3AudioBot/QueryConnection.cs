@@ -3,22 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamSpeak3QueryApi.Net;
-using TeamSpeak3QueryApi.Net.Specialized;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3Query;
+using TS3Query.Messages;
 using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {
 	class QueryConnection : IQueryConnection
 	{
-		public event MessageReceivedDelegate OnMessageReceived;
-		public event ClientEnterDelegate OnClientConnect;
-		public event ClientQuitDelegate OnClientDisconnect;
+		public event EventHandler<TextMessage> OnMessageReceived
+		{ add { tsClient.OnTextMessageReceived += value; } remove { tsClient.OnTextMessageReceived -= value; } }
+		public event EventHandler<ClientEnterView> OnClientConnect
+		{ add { tsClient.OnClientEnterView += value; } remove { tsClient.OnClientEnterView -= value; } }
+		public event EventHandler<ClientLeftView> OnClientDisconnect
+		{ add { tsClient.OnClientLeftView += value; } remove { tsClient.OnClientLeftView -= value; } }
 
-		private bool connected = false;
-		private IReadOnlyList<GetClientsInfo> clientbuffer;
+		private IEnumerable<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
 		private IDictionary<ulong, string> clientDbNames;
 
@@ -28,61 +28,29 @@ namespace TS3AudioBot
 		private CancellationTokenSource keepAliveTokenSource;
 		private CancellationToken keepAliveToken;
 
-		public TeamSpeakClient TSClient { get; private set; }
+		public TS3QueryClient tsClient { get; private set; }
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
 			clientDbNames = new Dictionary<ulong, string>();
 
 			connectionData = qcd;
-			TSClient = new TeamSpeakClient(connectionData.host);
+			tsClient = new TS3QueryClient(EventDispatchType.Manual);
 		}
 
-		public async Task Connect()
+		public void Connect()
 		{
-			if (!connected)
+			if (!tsClient.IsConnected)
 			{
-				await TSClient.Connect();
-				await TSClient.Login(connectionData.user, connectionData.passwd);
-				await TSClient.UseServer(1);
-				if (!(await ChangeName("TS3AudioBot")))
-					Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!");
+				tsClient.Connect(connectionData.host);
+				tsClient.Login(connectionData.user, connectionData.passwd);
+				tsClient.UseServer(1);
+				try { tsClient.ChangeName("TS3AudioBot"); }
+				catch (QueryCommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
 
-				await TSClient.RegisterServerNotification();
-				await TSClient.RegisterTextPrivateNotification();
-				await TSClient.RegisterTextServerNotification();
-
-				TSClient.Subscribe<TextMessage>(data =>
-					{
-						Log.Write(Log.Level.Debug, "QC TextMessage event raised");
-						if (OnMessageReceived != null)
-						{
-							foreach (var textMessage in data)
-								OnMessageReceived(this, textMessage);
-						}
-					});
-				TSClient.Subscribe<ClientEnterView>(data =>
-					{
-						Log.Write(Log.Level.Debug, "QC ClientEnterView event raised");
-						clientbufferOutdated = true;
-						if (OnClientConnect != null)
-						{
-							foreach (var clientdata in data)
-								OnClientConnect(this, clientdata);
-						}
-					});
-				TSClient.Subscribe<ClientLeftView>(data =>
-				{
-					Log.Write(Log.Level.Debug, "QC ClientQuitView event raised");
-					clientbufferOutdated = true;
-					if (OnClientDisconnect != null)
-					{
-						foreach (var clientdata in data)
-							OnClientDisconnect(this, clientdata);
-					}
-				});
-
-				connected = true;
+				tsClient.RegisterNotification(MessageTarget.Server, -1);
+				tsClient.RegisterNotification(MessageTarget.Private, -1);
+				tsClient.RegisterNotification(RequestTarget.Server, -1);
 
 				keepAliveTokenSource = new CancellationTokenSource();
 				keepAliveToken = keepAliveTokenSource.Token;
@@ -96,7 +64,7 @@ namespace TS3AudioBot
 			{
 				while (!keepAliveToken.IsCancellationRequested)
 				{
-					await TSClient.WhoAmI();
+					tsClient.WhoAmI();
 					await Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken);
 				}
 			}
@@ -104,39 +72,29 @@ namespace TS3AudioBot
 			catch (AggregateException) { }
 		}
 
-		private async Task<bool> ChangeName(string newName)
-		{
-			try
-			{
-				await TSClient.Client.Send("clientupdate", new Parameter("client_nickname", newName));
-				return true;
-			}
-			catch (QueryException) { return false; }
-		}
-
 		private void Diconnect()
 		{
-			if (TSClient.Client.IsConnected)
-				TSClient.Client.Send("quit");
+			if (tsClient.IsConnected)
+				tsClient.Quit();
 		}
 
-		public void SendMessage(string message, GetClientsInfo client)
+
+		public void SendMessage(string message, ClientData client)
 		{
-			Sync.Run(TSClient.SendMessage(message, client));
+			tsClient.SendMessage(message, client);
 		}
 
-		public void SendGlobalMessage(string message)
-		{
-			Sync.Run(TSClient.SendGlobalMessage(message));
-		}
+		public void SendGlobalMessage(string message) => tsClient.SendGlobalMessage(message);
+		public void KickClientFromServer(int clientId) => tsClient.KickClientFromServer(new[] { clientId });
+		public void KickClientFromChannel(int clientId) => tsClient.KickClientFromChannel(new[] { clientId });
 
-		public GetClientsInfo GetClientById(int id)
+		public ClientData GetClientById(int id)
 		{
 			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(client => client.Id == id);
 		}
 
-		public GetClientsInfo GetClientByName(string name)
+		public ClientData GetClientByName(string name)
 		{
 			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(user => user.NickName == name);
@@ -146,26 +104,27 @@ namespace TS3AudioBot
 		{
 			if (clientbufferOutdated || force)
 			{
-				clientbuffer = Sync.Run<IReadOnlyList<GetClientsInfo>>(TSClient.GetClients());
+				clientbuffer = tsClient.ClientList();
 				clientbufferOutdated = false;
 			}
 		}
 
-		public int[] GetClientServerGroups(GetClientsInfo client)
+		public int[] GetClientServerGroups(ClientData client)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			QueryResponseDictionary[] response = Sync.Run(TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId)));
+			var response = tsClient.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
 			if (!response.Any() || !response.First().ContainsKey("sgid"))
 				return new int[0];
-			return response.Select<QueryResponseDictionary, int>(dict => (int)dict["sgid"]).ToArray();
+			// TODO check/redo
+			return response.Select(dict => int.Parse(dict["sgid"])).ToArray();
 		}
 
-		public async Task<string> GetNameByDbId(ulong clientDbId)
+		public string GetNameByDbId(ulong clientDbId)
 		{
 			string name;
 			if (!clientDbNames.TryGetValue(clientDbId, out name))
 			{
-				QueryResponseDictionary[] response = await TSClient.Client.Send("clientdbinfo", new Parameter("cldbid", (ParameterValueEx)clientDbId));
+				var response = tsClient.Send("clientdbinfo", new Parameter("cldbid", clientDbId));
 				if (!response.Any() || !response.First().ContainsKey("client_nickname"))
 				{
 					name = response.First()["client_nickname"] as string;
@@ -183,49 +142,47 @@ namespace TS3AudioBot
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing QueryConnection...");
-			if (connected)
+			if (tsClient != null)
 			{
-				connected = false;
-				Log.Write(Log.Level.Debug, "QC disconnecting...");
-				Diconnect();
-				Log.Write(Log.Level.Debug, "QC disconnected");
-				if (keepAliveToken.CanBeCanceled)
+				if (tsClient.IsConnected)
 				{
-					keepAliveTokenSource.Cancel();
-					Log.Write(Log.Level.Debug, "QC kAT cancel raised");
+					Diconnect();
+					Log.Write(Log.Level.Debug, "QC disconnected");
+					if (keepAliveToken.CanBeCanceled)
+					{
+						keepAliveTokenSource.Cancel();
+						Log.Write(Log.Level.Debug, "QC kAT cancel raised");
+					}
+					if (!keepAliveTask.IsCompleted)
+						keepAliveTask.Wait(500);
+					Log.Write(Log.Level.Debug, "QC kAT ended");
+					if (keepAliveTokenSource != null)
+					{
+						keepAliveTokenSource.Dispose();
+						keepAliveTokenSource = null;
+					}
 				}
-				if (!keepAliveTask.IsCompleted)
-					keepAliveTask.Wait();
-				Log.Write(Log.Level.Debug, "QC kAT ended");
-				if (keepAliveTokenSource != null)
-				{
-					keepAliveTokenSource.Dispose();
-					keepAliveTokenSource = null;
-				}
+
+				tsClient.Dispose();
+				tsClient = null;
 			}
 		}
 
-		class ParameterValueEx : ParameterValue
+		enum EventType
 		{
-			public ParameterValueEx(ulong value)
-			{
-				Value = value.ToString();
-			}
-
-			public static implicit operator ParameterValueEx(ulong fromParameter)
-			{
-				return new ParameterValueEx(fromParameter);
-			}
+			TextMessage,
+			ClientEnter,
+			ClientLeft,
 		}
 	}
 
 	public struct QueryConnectionData
 	{
-		[InfoAttribute("the address of the TeamSpeak3 Query")]
+		[Info("the address of the TeamSpeak3 Query")]
 		public string host;
-		[InfoAttribute("the user for the TeamSpeak3 Query")]
+		[Info("the user for the TeamSpeak3 Query")]
 		public string user;
-		[InfoAttribute("the password for the TeamSpeak3 Query")]
+		[Info("the password for the TeamSpeak3 Query")]
 		public string passwd;
 	}
 }

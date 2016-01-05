@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-using TeamSpeak3QueryApi.Net.Specialized;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3Query;
+using TS3Query.Messages;
 
 namespace TS3AudioBot
 {
@@ -20,7 +20,7 @@ namespace TS3AudioBot
 		{
 			if (ExistsSession(invokerId))
 				return GetSession(MessageTarget.Private, invokerId);
-			GetClientsInfo client = bot.QueryConnection.GetClientById(invokerId);
+			ClientData client = bot.QueryConnection.GetClientById(invokerId);
 			var newSession = new PrivateSession(bot, client);
 			openSessions.Add(newSession);
 			return newSession;
