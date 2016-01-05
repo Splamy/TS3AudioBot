@@ -1,27 +1,27 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
-using TS3Query;
-using TS3Query.Messages;
-
-using TS3AudioBot.Helper;
-using TS3AudioBot.Algorithm;
-using TS3AudioBot.RessourceFactories;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
+	using System.Linq;
+	using System.Text;
+	using System.Text.RegularExpressions;
+	using System.Threading.Tasks;
+
+	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.Helper;
+	using TS3AudioBot.RessourceFactories;
+
+	using TS3Query;
+	using TS3Query.Messages;
+
 	// Todo:
 	// - make the bot more pluing-able like (for e.g. history as plugin)
 	//	    method for registering commands
 	//	    method for registering events
 	// - implement bob backend
-	// - Implement queryConnection
 	// - implement history missing features
+	// - implement command stacking
 	public sealed class MainBot : IDisposable
 	{
 		static void Main(string[] args)
@@ -46,7 +46,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		private bool run;
 		private bool consoleOutput;
 		private bool writeLog;
 		private MainBotData mainBotData;
@@ -69,7 +68,6 @@ namespace TS3AudioBot
 
 		public MainBot()
 		{
-			run = true;
 			consoleOutput = false;
 			writeLog = false;
 			commandDict = new Trie<BotCommand>();
@@ -209,28 +207,10 @@ namespace TS3AudioBot
 			qc.tsClient.EventDispatcher.EnterEventLoop();
 		}
 
-		private void ReadConsole()
+		private string ReadConsole()
 		{
-			string input;
-			try
-			{
-				input = Console.ReadLine();
-			}
-			catch (IOException)
-			{
-				Task.Delay(1000).Wait();
-				return;
-			}
-			if (input == null)
-			{
-				Task.Delay(1000).Wait();
-				return;
-			}
-			if (input == "quit")
-			{
-				run = false;
-				return;
-			}
+			try { return Console.ReadLine(); }
+			catch (IOException) { return null; }
 		}
 
 		public void TextCallback(object sender, TextMessage textMessage)
@@ -872,7 +852,6 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
-			run = false;
 			if (AudioFramework != null)
 			{
 				AudioFramework.Dispose();
