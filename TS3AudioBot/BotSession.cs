@@ -1,10 +1,8 @@
-﻿using System;
-using TeamSpeak3QueryApi.Net;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
-	using TeamSpeak3QueryApi.Net.Specialized.Responses;
-	using Response = Func<BotSession, TeamSpeak3QueryApi.Net.Specialized.Notifications.TextMessage, bool, bool>;
+	using TS3Query;
+	using TS3Query.Messages;
+	using Response = System.Func<BotSession, TS3Query.Messages.TextMessage, bool, bool>;
 
 	abstract class BotSession
 	{
@@ -52,7 +50,7 @@ namespace TS3AudioBot
 			{
 				Bot.QueryConnection.SendGlobalMessage(message);
 			}
-			catch (QueryException ex)
+			catch (QueryCommandException ex)
 			{
 				Log.Write(Log.Level.Error, "Could not write public message ({0})", ex);
 			}
@@ -65,7 +63,7 @@ namespace TS3AudioBot
 
 	sealed class PrivateSession : BotSession
 	{
-		public GetClientsInfo Client { get; private set; }
+		public ClientData Client { get; private set; }
 
 		public override bool IsPrivate { get { return true; } }
 
@@ -74,7 +72,7 @@ namespace TS3AudioBot
 			Bot.QueryConnection.SendMessage(message, Client);
 		}
 
-		public PrivateSession(MainBot bot, GetClientsInfo client)
+		public PrivateSession(MainBot bot, ClientData client)
 			: base(bot)
 		{
 			Client = client;

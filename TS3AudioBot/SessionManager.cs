@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-using TeamSpeak3QueryApi.Net.Specialized;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3Query;
+using TS3Query.Messages;
 
 namespace TS3AudioBot
 {
@@ -17,11 +16,11 @@ namespace TS3AudioBot
 			openSessions = new List<PrivateSession>();
 		}
 
-		public async Task<BotSession> CreateSession(MainBot bot, int invokerId)
+		public BotSession CreateSession(MainBot bot, int invokerId)
 		{
 			if (ExistsSession(invokerId))
 				return GetSession(MessageTarget.Private, invokerId);
-			GetClientsInfo client = await bot.QueryConnection.GetClientById(invokerId);
+			ClientData client = bot.QueryConnection.GetClientById(invokerId);
 			var newSession = new PrivateSession(bot, client);
 			openSessions.Add(newSession);
 			return newSession;

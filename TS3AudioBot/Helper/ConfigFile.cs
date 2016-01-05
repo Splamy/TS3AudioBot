@@ -51,7 +51,7 @@ namespace TS3AudioBot.Helper
 			{
 				FileStream fs = File.Create(pPath);
 				fs.Close();
-				return new ConfigFile 
+				return new ConfigFile
 				{
 					path = pPath,
 				};
@@ -167,7 +167,7 @@ namespace TS3AudioBot.Helper
 			{
 				WriteKey(entryName, (string)value);
 			}
-			if (IsNumeric(tType) || tType == typeof(char) || tType == typeof(bool))
+			if (tType == typeof(bool) || IsNumeric(tType) || tType == typeof(char))
 			{
 				WriteKey(entryName, value.ToString());
 			}

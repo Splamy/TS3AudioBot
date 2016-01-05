@@ -12,6 +12,7 @@ namespace TS3AudioBot
 	class VLCConnection : IPlayerConnection
 	{
 		private string botLocation;
+		private string vlcLocation;
 		private bool connected;
 		private string password;
 		private Process vlcproc = null;
@@ -27,9 +28,10 @@ namespace TS3AudioBot
 		private int getLength = -1;
 		private int getPosition = -1;
 
-		public VLCConnection()
+		public VLCConnection(string vlcLocation)
 		{
 			connected = false;
+			this.vlcLocation = vlcLocation;
 			botLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 		}
 
@@ -210,6 +212,7 @@ namespace TS3AudioBot
 					}
 				}
 				catch (IOException ex) { Log.Write(Log.Level.Warning, "Disconnected ({0})...", ex.Message); }
+				catch (ObjectDisposedException) { }
 			});
 		}
 
@@ -252,13 +255,10 @@ namespace TS3AudioBot
 				password = generatePassword();
 				ProcessStartInfo psi = new ProcessStartInfo()
 				{
-					FileName = Helper.Util.GetFilePath(Helper.FilePath.VLC),
+					FileName = vlcLocation,
 					Arguments = "--intf telnet"
 								+ " --telnet-password " + password
-								+ " --vout none"
-						//+ " --rtsp-host 127.0.0.1:5554"
-						//+ " --play-and-exit \"" + param + "\""
-						,
+								+ " --vout none",
 					WorkingDirectory = botLocation,
 				};
 				tmproc.StartInfo = psi;
@@ -291,8 +291,13 @@ namespace TS3AudioBot
 			if (netStream != null)
 			{
 				netStream.Dispose();
-				netStream = null;
 			}
+			if (textCallbackTask != null)
+			{
+				textCallbackTask.Wait();
+				textCallbackTask = null;
+			}
+			netStream = null;
 			if (vlcInterface != null)
 			{
 				if (vlcInterface.Connected)
@@ -304,11 +309,6 @@ namespace TS3AudioBot
 				if (!vlcproc.HasExited)
 					vlcproc.Kill();
 				vlcproc = null;
-			}
-			if (textCallbackTask != null)
-			{
-				textCallbackTask.Wait();
-				textCallbackTask = null;
 			}
 		}
 

@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+using TS3Query.Messages;
 using TS3AudioBot.RessourceFactories;
 using TS3AudioBot.Helper;
 
@@ -25,22 +24,20 @@ namespace TS3AudioBot
 		private CancellationToken cancellationToken;
 		private DateTime lastUpdate = DateTime.Now;
 
+		private bool sending = false;
+		private bool isRunning;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
-		private GetClientsInfo bobClient;
+		private ClientData bobClient;
 
 		private Dictionary<int, SubscriptionData> channelSubscriptions;
 
-		public QueryConnection QueryConnection { get; set; }
+		public IQueryConnection QueryConnection { get; set; }
 
-		public bool IsRunning { get; private set; }
-
-		public bool IsTimingOut
+		private bool IsTimingOut
 		{
 			get { return timerTask != null && !timerTask.IsCompleted; }
 		}
-
-		private bool sending = false;
 
 		public bool Sending
 		{
@@ -54,7 +51,7 @@ namespace TS3AudioBot
 
 		public BobController(BobControllerData data)
 		{
-			IsRunning = false;
+			isRunning = false;
 			this.data = data;
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
@@ -64,7 +61,7 @@ namespace TS3AudioBot
 		{
 			lock (lockObject)
 			{
-				if (IsRunning)
+				if (isRunning)
 				{
 					SendMessageRaw(message);
 				}
@@ -91,7 +88,7 @@ namespace TS3AudioBot
 
 		private void SendQueue()
 		{
-			if (!IsRunning)
+			if (!isRunning)
 				throw new InvalidOperationException("The bob must run to send the commandQueue");
 
 			while (commandQueue.Count > 0)
@@ -121,14 +118,14 @@ namespace TS3AudioBot
 
 		public void Start()
 		{
-			if (!IsRunning)
+			if (!isRunning)
 			{
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
 				QueryConnection.OnClientConnect += AwaitBobConnect;
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 
-				if (!Util.Execute(FilePath.StartTsBot))
+				if (!Util.Execute(data.startTSClient))
 				{
 					Log.Write(Log.Level.Debug, "BC could not start bob");
 					QueryConnection.OnClientConnect -= AwaitBobConnect;
@@ -143,7 +140,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Info, "BC Stopping Bob");
 			SendMessage("exit");
-			IsRunning = false;
+			isRunning = false;
 			commandQueue.Clear();
 			Log.Write(Log.Level.Debug, "BC bob is now officially dead");
 			if (IsTimingOut)
@@ -201,7 +198,7 @@ namespace TS3AudioBot
 			SendMessage("whisper client remove " + userID);
 		}
 
-		private void RestoreSubscriptions(GetClientsInfo invokingUser)
+		private void RestoreSubscriptions(ClientData invokingUser)
 		{
 			WhisperChannelSubscribe(invokingUser.ChannelId, false);
 			foreach (var data in channelSubscriptions)
@@ -216,24 +213,24 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async void AwaitBobConnect(object sender, ClientEnterView e)
+		private void AwaitBobConnect(object sender, ClientEnterView e)
 		{
 			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
 			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = await QueryConnection.GetClientById(e.Id);
+				bobClient = QueryConnection.GetClientById(e.ClientId);
 				QueryConnection.OnClientConnect -= AwaitBobConnect;
-				IsRunning = true;
+				isRunning = true;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
 				SendQueue();
 			}
 		}
 
-		public async Task StartEndTimer()
+		private async Task StartEndTimer()
 		{
 			HasUpdate();
-			if (IsRunning)
+			if (isRunning)
 			{
 				if (IsTimingOut)
 				{
@@ -293,7 +290,9 @@ namespace TS3AudioBot
 
 	public struct BobControllerData
 	{
-		[InfoAttribute("ServerGroupID of the ServerBob")]
+		[Info("ServerGroupID of the ServerBob")]
 		public int bobGroupId;
+		[Info("the path to a launch script or the teamspeak3 executable itself")]
+		public string startTSClient;
 	}
 }

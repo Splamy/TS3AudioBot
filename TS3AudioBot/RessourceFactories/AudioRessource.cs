@@ -1,5 +1,4 @@
-﻿using System;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
+﻿using TS3Query.Messages;
 
 namespace TS3AudioBot.RessourceFactories
 {
@@ -11,7 +10,7 @@ namespace TS3AudioBot.RessourceFactories
 
 		public int Volume { get; set; }
 		public bool Enqueue { get; set; }
-		public GetClientsInfo InvokingUser { get; set; }
+		public ClientData InvokingUser { get; set; }
 
 		protected AudioRessource(string ressourceId, string ressourceTitle)
 		{

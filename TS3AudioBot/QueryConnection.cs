@@ -1,27 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using TeamSpeak3QueryApi.Net;
-using TeamSpeak3QueryApi.Net.Specialized;
-using TeamSpeak3QueryApi.Net.Specialized.Notifications;
-using TeamSpeak3QueryApi.Net.Specialized.Responses;
 using System.Threading;
+using System.Threading.Tasks;
+using TS3Query;
+using TS3Query.Messages;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {
-	class QueryConnection : IDisposable
+	class QueryConnection : IQueryConnection
 	{
-		public delegate void MessageReceivedDelegate(object sender, TextMessage e);
-		public event MessageReceivedDelegate OnMessageReceived;
-		public delegate void ClientEnterDelegate(object sender, ClientEnterView e);
-		public event ClientEnterDelegate OnClientConnect;
-		public delegate void ClientQuitDelegate(object sender, ClientLeftView e);
-		public event ClientQuitDelegate OnClientDisconnect;
+		public event EventHandler<TextMessage> OnMessageReceived
+		{ add { tsClient.OnTextMessageReceived += value; } remove { tsClient.OnTextMessageReceived -= value; } }
 
-		private bool connected = false;
-		private IReadOnlyList<GetClientsInfo> clientbuffer;
-		private bool clientbufferoutdated = true;
+		public event EventHandler<ClientEnterView> OnClientConnect;
+		private void ExtendedClientEnterView(object sender, ClientEnterView eventArgs)
+		{ clientbufferOutdated = true; OnClientConnect?.Invoke(sender, eventArgs); }
+
+		public event EventHandler<ClientLeftView> OnClientDisconnect;
+		private void ExtendedClientLeftView(object sender, ClientLeftView eventArgs)
+		{ clientbufferOutdated = true; OnClientDisconnect?.Invoke(sender, eventArgs); }
+
+		private IEnumerable<ClientData> clientbuffer;
+		private bool clientbufferOutdated = true;
+		private IDictionary<ulong, string> clientDbNames;
 
 		private QueryConnectionData connectionData;
 		private const int PingEverySeconds = 60;
@@ -29,67 +32,32 @@ namespace TS3AudioBot
 		private CancellationTokenSource keepAliveTokenSource;
 		private CancellationToken keepAliveToken;
 
-		private Task queueProcessor;
-		private Queue<Func<Task>> workQueue;
-		private bool queueDone = false;
-
-		public TeamSpeakClient TSClient { get; private set; }
+		public TS3QueryClient tsClient { get; private set; }
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
-			queueProcessor = null;
-			workQueue = new Queue<Func<Task>>();
+			clientDbNames = new Dictionary<ulong, string>();
 
 			connectionData = qcd;
-			TSClient = new TeamSpeakClient(connectionData.host);
+			tsClient = new TS3QueryClient(EventDispatchType.Manual);
 		}
 
-		public async Task Connect()
+		public void Connect()
 		{
-			if (!connected)
+			if (!tsClient.IsConnected)
 			{
-				await TSClient.Connect();
-				await TSClient.Login(connectionData.user, connectionData.passwd);
-				await TSClient.UseServer(1);
-				if (!(await ChangeName("TS3AudioBot")))
-					Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!");
+				tsClient.Connect(connectionData.host);
+				tsClient.Login(connectionData.user, connectionData.passwd);
+				tsClient.UseServer(1);
+				try { tsClient.ChangeName("TS3AudioBot"); }
+				catch (QueryCommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
 
-				await TSClient.RegisterServerNotification();
-				await TSClient.RegisterTextPrivateNotification();
-				await TSClient.RegisterTextServerNotification();
+				tsClient.RegisterNotification(MessageTarget.Server, -1);
+				tsClient.RegisterNotification(MessageTarget.Private, -1);
+				tsClient.RegisterNotification(RequestTarget.Server, -1);
 
-				TSClient.Subscribe<TextMessage>(data =>
-					{
-						Log.Write(Log.Level.Debug, "QC TextMessage event raised");
-						if (OnMessageReceived != null)
-						{
-							foreach (var textMessage in data)
-								foreach(MessageReceivedDelegate tmSubscriber in OnMessageReceived.GetInvocationList())
-									QueueTask(() => Task.Run(() => tmSubscriber(this, textMessage)));
-						}
-					});
-				TSClient.Subscribe<ClientEnterView>(data =>
-					{
-						Log.Write(Log.Level.Debug, "QC ClientEnterView event raised");
-						clientbufferoutdated = true;
-						if (OnClientConnect != null)
-						{
-							foreach (var clientdata in data)
-								OnClientConnect(this, clientdata);
-						}
-					});
-				TSClient.Subscribe<ClientLeftView>(data =>
-				{
-					Log.Write(Log.Level.Debug, "QC ClientQuitView event raised");
-					clientbufferoutdated = true;
-					if (OnClientDisconnect != null)
-					{
-						foreach (var clientdata in data)
-							OnClientDisconnect(this, clientdata);
-					}
-				});
-
-				connected = true;
+				tsClient.OnClientLeftView += ExtendedClientLeftView;
+				tsClient.OnClientEnterView += ExtendedClientEnterView;
 
 				keepAliveTokenSource = new CancellationTokenSource();
 				keepAliveToken = keepAliveTokenSource.Token;
@@ -103,7 +71,7 @@ namespace TS3AudioBot
 			{
 				while (!keepAliveToken.IsCancellationRequested)
 				{
-					await TSClient.WhoAmI();
+					tsClient.WhoAmI();
 					await Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken);
 				}
 			}
@@ -111,164 +79,105 @@ namespace TS3AudioBot
 			catch (AggregateException) { }
 		}
 
-		public async Task<bool> ChangeName(string newName)
-		{
-			try
-			{
-				await TSClient.Client.Send("clientupdate", new Parameter("client_nickname", newName));
-				return true;
-			}
-			catch (QueryException) { return false; }
-		}
-
 		private void Diconnect()
 		{
-			if (TSClient.Client.IsConnected)
-				TSClient.Client.Send("quit");
+			if (tsClient.IsConnected)
+				tsClient.Quit();
 		}
+		
+		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);
+		public void SendGlobalMessage(string message) => tsClient.SendGlobalMessage(message);
+		public void KickClientFromServer(int clientId) => tsClient.KickClientFromServer(new[] { clientId });
+		public void KickClientFromChannel(int clientId) => tsClient.KickClientFromChannel(new[] { clientId });
 
-		public void SendMessage(string message, GetClientsInfo client)
+		public ClientData GetClientById(int id)
 		{
-			QueueTask(() => TSClient.SendMessage(message, client));
-		}
-
-		public void SendGlobalMessage(string message)
-		{
-			QueueTask(() => TSClient.SendGlobalMessage(message));
-		}
-
-		// SMART QUEUE ////////////////////
-
-		private async void DoQueueWork()
-		{
-			while (true)
-			{
-				Func<Task> workTask;
-				lock (workQueue)
-				{
-					if (workQueue.Count == 0)
-					{
-						queueDone = true;
-						return;
-					}
-					else
-					{
-						workTask = workQueue.Dequeue();
-					}
-				}
-				await workTask.Invoke();
-			}
-		}
-
-		private void QueueTask(Func<Task> work)
-		{
-			if (queueProcessor == null)
-				EnqueInternal(work);
-			else
-			{
-				lock (workQueue)
-				{
-					if (queueDone)
-						EnqueInternal(work);
-					else
-						workQueue.Enqueue(work);
-				}
-			}
-		}
-
-		/// <summary>Do NOT call this method directly.
-		/// Use QueueTask(Func<Task>) instead.</summary>
-		private void EnqueInternal(Func<Task> work)
-		{
-			workQueue.Enqueue(work);
-			queueDone = false;
-			queueProcessor = Task.Run((Action)DoQueueWork);
-		}
-
-		///////////////////////////////////
-
-		public async Task<GetClientsInfo> GetClientById(int id)
-		{
-			Log.Write(Log.Level.Debug, "QC GetClientById called");
-			await RefreshClientBuffer(false);
+			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(client => client.Id == id);
 		}
 
-		public GetClientsInfo GetClientByIdBuffer(int id)
+		public ClientData GetClientByName(string name)
 		{
-			if (clientbufferoutdated)
-				Log.Write(Log.Level.Warning, "QC clientbuffer was outdated");
-			return clientbuffer.FirstOrDefault(client => client.Id == id);
-		}
-
-		public async Task<GetClientsInfo> GetClientByName(string name)
-		{
-			await RefreshClientBuffer(false);
+			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(user => user.NickName == name);
 		}
 
-		public async Task RefreshClientBuffer(bool force)
+		public void RefreshClientBuffer(bool force)
 		{
-			if (clientbufferoutdated || force)
+			if (clientbufferOutdated || force)
 			{
-				clientbuffer = await TSClient.GetClients();
-				clientbufferoutdated = false;
+				clientbuffer = tsClient.ClientList();
+				clientbufferOutdated = false;
 			}
 		}
 
-		public async Task<int[]> GetClientServerGroups(GetClientsInfo client)
+		public int[] GetClientServerGroups(ClientData client)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			QueryResponseDictionary[] response = await TSClient.Client.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			if (response.Length <= 0 || !response.First().ContainsKey("sgid"))
+			var response = tsClient.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
+			if (!response.Any() || !response.First().ContainsKey("sgid"))
 				return new int[0];
-			return response.Select<QueryResponseDictionary, int>(dict => (int)dict["sgid"]).ToArray();
+			// TODO check/redo
+			return response.Select(dict => int.Parse(dict["sgid"])).ToArray();
+		}
+
+		public string GetNameByDbId(ulong clientDbId)
+		{
+			string name;
+			if (!clientDbNames.TryGetValue(clientDbId, out name))
+			{
+				var response = tsClient.Send("clientdbinfo", new Parameter("cldbid", clientDbId));
+				if (!response.Any() || !response.First().ContainsKey("client_nickname"))
+				{
+					name = response.First()["client_nickname"] as string;
+					if (name != null)
+						clientDbNames.Add(clientDbId, name);
+				}
+				else
+				{
+					name = string.Empty;
+				}
+			}
+			return name;
 		}
 
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing QueryConnection...");
-			if (connected)
+			if (tsClient != null)
 			{
-				connected = false;
-				Log.Write(Log.Level.Debug, "QC disconnecting...");
-				Diconnect();
-				Log.Write(Log.Level.Debug, "QC disconnected");
-				if (keepAliveToken.CanBeCanceled)
+				if (tsClient.IsConnected)
 				{
-					keepAliveTokenSource.Cancel();
-					Log.Write(Log.Level.Debug, "QC kAT cancel raised");
+					Diconnect();
+					Log.Write(Log.Level.Debug, "QC disconnected");
+					if (keepAliveToken.CanBeCanceled)
+					{
+						keepAliveTokenSource.Cancel();
+						Log.Write(Log.Level.Debug, "QC kAT cancel raised");
+					}
+					if (!keepAliveTask.IsCompleted)
+						keepAliveTask.Wait(500);
+					Log.Write(Log.Level.Debug, "QC kAT ended");
+					if (keepAliveTokenSource != null)
+					{
+						keepAliveTokenSource.Dispose();
+						keepAliveTokenSource = null;
+					}
 				}
-				if (!keepAliveTask.IsCompleted)
-					keepAliveTask.Wait();
-				Log.Write(Log.Level.Debug, "QC kAT ended");
-				if (keepAliveTokenSource != null)
-				{
-					keepAliveTokenSource.Dispose();
-					keepAliveTokenSource = null;
-				}
+
+				tsClient.Dispose();
+				tsClient = null;
 			}
 		}
 	}
 
 	public struct QueryConnectionData
 	{
-		[InfoAttribute("the address of the TeamSpeak3 Query")]
+		[Info("the address of the TeamSpeak3 Query")]
 		public string host;
-		[InfoAttribute("the user for the TeamSpeak3 Query")]
+		[Info("the user for the TeamSpeak3 Query")]
 		public string user;
-		[InfoAttribute("the password for the TeamSpeak3 Query")]
+		[Info("the password for the TeamSpeak3 Query")]
 		public string passwd;
-	}
-
-	static class ReadOnlyCollectionExtensions
-	{
-		public static void ForEach<T>(this IReadOnlyCollection<T> collection, Action<T> action)
-		{
-			if (action == null)
-				throw new ArgumentNullException("action");
-			foreach (var i in collection)
-				action(i);
-		}
 	}
 }
