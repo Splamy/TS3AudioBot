@@ -13,10 +13,14 @@ namespace TS3AudioBot
 	{
 		public event EventHandler<TextMessage> OnMessageReceived
 		{ add { tsClient.OnTextMessageReceived += value; } remove { tsClient.OnTextMessageReceived -= value; } }
-		public event EventHandler<ClientEnterView> OnClientConnect
-		{ add { tsClient.OnClientEnterView += value; } remove { tsClient.OnClientEnterView -= value; } }
-		public event EventHandler<ClientLeftView> OnClientDisconnect
-		{ add { tsClient.OnClientLeftView += value; } remove { tsClient.OnClientLeftView -= value; } }
+
+		public event EventHandler<ClientEnterView> OnClientConnect;
+		private void ExtendedClientEnterView(object sender, ClientEnterView eventArgs)
+		{ clientbufferOutdated = true; OnClientConnect?.Invoke(sender, eventArgs); }
+
+		public event EventHandler<ClientLeftView> OnClientDisconnect;
+		private void ExtendedClientLeftView(object sender, ClientLeftView eventArgs)
+		{ clientbufferOutdated = true; OnClientDisconnect?.Invoke(sender, eventArgs); }
 
 		private IEnumerable<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
@@ -52,6 +56,9 @@ namespace TS3AudioBot
 				tsClient.RegisterNotification(MessageTarget.Private, -1);
 				tsClient.RegisterNotification(RequestTarget.Server, -1);
 
+				tsClient.OnClientLeftView += ExtendedClientLeftView;
+				tsClient.OnClientEnterView += ExtendedClientEnterView;
+
 				keepAliveTokenSource = new CancellationTokenSource();
 				keepAliveToken = keepAliveTokenSource.Token;
 				keepAliveTask = Task.Run((Action)KeepAlivePoke);
@@ -77,13 +84,8 @@ namespace TS3AudioBot
 			if (tsClient.IsConnected)
 				tsClient.Quit();
 		}
-
-
-		public void SendMessage(string message, ClientData client)
-		{
-			tsClient.SendMessage(message, client);
-		}
-
+		
+		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);
 		public void SendGlobalMessage(string message) => tsClient.SendGlobalMessage(message);
 		public void KickClientFromServer(int clientId) => tsClient.KickClientFromServer(new[] { clientId });
 		public void KickClientFromChannel(int clientId) => tsClient.KickClientFromChannel(new[] { clientId });
@@ -166,13 +168,6 @@ namespace TS3AudioBot
 				tsClient.Dispose();
 				tsClient = null;
 			}
-		}
-
-		enum EventType
-		{
-			TextMessage,
-			ClientEnter,
-			ClientLeft,
 		}
 	}
 
