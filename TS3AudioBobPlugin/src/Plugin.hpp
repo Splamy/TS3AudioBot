@@ -6,9 +6,7 @@
 
 #include <cstdlib>
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 // Required functions that are needed for the plugin to load
 DLL_PUBLIC const char* ts3plugin_name();
@@ -34,8 +32,6 @@ DLL_PUBLIC void ts3plugin_onClientDBIDfromUIDEvent(uint64 serverConnectionHandle
 DLL_PUBLIC void ts3plugin_onServerGroupByClientIDEvent(uint64 serverConnectionHandlerId,
 	const char *name, uint64 serverGroupList, uint64 clientDatabaseId);
 
-#ifdef __cplusplus
 }
-#endif
 
 #endif
