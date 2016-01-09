@@ -1,5 +1,5 @@
 # Define global variables
-project = "TS3AudioBobPlugin"
+project = "TS3AudioBob"
 versionFile = "src/Plugin.cpp"
 #enableGettext = False
 #enableClangLib = False
