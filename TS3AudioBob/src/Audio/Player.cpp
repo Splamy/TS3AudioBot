@@ -204,7 +204,7 @@ void Player::read()
 		}
 
 		// Test if the stream is over
-		if (!paused && packetQueue.empty())
+		if (!paused && packetQueue.empty() && !decoder->gotFlush())
 		{
 			if (loop)
 				setPositionTime(0);
@@ -238,7 +238,7 @@ void Player::read()
 			hasEof = 1;
 
 		// Insert the packet into the queue
-		std::unique_lock<std::mutex> packetQueueLock(packetQueueMutex);
+		std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
 		packetQueue.push(packet);
 		packetQueueWaiter.notify_one();
 	}
@@ -496,12 +496,11 @@ void Player::setPositionTime(int64_t position)
 		setDecodeError(DECODE_ERROR_SEEK);
 	else
 	{
-		std::unique_lock<std::mutex> lock(packetQueueMutex);
+		std::lock_guard<std::mutex> lock(packetQueueMutex);
 		// Flush packet queue
 		while (!packetQueue.empty())
 			packetQueue.pop();
 		packetQueue.push(flushPacket);
-		packetQueueWaiter.notify_all();
 	}
 }
 
@@ -512,7 +511,7 @@ int64_t Player::getPositionTime() const
 
 void Player::setPosition(double time)
 {
-	std::unique_lock<std::mutex> lock(readThreadMutex);
+	std::lock_guard<std::mutex> lock(readThreadMutex);
 	setPositionTime(time / av_q2d(stream->time_base));
 }
 

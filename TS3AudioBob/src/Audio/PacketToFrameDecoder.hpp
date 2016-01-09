@@ -23,6 +23,8 @@ private:
 	AVCodecContext *codecContext;
 
 	bool hasPackets = false;
+	/** If the last received packet was a flush packet. */
+	bool flushed = false;
 	/** the packet that is currently decoded into frames. */
 	AVPacket currentPacket;
 	/** A modified version of currentPacket
@@ -49,6 +51,7 @@ public:
 	 */
 	int fillFrame(AVFrame *frame);
 	int getLastQueueId() const;
+	bool gotFlush() const;
 };
 }
 

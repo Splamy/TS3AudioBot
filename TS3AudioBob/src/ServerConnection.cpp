@@ -355,14 +355,17 @@ std::string ServerConnection::getAudioStatus() const
 
 		if (audioPlayer->getReadError() == audio::Player::READ_ERROR_NONE)
 		{
-			out << "\nlength " << audioPlayer->getDuration() << " s";
+			out << "\nlength " << audioPlayer->getDuration();
+			out << "\nposition " << audioPlayer->getPosition();
 			std::unique_ptr<std::string> title = audioPlayer->getTitle();
 			if (title)
 			{
+				Utils::replace(*title, "\\", "\\\\");
 				Utils::replace(*title, "\n", "\\n");
 				out << "\ntitle " << *title;
 			}
 			std::string address = audioPlayer->getStreamAddress();
+			Utils::replace(address, "\\", "\\\\");
 			Utils::replace(address, "\n", "\\n");
 			out << "\naddress " << address;
 		}

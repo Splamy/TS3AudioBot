@@ -35,11 +35,11 @@ int PacketToFrameDecoder::fillFrame(AVFrame *frame)
 			// Get a packet
 			do
 			{
+				std::unique_lock<std::mutex> packetQueueLock(player->packetQueueMutex);
 				if (player->packetQueue.empty())
 				{
 					player->readThreadWaiter.notify_one();
 					// Wait until there are new packets
-					std::unique_lock<std::mutex> packetQueueLock(player->packetQueueMutex);
 					player->packetQueueWaiter.wait(packetQueueLock, [this]{ return !player->packetQueue.empty() || player->finished; });
 					if (player->finished)
 						return -1;
@@ -57,7 +57,9 @@ int PacketToFrameDecoder::fillFrame(AVFrame *frame)
 					avcodec_flush_buffers(codecContext);
 					nextPlayTime = initialPlayTime;
 					nextPlayTimeBase = initialPlayTimeBase;
-				}
+					flushed = true;
+				} else
+					flushed = false;
 			} while (tmpPacket.data == player->flushPacket.data);
 			// Free the current packet
 			av_packet_unref(&currentPacket);
@@ -104,4 +106,9 @@ int PacketToFrameDecoder::fillFrame(AVFrame *frame)
 int PacketToFrameDecoder::getLastQueueId() const
 {
 	return lastQueueId;
+}
+
+bool PacketToFrameDecoder::gotFlush() const
+{
+	return flushed;
 }
