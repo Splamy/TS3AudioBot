@@ -25,6 +25,23 @@ static const int MAX_SAMPLES_QUEUE_SIZE = 9;
 
 using namespace audio;
 
+const std::string Player::readErrorDescription[] = {
+	"No error",
+	"Failed to open stream",
+	"Failed to read stream info",
+	"Can't find audio stream",
+	"Failed find a suitable decoder",
+	"Failed to open the codec",
+	"IO error"
+};
+const std::string Player::decodeErrorDescription[] = {
+	"No error",
+	"Failed to create resampler",
+	"Failed to get buffer size",
+	"Failed to set compensation for resampling",
+	"Failed to resample"
+};
+
 uint64_t Player::getValidChannelLayout(uint64_t channelLayout, int channelCount)
 {
 	if (channelLayout && av_get_channel_layout_nb_channels(channelLayout) == channelCount)
@@ -53,6 +70,16 @@ void Player::init()
 	}
 }
 
+const std::string& Player::getReadErrorDescription(ReadError error)
+{
+	return readErrorDescription[error];
+}
+
+const std::string& Player::getDecodeErrorDescription(DecodeError error)
+{
+	return decodeErrorDescription[error];
+}
+
 Player::Player(std::string streamAddress) :
 	streamAddress(streamAddress)
 {
@@ -73,6 +100,7 @@ Player::~Player()
 	sampleQueueWaiter.notify_all();
 	readThreadWaiter.notify_all();
 	packetQueueWaiter.notify_all();
+	pausedWaiter.notify_all();
 	if (readThread.joinable())
 		readThread.join();
 	if (decodeThread.joinable())
@@ -87,6 +115,18 @@ Player::~Player()
 	}
 }
 
+void Player::setReadError(ReadError error)
+{
+	readError = error;
+	// Read errors are fatal errors so playing sound doesn't work anymore
+	finished = true;
+}
+
+void Player::setDecodeError(DecodeError error)
+{
+	decodeError = error;
+}
+
 void Player::read()
 {
 	// Set thread name if available
@@ -96,19 +136,15 @@ void Player::read()
 
 	if (avformat_open_input(&formatContext, streamAddress.c_str(), nullptr, nullptr) != 0)
 	{
-		// TODO Handle logging better (use a logger) and exit better
-		av_log(nullptr, AV_LOG_FATAL, "Can't open stream");
-		finished = true;
-		error = true;
+		setReadError(READ_ERROR_STREAM_OPEN);
 		return;
 	}
 	av_format_inject_global_side_data(formatContext);
 	if (avformat_find_stream_info(formatContext, nullptr) < 0)
 	{
-		av_log(nullptr, AV_LOG_FATAL, "Can't find stream info");
+		// Free memory
 		avformat_close_input(&formatContext);
-		finished = true;
-		error = true;
+		setReadError(READ_ERROR_STREAM_INFO);
 		return;
 	}
 
@@ -128,19 +164,13 @@ void Player::read()
 	int audioStreamId = av_find_best_stream(formatContext, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioStreamId < 0)
 	{
-		av_log(nullptr, AV_LOG_FATAL, "Can't find audio stream");
 		avformat_close_input(&formatContext);
-		finished = true;
-		error = true;
+		setReadError(READ_ERROR_NO_AUDIO_STREAM);
 		return;
 	}
 
 	if (!openStreamComponent(audioStreamId))
-	{
-		finished = true;
-		error = true;
 		return;
-	}
 
 	// Read the stream
 	bool lastPaused = false;
@@ -151,24 +181,19 @@ void Player::read()
 	bool hasEof = false;
 	while (!finished)
 	{
-		if (paused != lastPaused)
+		if (paused != lastPaused && !realtime)
 		{
 			lastPaused = paused;
 			if (paused)
+			{
 				av_read_pause(formatContext);
-			else
+				pausedWaiter.wait(waitLock, [this]{ return !paused || finished; });
+			} else
 				av_read_play(formatContext);
-		}
-		//FIXME It seems like there is a workaround needed for some formats
-		if (paused && (strcmp(formatContext->iformat->name, "rtsp") == 0 ||
-					   (formatContext->pb && strncmp(formatContext->filename, "mmsh:", 5) == 0)))
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-			continue;
 		}
 
 		// Stop reading if the queue is full and if it's not a realtime stream
-		if (!realtime && packetQueue.size() >= MAX_QUEUE_SIZE)
+		if (!realtime && (packetQueue.size() >= MAX_QUEUE_SIZE || paused))
 		{
 			readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
 			continue;
@@ -193,8 +218,7 @@ void Player::read()
 			}
 			if (formatContext->pb && formatContext->pb->error)
 			{
-				finished = true;
-				error = true;
+				setReadError(READ_ERROR_IO);
 				return;
 			}
 
@@ -218,12 +242,12 @@ bool Player::openStreamComponent(int streamId)
 	AVCodec *codec = avcodec_find_decoder(codecContext->codec_id);
 	if (!codec)
 	{
-		av_log(nullptr, AV_LOG_FATAL, "Can't find a decoder for codec %d", codecContext->codec_id);
+		setReadError(READ_ERROR_NO_DECODER);
 		return false;
 	}
 	if (avcodec_open2(codecContext, codec, nullptr) != 0)
 	{
-		av_log(nullptr, AV_LOG_FATAL, "Can't open codec");
+		setReadError(READ_ERROR_OPEN_CODEC);
 		return false;
 	}
 
@@ -326,6 +350,7 @@ int Player::decodeFrame()
 	int wantedSampleCount;
 	Frame frame;
 
+	setDecodeError(DECODE_ERROR_NONE);
 	// Get a frame
 	do
 	{
@@ -364,15 +389,7 @@ int Player::decodeFrame()
 			0, nullptr);
 		if (!resampler || swr_init(resampler) < 0)
 		{
-			av_log(nullptr, AV_LOG_ERROR,
-			   "Cannot create sample rate converter for conversion of %d Hz"
-			   " %s %d channels to %d Hz %s %d channels!\n",
-				frame.getSampleRate(),
-				av_get_sample_fmt_name(frame.getAudioFormat()),
-				frame.getChannelCount(),
-				targetProps.frequency,
-				av_get_sample_fmt_name(targetProps.format),
-				targetProps.channelCount);
+			setDecodeError(DECODE_ERROR_CREATE_RESAMPLER);
 			swr_free(&resampler);
 			return -1;
 		}
@@ -391,7 +408,7 @@ int Player::decodeFrame()
 			targetProps.channelCount, outCount, targetProps.format, 0);
 		if (outSize < 0)
 		{
-			av_log(nullptr, AV_LOG_ERROR, "av_samples_get_buffer_size() failed\n");
+			setDecodeError(DECODE_ERROR_GET_BUFFER_SIZE);
 			return -1;
 		}
 
@@ -403,7 +420,7 @@ int Player::decodeFrame()
 					targetProps.frequency / frame.getSampleRate(),
 				wantedSampleCount * targetProps.frequency / frame.getSampleRate()) < 0)
 			{
-				av_log(nullptr, AV_LOG_ERROR, "swr_set_compensation() failed\n");
+				setDecodeError(DECODE_ERROR_RESAMPLE_COMPENSATION);
 				return -1;
 			}
 		}
@@ -416,12 +433,12 @@ int Player::decodeFrame()
 			const_cast<const uint8_t**>(frame.getData()), frame.getSampleCount());
 		if (length < 0)
 		{
-			av_log(nullptr, AV_LOG_ERROR, "swr_convert() failed\n");
+			setDecodeError(DECODE_ERROR_RESAMPLING);
 			return -1;
 		}
 		if (length == outCount)
 		{
-			av_log(nullptr, AV_LOG_WARNING, "audio buffer is probably too small\n");
+			// Audio buffer is probably too small
 			if (swr_init(resampler) < 0)
 				swr_free(&resampler);
 		}
@@ -461,6 +478,7 @@ void Player::setPaused(bool paused)
 {
 	this->paused = paused;
 	sampleQueueWaiter.notify_all();
+	pausedWaiter.notify_all();
 }
 
 bool Player::isFinished() const
@@ -468,9 +486,14 @@ bool Player::isFinished() const
 	return finished;
 }
 
-bool Player::hasErrors() const
+Player::ReadError Player::getReadError() const
 {
-	return error;
+	return readError;
+}
+
+Player::DecodeError Player::getDecodeError() const
+{
+	return decodeError;
 }
 
 const std::string& Player::getStreamAddress() const

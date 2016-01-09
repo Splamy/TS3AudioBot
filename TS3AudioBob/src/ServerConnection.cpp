@@ -183,15 +183,28 @@ void ServerConnection::addUser(anyID userId, const std::string &uniqueId)
 
 void ServerConnection::addWhisperUser(const User *user)
 {
-	whisperUsers.push_back(user);
-	// Update the whisper list
-	setAudio(audioOn);
+	// Check if the user is already in the whisper list
+	std::vector<const User*>::iterator it = std::find_if(whisperUsers.begin(),
+		whisperUsers.end(), std::bind(userIdEqual, user->getId(),
+		std::placeholders::_1));
+	if (it == whisperUsers.end())
+	{
+		whisperUsers.push_back(user);
+		// Update the whisper list
+		setAudio(audioOn);
+	}
 }
 
 void ServerConnection::addWhisperChannel(uint64 channel)
 {
-	whisperChannels.push_back(channel);
-	setAudio(audioOn);
+	// Check if the channel is already in the whisper list
+	std::vector<uint64>::iterator it = std::find(whisperChannels.begin(),
+		whisperChannels.end(), channel);
+	if (it == whisperChannels.end())
+	{
+		whisperChannels.push_back(channel);
+		setAudio(audioOn);
+	}
 }
 
 bool ServerConnection::removeWhisperUser(const User *user)
@@ -250,7 +263,6 @@ double ServerConnection::getVolume() const
 void ServerConnection::startAudio(const std::string &address)
 {
 	// Load and start an audio stream
-	// TODO sometimes that doesn't work
 	autoPaused = false;
 	audioPlayer.reset(new audio::Player(address));
 	// Use default properties, the channel settings will by dynamically updated
@@ -312,8 +324,13 @@ std::string ServerConnection::getAudioStatus() const
 		out << "off";
 	else
 	{
-		if (audioPlayer->hasErrors())
-			out << "error";
+		if (audioPlayer->getDecodeError() != audio::Player::DECODE_ERROR_NONE)
+			out << "\ndecode error " << audio::Player::getDecodeErrorDescription(
+				audioPlayer->getDecodeError());
+
+		if (audioPlayer->getReadError() != audio::Player::READ_ERROR_NONE)
+			out << "\nread error " << audio::Player::getReadErrorDescription(
+				audioPlayer->getReadError());
 		else if (audioPlayer->isFinished())
 			out << "finished";
 		else if (audioPlayer->isPaused())
@@ -321,7 +338,7 @@ std::string ServerConnection::getAudioStatus() const
 		else
 			out << "playing";
 
-		if (!audioPlayer->hasErrors())
+		if (audioPlayer->getReadError() == audio::Player::READ_ERROR_NONE)
 		{
 			out << "\nlength " << audioPlayer->getDuration() << " s";
 			out << "\nvolume " << audioPlayer->getVolume();

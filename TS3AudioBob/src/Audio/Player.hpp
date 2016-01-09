@@ -26,6 +26,33 @@ class Player
 	friend class PacketToFrameDecoder;
 
 public:
+	/** Errors that occur mainly when opening a stream.
+	 *  The occurence of one of these errors means a Player is broken.
+	 */
+	enum ReadError
+	{
+		READ_ERROR_NONE = 0,
+		READ_ERROR_STREAM_OPEN,
+		READ_ERROR_STREAM_INFO,
+		READ_ERROR_NO_AUDIO_STREAM,
+		READ_ERROR_NO_DECODER,
+		READ_ERROR_OPEN_CODEC,
+		READ_ERROR_IO,
+		READ_ERROR_COUNT
+	};
+	/** Decode errors can happen at each decoding, which means they can occur
+	 *  only temporary.
+	 */
+	enum DecodeError
+	{
+		DECODE_ERROR_NONE = 0,
+		DECODE_ERROR_CREATE_RESAMPLER,
+		DECODE_ERROR_GET_BUFFER_SIZE,
+		DECODE_ERROR_RESAMPLE_COMPENSATION,
+		DECODE_ERROR_RESAMPLING,
+		DECODE_ERROR_COUNT
+	};
+
 	enum Synchronisation
 	{
 		SYNC_AUDIO,
@@ -33,12 +60,16 @@ public:
 	};
 
 private:
+	static const std::string readErrorDescription[READ_ERROR_COUNT];
+	static const std::string decodeErrorDescription[DECODE_ERROR_COUNT];
+
 	std::string streamAddress;
 
 	bool paused = false;
 	bool muted = false;
 	bool finished = false;
-	bool error = false;
+	ReadError readError = READ_ERROR_NONE;
+	DecodeError decodeError = DECODE_ERROR_NONE;
 	double volume = 1;
 	//TODO Synchronisation sync = SYNC_AUDIO;
 
@@ -72,6 +103,7 @@ private:
 	std::thread readThread;
 	std::condition_variable readThreadWaiter;
 	std::condition_variable packetQueueWaiter;
+	std::condition_variable pausedWaiter;
 
 	static uint64_t getValidChannelLayout(uint64_t channelLayout, int channelCount);
 	static const char* searchEntry(const AVDictionary *dict, const char *key);
@@ -81,11 +113,16 @@ public:
 	 *  This has to be done before creating a player object.
 	 */
 	static void init();
+	static const std::string& getReadErrorDescription(ReadError error);
+	static const std::string& getDecodeErrorDescription(DecodeError error);
 
 	Player(std::string streamAddress);
 	~Player();
 
 private:
+	void setReadError(ReadError error);
+	void setDecodeError(DecodeError error);
+
 	/** The read thread that fills the packet queue. */
 	void read();
 	bool openStreamComponent(int streamId);
@@ -102,7 +139,8 @@ public:
 	bool isPaused() const;
 	void setPaused(bool paused);
 	bool isFinished() const;
-	bool hasErrors() const;
+	ReadError getReadError() const;
+	DecodeError getDecodeError() const;
 	const std::string& getStreamAddress() const;
 	/** Searches for the title of the current stream.
 	 *  If no title can be found, the result is null.
