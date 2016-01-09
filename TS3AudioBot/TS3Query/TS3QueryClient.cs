@@ -2,7 +2,7 @@
 {
 	using System;
 	using System.Collections.Generic;
-	//using System.Diagnostics;
+	using System.Diagnostics;
 	using System.Globalization;
 	using System.IO;
 	using System.Linq;
@@ -173,7 +173,7 @@
 			new Parameter("sid", svrId));
 		public void ChangeName(string newName) => Send("clientupdate",
 			new Parameter("client_nickname", newName));
-		public void Quit() => Send("quit");
+		public void Quit() => tcpWriter.WriteLine("quit");
 		public void WhoAmI() => Send<WhoAmI>("whoami");
 		// TODO: add ANEx
 		public void SendMessage(string message, ClientData client)
@@ -227,7 +227,9 @@
 
 			while (true)
 			{
-				string line = tcpReader.ReadLine();
+				string line;
+				try { line = tcpReader.ReadLine(); }
+				catch (IOException) { line = null; }
 				if (line == null) break;
 				else if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -394,28 +396,35 @@
 
 		// NETWORK METHODS
 
-		//[DebuggerStepThrough]
+		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command)
 			=> Send(command, NoParameter);
-		//[DebuggerStepThrough]
+
+		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, params Parameter[] parameter)
 			=> Send(command, parameter, NoOptions);
 
+		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, Parameter[] parameter, Option options)
 			=> Send(command, parameter, new[] { options });
 
+		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, Parameter[] parameter, params Option[] options)
 			=> SendInternal(command, parameter, options, null).Cast<ResponseDictionary>();
 
+		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command) where T : Response
 			=> Send<T>(command, NoParameter);
 
+		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, params Parameter[] parameter) where T : Response
 			=> Send<T>(command, parameter, NoOptions);
 
+		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, Parameter[] parameter, Option options) where T : Response
 			=> Send<T>(command, parameter, new[] { options });
 
+		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, Parameter[] parameter, params Option[] options) where T : Response
 			=> SendInternal(command, parameter, options, typeof(T)).Cast<T>();
 
@@ -492,7 +501,7 @@
 
 		public void EnterEventLoop()
 		{
-			while (true)
+			while (run)
 			{
 				eventBlock.WaitOne();
 				while (eventQueue.Any())

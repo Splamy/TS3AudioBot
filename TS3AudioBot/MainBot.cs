@@ -865,11 +865,6 @@
 				BobController.Dispose();
 				BobController = null;
 			}
-			if (QueryConnection != null)
-			{
-				QueryConnection.Dispose();
-				QueryConnection = null;
-			}
 			if (youtubeFactory != null)
 			{
 				youtubeFactory.Dispose();
@@ -889,6 +884,11 @@
 			{
 				//sessionManager.Dispose();
 				SessionManager = null;
+			}
+			if (QueryConnection != null)
+			{
+				QueryConnection.Dispose();
+				QueryConnection = null;
 			}
 			if (logStream != null)
 			{
@@ -1090,6 +1090,7 @@
 		AnyVisibility = Public | Private,
 	}
 
+#pragma warning disable CS0649
 	struct MainBotData
 	{
 		[Info("path to the logfile", "log_ts3audiobot")]
@@ -1097,4 +1098,5 @@
 		[Info("group able to execute admin commands from the bot")]
 		public int adminGroupId;
 	}
+#pragma warning restore CS0649
 }

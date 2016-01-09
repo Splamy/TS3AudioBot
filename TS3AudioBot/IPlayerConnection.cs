@@ -8,19 +8,15 @@ namespace TS3AudioBot
 
 		//bool SupportsEndCallback { get; }
 
-		void AudioAdd(string url);
+		int Volume { get; set; }
+		int Position { get; set; }
+		bool Repeated { get; set; }
+
 		void AudioClear();
-		void AudioNext();
 		void AudioPlay();
-		void AudioPrevious();
 		void AudioStart(string url);
 		void AudioStop();
 		int GetLength();
-		int GetPosition();
 		bool IsPlaying();
-		void SetLoop(bool enabled);
-		void SetPosition(int position);
-		void SetRepeat(bool enabled);
-		void SetVolume(int value);
 	}
 }
