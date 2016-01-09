@@ -378,6 +378,7 @@ std::string ServerConnection::getAudioStatus() const
 
 void ServerConnection::close(const std::string &quitMessage)
 {
+	stopAudio();
 	setQuality(false);
 	tsApi->handleTsError(tsApi->getFunctions().stopConnection(handlerId,
 		quitMessage.c_str()));

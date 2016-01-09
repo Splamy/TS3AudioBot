@@ -197,7 +197,7 @@ void ts3plugin_onServerGroupByClientIDEvent(uint64 scHandlerId,
 void ts3plugin_onEditCapturedVoiceDataEvent(uint64 scHandlerId,
 	short *samples, int sampleCount, int channels, int *edited)
 {
-	if (serverBob->fillAudioData(scHandlerId,
+	if (serverBob && serverBob->fillAudioData(scHandlerId,
 		reinterpret_cast<uint8_t*>(samples),
 		sampleCount * channels * sizeof(short), channels, *edited & 2))
 		*edited |= 1;

@@ -86,8 +86,11 @@ void ServerBob::gotDbId(uint64 handlerId, const char *uniqueId, uint64 dbId)
 {
 	ServerConnection *connection = getServer(handlerId);
 	User *user = connection->getUser(uniqueId);
-	user->setDbId(dbId);
-	user->requestGroupUpdate();
+	if (!user->hasDbId())
+	{
+		user->setDbId(dbId);
+		user->requestGroupUpdate();
+	}
 }
 
 void ServerBob::gotServerGroup(uint64 handlerId, uint64 dbId, uint64 serverGroup)
