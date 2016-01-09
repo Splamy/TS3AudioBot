@@ -12,22 +12,15 @@ extern "C"
 
 namespace audio
 {
+class Player;
+
 /** Get packets as input and decode them into frames. */
 class PacketToFrameDecoder
 {
 private:
-	/** The input packet queue. */
-	std::queue<AVPacket> *packetQueue;
-	/** The mutex to lock the packet queue. */
-	std::mutex *packetQueueMutex;
-	/** The read thread will be notified if the packet queue gets empty. */
-	std::condition_variable *readThreadWaiter;
-	/** This decoder will wait if the packet queue is empty. */
-	std::condition_variable *packetQueueWaiter;
+	/** The reference to the player. */
+	Player *player;
 	AVCodecContext *codecContext;
-	/** A special packet used to signal that this decoder should be flushed. */
-	AVPacket *flushPacket;
-	bool *finished;
 
 	bool hasPackets = false;
 	/** the packet that is currently decoded into frames. */
@@ -46,13 +39,7 @@ private:
 	int lastQueueId;
 
 public:
-	PacketToFrameDecoder(std::queue<AVPacket> *packetQueue,
-		std::mutex *packetQueueMutex,
-		std::condition_variable *readThreadWaiter,
-		std::condition_variable *packetQueueWaiter,
-		AVCodecContext *codecContext,
-		AVPacket *flushPacket,
-		bool *finished);
+	PacketToFrameDecoder(Player *player, AVCodecContext *codecContext);
 	~PacketToFrameDecoder();
 
 	/** Fill a frame with the received packets

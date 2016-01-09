@@ -1,12 +1,12 @@
 #ifndef USER_HPP
 #define USER_HPP
 
-#include <TsApi.hpp>
-
 #include <chrono>
 #include <memory>
 #include <queue>
 #include <string>
+
+#include <TsApi.hpp>
 
 class ServerConnection;
 

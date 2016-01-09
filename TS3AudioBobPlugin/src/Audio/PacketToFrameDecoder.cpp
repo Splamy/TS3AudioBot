@@ -1,21 +1,12 @@
 #include "PacketToFrameDecoder.hpp"
 
+#include "Player.hpp"
+
 using namespace audio;
 
-PacketToFrameDecoder::PacketToFrameDecoder(std::queue<AVPacket> *packetQueue,
-		std::mutex *packetQueueMutex,
-		std::condition_variable *readThreadWaiter,
-		std::condition_variable *packetQueueWaiter,
-		AVCodecContext *codecContext,
-		AVPacket *flushPacket,
-		bool *finished) :
-	packetQueue(packetQueue),
-	packetQueueMutex(packetQueueMutex),
-	readThreadWaiter(readThreadWaiter),
-	packetQueueWaiter(packetQueueWaiter),
-	codecContext(codecContext),
-	flushPacket(flushPacket),
-	finished(finished)
+PacketToFrameDecoder::PacketToFrameDecoder(Player *player, AVCodecContext *codecContext) :
+	player(player),
+	codecContext(codecContext)
 {
 	av_init_packet(&currentPacket);
 	currentPacket.data = nullptr;
@@ -37,30 +28,30 @@ int PacketToFrameDecoder::fillFrame(AVFrame *frame)
 			// Get a packet
 			do
 			{
-				if (packetQueue->empty())
+				if (player->packetQueue.empty())
 				{
-					readThreadWaiter->notify_one();
+					player->readThreadWaiter.notify_one();
 					// Wait until there are new packets
-					std::unique_lock<std::mutex> packetQueueLock(*packetQueueMutex);
-					packetQueueWaiter->wait(packetQueueLock, [this]{ return !packetQueue->empty() || *finished; });
-					if (*finished)
+					std::unique_lock<std::mutex> packetQueueLock(player->packetQueueMutex);
+					player->packetQueueWaiter.wait(packetQueueLock, [this]{ return !player->packetQueue.empty() || player->finished; });
+					if (player->finished)
 						return -1;
 				}
 
 				// The packet queue should contain something now
-				tmpPacket = packetQueue->front();
-				packetQueue->pop();
-				packetQueueWaiter->notify_one();
+				tmpPacket = player->packetQueue.front();
+				player->packetQueue.pop();
+				player->packetQueueWaiter.notify_one();
 				lastQueueId = tmpPacket.stream_index;
 
 				// Check if we got a flush packet
-				if (tmpPacket.data == flushPacket->data)
+				if (tmpPacket.data == player->flushPacket.data)
 				{
 					avcodec_flush_buffers(codecContext);
 					nextPlayTime = initialPlayTime;
 					nextPlayTimeBase = initialPlayTimeBase;
 				}
-			} while (tmpPacket.data == flushPacket->data);
+			} while (tmpPacket.data == player->flushPacket.data);
 			// Free the current packet
 			av_packet_unref(&currentPacket);
 			currentPacket = tmpPacket;

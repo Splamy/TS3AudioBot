@@ -13,6 +13,7 @@ Frame::Frame(int queueId) :
 	internalFrame(av_frame_alloc()),
 	queueId(queueId)
 {
+	internalFrame->extended_data = nullptr;
 }
 
 Frame::Frame(Frame &&f) :

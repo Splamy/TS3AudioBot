@@ -1,13 +1,13 @@
 #ifndef SERVER_CONNECTION_HPP
 #define SERVER_CONNECTION_HPP
 
-#include <TsApi.hpp>
-#include <User.hpp>
-#include <Utils.hpp>
-
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <TsApi.hpp>
+#include <User.hpp>
+#include <Utils.hpp>
 
 class ServerConnection
 {

@@ -1,13 +1,15 @@
 #include "ServerBob.hpp"
 
-#include <ServerConnection.hpp>
-#include <User.hpp>
-#include <Utils.hpp>
-
-#include <public_errors.h>
 #include <algorithm>
 #include <sstream>
 #include <stdexcept>
+
+#include <public_errors.h>
+
+#include <ServerConnection.hpp>
+#include <TsApi.hpp>
+#include <User.hpp>
+#include <Utils.hpp>
 
 namespace
 {
@@ -27,20 +29,26 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup) :
 	botAdminGroup(botAdminGroup),
 	tsApi(tsApi)
 {
+	audio::Player::init();
+
 	// Register commands
 	addCommand("help", &ServerBob::helpCommand,              "Gives you this handy command list");
 	addCommand("ping", &ServerBob::pingCommand,              "Returns with a pong if the Bob is alive");
 	addCommand("exit", &ServerBob::exitCommand,              "Let the Bob go home");
 	std::string commandString = "audio [on|off]";
 	addCommand("audio", &ServerBob::audioCommand,            "Let the bob send or be silent", &commandString);
+	commandString = "music [start <address>|stop|pause|unpause]";
+	addCommand("music", &ServerBob::musicStartCommand,       "Control the integrated music player", &commandString);
+	addCommand("music", &ServerBob::musicCommand,            "", nullptr, false, false);
 	commandString = "whisper clear";
 	addCommand("whisper", &ServerBob::whisperClearCommand,   "Clears the whisperlist", &commandString);
 	commandString = "whisper [client|channel] [add|remove] <id>";
 	addCommand("whisper", &ServerBob::whisperClientCommand,  "Control the whisperlist of the Bob", &commandString);
 	addCommand("whisper", &ServerBob::whisperChannelCommand, "", nullptr, false, false);
-	commandString = "status [whisper|audio]";
+	commandString = "status [whisper|audio|music]";
 	addCommand("status", &ServerBob::statusAudioCommand,     "Get status information", &commandString);
 	addCommand("status", &ServerBob::statusWhisperCommand,   "", nullptr, false, false);
+	addCommand("status", &ServerBob::statusMusicCommand,     "", nullptr, false, false);
 	addCommand("error", &ServerBob::loopCommand,             "", nullptr, true, false);
 	commandString = "list [clients|channels]";
 	addCommand("list", &ServerBob::listClientsCommand,       "Lists all connected clients", &commandString);
@@ -113,6 +121,26 @@ void ServerBob::removeServer(uint64 handlerId)
 		}
 	}
 	tsApi->log("Can't find server id to remove");
+}
+
+void ServerBob::fillAudioData(uint64 /*handlerId*/, uint8_t *buffer, size_t length,
+	int channelCount)
+{
+	if (audioPlayer)
+	{
+		audio::AudioProperties props = audioPlayer->getTargetProperties();
+		if (props.channelCount != channelCount)
+		{
+			props.channelCount = channelCount;
+			props.channelLayout = channelCount == 2 ?
+				AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+			// Reset dynamically computed properties
+			props.bytesPerSecond = 0;
+			props.frameSize = 0;
+			audioPlayer->setTargetProperties(props);
+		}
+		audioPlayer->fillBuffer(buffer, length);
+	}
 }
 
 ServerConnection* ServerBob::getServer(uint64 handlerId)
@@ -206,6 +234,21 @@ void ServerBob::setAudio(bool on)
 	audioOn = on;
 	for (ServerConnection &connection : connections)
 		connection.setAudio(on);
+	if (audioPlayer)
+	{
+		if (audioOn)
+		{
+			if (autoPaused)
+			{
+				autoPaused = false;
+				audioPlayer->setPaused(false);
+			}
+		} else if (!audioPlayer->isPaused())
+		{
+			autoPaused = true;
+			audioPlayer->setPaused(true);
+		}
+	}
 }
 
 void ServerBob::setQuality(bool on)
@@ -249,6 +292,61 @@ CommandResult ServerBob::audioCommand(ServerConnection * /*connection*/,
 	bool on)
 {
 	setAudio(on);
+	return CommandResult();
+}
+
+CommandResult ServerBob::musicStartCommand(ServerConnection * /*connection*/,
+	User * /*sender*/, const std::string &/*message*/, std::string /*command*/,
+	std::string start, std::string address)
+{
+	std::transform(start.begin(), start.end(), start.begin(), ::tolower);
+	if (start != "start")
+		return CommandResult(false);
+
+	// Strip [URL] and [/URL]
+	if (address.length() >= 5 && address.compare(0, 5, "[URL]") == 0)
+		address = address.substr(5);
+	if (address.length() >= 6 && address.compare(address.length() - 6, 6, "[/URL]") == 0)
+		address = address.substr(0, address.length() - 6);
+
+	// Load and start an audio stream
+	// TODO sometimes that doesn't work
+	autoPaused = false;
+	audioPlayer.reset(new audio::Player(address));
+	// Use default properties, the channel settings will by dynamically updated
+	audioPlayer->setTargetProperties(AV_SAMPLE_FMT_S16, 48000, 2,
+		AV_CH_LAYOUT_STEREO);
+	audioPlayer->start();
+	return CommandResult();
+}
+
+CommandResult ServerBob::musicCommand(ServerConnection * /*connection*/,
+	User * /*sender*/, const std::string &/*message*/, std::string /*command*/,
+	std::string action)
+{
+	std::transform(action.begin(), action.end(), action.begin(), ::tolower);
+	if (action == "stop")
+		audioPlayer.reset();
+	else if (action == "pause")
+	{
+		if (audioPlayer)
+		{
+			audioPlayer->setPaused(true);
+			autoPaused = false;
+		} else
+			return CommandResult(false, std::make_shared<std::string>(
+				"error no audio is played at the moment"));
+	} else if (action == "unpause")
+	{
+		if (audioPlayer)
+		{
+			audioPlayer->setPaused(false);
+			autoPaused = false;
+		} else
+			return CommandResult(false, std::make_shared<std::string>(
+				"error no audio is played at the moment"));
+	} else
+		return CommandResult(false);
 	return CommandResult();
 }
 
@@ -362,6 +460,33 @@ CommandResult ServerBob::statusWhisperCommand(ServerConnection *connection,
 	out << "\nstatus whisper channels";
 	for (const uint64 channel : *connection->getWhisperChannels())
 		out << " " << channel;
+	connection->sendCommand(sender, out.str());
+	return CommandResult();
+}
+
+CommandResult ServerBob::statusMusicCommand(ServerConnection *connection,
+	User *sender, const std::string &/*message*/, std::string /*command*/,
+	std::string music)
+{
+	std::transform(music.begin(), music.end(), music.begin(), ::tolower);
+	if (music != "music")
+		return CommandResult(false);
+	std::ostringstream out;
+	out << "status music ";
+	if (!audioPlayer)
+		out << "off";
+	else if (audioPlayer->hasErrors())
+		out << "error";
+	else if (audioPlayer->isFinished())
+		out << "finished";
+	else if (audioPlayer->isPaused())
+		out << "paused";
+	else
+		out << "playing";
+
+	if (audioPlayer && !audioPlayer->hasErrors())
+		out << " with length " << audioPlayer->getDuration() << " s";
+
 	connection->sendCommand(sender, out.str());
 	return CommandResult();
 }

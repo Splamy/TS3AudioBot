@@ -3,7 +3,6 @@
 
 #include "AudioProperties.hpp"
 #include "Frame.hpp"
-#include "PacketToFrameDecoder.hpp"
 
 extern "C"
 {
@@ -20,8 +19,12 @@ extern "C"
 
 namespace audio
 {
+class PacketToFrameDecoder;
+
 class Player
 {
+	friend class PacketToFrameDecoder;
+
 public:
 	enum Synchronisation
 	{
@@ -35,6 +38,7 @@ private:
 	bool paused = false;
 	bool muted = false;
 	bool finished = false;
+	bool error = false;
 	//TODO Synchronisation sync = SYNC_AUDIO;
 
 	std::queue<Frame> sampleQueue;
@@ -48,8 +52,8 @@ private:
 	AudioProperties targetProps;
 
 	SwrContext *resampler = nullptr;
-	AVFormatContext *formatContext;
-	AVStream *stream;
+	AVFormatContext *formatContext = nullptr;
+	AVStream *stream = nullptr;
 	AVPacket flushPacket;
 
 	std::unique_ptr<PacketToFrameDecoder> decoder;
@@ -96,8 +100,15 @@ public:
 	bool isPaused();
 	void setPaused(bool paused);
 	bool isFinished();
+	bool hasErrors();
+	/** Returns the duration of the audio stream in seconds.
+	 *  Calling this function on an erroneous instance is undefined behaviour.
+	 */
+	double getDuration();
 	// TODO set and apply volume
 
+	/** Get the current properties of the audio data. */
+	audio::AudioProperties getTargetProperties();
 	/** Set the properties for the provided audio data. */
 	bool setTargetProperties(audio::AudioProperties props);
 	bool setTargetProperties(AVSampleFormat format, int frequency, int channelCount, uint64_t channelLayout, int frameSize = -1, int bytesPerSecond = -1);

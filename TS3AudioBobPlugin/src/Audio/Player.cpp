@@ -15,6 +15,8 @@ extern "C"
 #endif
 #include <cstring>
 
+#include "PacketToFrameDecoder.hpp"
+
 /** Maximum number of packets in the packet queue (ignored for realtime streams) */
 static const int MAX_QUEUE_SIZE = 15 * 1024 * 1024;
 /** Maximum number of frames in the sample queue */
@@ -70,8 +72,12 @@ Player::~Player()
 		decodeThread.join();
 
 	swr_free(&resampler);
-	avcodec_close(formatContext->streams[streamId]->codec);
-	avformat_close_input(&formatContext);
+	if (formatContext)
+	{
+		if (streamId != -1)
+			avcodec_close(formatContext->streams[streamId]->codec);
+		avformat_close_input(&formatContext);
+	}
 }
 
 void Player::read()
@@ -81,27 +87,26 @@ void Player::read()
 	pthread_setname_np(pthread_self(), "ReadThread");
 #endif
 
-	formatContext = avformat_alloc_context();
-	if (!formatContext)
-	{
-		// TODO Handle logging better (use a logger) and exit better (return value, exit everything...)
-		av_log(nullptr, AV_LOG_FATAL, "Can't allocate format context");
-		finished = true;
-		return;
-	}
 	if (avformat_open_input(&formatContext, streamAddress.c_str(), nullptr, nullptr) != 0)
 	{
+		// TODO Handle logging better (use a logger) and exit better
 		av_log(nullptr, AV_LOG_FATAL, "Can't open stream");
 		finished = true;
+		error = true;
 		return;
 	}
 	av_format_inject_global_side_data(formatContext);
 	if (avformat_find_stream_info(formatContext, nullptr) < 0)
 	{
 		av_log(nullptr, AV_LOG_FATAL, "Can't find stream info");
+		avformat_close_input(&formatContext);
 		finished = true;
+		error = true;
 		return;
 	}
+
+	// Print audio stream information
+	av_dump_format(formatContext, 0, streamAddress.c_str(), 0);
 
 	// Test if this stream is realtime
 	const char *formatName = formatContext->iformat->name;
@@ -112,19 +117,23 @@ void Player::read()
 		realtime |= strncmp(filename, "rtp:", 4) == 0 || strncmp(filename, "udp:", 4);
 	}
 
-	// Print audio stream information
-	av_dump_format(formatContext, 0, streamAddress.c_str(), 0);
-
 	// Find audio stream
 	int audioStreamId = av_find_best_stream(formatContext, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioStreamId < 0)
 	{
 		av_log(nullptr, AV_LOG_FATAL, "Can't find audio stream");
+		avformat_close_input(&formatContext);
 		finished = true;
+		error = true;
 		return;
 	}
 
-	openStreamComponent(audioStreamId);
+	if (!openStreamComponent(audioStreamId))
+	{
+		finished = true;
+		error = true;
+		return;
+	}
 
 	// Read the stream
 	bool lastPaused = false;
@@ -178,6 +187,7 @@ void Player::read()
 			if (formatContext->pb && formatContext->pb->error)
 			{
 				finished = true;
+				error = true;
 				return;
 			}
 
@@ -237,7 +247,7 @@ bool Player::openStreamComponent(int streamId)
 	stream = formatContext->streams[streamId];
 
 	// Initialize decoder
-	decoder.reset(new PacketToFrameDecoder(&packetQueue, &packetQueueMutex, &readThreadWaiter, &packetQueueWaiter, codecContext, &flushPacket, &finished));
+	decoder.reset(new PacketToFrameDecoder(this, codecContext));
 	decodeThread = std::thread(&Player::decode, this);
 
 	return true;
@@ -251,6 +261,7 @@ void Player::decode()
 #endif
 
 	AVFrame *frame = av_frame_alloc();
+	frame->extended_data = nullptr;
 	if (!frame)
 	{
 		printf("Can't allocate a frame\n");
@@ -292,6 +303,7 @@ void Player::decode()
 				f.setDuration(av_q2d(AVRational{ frame->nb_samples, frame->sample_rate }));
 
 				av_frame_move_ref(f.getInternalFrame(), frame);
+				frame->extended_data = nullptr;
 				sampleQueue.push(std::move(f));
 				sampleQueueWaiter.notify_one();
 			}
@@ -307,17 +319,14 @@ int Player::decodeFrame()
 	int wantedSampleCount;
 	Frame frame;
 
-	if (paused)
-		return -1;
-
 	// Get a frame
 	do
 	{
 		std::unique_lock<std::mutex> lock(sampleQueueMutex);
 		if (sampleQueue.empty())
 			sampleQueueWaiter.wait(lock,
-				[this]{ return !sampleQueue.empty() || finished; });
-		if (finished)
+				[this]{ return !sampleQueue.empty() || finished || paused; });
+		if (finished || paused)
 			return -1;
 		frame = std::move(sampleQueue.front());
 		sampleQueue.pop();
@@ -444,11 +453,28 @@ bool Player::isPaused()
 void Player::setPaused(bool paused)
 {
 	this->paused = paused;
+	sampleQueueWaiter.notify_all();
 }
 
 bool Player::isFinished()
 {
 	return finished;
+}
+
+bool Player::hasErrors()
+{
+	return error;
+}
+
+double Player::getDuration()
+{
+	return (double) stream->duration * stream->time_base.num /
+		stream->time_base.den;
+}
+
+audio::AudioProperties Player::getTargetProperties()
+{
+	return targetProps;
 }
 
 bool Player::setTargetProperties(AudioProperties props)
