@@ -37,8 +37,9 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup) :
 	addCommand("exit", &ServerBob::exitCommand,              "Let the Bob go home");
 	std::string commandString = "audio [on|off]";
 	addCommand("audio", &ServerBob::audioCommand,            "Let the bob send or be silent", &commandString);
-	commandString = "music [start <address>|stop|pause|unpause]";
+	commandString = "music [start <address>|stop|pause|unpause|volume <0-1>]";
 	addCommand("music", &ServerBob::musicStartCommand,       "Control the integrated music player", &commandString);
+	addCommand("music", &ServerBob::musicVolumeCommand,      "", nullptr, false, false);
 	addCommand("music", &ServerBob::musicCommand,            "", nullptr, false, false);
 	commandString = "whisper clear";
 	addCommand("whisper", &ServerBob::whisperClearCommand,   "Clears the whisperlist", &commandString);
@@ -123,24 +124,15 @@ void ServerBob::removeServer(uint64 handlerId)
 	tsApi->log("Can't find server id to remove");
 }
 
-void ServerBob::fillAudioData(uint64 /*handlerId*/, uint8_t *buffer, size_t length,
-	int channelCount)
+bool ServerBob::fillAudioData(uint64 handlerId, uint8_t *buffer,
+	size_t length, int channelCount, bool sending)
 {
-	if (audioPlayer)
+	for (ServerConnection &connection : connections)
 	{
-		audio::AudioProperties props = audioPlayer->getTargetProperties();
-		if (props.channelCount != channelCount)
-		{
-			props.channelCount = channelCount;
-			props.channelLayout = channelCount == 2 ?
-				AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-			// Reset dynamically computed properties
-			props.bytesPerSecond = 0;
-			props.frameSize = 0;
-			audioPlayer->setTargetProperties(props);
-		}
-		audioPlayer->fillBuffer(buffer, length);
+		if (connection.getHandlerId() == handlerId)
+			return connection.fillAudioData(buffer, length, channelCount, sending);
 	}
+	return false;
 }
 
 ServerConnection* ServerBob::getServer(uint64 handlerId)
@@ -234,21 +226,6 @@ void ServerBob::setAudio(bool on)
 	audioOn = on;
 	for (ServerConnection &connection : connections)
 		connection.setAudio(on);
-	if (audioPlayer)
-	{
-		if (audioOn)
-		{
-			if (autoPaused)
-			{
-				autoPaused = false;
-				audioPlayer->setPaused(false);
-			}
-		} else if (!audioPlayer->isPaused())
-		{
-			autoPaused = true;
-			audioPlayer->setPaused(true);
-		}
-	}
 }
 
 void ServerBob::setQuality(bool on)
@@ -295,7 +272,7 @@ CommandResult ServerBob::audioCommand(ServerConnection * /*connection*/,
 	return CommandResult();
 }
 
-CommandResult ServerBob::musicStartCommand(ServerConnection * /*connection*/,
+CommandResult ServerBob::musicStartCommand(ServerConnection *connection,
 	User * /*sender*/, const std::string &/*message*/, std::string /*command*/,
 	std::string start, std::string address)
 {
@@ -309,42 +286,43 @@ CommandResult ServerBob::musicStartCommand(ServerConnection * /*connection*/,
 	if (address.length() >= 6 && address.compare(address.length() - 6, 6, "[/URL]") == 0)
 		address = address.substr(0, address.length() - 6);
 
-	// Load and start an audio stream
-	// TODO sometimes that doesn't work
-	autoPaused = false;
-	audioPlayer.reset(new audio::Player(address));
-	// Use default properties, the channel settings will by dynamically updated
-	audioPlayer->setTargetProperties(AV_SAMPLE_FMT_S16, 48000, 2,
-		AV_CH_LAYOUT_STEREO);
-	audioPlayer->start();
+	// Start an audio stream
+	connection->startAudio(address);
 	return CommandResult();
 }
 
-CommandResult ServerBob::musicCommand(ServerConnection * /*connection*/,
+CommandResult ServerBob::musicVolumeCommand(ServerConnection *connection,
+	User * /*sender*/, const std::string &/*message*/, std::string /*command*/,
+	std::string volumeStr, double volume)
+{
+	std::transform(volumeStr.begin(), volumeStr.end(), volumeStr.begin(), ::tolower);
+	if (volumeStr != "volume")
+		return CommandResult(false);
+	// Start an audio stream
+	if (!connection->hasAudioPlayer())
+		return CommandResult(false, std::make_shared<std::string>(
+			"error the audio player doesn't exist at the moment"));
+	connection->setVolume(volume);
+	return CommandResult();
+}
+
+CommandResult ServerBob::musicCommand(ServerConnection *connection,
 	User * /*sender*/, const std::string &/*message*/, std::string /*command*/,
 	std::string action)
 {
 	std::transform(action.begin(), action.end(), action.begin(), ::tolower);
 	if (action == "stop")
-		audioPlayer.reset();
+		connection->stopAudio();
 	else if (action == "pause")
 	{
-		if (audioPlayer)
-		{
-			audioPlayer->setPaused(true);
-			autoPaused = false;
-		} else
+		if (!connection->setAudioPaused(true))
 			return CommandResult(false, std::make_shared<std::string>(
-				"error no audio is played at the moment"));
+				"error the audio player doesn't exist at the moment"));
 	} else if (action == "unpause")
 	{
-		if (audioPlayer)
-		{
-			audioPlayer->setPaused(false);
-			autoPaused = false;
-		} else
+		if (!connection->setAudioPaused(false))
 			return CommandResult(false, std::make_shared<std::string>(
-				"error no audio is played at the moment"));
+				"error the audio player doesn't exist at the moment"));
 	} else
 		return CommandResult(false);
 	return CommandResult();
@@ -472,20 +450,7 @@ CommandResult ServerBob::statusMusicCommand(ServerConnection *connection,
 	if (music != "music")
 		return CommandResult(false);
 	std::ostringstream out;
-	out << "status music ";
-	if (!audioPlayer)
-		out << "off";
-	else if (audioPlayer->hasErrors())
-		out << "error";
-	else if (audioPlayer->isFinished())
-		out << "finished";
-	else if (audioPlayer->isPaused())
-		out << "paused";
-	else
-		out << "playing";
-
-	if (audioPlayer && !audioPlayer->hasErrors())
-		out << " with length " << audioPlayer->getDuration() << " s";
+	out << "status music " << connection->getAudioStatus();
 
 	connection->sendCommand(sender, out.str());
 	return CommandResult();

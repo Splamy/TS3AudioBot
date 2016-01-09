@@ -2,8 +2,9 @@
 
 extern "C"
 {
-	#include <libavutil/time.h>
 	#include <libavfilter/avfilter.h>
+	#include <libavutil/dict.h>
+	#include <libavutil/time.h>
 }
 
 #ifdef __linux__
@@ -29,6 +30,12 @@ uint64_t Player::getValidChannelLayout(uint64_t channelLayout, int channelCount)
 	if (channelLayout && av_get_channel_layout_nb_channels(channelLayout) == channelCount)
 		return channelLayout;
 	return 0;
+}
+
+const char* Player::searchEntry(const AVDictionary *dict, const char *key)
+{
+	AVDictionaryEntry *entry = av_dict_get(dict, key, nullptr, 0);
+	return entry ? entry->value : nullptr;
 }
 
 void Player::init()
@@ -445,7 +452,7 @@ int Player::computeWantedSamples(int sampleCount)
 	return wantedSamples;
 }
 
-bool Player::isPaused()
+bool Player::isPaused() const
 {
 	return paused;
 }
@@ -456,20 +463,41 @@ void Player::setPaused(bool paused)
 	sampleQueueWaiter.notify_all();
 }
 
-bool Player::isFinished()
+bool Player::isFinished() const
 {
 	return finished;
 }
 
-bool Player::hasErrors()
+bool Player::hasErrors() const
 {
 	return error;
 }
 
-double Player::getDuration()
+const std::string& Player::getStreamAddress() const
+{
+	return streamAddress;
+}
+
+std::unique_ptr<std::string> Player::getTitle() const
+{
+	const char *title = searchEntry(formatContext->metadata, "title");
+	return title ? std::unique_ptr<std::string>(new std::string(title)) : nullptr;
+}
+
+double Player::getDuration() const
 {
 	return (double) stream->duration * stream->time_base.num /
 		stream->time_base.den;
+}
+
+double Player::getVolume() const
+{
+	return volume;
+}
+
+void Player::setVolume(double volume)
+{
+	this->volume = volume;
 }
 
 audio::AudioProperties Player::getTargetProperties()
@@ -513,7 +541,9 @@ void Player::fillBuffer(uint8_t *buffer, std::size_t length)
 {
 	callbackTime = av_gettime_relative();
 
-	while (length > 0)
+	std::size_t todoLength = length;
+	uint8_t *curBuffer = buffer;
+	while (todoLength > 0)
 	{
 		bool silence = muted;
 		if (bufferIndex >= bufferSize)
@@ -530,16 +560,26 @@ void Player::fillBuffer(uint8_t *buffer, std::size_t length)
 			bufferIndex = 0;
 		}
 		std::size_t len = bufferSize - bufferIndex;
-		if (len > length)
-			len = length;
+		if (len > todoLength)
+			len = todoLength;
 		if (silence)
-			memset(buffer, 0, len);
+			memset(curBuffer, 0, len);
 		else
-			memcpy(buffer, pointer + bufferIndex, len);
-		length -= len;
-		buffer += len;
+			memcpy(curBuffer, pointer + bufferIndex, len);
+		todoLength -= len;
+		curBuffer += len;
 		bufferIndex += len;
 	}
+
+	// Apply current volume
+	if (volume != 1)
+	{
+		int16_t *samples = reinterpret_cast<int16_t*>(buffer);
+		std::size_t sampleCount = length / sizeof(int16_t);
+		for (std::size_t i = 0; i < sampleCount; i++)
+			samples[i] *= volume;
+	}
+
 	if (!isnan(clockTime))
 	{
 		// FIXME How exactly does this code work? It's needed for funky mode ;)

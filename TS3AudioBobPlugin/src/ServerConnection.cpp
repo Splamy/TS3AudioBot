@@ -87,6 +87,22 @@ void ServerConnection::setAudio(bool on)
 			tsApi->handleTsError(tsApi->getFunctions().
 				requestClientSetWhisperList(handlerId, 0, nullptr, nullptr, nullptr));
 	}
+	// Pause audio playback if it's still playing
+	if (audioPlayer)
+	{
+		if (audioOn)
+		{
+			if (autoPaused)
+			{
+				autoPaused = false;
+				audioPlayer->setPaused(false);
+			}
+		} else if (!audioPlayer->isPaused())
+		{
+			autoPaused = true;
+			audioPlayer->setPaused(true);
+		}
+	}
 	tsApi->handleTsError(tsApi->getFunctions().setClientSelfVariableAsInt(
 		handlerId, CLIENT_INPUT_DEACTIVATED,
 		on ? INPUT_ACTIVE : INPUT_DEACTIVATED));
@@ -216,6 +232,112 @@ const std::vector<const User*>* ServerConnection::getWhisperUsers() const
 const std::vector<uint64>* ServerConnection::getWhisperChannels() const
 {
 	return &whisperChannels;
+}
+
+bool ServerConnection::setVolume(double volume)
+{
+	if (!audioPlayer)
+		return false;
+	audioPlayer->setVolume(volume);
+	return true;
+}
+
+double ServerConnection::getVolume() const
+{
+	return audioPlayer->getVolume();
+}
+
+void ServerConnection::startAudio(const std::string &address)
+{
+	// Load and start an audio stream
+	// TODO sometimes that doesn't work
+	autoPaused = false;
+	audioPlayer.reset(new audio::Player(address));
+	// Use default properties, the channel settings will by dynamically updated
+	audioPlayer->setTargetProperties(AV_SAMPLE_FMT_S16, 48000, 2,
+		AV_CH_LAYOUT_STEREO);
+	audioPlayer->start();
+}
+
+void ServerConnection::stopAudio()
+{
+	audioPlayer.reset();
+}
+
+bool ServerConnection::hasAudioPlayer() const
+{
+	return static_cast<bool>(audioPlayer);
+}
+
+bool ServerConnection::isAudioPaused() const
+{
+	return audioPlayer->isPaused();
+}
+
+bool ServerConnection::setAudioPaused(bool paused)
+{
+	if (!audioPlayer)
+		return false;
+	audioPlayer->setPaused(paused);
+	autoPaused = false;
+	return true;
+}
+
+bool ServerConnection::fillAudioData(uint8_t *buffer, size_t length,
+	int channelCount, bool sending)
+{
+	if (sending && audioPlayer)
+	{
+		audio::AudioProperties props = audioPlayer->getTargetProperties();
+		if (props.channelCount != channelCount)
+		{
+			props.channelCount = channelCount;
+			props.channelLayout = channelCount == 2 ?
+				AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+			// Reset dynamically computed properties
+			props.bytesPerSecond = 0;
+			props.frameSize = 0;
+			audioPlayer->setTargetProperties(props);
+		}
+		audioPlayer->fillBuffer(buffer, length);
+		return true;
+	}
+	return false;
+}
+
+std::string ServerConnection::getAudioStatus() const
+{
+	std::ostringstream out;
+	if (!audioPlayer)
+		out << "off";
+	else
+	{
+		if (audioPlayer->hasErrors())
+			out << "error";
+		else if (audioPlayer->isFinished())
+			out << "finished";
+		else if (audioPlayer->isPaused())
+			out << "paused";
+		else
+			out << "playing";
+
+		if (!audioPlayer->hasErrors())
+		{
+			out << "\nlength " << audioPlayer->getDuration() << " s";
+			out << "\nvolume " << audioPlayer->getVolume();
+			std::unique_ptr<std::string> title = audioPlayer->getTitle();
+			if (title)
+			{
+				Utils::replace(*title, "\n", "\\n");
+				out << "\ntitle " << *title;
+			}
+			std::string address = audioPlayer->getStreamAddress();
+			Utils::replace(address, "\n", "\\n");
+			out << "\naddress " << address;
+		}
+	}
+
+	return out.str();
 }
 
 void ServerConnection::close(const std::string &quitMessage)

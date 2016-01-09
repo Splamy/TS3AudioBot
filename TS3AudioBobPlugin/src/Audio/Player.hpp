@@ -39,6 +39,7 @@ private:
 	bool muted = false;
 	bool finished = false;
 	bool error = false;
+	double volume = 1;
 	//TODO Synchronisation sync = SYNC_AUDIO;
 
 	std::queue<Frame> sampleQueue;
@@ -73,6 +74,7 @@ private:
 	std::condition_variable packetQueueWaiter;
 
 	static uint64_t getValidChannelLayout(uint64_t channelLayout, int channelCount);
+	static const char* searchEntry(const AVDictionary *dict, const char *key);
 
 public:
 	/** Initialize the ffmpeg library.
@@ -97,15 +99,21 @@ private:
 
 public:
 	/* Getters and Setters */
-	bool isPaused();
+	bool isPaused() const;
 	void setPaused(bool paused);
-	bool isFinished();
-	bool hasErrors();
+	bool isFinished() const;
+	bool hasErrors() const;
+	const std::string& getStreamAddress() const;
+	/** Searches for the title of the current stream.
+	 *  If no title can be found, the result is null.
+	 */
+	std::unique_ptr<std::string> getTitle() const;
 	/** Returns the duration of the audio stream in seconds.
 	 *  Calling this function on an erroneous instance is undefined behaviour.
 	 */
-	double getDuration();
-	// TODO set and apply volume
+	double getDuration() const;
+	double getVolume() const;
+	void setVolume(double volume);
 
 	/** Get the current properties of the audio data. */
 	audio::AudioProperties getTargetProperties();

@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include <Audio/Player.hpp>
 #include <Command.hpp>
 
 class AbstractCommandExecutor;
@@ -24,14 +23,9 @@ private:
 	std::vector<ServerConnection> connections;
 	bool audioOn;
 	bool qualityOn;
-	/** Indicates if the music player was paused automatically when the bot
-	 *  was muted.
-	 */
-	bool autoPaused;
 	uint64 botAdminGroup;
 
 	std::shared_ptr<TsApi> tsApi;
-	std::unique_ptr<audio::Player> audioPlayer;
 
 public:
 	ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup);
@@ -43,8 +37,8 @@ public:
 	void gotServerGroup(uint64 handlerId, uint64 dbId, uint64 serverGroup);
 	void addServer(uint64 handlerId);
 	void removeServer(uint64 handlerId);
-	void fillAudioData(uint64 handlerId, uint8_t *buffer, size_t length,
-		int channelCount);
+	bool fillAudioData(uint64 handlerId, uint8_t *buffer, size_t length,
+		int channelCount, bool sending);
 	ServerConnection* getServer(uint64 handlerId);
 	void handleCommand(uint64 handlerId, anyID sender, const char *uniqueId,
 		const std::string &message);
@@ -67,6 +61,7 @@ private:
 	CommandResult loopCommand          (ServerConnection *connection, User *sender, const std::string &message, std::string command);
 	CommandResult audioCommand         (ServerConnection *connection, User *sender, const std::string &message, std::string command, bool on);
 	CommandResult musicStartCommand    (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string start, std::string address);
+	CommandResult musicVolumeCommand   (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string volumeStr, double volume);
 	CommandResult musicCommand         (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string action);
 	CommandResult qualityCommand       (ServerConnection *connection, User *sender, const std::string &message, std::string command, bool on);
 	CommandResult whisperClientCommand (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string client, std::string action, int id);
