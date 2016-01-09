@@ -247,17 +247,33 @@ const std::vector<uint64>* ServerConnection::getWhisperChannels() const
 	return &whisperChannels;
 }
 
-bool ServerConnection::setVolume(double volume)
+void ServerConnection::setVolume(double volume)
 {
-	if (!audioPlayer)
-		return false;
-	audioPlayer->setVolume(volume);
-	return true;
+	this->volume = volume;
+	if (audioPlayer)
+		audioPlayer->setVolume(volume);
 }
 
 double ServerConnection::getVolume() const
 {
-	return audioPlayer->getVolume();
+	return volume;
+}
+
+void ServerConnection::setLooped(bool loop)
+{
+	this->loop = loop;
+	if (audioPlayer)
+		audioPlayer->setLooped(loop);
+}
+
+bool ServerConnection::isLooped() const
+{
+	return loop;
+}
+
+void ServerConnection::setAudioPosition(double position)
+{
+	audioPlayer->setPosition(position);
 }
 
 void ServerConnection::startAudio(const std::string &address)
@@ -268,6 +284,8 @@ void ServerConnection::startAudio(const std::string &address)
 	// Use default properties, the channel settings will by dynamically updated
 	audioPlayer->setTargetProperties(AV_SAMPLE_FMT_S16, 48000, 2,
 		AV_CH_LAYOUT_STEREO);
+	audioPlayer->setVolume(volume);
+	audioPlayer->setLooped(loop);
 	audioPlayer->start();
 }
 
@@ -286,13 +304,10 @@ bool ServerConnection::isAudioPaused() const
 	return audioPlayer->isPaused();
 }
 
-bool ServerConnection::setAudioPaused(bool paused)
+void ServerConnection::setAudioPaused(bool paused)
 {
-	if (!audioPlayer)
-		return false;
 	audioPlayer->setPaused(paused);
 	autoPaused = false;
-	return true;
 }
 
 bool ServerConnection::fillAudioData(uint8_t *buffer, size_t length,
@@ -341,7 +356,6 @@ std::string ServerConnection::getAudioStatus() const
 		if (audioPlayer->getReadError() == audio::Player::READ_ERROR_NONE)
 		{
 			out << "\nlength " << audioPlayer->getDuration() << " s";
-			out << "\nvolume " << audioPlayer->getVolume();
 			std::unique_ptr<std::string> title = audioPlayer->getTitle();
 			if (title)
 			{
@@ -353,6 +367,8 @@ std::string ServerConnection::getAudioStatus() const
 			out << "\naddress " << address;
 		}
 	}
+	out << "\nloop " << (loop ? "on" : "off");
+	out << "\nvolume " << volume;
 
 	return out.str();
 }

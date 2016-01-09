@@ -29,6 +29,8 @@ private:
 	 *  was muted.
 	 */
 	bool autoPaused;
+	double volume = 1;
+	bool loop = false;
 
 public:
 	ServerConnection(std::shared_ptr<TsApi> tsApi, uint64 handlerId,
@@ -59,8 +61,11 @@ public:
 	/** Sets the volume of the audio player.
 	 *  @return False will be returned if the audio player doesn't exist.
 	 */
-	bool setVolume(double volume);
+	void setVolume(double volume);
 	double getVolume() const;
+	void setLooped(bool loop);
+	bool isLooped() const;
+	void setAudioPosition(double position);
 	void startAudio(const std::string &address);
 	void stopAudio();
 	bool hasAudioPlayer() const;
@@ -68,7 +73,7 @@ public:
 	/** Pauses or unpauses the audio player.
 	 *  @return False will be returned if the audio player doesn't exist.
 	 */
-	bool setAudioPaused(bool paused);
+	void setAudioPaused(bool paused);
 	/** Fills a buffer with audio data.
 	 *  @return True, if the buffer was edited.
 	 */

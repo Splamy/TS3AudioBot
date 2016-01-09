@@ -50,6 +50,7 @@ public:
 		DECODE_ERROR_GET_BUFFER_SIZE,
 		DECODE_ERROR_RESAMPLE_COMPENSATION,
 		DECODE_ERROR_RESAMPLING,
+		DECODE_ERROR_SEEK,
 		DECODE_ERROR_COUNT
 	};
 
@@ -65,6 +66,7 @@ private:
 
 	std::string streamAddress;
 
+	bool loop = false;
 	bool paused = false;
 	bool muted = false;
 	bool finished = false;
@@ -75,6 +77,7 @@ private:
 
 	std::queue<Frame> sampleQueue;
 	std::mutex sampleQueueMutex;
+	std::mutex readThreadMutex;
 	std::condition_variable sampleQueueWaiter;
 	std::queue<AVPacket> packetQueue;
 	std::mutex packetQueueMutex;
@@ -134,8 +137,19 @@ private:
 
 	int computeWantedSamples(int sampleCount);
 
+	/** Sets the current stream position as stream dependant timestamp. */
+	void setPositionTime(int64_t position);
+	/** Gets the current stream position as stream dependant timestamp. */
+	int64_t getPositionTime() const;
+
 public:
+	/** Sets the current stream position in seconds. */
+	void setPosition(double time);
+	/** Gets the current stream position in seconds. */
+	double getPosition() const;
 	/* Getters and Setters */
+	bool isLooped() const;
+	void setLooped(bool looped);
 	bool isPaused() const;
 	void setPaused(bool paused);
 	bool isFinished() const;

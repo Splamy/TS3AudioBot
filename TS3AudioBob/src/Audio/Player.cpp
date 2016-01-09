@@ -39,7 +39,8 @@ const std::string Player::decodeErrorDescription[] = {
 	"Failed to create resampler",
 	"Failed to get buffer size",
 	"Failed to set compensation for resampling",
-	"Failed to resample"
+	"Failed to resample",
+	"Failed to change the position"
 };
 
 uint64_t Player::getValidChannelLayout(uint64_t channelLayout, int channelCount)
@@ -118,6 +119,8 @@ Player::~Player()
 void Player::setReadError(ReadError error)
 {
 	readError = error;
+	if (error != READ_ERROR_NONE)
+		printf("A read error occured: %s\n", getReadErrorDescription(error).c_str());
 	// Read errors are fatal errors so playing sound doesn't work anymore
 	finished = true;
 }
@@ -125,6 +128,8 @@ void Player::setReadError(ReadError error)
 void Player::setDecodeError(DecodeError error)
 {
 	decodeError = error;
+	if (error != DECODE_ERROR_NONE)
+		printf("A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
 }
 
 void Player::read()
@@ -175,8 +180,7 @@ void Player::read()
 	// Read the stream
 	bool lastPaused = false;
 	// The mutex and lock to wait with the readThreadWaiter
-	std::mutex waitMutex;
-	std::unique_lock<std::mutex> waitLock(waitMutex);
+	std::unique_lock<std::mutex> waitLock(readThreadMutex);
 	AVPacket packet;
 	bool hasEof = false;
 	while (!finished)
@@ -202,8 +206,13 @@ void Player::read()
 		// Test if the stream is over
 		if (!paused && packetQueue.empty())
 		{
-			finished = true;
-			return;
+			if (loop)
+				setPositionTime(0);
+			else
+			{
+				finished = true;
+				return;
+			}
 		}
 
 		// Read a packet from the stream
@@ -254,6 +263,16 @@ bool Player::openStreamComponent(int streamId)
 	// Discard useless packets
 	formatContext->streams[streamId]->discard = AVDISCARD_DEFAULT;
 
+	// Ignore all other streams
+	for (size_t i = 0; i < formatContext->nb_streams; i++)
+	{
+		if (i != static_cast<size_t>(streamId))
+		{
+			formatContext->streams[i]->discard = AVDISCARD_ALL;
+			avcodec_close(formatContext->streams[i]->codec);
+		}
+	}
+
 	int sampleRate, channelCount;
 	uint64_t channelLayout;
 	// TODO Work on audio filters
@@ -279,6 +298,7 @@ bool Player::openStreamComponent(int streamId)
 
 	// Initialize decoder
 	decoder.reset(new PacketToFrameDecoder(this, codecContext));
+	decoder->setInitalPlayTime(stream->time_base, stream->start_time);
 	decodeThread = std::thread(&Player::decode, this);
 
 	return true;
@@ -469,6 +489,48 @@ int Player::computeWantedSamples(int sampleCount)
 	return wantedSamples;
 }
 
+void Player::setPositionTime(int64_t position)
+{
+	if (avformat_seek_file(formatContext, streamId, position, position,
+		position, 0) < 0)
+		setDecodeError(DECODE_ERROR_SEEK);
+	else
+	{
+		std::unique_lock<std::mutex> lock(packetQueueMutex);
+		// Flush packet queue
+		while (!packetQueue.empty())
+			packetQueue.pop();
+		packetQueue.push(flushPacket);
+		packetQueueWaiter.notify_all();
+	}
+}
+
+int64_t Player::getPositionTime() const
+{
+	return 0; //TODO
+}
+
+void Player::setPosition(double time)
+{
+	std::unique_lock<std::mutex> lock(readThreadMutex);
+	setPositionTime(time / av_q2d(stream->time_base));
+}
+
+double Player::getPosition() const
+{
+	return 0; //TODO
+}
+
+bool Player::isLooped() const
+{
+	return loop;
+}
+
+void Player::setLooped(bool loop)
+{
+	this->loop = loop;
+}
+
 bool Player::isPaused() const
 {
 	return paused;
@@ -509,8 +571,7 @@ std::unique_ptr<std::string> Player::getTitle() const
 
 double Player::getDuration() const
 {
-	return (double) stream->duration * stream->time_base.num /
-		stream->time_base.den;
+	return stream->duration * av_q2d(stream->time_base);
 }
 
 double Player::getVolume() const

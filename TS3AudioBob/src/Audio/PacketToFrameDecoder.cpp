@@ -18,6 +18,13 @@ PacketToFrameDecoder::~PacketToFrameDecoder()
 	av_packet_unref(&currentPacket);
 }
 
+void PacketToFrameDecoder::setInitalPlayTime(AVRational playTimeBase,
+	int64_t playTime)
+{
+	initialPlayTimeBase = playTimeBase;
+	initialPlayTime = playTime;
+}
+
 int PacketToFrameDecoder::fillFrame(AVFrame *frame)
 {
 	int gotFrame = 0;

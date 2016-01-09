@@ -62,6 +62,8 @@ private:
 	CommandResult audioCommand         (ServerConnection *connection, User *sender, const std::string &message, std::string command, bool on);
 	CommandResult musicStartCommand    (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string start, std::string address);
 	CommandResult musicVolumeCommand   (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string volumeStr, double volume);
+	CommandResult musicSeekCommand     (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string seek, double position);
+	CommandResult musicLoopCommand     (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string loop, bool on);
 	CommandResult musicCommand         (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string action);
 	CommandResult qualityCommand       (ServerConnection *connection, User *sender, const std::string &message, std::string command, bool on);
 	CommandResult whisperClientCommand (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string client, std::string action, int id);
@@ -71,6 +73,7 @@ private:
 	CommandResult statusWhisperCommand (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string whisper);
 	CommandResult statusMusicCommand   (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string music);
 	CommandResult helpCommand          (ServerConnection *connection, User *sender, const std::string &message, std::string command);
+	CommandResult helpMusicCommand     (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string music);
 	CommandResult pingCommand          (ServerConnection *connection, User *sender, const std::string &message, std::string command);
 	CommandResult listClientsCommand   (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string clients);
 	CommandResult listChannelsCommand  (ServerConnection *connection, User *sender, const std::string &message, std::string command, std::string channels);

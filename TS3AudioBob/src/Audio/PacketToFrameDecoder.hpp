@@ -42,6 +42,8 @@ public:
 	PacketToFrameDecoder(Player *player, AVCodecContext *codecContext);
 	~PacketToFrameDecoder();
 
+	void setInitalPlayTime(AVRational playTimeBase, int64_t playTime);
+
 	/** Fill a frame with the received packets
 	 *  @return The size of the received frame
 	 */

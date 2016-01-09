@@ -32,14 +32,18 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64 botAdminGroup) :
 	audio::Player::init();
 
 	// Register commands
-	addCommand("help", &ServerBob::helpCommand,              "Gives you this handy command list");
+	std::string commandString = "help [music]";
+	addCommand("help", &ServerBob::helpCommand,              "Gives you this handy command list", &commandString);
+	addCommand("help", &ServerBob::helpMusicCommand,         "", nullptr, false, false);
 	addCommand("ping", &ServerBob::pingCommand,              "Returns with a pong if the Bob is alive");
 	addCommand("exit", &ServerBob::exitCommand,              "Let the Bob go home");
-	std::string commandString = "audio [on|off]";
+	commandString = "audio [on|off]";
 	addCommand("audio", &ServerBob::audioCommand,            "Let the bob send or be silent", &commandString);
-	commandString = "music [start <address>|stop|pause|unpause|volume <0-1>]";
+	commandString = "music [start <address>|stop|pause|unpause|loop [on|off]|volume <0-1>|seek <second>]";
 	addCommand("music", &ServerBob::musicStartCommand,       "Control the integrated music player", &commandString);
 	addCommand("music", &ServerBob::musicVolumeCommand,      "", nullptr, false, false);
+	addCommand("music", &ServerBob::musicSeekCommand,        "", nullptr, false, false);
+	addCommand("music", &ServerBob::musicLoopCommand,        "", nullptr, false, false);
 	addCommand("music", &ServerBob::musicCommand,            "", nullptr, false, false);
 	commandString = "whisper clear";
 	addCommand("whisper", &ServerBob::whisperClearCommand,   "Clears the whisperlist", &commandString);
@@ -298,11 +302,32 @@ CommandResult ServerBob::musicVolumeCommand(ServerConnection *connection,
 	std::transform(volumeStr.begin(), volumeStr.end(), volumeStr.begin(), ::tolower);
 	if (volumeStr != "volume")
 		return CommandResult(false);
-	// Start an audio stream
+	connection->setVolume(volume);
+	return CommandResult();
+}
+
+CommandResult ServerBob::musicSeekCommand(ServerConnection *connection,
+	User * /*sender*/, const std::string &/*message*/, std::string /*command*/,
+	std::string seek, double position)
+{
+	std::transform(seek.begin(), seek.end(), seek.begin(), ::tolower);
+	if (seek != "seek")
+		return CommandResult(false);
 	if (!connection->hasAudioPlayer())
 		return CommandResult(false, std::make_shared<std::string>(
 			"error the audio player doesn't exist at the moment"));
-	connection->setVolume(volume);
+	connection->setAudioPosition(position);
+	return CommandResult();
+}
+
+CommandResult ServerBob::musicLoopCommand(ServerConnection *connection,
+	User * /*sender*/, const std::string &/*message*/, std::string /*command*/,
+	std::string loop, bool on)
+{
+	std::transform(loop.begin(), loop.end(), loop.begin(), ::tolower);
+	if (loop != "loop")
+		return CommandResult(false);
+	connection->setLooped(on);
 	return CommandResult();
 }
 
@@ -313,18 +338,18 @@ CommandResult ServerBob::musicCommand(ServerConnection *connection,
 	std::transform(action.begin(), action.end(), action.begin(), ::tolower);
 	if (action == "stop")
 		connection->stopAudio();
-	else if (action == "pause")
+	else
 	{
-		if (!connection->setAudioPaused(true))
+		if (!connection->hasAudioPlayer())
 			return CommandResult(false, std::make_shared<std::string>(
 				"error the audio player doesn't exist at the moment"));
-	} else if (action == "unpause")
-	{
-		if (!connection->setAudioPaused(false))
-			return CommandResult(false, std::make_shared<std::string>(
-				"error the audio player doesn't exist at the moment"));
-	} else
-		return CommandResult(false);
+		else if (action == "pause")
+			connection->setAudioPaused(true);
+		else if (action == "unpause")
+			connection->setAudioPaused(false);
+		else
+			return CommandResult(false);
+	}
 	return CommandResult();
 }
 
@@ -461,10 +486,13 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 {
 	std::ostringstream output;
 	output << "help";
+	// Find the maximum command length to align the commands
 	std::size_t maxLength = 0;
 	for (Commands::const_reference command : commands)
 	{
-		if (command->getHelp() && command->getCommandName())
+		if (command->getHelp() && command->getCommandName() &&
+			// Exclude music commands
+			!Utils::startsWith(*command->getCommandName(), "music"))
 		{
 			std::size_t s = command->getCommandName()->size();
 			if (s > maxLength)
@@ -477,7 +505,48 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 	const std::string format = fStream.str();
 	for (Commands::const_reference command : commands)
 	{
-		if (command->getHelp() && command->getCommandName())
+		if (command->getHelp() && command->getCommandName() &&
+			// Exclude music commands
+			!Utils::startsWith(*command->getCommandName(), "music"))
+			output << Utils::format(format, *command->getCommandName(),
+				*command->getHelp());
+	}
+
+	connection->sendCommand(sender, output.str());
+	return CommandResult();
+}
+
+CommandResult ServerBob::helpMusicCommand(ServerConnection *connection,
+	User *sender, const std::string& /*message*/, std::string /*command*/,
+	std::string music)
+{
+	std::transform(music.begin(), music.end(), music.begin(), ::tolower);
+	if (music != "music")
+		return CommandResult(false);
+	std::ostringstream output;
+	output << "help";
+	// Find the maximum command length to align the commands
+	std::size_t maxLength = 0;
+	for (Commands::const_reference command : commands)
+	{
+		if (command->getHelp() && command->getCommandName() &&
+			// Only include music commands
+			Utils::startsWith(*command->getCommandName(), "music"))
+		{
+			std::size_t s = command->getCommandName()->size();
+			if (s > maxLength)
+				maxLength = s;
+		}
+	}
+	std::ostringstream fStream;
+	// Align the output to s characters
+	fStream << "\n{0:-" << maxLength << "}    {1}";
+	const std::string format = fStream.str();
+	for (Commands::const_reference command : commands)
+	{
+		if (command->getHelp() && command->getCommandName() &&
+			// Only include music commands
+			Utils::startsWith(*command->getCommandName(), "music"))
 			output << Utils::format(format, *command->getCommandName(),
 				*command->getHelp());
 	}
