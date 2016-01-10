@@ -33,10 +33,10 @@
 
 	public enum RequestTarget
 	{
-		[QueryString("server")]
-		Server = 4,
 		[QueryString("channel")]
-		Channel,
+		Channel = 4,
+		[QueryString("server")]
+		Server,
 	}
 
 	enum NotificationType

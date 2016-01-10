@@ -141,8 +141,16 @@ namespace TS3AudioBot.RessourceFactories
 			if (autoselectIndex != -1)
 			{
 				ytRessource.Selected = autoselectIndex;
-				abortPlay = false;
-				return;
+				if (!ValidateMedia(ytRessource))
+				{
+					abortPlay = true;
+					data.Session.Write("The video cannot be played due to youtube restrictions.");
+					return;
+				}
+				else {
+					abortPlay = false;
+					return;
+				}
 			}
 
 			StringBuilder strb = new StringBuilder();
@@ -177,15 +185,37 @@ namespace TS3AudioBot.RessourceFactories
 				PlayData data = session.UserRessource;
 				if (data == null || data.Ressource as YoutubeRessource == null)
 				{
-					session.Write("An unexpected error with the ytressource occured: null");
+					session.Write("An unexpected error with the ytressource occured: null.");
 					return true;
 				}
 				YoutubeRessource ytRessource = (YoutubeRessource)data.Ressource;
 				if (entry < 0 || entry >= ytRessource.AvailableTypes.Count)
 					return true;
 				ytRessource.Selected = entry;
+				if (!ValidateMedia(ytRessource))
+				{
+					session.Write("The video cannot be played due to youtube restrictions.");
+					return true;
+				}
 
 				session.Bot.Play(data);
+			}
+			return true;
+		}
+
+		private static bool ValidateMedia(YoutubeRessource ressource)
+		{
+			var media = ressource.AvailableTypes[ressource.Selected];
+			var request = WebRequest.Create(media.link) as HttpWebRequest;
+			try { request.GetResponse(); }
+			catch (WebException webEx)
+			{
+				HttpWebResponse errorResponse = webEx.Response as HttpWebResponse;
+				if (errorResponse == null)
+					Log.Write(Log.Level.Warning, $"YT Video media error: {webEx}");
+				else
+					Log.Write(Log.Level.Warning, $"YT Video media error: [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
+				return false;
 			}
 			return true;
 		}

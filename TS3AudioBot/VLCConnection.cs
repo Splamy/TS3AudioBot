@@ -46,6 +46,47 @@ namespace TS3AudioBot
 
 		// VLC Commands
 
+		int volume = -1;
+		public int Volume
+		{
+			get
+			{
+				return volume;
+			}
+			set
+			{
+				volume = value;
+				SendCommandLocked("volume " + value);
+			}
+		}
+
+		public int Position
+		{
+			get
+			{
+				SendResponseLocked(AwaitingResponse.GetPosition, "get_time");
+				return getPosition;
+			}
+			set
+			{
+				SendCommandLocked("seek " + value);
+			}
+		}
+
+		bool repeated = false;
+		public bool Repeated
+		{
+			get
+			{
+				return repeated;
+			}
+			set
+			{
+				repeated = value;
+				SendCommandLocked("repeat " + (value ? "on" : "off"));
+			}
+		}
+
 		public void AudioAdd(string url)
 		{
 			SendCommandLocked("enqueue " + url);
@@ -87,12 +128,6 @@ namespace TS3AudioBot
 			return getLength;
 		}
 
-		public int GetPosition()
-		{
-			SendResponseLocked(AwaitingResponse.GetPosition, "get_time");
-			return getPosition;
-		}
-
 		public bool IsPlaying()
 		{
 			SendResponseLocked(AwaitingResponse.IsPlaing, "is_playing");
@@ -102,21 +137,6 @@ namespace TS3AudioBot
 		public void SetLoop(bool enabled)
 		{
 			SendCommandLocked("loop " + (enabled ? "on" : "off"));
-		}
-
-		public void SetPosition(int position)
-		{
-			SendCommandLocked("seek " + position);
-		}
-
-		public void SetRepeat(bool enabled)
-		{
-			SendCommandLocked("repeat " + (enabled ? "on" : "off"));
-		}
-
-		public void SetVolume(int value)
-		{
-			SendCommandLocked("volume " + value);
 		}
 
 		// Lock and textsend methods

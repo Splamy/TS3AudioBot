@@ -31,28 +31,17 @@ namespace TS3AudioBot
 
 		// Playerproperties
 
-		private bool loop = false;
 		/// <summary>Loop state for the entire playlist.</summary>
-		public bool Loop
+		public bool Loop // TODO
 		{
-			get { return loop; }
-			set { playerConnection.SetLoop(value); loop = value; }
+			get { return false; }
+			set { }
 		}
 
-		private bool repeat = false;
 		/// <summary>Loop state for the current song.</summary>
-		public bool Repeat
-		{
-			get { return repeat; }
-			set { playerConnection.SetRepeat(value); repeat = value; }
-		}
+		public bool Repeat { get { return playerConnection.Repeated; } set { playerConnection.Repeated = value; } }
 
-		private int volume = -1;
-		public int Volume
-		{
-			get { return volume; }
-			set { if (value != volume) { playerConnection.SetVolume(value); volume = value; } }
-		}
+		public int Volume { get { return playerConnection.Volume; } set { playerConnection.Volume = value; } }
 
 		// Playermethods
 
@@ -63,20 +52,20 @@ namespace TS3AudioBot
 		{
 			if (pos < 0 || pos > playerConnection.GetLength())
 				return false;
-			playerConnection.SetPosition(pos);
+			playerConnection.Position = pos;
 			return true;
 		}
 
 		/// <summary>Plays the next song in the playlist.</summary>
 		public void Next()
 		{
-			playerConnection.AudioNext();
+
 		}
 
 		/// <summary>Plays the previous song in the playlist.</summary>
 		public void Previous()
 		{
-			playerConnection.AudioPrevious();
+
 		}
 
 		/// <summary>Clears the current playlist</summary>
@@ -164,7 +153,8 @@ namespace TS3AudioBot
 
 			if (audioRessource.Enqueue)
 			{
-				playerConnection.AudioAdd(ressourceLink);
+				//playerConnection.AudioAdd(ressourceLink);
+				// TODO to playlist mgr
 				audioRessource.Enqueue = false;
 			}
 			else
@@ -217,17 +207,16 @@ namespace TS3AudioBot
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing Mediaplayer...");
+
+			Stop(false);
+			if (ressourceEndTask != null)
+				ressourceEndTask.Wait();
+
 			if (playerConnection != null)
 			{
 				playerConnection.Dispose();
 				playerConnection = null;
 				Log.Write(Log.Level.Debug, "AF playerConnection disposed");
-			}
-			if (ressourceEndTokenSource != null)
-			{
-				ressourceEndTokenSource.Dispose();
-				ressourceEndTokenSource = null;
-				Log.Write(Log.Level.Debug, "AF rETS disposed");
 			}
 		}
 	}
