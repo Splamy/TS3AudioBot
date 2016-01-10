@@ -146,24 +146,26 @@ void ServerConnection::setQuality(bool on)
 	}
 }
 
-User* ServerConnection::getUser(const std::string &uniqueId)
+std::vector<User*> ServerConnection::getUsers(const std::string &uniqueId)
 {
+	std::vector<User*> result;
 	for (User &user : users)
 	{
 		if (user.getUniqueId() == uniqueId)
-			return &user;
+			result.push_back(&user);
 	}
-	return nullptr;
+	return result;
 }
 
-User* ServerConnection::getUser(uint64 dbId)
+std::vector<User*> ServerConnection::getUsers(uint64 dbId)
 {
+	std::vector<User*> result;
 	for (User &user : users)
 	{
 		if (user.hasDbId() && user.getDbId() == dbId)
-			return &user;
+			result.push_back(&user);
 	}
-	return nullptr;
+	return result;
 }
 
 User* ServerConnection::getUser(anyID userId)

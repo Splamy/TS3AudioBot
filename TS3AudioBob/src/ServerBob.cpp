@@ -85,19 +85,24 @@ ServerBob::ServerBob(ServerBob &&bob) :
 void ServerBob::gotDbId(uint64 handlerId, const char *uniqueId, uint64 dbId)
 {
 	ServerConnection *connection = getServer(handlerId);
-	User *user = connection->getUser(uniqueId);
-	if (!user->hasDbId())
+	std::vector<User*> users = connection->getUsers(uniqueId);
+	for (User *user : users)
 	{
-		user->setDbId(dbId);
-		user->requestGroupUpdate();
+		if (!user->hasDbId())
+		{
+			user->setDbId(dbId);
+			user->requestGroupUpdate();
+		}
 	}
 }
 
 void ServerBob::gotServerGroup(uint64 handlerId, uint64 dbId, uint64 serverGroup)
 {
 	ServerConnection *connection = getServer(handlerId);
-	User *user = connection->getUser(dbId);
-	if (user)
+	std::vector<User*> users = connection->getUsers(dbId);
+	if (users.empty())
+		tsApi->log("User not found");
+	for (User *user : users)
 	{
 		user->addGroup(serverGroup);
 		if (serverGroup == botAdminGroup)
@@ -107,8 +112,7 @@ void ServerBob::gotServerGroup(uint64 handlerId, uint64 dbId, uint64 serverGroup
 			while (user->hasCommands())
 				executeCommand(connection, user, user->dequeueCommand());
 		}
-	} else
-		tsApi->log("User not found");
+	}
 }
 
 void ServerBob::addServer(uint64 handlerId)

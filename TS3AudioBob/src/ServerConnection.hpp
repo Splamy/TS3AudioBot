@@ -45,8 +45,8 @@ public:
 	bool shouldWhisper() const;
 	void setAudio(bool on);
 	void setQuality(bool on);
-	User* getUser(const std::string &uniqueId);
-	User* getUser(uint64 dbId);
+	std::vector<User*> getUsers(const std::string &uniqueId);
+	std::vector<User*> getUsers(uint64 dbId);
 	User* getUser(anyID userId);
 	// TODO remove users again
 	void addUser(anyID id, const std::string &uniqueId);

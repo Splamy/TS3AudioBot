@@ -59,11 +59,11 @@ const char* Player::searchEntry(const AVDictionary *dict, const char *key)
 void Player::init()
 {
 	// Initialize ffmpeg only once
-	static bool inited = false;
+	static bool initialized = false;
 
-	if (!inited)
+	if (!initialized)
 	{
-		inited = true;
+		initialized = true;
 		av_log_set_flags(AV_LOG_SKIP_REPEATED);
 		avfilter_register_all();
 		av_register_all();
@@ -132,6 +132,14 @@ void Player::setDecodeError(DecodeError error)
 		printf("A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
 }
 
+void Player::waitUntilInitialized() const
+{
+	// Busy waiting because it shouldn't take long until everything is
+	// initialized
+	while (!initialized)
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
 void Player::read()
 {
 	// Set thread name if available
@@ -183,6 +191,8 @@ void Player::read()
 	std::unique_lock<std::mutex> waitLock(readThreadMutex);
 	AVPacket packet;
 	bool hasEof = false;
+	// Ready with initializing
+	initialized = true;
 	while (!finished)
 	{
 		if (paused != lastPaused && !realtime)
@@ -511,12 +521,14 @@ int64_t Player::getPositionTime() const
 
 void Player::setPosition(double time)
 {
+	waitUntilInitialized();
 	std::lock_guard<std::mutex> lock(readThreadMutex);
 	setPositionTime(time / av_q2d(stream->time_base));
 }
 
 double Player::getPosition() const
 {
+	waitUntilInitialized();
 	return 0; //TODO
 }
 
@@ -564,12 +576,14 @@ const std::string& Player::getStreamAddress() const
 
 std::unique_ptr<std::string> Player::getTitle() const
 {
+	waitUntilInitialized();
 	const char *title = searchEntry(formatContext->metadata, "title");
 	return title ? std::unique_ptr<std::string>(new std::string(title)) : nullptr;
 }
 
 double Player::getDuration() const
 {
+	waitUntilInitialized();
 	return stream->duration * av_q2d(stream->time_base);
 }
 
