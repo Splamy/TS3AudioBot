@@ -1,9 +1,5 @@
 #include "Plugin.hpp"
 
-#include <ServerBob.hpp>
-#include <ServerConnection.hpp>
-#include <TsApi.hpp>
-
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -16,9 +12,14 @@
 #include <string>
 #include <vector>
 
+#include <Audio/Player.hpp>
+#include <ServerBob.hpp>
+#include <ServerConnection.hpp>
+#include <TsApi.hpp>
+
 namespace
 {
-static const char *VERSION = "2.1";
+static const char *VERSION = "2.2";
 static const std::string CONFIG_FILE = "../configTS3AudioBot.cfg";
 static const std::string ADMIN_Id_CONFIG_STRING = "MainBot::adminGroupId=";
 static const std::size_t PATH_SIZE = 1024;
@@ -33,7 +34,7 @@ static std::shared_ptr<TsApi> tsApi;
 // Unique name of this plugin
 const char* ts3plugin_name()
 {
-	return "TS3AudioBobPlugin";
+	return "TS3AudioBob";
 }
 
 // Version of this plugin
@@ -57,7 +58,7 @@ const char* ts3plugin_author()
 // Description of this plugin
 const char* ts3plugin_description()
 {
-	return "Lets the TS3AudioBot control the TS3AudioBobPlugin.";
+	return "Lets the TS3AudioBot control the TS3AudioBob.";
 }
 
 // Set the callback function pointers
@@ -191,4 +192,13 @@ void ts3plugin_onServerGroupByClientIDEvent(uint64 scHandlerId,
 	const char * /*name*/, uint64 serverGroup, uint64 clientDatabaseId)
 {
 	serverBob->gotServerGroup(scHandlerId, clientDatabaseId, serverGroup);
+}
+
+void ts3plugin_onEditCapturedVoiceDataEvent(uint64 scHandlerId,
+	short *samples, int sampleCount, int channels, int *edited)
+{
+	if (serverBob && serverBob->fillAudioData(scHandlerId,
+		reinterpret_cast<uint8_t*>(samples),
+		sampleCount * channels * sizeof(short), channels, *edited & 2))
+		*edited |= 1;
 }

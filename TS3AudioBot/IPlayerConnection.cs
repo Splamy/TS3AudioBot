@@ -11,9 +11,8 @@ namespace TS3AudioBot
 		int Volume { get; set; }
 		int Position { get; set; }
 		bool Repeated { get; set; }
-
-		void AudioClear();
-		void AudioPlay();
+		bool Pause { get; set; }
+		
 		void AudioStart(string url);
 		void AudioStop();
 		int GetLength();

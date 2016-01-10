@@ -1,16 +1,16 @@
 #ifndef COMMAND_HPP
 #define COMMAND_HPP
 
-#include <Definitions.hpp>
-
-#include <Utils.hpp>
-#include <public_definitions.h>
-
 #include <algorithm>
 #include <array>
 #include <memory>
 #include <sstream>
 #include <string>
+
+#include <public_definitions.h>
+
+#include <Definitions.hpp>
+#include <Utils.hpp>
 
 class ServerConnection;
 class User;

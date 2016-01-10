@@ -49,10 +49,7 @@ namespace TS3AudioBot
 		int volume = -1;
 		public int Volume
 		{
-			get
-			{
-				return volume;
-			}
+			get { return volume; }
 			set
 			{
 				volume = value;
@@ -76,10 +73,7 @@ namespace TS3AudioBot
 		bool repeated = false;
 		public bool Repeated
 		{
-			get
-			{
-				return repeated;
-			}
+			get { return repeated; }
 			set
 			{
 				repeated = value;
@@ -87,19 +81,23 @@ namespace TS3AudioBot
 			}
 		}
 
+		bool paused = false;
+		public bool Pause
+		{
+			get { return paused; }
+			set
+			{
+				paused = value;
+				if (value)
+					SendCommandLocked("pause");
+				else
+					SendCommandLocked("play");
+			}
+		}
+
 		public void AudioAdd(string url)
 		{
 			SendCommandLocked("enqueue " + url);
-		}
-
-		public void AudioClear()
-		{
-			SendCommandLocked("clear");
-		}
-
-		public void AudioNext()
-		{
-			SendCommandLocked("next");
 		}
 
 		public void AudioPrevious()

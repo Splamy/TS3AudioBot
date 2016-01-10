@@ -4,6 +4,7 @@ folder = "src"
 execfile(rootDirectory + "Tools/SConscriptLib.py")
 
 if not iswin:
+	curenv.ParseConfig("pkg-config --cflags --libs libavcodec libavformat libswscale libavutil libswresample libavfilter")
 	curenv.Append(CCFLAGS = ["-fPIC", "-fvisibility=hidden", "-Wno-format-security", "-Wno-missing-braces"])
 else:
 	curenv.Append(LINKFLAGS = ["/subsystem:console"])

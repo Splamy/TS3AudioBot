@@ -262,9 +262,10 @@ else:
 # Available options
 vars = Variables(".buildvars.py", ARGUMENTS)
 vars.AddVariables(
-	BoolVariable("release", "Build in release mode", False),
-	BoolVariable("verbose", "Output build commands", False),
-	BoolVariable("noinstall", "Build for local use", True),
+	BoolVariable("release",       "Build in release mode", False),
+	BoolVariable("optimize",      "Build in optimized mode", False),
+	BoolVariable("verbose",       "Output build commands", False),
+	BoolVariable("noinstall",     "Build for local use", True),
 	PathVariable("installPrefix", "Define installation directory", installPrefix, PathVariable.PathIsDirCreate))
 if iswin:
 	vars.AddVariables(
@@ -280,6 +281,8 @@ else:
 
 if env.get("release"):
 	buildPrefix = "bin-release"
+if env.get("optimize"):
+	buildPrefix = "bin-optimize"
 else:
 	buildPrefix = "bin"
 vars.AddVariables(PathVariable("buildPrefix", "Define build directory", buildPrefix, PathVariable.PathIsDirCreate))
@@ -312,7 +315,7 @@ if not env.get("verbose"):
 if iswin:
 	env.Append(CCFLAGS = ["/wd4068"], CPPDEFINES = ["_UNICODE", "WXUSINGDLL"])
 else:
-	env.Append(CXXFLAGS = ["-std=c++11"], CCFLAGS = ["-Wall", "-Wextra", "-Wfatal-errors"])
+	env.Append(CXXFLAGS = ["-std=c++11"], CCFLAGS = ["-Wall", "-Wextra", "-Wfatal-errors", "-fdiagnostics-color=always"])
 
 # Setup clang if it should be used
 if env.get("clang"):
@@ -328,7 +331,15 @@ if env.get("release"):
 	if iswin:
 		env.Append(CCFLAGS = ["/O2", "/MD"])
 	else:
-		env.Append(CCFLAGS = ["-O2"])
+		env.Append(CCFLAGS = ["-O2", "-flto"])
+elif env.get("optimize"):
+	# Optimized release build
+	buildType = "Optimize"
+	env.Append(CPPDEFINES = ["NDEBUG"])
+	if iswin:
+		env.Append(CCFLAGS = ["/O3", "/MD"])
+	else:
+		env.Append(CCFLAGS = ["-O3", "-flto", "-mtune=native", "-march=native"])
 else:
 	# Debug build
 	buildType = "Debug"

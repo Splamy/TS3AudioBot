@@ -1,15 +1,13 @@
 #ifndef PLUGIN_HPP
 #define PLUGIN_HPP
 
+#include <cstdlib>
+
 #include <Definitions.hpp>
 #include <public_definitions.h>
 
-#include <cstdlib>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+extern "C"
+{
 // Required functions that are needed for the plugin to load
 DLL_PUBLIC const char* ts3plugin_name();
 DLL_PUBLIC const char* ts3plugin_version();
@@ -33,9 +31,8 @@ DLL_PUBLIC void ts3plugin_onClientDBIDfromUIDEvent(uint64 serverConnectionHandle
 	const char *uniqueClientIdentifier, uint64 clientDatabaseId);
 DLL_PUBLIC void ts3plugin_onServerGroupByClientIDEvent(uint64 serverConnectionHandlerId,
 	const char *name, uint64 serverGroupList, uint64 clientDatabaseId);
-
-#ifdef __cplusplus
+DLL_PUBLIC void ts3plugin_onEditCapturedVoiceDataEvent(uint64 scHandlerID,
+	short *samples, int sampleCount, int channels, int *edited);
 }
-#endif
 
 #endif

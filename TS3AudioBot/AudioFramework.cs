@@ -40,8 +40,9 @@ namespace TS3AudioBot
 
 		/// <summary>Loop state for the current song.</summary>
 		public bool Repeat { get { return playerConnection.Repeated; } set { playerConnection.Repeated = value; } }
-
 		public int Volume { get { return playerConnection.Volume; } set { playerConnection.Volume = value; } }
+		/// <summary>Starts or resumes the current song.</summary>
+		public bool Pause { get { return playerConnection.Pause; } set { playerConnection.Pause = value; } }
 
 		// Playermethods
 
@@ -71,13 +72,7 @@ namespace TS3AudioBot
 		/// <summary>Clears the current playlist</summary>
 		public void Clear()
 		{
-			playerConnection.AudioClear();
-		}
 
-		/// <summary>Starts or resumes the current song.</summary>
-		public void Play()
-		{
-			playerConnection.AudioPlay();
 		}
 
 		// Audioframework
@@ -141,9 +136,7 @@ namespace TS3AudioBot
 			audioRessource.InvokingUser = invoker;
 
 			Stop(true);
-
-			playerConnection.AudioClear();
-
+			
 			if (audioRessource.Volume == -1)
 				audioRessource.Volume = audioFrameworkData.defaultVolume;
 
