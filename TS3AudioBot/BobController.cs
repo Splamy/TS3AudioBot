@@ -9,7 +9,7 @@ using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {
-	class BobController : IDisposable
+	class BobController : IPlayerConnection
 	{
 		private const int CONNECT_TIMEOUT_MS = 10000;
 		private const int CONNECT_TIMEOUT_INTERVAL_MS = 100;
@@ -26,6 +26,9 @@ namespace TS3AudioBot
 
 		private bool sending = false;
 		private bool isRunning;
+		private int volume = 100;
+		private bool repeated = false;
+		private bool pause = false;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private ClientData bobClient;
@@ -45,6 +48,47 @@ namespace TS3AudioBot
 			set
 			{
 				sending = value;
+				SendMessage("audio " + (value ? "on" : "off"));
+			}
+		}
+
+		public int Volume
+		{
+			get { return volume; }
+			set
+			{
+				volume = value;
+				SendMessage("music volume " + (value / 100.0));
+			}
+		}
+
+		public int Position
+		{
+			get { return 0; } // TODO
+			set
+			{
+				SendMessage("music seek " + value);
+			}
+		}
+
+		public bool Repeated
+		{
+			get { return repeated; }
+			set
+			{
+				repeated = value;
+				SendMessage("music loop " + (value ? "on" : "off"));
+			}
+		}
+
+		public bool Pause
+		{
+			get { return pause; }
+			set
+			{
+				pause = value;
+				// There are also "music pause|unpause" but it unnecessary to send then
+				// and the bob automatically pauses when it doesn't send.
 				SendMessage("audio " + (value ? "on" : "off"));
 			}
 		}
@@ -196,6 +240,30 @@ namespace TS3AudioBot
 		public void WhisperClientUnsubscribe(int userID)
 		{
 			SendMessage("whisper client remove " + userID);
+		}
+
+		public void AudioStart(string url)
+		{
+			SendMessage("music start " + url);
+		}
+
+		public void AudioStop()
+		{
+			SendMessage("music stop");
+		}
+
+		public int GetLength()
+		{
+			SendMessage("status music");
+			//TODO get result
+			return 0;
+		}
+
+		public bool IsPlaying()
+		{
+			SendMessage("status music");
+			//TODO get result
+			return false;
 		}
 
 		private void RestoreSubscriptions(ClientData invokingUser)
