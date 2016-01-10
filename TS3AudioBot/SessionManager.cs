@@ -16,7 +16,7 @@ namespace TS3AudioBot
 			openSessions = new List<PrivateSession>();
 		}
 
-		public BotSession CreateSession(MainBot bot, int invokerId)
+		public BotSession CreateSession(MainBot bot, ushort invokerId)
 		{
 			if (ExistsSession(invokerId))
 				return GetSession(MessageTarget.Private, invokerId);
@@ -26,19 +26,19 @@ namespace TS3AudioBot
 			return newSession;
 		}
 
-		public bool ExistsSession(int invokerId)
+		public bool ExistsSession(ushort invokerId)
 		{
 			return openSessions.Any((ps) => ps.Client.Id == invokerId);
 		}
 
-		public BotSession GetSession(MessageTarget target, int invokerId)
+		public BotSession GetSession(MessageTarget target, ushort invokerId)
 		{
 			if (target == MessageTarget.Server)
 				return DefaultSession;
 			return openSessions.FirstOrDefault((bs) => bs.Client.Id == invokerId) ?? DefaultSession;
 		}
 
-		public void RemoveSession(int invokerId)
+		public void RemoveSession(ushort invokerId)
 		{
 			openSessions.RemoveAll((ps) => ps.Client.Id == invokerId);
 		}

@@ -16,6 +16,7 @@ namespace TS3AudioBot
 		/// </summary>
 		private const int BOB_TIMEOUT = 60;
 
+		private IQueryConnection queryConnection;
 		private BobControllerData data;
 		private TickWorker timeout;
 		private DateTime lastUpdate = DateTime.Now;
@@ -30,8 +31,6 @@ namespace TS3AudioBot
 		private ClientData bobClient;
 
 		private Dictionary<int, SubscriptionData> channelSubscriptions;
-
-		public IQueryConnection QueryConnection { get; set; }
 
 		public bool Sending
 		{
@@ -55,7 +54,7 @@ namespace TS3AudioBot
 
 		public int Position
 		{
-			get { return 0; } // TODO
+			get { throw new NotImplementedException(); }
 			set
 			{
 				SendMessage("music seek " + value);
@@ -84,34 +83,33 @@ namespace TS3AudioBot
 			}
 		}
 
-		public BobController(BobControllerData data)
+		public BobController(BobControllerData data, IQueryConnection queryConnection)
 		{
 			timeout = TickPool.RegisterTick(TimeoutCheck, 100, false);
 			isRunning = false;
 			this.data = data;
+			this.queryConnection = queryConnection;
+			queryConnection.OnMessageReceived += GetResponse;
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
 		}
 
 		private void SendMessage(string message)
 		{
-			lock (lockObject)
+			if (isRunning)
 			{
-				if (isRunning)
-				{
+				lock (lockObject)
 					SendMessageRaw(message);
-				}
-				else
-				{
-					Log.Write(Log.Level.Debug, "BC Enqueing: {0}", message);
-					commandQueue.Enqueue(message);
-				}
+			}
+			else
+			{
+				Log.Write(Log.Level.Debug, "BC Enqueing: {0}", message);
+				commandQueue.Enqueue(message);
 			}
 		}
 
 		private void SendMessageRaw(string message)
 		{
-			//TODO lock here instead of sendmessage
 			if (bobClient == null)
 			{
 				Log.Write(Log.Level.Debug, "BC bobClient is null! Message is lost: {0}", message);
@@ -119,7 +117,7 @@ namespace TS3AudioBot
 			}
 
 			Log.Write(Log.Level.Debug, "BC sending to bobC: {0}", message);
-			QueryConnection.SendMessage(message, bobClient);
+			queryConnection.SendMessage(message, bobClient);
 		}
 
 		private void SendQueue()
@@ -127,8 +125,19 @@ namespace TS3AudioBot
 			if (!isRunning)
 				throw new InvalidOperationException("The bob must run to send the commandQueue");
 
-			while (commandQueue.Count > 0)
-				SendMessageRaw(commandQueue.Dequeue());
+			lock (lockObject)
+				while (commandQueue.Count > 0)
+					SendMessageRaw(commandQueue.Dequeue());
+		}
+
+		public void GetResponse(object sender, TextMessage message)
+		{
+			if (bobClient == null)
+				return;
+			if (message.InvokerId != bobClient.Id)
+				return;
+
+			// TODO parse here
 		}
 
 		public void HasUpdate()
@@ -159,13 +168,13 @@ namespace TS3AudioBot
 			{
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
-				QueryConnection.OnClientConnect += AwaitBobConnect;
+				queryConnection.OnClientConnect += AwaitBobConnect;
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 
 				if (!Util.Execute(data.startTSClient))
 				{
 					Log.Write(Log.Level.Debug, "BC could not start bob");
-					QueryConnection.OnClientConnect -= AwaitBobConnect;
+					queryConnection.OnClientConnect -= AwaitBobConnect;
 					return;
 				}
 			}
@@ -244,15 +253,13 @@ namespace TS3AudioBot
 		public int GetLength()
 		{
 			SendMessage("status music");
-			//TODO get result
-			return 0;
+			throw new NotImplementedException();
 		}
 
 		public bool IsPlaying()
 		{
 			SendMessage("status music");
-			//TODO get result
-			return false;
+			throw new NotImplementedException();
 		}
 
 		private void RestoreSubscriptions(ClientData invokingUser)
@@ -276,8 +283,8 @@ namespace TS3AudioBot
 			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = QueryConnection.GetClientById(e.ClientId);
-				QueryConnection.OnClientConnect -= AwaitBobConnect;
+				bobClient = queryConnection.GetClientById(e.ClientId);
+				queryConnection.OnClientConnect -= AwaitBobConnect;
 				isRunning = true;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
 				SendQueue();

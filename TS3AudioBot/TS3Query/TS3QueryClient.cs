@@ -192,11 +192,11 @@
 			new Parameter("msg", message));
 		public void SendGlobalMessage(string message) => Send("gm",
 			new Parameter("msg", message));
-		public void KickClientFromServer(int[] clientIds)
+		public void KickClientFromServer(ushort[] clientIds)
 			=> KickClient(clientIds, RequestTarget.Server);
-		public void KickClientFromChannel(int[] clientIds)
+		public void KickClientFromChannel(ushort[] clientIds)
 			=> KickClient(clientIds, RequestTarget.Channel);
-		public void KickClient(int[] clientIds, RequestTarget target) => Send("clientkick",
+		public void KickClient(ushort[] clientIds, RequestTarget target) => Send("clientkick",
 			new Parameter("reasonid", (int)target),
 			Binder.NewBind("clid", clientIds));
 		public IEnumerable<ClientData> ClientList() => ClientList(0);

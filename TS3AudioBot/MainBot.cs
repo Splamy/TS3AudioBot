@@ -6,6 +6,7 @@
 	using System.Linq;
 	using System.Text;
 	using System.Text.RegularExpressions;
+	using System.Threading;
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
@@ -25,13 +26,14 @@
 	{
 		static void Main(string[] args)
 		{
+			// Force thread pool disable
+			ThreadPool.SetMaxThreads(0, 0);
 			using (MainBot bot = new MainBot())
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 				{
 					var ex = e.ExceptionObject as Exception;
-					if (ex != null)
-						Log.Write(Log.Level.Error, "Critical program failure: {0}", ex);
+					Log.Write(Log.Level.Error, "Critical program failure: {0}", ex ?? new Exception("Unknown Exception!"));
 					if (bot != null)
 						bot.Dispose();
 				};
@@ -72,7 +74,7 @@
 			commandDict = new Trie<BotCommand>();
 		}
 
-		public bool ReadParameter(string[] args)
+		private bool ReadParameter(string[] args)
 		{
 			HashSet<string> launchParameter = new HashSet<string>();
 			foreach (string parameter in args)
@@ -89,7 +91,7 @@
 			return false;
 		}
 
-		public void InitializeBot()
+		private void InitializeBot()
 		{
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
@@ -131,9 +133,11 @@
 			Log.Write(Log.Level.Info, "[==============================================]");
 
 			// Initialize Modules
-			AudioFramework = new AudioFramework(afd);
-			BobController = new BobController(bcd);
 			QueryConnection = new QueryConnection(qcd);
+			BobController = new BobController(bcd, QueryConnection);
+			// old: new VLCConnection(afd.vlcLocation);
+			// new: BobController
+			AudioFramework = new AudioFramework(afd, new VLCConnection(afd.vlcLocation));
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 
@@ -150,15 +154,13 @@
 			QueryConnection.OnMessageReceived += TextCallback;
 			// register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerId);
-			// give the bobController a reference to the query so he can communicate with the queryClient
-			BobController.QueryConnection = QueryConnection;
 			// create a default session for all users in all chat
 			SessionManager.DefaultSession = new PublicSession(this);
 			// connect the query after everyting is set up
 			QueryConnection.Connect();
 		}
 
-		public void InitializeCommands()
+		private void InitializeCommands()
 		{
 			var allCommandsList = new List<BotCommand>();
 
@@ -203,7 +205,7 @@
 			allCommands = allCommandsList.ToArray();
 		}
 
-		public void Run()
+		private void Run()
 		{
 			var qc = (QueryConnection)QueryConnection;
 			qc.tsClient.EventDispatcher.EnterEventLoop();
@@ -215,7 +217,7 @@
 			catch (IOException) { return null; }
 		}
 
-		public void TextCallback(object sender, TextMessage textMessage)
+		private void TextCallback(object sender, TextMessage textMessage)
 		{
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 

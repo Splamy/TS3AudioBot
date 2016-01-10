@@ -5,6 +5,7 @@ using System.Threading;
 using System.Net.Sockets;
 using System.Diagnostics;
 using System.ComponentModel;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {
@@ -230,7 +231,9 @@ namespace TS3AudioBot
 						ProcessMessage(sb.ToString());
 					}
 				}
-				catch (IOException) { Log.Write(Log.Level.Warning, "Disconnected from VLC"); }
+				catch (IOException) { }
+				catch (ObjectDisposedException) { }
+				Log.Write(Log.Level.Warning, "Disconnected from VLC");
 			}
 			vlcClient = null;
 		}
@@ -304,9 +307,11 @@ namespace TS3AudioBot
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing VLC...");
+
 			if (netStream != null)
 			{
 				netStream.Close();
+				Util.WaitOrTimeout(() => vlcClient != null, 100);
 				netStream = null;
 			}
 			if (vlcproc != null)

@@ -14,10 +14,10 @@ namespace TS3AudioBot
 
 		void SendMessage(string message, ClientData client);
 		void SendGlobalMessage(string message);
-		void KickClientFromServer(int clientId);
-		void KickClientFromChannel(int clientId);
+		void KickClientFromServer(ushort clientId);
+		void KickClientFromChannel(ushort clientId);
 
-		ClientData GetClientById(int id);
+		ClientData GetClientById(ushort id);
 		ClientData GetClientByName(string name);
 		void RefreshClientBuffer(bool force);
 		int[] GetClientServerGroups(ClientData client);

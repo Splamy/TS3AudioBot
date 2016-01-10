@@ -66,10 +66,10 @@ namespace TS3AudioBot
 
 		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);
 		public void SendGlobalMessage(string message) => tsClient.SendGlobalMessage(message);
-		public void KickClientFromServer(int clientId) => tsClient.KickClientFromServer(new[] { clientId });
-		public void KickClientFromChannel(int clientId) => tsClient.KickClientFromChannel(new[] { clientId });
+		public void KickClientFromServer(ushort clientId) => tsClient.KickClientFromServer(new[] { clientId });
+		public void KickClientFromChannel(ushort clientId) => tsClient.KickClientFromChannel(new[] { clientId });
 
-		public ClientData GetClientById(int id)
+		public ClientData GetClientById(ushort id)
 		{
 			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(client => client.Id == id);

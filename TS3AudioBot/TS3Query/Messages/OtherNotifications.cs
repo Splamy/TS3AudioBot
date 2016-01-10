@@ -5,7 +5,7 @@
 	public abstract class InvokedNotifiction : Notification
 	{
 		[QuerySerialized("invokerid")]
-		public int InvokerId;
+		public ushort InvokerId;
 
 		[QuerySerialized("invokername")]
 		public string InvokerName;
@@ -42,7 +42,7 @@
 		public TimeSpan HostbannerGfxInterval;
 
 		[QuerySerialized("virtualserver_priority_speaker_dimm_modificator")]
-		public float PrioritySpeakerDimmModificator; // TODO check
+		public float PrioritySpeakerDimmModificator;
 
 		[QuerySerialized("virtualserver_hostbutton_tooltip")]
 		public string HostButtonTooltipText;
@@ -83,10 +83,10 @@
 	public class TokenUsed : Notification
 	{
 		[QuerySerialized("clid")]
-		public int ClientId;
+		public ushort ClientId;
 
 		[QuerySerialized("cldbid")]
-		public int ClientDatabaseId;
+		public ulong ClientDatabaseId;
 
 		[QuerySerialized("cluid")]
 		public string ClientUid;

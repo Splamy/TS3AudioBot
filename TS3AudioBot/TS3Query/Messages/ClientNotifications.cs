@@ -14,7 +14,7 @@
 	public abstract class InvokedClientNotification : ClientNotifications
 	{
 		[QuerySerialized("invokerid")]
-		public int InvokerId;
+		public ushort InvokerId;
 
 		[QuerySerialized("invokername")]
 		public string InvokerName;
@@ -27,7 +27,7 @@
 	public class ClientEnterView : ClientNotifications
 	{
 		[QuerySerialized("clid")]
-		public int ClientId;
+		public ushort ClientId;
 
 		[QuerySerialized("cfid")]
 		public int SourceChannelId;
@@ -127,7 +127,7 @@
 	public class ClientLeftView : InvokedClientNotification
 	{
 		[QuerySerialized("clid")]
-		public int ClientId;
+		public ushort ClientId;
 
 		[QuerySerialized("cfid")]
 		public int SourceChannelId;
@@ -143,6 +143,6 @@
 	public class ClientMoved : InvokedClientNotification
 	{
 		[QuerySerialized("clid")]
-		public int[] ClientIds;
+		public ushort[] ClientIds;
 	}
 }

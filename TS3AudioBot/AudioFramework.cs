@@ -74,11 +74,11 @@ namespace TS3AudioBot
 
 		/// <summary>Creates a new AudioFramework</summary>
 		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
-		public AudioFramework(AudioFrameworkData afd)
+		public AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackend)
 		{
 			waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL_MS, false);
 			audioFrameworkData = afd;
-			playerConnection = new VLCConnection(afd.vlcLocation);
+			playerConnection = audioBackend;
 			playerConnection.Start();
 		}
 

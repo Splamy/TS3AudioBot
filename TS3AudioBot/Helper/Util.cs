@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
 
 namespace TS3AudioBot.Helper
 {
@@ -41,6 +42,12 @@ namespace TS3AudioBot.Helper
 		public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int amount)
 		{
 			return source.Skip(Math.Max(0, source.Count() - amount));
+		}
+
+		public static void WaitOrTimeout(Func<bool> predicate, int msTimeout)
+		{
+			while (!predicate() && msTimeout-- > 0)
+				Thread.Sleep(1);
 		}
 	}
 }
