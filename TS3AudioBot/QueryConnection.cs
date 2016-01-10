@@ -59,24 +59,8 @@ namespace TS3AudioBot
 				tsClient.OnClientLeftView += ExtendedClientLeftView;
 				tsClient.OnClientEnterView += ExtendedClientEnterView;
 
-				keepAliveTokenSource = new CancellationTokenSource();
-				keepAliveToken = keepAliveTokenSource.Token;
-				keepAliveTask = Task.Run((Action)KeepAlivePoke);
+				TickPool.RegisterTick(() => tsClient.WhoAmI(), (int)TimeSpan.FromSeconds(PingEverySeconds).TotalMilliseconds, true);
 			}
-		}
-
-		private async void KeepAlivePoke()
-		{
-			try
-			{
-				while (!keepAliveToken.IsCancellationRequested)
-				{
-					tsClient.WhoAmI();
-					await Task.Delay(TimeSpan.FromSeconds(PingEverySeconds), keepAliveToken);
-				}
-			}
-			catch (TaskCanceledException) { }
-			catch (AggregateException) { }
 		}
 
 		private void Diconnect()
@@ -84,7 +68,7 @@ namespace TS3AudioBot
 			if (tsClient.IsConnected)
 				tsClient.Quit();
 		}
-		
+
 		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);
 		public void SendGlobalMessage(string message) => tsClient.SendGlobalMessage(message);
 		public void KickClientFromServer(int clientId) => tsClient.KickClientFromServer(new[] { clientId });

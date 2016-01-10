@@ -9,7 +9,7 @@ using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {
-	class BobController : IDisposable
+	class BobController : IPlayerConnection
 	{
 		private const int CONNECT_TIMEOUT_MS = 10000;
 		private const int CONNECT_TIMEOUT_INTERVAL_MS = 100;
@@ -19,13 +19,14 @@ namespace TS3AudioBot
 		private const int BOB_TIMEOUT = 60;
 
 		private BobControllerData data;
-		private Task timerTask;
-		private CancellationTokenSource cancellationTokenSource;
-		private CancellationToken cancellationToken;
+		private TickWorker timeout;
 		private DateTime lastUpdate = DateTime.Now;
 
 		private bool sending = false;
 		private bool isRunning;
+		private int volume = 100;
+		private bool repeated = false;
+		private bool pause = false;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private ClientData bobClient;
@@ -33,11 +34,6 @@ namespace TS3AudioBot
 		private Dictionary<int, SubscriptionData> channelSubscriptions;
 
 		public IQueryConnection QueryConnection { get; set; }
-
-		private bool IsTimingOut
-		{
-			get { return timerTask != null && !timerTask.IsCompleted; }
-		}
 
 		public bool Sending
 		{
@@ -49,8 +45,50 @@ namespace TS3AudioBot
 			}
 		}
 
+		public int Volume
+		{
+			get { return volume; }
+			set
+			{
+				volume = value;
+				SendMessage("music volume " + (value / 100.0));
+			}
+		}
+
+		public int Position
+		{
+			get { return 0; } // TODO
+			set
+			{
+				SendMessage("music seek " + value);
+			}
+		}
+
+		public bool Repeated
+		{
+			get { return repeated; }
+			set
+			{
+				repeated = value;
+				SendMessage("music loop " + (value ? "on" : "off"));
+			}
+		}
+
+		public bool Pause
+		{
+			get { return pause; }
+			set
+			{
+				pause = value;
+				// There are also "music pause|unpause" but it unnecessary to send then
+				// and the bob automatically pauses when it doesn't send.
+				SendMessage("audio " + (value ? "on" : "off"));
+			}
+		}
+
 		public BobController(BobControllerData data)
 		{
+			timeout = TickPool.RegisterTick(TimeoutCheck, 100, false);
 			isRunning = false;
 			this.data = data;
 			commandQueue = new Queue<string>();
@@ -107,17 +145,18 @@ namespace TS3AudioBot
 			RestoreSubscriptions(ar.InvokingUser);
 		}
 
-		public async void OnRessourceStopped(bool restart)
+		public void OnRessourceStopped(bool restart)
 		{
 			if (!restart)
 			{
 				Sending = false;
-				await StartEndTimer();
+				StartEndTimer();
 			}
 		}
 
 		public void Start()
 		{
+			timeout.Active = false;
 			if (!isRunning)
 			{
 				// register callback to know immediatly when the bob connects
@@ -132,19 +171,15 @@ namespace TS3AudioBot
 					return;
 				}
 			}
-			if (IsTimingOut)
-				cancellationTokenSource.Cancel();
 		}
 
 		public void Stop()
 		{
-			Log.Write(Log.Level.Info, "BC Stopping Bob");
+			Log.Write(Log.Level.Info, "BC Stopping bob");
 			SendMessage("exit");
 			isRunning = false;
 			commandQueue.Clear();
 			Log.Write(Log.Level.Debug, "BC bob is now officially dead");
-			if (IsTimingOut)
-				cancellationTokenSource.Cancel();
 		}
 
 		/// <summary>Adds a channel to the audio streaming list.</summary>
@@ -198,6 +233,30 @@ namespace TS3AudioBot
 			SendMessage("whisper client remove " + userID);
 		}
 
+		public void AudioStart(string url)
+		{
+			SendMessage("music start " + url);
+		}
+
+		public void AudioStop()
+		{
+			SendMessage("music stop");
+		}
+
+		public int GetLength()
+		{
+			SendMessage("status music");
+			//TODO get result
+			return 0;
+		}
+
+		public bool IsPlaying()
+		{
+			SendMessage("status music");
+			//TODO get result
+			return false;
+		}
+
 		private void RestoreSubscriptions(ClientData invokingUser)
 		{
 			WhisperChannelSubscribe(invokingUser.ChannelId, false);
@@ -227,57 +286,30 @@ namespace TS3AudioBot
 			}
 		}
 
-		private async Task StartEndTimer()
+		private void StartEndTimer()
 		{
 			HasUpdate();
 			if (isRunning)
 			{
-				if (IsTimingOut)
-				{
-					cancellationTokenSource.Cancel();
-					Log.Write(Log.Level.Debug, "BC cTS raised");
-					await timerTask;
-					Log.Write(Log.Level.Debug, "BC tT completed");
-				}
 				Log.Write(Log.Level.Debug, "BC start timeout");
-				InternalStartEndTimer();
+				timeout.Active = true;
 			}
 		}
 
-		private void InternalStartEndTimer()
+		private void TimeoutCheck()
 		{
-			cancellationTokenSource = new CancellationTokenSource();
-			cancellationToken = cancellationTokenSource.Token;
-			timerTask = Task.Run(async () =>
-				{
-					try
-					{
-						while (!cancellationToken.IsCancellationRequested)
-						{
-							double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
-							if (inactiveSeconds > BOB_TIMEOUT)
-							{
-								Log.Write(Log.Level.Debug, "BC Timeout ran out...");
-								Stop();
-								break;
-							}
-							else
-								await Task.Delay(TimeSpan.FromSeconds(BOB_TIMEOUT - inactiveSeconds), cancellationToken);
-						}
-					}
-					catch (TaskCanceledException) { }
-					catch (AggregateException) { }
-				}, cancellationToken);
+			double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
+			if (inactiveSeconds > BOB_TIMEOUT)
+			{
+				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
+				Stop();
+				timeout.Active = false;
+			}
 		}
 
 		public void Dispose()
 		{
 			Stop();
-			if (cancellationTokenSource != null)
-			{
-				cancellationTokenSource.Dispose();
-				cancellationTokenSource = null;
-			}
 		}
 
 		private class SubscriptionData

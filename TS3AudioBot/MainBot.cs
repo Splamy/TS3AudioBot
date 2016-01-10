@@ -582,7 +582,7 @@
 		private void CommandPlay(BotSession session, TextMessage textMessage, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
-				AudioFramework.Play();
+				AudioFramework.Pause = false;
 			else
 			{
 				ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
@@ -855,6 +855,7 @@
 
 		public void Dispose()
 		{
+			TickPool.Close();
 			if (AudioFramework != null)
 			{
 				AudioFramework.Dispose();
