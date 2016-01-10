@@ -12,6 +12,7 @@ namespace TS3AudioBot.RessourceFactories
 {
 	class YoutubeFactory : IRessourceFactory
 	{
+		private Regex idMatch = new Regex(@"(&|\?)v=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private WebClient wc;
 
 		public AudioType FactoryFor { get { return AudioType.Youtube; } }
@@ -23,7 +24,7 @@ namespace TS3AudioBot.RessourceFactories
 
 		public RResultCode GetRessource(string ytLink, out AudioRessource result)
 		{
-			Match matchYtId = Regex.Match(ytLink, @"(&|\?)v=([a-zA-Z0-9\-_]+)");
+			Match matchYtId = idMatch.Match(ytLink);
 			if (!matchYtId.Success)
 			{
 				result = null;
@@ -117,17 +118,6 @@ namespace TS3AudioBot.RessourceFactories
 			var ytResult = new YoutubeRessource(ytID, finalName, videoTypes.AsReadOnly());
 			result = ytResult;
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
-		}
-
-		public RResultCode ExtractPlaylist()
-		{
-			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json
-			//https://gdata.youtube.com/feeds/api/playlists/UU4L4Vac0HBJ8-f3LBFllMsg?alt=json&start-index=1&max-results=1
-
-			//totalResults":{"\$t":(\d+)}
-
-			//"url"\w*:\w*"(https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9\-_]+&)
-			return RResultCode.UnknowError;
 		}
 
 		public void PostProcess(PlayData data, out bool abortPlay)
