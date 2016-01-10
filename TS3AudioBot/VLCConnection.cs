@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -16,12 +15,12 @@ namespace TS3AudioBot
 		private bool connected;
 		private string password;
 		private Process vlcproc = null;
-		private TcpClient vlcInterface;
+		private TcpClient vlcClient;
 		private NetworkStream netStream;
-		private Task textCallbackTask;
+		private Thread textCallbackThread;
 
 		private readonly object attributeLock = new object();
-		private readonly object responseLock = new object();
+		private AutoResetEvent responseEvent = new AutoResetEvent(false);
 
 		private AwaitingResponse currentResponse = AwaitingResponse.None;
 		private bool isPlaying = false;
@@ -40,7 +39,7 @@ namespace TS3AudioBot
 			if (vlcproc == null || vlcproc.HasExited)
 			{
 				vlcproc = GetVlcProc();
-				Connect("localhost", 4212);
+				Connect();
 			}
 		}
 
@@ -128,7 +127,7 @@ namespace TS3AudioBot
 
 		public bool IsPlaying()
 		{
-			SendResponseLocked(AwaitingResponse.IsPlaing, "is_playing");
+			SendResponseLocked(AwaitingResponse.IsPlaying, "is_playing");
 			return isPlaying;
 		}
 
@@ -143,12 +142,9 @@ namespace TS3AudioBot
 			if (!connected) return;
 			lock (attributeLock)
 			{
-				lock (responseLock)
-				{
-					currentResponse = resp;
-					SendTextRaw(msg);
-					Monitor.Wait(responseLock);
-				}
+				currentResponse = resp;
+				SendTextRaw(msg);
+				responseEvent.WaitOne();
 			}
 		}
 
@@ -182,22 +178,27 @@ namespace TS3AudioBot
 
 		// Internal stuff
 
-		private void Connect(string hostname, int port)
+		private void Connect()
 		{
-			textCallbackTask = Task.Run(() =>
+			connected = false;
+			textCallbackThread = new Thread(ReadMessageLoop);
+			textCallbackThread.Start();
+		}
+
+		private void ReadMessageLoop()
+		{
+			using (vlcClient = new TcpClient())
 			{
-				connected = false;
-				vlcInterface = new TcpClient();
-				while (vlcInterface != null && !connected)
+				while (vlcClient != null && !connected)
 				{
 					try
 					{
-						vlcInterface.Connect(hostname, port);
+						vlcClient.Connect("localhost", 4212);
 						connected = true;
 					}
 					catch (SocketException)
 					{
-						Task.Delay(1000).Wait();
+						Thread.Sleep(1000);
 						Log.Write(Log.Level.Warning, "Retry: Connect to VLC");
 					}
 				}
@@ -212,11 +213,11 @@ namespace TS3AudioBot
 					Log.Write(Log.Level.Info, "Connected to VLC");
 				}
 
-				netStream = vlcInterface.GetStream();
+				netStream = vlcClient.GetStream();
 
 				try
 				{
-					while (vlcInterface != null)
+					while (vlcClient != null)
 					{
 						StringBuilder sb = new StringBuilder();
 						do
@@ -229,9 +230,9 @@ namespace TS3AudioBot
 						ProcessMessage(sb.ToString());
 					}
 				}
-				catch (IOException ex) { Log.Write(Log.Level.Warning, "Disconnected ({0})...", ex.Message); }
-				catch (ObjectDisposedException) { }
-			});
+				catch (IOException) { Log.Write(Log.Level.Warning, "Disconnected from VLC"); }
+			}
+			vlcClient = null;
 		}
 
 		private void ProcessMessage(string msg)
@@ -252,17 +253,14 @@ namespace TS3AudioBot
 					int get_position;
 					getPosition = int.TryParse(msg, out get_position) ? get_position : -1;
 					break;
-				case AwaitingResponse.IsPlaing:
+				case AwaitingResponse.IsPlaying:
 					int is_plaing;
 					isPlaying = int.TryParse(msg, out is_plaing) && is_plaing != 0;
 					break;
 				}
 				currentResponse = AwaitingResponse.None;
 			}
-			lock (responseLock)
-			{
-				Monitor.Pulse(responseLock);
-			}
+			responseEvent.Set();
 		}
 
 		private Process GetVlcProc()
@@ -308,19 +306,8 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "Closing VLC...");
 			if (netStream != null)
 			{
-				netStream.Dispose();
-			}
-			if (textCallbackTask != null)
-			{
-				textCallbackTask.Wait();
-				textCallbackTask = null;
-			}
-			netStream = null;
-			if (vlcInterface != null)
-			{
-				if (vlcInterface.Connected)
-					vlcInterface.Close();
-				vlcInterface = null;
+				netStream.Close();
+				netStream = null;
 			}
 			if (vlcproc != null)
 			{
@@ -335,7 +322,7 @@ namespace TS3AudioBot
 			None,
 			GetLength,
 			GetPosition,
-			IsPlaing,
+			IsPlaying,
 		}
 	}
 }

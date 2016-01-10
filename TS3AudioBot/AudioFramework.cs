@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
 using TS3Query.Messages;
 using TS3AudioBot.RessourceFactories;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {
@@ -14,12 +13,8 @@ namespace TS3AudioBot
 		private const int TIMEOUT_INTERVAL_MS = 100;
 
 		private AudioFrameworkData audioFrameworkData;
-		private Task ressourceEndTask;
-		/// <summary>
-		/// This token is used to cancel a WaitNotifyEnd task, don't change it while the task is running!
-		/// </summary>
-		private CancellationTokenSource ressourceEndTokenSource;
-		private CancellationToken ressourceEndToken;
+		private TickWorker waitEndTick;
+		private DateTime endTime;
 
 		public AudioRessource currentRessource { get; protected set; }
 		private IPlayerConnection playerConnection;
@@ -81,6 +76,7 @@ namespace TS3AudioBot
 		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
 		public AudioFramework(AudioFrameworkData afd)
 		{
+			waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL_MS, false);
 			audioFrameworkData = afd;
 			playerConnection = new VLCConnection(afd.vlcLocation);
 			playerConnection.Start();
@@ -89,34 +85,27 @@ namespace TS3AudioBot
 		/// <summary>
 		/// <para>Gets started at the beginning of a new ressource.</para>
 		/// <para>It calls the stop event when a ressource is finished.</para>
-		/// <para>This task can be cancelled by cancelling ressourceEndToken.</para>
+		/// <para>Is used for player backends which are not supporting an end callback.</para>
 		/// </summary>
-		private async void WaitNotifyEnd()
+		private void NotifyEnd()
 		{
-			try
+			if (endTime < DateTime.Now)
 			{
-				Log.Write(Log.Level.Debug, "AF Wait for start");
-				const int timeoutmax = TIMEOUT_MS / TIMEOUT_INTERVAL_MS;
-				int timeoutcur = timeoutmax;
-
-				while (timeoutcur-- > 0 && currentRessource != null && !ressourceEndToken.IsCancellationRequested)
+				if (playerConnection.IsPlaying())
 				{
-					if (playerConnection.IsPlaying())
-					{
-						timeoutcur = timeoutmax;
-						await Task.Delay(TIMEOUT_MS, ressourceEndToken);
-					}
-					else
-					{
-						await Task.Delay(TIMEOUT_INTERVAL_MS, ressourceEndToken);
-					}
+					int playtime = playerConnection.GetLength();
+					int position = playerConnection.Position;
+
+					int endspan = playtime - position;
+					endTime = DateTime.Now.AddSeconds(endspan);
 				}
-				Log.Write(Log.Level.Debug, "AF Timeout or stopped (IsPlaying:{0})", timeoutcur);
-				if (!ressourceEndToken.IsCancellationRequested)
+				else if (endTime.AddMilliseconds(TIMEOUT_MS) < DateTime.Now)
+				{
+					Log.Write(Log.Level.Debug, "AF Song ended with default timeout");
 					Stop(false);
+					waitEndTick.Active = false;
+				}
 			}
-			catch (TaskCanceledException) { }
-			catch (AggregateException) { }
 		}
 
 		/// <summary>
@@ -136,7 +125,7 @@ namespace TS3AudioBot
 			audioRessource.InvokingUser = invoker;
 
 			Stop(true);
-			
+
 			if (audioRessource.Volume == -1)
 				audioRessource.Volume = audioFrameworkData.defaultVolume;
 
@@ -162,16 +151,8 @@ namespace TS3AudioBot
 				OnRessourceStarted(audioRessource);
 
 			currentRessource = audioRessource;
-			if (ressourceEndTask == null || ressourceEndTask.IsCompleted || ressourceEndTask.IsCanceled || ressourceEndTask.IsFaulted)
-			{
-				if (ressourceEndTask != null)
-					ressourceEndTask.Dispose();
-				if (ressourceEndTokenSource != null)
-					ressourceEndTokenSource.Dispose();
-				ressourceEndTokenSource = new CancellationTokenSource();
-				ressourceEndToken = ressourceEndTokenSource.Token;
-				ressourceEndTask = Task.Run((Action)WaitNotifyEnd);
-			}
+			endTime = DateTime.MinValue;
+			waitEndTick.Active = true;
 			return AudioResultCode.Success;
 		}
 
@@ -190,8 +171,6 @@ namespace TS3AudioBot
 			{
 				currentRessource = null;
 				playerConnection.AudioStop();
-				if (!ressourceEndTask.IsCompleted)
-					ressourceEndTokenSource.Cancel();
 				if (OnRessourceStopped != null)
 					OnRessourceStopped(restart);
 			}
@@ -202,8 +181,6 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "Closing Mediaplayer...");
 
 			Stop(false);
-			if (ressourceEndTask != null)
-				ressourceEndTask.Wait();
 
 			if (playerConnection != null)
 			{

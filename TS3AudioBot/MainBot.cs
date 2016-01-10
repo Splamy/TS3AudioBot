@@ -6,7 +6,6 @@
 	using System.Linq;
 	using System.Text;
 	using System.Text.RegularExpressions;
-	using System.Threading.Tasks;
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
@@ -597,7 +596,7 @@
 
 		private void CommandQuit(BotSession session)
 		{
-			Task.WaitAll(new[] { Task.Run(() => session.Write("Goodbye!")) }, 500);
+			session.Write("Goodbye!");
 			Dispose();
 			Log.Write(Log.Level.Info, "Exiting...");
 		}

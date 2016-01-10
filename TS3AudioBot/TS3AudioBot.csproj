@@ -78,9 +78,6 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
-    <Reference Include="TeamSpeak3QueryApi">
-      <HintPath>lib\TeamSpeak3QueryApi.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -93,7 +90,6 @@
     <Compile Include="Algorithm\ISubstringSearch.cs" />
     <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
     <Compile Include="AudioFramework.cs" />
-    <Compile Include="Helper\AsyncLazy.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\ConfigFile.cs" />

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using TS3Query;
 using TS3Query.Messages;
 using TS3AudioBot.Helper;
