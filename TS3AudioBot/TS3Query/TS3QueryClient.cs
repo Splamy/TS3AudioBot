@@ -173,7 +173,11 @@
 			new Parameter("sid", svrId));
 		public void ChangeName(string newName) => Send("clientupdate",
 			new Parameter("client_nickname", newName));
-		public void Quit() => tcpWriter.WriteLine("quit");
+		public void Quit()
+		{
+			tcpWriter.WriteLine("quit");
+			tcpWriter.Flush();
+		}
 		public void WhoAmI() => Send<WhoAmI>("whoami");
 		// TODO: add ANEx
 		public void SendMessage(string message, ClientData client)

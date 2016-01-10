@@ -151,7 +151,7 @@ namespace TS3AudioBot
 				OnRessourceStarted(audioRessource);
 
 			currentRessource = audioRessource;
-			endTime = DateTime.MinValue;
+			endTime = DateTime.Now;
 			waitEndTick.Active = true;
 			return AudioResultCode.Success;
 		}

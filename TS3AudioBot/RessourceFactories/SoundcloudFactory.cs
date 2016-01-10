@@ -25,10 +25,7 @@ namespace TS3AudioBot.RessourceFactories
 			string jsonResponse;
 			try
 			{
-				jsonResponse = wc.DownloadString(
-					string.Format("https://api.soundcloud.com/resolve.json?url={0}&client_id={1}",
-					Uri.EscapeUriString(link),
-					SoundcloudClientID));
+				jsonResponse = wc.DownloadString($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientID}");
 			}
 			catch (WebException)
 			{
