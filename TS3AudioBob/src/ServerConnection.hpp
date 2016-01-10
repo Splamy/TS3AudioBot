@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include <Audio/Player.hpp>
+#include <audio/Player.hpp>
 #include <TsApi.hpp>
 #include <User.hpp>
 #include <Utils.hpp>
