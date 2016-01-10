@@ -28,9 +28,6 @@ namespace TS3AudioBot
 
 		private QueryConnectionData connectionData;
 		private const int PingEverySeconds = 60;
-		private Task keepAliveTask;
-		private CancellationTokenSource keepAliveTokenSource;
-		private CancellationToken keepAliveToken;
 
 		public TS3QueryClient tsClient { get; private set; }
 
@@ -130,25 +127,6 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "Closing QueryConnection...");
 			if (tsClient != null)
 			{
-				if (tsClient.IsConnected)
-				{
-					Diconnect();
-					Log.Write(Log.Level.Debug, "QC disconnected");
-					if (keepAliveToken.CanBeCanceled)
-					{
-						keepAliveTokenSource.Cancel();
-						Log.Write(Log.Level.Debug, "QC kAT cancel raised");
-					}
-					if (!keepAliveTask.IsCompleted)
-						keepAliveTask.Wait(500);
-					Log.Write(Log.Level.Debug, "QC kAT ended");
-					if (keepAliveTokenSource != null)
-					{
-						keepAliveTokenSource.Dispose();
-						keepAliveTokenSource = null;
-					}
-				}
-
 				tsClient.Dispose();
 				tsClient = null;
 			}
