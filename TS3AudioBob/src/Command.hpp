@@ -17,15 +17,72 @@ class User;
 
 struct CommandResult
 {
-	bool success;
-	std::shared_ptr<std::string> errorMessage;
+	enum Result
+	{
+		SUCCESS,
+		ERROR,
+		/** Try the next command because this command didn't fit. */
+		TRY_NEXT
+	};
 
-	CommandResult(bool success = true, std::shared_ptr<std::string>
-		errorMessage = std::shared_ptr<std::string>()) :
-		success(success),
+	Result result;
+	std::string errorMessage;
+
+	CommandResult(Result result = SUCCESS, std::string errorMessage = "") :
+		result(result),
 		errorMessage(errorMessage)
 	{
 	}
+	operator bool() const
+	{
+		return result == SUCCESS;
+	}
+};
+
+class AbstractCommand
+{
+	/** Returns the result of the execution. */
+	virtual const std::string& getName() const = 0;
+	virtual std::vector<std::pair<std::string, std::string> >
+		createDescriptions() const = 0;
+	virtual CommandResult operator()(ServerConnection *connection, User *sender,
+		const std::string &message) const = 0;
+	virtual ~AbstractCommand() {}
+};
+
+template <class... Args>
+class Command : public AbstractCommand
+{
+public:
+	typedef std::function<CommandResult(ServerConnection *connection,
+		User *sender, const std::string &message, Args...)> FuncType;
+
+private:
+	/** The name of this command, e.g. 'status'. */
+	std::string name;
+	/** The description of this command.
+	 *  If this description is empty, it will be merged with the description of
+	 *  the previous command if it has the same name.
+	 */
+	std::string description;
+	bool displayDescription;
+	FuncType fun;
+
+public:
+	Command(const std::string &name, FuncType fun, const std::string &description = "",
+		bool displayDescription = true) :
+		name(name),
+		description(description),
+		displayDescription(displayDescription),
+		fun(fun)
+	{
+	}
+	virtual ~Command() {}
+
+	virtual const std::string& getName() const;
+	virtual std::vector<std::pair<std::string, std::string> > createDescriptions() const;
+	virtual CommandResult operator()(ServerConnection *connection, User *sender,
+		const std::string &message) const;
 };
 
 class AbstractCommandExecutor
@@ -109,8 +166,8 @@ private:
 	CommandResult execute(std::string message, std::function<CommandResult()> f)
 	{
 		if (!message.empty() && !ignoreMore)
-			return CommandResult(false,
-				std::make_shared<std::string>("error too many parameters"));
+			return CommandResult(CommandResult::TRY_NEXT,
+				"error too many parameters");
 		return f();
 	}
 
@@ -119,13 +176,13 @@ private:
 		std::function<CommandResult(P p, Params... params)> f)
 	{
 		if (message.empty())
-			return CommandResult(false,
-				std::make_shared<std::string>("error too few parameters"));
+			return CommandResult(CommandResult::TRY_NEXT,
+				"error too few parameters");
 		std::string msg = Utils::strip(message, true, false);
 		P p;
 		if (!parseArgument(msg, &p))
-			return CommandResult(false,
-				std::make_shared<std::string>("error wrong parameter type"));
+			return CommandResult(CommandResult::TRY_NEXT,
+				"error wrong parameter type");
 
 		// Bind this parameter
 		std::function<CommandResult(Params...)> f2 = Utils::myBind(f, p);
@@ -177,7 +234,7 @@ public:
 			std::string(msg.begin(), pos));
 		std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
 		if (cmd != command)
-			return CommandResult(false);
+			return CommandResult(CommandResult::TRY_NEXT);
 		return CommandExecutor<Args...>::operator()(connection, sender, message);
 	}
 

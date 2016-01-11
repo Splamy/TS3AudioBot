@@ -98,10 +98,20 @@ Player::~Player()
 {
 	// Notify waiting threads and wait for them to exit
 	finished = true;
-	sampleQueueWaiter.notify_all();
-	readThreadWaiter.notify_all();
-	packetQueueWaiter.notify_all();
-	pausedWaiter.notify_all();
+	{
+		std::lock_guard<std::mutex> lock(sampleQueueMutex);
+		sampleQueueWaiter.notify_all();
+	}
+	{
+		std::lock_guard<std::mutex> lock(readThreadMutex);
+		readThreadWaiter.notify_all();
+		pausedWaiter.notify_all();
+	}
+	{
+		std::lock_guard<std::mutex> lock(packetQueueMutex);
+		packetQueueWaiter.notify_all();
+	}
+
 	if (readThread.joinable())
 		readThread.join();
 	if (decodeThread.joinable())
@@ -214,14 +224,17 @@ void Player::read()
 		}
 
 		// Test if the stream is over
-		if (!paused && packetQueue.empty() && !decoder->gotFlush())
 		{
-			if (loop)
-				setPositionTime(0);
-			else
+			std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
+			if (!paused && packetQueue.empty() && !decoder->gotFlush())
 			{
-				finished = true;
-				return;
+				if (loop)
+					setPositionTime(0);
+				else
+				{
+					finished = true;
+					return;
+				}
 			}
 		}
 

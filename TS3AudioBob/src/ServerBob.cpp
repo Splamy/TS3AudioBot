@@ -202,19 +202,19 @@ void ServerBob::executeCommand(ServerConnection *connection, User *sender,
 
 	// Search the right command
 	CommandResult res;
-	std::shared_ptr<std::string> errorMessage;
+	std::string errorMessage;
 	for (Commands::reference command : commands)
 	{
 		res = (*command)(connection, sender, message);
-		if (res.success)
+		if (res.result != CommandResult::TRY_NEXT)
 			break;
-		else if (res.errorMessage)
+		else if (!res.errorMessage.empty())
 			errorMessage = res.errorMessage;
 	}
-	if (!res.success)
+	if (!res)
 	{
-		if (errorMessage)
-			connection->sendCommand(sender, *errorMessage);
+		if (!errorMessage.empty())
+			connection->sendCommand(sender, errorMessage);
 		else
 			unknownCommand(connection, sender, message);
 	}
@@ -265,7 +265,7 @@ CommandResult ServerBob::unknownCommand(ServerConnection *connection,
 	std::string formatted = Utils::format("Unknown command: {0}", msg);
 	// Send error message
 	connection->sendCommand(sender, "error unknown command {0}", msg);
-	return CommandResult(false, std::make_shared<std::string>(formatted));
+	return CommandResult(CommandResult::TRY_NEXT, formatted);
 }
 
 CommandResult ServerBob::loopCommand(ServerConnection * /*connection*/,
@@ -289,7 +289,7 @@ CommandResult ServerBob::musicStartCommand(ServerConnection *connection,
 {
 	std::transform(start.begin(), start.end(), start.begin(), ::tolower);
 	if (start != "start")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 
 	// Strip [URL] and [/URL]
 	if (address.length() >= 5 && address.compare(0, 5, "[URL]") == 0)
@@ -308,7 +308,7 @@ CommandResult ServerBob::musicVolumeCommand(ServerConnection *connection,
 {
 	std::transform(volumeStr.begin(), volumeStr.end(), volumeStr.begin(), ::tolower);
 	if (volumeStr != "volume")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	connection->setVolume(volume);
 	return CommandResult();
 }
@@ -319,10 +319,10 @@ CommandResult ServerBob::musicSeekCommand(ServerConnection *connection,
 {
 	std::transform(seek.begin(), seek.end(), seek.begin(), ::tolower);
 	if (seek != "seek")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	if (!connection->hasAudioPlayer())
-		return CommandResult(false, std::make_shared<std::string>(
-			"error the audio player doesn't exist at the moment"));
+		return CommandResult(CommandResult::ERROR,
+			"error the audio player doesn't exist at the moment");
 	connection->setAudioPosition(position);
 	return CommandResult();
 }
@@ -333,7 +333,7 @@ CommandResult ServerBob::musicLoopCommand(ServerConnection *connection,
 {
 	std::transform(loop.begin(), loop.end(), loop.begin(), ::tolower);
 	if (loop != "loop")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	connection->setLooped(on);
 	return CommandResult();
 }
@@ -348,14 +348,14 @@ CommandResult ServerBob::musicCommand(ServerConnection *connection,
 	else
 	{
 		if (!connection->hasAudioPlayer())
-			return CommandResult(false, std::make_shared<std::string>(
-				"error the audio player doesn't exist at the moment"));
+			return CommandResult(CommandResult::ERROR,
+				"error the audio player doesn't exist at the moment");
 		else if (action == "pause")
 			connection->setAudioPaused(true);
 		else if (action == "unpause")
 			connection->setAudioPaused(false);
 		else
-			return CommandResult(false);
+			return CommandResult(CommandResult::TRY_NEXT);
 	}
 	return CommandResult();
 }
@@ -375,10 +375,10 @@ CommandResult ServerBob::whisperClientCommand(ServerConnection *connection,
 	std::transform(client.begin(), client.end(), client.begin(), ::tolower);
 	std::transform(action.begin(), action.end(), action.begin(), ::tolower);
 	if (client != "client")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	if (id < 0)
-		return CommandResult(false,
-			std::make_shared<std::string>("error client id can't be negative"));
+		return CommandResult(CommandResult::ERROR,
+			"error client id can't be negative");
 	if (action == "add")
 	{
 		User *user = connection->getUser(static_cast<anyID>(id));
@@ -389,8 +389,8 @@ CommandResult ServerBob::whisperClientCommand(ServerConnection *connection,
 			if (!tsApi->handleTsError(tsApi->getFunctions().
 			    getClientVariableAsString(connection->getHandlerId(),
 			    static_cast<anyID>(id), CLIENT_UNIQUE_IDENTIFIER, &clientUid)))
-				return CommandResult(false,
-					std::make_shared<std::string>("error client id not found"));
+				return CommandResult(CommandResult::ERROR,
+					"error client id not found");
 			connection->addUser(id, clientUid);
 			tsApi->getFunctions().freeMemory(clientUid);
 			user = connection->getUser(static_cast<anyID>(id));
@@ -402,11 +402,10 @@ CommandResult ServerBob::whisperClientCommand(ServerConnection *connection,
 		if (user)
 			connection->removeWhisperUser(user);
 		else
-			return CommandResult(false,
-				std::make_shared<std::string>("error client id not found"));
+			return CommandResult(CommandResult::ERROR,
+				"error client id not found");
 	} else
-		return CommandResult(false,
-			std::make_shared<std::string>("error unknown action"));
+		return CommandResult(CommandResult::TRY_NEXT, "error unknown action");
 	return CommandResult();
 }
 
@@ -417,20 +416,19 @@ CommandResult ServerBob::whisperChannelCommand(ServerConnection *connection,
 	std::transform(channel.begin(), channel.end(), channel.begin(), ::tolower);
 	std::transform(action.begin(), action.end(), action.begin(), ::tolower);
 	if (channel != "channel")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	if (id < 0)
-		return CommandResult(false,
-			std::make_shared<std::string>("error client id can't be negative"));
+		return CommandResult(CommandResult::ERROR,
+			"error client id can't be negative");
 	if (action == "add")
 		connection->addWhisperChannel(id);
 	else if (action == "remove")
 	{
 		if (!connection->removeWhisperChannel(id))
-			return CommandResult(false,
-				std::make_shared<std::string>("error channel id not found"));
+			return CommandResult(CommandResult::ERROR,
+				"error channel id not found");
 	} else
-		return CommandResult(false,
-			std::make_shared<std::string>("error unknown action"));
+		return CommandResult(CommandResult::TRY_NEXT, "error unknown action");
 	return CommandResult();
 }
 
@@ -440,7 +438,7 @@ CommandResult ServerBob::whisperClearCommand(ServerConnection *connection,
 {
 	std::transform(clear.begin(), clear.end(), clear.begin(), ::tolower);
 	if (clear != "clear")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	connection->clearWhisper();
 	return CommandResult();
 }
@@ -451,8 +449,8 @@ CommandResult ServerBob::statusAudioCommand(ServerConnection *connection,
 {
 	std::transform(audio.begin(), audio.end(), audio.begin(), ::tolower);
 	if (audio != "audio")
-		return CommandResult(false);
-	connection->sendCommand(sender, "status audio {0}", audioOn ? "on" : "off");
+		return CommandResult(CommandResult::TRY_NEXT);
+	connection->sendCommand(sender, "answer audio\nstatus {0}", audioOn ? "on" : "off");
 	return CommandResult();
 }
 
@@ -462,12 +460,12 @@ CommandResult ServerBob::statusWhisperCommand(ServerConnection *connection,
 {
 	std::transform(whisper.begin(), whisper.end(), whisper.begin(), ::tolower);
 	if (whisper != "whisper")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	std::ostringstream out;
-	out << "status whisper clients";
+	out << "answer whisper\nclients";
 	for (const User *user : *connection->getWhisperUsers())
 		out << " " << user->getId();
-	out << "\nstatus whisper channels";
+	out << "\nchannels";
 	for (const uint64 channel : *connection->getWhisperChannels())
 		out << " " << channel;
 	connection->sendCommand(sender, out.str());
@@ -480,9 +478,9 @@ CommandResult ServerBob::statusMusicCommand(ServerConnection *connection,
 {
 	std::transform(music.begin(), music.end(), music.begin(), ::tolower);
 	if (music != "music")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	std::ostringstream out;
-	out << "status music " << connection->getAudioStatus();
+	out << "answer music" << connection->getAudioStatus();
 
 	connection->sendCommand(sender, out.str());
 	return CommandResult();
@@ -492,7 +490,7 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 	const std::string& /*message*/, std::string /*command*/)
 {
 	std::ostringstream output;
-	output << "help";
+	output << "answer help";
 	// Find the maximum command length to align the commands
 	std::size_t maxLength = 0;
 	for (Commands::const_reference command : commands)
@@ -529,16 +527,16 @@ CommandResult ServerBob::helpMusicCommand(ServerConnection *connection,
 {
 	std::transform(music.begin(), music.end(), music.begin(), ::tolower);
 	if (music != "music")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	std::ostringstream output;
-	output << "help";
+	output << "answer help";
 	// Find the maximum command length to align the commands
 	std::size_t maxLength = 0;
 	for (Commands::const_reference command : commands)
 	{
 		if (command->getHelp() && command->getCommandName() &&
 			// Only include music commands
-			Utils::startsWith(*command->getCommandName(), "music"))
+			command->getCommandName()->find("music") != std::string::npos)
 		{
 			std::size_t s = command->getCommandName()->size();
 			if (s > maxLength)
@@ -553,7 +551,7 @@ CommandResult ServerBob::helpMusicCommand(ServerConnection *connection,
 	{
 		if (command->getHelp() && command->getCommandName() &&
 			// Only include music commands
-			Utils::startsWith(*command->getCommandName(), "music"))
+			command->getCommandName()->find("music") != std::string::npos)
 			output << Utils::format(format, *command->getCommandName(),
 				*command->getHelp());
 	}
@@ -575,7 +573,7 @@ CommandResult ServerBob::listClientsCommand(ServerConnection *connection,
 {
 	std::transform(clients.begin(), clients.end(), clients.begin(), ::tolower);
 	if (clients != "clients")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	std::vector<anyID> clientIds;
 	std::vector<std::string> clientNames;
 	std::size_t maxLength = 0;
@@ -615,7 +613,7 @@ CommandResult ServerBob::listChannelsCommand(ServerConnection *connection,
 {
 	std::transform(channels.begin(), channels.end(), channels.begin(), ::tolower);
 	if (channels != "channels")
-		return CommandResult(false);
+		return CommandResult(CommandResult::TRY_NEXT);
 	std::vector<uint64> channelIds;
 	std::vector<std::string> channelNames;
 	std::size_t maxLength = 0;
