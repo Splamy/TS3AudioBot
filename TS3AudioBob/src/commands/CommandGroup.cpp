@@ -133,7 +133,7 @@ CommandResult CommandGroup::operator()(ServerConnection *connection,
 				commands[i].first.find(message[msgIndex], commands[i].second);
 			if (newPos == std::string::npos)
 			{
-				commands.erase(commands.cbegin() + i);
+				commands.erase(commands.begin() + i);
 				i--;
 			} else
 				commands[i].second = newPos + 1;
@@ -157,7 +157,7 @@ CommandResult CommandGroup::operator()(ServerConnection *connection,
 	{
 		if (commands[i].second != minIndex)
 		{
-			commands.erase(commands.cbegin() + i);
+			commands.erase(commands.begin() + i);
 			i--;
 		}
 	}

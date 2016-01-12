@@ -468,7 +468,7 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 	const auto newEnd = std::remove_if(descriptions.begin(), descriptions.end(),
 		[](const std::pair<std::string, std::string> &d)
 			{ return Utils::startsWith(d.first, "music"); });
-	descriptions.erase(newEnd, descriptions.cend());
+	descriptions.erase(newEnd, descriptions.end());
 	output << combineHelp(descriptions);
 
 	connection->sendCommand(sender, output.str());
@@ -486,7 +486,7 @@ CommandResult ServerBob::helpMusicCommand(ServerConnection *connection,
 	const auto newEnd = std::remove_if(descriptions.begin(), descriptions.end(),
 		[](const std::pair<std::string, std::string> &d)
 			{ return d.first.find("music") == std::string::npos; });
-	descriptions.erase(newEnd, descriptions.cend());
+	descriptions.erase(newEnd, descriptions.end());
 
 	output << combineHelp(descriptions);
 
