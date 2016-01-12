@@ -1,11 +1,9 @@
 #ifndef TS_API_HPP
 #define TS_API_HPP
 
-#include <iostream>
-
+#include "Utils.hpp"
 #include <ts3_functions.h>
-
-#include <Utils.hpp>
+#include <iostream>
 
 class TsApi
 {

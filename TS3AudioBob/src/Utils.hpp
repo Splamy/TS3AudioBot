@@ -111,6 +111,8 @@ namespace Utils
 		const std::string &replacement);
 	/** Checks if the beginning of a string is another string. */
 	bool startsWith(const std::string &string, const std::string &prefix);
+	/** Checks if the ending of a string is another string. */
+	bool endsWith(const std::string &string, const std::string &suffix);
 
 	/** Only print readable ascii characters and no control characters (there
 	 *  can be problems with terminals that interpret characters and we don't

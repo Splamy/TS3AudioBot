@@ -1,10 +1,9 @@
 #ifndef PLUGIN_HPP
 #define PLUGIN_HPP
 
+#include "Definitions.hpp"
+#include "public_definitions.h"
 #include <cstdlib>
-
-#include <Definitions.hpp>
-#include <public_definitions.h>
 
 extern "C"
 {

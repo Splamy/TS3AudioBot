@@ -6,7 +6,7 @@
 
 extern "C"
 {
-	#include "libswresample/swresample.h"
+	#include <libswresample/swresample.h>
 }
 
 #include <condition_variable>
@@ -74,6 +74,10 @@ private:
 	DecodeError decodeError = DECODE_ERROR_NONE;
 	double volume = 1;
 	//TODO Synchronisation sync = SYNC_AUDIO;
+	/** If all attributes are initialized and the music player is operating
+	 *  normally.
+	 */
+	bool initialized = false;
 
 	std::queue<Frame> sampleQueue;
 	std::mutex sampleQueueMutex;
@@ -125,6 +129,7 @@ public:
 private:
 	void setReadError(ReadError error);
 	void setDecodeError(DecodeError error);
+	void waitUntilInitialized() const;
 
 	/** The read thread that fills the packet queue. */
 	void read();

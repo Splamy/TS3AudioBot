@@ -1,14 +1,14 @@
 #ifndef SERVER_CONNECTION_HPP
 #define SERVER_CONNECTION_HPP
 
+#include "audio/Player.hpp"
+#include "TsApi.hpp"
+#include "User.hpp"
+#include "Utils.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <Audio/Player.hpp>
-#include <TsApi.hpp>
-#include <User.hpp>
-#include <Utils.hpp>
 
 class ServerConnection
 {
@@ -45,8 +45,8 @@ public:
 	bool shouldWhisper() const;
 	void setAudio(bool on);
 	void setQuality(bool on);
-	User* getUser(const std::string &uniqueId);
-	User* getUser(uint64 dbId);
+	std::vector<User*> getUsers(const std::string &uniqueId);
+	std::vector<User*> getUsers(uint64 dbId);
 	User* getUser(anyID userId);
 	// TODO remove users again
 	void addUser(anyID id, const std::string &uniqueId);

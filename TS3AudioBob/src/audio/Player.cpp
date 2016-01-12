@@ -59,11 +59,11 @@ const char* Player::searchEntry(const AVDictionary *dict, const char *key)
 void Player::init()
 {
 	// Initialize ffmpeg only once
-	static bool inited = false;
+	static bool initialized = false;
 
-	if (!inited)
+	if (!initialized)
 	{
-		inited = true;
+		initialized = true;
 		av_log_set_flags(AV_LOG_SKIP_REPEATED);
 		avfilter_register_all();
 		av_register_all();
@@ -98,10 +98,20 @@ Player::~Player()
 {
 	// Notify waiting threads and wait for them to exit
 	finished = true;
-	sampleQueueWaiter.notify_all();
-	readThreadWaiter.notify_all();
-	packetQueueWaiter.notify_all();
-	pausedWaiter.notify_all();
+	{
+		std::lock_guard<std::mutex> lock(sampleQueueMutex);
+		sampleQueueWaiter.notify_all();
+	}
+	{
+		std::lock_guard<std::mutex> lock(readThreadMutex);
+		readThreadWaiter.notify_all();
+		pausedWaiter.notify_all();
+	}
+	{
+		std::lock_guard<std::mutex> lock(packetQueueMutex);
+		packetQueueWaiter.notify_all();
+	}
+
 	if (readThread.joinable())
 		readThread.join();
 	if (decodeThread.joinable())
@@ -130,6 +140,14 @@ void Player::setDecodeError(DecodeError error)
 	decodeError = error;
 	if (error != DECODE_ERROR_NONE)
 		printf("A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
+}
+
+void Player::waitUntilInitialized() const
+{
+	// Busy waiting because it shouldn't take long until everything is
+	// initialized
+	while (!initialized)
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void Player::read()
@@ -183,6 +201,8 @@ void Player::read()
 	std::unique_lock<std::mutex> waitLock(readThreadMutex);
 	AVPacket packet;
 	bool hasEof = false;
+	// Ready with initializing
+	initialized = true;
 	while (!finished)
 	{
 		if (paused != lastPaused && !realtime)
@@ -204,14 +224,17 @@ void Player::read()
 		}
 
 		// Test if the stream is over
-		if (!paused && packetQueue.empty() && !decoder->gotFlush())
 		{
-			if (loop)
-				setPositionTime(0);
-			else
+			std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
+			if (!paused && packetQueue.empty() && !decoder->gotFlush())
 			{
-				finished = true;
-				return;
+				if (loop)
+					setPositionTime(0);
+				else
+				{
+					finished = true;
+					return;
+				}
 			}
 		}
 
@@ -264,9 +287,9 @@ bool Player::openStreamComponent(int streamId)
 	formatContext->streams[streamId]->discard = AVDISCARD_DEFAULT;
 
 	// Ignore all other streams
-	for (size_t i = 0; i < formatContext->nb_streams; i++)
+	for (std::size_t i = 0; i < formatContext->nb_streams; i++)
 	{
-		if (i != static_cast<size_t>(streamId))
+		if (i != static_cast<std::size_t>(streamId))
 		{
 			formatContext->streams[i]->discard = AVDISCARD_ALL;
 			avcodec_close(formatContext->streams[i]->codec);
@@ -511,12 +534,14 @@ int64_t Player::getPositionTime() const
 
 void Player::setPosition(double time)
 {
+	waitUntilInitialized();
 	std::lock_guard<std::mutex> lock(readThreadMutex);
 	setPositionTime(time / av_q2d(stream->time_base));
 }
 
 double Player::getPosition() const
 {
+	waitUntilInitialized();
 	return 0; //TODO
 }
 
@@ -564,12 +589,14 @@ const std::string& Player::getStreamAddress() const
 
 std::unique_ptr<std::string> Player::getTitle() const
 {
+	waitUntilInitialized();
 	const char *title = searchEntry(formatContext->metadata, "title");
 	return title ? std::unique_ptr<std::string>(new std::string(title)) : nullptr;
 }
 
 double Player::getDuration() const
 {
+	waitUntilInitialized();
 	return stream->duration * av_q2d(stream->time_base);
 }
 

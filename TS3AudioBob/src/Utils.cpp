@@ -70,6 +70,12 @@ bool Utils::startsWith(const std::string &string, const std::string &prefix)
 		prefix.end(), string.begin());
 }
 
+bool Utils::endsWith(const std::string &string, const std::string &suffix)
+{
+	return suffix.size() <= string.size() && std::equal(suffix.begin(),
+		suffix.end(), string.end() - suffix.size());
+}
+
 std::string Utils::sanitizeAscii(const std::string &input)
 {
 	std::vector<char> result(input.size());
