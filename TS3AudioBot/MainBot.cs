@@ -754,17 +754,9 @@
 
 		// HELPER
 
-		private static string ExtractUrlFromBB(string ts3link)
-		{
-			if (ts3link.Contains("[URL]"))
-				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
-			else
-				return ts3link;
-		}
-
 		private void LoadAndPlayAuto(PlayData data)
 		{
-			string netlinkurl = ExtractUrlFromBB(data.Message);
+			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 			IRessourceFactory factory = null;
 			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
 				factory = youtubeFactory;
@@ -779,7 +771,7 @@
 		{
 			if (data.Ressource == null)
 			{
-				string netlinkurl = ExtractUrlFromBB(data.Message);
+				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 
 				AudioRessource ressource;
 				RResultCode result = factory.GetRessource(netlinkurl, out ressource);

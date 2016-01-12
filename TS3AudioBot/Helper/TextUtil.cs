@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 namespace TS3AudioBot.Helper
 {
@@ -23,6 +24,20 @@ namespace TS3AudioBot.Helper
 				return Answer.No;
 			else
 				return Answer.Unknown;
+		}
+
+		private static readonly Regex bbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		public static string ExtractUrlFromBB(string ts3link)
+		{
+			if (ts3link.Contains("[URL]"))
+				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
+			else
+				return ts3link;
+		}
+
+		public static string RemoveUrlBB(string ts3link)
+		{
+			return bbMatch.Replace(ts3link, "$1");
 		}
 	}
 

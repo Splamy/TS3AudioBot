@@ -4,6 +4,7 @@ using System.Linq;
 using TS3Query.Messages;
 using TS3AudioBot.RessourceFactories;
 using TS3AudioBot.Helper;
+using System.Globalization;
 
 namespace TS3AudioBot
 {
@@ -20,6 +21,7 @@ namespace TS3AudioBot
 		private BobControllerData data;
 		private TickWorker timeout;
 		private DateTime lastUpdate = DateTime.Now;
+		private MusicData currentMusicInfo;
 
 		private bool sending = false;
 		private bool isRunning;
@@ -137,7 +139,31 @@ namespace TS3AudioBot
 			if (message.InvokerId != bobClient.Id)
 				return;
 
-			// TODO parse here
+			ParseData(TextUtil.RemoveUrlBB(message.Message));
+		}
+
+		private void ParseData(string input)
+		{
+			var splits = input.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Split(new[] { ' ' }, 2));
+			var typeKVP = splits.FirstOrDefault();
+			if (typeKVP == null)
+				throw new InvalidOperationException("Empty response");
+			splits = splits.Skip(1);
+			switch (typeKVP[0])
+			{
+			case "error": Log.Write(Log.Level.Warning, "Erroneous answer: {0}", typeKVP[1]); break;
+			case "answer":
+				switch (typeKVP[1])
+				{
+				case "music": currentMusicInfo = ParseMusicData(splits); break;
+				case "audio": break;
+				case "end_event": break;
+				default: throw new NotSupportedException("Answer not recognized");
+				}
+				break;
+			case "pong": Log.Write(Log.Level.Debug, "Alrighty then!"); break;
+			default: throw new NotSupportedException("Response not recognized");
+			}
 		}
 
 		public void HasUpdate()
@@ -317,11 +343,51 @@ namespace TS3AudioBot
 			Stop();
 		}
 
+		private static MusicData ParseMusicData(IEnumerable<string[]> input)
+		{
+			var musicData = new MusicData();
+			foreach (var result in input)
+			{
+				switch (result[0])
+				{
+				case "address": musicData.Address = result[1]; break;
+				case "length": musicData.Length = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "loop": musicData.Loop = result[1] != "off"; break;
+				case "position": musicData.Position = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1]); break;
+				case "title": musicData.Title = result[1]; break;
+				case "volume": musicData.Volume = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				default: Log.Write(Log.Level.Debug, "Unparsed key: {0}={1}", result[0], result[1]); break;
+				}
+			}
+			return musicData;
+		}
+
 		private class SubscriptionData
 		{
 			public int Id { get; set; }
 			public bool Enabled { get; set; }
 			public bool Manual { get; set; }
+		}
+
+		private class MusicData
+		{
+			public MusicStatus Status { get; set; }
+			public double Length { get; set; }
+			public double Position { get; set; }
+			public string Title { get; set; }
+			public string Address { get; set; }
+			public bool Loop { get; set; }
+			public double Volume { get; set; }
+		}
+
+		enum MusicStatus
+		{
+			off,
+			playing,
+			paused,
+			finished,
+			error,
 		}
 	}
 
