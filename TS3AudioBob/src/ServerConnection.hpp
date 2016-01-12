@@ -1,14 +1,14 @@
 #ifndef SERVER_CONNECTION_HPP
 #define SERVER_CONNECTION_HPP
 
+#include "audio/Player.hpp"
+#include "TsApi.hpp"
+#include "User.hpp"
+#include "Utils.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <audio/Player.hpp>
-#include <TsApi.hpp>
-#include <User.hpp>
-#include <Utils.hpp>
 
 class ServerConnection
 {

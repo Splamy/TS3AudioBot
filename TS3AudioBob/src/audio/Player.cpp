@@ -287,9 +287,9 @@ bool Player::openStreamComponent(int streamId)
 	formatContext->streams[streamId]->discard = AVDISCARD_DEFAULT;
 
 	// Ignore all other streams
-	for (size_t i = 0; i < formatContext->nb_streams; i++)
+	for (std::size_t i = 0; i < formatContext->nb_streams; i++)
 	{
-		if (i != static_cast<size_t>(streamId))
+		if (i != static_cast<std::size_t>(streamId))
 		{
 			formatContext->streams[i]->discard = AVDISCARD_ALL;
 			avcodec_close(formatContext->streams[i]->codec);

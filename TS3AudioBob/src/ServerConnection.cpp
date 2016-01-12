@@ -1,9 +1,9 @@
 #include "ServerConnection.hpp"
 
+#include <public_errors.h>
+
 #include <algorithm>
 #include <functional>
-
-#include <public_errors.h>
 
 namespace
 {

@@ -1,12 +1,13 @@
 #include "User.hpp"
 
-#include <sstream>
-#include <stdexcept>
+#include "ServerBob.hpp"
+#include "ServerConnection.hpp"
 
 #include <public_rare_definitions.h>
 
-#include <ServerBob.hpp>
-#include <ServerConnection.hpp>
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
 
 const std::chrono::seconds User::GROUP_WAIT_TIME(3);
 const std::chrono::seconds User::GROUP_REFRESH_TIME(10);

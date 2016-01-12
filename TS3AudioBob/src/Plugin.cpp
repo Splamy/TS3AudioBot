@@ -1,5 +1,9 @@
 #include "Plugin.hpp"
 
+#include "ServerBob.hpp"
+#include "ServerConnection.hpp"
+#include "TsApi.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -11,10 +15,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include <ServerBob.hpp>
-#include <ServerConnection.hpp>
-#include <TsApi.hpp>
 
 namespace
 {
