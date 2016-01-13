@@ -7,6 +7,7 @@
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
+	using System.Reflection;
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
@@ -26,8 +27,9 @@
 	{
 		static void Main(string[] args)
 		{
-			// Force thread pool disable
-			ThreadPool.SetMaxThreads(0, 0);
+			//var queueDataArr = 
+
+			return;
 			using (MainBot bot = new MainBot())
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
