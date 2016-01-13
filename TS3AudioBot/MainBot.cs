@@ -27,9 +27,6 @@
 	{
 		static void Main(string[] args)
 		{
-			//var queueDataArr = 
-
-			return;
 			using (MainBot bot = new MainBot())
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
@@ -139,7 +136,7 @@
 			BobController = new BobController(bcd, QueryConnection);
 			// old: new VLCConnection(afd.vlcLocation);
 			// new: BobController
-			AudioFramework = new AudioFramework(afd, new VLCConnection(afd.vlcLocation));
+			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 
@@ -732,7 +729,7 @@
 			int volume;
 			if (int.TryParse(parameter, out volume) && volume >= 0)
 			{
-				if (volume <= AudioFramework.MAXUSERVOLUME || volume < AudioFramework.Volume)
+				if (volume <= AudioFramework.MaxUserVolume || volume < AudioFramework.Volume)
 				{
 					AudioFramework.Volume = volume;
 					return;
