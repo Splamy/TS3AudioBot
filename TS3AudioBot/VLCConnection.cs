@@ -35,7 +35,7 @@ namespace TS3AudioBot
 			botLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 		}
 
-		public void Start()
+		public void Initialize()
 		{
 			if (vlcproc == null || vlcproc.HasExited)
 			{
@@ -95,6 +95,25 @@ namespace TS3AudioBot
 			}
 		}
 
+		public int Length
+		{
+			get
+			{
+				SendResponseLocked(AwaitingResponse.GetLength, "get_length");
+				return getLength;
+			}
+		}
+
+		public bool IsPlaying
+		{
+			get
+			{
+				SendResponseLocked(AwaitingResponse.IsPlaying, "is_playing");
+				return isPlaying;
+			}
+		}
+
+
 		public void AudioAdd(string url)
 		{
 			SendCommandLocked("enqueue " + url);
@@ -118,18 +137,6 @@ namespace TS3AudioBot
 		public void AudioStop()
 		{
 			SendCommandLocked("stop");
-		}
-
-		public int GetLength()
-		{
-			SendResponseLocked(AwaitingResponse.GetLength, "get_length");
-			return getLength;
-		}
-
-		public bool IsPlaying()
-		{
-			SendResponseLocked(AwaitingResponse.IsPlaying, "is_playing");
-			return isPlaying;
 		}
 
 		public void SetLoop(bool enabled)

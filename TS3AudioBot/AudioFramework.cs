@@ -46,7 +46,7 @@ namespace TS3AudioBot
 		/// <returns>True if the seek request was valid, false otherwise.</returns>
 		public bool Seek(int pos)
 		{
-			if (pos < 0 || pos > playerConnection.GetLength())
+			if (pos < 0 || pos > playerConnection.Length)
 				return false;
 			playerConnection.Position = pos;
 			return true;
@@ -79,7 +79,7 @@ namespace TS3AudioBot
 			waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL_MS, false);
 			audioFrameworkData = afd;
 			playerConnection = audioBackend;
-			playerConnection.Start();
+			playerConnection.Initialize();
 		}
 
 		/// <summary>
@@ -91,9 +91,9 @@ namespace TS3AudioBot
 		{
 			if (endTime < DateTime.Now)
 			{
-				if (playerConnection.IsPlaying())
+				if (playerConnection.IsPlaying)
 				{
-					int playtime = playerConnection.GetLength();
+					int playtime = playerConnection.Length;
 					int position = playerConnection.Position;
 
 					int endspan = playtime - position;

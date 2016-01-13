@@ -4,7 +4,7 @@ namespace TS3AudioBot
 {
 	interface IPlayerConnection : IDisposable
 	{
-		void Start();
+		void Initialize();
 
 		//bool SupportsEndCallback { get; }
 
@@ -12,10 +12,10 @@ namespace TS3AudioBot
 		int Position { get; set; }
 		bool Repeated { get; set; }
 		bool Pause { get; set; }
-		
+		int Length { get; }
+		bool IsPlaying { get; }
+
 		void AudioStart(string url);
 		void AudioStop();
-		int GetLength();
-		bool IsPlaying();
 	}
 }

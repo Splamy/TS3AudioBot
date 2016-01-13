@@ -21,6 +21,7 @@ namespace TS3AudioBot
 		private BobControllerData data;
 		private TickWorker timeout;
 		private DateTime lastUpdate = DateTime.Now;
+		private WaitEventBlock<MusicData> musicInfoWaiter;
 		private MusicData currentMusicInfo;
 
 		private bool sending = false;
@@ -44,19 +45,24 @@ namespace TS3AudioBot
 			}
 		}
 
+		#region IPlayerConnection
+
 		public int Volume
 		{
 			get { return volume; }
 			set
 			{
 				volume = value;
-				SendMessage("music volume " + (value / 100.0));
+				SendMessage("music volume " + (value / 100d));
 			}
 		}
 
 		public int Position
 		{
-			get { throw new NotImplementedException(); }
+			get
+			{
+				return (int)musicInfoWaiter.Wait().Position;
+			}
 			set
 			{
 				SendMessage("music seek " + value);
@@ -79,15 +85,47 @@ namespace TS3AudioBot
 			set
 			{
 				pause = value;
-				// There are also "music pause|unpause" but it unnecessary to send then
-				// and the bob automatically pauses when it doesn't send.
+				// The commands "music pause|unpause" are available, but redundant
+				// since the bob automatically pauses when the audio output is off.
 				SendMessage("audio " + (value ? "on" : "off"));
 			}
 		}
 
+		public int Length
+		{
+			get
+			{
+				SendMessage("status music");
+				return (int)musicInfoWaiter.Wait().Length;
+			}
+		}
+
+		public bool IsPlaying
+		{
+			get
+			{
+				SendMessage("status music");
+				return musicInfoWaiter.Wait().Status == MusicStatus.playing;
+			}
+		}
+
+
+		public void AudioStart(string url)
+		{
+			SendMessage("music start " + url);
+		}
+
+		public void AudioStop()
+		{
+			SendMessage("music stop");
+		}
+
+		#endregion
+
 		public BobController(BobControllerData data, IQueryConnection queryConnection)
 		{
 			timeout = TickPool.RegisterTick(TimeoutCheck, 100, false);
+			musicInfoWaiter = new WaitEventBlock<MusicData>();
 			isRunning = false;
 			this.data = data;
 			this.queryConnection = queryConnection;
@@ -95,6 +133,8 @@ namespace TS3AudioBot
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
 		}
+
+		public void Initialize() { }
 
 		private void SendMessage(string message)
 		{
@@ -155,7 +195,7 @@ namespace TS3AudioBot
 			case "answer":
 				switch (typeKVP[1])
 				{
-				case "music": currentMusicInfo = ParseMusicData(splits); break;
+				case "music": musicInfoWaiter.Notify(currentMusicInfo = ParseMusicData(splits)); break;
 				case "audio": break;
 				case "end_event": break;
 				default: throw new NotSupportedException("Answer not recognized");
@@ -264,28 +304,6 @@ namespace TS3AudioBot
 		public void WhisperClientUnsubscribe(int userID)
 		{
 			SendMessage("whisper client remove " + userID);
-		}
-
-		public void AudioStart(string url)
-		{
-			SendMessage("music start " + url);
-		}
-
-		public void AudioStop()
-		{
-			SendMessage("music stop");
-		}
-
-		public int GetLength()
-		{
-			SendMessage("status music");
-			throw new NotImplementedException();
-		}
-
-		public bool IsPlaying()
-		{
-			SendMessage("status music");
-			throw new NotImplementedException();
 		}
 
 		private void RestoreSubscriptions(ClientData invokingUser)
