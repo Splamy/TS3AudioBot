@@ -70,6 +70,7 @@ private:
 	CommandResult musicStopCommand     (ServerConnection *connection, User *sender, const std::string &message);
 	CommandResult musicPauseCommand    (ServerConnection *connection, User *sender, const std::string &message);
 	CommandResult musicUnpauseCommand  (ServerConnection *connection, User *sender, const std::string &message);
+	CommandResult musicAddressCommand  (ServerConnection *connection, User *sender, const std::string &message);
 	CommandResult qualityCommand       (ServerConnection *connection, User *sender, const std::string &message, bool on);
 	CommandResult whisperClientAddCommand    (ServerConnection *connection, User *sender, const std::string &message, int id);
 	CommandResult whisperClientRemoveCommand (ServerConnection *connection, User *sender, const std::string &message, int id);

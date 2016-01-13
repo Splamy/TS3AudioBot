@@ -69,6 +69,7 @@ public:
 	void startAudio(const std::string &address);
 	void stopAudio();
 	bool hasAudioPlayer() const;
+	std::string getStreamAddress() const;
 	bool isAudioPaused() const;
 	/** Pauses or unpauses the audio player.
 	 *  @return False will be returned if the audio player doesn't exist.

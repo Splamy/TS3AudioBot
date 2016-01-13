@@ -301,6 +301,11 @@ bool ServerConnection::hasAudioPlayer() const
 	return static_cast<bool>(audioPlayer);
 }
 
+std::string ServerConnection::getStreamAddress() const
+{
+	return audioPlayer->getStreamAddress();
+}
+
 bool ServerConnection::isAudioPaused() const
 {
 	return audioPlayer->isPaused();
@@ -355,11 +360,6 @@ std::string ServerConnection::getAudioStatus() const
 		if (audioPlayer->getDecodeError() != audio::Player::DECODE_ERROR_NONE)
 			out << "\ndecode error " << audio::Player::getDecodeErrorDescription(
 				audioPlayer->getDecodeError());
-
-		std::string address = audioPlayer->getStreamAddress();
-		Utils::replace(address, "\\", "\\\\");
-		Utils::replace(address, "\n", "\\n");
-		out << "\naddress " << address;
 
 		if (audioPlayer->getReadError() == audio::Player::READ_ERROR_NONE)
 		{

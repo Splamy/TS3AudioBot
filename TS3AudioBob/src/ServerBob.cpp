@@ -37,6 +37,7 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64_t botAdminGroup) :
 	addCommand("music stop", &ServerBob::musicStopCommand);
 	addCommand("music pause", &ServerBob::musicPauseCommand);
 	addCommand("music unpause", &ServerBob::musicUnpauseCommand);
+	addCommand("music address", &ServerBob::musicAddressCommand);
 	addCommand("whisper clear", &ServerBob::whisperClearCommand, "Clear the whisperlist");
 	addCommand("whisper client add <id>", &ServerBob::whisperClientAddCommand, "Add or remove clients from the whisperlist");
 	addCommand("whisper client remove <id>", &ServerBob::whisperClientRemoveCommand);
@@ -348,6 +349,20 @@ CommandResult ServerBob::musicUnpauseCommand(ServerConnection *connection,
 		return CommandResult(CommandResult::ERROR,
 			"error the audio player doesn't exist at the moment");
 	connection->setAudioPaused(false);
+	return CommandResult();
+}
+
+CommandResult ServerBob::musicAddressCommand(ServerConnection *connection,
+	User *sender, const std::string &/*message*/)
+{
+	if (!connection->hasAudioPlayer())
+		return CommandResult(CommandResult::ERROR,
+			"error the audio player doesn't exist at the moment");
+
+	std::string address = connection->getStreamAddress();
+	Utils::replace(address, "\\", "\\\\");
+	Utils::replace(address, "\n", "\\n");
+	connection->sendCommand(sender, "answer music address\n{0}", address);
 	return CommandResult();
 }
 
