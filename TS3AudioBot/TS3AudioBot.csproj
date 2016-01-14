@@ -58,7 +58,6 @@
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\ConfigFile.cs" />
     <Compile Include="ErrorLogger.cs" />
-    <Compile Include="Helper\DebugPoolWatcher.cs" />
     <Compile Include="Helper\PositionedStreamReader.cs" />
     <Compile Include="Helper\SmartHistoryFormatter.cs" />
     <Compile Include="Helper\TickPool.cs" />
