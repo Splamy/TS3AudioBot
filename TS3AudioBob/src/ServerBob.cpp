@@ -25,6 +25,8 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64_t botAdminGroup) :
 	audio::Player::init();
 
 	// Register commands
+	addCommand("error", &ServerBob::errorCommand, "", false);
+	addCommand("unknown", &ServerBob::errorCommand, "", false);
 	addCommand("help", &ServerBob::helpCommand, "Gives you this handy command list");
 	addCommand("help music", &ServerBob::helpMusicCommand);
 	addCommand("ping", &ServerBob::pingCommand, "Returns with a pong if the Bob is alive");
@@ -263,21 +265,23 @@ void ServerBob::close()
 	exit(EXIT_SUCCESS);
 }
 
-// Commands
 void ServerBob::unknownCommand(ServerConnection *connection,
 	User *sender, const std::string &message)
 {
-	if (Utils::startsWith(message, "error") || Utils::startsWith(message, "unknown"))
-	{
-		tsApi->log("Loop detected, have fun");
-		return;
-	}
-
 	std::string msg = message;
 	Utils::replace(msg, "\n", "\\n");
 	tsApi->log(Utils::format("Unknown command: {0}", msg));
 	// Send error message
 	connection->sendCommand(sender, "error unknown command {0}", msg);
+	
+}
+
+// Commands
+CommandResult ServerBob::errorCommand(ServerConnection * /*connection*/,
+	User * /*sender*/, const std::string &/*message*/, std::string /*rest*/)
+{
+	tsApi->log("Loop detected, have fun");
+	return CommandResult();
 }
 
 CommandResult ServerBob::audioCommand(ServerConnection * /*connection*/,

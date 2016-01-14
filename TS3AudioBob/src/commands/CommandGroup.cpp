@@ -3,6 +3,7 @@
 #include "Utils.hpp"
 
 #include <cassert>
+#include <regex>
 
 CommandGroup::CommandGroup(const std::string &name) :
 	name(name)
@@ -91,96 +92,26 @@ CommandResult CommandGroup::operator()(ServerConnection *connection,
 #ifdef COMMAND_DEBUG
 	std::cout << Utils::format("Entering {0}\n", name);
 #endif
-	std::vector<std::pair<std::string, std::string::size_type> > commands;
+	std::vector<std::string> commands;
 	for (const std::unique_ptr<AbstractCommand> &sub : subCommands)
 	{
 		const std::string &name = sub->getName();
-		if (std::none_of(commands.cbegin(), commands.cend(), [&name]
-			(decltype(commands)::const_reference s)
-			{ return s.first == name; }))
+		if (std::find(commands.cbegin(), commands.cend(), name) == commands.cend())
 			commands.emplace_back(name, 0);
 	}
 
-	// Search if we can find a right method
-	std::string::size_type msgIndex = 0;
-	while (msgIndex < message.length())
-	{
-		// Stop if the command is over
-		if (Utils::isSpace(message[msgIndex]))
-		{
-			// Skip following whitespaces
-			do
-			{
-				msgIndex++;
-			} while (msgIndex < message.length() && Utils::isSpace(message[msgIndex]));
-			break;
-		}
-		// Stop if only one command is left
-		if (commands.size() == 1)
-		{
-			// Skip to end of command
-			while (msgIndex < message.length() && !Utils::isSpace(message[msgIndex]))
-				msgIndex++;
-			continue;
-		}
+	std::string arguments = message;
+	commands = CommandSystem::chooseWord(commands, arguments);
 
-		// Backup current commands
-		decltype(commands) oldCommands = commands;
-		// Filter commands
-		for (std::size_t i = 0; i < commands.size(); i++)
-		{
-			std::string::size_type newPos =
-				commands[i].first.find(message[msgIndex], commands[i].second);
-			if (newPos == std::string::npos)
-			{
-				commands.erase(commands.begin() + i);
-				i--;
-			} else
-				commands[i].second = newPos + 1;
-		}
-		// Ignore this character if there are no results
-		// ATTENTION: This can probably lead to funny behaviour ;)
-		if (commands.empty())
-			commands = std::move(oldCommands);
-
-		msgIndex++;
-	}
-
-	// Take the command with the lowest index
-	std::string::size_type minIndex = std::string::npos;
-	for (const auto &c : commands)
-	{
-		if (c.second < minIndex)
-			minIndex = c.second;
-	}
-	for (std::size_t i = 0; i < commands.size(); i++)
-	{
-		if (commands[i].second != minIndex)
-		{
-			commands.erase(commands.begin() + i);
-			i--;
-		}
-	}
-
-#ifdef COMMAND_DEBUG
-	if (commands.size() > 1)
-		std::cout << Utils::format("Leaving {0} because of too many commands\n", name);
-	else
-	{
-		std::cout << Utils::format("Found the following commands ({0}):", commands.size());
-		for (const auto &c : commands)
-			std::cout << " " << c.first;
-		std::cout << "\n";
-	}
-#endif
+	if (commands.empty())
+		return CommandResult::TRY_NEXT;
 
 	if (commands.size() > 1)
 		// Can't get a distinct command string
 		return CommandResult(CommandResult::TRY_NEXT, "error ambigious command");
 
 	// Execute command
-	std::string commandName = commands[0].first;
-	std::string arguments = message.substr(msgIndex);
+	std::string commandName = commands[0];
 	CommandResult result;
 	for (const std::unique_ptr<AbstractCommand> &sub : subCommands)
 	{

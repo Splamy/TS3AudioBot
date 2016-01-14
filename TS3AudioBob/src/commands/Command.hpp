@@ -9,13 +9,13 @@
 #include <functional>
 #include <sstream>
 
-//#define COMMAND_DEBUG
+#define COMMAND_DEBUG
 
 #ifdef COMMAND_DEBUG
 	#include <iostream>
 #endif
 
-namespace CommandParser
+namespace CommandSystem
 {
 	/** Extracts an argument from a string and returns the parsed argument
 	 *  and the leftover string.
@@ -40,6 +40,16 @@ namespace CommandParser
 
 	/** A specialisation for bool to allow more, better values. */
 	bool parseArgument(std::string &message, bool *result);
+
+	/** Search for a best matching string for input in possible.
+	 *  The result is a list of matching strings where the algorithm wasn't
+	 *  able to find any preference.
+	 */
+	std::vector<std::string> choose(const std::vector<std::string> &possible,
+		const std::string &input);
+
+	std::vector<std::string> chooseWord(const std::vector<std::string> &possible,
+		std::string &input);
 }
 
 template <class... Args>
@@ -97,7 +107,7 @@ private:
 				"error too few parameters");
 		std::string msg = Utils::strip(message, true, false);
 		P p;
-		if (!CommandParser::parseArgument(msg, &p))
+		if (!CommandSystem::parseArgument(msg, &p))
 			return CommandResult(CommandResult::ERROR,
 				"error wrong parameter type");
 
@@ -138,8 +148,8 @@ public:
 			connection, sender, message);
 #ifdef COMMAND_DEBUG
 		auto r = execute(message, f);
-		std::cout << Utils::format("Trying to execute {0} {1} → {2} {3}\n",
-			name.c_str(), parameters.c_str(), r.result, r.errorMessage.c_str());
+		std::cout << Utils::format("Trying to execute '{0}' '{1}' → {2} {3}\n",
+			name, parameters, r.result, r.errorMessage);
 		return r;
 #endif
 		return execute(message, f);

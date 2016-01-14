@@ -59,9 +59,10 @@ private:
 	std::string combineHelp(std::vector<std::pair<std::string, std::string> >
 		descriptions);
 	void close();
+	void unknownCommand(ServerConnection *connection, User *sender, const std::string &message);
 
 	// Commands
-	void unknownCommand                (ServerConnection *connection, User *sender, const std::string &message);
+	CommandResult errorCommand         (ServerConnection *connection, User *sender, const std::string &message, std::string rest);
 	CommandResult audioCommand         (ServerConnection *connection, User *sender, const std::string &message, bool on);
 	CommandResult musicStartCommand    (ServerConnection *connection, User *sender, const std::string &message, std::string address);
 	CommandResult musicVolumeCommand   (ServerConnection *connection, User *sender, const std::string &message, double volume);
