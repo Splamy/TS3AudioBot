@@ -225,8 +225,14 @@ void Player::read()
 
 		// Test if the stream is over
 		{
-			std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
-			if (!paused && packetQueue.empty() && !decoder->gotFlush())
+			bool finished;
+			// Lock only this part because setPositionTime also locks the packet
+			// queue
+			{
+				std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
+				finished = !paused && packetQueue.empty() && !decoder->gotFlush();
+			}
+			if (finished)
 			{
 				if (loop)
 					setPositionTime(0);
