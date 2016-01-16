@@ -198,6 +198,6 @@ void ts3plugin_onEditCapturedVoiceDataEvent(uint64 scHandlerId,
 {
 	if (serverBob && serverBob->fillAudioData(scHandlerId,
 		reinterpret_cast<uint8_t*>(samples),
-		sampleCount * channels * sizeof(short), channels, *edited & 2))
+		sampleCount * channels * sizeof(short), channels, (*edited & 2) == 2))
 		*edited |= 1;
 }

@@ -107,8 +107,15 @@ CommandResult CommandGroup::operator()(ServerConnection *connection,
 		return CommandResult::TRY_NEXT;
 
 	if (commands.size() > 1)
-		// Can't get a distinct command string
-		return CommandResult(CommandResult::TRY_NEXT, "error ambigious command");
+	{
+		// Can't get a distinct command string so give a useful list of possibly
+		// meant commands
+		std::ostringstream out;
+		out << "error ambigious command\nMaybe you meant one of ";
+		for (const auto &c : commands)
+			out << "\n" << c;
+		return CommandResult(CommandResult::TRY_NEXT, out.str());
+	}
 
 	// Execute command
 	std::string commandName = commands[0];

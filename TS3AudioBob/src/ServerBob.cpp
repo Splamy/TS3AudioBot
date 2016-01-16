@@ -248,7 +248,9 @@ std::string ServerBob::combineHelp(
 	}
 	std::ostringstream fStream;
 	// Align the output to s characters
-	fStream << "\n{0:-" << maxLength << "}    {1}";
+	// Each line has two spaces at the beginning because TeamSpeak will delete
+	// one single whitespace at the start of a line which leads to bad alignment.
+	fStream << "\n  {0:-" << maxLength << "}    {1}";
 	const std::string format = fStream.str();
 	for (const auto &desc : descriptions)
 		output << Utils::format(format, desc.first, desc.second);
@@ -488,6 +490,7 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 		[](const std::pair<std::string, std::string> &d)
 			{ return Utils::startsWith(d.first, "music"); });
 	descriptions.erase(newEnd, descriptions.end());
+
 	output << combineHelp(descriptions);
 
 	connection->sendCommand(sender, output.str());

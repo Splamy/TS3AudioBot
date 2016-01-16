@@ -30,7 +30,7 @@ std::string Utils::getFormattedString(const std::string &/*format*/, std::size_t
 
 bool Utils::isSpace(char c)
 {
-	return std::isspace(c);
+	return std::isspace(c) != 0;
 }
 
 std::string Utils::strip(const std::string &input, bool left, bool right)

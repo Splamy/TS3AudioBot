@@ -130,6 +130,8 @@ private:
 	void setReadError(ReadError error);
 	void setDecodeError(DecodeError error);
 	void waitUntilInitialized() const;
+	/** Quit threads and set finished to true. */
+	void finish();
 
 	/** The read thread that fills the packet queue. */
 	void read();

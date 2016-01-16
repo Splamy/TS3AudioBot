@@ -97,6 +97,44 @@ Player::Player(std::string streamAddress) :
 Player::~Player()
 {
 	// Notify waiting threads and wait for them to exit
+	finish();
+
+	swr_free(&resampler);
+	if (formatContext)
+	{
+		if (streamId != -1)
+			avcodec_close(formatContext->streams[streamId]->codec);
+		avformat_close_input(&formatContext);
+	}
+}
+
+void Player::setReadError(ReadError error)
+{
+	readError = error;
+	if (error != READ_ERROR_NONE)
+		printf("A read error occured: %s\n", getReadErrorDescription(error).c_str());
+	// Read errors are fatal errors so playing sound doesn't work anymore
+	finish();
+}
+
+void Player::setDecodeError(DecodeError error)
+{
+	decodeError = error;
+	if (error != DECODE_ERROR_NONE)
+		printf("A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
+}
+
+void Player::waitUntilInitialized() const
+{
+	// Busy waiting because it shouldn't take long until everything is
+	// initialized
+	while (!initialized)
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
+void Player::finish()
+{
+	// Notify waiting threads and wait for them to exit
 	finished = true;
 	{
 		std::lock_guard<std::mutex> lock(sampleQueueMutex);
@@ -116,38 +154,6 @@ Player::~Player()
 		readThread.join();
 	if (decodeThread.joinable())
 		decodeThread.join();
-
-	swr_free(&resampler);
-	if (formatContext)
-	{
-		if (streamId != -1)
-			avcodec_close(formatContext->streams[streamId]->codec);
-		avformat_close_input(&formatContext);
-	}
-}
-
-void Player::setReadError(ReadError error)
-{
-	readError = error;
-	if (error != READ_ERROR_NONE)
-		printf("A read error occured: %s\n", getReadErrorDescription(error).c_str());
-	// Read errors are fatal errors so playing sound doesn't work anymore
-	finished = true;
-}
-
-void Player::setDecodeError(DecodeError error)
-{
-	decodeError = error;
-	if (error != DECODE_ERROR_NONE)
-		printf("A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
-}
-
-void Player::waitUntilInitialized() const
-{
-	// Busy waiting because it shouldn't take long until everything is
-	// initialized
-	while (!initialized)
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void Player::read()
@@ -238,7 +244,7 @@ void Player::read()
 					setPositionTime(0);
 				else
 				{
-					finished = true;
+					finish();
 					return;
 				}
 			}
