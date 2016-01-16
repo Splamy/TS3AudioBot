@@ -127,11 +127,11 @@ public:
 	~Player();
 
 private:
-	void setReadError(ReadError error);
+	void setReadError(ReadError error, bool lockReadThread = true);
 	void setDecodeError(DecodeError error);
 	void waitUntilInitialized() const;
 	/** Quit threads and set finished to true. */
-	void finish();
+	void finish(bool lockReadThread = true);
 
 	/** The read thread that fills the packet queue. */
 	void read();

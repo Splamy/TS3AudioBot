@@ -96,6 +96,11 @@ Player::~Player()
 	// Notify waiting threads and wait for them to exit
 	finish();
 
+	if (readThread.joinable())
+		readThread.join();
+	if (decodeThread.joinable())
+		decodeThread.join();
+
 	swr_free(&resampler);
 	if (formatContext)
 	{
@@ -105,13 +110,13 @@ Player::~Player()
 	}
 }
 
-void Player::setReadError(ReadError error)
+void Player::setReadError(ReadError error, bool lockReadThread)
 {
 	readError = error;
 	if (error != READ_ERROR_NONE)
 		printf("A read error occured: %s\n", getReadErrorDescription(error).c_str());
 	// Read errors are fatal errors so playing sound doesn't work anymore
-	finish();
+	finish(lockReadThread);
 }
 
 void Player::setDecodeError(DecodeError error)
@@ -129,7 +134,7 @@ void Player::waitUntilInitialized() const
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
-void Player::finish()
+void Player::finish(bool lockReadThread)
 {
 	// Notify waiting threads and wait for them to exit
 	finished = true;
@@ -138,8 +143,13 @@ void Player::finish()
 		std::lock_guard<std::mutex> lock(sampleQueueMutex);
 		sampleQueueWaiter.notify_all();
 	}
+	if (lockReadThread)
 	{
 		std::lock_guard<std::mutex> lock(readThreadMutex);
+		readThreadWaiter.notify_all();
+		pausedWaiter.notify_all();
+	} else
+	{
 		readThreadWaiter.notify_all();
 		pausedWaiter.notify_all();
 	}
@@ -147,11 +157,6 @@ void Player::finish()
 		std::lock_guard<std::mutex> lock(packetQueueMutex);
 		packetQueueWaiter.notify_all();
 	}
-
-	if (readThread.joinable())
-		readThread.join();
-	if (decodeThread.joinable())
-		decodeThread.join();
 }
 
 void Player::read()
@@ -258,7 +263,7 @@ void Player::read()
 				}
 				if (formatContext->pb && formatContext->pb->error)
 				{
-					setReadError(READ_ERROR_IO);
+					setReadError(READ_ERROR_IO, false);
 					return;
 				}
 
