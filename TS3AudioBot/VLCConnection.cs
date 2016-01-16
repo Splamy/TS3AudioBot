@@ -190,6 +190,7 @@ namespace TS3AudioBot
 		{
 			connected = false;
 			textCallbackThread = new Thread(ReadMessageLoop);
+			textCallbackThread.Name = "VLC Read Loop";
 			textCallbackThread.Start();
 		}
 
