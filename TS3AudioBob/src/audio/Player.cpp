@@ -617,9 +617,9 @@ std::unique_ptr<std::string> Player::getTitle() const
 double Player::getDuration() const
 {
 	waitUntilInitialized();
-	if (!stream)
+	if (!formatContext)
 		return 0;
-	return stream->duration * av_q2d(stream->time_base);
+	return (double) formatContext->duration / AV_TIME_BASE;
 }
 
 double Player::getVolume() const
