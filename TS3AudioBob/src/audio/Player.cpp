@@ -11,9 +11,6 @@ extern "C"
 	#include <pthread.h>
 #endif
 
-#ifndef NDEBUG
-	#include <cassert>
-#endif
 #include <cstring>
 
 #include "PacketToFrameDecoder.hpp"

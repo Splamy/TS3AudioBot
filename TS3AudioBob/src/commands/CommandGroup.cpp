@@ -2,9 +2,6 @@
 
 #include "Utils.hpp"
 
-#include <cassert>
-#include <regex>
-
 CommandGroup::CommandGroup(const std::string &name) :
 	name(name)
 {

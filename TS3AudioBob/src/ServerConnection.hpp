@@ -89,8 +89,19 @@ public:
 	template <class... Args>
 	void sendCommand(const User *user, const std::string &message, Args... args)
 	{
+		std::string msg = Utils::format(message, args...);
+		// Crop message if it's longer than 1024 bytes
+		// Let's hope TeamSpeak won't complain if we destroy some unicode
+		if (msg.size() > 1024)
+		{
+			msg.erase(msg.begin() + 1024, msg.end());
+			// Append ...
+			msg[1021] = '.';
+			msg[1022] = '.';
+			msg[1023] = '.';
+		}
 		tsApi->handleTsError(tsApi->getFunctions().requestSendPrivateTextMsg(
-			handlerId, Utils::format(message, args...).c_str(), user->getId(),
+			handlerId, msg.c_str(), user->getId(),
 			nullptr));
 	}
 };

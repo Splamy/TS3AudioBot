@@ -1,7 +1,5 @@
 #include "Command.hpp"
 
-#include <regex>
-
 /** A specialisation for bool to allow more, better values. */
 bool CommandSystem::parseArgument(std::string &message, bool *result)
 {
@@ -124,16 +122,21 @@ std::vector<std::string> CommandSystem::choose(const std::vector<std::string> &p
 std::vector<std::string> CommandSystem::chooseWord(const std::vector<std::string> &possible,
 	std::string &input)
 {
-	std::smatch matches;
 	std::string stripped = Utils::strip(input, true, false);
-	std::regex_search(stripped, matches, std::regex("^(\\S+)\\s*"));
-	if (matches.empty())
+	// Search for command and rest
+	std::string::size_type commandEnd = 0;
+	while (commandEnd < stripped.length() && !Utils::isSpace(stripped[commandEnd]))
+		commandEnd++;
+	std::string::size_type restStart = commandEnd;
+	while (restStart < stripped.length() && Utils::isSpace(stripped[restStart]))
+		restStart++;
+	if (commandEnd == 0)
 		return std::vector<std::string>();
 
 	// Search if we can find a right method
-	std::string command = matches[0];
+	std::string command = stripped.substr(0, commandEnd);
 	std::vector<std::string> commands = CommandSystem::choose(possible, command);
 
-	input = matches.suffix();
+	input = stripped.substr(commandEnd);
 	return commands;
 }
