@@ -65,7 +65,7 @@ public:
 	double getVolume() const;
 	void setLooped(bool loop);
 	bool isLooped() const;
-	void setAudioPosition(double position);
+	bool setAudioPosition(double position);
 	void startAudio(const std::string &address);
 	void stopAudio();
 	bool hasAudioPlayer() const;

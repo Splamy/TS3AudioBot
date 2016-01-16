@@ -24,11 +24,11 @@ public:
 	std::vector<std::pair<std::string, std::string> >
 		createDescriptions() const override;
 	CommandResult operator()(ServerConnection *connection, User *sender,
-		const std::string &message) const override;
+		const std::string &completeMessage, const std::string &message) const override;
 
 	template <class... Args>
 	void addCommand(const std::string &command, std::function<CommandResult
-		(ServerConnection*, User*, const std::string&, Args...)> fun,
+		(ServerConnection*, User*, const std::string&, const std::string&, Args...)> fun,
 		const std::string &description = "", bool displayDescription = true)
 	{
 		std::string::size_type commandEnd = command.find(' ');

@@ -9,7 +9,7 @@
 #include <functional>
 #include <sstream>
 
-#define COMMAND_DEBUG
+//#define COMMAND_DEBUG
 
 #ifdef COMMAND_DEBUG
 	#include <iostream>
@@ -57,7 +57,7 @@ class Command : public AbstractCommand
 {
 public:
 	typedef std::function<CommandResult(ServerConnection *connection,
-		User *sender, const std::string &message, Args...)> FuncType;
+		User *sender, const std::string &message, const std::string &rest, Args...)> FuncType;
 
 private:
 	/** The name of this command, e.g. 'status'. */
@@ -141,11 +141,12 @@ public:
 	}
 
 	CommandResult operator()(ServerConnection *connection, User *sender,
-		const std::string &message) const override
+		const std::string &completeMessage, const std::string &message) const override
 	{
 		// Bind already known arguments
-		std::function<CommandResult(Args...)> f = Utils::myBind(fun,
-			connection, sender, message);
+		// Use two steps because only then it compiles
+		const auto f1 = Utils::myBind(fun, connection, sender);
+		const auto f = Utils::myBind(f1, completeMessage, message);
 #ifdef COMMAND_DEBUG
 		auto r = execute(message, f);
 		std::cout << Utils::format("Trying to execute '{0}' '{1}' → {2} {3}\n",

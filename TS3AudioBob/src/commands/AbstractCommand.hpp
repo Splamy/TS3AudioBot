@@ -39,8 +39,12 @@ public:
 	virtual const std::string& getName() const = 0;
 	virtual std::vector<std::pair<std::string, std::string> >
 		createDescriptions() const = 0;
+	/** Execute this command with the given information.
+	 *  The message is the part of the input that should be parsed and used by
+	 *  this command. completeMessage contains the original input.
+	 */
 	virtual CommandResult operator()(ServerConnection *connection, User *sender,
-		const std::string &message) const = 0;
+		const std::string &completeMessage, const std::string &message) const = 0;
 	virtual ~AbstractCommand() {}
 };
 

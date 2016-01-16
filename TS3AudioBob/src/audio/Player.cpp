@@ -136,6 +136,7 @@ void Player::finish()
 {
 	// Notify waiting threads and wait for them to exit
 	finished = true;
+	initialized = true;
 	{
 		std::lock_guard<std::mutex> lock(sampleQueueMutex);
 		sampleQueueWaiter.notify_all();
@@ -201,82 +202,82 @@ void Player::read()
 	if (!openStreamComponent(audioStreamId))
 		return;
 
-	// Read the stream
-	bool lastPaused = false;
-	// The mutex and lock to wait with the readThreadWaiter
-	std::unique_lock<std::mutex> waitLock(readThreadMutex);
-	AVPacket packet;
-	bool hasEof = false;
-	// Ready with initializing
-	initialized = true;
-	while (!finished)
 	{
-		if (paused != lastPaused && !realtime)
+		// Read the stream
+		bool lastPaused = false;
+		// The mutex and lock to wait with the readThreadWaiter
+		std::unique_lock<std::mutex> waitLock(readThreadMutex);
+		AVPacket packet;
+		bool hasEof = false;
+		// Ready with initializing
+		initialized = true;
+		while (!finished)
 		{
-			lastPaused = paused;
-			if (paused)
+			if (paused != lastPaused && !realtime)
 			{
-				av_read_pause(formatContext);
-				pausedWaiter.wait(waitLock, [this]{ return !paused || finished; });
-			} else
-				av_read_play(formatContext);
-		}
-
-		// Stop reading if the queue is full and if it's not a realtime stream
-		if (!realtime && (packetQueue.size() >= MAX_QUEUE_SIZE || paused))
-		{
-			readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
-			continue;
-		}
-
-		// Test if the stream is over
-		{
-			bool finished;
-			// Lock only this part because setPositionTime also locks the packet
-			// queue
-			{
-				std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
-				finished = !paused && packetQueue.empty() && !decoder->gotFlush();
-			}
-			if (finished)
-			{
-				if (loop)
-					setPositionTime(0);
-				else
+				lastPaused = paused;
+				if (paused)
 				{
-					finish();
-					return;
+					av_read_pause(formatContext);
+					pausedWaiter.wait(waitLock, [this]{ return !paused || finished; });
+				} else
+					av_read_play(formatContext);
+			}
+
+			// Stop reading if the queue is full and if it's not a realtime stream
+			if (!realtime && (packetQueue.size() >= MAX_QUEUE_SIZE || paused))
+			{
+				readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
+				continue;
+			}
+
+			// Test if the stream is over
+			{
+				bool finished;
+				// Lock only this part because setPositionTime also locks the packet
+				// queue
+				{
+					std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
+					finished = !paused && packetQueue.empty() && !decoder->gotFlush();
+				}
+				if (finished)
+				{
+					if (loop)
+						setPositionTime(0);
+					else
+						break;
 				}
 			}
+
+			// Read a packet from the stream
+			int ret = av_read_frame(formatContext, &packet);
+			if (ret < 0)
+			{
+				if ((ret == AVERROR_EOF || avio_feof(formatContext->pb)) && !hasEof)
+				{
+					packetQueue.push(flushPacket);
+					packetQueueWaiter.notify_one();
+					hasEof = true;
+				}
+				if (formatContext->pb && formatContext->pb->error)
+				{
+					setReadError(READ_ERROR_IO);
+					return;
+				}
+
+				// Wait for more data
+				readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
+				continue;
+			} else
+				hasEof = 1;
+
+			// Insert the packet into the queue
+			std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
+			packetQueue.push(packet);
+			packetQueueWaiter.notify_one();
 		}
-
-		// Read a packet from the stream
-		int ret = av_read_frame(formatContext, &packet);
-		if (ret < 0)
-		{
-			if ((ret == AVERROR_EOF || avio_feof(formatContext->pb)) && !hasEof)
-			{
-				packetQueue.push(flushPacket);
-				packetQueueWaiter.notify_one();
-				hasEof = true;
-			}
-			if (formatContext->pb && formatContext->pb->error)
-			{
-				setReadError(READ_ERROR_IO);
-				return;
-			}
-
-			// Wait for more data
-			readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
-			continue;
-		} else
-			hasEof = 1;
-
-		// Insert the packet into the queue
-		std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
-		packetQueue.push(packet);
-		packetQueueWaiter.notify_one();
 	}
+	finish();
 }
 
 bool Player::openStreamComponent(int streamId)
@@ -544,11 +545,14 @@ int64_t Player::getPositionTime() const
 	return 0; //TODO
 }
 
-void Player::setPosition(double time)
+bool Player::setPosition(double time)
 {
 	waitUntilInitialized();
+	if (finished)
+		return false;
 	std::lock_guard<std::mutex> lock(readThreadMutex);
 	setPositionTime(time / av_q2d(stream->time_base));
+	return true;
 }
 
 double Player::getPosition() const
@@ -602,6 +606,8 @@ const std::string& Player::getStreamAddress() const
 std::unique_ptr<std::string> Player::getTitle() const
 {
 	waitUntilInitialized();
+	if (!formatContext)
+		return nullptr;
 	const char *title = searchEntry(formatContext->metadata, "title");
 	return title ? std::unique_ptr<std::string>(new std::string(title)) : nullptr;
 }
@@ -609,6 +615,8 @@ std::unique_ptr<std::string> Player::getTitle() const
 double Player::getDuration() const
 {
 	waitUntilInitialized();
+	if (!stream)
+		return 0;
 	return stream->duration * av_q2d(stream->time_base);
 }
 

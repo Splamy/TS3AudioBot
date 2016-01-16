@@ -83,7 +83,7 @@ std::vector<std::pair<std::string, std::string> >
 }
 
 CommandResult CommandGroup::operator()(ServerConnection *connection,
-	User *sender, const std::string &message) const
+	User *sender, const std::string &completeMessage, const std::string &message) const
 {
 	if (subCommands.empty())
 		// Useless command group
@@ -124,7 +124,7 @@ CommandResult CommandGroup::operator()(ServerConnection *connection,
 	{
 		if (sub->getName() == commandName)
 		{
-			result = (*sub)(connection, sender, arguments);
+			result = (*sub)(connection, sender, completeMessage, arguments);
 			if (result.result != CommandResult::TRY_NEXT)
 				break;
 		}

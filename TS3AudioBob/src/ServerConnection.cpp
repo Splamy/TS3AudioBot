@@ -273,9 +273,9 @@ bool ServerConnection::isLooped() const
 	return loop;
 }
 
-void ServerConnection::setAudioPosition(double position)
+bool ServerConnection::setAudioPosition(double position)
 {
-	audioPlayer->setPosition(position);
+	return audioPlayer->setPosition(position);
 }
 
 void ServerConnection::startAudio(const std::string &address)

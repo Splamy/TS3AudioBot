@@ -61,7 +61,10 @@ namespace Utils
 		return myBindIntern(fun, p, IntSequenceCreator<sizeof...(Args)>());
 	}
 
-	// Bind more than one Argument at once
+	// Bind more than one Argument at once.
+	// In my imagination that should call itself recursively, but it doesn't
+	// work :( (gcc only accepts two parameters, clang supports up to 3 if you
+	// copy this declaration...)
 	template <typename F, class P, class... Ps>
 	auto myBind(const std::function<F> &fun, P p, Ps... ps)
 		-> decltype(myBind(myBind(fun, p), ps...));
@@ -71,6 +74,16 @@ namespace Utils
 		-> decltype(myBind(myBind(fun, p), ps...))
 	{
 		return myBind(myBind(fun, p), ps...);
+	}
+
+	// A lambda function that should be able to bind arguments like myBind.
+	// Unfortunately this only works up to 2 arguments for gcc and clang.
+	// You have to specify the left over arguments (Args) explicitely.
+	template <class... Args, class R, class... P>
+	std::function<R(Args...)> myBind2(const std::function<R(P..., Args...)> &fun, P... p)
+	{
+		std::function<R(Args...)> r = [&fun, &p...](Args... r) { return fun(p..., r...); };
+		return r;
 	}
 
 	/** Convert an object to a string with the possibility to format the object.

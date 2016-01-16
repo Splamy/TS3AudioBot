@@ -151,7 +151,7 @@ private:
 
 public:
 	/** Sets the current stream position in seconds. */
-	void setPosition(double time);
+	bool setPosition(double time);
 	/** Gets the current stream position in seconds. */
 	double getPosition() const;
 	/* Getters and Setters */
