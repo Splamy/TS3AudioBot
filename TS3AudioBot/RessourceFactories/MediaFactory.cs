@@ -9,7 +9,9 @@ namespace TS3AudioBot.RessourceFactories
 {
 	class MediaFactory : IRessourceFactory
 	{
-		public AudioType FactoryFor { get { return AudioType.MediaLink; } }
+		public AudioType FactoryFor => AudioType.MediaLink;
+
+		public bool MatchLink(string uri) => true;
 
 		public RResultCode GetRessource(string uri, out AudioRessource ressource)
 		{
@@ -46,6 +48,8 @@ namespace TS3AudioBot.RessourceFactories
 				return RResultCode.Success;
 			}
 		}
+
+		public string RestoreLink(string id) => id;
 
 		private RResultCode ValidateUri(string uri, out Stream stream)
 		{
@@ -129,7 +133,7 @@ namespace TS3AudioBot.RessourceFactories
 			if (answer == Answer.Yes)
 			{
 				PlayData data = session.UserRessource;
-				session.Bot.Play(data);
+				session.Bot.FactoryManager.Play(data);
 			}
 			else if (answer == Answer.No)
 			{

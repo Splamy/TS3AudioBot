@@ -15,12 +15,14 @@ namespace TS3AudioBot.RessourceFactories
 		private Regex idMatch = new Regex(@"(&|\?)v=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private WebClient wc;
 
-		public AudioType FactoryFor { get { return AudioType.Youtube; } }
+		public AudioType FactoryFor => AudioType.Youtube;
 
 		public YoutubeFactory()
 		{
 			wc = new WebClient();
 		}
+
+		public bool MatchLink(string link) => Regex.IsMatch(link, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)");
 
 		public RResultCode GetRessource(string ytLink, out AudioRessource result)
 		{
@@ -120,6 +122,8 @@ namespace TS3AudioBot.RessourceFactories
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
 
+		public string RestoreLink(string id) => $"https://www.youtube.com/watch?v={id}";
+
 		public void PostProcess(PlayData data, out bool abortPlay)
 		{
 			YoutubeRessource ytRessource = (YoutubeRessource)data.Ressource;
@@ -188,7 +192,7 @@ namespace TS3AudioBot.RessourceFactories
 					return true;
 				}
 
-				session.Bot.Play(data);
+				session.Bot.FactoryManager.Play(data);
 			}
 			return true;
 		}

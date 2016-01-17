@@ -2,6 +2,7 @@
 using System.Net;
 using System.Web.Script.Serialization;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace TS3AudioBot.RessourceFactories
 {
@@ -10,7 +11,7 @@ namespace TS3AudioBot.RessourceFactories
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;
 
-		public AudioType FactoryFor { get { return AudioType.Soundcloud; } }
+		public AudioType FactoryFor => AudioType.Soundcloud;
 		public string SoundcloudClientID { get; private set; }
 
 		public SoundcloudFactory()
@@ -19,6 +20,8 @@ namespace TS3AudioBot.RessourceFactories
 			jsonParser = new JavaScriptSerializer();
 			SoundcloudClientID = "a9dd3403f858e105d7e266edc162a0c5";
 		}
+
+		public bool MatchLink(string link) => Regex.IsMatch(link, @"^https?\:\/\/(www\.)?soundcloud\.");
 
 		public RResultCode GetRessource(string link, out AudioRessource ressource)
 		{
@@ -33,7 +36,7 @@ namespace TS3AudioBot.RessourceFactories
 				return RResultCode.ScInvalidLink;
 			}
 
-			var parsedDict = (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
+			var parsedDict = ParseJson(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
 			return GetRessourceById(id.ToString(), title, out ressource);
@@ -45,6 +48,15 @@ namespace TS3AudioBot.RessourceFactories
 			ressource = new SoundcloudRessource(id, name, finalRequest);
 			return RResultCode.Success;
 		}
+
+		public string RestoreLink(string id)
+		{
+			string jsonResponse = string.Format("https://api.soundcloud.com/tracks/{0}?client_id={1}", id, SoundcloudClientID);
+			var parsedDict = ParseJson(jsonResponse);
+			return (string)parsedDict["permalink_url"];
+		}
+
+		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
 
 		public void PostProcess(PlayData data, out bool abortPlay)
 		{

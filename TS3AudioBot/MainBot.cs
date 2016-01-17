@@ -59,10 +59,7 @@
 		internal IQueryConnection QueryConnection { get; private set; }
 		internal SessionManager SessionManager { get; private set; }
 		internal HistoryManager HistoryManager { get; private set; }
-
-		private IRessourceFactory mediaFactory;
-		private IRessourceFactory youtubeFactory;
-		private IRessourceFactory soundcloudFactory;
+		internal RessourceFactoryManager FactoryManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -114,8 +111,7 @@
 				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
 				{
 					if (logStream != null)
-						lock (logStream)
-							try
+						lock (logStream) try
 							{
 								logStream.Write(msg);
 								logStream.Flush();
@@ -140,9 +136,10 @@
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 
-			mediaFactory = new MediaFactory();
-			youtubeFactory = new YoutubeFactory();
-			soundcloudFactory = new SoundcloudFactory();
+			FactoryManager = new RessourceFactoryManager(AudioFramework);
+			FactoryManager.DefaultFactorty = new MediaFactory();
+			FactoryManager.AddFactory(new YoutubeFactory());
+			FactoryManager.AddFactory(new SoundcloudFactory());
 
 			// Register callbacks
 			AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
@@ -180,7 +177,7 @@
 			builder.New("help").Action(CommandHelp).Permission(CommandRights.Private).HelpData("Shows all commands or detailed help about a specific command.", "[<command>]").Finish();
 			builder.New("history").Action(CommandHistory).Permission(CommandRights.Private).HelpData("Shows recently played songs.").Finish();
 			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private).HelpData("Guess what?", "[far]").Finish();
-			builder.New("link").Action(CommandLink).Permission(CommandRights.Private).HelpData("Plays any direct ressource link.", "<link>").Finish();
+			builder.New("link").Action(CommandLink).Permission(CommandRights.Private).HelpData("Gets a link to the origin of the current song.", "<link>").Finish();
 			builder.New("loop").Action(CommandLoop).Permission(CommandRights.Private).HelpData("Sets whether or not to loop the entire playlist.", "(on|off)").Finish();
 			builder.New("next").Action(CommandNext).Permission(CommandRights.Private).HelpData("Plays the next song in the playlist.").Finish();
 			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public).HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
@@ -346,7 +343,7 @@
 		private void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			LoadAndPlayAuto(new PlayData(session, client, parameter, true));
+			FactoryManager.LoadAndPlay(new PlayData(session, client, parameter, true));
 		}
 
 		private void CommandClear(BotSession session)
@@ -449,7 +446,7 @@
 						if (ale != null)
 						{
 							ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-							RestoreAndPlay(ale, new PlayData(session, client, null, false));
+							FactoryManager.RestoreAndPlay(ale, new PlayData(session, client, null, false));
 						}
 					}
 					break;
@@ -463,7 +460,7 @@
 						if (ale != null)
 						{
 							ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-							RestoreAndPlay(ale, new PlayData(session, client, null, false));
+							FactoryManager.RestoreAndPlay(ale, new PlayData(session, client, null, false));
 						}
 						else
 						{
@@ -554,8 +551,16 @@
 
 		private void CommandLink(BotSession session, TextMessage textMessage, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			LoadAndPlay(mediaFactory, new PlayData(session, client, parameter, false));
+			if (AudioFramework.currentRessource == null)
+			{
+				session.Write("There is nothing on right now...");
+				return;
+			}
+
+			if (QuizMode && AudioFramework.currentRessource.InvokingUser.Id != textMessage.InvokerId)
+				session.Write("Sorry, you have to guess!");
+			else
+				session.Write(AudioFramework.currentRessource.RessourceTitle);
 		}
 
 		private void CommandLoop(BotSession session, string parameter)
@@ -566,6 +571,12 @@
 				AudioFramework.Loop = false;
 			else
 				CommandHelp(session, "loop");
+		}
+
+		private void CommandMedia(BotSession session, TextMessage textMessage, string parameter)
+		{
+			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(session, client, parameter, false));
 		}
 
 		private void CommandNext(BotSession session)
@@ -586,7 +597,7 @@
 			else
 			{
 				ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-				LoadAndPlayAuto(new PlayData(session, client, parameter, false));
+				FactoryManager.LoadAndPlay(new PlayData(session, client, parameter, false));
 			}
 		}
 
@@ -689,7 +700,7 @@
 		private void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			LoadAndPlay(soundcloudFactory, new PlayData(session, client, parameter, false));
+			FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(session, client, parameter, false));
 		}
 
 		private void CommandStop(BotSession session)
@@ -748,77 +759,7 @@
 		private void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			LoadAndPlay(youtubeFactory, new PlayData(session, client, parameter, false));
-		}
-
-		// HELPER
-
-		private void LoadAndPlayAuto(PlayData data)
-		{
-			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
-			IRessourceFactory factory = null;
-			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
-				factory = youtubeFactory;
-			else if (Regex.IsMatch(netlinkurl, @"^https?\:\/\/(www\.)?soundcloud\."))
-				factory = soundcloudFactory;
-			else
-				factory = mediaFactory;
-			LoadAndPlay(factory, data);
-		}
-
-		private void LoadAndPlay(IRessourceFactory factory, PlayData data)
-		{
-			if (data.Ressource == null)
-			{
-				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
-
-				AudioRessource ressource;
-				RResultCode result = factory.GetRessource(netlinkurl, out ressource);
-				if (result != RResultCode.Success)
-				{
-					data.Session.Write(string.Format("Could not play ({0})", result));
-					return;
-				}
-				data.Ressource = ressource;
-			}
-
-			bool abortPlay;
-			factory.PostProcess(data, out abortPlay);
-			if (!abortPlay)
-				Play(data);
-		}
-
-		private void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
-		{
-			//TODO: make ressourceFactoryManager !!!
-			IRessourceFactory factory;
-			if (youtubeFactory.FactoryFor == logEntry.AudioType)
-				factory = youtubeFactory;
-			else if (soundcloudFactory.FactoryFor == logEntry.AudioType)
-				factory = soundcloudFactory;
-			else if (mediaFactory.FactoryFor == logEntry.AudioType)
-				factory = mediaFactory;
-			else
-				throw new InvalidOperationException();
-
-			AudioRessource ressource;
-			RResultCode result = factory.GetRessourceById(logEntry.RessourceId, logEntry.Title, out ressource);
-			if (result != RResultCode.Success)
-			{
-				data.Session.Write(string.Format("Could not restore ({0})", result));
-				return;
-			}
-			data.Ressource = ressource;
-
-			Play(data);
-		}
-
-		internal void Play(PlayData data)
-		{
-			data.Ressource.Enqueue = data.Enqueue;
-			var result = AudioFramework.StartRessource(data.Ressource, data.Invoker);
-			if (result != AudioResultCode.Success)
-				data.Session.Write(string.Format("The ressource could not be played ({0}).", result));
+			FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(session, client, parameter, false));
 		}
 
 		// RESPONSES
@@ -848,6 +789,11 @@
 		public void Dispose()
 		{
 			TickPool.Close();
+			if (FactoryManager != null)
+			{
+				FactoryManager.Dispose();
+				FactoryManager = null;
+			}
 			if (AudioFramework != null)
 			{
 				AudioFramework.Dispose();
@@ -857,21 +803,6 @@
 			{
 				BobController.Dispose();
 				BobController = null;
-			}
-			if (youtubeFactory != null)
-			{
-				youtubeFactory.Dispose();
-				youtubeFactory = null;
-			}
-			if (mediaFactory != null)
-			{
-				mediaFactory.Dispose();
-				mediaFactory = null;
-			}
-			if (soundcloudFactory != null)
-			{
-				soundcloudFactory.Dispose();
-				soundcloudFactory = null;
 			}
 			if (SessionManager != null)
 			{
