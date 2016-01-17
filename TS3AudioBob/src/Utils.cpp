@@ -58,9 +58,12 @@ std::string Utils::strip(const std::string &input, bool left, bool right)
 std::string& Utils::replace(std::string &input, const std::string &target,
 	const std::string &replacement)
 {
-	std::size_t pos;
-	while ((pos = input.find(target)) != std::string::npos)
+	std::string::size_type pos = 0;
+	while ((pos = input.find(target, pos)) != std::string::npos)
+	{
 		input.replace(pos, target.size(), replacement);
+		pos += replacement.size();
+	}
 	return input;
 }
 
