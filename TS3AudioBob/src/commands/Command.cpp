@@ -3,7 +3,7 @@
 /** A specialisation for bool to allow more, better values. */
 bool CommandSystem::parseArgument(std::string &message, bool *result)
 {
-	const static std::array<std::string, 4> trueValues = { "on", "true", "yes", "1" };
+	const static std::vector<std::string> trueValues = { "on", "true", "yes", "1" };
 	const static std::vector<std::string> allValues = { "on", "true", "yes", "1",
 		"off", "false", "no", "0" };
 

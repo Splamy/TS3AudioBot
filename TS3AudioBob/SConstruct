@@ -3,7 +3,7 @@ project = "TS3AudioBob"
 versionFile = "src/Plugin.cpp"
 #enableGettext = False
 #enableClangLib = False
-winUse32 = True
+#winUse32 = False
 
 # Setup environment
 import os
