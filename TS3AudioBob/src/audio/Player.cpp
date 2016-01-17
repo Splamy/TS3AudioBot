@@ -292,11 +292,15 @@ bool Player::openStreamComponent(int streamId)
 		setReadError(READ_ERROR_NO_DECODER);
 		return false;
 	}
-	if (avcodec_open2(codecContext, codec, nullptr) != 0)
+	AVDictionary *options = nullptr;
+	av_dict_set(&options, "refcounted_frames", "1", 0);
+	if (avcodec_open2(codecContext, codec, &options) != 0)
 	{
 		setReadError(READ_ERROR_OPEN_CODEC);
+		av_dict_free(&options);
 		return false;
 	}
+	av_dict_free(&options);
 
 	// Discard useless packets
 	formatContext->streams[streamId]->discard = AVDISCARD_DEFAULT;
