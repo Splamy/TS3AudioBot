@@ -7,6 +7,7 @@
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
+	using System.Reflection;
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
@@ -26,8 +27,6 @@
 	{
 		static void Main(string[] args)
 		{
-			// Force thread pool disable
-			ThreadPool.SetMaxThreads(0, 0);
 			using (MainBot bot = new MainBot())
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
@@ -137,7 +136,7 @@
 			BobController = new BobController(bcd, QueryConnection);
 			// old: new VLCConnection(afd.vlcLocation);
 			// new: BobController
-			AudioFramework = new AudioFramework(afd, new VLCConnection(afd.vlcLocation));
+			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 
@@ -730,7 +729,7 @@
 			int volume;
 			if (int.TryParse(parameter, out volume) && volume >= 0)
 			{
-				if (volume <= AudioFramework.MAXUSERVOLUME || volume < AudioFramework.Volume)
+				if (volume <= AudioFramework.MaxUserVolume || volume < AudioFramework.Volume)
 				{
 					AudioFramework.Volume = volume;
 					return;
@@ -754,17 +753,9 @@
 
 		// HELPER
 
-		private static string ExtractUrlFromBB(string ts3link)
-		{
-			if (ts3link.Contains("[URL]"))
-				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
-			else
-				return ts3link;
-		}
-
 		private void LoadAndPlayAuto(PlayData data)
 		{
-			string netlinkurl = ExtractUrlFromBB(data.Message);
+			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 			IRessourceFactory factory = null;
 			if (Regex.IsMatch(netlinkurl, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)"))
 				factory = youtubeFactory;
@@ -779,7 +770,7 @@
 		{
 			if (data.Ressource == null)
 			{
-				string netlinkurl = ExtractUrlFromBB(data.Message);
+				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 
 				AudioRessource ressource;
 				RResultCode result = factory.GetRessource(netlinkurl, out ressource);

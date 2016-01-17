@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Linq;
 
 namespace TS3AudioBot.Helper
 {
@@ -15,6 +16,7 @@ namespace TS3AudioBot.Helper
 		{
 			workList = new List<TickWorker>();
 			tickThread = new Thread(Tick);
+			tickThread.Name = "TickPool";
 		}
 
 		public static TickWorker RegisterTick(Action method, int interval, bool active)
@@ -23,33 +25,47 @@ namespace TS3AudioBot.Helper
 			if (interval <= 0) throw new ArgumentException("The parameter must be at least '1'", nameof(interval));
 			var worker = new TickWorker(method, interval);
 			worker.Active = active;
-			workList.Add(worker);
-			CheckTicker(worker);
+			lock (workList)
+			{
+				workList.Add(worker);
+				minTick = workList.Min(w => w.Interval);
+				if (!run)
+				{
+					run = true;
+					tickThread.Start();
+				}
+			}
 			return worker;
 		}
 
-		private static void CheckTicker(TickWorker worker)
+		public static void UnregisterTicker(TickWorker worker)
 		{
-			minTick = Math.Min(minTick, worker.Interval);
-			if (!run)
+			if (worker == null) throw new ArgumentNullException(nameof(worker));
+			lock (workList)
 			{
-				run = true;
-				tickThread.Start();
+				workList.Remove(worker);
+				if (workList.Count > 0)
+					minTick = workList.Min(w => w.Interval);
+				else
+					minTick = 100;
 			}
 		}
-
+		
 		private static void Tick()
 		{
 			while (run)
 			{
-				foreach (var worker in workList)
+				lock (workList)
 				{
-					if (!worker.Active) continue;
-					worker.IntervalRemain -= minTick;
-					if (worker.IntervalRemain <= 0)
+					foreach (var worker in workList)
 					{
-						worker.IntervalRemain = worker.Interval;
-						worker.Method.Invoke();
+						if (!worker.Active) continue;
+						worker.IntervalRemain -= minTick;
+						if (worker.IntervalRemain <= 0)
+						{
+							worker.IntervalRemain = worker.Interval;
+							worker.Method.Invoke();
+						}
 					}
 				}
 

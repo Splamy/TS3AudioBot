@@ -162,6 +162,7 @@
 				readQueryThread = null;
 			}
 			readQueryThread = new Thread(ReadQueryLoop);
+			readQueryThread.Name = "TS3Query MessageLoop";
 			readQueryThread.Start();
 		}
 

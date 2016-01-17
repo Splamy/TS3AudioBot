@@ -4,6 +4,7 @@ using System.Linq;
 using TS3Query.Messages;
 using TS3AudioBot.RessourceFactories;
 using TS3AudioBot.Helper;
+using System.Globalization;
 
 namespace TS3AudioBot
 {
@@ -20,6 +21,8 @@ namespace TS3AudioBot
 		private BobControllerData data;
 		private TickWorker timeout;
 		private DateTime lastUpdate = DateTime.Now;
+		private WaitEventBlock<MusicData> musicInfoWaiter;
+		private MusicData currentMusicInfo;
 
 		private bool sending = false;
 		private bool isRunning;
@@ -42,19 +45,24 @@ namespace TS3AudioBot
 			}
 		}
 
+		#region IPlayerConnection
+
 		public int Volume
 		{
 			get { return volume; }
 			set
 			{
 				volume = value;
-				SendMessage("music volume " + (value / 100.0));
+				SendMessage("music volume " + (value / 100d));
 			}
 		}
 
 		public int Position
 		{
-			get { throw new NotImplementedException(); }
+			get
+			{
+				return (int)musicInfoWaiter.Wait().Position;
+			}
 			set
 			{
 				SendMessage("music seek " + value);
@@ -77,15 +85,47 @@ namespace TS3AudioBot
 			set
 			{
 				pause = value;
-				// There are also "music pause|unpause" but it unnecessary to send then
-				// and the bob automatically pauses when it doesn't send.
+				// The commands "music pause|unpause" are available, but redundant
+				// since the bob automatically pauses when the audio output is off.
 				SendMessage("audio " + (value ? "on" : "off"));
 			}
 		}
 
+		public int Length
+		{
+			get
+			{
+				SendMessage("status music");
+				return (int)musicInfoWaiter.Wait().Length;
+			}
+		}
+
+		public bool IsPlaying
+		{
+			get
+			{
+				SendMessage("status music");
+				return musicInfoWaiter.Wait().Status == MusicStatus.playing;
+			}
+		}
+
+
+		public void AudioStart(string url)
+		{
+			SendMessage("music start " + url);
+		}
+
+		public void AudioStop()
+		{
+			SendMessage("music stop");
+		}
+
+		#endregion
+
 		public BobController(BobControllerData data, IQueryConnection queryConnection)
 		{
 			timeout = TickPool.RegisterTick(TimeoutCheck, 100, false);
+			musicInfoWaiter = new WaitEventBlock<MusicData>();
 			isRunning = false;
 			this.data = data;
 			this.queryConnection = queryConnection;
@@ -93,6 +133,8 @@ namespace TS3AudioBot
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
 		}
+
+		public void Initialize() { }
 
 		private void SendMessage(string message)
 		{
@@ -137,7 +179,31 @@ namespace TS3AudioBot
 			if (message.InvokerId != bobClient.Id)
 				return;
 
-			// TODO parse here
+			ParseData(TextUtil.RemoveUrlBB(message.Message));
+		}
+
+		private void ParseData(string input)
+		{
+			var splits = input.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Split(new[] { ' ' }, 2));
+			var typeKVP = splits.FirstOrDefault();
+			if (typeKVP == null)
+				throw new InvalidOperationException("Empty response");
+			splits = splits.Skip(1);
+			switch (typeKVP[0])
+			{
+			case "error": Log.Write(Log.Level.Warning, "Erroneous answer: {0}", typeKVP[1]); break;
+			case "answer":
+				switch (typeKVP[1])
+				{
+				case "music": musicInfoWaiter.Notify(currentMusicInfo = ParseMusicData(splits)); break;
+				case "audio": break;
+				case "end_event": break;
+				default: throw new NotSupportedException("Answer not recognized");
+				}
+				break;
+			case "pong": Log.Write(Log.Level.Debug, "Alrighty then!"); break;
+			default: throw new NotSupportedException("Response not recognized");
+			}
 		}
 
 		public void HasUpdate()
@@ -240,28 +306,6 @@ namespace TS3AudioBot
 			SendMessage("whisper client remove " + userID);
 		}
 
-		public void AudioStart(string url)
-		{
-			SendMessage("music start " + url);
-		}
-
-		public void AudioStop()
-		{
-			SendMessage("music stop");
-		}
-
-		public int GetLength()
-		{
-			SendMessage("status music");
-			throw new NotImplementedException();
-		}
-
-		public bool IsPlaying()
-		{
-			SendMessage("status music");
-			throw new NotImplementedException();
-		}
-
 		private void RestoreSubscriptions(ClientData invokingUser)
 		{
 			WhisperChannelSubscribe(invokingUser.ChannelId, false);
@@ -317,11 +361,51 @@ namespace TS3AudioBot
 			Stop();
 		}
 
+		private static MusicData ParseMusicData(IEnumerable<string[]> input)
+		{
+			var musicData = new MusicData();
+			foreach (var result in input)
+			{
+				switch (result[0])
+				{
+				case "address": musicData.Address = result[1]; break;
+				case "length": musicData.Length = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "loop": musicData.Loop = result[1] != "off"; break;
+				case "position": musicData.Position = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1]); break;
+				case "title": musicData.Title = result[1]; break;
+				case "volume": musicData.Volume = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				default: Log.Write(Log.Level.Debug, "Unparsed key: {0}={1}", result[0], result[1]); break;
+				}
+			}
+			return musicData;
+		}
+
 		private class SubscriptionData
 		{
 			public int Id { get; set; }
 			public bool Enabled { get; set; }
 			public bool Manual { get; set; }
+		}
+
+		private class MusicData
+		{
+			public MusicStatus Status { get; set; }
+			public double Length { get; set; }
+			public double Position { get; set; }
+			public string Title { get; set; }
+			public string Address { get; set; }
+			public bool Loop { get; set; }
+			public double Volume { get; set; }
+		}
+
+		enum MusicStatus
+		{
+			off,
+			playing,
+			paused,
+			finished,
+			error,
 		}
 	}
 

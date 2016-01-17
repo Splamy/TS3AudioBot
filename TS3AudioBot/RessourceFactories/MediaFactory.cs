@@ -94,7 +94,6 @@ namespace TS3AudioBot.RessourceFactories
 		{
 			if (File.Exists(path))
 			{
-
 				try { stream = File.Open(path, FileMode.Open, FileAccess.Read); }
 				catch (Exception) { stream = null; }
 				return RResultCode.Success;
