@@ -1,9 +1,9 @@
 #include "ServerConnection.hpp"
 
+#include <public_errors.h>
+
 #include <algorithm>
 #include <functional>
-
-#include <public_errors.h>
 
 namespace
 {
@@ -146,24 +146,26 @@ void ServerConnection::setQuality(bool on)
 	}
 }
 
-User* ServerConnection::getUser(const std::string &uniqueId)
+std::vector<User*> ServerConnection::getUsers(const std::string &uniqueId)
 {
+	std::vector<User*> result;
 	for (User &user : users)
 	{
 		if (user.getUniqueId() == uniqueId)
-			return &user;
+			result.push_back(&user);
 	}
-	return nullptr;
+	return result;
 }
 
-User* ServerConnection::getUser(uint64 dbId)
+std::vector<User*> ServerConnection::getUsers(uint64 dbId)
 {
+	std::vector<User*> result;
 	for (User &user : users)
 	{
 		if (user.hasDbId() && user.getDbId() == dbId)
-			return &user;
+			result.push_back(&user);
 	}
-	return nullptr;
+	return result;
 }
 
 User* ServerConnection::getUser(anyID userId)
@@ -271,9 +273,9 @@ bool ServerConnection::isLooped() const
 	return loop;
 }
 
-void ServerConnection::setAudioPosition(double position)
+bool ServerConnection::setAudioPosition(double position)
 {
-	audioPlayer->setPosition(position);
+	return audioPlayer->setPosition(position);
 }
 
 void ServerConnection::startAudio(const std::string &address)
@@ -297,6 +299,11 @@ void ServerConnection::stopAudio()
 bool ServerConnection::hasAudioPlayer() const
 {
 	return static_cast<bool>(audioPlayer);
+}
+
+std::string ServerConnection::getStreamAddress() const
+{
+	return audioPlayer->getStreamAddress();
 }
 
 bool ServerConnection::isAudioPaused() const
@@ -335,16 +342,13 @@ bool ServerConnection::fillAudioData(uint8_t *buffer, size_t length,
 std::string ServerConnection::getAudioStatus() const
 {
 	std::ostringstream out;
+	out << "\nstatus ";
 	if (!audioPlayer)
 		out << "off";
 	else
 	{
-		if (audioPlayer->getDecodeError() != audio::Player::DECODE_ERROR_NONE)
-			out << "\ndecode error " << audio::Player::getDecodeErrorDescription(
-				audioPlayer->getDecodeError());
-
 		if (audioPlayer->getReadError() != audio::Player::READ_ERROR_NONE)
-			out << "\nread error " << audio::Player::getReadErrorDescription(
+			out << "error\nread error " << audio::Player::getReadErrorDescription(
 				audioPlayer->getReadError());
 		else if (audioPlayer->isFinished())
 			out << "finished";
@@ -352,6 +356,10 @@ std::string ServerConnection::getAudioStatus() const
 			out << "paused";
 		else
 			out << "playing";
+
+		if (audioPlayer->getDecodeError() != audio::Player::DECODE_ERROR_NONE)
+			out << "\ndecode error " << audio::Player::getDecodeErrorDescription(
+				audioPlayer->getDecodeError());
 
 		if (audioPlayer->getReadError() == audio::Player::READ_ERROR_NONE)
 		{
@@ -364,10 +372,6 @@ std::string ServerConnection::getAudioStatus() const
 				Utils::replace(*title, "\n", "\\n");
 				out << "\ntitle " << *title;
 			}
-			std::string address = audioPlayer->getStreamAddress();
-			Utils::replace(address, "\\", "\\\\");
-			Utils::replace(address, "\n", "\\n");
-			out << "\naddress " << address;
 		}
 	}
 	out << "\nloop " << (loop ? "on" : "off");

@@ -11,9 +11,6 @@ extern "C"
 	#include <pthread.h>
 #endif
 
-#ifndef NDEBUG
-	#include <cassert>
-#endif
 #include <cstring>
 
 #include "PacketToFrameDecoder.hpp"
@@ -59,11 +56,11 @@ const char* Player::searchEntry(const AVDictionary *dict, const char *key)
 void Player::init()
 {
 	// Initialize ffmpeg only once
-	static bool inited = false;
+	static bool initialized = false;
 
-	if (!inited)
+	if (!initialized)
 	{
-		inited = true;
+		initialized = true;
 		av_log_set_flags(AV_LOG_SKIP_REPEATED);
 		avfilter_register_all();
 		av_register_all();
@@ -97,11 +94,8 @@ Player::Player(std::string streamAddress) :
 Player::~Player()
 {
 	// Notify waiting threads and wait for them to exit
-	finished = true;
-	sampleQueueWaiter.notify_all();
-	readThreadWaiter.notify_all();
-	packetQueueWaiter.notify_all();
-	pausedWaiter.notify_all();
+	finish();
+
 	if (readThread.joinable())
 		readThread.join();
 	if (decodeThread.joinable())
@@ -116,13 +110,13 @@ Player::~Player()
 	}
 }
 
-void Player::setReadError(ReadError error)
+void Player::setReadError(ReadError error, bool lockReadThread)
 {
 	readError = error;
 	if (error != READ_ERROR_NONE)
 		printf("A read error occured: %s\n", getReadErrorDescription(error).c_str());
 	// Read errors are fatal errors so playing sound doesn't work anymore
-	finished = true;
+	finish(lockReadThread);
 }
 
 void Player::setDecodeError(DecodeError error)
@@ -130,6 +124,39 @@ void Player::setDecodeError(DecodeError error)
 	decodeError = error;
 	if (error != DECODE_ERROR_NONE)
 		printf("A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
+}
+
+void Player::waitUntilInitialized() const
+{
+	// Busy waiting because it shouldn't take long until everything is
+	// initialized
+	while (!initialized)
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
+void Player::finish(bool lockReadThread)
+{
+	// Notify waiting threads and wait for them to exit
+	finished = true;
+	initialized = true;
+	{
+		std::lock_guard<std::mutex> lock(sampleQueueMutex);
+		sampleQueueWaiter.notify_all();
+	}
+	if (lockReadThread)
+	{
+		std::lock_guard<std::mutex> lock(readThreadMutex);
+		readThreadWaiter.notify_all();
+		pausedWaiter.notify_all();
+	} else
+	{
+		readThreadWaiter.notify_all();
+		pausedWaiter.notify_all();
+	}
+	{
+		std::lock_guard<std::mutex> lock(packetQueueMutex);
+		packetQueueWaiter.notify_all();
+	}
 }
 
 void Player::read()
@@ -177,71 +204,82 @@ void Player::read()
 	if (!openStreamComponent(audioStreamId))
 		return;
 
-	// Read the stream
-	bool lastPaused = false;
-	// The mutex and lock to wait with the readThreadWaiter
-	std::unique_lock<std::mutex> waitLock(readThreadMutex);
-	AVPacket packet;
-	bool hasEof = false;
-	while (!finished)
 	{
-		if (paused != lastPaused && !realtime)
+		// Read the stream
+		bool lastPaused = false;
+		// The mutex and lock to wait with the readThreadWaiter
+		std::unique_lock<std::mutex> waitLock(readThreadMutex);
+		AVPacket packet;
+		bool hasEof = false;
+		// Ready with initializing
+		initialized = true;
+		while (!finished)
 		{
-			lastPaused = paused;
-			if (paused)
+			if (paused != lastPaused && !realtime)
 			{
-				av_read_pause(formatContext);
-				pausedWaiter.wait(waitLock, [this]{ return !paused || finished; });
+				lastPaused = paused;
+				if (paused)
+				{
+					av_read_pause(formatContext);
+					pausedWaiter.wait(waitLock, [this]{ return !paused || finished; });
+				} else
+					av_read_play(formatContext);
+			}
+
+			// Stop reading if the queue is full and if it's not a realtime stream
+			if (!realtime && (packetQueue.size() >= MAX_QUEUE_SIZE || paused))
+			{
+				readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
+				continue;
+			}
+
+			// Test if the stream is over
+			{
+				bool finished;
+				// Lock only this part because setPositionTime also locks the packet
+				// queue
+				{
+					std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
+					finished = !paused && packetQueue.empty() && !decoder->gotFlush();
+				}
+				if (finished)
+				{
+					if (loop)
+						setPositionTime(0);
+					else
+						break;
+				}
+			}
+
+			// Read a packet from the stream
+			int ret = av_read_frame(formatContext, &packet);
+			if (ret < 0)
+			{
+				if ((ret == AVERROR_EOF || avio_feof(formatContext->pb)) && !hasEof)
+				{
+					packetQueue.push(flushPacket);
+					packetQueueWaiter.notify_one();
+					hasEof = true;
+				}
+				if (formatContext->pb && formatContext->pb->error)
+				{
+					setReadError(READ_ERROR_IO, false);
+					return;
+				}
+
+				// Wait for more data
+				readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
+				continue;
 			} else
-				av_read_play(formatContext);
+				hasEof = 1;
+
+			// Insert the packet into the queue
+			std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
+			packetQueue.push(packet);
+			packetQueueWaiter.notify_one();
 		}
-
-		// Stop reading if the queue is full and if it's not a realtime stream
-		if (!realtime && (packetQueue.size() >= MAX_QUEUE_SIZE || paused))
-		{
-			readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
-			continue;
-		}
-
-		// Test if the stream is over
-		if (!paused && packetQueue.empty() && !decoder->gotFlush())
-		{
-			if (loop)
-				setPositionTime(0);
-			else
-			{
-				finished = true;
-				return;
-			}
-		}
-
-		// Read a packet from the stream
-		int ret = av_read_frame(formatContext, &packet);
-		if (ret < 0)
-		{
-			if ((ret == AVERROR_EOF || avio_feof(formatContext->pb)) && !hasEof)
-			{
-				packetQueue.push(flushPacket);
-				packetQueueWaiter.notify_one();
-				hasEof = true;
-			}
-			if (formatContext->pb && formatContext->pb->error)
-			{
-				setReadError(READ_ERROR_IO);
-				return;
-			}
-
-			// Wait for more data
-			readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
-			continue;
-		} else
-			hasEof = 1;
-
-		// Insert the packet into the queue
-		std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
-		packetQueue.push(packet);
-		packetQueueWaiter.notify_one();
 	}
+	finish();
 }
 
 bool Player::openStreamComponent(int streamId)
@@ -254,19 +292,23 @@ bool Player::openStreamComponent(int streamId)
 		setReadError(READ_ERROR_NO_DECODER);
 		return false;
 	}
-	if (avcodec_open2(codecContext, codec, nullptr) != 0)
+	AVDictionary *options = nullptr;
+	av_dict_set(&options, "refcounted_frames", "1", 0);
+	if (avcodec_open2(codecContext, codec, &options) != 0)
 	{
 		setReadError(READ_ERROR_OPEN_CODEC);
+		av_dict_free(&options);
 		return false;
 	}
+	av_dict_free(&options);
 
 	// Discard useless packets
 	formatContext->streams[streamId]->discard = AVDISCARD_DEFAULT;
 
 	// Ignore all other streams
-	for (size_t i = 0; i < formatContext->nb_streams; i++)
+	for (std::size_t i = 0; i < formatContext->nb_streams; i++)
 	{
-		if (i != static_cast<size_t>(streamId))
+		if (i != static_cast<std::size_t>(streamId))
 		{
 			formatContext->streams[i]->discard = AVDISCARD_ALL;
 			avcodec_close(formatContext->streams[i]->codec);
@@ -509,14 +551,19 @@ int64_t Player::getPositionTime() const
 	return 0; //TODO
 }
 
-void Player::setPosition(double time)
+bool Player::setPosition(double time)
 {
+	waitUntilInitialized();
+	if (finished)
+		return false;
 	std::lock_guard<std::mutex> lock(readThreadMutex);
 	setPositionTime(time / av_q2d(stream->time_base));
+	return true;
 }
 
 double Player::getPosition() const
 {
+	waitUntilInitialized();
 	return 0; //TODO
 }
 
@@ -564,13 +611,19 @@ const std::string& Player::getStreamAddress() const
 
 std::unique_ptr<std::string> Player::getTitle() const
 {
+	waitUntilInitialized();
+	if (!formatContext)
+		return nullptr;
 	const char *title = searchEntry(formatContext->metadata, "title");
 	return title ? std::unique_ptr<std::string>(new std::string(title)) : nullptr;
 }
 
 double Player::getDuration() const
 {
-	return stream->duration * av_q2d(stream->time_base);
+	waitUntilInitialized();
+	if (!formatContext)
+		return 0;
+	return (double) formatContext->duration / AV_TIME_BASE;
 }
 
 double Player::getVolume() const

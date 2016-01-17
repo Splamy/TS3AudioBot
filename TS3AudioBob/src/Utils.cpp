@@ -30,7 +30,7 @@ std::string Utils::getFormattedString(const std::string &/*format*/, std::size_t
 
 bool Utils::isSpace(char c)
 {
-	return std::isspace(c);
+	return std::isspace(c) != 0;
 }
 
 std::string Utils::strip(const std::string &input, bool left, bool right)
@@ -68,6 +68,12 @@ bool Utils::startsWith(const std::string &string, const std::string &prefix)
 {
 	return prefix.size() <= string.size() && std::equal(prefix.begin(),
 		prefix.end(), string.begin());
+}
+
+bool Utils::endsWith(const std::string &string, const std::string &suffix)
+{
+	return suffix.size() <= string.size() && std::equal(suffix.begin(),
+		suffix.end(), string.end() - suffix.size());
 }
 
 std::string Utils::sanitizeAscii(const std::string &input)

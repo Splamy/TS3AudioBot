@@ -1,5 +1,9 @@
 #include "Plugin.hpp"
 
+#include "ServerBob.hpp"
+#include "ServerConnection.hpp"
+#include "TsApi.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -11,11 +15,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include <Audio/Player.hpp>
-#include <ServerBob.hpp>
-#include <ServerConnection.hpp>
-#include <TsApi.hpp>
 
 namespace
 {
@@ -199,6 +198,6 @@ void ts3plugin_onEditCapturedVoiceDataEvent(uint64 scHandlerId,
 {
 	if (serverBob && serverBob->fillAudioData(scHandlerId,
 		reinterpret_cast<uint8_t*>(samples),
-		sampleCount * channels * sizeof(short), channels, *edited & 2))
+		sampleCount * channels * sizeof(short), channels, (*edited & 2) == 2))
 		*edited |= 1;
 }

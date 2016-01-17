@@ -1,14 +1,14 @@
 #ifndef SERVER_CONNECTION_HPP
 #define SERVER_CONNECTION_HPP
 
+#include "audio/Player.hpp"
+#include "TsApi.hpp"
+#include "User.hpp"
+#include "Utils.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <Audio/Player.hpp>
-#include <TsApi.hpp>
-#include <User.hpp>
-#include <Utils.hpp>
 
 class ServerConnection
 {
@@ -45,8 +45,8 @@ public:
 	bool shouldWhisper() const;
 	void setAudio(bool on);
 	void setQuality(bool on);
-	User* getUser(const std::string &uniqueId);
-	User* getUser(uint64 dbId);
+	std::vector<User*> getUsers(const std::string &uniqueId);
+	std::vector<User*> getUsers(uint64 dbId);
 	User* getUser(anyID userId);
 	// TODO remove users again
 	void addUser(anyID id, const std::string &uniqueId);
@@ -65,10 +65,11 @@ public:
 	double getVolume() const;
 	void setLooped(bool loop);
 	bool isLooped() const;
-	void setAudioPosition(double position);
+	bool setAudioPosition(double position);
 	void startAudio(const std::string &address);
 	void stopAudio();
 	bool hasAudioPlayer() const;
+	std::string getStreamAddress() const;
 	bool isAudioPaused() const;
 	/** Pauses or unpauses the audio player.
 	 *  @return False will be returned if the audio player doesn't exist.
@@ -88,8 +89,19 @@ public:
 	template <class... Args>
 	void sendCommand(const User *user, const std::string &message, Args... args)
 	{
+		std::string msg = Utils::format(message, args...);
+		// Crop message if it's longer than 1024 bytes
+		// Let's hope TeamSpeak won't complain if we destroy some unicode
+		if (msg.size() > 1024)
+		{
+			msg.erase(msg.begin() + 1024, msg.end());
+			// Append ...
+			msg[1021] = '.';
+			msg[1022] = '.';
+			msg[1023] = '.';
+		}
 		tsApi->handleTsError(tsApi->getFunctions().requestSendPrivateTextMsg(
-			handlerId, Utils::format(message, args...).c_str(), user->getId(),
+			handlerId, msg.c_str(), user->getId(),
 			nullptr));
 	}
 };
