@@ -2,7 +2,7 @@
 
 namespace TS3AudioBot.Algorithm
 {
-	public class Trie<T> where T : class
+	public class Trie<T> : ICommandFilter<T> where T : class
 	{
 		protected const int CHARS_IN_ALPHABET = 26;
 		protected TrieNode root;

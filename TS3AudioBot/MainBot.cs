@@ -49,7 +49,7 @@
 		private bool consoleOutput;
 		private bool writeLog;
 		private MainBotData mainBotData;
-		private Trie<BotCommand> commandDict;
+		private ICommandFilter<BotCommand> commandDict;
 		private BotCommand[] allCommands;
 
 		private StreamWriter logStream;
