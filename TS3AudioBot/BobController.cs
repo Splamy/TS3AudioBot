@@ -211,14 +211,14 @@ namespace TS3AudioBot
 			lastUpdate = DateTime.Now;
 		}
 
-		public void OnRessourceStarted(PlayData playData)
+		public void OnResourceStarted(PlayData playData)
 		{
 			Start();
 			Sending = true;
 			RestoreSubscriptions(playData.Invoker);
 		}
 
-		public void OnRessourceStopped(bool restart)
+		public void OnResourceStopped(bool restart)
 		{
 			if (!restart)
 			{

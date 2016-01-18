@@ -44,7 +44,7 @@ namespace TS3AudioBot
 			shuffle = new ListedShuffle();
 		}
 
-		public void Enqueue(AudioResource ressource)
+		public void Enqueue(AudioResource resource)
 		{
 
 		}
@@ -130,28 +130,28 @@ namespace TS3AudioBot
 	{
 		public int Length { get; protected set; }
 
-		public abstract AudioResource GetRessource(int index);
+		public abstract AudioResource GetResource(int index);
 	}
 
 	class FreeSet : DataSet
 	{
-		private HashSet<AudioResource> ressourceSet;
-		private List<AudioResource> ressources;
+		private HashSet<AudioResource> resourceSet;
+		private List<AudioResource> resources;
 
 		public FreeSet()
 		{
-			ressourceSet = new HashSet<AudioResource>();
-			ressources = new List<AudioResource>();
+			resourceSet = new HashSet<AudioResource>();
+			resources = new List<AudioResource>();
 		}
 
-		public void AddRessource(AudioResource ressource)
+		public void AddResource(AudioResource resource)
 		{
 
 		}
 
-		public override AudioResource GetRessource(int index)
+		public override AudioResource GetResource(int index)
 		{
-			return ressources[index];
+			return resources[index];
 		}
 	}
 

@@ -70,17 +70,17 @@
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="IQueryConnection.cs" />
     <Compile Include="PlaylistManager.cs" />
-    <Compile Include="RessourceFactories\AudioRessource.cs" />
-    <Compile Include="RessourceFactories\IRessourceFactory.cs" />
+    <Compile Include="ResourceFactories\AudioResource.cs" />
+    <Compile Include="ResourceFactories\IResourceFactory.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="BotSession.cs" />
-    <Compile Include="RessourceFactories\MediaFactory.cs" />
+    <Compile Include="ResourceFactories\MediaFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryConnection.cs" />
-    <Compile Include="RessourceFactories\RessourceFactoryManager.cs" />
-    <Compile Include="RessourceFactories\RResultCode.cs" />
+    <Compile Include="ResourceFactories\ResourceFactoryManager.cs" />
+    <Compile Include="ResourceFactories\RResultCode.cs" />
     <Compile Include="SessionManager.cs" />
-    <Compile Include="RessourceFactories\SoundcloudFactory.cs" />
+    <Compile Include="ResourceFactories\SoundcloudFactory.cs" />
     <Compile Include="Helper\TextUtil.cs" />
     <Compile Include="Algorithm\Trie.cs" />
     <Compile Include="Helper\Util.cs" />
@@ -101,7 +101,7 @@
     <Compile Include="TS3Query\Messages\WhoAmI.cs" />
     <Compile Include="TS3Query\TS3QueryClient.cs" />
     <Compile Include="VLCConnection.cs" />
-    <Compile Include="RessourceFactories\YoutubeFactory.cs" />
+    <Compile Include="ResourceFactories\YoutubeFactory.cs" />
     <Compile Include="BobController.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

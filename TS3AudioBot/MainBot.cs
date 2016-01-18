@@ -5,9 +5,6 @@
 	using System.IO;
 	using System.Linq;
 	using System.Text;
-	using System.Text.RegularExpressions;
-	using System.Threading;
-	using System.Reflection;
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
@@ -58,7 +55,7 @@
 		internal IQueryConnection QueryConnection { get; private set; }
 		internal SessionManager SessionManager { get; private set; }
 		internal HistoryManager HistoryManager { get; private set; }
-		internal RessourceFactoryManager FactoryManager { get; private set; }
+		internal ResourceFactoryManager FactoryManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -135,15 +132,15 @@
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 
-			FactoryManager = new RessourceFactoryManager(AudioFramework);
+			FactoryManager = new ResourceFactoryManager(AudioFramework);
 			FactoryManager.DefaultFactorty = new MediaFactory();
 			FactoryManager.AddFactory(new YoutubeFactory());
 			FactoryManager.AddFactory(new SoundcloudFactory());
 
 			// Register callbacks
-			AudioFramework.OnRessourceStarted += HistoryManager.LogAudioRessource;
-			AudioFramework.OnRessourceStarted += BobController.OnRessourceStarted;
-			AudioFramework.OnRessourceStopped += BobController.OnRessourceStopped;
+			AudioFramework.OnResourceStarted += HistoryManager.LogAudioResource;
+			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
+			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
 
 			// register callback for all messages happeing
 			QueryConnection.OnMessageReceived += TextCallback;
@@ -181,7 +178,7 @@
 			builder.New("next").Action(CommandNext).Permission(CommandRights.Private).HelpData("Plays the next song in the playlist.").Finish();
 			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public).HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
 			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
-				.HelpData("Automatically tries to decide whether the link is a special ressource (like youtube) or a direct ressource (like ./hello.mp3) and starts it", "<link>").Finish();
+				.HelpData("Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it", "<link>").Finish();
 			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private).HelpData("Plays the previous song in the playlist.").Finish();
 			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin).HelpData("Closes the TS3AudioBot application.").Finish();
 			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public).HelpData("Enable to hide the songnames and let your friends guess the title.", "(on|off)").Finish();
@@ -559,7 +556,7 @@
 			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.Id != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
-				session.Write(AudioFramework.CurrentPlayData.Ressource.ResourceTitle);
+				session.Write(AudioFramework.CurrentPlayData.Resource.ResourceTitle);
 		}
 
 		private void CommandLoop(BotSession session, string parameter)
@@ -693,7 +690,7 @@
 			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.Id != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
-				session.Write(AudioFramework.CurrentPlayData.Ressource.ResourceTitle);
+				session.Write(AudioFramework.CurrentPlayData.Resource.ResourceTitle);
 		}
 
 		private void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
@@ -828,7 +825,7 @@
 		public string Message { get; private set; }
 		public bool Enqueue { get; private set; }
 		public int Volume { get; private set; }
-		public AudioResource Ressource { get; set; }
+		public AudioResource Resource { get; set; }
 
 		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue)
 		{
@@ -836,7 +833,7 @@
 			Invoker = invoker;
 			Message = message;
 			Enqueue = enqueue;
-			Ressource = null;
+			Resource = null;
 		}
 	}
 

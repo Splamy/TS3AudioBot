@@ -7,8 +7,8 @@ namespace TS3AudioBot.ResourceFactories
 		AudioType FactoryFor { get; }
 
 		bool MatchLink(string uri);
-		RResultCode GetRessource(string url, out AudioResource ressource);
-		RResultCode GetRessourceById(string id, string name, out AudioResource ressource);
+		RResultCode GetResource(string url, out AudioResource resource);
+		RResultCode GetResourceById(string id, string name, out AudioResource resource);
 		string RestoreLink(string id);
 		void PostProcess(PlayData data, out bool abortPlay);
 	}

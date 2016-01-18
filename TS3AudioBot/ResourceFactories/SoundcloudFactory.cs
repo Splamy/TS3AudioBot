@@ -23,7 +23,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public bool MatchLink(string link) => Regex.IsMatch(link, @"^https?\:\/\/(www\.)?soundcloud\.");
 
-		public RResultCode GetRessource(string link, out AudioResource ressource)
+		public RResultCode GetResource(string link, out AudioResource resource)
 		{
 			string jsonResponse;
 			try
@@ -32,20 +32,20 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			catch (WebException)
 			{
-				ressource = null;
+				resource = null;
 				return RResultCode.ScInvalidLink;
 			}
 
 			var parsedDict = ParseJson(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
-			return GetRessourceById(id.ToString(), title, out ressource);
+			return GetResourceById(id.ToString(), title, out resource);
 		}
 
-		public RResultCode GetRessourceById(string id, string name, out AudioResource ressource)
+		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
 		{
 			string finalRequest = string.Format("https://api.soundcloud.com/tracks/{0}/stream?client_id={1}", id, SoundcloudClientID);
-			ressource = new SoundcloudRessource(id, name, finalRequest);
+			resource = new SoundcloudResource(id, name, finalRequest);
 			return RResultCode.Success;
 		}
 
@@ -73,21 +73,21 @@ namespace TS3AudioBot.ResourceFactories
 		}
 	}
 
-	class SoundcloudRessource : AudioResource
+	class SoundcloudResource : AudioResource
 	{
 		public override AudioType AudioType { get { return AudioType.Soundcloud; } }
 
-		public string RessourceURL { get; private set; }
+		public string ResourceURL { get; private set; }
 
-		public SoundcloudRessource(string id, string name, string url)
+		public SoundcloudResource(string id, string name, string url)
 			: base(id, name)
 		{
-			RessourceURL = url;
+			ResourceURL = url;
 		}
 
 		public override string Play()
 		{
-			return RessourceURL;
+			return ResourceURL;
 		}
 	}
 }

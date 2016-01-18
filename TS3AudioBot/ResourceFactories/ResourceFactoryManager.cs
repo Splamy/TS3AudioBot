@@ -5,13 +5,13 @@ using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	class RessourceFactoryManager : IDisposable
+	class ResourceFactoryManager : IDisposable
 	{
 		public IResourceFactory DefaultFactorty { get; set; }
 		private IList<IResourceFactory> factories;
 		private AudioFramework audioFramework;
 
-		public RessourceFactoryManager(AudioFramework audioFramework)
+		public ResourceFactoryManager(AudioFramework audioFramework)
 		{
 			factories = new List<IResourceFactory>();
 			this.audioFramework = audioFramework;
@@ -32,18 +32,18 @@ namespace TS3AudioBot.ResourceFactories
 
 		private void LoadAndPlay(IResourceFactory factory, PlayData data)
 		{
-			if (data.Ressource == null)
+			if (data.Resource == null)
 			{
 				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 
-				AudioResource ressource;
-				RResultCode result = factory.GetRessource(netlinkurl, out ressource);
+				AudioResource resource;
+				RResultCode result = factory.GetResource(netlinkurl, out resource);
 				if (result != RResultCode.Success)
 				{
 					data.Session.Write(string.Format("Could not play ({0})", result));
 					return;
 				}
-				data.Ressource = ressource;
+				data.Resource = resource;
 			}
 
 			bool abortPlay;
@@ -56,14 +56,14 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == logEntry.AudioType);
 
-			AudioResource ressource;
-			RResultCode result = factory.GetRessourceById(logEntry.RessourceId, logEntry.Title, out ressource);
+			AudioResource resource;
+			RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.Title, out resource);
 			if (result != RResultCode.Success)
 			{
 				data.Session.Write(string.Format("Could not restore ({0})", result));
 				return;
 			}
-			data.Ressource = ressource;
+			data.Resource = resource;
 
 			Play(data);
 		}
@@ -77,9 +77,9 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else
 			{
-				var result = audioFramework.StartRessource(data);
+				var result = audioFramework.StartResource(data);
 				if (result != AudioResultCode.Success)
-					data.Session.Write(string.Format("The ressource could not be played ({0}).", result));
+					data.Session.Write(string.Format("The resource could not be played ({0}).", result));
 			}
 		}
 

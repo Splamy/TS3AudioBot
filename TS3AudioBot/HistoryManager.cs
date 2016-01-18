@@ -23,7 +23,7 @@ namespace TS3AudioBot
 			historyFile.LoadFile(hmd.historyFile);
 		}
 
-		public void LogAudioRessource(PlayData playData)
+		public void LogAudioResource(PlayData playData)
 		{
 			historyFile.Store(playData);
 		}
@@ -156,7 +156,7 @@ namespace TS3AudioBot
 
 		public void Store(PlayData playData)
 		{
-			uint? index = Contains(playData.Ressource);
+			uint? index = Contains(playData.Resource);
 			if (index == null)
 			{
 				var ale = CreateLogEntry(playData);
@@ -255,7 +255,7 @@ namespace TS3AudioBot
 
 		private AudioLogEntry CreateLogEntry(PlayData playData)
 		{
-			var resource = playData.Ressource;
+			var resource = playData.Resource;
 			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
 				return null;
 			var ale = new AudioLogEntry(currentID, resource.AudioType, resource.ResourceId, fileStream.Position)
@@ -330,7 +330,7 @@ namespace TS3AudioBot
 
 		private void AddToMemoryIndex(AudioLogEntry logEntry)
 		{
-			resIdToId.Add(logEntry.RessourceId, logEntry.Id);
+			resIdToId.Add(logEntry.ResourceId, logEntry.Id);
 			idFilter.Add(logEntry.Id, logEntry);
 			titleFilter.Add(logEntry.Title.ToLower(), logEntry);
 			AutoAdd(userIdFilter, logEntry);
@@ -370,7 +370,7 @@ namespace TS3AudioBot
 		public uint PlayCount { get; set; }
 		public DateTime Timestamp { get; set; }
 		public AudioType AudioType { get; private set; }
-		public string RessourceId { get; private set; }
+		public string ResourceId { get; private set; }
 		public string Title { get; set; }
 
 		public long FilePosIndex { get; private set; }
@@ -380,7 +380,7 @@ namespace TS3AudioBot
 			Id = id;
 			PlayCount = 0;
 			AudioType = audioType;
-			RessourceId = resId;
+			ResourceId = resId;
 			FilePosIndex = fileIndex;
 		}
 
@@ -400,7 +400,7 @@ namespace TS3AudioBot
 			// OTHER STRINGS
 			strb.Append(AudioType.ToString());
 			strb.Append(",");
-			strb.Append(Uri.EscapeDataString(RessourceId));
+			strb.Append(Uri.EscapeDataString(ResourceId));
 			strb.Append(",");
 			strb.Append(Uri.EscapeDataString(Title));
 
@@ -438,7 +438,7 @@ namespace TS3AudioBot
 
 		public override string ToString()
 		{
-			return string.Format("[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, RessourceId);
+			return string.Format("[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, ResourceId);
 		}
 	}
 

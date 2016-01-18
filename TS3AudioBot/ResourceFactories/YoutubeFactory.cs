@@ -24,7 +24,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public bool MatchLink(string link) => Regex.IsMatch(link, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)");
 
-		public RResultCode GetRessource(string ytLink, out AudioResource result)
+		public RResultCode GetResource(string ytLink, out AudioResource result)
 		{
 			Match matchYtId = idMatch.Match(ytLink);
 			if (!matchYtId.Success)
@@ -32,10 +32,10 @@ namespace TS3AudioBot.ResourceFactories
 				result = null;
 				return RResultCode.YtIdNotFound;
 			}
-			return GetRessourceById(matchYtId.Groups[2].Value, null, out result);
+			return GetResourceById(matchYtId.Groups[2].Value, null, out result);
 		}
 
-		public RResultCode GetRessourceById(string ytID, string name, out AudioResource result)
+		public RResultCode GetResourceById(string ytID, string name, out AudioResource result)
 		{
 			string resulthtml = string.Empty;
 			try
@@ -117,7 +117,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			string finalName = name ?? dataParse["title"] ?? string.Format("<YT - no title : {0}>", ytID);
-			var ytResult = new YoutubeRessource(ytID, finalName, videoTypes.AsReadOnly());
+			var ytResult = new YoutubeResource(ytID, finalName, videoTypes.AsReadOnly());
 			result = ytResult;
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
@@ -126,16 +126,16 @@ namespace TS3AudioBot.ResourceFactories
 
 		public void PostProcess(PlayData data, out bool abortPlay)
 		{
-			YoutubeRessource ytRessource = (YoutubeRessource)data.Ressource;
+			YoutubeResource ytResource = (YoutubeResource)data.Resource;
 
-			var availList = ytRessource.AvailableTypes.ToList();
+			var availList = ytResource.AvailableTypes.ToList();
 			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
 			if (autoselectIndex == -1)
 				autoselectIndex = availList.FindIndex(t => t.audioOnly);
 			if (autoselectIndex != -1)
 			{
-				ytRessource.Selected = autoselectIndex;
-				if (!ValidateMedia(ytRessource))
+				ytResource.Selected = autoselectIndex;
+				if (!ValidateMedia(ytResource))
 				{
 					abortPlay = true;
 					data.Session.Write("The video cannot be played due to youtube restrictions.");
@@ -150,7 +150,7 @@ namespace TS3AudioBot.ResourceFactories
 			StringBuilder strb = new StringBuilder();
 			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
 			int count = 0;
-			foreach (var videoType in ytRessource.AvailableTypes)
+			foreach (var videoType in ytResource.AvailableTypes)
 			{
 				strb.Append("[");
 				strb.Append(count++);
@@ -162,7 +162,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			abortPlay = true;
 			data.Session.Write(strb.ToString());
-			data.Session.UserRessource = data;
+			data.Session.UserResource = data;
 			data.Session.SetResponse(ResponseYoutube, null, false);
 		}
 
@@ -176,17 +176,17 @@ namespace TS3AudioBot.ResourceFactories
 			int entry;
 			if (int.TryParse(command[1], out entry))
 			{
-				PlayData data = session.UserRessource;
-				if (data == null || data.Ressource as YoutubeRessource == null)
+				PlayData data = session.UserResource;
+				if (data == null || data.Resource as YoutubeResource == null)
 				{
-					session.Write("An unexpected error with the ytressource occured: null.");
+					session.Write("An unexpected error with the ytresource occured: null.");
 					return true;
 				}
-				YoutubeRessource ytRessource = (YoutubeRessource)data.Ressource;
-				if (entry < 0 || entry >= ytRessource.AvailableTypes.Count)
+				YoutubeResource ytResource = (YoutubeResource)data.Resource;
+				if (entry < 0 || entry >= ytResource.AvailableTypes.Count)
 					return true;
-				ytRessource.Selected = entry;
-				if (!ValidateMedia(ytRessource))
+				ytResource.Selected = entry;
+				if (!ValidateMedia(ytResource))
 				{
 					session.Write("The video cannot be played due to youtube restrictions.");
 					return true;
@@ -197,9 +197,9 @@ namespace TS3AudioBot.ResourceFactories
 			return true;
 		}
 
-		private static bool ValidateMedia(YoutubeRessource ressource)
+		private static bool ValidateMedia(YoutubeResource resource)
 		{
-			var media = ressource.AvailableTypes[ressource.Selected];
+			var media = resource.AvailableTypes[resource.Selected];
 			var request = WebRequest.Create(media.link) as HttpWebRequest;
 			try { request.GetResponse(); }
 			catch (WebException webEx)
@@ -274,7 +274,7 @@ namespace TS3AudioBot.ResourceFactories
 		}
 	}
 
-	class YoutubeRessource : AudioResource
+	class YoutubeResource : AudioResource
 	{
 		public IList<VideoType> AvailableTypes { get; protected set; }
 
@@ -282,7 +282,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public override AudioType AudioType { get { return AudioType.Youtube; } }
 
-		public YoutubeRessource(string ytId, string youtubeName, IList<VideoType> availableTypes)
+		public YoutubeResource(string ytId, string youtubeName, IList<VideoType> availableTypes)
 			: base(ytId, youtubeName)
 		{
 			AvailableTypes = availableTypes;

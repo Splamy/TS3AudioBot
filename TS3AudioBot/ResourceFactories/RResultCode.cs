@@ -1,6 +1,6 @@
 ﻿namespace TS3AudioBot.ResourceFactories
 {
-	enum RResultCode // Ressource Result Code
+	enum RResultCode // Resource Result Code
 	{
 		UnknowError,
 		Success,

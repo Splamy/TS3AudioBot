@@ -8,7 +8,7 @@
 	{
 		public MainBot Bot { get; private set; }
 
-		public PlayData UserRessource { get; set; }
+		public PlayData UserResource { get; set; }
 		public Response ResponseProcessor { get; protected set; }
 		public bool AdminResponse { get; protected set; }
 		public object ResponseData { get; protected set; }
@@ -20,7 +20,7 @@
 		protected BotSession(MainBot bot)
 		{
 			Bot = bot;
-			UserRessource = null;
+			UserResource = null;
 			ResponseProcessor = null;
 			ResponseData = null;
 		}
