@@ -1,6 +1,6 @@
 ﻿using System;
 using TS3Query.Messages;
-using TS3AudioBot.RessourceFactories;
+using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
@@ -16,14 +16,14 @@ namespace TS3AudioBot
 		private TickWorker waitEndTick;
 		private DateTime endTime;
 
-		public AudioRessource currentRessource { get; protected set; }
+		public PlayData CurrentPlayData { get; protected set; }
 		private IPlayerConnection playerConnection;
 
-		public delegate void RessourceStartedDelegate(AudioRessource audioRessource);
+		public delegate void RessourceStartedDelegate(PlayData audioRessource);
 		public delegate void RessourceStoppedDelegate(bool restart);
 		public event RessourceStartedDelegate OnRessourceStarted;
 		public event RessourceStoppedDelegate OnRessourceStopped;
-		
+
 		// Playerproperties
 
 		/// <summary>Loop state for the entire playlist.</summary>
@@ -109,48 +109,39 @@ namespace TS3AudioBot
 		}
 
 		/// <summary>
+		/// <para>Do NOT call this method directly! Use the FactoryManager instead.</para>
 		/// <para>Stops the old ressource and starts the new one.</para>
 		/// <para>The volume gets resetted and the OnStartEvent gets triggered.</para>
 		/// </summary>
 		/// <param name="audioRessource">The audio ressource to start.</param>
-		/// <returns>True if the audio ressource started successfully, false otherwise.</returns>
-		public AudioResultCode StartRessource(AudioRessource audioRessource, ClientData invoker)
+		/// <returns>An infocode on what happened.</returns>
+		public AudioResultCode StartRessource(PlayData playData)
 		{
-			if (audioRessource == null)
+			if (playData == null || playData.Ressource == null)
 			{
 				Log.Write(Log.Level.Debug, "AF audioRessource is null");
 				return AudioResultCode.NoNewRessource;
 			}
 
-			audioRessource.InvokingUser = invoker;
-
 			Stop(true);
 
-			if (audioRessource.Volume == -1)
-				audioRessource.Volume = audioFrameworkData.defaultVolume;
-
-			string ressourceLink = audioRessource.Play();
+			string ressourceLink = playData.Ressource.Play();
 			if (string.IsNullOrWhiteSpace(ressourceLink))
 				return AudioResultCode.RessouceInternalError;
 
-			if (audioRessource.Enqueue)
-			{
-				//playerConnection.AudioAdd(ressourceLink);
-				// TODO to playlist mgr
-				audioRessource.Enqueue = false;
-			}
+			Log.Write(Log.Level.Debug, "AF ar start: {0}", playData.Ressource);
+			playerConnection.AudioStart(ressourceLink);
+
+			if (playData.Volume == -1)
+				Volume = audioFrameworkData.defaultVolume;
 			else
-			{
-				Log.Write(Log.Level.Debug, "AF ar start: {0}", audioRessource);
-				playerConnection.AudioStart(ressourceLink);
-				Volume = audioRessource.Volume;
-				Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
-			}
+				Volume = playData.Volume;
+			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 
 			if (OnRessourceStarted != null)
-				OnRessourceStarted(audioRessource);
+				OnRessourceStarted(playData);
 
-			currentRessource = audioRessource;
+			CurrentPlayData = playData;
 			endTime = DateTime.Now;
 			waitEndTick.Active = true;
 			return AudioResultCode.Success;
@@ -167,9 +158,9 @@ namespace TS3AudioBot
 		private void Stop(bool restart)
 		{
 			Log.Write(Log.Level.Debug, "AF stop old (restart:{0})", restart);
-			if (currentRessource != null)
+			if (CurrentPlayData != null)
 			{
-				currentRessource = null;
+				CurrentPlayData = null;
 				playerConnection.AudioStop();
 				if (OnRessourceStopped != null)
 					OnRessourceStopped(restart);

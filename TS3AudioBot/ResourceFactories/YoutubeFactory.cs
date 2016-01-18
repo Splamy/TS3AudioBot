@@ -8,9 +8,9 @@ using System.Web;
 using TS3Query.Messages;
 using TS3AudioBot.Helper;
 
-namespace TS3AudioBot.RessourceFactories
+namespace TS3AudioBot.ResourceFactories
 {
-	class YoutubeFactory : IRessourceFactory
+	class YoutubeFactory : IResourceFactory
 	{
 		private Regex idMatch = new Regex(@"(&|\?)v=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private WebClient wc;
@@ -24,7 +24,7 @@ namespace TS3AudioBot.RessourceFactories
 
 		public bool MatchLink(string link) => Regex.IsMatch(link, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)");
 
-		public RResultCode GetRessource(string ytLink, out AudioRessource result)
+		public RResultCode GetRessource(string ytLink, out AudioResource result)
 		{
 			Match matchYtId = idMatch.Match(ytLink);
 			if (!matchYtId.Success)
@@ -35,7 +35,7 @@ namespace TS3AudioBot.RessourceFactories
 			return GetRessourceById(matchYtId.Groups[2].Value, null, out result);
 		}
 
-		public RResultCode GetRessourceById(string ytID, string name, out AudioRessource result)
+		public RResultCode GetRessourceById(string ytID, string name, out AudioResource result)
 		{
 			string resulthtml = string.Empty;
 			try
@@ -274,7 +274,7 @@ namespace TS3AudioBot.RessourceFactories
 		}
 	}
 
-	class YoutubeRessource : AudioRessource
+	class YoutubeRessource : AudioResource
 	{
 		public IList<VideoType> AvailableTypes { get; protected set; }
 

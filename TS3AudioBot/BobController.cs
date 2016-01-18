@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using TS3Query.Messages;
-using TS3AudioBot.RessourceFactories;
+using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Helper;
 using System.Globalization;
 
@@ -211,11 +211,11 @@ namespace TS3AudioBot
 			lastUpdate = DateTime.Now;
 		}
 
-		public void OnRessourceStarted(AudioRessource ar)
+		public void OnRessourceStarted(PlayData playData)
 		{
 			Start();
 			Sending = true;
-			RestoreSubscriptions(ar.InvokingUser);
+			RestoreSubscriptions(playData.Invoker);
 		}
 
 		public void OnRessourceStopped(bool restart)

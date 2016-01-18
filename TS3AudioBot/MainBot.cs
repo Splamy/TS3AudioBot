@@ -11,7 +11,7 @@
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
-	using TS3AudioBot.RessourceFactories;
+	using TS3AudioBot.ResourceFactories;
 
 	using TS3Query;
 	using TS3Query.Messages;
@@ -20,7 +20,6 @@
 	// - make the bot more pluing-able like (for e.g. history as plugin)
 	//	    method for registering commands
 	//	    method for registering events
-	// - implement bob backend
 	// - implement history missing features
 	// - implement command stacking
 	public sealed class MainBot : IDisposable
@@ -195,7 +194,7 @@
 			builder.New("stop").Action(CommandStop).Permission(CommandRights.Private).HelpData("Stops the current song.").Finish();
 			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin).HelpData("Only for debugging purposes").Finish();
 			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(CommandRights.Private).HelpData("Only lets you hear the music in active channels again.").Finish();
-			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility).HelpData("Sets the volume level of the music.", "<level(0-200)>").Finish();
+			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility).HelpData("Sets the volume level of the music.", "<level(0-100)>").Finish();
 			builder.New("youtube").Action(CommandYoutube).Permission(CommandRights.Private).HelpData("Resolves the link as a youtube video to play it for you.").Finish();
 
 			allCommands = allCommandsList.ToArray();
@@ -551,16 +550,16 @@
 
 		private void CommandLink(BotSession session, TextMessage textMessage, string parameter)
 		{
-			if (AudioFramework.currentRessource == null)
+			if (AudioFramework.CurrentPlayData == null)
 			{
 				session.Write("There is nothing on right now...");
 				return;
 			}
 
-			if (QuizMode && AudioFramework.currentRessource.InvokingUser.Id != textMessage.InvokerId)
+			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.Id != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
-				session.Write(AudioFramework.currentRessource.RessourceTitle);
+				session.Write(AudioFramework.CurrentPlayData.Ressource.ResourceTitle);
 		}
 
 		private void CommandLoop(BotSession session, string parameter)
@@ -685,16 +684,16 @@
 
 		private void CommandSong(BotSession session, TextMessage textMessage)
 		{
-			if (AudioFramework.currentRessource == null)
+			if (AudioFramework.CurrentPlayData == null)
 			{
 				session.Write("There is nothing on right now...");
 				return;
 			}
 
-			if (QuizMode && AudioFramework.currentRessource.InvokingUser.Id != textMessage.InvokerId)
+			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.Id != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
-				session.Write(AudioFramework.currentRessource.RessourceTitle);
+				session.Write(AudioFramework.CurrentPlayData.Ressource.ResourceTitle);
 		}
 
 		private void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
@@ -828,7 +827,8 @@
 		public ClientData Invoker { get; private set; }
 		public string Message { get; private set; }
 		public bool Enqueue { get; private set; }
-		public AudioRessource Ressource { get; set; }
+		public int Volume { get; private set; }
+		public AudioResource Ressource { get; set; }
 
 		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue)
 		{

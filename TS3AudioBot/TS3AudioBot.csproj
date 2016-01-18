@@ -52,7 +52,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithm\ICommandFilter.cs" />
+    <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
     <Compile Include="Algorithm\ISubstringSearch.cs" />
+    <Compile Include="Algorithm\ListedShuffle.cs" />
     <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
     <Compile Include="AudioFramework.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />

@@ -5,20 +5,20 @@ using TS3Query.Messages;
 using TS3AudioBot.Helper.AudioTags;
 using TS3AudioBot.Helper;
 
-namespace TS3AudioBot.RessourceFactories
+namespace TS3AudioBot.ResourceFactories
 {
-	class MediaFactory : IRessourceFactory
+	class MediaFactory : IResourceFactory
 	{
 		public AudioType FactoryFor => AudioType.MediaLink;
 
 		public bool MatchLink(string uri) => true;
 
-		public RResultCode GetRessource(string uri, out AudioRessource ressource)
+		public RResultCode GetRessource(string uri, out AudioResource ressource)
 		{
 			return GetRessourceById(uri, null, out ressource);
 		}
 
-		public RResultCode GetRessourceById(string id, string name, out AudioRessource ressource)
+		public RResultCode GetRessourceById(string id, string name, out AudioResource ressource)
 		{
 			Stream peekStream;
 			var result = ValidateUri(id, out peekStream);
@@ -148,7 +148,7 @@ namespace TS3AudioBot.RessourceFactories
 		}
 	}
 
-	class MediaRessource : AudioRessource
+	class MediaRessource : AudioResource
 	{
 		public override AudioType AudioType { get { return AudioType.MediaLink; } }
 

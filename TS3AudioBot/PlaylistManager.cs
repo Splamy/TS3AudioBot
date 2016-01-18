@@ -1,16 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using TS3AudioBot.RessourceFactories;
+using TS3AudioBot.ResourceFactories;
 using System.Net;
 using System.Web.Script.Serialization;
 using System;
 using System.Linq;
 using System.Xml;
+using TS3AudioBot.Algorithm;
 
 namespace TS3AudioBot
 {
 	class PlaylistManager
 	{
+		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
 		// get video info
 		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
 
@@ -22,9 +25,13 @@ namespace TS3AudioBot
 		// managing ?
 
 		private WebClient client;
-		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private PlaylistManagerData data;
 		private JavaScriptSerializer json;
+
+		private int indexCount = 0;
+		private IShuffleAlgorithm shuffle;
+		private List<DataSet> dataSets;
+		private int dataSetLength = 0;
 
 		public bool Random { get; set; }
 		public bool Loop { get; set; }
@@ -34,11 +41,45 @@ namespace TS3AudioBot
 			data = pmd;
 			json = new JavaScriptSerializer();
 			client = new WebClient();
+			shuffle = new ListedShuffle();
 		}
 
-		public void Enqueue(AudioRessource ressource)
+		public void Enqueue(AudioResource ressource)
 		{
 
+		}
+
+		public void Next()
+		{
+			indexCount++;
+
+			int pseudoListIndex;
+			if (Random)
+				pseudoListIndex = shuffle.Next();
+			else
+				pseudoListIndex = indexCount;
+
+
+		}
+
+		private void AddDataSet(DataSet set)
+		{
+			if (!dataSets.Contains(set))
+			{
+				dataSets.Add(set);
+				dataSetLength = dataSets.Sum(s => s.Length);
+				shuffle.SetData(dataSetLength);
+			}
+		}
+
+		private void RemoveDataSet(DataSet set)
+		{
+			if (dataSets.Contains(set))
+			{
+				dataSets.Remove(set);
+				dataSetLength = dataSets.Sum(s => s.Length);
+				shuffle.SetData(dataSetLength);
+			}
 		}
 
 		public void LoadYoutubePlaylist(string ytLink, bool loadLength)
@@ -51,7 +92,7 @@ namespace TS3AudioBot
 			}
 			string id = matchYtId.Groups[2].Value;
 
-			List<PlaylistItem> videoList = new List<PlaylistItem>();
+			List<YoutubePlaylistItem> videoList = new List<YoutubePlaylistItem>();
 
 			bool hasNext = false;
 			object nextToken = null;
@@ -61,9 +102,9 @@ namespace TS3AudioBot
 				var response = client.DownloadString(queryString);
 				var parsed = (Dictionary<string, object>)json.DeserializeObject(response);
 				var videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
-				PlaylistItem[] itemBuffer = new PlaylistItem[videoDicts.Length];
+				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoDicts.Length];
 				for (int i = 0; i < videoDicts.Length; i++)
-					itemBuffer[i] = new PlaylistItem
+					itemBuffer[i] = new YoutubePlaylistItem
 					{
 						AudioType = AudioType.Youtube,
 						Id = (string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["videoId"]),
@@ -85,14 +126,48 @@ namespace TS3AudioBot
 		}
 	}
 
-	class PlaylistItem
+	abstract class DataSet
+	{
+		public int Length { get; protected set; }
+
+		public abstract AudioResource GetRessource(int index);
+	}
+
+	class FreeSet : DataSet
+	{
+		private HashSet<AudioResource> ressourceSet;
+		private List<AudioResource> ressources;
+
+		public FreeSet()
+		{
+			ressourceSet = new HashSet<AudioResource>();
+			ressources = new List<AudioResource>();
+		}
+
+		public void AddRessource(AudioResource ressource)
+		{
+
+		}
+
+		public override AudioResource GetRessource(int index)
+		{
+			return ressources[index];
+		}
+	}
+
+	class YoutubePlaylist
+	{
+
+	}
+
+	class YoutubePlaylistItem
 	{
 		public AudioType AudioType { get; set; }
 		public string Id { get; set; }
 		public TimeSpan Length { get; set; }
 	}
 
-	class PlaylistManagerData
+	struct PlaylistManagerData
 	{
 		[Info("a youtube apiv3 'Browser' type key")]
 		public string youtubeApiKey;

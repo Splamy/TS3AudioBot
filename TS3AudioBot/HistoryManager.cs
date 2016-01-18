@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using TS3AudioBot.RessourceFactories;
+using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Algorithm;
 using System.Collections.Generic;
 using System.Globalization;
@@ -23,9 +23,9 @@ namespace TS3AudioBot
 			historyFile.LoadFile(hmd.historyFile);
 		}
 
-		public void LogAudioRessource(AudioRessource ar)
+		public void LogAudioRessource(PlayData playData)
 		{
-			historyFile.Store(ar);
+			historyFile.Store(playData);
 		}
 
 		public IEnumerable<AudioLogEntry> Search(SeachQuery query)
@@ -154,12 +154,12 @@ namespace TS3AudioBot
 		}
 
 
-		public void Store(AudioRessource resource)
+		public void Store(PlayData playData)
 		{
-			uint? index = Contains(resource);
+			uint? index = Contains(playData.Ressource);
 			if (index == null)
 			{
-				var ale = CreateLogEntry(resource);
+				var ale = CreateLogEntry(playData);
 				if (ale != null)
 				{
 					AddToMemoryIndex(ale);
@@ -170,14 +170,14 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				UpdateLogEntry(index.Value, resource);
+				UpdateLogEntry(index.Value, playData);
 			}
 		}
 
-		private uint? Contains(AudioRessource resource)
+		private uint? Contains(AudioResource resource)
 		{
 			uint rId;
-			if (resIdToId.TryGetValue(resource.RessourceId, out rId))
+			if (resIdToId.TryGetValue(resource.ResourceId, out rId))
 				return rId;
 			return null;
 		}
@@ -253,15 +253,16 @@ namespace TS3AudioBot
 		}
 
 
-		private AudioLogEntry CreateLogEntry(AudioRessource resource)
+		private AudioLogEntry CreateLogEntry(PlayData playData)
 		{
-			if (string.IsNullOrWhiteSpace(resource.RessourceTitle))
+			var resource = playData.Ressource;
+			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
 				return null;
-			var ale = new AudioLogEntry(currentID, resource.AudioType, resource.RessourceId, fileStream.Position)
+			var ale = new AudioLogEntry(currentID, resource.AudioType, resource.ResourceId, fileStream.Position)
 			{
-				UserInvokeId = (uint)resource.InvokingUser.DatabaseId,
+				UserInvokeId = (uint)playData.Invoker.DatabaseId,
 				Timestamp = GetNow(),
-				Title = resource.RessourceTitle,
+				Title = resource.ResourceTitle,
 				PlayCount = 1,
 			};
 			currentID++;
@@ -269,14 +270,14 @@ namespace TS3AudioBot
 			return ale;
 		}
 
-		private void UpdateLogEntry(uint index, AudioRessource resource)
+		private void UpdateLogEntry(uint index, PlayData playData)
 		{
 			AudioLogEntry ale = idFilter[index];
 
-			if (resource.InvokingUser.DatabaseId != ale.UserInvokeId) // TODO: test
+			if (playData.Invoker.DatabaseId != ale.UserInvokeId) // TODO: test
 			{
 				userIdFilter[ale.UserInvokeId].Remove(ale);
-				ale.UserInvokeId = (uint)resource.InvokingUser.DatabaseId;
+				ale.UserInvokeId = (uint)playData.Invoker.DatabaseId;
 				AutoAdd(userIdFilter, ale);
 			}
 

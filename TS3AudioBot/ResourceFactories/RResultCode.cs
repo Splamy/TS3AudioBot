@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.RessourceFactories
+﻿namespace TS3AudioBot.ResourceFactories
 {
 	enum RResultCode // Ressource Result Code
 	{

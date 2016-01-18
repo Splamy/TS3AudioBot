@@ -1,43 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 
-namespace TS3AudioBot.RessourceFactories
+namespace TS3AudioBot.ResourceFactories
 {
 	class RessourceFactoryManager : IDisposable
 	{
-		public IRessourceFactory DefaultFactorty { get; set; }
-		private IList<IRessourceFactory> factories;
+		public IResourceFactory DefaultFactorty { get; set; }
+		private IList<IResourceFactory> factories;
 		private AudioFramework audioFramework;
 
 		public RessourceFactoryManager(AudioFramework audioFramework)
 		{
+			factories = new List<IResourceFactory>();
 			this.audioFramework = audioFramework;
 		}
 
 		public void LoadAndPlay(PlayData data)
 		{
 			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
-			IRessourceFactory factory = GetFactoryFor(netlinkurl);
+			IResourceFactory factory = GetFactoryFor(netlinkurl);
 			LoadAndPlay(factory, data);
 		}
 
 		public void LoadAndPlay(AudioType audioType, PlayData data)
 		{
-			IRessourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == audioType);
+			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == audioType);
 			LoadAndPlay(factory, data);
 		}
 
-		private void LoadAndPlay(IRessourceFactory factory, PlayData data)
+		private void LoadAndPlay(IResourceFactory factory, PlayData data)
 		{
 			if (data.Ressource == null)
 			{
 				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 
-				AudioRessource ressource;
+				AudioResource ressource;
 				RResultCode result = factory.GetRessource(netlinkurl, out ressource);
 				if (result != RResultCode.Success)
 				{
@@ -55,9 +54,9 @@ namespace TS3AudioBot.RessourceFactories
 
 		public void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
 		{
-			IRessourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == logEntry.AudioType);
+			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == logEntry.AudioType);
 
-			AudioRessource ressource;
+			AudioResource ressource;
 			RResultCode result = factory.GetRessourceById(logEntry.RessourceId, logEntry.Title, out ressource);
 			if (result != RResultCode.Success)
 			{
@@ -71,20 +70,27 @@ namespace TS3AudioBot.RessourceFactories
 
 		public void Play(PlayData data)
 		{
-			data.Ressource.Enqueue = data.Enqueue;
-			var result = audioFramework.StartRessource(data.Ressource, data.Invoker);
-			if (result != AudioResultCode.Success)
-				data.Session.Write(string.Format("The ressource could not be played ({0}).", result));
+			if (data.Enqueue)
+			{
+				// TODO
+				throw new NotImplementedException();
+			}
+			else
+			{
+				var result = audioFramework.StartRessource(data);
+				if (result != AudioResultCode.Success)
+					data.Session.Write(string.Format("The ressource could not be played ({0}).", result));
+			}
 		}
 
-		private IRessourceFactory GetFactoryFor(string uri)
+		private IResourceFactory GetFactoryFor(string uri)
 		{
 			foreach (var fac in factories)
 				if (fac.MatchLink(uri)) return fac;
 			return DefaultFactorty;
 		}
 
-		public void AddFactory(IRessourceFactory factory)
+		public void AddFactory(IResourceFactory factory)
 		{
 			factories.Add(factory);
 		}

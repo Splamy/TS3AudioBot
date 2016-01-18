@@ -4,9 +4,9 @@ using System.Web.Script.Serialization;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace TS3AudioBot.RessourceFactories
+namespace TS3AudioBot.ResourceFactories
 {
-	class SoundcloudFactory : IRessourceFactory
+	class SoundcloudFactory : IResourceFactory
 	{
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;
@@ -23,7 +23,7 @@ namespace TS3AudioBot.RessourceFactories
 
 		public bool MatchLink(string link) => Regex.IsMatch(link, @"^https?\:\/\/(www\.)?soundcloud\.");
 
-		public RResultCode GetRessource(string link, out AudioRessource ressource)
+		public RResultCode GetRessource(string link, out AudioResource ressource)
 		{
 			string jsonResponse;
 			try
@@ -42,7 +42,7 @@ namespace TS3AudioBot.RessourceFactories
 			return GetRessourceById(id.ToString(), title, out ressource);
 		}
 
-		public RResultCode GetRessourceById(string id, string name, out AudioRessource ressource)
+		public RResultCode GetRessourceById(string id, string name, out AudioResource ressource)
 		{
 			string finalRequest = string.Format("https://api.soundcloud.com/tracks/{0}/stream?client_id={1}", id, SoundcloudClientID);
 			ressource = new SoundcloudRessource(id, name, finalRequest);
@@ -73,7 +73,7 @@ namespace TS3AudioBot.RessourceFactories
 		}
 	}
 
-	class SoundcloudRessource : AudioRessource
+	class SoundcloudRessource : AudioResource
 	{
 		public override AudioType AudioType { get { return AudioType.Soundcloud; } }
 
