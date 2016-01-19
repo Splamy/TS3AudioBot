@@ -103,6 +103,7 @@
     <Compile Include="VLCConnection.cs" />
     <Compile Include="ResourceFactories\YoutubeFactory.cs" />
     <Compile Include="BobController.cs" />
+    <Compile Include="Algorithm\XCommandFilter.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

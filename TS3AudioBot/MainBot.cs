@@ -63,7 +63,7 @@
 		{
 			consoleOutput = false;
 			writeLog = false;
-			commandDict = new Trie<BotCommand>();
+			commandDict = new XCommandFilter<BotCommand>();
 		}
 
 		private bool ReadParameter(string[] args)
