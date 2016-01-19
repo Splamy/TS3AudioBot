@@ -42,6 +42,7 @@ namespace TS3AudioBot
 			json = new JavaScriptSerializer();
 			client = new WebClient();
 			shuffle = new ListedShuffle();
+			dataSets = new List<DataSet>();
 		}
 
 		public void Enqueue(AudioResource resource)
@@ -77,9 +78,13 @@ namespace TS3AudioBot
 			if (dataSets.Contains(set))
 			{
 				dataSets.Remove(set);
-				dataSetLength = dataSets.Sum(s => s.Length);
-				shuffle.SetData(dataSetLength);
 			}
+		}
+
+		private void RecalcDataSet()
+		{
+			dataSetLength = dataSets.Sum(s => s.Length);
+			shuffle.SetData(dataSetLength);
 		}
 
 		public void LoadYoutubePlaylist(string ytLink, bool loadLength)
@@ -129,6 +134,7 @@ namespace TS3AudioBot
 	abstract class DataSet
 	{
 		public int Length { get; protected set; }
+		public bool NeedRecalc { get; set; }
 
 		public abstract AudioResource GetResource(int index);
 	}
@@ -146,7 +152,19 @@ namespace TS3AudioBot
 
 		public void AddResource(AudioResource resource)
 		{
+			if (!resourceSet.Contains(resource))
+			{
 
+				Length++;
+			}
+		}
+
+		public void RemoveResource(AudioResource resource)
+		{
+			if (!resourceSet.Contains(resource))
+			{
+
+			}
 		}
 
 		public override AudioResource GetResource(int index)
@@ -167,9 +185,11 @@ namespace TS3AudioBot
 		public TimeSpan Length { get; set; }
 	}
 
+#pragma warning disable CS0649
 	struct PlaylistManagerData
 	{
 		[Info("a youtube apiv3 'Browser' type key")]
 		public string youtubeApiKey;
 	}
+#pragma warning restore CS0649
 }
