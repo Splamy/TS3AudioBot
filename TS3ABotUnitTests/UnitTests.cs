@@ -3,6 +3,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using NUnit.Framework;
 using TS3AudioBot;
+using TS3AudioBot.Algorithm;
 
 namespace TS3ABotUnitTests
 {
@@ -72,6 +73,27 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}](o*(l*(o[{3}])))))))", values), trie.ToString());
 			trie.Add("hansololo", values[adix++]);
 			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}](o(l(o[{3}](l*(o[{4}])))))))))", values), trie.ToString());
+		}
+
+		[Test]
+		public void XCommandFilterTest()
+		{
+			XCommandFilter<string> filter = new XCommandFilter<string>();
+			filter.Add("help", "HELP");
+			filter.Add("quit", "QUIT");
+			filter.Add("play", "PLAY");
+			filter.Add("ply", "PLY");
+			string result;
+			Assert.IsTrue(filter.TryGetValue("help", out result));
+			Assert.AreEqual("HELP", result);
+			Assert.IsTrue(filter.TryGetValue("y", out result));
+			Assert.AreEqual("PLY", result);
+			Assert.IsFalse(filter.TryGetValue("zorn", out result));
+			Assert.AreEqual(default(string), result);
+			Assert.IsTrue(filter.TryGetValue("q", out result));
+			Assert.AreEqual("QUIT", result);
+			Assert.IsTrue(filter.TryGetValue("palyndrom", out result));
+			Assert.AreEqual("PLAY", result);
 		}
 	}
 }

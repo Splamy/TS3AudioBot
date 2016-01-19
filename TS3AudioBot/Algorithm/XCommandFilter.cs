@@ -23,14 +23,14 @@ namespace TS3AudioBot.Algorithm
 			// Filter matching commands
 			while (inputPos < input.Length)
 			{
-				List<Tuple<string, int>> newPossibilities = new List<Tuple<string, int>>();
+				IList<Tuple<string, int>> newPossibilities = new List<Tuple<string, int>>();
 				foreach (var p in possibilities)
 				{
 					int pos = p.Item1.IndexOf(input[inputPos], p.Item2);
 					if (pos != -1)
-						newPossibilities.Add(new Tuple<string, int>(p.Item1, pos));
+						newPossibilities.Add(new Tuple<string, int>(p.Item1, pos + 1));
 				}
-				if (!newPossibilities.Any())
+				if (newPossibilities.Any())
 					possibilities = newPossibilities;
 				inputPos++;
 			}

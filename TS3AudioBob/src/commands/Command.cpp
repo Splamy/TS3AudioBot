@@ -66,24 +66,19 @@ std::vector<std::string> CommandSystem::choose(const std::vector<std::string> &p
 			continue;
 		}
 
-		// Backup current commands
-		decltype(possibilities) oldPossibilities = possibilities;
+		decltype(possibilities) newPossibilities;
 		// Filter possibilities
 		for (std::size_t i = 0; i < possibilities.size(); i++)
 		{
 			std::string::size_type newPos =
 				possibilities[i].first.find(input[msgIndex], possibilities[i].second);
-			if (newPos == std::string::npos)
-			{
-				possibilities.erase(possibilities.begin() + i);
-				i--;
-			} else
-				possibilities[i].second = newPos + 1;
+			if (newPos != std::string::npos)
+				newPossibilities.emplace_back(possibilities[i].first, newPos + 1);
 		}
 		// Ignore this character if there are no results
 		// ATTENTION: This can probably lead to funny behaviour ;)
-		if (possibilities.empty())
-			possibilities = std::move(oldPossibilities);
+		if (!newPossibilities.empty())
+			possibilities = std::move(newPossibilities);
 
 		msgIndex++;
 	}
