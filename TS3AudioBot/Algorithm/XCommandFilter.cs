@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,9 +18,8 @@ namespace TS3AudioBot.Algorithm
 		{
 			IEnumerable<Tuple<string, int>> possibilities = dict.Select(
 				t => new Tuple<string, int>(t.Item1, 0));
-			int inputPos = 0;
 			// Filter matching commands
-			while (inputPos < input.Length)
+			for (int inputPos = 0; inputPos < input.Length; inputPos++)
 			{
 				IList<Tuple<string, int>> newPossibilities = new List<Tuple<string, int>>();
 				foreach (var p in possibilities)
@@ -32,10 +30,9 @@ namespace TS3AudioBot.Algorithm
 				}
 				if (newPossibilities.Any())
 					possibilities = newPossibilities;
-				inputPos++;
 			}
 			// Take command with lowest index
-			int minIndex = possibilities.Select(t => t.Item2).Min();
+			int minIndex = possibilities.Min(t => t.Item2);
 
 			return possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1).ToArray();
 		}

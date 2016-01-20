@@ -44,8 +44,7 @@ std::vector<std::string> CommandSystem::choose(const std::vector<std::string> &p
 		[](const std::string &s) -> std::pair<std::string, std::string::size_type>
 		{ return std::make_pair(s, 0); });
 
-	std::string::size_type msgIndex = 0;
-	while (msgIndex < input.length())
+	for (std::string::size_type msgIndex = 0; msgIndex < input.length(); msgIndex++)
 	{
 		// Stop if the command is over
 		if (Utils::isSpace(input[msgIndex]))
@@ -79,8 +78,6 @@ std::vector<std::string> CommandSystem::choose(const std::vector<std::string> &p
 		// ATTENTION: This can probably lead to funny behaviour ;)
 		if (!newPossibilities.empty())
 			possibilities = std::move(newPossibilities);
-
-		msgIndex++;
 	}
 
 	// Take the command with the lowest index
