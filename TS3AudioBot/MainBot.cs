@@ -107,12 +107,12 @@
 				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
 				{
 					if (logStream != null)
-						lock (logStream) try
-							{
-								logStream.Write(msg);
-								logStream.Flush();
-							}
-							catch (IOException) { }
+						try
+						{
+							logStream.Write(msg);
+							logStream.Flush();
+						}
+						catch (IOException) { }
 				});
 			}
 
