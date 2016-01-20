@@ -197,7 +197,7 @@ def availableCpus():
 
 def addSubfolder(name, createMSVSProj = True):
 	global msvsFolders
-	SConscript("{0}/SConscript".format(name), variant_dir = "{0}/{1}".format(buildPrefix, name), duplicate = 0)
+	SConscript("{0}/SConscript".format(name), variant_dir = os.path.join(buildPrefix, name), duplicate = 0)
 	if createMSVSProj:
 		msvsFolders += name
 

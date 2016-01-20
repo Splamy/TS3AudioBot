@@ -1,0 +1,19 @@
+# Setup environment
+Import("rootDirectory")
+folder = "test"
+execfile(rootDirectory + "Tools/SConscriptLib.py")
+
+if not iswin:
+	curenv.ParseConfig("pkg-config --cflags --libs libavcodec libavformat libswscale libavutil libswresample libavfilter cppunit")
+	curenv.Append(CCFLAGS = ["-fPIC", "-fvisibility=hidden", "-Wno-format-security", "-Wno-missing-braces"], LINKFLAGS = ["-lpthread"])
+else:
+	curenv.Append(CPPPATH = ["..\\Dependencies\\include"],
+		LIBPATH = ["..\\Dependencies\\lib", "..\\Dependencies\\bin"],
+		LIBS = ["avcodec", "avformat", "swscale", "avutil", "swresample", "avfilter"],
+		CCFLAGS = ["/MTd"])
+curenv.Append(CPPPATH = [getAbsolutePath(p) for p in ["Include"]] + [getAbsolutePath("src")])
+
+# Add the plugin files directly because most of the functions are not exported
+test = curenv.Program("test", recursiveGlob(sourceFiles) +
+	recursiveGlob(sourceFiles, "../src"))
+Export("test")

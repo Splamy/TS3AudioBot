@@ -220,7 +220,7 @@ namespace Utils
 			if (!in && !in.eof())
 				return;
 			result.push_back(t);
-			// Read the comma
+			// Read the comma or other separating character
 			in >> c;
 			if (!in && !in.eof())
 				return;

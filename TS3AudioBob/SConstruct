@@ -11,7 +11,8 @@ rootDirectory = os.getcwd() + os.sep
 execfile(rootDirectory + "Tools/SConstructLib.py")
 
 # Execute subscripts
-SConscript("src/SConscript", variant_dir = buildPrefix, duplicate = 0)
+addSubfolder("src")
+addSubfolder("test")
 
 # Create Visual Studio solution
 if doMSVS():
