@@ -123,7 +123,7 @@
 			Log.Write(Log.Level.Info, "[=== Time: {0}{1} ===]", new string(' ', Math.Max(0, 32 - timeStr.Length)), timeStr);
 			Log.Write(Log.Level.Info, "[==============================================]");
 
-			// Initialize Modules
+			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
 			BobController = new BobController(bcd, QueryConnection);
 			// old: new VLCConnection(afd.vlcLocation);
@@ -132,24 +132,29 @@
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 
+			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager(AudioFramework);
 			FactoryManager.DefaultFactorty = new MediaFactory();
 			FactoryManager.AddFactory(new YoutubeFactory());
 			FactoryManager.AddFactory(new SoundcloudFactory());
 
-			// Register callbacks
+			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
+			// Inform our HistoryManager when a new resource started successfully
 			AudioFramework.OnResourceStarted += HistoryManager.LogAudioResource;
+			// Inform the BobClient on start/stop
 			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
 			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
-
-			// register callback for all messages happeing
+			// Register callback for all messages happeing
 			QueryConnection.OnMessageReceived += TextCallback;
-			// register callback to remove open private sessions, when user disconnects
+			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerId);
-			// create a default session for all users in all chat
+
+			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
+			// Create a default session for all users in all chat
 			SessionManager.DefaultSession = new PublicSession(this);
-			// connect the query after everyting is set up
+			// Connect the query after everyting is set up
 			QueryConnection.Connect();
+			Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
 		}
 
 		private void InitializeCommands()
