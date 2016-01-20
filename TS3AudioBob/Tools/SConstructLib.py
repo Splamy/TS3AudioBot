@@ -331,7 +331,7 @@ if env.get("release"):
 	if iswin:
 		env.Append(CCFLAGS = ["/O2", "/MD"])
 	else:
-		env.Append(CCFLAGS = ["-O2", "-flto"])
+		env.Append(CCFLAGS = ["-O2", "-flto"], LINKFLAGS = ["-flto"])
 elif env.get("optimize"):
 	# Optimized release build
 	buildType = "Optimize"
@@ -339,7 +339,7 @@ elif env.get("optimize"):
 	if iswin:
 		env.Append(CCFLAGS = ["/O3", "/MD"])
 	else:
-		env.Append(CCFLAGS = ["-O3", "-flto", "-mtune=native", "-march=native"])
+		env.Append(CCFLAGS = ["-O3", "-flto", "-mtune=native", "-march=native"], LINKFLAGS = ["-flto"])
 else:
 	# Debug build
 	buildType = "Debug"
