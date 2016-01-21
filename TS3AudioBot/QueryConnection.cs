@@ -96,7 +96,6 @@ namespace TS3AudioBot
 			var response = tsClient.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
 			if (!response.Any() || !response.First().ContainsKey("sgid"))
 				return new int[0];
-			// TODO check/redo
 			return response.Select(dict => int.Parse(dict["sgid"])).ToArray();
 		}
 

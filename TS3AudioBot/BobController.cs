@@ -60,6 +60,7 @@ namespace TS3AudioBot
 		{
 			get
 			{
+				SendMessage("status music");
 				return (int)musicInfoWaiter.Wait().Position;
 			}
 			set
@@ -398,7 +399,7 @@ namespace TS3AudioBot
 			public double Volume { get; set; }
 		}
 
-		enum MusicStatus
+		private enum MusicStatus
 		{
 			off,
 			playing,

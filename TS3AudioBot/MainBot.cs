@@ -905,6 +905,7 @@
 			Message = message;
 			Enqueue = enqueue;
 			Resource = null;
+			Volume = -1;
 		}
 	}
 
