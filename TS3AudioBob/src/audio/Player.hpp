@@ -19,11 +19,18 @@ extern "C"
 
 namespace audio
 {
+class PacketReader;
 class PacketToFrameDecoder;
 
 class Player
 {
+	friend class PacketReader;
 	friend class PacketToFrameDecoder;
+
+	/** Maximum number of packets in the packet queue (ignored for realtime streams) */
+	static const std::size_t MAX_QUEUE_SIZE;
+	/** Maximum number of frames in the sample queue */
+	static const int MAX_SAMPLES_QUEUE_SIZE;
 
 public:
 	/** Errors that occur mainly when opening a stream.
@@ -95,6 +102,8 @@ private:
 	AVStream *stream = nullptr;
 	AVPacket flushPacket;
 
+	/** The reader that fills the packet queue. */
+	std::unique_ptr<PacketReader> reader;
 	std::unique_ptr<PacketToFrameDecoder> decoder;
 
 	std::vector<uint8_t> localBuffer;
@@ -133,9 +142,6 @@ private:
 	/** Quit threads and set finished to true. */
 	void finish(bool lockReadThread = true);
 
-	/** The read thread that fills the packet queue. */
-	void read();
-	bool openStreamComponent(int streamId);
 	/** The decode thread that takes packets, converts them into frames and puts
 	 *  them into the sample queue.
 	 */
