@@ -50,7 +50,7 @@ namespace TS3AudioBot.Helper
 					minTick = 100;
 			}
 		}
-		
+
 		private static void Tick()
 		{
 			while (run)
@@ -63,10 +63,8 @@ namespace TS3AudioBot.Helper
 						worker.IntervalRemain -= minTick;
 						if (worker.IntervalRemain <= 0)
 						{
-							Log.Write(Log.Level.Debug, "Ticking: {0}->{1}", worker.Method.Method.DeclaringType.Name , worker.Method.Method.Name);
 							worker.IntervalRemain = worker.Interval;
 							worker.Method.Invoke();
-							Log.Write(Log.Level.Debug, "Tick done!");
 						}
 					}
 				}
