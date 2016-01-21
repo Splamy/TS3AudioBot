@@ -105,6 +105,7 @@ namespace TS3AudioBot
 			string name;
 			if (!clientDbNames.TryGetValue(clientDbId, out name))
 			{
+				// TODO move to TS3Query
 				var response = tsClient.Send("clientdbinfo", new Parameter("cldbid", clientDbId));
 				if (!response.Any() || !response.First().ContainsKey("client_nickname"))
 				{

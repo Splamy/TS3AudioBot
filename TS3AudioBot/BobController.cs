@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using TS3Query.Messages;
-using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Helper;
 using System.Globalization;
 
