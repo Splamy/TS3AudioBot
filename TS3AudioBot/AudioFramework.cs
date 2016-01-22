@@ -30,7 +30,7 @@ namespace TS3AudioBot
 		public bool Loop // TODO
 		{
 			get { return false; }
-			set { }
+			set { throw new NotImplementedException(); }
 		}
 
 		/// <summary>Loop state for the current song.</summary>

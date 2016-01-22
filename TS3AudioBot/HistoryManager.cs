@@ -15,6 +15,7 @@ namespace TS3AudioBot
 		private HistoryFile historyFile;
 		private IEnumerable<AudioLogEntry> lastResult;
 		public SmartHistoryFormatter Formatter { get; private set; }
+		public uint HighestId => historyFile.CurrentID;
 
 		public HistoryManager(HistoryManagerData hmd)
 		{
@@ -96,7 +97,7 @@ namespace TS3AudioBot
 		private IDictionary<uint, IList<AudioLogEntry>> userIdFilter;
 		private SortedList<DateTime, AudioLogEntry> timeFilter;
 
-		private uint currentID = 0;
+		public uint CurrentID { get; private set; } = 0;
 
 		private readonly IList<AudioLogEntry> noResult = new List<AudioLogEntry>().AsReadOnly();
 
@@ -146,8 +147,8 @@ namespace TS3AudioBot
 				if (ale != null)
 				{
 					AddToMemoryIndex(ale);
-					if (ale.Id >= currentID)
-						currentID = ale.Id + 1;
+					if (ale.Id >= CurrentID)
+						CurrentID = ale.Id + 1;
 				}
 				readIndex = fileReader.ReadPosition;
 			}
@@ -258,14 +259,14 @@ namespace TS3AudioBot
 			var resource = playData.Resource;
 			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
 				return null;
-			var ale = new AudioLogEntry(currentID, resource.AudioType, resource.ResourceId, fileStream.Position)
+			var ale = new AudioLogEntry(CurrentID, resource.AudioType, resource.ResourceId, fileStream.Position)
 			{
 				UserInvokeId = (uint)playData.Invoker.DatabaseId,
 				Timestamp = GetNow(),
 				Title = resource.ResourceTitle,
 				PlayCount = 1,
 			};
-			currentID++;
+			CurrentID++;
 
 			return ale;
 		}

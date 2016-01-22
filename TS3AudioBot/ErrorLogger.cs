@@ -13,6 +13,7 @@ namespace TS3AudioBot
 		public static bool Active { get; set; }
 		public static int StackLevel { get; set; }
 
+		private static readonly object writeLock = new object();
 		private static int callbackCount = 0;
 		public delegate void callbackActionDelegate(string result);
 		private static callbackActionDelegate[] callbackAction;
@@ -50,7 +51,17 @@ namespace TS3AudioBot
 
 		public static void RegisterLogger(string format, string linebreakIndent, callbackActionDelegate callback)
 		{
-			var validator = new List<Tuple<MethodBuildToken, string>>();
+			try
+			{
+				var validator = ParseAndValidate(format);
+				RegisterLoggerUnsafe(validator, linebreakIndent, callback);
+			}
+			catch (ArgumentException argEx) { throw argEx; }
+		}
+
+		private static List<ParseToken> ParseAndValidate(string format)
+		{
+			var validator = new List<ParseToken>();
 
 			int starttext = 0;
 			for (int c = 0; c < format.Length; c++)
@@ -61,7 +72,7 @@ namespace TS3AudioBot
 				if ((specSymbol && c - starttext > 0) || endoftext)
 				{
 					if (endoftext) c++;
-					validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.Text, format.Substring(starttext, c - starttext)));
+					validator.Add(new ParseToken(MethodBuildToken.Text, format.Substring(starttext, c - starttext)));
 				}
 
 				if (specSymbol)
@@ -71,13 +82,13 @@ namespace TS3AudioBot
 						switch (format[c + 1])
 						{
 						case 'M':
-							validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.ErrorTextFormatted, null));
+							validator.Add(new ParseToken(MethodBuildToken.ErrorTextFormatted, null));
 							break;
 						case 'T':
-							validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.DateFormatted, null));
+							validator.Add(new ParseToken(MethodBuildToken.DateFormatted, null));
 							break;
 						case 'L':
-							validator.Add(new Tuple<MethodBuildToken, string>(MethodBuildToken.LogLevelSpaced, null));
+							validator.Add(new ParseToken(MethodBuildToken.LogLevelSpaced, null));
 							break;
 						}
 						c++;
@@ -90,6 +101,11 @@ namespace TS3AudioBot
 				}
 			}
 
+			return validator;
+		}
+
+		private static void RegisterLoggerUnsafe(List<ParseToken> validator, string linebreakIndent, callbackActionDelegate callback)
+		{
 			DynamicMethod dynLog = new DynamicMethod("LogWrite" + callbackCount, typeof(void), new[] { typeof(LogHelper) }, typeof(Log), true);
 			var ilGen = dynLog.GetILGenerator();
 			var localStrb = ilGen.DeclareLocal(typeof(StringBuilder));
@@ -116,10 +132,10 @@ namespace TS3AudioBot
 
 			foreach (var part in validator)
 			{
-				switch (part.Item1)
+				switch (part.TokenType)
 				{
 				case MethodBuildToken.Text:
-					ilGen.Emit(OpCodes.Ldstr, part.Item2);
+					ilGen.Emit(OpCodes.Ldstr, part.Value);
 					break;
 				case MethodBuildToken.LogLevelSpaced:
 					ilGen.Emit(OpCodes.Ldarg_0);
@@ -149,27 +165,30 @@ namespace TS3AudioBot
 
 			ilGen.Emit(OpCodes.Ret);
 
-			// Redim the calllist array
-			if (callbackProcessor == null)
+			lock (writeLock)
 			{
-				callbackProcessor = new callbackProcessorDelegate[1];
-				callbackAction = new callbackActionDelegate[1];
-			}
-			else
-			{
-				callbackProcessorDelegate[] tempProcessorArray = new callbackProcessorDelegate[callbackCount + 1];
-				callbackActionDelegate[] tempActionArray = new callbackActionDelegate[callbackCount + 1];
-				Array.Copy(callbackProcessor, tempProcessorArray, callbackCount);
-				Array.Copy(callbackAction, tempActionArray, callbackCount);
-				callbackProcessor = tempProcessorArray;
-				callbackAction = tempActionArray;
-			}
+				// Redim the calllist array
+				if (callbackProcessor == null)
+				{
+					callbackProcessor = new callbackProcessorDelegate[1];
+					callbackAction = new callbackActionDelegate[1];
+				}
+				else
+				{
+					callbackProcessorDelegate[] tempProcessorArray = new callbackProcessorDelegate[callbackCount + 1];
+					callbackActionDelegate[] tempActionArray = new callbackActionDelegate[callbackCount + 1];
+					Array.Copy(callbackProcessor, tempProcessorArray, callbackCount);
+					Array.Copy(callbackAction, tempActionArray, callbackCount);
+					callbackProcessor = tempProcessorArray;
+					callbackAction = tempActionArray;
+				}
 
-			//Store event call in the calllist
-			callbackProcessor[callbackCount] = (callbackProcessorDelegate)dynLog.CreateDelegate(typeof(callbackProcessorDelegate));
-			callbackAction[callbackCount] = callback;
+				//Store event call in the calllist
+				callbackProcessor[callbackCount] = (callbackProcessorDelegate)dynLog.CreateDelegate(typeof(callbackProcessorDelegate));
+				callbackAction[callbackCount] = callback;
 
-			callbackCount++;
+				callbackCount++;
+			}
 		}
 
 		private static void DefaultTest(LogHelper lh)
@@ -186,8 +205,11 @@ namespace TS3AudioBot
 				return;
 
 			LogHelper lh = new LogHelper(lvl, new StackTrace(1), errText, infos);
-			foreach (var callbackProc in callbackProcessor)
-				callbackProc(lh);
+			lock (writeLock)
+			{
+				foreach (var callbackProc in callbackProcessor)
+					callbackProc(lh);
+			}
 		}
 
 		private enum MethodBuildToken
@@ -280,6 +302,18 @@ namespace TS3AudioBot
 					return string.Empty;
 
 				return name.Substring(startName, endName - startName);
+			}
+		}
+
+		private class ParseToken
+		{
+			public readonly MethodBuildToken TokenType;
+			public readonly string Value;
+
+			public ParseToken(MethodBuildToken tokenType, string value)
+			{
+				TokenType = tokenType;
+				Value = value;
 			}
 		}
 	}

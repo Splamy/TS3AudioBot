@@ -107,12 +107,12 @@
 				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
 				{
 					if (logStream != null)
-						lock (logStream) try
-							{
-								logStream.Write(msg);
-								logStream.Flush();
-							}
-							catch (IOException) { }
+						try
+						{
+							logStream.Write(msg);
+							logStream.Flush();
+						}
+						catch (IOException) { }
 				});
 			}
 
@@ -123,7 +123,7 @@
 			Log.Write(Log.Level.Info, "[=== Time: {0}{1} ===]", new string(' ', Math.Max(0, 32 - timeStr.Length)), timeStr);
 			Log.Write(Log.Level.Info, "[==============================================]");
 
-			// Initialize Modules
+			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
 			BobController = new BobController(bcd, QueryConnection);
 			// old: new VLCConnection(afd.vlcLocation);
@@ -132,24 +132,29 @@
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 
+			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager(AudioFramework);
 			FactoryManager.DefaultFactorty = new MediaFactory();
 			FactoryManager.AddFactory(new YoutubeFactory());
 			FactoryManager.AddFactory(new SoundcloudFactory());
 
-			// Register callbacks
+			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
+			// Inform our HistoryManager when a new resource started successfully
 			AudioFramework.OnResourceStarted += HistoryManager.LogAudioResource;
+			// Inform the BobClient on start/stop
 			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
 			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
-
-			// register callback for all messages happeing
+			// Register callback for all messages happeing
 			QueryConnection.OnMessageReceived += TextCallback;
-			// register callback to remove open private sessions, when user disconnects
+			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerId);
-			// create a default session for all users in all chat
+
+			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
+			// Create a default session for all users in all chat
 			SessionManager.DefaultSession = new PublicSession(this);
-			// connect the query after everyting is set up
+			// Connect the query after everyting is set up
 			QueryConnection.Connect();
+			Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
 		}
 
 		private void InitializeCommands()
@@ -167,32 +172,70 @@
 			// [text] = Option for fixed text
 			// (a|b) = either or switch
 
-			builder.New("add").Action(CommandAdd).Permission(CommandRights.Private).HelpData("Adds a new song to the queue.", "<link>").Finish();
-			builder.New("clear").Action(CommandClear).Permission(CommandRights.Private).HelpData("Removes all songs from the current playlist.").Finish();
-			builder.New("getuserid").Action(CommandGetUserId).Permission(CommandRights.Admin).HelpData("Gets the unique Id of a user.", "<username>").Finish();
-			builder.New("help").Action(CommandHelp).Permission(CommandRights.Private).HelpData("Shows all commands or detailed help about a specific command.", "[<command>]").Finish();
-			builder.New("history").Action(CommandHistory).Permission(CommandRights.Private).HelpData("Shows recently played songs.").Finish();
-			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private).HelpData("Guess what?", "[far]").Finish();
-			builder.New("link").Action(CommandLink).Permission(CommandRights.Private).HelpData("Gets a link to the origin of the current song.", "<link>").Finish();
-			builder.New("loop").Action(CommandLoop).Permission(CommandRights.Private).HelpData("Sets whether or not to loop the entire playlist.", "(on|off)").Finish();
-			builder.New("next").Action(CommandNext).Permission(CommandRights.Private).HelpData("Plays the next song in the playlist.").Finish();
-			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public).HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
+			builder.New("add").Action(CommandAdd).Permission(CommandRights.Private)
+				.HelpData("Adds a new song to the queue.")
+				.Parameter("<link>", "Any link that is also recognized by !play").Finish();
+			builder.New("clear").Action(CommandClear).Permission(CommandRights.Private)
+				.HelpData("Removes all songs from the current playlist.").Finish();
+			builder.New("getuserid").Action(CommandGetUserId).Permission(CommandRights.Admin)
+				.HelpData("Gets the unique Id of a user.")
+				.Parameter("<username>", "A user which is currently logged in to the server").Finish();
+			builder.New("help").Action(CommandHelp).Permission(CommandRights.Private)
+				.HelpData("Shows all commands or detailed help about a specific command.")
+				.Parameter("[<command>]", "Any currently accepted command").Finish();
+			builder.New("history").Action(CommandHistory).Permission(CommandRights.Private)
+				.HelpData("Shows recently played songs.").Finish();
+			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
+				.HelpData("Guess what?")
+				.Parameter("[far]", "Optional attribute for the extra punch stenght").Finish();
+			builder.New("link").Action(CommandLink).Permission(CommandRights.Private)
+				.HelpData("Gets a link to the origin of the current song.").Finish();
+			builder.New("loop").Action(CommandLoop).Permission(CommandRights.Private)
+				.HelpData("Sets whether or not to loop the entire playlist.")
+				.Parameter("(on|off)", "on or off").Finish();
+			builder.New("next").Action(CommandNext).Permission(CommandRights.Private)
+				.HelpData("Plays the next song in the playlist.").Finish();
+			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public)
+				.HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
 			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
-				.HelpData("Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it", "<link>").Finish();
-			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private).HelpData("Plays the previous song in the playlist.").Finish();
-			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin).HelpData("Closes the TS3AudioBot application.").Finish();
-			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public).HelpData("Enable to hide the songnames and let your friends guess the title.", "(on|off)").Finish();
-			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private).HelpData("Sets whether or not to loop a single song.", "(on|off)").Finish();
-			builder.New("rng").Action(CommandRng).Permission(CommandRights.AnyVisibility).HelpData("Gets a random number.", "(_|<max>|<min> <max>)").Finish();
-			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private).HelpData("Jumps to a timemark within the current song.", "(<time in seconds>|<seconds>:<minutes>)").Finish();
-			builder.New("song").Action(CommandSong).Permission(CommandRights.AnyVisibility).HelpData("Tells you the name of the current song.").Finish();
-			builder.New("soundcloud").Action(CommandSoundcloud).Permission(CommandRights.Private).HelpData("Resolves the link as a soundcloud song to play it for you.").Finish();
-			builder.New("subscribe").Action(CommandSubscribe).Permission(CommandRights.Private).HelpData("Lets you hear the music independent from the channel you are in.").Finish();
-			builder.New("stop").Action(CommandStop).Permission(CommandRights.Private).HelpData("Stops the current song.").Finish();
-			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin).HelpData("Only for debugging purposes").Finish();
-			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(CommandRights.Private).HelpData("Only lets you hear the music in active channels again.").Finish();
-			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility).HelpData("Sets the volume level of the music.", "<level(0-100)>").Finish();
-			builder.New("youtube").Action(CommandYoutube).Permission(CommandRights.Private).HelpData("Resolves the link as a youtube video to play it for you.").Finish();
+				.HelpData("Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")
+				.Parameter("<link>", "Youtube, Soundcloud, local path or file link").Finish();
+			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private)
+				.HelpData("Plays the previous song in the playlist.").Finish();
+			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin)
+				.HelpData("Closes the TS3AudioBot application.").Finish();
+			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public)
+				.HelpData("Enable to hide the songnames and let your friends guess the title.")
+				.Parameter("(on|off)", "on or off").Finish();
+			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private)
+				.HelpData("Sets whether or not to loop a single song.")
+				.Parameter("(on|off)", "on or off").Finish();
+			builder.New("rng").Action(CommandRng).Permission(CommandRights.AnyVisibility)
+				.HelpData("Gets a random number.")
+				.Parameter(string.Empty, "Gets a number between 0 and " + int.MaxValue)
+				.Parameter("<max>", "Gets a number between 0 and <max>")
+				.Parameter("<min> <max>", "Gets a number between <min> and <max>").Finish();
+			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private)
+				.HelpData("Jumps to a timemark within the current song.")
+				.Parameter("<sec>", "Time in seconds")
+				.Parameter("<min:sec>", "Time in Minutes:Seconds").Finish();
+			builder.New("song").Action(CommandSong).Permission(CommandRights.AnyVisibility)
+				.HelpData("Tells you the name of the current song.").Finish();
+			builder.New("soundcloud").Action(CommandSoundcloud).Permission(CommandRights.Private)
+				.HelpData("Resolves the link as a soundcloud song to play it for you.").Finish();
+			builder.New("subscribe").Action(CommandSubscribe).Permission(CommandRights.Private)
+				.HelpData("Lets you hear the music independent from the channel you are in.").Finish();
+			builder.New("stop").Action(CommandStop).Permission(CommandRights.Private)
+				.HelpData("Stops the current song.").Finish();
+			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin)
+				.HelpData("Only for debugging purposes").Finish();
+			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(CommandRights.Private)
+				.HelpData("Only lets you hear the music in active channels again.").Finish();
+			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility)
+				.HelpData("Sets the volume level of the music.")
+				.Parameter("<level>", "A new volume level between 0 and " + AudioFramework.MAXVOLUME).Finish();
+			builder.New("youtube").Action(CommandYoutube).Permission(CommandRights.Private)
+				.HelpData("Resolves the link as a youtube video to play it for you.").Finish();
 
 			allCommands = allCommandsList.ToArray();
 		}
@@ -388,8 +431,8 @@
 		private void CommandHistory(BotSession session, TextMessage textMessage, string parameter)
 		{
 			var args = parameter.SplitNoEmpty(' ');
-			if (args.Length == 0)
-				return; // OPtionally print help
+			if (args.Length == 0) args = new[] { "help" };
+
 			else if (args.Length >= 1)
 			{
 				#region switch local variables
@@ -400,15 +443,37 @@
 
 				switch (args[0])
 				{
-				case "from": // <user> <last x>
-					break;
+				#region from
+				case "from": // <user_dbid> <last x>
+					if (args.Length >= 1 && uint.TryParse(args[1], out id))
+					{
+						SeachQuery query = new SeachQuery();
+						query.UserId = id;
 
-				case "help":
+						if (args.Length >= 2 && int.TryParse(args[1], out amount))
+							query.MaxResults = amount;
+
+						string resultStr = HistoryManager.SearchParsed(query);
+						session.Write(resultStr);
+					}
+					else
+					{
+						session.Write("Missing or invalid user DbId.");
+					}
 					break;
+				#endregion
+
+				#region help
+				case "help":
+				default:
+					CommandHelp(session, "history");
+					break;
+				#endregion
 
 				#region id
 				case "id": // [id]
-					if (args.Length >= 2 && uint.TryParse(args[1], out id))
+					bool arrLen2 = args.Length >= 2;
+					if (arrLen2 && uint.TryParse(args[1], out id))
 					{
 						var ale = HistoryManager.GetEntryById(id);
 						if (ale != null)
@@ -420,6 +485,10 @@
 						{
 							session.Write("Could not find track with this id");
 						}
+					}
+					else if (arrLen2 && args[1] == "last")
+					{
+						session.Write($"{HistoryManager.HighestId} is the currently highest song id.");
 					}
 					else
 					{
@@ -522,9 +591,8 @@
 				#endregion
 
 				case "where":
-					break;
 
-				default:
+
 					break;
 				}
 			}
@@ -545,7 +613,7 @@
 			}
 		}
 
-		private void CommandLink(BotSession session, TextMessage textMessage, string parameter)
+		private void CommandLink(BotSession session, TextMessage textMessage)
 		{
 			if (AudioFramework.CurrentPlayData == null)
 			{
@@ -734,22 +802,25 @@
 		private void CommandVolume(BotSession session, string parameter)
 		{
 			int volume;
-			if (int.TryParse(parameter, out volume) && volume >= 0)
+			if (!int.TryParse(parameter, out volume) || volume < 0)
 			{
-				if (volume <= AudioFramework.MaxUserVolume || volume < AudioFramework.Volume)
-				{
-					AudioFramework.Volume = volume;
-					return;
-				}
-				else if (volume <= AudioFramework.MAXVOLUME)
-				{
-					session.Write("Careful you are requesting a very high volume! Do you want to apply this? !(y|n)");
-					session.SetResponse(ResponseVolume, volume, true);
-					return;
-				}
+				CommandHelp(session, "volume");
+				return;
 			}
 
-			CommandHelp(session, "volume");
+			if (volume <= AudioFramework.MaxUserVolume || volume < AudioFramework.Volume)
+			{
+				AudioFramework.Volume = volume;
+			}
+			else if (volume <= AudioFramework.MAXVOLUME)
+			{
+				session.Write("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
+				session.SetResponse(ResponseVolume, volume, true);
+			}
+			else
+			{
+				session.Write("The volume level must be between 0 and " + AudioFramework.MAXVOLUME);
+			}
 		}
 
 		private void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
@@ -834,6 +905,7 @@
 			Message = message;
 			Enqueue = enqueue;
 			Resource = null;
+			Volume = -1;
 		}
 	}
 
@@ -850,7 +922,7 @@
 
 		private string outputCache = null;
 		public string Description { get; private set; }
-		public string[] ParameterList { get; private set; }
+		public Tuple<string, string>[] ParameterList { get; private set; }
 
 		private BotCommand() { }
 
@@ -859,10 +931,14 @@
 			if (outputCache == null)
 			{
 				StringBuilder strb = new StringBuilder();
-				strb.Append("\nUsage: ").Append('!').Append(InvokeName);
-				foreach (string para in ParameterList)
-					strb.Append(" ").Append(para);
-				strb.Append('\n').Append(Description);
+				strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description);
+				if (ParameterList.Length > 0)
+				{
+					int longest = ParameterList.Max(p => p.Item1.Length) + 1;
+					foreach (var para in ParameterList)
+						strb.Append("\n!").Append(InvokeName).Append(" ").Append(para.Item1)
+							.Append(' ', longest - para.Item1.Length).Append(para.Item2);
+				}
 				outputCache = strb.ToString();
 			}
 			return outputCache;
@@ -881,7 +957,6 @@
 			// Default values
 			private const CommandRights defaultCommandRights = CommandRights.Admin;
 			private const string defaultDescription = "<no info>";
-			private static readonly string[] defaultParameters = new string[0];
 
 			// List of configurations for each command
 			private string name;
@@ -898,7 +973,7 @@
 
 			private bool setHelp = false;
 			private string description;
-			private string[] parameters;
+			private List<Tuple<string, string>> parameters = new List<Tuple<string, string>>();
 
 			private Builder(Action<BotCommand> finishAction, bool buildMode)
 			{
@@ -961,12 +1036,17 @@
 				return this;
 			}
 
-			public Builder HelpData(string description, params string[] parameters)
+			public Builder HelpData(string description)
 			{
 				if (setHelp) throw new InvalidOperationException();
 				this.description = description;
-				this.parameters = parameters;
 				setHelp = true;
+				return this;
+			}
+
+			public Builder Parameter(string option, string help)
+			{
+				parameters.Add(new Tuple<string, string>(option, help));
 				return this;
 			}
 
@@ -984,7 +1064,7 @@
 					CommandParameter = commandParameter,
 					CommandRights = setRights ? commandRights : defaultCommandRights,
 					Description = setHelp ? description : defaultDescription,
-					ParameterList = setHelp ? parameters : defaultParameters,
+					ParameterList = parameters.ToArray(),
 				};
 				if (registerAction != null)
 					registerAction(command);

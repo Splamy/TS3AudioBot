@@ -50,7 +50,7 @@ namespace TS3AudioBot.Helper
 					minTick = 100;
 			}
 		}
-		
+
 		private static void Tick()
 		{
 			while (run)
