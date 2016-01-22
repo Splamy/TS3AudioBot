@@ -4,7 +4,7 @@
 	using TS3Query.Messages;
 	using Response = System.Func<BotSession, TS3Query.Messages.TextMessage, bool, bool>;
 
-	abstract class BotSession
+	public abstract class BotSession
 	{
 		public MainBot Bot { get; private set; }
 

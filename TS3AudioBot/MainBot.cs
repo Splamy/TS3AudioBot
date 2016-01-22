@@ -624,7 +624,7 @@
 			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.Id != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
-				session.Write(AudioFramework.CurrentPlayData.Resource.ResourceTitle);
+				session.Write(FactoryManager.RestoreLink(AudioFramework.CurrentPlayData));
 		}
 
 		private void CommandLoop(BotSession session, string parameter)
@@ -889,7 +889,7 @@
 		}
 	}
 
-	class PlayData
+	public class PlayData
 	{
 		public BotSession Session { get; private set; }
 		public ClientData Invoker { get; private set; }

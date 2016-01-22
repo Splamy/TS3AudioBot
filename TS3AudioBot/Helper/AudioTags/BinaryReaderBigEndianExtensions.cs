@@ -1,8 +1,8 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
-
-namespace TS3AudioBot.Helper.AudioTags
+﻿namespace TS3AudioBot.Helper.AudioTags
 {
+	using System.IO;
+	using System.Runtime.InteropServices;
+
 	static class BinaryReaderBigEndianExtensions
 	{
 		public static short ReadInt16BE(this BinaryReader br)

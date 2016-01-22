@@ -1,10 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using System.Collections.Generic;
-
-namespace TS3AudioBot.Helper
+﻿namespace TS3AudioBot.Helper
 {
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
+	using System.Reflection;
+
 	class ConfigFile
 	{
 		private string path;

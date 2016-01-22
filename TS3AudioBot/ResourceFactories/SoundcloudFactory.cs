@@ -1,12 +1,12 @@
-﻿using System;
-using System.Net;
-using System.Web.Script.Serialization;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
-namespace TS3AudioBot.ResourceFactories
+﻿namespace TS3AudioBot.ResourceFactories
 {
-	class SoundcloudFactory : IResourceFactory
+	using System;
+	using System.Collections.Generic;
+	using System.Net;
+	using System.Text.RegularExpressions;
+	using System.Web.Script.Serialization;
+
+	public class SoundcloudFactory : IResourceFactory
 	{
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;

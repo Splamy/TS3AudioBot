@@ -1,19 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using TS3Query.Messages;
-using TS3AudioBot.Helper;
-using System.Globalization;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Globalization;
+	using System.Linq;
+	using TS3AudioBot.Helper;
+	using TS3Query.Messages;
+
 	class BobController : IPlayerConnection
 	{
 		private const int CONNECT_TIMEOUT_MS = 10000;
 		private const int CONNECT_TIMEOUT_INTERVAL_MS = 100;
-		/// <summary>
-		/// After TIMEOUT seconds, the bob disconnects.
-		/// </summary>
+		/// <summary>After TIMEOUT seconds, the bob disconnects.</summary>
 		private const int BOB_TIMEOUT = 60;
 
 		private IQueryConnection queryConnection;

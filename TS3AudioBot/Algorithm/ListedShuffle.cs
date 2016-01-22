@@ -1,9 +1,9 @@
-﻿using System;
-using System.Linq;
-
-namespace TS3AudioBot.Algorithm
+﻿namespace TS3AudioBot.Algorithm
 {
-	class ListedShuffle : IShuffleAlgorithm
+	using System;
+	using System.Linq;
+
+	public class ListedShuffle : IShuffleAlgorithm
 	{
 		private int[] permutation;
 		private int index;

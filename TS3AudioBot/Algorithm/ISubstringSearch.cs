@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-
-namespace TS3AudioBot.Algorithm
+﻿namespace TS3AudioBot.Algorithm
 {
+	using System.Collections.Generic;
+
 	public interface ISubstringSearch<T>
 	{
 		void Add(string key, T value);

@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace TS3AudioBot.Algorithm
+﻿namespace TS3AudioBot.Algorithm
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+
 	public class XCommandFilter<T> : ICommandFilter<T> where T : class
 	{
 		private IList<Tuple<string, T>> dict = new List<Tuple<string, T>>();
@@ -14,44 +14,40 @@ namespace TS3AudioBot.Algorithm
 
 		public virtual void Add(string key, T value) => dict.Add(new Tuple<string, T>(key, value));
 
-		private string[] Choose(string input)
+		private IEnumerable<string> Choose(string input)
 		{
-			IEnumerable<Tuple<string, int>> possibilities = dict.Select(
-				t => new Tuple<string, int>(t.Item1, 0));
+			var possibilities = dict.Select(t => new Tuple<string, int>(t.Item1, 0));
 			// Filter matching commands
-			for (int inputPos = 0; inputPos < input.Length; inputPos++)
+			foreach (var c in input)
 			{
-				IList<Tuple<string, int>> newPossibilities = new List<Tuple<string, int>>();
-				foreach (var p in possibilities)
-				{
-					int pos = p.Item1.IndexOf(input[inputPos], p.Item2);
-					if (pos != -1)
-						newPossibilities.Add(new Tuple<string, int>(p.Item1, pos + 1));
-				}
+				var newPossibilities = from p in possibilities
+									   let pos = p.Item1.IndexOf(c, p.Item2)
+									   where pos != -1
+									   select new Tuple<string, int>(p.Item1, pos + 1);
 				if (newPossibilities.Any())
 					possibilities = newPossibilities;
 			}
 			// Take command with lowest index
 			int minIndex = possibilities.Min(t => t.Item2);
 
-			return possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1).ToArray();
+			return possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1);
 		}
 
 		public virtual bool TryGetValue(string key, out T value)
 		{
-			string[] possibilities = Choose(key);
-			if (possibilities.Length != 1)
+			var possibilities = Choose(key).Take(2);
+			if (possibilities.Count() != 1)
 			{
 				value = default(T);
 				return false;
 			}
-			Tuple<string, T>[] cmds = dict.Where(t => t.Item1 == possibilities[0]).ToArray();
-			if (cmds.Length != 1)
+			var cmds = dict.Where(t => t.Item1 == possibilities.First()).Take(2);
+			if (cmds.Count() != 1)
 			{
 				value = default(T);
 				return false;
 			}
-			value = cmds[0].Item2;
+			value = cmds.First().Item2;
 			return true;
 		}
 	}

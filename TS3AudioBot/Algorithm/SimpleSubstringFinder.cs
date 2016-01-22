@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
-
-namespace TS3AudioBot.Algorithm
+﻿namespace TS3AudioBot.Algorithm
 {
-	class SimpleSubstringFinder<T> : ISubstringSearch<T>
+	using System;
+	using System.Collections.Generic;
+
+	public class SimpleSubstringFinder<T> : ISubstringSearch<T>
 	{
 		private List<string> keys;
 		private List<T> values;
@@ -30,7 +31,7 @@ namespace TS3AudioBot.Algorithm
 			var result = new List<T>();
 			for (int i = 0; i < keys.Count; i++)
 			{
-				if (keys[i].Contains(key))
+				if (keys[i].IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0)
 				{
 					result.Add(values[i]);
 				}

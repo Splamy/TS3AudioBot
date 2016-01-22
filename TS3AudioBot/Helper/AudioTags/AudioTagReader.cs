@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-
-namespace TS3AudioBot.Helper.AudioTags
+﻿namespace TS3AudioBot.Helper.AudioTags
 {
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
+	using System.Text;
+
 	public static class AudioTagReader
 	{
 		private static Dictionary<string, Tag> tagDict;

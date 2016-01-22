@@ -1,18 +1,19 @@
-﻿using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Web;
-using TS3Query.Messages;
-using TS3AudioBot.Helper;
-
-namespace TS3AudioBot.ResourceFactories
+﻿namespace TS3AudioBot.ResourceFactories
 {
-	class YoutubeFactory : IResourceFactory
+	using System.Collections.Generic;
+	using System.Collections.Specialized;
+	using System.Linq;
+	using System.Net;
+	using System.Text;
+	using System.Text.RegularExpressions;
+	using System.Web;
+	using TS3AudioBot.Helper;
+	using TS3Query.Messages;
+
+	public class YoutubeFactory : IResourceFactory
 	{
 		private Regex idMatch = new Regex(@"(&|\?)v=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private WebClient wc;
 
 		public AudioType FactoryFor => AudioType.Youtube;
@@ -22,7 +23,7 @@ namespace TS3AudioBot.ResourceFactories
 			wc = new WebClient();
 		}
 
-		public bool MatchLink(string link) => Regex.IsMatch(link, @"^(https?\:\/\/)?(www\.)?(youtube\.|youtu\.be)");
+		public bool MatchLink(string link) => linkMatch.IsMatch(link);
 
 		public RResultCode GetResource(string ytLink, out AudioResource result)
 		{
@@ -122,7 +123,7 @@ namespace TS3AudioBot.ResourceFactories
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
 
-		public string RestoreLink(string id) => $"https://www.youtube.com/watch?v={id}";
+		public string RestoreLink(string id) => $"https://youtu.be/{id}";
 
 		public void PostProcess(PlayData data, out bool abortPlay)
 		{

@@ -1,8 +1,8 @@
-﻿using System;
-
-namespace TS3AudioBot.ResourceFactories
+﻿namespace TS3AudioBot.ResourceFactories
 {
-	interface IResourceFactory : IDisposable
+	using System;
+
+	public interface IResourceFactory : IDisposable
 	{
 		AudioType FactoryFor { get; }
 

@@ -1,7 +1,7 @@
-﻿using System.Text;
-
-namespace TS3AudioBot.Algorithm
+﻿namespace TS3AudioBot.Algorithm
 {
+	using System.Text;
+
 	public class Trie<T> : ICommandFilter<T> where T : class
 	{
 		protected const int CHARS_IN_ALPHABET = 26;

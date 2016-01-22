@@ -1,13 +1,13 @@
-﻿using System;
-using System.Net;
-using System.IO;
-using TS3Query.Messages;
-using TS3AudioBot.Helper.AudioTags;
-using TS3AudioBot.Helper;
-
-namespace TS3AudioBot.ResourceFactories
+﻿namespace TS3AudioBot.ResourceFactories
 {
-	class MediaFactory : IResourceFactory
+	using System;
+	using System.IO;
+	using System.Net;
+	using TS3AudioBot.Helper;
+	using TS3AudioBot.Helper.AudioTags;
+	using TS3Query.Messages;
+
+	public class MediaFactory : IResourceFactory
 	{
 		public AudioType FactoryFor => AudioType.MediaLink;
 

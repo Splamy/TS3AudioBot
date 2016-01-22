@@ -1,7 +1,7 @@
-﻿using System;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+
 	[AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
 	sealed class InfoAttribute : Attribute
 	{

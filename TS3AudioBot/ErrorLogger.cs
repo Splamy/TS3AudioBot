@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Text;
-using System.Text.RegularExpressions;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Diagnostics;
+	using System.Reflection;
+	using System.Reflection.Emit;
+	using System.Text;
+	using System.Text.RegularExpressions;
+
 	public class Log
 	{
 		public static bool Active { get; set; }

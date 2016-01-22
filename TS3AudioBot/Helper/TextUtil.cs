@@ -1,8 +1,8 @@
-﻿using System;
-using System.Text.RegularExpressions;
-
-namespace TS3AudioBot.Helper
+﻿namespace TS3AudioBot.Helper
 {
+	using System;
+	using System.Text.RegularExpressions;
+
 	static class TextUtil
 	{
 		public static int[] ToIntArray(this string value)

@@ -1,8 +1,8 @@
-﻿using System.Text;
-using System.IO;
-
-namespace TS3AudioBot.Helper
+﻿namespace TS3AudioBot.Helper
 {
+	using System.IO;
+	using System.Text;
+
 	class PositionedStreamReader : TextReader
 	{
 		private const int BufferSize = 1 << 10; // 1024

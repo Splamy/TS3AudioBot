@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-
-namespace TS3AudioBot.Helper
+﻿namespace TS3AudioBot.Helper
 {
+	using System;
+	using System.Threading;
+
 	class WaitEventBlock<T>
 	{
 		private T response;

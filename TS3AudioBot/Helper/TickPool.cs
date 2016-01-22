@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Linq;
-
-namespace TS3AudioBot.Helper
+﻿namespace TS3AudioBot.Helper
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Threading;
+
 	static class TickPool
 	{
 		private static Thread tickThread;

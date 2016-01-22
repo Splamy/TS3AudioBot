@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-using TS3Query;
-using TS3Query.Messages;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System.Collections.Generic;
+	using System.Linq;
+	using TS3Query;
+	using TS3Query.Messages;
+
 	class SessionManager
 	{
 		public BotSession DefaultSession { get; set; }

@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using TS3Query;
-using TS3Query.Messages;
-using TS3AudioBot.Helper;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using TS3AudioBot.Helper;
+	using TS3Query;
+	using TS3Query.Messages;
+
 	class QueryConnection : IQueryConnection
 	{
 		public event EventHandler<TextMessage> OnMessageReceived

@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using TS3AudioBot.Helper;
-
-namespace TS3AudioBot.ResourceFactories
+﻿namespace TS3AudioBot.ResourceFactories
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using TS3AudioBot.Helper;
+
 	class ResourceFactoryManager : IDisposable
 	{
 		public IResourceFactory DefaultFactorty { get; set; }
@@ -93,6 +93,13 @@ namespace TS3AudioBot.ResourceFactories
 		public void AddFactory(IResourceFactory factory)
 		{
 			factories.Add(factory);
+		}
+
+		public string RestoreLink(PlayData data) => RestoreLink(data.Resource);
+		public string RestoreLink(AudioResource res)
+		{
+			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == res.AudioType);
+			return factory.RestoreLink(res.ResourceId);
 		}
 
 		public void Dispose()

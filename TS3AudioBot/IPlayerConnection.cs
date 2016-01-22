@@ -1,7 +1,7 @@
-﻿using System;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+
 	interface IPlayerConnection : IDisposable
 	{
 		void Initialize();

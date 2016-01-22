@@ -1,10 +1,8 @@
-﻿using System;
-using TS3Query.Messages;
-using TS3AudioBot.ResourceFactories;
-using TS3AudioBot.Helper;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using TS3AudioBot.Helper;
+
 	class AudioFramework : IDisposable
 	{
 		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
@@ -194,7 +192,7 @@ namespace TS3AudioBot
 		public string vlcLocation;
 	}
 
-	enum AudioType
+	public enum AudioType
 	{
 		MediaLink,
 		Youtube,

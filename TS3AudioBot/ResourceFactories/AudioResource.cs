@@ -1,8 +1,6 @@
-﻿using TS3Query.Messages;
-
-namespace TS3AudioBot.ResourceFactories
+﻿namespace TS3AudioBot.ResourceFactories
 {
-	abstract class AudioResource
+	public abstract class AudioResource
 	{
 		public abstract AudioType AudioType { get; }
 		public string ResourceTitle { get; protected set; }

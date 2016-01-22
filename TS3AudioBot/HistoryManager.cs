@@ -1,15 +1,15 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using TS3AudioBot.ResourceFactories;
-using TS3AudioBot.Algorithm;
-using System.Collections.Generic;
-using System.Globalization;
-using TS3AudioBot.Helper;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Globalization;
+	using System.IO;
+	using System.Linq;
+	using System.Text;
+	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.Helper;
+	using TS3AudioBot.ResourceFactories;
+
 	class HistoryManager
 	{
 		private HistoryFile historyFile;

@@ -1,14 +1,15 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Net.Sockets;
-using System.Diagnostics;
-using System.ComponentModel;
-using TS3AudioBot.Helper;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using System.ComponentModel;
+	using System.Diagnostics;
+	using System.IO;
+	using System.Net.Sockets;
+	using System.Text;
+	using System.Threading;
+	using TS3AudioBot.Helper;
+
+	[Obsolete]
 	class VLCConnection : IPlayerConnection
 	{
 		private string botLocation;

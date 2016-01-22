@@ -1,15 +1,15 @@
-﻿using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using TS3AudioBot.ResourceFactories;
-using System.Net;
-using System.Web.Script.Serialization;
-using System;
-using System.Linq;
-using System.Xml;
-using TS3AudioBot.Algorithm;
-
-namespace TS3AudioBot
+﻿namespace TS3AudioBot
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Net;
+	using System.Text.RegularExpressions;
+	using System.Web.Script.Serialization;
+	using System.Xml;
+	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.ResourceFactories;
+
 	class PlaylistManager
 	{
 		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
