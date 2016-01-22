@@ -7,20 +7,17 @@ extern "C"
 	#include <libavutil/time.h>
 }
 
-#ifdef __linux__
-	#include <pthread.h>
-#endif
-
 #include <cstring>
 
+#include "PacketReader.hpp"
 #include "PacketToFrameDecoder.hpp"
 
-/** Maximum number of packets in the packet queue (ignored for realtime streams) */
-static const int MAX_QUEUE_SIZE = 15 * 1024 * 1024;
-/** Maximum number of frames in the sample queue */
-static const int MAX_SAMPLES_QUEUE_SIZE = 9;
-
 using namespace audio;
+
+/** Maximum number of packets in the packet queue (ignored for realtime streams) */
+const std::size_t Player::MAX_QUEUE_SIZE = 15 * 1024 * 1024;
+/** Maximum number of frames in the sample queue */
+const int Player::MAX_SAMPLES_QUEUE_SIZE = 9;
 
 const std::string Player::readErrorDescription[] = {
 	"No error",
@@ -157,193 +154,6 @@ void Player::finish(bool lockReadThread)
 		std::lock_guard<std::mutex> lock(packetQueueMutex);
 		packetQueueWaiter.notify_all();
 	}
-}
-
-void Player::read()
-{
-	// Set thread name if available
-#ifdef __linux__
-	pthread_setname_np(pthread_self(), "ReadThread");
-#endif
-
-	if (avformat_open_input(&formatContext, streamAddress.c_str(), nullptr, nullptr) != 0)
-	{
-		setReadError(READ_ERROR_STREAM_OPEN);
-		return;
-	}
-	av_format_inject_global_side_data(formatContext);
-	if (avformat_find_stream_info(formatContext, nullptr) < 0)
-	{
-		// Free memory
-		avformat_close_input(&formatContext);
-		setReadError(READ_ERROR_STREAM_INFO);
-		return;
-	}
-
-	// Print audio stream information
-	av_dump_format(formatContext, 0, streamAddress.c_str(), 0);
-
-	// Test if this stream is realtime
-	const char *formatName = formatContext->iformat->name;
-	bool realtime = strcmp(formatName, "rtp") == 0 || strcmp(formatName, "rtsp") == 0 || strcmp(formatName, "sdp");
-	if (formatContext->pb)
-	{
-		const char *filename = formatContext->filename;
-		realtime |= strncmp(filename, "rtp:", 4) == 0 || strncmp(filename, "udp:", 4);
-	}
-
-	// Find audio stream
-	int audioStreamId = av_find_best_stream(formatContext, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-	if (audioStreamId < 0)
-	{
-		avformat_close_input(&formatContext);
-		setReadError(READ_ERROR_NO_AUDIO_STREAM);
-		return;
-	}
-
-	if (!openStreamComponent(audioStreamId))
-		return;
-
-	{
-		// Read the stream
-		bool lastPaused = false;
-		// The mutex and lock to wait with the readThreadWaiter
-		std::unique_lock<std::mutex> waitLock(readThreadMutex);
-		AVPacket packet;
-		bool hasEof = false;
-		// Ready with initializing
-		initialized = true;
-		while (!finished)
-		{
-			if (paused != lastPaused && !realtime)
-			{
-				lastPaused = paused;
-				if (paused)
-				{
-					av_read_pause(formatContext);
-					pausedWaiter.wait(waitLock, [this]{ return !paused || finished; });
-				} else
-					av_read_play(formatContext);
-			}
-
-			// Stop reading if the queue is full and if it's not a realtime stream
-			if (!realtime && (packetQueue.size() >= MAX_QUEUE_SIZE || paused))
-			{
-				readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
-				continue;
-			}
-
-			// Test if the stream is over
-			{
-				bool finished;
-				// Lock only this part because setPositionTime also locks the packet
-				// queue
-				{
-					std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
-					finished = !paused && packetQueue.empty() && !decoder->gotFlush();
-				}
-				if (finished)
-				{
-					if (loop)
-						setPositionTime(0);
-					else
-						break;
-				}
-			}
-
-			// Read a packet from the stream
-			int ret = av_read_frame(formatContext, &packet);
-			if (ret < 0)
-			{
-				if ((ret == AVERROR_EOF || avio_feof(formatContext->pb)) && !hasEof)
-				{
-					packetQueue.push(flushPacket);
-					packetQueueWaiter.notify_one();
-					hasEof = true;
-				}
-				if (formatContext->pb && formatContext->pb->error)
-				{
-					setReadError(READ_ERROR_IO, false);
-					return;
-				}
-
-				// Wait for more data
-				readThreadWaiter.wait_for(waitLock, std::chrono::milliseconds(10));
-				continue;
-			} else
-				hasEof = 1;
-
-			// Insert the packet into the queue
-			std::lock_guard<std::mutex> packetQueueLock(packetQueueMutex);
-			packetQueue.push(packet);
-			packetQueueWaiter.notify_one();
-		}
-	}
-	finish();
-}
-
-bool Player::openStreamComponent(int streamId)
-{
-	// Search and open decoder
-	AVCodecContext *codecContext = formatContext->streams[streamId]->codec;
-	AVCodec *codec = avcodec_find_decoder(codecContext->codec_id);
-	if (!codec)
-	{
-		setReadError(READ_ERROR_NO_DECODER);
-		return false;
-	}
-	AVDictionary *options = nullptr;
-	av_dict_set(&options, "refcounted_frames", "1", 0);
-	if (avcodec_open2(codecContext, codec, &options) != 0)
-	{
-		setReadError(READ_ERROR_OPEN_CODEC);
-		av_dict_free(&options);
-		return false;
-	}
-	av_dict_free(&options);
-
-	// Discard useless packets
-	formatContext->streams[streamId]->discard = AVDISCARD_DEFAULT;
-
-	// Ignore all other streams
-	for (std::size_t i = 0; i < formatContext->nb_streams; i++)
-	{
-		if (i != static_cast<std::size_t>(streamId))
-		{
-			formatContext->streams[i]->discard = AVDISCARD_ALL;
-			avcodec_close(formatContext->streams[i]->codec);
-		}
-	}
-
-	int sampleRate, channelCount;
-	uint64_t channelLayout;
-	// TODO Work on audio filters
-	if (false)
-	{
-		filterProps.frequency = codecContext->sample_rate;
-		filterProps.channelCount = codecContext->channels;
-		filterProps.channelLayout = getValidChannelLayout(codecContext->channel_layout, codecContext->channels);
-		filterProps.format = codecContext->sample_fmt;
-		//AVFilterLink *link = // Create output filter
-	} else
-	{
-		sampleRate = codecContext->sample_rate;
-		channelCount = codecContext->channels;
-		channelLayout = codecContext->channel_layout;
-	}
-
-	// Initialize stream related data
-	bufferIndex = 0;
-	bufferSize = 0;
-	this->streamId = streamId;
-	stream = formatContext->streams[streamId];
-
-	// Initialize decoder
-	decoder.reset(new PacketToFrameDecoder(this, codecContext));
-	decoder->setInitalPlayTime(stream->time_base, stream->start_time);
-	decodeThread = std::thread(&Player::decode, this);
-
-	return true;
 }
 
 void Player::decode()
@@ -615,6 +425,8 @@ std::unique_ptr<std::string> Player::getTitle() const
 	if (!formatContext)
 		return nullptr;
 	const char *title = searchEntry(formatContext->metadata, "title");
+	if (!title && stream)
+		title = searchEntry(stream->metadata, "title");
 	return title ? std::unique_ptr<std::string>(new std::string(title)) : nullptr;
 }
 
@@ -670,7 +482,8 @@ bool Player::setTargetProperties(AVSampleFormat format, int frequency, int chann
 
 void Player::start()
 {
-	readThread = std::thread(&Player::read, this);
+	reader.reset(new PacketReader(this));
+	readThread = std::thread(&PacketReader::read, reader.get());
 }
 
 void Player::fillBuffer(uint8_t *buffer, std::size_t length)
