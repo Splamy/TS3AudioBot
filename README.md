@@ -4,11 +4,9 @@ This is our open-source Teamspeak 3 audiobot project since
 we haven't found any other open-source one so far.  
 The bot has come a long way is pretty stable by now, though somtimes he hangs up or needs some other maintenance.  
 For now i'd only recomment this bot on small servers since it doesn't cover any more complex right systems and relies on discipline.  
-And last but not least: the majority of the magic is happening in the C# part, so if you want to contribute
-don't be scared about the 50%+ C/C++ rate :).
 
 ## How our Bot works
-The bot is split up into 3 parts:
+The bot is split up into 2 parts:
 
 1. The Main-Bot:
   * is processing all your commands via TeamSpeak's serverquery.
@@ -16,9 +14,26 @@ The bot is split up into 3 parts:
 2. The ServerBob:
   * is a plain TeamSpeak3 client with a custom plugin.
   * he is able to stream to different Channels and/or Users simultaneously with TeamSpeak's whisper feature
-3. And VLC:
-  * simply because it's probably the best mediaplayer in existence. 
-  * (and we couldn't get anything else working properly, soo...)
+  * and streams all the music with the awesome ffmpeg library
+
+## Features & Plannings
+Working:
+* Extract Youtube and Soundcloud songs
+* Extensive history manager, including features like:
+  - getting the last x played songs
+  - get last x songs played by a certain user
+  - start any once played song again via id
+  - search in title from played songs
+  - (planned) combined search expressions
+* (un)subscribe to the Bob to hear music in any channel
+* (un)subscribe the Bob to certain channels
+
+In progress:
+* Playlist manager
+
+In planning
+* Create multiple client instances automatically for diffrent channels
+* Add plugin support
 
 ## Existing commands
 All in all, the bot is fully operatable only via chat (and actually only via chat)  
@@ -31,7 +46,7 @@ Some commands have restrictions, like they can only be used in a private chat, o
 * *help*: Shows all commands or detailed help about a specific command.
 * *history*: Shows recently played songs.
 * *kickme*: Guess what?
-* *link*: Plays any direct resource link.
+* *link*: Gets a close to original link so you can open the original song in youtube, soundcloud, etc.
 * *loop*: Sets whether of not to loop the entire playlist.
 * *next*: Plays the next song in the playlist.
 * *pm*: Requests private session with the ServerBot so you can invoke private commands.
@@ -61,23 +76,8 @@ For now we don't have any workaround for that.
 a virtual X interface like Xvfb.
 Our Xvfb one time start looks like this: `Xvfb :1 -screen 0 640x480x24 > /dev/null 2>&1 & disown`  
 Windows: Ignore this step.
-1. Linux: Put a StartTsBot.sh executing "export DISPLAY=:1" and starting the ts3client to the TS3Audiobot.exe  
+1. Linux: Put a StartTsBot.sh next to the TS3Audiobot.exe. The scipt should execute "export DISPLAY=:1" and start the ts3client  
 Windows: not yet working.
-1. Setup the audio redirecting from vlc to the client:  
-Linux, something like:
-	```
-	#!/usr/bin/env bash
-	set -e
-	
-	pactl load-module module-null-sink sink_name=defaultSink
-	id=`pactl list source-outputs | grep TeamSpeak3 -B25 | grep "Source Output" | cut -d# -f2`
-	pactl move-source-output $id defaultSink.monitor
-	
-	id=`pactl list sink-inputs | grep TeamSpeak3 -B25 | grep "Sink Input" | cut -d# -f2`
-	pactl set-sink-input-volume $id 0
-	```
-Windows:  
-	Configure the Stereomix to get the vlc output to the ts3client. 
 1. Create 2 groups:
   * one for the ServerBob with enough rights so he can
     * join as a serverquery
