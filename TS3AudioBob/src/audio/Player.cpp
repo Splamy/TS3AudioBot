@@ -425,6 +425,8 @@ std::unique_ptr<std::string> Player::getTitle() const
 	if (!formatContext)
 		return nullptr;
 	const char *title = searchEntry(formatContext->metadata, "title");
+	if (!title && stream)
+		title = searchEntry(stream->metadata, "title");
 	return title ? std::unique_ptr<std::string>(new std::string(title)) : nullptr;
 }
 
