@@ -79,6 +79,7 @@
     <Compile Include="QueryConnection.cs" />
     <Compile Include="ResourceFactories\ResourceFactoryManager.cs" />
     <Compile Include="ResourceFactories\RResultCode.cs" />
+    <Compile Include="ResourceFactories\TwitchFactory.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="ResourceFactories\SoundcloudFactory.cs" />
     <Compile Include="Helper\TextUtil.cs" />

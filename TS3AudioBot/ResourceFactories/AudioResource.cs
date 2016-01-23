@@ -16,7 +16,7 @@
 
 		public override string ToString()
 		{
-			return string.Format("{0}: {1} (ID:{2})", AudioType, ResourceTitle, ResourceId);
+			return $"{AudioType}: {ResourceTitle} (ID:{ResourceId})";
 		}
 	}
 }

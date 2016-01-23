@@ -39,6 +39,16 @@
 		{
 			return bbMatch.Replace(ts3link, "$1");
 		}
+
+		public static string StripQuotes(string quotedString)
+		{
+			if (quotedString.Length <= 1 ||
+				!quotedString.StartsWith("\"") ||
+				!quotedString.EndsWith("\""))
+				throw new ArgumentException("The string is not properly quoted");
+
+			return quotedString.Substring(1, quotedString.Length - 2);
+		}
 	}
 
 	enum Answer

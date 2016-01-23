@@ -41,16 +41,16 @@
 			string resulthtml = string.Empty;
 			try
 			{
-				resulthtml = wc.DownloadString(string.Format("http://www.youtube.com/get_video_info?video_id={0}&el=info", ytID));
+				resulthtml = wc.DownloadString($"http://www.youtube.com/get_video_info?video_id={ytID}&el=info");
 			}
 			catch (WebException ex)
 			{
 				Log.Write(Log.Level.Warning, "Youtube downloadreqest failed: " + ex.Message);
 				result = null;
-				return RResultCode.YtNoConnection;
+				return RResultCode.NoConnection;
 			}
 
-			List<VideoType> videoTypes = new List<VideoType>();
+			var videoTypes = new List<VideoData>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
 
 			string videoDataUnsplit = dataParse["url_encoded_fmt_stream_map"];
@@ -74,7 +74,7 @@
 					if (vQuality == null)
 						continue;
 
-					VideoType vt = new VideoType();
+					var vt = new VideoData();
 					vt.link = vLink;
 					vt.codec = GetCodec(vType);
 					vt.qualitydesciption = vQuality;
@@ -105,7 +105,7 @@
 					if (vLink == null)
 						continue;
 
-					VideoType vt = new VideoType();
+					var vt = new VideoData();
 					vt.codec = GetCodec(vType);
 					vt.qualitydesciption = vType;
 					vt.link = vLink;
@@ -117,8 +117,8 @@
 				}
 			}
 
-			string finalName = name ?? dataParse["title"] ?? string.Format("<YT - no title : {0}>", ytID);
-			var ytResult = new YoutubeResource(ytID, finalName, videoTypes.AsReadOnly());
+			string finalName = name ?? dataParse["title"] ?? $"<YT - no title : {ytID}>";
+			var ytResult = new YoutubeResource(ytID, finalName, videoTypes);
 			result = ytResult;
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
@@ -129,7 +129,7 @@
 		{
 			YoutubeResource ytResource = (YoutubeResource)data.Resource;
 
-			var availList = ytResource.AvailableTypes.ToList();
+			var availList = ytResource.AvailableTypes;
 			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
 			if (autoselectIndex == -1)
 				autoselectIndex = availList.FindIndex(t => t.audioOnly);
@@ -152,14 +152,12 @@
 			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
 			int count = 0;
 			foreach (var videoType in ytResource.AvailableTypes)
-			{
-				strb.Append("[");
-				strb.Append(count++);
-				strb.Append("] ");
-				strb.Append(videoType.codec.ToString());
-				strb.Append(" @ ");
-				strb.AppendLine(videoType.qualitydesciption);
-			}
+				strb.Append("[")
+					.Append(count++)
+					.Append("] ")
+					.Append(videoType.codec.ToString())
+					.Append(" @ ")
+					.AppendLine(videoType.qualitydesciption);
 
 			abortPlay = true;
 			data.Session.Write(strb.ToString());
@@ -261,7 +259,7 @@
 		}
 	}
 
-	class VideoType
+	class VideoData
 	{
 		public string link;
 		public string qualitydesciption;
@@ -277,13 +275,12 @@
 
 	class YoutubeResource : AudioResource
 	{
-		public IList<VideoType> AvailableTypes { get; protected set; }
-
+		public List<VideoData> AvailableTypes { get; protected set; }
 		public int Selected { get; set; }
 
-		public override AudioType AudioType { get { return AudioType.Youtube; } }
+		public override AudioType AudioType => AudioType.Youtube;
 
-		public YoutubeResource(string ytId, string youtubeName, IList<VideoType> availableTypes)
+		public YoutubeResource(string ytId, string youtubeName, List<VideoData> availableTypes)
 			: base(ytId, youtubeName)
 		{
 			AvailableTypes = availableTypes;

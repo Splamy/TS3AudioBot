@@ -40,7 +40,7 @@
 				RResultCode result = factory.GetResource(netlinkurl, out resource);
 				if (result != RResultCode.Success)
 				{
-					data.Session.Write(string.Format("Could not play ({0})", result));
+					data.Session.Write($"Could not play ({result})");
 					return;
 				}
 				data.Resource = resource;
@@ -60,7 +60,7 @@
 			RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.Title, out resource);
 			if (result != RResultCode.Success)
 			{
-				data.Session.Write(string.Format("Could not restore ({0})", result));
+				data.Session.Write($"Could not restore ({result})");
 				return;
 			}
 			data.Resource = resource;
@@ -79,7 +79,7 @@
 			{
 				var result = audioFramework.StartResource(data);
 				if (result != AudioResultCode.Success)
-					data.Session.Write(string.Format("The resource could not be played ({0}).", result));
+					data.Session.Write($"The resource could not be played ({result}).");
 			}
 		}
 

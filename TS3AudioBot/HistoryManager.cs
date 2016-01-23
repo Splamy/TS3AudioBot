@@ -275,17 +275,12 @@
 		{
 			AudioLogEntry ale = idFilter[index];
 
-			if (playData.Invoker.DatabaseId != ale.UserInvokeId) // TODO: test
-			{
-				userIdFilter[ale.UserInvokeId].Remove(ale);
-				ale.UserInvokeId = (uint)playData.Invoker.DatabaseId;
-				AutoAdd(userIdFilter, ale);
-			}
-
+			// update the playtime
 			timeFilter.Remove(ale.Timestamp);
 			ale.Timestamp = GetNow();
 			timeFilter.Add(ale.Timestamp, ale);
 
+			// update the playcount
 			ale.PlayCount++;
 
 			ReWriteToFile(ale);

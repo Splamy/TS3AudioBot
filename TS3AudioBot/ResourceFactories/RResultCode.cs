@@ -9,9 +9,14 @@
 		MediaNoWebResponse,
 		MediaFileNotFound,
 		YtIdNotFound,
-		YtNoConnection,
 		YtNoVideosExtracted,
 		YtNoFMTS,
 		ScInvalidLink,
+		TwitchInvalidUrl,
+		TwitchMalformedM3u8File,
+		TwitchNoStreamsExtracted,
+
+		// general errors
+		NoConnection,
 	}
 }

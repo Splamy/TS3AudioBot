@@ -120,8 +120,7 @@
 			{
 				abortPlay = true;
 				data.Session.Write(
-					string.Format("This uri might be invalid ({0}), do you want to start anyway?",
-						mediaResource.InternalResultCode));
+					$"This uri might be invalid ({mediaResource.InternalResultCode}), do you want to start anyway?");
 				data.Session.UserResource = data;
 				data.Session.SetResponse(ResponseValidation, null, false);
 			}
@@ -150,7 +149,7 @@
 
 	class MediaResource : AudioResource
 	{
-		public override AudioType AudioType { get { return AudioType.MediaLink; } }
+		public override AudioType AudioType => AudioType.MediaLink;
 
 		public string ResourceURL { get; private set; }
 		public RResultCode InternalResultCode { get; private set; }

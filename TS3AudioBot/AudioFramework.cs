@@ -197,6 +197,7 @@
 		MediaLink,
 		Youtube,
 		Soundcloud,
+		Twitch,
 	}
 
 	enum AudioResultCode

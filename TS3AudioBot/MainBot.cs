@@ -137,6 +137,7 @@
 			FactoryManager.DefaultFactorty = new MediaFactory();
 			FactoryManager.AddFactory(new YoutubeFactory());
 			FactoryManager.AddFactory(new SoundcloudFactory());
+			FactoryManager.AddFactory(new TwitchFactory());
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
 			// Inform our HistoryManager when a new resource started successfully
@@ -229,6 +230,8 @@
 				.HelpData("Stops the current song.").Finish();
 			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin)
 				.HelpData("Only for debugging purposes").Finish();
+			builder.New("twitch").Action(CommandSoundcloud).Permission(CommandRights.Private)
+				.HelpData("Resolves the link as a twitch stream to play it for you.").Finish();
 			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(CommandRights.Private)
 				.HelpData("Only lets you hear the music in active channels again.").Finish();
 			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility)
@@ -396,7 +399,7 @@
 			if (client == null)
 				session.Write("No user found...");
 			else
-				session.Write(string.Format("Client: UID:{0} DBID:{1} ChanID:{2}", client.Id, client.DatabaseId, client.ChannelId));
+				session.Write($"Client: UID:{client.Id} DBID:{client.DatabaseId} ChanID:{client.ChannelId}");
 		}
 
 		private void CommandHelp(BotSession session, string parameter)
@@ -792,6 +795,12 @@
 				for (int i = 0; i < 10; i++)
 					session.Write(i.ToString());
 			}
+		}
+
+		private void CommandTwitch(BotSession session, TextMessage textMessage, string parameter)
+		{
+			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(session, client, parameter, false));
 		}
 
 		private void CommandUnsubscribe(BotSession session, TextMessage textMessage)

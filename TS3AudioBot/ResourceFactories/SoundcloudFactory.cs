@@ -44,14 +44,14 @@
 
 		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
 		{
-			string finalRequest = string.Format("https://api.soundcloud.com/tracks/{0}/stream?client_id={1}", id, SoundcloudClientID);
+			string finalRequest = $"https://api.soundcloud.com/tracks/{id}/stream?client_id={SoundcloudClientID}";
 			resource = new SoundcloudResource(id, name, finalRequest);
 			return RResultCode.Success;
 		}
 
 		public string RestoreLink(string id)
 		{
-			string jsonResponse = string.Format("https://api.soundcloud.com/tracks/{0}?client_id={1}", id, SoundcloudClientID);
+			string jsonResponse = $"https://api.soundcloud.com/tracks/{id}?client_id={SoundcloudClientID}";
 			var parsedDict = ParseJson(jsonResponse);
 			return (string)parsedDict["permalink_url"];
 		}
@@ -75,7 +75,7 @@
 
 	class SoundcloudResource : AudioResource
 	{
-		public override AudioType AudioType { get { return AudioType.Soundcloud; } }
+		public override AudioType AudioType => AudioType.Soundcloud;
 
 		public string ResourceURL { get; private set; }
 

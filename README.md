@@ -18,7 +18,7 @@ The bot is split up into 2 parts:
 
 ## Features & Plannings
 Working:
-* Extract Youtube and Soundcloud songs
+* Extract Youtube and Soundcloud songs as well as stream Twitch
 * Extensive history manager, including features like:
   - getting the last x played songs
   - get last x songs played by a certain user
@@ -61,6 +61,7 @@ Some commands have restrictions, like they can only be used in a private chat, o
 * *subscribe*: Lets you hear the music independent from the channel you are in.
 * *stop*: Stops the current song.
 * *test*: Only for debugging purposes
+* *twitch*: Resolves the link as a twitch stream to play it for you.
 * *unsubscribe*: Only lets you hear the music in active channels again.
 * *volume*: Sets the volume level of the music.
 * *youtube*: Resolves the link as a youtube video to play it for you.  
