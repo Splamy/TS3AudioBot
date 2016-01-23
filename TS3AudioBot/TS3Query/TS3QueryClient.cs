@@ -12,6 +12,7 @@
 	using System.Text.RegularExpressions;
 	using System.Threading;
 	using TS3Query.Messages;
+	using System.Collections.Concurrent;
 	using FieldMap = System.Collections.Generic.Dictionary<string, System.Reflection.FieldInfo>;
 	using KVEnu = System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>;
 
@@ -240,14 +241,19 @@
 				var message = line.Trim();
 				if (message.StartsWith("error "))
 				{
-					var errorStatus = GenerateErrorStatus(message);
-					if (!errorStatus.Ok)
-						requestQueue.Dequeue().SetAnswer(errorStatus);
-					else
+					// we (hopefully) only need to lock here for the dequeue
+					lock (lockObj)
 					{
-						var response = GenerateResponse(dataBuffer);
-						dataBuffer = null;
-						requestQueue.Dequeue().SetAnswer(errorStatus, response);
+						var errorStatus = GenerateErrorStatus(message);
+						if (!errorStatus.Ok)
+							requestQueue.Dequeue().SetAnswer(errorStatus);
+						else
+						{
+							var response = GenerateResponse(dataBuffer);
+							dataBuffer = null;
+
+							requestQueue.Dequeue().SetAnswer(errorStatus, response);
+						}
 					}
 				}
 				else if (message.StartsWith("notify"))
@@ -491,7 +497,7 @@
 		public EventDispatchType DispatcherType => EventDispatchType.Manual;
 
 		private TS3QueryClient parentClient;
-		private Queue<Action> eventQueue = new Queue<Action>();
+		private ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
 		private AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private bool run = true;
 
@@ -508,10 +514,11 @@
 			while (run)
 			{
 				eventBlock.WaitOne();
-				while (eventQueue.Any())
+				while (!eventQueue.IsEmpty)
 				{
-					var callData = eventQueue.Dequeue();
-					callData.Invoke();
+					Action callData;
+					if (eventQueue.TryDequeue(out callData))
+						callData.Invoke();
 				}
 			}
 		}

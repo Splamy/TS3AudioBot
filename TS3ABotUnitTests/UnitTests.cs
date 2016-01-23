@@ -109,7 +109,7 @@ namespace TS3ABotUnitTests
 				Assert.False(rfac.MatchLink(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"));
 
 				// restoring links
-				Assert.Equals(rfac.RestoreLink("robqdGEhQWo"), "https://youtu.be/robqdGEhQWo");
+				Assert.AreEqual(rfac.RestoreLink("robqdGEhQWo"), "https://youtu.be/robqdGEhQWo");
 			}
 		}
 	}

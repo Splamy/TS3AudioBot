@@ -8,7 +8,7 @@
 		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
 		public const int MAXVOLUME = 100;
 		private const int TIMEOUT_MS = 30000;
-		private const int TIMEOUT_INTERVAL_MS = 100;
+		private const int TIMEOUT_INTERVAL_MS = 1000;
 
 		private AudioFrameworkData audioFrameworkData;
 		private TickWorker waitEndTick;
