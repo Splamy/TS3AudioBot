@@ -56,16 +56,22 @@
 		{
 			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == logEntry.AudioType);
 
-			AudioResource resource;
-			RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.Title, out resource);
-			if (result != RResultCode.Success)
+			if (data.Resource == null)
 			{
-				data.Session.Write($"Could not restore ({result})");
-				return;
+				AudioResource resource;
+				RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.Title, out resource);
+				if (result != RResultCode.Success)
+				{
+					data.Session.Write($"Could not restore ({result})");
+					return;
+				}
+				data.Resource = resource;
 			}
-			data.Resource = resource;
 
-			Play(data);
+			bool abortPlay;
+			factory.PostProcess(data, out abortPlay);
+			if (!abortPlay)
+				Play(data);
 		}
 
 		public void Play(PlayData data)

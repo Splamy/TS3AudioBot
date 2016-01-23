@@ -129,12 +129,12 @@
 		{
 			YoutubeResource ytResource = (YoutubeResource)data.Resource;
 
-			// dbg log
+#if DEBUG
 			StringBuilder dbg = new StringBuilder("YT avail codecs: ");
 			foreach (var yd in ytResource.AvailableTypes)
 				dbg.Append(yd.qualitydesciption).Append(" @ ").Append(yd.codec).Append(", ");
 			Log.Write(Log.Level.Debug, dbg.ToString());
-			// ==
+#endif
 
 			var availList = ytResource.AvailableTypes;
 			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
