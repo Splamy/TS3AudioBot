@@ -994,9 +994,11 @@
 
 			public Builder New(string invokeName)
 			{
-				var cb = new Builder(registerAction, true);
-				cb.name = invokeName;
-				return cb;
+				if (buildMode)
+					throw new InvalidOperationException("A new command cannot be created when the old one isn't finished.");
+				var builder = new Builder(registerAction, true);
+				builder.name = invokeName;
+				return builder;
 			}
 
 			private void CheckAction()
@@ -1075,8 +1077,11 @@
 					Description = setHelp ? description : defaultDescription,
 					ParameterList = parameters.ToArray(),
 				};
+
 				if (registerAction != null)
 					registerAction(command);
+
+				buildMode = false;
 				return command;
 			}
 		}

@@ -7,12 +7,10 @@
 	{
 		private T response;
 		private AutoResetEvent blocker;
-		private TimeSpan timeOut;
-		private TimeSpan timeOutRemaining;
+		private DateTime timeOutPoint;
+		private bool timedOut;
 		private TickWorker timeOutTicker;
 		private int tickSpanMs = 100;
-
-		private static readonly TimeSpan NoTimeout = TimeSpan.MinValue;
 
 		public WaitEventBlock()
 		{
@@ -20,20 +18,23 @@
 			timeOutTicker = TickPool.RegisterTick(RunTimeout, tickSpanMs, false);
 		}
 
-		public T Wait() => Wait(NoTimeout);
+		public T Wait() => Wait(Timeout.InfiniteTimeSpan);
 
 		public T Wait(TimeSpan timeout)
 		{
-			if (timeout != NoTimeout)
+			if (timeout != Timeout.InfiniteTimeSpan)
 			{
-				timeOut = timeout;
-				timeOutRemaining = timeout;
+				timedOut = false;
+				timeOutPoint = DateTime.Now.Add(timeout);
 				timeOutTicker.Active = true;
 			}
 
 			blocker.WaitOne();
 			timeOutTicker.Active = false;
-			return response;
+			if (timedOut)
+				throw new TimeoutException();
+			else
+				return response;
 		}
 
 		public void Notify(T data)
@@ -44,13 +45,19 @@
 
 		private void RunTimeout()
 		{
-			timeOutRemaining = timeOutRemaining.Subtract(TimeSpan.FromMilliseconds(tickSpanMs));
-			if (timeOutRemaining < TimeSpan.Zero)
+			if (DateTime.Now >= timeOutPoint)
 			{
 				timeOutTicker.Active = false;
-				response = default(T); // alt throw timeoutexception
+				timedOut = true;
 				blocker.Set();
 			}
 		}
+	}
+
+	public class TimeoutException : Exception
+	{
+		public TimeoutException() { }
+		public TimeoutException(string message) : base(message) { }
+		public TimeoutException(string message, Exception inner) : base(message, inner) { }
 	}
 }

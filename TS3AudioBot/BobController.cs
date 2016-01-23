@@ -59,7 +59,8 @@
 			get
 			{
 				SendMessage("status music");
-				return (int)musicInfoWaiter.Wait().Position;
+				musicInfoWaiter.Wait();
+				return (int)currentMusicInfo.Position;
 			}
 			set
 			{
@@ -94,7 +95,8 @@
 			get
 			{
 				SendMessage("status music");
-				return (int)musicInfoWaiter.Wait().Length;
+				musicInfoWaiter.Wait();
+				return (int)currentMusicInfo.Length;
 			}
 		}
 
@@ -103,7 +105,8 @@
 			get
 			{
 				SendMessage("status music");
-				return musicInfoWaiter.Wait().Status == MusicStatus.playing;
+				musicInfoWaiter.Wait();
+				return currentMusicInfo.Status == MusicStatus.playing;
 			}
 		}
 

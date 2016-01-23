@@ -122,7 +122,7 @@
 			{
 			case EventDispatchType.None: EventDispatcher = new NoEventDispatcher(); break;
 			case EventDispatchType.CurrentThread: throw new NotSupportedException(); //break;
-			case EventDispatchType.Manual: EventDispatcher = new ManualEventDispatcher(this); break;
+			case EventDispatchType.Manual: EventDispatcher = new ManualEventDispatcher(); break;
 			case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
 			case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
 			default: throw new NotSupportedException();
@@ -167,7 +167,8 @@
 			readQueryThread.Start();
 		}
 
-		#region QueryMethods
+		#region QUERY METHODS
+
 		public void Login(string username, string password) => Send("login",
 			new Parameter("client_login_name", username),
 			new Parameter("client_login_password", password));
@@ -203,6 +204,7 @@
 		public IEnumerable<ClientData> ClientList() => ClientList(0);
 		public IEnumerable<ClientData> ClientList(ClientListOptions options) => Send<ClientData>("clientlist",
 			NoParameter, options);
+
 		#endregion
 
 		// TODO automate
@@ -404,7 +406,7 @@
 		private static IDictionary<string, string> ParseKeyValueLineDict(KVEnu data)
 			=> data.ToDictionary(pair => pair.Key, pair => pair.Value);
 
-		// NETWORK METHODS
+		#region NETWORK METHODS
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command)
@@ -467,6 +469,8 @@
 			return wb.WaitForMessage();
 		}
 
+		#endregion
+
 		public void Dispose()
 		{
 			if (IsConnected)
@@ -496,12 +500,11 @@
 	{
 		public EventDispatchType DispatcherType => EventDispatchType.Manual;
 
-		private TS3QueryClient parentClient;
 		private ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
 		private AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private bool run = true;
 
-		public ManualEventDispatcher(TS3QueryClient parent) { parentClient = parent; }
+		public ManualEventDispatcher() { }
 
 		public void Invoke(Action eventAction)
 		{
@@ -559,7 +562,7 @@
 		}
 	}
 
-	internal class ErrorStatus
+	public class ErrorStatus
 	{
 		// id
 		public int Id;
@@ -610,10 +613,10 @@
 
 	public class QueryCommandException : Exception
 	{
-		private ErrorStatus errorStatus;
+		public ErrorStatus ErrorStatus { get; private set; }
 
-		internal QueryCommandException(ErrorStatus message) : base(message.ErrorFormat()) { errorStatus = message; }
-		internal QueryCommandException(ErrorStatus message, Exception inner) : base(message.ErrorFormat(), inner) { errorStatus = message; }
+		internal QueryCommandException(ErrorStatus message) : base(message.ErrorFormat()) { ErrorStatus = message; }
+		internal QueryCommandException(ErrorStatus message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
 	}
 
 	public class Parameter

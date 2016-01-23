@@ -66,6 +66,7 @@
 
 			public override string TagID { get { return "ID3"; } }
 
+#pragma warning disable CS0219
 			public override string GetTitle(BinaryReader fileStream)
 			{
 				// using the official id3 tag documentation
@@ -158,6 +159,7 @@
 				#endregion
 				return null;
 			}
+#pragma warning restore
 
 			private static int FrameIdV2(string id)
 			{
