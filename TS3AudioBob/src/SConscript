@@ -7,8 +7,8 @@ if not iswin:
 	curenv.ParseConfig("pkg-config --cflags --libs libavcodec libavformat libswscale libavutil libswresample libavfilter")
 	curenv.Append(CCFLAGS = ["-fPIC", "-fvisibility=hidden", "-Wno-format-security", "-Wno-missing-braces"], LINKFLAGS = ["-lpthread"])
 else:
-	curenv.Append(CPPPATH = ["..\\Dependencies\\include"],
-		LIBPATH = ["..\\Dependencies\\lib", "..\\Dependencies\\bin"],
+	curenv.Append(CPPPATH = [getAbsolutePath("Dependencies\\include")],
+		LIBPATH = [getAbsolutePath("Dependencies\\lib")],
 		LIBS = ["avcodec", "avformat", "swscale", "avutil", "swresample", "avfilter"],
 		CCFLAGS = ["/MTd"])
 curenv.Append(CPPPATH = [getAbsolutePath(p) for p in ["Include"]])
