@@ -86,6 +86,7 @@
 			//	request.Method = "HEAD";
 			try
 			{
+				request.Timeout = 1000;
 				var response = request.GetResponse();
 				stream = response.GetResponseStream();
 				return RResultCode.Success;

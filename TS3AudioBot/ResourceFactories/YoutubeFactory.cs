@@ -129,6 +129,13 @@
 		{
 			YoutubeResource ytResource = (YoutubeResource)data.Resource;
 
+			// dbg log
+			StringBuilder dbg = new StringBuilder("YT avail codecs: ");
+			foreach (var yd in ytResource.AvailableTypes)
+				dbg.Append(yd.qualitydesciption).Append(" @ ").Append(yd.codec).Append(", ");
+			Log.Write(Log.Level.Debug, dbg.ToString());
+			// ==
+
 			var availList = ytResource.AvailableTypes;
 			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
 			if (autoselectIndex == -1)
@@ -267,10 +274,7 @@
 		public bool audioOnly = false;
 		public bool videoOnly = false;
 
-		public override string ToString()
-		{
-			return qualitydesciption + " @ " + codec + " - " + link;
-		}
+		public override string ToString() => $"{qualitydesciption} @ {codec} - {link}";
 	}
 
 	class YoutubeResource : AudioResource
