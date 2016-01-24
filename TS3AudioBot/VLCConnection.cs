@@ -45,9 +45,19 @@
 			}
 		}
 
-		// VLC Commands
+		#region IPlayerConnection
 
 		int volume = -1;
+		bool repeated = false;
+		bool paused = false;
+
+		public bool SupportsEndCallback => false;
+		public event EventHandler OnSongEnd
+		{
+			add { throw new NotSupportedException(); }
+			remove { throw new NotSupportedException(); }
+		}
+
 		public int Volume
 		{
 			get { return volume; }
@@ -71,7 +81,6 @@
 			}
 		}
 
-		bool repeated = false;
 		public bool Repeated
 		{
 			get { return repeated; }
@@ -82,7 +91,6 @@
 			}
 		}
 
-		bool paused = false;
 		public bool Pause
 		{
 			get { return paused; }
@@ -115,6 +123,20 @@
 		}
 
 
+		public void AudioStart(string url)
+		{
+			SendCommandLocked("add " + url);
+		}
+
+		public void AudioStop()
+		{
+			SendCommandLocked("stop");
+		}
+
+		#endregion
+
+		// VLC Commands
+
 		public void AudioAdd(string url)
 		{
 			SendCommandLocked("enqueue " + url);
@@ -125,19 +147,9 @@
 			SendCommandLocked("prev");
 		}
 
-		public void AudioStart(string url)
-		{
-			SendCommandLocked("add " + url);
-		}
-
 		public void AudioPlay()
 		{
 			SendCommandLocked("play");
-		}
-
-		public void AudioStop()
-		{
-			SendCommandLocked("stop");
 		}
 
 		public void SetLoop(bool enabled)
@@ -146,6 +158,7 @@
 		}
 
 		// Lock and textsend methods
+
 		private void SendResponseLocked(AwaitingResponse resp, string msg)
 		{
 			if (!connected) return;

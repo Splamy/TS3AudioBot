@@ -9,8 +9,6 @@
 
 	class BobController : IPlayerConnection
 	{
-		private const int CONNECT_TIMEOUT_MS = 10000;
-		private const int CONNECT_TIMEOUT_INTERVAL_MS = 100;
 		/// <summary>After TIMEOUT seconds, the bob disconnects.</summary>
 		private const int BOB_TIMEOUT = 60;
 
@@ -21,17 +19,14 @@
 		private WaitEventBlock<MusicData> musicInfoWaiter;
 		private MusicData currentMusicInfo;
 
-		private bool sending = false;
 		private bool isRunning;
-		private int volume = 100;
-		private bool repeated = false;
-		private bool pause = false;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
 		private ClientData bobClient;
 
 		private Dictionary<int, SubscriptionData> channelSubscriptions;
 
+		private bool sending = false;
 		public bool Sending
 		{
 			get { return sending; }
@@ -43,6 +38,13 @@
 		}
 
 		#region IPlayerConnection
+
+		private int volume = -1;
+		private bool repeated = false;
+		private bool pause = false;
+
+		public bool SupportsEndCallback => true;
+		public event EventHandler OnSongEnd;
 
 		public int Volume
 		{
@@ -202,6 +204,20 @@
 				default: throw new NotSupportedException("Answer not recognized");
 				}
 				break;
+			case "callback":
+				switch (typeKVP[1])
+				{
+				// Error during decoding (can be ignored)
+				case "musicdecodeerror": break;
+				// Fatal error, song cannot be started/continued
+				case "musicreaderror":
+				// song has finished
+				case "musicfinished":
+					OnSongEnd?.Invoke(this, new EventArgs());
+					break;
+				default: throw new NotSupportedException("Callback not recognized");
+				}
+				break;
 			case "pong": Log.Write(Log.Level.Debug, "Alrighty then!"); break;
 			default: throw new NotSupportedException("Response not recognized");
 			}
@@ -214,7 +230,7 @@
 
 		public void OnResourceStarted(PlayData playData)
 		{
-			Start();
+			BobStart();
 			Sending = true;
 			RestoreSubscriptions(playData.Invoker);
 		}
@@ -228,7 +244,7 @@
 			}
 		}
 
-		public void Start()
+		public void BobStart()
 		{
 			timeout.Active = false;
 			if (!isRunning)
@@ -247,7 +263,7 @@
 			}
 		}
 
-		public void Stop()
+		public void BobStop()
 		{
 			Log.Write(Log.Level.Info, "BC Stopping bob");
 			SendMessage("exit");
@@ -352,14 +368,14 @@
 			if (inactiveSeconds > BOB_TIMEOUT)
 			{
 				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
-				Stop();
+				BobStop();
 				timeout.Active = false;
 			}
 		}
 
 		public void Dispose()
 		{
-			Stop();
+			BobStop();
 		}
 
 		private static MusicData ParseMusicData(IEnumerable<string[]> input)

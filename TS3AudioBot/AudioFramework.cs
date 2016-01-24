@@ -68,13 +68,25 @@
 
 		}
 
+		public void SongEnd()
+		{
+			// if playlistmanager is off:
+			Stop(false);
+			// else:
+			// Stop(true);
+			// next song
+		}
+
 		// Audioframework
 
 		/// <summary>Creates a new AudioFramework</summary>
 		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
 		public AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackend)
 		{
-			waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL_MS, false);
+			if (audioBackend.SupportsEndCallback)
+				audioBackend.OnSongEnd += (s, e) => SongEnd();
+			else
+				waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL_MS, false);
 			audioFrameworkData = afd;
 			playerConnection = audioBackend;
 			playerConnection.Initialize();
@@ -100,7 +112,7 @@
 				else if (endTime.AddMilliseconds(TIMEOUT_MS) < DateTime.Now)
 				{
 					Log.Write(Log.Level.Debug, "AF Song ended with default timeout");
-					Stop(false);
+					SongEnd();
 					waitEndTick.Active = false;
 				}
 			}
@@ -141,7 +153,8 @@
 
 			CurrentPlayData = playData;
 			endTime = DateTime.Now;
-			waitEndTick.Active = true;
+			if (!playerConnection.SupportsEndCallback)
+				waitEndTick.Active = true;
 			return AudioResultCode.Success;
 		}
 

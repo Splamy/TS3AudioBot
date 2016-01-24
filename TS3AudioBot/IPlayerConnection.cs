@@ -6,7 +6,8 @@
 	{
 		void Initialize();
 
-		//bool SupportsEndCallback { get; }
+		bool SupportsEndCallback { get; }
+		event EventHandler OnSongEnd;
 
 		int Volume { get; set; }
 		int Position { get; set; }
