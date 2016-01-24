@@ -142,6 +142,7 @@ void PacketReader::read()
 		}
 	}
 	player->finish();
+	player->onFinished(player);
 }
 
 bool PacketReader::openStreamComponent(int streamId)

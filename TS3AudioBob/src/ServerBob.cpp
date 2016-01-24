@@ -48,6 +48,7 @@ ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64_t botAdminGroup) :
 	addCommand("status audio", &ServerBob::statusAudioCommand);
 	addCommand("status music", &ServerBob::statusMusicCommand);
 	addCommand("list clients", &ServerBob::listClientsCommand, "Lists all connected clients or channels");
+	addCommand("callback [on|off]", &ServerBob::callbackCommand, "Register or unregister for callbacks");
 	addCommand("list channels", &ServerBob::listChannelsCommand);
 
 	// Get currently active connections
@@ -170,9 +171,11 @@ void ServerBob::handleCommand(uint64_t handlerId, anyID sender,
 	}
 	// Enqueue the message
 	user->enqueueCommand(message);
+#ifndef NDEBUG
 	std::string noNewline = message;
-	Utils::replace(noNewline, "\n", "\\n");
+	Utils::sanitizeLines(noNewline);
 	tsApi->log("Enqueued command '{0}'", noNewline);
+#endif
 	// Execute commands
 	while (user->hasCommands())
 		executeCommand(&(*connection), user, user->dequeueCommand());
@@ -188,7 +191,7 @@ void ServerBob::executeCommand(ServerConnection *connection, User *sender,
 		return;
 	}
 	std::string noNewline = message;
-	Utils::replace(noNewline, "\n", "\\n");
+	Utils::sanitizeLines(noNewline);
 	tsApi->log("Executing command '{0}'", noNewline);
 
 	// Search the right command
@@ -270,7 +273,7 @@ void ServerBob::unknownCommand(ServerConnection *connection,
 	User *sender, const std::string &message)
 {
 	std::string msg = message;
-	Utils::replace(msg, "\n", "\\n");
+	Utils::sanitizeLines(msg);
 	tsApi->log(Utils::format("Unknown command: {0}", msg));
 	// Send error message
 	connection->sendCommand(sender, "error unknown command {0}", msg);
@@ -370,8 +373,7 @@ CommandResult ServerBob::musicAddressCommand(ServerConnection *connection,
 			"error the audio player doesn't exist at the moment");
 
 	std::string address = connection->getStreamAddress();
-	Utils::replace(address, "\\", "\\\\");
-	Utils::replace(address, "\n", "\\n");
+	Utils::sanitizeLines(address);
 	connection->sendCommand(sender, "answer music address\n{0}", address);
 	return CommandResult();
 }
@@ -596,6 +598,13 @@ CommandResult ServerBob::listChannelsCommand(ServerConnection *connection,
 	for (std::size_t i = 0; i < channelIds.size(); i++)
 		output << Utils::format(format, channelNames[i], channelIds[i]);
 	connection->sendCommand(sender, output.str());
+	return CommandResult();
+}
+
+CommandResult ServerBob::callbackCommand(ServerConnection * /*connection*/,
+	User *sender, const std::string &/*message*/, const std::string &/*rest*/, bool on)
+{
+	sender->setEnableCallbacks(on);
 	return CommandResult();
 }
 

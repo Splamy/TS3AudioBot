@@ -26,7 +26,8 @@ const std::string Player::readErrorDescription[] = {
 	"Can't find audio stream",
 	"Failed find a suitable decoder",
 	"Failed to open the codec",
-	"IO error"
+	"IO error",
+	"Can't allocate AVFrame"
 };
 const std::string Player::decodeErrorDescription[] = {
 	"No error",
@@ -86,6 +87,17 @@ Player::Player(std::string streamAddress) :
 	// Set default target properties
 	// Signed 16 bit integers, packed (non-planar); 44100 Hz; 2 Channels; Stereo
 	setTargetProperties(AV_SAMPLE_FMT_S16, 44100, 2, AV_CH_LAYOUT_STEREO);
+
+	// Initialize callback functions
+	setOnLog([](Player*, const std::string &message){ 
+		fprintf(stderr, message.c_str());
+	});
+	setOnReadError([](Player*, ReadError error){ 
+		fprintf(stderr, "A read error occured: %s\n", getReadErrorDescription(error).c_str());
+	});
+	setOnDecodeError([](Player*, DecodeError error){ 
+		fprintf(stderr, "A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
+	});
 }
 
 Player::~Player()
@@ -111,7 +123,7 @@ void Player::setReadError(ReadError error, bool lockReadThread)
 {
 	readError = error;
 	if (error != READ_ERROR_NONE)
-		printf("A read error occured: %s\n", getReadErrorDescription(error).c_str());
+		onReadError(this, error);
 	// Read errors are fatal errors so playing sound doesn't work anymore
 	finish(lockReadThread);
 }
@@ -120,7 +132,7 @@ void Player::setDecodeError(DecodeError error)
 {
 	decodeError = error;
 	if (error != DECODE_ERROR_NONE)
-		printf("A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
+		onDecodeError(this, error);
 }
 
 void Player::waitUntilInitialized() const
@@ -167,7 +179,7 @@ void Player::decode()
 	frame->extended_data = nullptr;
 	if (!frame)
 	{
-		printf("Can't allocate a frame\n");
+		setReadError(READ_ERROR_FRAME_ALLOCATION);
 		return;
 	}
 	AVRational timeBase;
@@ -536,4 +548,24 @@ void Player::fillBuffer(uint8_t *buffer, std::size_t length)
 		//clock.setClockAt(clockTime - (double) (2 * hardwareBufferSize + writeBufferSize) / targetProps.bytesPerSecond, clockQueueId, callbackTime / 1000000.0);
 		//externClock.syncTo(clock);
 	}
+}
+
+void Player::setOnLog(std::function<void(Player*, const std::string&)> onLog)
+{
+	this->onLog = onLog;
+}
+
+void Player::setOnReadError(std::function<void(Player*, ReadError)> onReadError)
+{
+	this->onReadError = onReadError;
+}
+
+void Player::setOnDecodeError(std::function<void(Player*, DecodeError)> onDecodeError)
+{
+	this->onDecodeError = onDecodeError;
+}
+
+void Player::setOnFinished(std::function<void(Player*)> onFinished)
+{
+	this->onFinished = onFinished;
 }

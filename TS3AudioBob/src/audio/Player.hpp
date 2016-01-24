@@ -11,6 +11,7 @@ extern "C"
 
 #include <condition_variable>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <queue>
 #include <string>
@@ -45,6 +46,7 @@ public:
 		READ_ERROR_NO_DECODER,
 		READ_ERROR_OPEN_CODEC,
 		READ_ERROR_IO,
+		READ_ERROR_FRAME_ALLOCATION,
 		READ_ERROR_COUNT
 	};
 	/** Decode errors can happen at each decoding, which means they can occur
@@ -121,6 +123,12 @@ private:
 	std::condition_variable packetQueueWaiter;
 	std::condition_variable pausedWaiter;
 
+	/* User-defined functions used as callbacks. */
+	std::function<void(Player*, const std::string&)> onLog;
+	std::function<void(Player*, ReadError)> onReadError;
+	std::function<void(Player*, DecodeError)> onDecodeError;
+	std::function<void(Player*)> onFinished;
+
 	static uint64_t getValidChannelLayout(uint64_t channelLayout, int channelCount);
 	static const char* searchEntry(const AVDictionary *dict, const char *key);
 
@@ -189,6 +197,12 @@ public:
 	void start();
 	/** Fetch the actual audio data. */
 	void fillBuffer(uint8_t *buffer, std::size_t length);
+
+	/* Set the callbacks. */
+	void setOnLog(std::function<void(Player*, const std::string&)> onLog);
+	void setOnReadError(std::function<void(Player*, ReadError)> onReadError);
+	void setOnDecodeError(std::function<void(Player*, DecodeError)> onDecodeError);
+	void setOnFinished(std::function<void(Player*)> onFinished);
 };
 }
 

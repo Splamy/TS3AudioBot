@@ -42,12 +42,10 @@ public:
 	void log(const std::string &format, Args... args) const
 	{
 		std::string message = Utils::format(format, args...);
+		Utils::sanitizeLines(message);
 		if (!handleTsError(functions.logMessage(message.c_str(), LogLevel_INFO, "", 0)))
 		{
 			// Print the message to stdout when logging with TeamSpeak failed
-			Utils::replace(message, "\\", "\\\\");
-			Utils::replace(message, "\n", "\\n");
-			Utils::replace(message, "\r", "\\r");
 			// Remove every left control character for more security
 			message = Utils::sanitizeAscii(message);
 			std::cout << message;

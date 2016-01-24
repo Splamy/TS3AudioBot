@@ -288,6 +288,10 @@ void ServerConnection::startAudio(const std::string &address)
 		AV_CH_LAYOUT_STEREO);
 	audioPlayer->setVolume(volume);
 	audioPlayer->setLooped(loop);
+	audioPlayer->setOnLog(Utils::myBindMember(&ServerConnection::onLog, this));
+	audioPlayer->setOnReadError(Utils::myBindMember(&ServerConnection::onReadError, this));
+	audioPlayer->setOnDecodeError(Utils::myBindMember(&ServerConnection::onDecodeError, this));
+	audioPlayer->setOnFinished(Utils::myBindMember(&ServerConnection::onFinished, this));
 	audioPlayer->start();
 }
 
@@ -368,8 +372,7 @@ std::string ServerConnection::getAudioStatus() const
 			std::unique_ptr<std::string> title = audioPlayer->getTitle();
 			if (title)
 			{
-				Utils::replace(*title, "\\", "\\\\");
-				Utils::replace(*title, "\n", "\\n");
+				Utils::sanitizeLines(*title);
 				out << "\ntitle " << *title;
 			}
 		}
@@ -386,4 +389,45 @@ void ServerConnection::close(const std::string &quitMessage)
 	setQuality(false);
 	tsApi->handleTsError(tsApi->getFunctions().stopConnection(handlerId,
 		quitMessage.c_str()));
+}
+
+void ServerConnection::onLog(audio::Player*, const std::string &message)
+{
+	tsApi->log("AudioPlayer-Log: {0}", message);
+}
+
+void ServerConnection::onReadError(audio::Player*, audio::Player::ReadError error)
+{
+	const std::string &message = audio::Player::getReadErrorDescription(error);
+	tsApi->log("AudioPlayer-ReadError: {0}", message);
+
+	// Send callback
+	for (User &user : users)
+	{
+		if (user.getEnableCallbacks())
+			sendCommand(&user, "callback musicreaderror\ndescription {0}", message);
+	}
+}
+
+void ServerConnection::onDecodeError(audio::Player*, audio::Player::DecodeError error)
+{
+	const std::string &message = audio::Player::getDecodeErrorDescription(error);
+	tsApi->log("AudioPlayer-DecodeError: {0}", message);
+
+	// Send callback
+	for (User &user : users)
+	{
+		if (user.getEnableCallbacks())
+			sendCommand(&user, "callback musicdecodeerror\ndescription {0}", message);
+	}
+}
+
+void ServerConnection::onFinished(audio::Player*)
+{
+	// Send callback
+	for (User &user : users)
+	{
+		if (user.getEnableCallbacks())
+			sendCommand(&user, "callback musicfinished");
+	}
 }

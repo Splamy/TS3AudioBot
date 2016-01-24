@@ -86,6 +86,7 @@ private:
 	CommandResult pingCommand          (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
 	CommandResult listClientsCommand   (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
 	CommandResult listChannelsCommand  (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
+	CommandResult callbackCommand      (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, bool on);
 	CommandResult exitCommand          (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
 };
 

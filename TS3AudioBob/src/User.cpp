@@ -18,10 +18,6 @@ User::User(ServerConnection *connection, std::shared_ptr<TsApi> tsApi, anyID id,
 	connection(connection),
 	id(id),
 	uniqueId(uniqueId),
-	dbIdInitialized(false),
-	dbIdRequested(false),
-	groupsInitialized(false),
-	groupUpdateRequested(false),
 	lastGroupAdd(std::chrono::steady_clock::now() - GROUP_REFRESH_TIME)
 {
 }
@@ -160,4 +156,14 @@ bool User::inGroup(uint64 group) const
 	if (!groupsInitialized)
 		throw std::runtime_error("The group list is not initialized");
 	return std::find(groups.cbegin(), groups.cend(), group) != groups.cend();
+}
+
+void User::setEnableCallbacks(bool enableCallbacks)
+{
+	this->enableCallbacks = enableCallbacks;
+}
+
+bool User::getEnableCallbacks() const
+{
+	return enableCallbacks;
 }

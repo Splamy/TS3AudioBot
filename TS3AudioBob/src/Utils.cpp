@@ -91,11 +91,18 @@ std::string Utils::sanitizeAscii(const std::string &input)
 			result[j++] = c;
 	}
 	result[j] = '\0';
-	std::string str(result.data());
-	return str;
+	return std::string(result.data());
 }
 
-std::string Utils::format(const std::string &format)
+std::string& Utils::sanitizeLines(std::string &input)
+{
+	Utils::replace(input, "\\", "\\\\");
+	Utils::replace(input, "\n", "\\n");
+	Utils::replace(input, "\r", "\\r");
+	return input;
+}
+
+std::string Utils::format(std::string format)
 {
 	return format;
 }

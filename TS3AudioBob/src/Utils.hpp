@@ -133,6 +133,8 @@ namespace Utils
 	 */
 	std::string sanitizeAscii(const std::string &input);
 
+	std::string& sanitizeLines(std::string &input);
+
 	/** A function that returns the argument. It is used if format is called
 	 *  without any arguments that should be formatted. This is useful if you
 	 *  e.g. want to print user input and pass that to a log function that
@@ -141,7 +143,7 @@ namespace Utils
 	 *  Be aware that this function also ignore brackets, so you shouldn't
 	 *  escape them if you don't pass other arguments to format().
 	 */
-	std::string format(const std::string &format);
+	std::string format(std::string format);
 
 	/** This function inserts arguments into a string with the usage of streams.
 	 *  The format string can contain normal characters, arguments are inserted

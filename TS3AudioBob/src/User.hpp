@@ -21,13 +21,18 @@ private:
 	anyID id;
 	std::string uniqueId;
 	uint64 dbId;
-	bool dbIdInitialized;
-	bool dbIdRequested;
+	bool dbIdInitialized = false;
+	bool dbIdRequested = false;
 	std::vector<uint64> groups;
-	bool groupsInitialized;
-	bool groupUpdateRequested;
+	bool groupsInitialized = false;
+	bool groupUpdateRequested = false;
 	std::chrono::steady_clock::time_point lastGroupAdd;
 	std::queue<std::string> commandQueue;
+
+	/** If this user should receive messages on callbacks (without explicitly
+	 *  requesting information).
+	 */
+	bool enableCallbacks = false;
 
 public:
 	User(ServerConnection *connection, std::shared_ptr<TsApi> tsApi, anyID id, const std::string &uniqueId);
@@ -56,7 +61,10 @@ public:
 	std::string dequeueCommand();
 	void setGroupsInitialized(bool groupsInitialized);
 	void addGroup(uint64 group);
-	bool inGroup(uint64 group)const ;
+	bool inGroup(uint64 group) const;
+
+	void setEnableCallbacks(bool enableCallbacks);
+	bool getEnableCallbacks() const;
 };
 
 #endif

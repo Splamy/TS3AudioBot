@@ -104,6 +104,13 @@ public:
 			handlerId, msg.c_str(), user->getId(),
 			nullptr));
 	}
+
+private:
+	/* Callbacks for player events. */
+	void onLog(audio::Player*, const std::string &message);
+	void onReadError(audio::Player*, audio::Player::ReadError error);
+	void onDecodeError(audio::Player*, audio::Player::DecodeError error);
+	void onFinished(audio::Player*);
 };
 
 #endif
