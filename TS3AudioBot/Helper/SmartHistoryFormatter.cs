@@ -16,20 +16,20 @@
 
 		public string ProcessQuery(IEnumerable<AudioLogEntry> entries)
 		{
-			const string header = "Look what I found:";
+			const string header = "Look what I found:\n";
 			List<LineBuilder> lines = new List<LineBuilder>();
 
-			int currentLength = header.Length;
-			int maxLimit = header.Length;
+			int currentLength = TokenLength(header);
+			int maxLimit = currentLength;
 			int skip = 0;
 			foreach (var entry in entries)
 			{
 				var lb = new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString());
 				lines.Add(lb);
-				currentLength += lb.Length;
+				currentLength += lb.TokenLength;
 				maxLimit += lb.MinLength;
 				if (maxLimit > TS3_MAXLENGTH)
-					maxLimit -= lines[skip++].Length;
+					maxLimit -= lines[skip++].TokenLength;
 			}
 
 			StringBuilder strb;
@@ -40,16 +40,17 @@
 			else
 			{
 				strb = new StringBuilder(TS3_MAXLENGTH);
-				strb.AppendLine(header);
+				strb.Append(header);
 			}
 
 			if (currentLength < TS3_MAXLENGTH)
 			{
 				for (int i = 0; i < lines.Count; i++)
-					lines[i].Append(strb);
+					lines[i].InsertTo(strb);
 			}
 			else
 			{
+				int tokenCount = TokenLength(header);
 				int limitTo;
 				int linesLeft = lines.Count - skip;
 				foreach (var line in lines.Skip(skip))
@@ -57,22 +58,30 @@
 					if (skip > 0)
 						limitTo = 0;  // minimal size per line
 					else
-						limitTo = (TS3_MAXLENGTH - strb.Length) / linesLeft;
+						limitTo = (TS3_MAXLENGTH - tokenCount) / linesLeft;
 					linesLeft--;
 
 					line.LimitTo = limitTo;
-					line.Append(strb);
+					line.InsertTo(strb);
+					tokenCount += line.TokenLength;
 				}
 			}
-			return strb.ToString();
+			string result = strb.ToString();
+			// Validate
+			if (TokenLength(result) > TS3_MAXLENGTH)
+			{
+				Log.Write(Log.Level.Error, "Formatter: Parsed string is too long: {0}", result);
+				result = "Internal parsing error";
+			}
+			return result;
 		}
 
 		class LineBuilder
 		{
 			private const int TITLE_MIN_LENGTH = 10;
 
-			private const int NEWLINE_LENGTH = 2;
-			private const int FORMAT_CHARS_LENGTH = 5 + NEWLINE_LENGTH;
+			private const string FORMATCHARS = " (): \n";
+			private static readonly int FORMAT_CHARS_LENGTH = TokenLength(FORMATCHARS);
 			private const int DOTS_LENGTH = 3;
 			public const int FORMAT_MIN_LENGTH = TITLE_MIN_LENGTH + DOTS_LENGTH;
 
@@ -84,18 +93,28 @@
 			{
 				get
 				{
-					if (LimitTo < 0 || Title.Length + ConstLength < LimitTo)
+					if (LimitTo < 0 || TokenLength(Title) + ConstLength < LimitTo)
 						return Title;
 					else
 					{
 						int titleForceLen = Math.Max(LimitTo - (ConstLength + DOTS_LENGTH), TITLE_MIN_LENGTH);
-						return Title.Substring(0, titleForceLen) + "...";
+						string primSub = Title.Substring(0, titleForceLen);
+						int curTrim = TokenLength(primSub);
+						if (curTrim > titleForceLen)
+						{
+							int trimCnt = 0;
+							for (int i = primSub.Length - 1; i >= 0 && curTrim > titleForceLen; i--, trimCnt++)
+								if (IsDoubleChar(primSub[i])) curTrim -= 2;
+								else curTrim--;
+							primSub = primSub.Substring(0, titleForceLen - trimCnt);
+						}
+						return primSub + "...";
 					}
 				}
 			}
-			public int Length { get { return ConstLength + TitleFinal.Length; } }
-			public int MinLength { get { return ConstLength + Math.Min(Title.Length, FORMAT_MIN_LENGTH); } }
-			private int ConstLength { get { return Id.Length + User.Length + FORMAT_CHARS_LENGTH; } }
+			public int TokenLength { get { return ConstLength + TokenLength(TitleFinal); } }
+			public int MinLength { get { return ConstLength + Math.Min(TokenLength(Title), FORMAT_MIN_LENGTH); } }
+			private int ConstLength { get { return TokenLength(Id) + TokenLength(User) + FORMAT_CHARS_LENGTH; } }
 
 			public int LimitTo { get; set; }
 
@@ -108,10 +127,35 @@
 				// <ID> (<USER>): <TITLE> = 5
 			}
 
-			public void Append(StringBuilder strb)
+			public void InsertTo(StringBuilder strb)
 			{
-				strb.Append(Id).Append(" (").Append(User).Append("): ").AppendLine(TitleFinal);
+				strb.Append(Id)
+					.Append(" (")
+					.Append(User)
+					.Append("): ")
+					.Append(TitleFinal)
+					.Append('\n');
 			}
+		}
+
+		private static int TokenLength(string str)
+		{
+			int finLen = str.Length;
+			finLen += str.Count(IsDoubleChar);
+			return finLen;
+		}
+
+		private static bool IsDoubleChar(char c)
+		{
+			return c == '\\' ||
+				c == '/' ||
+				c == ' ' ||
+				c == '|' ||
+				c == '\f' ||
+				c == '\n' ||
+				c == '\r' ||
+				c == '\t' ||
+				c == '\v';
 		}
 	}
 }
