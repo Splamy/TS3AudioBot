@@ -810,25 +810,34 @@
 
 		private void CommandVolume(BotSession session, string parameter)
 		{
+			bool relPos = parameter.StartsWith("+");
+			bool relNeg = parameter.StartsWith("-");
+			string numberString = (relPos || relNeg) ? parameter.Remove(0, 1) : parameter;
+
 			int volume;
-			if (!int.TryParse(parameter, out volume) || volume < 0)
+			if (!int.TryParse(numberString, out volume))
 			{
 				CommandHelp(session, "volume");
 				return;
 			}
 
-			if (volume <= AudioFramework.MaxUserVolume || volume < AudioFramework.Volume)
-			{
-				AudioFramework.Volume = volume;
-			}
-			else if (volume <= AudioFramework.MAXVOLUME)
-			{
-				session.Write("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
-				session.SetResponse(ResponseVolume, volume, true);
-			}
-			else
+			int newVolume;
+			if (relPos) newVolume = AudioFramework.Volume + volume;
+			else if (relNeg) newVolume = AudioFramework.Volume - volume;
+			else newVolume = volume;
+
+			if (newVolume < 0 || newVolume > AudioFramework.MAXVOLUME)
 			{
 				session.Write("The volume level must be between 0 and " + AudioFramework.MAXVOLUME);
+			}
+			if (newVolume <= AudioFramework.MaxUserVolume || newVolume < AudioFramework.Volume)
+			{
+				AudioFramework.Volume = newVolume;
+			}
+			else if (newVolume <= AudioFramework.MAXVOLUME)
+			{
+				session.Write("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
+				session.SetResponse(ResponseVolume, newVolume, true);
 			}
 		}
 
