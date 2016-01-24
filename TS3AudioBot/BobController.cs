@@ -37,6 +37,8 @@
 			}
 		}
 
+		public bool Callback { set { SendMessage("callback " + (value ? "on" : "off")); } }
+
 		#region IPlayerConnection
 
 		private int volume = -1;
@@ -249,6 +251,7 @@
 			timeout.Active = false;
 			if (!isRunning)
 			{
+				Callback = true;
 				// register callback to know immediatly when the bob connects
 				Log.Write(Log.Level.Debug, "BC registering callback");
 				queryConnection.OnClientConnect += AwaitBobConnect;
