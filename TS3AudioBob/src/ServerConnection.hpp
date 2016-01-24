@@ -92,13 +92,31 @@ public:
 		std::string msg = Utils::format(message, args...);
 		// Crop message if it's longer than 1024 bytes
 		// Let's hope TeamSpeak won't complain if we destroy some unicode
-		if (msg.size() > 1024)
+		// Also, some characters are expanded to 2 bytes:
+		static const std::string doubleChars = " \\/\n\r\f\t\v|";
+
+		// Find out when the max length is reached
+		std::string::size_type length = 0;
+		std::string::size_type i = 0;
+		for (; i < msg.length() && length < 1024; i++)
 		{
-			msg.erase(msg.begin() + 1024, msg.end());
+			if (doubleChars.find(msg[i]) != std::string::npos)
+				length += 2;
+			else
+				length++;
+		}
+		if (length > 1024 || i < msg.length() - 1)
+		{
+			// Something needs to be removed again because the last parsed
+			// character takes 2 bytes
+			if (length > 1024)
+				i--;
+
+			msg.erase(msg.begin() + i + 1, msg.end());
 			// Append ...
-			msg[1021] = '.';
-			msg[1022] = '.';
-			msg[1023] = '.';
+			msg[i - 2] = '.';
+			msg[i - 1] = '.';
+			msg[i] = '.';
 		}
 		tsApi->handleTsError(tsApi->getFunctions().requestSendPrivateTextMsg(
 			handlerId, msg.c_str(), user->getId(),
