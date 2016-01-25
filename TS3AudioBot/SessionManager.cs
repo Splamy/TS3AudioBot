@@ -5,9 +5,9 @@
 	using TS3Query;
 	using TS3Query.Messages;
 
-	class SessionManager
+	public class SessionManager
 	{
-		public BotSession DefaultSession { get; set; }
+		public BotSession DefaultSession { get; internal set; }
 		private readonly List<PrivateSession> openSessions;
 
 		public SessionManager()

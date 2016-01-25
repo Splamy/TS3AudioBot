@@ -5,9 +5,9 @@
 	using System.Linq;
 	using TS3AudioBot.Helper;
 
-	class ResourceFactoryManager : IDisposable
+	public class ResourceFactoryManager : IDisposable
 	{
-		public IResourceFactory DefaultFactorty { get; set; }
+		public IResourceFactory DefaultFactorty { get; internal set; }
 		private IList<IResourceFactory> factories;
 		private AudioFramework audioFramework;
 
@@ -52,7 +52,7 @@
 				Play(data);
 		}
 
-		public void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
+		internal void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
 		{
 			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == logEntry.AudioType);
 

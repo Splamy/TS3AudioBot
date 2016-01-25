@@ -3,7 +3,7 @@
 	using System;
 	using System.Text.RegularExpressions;
 
-	static class TextUtil
+	public static class TextUtil
 	{
 		public static int[] ToIntArray(this string value)
 		{
@@ -51,7 +51,7 @@
 		}
 	}
 
-	enum Answer
+	public enum Answer
 	{
 		Unknown,
 		Yes,

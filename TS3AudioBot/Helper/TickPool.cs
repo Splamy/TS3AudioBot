@@ -5,7 +5,7 @@
 	using System.Linq;
 	using System.Threading;
 
-	static class TickPool
+	public static class TickPool
 	{
 		private static Thread tickThread;
 		private static int minTick = int.MaxValue;
@@ -79,7 +79,7 @@
 		}
 	}
 
-	class TickWorker
+	public class TickWorker
 	{
 		public Action Method { get; }
 		public int Interval { get; }

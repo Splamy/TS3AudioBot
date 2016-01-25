@@ -8,7 +8,7 @@
 	using System.Text;
 	using System.Text.RegularExpressions;
 
-	public class Log
+	public static class Log
 	{
 		public static bool Active { get; set; }
 		public static int StackLevel { get; set; }

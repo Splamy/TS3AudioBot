@@ -5,7 +5,7 @@
 	using System.IO;
 	using System.Text;
 
-	public static class AudioTagReader
+	static class AudioTagReader
 	{
 		private static Dictionary<string, Tag> tagDict;
 

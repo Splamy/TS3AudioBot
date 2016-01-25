@@ -5,7 +5,7 @@
 	using System.Linq;
 	using System.Text;
 
-	class SmartHistoryFormatter
+	internal class SmartHistoryFormatter
 	{
 		private const int TS3_MAXLENGTH = 1024;
 

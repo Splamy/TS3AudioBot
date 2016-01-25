@@ -5,7 +5,7 @@
 	using System.IO;
 	using System.Reflection;
 
-	class ConfigFile
+	public class ConfigFile
 	{
 		private string path;
 		private readonly Dictionary<string, string> data;

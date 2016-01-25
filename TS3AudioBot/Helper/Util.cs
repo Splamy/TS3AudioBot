@@ -7,7 +7,7 @@
 	using System.Linq;
 	using System.Threading;
 
-	static class Util
+	public static class Util
 	{
 		static Util() { }
 

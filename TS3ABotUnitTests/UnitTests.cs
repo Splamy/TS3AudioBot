@@ -100,7 +100,8 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Factory_YoutubeFactoryTest()
 		{
-			using (IResourceFactory rfac = new YoutubeFactory())
+			// TODO instantiate YTF
+			using (IResourceFactory rfac = null)
 			{
 				// matching links
 				Assert.True(rfac.MatchLink(@"https://www.youtube.com/watch?v=robqdGEhQWo"));

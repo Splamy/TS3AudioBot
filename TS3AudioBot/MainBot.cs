@@ -50,12 +50,12 @@
 
 		private StreamWriter logStream;
 
-		internal AudioFramework AudioFramework { get; private set; }
-		internal BobController BobController { get; private set; }
-		internal IQueryConnection QueryConnection { get; private set; }
-		internal SessionManager SessionManager { get; private set; }
+		public AudioFramework AudioFramework { get; private set; }
+		public BobController BobController { get; private set; }
+		public IQueryConnection QueryConnection { get; private set; }
+		public SessionManager SessionManager { get; private set; }
 		internal HistoryManager HistoryManager { get; private set; }
-		internal ResourceFactoryManager FactoryManager { get; private set; }
+		public ResourceFactoryManager FactoryManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -940,7 +940,7 @@
 		}
 	}
 
-	class BotCommand
+	public class BotCommand
 	{
 		public string InvokeName { get; private set; }
 
@@ -1109,7 +1109,7 @@
 		}
 	}
 
-	enum CommandParameter
+	public enum CommandParameter
 	{
 		Undefined,
 		Nothing,
@@ -1119,7 +1119,7 @@
 	}
 
 	[Flags]
-	enum CommandRights
+	public enum CommandRights
 	{
 		Admin = 0,
 		Public = 1 << 0,

@@ -2,7 +2,7 @@
 {
 	using System;
 
-	interface IPlayerConnection : IDisposable
+	public interface IPlayerConnection : IDisposable
 	{
 		void Initialize();
 

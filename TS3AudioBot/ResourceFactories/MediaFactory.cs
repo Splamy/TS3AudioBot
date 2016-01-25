@@ -7,7 +7,7 @@
 	using TS3AudioBot.Helper.AudioTags;
 	using TS3Query.Messages;
 
-	public class MediaFactory : IResourceFactory
+	class MediaFactory : IResourceFactory
 	{
 		public AudioType FactoryFor => AudioType.MediaLink;
 

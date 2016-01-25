@@ -3,7 +3,7 @@
 	using System;
 	using System.Linq;
 
-	public class ListedShuffle : IShuffleAlgorithm
+	class ListedShuffle : IShuffleAlgorithm
 	{
 		private int[] permutation;
 		private int index;

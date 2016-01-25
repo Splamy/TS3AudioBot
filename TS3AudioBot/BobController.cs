@@ -7,7 +7,7 @@
 	using TS3AudioBot.Helper;
 	using TS3Query.Messages;
 
-	class BobController : IPlayerConnection
+	public class BobController : IPlayerConnection
 	{
 		/// <summary>After TIMEOUT seconds, the bob disconnects.</summary>
 		private const int BOB_TIMEOUT = 60;
@@ -17,7 +17,7 @@
 		private TickWorker timeout;
 		private DateTime lastUpdate = DateTime.Now;
 		private WaitEventBlock<MusicData> musicInfoWaiter;
-		private MusicData currentMusicInfo;
+		public MusicData CurrentMusicInfo { get; private set; }
 
 		private bool isRunning;
 		private Queue<string> commandQueue;
@@ -64,7 +64,7 @@
 			{
 				SendMessage("status music");
 				musicInfoWaiter.Wait();
-				return (int)currentMusicInfo.Position;
+				return (int)CurrentMusicInfo.Position;
 			}
 			set
 			{
@@ -100,7 +100,7 @@
 			{
 				SendMessage("status music");
 				musicInfoWaiter.Wait();
-				return (int)currentMusicInfo.Length;
+				return (int)CurrentMusicInfo.Length;
 			}
 		}
 
@@ -110,7 +110,7 @@
 			{
 				SendMessage("status music");
 				musicInfoWaiter.Wait();
-				return currentMusicInfo.Status == MusicStatus.playing;
+				return CurrentMusicInfo.Status == MusicStatus.playing;
 			}
 		}
 
@@ -141,7 +141,7 @@
 
 		public void Initialize() { }
 
-		private void SendMessage(string message)
+		public void SendMessage(string message)
 		{
 			if (isRunning)
 			{
@@ -177,7 +177,7 @@
 					SendMessageRaw(commandQueue.Dequeue());
 		}
 
-		public void GetResponse(object sender, TextMessage message)
+		internal void GetResponse(object sender, TextMessage message)
 		{
 			if (bobClient == null)
 				return;
@@ -200,7 +200,7 @@
 			case "answer":
 				switch (typeKVP[1])
 				{
-				case "music": musicInfoWaiter.Notify(currentMusicInfo = ParseMusicData(splits)); break;
+				case "music": musicInfoWaiter.Notify(CurrentMusicInfo = ParseMusicData(splits)); break;
 				case "audio": break;
 				case "end_event": break;
 				default: throw new NotSupportedException("Answer not recognized");
@@ -230,14 +230,14 @@
 			lastUpdate = DateTime.Now;
 		}
 
-		public void OnResourceStarted(PlayData playData)
+		internal void OnResourceStarted(PlayData playData)
 		{
 			BobStart();
 			Sending = true;
 			RestoreSubscriptions(playData.Invoker);
 		}
 
-		public void OnResourceStopped(bool restart)
+		internal void OnResourceStopped(bool restart)
 		{
 			if (!restart)
 			{
@@ -246,7 +246,7 @@
 			}
 		}
 
-		public void BobStart()
+		internal void BobStart()
 		{
 			timeout.Active = false;
 			if (!isRunning)
@@ -266,7 +266,7 @@
 			}
 		}
 
-		public void BobStop()
+		internal void BobStop()
 		{
 			Log.Write(Log.Level.Info, "BC Stopping bob");
 			SendMessage("exit");
@@ -408,7 +408,7 @@
 			public bool Manual { get; set; }
 		}
 
-		private class MusicData
+		public class MusicData
 		{
 			public MusicStatus Status { get; set; }
 			public double Length { get; set; }
@@ -419,7 +419,7 @@
 			public double Volume { get; set; }
 		}
 
-		private enum MusicStatus
+		public enum MusicStatus
 		{
 			off,
 			playing,

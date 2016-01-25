@@ -70,6 +70,7 @@
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="IQueryConnection.cs" />
     <Compile Include="PlaylistManager.cs" />
+    <Compile Include="PluginManager.cs" />
     <Compile Include="ResourceFactories\AudioResource.cs" />
     <Compile Include="ResourceFactories\IResourceFactory.cs" />
     <Compile Include="MainBot.cs" />

@@ -3,7 +3,7 @@
 	using System;
 	using System.Threading;
 
-	class WaitEventBlock<T>
+	public class WaitEventBlock<T>
 	{
 		private T response;
 		private AutoResetEvent blocker;

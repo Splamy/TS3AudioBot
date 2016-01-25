@@ -6,7 +6,7 @@
 	using System.Text.RegularExpressions;
 	using System.Web.Script.Serialization;
 
-	public class SoundcloudFactory : IResourceFactory
+	class SoundcloudFactory : IResourceFactory
 	{
 		private WebClient wc;
 		private JavaScriptSerializer jsonParser;

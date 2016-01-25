@@ -3,7 +3,7 @@
 	using System;
 	using TS3AudioBot.Helper;
 
-	class AudioFramework : IDisposable
+	public class AudioFramework : IDisposable
 	{
 		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
 		public const int MAXVOLUME = 100;
@@ -125,7 +125,7 @@
 		/// </summary>
 		/// <param name="playData">The info struct contaiting the AudioResource to start.</param>
 		/// <returns>An infocode on what happened.</returns>
-		public AudioResultCode StartResource(PlayData playData)
+		internal AudioResultCode StartResource(PlayData playData)
 		{
 			if (playData == null || playData.Resource == null)
 			{
