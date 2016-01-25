@@ -207,7 +207,11 @@
 		{
 			var media = resource.AvailableTypes[resource.Selected];
 			var request = WebRequest.Create(media.link) as HttpWebRequest;
-			try { request.GetResponse(); }
+			try
+			{
+				request.Timeout = 1000;
+				request.GetResponse();
+			}
 			catch (WebException webEx)
 			{
 				HttpWebResponse errorResponse = webEx.Response as HttpWebResponse;

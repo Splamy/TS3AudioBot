@@ -185,7 +185,16 @@
 				.HelpData("Shows all commands or detailed help about a specific command.")
 				.Parameter("[<command>]", "Any currently accepted command").Finish();
 			builder.New("history").Action(CommandHistory).Permission(CommandRights.Private)
-				.HelpData("Shows recently played songs.").Finish();
+				.HelpData("Shows recently played songs.")
+				.Parameter("from <user-dbid> <count>", "Gets the last <count> songs from the user with the given <user-dbid>")
+				.Parameter("help", "You know...")
+				.Parameter("id <id>", "Displays all saved informations about the song with <id>")
+				.Parameter("id (last|next)", "Gets the highest|next song id")
+				.Parameter("last", "Plays the last song again")
+				.Parameter("last <count>", "Gets the last <count> played songs.")
+				.Parameter("play <id>", "Playes the song with <id>")
+				.Parameter("till <time>", "Gets all songs plyed until <time>. Special options are: (hour|today|yesterday|week)")
+				.Parameter("title <string>", "Gets all songs which title contains <string>").Finish();
 			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
 				.HelpData("Guess what?")
 				.Parameter("[far]", "Optional attribute for the extra punch stenght").Finish();
@@ -492,6 +501,10 @@
 					else if (arrLen2 && args[1] == "last")
 					{
 						session.Write($"{HistoryManager.HighestId} is the currently highest song id.");
+					}
+					else if (arrLen2 && args[1] == "next")
+					{
+						session.Write($"{HistoryManager.HighestId + 1} will be the next song id.");
 					}
 					else
 					{

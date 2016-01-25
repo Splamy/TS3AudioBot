@@ -15,7 +15,7 @@
 		private HistoryFile historyFile;
 		private IEnumerable<AudioLogEntry> lastResult;
 		public SmartHistoryFormatter Formatter { get; private set; }
-		public uint HighestId => historyFile.CurrentID;
+		public uint HighestId => historyFile.CurrentID - 1;
 
 		public HistoryManager(HistoryManagerData hmd)
 		{
