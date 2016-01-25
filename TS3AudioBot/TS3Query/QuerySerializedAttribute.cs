@@ -3,7 +3,7 @@
 namespace TS3Query
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-    class QuerySerializedAttribute : Attribute
+    sealed class QuerySerializedAttribute : Attribute
     {
         public string Name { get; private set; }
         public QuerySerializedAttribute(string name)

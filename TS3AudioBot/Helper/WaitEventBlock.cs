@@ -3,7 +3,7 @@
 	using System;
 	using System.Threading;
 
-	public class WaitEventBlock<T>
+	public sealed class WaitEventBlock<T> : IDisposable
 	{
 		private T response;
 		private AutoResetEvent blocker;
@@ -52,8 +52,19 @@
 				blocker.Set();
 			}
 		}
+
+		public void Dispose()
+		{
+			if (blocker != null)
+			{
+				blocker.Set();
+				blocker.Dispose();
+				blocker = null;
+			}
+		}
 	}
 
+	[Serializable]
 	public class TimeoutException : Exception
 	{
 		public TimeoutException() { }

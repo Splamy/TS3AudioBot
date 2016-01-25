@@ -7,12 +7,12 @@
 	using TS3AudioBot.Helper;
 	using TS3Query.Messages;
 
-	public class BobController : IPlayerConnection
+	public sealed class BobController : IPlayerConnection
 	{
 		private static readonly TimeSpan BOB_TIMEOUT = TimeSpan.FromSeconds(60);
 
 		private IQueryConnection queryConnection;
-		private BobControllerData data;
+		private BobControllerData bobControllerData;
 		private TickWorker timeout;
 		private DateTime lastUpdate = DateTime.Now;
 		private WaitEventBlock<MusicData> musicInfoWaiter;
@@ -36,8 +36,6 @@
 				SendMessage("audio " + (value ? "on" : "off"));
 			}
 		}
-
-		public bool Callback { set { SendMessage("callback " + (value ? "on" : "off")); } }
 
 		#region IPlayerConnection
 
@@ -110,7 +108,7 @@
 			{
 				SendMessage("status music");
 				musicInfoWaiter.Wait();
-				return CurrentMusicInfo.Status == MusicStatus.playing;
+				return CurrentMusicInfo.Status == MusicStatus.Playing;
 			}
 		}
 
@@ -129,11 +127,14 @@
 
 		public BobController(BobControllerData data, IQueryConnection queryConnection)
 		{
+			if (queryConnection == null)
+				throw new ArgumentNullException(nameof(queryConnection));
+
 			timeout = TickPool.RegisterTick(TimeoutCheck, TimeSpan.FromMilliseconds(100), false);
 			musicInfoWaiter = new WaitEventBlock<MusicData>();
 			isRunning = false;
 			awaitingConnect = false;
-			this.data = data;
+			this.bobControllerData = data;
 			this.queryConnection = queryConnection;
 			queryConnection.OnMessageReceived += GetResponse;
 			queryConnection.OnClientConnect += OnBobConnect;
@@ -185,6 +186,8 @@
 		#endregion
 
 		#region Response
+
+		public void Callback(bool enable) => SendMessage("callback " + (enable ? "on" : "off"));
 
 		internal void GetResponse(object sender, TextMessage message)
 		{
@@ -245,7 +248,7 @@
 				case "length": musicData.Length = double.Parse(result[1], CultureInfo.InvariantCulture); break;
 				case "loop": musicData.Loop = result[1] != "off"; break;
 				case "position": musicData.Position = double.Parse(result[1], CultureInfo.InvariantCulture); break;
-				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1]); break;
+				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1], true); break;
 				case "title": musicData.Title = result[1]; break;
 				case "volume": musicData.Volume = double.Parse(result[1], CultureInfo.InvariantCulture); break;
 				default: Log.Write(Log.Level.Debug, "Unparsed key: {0}={1}", result[0], result[1]); break;
@@ -258,14 +261,14 @@
 
 		#region Connect & Events
 
-		internal void OnResourceStarted(PlayData playData)
+		internal void OnResourceStarted(object sender, PlayData playData)
 		{
 			BobStart();
 			Sending = true;
 			RestoreSubscriptions(playData.Invoker);
 		}
 
-		internal void OnResourceStopped(bool restart)
+		internal void OnResourceStopped(object sender, bool restart)
 		{
 			if (!restart)
 			{
@@ -279,11 +282,11 @@
 			timeout.Active = false;
 			if (!isRunning)
 			{
-				Callback = true;
+				Callback(true);
 				awaitingConnect = true;
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 
-				if (!Util.Execute(data.startTSClient))
+				if (!Util.Execute(bobControllerData.startTSClient))
 					Log.Write(Log.Level.Debug, "BC could not start bob");
 			}
 		}
@@ -309,7 +312,7 @@
 			if (!awaitingConnect) return;
 
 			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
-			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
+			if (e.ServerGroups.ToIntArray().Contains(bobControllerData.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
 				bobClient = queryConnection.GetClientById(e.ClientId);
@@ -353,14 +356,14 @@
 		public void WhisperChannelSubscribe(int channel, bool manual)
 		{
 			SendMessage("whisper channel add " + channel);
-			SubscriptionData data;
-			if (!channelSubscriptions.TryGetValue(channel, out data))
+			SubscriptionData subscriptionData;
+			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
 			{
-				data = new SubscriptionData { Id = channel, Manual = manual };
-				channelSubscriptions.Add(channel, data);
+				subscriptionData = new SubscriptionData { Id = channel, Manual = manual };
+				channelSubscriptions.Add(channel, subscriptionData);
 			}
-			data.Enabled = true;
-			data.Manual = data.Manual || manual;
+			subscriptionData.Enabled = true;
+			subscriptionData.Manual = subscriptionData.Manual || manual;
 		}
 
 		/// <summary>Removes a channel from the audio streaming list.</summary>
@@ -370,31 +373,31 @@
 		public void WhisperChannelUnsubscribe(int channel, bool manual)
 		{
 			SendMessage("whisper channel remove " + channel);
-			SubscriptionData data;
-			if (!channelSubscriptions.TryGetValue(channel, out data))
+			SubscriptionData subscriptionData;
+			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
 			{
-				data = new SubscriptionData { Id = channel, Manual = false };
-				channelSubscriptions.Add(channel, data);
+				subscriptionData = new SubscriptionData { Id = channel, Manual = false };
+				channelSubscriptions.Add(channel, subscriptionData);
 			}
 			if (manual)
 			{
-				data.Manual = true;
-				data.Enabled = false;
+				subscriptionData.Manual = true;
+				subscriptionData.Enabled = false;
 			}
-			else if (!data.Manual)
+			else if (!subscriptionData.Manual)
 			{
-				data.Enabled = false;
+				subscriptionData.Enabled = false;
 			}
 		}
 
-		public void WhisperClientSubscribe(int userID)
+		public void WhisperClientSubscribe(int userId)
 		{
-			SendMessage("whisper client add " + userID);
+			SendMessage("whisper client add " + userId);
 		}
 
-		public void WhisperClientUnsubscribe(int userID)
+		public void WhisperClientUnsubscribe(int userId)
 		{
-			SendMessage("whisper client remove " + userID);
+			SendMessage("whisper client remove " + userId);
 		}
 
 		private void RestoreSubscriptions(ClientData invokingUser)
@@ -423,28 +426,33 @@
 
 		public void Dispose()
 		{
+			if (musicInfoWaiter != null)
+			{
+				musicInfoWaiter.Dispose();
+				musicInfoWaiter = null;
+			}
 			BobExit();
 		}
+	}
 
-		public class MusicData
-		{
-			public MusicStatus Status { get; set; }
-			public double Length { get; set; }
-			public double Position { get; set; }
-			public string Title { get; set; }
-			public string Address { get; set; }
-			public bool Loop { get; set; }
-			public double Volume { get; set; }
-		}
+	public class MusicData
+	{
+		public MusicStatus Status { get; set; }
+		public double Length { get; set; }
+		public double Position { get; set; }
+		public string Title { get; set; }
+		public string Address { get; set; }
+		public bool Loop { get; set; }
+		public double Volume { get; set; }
+	}
 
-		public enum MusicStatus
-		{
-			off,
-			playing,
-			paused,
-			finished,
-			error,
-		}
+	public enum MusicStatus
+	{
+		Off,
+		Playing,
+		Paused,
+		Finished,
+		Error,
 	}
 
 	public struct BobControllerData

@@ -3,6 +3,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Globalization;
 	using System.Reflection;
 	using System.Reflection.Emit;
 	using System.Text;
@@ -13,18 +14,19 @@
 		public static bool Active { get; set; }
 		public static int StackLevel { get; set; }
 
-		private static readonly object writeLock = new object();
+		private static readonly object writeLock;
 		private static int callbackCount = 0;
-		public delegate void callbackActionDelegate(string result);
-		private static callbackActionDelegate[] callbackAction;
-		private delegate void callbackProcessorDelegate(LogHelper lh);
-		private static callbackProcessorDelegate[] callbackProcessor;
+		private static CallbackActionDelegate[] callbackAction;
+		private delegate void CallbackProcessorDelegate(LogHelper lh);
+		private static CallbackProcessorDelegate[] callbackProcessor;
 
 		private static int longestelem = 0;
 		private static string[] spaceup;
 
 		static Log()
 		{
+			writeLock = new object();
+
 			StackLevel = 10;
 			Active = true;
 
@@ -49,14 +51,14 @@
 			}
 		}
 
-		public static void RegisterLogger(string format, string linebreakIndent, callbackActionDelegate callback)
+		public static void RegisterLogger(string format, string linebreakIndent, CallbackActionDelegate callback)
 		{
 			try
 			{
 				var validator = ParseAndValidate(format);
 				RegisterLoggerUnsafe(validator, linebreakIndent, callback);
 			}
-			catch (ArgumentException argEx) { throw argEx; }
+			catch (ArgumentException) { throw; }
 		}
 
 		private static List<ParseToken> ParseAndValidate(string format)
@@ -104,7 +106,7 @@
 			return validator;
 		}
 
-		private static void RegisterLoggerUnsafe(List<ParseToken> validator, string linebreakIndent, callbackActionDelegate callback)
+		private static void RegisterLoggerUnsafe(List<ParseToken> validator, string linebreakIndent, CallbackActionDelegate callback)
 		{
 			DynamicMethod dynLog = new DynamicMethod("LogWrite" + callbackCount, typeof(void), new[] { typeof(LogHelper) }, typeof(Log), true);
 			var ilGen = dynLog.GetILGenerator();
@@ -161,7 +163,7 @@
 
 			// call ToString and the callback method
 			ilGen.EmitCall(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("ToString", Type.EmptyTypes), null);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(callbackActionDelegate).GetMethod("Invoke", argsString), null);
+			ilGen.EmitCall(OpCodes.Callvirt, typeof(CallbackActionDelegate).GetMethod("Invoke", argsString), null);
 
 			ilGen.Emit(OpCodes.Ret);
 
@@ -170,13 +172,13 @@
 				// Redim the calllist array
 				if (callbackProcessor == null)
 				{
-					callbackProcessor = new callbackProcessorDelegate[1];
-					callbackAction = new callbackActionDelegate[1];
+					callbackProcessor = new CallbackProcessorDelegate[1];
+					callbackAction = new CallbackActionDelegate[1];
 				}
 				else
 				{
-					callbackProcessorDelegate[] tempProcessorArray = new callbackProcessorDelegate[callbackCount + 1];
-					callbackActionDelegate[] tempActionArray = new callbackActionDelegate[callbackCount + 1];
+					CallbackProcessorDelegate[] tempProcessorArray = new CallbackProcessorDelegate[callbackCount + 1];
+					CallbackActionDelegate[] tempActionArray = new CallbackActionDelegate[callbackCount + 1];
 					Array.Copy(callbackProcessor, tempProcessorArray, callbackCount);
 					Array.Copy(callbackAction, tempActionArray, callbackCount);
 					callbackProcessor = tempProcessorArray;
@@ -184,7 +186,7 @@
 				}
 
 				//Store event call in the calllist
-				callbackProcessor[callbackCount] = (callbackProcessorDelegate)dynLog.CreateDelegate(typeof(callbackProcessorDelegate));
+				callbackProcessor[callbackCount] = (CallbackProcessorDelegate)dynLog.CreateDelegate(typeof(CallbackProcessorDelegate));
 				callbackAction[callbackCount] = callback;
 
 				callbackCount++;
@@ -273,7 +275,7 @@
 			{
 				if (ErrorTextFormatted == null)
 				{
-					string inputbuffer = string.Format(errorTextRaw, infos);
+					string inputbuffer = string.Format(CultureInfo.InvariantCulture, errorTextRaw, infos);
 					if (linebreakIndent > 0)
 					{
 						string spaces = new string(' ', linebreakIndent);
@@ -288,7 +290,7 @@
 			{
 				if (DateFormatted == null)
 				{
-					DateFormatted = DateTime.Now.ToString("HH:mm:ss");
+					DateFormatted = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
 				}
 				return DateFormatted;
 			}
@@ -317,4 +319,6 @@
 			}
 		}
 	}
+
+	public delegate void CallbackActionDelegate(string result);
 }

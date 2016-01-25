@@ -78,7 +78,7 @@
 			catch (InvalidOperationException) { return ValidateFile(uri, out stream); }
 		}
 
-		private RResultCode ValidateWeb(string link, out Stream stream)
+		private static RResultCode ValidateWeb(string link, out Stream stream)
 		{
 			stream = null;
 			var request = WebRequest.Create(link);
@@ -95,7 +95,7 @@
 			catch (ProtocolViolationException) { return RResultCode.MediaNoWebResponse; }
 		}
 
-		private RResultCode ValidateFile(string path, out Stream stream)
+		private static RResultCode ValidateFile(string path, out Stream stream)
 		{
 			if (File.Exists(path))
 			{

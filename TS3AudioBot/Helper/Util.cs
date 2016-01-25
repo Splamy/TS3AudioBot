@@ -9,8 +9,6 @@
 
 	public static class Util
 	{
-		static Util() { }
-
 		public static bool IsLinux
 		{
 			get
@@ -24,13 +22,15 @@
 		{
 			try
 			{
-				Process tmproc = new Process();
-				ProcessStartInfo psi = new ProcessStartInfo() { FileName = path, };
-				tmproc.StartInfo = psi;
-				tmproc.Start();
-				// Test if it was started successfully
-				// True if the process runs for more than 10 ms or the exit code is 0
-				return !tmproc.WaitForExit(10) || tmproc.ExitCode == 0;
+				using (Process tmproc = new Process())
+				{
+					ProcessStartInfo psi = new ProcessStartInfo() { FileName = path, };
+					tmproc.StartInfo = psi;
+					tmproc.Start();
+					// Test if it was started successfully
+					// True if the process runs for more than 10 ms or the exit code is 0
+					return !tmproc.WaitForExit(10) || tmproc.ExitCode == 0;
+				}
 			}
 			catch (Win32Exception ex)
 			{

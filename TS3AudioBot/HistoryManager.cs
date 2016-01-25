@@ -10,7 +10,7 @@
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.ResourceFactories;
 
-	class HistoryManager
+	class HistoryManager : IDisposable
 	{
 		private HistoryFile historyFile;
 		private IEnumerable<AudioLogEntry> lastResult;
@@ -24,7 +24,7 @@
 			historyFile.LoadFile(hmd.historyFile);
 		}
 
-		public void LogAudioResource(PlayData playData)
+		public void LogAudioResource(object sender, PlayData playData)
 		{
 			historyFile.Store(playData);
 		}
@@ -71,6 +71,15 @@
 		{
 			return historyFile.GetEntryById(id);
 		}
+
+		public void Dispose()
+		{
+			if (historyFile != null)
+			{
+				historyFile.Dispose();
+				historyFile = null;
+			}
+		}
 	}
 
 	class SeachQuery
@@ -89,7 +98,7 @@
 		}
 	}
 
-	class HistoryFile
+	class HistoryFile : IDisposable
 	{
 		private IDictionary<string, uint> resIdToId;
 		private IDictionary<uint, AudioLogEntry> idFilter;
@@ -106,7 +115,6 @@
 		private FileStream fileStream;
 		//private StreamWriter fileWriter;
 		private PositionedStreamReader fileReader;
-		public string Path { get; private set; }
 
 		public HistoryFile()
 		{
@@ -120,14 +128,7 @@
 
 		public void LoadFile(string path)
 		{
-			Path = path;
-
-			if (fileStream != null)
-			{
-				fileStream.Dispose();
-				fileStream = null;
-			}
-
+			Close();
 			Clear();
 
 			fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
@@ -154,6 +155,19 @@
 			}
 		}
 
+		private void Close()
+		{
+			if (fileReader != null)
+			{
+				fileReader.Dispose();
+				fileReader = null;
+			}
+			if (fileStream != null)
+			{
+				fileStream.Dispose();
+				fileStream = null;
+			}
+		}
 
 		public void Store(PlayData playData)
 		{
@@ -199,7 +213,7 @@
 		/// <returns>A list of all found entries.</returns>
 		public IList<AudioLogEntry> SearchTitle(string titlePart)
 		{
-			return titleFilter.GetValues(titlePart.ToLower());
+			return titleFilter.GetValues(titlePart.ToLower(CultureInfo.InvariantCulture));
 		}
 
 		/// <summary>Gets all Entrys last called from a user.<\br>
@@ -328,7 +342,7 @@
 		{
 			resIdToId.Add(logEntry.ResourceId, logEntry.Id);
 			idFilter.Add(logEntry.Id, logEntry);
-			titleFilter.Add(logEntry.Title.ToLower(), logEntry);
+			titleFilter.Add(logEntry.Title.ToLower(CultureInfo.InvariantCulture), logEntry);
 			AutoAdd(userIdFilter, logEntry);
 			timeFilter.Add(logEntry.Timestamp, logEntry);
 		}
@@ -344,10 +358,7 @@
 			uidList.Add(value);
 		}
 
-		private DateTime GetNow()
-		{
-			return DateTime.Now;
-		}
+		private static DateTime GetNow() => DateTime.Now;
 
 		private void Clear()
 		{
@@ -356,6 +367,11 @@
 			titleFilter.Clear();
 			userIdFilter.Clear();
 			timeFilter.Clear();
+		}
+
+		public void Dispose()
+		{
+			Close();
 		}
 	}
 
@@ -429,12 +445,12 @@
 			};
 		}
 
-		private string AsHex(uint num) { return num.ToString("X8"); }
-		private string AsHex(long num) { return num.ToString("X16"); }
+		private static string AsHex(uint num) => num.ToString("X8", CultureInfo.InvariantCulture);
+		private static string AsHex(long num) => num.ToString("X16", CultureInfo.InvariantCulture);
 
 		public override string ToString()
 		{
-			return string.Format("[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, ResourceId);
+			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, ResourceId);
 		}
 	}
 

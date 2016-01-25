@@ -224,7 +224,7 @@
 			return true;
 		}
 
-		private VideoCodec GetCodec(string type)
+		private static VideoCodec GetCodec(string type)
 		{
 			string lowtype = type.ToLower();
 			bool audioOnly = false;

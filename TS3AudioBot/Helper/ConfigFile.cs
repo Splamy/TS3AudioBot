@@ -30,18 +30,21 @@
 				return null;
 			}
 
-			FileStream fs = File.Open(pPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-			StreamReader input = new StreamReader(fs);
-			while (!input.EndOfStream)
+			using (FileStream fs = File.Open(pPath, FileMode.Open, FileAccess.Read, FileShare.Read))
 			{
-				string s = input.ReadLine();
-				if (!s.StartsWith(";") && !s.StartsWith("//") && !s.StartsWith("#"))
+				using (StreamReader input = new StreamReader(fs))
 				{
-					int index = s.IndexOf('=');
-					cfgFile.data.Add(s.Substring(0, index).Trim(), s.Substring(index + 1).Trim());
+					while (!input.EndOfStream)
+					{
+						string s = input.ReadLine();
+						if (!s.StartsWith(";") && !s.StartsWith("//") && !s.StartsWith("#"))
+						{
+							int index = s.IndexOf('=');
+							cfgFile.data.Add(s.Substring(0, index).Trim(), s.Substring(index + 1).Trim());
+						}
+					}
 				}
 			}
-			fs.Close();
 			return cfgFile;
 		}
 
@@ -112,8 +115,11 @@
 		/// <param name="defaultIfPossible">If set to <c>true</c> the method will use the default value from the InfoAttribute if it exists,
 		/// if no default value exists or set to <c>false</c> it will ask for the value on the console.</param>
 		/// <typeparam name="T">Struct to be read from the file.</typeparam>
-		public T GetDataStruct<T>(Type associatedClass, bool defaultIfPossible) where T : struct
+		public T GetDataStruct<T>(MemberInfo associatedClass, bool defaultIfPossible) where T : struct
 		{
+			if (associatedClass == null)
+				throw new ArgumentNullException(nameof(associatedClass));
+
 			object dataStruct = new T();
 			string assocName = associatedClass.Name;
 			var fields = typeof(T).GetFields();
@@ -178,13 +184,13 @@
 			return true;
 		}
 
-		protected object ParseToType(Type targetType, string value)
+		protected static object ParseToType(Type targetType, string value)
 		{
 			if (targetType == typeof(string))
 				return value;
 			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
 			if (mi == null)
-				throw new Exception("The value of the DataStruct couldn't be parsed.");
+				throw new ArgumentException("The value of the DataStruct couldn't be parsed.");
 			object[] result = { value, null };
 			object success = mi.Invoke(null, result);
 			if (!(bool)success)
@@ -214,16 +220,19 @@
 				return;
 			}
 
-			FileStream fs = File.Open(path, FileMode.Create, FileAccess.Write);
-			StreamWriter output = new StreamWriter(fs);
-			foreach (string key in data.Keys)
+			using (FileStream fs = File.Open(path, FileMode.Create, FileAccess.Write))
 			{
-				output.Write(key);
-				output.Write('=');
-				output.WriteLine(data[key]);
+				using (StreamWriter output = new StreamWriter(fs))
+				{
+					foreach (string key in data.Keys)
+					{
+						output.Write(key);
+						output.Write('=');
+						output.WriteLine(data[key]);
+					}
+					output.Flush();
+				}
 			}
-			output.Flush();
-			fs.Close();
 		}
 
 		private class DummyConfigFile : ConfigFile

@@ -1,33 +1,46 @@
 ﻿namespace TS3AudioBot.Algorithm
 {
+	using System;
+	using System.Globalization;
 	using System.Text;
 
 	public class Trie<T> : ICommandFilter<T> where T : class
 	{
-		protected const int CHARS_IN_ALPHABET = 26;
-		protected TrieNode root;
-
-		public Trie()
+		protected const int CharsInAlphabet = 26;
+		private TrieNode root = null;
+		protected TrieNode Root
 		{
-			root = GetNewTrieNode('+');
-			root.unique = false;
+			get
+			{
+				if (root == null)
+				{
+					root = GetNewTrieNode('+');
+					root.Unique = false;
+				}
+				return root;
+			}
 		}
+
+		public Trie() { }
 
 		public virtual void Add(string key, T value)
 		{
-			TrieNode current = root;
+			if (string.IsNullOrEmpty(key))
+				throw new ArgumentNullException(nameof(key));
+
+			TrieNode current = Root;
 			foreach (char c in key)
 			{
 				int index = ValidateChar(c);
 				if (current.children == null)
 				{
-					current.children = new TrieNode[CHARS_IN_ALPHABET];
+					current.children = new TrieNode[CharsInAlphabet];
 				}
 				else
 				{
-					if (!current.hasData)
+					if (!current.HasData)
 						current.Data = null;
-					current.unique = false;
+					current.Unique = false;
 				}
 				TrieNode child = current.children[index];
 				if (child == null)
@@ -39,7 +52,7 @@
 				current = child;
 			}
 			current.Data = value;
-			current.hasData = true;
+			current.HasData = true;
 		}
 
 		protected virtual TrieNode GetNewTrieNode(char index)
@@ -50,7 +63,7 @@
 		public virtual bool TryGetValue(string key, out T value)
 		{
 			TrieNode node = TryGetNode(key);
-			if (node != null && (node.hasData || node.unique))
+			if (node != null && (node.HasData || node.Unique))
 			{
 				value = node.Data;
 				return true;
@@ -64,14 +77,17 @@
 
 		protected TrieNode TryGetNode(string key)
 		{
-			key = key.ToLower();
-			TrieNode current = root;
+			if (key == null)
+				throw new ArgumentNullException(nameof(key));
+
+			key = key.ToLower(CultureInfo.InvariantCulture);
+			TrieNode current = Root;
 			foreach (char c in key)
 			{
 				int index = ValidateChar(c);
 				if (index == -1 || current.children == null || (current = current.children[index]) == null)
 					return null;
-				if (current.unique) break;
+				if (current.Unique) break;
 			}
 			return current;
 		}
@@ -86,20 +102,20 @@
 		public override string ToString()
 		{
 			StringBuilder strb = new StringBuilder();
-			ToStringGen(root, strb);
+			ToStringGen(Root, strb);
 			return strb.ToString();
 		}
 
-		protected void ToStringGen(TrieNode tn, StringBuilder strb)
+		private void ToStringGen(TrieNode tn, StringBuilder strb)
 		{
-			strb.Append(tn.charId);
-			if (tn.hasData)
+			strb.Append(tn.CharId);
+			if (tn.HasData)
 			{
 				strb.Append("[");
 				strb.Append(tn.Data);
 				strb.Append("]");
 			}
-			else if (tn.unique)
+			else if (tn.Unique)
 			{
 				strb.Append("*");
 			}
@@ -118,17 +134,17 @@
 		protected class TrieNode
 		{
 			public T Data { get; set; }
-			public TrieNode[] children;
-			readonly public char charId;
-			public bool hasData;
-			public bool unique;
+			public TrieNode[] children { get; set; }
+			public char CharId { get; }
+			public bool HasData { get; set; }
+			public bool Unique { get; set; }
 
 			public TrieNode(char charId)
 			{
-				this.charId = charId;
+				CharId = charId;
 				Data = null;
-				hasData = false;
-				unique = true;
+				HasData = false;
+				Unique = true;
 				children = null;
 			}
 		}

@@ -8,13 +8,16 @@
 	public static class TickPool
 	{
 		private static Thread tickThread;
-		private static TimeSpan curTick = TimeSpan.MaxValue;
-		private static readonly TimeSpan minTick = TimeSpan.FromMilliseconds(100);
+		private static TimeSpan curTick;
+		private static readonly TimeSpan minTick;
 		private static List<TickWorker> workList;
-		private static bool run = false;
+		private static bool run;
 
 		static TickPool()
 		{
+			run = false;
+			minTick = TimeSpan.FromMilliseconds(100);
+			curTick = TimeSpan.MaxValue;
 			workList = new List<TickWorker>();
 			tickThread = new Thread(Tick);
 			tickThread.Name = "TickPool";

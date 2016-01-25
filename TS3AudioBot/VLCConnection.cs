@@ -330,6 +330,11 @@
 		{
 			Log.Write(Log.Level.Info, "Closing VLC...");
 
+			if (responseEvent != null)
+			{
+				responseEvent.Dispose();
+				responseEvent = null;
+			}
 			if (netStream != null)
 			{
 				netStream.Close();

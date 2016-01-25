@@ -16,6 +16,7 @@
 		int Length { get; }
 		bool IsPlaying { get; }
 
+		// TODO check change in uri ??
 		void AudioStart(string url);
 		void AudioStop();
 	}

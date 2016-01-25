@@ -10,7 +10,7 @@
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.ResourceFactories;
 
-	class PlaylistManager
+	class PlaylistManager : IDisposable
 	{
 		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -56,7 +56,7 @@
 
 			int pseudoListIndex;
 			if (Random)
-				pseudoListIndex = shuffle.Next();
+				pseudoListIndex = shuffle.NextIndex();
 			else
 				pseudoListIndex = indexCount;
 
@@ -128,6 +128,15 @@
 
 				videoList.AddRange(itemBuffer);
 			} while (hasNext);
+		}
+
+		public void Dispose()
+		{
+			if (client != null)
+			{
+				client.Dispose();
+				client = null;
+			}
 		}
 	}
 

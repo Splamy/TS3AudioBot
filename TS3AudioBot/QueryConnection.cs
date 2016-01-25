@@ -92,6 +92,9 @@
 
 		public int[] GetClientServerGroups(ClientData client)
 		{
+			if (client == null)
+				throw new ArgumentNullException(nameof(client));
+
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			var response = tsClient.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
 			if (!response.Any() || !response.First().ContainsKey("sgid"))

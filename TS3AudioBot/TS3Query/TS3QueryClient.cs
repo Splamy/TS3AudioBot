@@ -1,6 +1,7 @@
 ﻿namespace TS3Query
 {
 	using System;
+	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Globalization;
@@ -12,8 +13,6 @@
 	using System.Text.RegularExpressions;
 	using System.Threading;
 	using TS3Query.Messages;
-	using System.Collections.Concurrent;
-	using FieldMap = System.Collections.Generic.Dictionary<string, System.Reflection.FieldInfo>;
 	using KVEnu = System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>;
 
 	class TS3QueryClient : IDisposable
@@ -37,8 +36,6 @@
 			add { Subscribe(ref ClientLeftViewHandler, value); }
 			remove { Unsubscribe(ref ClientLeftViewHandler, value); }
 		}
-
-		// PUBLIC CONFIG PROPERTIES
 
 		// SEMI-PUBLIC PROPERTIES
 
@@ -73,7 +70,7 @@
 		private static Dictionary<string, Type> notifyLookup;
 		/// <summary>Maps any QueryMessage class to all its fields
 		/// the adding of QM's is lazy via the request method.</summary>
-		private static Dictionary<Type, FieldMap> messageMap;
+		private static Dictionary<Type, InitializerData> messageMap;
 		/// <summary>Map of functions to deserialize from query values.</summary>
 		private static Dictionary<Type, Func<string, Type, object>> convertMap;
 
@@ -83,7 +80,7 @@
 		{
 			notifyLookup = new Dictionary<string, Type>();
 
-			messageMap = new Dictionary<Type, FieldMap>();
+			messageMap = new Dictionary<Type, InitializerData>();
 			// get all classes deriving from Notification
 			var derivedNtfy = from asm in AppDomain.CurrentDomain.GetAssemblies()
 							  from type in asm.GetTypes()
@@ -136,7 +133,7 @@
 		public void Connect(string hostname, int port)
 		{
 			if (string.IsNullOrWhiteSpace(hostname)) throw new ArgumentNullException(nameof(hostname));
-			if (port <= 0) throw new ArgumentOutOfRangeException("Invalid port.");
+			if (port <= 0) throw new ArgumentOutOfRangeException(nameof(port));
 
 			// TODO DC HERE IF CONNECTED
 
@@ -219,11 +216,11 @@
 				Send("servernotifyregister", ev);
 		}
 
-		private void Subscribe<T>(ref EventHandler<T> handler, EventHandler<T> add) where T : Notification
+		private static void Subscribe<T>(ref EventHandler<T> handler, EventHandler<T> add) where T : Notification
 		{
 			handler = (EventHandler<T>)Delegate.Combine(handler, add);
 		}
-		private void Unsubscribe<T>(ref EventHandler<T> handler, EventHandler<T> remove) where T : Notification
+		private static void Unsubscribe<T>(ref EventHandler<T> handler, EventHandler<T> remove) where T : Notification
 		{
 			handler = (EventHandler<T>)Delegate.Remove(handler, remove);
 		}
@@ -356,7 +353,7 @@
 			var map = GetFieldMap(qmType);
 			foreach (var kvp in kvpData)
 			{
-				var field = map[kvp.Key];
+				var field = map.FieldMap[kvp.Key];
 				object value = DeserializeValue(kvp.Value, field.FieldType);
 				field.SetValue(qm, value);
 			}
@@ -373,18 +370,18 @@
 				throw new NotSupportedException();
 		}
 
-		private static FieldMap GetFieldMap(Type type)
+		private static InitializerData GetFieldMap(Type type)
 		{
-			FieldMap map;
+			InitializerData map;
 			if (!messageMap.TryGetValue(type, out map))
 			{
-				map = new FieldMap();
+				map = new InitializerData(type);
 				foreach (var field in type.GetFields())
 				{
 					var serializerAtt = field.GetCustomAttribute<QuerySerializedAttribute>();
 					if (serializerAtt == null) continue; // todo check is null ?
 
-					map.Add(serializerAtt.Name, field);
+					map.FieldMap.Add(serializerAtt.Name, field);
 				}
 				messageMap.Add(type, map);
 			}
@@ -456,17 +453,18 @@
 				strb.Append(option.Value);
 
 			string finalCommand = strb.ToString();
-			WaitBlock wb = new WaitBlock(targetType);
-
-			lock (lockObj)
+			using (WaitBlock wb = new WaitBlock(targetType))
 			{
-				requestQueue.Enqueue(wb);
+				lock (lockObj)
+				{
+					requestQueue.Enqueue(wb);
 
-				tcpWriter.WriteLine(finalCommand);
-				tcpWriter.Flush();
+					tcpWriter.WriteLine(finalCommand);
+					tcpWriter.Flush();
+				}
+
+				return wb.WaitForMessage();
 			}
-
-			return wb.WaitForMessage();
 		}
 
 		#endregion
@@ -476,6 +474,9 @@
 			if (IsConnected)
 			{
 				Quit();
+
+				tcpReader.Dispose();
+				tcpReader = null;
 
 				tcpClient.Close();
 				tcpClient = null;
@@ -514,7 +515,7 @@
 
 		public void EnterEventLoop()
 		{
-			while (run)
+			while (run && eventBlock != null)
 			{
 				eventBlock.WaitOne();
 				while (!eventQueue.IsEmpty)
@@ -529,7 +530,12 @@
 		public void Dispose()
 		{
 			run = false;
-			eventBlock.Set();
+			if (eventBlock != null)
+			{
+				eventBlock.Set();
+				eventBlock.Dispose();
+				eventBlock = null;
+			}
 		}
 	}
 
@@ -565,18 +571,18 @@
 	public class ErrorStatus
 	{
 		// id
-		public int Id;
+		public int Id { get; set; }
 		// msg
-		public string Message;
+		public string Message { get; set; }
 		// failed_permid
-		public int MissingPermissionId = -1;
+		public int MissingPermissionId { get; set; } = -1;
 
 		public bool Ok => Id == 0 && Message == "ok";
 
 		public string ErrorFormat() => $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";
 	}
 
-	class WaitBlock
+	class WaitBlock : IDisposable
 	{
 		private AutoResetEvent waiter = new AutoResetEvent(false);
 		private IEnumerable<Response> answer = null;
@@ -609,8 +615,19 @@
 			errorStatus = error;
 			waiter.Set();
 		}
+
+		public void Dispose()
+		{
+			if (waiter != null)
+			{
+				waiter.Set();
+				waiter.Dispose();
+				waiter = null;
+			}
+		}
 	}
 
+	[Serializable]
 	public class QueryCommandException : Exception
 	{
 		public ErrorStatus ErrorStatus { get; private set; }
@@ -623,7 +640,7 @@
 	{
 		public string Key { get; protected set; }
 		public string Value { get; protected set; }
-		public virtual string QueryString { get; protected set; }
+		public virtual string QueryString => string.Concat(Key, "=", Value);
 
 		protected Parameter() { }
 
@@ -631,7 +648,6 @@
 		{
 			Key = name;
 			Value = rawValue.QueryValue;
-			QueryString = string.Concat(Key, "=", Value);
 		}
 
 		public Parameter(string name, PrimitiveParameter value) : this(name, (IParameterConverter)value) { }
@@ -702,8 +718,8 @@
 			}
 			return ci;
 		}
-		List<string> buildList = new List<string>();
-		public override string QueryString { get { return string.Join(" ", buildList); } protected set { } }
+		private List<string> buildList = new List<string>();
+		public override string QueryString => string.Join(" ", buildList);
 
 		protected Binder() { }
 

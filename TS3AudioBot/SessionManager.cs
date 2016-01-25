@@ -1,5 +1,6 @@
 ﻿namespace TS3AudioBot
 {
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using TS3Query;
@@ -17,6 +18,9 @@
 
 		public BotSession CreateSession(MainBot bot, ushort invokerId)
 		{
+			if (bot == null)
+				throw new ArgumentNullException(nameof(bot));
+
 			if (ExistsSession(invokerId))
 				return GetSession(MessageTarget.Private, invokerId);
 			ClientData client = bot.QueryConnection.GetClientById(invokerId);

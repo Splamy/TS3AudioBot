@@ -3,24 +3,22 @@
 	using System;
 	using TS3AudioBot.Helper;
 
-	public class AudioFramework : IDisposable
+	public sealed class AudioFramework : IDisposable
 	{
 		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
-		public const int MAXVOLUME = 100;
-		private static readonly TimeSpan TIMEOUT = TimeSpan.FromSeconds(30);
-		private static readonly TimeSpan TIMEOUT_INTERVAL = TimeSpan.FromSeconds(1);
+		public const int MaxVolume = 100;
+		private static readonly TimeSpan SongEndTimeout = TimeSpan.FromSeconds(30);
+		private static readonly TimeSpan SongEndTimeoutInterval = TimeSpan.FromSeconds(1);
 
 		private AudioFrameworkData audioFrameworkData;
 		private TickWorker waitEndTick;
 		private DateTime endTime;
 
-		public PlayData CurrentPlayData { get; protected set; }
+		public PlayData CurrentPlayData { get; private set; }
 		private IPlayerConnection playerConnection;
 
-		public delegate void ResourceStartedDelegate(PlayData audioResource);
-		public delegate void ResourceStoppedDelegate(bool restart);
-		public event ResourceStartedDelegate OnResourceStarted;
-		public event ResourceStoppedDelegate OnResourceStopped;
+		public event EventHandler<PlayData> OnResourceStarted;
+		public event EventHandler<bool> OnResourceStopped;
 
 		// Playerproperties
 
@@ -81,14 +79,17 @@
 
 		/// <summary>Creates a new AudioFramework</summary>
 		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
-		public AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackend)
+		public AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackEnd)
 		{
-			if (audioBackend.SupportsEndCallback)
-				audioBackend.OnSongEnd += (s, e) => SongEnd();
+			if (audioBackEnd == null)
+				throw new ArgumentNullException(nameof(audioBackEnd));
+
+			if (audioBackEnd.SupportsEndCallback)
+				audioBackEnd.OnSongEnd += (s, e) => SongEnd();
 			else
-				waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL, false);
+				waitEndTick = TickPool.RegisterTick(NotifyEnd, SongEndTimeoutInterval, false);
 			audioFrameworkData = afd;
-			playerConnection = audioBackend;
+			playerConnection = audioBackEnd;
 			playerConnection.Initialize();
 		}
 
@@ -109,7 +110,7 @@
 					int endspan = playtime - position;
 					endTime = DateTime.Now.AddSeconds(endspan);
 				}
-				else if (endTime + TIMEOUT < DateTime.Now)
+				else if (endTime + SongEndTimeout < DateTime.Now)
 				{
 					Log.Write(Log.Level.Debug, "AF Song ended with default timeout");
 					SongEnd();
@@ -149,7 +150,7 @@
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 
 			if (OnResourceStarted != null)
-				OnResourceStarted(playData);
+				OnResourceStarted(this, playData);
 
 			CurrentPlayData = playData;
 			endTime = DateTime.Now;
@@ -174,7 +175,7 @@
 				CurrentPlayData = null;
 				playerConnection.AudioStop();
 				if (OnResourceStopped != null)
-					OnResourceStopped(restart);
+					OnResourceStopped(this, restart);
 			}
 		}
 

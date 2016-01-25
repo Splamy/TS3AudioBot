@@ -245,7 +245,7 @@
 				.HelpData("Only lets you hear the music in active channels again.").Finish();
 			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility)
 				.HelpData("Sets the volume level of the music.")
-				.Parameter("<level>", "A new volume level between 0 and " + AudioFramework.MAXVOLUME).Finish();
+				.Parameter("<level>", "A new volume level between 0 and " + AudioFramework.MaxVolume).Finish();
 			builder.New("youtube").Action(CommandYoutube).Permission(CommandRights.Private)
 				.HelpData("Resolves the link as a youtube video to play it for you.").Finish();
 
@@ -256,12 +256,6 @@
 		{
 			var qc = (QueryConnection)QueryConnection;
 			qc.tsClient.EventDispatcher.EnterEventLoop();
-		}
-
-		private string ReadConsole()
-		{
-			try { return Console.ReadLine(); }
-			catch (IOException) { return null; }
 		}
 
 		private void TextCallback(object sender, TextMessage textMessage)
@@ -339,7 +333,7 @@
 			}
 		}
 
-		private void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, string[] commandSplit)
+		private static void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, string[] commandSplit)
 		{
 			try
 			{
@@ -839,15 +833,15 @@
 			else if (relNeg) newVolume = AudioFramework.Volume - volume;
 			else newVolume = volume;
 
-			if (newVolume < 0 || newVolume > AudioFramework.MAXVOLUME)
+			if (newVolume < 0 || newVolume > AudioFramework.MaxVolume)
 			{
-				session.Write("The volume level must be between 0 and " + AudioFramework.MAXVOLUME);
+				session.Write("The volume level must be between 0 and " + AudioFramework.MaxVolume);
 			}
 			if (newVolume <= AudioFramework.MaxUserVolume || newVolume < AudioFramework.Volume)
 			{
 				AudioFramework.Volume = newVolume;
 			}
-			else if (newVolume <= AudioFramework.MAXVOLUME)
+			else if (newVolume <= AudioFramework.MaxVolume)
 			{
 				session.Write("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
 				session.SetResponse(ResponseVolume, newVolume, true);
@@ -887,6 +881,11 @@
 		public void Dispose()
 		{
 			TickPool.Close();
+			if (HistoryManager != null)
+			{
+				HistoryManager.Dispose();
+				HistoryManager = null;
+			}
 			if (FactoryManager != null)
 			{
 				FactoryManager.Dispose();

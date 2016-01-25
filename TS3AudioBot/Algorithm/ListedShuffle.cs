@@ -34,7 +34,7 @@
 			index = 0;
 		}
 
-		public int Next() => permutation[(index = (index + 1) % permutation.Length)];
-		public int Prev() => permutation[(index = (index - 1) % permutation.Length)];
+		public int NextIndex() => permutation[(index = (index + 1) % permutation.Length)];
+		public int PrevIndex() => permutation[(index = (index - 1) % permutation.Length)];
 	}
 }

@@ -5,7 +5,7 @@
 	using System.Linq;
 	using TS3AudioBot.Helper;
 
-	public class ResourceFactoryManager : IDisposable
+	public sealed class ResourceFactoryManager : IDisposable
 	{
 		public IResourceFactory DefaultFactorty { get; internal set; }
 		private IList<IResourceFactory> factories;
