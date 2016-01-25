@@ -10,12 +10,12 @@
 		private DateTime timeOutPoint;
 		private bool timedOut;
 		private TickWorker timeOutTicker;
-		private int tickSpanMs = 100;
+		private static readonly TimeSpan tickSpan = TimeSpan.FromMilliseconds(100);
 
 		public WaitEventBlock()
 		{
 			blocker = new AutoResetEvent(false);
-			timeOutTicker = TickPool.RegisterTick(RunTimeout, tickSpanMs, false);
+			timeOutTicker = TickPool.RegisterTick(RunTimeout, tickSpan, false);
 		}
 
 		public T Wait() => Wait(Timeout.InfiniteTimeSpan);

@@ -8,7 +8,8 @@
 	public static class TickPool
 	{
 		private static Thread tickThread;
-		private static int minTick = int.MaxValue;
+		private static TimeSpan curTick = TimeSpan.MaxValue;
+		private static readonly TimeSpan minTick = TimeSpan.FromMilliseconds(100);
 		private static List<TickWorker> workList;
 		private static bool run = false;
 
@@ -19,16 +20,16 @@
 			tickThread.Name = "TickPool";
 		}
 
-		public static TickWorker RegisterTick(Action method, int interval, bool active)
+		public static TickWorker RegisterTick(Action method, TimeSpan interval, bool active)
 		{
 			if (method == null) throw new ArgumentNullException(nameof(method));
-			if (interval <= 0) throw new ArgumentException("The parameter must be at least '1'", nameof(interval));
+			if (interval <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(interval));
 			var worker = new TickWorker(method, interval);
 			worker.Active = active;
 			lock (workList)
 			{
 				workList.Add(worker);
-				minTick = workList.Min(w => w.Interval);
+				curTick = workList.Min(w => w.Interval);
 				if (!run)
 				{
 					run = true;
@@ -45,9 +46,9 @@
 			{
 				workList.Remove(worker);
 				if (workList.Count > 0)
-					minTick = workList.Min(w => w.Interval);
+					curTick = workList.Min(w => w.Interval);
 				else
-					minTick = 100;
+					curTick = minTick;
 			}
 		}
 
@@ -60,8 +61,8 @@
 					foreach (var worker in workList)
 					{
 						if (!worker.Active) continue;
-						worker.IntervalRemain -= minTick;
-						if (worker.IntervalRemain <= 0)
+						worker.IntervalRemain -= curTick;
+						if (worker.IntervalRemain <= TimeSpan.Zero)
 						{
 							worker.IntervalRemain = worker.Interval;
 							worker.Method.Invoke();
@@ -69,7 +70,7 @@
 					}
 				}
 
-				Thread.Sleep(minTick);
+				Thread.Sleep(curTick);
 			}
 		}
 
@@ -82,10 +83,10 @@
 	public class TickWorker
 	{
 		public Action Method { get; }
-		public int Interval { get; }
-		public int IntervalRemain { get; set; }
+		public TimeSpan Interval { get; }
+		public TimeSpan IntervalRemain { get; set; }
 		public bool Active { get; set; }
 
-		public TickWorker(Action method, int interval) { Method = method; Interval = interval; }
+		public TickWorker(Action method, TimeSpan interval) { Method = method; Interval = interval; }
 	}
 }

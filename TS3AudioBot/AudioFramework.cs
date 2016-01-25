@@ -7,8 +7,8 @@
 	{
 		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
 		public const int MAXVOLUME = 100;
-		private const int TIMEOUT_MS = 30000;
-		private const int TIMEOUT_INTERVAL_MS = 1000;
+		private static readonly TimeSpan TIMEOUT = TimeSpan.FromSeconds(30);
+		private static readonly TimeSpan TIMEOUT_INTERVAL = TimeSpan.FromSeconds(1);
 
 		private AudioFrameworkData audioFrameworkData;
 		private TickWorker waitEndTick;
@@ -86,7 +86,7 @@
 			if (audioBackend.SupportsEndCallback)
 				audioBackend.OnSongEnd += (s, e) => SongEnd();
 			else
-				waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL_MS, false);
+				waitEndTick = TickPool.RegisterTick(NotifyEnd, TIMEOUT_INTERVAL, false);
 			audioFrameworkData = afd;
 			playerConnection = audioBackend;
 			playerConnection.Initialize();
@@ -109,7 +109,7 @@
 					int endspan = playtime - position;
 					endTime = DateTime.Now.AddSeconds(endspan);
 				}
-				else if (endTime.AddMilliseconds(TIMEOUT_MS) < DateTime.Now)
+				else if (endTime + TIMEOUT < DateTime.Now)
 				{
 					Log.Write(Log.Level.Debug, "AF Song ended with default timeout");
 					SongEnd();

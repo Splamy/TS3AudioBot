@@ -25,7 +25,7 @@
 		private IDictionary<ulong, string> clientDbNames;
 
 		private QueryConnectionData connectionData;
-		private const int PingEverySeconds = 60;
+		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
 		public TS3QueryClient tsClient { get; private set; }
 
@@ -54,7 +54,7 @@
 				tsClient.OnClientLeftView += ExtendedClientLeftView;
 				tsClient.OnClientEnterView += ExtendedClientEnterView;
 
-				TickPool.RegisterTick(() => tsClient.WhoAmI(), (int)TimeSpan.FromSeconds(PingEverySeconds).TotalMilliseconds, true);
+				TickPool.RegisterTick(() => tsClient.WhoAmI(), PingInterval, true);
 			}
 		}
 

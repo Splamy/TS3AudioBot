@@ -9,8 +9,7 @@
 
 	public class BobController : IPlayerConnection
 	{
-		/// <summary>After TIMEOUT seconds, the bob disconnects.</summary>
-		private const int BOB_TIMEOUT = 60;
+		private static readonly TimeSpan BOB_TIMEOUT = TimeSpan.FromSeconds(60);
 
 		private IQueryConnection queryConnection;
 		private BobControllerData data;
@@ -19,6 +18,7 @@
 		private WaitEventBlock<MusicData> musicInfoWaiter;
 		public MusicData CurrentMusicInfo { get; private set; }
 
+		private bool awaitingConnect;
 		private bool isRunning;
 		private Queue<string> commandQueue;
 		private readonly object lockObject = new object();
@@ -129,17 +129,22 @@
 
 		public BobController(BobControllerData data, IQueryConnection queryConnection)
 		{
-			timeout = TickPool.RegisterTick(TimeoutCheck, 100, false);
+			timeout = TickPool.RegisterTick(TimeoutCheck, TimeSpan.FromMilliseconds(100), false);
 			musicInfoWaiter = new WaitEventBlock<MusicData>();
 			isRunning = false;
+			awaitingConnect = false;
 			this.data = data;
 			this.queryConnection = queryConnection;
 			queryConnection.OnMessageReceived += GetResponse;
+			queryConnection.OnClientConnect += OnBobConnect;
+			queryConnection.OnClientDisconnect += OnBobDisconnnect;
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
 		}
 
 		public void Initialize() { }
+
+		#region SendMethods
 
 		public void SendMessage(string message)
 		{
@@ -176,6 +181,10 @@
 				while (commandQueue.Count > 0)
 					SendMessageRaw(commandQueue.Dequeue());
 		}
+
+		#endregion
+
+		#region Response
 
 		internal void GetResponse(object sender, TextMessage message)
 		{
@@ -225,10 +234,29 @@
 			}
 		}
 
-		public void HasUpdate()
+		private static MusicData ParseMusicData(IEnumerable<string[]> input)
 		{
-			lastUpdate = DateTime.Now;
+			var musicData = new MusicData();
+			foreach (var result in input)
+			{
+				switch (result[0])
+				{
+				case "address": musicData.Address = result[1]; break;
+				case "length": musicData.Length = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "loop": musicData.Loop = result[1] != "off"; break;
+				case "position": musicData.Position = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1]); break;
+				case "title": musicData.Title = result[1]; break;
+				case "volume": musicData.Volume = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				default: Log.Write(Log.Level.Debug, "Unparsed key: {0}={1}", result[0], result[1]); break;
+				}
+			}
+			return musicData;
 		}
+
+		#endregion
+
+		#region Connect & Events
 
 		internal void OnResourceStarted(PlayData playData)
 		{
@@ -242,38 +270,81 @@
 			if (!restart)
 			{
 				Sending = false;
-				StartEndTimer();
+				BobStop();
 			}
 		}
 
-		internal void BobStart()
+		private void BobStart()
 		{
 			timeout.Active = false;
 			if (!isRunning)
 			{
 				Callback = true;
-				// register callback to know immediatly when the bob connects
-				Log.Write(Log.Level.Debug, "BC registering callback");
-				queryConnection.OnClientConnect += AwaitBobConnect;
+				awaitingConnect = true;
 				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 
 				if (!Util.Execute(data.startTSClient))
-				{
 					Log.Write(Log.Level.Debug, "BC could not start bob");
-					queryConnection.OnClientConnect -= AwaitBobConnect;
-					return;
-				}
 			}
 		}
 
-		internal void BobStop()
+		private void BobStop()
+		{
+			if (isRunning)
+			{
+				HasUpdate();
+				Log.Write(Log.Level.Debug, "BC start timeout");
+				timeout.Active = true;
+			}
+		}
+
+		private void BobExit()
 		{
 			Log.Write(Log.Level.Info, "BC Stopping bob");
 			SendMessage("exit");
+		}
+
+		private void OnBobConnect(object sender, ClientEnterView e)
+		{
+			if (!awaitingConnect) return;
+
+			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
+			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
+			{
+				Log.Write(Log.Level.Debug, "BC user with correct UID found");
+				bobClient = queryConnection.GetClientById(e.ClientId);
+				isRunning = true;
+				awaitingConnect = false;
+				Log.Write(Log.Level.Debug, "BC bob is now officially running");
+				SendQueue();
+			}
+		}
+
+		private void OnBobDisconnnect(object sender, ClientLeftView e)
+		{
 			isRunning = false;
 			commandQueue.Clear();
+			timeout.Active = false;
 			Log.Write(Log.Level.Debug, "BC bob is now officially dead");
 		}
+
+		public void HasUpdate()
+		{
+			lastUpdate = DateTime.Now;
+		}
+
+		private void TimeoutCheck()
+		{
+			if (lastUpdate + BOB_TIMEOUT < DateTime.Now)
+			{
+				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
+				BobExit();
+			}
+		}
+
+		#endregion
+
+		#region Subscriptions
 
 		/// <summary>Adds a channel to the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
@@ -341,71 +412,18 @@
 			}
 		}
 
-		private void AwaitBobConnect(object sender, ClientEnterView e)
-		{
-			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
-			if (e.ServerGroups.ToIntArray().Contains(data.bobGroupId))
-			{
-				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = queryConnection.GetClientById(e.ClientId);
-				queryConnection.OnClientConnect -= AwaitBobConnect;
-				isRunning = true;
-				Log.Write(Log.Level.Debug, "BC bob is now officially running");
-				SendQueue();
-			}
-		}
-
-		private void StartEndTimer()
-		{
-			HasUpdate();
-			if (isRunning)
-			{
-				Log.Write(Log.Level.Debug, "BC start timeout");
-				timeout.Active = true;
-			}
-		}
-
-		private void TimeoutCheck()
-		{
-			double inactiveSeconds = (DateTime.Now - lastUpdate).TotalSeconds;
-			if (inactiveSeconds > BOB_TIMEOUT)
-			{
-				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
-				BobStop();
-				timeout.Active = false;
-			}
-		}
-
-		public void Dispose()
-		{
-			BobStop();
-		}
-
-		private static MusicData ParseMusicData(IEnumerable<string[]> input)
-		{
-			var musicData = new MusicData();
-			foreach (var result in input)
-			{
-				switch (result[0])
-				{
-				case "address": musicData.Address = result[1]; break;
-				case "length": musicData.Length = double.Parse(result[1], CultureInfo.InvariantCulture); break;
-				case "loop": musicData.Loop = result[1] != "off"; break;
-				case "position": musicData.Position = double.Parse(result[1], CultureInfo.InvariantCulture); break;
-				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1]); break;
-				case "title": musicData.Title = result[1]; break;
-				case "volume": musicData.Volume = double.Parse(result[1], CultureInfo.InvariantCulture); break;
-				default: Log.Write(Log.Level.Debug, "Unparsed key: {0}={1}", result[0], result[1]); break;
-				}
-			}
-			return musicData;
-		}
-
 		private class SubscriptionData
 		{
 			public int Id { get; set; }
 			public bool Enabled { get; set; }
 			public bool Manual { get; set; }
+		}
+
+		#endregion
+
+		public void Dispose()
+		{
+			BobExit();
 		}
 
 		public class MusicData
