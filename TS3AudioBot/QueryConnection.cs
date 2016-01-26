@@ -9,16 +9,27 @@
 
 	class QueryConnection : IQueryConnection
 	{
-		public event EventHandler<TextMessage> OnMessageReceived
-		{ add { tsClient.OnTextMessageReceived += value; } remove { tsClient.OnTextMessageReceived -= value; } }
+		public event EventHandler<TextMessage> OnMessageReceived;
+		private void ExtendedTextMessage(object sender, TextMessage eventArgs)
+		{
+			if (connectionData.suppressLoopback && eventArgs.InvokerId == me.Id)
+				return;
+			OnMessageReceived?.Invoke(sender, eventArgs);
+		}
 
 		public event EventHandler<ClientEnterView> OnClientConnect;
 		private void ExtendedClientEnterView(object sender, ClientEnterView eventArgs)
-		{ clientbufferOutdated = true; OnClientConnect?.Invoke(sender, eventArgs); }
+		{
+			clientbufferOutdated = true;
+			OnClientConnect?.Invoke(sender, eventArgs);
+		}
 
 		public event EventHandler<ClientLeftView> OnClientDisconnect;
 		private void ExtendedClientLeftView(object sender, ClientLeftView eventArgs)
-		{ clientbufferOutdated = true; OnClientDisconnect?.Invoke(sender, eventArgs); }
+		{
+			clientbufferOutdated = true;
+			OnClientDisconnect?.Invoke(sender, eventArgs);
+		}
 
 		private IEnumerable<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
@@ -28,6 +39,7 @@
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
 		public TS3QueryClient tsClient { get; private set; }
+		private ClientData me;
 
 		public QueryConnection(QueryConnectionData qcd)
 		{
@@ -35,6 +47,9 @@
 
 			connectionData = qcd;
 			tsClient = new TS3QueryClient(EventDispatchType.Manual);
+			tsClient.OnClientLeftView += ExtendedClientLeftView;
+			tsClient.OnClientEnterView += ExtendedClientEnterView;
+			tsClient.OnTextMessageReceived += ExtendedTextMessage;
 		}
 
 		public void Connect()
@@ -47,12 +62,11 @@
 				try { tsClient.ChangeName("TS3AudioBot"); }
 				catch (QueryCommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
 
+				me = GetSelf();
+
 				tsClient.RegisterNotification(MessageTarget.Server, -1);
 				tsClient.RegisterNotification(MessageTarget.Private, -1);
 				tsClient.RegisterNotification(RequestTarget.Server, -1);
-
-				tsClient.OnClientLeftView += ExtendedClientLeftView;
-				tsClient.OnClientEnterView += ExtendedClientEnterView;
 
 				TickPool.RegisterTick(() => tsClient.WhoAmI(), PingInterval, true);
 			}
@@ -79,6 +93,18 @@
 		{
 			RefreshClientBuffer(false);
 			return clientbuffer.FirstOrDefault(user => user.NickName == name);
+		}
+
+		public ClientData GetSelf()
+		{
+			var cd = new ClientData();
+			var data = tsClient.WhoAmI();
+			cd.ChannelId = data.ChannelId;
+			cd.DatabaseId = data.DatabaseId;
+			cd.Id = data.ClientId;
+			cd.NickName = data.NickName;
+			cd.Type = ClientType.Query;
+			return cd;
 		}
 
 		public void RefreshClientBuffer(bool force)
@@ -142,5 +168,7 @@
 		public string user;
 		[Info("the password for the TeamSpeak3 Query")]
 		public string passwd;
+		[Info("wether or not to show own received messages in the log", "true")]
+		public bool suppressLoopback;
 	}
 }

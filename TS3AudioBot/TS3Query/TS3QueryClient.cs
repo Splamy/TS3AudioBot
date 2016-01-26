@@ -185,7 +185,7 @@
 			tcpWriter.Flush();
 			IsConnected = false;
 		}
-		public void WhoAmI() => Send<WhoAmI>("whoami");
+		public WhoAmI WhoAmI() => Send<WhoAmI>("whoami").FirstOrDefault();
 		public void SendMessage(string message, ClientData client)
 			=> SendMessage(MessageTarget.Private, client.Id, message);
 		public void SendMessage(string message, ChannelData channel)

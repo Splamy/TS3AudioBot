@@ -18,6 +18,7 @@
 
 		ClientData GetClientById(ushort id);
 		ClientData GetClientByName(string name);
+		ClientData GetSelf();
 		void RefreshClientBuffer(bool force);
 		int[] GetClientServerGroups(ClientData client);
 	}

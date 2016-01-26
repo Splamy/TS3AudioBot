@@ -12,10 +12,10 @@
         public string VirtualServerUid;
 
         [QuerySerialized("virtualserver_port")]
-        public short VirtualServerPort;
+        public ushort VirtualServerPort;
 
         [QuerySerialized("client_id")]
-        public int ClientId;
+        public ushort ClientId;
 
         [QuerySerialized("client_channel_id")]
         public int ChannelId;
@@ -24,7 +24,7 @@
         public string NickName;
 
         [QuerySerialized("client_database_id")]
-        public int DatabaseId;
+        public ulong DatabaseId;
 
         [QuerySerialized("client_login_name")]
         public string LoginName;

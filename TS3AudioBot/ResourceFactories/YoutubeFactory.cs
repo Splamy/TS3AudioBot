@@ -1,8 +1,8 @@
 ﻿namespace TS3AudioBot.ResourceFactories
 {
+	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
-	using System.Linq;
 	using System.Net;
 	using System.Text;
 	using System.Text.RegularExpressions;
@@ -143,16 +143,8 @@
 			if (autoselectIndex != -1)
 			{
 				ytResource.Selected = autoselectIndex;
-				if (!ValidateMedia(ytResource))
-				{
-					abortPlay = true;
-					data.Session.Write("The video cannot be played due to youtube restrictions.");
-					return;
-				}
-				else {
-					abortPlay = false;
-					return;
-				}
+				abortPlay = !ValidateMedia(data.Session, ytResource);
+				return;
 			}
 
 			StringBuilder strb = new StringBuilder();
@@ -192,18 +184,25 @@
 				if (entry < 0 || entry >= ytResource.AvailableTypes.Count)
 					return true;
 				ytResource.Selected = entry;
-				if (!ValidateMedia(ytResource))
-				{
-					session.Write("The video cannot be played due to youtube restrictions.");
-					return true;
-				}
-
-				session.Bot.FactoryManager.Play(data);
+				if (ValidateMedia(session, ytResource))
+					session.Bot.FactoryManager.Play(data);
 			}
 			return true;
 		}
 
-		private static bool ValidateMedia(YoutubeResource resource)
+		private static bool ValidateMedia(BotSession session, YoutubeResource resource)
+		{
+			switch (ValidateMedia(resource))
+			{
+			case ValidateCode.Ok: return true;
+			case ValidateCode.Restricted: session.Write("The video cannot be played due to youtube restrictions."); return false;
+			case ValidateCode.Timeout: session.Write("No connection could be established to youtube. Please try again later."); return false;
+			case ValidateCode.UnknownError: session.Write("Unknown error occoured"); return false;
+			default: throw new InvalidOperationException();
+			}
+		}
+
+		private static ValidateCode ValidateMedia(YoutubeResource resource)
 		{
 			var media = resource.AvailableTypes[resource.Selected];
 			var request = WebRequest.Create(media.link) as HttpWebRequest;
@@ -211,17 +210,27 @@
 			{
 				request.Timeout = 1000;
 				request.GetResponse();
+				return ValidateCode.Ok;
 			}
 			catch (WebException webEx)
 			{
-				HttpWebResponse errorResponse = webEx.Response as HttpWebResponse;
-				if (errorResponse == null)
-					Log.Write(Log.Level.Warning, $"YT Video media error: {webEx}");
-				else
+				HttpWebResponse errorResponse;
+				if (webEx.Status == WebExceptionStatus.Timeout)
+				{
+					Log.Write(Log.Level.Warning, "YT Video request timed out");
+					return ValidateCode.Timeout;
+				}
+				else if ((errorResponse = webEx.Response as HttpWebResponse) != null)
+				{
 					Log.Write(Log.Level.Warning, $"YT Video media error: [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
-				return false;
+					return ValidateCode.Restricted;
+				}
+				else
+				{
+					Log.Write(Log.Level.Warning, $"YT Video media error: {webEx}");
+					return ValidateCode.UnknownError;
+				}
 			}
-			return true;
 		}
 
 		private static VideoCodec GetCodec(string type)
@@ -312,5 +321,13 @@
 		WEBM,
 		FLV,
 		ThreeGP,
+	}
+
+	enum ValidateCode
+	{
+		Ok,
+		UnknownError,
+		Restricted,
+		Timeout,
 	}
 }
