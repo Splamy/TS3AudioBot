@@ -18,8 +18,14 @@
 			timeOutTicker = TickPool.RegisterTick(RunTimeout, tickSpan, false);
 		}
 
+		/// <summary>Will block the current thread and wait until notified with <see cref="WaitEventBlock{T}.Notify(T)"/>.</summary>
+		/// <returns>The received object from the notification.</returns>
 		public T Wait() => Wait(Timeout.InfiniteTimeSpan);
 
+		/// <summary>Will block the current thread and wait until notified with <see cref="WaitEventBlock{T}.Notify(T)"/>
+		/// or throws when the timeout ran out.</summary>
+		/// <returns>The received object from the notification.</returns>
+		/// <exception cref="TimeoutException"></exception>
 		public T Wait(TimeSpan timeout)
 		{
 			if (timeout != Timeout.InfiniteTimeSpan)
@@ -62,13 +68,5 @@
 				blocker = null;
 			}
 		}
-	}
-
-	[Serializable]
-	public class TimeoutException : Exception
-	{
-		public TimeoutException() { }
-		public TimeoutException(string message) : base(message) { }
-		public TimeoutException(string message, Exception inner) : base(message, inner) { }
 	}
 }

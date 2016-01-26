@@ -207,6 +207,8 @@
 				.HelpData("Plays the next song in the playlist.").Finish();
 			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public)
 				.HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
+			builder.New("pause").Action(CommandPause).Permission(CommandRights.Private)
+				.HelpData("Well, pauses the song. Undo with !play").Finish();
 			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
 				.HelpData("Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")
 				.Parameter("<link>", "Youtube, Soundcloud, local path or file link").Finish();
@@ -367,9 +369,15 @@
 					break;
 				}
 			}
+			catch (TimeoutException tex)
+			{
+				Log.Write(Log.Level.Error, "Critical timeout error: {0}", tex.StackTrace);
+				session.Write("Internal timout error, please try again.");
+			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Error, "Critical command error: " + ex.Message);
+				Log.Write(Log.Level.Error, "Critical command error: {0}", ex.Message);
+				session.Write("Internal command error, please try again.");
 			}
 		}
 
@@ -662,6 +670,11 @@
 		{
 			BotSession ownSession = SessionManager.CreateSession(this, textMessage.InvokerId);
 			ownSession.Write("Hi " + textMessage.InvokerName);
+		}
+
+		private void CommandPause(BotSession session, TextMessage textMessage)
+		{
+			AudioFramework.Pause = true;
 		}
 
 		private void CommandPlay(BotSession session, TextMessage textMessage, string parameter)

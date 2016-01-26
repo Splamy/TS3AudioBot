@@ -9,7 +9,8 @@
 
 	public sealed class BobController : IPlayerConnection
 	{
-		private static readonly TimeSpan BOB_TIMEOUT = TimeSpan.FromSeconds(60);
+		private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
+		private static readonly TimeSpan BobTimeout = TimeSpan.FromSeconds(60);
 
 		private IQueryConnection queryConnection;
 		private BobControllerData bobControllerData;
@@ -61,7 +62,7 @@
 			get
 			{
 				SendMessage("status music");
-				musicInfoWaiter.Wait();
+				musicInfoWaiter.Wait(RequestTimeout);
 				return (int)CurrentMusicInfo.Position;
 			}
 			set
@@ -86,9 +87,7 @@
 			set
 			{
 				pause = value;
-				// The commands "music pause|unpause" are available, but redundant
-				// since the bob automatically pauses when the audio output is off.
-				SendMessage("audio " + (value ? "on" : "off"));
+				SendMessage("music " + (value ? "pause" : "unpause"));
 			}
 		}
 
@@ -97,7 +96,7 @@
 			get
 			{
 				SendMessage("status music");
-				musicInfoWaiter.Wait();
+				musicInfoWaiter.Wait(RequestTimeout);
 				return (int)CurrentMusicInfo.Length;
 			}
 		}
@@ -107,7 +106,7 @@
 			get
 			{
 				SendMessage("status music");
-				musicInfoWaiter.Wait();
+				musicInfoWaiter.Wait(RequestTimeout);
 				return CurrentMusicInfo.Status == MusicStatus.Playing;
 			}
 		}
@@ -259,11 +258,12 @@
 
 		#endregion
 
-		#region Connect & Events
+		#region Bob & Events
 
 		internal void OnResourceStarted(object sender, PlayData playData)
 		{
 			BobStart();
+			Pause = false;
 			Sending = true;
 			RestoreSubscriptions(playData.Invoker);
 		}
@@ -338,7 +338,7 @@
 
 		private void TimeoutCheck()
 		{
-			if (lastUpdate + BOB_TIMEOUT < DateTime.Now)
+			if (lastUpdate + BobTimeout < DateTime.Now)
 			{
 				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
 				BobExit();

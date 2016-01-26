@@ -135,7 +135,8 @@
 			if (string.IsNullOrWhiteSpace(hostname)) throw new ArgumentNullException(nameof(hostname));
 			if (port <= 0) throw new ArgumentOutOfRangeException(nameof(port));
 
-			// TODO DC HERE IF CONNECTED
+			if (IsConnected)
+				Quit();
 
 			CurrentHost = hostname;
 			CurrentPort = port;
@@ -153,11 +154,16 @@
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
 
+
 			if (readQueryThread != null)
 			{
-				// FIX: Try to do it more gently
-				readQueryThread.Abort();
-				readQueryThread = null;
+				for (int i = 0; i < 100 && readQueryThread.IsAlive; i++)
+					Thread.Sleep(1);
+				if (readQueryThread.IsAlive)
+				{
+					readQueryThread.Abort();
+					readQueryThread = null;
+				}
 			}
 			readQueryThread = new Thread(ReadQueryLoop);
 			readQueryThread.Name = "TS3Query MessageLoop";
@@ -177,6 +183,7 @@
 		{
 			tcpWriter.WriteLine("quit");
 			tcpWriter.Flush();
+			IsConnected = false;
 		}
 		public void WhoAmI() => Send<WhoAmI>("whoami");
 		public void SendMessage(string message, ClientData client)
@@ -265,6 +272,7 @@
 					dataBuffer = line;
 				}
 			}
+			IsConnected = false;
 		}
 
 		private void InvokeEvent(Notification notification)
@@ -493,7 +501,11 @@
 	interface IEventDispatcher : IDisposable
 	{
 		EventDispatchType DispatcherType { get; }
+		/// <summary>Do NOT call this method manually (Unless you know what you do).
+		/// Invokes an Action, when the EventLoop receives a new packet.</summary>
+		/// <param name="eventAction"></param>
 		void Invoke(Action eventAction);
+		/// <summary>Use this method to enter the read loop with the current Thread.</summary>
 		void EnterEventLoop();
 	}
 
