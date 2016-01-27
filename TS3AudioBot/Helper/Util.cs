@@ -49,5 +49,7 @@
 			while (!predicate() && msTimeout-- > 0)
 				Thread.Sleep(1);
 		}
+
+		public static DateTime GetNow() => DateTime.Now;
 	}
 }
