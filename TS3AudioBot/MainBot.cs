@@ -5,6 +5,7 @@
 	using System.IO;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
@@ -44,6 +45,7 @@
 
 		private bool consoleOutput;
 		private bool writeLog;
+		private bool writeLogStack;
 		private MainBotData mainBotData;
 		private ICommandFilter<BotCommand> commandDict;
 		private BotCommand[] allCommands;
@@ -73,13 +75,15 @@
 				launchParameter.Add(parameter);
 			if (launchParameter.Contains("--help") || launchParameter.Contains("-h"))
 			{
-				Console.WriteLine(" --Silent -S      Deactivates all output to stdout.");
+				Console.WriteLine(" --Quiet -q       Deactivates all output to stdout.");
 				Console.WriteLine(" --NoLog -L       Deactivates writing to the logfile.");
+				Console.WriteLine(" --Stack -s       Adds the stacktrace to all log writes.");
 				Console.WriteLine(" --help -h        Prints this help....");
 				return true;
 			}
-			consoleOutput = !(launchParameter.Contains("--Silent") || launchParameter.Contains("-S"));
+			consoleOutput = !(launchParameter.Contains("--Quiet") || launchParameter.Contains("-q"));
 			writeLog = !(launchParameter.Contains("--NoLog") || launchParameter.Contains("-L"));
+			writeLogStack = (launchParameter.Contains("--Stack") || launchParameter.Contains("-s"));
 			return false;
 		}
 
@@ -104,7 +108,7 @@
 			{
 				var encoding = new UTF8Encoding(false);
 				logStream = new StreamWriter(File.Open(mainBotData.logFile, FileMode.Append, FileAccess.Write, FileShare.Read), encoding);
-				Log.RegisterLogger("[%T]%L: %M\n", "", (msg) =>
+				Log.RegisterLogger("[%T]%L: %M\n" + (writeLogStack ? "%S\n" : ""), "", (msg) =>
 				{
 					if (logStream != null)
 						try
@@ -256,6 +260,7 @@
 
 		private void Run()
 		{
+			Thread.CurrentThread.Name = "Main/Eventloop";
 			var qc = (QueryConnection)QueryConnection;
 			qc.tsClient.EventDispatcher.EnterEventLoop();
 		}
