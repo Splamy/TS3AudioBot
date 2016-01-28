@@ -376,12 +376,12 @@
 			}
 			catch (TimeoutException tex)
 			{
-				Log.Write(Log.Level.Error, "Critical timeout error: {0}", tex.StackTrace);
+				Log.Write(Log.Level.Error, "Critical timeout error ({0})", tex.StackTrace);
 				session.Write("Internal timout error, please try again.");
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Error, "Critical command error: {0}", ex.Message);
+				Log.Write(Log.Level.Error, "Critical command error: {0} ({1})", ex.Message, ex.StackTrace);
 				session.Write("Internal command error, please try again.");
 			}
 		}

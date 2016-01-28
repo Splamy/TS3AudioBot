@@ -315,7 +315,7 @@
 						var method = frames.GetMethod();
 						bool endOfIl = method.MethodImplementationFlags == MethodImplAttributes.InternalCall;
 						if (endOfIl)
-							strb.Append("$internal T:").Append(Thread.CurrentThread.Name);
+							strb.Append("$internal");
 						else
 							strb.Append(method.ToString()).Append('@').Append(frames.GetFileLineNumber());
 						StackTraceFormatted.Add(strb.ToString());
@@ -326,6 +326,7 @@
 				for (int i = 0; i < Math.Min(stackDepth, StackTraceFormatted.Count); i++)
 					strb.Append(StackTraceFormatted[i]).Append('\n'); // or .Append('>')
 				strb.Length--; // remove last char
+				strb.Append(" T:").Append(Thread.CurrentThread.Name);
 				return strb.ToString();
 			}
 

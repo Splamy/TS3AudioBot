@@ -149,9 +149,7 @@
 				Volume = playData.Volume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 
-			if (OnResourceStarted != null)
-				OnResourceStarted(this, playData);
-
+			OnResourceStarted?.Invoke(this, playData);
 			CurrentPlayData = playData;
 
 			if (!playerConnection.SupportsEndCallback)
@@ -176,9 +174,9 @@
 			if (CurrentPlayData != null)
 			{
 				CurrentPlayData = null;
-				playerConnection.AudioStop();
-				if (OnResourceStopped != null)
-					OnResourceStopped(this, restart);
+				if (!restart)
+					playerConnection.AudioStop();
+				OnResourceStopped?.Invoke(this, restart);
 			}
 		}
 
