@@ -318,7 +318,14 @@
 			if (e.ServerGroups.ToIntArray().Contains(bobControllerData.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = queryConnection.GetClientById(e.ClientId);
+				bobClient = new ClientData()
+				{
+					ChannelId = e.TargetChannelId,
+					DatabaseId = e.DatabaseId,
+					Id = e.ClientId,
+					NickName = e.NickName,
+					Type = e.Type,
+				};
 				isRunning = true;
 				awaitingConnect = false;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
@@ -328,6 +335,9 @@
 
 		private void OnBobDisconnnect(object sender, ClientLeftView e)
 		{
+			if (bobClient == null || e.ClientId != bobClient.Id) return;
+
+			bobClient = null;
 			isRunning = false;
 			commandQueue.Clear();
 			timeout.Active = false;

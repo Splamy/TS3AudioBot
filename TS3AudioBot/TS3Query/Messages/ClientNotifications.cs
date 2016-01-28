@@ -60,7 +60,7 @@
 		public bool IsRecording;
 
 		[QuerySerialized("client_database_id")]
-		public int DatabaseId;
+		public ulong DatabaseId;
 
 		[QuerySerialized("client_channel_group_id")]
 		public int ChannelGroupId;
