@@ -90,7 +90,7 @@ Player::Player(std::string streamAddress) :
 
 	// Initialize callback functions
 	setOnLog([](Player*, const std::string &message){ 
-		fprintf(stderr, message.c_str());
+		fputs(message.c_str(), stderr);
 	});
 	setOnReadError([](Player*, ReadError error){ 
 		fprintf(stderr, "A read error occured: %s\n", getReadErrorDescription(error).c_str());
@@ -218,7 +218,6 @@ void Player::decode()
 				f.setDuration(av_q2d(AVRational{ frame->nb_samples, frame->sample_rate }));
 
 				av_frame_move_ref(f.getInternalFrame(), frame);
-				frame->extended_data = nullptr;
 				sampleQueue.push(std::move(f));
 				sampleQueueWaiter.notify_one();
 			}

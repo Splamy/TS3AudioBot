@@ -66,6 +66,7 @@ void PacketReader::read()
 	if (!openStreamComponent(audioStreamId))
 		return;
 
+	// Release the lock afterwards
 	{
 		// Read the stream
 		bool lastPaused = false;
@@ -126,7 +127,7 @@ void PacketReader::read()
 				if (formatContext->pb && formatContext->pb->error)
 				{
 					player->setReadError(Player::READ_ERROR_IO, false);
-					return;
+					break;
 				}
 
 				// Wait for more data
@@ -141,8 +142,11 @@ void PacketReader::read()
 			player->packetQueueWaiter.notify_one();
 		}
 	}
+	// Only send the finished event if the stream was not yet finished from
+	// outside
+	if (!player->finished)
+		player->onFinished(player);
 	player->finish();
-	player->onFinished(player);
 }
 
 bool PacketReader::openStreamComponent(int streamId)
