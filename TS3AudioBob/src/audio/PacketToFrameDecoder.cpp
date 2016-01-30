@@ -42,7 +42,10 @@ int PacketToFrameDecoder::fillFrame(AVFrame *frame)
 					// Wait until there are new packets
 					player->packetQueueWaiter.wait(packetQueueLock, [this]{ return !player->packetQueue.empty() || player->finished; });
 					if (player->finished)
+					{
+						av_packet_unref(&currentPacket);
 						return -1;
+					}
 				}
 
 				// The packet queue should contain something now

@@ -9,6 +9,7 @@ extern "C"
 	#include <libswresample/swresample.h>
 }
 
+#include <atomic>
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
@@ -78,7 +79,7 @@ private:
 	bool loop = false;
 	bool paused = false;
 	bool muted = false;
-	bool finished = false;
+	std::atomic_bool finished{ false };
 	ReadError readError = READ_ERROR_NONE;
 	DecodeError decodeError = DECODE_ERROR_NONE;
 	double volume = 1;
@@ -86,7 +87,9 @@ private:
 	/** If all attributes are initialized and the music player is operating
 	 *  normally.
 	 */
-	bool initialized = false;
+	std::atomic_bool initialized{ false };
+	mutable std::mutex initializedMutex;
+	mutable std::condition_variable initializedWaiter;
 
 	std::queue<Frame> sampleQueue;
 	std::mutex sampleQueueMutex;

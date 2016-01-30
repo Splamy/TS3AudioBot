@@ -51,7 +51,7 @@ void PacketReader::read()
 	if (formatContext->pb)
 	{
 		const char *filename = formatContext->filename;
-		realtime |= strncmp(filename, "rtp:", 4) == 0 || strncmp(filename, "udp:", 4);
+		realtime |= strncmp(filename, "rtp:", 4) == 0 || strncmp(filename, "udp:", 4) == 0;
 	}
 
 	// Find audio stream
@@ -76,6 +76,7 @@ void PacketReader::read()
 		bool hasEof = false;
 		// Ready with initializing
 		player->initialized = true;
+		player->initializedWaiter.notify_all();
 		while (!player->finished)
 		{
 			if (player->paused != lastPaused && !realtime)
@@ -120,6 +121,7 @@ void PacketReader::read()
 			{
 				if ((ret == AVERROR_EOF || avio_feof(formatContext->pb)) && !hasEof)
 				{
+					std::lock_guard<std::mutex> packetQueueLock(player->packetQueueMutex);
 					player->packetQueue.push(player->flushPacket);
 					player->packetQueueWaiter.notify_one();
 					hasEof = true;
@@ -136,10 +138,15 @@ void PacketReader::read()
 			} else
 				hasEof = 1;
 
-			// Insert the packet into the queue
-			std::lock_guard<std::mutex> packetQueueLock(player->packetQueueMutex);
-			player->packetQueue.push(packet);
-			player->packetQueueWaiter.notify_one();
+			// Only store packets of the wanted stream
+			if (packet.stream_index == player->streamId)
+			{
+				// Insert the packet into the queue
+				std::lock_guard<std::mutex> packetQueueLock(player->packetQueueMutex);
+				player->packetQueue.push(packet);
+				player->packetQueueWaiter.notify_one();
+			} else
+				av_packet_unref(&packet);
 		}
 	}
 	// Only send the finished event if the stream was not yet finished from
@@ -162,6 +169,7 @@ bool PacketReader::openStreamComponent(int streamId)
 		return false;
 	}
 	AVDictionary *options = nullptr;
+	av_dict_set(&options, "threads", "auto", 0);
 	av_dict_set(&options, "refcounted_frames", "1", 0);
 	if (avcodec_open2(codecContext, codec, &options) != 0)
 	{

@@ -15,7 +15,7 @@ extern "C"
 using namespace audio;
 
 /** Maximum number of packets in the packet queue (ignored for realtime streams) */
-const std::size_t Player::MAX_QUEUE_SIZE = 15 * 1024 * 1024;
+const std::size_t Player::MAX_QUEUE_SIZE = 1024;
 /** Maximum number of frames in the sample queue */
 const int Player::MAX_SAMPLES_QUEUE_SIZE = 9;
 
@@ -89,15 +89,16 @@ Player::Player(std::string streamAddress) :
 	setTargetProperties(AV_SAMPLE_FMT_S16, 44100, 2, AV_CH_LAYOUT_STEREO);
 
 	// Initialize callback functions
-	setOnLog([](Player*, const std::string &message){ 
+	setOnLog([](Player*, const std::string &message) {
 		fputs(message.c_str(), stderr);
 	});
-	setOnReadError([](Player*, ReadError error){ 
+	setOnReadError([](Player*, ReadError error) {
 		fprintf(stderr, "A read error occured: %s\n", getReadErrorDescription(error).c_str());
 	});
-	setOnDecodeError([](Player*, DecodeError error){ 
+	setOnDecodeError([](Player*, DecodeError error) {
 		fprintf(stderr, "A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
 	});
+	setOnFinished([](Player*) {});
 }
 
 Player::~Player()
@@ -109,6 +110,18 @@ Player::~Player()
 		readThread.join();
 	if (decodeThread.joinable())
 		decodeThread.join();
+
+	// Clear packet queue
+	{
+		std::lock_guard<std::mutex> lock(packetQueueMutex);
+		while (!packetQueue.empty())
+		{
+			AVPacket &packet = packetQueue.front();
+			if (packet.data != flushPacket.data)
+				av_packet_unref(&packet);
+			packetQueue.pop();
+		}
+	}
 
 	swr_free(&resampler);
 	if (formatContext)
@@ -137,10 +150,12 @@ void Player::setDecodeError(DecodeError error)
 
 void Player::waitUntilInitialized() const
 {
-	// Busy waiting because it shouldn't take long until everything is
-	// initialized
-	while (!initialized)
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	// Wait until everything is initialized
+	if (!initialized)
+	{
+		std::unique_lock<std::mutex> initializedLock(initializedMutex);
+		initializedWaiter.wait(initializedLock, [this]{ return initialized.load(); });
+	}
 }
 
 void Player::finish(bool lockReadThread)
@@ -148,6 +163,7 @@ void Player::finish(bool lockReadThread)
 	// Notify waiting threads and wait for them to exit
 	finished = true;
 	initialized = true;
+	initializedWaiter.notify_all();
 	{
 		std::lock_guard<std::mutex> lock(sampleQueueMutex);
 		sampleQueueWaiter.notify_all();
@@ -362,7 +378,12 @@ void Player::setPositionTime(int64_t position)
 		std::lock_guard<std::mutex> lock(packetQueueMutex);
 		// Flush packet queue
 		while (!packetQueue.empty())
+		{
+			AVPacket &packet = packetQueue.front();
+			if (packet.data != flushPacket.data)
+				av_packet_unref(&packet);
 			packetQueue.pop();
+		}
 		packetQueue.push(flushPacket);
 	}
 }
@@ -499,6 +520,8 @@ void Player::start()
 
 void Player::fillBuffer(uint8_t *buffer, std::size_t length)
 {
+	waitUntilInitialized();
+
 	callbackTime = av_gettime_relative();
 
 	std::size_t todoLength = length;
@@ -540,13 +563,13 @@ void Player::fillBuffer(uint8_t *buffer, std::size_t length)
 			samples[i] *= volume;
 	}
 
-	if (!isnan(clockTime))
+	/*if (!isnan(clockTime))
 	{
 		// FIXME How exactly does this code work? It's needed for funky mode ;)
 		//int writeBufferSize = bufferSize - bufferIndex;
 		//clock.setClockAt(clockTime - (double) (2 * hardwareBufferSize + writeBufferSize) / targetProps.bytesPerSecond, clockQueueId, callbackTime / 1000000.0);
 		//externClock.syncTo(clock);
-	}
+	}*/
 }
 
 void Player::setOnLog(std::function<void(Player*, const std::string&)> onLog)
