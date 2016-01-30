@@ -8,6 +8,7 @@
 	using System.Reflection.Emit;
 	using System.Text;
 	using System.Text.RegularExpressions;
+	using System.Threading;
 
 	public static class Log
 	{
@@ -71,7 +72,7 @@
 				bool specSymbol = format[c] == '%';
 				bool endoftext = c >= format.Length - 1;
 
-				if ((specSymbol && c - starttext > 0) || endoftext)
+				if ((specSymbol && c - starttext > 0) || endoftext) // static format text
 				{
 					if (endoftext) c++;
 					validator.Add(new ParseToken(MethodBuildToken.Text, format.Substring(starttext, c - starttext)));
@@ -83,14 +84,17 @@
 					{
 						switch (format[c + 1])
 						{
-						case 'M':
+						case 'M': // Message
 							validator.Add(new ParseToken(MethodBuildToken.ErrorTextFormatted, null));
 							break;
-						case 'T':
+						case 'T': // Time
 							validator.Add(new ParseToken(MethodBuildToken.DateFormatted, null));
 							break;
-						case 'L':
+						case 'L': // Level
 							validator.Add(new ParseToken(MethodBuildToken.LogLevelSpaced, null));
+							break;
+						case 'S': // Stack
+							validator.Add(new ParseToken(MethodBuildToken.StackFormatted, null));
 							break;
 						}
 						c++;
@@ -117,13 +121,14 @@
 			Type[] argsInt = { typeof(int) };
 
 			// common InfosTypes
-			MethodInfo miStringBuilder_Append_String = typeof(StringBuilder).GetMethod("Append", argsString);
-			MethodInfo miLog_GenLogLevelSpaced = typeof(LogHelper).GetMethod("GenLogLevelSpaced");
-			MethodInfo miLog_GenDateFormatted = typeof(LogHelper).GetMethod("GenDateFormatted");
-			MethodInfo miLog_GenErrorTextFormatted = typeof(LogHelper).GetMethod("GenErrorTextFormatted", argsInt);
+			MethodInfo miStringBuilder_Append_String = typeof(StringBuilder).GetMethod(nameof(StringBuilder.Append), argsString);
+			MethodInfo miLog_GenLogLevelSpaced = typeof(LogHelper).GetMethod(nameof(LogHelper.GenLogLevelSpaced));
+			MethodInfo miLog_GenDateFormatted = typeof(LogHelper).GetMethod(nameof(LogHelper.GenDateFormatted));
+			MethodInfo miLog_GenErrorTextFormatted = typeof(LogHelper).GetMethod(nameof(LogHelper.GenErrorTextFormatted), argsInt);
+			MethodInfo miLog_GenStackTraceFormatted = typeof(LogHelper).GetMethod(nameof(LogHelper.GenStackTraceFormatted), argsInt);
 
 			// prepare callback invoke
-			ilGen.Emit(OpCodes.Ldsfld, typeof(Log).GetField("callbackAction", BindingFlags.NonPublic | BindingFlags.Static));
+			ilGen.Emit(OpCodes.Ldsfld, typeof(Log).GetField(nameof(callbackAction), BindingFlags.NonPublic | BindingFlags.Static));
 			ilGen.Emit(OpCodes.Ldc_I4, callbackCount);
 			ilGen.Emit(OpCodes.Ldelem_Ref);
 
@@ -137,7 +142,7 @@
 				switch (part.TokenType)
 				{
 				case MethodBuildToken.Text:
-					ilGen.Emit(OpCodes.Ldstr, part.Value);
+					ilGen.Emit(OpCodes.Ldstr, (string)part.Value);
 					break;
 				case MethodBuildToken.LogLevelSpaced:
 					ilGen.Emit(OpCodes.Ldarg_0);
@@ -153,8 +158,10 @@
 					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenDateFormatted, null);
 					break;
 				case MethodBuildToken.StackFormatted:
-					throw new NotImplementedException();
-				//break;
+					ilGen.Emit(OpCodes.Ldarg_0);
+					ilGen.Emit(OpCodes.Ldc_I4_M1);
+					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenStackTraceFormatted, null);
+					break;
 				default:
 					throw new InvalidProgramException("Undefined MethodBuildToken occoured");
 				}
@@ -162,8 +169,8 @@
 			}
 
 			// call ToString and the callback method
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("ToString", Type.EmptyTypes), null);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(CallbackActionDelegate).GetMethod("Invoke", argsString), null);
+			ilGen.EmitCall(OpCodes.Callvirt, typeof(StringBuilder).GetMethod(nameof(StringBuilder.ToString), Type.EmptyTypes), null);
+			ilGen.EmitCall(OpCodes.Callvirt, typeof(CallbackActionDelegate).GetMethod(nameof(CallbackActionDelegate.Invoke), argsString), null);
 
 			ilGen.Emit(OpCodes.Ret);
 
@@ -207,6 +214,7 @@
 				return;
 
 			LogHelper lh = new LogHelper(lvl, new StackTrace(1), errText, infos);
+			lh.GenStackTraceFormatted(-1);
 			lock (writeLock)
 			{
 				foreach (var callbackProc in callbackProcessor)
@@ -244,14 +252,13 @@
 				this.errorTextRaw = errorTextRaw;
 				this.infos = infos;
 				this.level = level;
-				StackTraceFormatted = new string[stackTrace.FrameCount * 2];
 			}
 
 			public string LogLevelRaw = null;
 			public string LogLevelSpaced = null;
 			public string ErrorTextFormatted = null;
 			public string DateFormatted = null;
-			public string[] StackTraceFormatted = null;
+			public List<string> StackTraceFormatted = null;
 
 			public string GenLogLevelRaw()
 			{
@@ -279,7 +286,7 @@
 					if (linebreakIndent > 0)
 					{
 						string spaces = new string(' ', linebreakIndent);
-						inputbuffer = Regex.Replace(inputbuffer, @"(\r\n?|\n)", (x) => x.Value + spaces);
+						inputbuffer = Regex.Replace(inputbuffer, @"(\r\n?|\n)", (x) => x.Value + spaces); // Test vs compiled, vs StrB
 					}
 					ErrorTextFormatted = inputbuffer;
 				}
@@ -293,6 +300,34 @@
 					DateFormatted = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
 				}
 				return DateFormatted;
+			}
+
+			public string GenStackTraceFormatted(int stackDepth)
+			{
+				var strb = new StringBuilder();
+				if (stackDepth < 0) stackDepth = stackTrace.FrameCount;
+				if (StackTraceFormatted == null)
+				{
+					StackTraceFormatted = new List<string>(stackDepth);
+
+					foreach (var frames in stackTrace.GetFrames())
+					{
+						var method = frames.GetMethod();
+						bool endOfIl = method.MethodImplementationFlags == MethodImplAttributes.InternalCall;
+						if (endOfIl)
+							strb.Append("$internal");
+						else
+							strb.Append(method.ToString()).Append('@').Append(frames.GetFileLineNumber());
+						StackTraceFormatted.Add(strb.ToString());
+						strb.Clear();
+						if (endOfIl) break;
+					}
+				}
+				for (int i = 0; i < Math.Min(stackDepth, StackTraceFormatted.Count); i++)
+					strb.Append(StackTraceFormatted[i]).Append('\n'); // or .Append('>')
+				strb.Length--; // remove last char
+				strb.Append(" T:").Append(Thread.CurrentThread.Name);
+				return strb.ToString();
 			}
 
 			public static string ExtractAnonymous(string name)
@@ -310,9 +345,9 @@
 		private class ParseToken
 		{
 			public readonly MethodBuildToken TokenType;
-			public readonly string Value;
+			public readonly object Value;
 
-			public ParseToken(MethodBuildToken tokenType, string value)
+			public ParseToken(MethodBuildToken tokenType, object value)
 			{
 				TokenType = tokenType;
 				Value = value;

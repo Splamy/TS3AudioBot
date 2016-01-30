@@ -31,7 +31,7 @@
 			if (timeout != Timeout.InfiniteTimeSpan)
 			{
 				timedOut = false;
-				timeOutPoint = DateTime.Now.Add(timeout);
+				timeOutPoint = Util.GetNow().Add(timeout);
 				timeOutTicker.Active = true;
 			}
 
@@ -51,7 +51,7 @@
 
 		private void RunTimeout()
 		{
-			if (DateTime.Now >= timeOutPoint)
+			if (Util.GetNow() >= timeOutPoint)
 			{
 				timeOutTicker.Active = false;
 				timedOut = true;

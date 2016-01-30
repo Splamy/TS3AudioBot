@@ -1,4 +1,8 @@
 # TS3AudioBot
+|master|develop|
+|:--:|:--:|
+|[![Build Status](https://travis-ci.org/Splamy/TS3MusicBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3MusicBot)|[![Build Status](https://travis-ci.org/Splamy/TS3MusicBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3MusicBot)|
+
 ## About
 This is our open-source TeamSpeak 3 audiobot project since
 we haven't found any other open-source one so far.  

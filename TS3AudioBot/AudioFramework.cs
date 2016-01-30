@@ -100,7 +100,7 @@
 		/// </summary>
 		private void NotifyEnd()
 		{
-			if (endTime < DateTime.Now)
+			if (endTime < Util.GetNow())
 			{
 				if (playerConnection.IsPlaying)
 				{
@@ -108,9 +108,9 @@
 					int position = playerConnection.Position;
 
 					int endspan = playtime - position;
-					endTime = DateTime.Now.AddSeconds(endspan);
+					endTime = Util.GetNow().AddSeconds(endspan);
 				}
-				else if (endTime + SongEndTimeout < DateTime.Now)
+				else if (endTime + SongEndTimeout < Util.GetNow())
 				{
 					Log.Write(Log.Level.Debug, "AF Song ended with default timeout");
 					SongEnd();
@@ -149,13 +149,14 @@
 				Volume = playData.Volume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 
-			if (OnResourceStarted != null)
-				OnResourceStarted(this, playData);
-
+			OnResourceStarted?.Invoke(this, playData);
 			CurrentPlayData = playData;
-			endTime = DateTime.Now;
+
 			if (!playerConnection.SupportsEndCallback)
+			{
+				endTime = Util.GetNow();
 				waitEndTick.Active = true;
+			}
 			return AudioResultCode.Success;
 		}
 
@@ -173,9 +174,9 @@
 			if (CurrentPlayData != null)
 			{
 				CurrentPlayData = null;
-				playerConnection.AudioStop();
-				if (OnResourceStopped != null)
-					OnResourceStopped(this, restart);
+				if (!restart)
+					playerConnection.AudioStop();
+				OnResourceStopped?.Invoke(this, restart);
 			}
 		}
 

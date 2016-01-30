@@ -15,7 +15,7 @@
 		private IQueryConnection queryConnection;
 		private BobControllerData bobControllerData;
 		private TickWorker timeout;
-		private DateTime lastUpdate = DateTime.Now;
+		private DateTime lastUpdate = Util.GetNow();
 		private WaitEventBlock<MusicData> musicInfoWaiter;
 		public MusicData CurrentMusicInfo { get; private set; }
 
@@ -262,6 +262,7 @@
 
 		internal void OnResourceStarted(object sender, PlayData playData)
 		{
+			Log.Write(Log.Level.Debug, "BC Ressource started");
 			BobStart();
 			Pause = false;
 			Sending = true;
@@ -270,6 +271,7 @@
 
 		internal void OnResourceStopped(object sender, bool restart)
 		{
+			Log.Write(Log.Level.Debug, "BC Ressource ended ({0})", restart);
 			if (!restart)
 			{
 				Sending = false;
@@ -293,17 +295,18 @@
 
 		private void BobStop()
 		{
+			Log.Write(Log.Level.Debug, "BC initialted Bob-stop (isRunning={0})", isRunning);
 			if (isRunning)
 			{
 				HasUpdate();
-				Log.Write(Log.Level.Debug, "BC start timeout");
 				timeout.Active = true;
+				Log.Write(Log.Level.Debug, "BC start timeout");
 			}
 		}
 
 		private void BobExit()
 		{
-			Log.Write(Log.Level.Info, "BC Stopping bob");
+			Log.Write(Log.Level.Info, "BC Exiting bob");
 			SendMessage("exit");
 		}
 
@@ -315,7 +318,14 @@
 			if (e.ServerGroups.ToIntArray().Contains(bobControllerData.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = queryConnection.GetClientById(e.ClientId);
+				bobClient = new ClientData()
+				{
+					ChannelId = e.TargetChannelId,
+					DatabaseId = e.DatabaseId,
+					Id = e.ClientId,
+					NickName = e.NickName,
+					Type = e.Type,
+				};
 				isRunning = true;
 				awaitingConnect = false;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
@@ -325,6 +335,9 @@
 
 		private void OnBobDisconnnect(object sender, ClientLeftView e)
 		{
+			if (bobClient == null || e.ClientId != bobClient.Id) return;
+
+			bobClient = null;
 			isRunning = false;
 			commandQueue.Clear();
 			timeout.Active = false;
@@ -333,12 +346,12 @@
 
 		public void HasUpdate()
 		{
-			lastUpdate = DateTime.Now;
+			lastUpdate = Util.GetNow();
 		}
 
 		private void TimeoutCheck()
 		{
-			if (lastUpdate + BobTimeout < DateTime.Now)
+			if (lastUpdate + BobTimeout < Util.GetNow())
 			{
 				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
 				BobExit();

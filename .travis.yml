@@ -1,2 +1,58 @@
+sudo: false
 language: csharp
+
+compiler:
+  - clang
+
+cache:
+  apt: true
+  directories:
+  - $HOME/FFmpegbin
+
+addons:
+  apt:
+    sources:
+    # Try to add up to date compilers
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.6
+    packages:
+    - nasm
+    - build-essential
+    - cmake
+    - libcppunit-dev
+    - gcc-5
+    - g++-5
+    - clang-3.6
+
+install:
+  - nuget restore TS3AudioBot.sln
+  - nuget install NUnit.Runners -OutputDirectory nunit
+
+before_script:
+  - export THREADS=$((`nproc` + 1))
+  - echo "THREADS = $THREADS"
+  - export MAIN_DIR=`pwd`
+  - cd "$HOME"
+  - git clone --depth=1 https://github.com/FFmpeg/FFmpeg.git
+  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then mkdir -p FFmpegbin; cd FFmpegbin; fi
+  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then $HOME/FFmpeg/configure --enable-shared; fi
+  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then make -j $THREADS; fi
+
 solution: TS3AudioBot.sln
+script:
+  - cd $MAIN_DIR
+  - cd TS3AudioBob
+  - mkdir bin
+  - cd bin
+  - cmake .. -DAVCODEC_INCLUDE_DIRS="$HOME/FFmpeg" -DAVCODEC_LIBRARIES="$HOME/FFmpegbin/libavcodec/libavcodec.so" -DAVFILTER_INCLUDE_DIRS="$HOME/FFmpeg" -DAVFILTER_LIBRARIES="$HOME/FFmpegbin/libavfilter/libavfilter.so" -DAVFORMAT_INCLUDE_DIRS="$HOME/FFmpeg" -DAVFORMAT_LIBRARIES="$HOME/FFmpegbin/libavformat/libavformat.so" -DAVUTIL_INCLUDE_DIRS="$HOME/FFmpegbin" -DAVUTIL_LIBRARIES="$HOME/FFmpegbin/libavutil/libavutil.so" -DSWSCALE_INCLUDE_DIRS="$HOME/FFmpeg" -DSWSCALE_LIBRARIES="$HOME/FFmpegbin/libswscale/libswscale.so" -DSWRESAMPLE_INCLUDE_DIRS="$HOME/FFmpeg" -DSWRESAMPLE_LIBRARIES="$HOME/FFmpegbin/libswresample/libswresample.so" -DSWSCALE_INCLUDE_DIRS="$HOME/FFmpeg" -DSWSCALE_LIBRARIES="$HOME/FFmpegbin/libswscale/libswscale.so"
+  - make VERBOSE=1 -j $THREADS
+  - LD_LIBRARY_PATH="$HOME/FFmpegbin/libavcodec:$HOME/FFmpegbin/libavfilter:$HOME/FFmpegbin/libavformat:$HOME/FFmpegbin/libavutil:$HOME/FFmpegbin/libswresample:$HOME/FFmpegbin/libswscale" ./ts3audiobobtest
+
+  - cd "$MAIN_DIR"
+  - xbuild /p:Configuration=Release TS3AudioBot.sln
+#  - mono ./nunit/NUnit.Console.*.*.*/tools/nunit-console.exe ./TS3AudioBot/TS3AudioBot/bin/Release/TS3AudioBot.exe
+
+after_script:
+  - cd $MAIN_DIR
+  - chmod u+x ts3notify.sh
+  - ./ts3notify.sh

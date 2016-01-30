@@ -276,7 +276,7 @@
 			var ale = new AudioLogEntry(CurrentID, resource.AudioType, resource.ResourceId, fileStream.Position)
 			{
 				UserInvokeId = (uint)playData.Invoker.DatabaseId,
-				Timestamp = GetNow(),
+				Timestamp = Util.GetNow(),
 				Title = resource.ResourceTitle,
 				PlayCount = 1,
 			};
@@ -291,7 +291,7 @@
 
 			// update the playtime
 			timeFilter.Remove(ale.Timestamp);
-			ale.Timestamp = GetNow();
+			ale.Timestamp = Util.GetNow();
 			timeFilter.Add(ale.Timestamp, ale);
 
 			// update the playcount
@@ -357,8 +357,6 @@
 			}
 			uidList.Add(value);
 		}
-
-		private static DateTime GetNow() => DateTime.Now;
 
 		private void Clear()
 		{
