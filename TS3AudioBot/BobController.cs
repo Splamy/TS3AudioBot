@@ -306,8 +306,11 @@
 
 		private void BobExit()
 		{
-			Log.Write(Log.Level.Info, "BC Exiting bob");
-			SendMessage("exit");
+			if (isRunning)
+			{
+				Log.Write(Log.Level.Info, "BC Exiting bob");
+				SendMessage("exit");
+			}
 		}
 
 		private void OnBobConnect(object sender, ClientEnterView e)

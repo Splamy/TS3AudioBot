@@ -123,7 +123,7 @@
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
 
-		public string RestoreLink(string id) => $"https://youtu.be/{id}";
+		public string RestoreLink(string id) => $"[url=https://youtu.be/{id}]https://youtu.be/{id}[/url]";
 
 		public void PostProcess(PlayData data, out bool abortPlay)
 		{

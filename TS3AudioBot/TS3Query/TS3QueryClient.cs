@@ -61,6 +61,7 @@
 		private StreamWriter tcpWriter;
 		private Thread readQueryThread;
 
+		private bool isQuitting;
 		private readonly object lockObj = new object();
 		private Queue<WaitBlock> requestQueue = new Queue<WaitBlock>();
 
@@ -138,6 +139,7 @@
 			if (IsConnected)
 				Quit();
 
+			isQuitting = false;
 			CurrentHost = hostname;
 			CurrentPort = port;
 
@@ -153,7 +155,6 @@
 
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
-
 
 			if (readQueryThread != null)
 			{
@@ -181,9 +182,13 @@
 			new Parameter("client_nickname", newName));
 		public void Quit()
 		{
-			tcpWriter.WriteLine("quit");
-			tcpWriter.Flush();
-			IsConnected = false;
+			lock (lockObj)
+			{
+				isQuitting = true;
+				tcpWriter.WriteLine("quit");
+				tcpWriter.Flush();
+				IsConnected = false;
+			}
 		}
 		public WhoAmI WhoAmI() => Send<WhoAmI>("whoami").FirstOrDefault();
 		public void SendMessage(string message, ClientData client)
@@ -250,6 +255,8 @@
 					// we (hopefully) only need to lock here for the dequeue
 					lock (lockObj)
 					{
+						if (isQuitting) break;
+
 						var errorStatus = GenerateErrorStatus(message);
 						if (!errorStatus.Ok)
 							requestQueue.Dequeue().SetAnswer(errorStatus);

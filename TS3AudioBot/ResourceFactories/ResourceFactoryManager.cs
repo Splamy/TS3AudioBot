@@ -26,7 +26,7 @@
 
 		public void LoadAndPlay(AudioType audioType, PlayData data)
 		{
-			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == audioType);
+			var factory = GetFactoryFor(audioType);
 			LoadAndPlay(factory, data);
 		}
 
@@ -54,7 +54,7 @@
 
 		internal void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
 		{
-			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == logEntry.AudioType);
+			var factory = GetFactoryFor(logEntry.AudioType);
 
 			if (data.Resource == null)
 			{
@@ -89,6 +89,12 @@
 			}
 		}
 
+		private IResourceFactory GetFactoryFor(AudioType audioType)
+		{
+			foreach (var fac in factories)
+				if (fac.FactoryFor == audioType) return fac;
+			return DefaultFactorty;
+		}
 		private IResourceFactory GetFactoryFor(string uri)
 		{
 			foreach (var fac in factories)
