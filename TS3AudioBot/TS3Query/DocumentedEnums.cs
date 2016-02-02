@@ -5,8 +5,10 @@ namespace TS3Query
 
 	public enum HostMessageMode
 	{
+		/// <summary>Dont display anything</summary>
+		None = 0,
 		/// <summary>Display message in chatlog.</summary>
-		Log = 1,
+		Log,
 		/// <summary>Display message in modal dialog.</summary>
 		Modal,
 		/// <summary>Display message in modal dialog and close connection.</summary>

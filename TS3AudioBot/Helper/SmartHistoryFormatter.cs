@@ -9,6 +9,7 @@ namespace TS3AudioBot.Helper
 	internal class SmartHistoryFormatter
 	{
 		private const int TS3_MAXLENGTH = 1024;
+		private int LineLimit = 40;
 
 		public string ProcessQuery(AudioLogEntry entry)
 		{
@@ -17,58 +18,38 @@ namespace TS3AudioBot.Helper
 
 		public string ProcessQuery(IEnumerable<AudioLogEntry> entries)
 		{
-			const string header = "Look what I found:\n";
-			List<LineBuilder> lines = new List<LineBuilder>();
-
-			int currentLength = TokenLength(header);
-			int maxLimit = currentLength;
-			int skip = 0;
-			foreach (var entry in entries)
-			{
-				var lb = new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString());
-				lines.Add(lb);
-				currentLength += lb.TokenLength;
-				maxLimit += lb.MinLength;
-				if (maxLimit > TS3_MAXLENGTH)
-					maxLimit -= lines[skip++].TokenLength;
-			}
-
-			StringBuilder strb;
-			if (lines.Count == 0)
-			{
+			if (!entries.Any())
 				return "I found nothing!";
-			}
-			else
+
+			const string header = "Look what I found:\n";
+			int currentLength = TokenLength(header);
+
+			var lines = entries.Select(entry => new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString()));
+			lines = lines.Reverse();
+
+			// List all lines
+			var finList = new List<LineBuilder>();
+			var lenu = lines.GetEnumerator();
+			while (lenu.MoveNext())
 			{
-				strb = new StringBuilder(TS3_MAXLENGTH);
-				strb.Append(header);
+				var line = lenu.Current;
+
+				line.LimitTo = LineLimit;
+				int tokenLen = line.TokenLength;
+				if (currentLength + tokenLen > TS3_MAXLENGTH)
+					break;
+
+				finList.Add(line);
+				currentLength += tokenLen;
 			}
 
-			if (currentLength < TS3_MAXLENGTH)
-			{
-				for (int i = 0; i < lines.Count; i++)
-					lines[i].InsertTo(strb);
-			}
-			else
-			{
-				int tokenCount = TokenLength(header);
-				int limitTo;
-				int linesLeft = lines.Count - skip;
-				foreach (var line in lines.Skip(skip))
-				{
-					if (skip > 0)
-						limitTo = 0;  // minimal size per line
-					else
-						limitTo = (TS3_MAXLENGTH - tokenCount) / linesLeft;
-					linesLeft--;
-
-					line.LimitTo = limitTo;
-					line.InsertTo(strb);
-					tokenCount += line.TokenLength;
-				}
-			}
+			// Build the lines
+			var strb = new StringBuilder(header, TS3_MAXLENGTH);
+			foreach (var line in finList.Reverse<LineBuilder>())
+				line.InsertTo(strb);
 			string result = strb.ToString();
-			// Validate
+
+			// Validate the result
 			if (TokenLength(result) > TS3_MAXLENGTH)
 			{
 				Log.Write(Log.Level.Error, "Formatter: Parsed string is too long: {0}", result);
@@ -99,7 +80,7 @@ namespace TS3AudioBot.Helper
 					else
 					{
 						int titleForceLen = Math.Max(LimitTo - (ConstLength + DOTS_LENGTH), TITLE_MIN_LENGTH);
-						string primSub = Title.Substring(0, titleForceLen);
+						string primSub = Title.Length > 10 ? Title.Substring(0, titleForceLen) : Title;
 						int curTrim = TokenLength(primSub);
 						if (curTrim > titleForceLen)
 						{
