@@ -1,4 +1,4 @@
-﻿namespace TS3Query
+namespace TS3Query
 {
 	// http://media.teamspeak.com/ts3_literature/TeamSpeak%203%20Server%20Query%20Manual.pdf
 	// public_definitions.h from the ts3 plugin library

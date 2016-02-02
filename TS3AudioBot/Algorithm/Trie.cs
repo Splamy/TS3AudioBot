@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.Algorithm
+namespace TS3AudioBot.Algorithm
 {
 	using System;
 	using System.Globalization;

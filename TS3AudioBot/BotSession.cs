@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot
+namespace TS3AudioBot
 {
 	using TS3Query;
 	using TS3Query.Messages;

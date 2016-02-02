@@ -1,4 +1,4 @@
-﻿namespace TS3Query.Messages
+namespace TS3Query.Messages
 {
 	using System;
 	using System.Linq;

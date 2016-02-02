@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.Helper.AudioTags
+namespace TS3AudioBot.Helper.AudioTags
 {
 	using System;
 	using System.Collections.Generic;

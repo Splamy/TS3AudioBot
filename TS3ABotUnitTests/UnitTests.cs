@@ -1,4 +1,4 @@
-﻿using LockCheck;
+using LockCheck;
 using NUnit.Framework;
 using TS3AudioBot;
 using TS3AudioBot.Algorithm;

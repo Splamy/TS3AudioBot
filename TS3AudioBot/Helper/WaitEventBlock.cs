@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.Helper
+namespace TS3AudioBot.Helper
 {
 	using System;
 	using System.Threading;

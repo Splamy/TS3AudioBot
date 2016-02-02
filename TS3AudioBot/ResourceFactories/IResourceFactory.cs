@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 
