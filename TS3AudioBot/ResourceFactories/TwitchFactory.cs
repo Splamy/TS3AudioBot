@@ -2,7 +2,6 @@
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Net;
 	using System.Text.RegularExpressions;
 	using System.Web.Script.Serialization;
 	using TS3AudioBot.Helper;
@@ -11,12 +10,10 @@
 	{
 		private Regex twitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private Regex m3u8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		private WebClient client;
 		private JavaScriptSerializer jsonParser;
 
 		public TwitchFactory()
 		{
-			client = new WebClient();
 			jsonParser = new JavaScriptSerializer();
 		}
 
@@ -39,8 +36,7 @@
 
 			// request api token
 			string jsonResponse;
-			try { jsonResponse = client.DownloadString($"http://api.twitch.tv/api/channels/{channel}/access_token"); }
-			catch (WebException)
+			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token")))
 			{
 				resource = null;
 				return RResultCode.NoConnection;
@@ -54,8 +50,7 @@
 			// guaranteed to be random, chosen by fair dice roll.
 			var random = 4;
 			string m3u8;
-			try { m3u8 = client.DownloadString($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}"); }
-			catch (WebException)
+			if (!WebWrapper.DownloadString(out m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))
 			{
 				resource = null;
 				return RResultCode.NoConnection;
@@ -150,14 +145,7 @@
 
 		public string RestoreLink(string id) => $"[url=http://www.twitch.tv/{id}]http://www.twitch.tv/{id}[/url]";
 
-		public void Dispose()
-		{
-			if (client != null)
-			{
-				client.Dispose();
-				client = null;
-			}
-		}
+		public void Dispose() { }
 	}
 
 	class StreamData

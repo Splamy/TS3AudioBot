@@ -3,11 +3,11 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using System.Net;
 	using System.Text.RegularExpressions;
 	using System.Web.Script.Serialization;
 	using System.Xml;
 	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.Helper;
 	using TS3AudioBot.ResourceFactories;
 
 	class PlaylistManager : IDisposable
@@ -24,7 +24,6 @@
 		// folder as playlist
 		// managing ?
 
-		private WebClient client;
 		private PlaylistManagerData data;
 		private JavaScriptSerializer json;
 
@@ -40,7 +39,6 @@
 		{
 			data = pmd;
 			json = new JavaScriptSerializer();
-			client = new WebClient();
 			shuffle = new ListedShuffle();
 			dataSets = new List<DataSet>();
 		}
@@ -68,8 +66,7 @@
 			if (!dataSets.Contains(set))
 			{
 				dataSets.Add(set);
-				dataSetLength = dataSets.Sum(s => s.Length);
-				shuffle.SetData(dataSetLength);
+				RecalcDataSet();
 			}
 		}
 
@@ -78,6 +75,7 @@
 			if (dataSets.Contains(set))
 			{
 				dataSets.Remove(set);
+				RecalcDataSet();
 			}
 		}
 
@@ -103,8 +101,11 @@
 			object nextToken = null;
 			do
 			{
-				string queryString = $"https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId={id}{(hasNext ? ("&pageToken=" + nextToken) : string.Empty)}&key={data.youtubeApiKey}";
-				var response = client.DownloadString(queryString);
+				var queryString = new Uri($"https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId={id}{(hasNext ? ("&pageToken=" + nextToken) : string.Empty)}&key={data.youtubeApiKey}");
+
+				string response;
+				if (!WebWrapper.DownloadString(out response, queryString))
+					throw new Exception(); // TODO correct error handling
 				var parsed = (Dictionary<string, object>)json.DeserializeObject(response);
 				var videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoDicts.Length];
@@ -118,8 +119,9 @@
 
 				if (loadLength)
 				{
-					queryString = $"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Id))}&part=contentDetails&key={data.youtubeApiKey}";
-					response = client.DownloadString(queryString);
+					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Id))}&part=contentDetails&key={data.youtubeApiKey}");
+					if (!WebWrapper.DownloadString(out response, queryString))
+						throw new Exception(); // TODO correct error handling
 					parsed = (Dictionary<string, object>)json.DeserializeObject(response);
 					videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 					for (int i = 0; i < videoDicts.Length; i++)
@@ -130,14 +132,7 @@
 			} while (hasNext);
 		}
 
-		public void Dispose()
-		{
-			if (client != null)
-			{
-				client.Dispose();
-				client = null;
-			}
-		}
+		public void Dispose() { }
 	}
 
 	abstract class DataSet

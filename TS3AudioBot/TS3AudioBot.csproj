@@ -64,6 +64,7 @@
     <Compile Include="Helper\SmartHistoryFormatter.cs" />
     <Compile Include="Helper\TickPool.cs" />
     <Compile Include="Helper\WaitEventBlock.cs" />
+    <Compile Include="Helper\WebWrapper.cs" />
     <Compile Include="HistoryManager.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />

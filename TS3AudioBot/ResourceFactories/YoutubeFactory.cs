@@ -3,7 +3,6 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
-	using System.Net;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
@@ -14,14 +13,10 @@
 	{
 		private Regex idMatch = new Regex(@"(&|\?)v=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		private WebClient wc;
 
 		public AudioType FactoryFor => AudioType.Youtube;
 
-		public YoutubeFactory()
-		{
-			wc = new WebClient();
-		}
+		public YoutubeFactory() { }
 
 		public bool MatchLink(string link) => linkMatch.IsMatch(link);
 
@@ -38,14 +33,9 @@
 
 		public RResultCode GetResourceById(string ytID, string name, out AudioResource result)
 		{
-			string resulthtml = string.Empty;
-			try
+			string resulthtml;
+			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={ytID}&el=info")))
 			{
-				resulthtml = wc.DownloadString($"http://www.youtube.com/get_video_info?video_id={ytID}&el=info");
-			}
-			catch (WebException ex)
-			{
-				Log.Write(Log.Level.Warning, "Youtube downloadreqest failed: " + ex.Message);
 				result = null;
 				return RResultCode.NoConnection;
 			}
@@ -205,32 +195,7 @@
 		private static ValidateCode ValidateMedia(YoutubeResource resource)
 		{
 			var media = resource.AvailableTypes[resource.Selected];
-			var request = WebRequest.Create(media.link) as HttpWebRequest;
-			try
-			{
-				request.Timeout = 1000;
-				request.GetResponse();
-				return ValidateCode.Ok;
-			}
-			catch (WebException webEx)
-			{
-				HttpWebResponse errorResponse;
-				if (webEx.Status == WebExceptionStatus.Timeout)
-				{
-					Log.Write(Log.Level.Warning, "YT Video request timed out");
-					return ValidateCode.Timeout;
-				}
-				else if ((errorResponse = webEx.Response as HttpWebResponse) != null)
-				{
-					Log.Write(Log.Level.Warning, $"YT Video media error: [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
-					return ValidateCode.Restricted;
-				}
-				else
-				{
-					Log.Write(Log.Level.Warning, $"YT Video media error: {webEx}");
-					return ValidateCode.UnknownError;
-				}
-			}
+			return WebWrapper.CheckResponse(new Uri(media.link), TimeSpan.FromSeconds(1));
 		}
 
 		private static VideoCodec GetCodec(string type)
@@ -245,8 +210,7 @@
 				codecSubStr = lowtype.Substring("audio/".Length);
 				audioOnly = true;
 			}
-			else
-				return VideoCodec.Unknown;
+			else return VideoCodec.Unknown;
 
 			string extractedCodec;
 			int codecEnd;
@@ -269,14 +233,7 @@
 			}
 		}
 
-		public void Dispose()
-		{
-			if (wc != null)
-			{
-				wc.Dispose();
-				wc = null;
-			}
-		}
+		public void Dispose() { }
 	}
 
 	class VideoData
@@ -321,13 +278,5 @@
 		WEBM,
 		FLV,
 		ThreeGP,
-	}
-
-	enum ValidateCode
-	{
-		Ok,
-		UnknownError,
-		Restricted,
-		Timeout,
 	}
 }

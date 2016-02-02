@@ -37,11 +37,13 @@
 				{
 					if (peekStream != null)
 					{
-						name = AudioTagReader.GetTitle(peekStream);
-						name = string.IsNullOrWhiteSpace(name) ? id : name;
+						using (peekStream)
+						{
+							name = AudioTagReader.GetTitle(peekStream);
+							name = string.IsNullOrWhiteSpace(name) ? id : name;
+						}
 					}
-					else
-						name = id;
+					else name = id;
 				}
 
 				resource = new MediaResource(id, name, id, result);
@@ -80,19 +82,14 @@
 
 		private static RResultCode ValidateWeb(string link, out Stream stream)
 		{
-			stream = null;
-			var request = WebRequest.Create(link);
-			//if (request.Method == "GET")
-			//	request.Method = "HEAD";
-			try
+			WebResponse response;
+			if (WebWrapper.GetResponse(out response, new Uri(link)) != ValidateCode.Ok)
 			{
-				request.Timeout = 1000;
-				var response = request.GetResponse();
-				stream = response.GetResponseStream();
-				return RResultCode.Success;
+				stream = null;
+				return RResultCode.MediaNoWebResponse;
 			}
-			catch (WebException) { return RResultCode.MediaNoWebResponse; }
-			catch (ProtocolViolationException) { return RResultCode.MediaNoWebResponse; }
+			stream = response.GetResponseStream();
+			return RResultCode.Success;
 		}
 
 		private static RResultCode ValidateFile(string path, out Stream stream)

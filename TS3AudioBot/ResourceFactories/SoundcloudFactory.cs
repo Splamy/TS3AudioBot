@@ -2,13 +2,12 @@
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Net;
 	using System.Text.RegularExpressions;
 	using System.Web.Script.Serialization;
+	using TS3AudioBot.Helper;
 
 	class SoundcloudFactory : IResourceFactory
 	{
-		private WebClient wc;
 		private JavaScriptSerializer jsonParser;
 
 		public AudioType FactoryFor => AudioType.Soundcloud;
@@ -16,7 +15,6 @@
 
 		public SoundcloudFactory()
 		{
-			wc = new WebClient();
 			jsonParser = new JavaScriptSerializer();
 			SoundcloudClientID = "a9dd3403f858e105d7e266edc162a0c5";
 		}
@@ -26,16 +24,12 @@
 		public RResultCode GetResource(string link, out AudioResource resource)
 		{
 			string jsonResponse;
-			try
-			{
-				jsonResponse = wc.DownloadString($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientID}");
-			}
-			catch (WebException)
+			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientID}");
+			if (!WebWrapper.DownloadString(out jsonResponse, uri))
 			{
 				resource = null;
 				return RResultCode.ScInvalidLink;
 			}
-
 			var parsedDict = ParseJson(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
@@ -55,7 +49,7 @@
 			var parsedDict = ParseJson(jsonResponse);
 			string permaLink = (string)parsedDict["permalink_url"];
 			return $"[url={permaLink}]{permaLink}[/url]";
-        }
+		}
 
 		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
 
@@ -64,14 +58,7 @@
 			abortPlay = false;
 		}
 
-		public void Dispose()
-		{
-			if (wc != null)
-			{
-				wc.Dispose();
-				wc = null;
-			}
-		}
+		public void Dispose() { }
 	}
 
 	class SoundcloudResource : AudioResource
