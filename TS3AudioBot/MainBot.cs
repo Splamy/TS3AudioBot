@@ -272,6 +272,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
+			textMessage.Message = textMessage.Message.TrimStart(new[] { ' ' });
 			if (!textMessage.Message.StartsWith("!"))
 				return;
 			BobController.HasUpdate();

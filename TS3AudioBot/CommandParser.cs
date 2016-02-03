@@ -48,12 +48,14 @@ namespace TS3AudioBot
 						{
 							if (strPtr.Char >= 'a' && strPtr.Char <= 'z')
 								strb.Append(strPtr.Char);
-							else if (char.IsWhiteSpace(strPtr.Char))
+							else if (char.IsWhiteSpace(strPtr.Char) || strPtr.Char == '(' || strPtr.Char == ')' || strPtr.Char == '"')
 								break;
 							else
 								return new ParseError(request, buildCom, "The command can only contain lowercase letters a-z.");
 						}
 						buildCom.Command = strb.ToString();
+						if (string.IsNullOrWhiteSpace(buildCom.Command))
+							return new ParseError(request, buildCom, "A command must have a name");
 					}
 					build = BuildStatus.SelectParam;
 					break;
@@ -102,11 +104,10 @@ namespace TS3AudioBot
 						for (; !strPtr.End; strPtr.Next())
 						{
 							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext('!'))
-								|| strPtr.Char == ')')
+								|| strPtr.Char == ')'
+								|| char.IsWhiteSpace(strPtr.Char))
 								break;
 							strb.Append(strPtr.Char);
-							if (char.IsWhiteSpace(strPtr.Char))
-								break;
 						}
 					}
 					valFreeAst.Value = strb.ToString();
@@ -303,7 +304,6 @@ namespace TS3AudioBot
 
 		public ASTCommand()
 		{
-			Command = string.Empty;
 			Parameter = new List<ASTNode>();
 		}
 
