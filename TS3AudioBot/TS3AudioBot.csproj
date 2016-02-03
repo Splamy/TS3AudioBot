@@ -56,6 +56,7 @@
     <Compile Include="Algorithm\ListedShuffle.cs" />
     <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
     <Compile Include="AudioFramework.cs" />
+    <Compile Include="CommandParser.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\ConfigFile.cs" />
