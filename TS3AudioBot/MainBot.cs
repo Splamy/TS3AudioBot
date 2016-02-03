@@ -177,9 +177,6 @@ namespace TS3AudioBot
 			// [text] = Option for fixed text
 			// (a|b) = either or switch
 
-			builder.New("parse").Action(CommandParse).Permission(CommandRights.AnyVisibility)
-				.HelpData("For debugging purposes.").Finish();
-
 			builder.New("add").Action(CommandAdd).Permission(CommandRights.Private)
 				.HelpData("Adds a new song to the queue.")
 				.Parameter("<link>", "Any link that is also recognized by !play").Finish();
@@ -214,6 +211,9 @@ namespace TS3AudioBot
 				.HelpData("Plays the next song in the playlist.").Finish();
 			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public)
 				.HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
+			builder.New("parse").Action(CommandParse).Permission(CommandRights.Admin)
+				.HelpData("Displays the AST of the requested command.")
+				.Parameter("<command>", "The comand to be parsed").Finish();
 			builder.New("pause").Action(CommandPause).Permission(CommandRights.Private)
 				.HelpData("Well, pauses the song. Undo with !play").Finish();
 			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
@@ -400,19 +400,6 @@ namespace TS3AudioBot
 		}
 
 		// COMMANDS
-
-		private void CommandParse(BotSession session, string parameter)
-		{
-			try
-			{
-				var node = CommandParser.ParseCommandRequest(parameter);
-				session.Write(node.ToString());
-			}
-			catch
-			{
-				session.Write("GJ - You crashed it!!!");
-			}
-		}
 
 		private void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
@@ -691,6 +678,27 @@ namespace TS3AudioBot
 		{
 			BotSession ownSession = SessionManager.CreateSession(this, textMessage.InvokerId);
 			ownSession.Write("Hi " + textMessage.InvokerName);
+		}
+
+		private void CommandParse(BotSession session, string parameter)
+		{
+			if (!parameter.TrimStart().StartsWith("!"))
+			{
+				session.Write("This is not a command");
+				return;
+			}
+			try
+			{
+				var node = CommandParser.ParseCommandRequest(parameter);
+				StringBuilder strb = new StringBuilder();
+				strb.AppendLine();
+				node.Write(strb, 0);
+				session.Write(strb.ToString());
+			}
+			catch
+			{
+				session.Write("GJ - You crashed it!!!");
+			}
 		}
 
 		private void CommandPause(BotSession session, TextMessage textMessage)
@@ -1151,13 +1159,12 @@ namespace TS3AudioBot
 		MessageAndRemainder
 	}
 
-	[Flags]
 	public enum CommandRights
 	{
-		Admin = 0,
-		Public = 1 << 0,
-		Private = 1 << 1,
-		AnyVisibility = Public | Private,
+		Admin,
+		Public,
+		Private,
+		AnyVisibility,
 	}
 
 #pragma warning disable CS0649
