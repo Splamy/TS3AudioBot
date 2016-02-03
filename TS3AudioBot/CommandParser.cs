@@ -10,28 +10,39 @@ namespace TS3AudioBot
 	{
 		const char CommandChar = '!';
 
+		// This switch follows more or less a DEA to this EBNF
+		// COMMAND-EBNF := COMMAND
+
+		// COMMAND      := (!NAME \s+ (COMMAND|FREESTRING|QUOTESTRING|\s)*)
+		// NAME         := [a-z]+
+		// FREESTRING   := [^()]+
+		// QUOTESTRING  := "[<anything but '\"'>]+"
+
 		public static ASTCommand ParseCommandRequest(string request)
 		{
-			Stack<ASTNode> comAst = new Stack<ASTNode>();
-			BuildStatus build = BuildStatus.Init;
+			ASTCommand root = null;
+			Stack<ASTCommand> comAst = new Stack<ASTCommand>();
+			BuildStatus build = BuildStatus.ParseCommand;
+			StringBuilder strb = new StringBuilder();
 
-			for (int i = 0; i < request.Length; i++)
+			for (int i = 0; i < request.Length;)
 			{
-				char c = request[i];
+				char c;
 				switch (build)
 				{
-				case BuildStatus.Init:
-					ASTCommand buildCom = null;
-					if (c == CommandChar)
-					{
-						buildCom = new ASTCommand();
-						comAst.Push(buildCom);
-						build = BuildStatus.GetCommand;
-					}
-					break;
+				case BuildStatus.ParseCommand:
+					SkipSpace(ref i, request);
 
-				case BuildStatus.GetCommand:
-					StringBuilder strb = new StringBuilder();
+					ASTCommand buildCom = new ASTCommand();
+
+					if (request[i] == '(') i++;
+					if (!ValidateChar(ref i, request, CommandChar)) throw new InvalidOperationException();
+
+					if (root == null) root = buildCom;
+					else comAst.Peek().Parameter.Add(buildCom);
+					comAst.Push(buildCom);
+
+					strb.Clear();
 					for (; i < request.Length; i++)
 					{
 						c = request[i];
@@ -40,55 +51,85 @@ namespace TS3AudioBot
 						else if (char.IsWhiteSpace(c))
 							break;
 					}
-					ASTNode node = comAst.Peek();
-					if (node.Type != NodeType.Command)
-						throw new InvalidOperationException();
-					((ASTCommand)node).Command = strb.ToString();
-					build = BuildStatus.SkipSpace;
+					buildCom.Command = strb.ToString();
+					build = BuildStatus.SelectParam;
 					break;
 
-				case BuildStatus.SkipSpace:
-					while (i < request.Length && char.IsWhiteSpace(request[i])) i++;
-					build = BuildStatus.ParseParam;
-					break;
-
-				case BuildStatus.ParseParam:
-					node = comAst.Peek();
-					if (node.Type != NodeType.Command)
-						throw new InvalidOperationException();
-					ASTCommand comCur = (ASTCommand)node;
-
-					strb = new StringBuilder();
-					while (true)
+				case BuildStatus.SelectParam:
+					SkipSpace(ref i, request);
+					if (i >= request.Length)
+						build = BuildStatus.End;
+					else
 					{
-						if (i >= request.Length)
-						{
-							comCur.Parameter.Add(new ASTValue() { Value = strb.ToString() });
-							break;
-						}
-						else if (c != '(')
-						{
-							strb.Append(c);
-						}
-						else
+						c = request[i];
+						if (c == '"')
+							build = BuildStatus.ParseQuotedString;
+						else if (c == '(')
 						{
 							if (i + 1 >= request.Length)
-								break;
-
-							if (request[i + 1] != '!')
-								continue;
-
-							comCur.Parameter.Add(new ASTValue() { Value = strb.ToString() });
-							buildCom = new ASTCommand();
-							comCur.Parameter.Add(buildCom);
-							comAst.Push(buildCom);
-							build = BuildStatus.GetCommand;
-							break;
+								build = BuildStatus.ParseFreeString;
+							else if (request[i + 1] == '!')
+								build = BuildStatus.ParseCommand;
+							else
+								build = BuildStatus.ParseFreeString;
 						}
-
-						i++;
+						else if (c == ')')
+						{
+							if (!comAst.Any())
+								build = BuildStatus.End;
+							else
+							{
+								comAst.Pop();
+								if (!comAst.Any())
+									build = BuildStatus.End;
+							}
+							i++;
+						}
+						else
+							build = BuildStatus.ParseFreeString;
 					}
+					break;
 
+				case BuildStatus.ParseFreeString:
+					strb.Clear();
+
+					for (; i < request.Length; i++)
+					{
+						c = request[i];
+						if ((c == '(' && i + 1 < request.Length && request[i + 1] == '!')
+							|| c == ')')
+							break;
+						strb.Append(c);
+						if (char.IsWhiteSpace(c))
+							break;
+					}
+					buildCom = comAst.Peek();
+					buildCom.Parameter.Add(new ASTValue() { Value = strb.ToString() });
+					build = BuildStatus.SelectParam;
+					break;
+
+				case BuildStatus.ParseQuotedString:
+					strb.Clear();
+
+					if (!ValidateChar(ref i, request, '"')) throw new InvalidOperationException();
+
+					bool escaped = false;
+					for (; i < request.Length; i++)
+					{
+						c = request[i];
+						if (c == '\\') escaped = true;
+						else if (c == '"')
+						{
+							if (escaped) strb.Length--;
+							else { i++; break; }
+							escaped = false;
+						}
+						else escaped = false;
+						strb.Append(c);
+					}
+					buildCom = comAst.Peek();
+					buildCom.Parameter.Add(new ASTValue() { Value = strb.ToString() });
+					build = BuildStatus.SelectParam;
 					break;
 
 				case BuildStatus.End:
@@ -99,28 +140,52 @@ namespace TS3AudioBot
 				}
 			}
 
-			ASTNode lowCom = null;
-			while (comAst.Any())
-				comAst.Pop();
-			if (lowCom == null || lowCom.Type != NodeType.Command)
-				return null;
-			return (ASTCommand)lowCom;
+			return root;
+		}
+
+		private static void SkipSpace(ref int i, string text)
+		{
+			while (i < text.Length && char.IsWhiteSpace(text[i]))
+				i++;
+		}
+
+		private static bool ValidateChar(ref int i, string text, char c)
+		{
+			if (i >= text.Length)
+				return false;
+			bool ok = text[i] == c;
+			if (ok) i++;
+			return ok;
 		}
 
 		enum BuildStatus
 		{
-			Init,
-			GetCommand,
-			SkipSpace,
-			ParseParam,
-			GetStringValue,
+			ParseCommand,
+			SelectParam,
+			ParseFreeString,
+			ParseQuotedString,
 			End,
 		}
+	}
+
+	class ParseError
+	{
+		public int Position { get; set; }
+		public int Length { get; set; }
+		public string Description { get; set; }
 	}
 
 	abstract class ASTNode
 	{
 		public abstract NodeType Type { get; }
+
+		public abstract void Write(StringBuilder strb, int depth);
+		public override sealed string ToString()
+		{
+			StringBuilder strb = new StringBuilder();
+			Write(strb, 0);
+			return strb.ToString();
+		}
 	}
 
 	class ASTCommand : ASTNode
@@ -138,12 +203,27 @@ namespace TS3AudioBot
 			Command = string.Empty;
 			Parameter = new List<ASTNode>();
 		}
+
+		public override void Write(StringBuilder strb, int depth)
+		{
+			strb.Append(' ', depth);
+			strb.Append('!').Append(Command);
+			if (Resolved)
+				strb.Append(" : ").Append(Value);
+			else
+				strb.Append("<not executed>");
+			strb.AppendLine();
+			foreach (var para in Parameter)
+				para.Write(strb, depth + 1);
+		}
 	}
 
 	class ASTValue : ASTNode
 	{
 		public override NodeType Type => NodeType.Value;
 		public string Value { get; set; }
+
+		public override void Write(StringBuilder strb, int depth) => strb.Append(' ', depth).AppendLine(Value);
 	}
 
 	enum NodeType

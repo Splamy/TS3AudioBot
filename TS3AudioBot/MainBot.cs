@@ -177,6 +177,9 @@ namespace TS3AudioBot
 			// [text] = Option for fixed text
 			// (a|b) = either or switch
 
+			builder.New("parse").Action(CommandParse).Permission(CommandRights.AnyVisibility)
+				.HelpData("For debugging purposes.").Finish();
+
 			builder.New("add").Action(CommandAdd).Permission(CommandRights.Private)
 				.HelpData("Adds a new song to the queue.")
 				.Parameter("<link>", "Any link that is also recognized by !play").Finish();
@@ -397,6 +400,19 @@ namespace TS3AudioBot
 		}
 
 		// COMMANDS
+
+		private void CommandParse(BotSession session, string parameter)
+		{
+			try
+			{
+				var node = CommandParser.ParseCommandRequest(parameter);
+				session.Write(node.ToString());
+			}
+			catch
+			{
+				session.Write("GJ - You crashed it!!!");
+			}
+		}
 
 		private void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
