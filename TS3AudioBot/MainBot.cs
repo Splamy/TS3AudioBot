@@ -299,13 +299,23 @@ namespace TS3AudioBot
 				}
 			}
 
-			string commandSubstring = textMessage.Message.Substring(1);
-			string[] commandSplit = commandSubstring.Split(new[] { ' ' }, 2);
-			BotCommand command = null;
-			if (!commandDict.TryGetValue(commandSplit[0], out command))
+			ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
+			if (parsedAst.Type == NodeType.Error)
 			{
-				session.Write("Unknown command!");
-				return;
+				StringBuilder strb = new StringBuilder();
+				strb.AppendLine();
+				parsedAst.Write(strb, 0);
+				session.Write(strb.ToString());
+			}
+			else if (parsedAst.Type == NodeType.Command)
+			{
+				Validate(parsedAst, textMessage.Message);
+				CallCommandTree(parsedAst, session);
+			}
+			else
+			{
+				Log.Write(Log.Level.Error, "MB Parse error with: {0}", parsedAst);
+				session.Write("Internal command parsing error!");
 			}
 
 			string reason = string.Empty;
@@ -335,6 +345,35 @@ namespace TS3AudioBot
 			}
 
 			InvokeCommand(command, session, textMessage, commandSplit);
+		}
+
+		private bool Validate(ASTNode astnode, string fullRequest)
+		{
+			switch (astnode.Type)
+			{
+			case NodeType.Command:
+				ASTCommand com = (ASTCommand)astnode;
+				BotCommand foundCom;
+				if (commandDict.TryGetValue(com.Command, out foundCom))
+				{
+					com.BotCommand = foundCom;
+				}
+				else
+				{
+					new ParseError(fullRequest, com, "Unknown command!");
+				}
+				break;
+
+			case NodeType.Value:
+				break;
+			case NodeType.Error: return false;
+			default: return false;
+			}
+		}
+
+		private void LazyExecute(ASTNode astnode, BotSession session)
+		{
+
 		}
 
 		private static void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, string[] commandSplit)
@@ -393,7 +432,7 @@ namespace TS3AudioBot
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 
-		// COMMANDS
+		#region COMMANDS
 
 		private void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
 		{
@@ -890,7 +929,9 @@ namespace TS3AudioBot
 			FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(session, client, parameter, false));
 		}
 
-		// RESPONSES
+		#endregion
+
+		#region RESPONSES
 
 		private bool ResponseVolume(BotSession session, TextMessage tm, bool isAdmin)
 		{
@@ -913,6 +954,8 @@ namespace TS3AudioBot
 			}
 			return answer != Answer.Unknown;
 		}
+
+		#endregion
 
 		public void Dispose()
 		{
@@ -953,6 +996,32 @@ namespace TS3AudioBot
 				logStream = null;
 			}
 		}
+	}
+
+	class CommandExecuteNode
+	{
+		public ASTCommand commandNode;
+		public BotCommand botCommand;
+		public string parameter;
+		public bool Executed = false;
+		public string Value;
+	}
+
+	class LoopSession : BotSession
+	{
+		public MemoryStream memStream;
+		public StreamWriter writer;
+		public BotCommand parentCommand;
+
+		public LoopSession(MainBot bot) : base(bot)
+		{
+			memStream = new MemoryStream();
+			writer = new StreamWriter(memStream);
+		}
+
+		public override bool IsPrivate => parentCommand.CommandRights == CommandRights.Private;
+		public override void Write(string message) => writer.Write(message);
+		public void Clear() => memStream.SetLength(0);
 	}
 
 	public class PlayData

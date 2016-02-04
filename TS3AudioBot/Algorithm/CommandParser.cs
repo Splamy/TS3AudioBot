@@ -298,6 +298,7 @@
 		public string Command { get; set; }
 		public List<ASTNode> Parameter { get; set; }
 
+		public BotCommand BotCommand { get; set; }
 		public bool Resolved { get; set; }
 		public string Value { get; set; }
 
