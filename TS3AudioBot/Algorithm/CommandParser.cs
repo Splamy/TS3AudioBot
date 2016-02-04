@@ -50,11 +50,11 @@
 							else if (char.IsWhiteSpace(strPtr.Char) || strPtr.Char == '(' || strPtr.Char == ')' || strPtr.Char == '"')
 								break;
 							else
-								return new ParseError(request, buildCom, "The command can only contain lowercase letters a-z.");
+								return new ASTError(buildCom, "The command can only contain lowercase letters a-z.");
 						}
 						buildCom.Command = strb.ToString();
 						if (string.IsNullOrWhiteSpace(buildCom.Command))
-							return new ParseError(request, buildCom, "A command must have a name");
+							return new ASTError(buildCom, "A command must have a name");
 					}
 					build = BuildStatus.SelectParam;
 					break;
@@ -212,6 +212,7 @@
 				astnode = node;
 				if (node != null)
 				{
+					astnode.FullRequest = text;
 					astnode.Position = index;
 					astnode.Length = 0;
 				}
@@ -244,6 +245,8 @@
 	abstract class ASTNode
 	{
 		public abstract NodeType Type { get; }
+
+		public string FullRequest { get; set; }
 		public int Position { get; set; }
 		public int Length { get; set; }
 
@@ -258,24 +261,23 @@
 		}
 	}
 
-	class ParseError : ASTNode
+	class ASTError : ASTNode
 	{
 		public override NodeType Type => NodeType.Error;
 
 		public string Description { get; }
-		public string Request { get; }
 
-		public ParseError(string request, ASTNode referenceNode, string description)
+		public ASTError(ASTNode referenceNode, string description)
 		{
-			Request = request;
+			FullRequest = referenceNode.FullRequest;
 			Position = referenceNode.Position;
 			Length = referenceNode.Length;
 			Description = description;
 		}
 
-		public ParseError(string request, int pos, int len, string description)
+		public ASTError(string request, int pos, int len, string description)
 		{
-			Request = request;
+			FullRequest = request;
 			Position = pos;
 			Length = len;
 			Description = description;
@@ -283,7 +285,7 @@
 
 		public override void Write(StringBuilder strb, int depth)
 		{
-			strb.AppendLine(Request);
+			strb.AppendLine(FullRequest);
 			if (Position == 1) strb.Append('.');
 			else if (Position > 1) strb.Append(' ', Position);
 			strb.Append('~', Length).Append('^').AppendLine();
@@ -299,7 +301,6 @@
 		public List<ASTNode> Parameter { get; set; }
 
 		public BotCommand BotCommand { get; set; }
-		public bool Resolved { get; set; }
 		public string Value { get; set; }
 
 		public ASTCommand()
@@ -310,10 +311,7 @@
 		public override void Write(StringBuilder strb, int depth)
 		{
 			Space(strb, depth).Append('!').Append(Command);
-			if (Resolved)
-				strb.Append(" : ").Append(Value);
-			else
-				strb.Append("<not executed>");
+			strb.Append(" : ").Append(Value ?? string.Empty);
 			strb.AppendLine();
 			foreach (var para in Parameter)
 				para.Write(strb, depth + 1);

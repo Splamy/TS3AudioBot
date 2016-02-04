@@ -280,6 +280,7 @@ namespace TS3AudioBot
 
 			QueryConnection.RefreshClientBuffer(true);
 
+			// get the current session
 			BotSession session = SessionManager.GetSession(textMessage.Target, textMessage.InvokerId);
 			if (textMessage.Target == MessageTarget.Private && session == SessionManager.DefaultSession)
 			{
@@ -299,18 +300,23 @@ namespace TS3AudioBot
 				}
 			}
 
+			// parse (and execute) the command
 			ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
 			if (parsedAst.Type == NodeType.Error)
 			{
-				StringBuilder strb = new StringBuilder();
-				strb.AppendLine();
-				parsedAst.Write(strb, 0);
-				session.Write(strb.ToString());
+				PrintAstError(session, (ASTError)parsedAst);
 			}
 			else if (parsedAst.Type == NodeType.Command)
 			{
-				Validate(parsedAst, textMessage.Message);
-				CallCommandTree(parsedAst, session);
+				var commandAst = (ASTCommand)parsedAst;
+				if (Validate(session, parsedAst, textMessage, isAdmin))
+				{
+					LazyExecute(session, commandAst, textMessage);
+
+					// DEBUG
+					//var paramStr = string.Join(" ", commandAst.Parameter.Where(n => n.Type == NodeType.Value).Select(n => ((ASTValue)n).Value));
+					//InvokeCommand(commandAst.BotCommand, session, textMessage, new[] { null, paramStr });
+				}
 			}
 			else
 			{
@@ -318,9 +324,48 @@ namespace TS3AudioBot
 				session.Write("Internal command parsing error!");
 			}
 
+		}
+
+		private bool Validate(BotSession session, ASTNode astnode, TextMessage textMessage, Lazy<bool> isAdmin)
+		{
+			switch (astnode.Type)
+			{
+			case NodeType.Command:
+				ASTCommand com = (ASTCommand)astnode;
+				BotCommand foundCom;
+				if (!commandDict.TryGetValue(com.Command, out foundCom))
+				{
+					PrintAstError(session, new ASTError(com, "Unknown command!"));
+					return false;
+				}
+				com.BotCommand = foundCom;
+				if (!CheckRights(session, com, textMessage, isAdmin))
+					return false;
+
+				foreach (var param in com.Parameter)
+				{
+					if (param.Type == NodeType.Value)
+						continue;
+					if (!Validate(session, param, textMessage, isAdmin))
+						return false;
+				}
+				return true;
+
+			case NodeType.Value: return true;
+			case NodeType.Error: return false;
+			default: throw new InvalidOperationException();
+			}
+		}
+
+		private bool CheckRights(BotSession session, ASTCommand astcommand, TextMessage textMessage, Lazy<bool> isAdmin)
+		{
+			if (isAdmin.IsValueCreated && isAdmin.Value)
+				return true;
+
+			var command = astcommand.BotCommand;
 			string reason = string.Empty;
 			bool allowed = false;
-			// check if the command need certain rights/specs
+
 			switch (command.CommandRights)
 			{
 			case CommandRights.Admin:
@@ -338,42 +383,46 @@ namespace TS3AudioBot
 				allowed = true;
 				break;
 			}
+
 			if (!allowed && !isAdmin.Value)
 			{
-				session.Write(reason);
-				return;
+				PrintAstError(session, new ASTError(astcommand, reason));
+				return false;
 			}
-
-			InvokeCommand(command, session, textMessage, commandSplit);
+			else return true;
 		}
 
-		private bool Validate(ASTNode astnode, string fullRequest)
+		private void PrintAstError(BotSession session, ASTError asterror)
 		{
-			switch (astnode.Type)
+			StringBuilder strb = new StringBuilder();
+			strb.AppendLine();
+			asterror.Write(strb, 0);
+			session.Write(strb.ToString());
+		}
+
+		private void LazyExecute(BotSession session, ASTCommand astcommand, TextMessage textMessage)
+		{
+			StringBuilder paramBuild = new StringBuilder();
+			foreach (var param in astcommand.Parameter)
 			{
-			case NodeType.Command:
-				ASTCommand com = (ASTCommand)astnode;
-				BotCommand foundCom;
-				if (commandDict.TryGetValue(com.Command, out foundCom))
+				switch (param.Type)
 				{
-					com.BotCommand = foundCom;
-				}
-				else
-				{
-					new ParseError(fullRequest, com, "Unknown command!");
-				}
-				break;
+				case NodeType.Command:
+					using (LoopSession memSession = new LoopSession(this, astcommand.BotCommand))
+					{
+						LazyExecute(memSession, (ASTCommand)param, textMessage);
+						string result = memSession.Result();
+						paramBuild.Append(result);
+					}
+					break;
+				case NodeType.Value: paramBuild.Append(((ASTValue)param).Value); break;
 
-			case NodeType.Value:
-				break;
-			case NodeType.Error: return false;
-			default: return false;
+				case NodeType.Error:
+				default: throw new InvalidOperationException();
+				}
+				paramBuild.Append(' ');
 			}
-		}
-
-		private void LazyExecute(ASTNode astnode, BotSession session)
-		{
-
+			InvokeCommand(astcommand.BotCommand, session, textMessage, new[] { null, paramBuild.ToString() });
 		}
 
 		private static void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, string[] commandSplit)
@@ -998,30 +1047,33 @@ namespace TS3AudioBot
 		}
 	}
 
-	class CommandExecuteNode
-	{
-		public ASTCommand commandNode;
-		public BotCommand botCommand;
-		public string parameter;
-		public bool Executed = false;
-		public string Value;
-	}
-
-	class LoopSession : BotSession
+	class LoopSession : BotSession, IDisposable
 	{
 		public MemoryStream memStream;
 		public StreamWriter writer;
 		public BotCommand parentCommand;
 
-		public LoopSession(MainBot bot) : base(bot)
+		public LoopSession(MainBot bot, BotCommand command) : base(bot)
 		{
 			memStream = new MemoryStream();
 			writer = new StreamWriter(memStream);
+			parentCommand = command;
 		}
 
 		public override bool IsPrivate => parentCommand.CommandRights == CommandRights.Private;
 		public override void Write(string message) => writer.Write(message);
 		public void Clear() => memStream.SetLength(0);
+		public string Result()
+		{
+			memStream.Position = 0;
+			using (var reader = new StreamReader(memStream))
+				return reader.ReadToEnd();
+		}
+		public void Dispose()
+		{
+			writer.Dispose();
+			memStream.Dispose();
+		}
 	}
 
 	public class PlayData
@@ -1081,6 +1133,7 @@ namespace TS3AudioBot
 
 		public override string ToString()
 		{
+			// TODO rework param list
 			return string.Format("!{0} - {1} - {2} : {3}", InvokeName, CommandParameter, CommandRights, ParameterList);
 		}
 
