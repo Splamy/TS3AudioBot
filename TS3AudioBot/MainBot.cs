@@ -9,6 +9,7 @@ namespace TS3AudioBot
 
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Helper;
+	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
 
 	using TS3Query;
@@ -334,14 +335,6 @@ namespace TS3AudioBot
 			}
 
 			InvokeCommand(command, session, textMessage, commandSplit);
-		}
-
-		private void ParseCommandRequest(string request)
-		{
-			for (int strPtr = 0; strPtr < request.Length; strPtr++)
-			{
-
-			}
 		}
 
 		private static void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, string[] commandSplit)

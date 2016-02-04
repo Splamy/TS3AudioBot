@@ -1,4 +1,4 @@
-namespace TS3AudioBot
+﻿namespace TS3AudioBot.History
 {
 	using System;
 	using System.Collections.Generic;
@@ -6,97 +6,10 @@ namespace TS3AudioBot
 	using System.IO;
 	using System.Linq;
 	using System.Text;
-	using TS3AudioBot.Algorithm;
-	using TS3AudioBot.Helper;
-	using TS3AudioBot.ResourceFactories;
 
-	class HistoryManager : IDisposable
-	{
-		private HistoryFile historyFile;
-		private IEnumerable<AudioLogEntry> lastResult;
-		public SmartHistoryFormatter Formatter { get; private set; }
-		public uint HighestId => historyFile.CurrentID - 1;
-
-		public HistoryManager(HistoryManagerData hmd)
-		{
-			Formatter = new SmartHistoryFormatter();
-			historyFile = new HistoryFile();
-			historyFile.LoadFile(hmd.historyFile);
-		}
-
-		public void LogAudioResource(object sender, PlayData playData)
-		{
-			historyFile.Store(playData);
-		}
-
-		public IEnumerable<AudioLogEntry> Search(SeachQuery query)
-		{
-			IEnumerable<AudioLogEntry> filteredHistory = null;
-
-			if (!string.IsNullOrEmpty(query.TitlePart))
-			{
-				filteredHistory = historyFile.SearchTitle(query.TitlePart);
-				if (query.UserId != null)
-					filteredHistory = filteredHistory.Where(ald => ald.UserInvokeId == query.UserId.Value);
-				if (query.LastInvokedAfter != null)
-					filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter.Value);
-			}
-			else if (query.UserId != null)
-			{
-				filteredHistory = historyFile.SeachByUser(query.UserId.Value);
-				if (query.LastInvokedAfter != null)
-					filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter.Value);
-			}
-			else if (query.LastInvokedAfter != null)
-			{
-				filteredHistory = historyFile.SeachTillTime(query.LastInvokedAfter.Value);
-			}
-			else if (query.MaxResults >= 0)
-			{
-				lastResult = historyFile.GetLastXEntrys(query.MaxResults);
-				return lastResult;
-			}
-
-			lastResult = filteredHistory;
-			return filteredHistory.TakeLast(query.MaxResults);
-		}
-
-		public string SearchParsed(SeachQuery query)
-		{
-			var aleList = Search(query);
-			return Formatter.ProcessQuery(aleList);
-		}
-
-		public AudioLogEntry GetEntryById(uint id)
-		{
-			return historyFile.GetEntryById(id);
-		}
-
-		public void Dispose()
-		{
-			if (historyFile != null)
-			{
-				historyFile.Dispose();
-				historyFile = null;
-			}
-		}
-	}
-
-	class SeachQuery
-	{
-		public string TitlePart;
-		public uint? UserId;
-		public DateTime? LastInvokedAfter;
-		public int MaxResults;
-
-		public SeachQuery()
-		{
-			TitlePart = null;
-			UserId = null;
-			LastInvokedAfter = null;
-			MaxResults = 10;
-		}
-	}
+	using ResourceFactories;
+	using Algorithm;
+	using Helper;
 
 	class HistoryFile : IDisposable
 	{
@@ -373,88 +286,4 @@ namespace TS3AudioBot
 		}
 	}
 
-	class AudioLogEntry
-	{
-		public uint Id { get; private set; }
-		public uint UserInvokeId { get; set; }
-		public uint PlayCount { get; set; }
-		public DateTime Timestamp { get; set; }
-		public AudioType AudioType { get; private set; }
-		public string ResourceId { get; private set; }
-		public string Title { get; set; }
-
-		public long FilePosIndex { get; private set; }
-
-		public AudioLogEntry(uint id, AudioType audioType, string resId, long fileIndex)
-		{
-			Id = id;
-			PlayCount = 0;
-			AudioType = audioType;
-			ResourceId = resId;
-			FilePosIndex = fileIndex;
-		}
-
-		public string ToFileString()
-		{
-			StringBuilder strb = new StringBuilder();
-			// HEX STRINGS
-			strb.Append(AsHex(Id));
-			strb.Append(",");
-			strb.Append(AsHex(UserInvokeId));
-			strb.Append(",");
-			strb.Append(AsHex(PlayCount));
-			strb.Append(",");
-			strb.Append(AsHex(Timestamp.ToFileTime()));
-			strb.Append(",");
-
-			// OTHER STRINGS
-			strb.Append(AudioType.ToString());
-			strb.Append(",");
-			strb.Append(Uri.EscapeDataString(ResourceId));
-			strb.Append(",");
-			strb.Append(Uri.EscapeDataString(Title));
-
-			return strb.ToString();
-		}
-
-		public static AudioLogEntry Parse(string line, long readIndex)
-		{
-			string[] strParts = line.Split(',');
-			if (strParts.Length != 7)
-				return null;
-			// Array.ForEach(strParts) // check if spacetrims are needed
-			int index = 0;
-			uint id = uint.Parse(strParts[index++], NumberStyles.HexNumber);
-			uint userInvId = uint.Parse(strParts[index++], NumberStyles.HexNumber);
-			uint playCount = uint.Parse(strParts[index++], NumberStyles.HexNumber);
-			long dtStamp = long.Parse(strParts[index++], NumberStyles.HexNumber);
-			DateTime dateTime = DateTime.FromFileTime(dtStamp);
-			AudioType audioType;
-			if (!Enum.TryParse(strParts[index++], out audioType))
-				return null;
-			string resId = Uri.UnescapeDataString(strParts[index++]);
-			string title = Uri.UnescapeDataString(strParts[index++]);
-			return new AudioLogEntry(id, audioType, resId, readIndex)
-			{
-				PlayCount = playCount,
-				Timestamp = dateTime,
-				Title = title,
-				UserInvokeId = userInvId,
-			};
-		}
-
-		private static string AsHex(uint num) => num.ToString("X8", CultureInfo.InvariantCulture);
-		private static string AsHex(long num) => num.ToString("X16", CultureInfo.InvariantCulture);
-
-		public override string ToString()
-		{
-			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, ResourceId);
-		}
-	}
-
-	public struct HistoryManagerData
-	{
-		[Info("the absolute or relative path to the history database file")]
-		public string historyFile;
-	}
 }

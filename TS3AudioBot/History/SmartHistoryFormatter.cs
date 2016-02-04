@@ -1,4 +1,4 @@
-namespace TS3AudioBot.Helper
+﻿namespace TS3AudioBot.History
 {
 	using System;
 	using System.Collections.Generic;
@@ -22,7 +22,20 @@ namespace TS3AudioBot.Helper
 				return "I found nothing!";
 
 			const string header = "Look what I found:\n";
+			List<LineBuilder> lines = new List<LineBuilder>();
+
 			int currentLength = TokenLength(header);
+			int maxLimit = currentLength;
+			int skip = 0;
+			foreach (var entry in entries)
+			{
+				var lb = new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString());
+				lines.Add(lb);
+				currentLength += lb.TokenLength;
+				maxLimit += lb.MinLength;
+				if (maxLimit > TS3_MAXLENGTH)
+					maxLimit -= lines[skip++].TokenLength;
+			}
 
 			var lines = entries.Select(entry => new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString()));
 			lines = lines.Reverse();
