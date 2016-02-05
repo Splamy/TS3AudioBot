@@ -51,5 +51,8 @@ namespace TS3AudioBot.Helper
 		}
 
 		public static DateTime GetNow() => DateTime.Now;
+
+		private static Random rngInstance = new Random();
+		public static Random RngInstance => rngInstance;
 	}
 }

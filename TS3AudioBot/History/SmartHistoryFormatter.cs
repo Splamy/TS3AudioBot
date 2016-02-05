@@ -21,7 +21,7 @@
 			if (!entries.Any())
 				return "I found nothing!";
 
-			const string header = "Look what I found:\n";
+			string header = string.Empty;
 			int currentLength = TokenLength(header);
 
 			var lines = entries.Select(entry => new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString()));

@@ -222,6 +222,8 @@ namespace TS3AudioBot
 				.Parameter("<link>", "Youtube, Soundcloud, local path or file link").Finish();
 			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private)
 				.HelpData("Plays the previous song in the playlist.").Finish();
+			builder.New("print").Action(CommandPrint).Permission(CommandRights.AnyVisibility)
+				.HelpData("Lets you format multiple parameter to one.").Finish();
 			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin)
 				.HelpData("Closes the TS3AudioBot application.").Finish();
 			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public)
@@ -310,13 +312,7 @@ namespace TS3AudioBot
 			{
 				var commandAst = (ASTCommand)parsedAst;
 				if (Validate(session, parsedAst, textMessage, isAdmin))
-				{
 					LazyExecute(session, commandAst, textMessage);
-
-					// DEBUG
-					//var paramStr = string.Join(" ", commandAst.Parameter.Where(n => n.Type == NodeType.Value).Select(n => ((ASTValue)n).Value));
-					//InvokeCommand(commandAst.BotCommand, session, textMessage, new[] { null, paramStr });
-				}
 			}
 			else
 			{
@@ -325,6 +321,8 @@ namespace TS3AudioBot
 			}
 
 		}
+
+		#region COMMAND EXECUTING & CHAINING
 
 		private bool Validate(BotSession session, ASTNode astnode, TextMessage textMessage, Lazy<bool> isAdmin)
 		{
@@ -400,9 +398,10 @@ namespace TS3AudioBot
 			session.Write(strb.ToString());
 		}
 
+		// temporary solution
 		private void LazyExecute(BotSession session, ASTCommand astcommand, TextMessage textMessage)
 		{
-			StringBuilder paramBuild = new StringBuilder();
+			List<string> paramBuild = new List<string>();
 			foreach (var param in astcommand.Parameter)
 			{
 				switch (param.Type)
@@ -412,20 +411,21 @@ namespace TS3AudioBot
 					{
 						LazyExecute(memSession, (ASTCommand)param, textMessage);
 						string result = memSession.Result();
-						paramBuild.Append(result);
+						string[] splitres = result.Split(' ');
+						paramBuild.AddRange(splitres);
 					}
 					break;
-				case NodeType.Value: paramBuild.Append(((ASTValue)param).Value); break;
+				case NodeType.Value: paramBuild.Add(((ASTValue)param).Value); break;
 
 				case NodeType.Error:
 				default: throw new InvalidOperationException();
 				}
-				paramBuild.Append(' ');
 			}
-			InvokeCommand(astcommand.BotCommand, session, textMessage, new[] { null, paramBuild.ToString() });
+			InvokeCommand(astcommand.BotCommand, session, textMessage, paramBuild);
 		}
 
-		private static void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, string[] commandSplit)
+		// temporary solution
+		private static void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, List<string> commandSplit)
 		{
 			try
 			{
@@ -436,10 +436,11 @@ namespace TS3AudioBot
 					break;
 
 				case CommandParameter.Remainder:
-					if (commandSplit.Length < 2)
-						command.CommandS(session, string.Empty);
-					else
-						command.CommandS(session, commandSplit[1]);
+					command.CommandS(session, string.Join(" ", commandSplit));
+					break;
+
+				case CommandParameter.RemainderArray:
+					command.CommandSA(session, commandSplit.ToArray());
 					break;
 
 				case CommandParameter.TextMessage:
@@ -447,10 +448,7 @@ namespace TS3AudioBot
 					break;
 
 				case CommandParameter.MessageAndRemainder:
-					if (commandSplit.Length < 2)
-						command.CommandTMS(session, textMessage, string.Empty);
-					else
-						command.CommandTMS(session, textMessage, commandSplit[1]);
+					command.CommandTMS(session, textMessage, string.Join(" ", commandSplit));
 					break;
 
 				case CommandParameter.Undefined:
@@ -480,6 +478,8 @@ namespace TS3AudioBot
 			int[] clientSgIds = QueryConnection.GetClientServerGroups(client);
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
+
+		#endregion
 
 		#region COMMANDS
 
@@ -804,6 +804,17 @@ namespace TS3AudioBot
 			AudioFramework.Previous();
 		}
 
+		private void CommandPrint(BotSession session, string[] parameter)
+		{
+			// << Desing changes expected >>
+			StringBuilder strb = new StringBuilder();
+			foreach (var param in parameter)
+				strb.Append(param);
+			strb.Replace("\\\\", "\\");
+			strb.Replace("\\n", "\n");
+			session.Write(strb.ToString());
+		}
+
 		private void CommandQuit(BotSession session)
 		{
 			session.Write("Goodbye!");
@@ -837,16 +848,15 @@ namespace TS3AudioBot
 				CommandHelp(session, "repeat");
 		}
 
-		private void CommandRng(BotSession session, string parameter)
+		private void CommandRng(BotSession session, string[] parameter)
 		{
-			var rngArgs = parameter.SplitNoEmpty(' ');
 			int first, second;
-			if (rngArgs.Length <= 0)
-				session.Write(new Random().Next().ToString());
-			else if (int.TryParse(rngArgs[0], out first) && rngArgs.Length == 1)
-				session.Write(new Random().Next(first).ToString());
-			else if (int.TryParse(rngArgs[1], out second) && first <= second)
-				session.Write(new Random().Next(first, second).ToString());
+			if (parameter.Length <= 0)
+				session.Write(Util.RngInstance.Next().ToString());
+			else if (int.TryParse(parameter[0], out first) && parameter.Length == 1)
+				session.Write(Util.RngInstance.Next(first).ToString());
+			else if (int.TryParse(parameter[1], out second) && first <= second)
+				session.Write(Util.RngInstance.Next(first, second).ToString());
 		}
 
 		private void CommandSeek(BotSession session, string parameter)
@@ -1103,6 +1113,7 @@ namespace TS3AudioBot
 
 		public Action<BotSession> CommandN { get; private set; }
 		public Action<BotSession, string> CommandS { get; private set; }
+		public Action<BotSession, string[]> CommandSA { get; private set; }
 		public Action<BotSession, TextMessage> CommandTM { get; private set; }
 		public Action<BotSession, TextMessage, string> CommandTMS { get; private set; }
 		public CommandParameter CommandParameter { get; private set; }
@@ -1153,6 +1164,7 @@ namespace TS3AudioBot
 			private bool setAction = false;
 			private Action<BotSession> commandN;
 			private Action<BotSession, string> commandS;
+			private Action<BotSession, string[]> commandSA;
 			private Action<BotSession, TextMessage> commandTM;
 			private Action<BotSession, TextMessage, string> commandTMS;
 			private CommandParameter commandParameter;
@@ -1203,6 +1215,14 @@ namespace TS3AudioBot
 				return this;
 			}
 
+			public Builder Action(Action<BotSession, string[]> commandSA)
+			{
+				CheckAction();
+				this.commandSA = commandSA;
+				commandParameter = CommandParameter.RemainderArray;
+				return this;
+			}
+
 			public Builder Action(Action<BotSession, TextMessage> commandTM)
 			{
 				CheckAction();
@@ -1250,6 +1270,7 @@ namespace TS3AudioBot
 					InvokeName = name,
 					CommandN = commandN,
 					CommandS = commandS,
+					CommandSA = commandSA,
 					CommandTM = commandTM,
 					CommandTMS = commandTMS,
 					CommandParameter = commandParameter,
@@ -1272,6 +1293,7 @@ namespace TS3AudioBot
 		Undefined,
 		Nothing,
 		Remainder,
+		RemainderArray,
 		TextMessage,
 		MessageAndRemainder
 	}

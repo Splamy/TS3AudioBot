@@ -87,7 +87,7 @@ For now we don't have any workaround for that.
    Windows: Copy the contents of the `Dependencies/bin` folder into the TeamSpeak-Client directory (near `ts3client_win64.exe`)
 
 ### Compilation
-Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
+Download the git repository with `git clone https://github.com/Splamy/TS3MusicBot.git`.
 
 #### Linux
 1. Install all needed [dependencies](#dependencies) (e.g. scons and ffmpeg)

@@ -6,10 +6,9 @@
 	using System.IO;
 	using System.Linq;
 	using System.Text;
-
-	using ResourceFactories;
 	using Algorithm;
 	using Helper;
+	using ResourceFactories;
 
 	class HistoryFile : IDisposable
 	{

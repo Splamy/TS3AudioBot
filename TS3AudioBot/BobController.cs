@@ -281,15 +281,23 @@ namespace TS3AudioBot
 
 		private void BobStart()
 		{
+			bool timeoutStatus = timeout.Active;
 			timeout.Active = false;
-			if (!isRunning)
+			lock (lockObject)
 			{
-				Callback(true);
-				awaitingConnect = true;
-				Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
+				if (!isRunning && !awaitingConnect)
+				{
+					Callback(true);
+					awaitingConnect = true;
+					Log.Write(Log.Level.Debug, "BC now we are waiting for the bob");
 
-				if (!Util.Execute(bobControllerData.startTSClient))
-					Log.Write(Log.Level.Debug, "BC could not start bob");
+					if (!Util.Execute(bobControllerData.startTSClient))
+					{
+						Log.Write(Log.Level.Debug, "BC could not start bob");
+						awaitingConnect = false;
+						timeout.Active = timeoutStatus;
+					}
+				}
 			}
 		}
 
