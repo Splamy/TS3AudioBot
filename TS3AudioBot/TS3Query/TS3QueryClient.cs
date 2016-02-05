@@ -411,7 +411,7 @@ namespace TS3Query
 			if (ignoreFirst) splitValues = splitValues.Skip(1);
 			return from part in splitValues
 				   select part.Split(new[] { '=' }, 2) into keyValuePair
-				   select new KeyValuePair<string, string>(keyValuePair[0], keyValuePair.Length > 1 ? keyValuePair[1] : null);
+				   select new KeyValuePair<string, string>(keyValuePair[0], keyValuePair.Length > 1 ? keyValuePair[1] : string.Empty);
 		}
 		private static IDictionary<string, string> ParseKeyValueLineDict(string line, bool ignoreFirst)
 			=> ParseKeyValueLineDict(ParseKeyValueLine(line, ignoreFirst));
