@@ -810,8 +810,6 @@ namespace TS3AudioBot
 			StringBuilder strb = new StringBuilder();
 			foreach (var param in parameter)
 				strb.Append(param);
-			strb.Replace("\\\\", "\\");
-			strb.Replace("\\n", "\n");
 			session.Write(strb.ToString());
 		}
 
