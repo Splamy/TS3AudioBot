@@ -1051,12 +1051,14 @@ namespace TS3AudioBot
 	{
 		public MemoryStream memStream;
 		public StreamWriter writer;
+		public StreamReader reader;
 		public BotCommand parentCommand;
 
 		public LoopSession(MainBot bot, BotCommand command) : base(bot)
 		{
 			memStream = new MemoryStream();
 			writer = new StreamWriter(memStream);
+			reader = new StreamReader(memStream);
 			parentCommand = command;
 		}
 
@@ -1065,14 +1067,13 @@ namespace TS3AudioBot
 		public void Clear() => memStream.SetLength(0);
 		public string Result()
 		{
+			writer.Flush();
 			memStream.Position = 0;
-			using (var reader = new StreamReader(memStream))
-				return reader.ReadToEnd();
+			return reader.ReadToEnd();
 		}
 		public void Dispose()
 		{
-			writer.Dispose();
-			memStream.Dispose();
+			memStream.Close();
 		}
 	}
 
