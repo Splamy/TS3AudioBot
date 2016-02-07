@@ -250,7 +250,7 @@ namespace TS3AudioBot
 				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1], true); break;
 				case "title": musicData.Title = result[1]; break;
 				case "volume": musicData.Volume = double.Parse(result[1], CultureInfo.InvariantCulture); break;
-				default: Log.Write(Log.Level.Debug, "Unparsed key: {0}={1}", result[0], result[1]); break;
+				default: Log.Write(Log.Level.Warning, "Unparsed key: {0}={1}", result[0], result[1]); break;
 				}
 			}
 			return musicData;

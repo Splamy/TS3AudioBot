@@ -60,7 +60,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (data.Resource == null)
 			{
 				AudioResource resource;
-				RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.Title, out resource);
+				RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.ResourceTitle, out resource);
 				if (result != RResultCode.Success)
 				{
 					data.Session.Write($"Could not restore ({result})");
@@ -111,7 +111,7 @@ namespace TS3AudioBot.ResourceFactories
 		public string RestoreLink(PlayData data) => RestoreLink(data.Resource);
 		public string RestoreLink(AudioResource res)
 		{
-			IResourceFactory factory = factories.SingleOrDefault(f => f.FactoryFor == res.AudioType);
+			IResourceFactory factory = GetFactoryFor(res.AudioType);
 			return factory.RestoreLink(res.ResourceId);
 		}
 

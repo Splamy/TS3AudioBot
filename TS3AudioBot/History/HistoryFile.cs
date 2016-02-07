@@ -10,7 +10,7 @@
 	using Helper;
 	using ResourceFactories;
 
-	class HistoryFile : IDisposable
+	public class HistoryFile : IDisposable
 	{
 		private IDictionary<string, uint> resIdToId;
 		private IDictionary<uint, AudioLogEntry> idFilter;
@@ -23,10 +23,12 @@
 		private readonly IList<AudioLogEntry> noResult = new List<AudioLogEntry>().AsReadOnly();
 
 		private static readonly Encoding FileEncoding = Encoding.ASCII;
-		private static readonly byte[] NewLineArray = FileEncoding.GetBytes(Environment.NewLine);
+		private static readonly byte[] NewLineArray = new byte[] { (byte)'\n' };
 		private FileStream fileStream;
-		//private StreamWriter fileWriter;
 		private PositionedStreamReader fileReader;
+
+		private const int HistoryManagerVersion = 1;
+
 
 		public HistoryFile()
 		{
@@ -37,37 +39,18 @@
 			timeFilter = new SortedList<DateTime, AudioLogEntry>();
 		}
 
-
-		public void LoadFile(string path)
+		public void OpenFile(string path)
 		{
-			Close();
+			CloseFile();
 			Clear();
 
 			fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 			fileReader = new PositionedStreamReader(fileStream, FileEncoding);
+			VersionCheckAndUpgrade();
 			RestoreFromFile();
 		}
 
-		private void RestoreFromFile()
-		{
-			string line;
-			long readIndex = 0;
-			while ((line = fileReader.ReadLine()) != null)
-			{
-				if (string.IsNullOrEmpty(line))
-					continue;
-				var ale = AudioLogEntry.Parse(line, readIndex);
-				if (ale != null)
-				{
-					AddToMemoryIndex(ale);
-					if (ale.Id >= CurrentID)
-						CurrentID = ale.Id + 1;
-				}
-				readIndex = fileReader.ReadPosition;
-			}
-		}
-
-		private void Close()
+		public void CloseFile()
 		{
 			if (fileReader != null)
 			{
@@ -81,10 +64,64 @@
 			}
 		}
 
+		private void VersionCheckAndUpgrade()
+		{
+			const string VersionHeader = "VERSION-";
+			string line = fileReader.ReadLine();
+			if (line == null)
+			{
+				// fresh file
+				byte[] versionHeader = FileEncoding.GetBytes(VersionHeader + HistoryManagerVersion);
+				fileStream.Write(versionHeader, 0, versionHeader.Length);
+				fileStream.Write(NewLineArray, 0, NewLineArray.Length);
+				return;
+			}
+
+			int fileVersion = -1;
+			if (!line.StartsWith(VersionHeader)
+			|| !int.TryParse(line.Substring(VersionHeader.Length), out fileVersion))
+				throw new FormatException("The history file has an invalid header.");
+
+			switch (fileVersion)
+			{
+			case 0: /*do upgrade stuff*/ goto case 1;
+			case 1: break; // lastest version
+
+			default:
+				throw new FormatException("Not recognized header version");
+			}
+		}
+
+		public void CleanFile()
+		{
+			throw new NotImplementedException();
+		}
+
+		private void RestoreFromFile()
+		{
+			string line;
+			long readIndex = fileReader.ReadPosition;
+			while ((line = fileReader.ReadLine()) != null)
+			{
+				if (!string.IsNullOrWhiteSpace(line))
+				{
+					var ale = AudioLogEntry.Parse(line, readIndex);
+					if (ale != null)
+					{
+						AddToMemoryIndex(ale);
+						if (ale.Id >= CurrentID)
+							CurrentID = ale.Id + 1;
+					}
+				}
+				readIndex = fileReader.ReadPosition;
+			}
+		}
+
+
 		public void Store(PlayData playData)
 		{
 			uint? index = Contains(playData.Resource);
-			if (index == null)
+			if (!index.HasValue)
 			{
 				var ale = CreateLogEntry(playData);
 				if (ale != null)
@@ -104,7 +141,7 @@
 		private uint? Contains(AudioResource resource)
 		{
 			uint rId;
-			if (resIdToId.TryGetValue(resource.ResourceId, out rId))
+			if (resIdToId.TryGetValue(resource.UniqueId, out rId))
 				return rId;
 			return null;
 		}
@@ -185,11 +222,11 @@
 			var resource = playData.Resource;
 			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
 				return null;
-			var ale = new AudioLogEntry(CurrentID, resource.AudioType, resource.ResourceId, fileStream.Position)
+			var ale = new AudioLogEntry(CurrentID, resource.AudioType, resource.ResourceId)
 			{
 				UserInvokeId = (uint)playData.Invoker.DatabaseId,
 				Timestamp = Util.GetNow(),
-				Title = resource.ResourceTitle,
+				ResourceTitle = resource.ResourceTitle,
 				PlayCount = 1,
 			};
 			CurrentID++;
@@ -209,15 +246,20 @@
 			// update the playcount
 			ale.PlayCount++;
 
+			// update title
+			ale.ResourceTitle = playData.Resource.ResourceTitle;
+
 			ReWriteToFile(ale);
 		}
 
 		private void AppendToFile(AudioLogEntry logEntry)
 		{
+			logEntry.FilePosIndex = fileStream.Position;
+
 			var strBytes = FileEncoding.GetBytes(logEntry.ToFileString());
 			fileStream.Write(strBytes, 0, strBytes.Length);
 			fileStream.Write(NewLineArray, 0, NewLineArray.Length);
-			fileStream.Flush();
+			fileStream.Flush(true);
 		}
 
 		private void ReWriteToFile(AudioLogEntry logEntry)
@@ -239,6 +281,7 @@
 					fileStream.Write(filler, 0, filler.Length);
 				}
 				fileStream.Seek(0, SeekOrigin.End);
+				fileStream.Flush(true);
 			}
 			else
 			{
@@ -247,14 +290,13 @@
 				fileStream.Seek(0, SeekOrigin.End);
 				AppendToFile(logEntry);
 			}
-			fileStream.Flush(true);
 		}
 
 		private void AddToMemoryIndex(AudioLogEntry logEntry)
 		{
-			resIdToId.Add(logEntry.ResourceId, logEntry.Id);
+			resIdToId.Add(logEntry.UniqueId, logEntry.Id);
 			idFilter.Add(logEntry.Id, logEntry);
-			titleFilter.Add(logEntry.Title.ToLower(CultureInfo.InvariantCulture), logEntry);
+			titleFilter.Add(logEntry.ResourceTitle.ToLower(CultureInfo.InvariantCulture), logEntry);
 			AutoAdd(userIdFilter, logEntry);
 			timeFilter.Add(logEntry.Timestamp, logEntry);
 		}
@@ -277,11 +319,14 @@
 			titleFilter.Clear();
 			userIdFilter.Clear();
 			timeFilter.Clear();
+
+			CurrentID = 0;
 		}
 
 		public void Dispose()
 		{
-			Close();
+			CloseFile();
+			Clear();
 		}
 	}
 

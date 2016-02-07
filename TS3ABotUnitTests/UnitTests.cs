@@ -1,10 +1,13 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using LockCheck;
 using NUnit.Framework;
 using TS3AudioBot;
 using TS3AudioBot.Algorithm;
-using System.Collections.Generic;
-using System.Linq;
+using TS3AudioBot.History;
 using TS3AudioBot.ResourceFactories;
+using TS3Query.Messages;
 
 namespace TS3ABotUnitTests
 {
@@ -19,6 +22,87 @@ namespace TS3ABotUnitTests
 			var warnings = LockChecker.CheckAll<MainBot>(true);
 			Assert.IsTrue(warnings.Count == 0, "At least one possible deadlock detected");
 		}
+
+		[Test]
+		public void HistoryFileIntergrityTest()
+		{
+			if (File.Exists("test.txt")) File.Delete("test.txt");
+
+
+			var inv1 = new ClientData() { Id = 10, DatabaseId = 101, NickName = "Invoker1" };
+			var inv2 = new ClientData() { Id = 20, DatabaseId = 102, NickName = "Invoker2" };
+
+			var ar1 = new SoundcloudResource("asdf", "sc_ar1", "https://soundcloud.de/sc_ar1");
+			var ar2 = new MediaResource("./File.mp3", "me_ar2", "https://splamy.de/sc_ar2", RResultCode.Success);
+
+			var data1 = new PlayData(null, inv1, "", false) { Resource = ar1, };
+			var data2 = new PlayData(null, inv2, "", false) { Resource = ar2, };
+
+
+			HistoryFile hf = new HistoryFile();
+			hf.OpenFile("test.txt");
+
+			hf.Store(data1);
+
+			var lastXEntries = hf.GetLastXEntrys(1);
+			Assert.True(lastXEntries.Any());
+			var lastEntry = lastXEntries.First();
+			Assert.AreEqual(ar1, lastEntry);
+
+			hf.CloseFile();
+
+			hf.OpenFile("test.txt");
+			lastXEntries = hf.GetLastXEntrys(1);
+			Assert.True(lastXEntries.Any());
+			lastEntry = lastXEntries.First();
+			Assert.AreEqual(ar1, lastEntry);
+
+			hf.Store(data1);
+			hf.Store(data2);
+
+			lastXEntries = hf.GetLastXEntrys(1);
+			Assert.True(lastXEntries.Any());
+			lastEntry = lastXEntries.First();
+			Assert.AreEqual(ar2, lastEntry);
+
+			hf.CloseFile();
+
+			hf.OpenFile("test.txt");
+			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
+			Assert.AreEqual(2, lastXEntriesArray.Length);
+			Assert.AreEqual(ar1, lastXEntriesArray[0]);
+			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+
+			ar1.ResourceTitle = "sc_ar1X";
+			hf.Store(data1);
+
+			hf.CloseFile();
+
+			hf.OpenFile("test.txt");
+			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
+			Assert.AreEqual(2, lastXEntriesArray.Length);
+			Assert.AreEqual(ar2, lastXEntriesArray[0]);
+			Assert.AreEqual(ar1, lastXEntriesArray[1]);
+
+			ar2.ResourceTitle = "me_ar2_loong1";
+			hf.Store(data2);
+
+			ar1.ResourceTitle = "sc_ar1X_loong1";
+			hf.Store(data1);
+
+			ar2.ResourceTitle = "me_ar2_exxxxxtra_loong1";
+			hf.Store(data2);
+
+			hf.CloseFile();
+
+			Assert.DoesNotThrow(() => hf.OpenFile("test.txt"));
+			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
+			Assert.AreEqual(2, lastXEntriesArray.Length);
+			Assert.AreEqual(ar1, lastXEntriesArray[0]);
+			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+		}
+
+		// TODO positionfilereader test
 
 		/* ====================== Algorithm Tests =========================*/
 
@@ -100,8 +184,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Factory_YoutubeFactoryTest()
 		{
-			// TODO instantiate YTF
-			using (IResourceFactory rfac = null)
+			using (IResourceFactory rfac = new YoutubeFactory())
 			{
 				// matching links
 				Assert.True(rfac.MatchLink(@"https://www.youtube.com/watch?v=robqdGEhQWo"));
@@ -110,7 +193,7 @@ namespace TS3ABotUnitTests
 				Assert.False(rfac.MatchLink(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"));
 
 				// restoring links
-				Assert.AreEqual(rfac.RestoreLink("robqdGEhQWo"), "https://youtu.be/robqdGEhQWo");
+				Assert.AreEqual(rfac.RestoreLink("robqdGEhQWo"), "[url=https://youtu.be/robqdGEhQWo]https://youtu.be/robqdGEhQWo[/url]");
 			}
 		}
 	}

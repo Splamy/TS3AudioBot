@@ -9,7 +9,7 @@ namespace TS3AudioBot.ResourceFactories
 	using TS3AudioBot.Helper;
 	using TS3Query.Messages;
 
-	class YoutubeFactory : IResourceFactory
+	public sealed class YoutubeFactory : IResourceFactory
 	{
 		private Regex idMatch = new Regex(@"(&|\?)v=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -236,7 +236,7 @@ namespace TS3AudioBot.ResourceFactories
 		public void Dispose() { }
 	}
 
-	class VideoData
+	public sealed class VideoData
 	{
 		public string link;
 		public string qualitydesciption;
@@ -247,9 +247,9 @@ namespace TS3AudioBot.ResourceFactories
 		public override string ToString() => $"{qualitydesciption} @ {codec} - {link}";
 	}
 
-	class YoutubeResource : AudioResource
+	public sealed class YoutubeResource : AudioResource
 	{
-		public List<VideoData> AvailableTypes { get; protected set; }
+		public List<VideoData> AvailableTypes { get; }
 		public int Selected { get; set; }
 
 		public override AudioType AudioType => AudioType.Youtube;
@@ -270,7 +270,7 @@ namespace TS3AudioBot.ResourceFactories
 		}
 	}
 
-	enum VideoCodec
+	public enum VideoCodec
 	{
 		Unknown,
 		MP4,

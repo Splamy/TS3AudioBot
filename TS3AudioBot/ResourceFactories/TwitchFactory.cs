@@ -6,7 +6,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Web.Script.Serialization;
 	using TS3AudioBot.Helper;
 
-	class TwitchFactory : IResourceFactory
+	public sealed class TwitchFactory : IResourceFactory
 	{
 		private Regex twitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private Regex m3u8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -148,7 +148,7 @@ namespace TS3AudioBot.ResourceFactories
 		public void Dispose() { }
 	}
 
-	class StreamData
+	public sealed class StreamData
 	{
 		public StreamQuality QualityType;
 		public int Bandwidth;
@@ -156,7 +156,7 @@ namespace TS3AudioBot.ResourceFactories
 		public string Url;
 	}
 
-	enum StreamQuality
+	public enum StreamQuality
 	{
 		unknown,
 		chunked,
@@ -167,7 +167,7 @@ namespace TS3AudioBot.ResourceFactories
 		audio_only,
 	}
 
-	class TwitchResource : AudioResource
+	public sealed class TwitchResource : AudioResource
 	{
 		public List<StreamData> AvailableStreams { get; private set; }
 		public int Selected { get; set; }

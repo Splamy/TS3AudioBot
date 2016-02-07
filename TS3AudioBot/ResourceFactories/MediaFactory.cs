@@ -7,7 +7,7 @@ namespace TS3AudioBot.ResourceFactories
 	using TS3AudioBot.Helper.AudioTags;
 	using TS3Query.Messages;
 
-	class MediaFactory : IResourceFactory
+	public sealed class MediaFactory : IResourceFactory
 	{
 		public AudioType FactoryFor => AudioType.MediaLink;
 
@@ -145,7 +145,7 @@ namespace TS3AudioBot.ResourceFactories
 		}
 	}
 
-	class MediaResource : AudioResource
+	public sealed class MediaResource : AudioResource
 	{
 		public override AudioType AudioType => AudioType.MediaLink;
 

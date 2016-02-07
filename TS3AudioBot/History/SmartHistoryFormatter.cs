@@ -24,7 +24,7 @@
 			string header = string.Empty;
 			int currentLength = TokenLength(header);
 
-			var lines = entries.Select(entry => new LineBuilder(entry.Id.ToString(), entry.Title, entry.UserInvokeId.ToString()));
+			var lines = entries.Select(entry => new LineBuilder(entry.Id.ToString(), entry.ResourceTitle, entry.UserInvokeId.ToString()));
 			lines = lines.Reverse();
 
 			// List all lines

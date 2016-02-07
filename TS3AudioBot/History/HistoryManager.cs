@@ -16,7 +16,7 @@
 		{
 			Formatter = new SmartHistoryFormatter();
 			historyFile = new HistoryFile();
-			historyFile.LoadFile(hmd.historyFile);
+			historyFile.OpenFile(hmd.historyFile);
 		}
 
 		public void LogAudioResource(object sender, PlayData playData)

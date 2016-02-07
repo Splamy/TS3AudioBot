@@ -6,7 +6,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Web.Script.Serialization;
 	using TS3AudioBot.Helper;
 
-	class SoundcloudFactory : IResourceFactory
+	public sealed class SoundcloudFactory : IResourceFactory
 	{
 		private JavaScriptSerializer jsonParser;
 
@@ -61,7 +61,7 @@ namespace TS3AudioBot.ResourceFactories
 		public void Dispose() { }
 	}
 
-	class SoundcloudResource : AudioResource
+	public sealed class SoundcloudResource : AudioResource
 	{
 		public override AudioType AudioType => AudioType.Soundcloud;
 

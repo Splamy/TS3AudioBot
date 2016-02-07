@@ -3,26 +3,23 @@
 	using System;
 	using System.Globalization;
 	using System.Text;
+	using TS3AudioBot.ResourceFactories;
 
-	class AudioLogEntry
+	public class AudioLogEntry : AudioResource
 	{
-		public uint Id { get; private set; }
+		public uint Id { get; }
 		public uint UserInvokeId { get; set; }
 		public uint PlayCount { get; set; }
 		public DateTime Timestamp { get; set; }
-		public AudioType AudioType { get; private set; }
-		public string ResourceId { get; private set; }
-		public string Title { get; set; }
+		public override AudioType AudioType { get; }
 
-		public long FilePosIndex { get; private set; }
+		public long FilePosIndex { get; set; }
 
-		public AudioLogEntry(uint id, AudioType audioType, string resId, long fileIndex)
+		public AudioLogEntry(uint id, AudioType audioType, string resId) : base(resId, null)
 		{
 			Id = id;
 			PlayCount = 0;
 			AudioType = audioType;
-			ResourceId = resId;
-			FilePosIndex = fileIndex;
 		}
 
 		public string ToFileString()
@@ -43,7 +40,7 @@
 			strb.Append(",");
 			strb.Append(Uri.EscapeDataString(ResourceId));
 			strb.Append(",");
-			strb.Append(Uri.EscapeDataString(Title));
+			strb.Append(Uri.EscapeDataString(ResourceTitle));
 
 			return strb.ToString();
 		}
@@ -65,12 +62,13 @@
 				return null;
 			string resId = Uri.UnescapeDataString(strParts[index++]);
 			string title = Uri.UnescapeDataString(strParts[index++]);
-			return new AudioLogEntry(id, audioType, resId, readIndex)
+			return new AudioLogEntry(id, audioType, resId)
 			{
 				PlayCount = playCount,
 				Timestamp = dateTime,
-				Title = title,
+				ResourceTitle = title,
 				UserInvokeId = userInvId,
+				FilePosIndex = readIndex,
 			};
 		}
 
@@ -79,7 +77,12 @@
 
 		public override string ToString()
 		{
-			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, Title, ResourceId);
+			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, ResourceTitle, ResourceId);
+		}
+
+		public override string Play()
+		{
+			throw new NotSupportedException();
 		}
 	}
 
