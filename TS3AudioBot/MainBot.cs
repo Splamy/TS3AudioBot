@@ -35,12 +35,10 @@ namespace TS3AudioBot
 						bot.Dispose();
 				};
 
-				if (!bot.ReadParameter(args))
-				{
-					bot.InitializeBot();
-					bot.InitializeCommands();
-					bot.Run();
-				}
+				if (!bot.ReadParameter(args)) return;
+				if (!bot.InitializeBot()) return;
+				bot.InitializeCommands();
+				bot.Run();
 			}
 		}
 
@@ -80,15 +78,15 @@ namespace TS3AudioBot
 				Console.WriteLine(" --NoLog -L       Deactivates writing to the logfile.");
 				Console.WriteLine(" --Stack -s       Adds the stacktrace to all log writes.");
 				Console.WriteLine(" --help -h        Prints this help....");
-				return true;
+				return false;
 			}
 			consoleOutput = !(launchParameter.Contains("--Quiet") || launchParameter.Contains("-q"));
 			writeLog = !(launchParameter.Contains("--NoLog") || launchParameter.Contains("-L"));
 			writeLogStack = (launchParameter.Contains("--Stack") || launchParameter.Contains("-s"));
-			return false;
+			return true;
 		}
 
-		private void InitializeBot()
+		private bool InitializeBot()
 		{
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
@@ -159,8 +157,18 @@ namespace TS3AudioBot
 			// Create a default session for all users in all chat
 			SessionManager.DefaultSession = new PublicSession(this);
 			// Connect the query after everyting is set up
-			QueryConnection.Connect();
-			Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
+			try
+			{
+				QueryConnection.Connect();
+				Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
+			}
+			catch (QueryCommandException qcex)
+			{
+				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
+				return false;
+			}
+
+			return true;
 		}
 
 		private void InitializeCommands()
@@ -283,6 +291,7 @@ namespace TS3AudioBot
 			QueryConnection.RefreshClientBuffer(true);
 
 			// get the current session
+			// TODO: GetSession can return a null client !!!!!!!!!!!!!!!!!!!!!!!! hande it!
 			BotSession session = SessionManager.GetSession(textMessage.Target, textMessage.InvokerId);
 			if (textMessage.Target == MessageTarget.Private && session == SessionManager.DefaultSession)
 			{
@@ -425,7 +434,7 @@ namespace TS3AudioBot
 		}
 
 		// temporary solution
-		private static void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, List<string> commandSplit)
+		private void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, List<string> commandSplit)
 		{
 			try
 			{
@@ -461,6 +470,11 @@ namespace TS3AudioBot
 			{
 				Log.Write(Log.Level.Error, "Critical timeout error ({0})", tex.StackTrace);
 				session.Write("Internal timout error, please try again.");
+			}
+			catch (QueryCommandException qcex)
+			{
+				Log.Write(Log.Level.Error, "Critical query error: {0} ({1})", qcex.Message, qcex.StackTrace);
+				SessionManager.DefaultSession.Write($"The query could not execute the requested action, please make sure you configured everything right ({qcex.Message}).");
 			}
 			catch (Exception ex)
 			{

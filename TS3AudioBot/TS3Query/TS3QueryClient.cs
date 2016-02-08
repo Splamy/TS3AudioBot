@@ -312,7 +312,7 @@ namespace TS3Query
 				switch (responseParam.Key.ToUpperInvariant())
 				{
 				case "ID": errorStatus.Id = int.Parse(responseParam.Value); break;
-				case "MSG": errorStatus.Message = responseParam.Value; break;
+				case "MSG": errorStatus.Message = TS3QueryTools.Unescape(responseParam.Value); break;
 				case "FAILED_PERMID": errorStatus.MissingPermissionId = int.Parse(responseParam.Value); break;
 				}
 			}

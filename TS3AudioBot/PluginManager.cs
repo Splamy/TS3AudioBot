@@ -9,9 +9,11 @@ namespace TS3AudioBot
 {
 	class PluginManager : IDisposable
 	{
+		private List<ITS3ABPlugin> LoadedPlugins;
+
 		public PluginManager()
 		{
-
+			LoadedPlugins = new List<ITS3ABPlugin>();
 		}
 
 		public void LoadPlugin(Assembly assembly)
