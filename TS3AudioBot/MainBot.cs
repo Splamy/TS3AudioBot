@@ -291,12 +291,19 @@ namespace TS3AudioBot
 			QueryConnection.RefreshClientBuffer(true);
 
 			// get the current session
-			// TODO: GetSession can return a null client !!!!!!!!!!!!!!!!!!!!!!!! hande it!
 			BotSession session = SessionManager.GetSession(textMessage.Target, textMessage.InvokerId);
 			if (textMessage.Target == MessageTarget.Private && session == SessionManager.DefaultSession)
 			{
 				Log.Write(Log.Level.Debug, "MB User {0} created auto-private session with the bot", textMessage.InvokerName);
-				session = SessionManager.CreateSession(this, textMessage.InvokerId);
+				try
+				{
+					session = SessionManager.CreateSession(this, textMessage.InvokerId);
+				}
+				catch (SessionManagerException smex)
+				{
+					Log.Write(Log.Level.Error, smex.ToString());
+					return;
+				}
 			}
 
 			var isAdmin = new Lazy<bool>(() => HasInvokerAdminRights(textMessage));
@@ -1157,8 +1164,14 @@ namespace TS3AudioBot
 
 		public override string ToString()
 		{
-			// TODO rework param list
-			return string.Format("!{0} - {1} - {2} : {3}", InvokeName, CommandParameter, CommandRights, ParameterList);
+			var strb = new StringBuilder();
+			strb.Append('!').Append(InvokeName);
+			strb.Append(" - ").Append(CommandParameter);
+			strb.Append(" - ").Append(CommandRights);
+			strb.Append(" : ");
+			foreach (var param in ParameterList)
+				strb.Append(param.Item1).Append('/');
+			return strb.ToString();
 		}
 
 		public class Builder

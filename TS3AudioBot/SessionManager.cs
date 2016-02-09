@@ -24,6 +24,8 @@ namespace TS3AudioBot
 			if (ExistsSession(invokerId))
 				return GetSession(MessageTarget.Private, invokerId);
 			ClientData client = bot.QueryConnection.GetClientById(invokerId);
+			if (client == null)
+				throw new SessionManagerException("Could not find the requested client.");
 			var newSession = new PrivateSession(bot, client);
 			openSessions.Add(newSession);
 			return newSession;
@@ -45,5 +47,11 @@ namespace TS3AudioBot
 		{
 			openSessions.RemoveAll((ps) => ps.Client.ClientId == invokerId);
 		}
+	}
+
+	[Serializable]
+	public class SessionManagerException : Exception
+	{
+		public SessionManagerException(string message) : base(message) { }
 	}
 }
