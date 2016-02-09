@@ -85,14 +85,24 @@ namespace TS3AudioBot
 
 		public ClientData GetClientById(ushort id)
 		{
-			RefreshClientBuffer(false);
-			return clientbuffer.FirstOrDefault(client => client.ClientId == id);
+			var cd = ClientBufferRequest(client => client.ClientId == id);
+			if (cd != null) return cd;
+			Log.Write(Log.Level.Warning, "Slow double request, due to missing or wrong permission confinguration!");
+			cd = tsClient.Send<ClientData>("clientinfo", new Parameter("clid", id)).FirstOrDefault();
+			if (cd != null)
+			{
+				cd.ClientId = id;
+				return cd;
+			}
+			throw new InvalidOperationException();
 		}
 
-		public ClientData GetClientByName(string name)
+		public ClientData GetClientByName(string name) => ClientBufferRequest(user => user.NickName.Contains(name));
+
+		private ClientData ClientBufferRequest(Func<ClientData, bool> pred)
 		{
 			RefreshClientBuffer(false);
-			return clientbuffer.FirstOrDefault(user => user.NickName == name);
+			return clientbuffer.FirstOrDefault(pred);
 		}
 
 		public ClientData GetSelf()

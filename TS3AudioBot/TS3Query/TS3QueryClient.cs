@@ -357,7 +357,12 @@ namespace TS3Query
 			var map = Generator.GetAccessMap(baseType);
 			foreach (var kvp in kvpData)
 			{
-				var prop = map[kvp.Key];
+				PropertyInfo prop;
+				if (!map.TryGetValue(kvp.Key, out prop))
+				{
+					Debug.Write($"Missing Parameter '{kvp.Key}' in '{qm}'");
+					continue;
+				}
 				object value = DeserializeValue(kvp.Value, prop.PropertyType);
 				prop.SetValue(qm, value);
 			}

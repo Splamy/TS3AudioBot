@@ -94,14 +94,6 @@
 				tb.DefineMethodOverride(getMethod, propRequest.GetMethod);
 				tb.DefineMethodOverride(setMethod, propRequest.SetMethod);
 
-				var property = tb.DefineProperty(
-					propRequest.Name,
-					PropertyAttributes.HasDefault,
-					PropertyType,
-					Type.EmptyTypes);
-				property.SetSetMethod(setMethod);
-				property.SetGetMethod(getMethod);
-
 				accessMap.Add(qsa.Name, propRequest);
 			}
 
