@@ -31,19 +31,19 @@ namespace TS3AudioBot
 
 		public bool ExistsSession(ushort invokerId)
 		{
-			return openSessions.Any((ps) => ps.Client.Id == invokerId);
+			return openSessions.Any((ps) => ps.Client.ClientId == invokerId);
 		}
 
 		public BotSession GetSession(MessageTarget target, ushort invokerId)
 		{
 			if (target == MessageTarget.Server)
 				return DefaultSession;
-			return openSessions.FirstOrDefault((bs) => bs.Client.Id == invokerId) ?? DefaultSession;
+			return openSessions.FirstOrDefault((bs) => bs.Client.ClientId == invokerId) ?? DefaultSession;
 		}
 
 		public void RemoveSession(ushort invokerId)
 		{
-			openSessions.RemoveAll((ps) => ps.Client.Id == invokerId);
+			openSessions.RemoveAll((ps) => ps.Client.ClientId == invokerId);
 		}
 	}
 }

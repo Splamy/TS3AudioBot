@@ -2,147 +2,145 @@ namespace TS3Query.Messages
 {
 	using System;
 
-	public abstract class ClientNotifications : Notification
+	[QuerySubInterface]
+	public interface ITargetChannelId
 	{
 		[QuerySerialized("ctid")]
-		public int TargetChannelId;
-
-		[QuerySerialized("reasonid")]
-		public MoveReason Reason;
+		int TargetChannelId { get; set; }
 	}
 
-	public abstract class InvokedClientNotification : ClientNotifications
-	{
-		[QuerySerialized("invokerid")]
-		public ushort InvokerId;
-
-		[QuerySerialized("invokername")]
-		public string InvokerName;
-
-		[QuerySerialized("invokeruid")]
-		public string InvokerUid;
-	}
-
-	[NotificationName(NotificationType.ClientEnterView)]
-	public class ClientEnterView : ClientNotifications
+	[QuerySubInterface]
+	public interface IClientId
 	{
 		[QuerySerialized("clid")]
-		public ushort ClientId;
+		ushort ClientId { get; set; }
+	}
 
-		[QuerySerialized("cfid")]
-		public int SourceChannelId;
-
+	[QuerySubInterface]
+	public interface IClientUidLong
+	{
 		[QuerySerialized("client_unique_identifier")]
-		public string Uid;
+		string Uid { get; set; }
+	}
+
+	[QuerySubInterface]
+	public interface ISourceChannelId
+	{
+		[QuerySerialized("cfid")]
+		int SourceChannelId { get; set; }
+	}
+
+	[QuerySubInterface]
+	public interface ClientBaseData
+	{
+		[QuerySerialized("client_database_id")]
+		ulong DatabaseId { get; set; }
 
 		[QuerySerialized("client_nickname")]
-		public string NickName;
-
-		[QuerySerialized("client_input_muted")]
-		public bool IsInputMuted;
-
-		[QuerySerialized("client_output_muted")]
-		public bool IsOutputMuted;
-
-		[QuerySerialized("client_outputonly_muted")]
-		public bool IsOutputOnlyMuted;
-
-		[QuerySerialized("client_input_hardware")]
-		public bool IsInputHardware;
-
-		[QuerySerialized("client_output_hardware")]
-		public bool IsClientOutputHardware;
-
-		[QuerySerialized("client_meta_data")]
-		public string Metadata;
-
-		[QuerySerialized("client_is_recording")]
-		public bool IsRecording;
-
-		[QuerySerialized("client_database_id")]
-		public ulong DatabaseId;
-
-		[QuerySerialized("client_channel_group_id")]
-		public int ChannelGroupId;
-
-		[QuerySerialized("client_servergroups")]
-		public string ServerGroups;
-
-		[QuerySerialized("client_away")]
-		public bool IsAway;
-
-		[QuerySerialized("client_away_message")]
-		public string AwayMessage;
+		string NickName { get; set; }
 
 		[QuerySerialized("client_type")]
-		public ClientType Type;
+		ClientType ClientType { get; set; }
+	}
+	
+	public interface ClientData : IResponse, IClientId, IChannelId, ClientBaseData { }
+
+	[QueryNotification(NotificationType.ClientEnterView)]
+	public interface ClientEnterView : INotification, IReason, ITargetChannelId, IInvokedNotification, IClientId, ClientBaseData, ISourceChannelId, IClientUidLong
+	{
+		[QuerySerialized("client_input_muted")]
+		bool IsInputMuted { get; set; }
+
+		[QuerySerialized("client_output_muted")]
+		bool IsOutputMuted { get; set; }
+
+		[QuerySerialized("client_outputonly_muted")]
+		bool IsOutputOnlyMuted { get; set; }
+
+		[QuerySerialized("client_input_hardware")]
+		bool IsInputHardware { get; set; }
+
+		[QuerySerialized("client_output_hardware")]
+		bool IsClientOutputHardware { get; set; }
+
+		[QuerySerialized("client_meta_data")]
+		string Metadata { get; set; }
+
+		[QuerySerialized("client_is_recording")]
+		bool IsRecording { get; set; }
+
+		[QuerySerialized("client_channel_group_id")]
+		int ChannelGroupId { get; set; }
+
+		[QuerySerialized("client_servergroups")]
+		string ServerGroups { get; set; }
+
+		[QuerySerialized("client_away")]
+		bool IsAway { get; set; }
+
+		[QuerySerialized("client_away_message")]
+		string AwayMessage { get; set; }
 
 		[QuerySerialized("client_flag_avatar")]
-		public string AvatarFlag;
+		string AvatarFlag { get; set; }
 
 		[QuerySerialized("client_talk_power")]
-		public int TalkPower;
+		int TalkPower { get; set; }
 
 		[QuerySerialized("client_talk_request")]
-		public int RequestedTalkPower;
+		int RequestedTalkPower { get; set; }
 
 		[QuerySerialized("client_talk_request_msg")]
-		public string TalkPowerRequestMessage;
+		string TalkPowerRequestMessage { get; set; }
 
 		[QuerySerialized("client_description")]
-		public string Description;
+		string Description { get; set; }
 
 		[QuerySerialized("client_is_talker")]
-		public bool IsTalker;
+		bool IsTalker { get; set; }
 
 		[QuerySerialized("client_is_priority_speaker")]
-		public bool IsPrioritySpeaker;
+		bool IsPrioritySpeaker { get; set; }
 
 		[QuerySerialized("client_unread_messages")]
-		public int UnreadMessages;
+		int UnreadMessages { get; set; }
 
 		[QuerySerialized("client_nickname_phonetic")]
-		public string PhoneticName;
+		string PhoneticName { get; set; }
 
 		[QuerySerialized("client_needed_serverquery_view_power")]
-		public bool NeededServerQueryViewPower;
+		bool NeededServerQueryViewPower { get; set; }
 
 		[QuerySerialized("client_icon_id")]
-		public long IconId;
+		long IconId { get; set; }
 
 		[QuerySerialized("client_is_channel_commander")]
-		public bool IsChannelCommander;
+		bool IsChannelCommander { get; set; }
 
 		[QuerySerialized("client_country")]
-		public string CountryCode;
+		string CountryCode { get; set; }
 
 		[QuerySerialized("client_channel_group_inherited_channel_id")]
-		public int InheritedChannelGroupFromChannelId;
+		int InheritedChannelGroupFromChannelId { get; set; }
 
 		[QuerySerialized("client_badges")]
-		public string Badges;
+		string Badges { get; set; }
 	}
 
-	[NotificationName(NotificationType.ClientLeftView)]
-	public class ClientLeftView : InvokedClientNotification
+	[QueryNotification(NotificationType.ClientLeftView)]
+	public interface ClientLeftView : INotification, IReason, ITargetChannelId, IInvokedNotification, IClientId, ISourceChannelId
 	{
-		[QuerySerialized("clid")]
-		public ushort ClientId;
-
-		[QuerySerialized("cfid")]
-		public int SourceChannelId;
-
 		[QuerySerialized("reasonmsg")]
-		public string ReasonMessage;
+		string ReasonMessage { get; set; }
 
 		[QuerySerialized("bantime")]
-		public TimeSpan BanTime;
+		TimeSpan BanTime { get; set; }
 	}
 
-	[NotificationName(NotificationType.ClientMoved)]
-	public class ClientMoved : InvokedClientNotification
+	[QueryNotification(NotificationType.ClientMoved)]
+	public interface ClientMoved : INotification, IReason, ITargetChannelId, IInvokedNotification
 	{
 		[QuerySerialized("clid")]
-		public ushort[] ClientIds;
+		ushort[] ClientIds { get; set; }
 	}
 }

@@ -12,7 +12,7 @@ namespace TS3AudioBot
 		public event EventHandler<TextMessage> OnMessageReceived;
 		private void ExtendedTextMessage(object sender, TextMessage eventArgs)
 		{
-			if (connectionData.suppressLoopback && eventArgs.InvokerId == me.Id)
+			if (connectionData.suppressLoopback && eventArgs.InvokerId == me.ClientId)
 				return;
 			OnMessageReceived?.Invoke(sender, eventArgs);
 		}
@@ -86,7 +86,7 @@ namespace TS3AudioBot
 		public ClientData GetClientById(ushort id)
 		{
 			RefreshClientBuffer(false);
-			return clientbuffer.FirstOrDefault(client => client.Id == id);
+			return clientbuffer.FirstOrDefault(client => client.ClientId == id);
 		}
 
 		public ClientData GetClientByName(string name)
@@ -97,13 +97,13 @@ namespace TS3AudioBot
 
 		public ClientData GetSelf()
 		{
-			var cd = new ClientData();
+			var cd = Generator.ActivateResponse<ClientData>();
 			var data = tsClient.WhoAmI();
 			cd.ChannelId = data.ChannelId;
 			cd.DatabaseId = data.DatabaseId;
-			cd.Id = data.ClientId;
+			cd.ClientId = data.ClientId;
 			cd.NickName = data.NickName;
-			cd.Type = ClientType.Query;
+			cd.ClientType = ClientType.Query;
 			return cd;
 		}
 

@@ -39,7 +39,7 @@ namespace TS3Query
 		Server,
 	}
 
-	enum NotificationType
+	public enum NotificationType
 	{
 		[QueryString("notifychannelcreated")]
 		ChannelCreated,

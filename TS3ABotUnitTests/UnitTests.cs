@@ -29,8 +29,10 @@ namespace TS3ABotUnitTests
 			if (File.Exists("test.txt")) File.Delete("test.txt");
 
 
-			var inv1 = new ClientData() { Id = 10, DatabaseId = 101, NickName = "Invoker1" };
-			var inv2 = new ClientData() { Id = 20, DatabaseId = 102, NickName = "Invoker2" };
+			var inv1 = Generator.ActivateResponse<ClientData>();
+			{ inv1.ClientId = 10; inv1.DatabaseId = 101; inv1.NickName = "Invoker1"; }
+			var inv2 = Generator.ActivateResponse<ClientData>();
+			{ inv2.ClientId = 20; inv2.DatabaseId = 102; inv2.NickName = "Invoker2"; }
 
 			var ar1 = new SoundcloudResource("asdf", "sc_ar1", "https://soundcloud.de/sc_ar1");
 			var ar2 = new MediaResource("./File.mp3", "me_ar2", "https://splamy.de/sc_ar2", RResultCode.Success);

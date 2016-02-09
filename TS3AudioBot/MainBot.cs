@@ -514,7 +514,7 @@ namespace TS3AudioBot
 			if (client == null)
 				session.Write("No user found...");
 			else
-				session.Write($"Client: UID:{client.Id} DBID:{client.DatabaseId} ChanID:{client.ChannelId}");
+				session.Write($"Client: UID:{client.ClientId} DBID:{client.DatabaseId} ChanID:{client.ChannelId}");
 		}
 
 		private void CommandHelp(BotSession session, string parameter)
@@ -743,7 +743,7 @@ namespace TS3AudioBot
 				return;
 			}
 
-			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.Id != textMessage.InvokerId)
+			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
 				session.Write(FactoryManager.RestoreLink(AudioFramework.CurrentPlayData));
@@ -911,7 +911,7 @@ namespace TS3AudioBot
 				return;
 			}
 
-			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.Id != textMessage.InvokerId)
+			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
 				session.Write(AudioFramework.CurrentPlayData.Resource.ResourceTitle);

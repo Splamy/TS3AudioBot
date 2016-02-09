@@ -54,16 +54,15 @@
     <Compile Include="BobController.cs" />
     <Compile Include="BotSession.cs" />
     <Compile Include="ErrorLogger.cs" />
-	<Compile Include="InfoAttribute.cs" />
+    <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="IQueryConnection.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PluginManager.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryConnection.cs" />
-	<Compile Include="SessionManager.cs" />
-	<Compile Include="VLCConnection.cs" />
+    <Compile Include="SessionManager.cs" />
+    <Compile Include="VLCConnection.cs" />
     <Compile Include="Algorithm\CommandParser.cs" />
     <Compile Include="Algorithm\ICommandFilter.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
@@ -86,6 +85,7 @@
     <Compile Include="History\HistoryManager.cs" />
     <Compile Include="History\SearchQuery.cs" />
     <Compile Include="History\SmartHistoryFormatter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResourceFactories\AudioResource.cs" />
     <Compile Include="ResourceFactories\IResourceFactory.cs" />
     <Compile Include="ResourceFactories\MediaFactory.cs" />
@@ -98,18 +98,15 @@
     <Compile Include="TS3Query\Extensions.cs" />
     <Compile Include="TS3Query\KnownEnums.cs" />
     <Compile Include="TS3Query\Messages\BaseTypes.cs" />
-    <Compile Include="TS3Query\Messages\ChannelData.cs" />
     <Compile Include="TS3Query\Messages\ChannelNotifications.cs" />
-    <Compile Include="TS3Query\Messages\ClientData.cs" />
     <Compile Include="TS3Query\Messages\ClientNotifications.cs" />
+    <Compile Include="TS3Query\Messages\Generator.cs" />
     <Compile Include="TS3Query\Messages\OtherNotifications.cs" />
     <Compile Include="TS3Query\Messages\ResponseDictionary.cs" />
-    <Compile Include="TS3Query\Messages\ServerData.cs" />
-    <Compile Include="TS3Query\Messages\WhoAmI.cs" />
-    <Compile Include="TS3Query\NotificationNameAttribute.cs" />
-    <Compile Include="TS3Query\QuerySerializedAttribute.cs" />
+    <Compile Include="TS3Query\QueryEventDispatcher.cs" />
     <Compile Include="TS3Query\QueryStringAttribute.cs" />
     <Compile Include="TS3Query\TS3QueryClient.cs" />
+    <Compile Include="TS3Query\TS3QueryTools.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

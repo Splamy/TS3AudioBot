@@ -1,13 +1,12 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-
 namespace TS3Query.Messages
 {
-	using KeyType = String;
-	using ValueType = String;
+	using System;
+	using System.Collections;
+	using System.Collections.Generic;
+	using KeyType = System.String;
+	using ValueType = System.String;
 
-	class ResponseDictionary : Response, IDictionary<KeyType, ValueType>
+	class ResponseDictionary : IDictionary<KeyType, ValueType>, IResponse
 	{
 		private IDictionary<KeyType, ValueType> data;
 		public ResponseDictionary(IDictionary<KeyType, ValueType> dataDict) { data = dataDict; }

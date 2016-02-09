@@ -4,12 +4,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("TS3AudioBot")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("TS3MusicBot")]
+[assembly: AssemblyDescription("Advanced Musicbot for Teamspeak 3")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("TS3AudioBot")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyProduct("TS3MusicBot")]
+[assembly: AssemblyCopyright("Copyright © Splamy 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

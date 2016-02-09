@@ -2,120 +2,148 @@ namespace TS3Query.Messages
 {
 	using System;
 
-	public abstract class ChannelNotification : Notification
+	[QuerySubInterface]
+	public interface IChannelId
 	{
 		[QuerySerialized("cid")]
-		public int ChannelId;
+		int ChannelId { get; set; }
 	}
 
-	public abstract class InvokedChannelNotification : ChannelNotification
+	[QuerySubInterface]
+	public interface IInvokedNotification
 	{
 		[QuerySerialized("invokerid")]
-		public int InvokerId;
+		ushort InvokerId { get; set; }
 
 		[QuerySerialized("invokername")]
-		public string InvokerName;
+		string InvokerName { get; set; }
 
 		[QuerySerialized("invokeruid")]
-		public string InvokerUid;
+		string InvokerUid { get; set; }
 	}
 
-	public abstract class ChannelDataNotification : InvokedChannelNotification
+	[QuerySubInterface]
+	public interface IChannelBaseData
 	{
+		[QuerySerialized("channel_order")]
+		int Order { get; set; }
+
 		[QuerySerialized("channel_name")]
-		public string Name;
+		string Name { get; set; }
 
 		[QuerySerialized("channel_topic")]
-		public string Topic;
-
-		[QuerySerialized("channel_codec")]
-		public Codec Codec;
-
-		[QuerySerialized("channel_codec_quality")]
-		public int CodecQuality;
-
-		[QuerySerialized("channel_maxclients")]
-		public int MaxClients;
-
-		[QuerySerialized("channel_maxfamilyclients")]
-		public int MaxFamilyClients;
-
-		[QuerySerialized("channel_order")]
-		public int Order;
-
-		[QuerySerialized("channel_flag_permanent")]
-		public bool IsPermanent;
-
-		[QuerySerialized("channel_flag_semi_permanent")]
-		public bool IsSemiPermanent;
+		string Topic { get; set; }
 
 		[QuerySerialized("channel_flag_default")]
-		public bool IsDefaultChannel;
+		bool IsDefaultChannel { get; set; }
 
 		[QuerySerialized("channel_flag_password")]
-		public bool HasPassword;
+		bool HasPassword { get; set; }
 
-		[QuerySerialized("channel_codec_latency_factor")]
-		public int CodecLatencyFactor;
+		[QuerySerialized("channel_flag_permanent")]
+		bool IsPermanent { get; set; }
 
-		[QuerySerialized("channel_codec_is_unencrypted")]
-		public bool IsUnencrypted;
+		[QuerySerialized("channel_flag_semi_permanent")]
+		bool IsSemiPermanent { get; set; }
 
-		[QuerySerialized("channel_delete_delay")]
-		public TimeSpan DeleteDelay;
+		[QuerySerialized("channel_codec")]
+		Codec Codec { get; set; }
 
-		[QuerySerialized("channel_flag_maxclients_unlimited")]
-		public bool IsMaxClientsUnlimited;
-
-		[QuerySerialized("channel_flag_maxfamilyclients_unlimited")]
-		public bool IsMaxFamilyClientsUnlimited;
-
-		[QuerySerialized("channel_flag_maxfamilyclients_inherited")]
-		public bool IsMaxFamilyClientsInherited;
+		[QuerySerialized("channel_codec_quality")]
+		int CodecQuality { get; set; }
 
 		[QuerySerialized("channel_needed_talk_power")]
-		public int NeededTalkPower;
-
-		[QuerySerialized("channel_name_phonetic")]
-		public string PhoneticName;
+		int NeededTalkPower { get; set; }
 
 		[QuerySerialized("channel_icon_id")]
-		public string IconId;
+		long IconId { get; set; }
+
+		[QuerySerialized("channel_maxclients")]
+		int MaxClients { get; set; }
+
+		[QuerySerialized("channel_maxfamilyclients")]
+		int MaxFamilyClients { get; set; }
 	}
 
-	[NotificationName(NotificationType.ChannelCreated)]
-	public class ChannelCreated : ChannelDataNotification
+	[QuerySubInterface]
+	public interface IChannelNotificationData
 	{
-		[QuerySerialized("cpid")]
-		public int ChannelParentId;
+		[QuerySerialized("channel_codec_latency_factor")]
+		int CodecLatencyFactor { get; set; }
+
+		[QuerySerialized("channel_codec_is_unencrypted")]
+		bool IsUnencrypted { get; set; }
+
+		[QuerySerialized("channel_delete_delay")]
+		TimeSpan DeleteDelay { get; set; }
+
+		[QuerySerialized("channel_flag_maxclients_unlimited")]
+		bool IsMaxClientsUnlimited { get; set; }
+
+		[QuerySerialized("channel_flag_maxfamilyclients_unlimited")]
+		bool IsMaxFamilyClientsUnlimited { get; set; }
+
+		[QuerySerialized("channel_flag_maxfamilyclients_inherited")]
+		bool IsMaxFamilyClientsInherited { get; set; }
+
+		[QuerySerialized("channel_name_phonetic")]
+		string PhoneticName { get; set; }
 	}
 
-	[NotificationName(NotificationType.ChannelDeleted)]
-	public class ChannelDeleted : InvokedChannelNotification { }
-
-	[NotificationName(NotificationType.ChannelChanged)]
-	public class ChannelChanged : ChannelNotification { }
-
-	[NotificationName(NotificationType.ChannelEdited)]
-	public class ChannelEdited : ChannelDataNotification
+	[QuerySubInterface]
+	public interface IReason
 	{
 		[QuerySerialized("reasonid")]
-		public MoveReason Reason;
+		MoveReason Reason { get; set; }
 	}
 
-	[NotificationName(NotificationType.ChannelMoved)]
-	public class ChannelMoved : InvokedChannelNotification
+	[QuerySubInterface]
+	public interface IChannelParentId
 	{
-		[QuerySerialized("reasonid")]
-		public MoveReason Reason;
-
 		[QuerySerialized("cpid")]
-		public int ChannelParentId;
+		int ChannelParentId { get; set; }
+	}
 
+	[QueryNotification(NotificationType.ChannelCreated)]
+	public interface ChannelCreated : INotification, IChannelId, IInvokedNotification, IChannelBaseData, IChannelNotificationData, IChannelParentId { }
+
+	[QueryNotification(NotificationType.ChannelDeleted)]
+	public interface ChannelDeleted : INotification, IChannelId, IInvokedNotification { }
+
+	[QueryNotification(NotificationType.ChannelChanged)]
+	public interface ChannelChanged : INotification, IChannelId { }
+
+	[QueryNotification(NotificationType.ChannelEdited)]
+	public interface ChannelEdited : INotification, IChannelId, IInvokedNotification, IChannelBaseData, IChannelNotificationData, IReason { }
+
+	[QueryNotification(NotificationType.ChannelMoved)]
+	public interface ChannelMoved : INotification, IChannelId, IInvokedNotification, IReason, IChannelParentId
+	{
 		[QuerySerialized("order")]
-		public int Order;
+		int Order { get; set; }
 	}
 
-	[NotificationName(NotificationType.ChannelPasswordChanged)]
-	public class ChannelPasswordChanged : ChannelNotification { }
+	[QueryNotification(NotificationType.ChannelPasswordChanged)]
+	public interface ChannelPasswordChanged : INotification, IChannelId { }
+	
+	public interface ChannelData : IResponse, IChannelBaseData
+	{
+		[QuerySerialized("id")]
+		int Id { get; set; }
+
+		[QuerySerialized("pid")]
+		int ParentChannelId { get; set; }
+
+		[QuerySerialized("seconds_empty")]
+		TimeSpan DurationEmpty { get; set; }
+
+		[QuerySerialized("total_clients_family")]
+		int TotalFamilyClients { get; set; }
+
+		[QuerySerialized("total_clients")]
+		int TotalClients { get; set; }
+
+		[QuerySerialized("channel_needed_subscribe_power")]
+		int NeededSubscribePower { get; set; }
+	}
 }

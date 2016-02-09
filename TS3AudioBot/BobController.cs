@@ -192,7 +192,7 @@ namespace TS3AudioBot
 		{
 			if (bobClient == null)
 				return;
-			if (message.InvokerId != bobClient.Id)
+			if (message.InvokerId != bobClient.ClientId)
 				return;
 
 			ParseData(TextUtil.RemoveUrlBB(message.Message));
@@ -329,14 +329,14 @@ namespace TS3AudioBot
 			if (e.ServerGroups.ToIntArray().Contains(bobControllerData.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
-				bobClient = new ClientData()
+				bobClient = Generator.ActivateResponse<ClientData>();
 				{
-					ChannelId = e.TargetChannelId,
-					DatabaseId = e.DatabaseId,
-					Id = e.ClientId,
-					NickName = e.NickName,
-					Type = e.Type,
-				};
+					bobClient.ChannelId = e.TargetChannelId;
+					bobClient.DatabaseId = e.DatabaseId;
+					bobClient.ClientId = e.ClientId;
+					bobClient.NickName = e.NickName;
+					bobClient.ClientType = e.ClientType;
+				}
 				isRunning = true;
 				awaitingConnect = false;
 				Log.Write(Log.Level.Debug, "BC bob is now officially running");
@@ -346,7 +346,7 @@ namespace TS3AudioBot
 
 		private void OnBobDisconnnect(object sender, ClientLeftView e)
 		{
-			if (bobClient == null || e.ClientId != bobClient.Id) return;
+			if (bobClient == null || e.ClientId != bobClient.ClientId) return;
 
 			bobClient = null;
 			isRunning = false;

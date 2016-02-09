@@ -1,7 +1,6 @@
 namespace TS3Query
 {
 	using System;
-	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Globalization;
@@ -69,9 +68,6 @@ namespace TS3Query
 
 		/// <summary>Maps the name of a notification to the class.</summary>
 		private static Dictionary<string, Type> notifyLookup;
-		/// <summary>Maps any QueryMessage class to all its fields
-		/// the adding of QM's is lazy via the request method.</summary>
-		private static Dictionary<Type, InitializerData> messageMap;
 		/// <summary>Map of functions to deserialize from query values.</summary>
 		private static Dictionary<Type, Func<string, Type, object>> convertMap;
 
@@ -79,23 +75,17 @@ namespace TS3Query
 
 		static TS3QueryClient()
 		{
-			notifyLookup = new Dictionary<string, Type>();
-
-			messageMap = new Dictionary<Type, InitializerData>();
 			// get all classes deriving from Notification
 			var derivedNtfy = from asm in AppDomain.CurrentDomain.GetAssemblies()
 							  from type in asm.GetTypes()
-							  where typeof(Notification).IsAssignableFrom(type)
-							  select type;
-			foreach (var eValue in derivedNtfy)
-			{
-				var ntfyAtt = (NotificationNameAttribute)eValue.GetCustomAttribute(typeof(NotificationNameAttribute), false);
-				if (ntfyAtt == null) continue;
+							  where type.IsInterface
+							  where typeof(INotification).IsAssignableFrom(type)
+							  let ntfyAtt = type.GetCustomAttribute(typeof(QueryNotificationAttribute), false)
+							  where ntfyAtt != null
+							  select new KeyValuePair<string, Type>(((QueryNotificationAttribute)ntfyAtt).Name, type);
+			notifyLookup = derivedNtfy.ToDictionary(x => x.Key, x => x.Value);
 
-				notifyLookup.Add(ntfyAtt.Name, eValue);
-			}
-
-			convertMap = new Dictionary<Type, Func<string, Type, object>>();
+			Helper.Init(ref convertMap);
 			convertMap.Add(typeof(bool), (v, t) => v != "0");
 			convertMap.Add(typeof(sbyte), (v, t) => sbyte.Parse(v, CultureInfo.InvariantCulture));
 			convertMap.Add(typeof(byte), (v, t) => byte.Parse(v, CultureInfo.InvariantCulture));
@@ -192,11 +182,11 @@ namespace TS3Query
 		}
 		public WhoAmI WhoAmI() => Send<WhoAmI>("whoami").FirstOrDefault();
 		public void SendMessage(string message, ClientData client)
-			=> SendMessage(MessageTarget.Private, client.Id, message);
+			=> SendMessage(MessageTarget.Private, client.ClientId, message);
 		public void SendMessage(string message, ChannelData channel)
 			=> SendMessage(MessageTarget.Channel, channel.Id, message);
 		public void SendMessage(string message, ServerData server)
-			=> SendMessage(MessageTarget.Server, server.Id, message);
+			=> SendMessage(MessageTarget.Server, server.VirtualServerId, message);
 		public void SendMessage(MessageTarget target, int id, string message) => Send("sendtextmessage",
 			new Parameter("targetmode", (int)target),
 			new Parameter("target", id),
@@ -228,11 +218,11 @@ namespace TS3Query
 				Send("servernotifyregister", ev);
 		}
 
-		private static void Subscribe<T>(ref EventHandler<T> handler, EventHandler<T> add) where T : Notification
+		private static void Subscribe<T>(ref EventHandler<T> handler, EventHandler<T> add) where T : INotification
 		{
 			handler = (EventHandler<T>)Delegate.Combine(handler, add);
 		}
-		private static void Unsubscribe<T>(ref EventHandler<T> handler, EventHandler<T> remove) where T : Notification
+		private static void Unsubscribe<T>(ref EventHandler<T> handler, EventHandler<T> remove) where T : INotification
 		{
 			handler = (EventHandler<T>)Delegate.Remove(handler, remove);
 		}
@@ -282,10 +272,10 @@ namespace TS3Query
 			IsConnected = false;
 		}
 
-		private void InvokeEvent(Notification notification)
+		private void InvokeEvent(INotification notification)
 		{
 			// TODO rework
-			switch (notification.GetNotifyType())
+			switch (notification.NotifyType)
 			{
 			case NotificationType.ChannelCreated: break;
 			case NotificationType.ChannelDeleted: break;
@@ -319,7 +309,7 @@ namespace TS3Query
 			return errorStatus;
 		}
 
-		private static Notification GenerateNotification(string line)
+		private static INotification GenerateNotification(string line)
 		{
 			int splitindex = line.IndexOf(' ');
 			if (splitindex < 0) throw new ArgumentException("line couldn't be parsed");
@@ -327,15 +317,15 @@ namespace TS3Query
 			string notifyname = line.Substring(0, splitindex);
 			if (notifyLookup.TryGetValue(notifyname, out targetNotification))
 			{
-				var notification = (Notification)Activator.CreateInstance(targetNotification);
+				var notification = Generator.ActivateNotification(targetNotification);
 				var incommingData = ParseKeyValueLine(line, true);
-				FillQueryMessage(notification, incommingData);
+				FillQueryMessage(targetNotification, notification, incommingData);
 				return notification;
 			}
 			else throw new NotSupportedException("No matching notification derivative");
 		}
 
-		private IEnumerable<Response> GenerateResponse(string line)
+		private IEnumerable<IResponse> GenerateResponse(string line)
 		{
 			if (!requestQueue.Any())
 				throw new InvalidOperationException();
@@ -352,25 +342,24 @@ namespace TS3Query
 			else
 			{
 				if (string.IsNullOrWhiteSpace(line))
-					return Enumerable.Empty<Response>();
+					return Enumerable.Empty<IResponse>();
 				return messageList.Select(msg =>
 				{
-					var response = (Response)Activator.CreateInstance(peekResponse.AnswerType);
-					FillQueryMessage(response, ParseKeyValueLine(msg, false));
+					var response = Generator.ActivateResponse(peekResponse.AnswerType);
+					FillQueryMessage(peekResponse.AnswerType, response, ParseKeyValueLine(msg, false));
 					return response;
 				});
 			}
 		}
 
-		private static void FillQueryMessage(IQueryMessage qm, KVEnu kvpData)
+		private static void FillQueryMessage(Type baseType, IQueryMessage qm, KVEnu kvpData)
 		{
-			var qmType = qm.GetType();
-			var map = GetFieldMap(qmType);
+			var map = Generator.GetAccessMap(baseType);
 			foreach (var kvp in kvpData)
 			{
-				var field = map.FieldMap[kvp.Key];
-				object value = DeserializeValue(kvp.Value, field.FieldType);
-				field.SetValue(qm, value);
+				var prop = map[kvp.Key];
+				object value = DeserializeValue(kvp.Value, prop.PropertyType);
+				prop.SetValue(qm, value);
 			}
 		}
 
@@ -383,24 +372,6 @@ namespace TS3Query
 				return Enum.ToObject(dataType, Convert.ChangeType(data, dataType.GetEnumUnderlyingType()));
 			else
 				throw new NotSupportedException();
-		}
-
-		private static InitializerData GetFieldMap(Type type)
-		{
-			InitializerData map;
-			if (!messageMap.TryGetValue(type, out map))
-			{
-				map = new InitializerData(type);
-				foreach (var field in type.GetFields())
-				{
-					var serializerAtt = field.GetCustomAttribute<QuerySerializedAttribute>();
-					if (serializerAtt == null) continue; // todo check is null ?
-
-					map.FieldMap.Add(serializerAtt.Name, field);
-				}
-				messageMap.Add(type, map);
-			}
-			return map;
 		}
 
 		private static KVEnu ParseKeyValueLine(string line, bool ignoreFirst)
@@ -437,22 +408,22 @@ namespace TS3Query
 			=> SendInternal(command, parameter, options, null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command) where T : Response
+		public IEnumerable<T> Send<T>(string command) where T : IResponse
 			=> Send<T>(command, NoParameter);
 
 		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command, params Parameter[] parameter) where T : Response
+		public IEnumerable<T> Send<T>(string command, params Parameter[] parameter) where T : IResponse
 			=> Send<T>(command, parameter, NoOptions);
 
 		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command, Parameter[] parameter, Option options) where T : Response
+		public IEnumerable<T> Send<T>(string command, Parameter[] parameter, Option options) where T : IResponse
 			=> Send<T>(command, parameter, new[] { options });
 
 		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command, Parameter[] parameter, params Option[] options) where T : Response
+		public IEnumerable<T> Send<T>(string command, Parameter[] parameter, params Option[] options) where T : IResponse
 			=> SendInternal(command, parameter, options, typeof(T)).Cast<T>();
 
-		protected IEnumerable<Response> SendInternal(string command, Parameter[] parameter, Option[] options, Type targetType)
+		protected IEnumerable<IResponse> SendInternal(string command, Parameter[] parameter, Option[] options, Type targetType)
 		{
 			if (string.IsNullOrWhiteSpace(command))
 				throw new ArgumentNullException(nameof(command));
@@ -505,88 +476,6 @@ namespace TS3Query
 		}
 	}
 
-	interface IEventDispatcher : IDisposable
-	{
-		EventDispatchType DispatcherType { get; }
-		/// <summary>Do NOT call this method manually (Unless you know what you do).
-		/// Invokes an Action, when the EventLoop receives a new packet.</summary>
-		/// <param name="eventAction"></param>
-		void Invoke(Action eventAction);
-		/// <summary>Use this method to enter the read loop with the current Thread.</summary>
-		void EnterEventLoop();
-	}
-
-	class ManualEventDispatcher : IEventDispatcher
-	{
-		public EventDispatchType DispatcherType => EventDispatchType.Manual;
-
-		private ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
-		private AutoResetEvent eventBlock = new AutoResetEvent(false);
-		private bool run = true;
-
-		public ManualEventDispatcher() { }
-
-		public void Invoke(Action eventAction)
-		{
-			eventQueue.Enqueue(eventAction);
-			eventBlock.Set();
-		}
-
-		public void EnterEventLoop()
-		{
-			while (run && eventBlock != null)
-			{
-				eventBlock.WaitOne();
-				while (!eventQueue.IsEmpty)
-				{
-					Action callData;
-					if (eventQueue.TryDequeue(out callData))
-						callData.Invoke();
-				}
-			}
-		}
-
-		public void Dispose()
-		{
-			run = false;
-			if (eventBlock != null)
-			{
-				eventBlock.Set();
-				eventBlock.Dispose();
-				eventBlock = null;
-			}
-		}
-	}
-
-	class NoEventDispatcher : IEventDispatcher
-	{
-		public EventDispatchType DispatcherType => EventDispatchType.None;
-		public void EnterEventLoop() { throw new NotSupportedException(); }
-		public void Invoke(Action eventAction) { }
-		public void Dispose() { }
-	}
-
-	enum EventDispatchType
-	{
-		None,
-		CurrentThread,
-		Manual,
-		AutoThreadPooled,
-		NewThreadEach,
-	}
-
-	class InitializerData
-	{
-		public Type ActivationType { get; }
-		public Dictionary<string, FieldInfo> FieldMap { get; }
-
-		public InitializerData(Type type)
-		{
-			ActivationType = type;
-			FieldMap = new Dictionary<string, FieldInfo>();
-		}
-	}
-
 	public class ErrorStatus
 	{
 		// id
@@ -604,7 +493,7 @@ namespace TS3Query
 	class WaitBlock : IDisposable
 	{
 		private AutoResetEvent waiter = new AutoResetEvent(false);
-		private IEnumerable<Response> answer = null;
+		private IEnumerable<IResponse> answer = null;
 		private ErrorStatus errorStatus = null;
 		public Type AnswerType { get; }
 
@@ -613,7 +502,7 @@ namespace TS3Query
 			AnswerType = answerType;
 		}
 
-		public IEnumerable<Response> WaitForMessage()
+		public IEnumerable<IResponse> WaitForMessage()
 		{
 			waiter.WaitOne();
 			if (!errorStatus.Ok)
@@ -621,7 +510,7 @@ namespace TS3Query
 			return answer;
 		}
 
-		public void SetAnswer(ErrorStatus error, IEnumerable<Response> answer)
+		public void SetAnswer(ErrorStatus error, IEnumerable<IResponse> answer)
 		{
 			this.answer = answer;
 			SetAnswer(error);
@@ -758,52 +647,6 @@ namespace TS3Query
 			throw new NotImplementedException();
 			//buildList.Add(result);
 			//return this;
-		}
-	}
-
-	public static class TS3QueryTools
-	{
-		public static string Escape(string stringToEscape)
-		{
-			StringBuilder strb = new StringBuilder(stringToEscape);
-			strb = strb.Replace("\\", "\\\\"); // Backslash
-			strb = strb.Replace("/", "\\/");   // Slash
-			strb = strb.Replace(" ", "\\s");   // Whitespace
-			strb = strb.Replace("|", "\\p");   // Pipe
-			strb = strb.Replace("\f", "\\f");  // Formfeed
-			strb = strb.Replace("\n", "\\n");  // Newline
-			strb = strb.Replace("\r", "\\r");  // Carriage Return
-			strb = strb.Replace("\t", "\\t");  // Horizontal Tab
-			strb = strb.Replace("\v", "\\v");  // Vertical Tab
-			return strb.ToString();
-		}
-
-		public static string Unescape(string stringToUnescape)
-		{
-			StringBuilder strb = new StringBuilder(stringToUnescape.Length);
-			for (int i = 0; i < stringToUnescape.Length; i++)
-			{
-				char c = stringToUnescape[i];
-				if (c == '\\')
-				{
-					if (++i >= stringToUnescape.Length) throw new FormatException();
-					switch (stringToUnescape[i])
-					{
-					case 'v': strb.Append('\v'); break;  // Vertical Tab
-					case 't': strb.Append('\t'); break;  // Horizontal Tab
-					case 'r': strb.Append('\r'); break;  // Carriage Return
-					case 'n': strb.Append('\n'); break;  // Newline
-					case 'f': strb.Append('\f'); break;  // Formfeed
-					case 'p': strb.Append('|'); break;   // Pipe
-					case 's': strb.Append(' '); break;   // Whitespace
-					case '/': strb.Append('/'); break;   // Slash
-					case '\\': strb.Append('\\'); break; // Backslash
-					default: throw new FormatException();
-					}
-				}
-				else strb.Append(c);
-			}
-			return strb.ToString();
 		}
 	}
 }

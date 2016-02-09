@@ -2,105 +2,149 @@ namespace TS3Query.Messages
 {
 	using System;
 
-	public abstract class InvokedNotifiction : Notification
+	[QuerySubInterface]
+	public interface IServerName
 	{
-		[QuerySerialized("invokerid")]
-		public ushort InvokerId;
-
-		[QuerySerialized("invokername")]
-		public string InvokerName;
-
-		[QuerySerialized("invokeruid")]
-		public string InvokerUid;
+		[QuerySerialized("virtualserver_name")]
+		string ServerName { get; set; }
 	}
 
-	[NotificationName(NotificationType.ServerEdited)]
-	public class ServerEdited : InvokedNotifiction
+	[QueryNotification(NotificationType.ServerEdited)]
+	public interface ServerEdited : INotification, IInvokedNotification, IReason, IServerName
 	{
-		[QuerySerialized("reasonid")]
-		public MoveReason Reason;
-
-		[QuerySerialized("virtualserver_name")]
-		public string ServerName;
-
 		[QuerySerialized("virtualserver_codec_encryption_mode")]
-		public CodecEncryptionMode CodecEncryptionMode;
+		CodecEncryptionMode CodecEncryptionMode { get; set; }
 
 		[QuerySerialized("virtualserver_default_server_group")]
-		public int DefaultServerGroup;
+		int DefaultServerGroup { get; set; }
 
 		[QuerySerialized("virtualserver_default_channel_group")]
-		public int DefaultChannelGroup;
+		int DefaultChannelGroup { get; set; }
 
 		[QuerySerialized("virtualserver_hostbanner_url")]
-		public string HostbannerUrl;
+		string HostbannerUrl { get; set; }
 
 		[QuerySerialized("virtualserver_hostbanner_gfx_url")]
-		public string HostbannerGfxUrl;
+		string HostbannerGfxUrl { get; set; }
 
 		[QuerySerialized("virtualserver_hostbanner_gfx_interval")]
-		public TimeSpan HostbannerGfxInterval;
+		TimeSpan HostbannerGfxInterval { get; set; }
 
 		[QuerySerialized("virtualserver_priority_speaker_dimm_modificator")]
-		public float PrioritySpeakerDimmModificator;
+		float PrioritySpeakerDimmModificator { get; set; }
 
 		[QuerySerialized("virtualserver_hostbutton_tooltip")]
-		public string HostButtonTooltipText;
+		string HostButtonTooltipText { get; set; }
 
 		[QuerySerialized("virtualserver_hostbutton_url")]
-		public string HostButtonUrl;
+		string HostButtonUrl { get; set; }
 
 		[QuerySerialized("virtualserver_hostbutton_gfx_url")]
-		public string HostButtonGfxUrl;
+		string HostButtonGfxUrl { get; set; }
 
 		[QuerySerialized("virtualserver_name_phonetic")]
-		public string PhoneticName;
+		string PhoneticName { get; set; }
 
 		[QuerySerialized("virtualserver_icon_id")]
-		public long IconId;
+		long IconId { get; set; }
 
 		[QuerySerialized("virtualserver_hostbanner_mode")]
-		public HostBannerMode HostbannerMode;
+		HostBannerMode HostbannerMode { get; set; }
 
 		[QuerySerialized("virtualserver_channel_temp_delete_delay_default")]
-		public TimeSpan TempChannelDefaultDeleteDelay;
+		TimeSpan TempChannelDefaultDeleteDelay { get; set; }
 	}
 
-	[NotificationName(NotificationType.TextMessage)]
-	public class TextMessage : InvokedNotifiction
+	[QueryNotification(NotificationType.TextMessage)]
+	public interface TextMessage : INotification, IInvokedNotification
 	{
 		[QuerySerialized("targetmode")]
-		public MessageTarget Target;
+		MessageTarget Target { get; set; }
 
 		[QuerySerialized("msg")]
-		public string Message;
+		string Message { get; set; }
 
 		[QuerySerialized("target")]
-		public int TargetClientId;
+		int TargetClientId { get; set; }
 	}
 
-	[NotificationName(NotificationType.TokenUsed)]
-	public class TokenUsed : Notification
+	[QueryNotification(NotificationType.TokenUsed)]
+	public interface TokenUsed : INotification, IClientId
 	{
-		[QuerySerialized("clid")]
-		public ushort ClientId;
-
 		[QuerySerialized("cldbid")]
-		public ulong ClientDatabaseId;
+		ulong ClientDatabaseId { get; set; }
 
 		[QuerySerialized("cluid")]
-		public string ClientUid;
+		string ClientUid { get; set; }
 
 		[QuerySerialized("token")]
-		public string UsedToken;
+		string UsedToken { get; set; }
 
 		[QuerySerialized("tokencustomset")]
-		public string TokenCustomSet;
+		string TokenCustomSet { get; set; }
 
 		[QuerySerialized("token1")]
-		public string Token1;
+		string Token1 { get; set; }
 
 		[QuerySerialized("token2")]
-		public string Token2;
+		string Token2 { get; set; }
+	}
+
+	[QuerySubInterface]
+	public interface ServerBaseData
+	{
+		[QuerySerialized("virtualserver_id")]
+		int VirtualServerId { get; set; }
+
+		[QuerySerialized("virtualserver_unique_identifier")]
+		string VirtualServerUid { get; set; }
+
+		[QuerySerialized("virtualserver_port")]
+		ushort VirtualServerPort { get; set; }
+
+		[QuerySerialized("virtualserver_status")]
+		string VirtualServerStatus { get; set; }
+	}
+	
+	public interface ServerData : IResponse, IServerName, ServerBaseData
+	{
+		[QuerySerialized("virtualserver_clientsonline")]
+		int ClientsOnline { get; set; }
+
+		[QuerySerialized("virtualserver_queryclientsonline")]
+		int QueriesOnline { get; set; }
+
+		[QuerySerialized("virtualserver_maxclients")]
+		int MaxClients { get; set; }
+
+		[QuerySerialized("virtualserver_uptime")]
+		TimeSpan Uptime { get; set; }
+
+		[QuerySerialized("virtualserver_autostart")]
+		bool Autostart { get; set; }
+
+		[QuerySerialized("virtualserver_machine_id")]
+		string MachineId { get; set; }
+	}
+	
+	public interface WhoAmI : IResponse, ServerBaseData, IClientUidLong
+	{
+		[QuerySerialized("client_id")]
+		ushort ClientId { get; set; }
+
+		[QuerySerialized("client_channel_id")]
+		int ChannelId { get; set; }
+
+		[QuerySerialized("client_nickname")]
+		string NickName { get; set; }
+
+		[QuerySerialized("client_database_id")]
+		ulong DatabaseId { get; set; }
+
+		[QuerySerialized("client_login_name")]
+		string LoginName { get; set; }
+
+		[QuerySerialized("client_origin_server_id")]
+		int OriginServerId { get; set; }
 	}
 }
