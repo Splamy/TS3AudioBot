@@ -20,32 +20,15 @@ namespace TS3AudioBot.ResourceFactories
 
 		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
 		{
-			Stream peekStream;
-			var result = ValidateUri(id, out peekStream);
+			var result = ValidateUri(id, ref name, id);
 
-			// brach here if we have a final ErrorCode
 			if (result == RResultCode.MediaNoWebResponse)
 			{
 				resource = null;
 				return result;
 			}
-			// or branch here on success or if we can't figure out for sure
-			// and pass it to the user
 			else
 			{
-				if (string.IsNullOrEmpty(name))
-				{
-					if (peekStream != null)
-					{
-						using (peekStream)
-						{
-							name = AudioTagReader.GetTitle(peekStream);
-							name = string.IsNullOrWhiteSpace(name) ? id : name;
-						}
-					}
-					else name = id;
-				}
-
 				resource = new MediaResource(id, name, id, result);
 				return RResultCode.Success;
 			}
@@ -53,58 +36,72 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(string id) => id;
 
-		private RResultCode ValidateUri(string uri, out Stream stream)
+		private static RResultCode ValidateUri(string id, ref string name, string uri)
 		{
 			Uri uriResult;
 			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out uriResult))
-			{
-				stream = null;
 				return RResultCode.MediaInvalidUri;
-			}
-			string scheme;
+
 			try
 			{
-				scheme = uriResult.Scheme;
+				string scheme = uriResult.Scheme;
 				if (scheme == Uri.UriSchemeHttp
 					|| scheme == Uri.UriSchemeHttps
 					|| scheme == Uri.UriSchemeFtp)
-					return ValidateWeb(uri, out stream);
+					return ValidateWeb(id, ref name, uri);
 				else if (uriResult.Scheme == Uri.UriSchemeFile)
-					return ValidateFile(uri, out stream);
+					return ValidateFile(id, ref name, uri);
 				else
-				{
-					stream = null;
 					return RResultCode.MediaUnknownUri;
-				}
 			}
-			catch (InvalidOperationException) { return ValidateFile(uri, out stream); }
+			catch (InvalidOperationException)
+			{
+				return ValidateFile(id, ref name, uri);
+			}
 		}
 
-		private static RResultCode ValidateWeb(string link, out Stream stream)
+		private static void GetStreamData(string id, ref string name, Stream stream)
 		{
-			WebResponse response;
-			if (WebWrapper.GetResponse(out response, new Uri(link)) != ValidateCode.Ok)
+			if (string.IsNullOrEmpty(name))
 			{
-				stream = null;
-				return RResultCode.MediaNoWebResponse;
+				if (stream != null)
+				{
+					name = AudioTagReader.GetTitle(stream);
+					name = string.IsNullOrWhiteSpace(name) ? id : name;
+				}
+				else name = id;
 			}
-			stream = response.GetResponseStream();
+		}
+
+		private static RResultCode ValidateWeb(string id, ref string name, string link)
+		{
+			string refname = name;
+			if (WebWrapper.GetResponse(new Uri(link), response => { using (var stream = response.GetResponseStream()) GetStreamData(id, ref refname, stream); }) != ValidateCode.Ok)
+				return RResultCode.MediaNoWebResponse;
+
+			name = refname;
 			return RResultCode.Success;
 		}
 
-		private static RResultCode ValidateFile(string path, out Stream stream)
+		private static RResultCode ValidateFile(string id, ref string name, string path)
 		{
-			if (File.Exists(path))
-			{
-				try { stream = File.Open(path, FileMode.Open, FileAccess.Read); }
-				catch (Exception) { stream = null; }
-				return RResultCode.Success;
-			}
-			else
-			{
-				stream = null;
+			if (!File.Exists(path))
 				return RResultCode.MediaFileNotFound;
+
+			try
+			{
+				using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
+				{
+					GetStreamData(id, ref name, stream);
+					return RResultCode.Success;
+				}
 			}
+			catch (PathTooLongException) { return RResultCode.AccessDenied; }
+			catch (DirectoryNotFoundException) { return RResultCode.MediaFileNotFound; }
+			catch (FileNotFoundException) { return RResultCode.MediaFileNotFound; }
+			catch (IOException) { return RResultCode.AccessDenied; }
+			catch (UnauthorizedAccessException) { return RResultCode.AccessDenied; }
+			catch (NotSupportedException) { return RResultCode.AccessDenied; }
 		}
 
 		public void PostProcess(PlayData data, out bool abortPlay)

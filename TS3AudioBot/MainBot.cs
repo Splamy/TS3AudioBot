@@ -921,7 +921,10 @@ namespace TS3AudioBot
 			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != textMessage.InvokerId)
 				session.Write("Sorry, you have to guess!");
 			else
-				session.Write(AudioFramework.CurrentPlayData.Resource.ResourceTitle);
+			{
+				var response = $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.Resource.ResourceTitle}[/url]";
+				session.Write(response);
+			}
 		}
 
 		private void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)

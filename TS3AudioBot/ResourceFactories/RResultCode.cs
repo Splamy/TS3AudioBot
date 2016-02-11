@@ -18,5 +18,6 @@ namespace TS3AudioBot.ResourceFactories
 
 		// general errors
 		NoConnection,
+		AccessDenied,
 	}
 }

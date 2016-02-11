@@ -195,7 +195,7 @@ namespace TS3AudioBot.ResourceFactories
 		private static ValidateCode ValidateMedia(YoutubeResource resource)
 		{
 			var media = resource.AvailableTypes[resource.Selected];
-			return WebWrapper.CheckResponse(new Uri(media.link), TimeSpan.FromSeconds(1));
+			return WebWrapper.GetResponse(new Uri(media.link), TimeSpan.FromSeconds(1));
 		}
 
 		private static VideoCodec GetCodec(string type)

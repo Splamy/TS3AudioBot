@@ -13,12 +13,14 @@ namespace TS3AudioBot.Helper
 			var request = WebRequest.Create(link);
 			try
 			{
-				var response = request.GetResponse();
-				var stream = response.GetResponseStream();
-				using (var reader = new StreamReader(stream))
+				using (var response = request.GetResponse())
 				{
-					site = reader.ReadToEnd();
-					return true;
+					var stream = response.GetResponseStream();
+					using (var reader = new StreamReader(stream))
+					{
+						site = reader.ReadToEnd();
+						return true;
+					}
 				}
 			}
 			catch (WebException)
@@ -30,26 +32,23 @@ namespace TS3AudioBot.Helper
 
 		//if (request.Method == "GET")
 		//	request.Method = "HEAD";
-		public static ValidateCode CheckResponse(Uri link) => CheckResponse(link, DefaultTimeout);
-		public static ValidateCode CheckResponse(Uri link, TimeSpan timeout)
-		{
-			WebResponse response;
-			return GetResponse(out response, link, timeout);
-		}
-
-		public static ValidateCode GetResponse(out WebResponse response, Uri link) => GetResponse(out response, link, DefaultTimeout);
-		public static ValidateCode GetResponse(out WebResponse response, Uri link, TimeSpan timeout)
+		public static ValidateCode GetResponse(Uri link) => GetResponse(link, null);
+		public static ValidateCode GetResponse(Uri link, TimeSpan timeout) => GetResponse(link, null, timeout);
+		public static ValidateCode GetResponse(Uri link, Action<WebResponse> body) => GetResponse(link, body, DefaultTimeout);
+		public static ValidateCode GetResponse(Uri link, Action<WebResponse> body, TimeSpan timeout)
 		{
 			var request = WebRequest.Create(link);
 			try
 			{
 				request.Timeout = (int)timeout.TotalMilliseconds;
-				response = request.GetResponse();
+				using (var response = request.GetResponse())
+				{
+					body?.Invoke(response);
+				}
 				return ValidateCode.Ok;
 			}
 			catch (WebException webEx)
 			{
-				response = null;
 				HttpWebResponse errorResponse;
 				if (webEx.Status == WebExceptionStatus.Timeout)
 				{
