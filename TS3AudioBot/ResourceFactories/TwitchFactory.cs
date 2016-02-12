@@ -143,7 +143,7 @@ namespace TS3AudioBot.ResourceFactories
 			abortPlay = true;
 		}
 
-		public string RestoreLink(string id) => $"[url=http://www.twitch.tv/{id}]http://www.twitch.tv/{id}[/url]";
+		public string RestoreLink(string id) => "http://www.twitch.tv/" + id;
 
 		public void Dispose() { }
 	}

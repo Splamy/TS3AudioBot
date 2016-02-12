@@ -47,8 +47,7 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			string jsonResponse = $"https://api.soundcloud.com/tracks/{id}?client_id={SoundcloudClientID}";
 			var parsedDict = ParseJson(jsonResponse);
-			string permaLink = (string)parsedDict["permalink_url"];
-			return $"[url={permaLink}]{permaLink}[/url]";
+			return (string)parsedDict["permalink_url"];
 		}
 
 		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);

@@ -113,7 +113,7 @@ namespace TS3AudioBot.ResourceFactories
 			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
 		}
 
-		public string RestoreLink(string id) => $"[url=https://youtu.be/{id}]https://youtu.be/{id}[/url]";
+		public string RestoreLink(string id) => "https://youtu.be/" + id;
 
 		public void PostProcess(PlayData data, out bool abortPlay)
 		{
