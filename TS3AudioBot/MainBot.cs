@@ -880,24 +880,27 @@ namespace TS3AudioBot
 
 		private void CommandSeek(BotSession session, string parameter)
 		{
-			int seconds = -1;
+			TimeSpan span;
 			bool parsed = false;
 			if (parameter.Contains(":"))
 			{
 				string[] splittime = parameter.Split(':');
 				if (splittime.Length == 2)
 				{
-					int minutes = -1;
+					int seconds = -1, minutes;
 					parsed = int.TryParse(splittime[0], out minutes) && int.TryParse(splittime[1], out seconds);
 					if (parsed)
-					{
-						seconds = (int)(TimeSpan.FromSeconds(seconds) + TimeSpan.FromMinutes(minutes)).TotalSeconds;
-					}
+						span = TimeSpan.FromSeconds(seconds) + TimeSpan.FromMinutes(minutes);
+					else
+						span = TimeSpan.MinValue;
 				}
+				else span = TimeSpan.MinValue;
 			}
 			else
 			{
+				int seconds;
 				parsed = int.TryParse(parameter, out seconds);
+				span = TimeSpan.FromSeconds(seconds);
 			}
 
 			if (!parsed)
@@ -906,7 +909,7 @@ namespace TS3AudioBot
 				return;
 			}
 
-			if (!AudioFramework.Seek(seconds))
+			if (!AudioFramework.Seek(span))
 				session.Write("The point of time is not within the songlenth.");
 		}
 

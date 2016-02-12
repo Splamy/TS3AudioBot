@@ -10,10 +10,10 @@ namespace TS3AudioBot
 		event EventHandler OnSongEnd;
 
 		int Volume { get; set; }
-		int Position { get; set; }
+		TimeSpan Position { get; set; }
 		bool Repeated { get; set; }
 		bool Pause { get; set; }
-		int Length { get; }
+		TimeSpan Length { get; }
 		bool IsPlaying { get; }
 
 		// TODO check change in uri ??

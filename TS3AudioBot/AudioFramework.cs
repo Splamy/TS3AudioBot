@@ -40,9 +40,9 @@ namespace TS3AudioBot
 		/// <summary>Jumps to the position in the audiostream if available.</summary>
 		/// <param name="pos">Position in seconds from the start.</param>
 		/// <returns>True if the seek request was valid, false otherwise.</returns>
-		public bool Seek(int pos)
+		public bool Seek(TimeSpan pos)
 		{
-			if (pos < 0 || pos > playerConnection.Length)
+			if (pos < TimeSpan.Zero || pos > playerConnection.Length)
 				return false;
 			playerConnection.Position = pos;
 			return true;
@@ -104,11 +104,11 @@ namespace TS3AudioBot
 			{
 				if (playerConnection.IsPlaying)
 				{
-					int playtime = playerConnection.Length;
-					int position = playerConnection.Position;
+					var playtime = playerConnection.Length;
+					var position = playerConnection.Position;
 
-					int endspan = playtime - position;
-					endTime = Util.GetNow().AddSeconds(endspan);
+					var endspan = playtime - position;
+					endTime = Util.GetNow().Add(endspan);
 				}
 				else if (endTime + SongEndTimeout < Util.GetNow())
 				{

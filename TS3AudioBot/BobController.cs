@@ -57,17 +57,17 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int Position
+		public TimeSpan Position
 		{
 			get
 			{
 				SendMessage("status music");
 				musicInfoWaiter.Wait(RequestTimeout);
-				return (int)CurrentMusicInfo.Position;
+				return CurrentMusicInfo.Position;
 			}
 			set
 			{
-				SendMessage("music seek " + value);
+				SendMessage("music seek " + value.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 			}
 		}
 
@@ -91,13 +91,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int Length
+		public TimeSpan Length
 		{
 			get
 			{
 				SendMessage("status music");
 				musicInfoWaiter.Wait(RequestTimeout);
-				return (int)CurrentMusicInfo.Length;
+				return CurrentMusicInfo.Length;
 			}
 		}
 
@@ -244,9 +244,9 @@ namespace TS3AudioBot
 				switch (result[0])
 				{
 				case "address": musicData.Address = result[1]; break;
-				case "length": musicData.Length = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "length": musicData.Length = TimeSpan.FromSeconds(double.Parse(result[1], CultureInfo.InvariantCulture)); break;
 				case "loop": musicData.Loop = result[1] != "off"; break;
-				case "position": musicData.Position = double.Parse(result[1], CultureInfo.InvariantCulture); break;
+				case "position": musicData.Position = TimeSpan.FromSeconds(double.Parse(result[1], CultureInfo.InvariantCulture)); break;
 				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1], true); break;
 				case "title": musicData.Title = result[1]; break;
 				case "volume": musicData.Volume = double.Parse(result[1], CultureInfo.InvariantCulture); break;
@@ -462,8 +462,8 @@ namespace TS3AudioBot
 	public class MusicData
 	{
 		public MusicStatus Status { get; set; }
-		public double Length { get; set; }
-		public double Position { get; set; }
+		public TimeSpan Length { get; set; }
+		public TimeSpan Position { get; set; }
 		public string Title { get; set; }
 		public string Address { get; set; }
 		public bool Loop { get; set; }

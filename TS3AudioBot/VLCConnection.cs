@@ -68,16 +68,16 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int Position
+		public TimeSpan Position
 		{
 			get
 			{
 				SendResponseLocked(AwaitingResponse.GetPosition, "get_time");
-				return getPosition;
+				return TimeSpan.FromSeconds(getPosition);
 			}
 			set
 			{
-				SendCommandLocked("seek " + value);
+				SendCommandLocked("seek " + (int)value.TotalSeconds);
 			}
 		}
 
@@ -104,12 +104,12 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int Length
+		public TimeSpan Length
 		{
 			get
 			{
 				SendResponseLocked(AwaitingResponse.GetLength, "get_length");
-				return getLength;
+				return TimeSpan.FromSeconds(getLength);
 			}
 		}
 
