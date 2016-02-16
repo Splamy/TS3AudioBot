@@ -115,9 +115,9 @@ namespace TS3AudioBot.Helper.AudioTags
 		private struct ReinterpretInt
 		{
 			[FieldOffset(0)]
-			public int HDW;
-			[FieldOffset(4)]
 			public int LDW;
+			[FieldOffset(4)]
+			public int HDW;
 			[FieldOffset(0)]
 			public long value;
 		}

@@ -69,11 +69,8 @@ namespace TS3Query.Messages
 	}
 
 	[QueryNotification(NotificationType.TokenUsed)]
-	public interface TokenUsed : INotification, IClientId
+	public interface TokenUsed : INotification, IClientId, IClientDbId
 	{
-		[QuerySerialized("cldbid")]
-		ulong ClientDatabaseId { get; set; }
-
 		[QuerySerialized("cluid")]
 		string ClientUid { get; set; }
 

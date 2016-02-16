@@ -1043,6 +1043,11 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
+			if (QueryConnection != null)
+			{
+				QueryConnection.Dispose();
+				QueryConnection = null;
+			}
 			TickPool.Close();
 			if (HistoryManager != null)
 			{
@@ -1068,11 +1073,6 @@ namespace TS3AudioBot
 			{
 				//sessionManager.Dispose();
 				SessionManager = null;
-			}
-			if (QueryConnection != null)
-			{
-				QueryConnection.Dispose();
-				QueryConnection = null;
 			}
 			if (logStream != null)
 			{

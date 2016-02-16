@@ -17,6 +17,13 @@ namespace TS3Query.Messages
 	}
 
 	[QuerySubInterface]
+	public interface IClientDbId
+	{
+		[QuerySerialized("cldbid")]
+		ulong ClientDbId { get; set; }
+	}
+
+	[QuerySubInterface]
 	public interface IClientUidLong
 	{
 		[QuerySerialized("client_unique_identifier")]
@@ -31,7 +38,20 @@ namespace TS3Query.Messages
 	}
 
 	[QuerySubInterface]
-	public interface ClientBaseData
+	public interface IClientBaseData2
+	{
+		[QuerySerialized("client_flag_avatar")]
+		string AvatarFlag { get; set; }
+
+		[QuerySerialized("client_description")]
+		string Description { get; set; }
+
+		[QuerySerialized("client_icon_id")]
+		long IconId { get; set; }
+	}
+
+	[QuerySubInterface]
+	public interface IClientBaseData
 	{
 		[QuerySerialized("client_database_id")]
 		ulong DatabaseId { get; set; }
@@ -42,11 +62,50 @@ namespace TS3Query.Messages
 		[QuerySerialized("client_type")]
 		ClientType ClientType { get; set; }
 	}
-	
-	public interface ClientData : IResponse, IClientId, IChannelId, ClientBaseData { }
+
+	public interface ClientData : IResponse, IClientId, IChannelId, IClientBaseData { }
+
+	public interface ClientDbData : IResponse, ClientData, IClientBaseData2
+	{
+		[QuerySerialized("client_type")]
+		DateTime CreationDate { get; set; }
+
+		[QuerySerialized("client_lastconnected")]
+		DateTime LastConnected { get; set; }
+
+		[QuerySerialized("client_totalconnections")]
+		int TotalConnections { get; set; }
+
+		[QuerySerialized("client_month_bytes_uploaded")]
+		long MonthlyUploadQuota { get; set; }
+
+		[QuerySerialized("client_month_bytes_downloaded")]
+		long MonthlyDownloadQuota { get; set; }
+
+		[QuerySerialized("client_total_bytes_uploaded")]
+		long TotalUploadQuota { get; set; }
+
+		[QuerySerialized("client_total_bytes_downloaded")]
+		long TotalDownloadQuota { get; set; }
+
+		[QuerySerialized("client_base64HashClientUID")]
+		string Base64HashClientUID { get; set; }
+
+		[QuerySerialized("client_lastip")]
+		string LastIp { get; set; }
+	}
+
+	public interface ClientServerGroup : IResponse, IClientDbId
+	{
+		[QuerySerialized("name")]
+		string Name { get; set; }
+
+		[QuerySerialized("sgid")]
+		int ServerGroupId { get; set; }
+	}
 
 	[QueryNotification(NotificationType.ClientEnterView)]
-	public interface ClientEnterView : INotification, IReason, ITargetChannelId, IInvokedNotification, IClientId, ClientBaseData, ISourceChannelId, IClientUidLong
+	public interface ClientEnterView : INotification, IReason, ITargetChannelId, IInvokedNotification, IClientId, IClientBaseData, ISourceChannelId, IClientUidLong, IClientBaseData2
 	{
 		[QuerySerialized("client_input_muted")]
 		bool IsInputMuted { get; set; }
@@ -81,9 +140,6 @@ namespace TS3Query.Messages
 		[QuerySerialized("client_away_message")]
 		string AwayMessage { get; set; }
 
-		[QuerySerialized("client_flag_avatar")]
-		string AvatarFlag { get; set; }
-
 		[QuerySerialized("client_talk_power")]
 		int TalkPower { get; set; }
 
@@ -92,9 +148,6 @@ namespace TS3Query.Messages
 
 		[QuerySerialized("client_talk_request_msg")]
 		string TalkPowerRequestMessage { get; set; }
-
-		[QuerySerialized("client_description")]
-		string Description { get; set; }
 
 		[QuerySerialized("client_is_talker")]
 		bool IsTalker { get; set; }
@@ -110,9 +163,6 @@ namespace TS3Query.Messages
 
 		[QuerySerialized("client_needed_serverquery_view_power")]
 		bool NeededServerQueryViewPower { get; set; }
-
-		[QuerySerialized("client_icon_id")]
-		long IconId { get; set; }
 
 		[QuerySerialized("client_is_channel_commander")]
 		bool IsChannelCommander { get; set; }

@@ -132,10 +132,10 @@ namespace TS3AudioBot
 				throw new ArgumentNullException(nameof(client));
 
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			var response = tsClient.Send("servergroupsbyclientid", new Parameter("cldbid", client.DatabaseId));
-			if (!response.Any() || !response.First().ContainsKey("sgid"))
+			var response = tsClient.ServerGroupsOfClientDbId(client);
+			if (!response.Any())
 				return new int[0];
-			return response.Select(dict => int.Parse(dict["sgid"])).ToArray();
+			return response.Select(csg => csg.ServerGroupId).ToArray();
 		}
 
 		public string GetNameByDbId(ulong clientDbId)
@@ -143,18 +143,8 @@ namespace TS3AudioBot
 			string name;
 			if (!clientDbNames.TryGetValue(clientDbId, out name))
 			{
-				// TODO move to TS3Query
-				var response = tsClient.Send("clientdbinfo", new Parameter("cldbid", clientDbId));
-				if (!response.Any() || !response.First().ContainsKey("client_nickname"))
-				{
-					name = response.First()["client_nickname"] as string;
-					if (name != null)
-						clientDbNames.Add(clientDbId, name);
-				}
-				else
-				{
-					name = string.Empty;
-				}
+				var response = tsClient.ClientDbInfo(clientDbId);
+				clientDbNames.Add(clientDbId, response?.NickName ?? string.Empty);
 			}
 			return name;
 		}

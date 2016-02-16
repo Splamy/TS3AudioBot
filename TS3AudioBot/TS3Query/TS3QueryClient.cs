@@ -99,6 +99,7 @@ namespace TS3Query
 			convertMap.Add(typeof(double), (v, t) => double.Parse(v, CultureInfo.InvariantCulture));
 			convertMap.Add(typeof(string), (v, t) => TS3QueryTools.Unescape(v));
 			convertMap.Add(typeof(TimeSpan), (v, t) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
+			convertMap.Add(typeof(DateTime), (v, t) => PrimitiveParameter.unixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
 		}
 
 		public TS3QueryClient(EventDispatchType dispatcher)
@@ -163,12 +164,15 @@ namespace TS3Query
 
 		#region QUERY METHODS
 
-		public void Login(string username, string password) => Send("login",
+		public void Login(string username, string password)
+			=> Send("login",
 			new Parameter("client_login_name", username),
 			new Parameter("client_login_password", password));
-		public void UseServer(int svrId) => Send("use",
+		public void UseServer(int svrId)
+			=> Send("use",
 			new Parameter("sid", svrId));
-		public void ChangeName(string newName) => Send("clientupdate",
+		public void ChangeName(string newName)
+			=> Send("clientupdate",
 			new Parameter("client_nickname", newName));
 		public void Quit()
 		{
@@ -180,29 +184,43 @@ namespace TS3Query
 				IsConnected = false;
 			}
 		}
-		public WhoAmI WhoAmI() => Send<WhoAmI>("whoami").FirstOrDefault();
+		public WhoAmI WhoAmI()
+			=> Send<WhoAmI>("whoami").FirstOrDefault();
 		public void SendMessage(string message, ClientData client)
 			=> SendMessage(MessageTarget.Private, client.ClientId, message);
 		public void SendMessage(string message, ChannelData channel)
 			=> SendMessage(MessageTarget.Channel, channel.Id, message);
 		public void SendMessage(string message, ServerData server)
 			=> SendMessage(MessageTarget.Server, server.VirtualServerId, message);
-		public void SendMessage(MessageTarget target, int id, string message) => Send("sendtextmessage",
+		public void SendMessage(MessageTarget target, int id, string message)
+			=> Send("sendtextmessage",
 			new Parameter("targetmode", (int)target),
 			new Parameter("target", id),
 			new Parameter("msg", message));
-		public void SendGlobalMessage(string message) => Send("gm",
+		public void SendGlobalMessage(string message)
+			=> Send("gm",
 			new Parameter("msg", message));
 		public void KickClientFromServer(ushort[] clientIds)
 			=> KickClient(clientIds, RequestTarget.Server);
 		public void KickClientFromChannel(ushort[] clientIds)
 			=> KickClient(clientIds, RequestTarget.Channel);
-		public void KickClient(ushort[] clientIds, RequestTarget target) => Send("clientkick",
+		public void KickClient(ushort[] clientIds, RequestTarget target)
+			=> Send("clientkick",
 			new Parameter("reasonid", (int)target),
 			Binder.NewBind("clid", clientIds));
-		public IEnumerable<ClientData> ClientList() => ClientList(0);
+		public IEnumerable<ClientData> ClientList()
+			=> ClientList(0);
 		public IEnumerable<ClientData> ClientList(ClientListOptions options) => Send<ClientData>("clientlist",
 			NoParameter, options);
+		public IEnumerable<ClientServerGroup> ServerGroupsOfClientDbId(ClientData client)
+			=> ServerGroupsOfClientDbId(client.DatabaseId);
+		public IEnumerable<ClientServerGroup> ServerGroupsOfClientDbId(ulong clDbId)
+			=> Send<ClientServerGroup>("servergroupsbyclientid", new Parameter("cldbid", clDbId));
+		public ClientDbData ClientDbInfo(ClientData client)
+			=> ClientDbInfo(client.DatabaseId);
+		public ClientDbData ClientDbInfo(ulong clDbId)
+			=> Send<ClientDbData>("clientdbinfo", new Parameter("cldbid", clDbId)).FirstOrDefault();
+
 
 		#endregion
 
@@ -283,11 +301,11 @@ namespace TS3Query
 			case NotificationType.ChannelEdited: break;
 			case NotificationType.ChannelMoved: break;
 			case NotificationType.ChannelPasswordChanged: break;
-			case NotificationType.ClientEnterView: EventDispatcher.Invoke(() => ClientEnterViewHandler(this, (ClientEnterView)notification)); break;
-			case NotificationType.ClientLeftView: EventDispatcher.Invoke(() => ClientLeftViewHandler(this, (ClientLeftView)notification)); break;
+			case NotificationType.ClientEnterView: EventDispatcher.Invoke(() => ClientEnterViewHandler?.Invoke(this, (ClientEnterView)notification)); break;
+			case NotificationType.ClientLeftView: EventDispatcher.Invoke(() => ClientLeftViewHandler?.Invoke(this, (ClientLeftView)notification)); break;
 			case NotificationType.ClientMoved: break;
 			case NotificationType.ServerEdited: break;
-			case NotificationType.TextMessage: EventDispatcher.Invoke(() => TextMessageReceivedHandler(this, (TextMessage)notification)); break;
+			case NotificationType.TextMessage: EventDispatcher.Invoke(() => TextMessageReceivedHandler?.Invoke(this, (TextMessage)notification)); break;
 			case NotificationType.TokenUsed: break;
 			default: throw new InvalidOperationException();
 			}
@@ -464,6 +482,10 @@ namespace TS3Query
 		{
 			if (IsConnected)
 			{
+				TextMessageReceivedHandler = null;
+				ClientEnterViewHandler = null;
+				ClientLeftViewHandler = null;
+
 				Quit();
 
 				tcpReader.Dispose();
@@ -585,6 +607,7 @@ namespace TS3Query
 	public class PrimitiveParameter : IParameterConverter
 	{
 		public string QueryValue { get; }
+		public static readonly DateTime unixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
 		public PrimitiveParameter(bool value) { QueryValue = (value ? "1" : "0"); }
 		public PrimitiveParameter(sbyte value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
@@ -598,7 +621,8 @@ namespace TS3Query
 		public PrimitiveParameter(float value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(double value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(string value) { QueryValue = TS3QueryTools.Escape(value); }
-		public PrimitiveParameter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString(); }
+		public PrimitiveParameter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString("F0"); }
+		public PrimitiveParameter(DateTime value) { QueryValue = (value - unixTimeStart).TotalSeconds.ToString("F0"); }
 
 		public static implicit operator PrimitiveParameter(bool value) => new PrimitiveParameter(value);
 		public static implicit operator PrimitiveParameter(sbyte value) => new PrimitiveParameter(value);
@@ -613,6 +637,7 @@ namespace TS3Query
 		public static implicit operator PrimitiveParameter(double value) => new PrimitiveParameter(value);
 		public static implicit operator PrimitiveParameter(string value) => new PrimitiveParameter(value);
 		public static implicit operator PrimitiveParameter(TimeSpan value) => new PrimitiveParameter(value);
+		public static implicit operator PrimitiveParameter(DateTime value) => new PrimitiveParameter(value);
 	}
 
 	public class Binder : Parameter
