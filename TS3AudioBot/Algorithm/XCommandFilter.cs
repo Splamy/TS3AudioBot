@@ -52,4 +52,3 @@ namespace TS3AudioBot.Algorithm
 		}
 	}
 }
-

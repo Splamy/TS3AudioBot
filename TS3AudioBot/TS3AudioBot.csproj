@@ -107,6 +107,7 @@
     <Compile Include="TS3Query\QueryStringAttribute.cs" />
     <Compile Include="TS3Query\TS3QueryClient.cs" />
     <Compile Include="TS3Query\TS3QueryTools.cs" />
+    <Compile Include="Algorithm\XCommandSystem.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
