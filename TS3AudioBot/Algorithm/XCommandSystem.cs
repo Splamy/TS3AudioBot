@@ -76,9 +76,9 @@ namespace TS3AudioBot.Algorithm
 
 	public class CommandGroup : ICommand
 	{
-		private readonly IList<Tuple<string, ICommand>> commands = new List<Tuple<string, ICommand>>();
+		readonly IList<Tuple<string, ICommand>> commands = new List<Tuple<string, ICommand>>();
 		// Cache all names
-		private readonly IList<string> commandNames = new List<string>();
+		readonly IList<string> commandNames = new List<string>();
 
 		public void AddCommand(string name, ICommand command)
 		{
@@ -116,8 +116,8 @@ namespace TS3AudioBot.Algorithm
 		/// </summary>
 		protected class PartialFunctionCommand : ICommand
 		{
-			private EnumerableCommandResult savedArguments;
-			private ICommand internCommand;
+			readonly EnumerableCommandResult savedArguments;
+			readonly ICommand internCommand;
 
 			public PartialFunctionCommand(ICommand internCommandArg, EnumerableCommandResult arguments)
 			{
@@ -155,7 +155,7 @@ namespace TS3AudioBot.Algorithm
 		{
 			object[] parameters = new object[internCommand.GetParameters().Length];
 			// The first argument can be the ExecutionInformation
-			bool getsInfo = internCommand.GetParameters()[0].ParameterType == typeof(ExecutionInformation);
+			bool getsInfo = parameters.Length != 0 && internCommand.GetParameters()[0].ParameterType == typeof(ExecutionInformation);
 			int parameter = 0;
 			if (getsInfo)
 				parameters[parameter++] = info;
@@ -166,8 +166,7 @@ namespace TS3AudioBot.Algorithm
 				{
 					if (arguments.Count == 0)
 						return new CommandCommandResult(this);
-					else
-						return new CommandCommandResult(new PartialFunctionCommand(this, arguments));
+					return new CommandCommandResult(new PartialFunctionCommand(this, arguments));
 				}
 				throw new CommandException("Not enough arguments for function " + internCommand.Name);
 			}
@@ -176,7 +175,11 @@ namespace TS3AudioBot.Algorithm
 			{
 				var arg = internCommand.GetParameters()[parameter].ParameterType;
 				if (arg == typeof(string))
-					parameters[parameter] = arguments[i].ToString();
+					parameters[parameter] = arguments[i];
+				else if (arg == typeof(int))
+				{
+					parameters[parameter] = arguments[i];
+				}
 				else
 					throw new CommandException("Found inconvertable parameter type: " + arg.Name);
 			}
@@ -217,7 +220,7 @@ namespace TS3AudioBot.Algorithm
 		{
 			if (ResultType == CommandResultType.String)
 				return ((StringCommandResult) this).Content;
-			else if (ResultType == CommandResultType.Empty)
+			if (ResultType == CommandResultType.Empty)
 				return "";
 			return "CommandResult can't be converted to a string";
 		}
@@ -230,7 +233,7 @@ namespace TS3AudioBot.Algorithm
 
 	public class CommandCommandResult : ICommandResult
 	{
-		private readonly ICommand command;
+		readonly ICommand command;
 
 		public override CommandResultType ResultType => CommandResultType.Command;
 
@@ -254,9 +257,9 @@ namespace TS3AudioBot.Algorithm
 
 	public class EnumerableCommandResultRange : EnumerableCommandResult
 	{
-		private readonly EnumerableCommandResult internResult;
-		private readonly int start;
-		private readonly int count;
+		readonly EnumerableCommandResult internResult;
+		readonly int start;
+		readonly int count;
 
 		public override int Count => Math.Min(internResult.Count - start, count);
 		public override bool Flatten => internResult.Flatten;
@@ -281,10 +284,10 @@ namespace TS3AudioBot.Algorithm
 
 	public class EnumerableCommandResultMerge : EnumerableCommandResult
 	{
-		private readonly IEnumerable<EnumerableCommandResult> internResult;
+		readonly IEnumerable<EnumerableCommandResult> internResult;
 
 		public override int Count => internResult.Select(r => r.Count).Sum();
-		public override bool Flatten => internResult.Where(r => r.Flatten).Any();
+		public override bool Flatten => internResult.Any(r => r.Flatten);
 
 		public override ICommandResult this[int index]
 		{

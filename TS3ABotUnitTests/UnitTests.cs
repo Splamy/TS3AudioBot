@@ -102,6 +102,8 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0]);
 			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+
+			File.Delete("test.txt");
 		}
 
 		// TODO positionfilereader test
@@ -146,6 +148,16 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual("QUIT", result);
 			Assert.IsTrue(filter.TryGetValue("palyndrom", out result));
 			Assert.AreEqual("PLAY", result);
+		}
+
+		[Test]
+		public void XCommandSystemTest()
+		{
+			var group = new CommandGroup();
+			group.AddCommand("one", new FunctionCommand(() => { return "Called one"; }));
+			var commandSystem = new XCommandSystem(group);
+			Assert.AreEqual("Called one", ((StringCommandResult) commandSystem.Execute(new ExecutionInformation(),
+                 new StaticEnumerableCommandResult(new ICommandResult[] { new StringCommandResult("one") }))).Content);
 		}
 
 		[Test]
@@ -195,7 +207,7 @@ namespace TS3ABotUnitTests
 				Assert.False(rfac.MatchLink(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"));
 
 				// restoring links
-				Assert.AreEqual(rfac.RestoreLink("robqdGEhQWo"), "[url=https://youtu.be/robqdGEhQWo]https://youtu.be/robqdGEhQWo[/url]");
+				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink("robqdGEhQWo"));
 			}
 		}
 	}
