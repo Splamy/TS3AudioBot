@@ -89,8 +89,12 @@ namespace TS3AudioBot.Algorithm
 
 		public ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			if (arguments.MaxCount < 1)
+			if (arguments.Count < 1)
+			{
+				if (returnTypes.Contains(CommandResultType.Command))
+					return new CommandCommandResult(this);
 				throw new CommandException("CommandGroup can't be executed without arguments");
+			}
 
 			var result = arguments[0];
 			if (result.ResultType != CommandResultType.String)
@@ -107,6 +111,26 @@ namespace TS3AudioBot.Algorithm
 
 	public class FunctionCommand : ICommand
 	{
+		/// <summary>
+		/// A FunctionCommand that has some already applied arguments.
+		/// </summary>
+		protected class PartialFunctionCommand : ICommand
+		{
+			private EnumerableCommandResult savedArguments;
+			private ICommand internCommand;
+
+			public PartialFunctionCommand(ICommand internCommandArg, EnumerableCommandResult arguments)
+			{
+				internCommand = internCommandArg;
+				savedArguments = arguments;
+			}
+
+			public ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments, IEnumerable<CommandResultType> returnTypes)
+			{
+				return internCommand.Execute(info, new EnumerableCommandResultMerge(new []{ savedArguments, arguments }), returnTypes);
+			}
+		}
+
 		// Needed for non-static member methods
 		private readonly object callee;
 		private readonly MethodInfo internCommand;
@@ -136,8 +160,17 @@ namespace TS3AudioBot.Algorithm
 			if (getsInfo)
 				parameters[parameter++] = info;
 			// Check if we have enough arguments left
-			if (arguments.MaxCount < (getsInfo ? parameters.Length - 1 : parameters.Length))
+			if (arguments.Count < (getsInfo ? parameters.Length - 1 : parameters.Length))
+			{
+				if (returnTypes.Contains(CommandResultType.Command))
+				{
+					if (arguments.Count == 0)
+						return new CommandCommandResult(this);
+					else
+						return new CommandCommandResult(new PartialFunctionCommand(this, arguments));
+				}
 				throw new CommandException("Not enough arguments for function " + internCommand.Name);
+			}
 			// Fill the missing parameters
 			for (int i = 0; parameter < parameters.Length; i++, parameter++)
 			{
@@ -213,8 +246,7 @@ namespace TS3AudioBot.Algorithm
 	{
 		public override CommandResultType ResultType => CommandResultType.Enumerable;
 
-		public abstract int MinCount { get; }
-		public abstract int MaxCount { get; }
+		public abstract int Count { get; }
 		public abstract bool Flatten { get; }
 
 		public abstract ICommandResult this[int index]{ get; }
@@ -226,8 +258,7 @@ namespace TS3AudioBot.Algorithm
 		private readonly int start;
 		private readonly int count;
 
-		public override int MinCount => Math.Min(internResult.MinCount - start, count);
-		public override int MaxCount => Math.Min(internResult.MaxCount - start, count);
+		public override int Count => Math.Min(internResult.Count - start, count);
 		public override bool Flatten => internResult.Flatten;
 
 		public override ICommandResult this[int index]
@@ -248,13 +279,39 @@ namespace TS3AudioBot.Algorithm
 		}
 	}
 
+	public class EnumerableCommandResultMerge : EnumerableCommandResult
+	{
+		private readonly IEnumerable<EnumerableCommandResult> internResult;
+
+		public override int Count => internResult.Select(r => r.Count).Sum();
+		public override bool Flatten => internResult.Where(r => r.Flatten).Any();
+
+		public override ICommandResult this[int index]
+		{
+			get
+			{
+				foreach (var r in internResult)
+				{
+					if (r.Count < index)
+						return r[index];
+					index -= r.Count;
+				}
+				throw new IndexOutOfRangeException("Not enough content available");
+			}
+		}
+
+		public EnumerableCommandResultMerge(IEnumerable<EnumerableCommandResult> internResultArg)
+		{
+			internResult = internResultArg;
+		}
+	}
+
 	public class StaticEnumerableCommandResult: EnumerableCommandResult
 	{
 		private readonly IEnumerable<ICommandResult> content;
 		private readonly bool flatten;
 
-		public override int MinCount => content.Count();
-		public override int MaxCount => content.Count();
+		public override int Count => content.Count();
 		public override bool Flatten => flatten;
 
 		public override ICommandResult this[int index] => content.ElementAt(index);
