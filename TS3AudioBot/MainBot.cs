@@ -47,6 +47,7 @@ namespace TS3AudioBot
 		private bool writeLogStack;
 		private MainBotData mainBotData;
 		private ICommandFilter<BotCommand> commandDict;
+		private XCommandSystem commandSystem;
 		private BotCommand[] allCommands;
 
 		private StreamWriter logStream;
@@ -174,12 +175,22 @@ namespace TS3AudioBot
 		private void InitializeCommands()
 		{
 			var allCommandsList = new List<BotCommand>();
+			var rootCommand = new CommandGroup();
+			rootCommand.AddCommand("kickme", new FunctionCommand((ExecutionInformation i, string s) => CommandKickme(i.session, i.textMessage, s)));
+			rootCommand.AddCommand("help", new FunctionCommand((ExecutionInformation i, string s) => CommandHelp(i.session, s)));
+			commandSystem = new XCommandSystem(rootCommand);
 
 			var builder = new BotCommand.Builder(botCommand =>
 			{
 				commandDict.Add(botCommand.InvokeName, botCommand);
 				allCommandsList.Add(botCommand);
 			});
+
+			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
+				.HelpData("Guess what?")
+				.Parameter("[far]", "Optional attribute for the extra punch strength").Finish();
+			allCommands = allCommandsList.ToArray();
+			return;
 
 			// [...] = Optional
 			// <name> = Placeholder for a text
@@ -210,7 +221,7 @@ namespace TS3AudioBot
 				.Parameter("title <string>", "Gets all songs which title contains <string>").Finish();
 			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
 				.HelpData("Guess what?")
-				.Parameter("[far]", "Optional attribute for the extra punch stenght").Finish();
+				.Parameter("[far]", "Optional attribute for the extra punch strength").Finish();
 			builder.New("link").Action(CommandLink).Permission(CommandRights.Private)
 				.HelpData("Gets a link to the origin of the current song.").Finish();
 			builder.New("loop").Action(CommandLoop).Permission(CommandRights.Private)
@@ -327,6 +338,18 @@ namespace TS3AudioBot
 			else if (parsedAst.Type == NodeType.Command)
 			{
 				var commandAst = (ASTCommand)parsedAst;
+				var info = new ExecutionInformation()
+				{
+					session = session,
+					textMessage = textMessage
+				};
+				var res = commandSystem.Execute(info, new StaticEnumerableCommandResult(
+				new ICommandResult[]{
+					new StringCommandResult(commandAst.Command),
+					new StringCommandResult(((ASTValue) commandAst.Parameter[0]).Value)
+				}));
+				session.Write("Result: " + res);
+				return;
 				if (Validate(session, parsedAst, textMessage, isAdmin))
 					LazyExecute(session, commandAst, textMessage);
 			}
