@@ -154,10 +154,20 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest()
 		{
 			var group = new CommandGroup();
-			group.AddCommand("one", new FunctionCommand(() => { return "Called one"; }));
+			group.AddCommand("one", new FunctionCommand(() => "ONE"));
+			group.AddCommand("two", new FunctionCommand(() => "TWO"));
+			group.AddCommand("echo", new FunctionCommand(s => s));
+			group.AddCommand("optional", new FunctionCommand(s => s == null ? "NULL" : "NOT NULL").SetRequiredParameters(0));
 			var commandSystem = new XCommandSystem(group);
-			Assert.AreEqual("Called one", ((StringCommandResult) commandSystem.Execute(new ExecutionInformation(),
+
+			Assert.AreEqual("ONE", ((StringCommandResult) commandSystem.Execute(new ExecutionInformation(),
                  new StaticEnumerableCommand(new ICommand[] { new StringCommand("one") }))).Content);
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!one"));
+			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(new ExecutionInformation(), "!t"));
+			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e TEST"));
+
+			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op"));
+			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op 1"));
 		}
 
 		[Test]

@@ -1,3 +1,4 @@
+using System.Reflection;
 namespace TS3AudioBot
 {
 	using System;
@@ -176,21 +177,16 @@ namespace TS3AudioBot
 		{
 			var allCommandsList = new List<BotCommand>();
 			var rootCommand = new CommandGroup();
-			rootCommand.AddCommand("kickme", new FunctionCommand((i, s) => CommandKickme(i.session, i.textMessage, s)));
-			rootCommand.AddCommand("help", new FunctionCommand((i, s) => CommandHelp(i.session, s)));
-			commandSystem = new XCommandSystem(rootCommand);
+			//rootCommand.AddCommand("kickme", new FunctionCommand((i, s) => CommandKickme(i.session, i.textMessage, s)));
+			//rootCommand.AddCommand("help", new FunctionCommand((i, s) => CommandHelp(i.session, s)).SetRequiredParameters(0));
+			//rootCommand.AddCommand("quit", new FunctionCommand(i => CommandQuit(i.session)));
 
 			var builder = new BotCommand.Builder(botCommand =>
 			{
 				commandDict.Add(botCommand.InvokeName, botCommand);
+				rootCommand.AddCommand(botCommand.InvokeName, new FunctionCommand(botCommand.Command, this));
 				allCommandsList.Add(botCommand);
 			});
-
-			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
-				.HelpData("Guess what?")
-				.Parameter("[far]", "Optional attribute for the extra punch strength").Finish();
-			allCommands = allCommandsList.ToArray();
-			return;
 
 			// [...] = Optional
 			// <name> = Placeholder for a text
@@ -241,7 +237,7 @@ namespace TS3AudioBot
 				.Parameter("<link>", "Youtube, Soundcloud, local path or file link").Finish();
 			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private)
 				.HelpData("Plays the previous song in the playlist.").Finish();
-			builder.New("print").Action(CommandPrint).Permission(CommandRights.AnyVisibility)
+			builder.New("print").Action(new Func<ExecutionInformation, string[], string>(CommandPrint).GetMethodInfo()).Permission(CommandRights.AnyVisibility)
 				.HelpData("Lets you format multiple parameter to one.").Finish();
 			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin)
 				.HelpData("Closes the TS3AudioBot application.").Finish();
@@ -251,7 +247,7 @@ namespace TS3AudioBot
 			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private)
 				.HelpData("Sets whether or not to loop a single song.")
 				.Parameter("(on|off)", "on or off").Finish();
-			builder.New("rng").Action(CommandRng).Permission(CommandRights.AnyVisibility)
+			builder.New("rng").Action(new Func<ExecutionInformation, int?, int?, string>(CommandRng).GetMethodInfo()).Permission(CommandRights.AnyVisibility)
 				.HelpData("Gets a random number.")
 				.Parameter(string.Empty, "Gets a number between 0 and " + int.MaxValue)
 				.Parameter("<max>", "Gets a number between 0 and <max>")
@@ -281,6 +277,7 @@ namespace TS3AudioBot
 				.HelpData("Resolves the link as a youtube video to play it for you.").Finish();
 
 			allCommands = allCommandsList.ToArray();
+			commandSystem = new XCommandSystem(rootCommand);
 		}
 
 		private void Run()
@@ -349,7 +346,12 @@ namespace TS3AudioBot
 					var res = command.Execute(info, new EmptyEnumerableCommand(),
 						new[] { CommandResultType.String, CommandResultType.Empty });
 					if (res.ResultType == CommandResultType.String)
-						session.Write(((StringCommandResult) res).Content);
+					{
+						var sRes = (StringCommandResult) res;
+						// Write result to user
+						if (!string.IsNullOrEmpty(sRes.Content))
+							session.Write(sRes.Content);
+					}
 				}
 				catch (CommandException ex)
 				{
@@ -360,154 +362,12 @@ namespace TS3AudioBot
 
 		#region COMMAND EXECUTING & CHAINING
 
-		private bool Validate(BotSession session, ASTNode astnode, TextMessage textMessage, Lazy<bool> isAdmin)
-		{
-			switch (astnode.Type)
-			{
-			case NodeType.Command:
-				ASTCommand com = (ASTCommand)astnode;
-				BotCommand foundCom;
-				if (!commandDict.TryGetValue(com.Command, out foundCom))
-				{
-					PrintAstError(session, new ASTError(com, "Unknown command!"));
-					return false;
-				}
-				com.BotCommand = foundCom;
-				if (!CheckRights(session, com, textMessage, isAdmin))
-					return false;
-
-				foreach (var param in com.Parameter)
-				{
-					if (param.Type == NodeType.Value)
-						continue;
-					if (!Validate(session, param, textMessage, isAdmin))
-						return false;
-				}
-				return true;
-
-			case NodeType.Value: return true;
-			case NodeType.Error: return false;
-			default: throw new InvalidOperationException();
-			}
-		}
-
-		private bool CheckRights(BotSession session, ASTCommand astcommand, TextMessage textMessage, Lazy<bool> isAdmin)
-		{
-			if (isAdmin.IsValueCreated && isAdmin.Value)
-				return true;
-
-			var command = astcommand.BotCommand;
-			string reason = string.Empty;
-			bool allowed = false;
-
-			switch (command.CommandRights)
-			{
-			case CommandRights.Admin:
-				reason = "Command must be invoked by an admin!";
-				break;
-			case CommandRights.Public:
-				reason = "Command must be used in public mode!";
-				allowed = textMessage.Target == MessageTarget.Server;
-				break;
-			case CommandRights.Private:
-				reason = "Command must be used in a private session!";
-				allowed = textMessage.Target == MessageTarget.Private;
-				break;
-			case CommandRights.AnyVisibility:
-				allowed = true;
-				break;
-			}
-
-			if (!allowed && !isAdmin.Value)
-			{
-				PrintAstError(session, new ASTError(astcommand, reason));
-				return false;
-			}
-			else return true;
-		}
-
 		private void PrintAstError(BotSession session, ASTError asterror)
 		{
 			StringBuilder strb = new StringBuilder();
 			strb.AppendLine();
 			asterror.Write(strb, 0);
 			session.Write(strb.ToString());
-		}
-
-		// temporary solution
-		private void LazyExecute(BotSession session, ASTCommand astcommand, TextMessage textMessage)
-		{
-			List<string> paramBuild = new List<string>();
-			foreach (var param in astcommand.Parameter)
-			{
-				switch (param.Type)
-				{
-				case NodeType.Command:
-					using (LoopSession memSession = new LoopSession(this, astcommand.BotCommand))
-					{
-						LazyExecute(memSession, (ASTCommand)param, textMessage);
-						string result = memSession.Result();
-						string[] splitres = result.Split(' ');
-						paramBuild.AddRange(splitres);
-					}
-					break;
-				case NodeType.Value: paramBuild.Add(((ASTValue)param).Value); break;
-
-				case NodeType.Error:
-				default: throw new InvalidOperationException();
-				}
-			}
-			InvokeCommand(astcommand.BotCommand, session, textMessage, paramBuild);
-		}
-
-		// temporary solution
-		private void InvokeCommand(BotCommand command, BotSession session, TextMessage textMessage, List<string> commandSplit)
-		{
-			try
-			{
-				switch (command.CommandParameter)
-				{
-				case CommandParameter.Nothing:
-					command.CommandN(session);
-					break;
-
-				case CommandParameter.Remainder:
-					command.CommandS(session, string.Join(" ", commandSplit));
-					break;
-
-				case CommandParameter.RemainderArray:
-					command.CommandSA(session, commandSplit.ToArray());
-					break;
-
-				case CommandParameter.TextMessage:
-					command.CommandTM(session, textMessage);
-					break;
-
-				case CommandParameter.MessageAndRemainder:
-					command.CommandTMS(session, textMessage, string.Join(" ", commandSplit));
-					break;
-
-				case CommandParameter.Undefined:
-				default:
-					Log.Write(Log.Level.Error, "Command with no process: " + command);
-					break;
-				}
-			}
-			catch (TimeoutException tex)
-			{
-				Log.Write(Log.Level.Error, "Critical timeout error ({0})", tex.StackTrace);
-				session.Write("Internal timout error, please try again.");
-			}
-			catch (QueryCommandException qcex)
-			{
-				Log.Write(Log.Level.Error, "Critical query error: {0} ({1})", qcex.Message, qcex.StackTrace);
-				SessionManager.DefaultSession.Write($"The query could not execute the requested action, please make sure you configured everything right ({qcex.Message}).");
-			}
-			catch (Exception ex)
-			{
-				Log.Write(Log.Level.Error, "Critical command error: {0} ({1})", ex.Message, ex.StackTrace);
-				session.Write("Internal command error, please try again.");
-			}
 		}
 
 		private bool HasInvokerAdminRights(TextMessage textMessage)
@@ -524,27 +384,27 @@ namespace TS3AudioBot
 
 		#region COMMANDS
 
-		private void CommandAdd(BotSession session, TextMessage textMessage, string parameter)
+		void CommandAdd(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(new PlayData(session, client, parameter, true));
+			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+			FactoryManager.LoadAndPlay(new PlayData(info.session, client, parameter, true));
 		}
 
-		private void CommandClear(BotSession session)
+		void CommandClear()
 		{
 			AudioFramework.Clear();
 		}
 
-		private void CommandGetUserId(BotSession session, string parameter)
+		string CommandGetUserId(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientByName(parameter);
 			if (client == null)
-				session.Write("No user found...");
+				return "No user found...";
 			else
-				session.Write($"Client: UID:{client.ClientId} DBID:{client.DatabaseId} ChanID:{client.ChannelId}");
+				return $"Client: UID:{client.ClientId} DBID:{client.DatabaseId} ChanID:{client.ChannelId}";
 		}
 
-		private void CommandHelp(BotSession session, string parameter)
+		string CommandHelp(ExecutionInformation info, string parameter)
 		{
 			var strb = new StringBuilder();
 			if (string.IsNullOrEmpty(parameter))
@@ -552,17 +412,14 @@ namespace TS3AudioBot
 				strb.Append("\n========= Welcome to the TS3AudioBot ========="
 					+ "\nIf you need any help with a special command use !help commandName."
 					+ "\nHere are all possible commands:\n");
-				foreach (var command in allCommands)
-					strb.Append(command.InvokeName).Append(", ");
+				strb.Append(string.Join(", ", allCommands.Select(c => c.InvokeName)));
 			}
 			else
 			{
 				BotCommand command = null;
 				if (!commandDict.TryGetValue(parameter, out command))
-				{
-					session.Write("No matching command found! Try !help to get a list of all commands.");
-					return;
-				}
+					return "No matching command found! Try !help to get a list of all commands.";
+
 				strb.Append(command.GetHelp());
 				if (command.InvokeName == "help")
 				{
@@ -570,10 +427,10 @@ namespace TS3AudioBot
 						+ "\nfor example: !subscribe can be shortened with !sub or even !su");
 				}
 			}
-			session.Write(strb.ToString());
+			return strb.ToString();
 		}
 
-		private void CommandHistory(BotSession session, TextMessage textMessage, string parameter)
+		string CommandHistory(ExecutionInformation info, string parameter)
 		{
 			var args = parameter.SplitNoEmpty(' ');
 			if (args.Length == 0) args = new[] { "help" };
@@ -598,21 +455,15 @@ namespace TS3AudioBot
 						if (args.Length >= 2 && int.TryParse(args[1], out amount))
 							query.MaxResults = amount;
 
-						string resultStr = HistoryManager.SearchParsed(query);
-						session.Write(resultStr);
+						return HistoryManager.SearchParsed(query);
 					}
-					else
-					{
-						session.Write("Missing or invalid user DbId.");
-					}
-					break;
+					return "Missing or invalid user DbId.";
 				#endregion
 
 				#region help
 				case "help":
 				default:
-					CommandHelp(session, "history");
-					break;
+					return CommandHelp(info, "history");
 				#endregion
 
 				#region id
@@ -622,28 +473,15 @@ namespace TS3AudioBot
 					{
 						var ale = HistoryManager.GetEntryById(id);
 						if (ale != null)
-						{
-							string resultStr = HistoryManager.Formatter.ProcessQuery(ale);
-							session.Write(resultStr);
-						}
-						else
-						{
-							session.Write("Could not find track with this id");
-						}
+							return HistoryManager.Formatter.ProcessQuery(ale);
+						return "Could not find track with this id";
 					}
 					else if (arrLen2 && args[1] == "last")
-					{
-						session.Write($"{HistoryManager.HighestId} is the currently highest song id.");
-					}
+						return $"{HistoryManager.HighestId} is the currently highest song id.";
 					else if (arrLen2 && args[1] == "next")
-					{
-						session.Write($"{HistoryManager.HighestId + 1} will be the next song id.");
-					}
+						return $"{HistoryManager.HighestId + 1} will be the next song id.";
 					else
-					{
-						session.Write("Missing or invalid track Id.");
-					}
-					break;
+						return "Missing or invalid track Id.";
 				#endregion
 
 				#region last
@@ -651,16 +489,15 @@ namespace TS3AudioBot
 					if (args.Length >= 2 && int.TryParse(args[1], out amount))
 					{
 						var query = new SeachQuery { MaxResults = amount };
-						string resultStr = HistoryManager.SearchParsed(query);
-						session.Write(resultStr);
+						return HistoryManager.SearchParsed(query);
 					}
 					else
 					{
 						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
 						if (ale != null)
 						{
-							ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-							FactoryManager.RestoreAndPlay(ale, new PlayData(session, client, null, false));
+							ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+							FactoryManager.RestoreAndPlay(ale, new PlayData(info.session, client, null, false));
 						}
 					}
 					break;
@@ -673,18 +510,14 @@ namespace TS3AudioBot
 						var ale = HistoryManager.GetEntryById(id);
 						if (ale != null)
 						{
-							ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-							FactoryManager.RestoreAndPlay(ale, new PlayData(session, client, null, false));
+							ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+							FactoryManager.RestoreAndPlay(ale, new PlayData(info.session, client, null, false));
 						}
 						else
-						{
-							session.Write("Could not find track with this id");
-						}
+							return "Could not find track with this id";
 					}
 					else
-					{
-						session.Write("Missing or invalid track Id.");
-					}
+						return "Missing or invalid track Id.";
 					break;
 				#endregion
 
@@ -707,19 +540,11 @@ namespace TS3AudioBot
 						if (tillTime != DateTime.MinValue)
 						{
 							var query = new SeachQuery { LastInvokedAfter = tillTime };
-							string resultStr = HistoryManager.SearchParsed(query);
-							session.Write(resultStr);
+							return HistoryManager.SearchParsed(query);
 						}
-						else
-						{
-							session.Write("The date could not be parsed.");
-						}
+						return "The date could not be parsed.";
 					}
-					else
-					{
-						session.Write("Missing time or date.");
-					}
-					break;
+					return "Missing time or date.";
 				#endregion
 
 				#region title
@@ -729,14 +554,9 @@ namespace TS3AudioBot
 						int startSubstr = parameter.IndexOf("title");
 						string titleStr = parameter.Substring(startSubstr + 5).Trim(); // len of title + space
 						var query = new SeachQuery { TitlePart = titleStr };
-						string resultStr = HistoryManager.SearchParsed(query);
-						session.Write(resultStr);
+						return HistoryManager.SearchParsed(query);
 					}
-					else
-					{
-						session.Write("Missing title to search.");
-					}
-					break;
+					return "Missing title to search.";
 				#endregion
 
 				case "where":
@@ -745,16 +565,17 @@ namespace TS3AudioBot
 					break;
 				}
 			}
+			return null;
 		}
 
-		private void CommandKickme(BotSession session, TextMessage textMessage, string parameter)
+		void CommandKickme(ExecutionInformation info, string parameter)
 		{
 			try
 			{
 				if (string.IsNullOrEmpty(parameter))
-					QueryConnection.KickClientFromChannel(textMessage.InvokerId);
+					QueryConnection.KickClientFromChannel(info.textMessage.InvokerId);
 				else if (parameter == "far")
-					QueryConnection.KickClientFromServer(textMessage.InvokerId);
+					QueryConnection.KickClientFromServer(info.textMessage.InvokerId);
 			}
 			catch (QueryCommandException ex)
 			{
@@ -762,143 +583,135 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void CommandLink(BotSession session, TextMessage textMessage)
+		string CommandLink(ExecutionInformation info)
 		{
 			if (AudioFramework.CurrentPlayData == null)
-			{
-				session.Write("There is nothing on right now...");
-				return;
-			}
-
-			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != textMessage.InvokerId)
-				session.Write("Sorry, you have to guess!");
+				return "There is nothing on right now...";
+			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.textMessage.InvokerId)
+				return "Sorry, you have to guess!";
 			else
-				session.Write(FactoryManager.RestoreLink(AudioFramework.CurrentPlayData));
+				return FactoryManager.RestoreLink(AudioFramework.CurrentPlayData);
 		}
 
-		private void CommandLoop(BotSession session, string parameter)
+		string CommandLoop(ExecutionInformation info, string parameter)
 		{
 			if (parameter == "on")
 				AudioFramework.Loop = true;
 			else if (parameter == "off")
 				AudioFramework.Loop = false;
 			else
-				CommandHelp(session, "loop");
+				return CommandHelp(info, "loop");
+			return null;
 		}
 
-		private void CommandMedia(BotSession session, TextMessage textMessage, string parameter)
+		void CommandMedia(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.session, client, parameter, false));
 		}
 
-		private void CommandNext(BotSession session)
+		void CommandNext()
 		{
 			AudioFramework.Next();
 		}
 
-		private void CommandPM(BotSession session, TextMessage textMessage)
+		void CommandPM(ExecutionInformation info)
 		{
-			BotSession ownSession = SessionManager.CreateSession(this, textMessage.InvokerId);
-			ownSession.Write("Hi " + textMessage.InvokerName);
+			BotSession ownSession = SessionManager.CreateSession(this, info.textMessage.InvokerId);
+			ownSession.Write("Hi " + info.textMessage.InvokerName);
 		}
 
-		private void CommandParse(BotSession session, string parameter)
+		string CommandParse(ExecutionInformation info, string parameter)
 		{
 			if (!parameter.TrimStart().StartsWith("!"))
-			{
-				session.Write("This is not a command");
-				return;
-			}
+				return "This is not a command";
 			try
 			{
 				var node = CommandParser.ParseCommandRequest(parameter);
 				StringBuilder strb = new StringBuilder();
 				strb.AppendLine();
 				node.Write(strb, 0);
-				session.Write(strb.ToString());
+				return strb.ToString();
 			}
 			catch
 			{
-				session.Write("GJ - You crashed it!!!");
+				return "GJ - You crashed it!!!";
 			}
 		}
 
-		private void CommandPause(BotSession session, TextMessage textMessage)
+		void CommandPause()
 		{
 			AudioFramework.Pause = true;
 		}
 
-		private void CommandPlay(BotSession session, TextMessage textMessage, string parameter)
+		void CommandPlay(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
 				AudioFramework.Pause = false;
 			else
 			{
-				ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-				FactoryManager.LoadAndPlay(new PlayData(session, client, parameter, false));
+				ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+				FactoryManager.LoadAndPlay(new PlayData(info.session, client, parameter, false));
 			}
 		}
 
-		private void CommandPrevious(BotSession session)
+		void CommandPrevious()
 		{
 			AudioFramework.Previous();
 		}
 
-		private void CommandPrint(BotSession session, string[] parameter)
+		string CommandPrint(ExecutionInformation info, string[] parameter)
 		{
 			// << Desing changes expected >>
 			StringBuilder strb = new StringBuilder();
 			foreach (var param in parameter)
 				strb.Append(param);
-			session.Write(strb.ToString());
+			return strb.ToString();
 		}
 
-		private void CommandQuit(BotSession session)
+		void CommandQuit(ExecutionInformation info)
 		{
-			session.Write("Goodbye!");
+			info.session.Write("Goodbye!");
 			Dispose();
 			Log.Write(Log.Level.Info, "Exiting...");
 		}
 
-		private void CommandQuiz(BotSession session, string parameter)
+		string CommandQuiz(ExecutionInformation info, string parameter)
 		{
-			if (session.IsPrivate)
-			{
-				session.Write("No cheatig! Everybody has to see it!");
-				return;
-			}
+			if (info.session.IsPrivate)
+				return "No cheatig! Everybody has to see it!";
 
 			if (parameter == "on")
 				QuizMode = true;
 			else if (parameter == "off")
 				QuizMode = false;
 			else
-				CommandHelp(session, "quiz");
+				CommandHelp(info, "quiz");
+			return null;
 		}
 
-		private void CommandRepeat(BotSession session, string parameter)
+		string CommandRepeat(ExecutionInformation info, string parameter)
 		{
 			if (parameter == "on")
 				AudioFramework.Repeat = true;
 			else if (parameter == "off")
 				AudioFramework.Repeat = false;
 			else
-				CommandHelp(session, "repeat");
+				return CommandHelp(info, "repeat");
+			return null;
 		}
 
-		private void CommandRng(BotSession session, string[] parameter)
+		string CommandRng(ExecutionInformation info, int? first, int? second)
 		{
-			int first, second;
-			if (parameter.Length <= 0)
-				session.Write(Util.RngInstance.Next().ToString());
-			else if (int.TryParse(parameter[0], out first) && parameter.Length == 1)
-				session.Write(Util.RngInstance.Next(first).ToString());
-			else if (int.TryParse(parameter[1], out second) && first <= second)
-				session.Write(Util.RngInstance.Next(first, second).ToString());
+			if (second != null)
+				return Util.RngInstance.Next(first.Value, second.Value).ToString();
+			else if (first != null)
+				return Util.RngInstance.Next(first.Value).ToString();
+			else
+				return Util.RngInstance.Next().ToString();
 		}
 
-		private void CommandSeek(BotSession session, string parameter)
+		string CommandSeek(ExecutionInformation info, string parameter)
 		{
 			TimeSpan span;
 			bool parsed = false;
@@ -924,77 +737,64 @@ namespace TS3AudioBot
 			}
 
 			if (!parsed)
-			{
-				CommandHelp(session, "seek");
-				return;
-			}
+				return CommandHelp(info, "seek");
 
 			if (!AudioFramework.Seek(span))
-				session.Write("The point of time is not within the songlenth.");
+				return "The point of time is not within the songlenth.";
+			return null;
 		}
 
-		private void CommandSong(BotSession session, TextMessage textMessage)
+		string CommandSong(ExecutionInformation info)
 		{
 			if (AudioFramework.CurrentPlayData == null)
-			{
-				session.Write("There is nothing on right now...");
-				return;
-			}
-
-			if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != textMessage.InvokerId)
-				session.Write("Sorry, you have to guess!");
+				return "There is nothing on right now...";
+			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.textMessage.InvokerId)
+				return "Sorry, you have to guess!";
 			else
-			{
-				var response = $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.Resource.ResourceTitle}[/url]";
-				session.Write(response);
-			}
+				return $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.Resource.ResourceTitle}[/url]";
 		}
 
-		private void CommandSoundcloud(BotSession session, TextMessage textMessage, string parameter)
+		void CommandSoundcloud(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.session, client, parameter, false));
 		}
 
-		private void CommandStop(BotSession session)
+		void CommandStop()
 		{
 			AudioFramework.Stop();
 		}
 
-		private void CommandSubscribe(BotSession session, TextMessage textMessage)
+		void CommandSubscribe(ExecutionInformation info)
 		{
-			BobController.WhisperClientSubscribe(textMessage.InvokerId);
+			BobController.WhisperClientSubscribe(info.textMessage.InvokerId);
 		}
 
-		private void CommandTest(BotSession session)
+		void CommandTest(ExecutionInformation info)
 		{
-			PrivateSession ps = session as PrivateSession;
-			if (ps == null)
-			{
-				session.Write("Please use as private, admins too!");
-				return;
-			}
+			if (info.session.IsPrivate)
+				info.session.Write("Please use as private, admins too!");
 			else
 			{
-				ps.Write("Good boy!");
+				info.session.Write("Good boy!");
 				// stresstest
 				for (int i = 0; i < 10; i++)
-					session.Write(i.ToString());
+					info.session.Write(i.ToString());
 			}
 		}
 
-		private void CommandTwitch(BotSession session, TextMessage textMessage, string parameter)
+		void CommandTwitch(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.session, client, parameter, false));
 		}
 
-		private void CommandUnsubscribe(BotSession session, TextMessage textMessage)
+		void CommandUnsubscribe(ExecutionInformation info)
 		{
-			BobController.WhisperClientUnsubscribe(textMessage.InvokerId);
+			BobController.WhisperClientUnsubscribe(info.textMessage.InvokerId);
 		}
 
-		private void CommandVolume(BotSession session, string parameter)
+		string CommandVolume(ExecutionInformation info, string parameter)
 		{
 			bool relPos = parameter.StartsWith("+");
 			bool relNeg = parameter.StartsWith("-");
@@ -1002,10 +802,7 @@ namespace TS3AudioBot
 
 			int volume;
 			if (!int.TryParse(numberString, out volume))
-			{
-				CommandHelp(session, "volume");
-				return;
-			}
+				return CommandHelp(info, "volume");
 
 			int newVolume;
 			if (relPos) newVolume = AudioFramework.Volume + volume;
@@ -1013,24 +810,22 @@ namespace TS3AudioBot
 			else newVolume = volume;
 
 			if (newVolume < 0 || newVolume > AudioFramework.MaxVolume)
-			{
-				session.Write("The volume level must be between 0 and " + AudioFramework.MaxVolume);
-			}
+				return "The volume level must be between 0 and " + AudioFramework.MaxVolume;
+
 			if (newVolume <= AudioFramework.MaxUserVolume || newVolume < AudioFramework.Volume)
-			{
 				AudioFramework.Volume = newVolume;
-			}
 			else if (newVolume <= AudioFramework.MaxVolume)
 			{
-				session.Write("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
-				session.SetResponse(ResponseVolume, newVolume, true);
+				info.session.SetResponse(ResponseVolume, newVolume, true);
+				return "Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)";
 			}
+			return null;
 		}
 
-		private void CommandYoutube(BotSession session, TextMessage textMessage, string parameter)
+		void CommandYoutube(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(info.session, client, parameter, false));
 		}
 
 		#endregion
@@ -1102,36 +897,6 @@ namespace TS3AudioBot
 		}
 	}
 
-	class LoopSession : BotSession, IDisposable
-	{
-		public MemoryStream memStream;
-		public StreamWriter writer;
-		public StreamReader reader;
-		public BotCommand parentCommand;
-
-		public LoopSession(MainBot bot, BotCommand command) : base(bot)
-		{
-			memStream = new MemoryStream();
-			writer = new StreamWriter(memStream);
-			reader = new StreamReader(memStream);
-			parentCommand = command;
-		}
-
-		public override bool IsPrivate => parentCommand.CommandRights == CommandRights.Private;
-		public override void Write(string message) => writer.Write(message);
-		public void Clear() => memStream.SetLength(0);
-		public string Result()
-		{
-			writer.Flush();
-			memStream.Position = 0;
-			return reader.ReadToEnd();
-		}
-		public void Dispose()
-		{
-			memStream.Close();
-		}
-	}
-
 	public class PlayData
 	{
 		public BotSession Session { get; private set; }
@@ -1156,12 +921,7 @@ namespace TS3AudioBot
 	{
 		public string InvokeName { get; private set; }
 
-		public Action<BotSession> CommandN { get; private set; }
-		public Action<BotSession, string> CommandS { get; private set; }
-		public Action<BotSession, string[]> CommandSA { get; private set; }
-		public Action<BotSession, TextMessage> CommandTM { get; private set; }
-		public Action<BotSession, TextMessage, string> CommandTMS { get; private set; }
-		public CommandParameter CommandParameter { get; private set; }
+		public MethodInfo Command { get; private set; }
 		public CommandRights CommandRights { get; private set; }
 
 		private string outputCache = null;
@@ -1192,7 +952,6 @@ namespace TS3AudioBot
 		{
 			var strb = new StringBuilder();
 			strb.Append('!').Append(InvokeName);
-			strb.Append(" - ").Append(CommandParameter);
 			strb.Append(" - ").Append(CommandRights);
 			strb.Append(" : ");
 			foreach (var param in ParameterList)
@@ -1202,35 +961,30 @@ namespace TS3AudioBot
 
 		public class Builder
 		{
-			private bool buildMode;
-			private Action<BotCommand> registerAction;
+			bool buildMode;
+			readonly Action<BotCommand> registerAction;
 
 			// Default values
-			private const CommandRights defaultCommandRights = CommandRights.Admin;
-			private const string defaultDescription = "<no info>";
+			const CommandRights defaultCommandRights = CommandRights.Admin;
+			const string defaultDescription = "<no info>";
 
 			// List of configurations for each command
-			private string name;
+			string name;
 
-			private bool setAction = false;
-			private Action<BotSession> commandN;
-			private Action<BotSession, string> commandS;
-			private Action<BotSession, string[]> commandSA;
-			private Action<BotSession, TextMessage> commandTM;
-			private Action<BotSession, TextMessage, string> commandTMS;
-			private CommandParameter commandParameter;
+			bool setAction = false;
+			MethodInfo command;
 
-			private bool setRights = false;
-			private CommandRights commandRights;
+			bool setRights = false;
+			CommandRights commandRights;
 
-			private bool setHelp = false;
-			private string description;
-			private List<Tuple<string, string>> parameters = new List<Tuple<string, string>>();
+			bool setHelp = false;
+			string description;
+			readonly List<Tuple<string, string>> parameters = new List<Tuple<string, string>>();
 
-			private Builder(Action<BotCommand> finishAction, bool buildMode)
+			Builder(Action<BotCommand> finishAction, bool buildMode)
 			{
 				this.buildMode = buildMode;
-				this.registerAction = finishAction;
+				registerAction = finishAction;
 			}
 
 			public Builder(Action<BotCommand> finishAction) : this(finishAction, false) { }
@@ -1244,51 +998,28 @@ namespace TS3AudioBot
 				return builder;
 			}
 
-			private void CheckAction()
+			void CheckAction()
 			{
 				if (setAction) throw new InvalidOperationException();
 				setAction = true;
 			}
 
-			public Builder Action(Action<BotSession> commandN)
+			public Builder Action(MethodInfo command)
 			{
 				CheckAction();
-				this.commandN = commandN;
-				commandParameter = CommandParameter.Nothing;
+				this.command = command;
 				return this;
 			}
 
-			public Builder Action(Action<BotSession, string> commandS)
-			{
-				CheckAction();
-				this.commandS = commandS;
-				commandParameter = CommandParameter.Remainder;
-				return this;
-			}
-
-			public Builder Action(Action<BotSession, string[]> commandSA)
-			{
-				CheckAction();
-				this.commandSA = commandSA;
-				commandParameter = CommandParameter.RemainderArray;
-				return this;
-			}
-
-			public Builder Action(Action<BotSession, TextMessage> commandTM)
-			{
-				CheckAction();
-				this.commandTM = commandTM;
-				commandParameter = CommandParameter.TextMessage;
-				return this;
-			}
-
-			public Builder Action(Action<BotSession, TextMessage, string> commandTMS)
-			{
-				CheckAction();
-				this.commandTMS = commandTMS;
-				commandParameter = CommandParameter.MessageAndRemainder;
-				return this;
-			}
+			// Conveniance functions
+			public Builder Action(Action command) => Action(command.GetMethodInfo());
+			public Builder Action(Func<string> command) => Action(command.GetMethodInfo());
+			public Builder Action(Action<string> command) => Action(command.GetMethodInfo());
+			public Builder Action(Func<string, string> command) => Action(command.GetMethodInfo());
+			public Builder Action(Action<ExecutionInformation> command) => Action(command.GetMethodInfo());
+			public Builder Action(Func<ExecutionInformation, string> command) => Action(command.GetMethodInfo());
+			public Builder Action(Action<ExecutionInformation, string> command) => Action(command.GetMethodInfo());
+			public Builder Action(Func<ExecutionInformation, string, string> command) => Action(command.GetMethodInfo());
 
 			public Builder Permission(CommandRights requiredRights)
 			{
@@ -1316,18 +1047,13 @@ namespace TS3AudioBot
 			{
 				if (!setAction) throw new InvalidProgramException("No action defined for " + name);
 
-				var command = new BotCommand()
+				var command = new BotCommand
 				{
 					InvokeName = name,
-					CommandN = commandN,
-					CommandS = commandS,
-					CommandSA = commandSA,
-					CommandTM = commandTM,
-					CommandTMS = commandTMS,
-					CommandParameter = commandParameter,
+					Command = this.command,
 					CommandRights = setRights ? commandRights : defaultCommandRights,
 					Description = setHelp ? description : defaultDescription,
-					ParameterList = parameters.ToArray(),
+					ParameterList = parameters.ToArray()
 				};
 
 				if (registerAction != null)
@@ -1337,16 +1063,6 @@ namespace TS3AudioBot
 				return command;
 			}
 		}
-	}
-
-	public enum CommandParameter
-	{
-		Undefined,
-		Nothing,
-		Remainder,
-		RemainderArray,
-		TextMessage,
-		MessageAndRemainder
 	}
 
 	public enum CommandRights

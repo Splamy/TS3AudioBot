@@ -94,6 +94,8 @@ namespace TS3AudioBot.Algorithm
 		}
 	}
 
+	#region Commands
+
 	public class CommandGroup : ICommand
 	{
 		readonly IList<Tuple<string, ICommand>> commands = new List<Tuple<string, ICommand>>();
@@ -132,6 +134,11 @@ namespace TS3AudioBot.Algorithm
 		// Needed for non-static member methods
 		readonly object callee;
 		readonly MethodInfo internCommand;
+		/// <summary>
+		/// How many free arguments have to be applied to this function.
+		/// This includes only user-supplied arguments, e.g. the ExecutionInformation is not included.
+		/// </summary>
+		public int RequiredParameters { get; set; }
 
 		public FunctionCommand(MethodInfo command, object obj = null)
 		{
@@ -152,13 +159,39 @@ namespace TS3AudioBot.Algorithm
 		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			object[] parameters = new object[internCommand.GetParameters().Length];
-			// The first argument can be the ExecutionInformation
-			bool getsInfo = parameters.Length != 0 && internCommand.GetParameters()[0].ParameterType == typeof(ExecutionInformation);
-			int parameter = 0;
-			if (getsInfo)
-				parameters[parameter++] = info;
-			// Check if we have enough arguments left
-			if (arguments.Count < (getsInfo ? parameters.Length - 1 : parameters.Length))
+			// a: Iterate through arguments
+			// p: Iterate through parameters
+			int a = 0;
+			for (int p = 0; p < parameters.Length; p++)
+			{
+				var arg = internCommand.GetParameters()[p].ParameterType;
+				if (arg == typeof(ExecutionInformation))
+					parameters[p] = info;
+				// Only add arguments if we still have some
+				else if (a < arguments.Count)
+				{
+					var argResult = ((StringCommandResult) arguments.Execute(a, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String })).Content;
+					if (arg == typeof(string))
+						parameters[p] = argResult;
+					else if (arg == typeof(int) || arg == typeof(int?))
+					{
+						int intArg;
+						if (!int.TryParse(argResult, out intArg))
+							throw new CommandException("Can't convert parameter to int");
+						if (arg == typeof(int))
+							parameters[p] = intArg;
+						else
+							parameters[p] = new Nullable<int>(intArg);
+					}
+					else if (arg == typeof(string[]))
+						parameters[p] = argResult.Split();
+					else
+						throw new CommandException("Found inconvertable parameter type: " + arg.Name);
+					a++;
+				}
+			}
+			// Check if we were able to set enough arguments
+			if (a < Math.Min(parameters.Length, RequiredParameters))
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 				{
@@ -168,30 +201,23 @@ namespace TS3AudioBot.Algorithm
 				}
 				throw new CommandException("Not enough arguments for function " + internCommand.Name);
 			}
-			// Fill the missing parameters
-			for (int i = 0; parameter < parameters.Length; i++, parameter++)
-			{
-				var arg = internCommand.GetParameters()[parameter].ParameterType;
-				var argResult = ((StringCommandResult) arguments.Execute(i, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String })).Content;
-				if (arg == typeof(string))
-					parameters[parameter] = argResult;
-				else if (arg == typeof(int))
-				{
-					int intArg;
-					if (!int.TryParse(argResult, out intArg))
-						throw new CommandException("Can't convert parameter to int");
-					parameters[parameter] = intArg;
-				}
-				else
-					throw new CommandException("Found inconvertable parameter type: " + arg.Name);
-			}
 
 			object result = internCommand.Invoke(callee, parameters);
 
 			// Return the appropriate result
-			if (internCommand.ReturnType == typeof(void))
+			if (internCommand.ReturnType == typeof(void) || string.IsNullOrEmpty(result.ToString()))
 				return new EmptyCommandResult();
 			return new StringCommandResult(result.ToString());
+		}
+
+		/// <summary>
+		/// A conveniance method to set the amount of required parameters and returns this object.
+		/// This is useful for method chaining.
+		/// </summary>
+		public FunctionCommand SetRequiredParameters(int required)
+		{
+			RequiredParameters = required;
+			return this;
 		}
 	}
 
@@ -231,6 +257,16 @@ namespace TS3AudioBot.Algorithm
 			return internCommand.Execute(info, new EnumerableCommandMerge(new IEnumerableCommand[] { internArguments, arguments }), returnTypes);
 		}
 	}
+
+	public struct ExecutionInformation
+	{
+		public BotSession session;
+		public TS3Query.Messages.TextMessage textMessage;
+	}
+
+	#endregion
+
+	#region EnumerableCommands
 
 	public interface IEnumerableCommand
 	{
@@ -274,7 +310,7 @@ namespace TS3AudioBot.Algorithm
 		readonly int start;
 		readonly int count;
 
-		public int Count { get { return Math.Min(internCommand.Count, count); } }
+		public int Count { get { return Math.Min(internCommand.Count - start, count); } }
 
 		public EnumerableCommandRange(IEnumerableCommand command, int startArg, int countArg = int.MaxValue)
 		{
@@ -316,11 +352,9 @@ namespace TS3AudioBot.Algorithm
 		}
 	}
 
-	public struct ExecutionInformation
-	{
-		public BotSession session;
-		public TS3Query.Messages.TextMessage textMessage;
-	}
+	#endregion
+
+	#region CommandResults
 
 	public enum CommandResultType
 	{
@@ -450,6 +484,8 @@ namespace TS3AudioBot.Algorithm
 			content = contentArg;
 		}
 	}
+
+	#endregion
 
 	public class CommandException : Exception
 	{
