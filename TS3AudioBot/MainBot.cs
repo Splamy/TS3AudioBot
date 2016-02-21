@@ -176,8 +176,8 @@ namespace TS3AudioBot
 		{
 			var allCommandsList = new List<BotCommand>();
 			var rootCommand = new CommandGroup();
-			rootCommand.AddCommand("kickme", new FunctionCommand((ExecutionInformation i, string s) => CommandKickme(i.session, i.textMessage, s)));
-			rootCommand.AddCommand("help", new FunctionCommand((ExecutionInformation i, string s) => CommandHelp(i.session, s)));
+			rootCommand.AddCommand("kickme", new FunctionCommand((i, s) => CommandKickme(i.session, i.textMessage, s)));
+			rootCommand.AddCommand("help", new FunctionCommand((i, s) => CommandHelp(i.session, s)));
 			commandSystem = new XCommandSystem(rootCommand);
 
 			var builder = new BotCommand.Builder(botCommand =>
@@ -333,32 +333,29 @@ namespace TS3AudioBot
 			ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
 			if (parsedAst.Type == NodeType.Error)
 			{
-				PrintAstError(session, (ASTError)parsedAst);
+				PrintAstError(session, (ASTError) parsedAst);
 			}
-			else if (parsedAst.Type == NodeType.Command)
+			else
 			{
-				var commandAst = (ASTCommand)parsedAst;
-				var info = new ExecutionInformation()
+				var info = new ExecutionInformation
 				{
 					session = session,
 					textMessage = textMessage
 				};
-				var res = commandSystem.Execute(info, new StaticEnumerableCommand(
-				new ICommand[]{
-					new StringCommand(commandAst.Command),
-					new StringCommand(((ASTValue) commandAst.Parameter[0]).Value)
-				}));
-				session.Write("Result: " + res);
-				return;
-				if (Validate(session, parsedAst, textMessage, isAdmin))
-					LazyExecute(session, commandAst, textMessage);
-			}
-			else
-			{
-				Log.Write(Log.Level.Error, "MB Parse error with: {0}", parsedAst);
-				session.Write("Internal command parsing error!");
-			}
+				var command = commandSystem.AstToCommandResult(parsedAst);
 
+				try
+				{
+					var res = command.Execute(info, new EmptyEnumerableCommand(),
+						new[] { CommandResultType.String, CommandResultType.Empty });
+					if (res.ResultType == CommandResultType.String)
+						session.Write(((StringCommandResult) res).Content);
+				}
+				catch (CommandException ex)
+				{
+					session.Write("Error: " + ex.Message);
+				}
+			}
 		}
 
 		#region COMMAND EXECUTING & CHAINING

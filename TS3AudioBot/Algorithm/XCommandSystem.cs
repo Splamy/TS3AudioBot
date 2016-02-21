@@ -35,20 +35,6 @@ namespace TS3AudioBot.Algorithm
 			return possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1);
 		}
 
-		static EnumerableCommandResult ASTToCommandResult(ASTNode node)
-		{
-			switch (node.Type)
-			{
-			case NodeType.Error:
-				throw new CommandException("Found an unconvertable ASTNode of type Error");
-			case NodeType.Command:
-				break;
-			case NodeType.Value:
-				break;
-			}
-			return null;
-		}
-
 		ICommand rootCommand;
 
 		public ICommand RootCommand { get { return rootCommand; } }
@@ -58,6 +44,24 @@ namespace TS3AudioBot.Algorithm
 			rootCommand = rootCommandArg;
 		}
 
+		internal ICommand AstToCommandResult(ASTNode node)
+		{
+			switch (node.Type)
+			{
+			case NodeType.Error:
+				throw new CommandException("Found an unconvertable ASTNode of type Error");
+			case NodeType.Command:
+				var cmd = (ASTCommand) node;
+				var arguments = new List<ICommand>();
+				arguments.Add(new StringCommand(cmd.Command));
+				arguments.AddRange(cmd.Parameter.Select(n => AstToCommandResult(n)));
+				return new AppliedCommand(rootCommand, new StaticEnumerableCommand(arguments));
+			case NodeType.Value:
+				return new StringCommand(((ASTValue) node).Value);
+			}
+			throw new NotSupportedException("Seems like there's a new NodeType, this code should not be reached");
+		}
+
 		public ICommandResult Execute(ExecutionInformation info, string command)
 		{
 			return Execute(info, command, new [] { CommandResultType.String, CommandResultType.Empty });
@@ -65,7 +69,9 @@ namespace TS3AudioBot.Algorithm
 
 		public ICommandResult Execute(ExecutionInformation info, string command, IEnumerable<CommandResultType> returnTypes)
 		{
-			return new EmptyCommandResult();
+			var ast = CommandParser.ParseCommandRequest(command);
+			var cmd = AstToCommandResult(ast);
+			return cmd.Execute(info, new EmptyEnumerableCommand(), returnTypes);
 		}
 
 		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments)
@@ -84,7 +90,7 @@ namespace TS3AudioBot.Algorithm
 			if (result.ResultType == CommandResultType.String ||
 				result.ResultType == CommandResultType.Empty)
 				return result.ToString();
-			throw new CommandException("Command result is not a string");
+			throw new CommandException("Expected a string as result");
 		}
 	}
 
@@ -107,7 +113,7 @@ namespace TS3AudioBot.Algorithm
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 					return new CommandCommandResult(this);
-				throw new CommandException("CommandGroup can't be executed without arguments");
+				throw new CommandException("Expected a string");
 			}
 
 			var result = arguments.Execute(0, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String });
@@ -123,26 +129,6 @@ namespace TS3AudioBot.Algorithm
 
 	public class FunctionCommand : ICommand
 	{
-		/// <summary>
-		/// A FunctionCommand that has some already applied arguments.
-		/// </summary>
-		protected class PartialFunctionCommand : ICommand
-		{
-			readonly IEnumerableCommand savedArguments;
-			readonly ICommand internCommand;
-
-			public PartialFunctionCommand(ICommand internCommandArg, IEnumerableCommand arguments)
-			{
-				internCommand = internCommandArg;
-				savedArguments = arguments;
-			}
-
-			public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
-			{
-				return internCommand.Execute(info, new EnumerableCommandMerge(new []{ savedArguments, arguments }), returnTypes);
-			}
-		}
-
 		// Needed for non-static member methods
 		readonly object callee;
 		readonly MethodInfo internCommand;
@@ -178,7 +164,7 @@ namespace TS3AudioBot.Algorithm
 				{
 					if (arguments.Count == 0)
 						return new CommandCommandResult(this);
-					return new CommandCommandResult(new PartialFunctionCommand(this, arguments));
+					return new CommandCommandResult(new AppliedCommand(this, arguments));
 				}
 				throw new CommandException("Not enough arguments for function " + internCommand.Name);
 			}
@@ -229,14 +215,27 @@ namespace TS3AudioBot.Algorithm
 		}
 	}
 
+	public class AppliedCommand : ICommand
+	{
+		readonly ICommand internCommand;
+		readonly IEnumerableCommand internArguments;
+
+		public AppliedCommand(ICommand command, IEnumerableCommand arguments)
+		{
+			internCommand = command;
+			internArguments = arguments;
+		}
+
+		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			return internCommand.Execute(info, new EnumerableCommandMerge(new IEnumerableCommand[] { internArguments, arguments }), returnTypes);
+		}
+	}
+
 	public interface IEnumerableCommand
 	{
 		int Count { get; }
 
-		/// <summary>
-		/// Executes the command at the specified index.
-		/// The result will be null if there is no command at this index available.
-		/// </summary>
 		ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes);
 	}
 
@@ -246,7 +245,7 @@ namespace TS3AudioBot.Algorithm
 
 		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			return null;
+			throw new CommandException("No arguments given");
 		}
 	}
 
@@ -264,7 +263,7 @@ namespace TS3AudioBot.Algorithm
 		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (index < 0 || index >= internArguments.Count())
-				return null;
+				throw new CommandException("Not enough arguments");
 			return internArguments.ElementAt(index).Execute(info, arguments, returnTypes);
 		}
 	}
@@ -275,7 +274,7 @@ namespace TS3AudioBot.Algorithm
 		readonly int start;
 		readonly int count;
 
-		public int Count { get { return count; } }
+		public int Count { get { return Math.Min(internCommand.Count, count); } }
 
 		public EnumerableCommandRange(IEnumerableCommand command, int startArg, int countArg = int.MaxValue)
 		{
@@ -287,8 +286,8 @@ namespace TS3AudioBot.Algorithm
 		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (index < 0)
-				return null;
-			return internCommand.Execute(index - start, info, arguments, returnTypes);
+				throw new CommandException("Negative arguments?? (EnumerableCommandRange");
+			return internCommand.Execute(index + start, info, arguments, returnTypes);
 		}
 	}
 
@@ -306,14 +305,14 @@ namespace TS3AudioBot.Algorithm
 		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (index < 0)
-				return null;
+				throw new CommandException("Negative arguments?? (EnumerableCommandMerge");
 			foreach (var c in internCommands)
 			{
 				if (index < c.Count)
 					return c.Execute(index, info, arguments, returnTypes);
 				index -= c.Count;
 			}
-			return null;
+			throw new CommandException("Not enough arguments");
 		}
 	}
 
@@ -341,7 +340,7 @@ namespace TS3AudioBot.Algorithm
 				return ((StringCommandResult) this).Content;
 			if (ResultType == CommandResultType.Empty)
 				return "";
-			return "CommandResult can't be converted to a string";
+			return "CommandResult can't be converted into a string";
 		}
 	}
 
