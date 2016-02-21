@@ -343,10 +343,10 @@ namespace TS3AudioBot
 					session = session,
 					textMessage = textMessage
 				};
-				var res = commandSystem.Execute(info, new StaticEnumerableCommandResult(
-				new ICommandResult[]{
-					new StringCommandResult(commandAst.Command),
-					new StringCommandResult(((ASTValue) commandAst.Parameter[0]).Value)
+				var res = commandSystem.Execute(info, new StaticEnumerableCommand(
+				new ICommand[]{
+					new StringCommand(commandAst.Command),
+					new StringCommand(((ASTValue) commandAst.Parameter[0]).Value)
 				}));
 				session.Write("Result: " + res);
 				return;

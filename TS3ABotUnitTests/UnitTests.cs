@@ -157,7 +157,7 @@ namespace TS3ABotUnitTests
 			group.AddCommand("one", new FunctionCommand(() => { return "Called one"; }));
 			var commandSystem = new XCommandSystem(group);
 			Assert.AreEqual("Called one", ((StringCommandResult) commandSystem.Execute(new ExecutionInformation(),
-                 new StaticEnumerableCommandResult(new ICommandResult[] { new StringCommandResult("one") }))).Content);
+                 new StaticEnumerableCommand(new ICommand[] { new StringCommand("one") }))).Content);
 		}
 
 		[Test]

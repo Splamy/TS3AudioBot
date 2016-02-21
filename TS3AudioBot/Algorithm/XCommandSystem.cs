@@ -35,7 +35,21 @@ namespace TS3AudioBot.Algorithm
 			return possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1);
 		}
 
-		private ICommand rootCommand;
+		static EnumerableCommandResult ASTToCommandResult(ASTNode node)
+		{
+			switch (node.Type)
+			{
+			case NodeType.Error:
+				throw new CommandException("Found an unconvertable ASTNode of type Error");
+			case NodeType.Command:
+				break;
+			case NodeType.Value:
+				break;
+			}
+			return null;
+		}
+
+		ICommand rootCommand;
 
 		public ICommand RootCommand { get { return rootCommand; } }
 
@@ -54,12 +68,12 @@ namespace TS3AudioBot.Algorithm
 			return new EmptyCommandResult();
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments)
 		{
 			return Execute(info, arguments, new [] { CommandResultType.String, CommandResultType.Empty });
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			return rootCommand.Execute(info, arguments, returnTypes);
 		}
@@ -87,7 +101,7 @@ namespace TS3AudioBot.Algorithm
 				commandNames.Add(name);
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (arguments.Count < 1)
 			{
@@ -96,16 +110,14 @@ namespace TS3AudioBot.Algorithm
 				throw new CommandException("CommandGroup can't be executed without arguments");
 			}
 
-			var result = arguments[0];
-			if (result.ResultType != CommandResultType.String)
-				throw new CommandException("CommandGroup must get a string as first argument");
+			var result = arguments.Execute(0, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String });
 
 			var commandResults = XCommandSystem.FilterList(commandNames, ((StringCommandResult) result).Content).ToList();
 			if (commandResults.Count != 1)
 				throw new CommandException("Ambigous command, possible names: " + string.Join(", ", commandResults));
 
 			return commands.First(c => c.Item1 == commandResults[0]).Item2.Execute(
-				info, new EnumerableCommandResultRange(arguments, 1), returnTypes);
+				info, new EnumerableCommandRange(arguments, 1), returnTypes);
 		}
 	}
 
@@ -116,24 +128,24 @@ namespace TS3AudioBot.Algorithm
 		/// </summary>
 		protected class PartialFunctionCommand : ICommand
 		{
-			readonly EnumerableCommandResult savedArguments;
+			readonly IEnumerableCommand savedArguments;
 			readonly ICommand internCommand;
 
-			public PartialFunctionCommand(ICommand internCommandArg, EnumerableCommandResult arguments)
+			public PartialFunctionCommand(ICommand internCommandArg, IEnumerableCommand arguments)
 			{
 				internCommand = internCommandArg;
 				savedArguments = arguments;
 			}
 
-			public ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments, IEnumerable<CommandResultType> returnTypes)
+			public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 			{
-				return internCommand.Execute(info, new EnumerableCommandResultMerge(new []{ savedArguments, arguments }), returnTypes);
+				return internCommand.Execute(info, new EnumerableCommandMerge(new []{ savedArguments, arguments }), returnTypes);
 			}
 		}
 
 		// Needed for non-static member methods
-		private readonly object callee;
-		private readonly MethodInfo internCommand;
+		readonly object callee;
+		readonly MethodInfo internCommand;
 
 		public FunctionCommand(MethodInfo command, object obj = null)
 		{
@@ -151,7 +163,7 @@ namespace TS3AudioBot.Algorithm
 		public FunctionCommand(Action<ExecutionInformation, string> command) : this(command.Method, command.Target) {}
 		public FunctionCommand(Func<ExecutionInformation, string, string> command) : this(command.Method, command.Target) {}
 
-		public ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			object[] parameters = new object[internCommand.GetParameters().Length];
 			// The first argument can be the ExecutionInformation
@@ -174,11 +186,15 @@ namespace TS3AudioBot.Algorithm
 			for (int i = 0; parameter < parameters.Length; i++, parameter++)
 			{
 				var arg = internCommand.GetParameters()[parameter].ParameterType;
+				var argResult = ((StringCommandResult) arguments.Execute(i, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String })).Content;
 				if (arg == typeof(string))
-					parameters[parameter] = arguments[i];
+					parameters[parameter] = argResult;
 				else if (arg == typeof(int))
 				{
-					parameters[parameter] = arguments[i];
+					int intArg;
+					if (!int.TryParse(argResult, out intArg))
+						throw new CommandException("Can't convert parameter to int");
+					parameters[parameter] = intArg;
 				}
 				else
 					throw new CommandException("Found inconvertable parameter type: " + arg.Name);
@@ -195,7 +211,110 @@ namespace TS3AudioBot.Algorithm
 
 	public interface ICommand
 	{
-		ICommandResult Execute(ExecutionInformation info, EnumerableCommandResult arguments, IEnumerable<CommandResultType> returnTypes);
+		ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes);
+	}
+
+	public class StringCommand : ICommand
+	{
+		readonly string content;
+
+		public StringCommand(string contentArg)
+		{
+			content = contentArg;
+		}
+
+		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			return new StringCommandResult(content);
+		}
+	}
+
+	public interface IEnumerableCommand
+	{
+		int Count { get; }
+
+		/// <summary>
+		/// Executes the command at the specified index.
+		/// The result will be null if there is no command at this index available.
+		/// </summary>
+		ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes);
+	}
+
+	public class EmptyEnumerableCommand : IEnumerableCommand
+	{
+		public int Count { get { return 0; } }
+
+		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			return null;
+		}
+	}
+
+	public class StaticEnumerableCommand : IEnumerableCommand
+	{
+		readonly IEnumerable<ICommand> internArguments;
+
+		public int Count { get { return internArguments.Count(); } }
+
+		public StaticEnumerableCommand(IEnumerable<ICommand> arguments)
+		{
+			internArguments = arguments;
+		}
+
+		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			if (index < 0 || index >= internArguments.Count())
+				return null;
+			return internArguments.ElementAt(index).Execute(info, arguments, returnTypes);
+		}
+	}
+
+	public class EnumerableCommandRange : IEnumerableCommand
+	{
+		readonly IEnumerableCommand internCommand;
+		readonly int start;
+		readonly int count;
+
+		public int Count { get { return count; } }
+
+		public EnumerableCommandRange(IEnumerableCommand command, int startArg, int countArg = int.MaxValue)
+		{
+			internCommand = command;
+			start = startArg;
+			count = countArg;
+		}
+
+		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			if (index < 0)
+				return null;
+			return internCommand.Execute(index - start, info, arguments, returnTypes);
+		}
+	}
+
+	public class EnumerableCommandMerge : IEnumerableCommand
+	{
+		readonly IEnumerable<IEnumerableCommand> internCommands;
+
+		public int Count { get { return internCommands.Select(c => c.Count).Sum(); } }
+
+		public EnumerableCommandMerge(IEnumerable<IEnumerableCommand> commands)
+		{
+			internCommands = commands;
+		}
+
+		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			if (index < 0)
+				return null;
+			foreach (var c in internCommands)
+			{
+				if (index < c.Count)
+					return c.Execute(index, info, arguments, returnTypes);
+				index -= c.Count;
+			}
+			return null;
+		}
 	}
 
 	public struct ExecutionInformation
@@ -250,7 +369,6 @@ namespace TS3AudioBot.Algorithm
 		public override CommandResultType ResultType => CommandResultType.Enumerable;
 
 		public abstract int Count { get; }
-		public abstract bool Flatten { get; }
 
 		public abstract ICommandResult this[int index]{ get; }
 	}
@@ -262,7 +380,6 @@ namespace TS3AudioBot.Algorithm
 		readonly int count;
 
 		public override int Count => Math.Min(internResult.Count - start, count);
-		public override bool Flatten => internResult.Flatten;
 
 		public override ICommandResult this[int index]
 		{
@@ -287,7 +404,6 @@ namespace TS3AudioBot.Algorithm
 		readonly IEnumerable<EnumerableCommandResult> internResult;
 
 		public override int Count => internResult.Select(r => r.Count).Sum();
-		public override bool Flatten => internResult.Any(r => r.Flatten);
 
 		public override ICommandResult this[int index]
 		{
@@ -311,24 +427,21 @@ namespace TS3AudioBot.Algorithm
 
 	public class StaticEnumerableCommandResult: EnumerableCommandResult
 	{
-		private readonly IEnumerable<ICommandResult> content;
-		private readonly bool flatten;
+		readonly IEnumerable<ICommandResult> content;
 
 		public override int Count => content.Count();
-		public override bool Flatten => flatten;
 
 		public override ICommandResult this[int index] => content.ElementAt(index);
 
 		public StaticEnumerableCommandResult(IEnumerable<ICommandResult> contentArg, bool flattenArg = false)
 		{
 			content = contentArg;
-			flatten = flattenArg;   // TODO implement flatten?
 		}
 	}
 
 	public class StringCommandResult : ICommandResult
 	{
-		private readonly string content;
+		readonly string content;
 
 		public override CommandResultType ResultType => CommandResultType.String;
 		public virtual string Content => content;
