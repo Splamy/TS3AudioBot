@@ -184,7 +184,10 @@ namespace TS3AudioBot
 			var builder = new BotCommand.Builder(botCommand =>
 			{
 				commandDict.Add(botCommand.InvokeName, botCommand);
-				rootCommand.AddCommand(botCommand.InvokeName, new FunctionCommand(botCommand.Command, this));
+				var command = new FunctionCommand(botCommand.Command, this);
+				if (botCommand.RequiredParameters != null)
+					command.SetRequiredParameters(botCommand.RequiredParameters.Value);
+				rootCommand.AddCommand(botCommand.InvokeName, command);
 				allCommandsList.Add(botCommand);
 			});
 
@@ -203,7 +206,8 @@ namespace TS3AudioBot
 				.Parameter("<username>", "A user which is currently logged in to the server").Finish();
 			builder.New("help").Action(CommandHelp).Permission(CommandRights.Private)
 				.HelpData("Shows all commands or detailed help about a specific command.")
-				.Parameter("[<command>]", "Any currently accepted command").Finish();
+				.Parameter("[<command>]", "Any currently accepted command")
+			    .RequiredParameters(0).Finish();
 			builder.New("history").Action(CommandHistory).Permission(CommandRights.Private)
 				.HelpData("Shows recently played songs.")
 				.Parameter("from <user-dbid> <count>", "Gets the last <count> songs from the user with the given <user-dbid>")
@@ -214,10 +218,12 @@ namespace TS3AudioBot
 				.Parameter("last <count>", "Gets the last <count> played songs.")
 				.Parameter("play <id>", "Playes the song with <id>")
 				.Parameter("till <time>", "Gets all songs plyed until <time>. Special options are: (hour|today|yesterday|week)")
-				.Parameter("title <string>", "Gets all songs which title contains <string>").Finish();
+				.Parameter("title <string>", "Gets all songs which title contains <string>")
+			    .RequiredParameters(1).Finish();
 			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
 				.HelpData("Guess what?")
-				.Parameter("[far]", "Optional attribute for the extra punch strength").Finish();
+				.Parameter("[far]", "Optional attribute for the extra punch strength")
+			    .RequiredParameters(0).Finish();
 			builder.New("link").Action(CommandLink).Permission(CommandRights.Private)
 				.HelpData("Gets a link to the origin of the current song.").Finish();
 			builder.New("loop").Action(CommandLoop).Permission(CommandRights.Private)
@@ -251,7 +257,8 @@ namespace TS3AudioBot
 				.HelpData("Gets a random number.")
 				.Parameter(string.Empty, "Gets a number between 0 and " + int.MaxValue)
 				.Parameter("<max>", "Gets a number between 0 and <max>")
-				.Parameter("<min> <max>", "Gets a number between <min> and <max>").Finish();
+				.Parameter("<min> <max>", "Gets a number between <min> and <max>")
+			    .RequiredParameters(0).Finish();
 			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private)
 				.HelpData("Jumps to a timemark within the current song.")
 				.Parameter("<sec>", "Time in seconds")
@@ -924,11 +931,12 @@ namespace TS3AudioBot
 		public MethodInfo Command { get; private set; }
 		public CommandRights CommandRights { get; private set; }
 
-		private string outputCache = null;
+		string outputCache = null;
 		public string Description { get; private set; }
 		public Tuple<string, string>[] ParameterList { get; private set; }
+		public int? RequiredParameters { get; private set; }
 
-		private BotCommand() { }
+		BotCommand() {}
 
 		public string GetHelp()
 		{
@@ -980,6 +988,7 @@ namespace TS3AudioBot
 			bool setHelp = false;
 			string description;
 			readonly List<Tuple<string, string>> parameters = new List<Tuple<string, string>>();
+			int? requiredParameters = null;
 
 			Builder(Action<BotCommand> finishAction, bool buildMode)
 			{
@@ -1043,6 +1052,12 @@ namespace TS3AudioBot
 				return this;
 			}
 
+			public Builder RequiredParameters(int requiredParameters)
+			{
+				this.requiredParameters = requiredParameters;
+				return this;
+			}
+
 			public BotCommand Finish()
 			{
 				if (!setAction) throw new InvalidProgramException("No action defined for " + name);
@@ -1053,7 +1068,8 @@ namespace TS3AudioBot
 					Command = this.command,
 					CommandRights = setRights ? commandRights : defaultCommandRights,
 					Description = setHelp ? description : defaultDescription,
-					ParameterList = parameters.ToArray()
+					ParameterList = parameters.ToArray(),
+					RequiredParameters = requiredParameters
 				};
 
 				if (registerAction != null)

@@ -166,6 +166,7 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(new ExecutionInformation(), "!t"));
 			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e TEST"));
 
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(new ExecutionInformation(), "!e"));
 			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op"));
 			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op 1"));
 		}

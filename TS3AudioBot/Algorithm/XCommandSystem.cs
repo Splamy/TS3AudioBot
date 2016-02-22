@@ -144,6 +144,8 @@ namespace TS3AudioBot.Algorithm
 		{
 			internCommand = command;
 			callee = obj;
+			// Require all parameters by default
+			RequiredParameters = internCommand.GetParameters().Where(p => p.ParameterType != typeof(ExecutionInformation)).Count();
 		}
 
 		// Provide some constructors that take lambda expressions directly
@@ -170,7 +172,7 @@ namespace TS3AudioBot.Algorithm
 				// Only add arguments if we still have some
 				else if (a < arguments.Count)
 				{
-					var argResult = ((StringCommandResult) arguments.Execute(a, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String })).Content;
+					var argResult = ((StringCommandResult) arguments.Execute(a, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
 					if (arg == typeof(string))
 						parameters[p] = argResult;
 					else if (arg == typeof(int) || arg == typeof(int?))
@@ -178,13 +180,18 @@ namespace TS3AudioBot.Algorithm
 						int intArg;
 						if (!int.TryParse(argResult, out intArg))
 							throw new CommandException("Can't convert parameter to int");
-						if (arg == typeof(int))
-							parameters[p] = intArg;
-						else
-							parameters[p] = new Nullable<int>(intArg);
+						parameters[p] = intArg;
 					}
 					else if (arg == typeof(string[]))
-						parameters[p] = argResult.Split();
+					{
+						// Use the remaining arguments for this parameter
+						var args = new string[arguments.Count - a];
+						for (int i = 0; i < args.Length; i++, a++)
+							args[i] = ((StringCommandResult) arguments.Execute(a, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+						parameters[p] = args;
+						// Correct the argument index to the last used argument
+						a--;
+					}
 					else
 						throw new CommandException("Found inconvertable parameter type: " + arg.Name);
 					a++;
@@ -205,7 +212,7 @@ namespace TS3AudioBot.Algorithm
 			object result = internCommand.Invoke(callee, parameters);
 
 			// Return the appropriate result
-			if (internCommand.ReturnType == typeof(void) || string.IsNullOrEmpty(result.ToString()))
+			if (internCommand.ReturnType == typeof(void) || result == null || string.IsNullOrEmpty(result.ToString()))
 				return new EmptyCommandResult();
 			return new StringCommandResult(result.ToString());
 		}
