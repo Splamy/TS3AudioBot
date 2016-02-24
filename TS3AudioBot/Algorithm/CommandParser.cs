@@ -12,50 +12,34 @@
 		// This switch follows more or less a DEA to this EBNF
 		// COMMAND-EBNF := COMMAND
 
-		// COMMAND      := (!NAME \s+ (COMMAND|FREESTRING|QUOTESTRING|\s)*)
-		// NAME         := [a-z]+
-		// FREESTRING   := [^()]+
-		// QUOTESTRING  := "[<anything but '\"'>]+"
+		// COMMAND      := (!ARGUMENT \s+ (ARGUMENT|\s)*)
+		// ARGUMENT     := COMMAND|FREESTRING|QUOTESTRING
+		// FREESTRING   := [^)]+
+		// QUOTESTRING  := "[<anything but ", \" is ok>]+"
 
 		public static ASTNode ParseCommandRequest(string request)
 		{
 			ASTCommand root = null;
-			Stack<ASTCommand> comAst = new Stack<ASTCommand>();
+			var comAst = new Stack<ASTCommand>();
 			BuildStatus build = BuildStatus.ParseCommand;
-			StringBuilder strb = new StringBuilder();
-			StringPtr strPtr = new StringPtr(request);
+			var strb = new StringBuilder();
+			var strPtr = new StringPtr(request);
 
 			while (!strPtr.End)
 			{
+				ASTCommand buildCom;
 				switch (build)
 				{
 				case BuildStatus.ParseCommand:
-					strPtr.SkipSpace();
-
-					ASTCommand buildCom = new ASTCommand();
-					using (strPtr.TrackNode(buildCom))
-					{
-						if (strPtr.Char == '(') strPtr.Next();
+					// Got a command
+					buildCom = new ASTCommand();
+					// Consume CommandChar if left over
+					if (strPtr.Char == CommandChar)
 						strPtr.Next(CommandChar);
 
-						if (root == null) root = buildCom;
-						else comAst.Peek().Parameter.Add(buildCom);
-						comAst.Push(buildCom);
-
-						strb.Clear();
-						for (; !strPtr.End; strPtr.Next())
-						{
-							if (strPtr.Char >= 'a' && strPtr.Char <= 'z')
-								strb.Append(strPtr.Char);
-							else if (char.IsWhiteSpace(strPtr.Char) || strPtr.Char == '(' || strPtr.Char == ')' || strPtr.Char == '"')
-								break;
-							else
-								return new ASTError(buildCom, "The command can only contain lowercase letters a-z.");
-						}
-						buildCom.Command = strb.ToString();
-						if (string.IsNullOrWhiteSpace(buildCom.Command))
-							return new ASTError(buildCom, "A command must have a name");
-					}
+					if (root == null) root = buildCom;
+					else comAst.Peek().Parameter.Add(buildCom);
+					comAst.Push(buildCom);
 					build = BuildStatus.SelectParam;
 					break;
 
@@ -66,19 +50,23 @@
 						build = BuildStatus.End;
 					else
 					{
-						if (strPtr.Char == '"')
-							build = BuildStatus.ParseQuotedString;
-						else if (strPtr.Char == '(')
+						switch (strPtr.Char)
 						{
+						case '"':
+							build = BuildStatus.ParseQuotedString;
+							break;
+						case '(':
 							if (!strPtr.HasNext)
 								build = BuildStatus.ParseFreeString;
-							else if (strPtr.IsNext('!'))
+							else if (strPtr.IsNext(CommandChar))
+							{
+								strPtr.Next('(');
 								build = BuildStatus.ParseCommand;
+							}
 							else
 								build = BuildStatus.ParseFreeString;
-						}
-						else if (strPtr.Char == ')')
-						{
+							break;
+						case ')':
 							if (!comAst.Any())
 								build = BuildStatus.End;
 							else
@@ -88,9 +76,11 @@
 									build = BuildStatus.End;
 							}
 							strPtr.Next();
-						}
-						else
+							break;
+						default:
 							build = BuildStatus.ParseFreeString;
+							break;
+						}
 					}
 					break;
 
@@ -102,7 +92,7 @@
 					{
 						for (; !strPtr.End; strPtr.Next())
 						{
-							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext('!'))
+							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext(CommandChar))
 								|| strPtr.Char == ')'
 								|| char.IsWhiteSpace(strPtr.Char))
 								break;
@@ -154,7 +144,7 @@
 			return root;
 		}
 
-		private static bool ValidateChar(ref int i, string text, char c)
+		static bool ValidateChar(ref int i, string text, char c)
 		{
 			if (i >= text.Length)
 				return false;
@@ -163,12 +153,12 @@
 			return ok;
 		}
 
-		private class StringPtr
+		class StringPtr
 		{
-			private string text;
-			private int index;
-			private ASTNode astnode;
-			private NodeTracker curTrack;
+			string text;
+			int index;
+			ASTNode astnode;
+			NodeTracker curTrack;
 
 			public char Char => text[index];
 			public bool End => index >= text.Length;
@@ -218,7 +208,8 @@
 				}
 				return (curTrack = new NodeTracker(this));
 			}
-			private void UntrackNode()
+
+			void UntrackNode()
 			{
 				curTrack = null;
 				astnode = null;
@@ -226,7 +217,7 @@
 
 			public class NodeTracker : IDisposable
 			{
-				private StringPtr parent;
+				readonly StringPtr parent;
 				public NodeTracker(StringPtr p) { parent = p; }
 				public void Dispose() => parent.UntrackNode();
 			}
@@ -255,7 +246,7 @@
 		public abstract void Write(StringBuilder strb, int depth);
 		public override sealed string ToString()
 		{
-			StringBuilder strb = new StringBuilder();
+			var strb = new StringBuilder();
 			Write(strb, 0);
 			return strb.ToString();
 		}
@@ -297,7 +288,6 @@
 	{
 		public override NodeType Type => NodeType.Command;
 
-		public string Command { get; set; }
 		public List<ASTNode> Parameter { get; set; }
 
 		public BotCommand BotCommand { get; set; }
@@ -310,8 +300,7 @@
 
 		public override void Write(StringBuilder strb, int depth)
 		{
-			Space(strb, depth).Append('!').Append(Command);
-			strb.Append(" : ").Append(Value ?? string.Empty);
+			Space(strb, depth).Append(": ").Append(Value ?? string.Empty);
 			strb.AppendLine();
 			foreach (var para in Parameter)
 				para.Write(strb, depth + 1);

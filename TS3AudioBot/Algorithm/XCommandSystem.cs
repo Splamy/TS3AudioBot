@@ -53,7 +53,6 @@ namespace TS3AudioBot.Algorithm
 			case NodeType.Command:
 				var cmd = (ASTCommand) node;
 				var arguments = new List<ICommand>();
-				arguments.Add(new StringCommand(cmd.Command));
 				arguments.AddRange(cmd.Parameter.Select(n => AstToCommandResult(n)));
 				return new AppliedCommand(rootCommand, new StaticEnumerableCommand(arguments));
 			case NodeType.Value:
@@ -109,7 +108,7 @@ namespace TS3AudioBot.Algorithm
 				commandNames.Add(name);
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (arguments.Count < 1)
 			{
@@ -145,7 +144,7 @@ namespace TS3AudioBot.Algorithm
 			internCommand = command;
 			callee = obj;
 			// Require all parameters by default
-			RequiredParameters = internCommand.GetParameters().Where(p => p.ParameterType != typeof(ExecutionInformation)).Count();
+			RequiredParameters = internCommand.GetParameters().Count(p => p.ParameterType != typeof(ExecutionInformation));
 		}
 
 		// Provide some constructors that take lambda expressions directly
@@ -158,7 +157,7 @@ namespace TS3AudioBot.Algorithm
 		public FunctionCommand(Action<ExecutionInformation, string> command) : this(command.Method, command.Target) {}
 		public FunctionCommand(Func<ExecutionInformation, string, string> command) : this(command.Method, command.Target) {}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			object[] parameters = new object[internCommand.GetParameters().Length];
 			// a: Iterate through arguments
@@ -187,7 +186,8 @@ namespace TS3AudioBot.Algorithm
 						// Use the remaining arguments for this parameter
 						var args = new string[arguments.Count - a];
 						for (int i = 0; i < args.Length; i++, a++)
-							args[i] = ((StringCommandResult) arguments.Execute(a, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+							args[i] = ((StringCommandResult) arguments.Execute(a, info, new EmptyEnumerableCommand(),
+                                new []{ CommandResultType.String })).Content;
 						parameters[p] = args;
 						// Correct the argument index to the last used argument
 						a--;
@@ -225,6 +225,24 @@ namespace TS3AudioBot.Algorithm
 		{
 			RequiredParameters = required;
 			return this;
+		}
+	}
+
+	/// <summary>
+	/// A special group command that also accepts commands as first parameter and executes them on the left over parameters.
+	/// </summary>
+	public class RootCommand : CommandGroup
+	{
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			if (arguments.Count < 1)
+				return base.Execute(info, arguments, returnTypes);
+
+			var result = arguments.Execute(0, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.Command, CommandResultType.String });
+			if (result.ResultType == CommandResultType.String)
+				return base.Execute(info, arguments, returnTypes);
+
+			return ((CommandCommandResult) result).Command.Execute(info, new EnumerableCommandRange(arguments, 1), returnTypes);
 		}
 	}
 

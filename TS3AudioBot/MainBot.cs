@@ -176,7 +176,7 @@ namespace TS3AudioBot
 		private void InitializeCommands()
 		{
 			var allCommandsList = new List<BotCommand>();
-			var rootCommand = new CommandGroup();
+			var rootCommand = new RootCommand();
 			//rootCommand.AddCommand("kickme", new FunctionCommand((i, s) => CommandKickme(i.session, i.textMessage, s)));
 			//rootCommand.AddCommand("help", new FunctionCommand((i, s) => CommandHelp(i.session, s)).SetRequiredParameters(0));
 			//rootCommand.AddCommand("quit", new FunctionCommand(i => CommandQuit(i.session)));
