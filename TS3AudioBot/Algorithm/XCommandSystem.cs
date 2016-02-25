@@ -31,8 +31,11 @@ namespace TS3AudioBot.Algorithm
 			}
 			// Take command with lowest index
 			int minIndex = possibilities.Min(t => t.Item2);
+			var cmds = possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1).ToList();
+			// Take the smallest command
+			int minLength = cmds.Min(c => c.Length);
 
-			return possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1);
+			return cmds.Where(c => c.Length == minLength);
 		}
 
 		ICommand rootCommand;
@@ -130,9 +133,15 @@ namespace TS3AudioBot.Algorithm
 
 	public class FunctionCommand : ICommand
 	{
+		static IEnumerable<Type> GetSpecialTypes()
+		{
+			return new Type[] { typeof(ExecutionInformation), typeof(IEnumerableCommand), typeof(IEnumerable<CommandResultType>) };
+		}
+
 		// Needed for non-static member methods
 		readonly object callee;
 		readonly MethodInfo internCommand;
+		readonly int normalParameters;
 		/// <summary>
 		/// How many free arguments have to be applied to this function.
 		/// This includes only user-supplied arguments, e.g. the ExecutionInformation is not included.
@@ -144,7 +153,9 @@ namespace TS3AudioBot.Algorithm
 			internCommand = command;
 			callee = obj;
 			// Require all parameters by default
-			RequiredParameters = internCommand.GetParameters().Count(p => p.ParameterType != typeof(ExecutionInformation));
+			IEnumerable<Type> specialTypes = GetSpecialTypes();
+			normalParameters = internCommand.GetParameters().Count(p => !specialTypes.Contains(p.ParameterType));
+			RequiredParameters = normalParameters;
 		}
 
 		// Provide some constructors that take lambda expressions directly
@@ -157,6 +168,17 @@ namespace TS3AudioBot.Algorithm
 		public FunctionCommand(Action<ExecutionInformation, string> command) : this(command.Method, command.Target) {}
 		public FunctionCommand(Func<ExecutionInformation, string, string> command) : this(command.Method, command.Target) {}
 
+		object ExecuteFunction(object[] parameters)
+		{
+			try
+			{
+				return internCommand.Invoke(callee, parameters);
+			} catch (TargetInvocationException ex)
+			{
+				throw ex.InnerException;
+			}
+		}
+
 		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			object[] parameters = new object[internCommand.GetParameters().Length];
@@ -168,6 +190,10 @@ namespace TS3AudioBot.Algorithm
 				var arg = internCommand.GetParameters()[p].ParameterType;
 				if (arg == typeof(ExecutionInformation))
 					parameters[p] = info;
+				else if (arg == typeof(IEnumerableCommand))
+					parameters[p] = arguments;
+				else if (arg == typeof(IEnumerable<CommandResultType>))
+					parameters[p] = returnTypes;
 				// Only add arguments if we still have some
 				else if (a < arguments.Count)
 				{
@@ -209,12 +235,51 @@ namespace TS3AudioBot.Algorithm
 				throw new CommandException("Not enough arguments for function " + internCommand.Name);
 			}
 
-			object result = internCommand.Invoke(callee, parameters);
+			if (internCommand.ReturnType == typeof(ICommandResult))
+				return (ICommandResult) ExecuteFunction(parameters);
 
-			// Return the appropriate result
-			if (internCommand.ReturnType == typeof(void) || result == null || string.IsNullOrEmpty(result.ToString()))
-				return new EmptyCommandResult();
-			return new StringCommandResult(result.ToString());
+			bool executed = false;
+			object result = null;
+			// Take first fitting command result
+			foreach (var returnType in returnTypes)
+			{
+				switch (returnType)
+				{
+				case CommandResultType.Command:
+					// Return a command if possible
+					// Only do this if the command was not yet executed to prevent executing a command more than once
+					if (!executed &&
+					    (internCommand.GetParameters().Any(p => p.ParameterType == typeof(string[])) ||
+					     a < normalParameters))
+						return new CommandCommandResult(new AppliedCommand(this, arguments));
+					break;
+				case CommandResultType.Empty:
+					if (!executed)
+						ExecuteFunction(parameters);
+					return new EmptyCommandResult();
+				case CommandResultType.Enumerable:
+					if (internCommand.ReturnType == typeof(string[]))
+					{
+						if (!executed)
+							result = ExecuteFunction(parameters);
+						return new StaticEnumerableCommandResult(((string[]) result).Select(s => new StringCommandResult(s)));
+					}
+					break;
+				case CommandResultType.String:
+					if (!executed)
+					{
+						result = ExecuteFunction(parameters);
+						executed = true;
+					}
+					if (result != null && !string.IsNullOrEmpty(result.ToString()))
+						return new StringCommandResult(result.ToString());
+					break;
+				}
+			}
+			// Try to return an empty string
+			if (returnTypes.Contains(CommandResultType.String) && executed)
+				return new StringCommandResult("");
+			throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name);
 		}
 
 		/// <summary>
@@ -248,6 +313,18 @@ namespace TS3AudioBot.Algorithm
 
 	public interface ICommand
 	{
+		/// <summary>
+		/// Execute this command.
+		/// </summary>
+		/// <param name="info">All global informations for this execution.</param>
+		/// <param name="arguments">
+		/// The arguments for this command.
+		/// They are evaluated lazy which means they will only be evaluated if needed
+		/// </param>
+		/// <param name="returnTypes">
+		/// The possible return types that should be returned by this execution.
+		/// They are ordered by priority so, if possible, the first return type should be picked, then the second and so on.
+		/// </param>
 		ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes);
 	}
 
@@ -287,6 +364,7 @@ namespace TS3AudioBot.Algorithm
 	{
 		public BotSession session;
 		public TS3Query.Messages.TextMessage textMessage;
+		public Lazy<bool> isAdmin;
 	}
 
 	#endregion

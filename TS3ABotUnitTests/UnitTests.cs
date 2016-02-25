@@ -153,22 +153,31 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void XCommandSystemTest()
 		{
-			var group = new CommandGroup();
+			var group = new RootCommand();
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
 			group.AddCommand("optional", new FunctionCommand(s => s == null ? "NULL" : "NOT NULL").SetRequiredParameters(0));
 			var commandSystem = new XCommandSystem(group);
 
+			// Basic tests
 			Assert.AreEqual("ONE", ((StringCommandResult) commandSystem.Execute(new ExecutionInformation(),
                  new StaticEnumerableCommand(new ICommand[] { new StringCommand("one") }))).Content);
 			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!one"));
 			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(new ExecutionInformation(), "!t"));
 			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e TEST"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!o"));
 
+			// Optional parameters
 			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(new ExecutionInformation(), "!e"));
 			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op"));
 			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op 1"));
+
+			// Command chaining
+			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e (!e TEST)"));
+			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e (!t)"));
+			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op (!e TEST)"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!(!e on)"));
 		}
 
 		[Test]

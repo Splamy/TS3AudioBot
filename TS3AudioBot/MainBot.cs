@@ -8,10 +8,10 @@ namespace TS3AudioBot
 	using System.Text;
 	using System.Threading;
 
-	using TS3AudioBot.Algorithm;
-	using TS3AudioBot.Helper;
-	using TS3AudioBot.History;
-	using TS3AudioBot.ResourceFactories;
+	using Algorithm;
+	using Helper;
+	using History;
+	using ResourceFactories;
 
 	using TS3Query;
 	using TS3Query.Messages;
@@ -184,7 +184,7 @@ namespace TS3AudioBot
 			var builder = new BotCommand.Builder(botCommand =>
 			{
 				commandDict.Add(botCommand.InvokeName, botCommand);
-				var command = new FunctionCommand(botCommand.Command, this);
+				var command = new BotCommand.XBotCommand(botCommand, botCommand.Command, this);
 				if (botCommand.RequiredParameters != null)
 					command.SetRequiredParameters(botCommand.RequiredParameters.Value);
 				rootCommand.AddCommand(botCommand.InvokeName, command);
@@ -201,6 +201,8 @@ namespace TS3AudioBot
 				.Parameter("<link>", "Any link that is also recognized by !play").Finish();
 			builder.New("clear").Action(CommandClear).Permission(CommandRights.Private)
 				.HelpData("Removes all songs from the current playlist.").Finish();
+			builder.New("eval").Action(CommandEval).Permission(CommandRights.Private)
+				.HelpData("Executes a given command or string").Finish();
 			builder.New("getuserid").Action(CommandGetUserId).Permission(CommandRights.Admin)
 				.HelpData("Gets the unique Id of a user.")
 				.Parameter("<username>", "A user which is currently logged in to the server").Finish();
@@ -208,7 +210,7 @@ namespace TS3AudioBot
 				.HelpData("Shows all commands or detailed help about a specific command.")
 				.Parameter("[<command>]", "Any currently accepted command")
 			    .RequiredParameters(0).Finish();
-			builder.New("history").Action(CommandHistory).Permission(CommandRights.Private)
+			builder.New("history").Action(new Func<ExecutionInformation, string[], string>(CommandHistory).GetMethodInfo()).Permission(CommandRights.Private)
 				.HelpData("Shows recently played songs.")
 				.Parameter("from <user-dbid> <count>", "Gets the last <count> songs from the user with the given <user-dbid>")
 				.Parameter("help", "You know...")
@@ -220,6 +222,8 @@ namespace TS3AudioBot
 				.Parameter("till <time>", "Gets all songs plyed until <time>. Special options are: (hour|today|yesterday|week)")
 				.Parameter("title <string>", "Gets all songs which title contains <string>")
 			    .RequiredParameters(1).Finish();
+			builder.New("if").Action(CommandIf).Permission(CommandRights.Private)
+				.HelpData("Executes a given command if a condition is fullfilled").Finish();
 			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
 				.HelpData("Guess what?")
 				.Parameter("[far]", "Optional attribute for the extra punch strength")
@@ -344,7 +348,8 @@ namespace TS3AudioBot
 				var info = new ExecutionInformation
 				{
 					session = session,
-					textMessage = textMessage
+					textMessage = textMessage,
+					isAdmin = isAdmin
 				};
 				var command = commandSystem.AstToCommandResult(parsedAst);
 
@@ -363,6 +368,10 @@ namespace TS3AudioBot
 				catch (CommandException ex)
 				{
 					session.Write("Error: " + ex.Message);
+				}
+				catch (Exception ex)
+				{
+					session.Write("An unexpected error occured: " + ex.Message);
 				}
 			}
 		}
@@ -402,6 +411,31 @@ namespace TS3AudioBot
 			AudioFramework.Clear();
 		}
 
+		ICommandResult CommandEval(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			// Evaluate the first argument on the rest of the arguments
+			if (arguments.Count < 1)
+				throw new CommandException("Need at least one argument to evaluate");
+			var leftArguments = new EnumerableCommandRange(arguments, 1);
+			var arg0 = arguments.Execute(0, info, new EmptyEnumerableCommand(), new []{ CommandResultType.Command, CommandResultType.String });
+			if (arg0.ResultType == CommandResultType.Command)
+				return ((CommandCommandResult) arg0).Command.Execute(info, leftArguments, returnTypes);
+
+			// We got a string back so parse and evaluate it
+			var sb = new StringBuilder();
+			sb.Append(((StringCommandResult) arg0).Content);
+
+			// Add the rest of the arguments
+			for (int i = 1; i < arguments.Count; i++)
+			{
+				var res = arguments.Execute(i, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String });
+				sb.Append(' ').Append(((StringCommandResult) res).Content);
+			}
+
+			var cmd = commandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(sb.ToString()));
+			return cmd.Execute(info, leftArguments, returnTypes);
+		}
+
 		string CommandGetUserId(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientByName(parameter);
@@ -437,9 +471,10 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
-		string CommandHistory(ExecutionInformation info, string parameter)
+		string CommandHistory(ExecutionInformation info, string[] args)
 		{
-			var args = parameter.SplitNoEmpty(' ');
+			// TODO handle this better
+			string parameter = string.Join(" ", args);
 			if (args.Length == 0) args = new[] { "help" };
 
 			else if (args.Length >= 1)
@@ -575,11 +610,71 @@ namespace TS3AudioBot
 			return null;
 		}
 
+		ICommandResult CommandIf(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			if (arguments.Count < 4)
+				throw new CommandException("Expected at least 4 arguments");
+			var arg0 = ((StringCommandResult) arguments.Execute(0, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+			var cmp = ((StringCommandResult) arguments.Execute(1, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+			var arg1 = ((StringCommandResult) arguments.Execute(2, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+
+			bool cmpResult;
+			switch (cmp)
+			{
+			case "<":
+				// Try to parse arguments into doubles
+				double d0, d1;
+				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
+					cmpResult = d0 < d1;
+				else
+					cmpResult = arg0.CompareTo(arg1) < 0;
+				break;
+			case ">":
+				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
+					cmpResult = d0 > d1;
+				else
+					cmpResult = arg0.CompareTo(arg1) > 0;
+				break;
+			case "<=":
+				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
+					cmpResult = d0 <= d1;
+				else
+					cmpResult = arg0.CompareTo(arg1) <= 0;
+				break;
+			case ">=":
+				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
+					cmpResult = d0 >= d1;
+				else
+					cmpResult = arg0.CompareTo(arg1) >= 0;
+				break;
+			case "==":
+				cmpResult = arg0 == arg1;
+				break;
+				case "!=":
+				cmpResult = arg0 != arg1;
+				break;
+			default:
+				throw new CommandException("Unknown comparison operator");
+			}
+
+			// If branch
+			if (cmpResult)
+				return arguments.Execute(3, info, new EmptyEnumerableCommand(), returnTypes);
+			// Else branch
+			if (arguments.Count > 4)
+				return arguments.Execute(4, info, new EmptyEnumerableCommand(), returnTypes);
+
+			// Try to return nothing
+			if (returnTypes.Contains(CommandResultType.Empty))
+				return new EmptyCommandResult();
+			throw new CommandException("If found nothing to return");
+		}
+
 		void CommandKickme(ExecutionInformation info, string parameter)
 		{
 			try
 			{
-				if (string.IsNullOrEmpty(parameter))
+				if (string.IsNullOrEmpty(parameter) || parameter == "near")
 					QueryConnection.KickClientFromChannel(info.textMessage.InvokerId);
 				else if (parameter == "far")
 					QueryConnection.KickClientFromServer(info.textMessage.InvokerId);
@@ -670,7 +765,7 @@ namespace TS3AudioBot
 		string CommandPrint(ExecutionInformation info, string[] parameter)
 		{
 			// << Desing changes expected >>
-			StringBuilder strb = new StringBuilder();
+			var strb = new StringBuilder();
 			foreach (var param in parameter)
 				strb.Append(param);
 			return strb.ToString();
@@ -779,7 +874,7 @@ namespace TS3AudioBot
 
 		void CommandTest(ExecutionInformation info)
 		{
-			if (info.session.IsPrivate)
+			if (!info.session.IsPrivate)
 				info.session.Write("Please use as private, admins too!");
 			else
 			{
@@ -1029,6 +1124,7 @@ namespace TS3AudioBot
 			public Builder Action(Func<ExecutionInformation, string> command) => Action(command.GetMethodInfo());
 			public Builder Action(Action<ExecutionInformation, string> command) => Action(command.GetMethodInfo());
 			public Builder Action(Func<ExecutionInformation, string, string> command) => Action(command.GetMethodInfo());
+			public Builder Action(Func<ExecutionInformation, IEnumerableCommand, IEnumerable<CommandResultType>, ICommandResult> command) => Action(command.GetMethodInfo());
 
 			public Builder Permission(CommandRights requiredRights)
 			{
@@ -1077,6 +1173,37 @@ namespace TS3AudioBot
 
 				buildMode = false;
 				return command;
+			}
+		}
+
+		public class XBotCommand : FunctionCommand
+		{
+			readonly BotCommand botCommand;
+
+			public XBotCommand(BotCommand cmd, MethodInfo command, object obj) : base(command, obj)
+			{
+				botCommand = cmd;
+			}
+
+			public override ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+			{
+				if (info.isAdmin.Value)
+					return base.Execute(info, arguments, returnTypes);
+
+				switch (botCommand.CommandRights)
+				{
+				case CommandRights.Admin:
+					throw new CommandException("Command must be invoked by an admin!");
+				case CommandRights.Public:
+					if (info.textMessage.Target != MessageTarget.Server)
+						throw new CommandException("Command must be used in public mode!");
+					break;
+				case CommandRights.Private:
+					if (info.textMessage.Target != MessageTarget.Private)
+						throw new CommandException("Command must be used in a private session!");
+					break;
+				}
+				return base.Execute(info, arguments, returnTypes);
 			}
 		}
 	}
