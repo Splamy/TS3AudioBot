@@ -114,7 +114,7 @@ namespace TS3ABotUnitTests
 		public void TrieStructureTests()
 		{
 			var trie = new Trie<string>();
-			string[] values = new string[] { "val1", "val2", "val3", "val4", "val5" };
+			string[] values = { "val1", "val2", "val3", "val4", "val5" };
 			int adix = 0;
 
 			trie.Add("hans", values[adix++]);
@@ -130,24 +130,46 @@ namespace TS3ABotUnitTests
 		}
 
 		[Test]
-		public void XCommandFilterTest()
+		public void XCommandSystemFilterTest()
 		{
-			XCommandFilter<string> filter = new XCommandFilter<string>();
-			filter.Add("help", "HELP");
-			filter.Add("quit", "QUIT");
-			filter.Add("play", "PLAY");
-			filter.Add("ply", "PLY");
-			string result;
-			Assert.IsTrue(filter.TryGetValue("help", out result));
-			Assert.AreEqual("HELP", result);
-			Assert.IsTrue(filter.TryGetValue("y", out result));
-			Assert.AreEqual("PLY", result);
-			Assert.IsFalse(filter.TryGetValue("zorn", out result));
-			Assert.AreEqual(default(string), result);
-			Assert.IsTrue(filter.TryGetValue("q", out result));
-			Assert.AreEqual("QUIT", result);
-			Assert.IsTrue(filter.TryGetValue("palyndrom", out result));
-			Assert.AreEqual("PLAY", result);
+			var filterList = new List<string>();
+			filterList.Add("help");
+			filterList.Add("quit");
+			filterList.Add("play");
+			filterList.Add("ply");
+
+			// Exact match
+			IEnumerable<string> result = XCommandSystem.FilterList(filterList, "help");
+			Assert.AreEqual(1, result.Count());
+			Assert.AreEqual("help", result.First());
+
+			// The first occurence of y
+			result = XCommandSystem.FilterList(filterList, "y");
+			Assert.AreEqual(1, result.Count());
+			Assert.AreEqual("ply", result.First());
+
+			// The smallest word
+			result = XCommandSystem.FilterList(filterList, "zorn");
+			Assert.AreEqual(1, result.Count());
+			Assert.AreEqual("ply", result.First());
+
+			// First letter match
+			result = XCommandSystem.FilterList(filterList, "q");
+			Assert.AreEqual(1, result.Count());
+			Assert.AreEqual("quit", result.First());
+
+			// Ignore other letters
+			result = XCommandSystem.FilterList(filterList, "palyndrom");
+			Assert.AreEqual(1, result.Count());
+			Assert.AreEqual("play", result.First());
+
+			filterList.Add("pla");
+
+			// Ambiguous command
+			result = XCommandSystem.FilterList(filterList, "p");
+			Assert.AreEqual(2, result.Count());
+			Assert.IsTrue(result.Contains("ply"));
+			Assert.IsTrue(result.Contains("pla"));
 		}
 
 		[Test]

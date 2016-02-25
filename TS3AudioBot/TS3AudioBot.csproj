@@ -70,7 +70,6 @@
     <Compile Include="Algorithm\ListedShuffle.cs" />
     <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
     <Compile Include="Algorithm\Trie.cs" />
-    <Compile Include="Algorithm\XCommandFilter.cs" />
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\ConfigFile.cs" />

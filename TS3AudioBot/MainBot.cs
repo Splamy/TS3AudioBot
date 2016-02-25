@@ -47,7 +47,6 @@ namespace TS3AudioBot
 		private bool writeLog;
 		private bool writeLogStack;
 		private MainBotData mainBotData;
-		private ICommandFilter<BotCommand> commandDict;
 		private XCommandSystem commandSystem;
 		private BotCommand[] allCommands;
 
@@ -66,7 +65,6 @@ namespace TS3AudioBot
 		{
 			consoleOutput = false;
 			writeLog = false;
-			commandDict = new XCommandFilter<BotCommand>();
 		}
 
 		private bool ReadParameter(string[] args)
@@ -183,7 +181,6 @@ namespace TS3AudioBot
 
 			var builder = new BotCommand.Builder(botCommand =>
 			{
-				commandDict.Add(botCommand.InvokeName, botCommand);
 				var command = new BotCommand.XBotCommand(botCommand, botCommand.Command, this);
 				if (botCommand.RequiredParameters != null)
 					command.SetRequiredParameters(botCommand.RequiredParameters.Value);
@@ -457,9 +454,10 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				BotCommand command = null;
-				if (!commandDict.TryGetValue(parameter, out command))
+				var possibilities = XCommandSystem.FilterList(allCommands.Select(c => c.InvokeName), parameter).ToList();
+				if (possibilities.Count() != 1)
 					return "No matching command found! Try !help to get a list of all commands.";
+				BotCommand command = allCommands.First(c => c.InvokeName == possibilities[0]);
 
 				strb.Append(command.GetHelp());
 				if (command.InvokeName == "help")
