@@ -198,8 +198,10 @@ namespace TS3AudioBot
 				.Parameter("<link>", "Any link that is also recognized by !play").Finish();
 			builder.New("clear").Action(CommandClear).Permission(CommandRights.Private)
 				.HelpData("Removes all songs from the current playlist.").Finish();
-			builder.New("eval").Action(CommandEval).Permission(CommandRights.Private)
-				.HelpData("Executes a given command or string").Finish();
+			builder.New("eval").Action(CommandEval).Permission(CommandRights.AnyVisibility)
+				.HelpData("Executes a given command or string")
+				.Parameter("<command> <arguments...>", "Executes the given command on arguments")
+				.Parameter("<strings...>", "Concat the strings and execute them with the command system").Finish();
 			builder.New("getuserid").Action(CommandGetUserId).Permission(CommandRights.Admin)
 				.HelpData("Gets the unique Id of a user.")
 				.Parameter("<username>", "A user which is currently logged in to the server").Finish();
@@ -219,8 +221,10 @@ namespace TS3AudioBot
 				.Parameter("till <time>", "Gets all songs plyed until <time>. Special options are: (hour|today|yesterday|week)")
 				.Parameter("title <string>", "Gets all songs which title contains <string>")
 			    .RequiredParameters(1).Finish();
-			builder.New("if").Action(CommandIf).Permission(CommandRights.Private)
-				.HelpData("Executes a given command if a condition is fullfilled").Finish();
+			builder.New("if").Action(CommandIf).Permission(CommandRights.AnyVisibility)
+				.HelpData("Executes a given command if a condition is fullfilled")
+				.Parameter("<argument0> <comparator> <argument1> <then>", "Compares the two arguments and returns or executes the then-argument")
+				.Parameter("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false").Finish();
 			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
 				.HelpData("Guess what?")
 				.Parameter("[far]", "Optional attribute for the extra punch strength")
@@ -272,6 +276,11 @@ namespace TS3AudioBot
 				.HelpData("Lets you hear the music independent from the channel you are in.").Finish();
 			builder.New("stop").Action(CommandStop).Permission(CommandRights.Private)
 				.HelpData("Stops the current song.").Finish();
+			builder.New("take").Action(CommandTake).Permission(CommandRights.AnyVisibility)
+		        .HelpData("Take a substring from a string")
+		        .Parameter("<count> <text>", "Take only <count> parts of the text")
+		        .Parameter("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")
+				.Parameter("<count> <start> <delimiter> <text>", "Specify another delimiter for the parts than spaces").Finish();
 			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin)
 				.HelpData("Only for debugging purposes").Finish();
 			builder.New("twitch").Action(CommandSoundcloud).Permission(CommandRights.Private)
@@ -516,12 +525,11 @@ namespace TS3AudioBot
 							return HistoryManager.Formatter.ProcessQuery(ale);
 						return "Could not find track with this id";
 					}
-					else if (arrLen2 && args[1] == "last")
+					if (arrLen2 && args[1] == "last")
 						return $"{HistoryManager.HighestId} is the currently highest song id.";
-					else if (arrLen2 && args[1] == "next")
+					if (arrLen2 && args[1] == "next")
 						return $"{HistoryManager.HighestId + 1} will be the next song id.";
-					else
-						return "Missing or invalid track Id.";
+					return "Missing or invalid track Id.";
 				#endregion
 
 				#region last
@@ -646,10 +654,16 @@ namespace TS3AudioBot
 					cmpResult = arg0.CompareTo(arg1) >= 0;
 				break;
 			case "==":
-				cmpResult = arg0 == arg1;
+				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
+					cmpResult = d0 == d1;
+				else
+					cmpResult = arg0.CompareTo(arg1) == 0;
 				break;
-				case "!=":
-				cmpResult = arg0 != arg1;
+			case "!=":
+				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
+					cmpResult = d0 != d1;
+				else
+					cmpResult = arg0.CompareTo(arg1) != 0;
 				break;
 			default:
 				throw new CommandException("Unknown comparison operator");
@@ -868,6 +882,54 @@ namespace TS3AudioBot
 		void CommandSubscribe(ExecutionInformation info)
 		{
 			BobController.WhisperClientSubscribe(info.textMessage.InvokerId);
+		}
+
+		ICommandResult CommandTake(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			if (arguments.Count < 2)
+				throw new CommandException("Expected at least 2 parameters");
+
+			int start = 0;
+			int count = 0;
+			string delimiter = null;
+
+			// Get count
+			var res = ((StringCommandResult) arguments.Execute(0, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+			if (!int.TryParse(res, out count))
+				throw new CommandException("Count must be an integer");
+
+			if (arguments.Count > 2)
+			{
+				// Get start
+				res = ((StringCommandResult) arguments.Execute(1, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+				if (!int.TryParse(res, out start))
+					throw new CommandException("Start must be an integer");
+			}
+
+			if (arguments.Count > 3)
+				// Get delimiter
+				delimiter = ((StringCommandResult) arguments.Execute(2, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+
+			string text = ((StringCommandResult) arguments.Execute(Math.Min(arguments.Count - 1, 3), info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+
+			IEnumerable<string> splitted;
+			if (delimiter == null)
+				splitted = text.Split();
+			else
+				splitted = text.Split(new []{ delimiter }, StringSplitOptions.None);
+			if (splitted.Count() < start + count)
+				throw new CommandException("Not enough arguments to take");
+			splitted = splitted.Skip(start).Take(count);
+
+			foreach (var returnType in returnTypes)
+			{
+				if (returnType == CommandResultType.String)
+					return new StringCommandResult(string.Join(delimiter ?? " ", splitted));
+				if (returnType == CommandResultType.Enumerable)
+					return new StaticEnumerableCommandResult(splitted.Select(s => new StringCommandResult(s)));
+			}
+
+			throw new CommandException("Can't find a fitting return type for take");
 		}
 
 		void CommandTest(ExecutionInformation info)

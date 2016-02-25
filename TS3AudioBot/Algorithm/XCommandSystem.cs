@@ -124,7 +124,7 @@ namespace TS3AudioBot.Algorithm
 
 			var commandResults = XCommandSystem.FilterList(commandNames, ((StringCommandResult) result).Content).ToList();
 			if (commandResults.Count != 1)
-				throw new CommandException("Ambigous command, possible names: " + string.Join(", ", commandResults));
+				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults));
 
 			return commands.First(c => c.Item1 == commandResults[0]).Item2.Execute(
 				info, new EnumerableCommandRange(arguments, 1), returnTypes);
@@ -402,7 +402,7 @@ namespace TS3AudioBot.Algorithm
 		public ICommandResult Execute(int index, ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (index < 0 || index >= internArguments.Count())
-				throw new CommandException("Not enough arguments");
+				throw new CommandException("Requested too many arguments (StaticEnumerableCommand)");
 			return internArguments.ElementAt(index).Execute(info, arguments, returnTypes);
 		}
 	}
@@ -451,7 +451,7 @@ namespace TS3AudioBot.Algorithm
 					return c.Execute(index, info, arguments, returnTypes);
 				index -= c.Count;
 			}
-			throw new CommandException("Not enough arguments");
+			throw new CommandException("Requested too many arguments (EnumerableCommandMerge)");
 		}
 	}
 
@@ -569,7 +569,7 @@ namespace TS3AudioBot.Algorithm
 
 		public override ICommandResult this[int index] => content.ElementAt(index);
 
-		public StaticEnumerableCommandResult(IEnumerable<ICommandResult> contentArg, bool flattenArg = false)
+		public StaticEnumerableCommandResult(IEnumerable<ICommandResult> contentArg)
 		{
 			content = contentArg;
 		}
