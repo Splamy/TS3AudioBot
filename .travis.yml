@@ -40,6 +40,7 @@ before_script:
 
 solution: TS3AudioBot.sln
 script:
+  # Building the AudioBob (C++ stuff)
   - cd $MAIN_DIR
   - cd TS3AudioBob
   - mkdir bin
@@ -48,9 +49,12 @@ script:
   - make VERBOSE=1 -j $THREADS
   - LD_LIBRARY_PATH="$HOME/FFmpegbin/libavcodec:$HOME/FFmpegbin/libavfilter:$HOME/FFmpegbin/libavformat:$HOME/FFmpegbin/libavutil:$HOME/FFmpegbin/libswresample:$HOME/FFmpegbin/libswscale" ./ts3audiobobtest
 
+  # Building the AudioBot (C# stuff)
   - cd "$MAIN_DIR"
   - xbuild /p:Configuration=Release TS3AudioBot.sln
-  - mono ./nunit/NUnit.Console.*.*.*/tools/nunit3-console.exe ./TS3AudioBot/TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
+  - pwd
+  - echo "$TRAVIS_BUILD_DIR"
+  - mono ./nunit/NUnit.Console.*.*.*/tools/nunit3-console.exe $TRAVIS_BUILD_DIR/TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
 
 after_script:
   - cd $MAIN_DIR
