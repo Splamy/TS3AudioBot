@@ -1,16 +1,17 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using LockCheck;
-using NUnit.Framework;
-using TS3AudioBot;
-using TS3AudioBot.Algorithm;
-using TS3AudioBot.History;
-using TS3AudioBot.ResourceFactories;
-using TS3Query.Messages;
-
 namespace TS3ABotUnitTests
 {
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
+	using System.Linq;
+	using LockCheck;
+	using NUnit.Framework;
+	using TS3AudioBot;
+	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.History;
+	using TS3AudioBot.ResourceFactories;
+	using TS3Query.Messages;
+
 	[TestFixture]
 	public class UnitTests
 	{
@@ -179,12 +180,12 @@ namespace TS3ABotUnitTests
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
-			group.AddCommand("optional", new FunctionCommand(s => s == null ? "NULL" : "NOT NULL").SetRequiredParameters(0));
+			group.AddCommand("optional", new FunctionCommand(new Func<ExecutionInformation, string>(s => s == null ? "NULL" : "NOT NULL")).SetRequiredParameters(0));
 			var commandSystem = new XCommandSystem(group);
 
 			// Basic tests
-			Assert.AreEqual("ONE", ((StringCommandResult) commandSystem.Execute(new ExecutionInformation(),
-                 new StaticEnumerableCommand(new ICommand[] { new StringCommand("one") }))).Content);
+			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(new ExecutionInformation(),
+				 new StaticEnumerableCommand(new ICommand[] { new StringCommand("one") }))).Content);
 			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!one"));
 			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(new ExecutionInformation(), "!t"));
 			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e TEST"));

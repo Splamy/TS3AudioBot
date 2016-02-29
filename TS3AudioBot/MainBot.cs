@@ -182,7 +182,7 @@ namespace TS3AudioBot
 			var builder = new BotCommand.Builder(botCommand =>
 			{
 				var command = new BotCommand.XBotCommand(botCommand, botCommand.Command, this);
-				if (botCommand.RequiredParameters != null)
+				if (botCommand.RequiredParameters.HasValue)
 					command.SetRequiredParameters(botCommand.RequiredParameters.Value);
 				rootCommand.AddCommand(botCommand.InvokeName, command);
 				allCommandsList.Add(botCommand);
@@ -193,23 +193,23 @@ namespace TS3AudioBot
 			// [text] = Option for fixed text
 			// (a|b) = either or switch
 
-			builder.New("add").Action(CommandAdd).Permission(CommandRights.Private)
+			builder.New("add").Action(nameof(CommandAdd)).Permission(CommandRights.Private)
 				.HelpData("Adds a new song to the queue.")
 				.Parameter("<link>", "Any link that is also recognized by !play").Finish();
-			builder.New("clear").Action(CommandClear).Permission(CommandRights.Private)
+			builder.New("clear").Action(nameof(CommandClear)).Permission(CommandRights.Private)
 				.HelpData("Removes all songs from the current playlist.").Finish();
-			builder.New("eval").Action(CommandEval).Permission(CommandRights.AnyVisibility)
+			builder.New("eval").Action(nameof(CommandEval)).Permission(CommandRights.AnyVisibility)
 				.HelpData("Executes a given command or string")
 				.Parameter("<command> <arguments...>", "Executes the given command on arguments")
 				.Parameter("<strings...>", "Concat the strings and execute them with the command system").Finish();
-			builder.New("getuserid").Action(CommandGetUserId).Permission(CommandRights.Admin)
+			builder.New("getuserid").Action(nameof(CommandGetUserId)).Permission(CommandRights.Admin)
 				.HelpData("Gets the unique Id of a user.")
 				.Parameter("<username>", "A user which is currently logged in to the server").Finish();
-			builder.New("help").Action(CommandHelp).Permission(CommandRights.Private)
+			builder.New("help").Action(nameof(CommandHelp)).Permission(CommandRights.Private)
 				.HelpData("Shows all commands or detailed help about a specific command.")
 				.Parameter("[<command>]", "Any currently accepted command")
-			    .RequiredParameters(0).Finish();
-			builder.New("history").Action(new Func<ExecutionInformation, string[], string>(CommandHistory).GetMethodInfo()).Permission(CommandRights.Private)
+				.RequiredParameters(0).Finish();
+			builder.New("history").Action(nameof(CommandHistory)).Permission(CommandRights.Private)
 				.HelpData("Shows recently played songs.")
 				.Parameter("from <user-dbid> <count>", "Gets the last <count> songs from the user with the given <user-dbid>")
 				.Parameter("help", "You know...")
@@ -220,77 +220,77 @@ namespace TS3AudioBot
 				.Parameter("play <id>", "Playes the song with <id>")
 				.Parameter("till <time>", "Gets all songs plyed until <time>. Special options are: (hour|today|yesterday|week)")
 				.Parameter("title <string>", "Gets all songs which title contains <string>")
-			    .RequiredParameters(1).Finish();
-			builder.New("if").Action(CommandIf).Permission(CommandRights.AnyVisibility)
+				.RequiredParameters(1).Finish();
+			builder.New("if").Action(nameof(CommandIf)).Permission(CommandRights.AnyVisibility)
 				.HelpData("Executes a given command if a condition is fullfilled")
 				.Parameter("<argument0> <comparator> <argument1> <then>", "Compares the two arguments and returns or executes the then-argument")
 				.Parameter("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false").Finish();
-			builder.New("kickme").Action(CommandKickme).Permission(CommandRights.Private)
+			builder.New("kickme").Action(nameof(CommandKickme)).Permission(CommandRights.Private)
 				.HelpData("Guess what?")
 				.Parameter("[far]", "Optional attribute for the extra punch strength")
-			    .RequiredParameters(0).Finish();
-			builder.New("link").Action(CommandLink).Permission(CommandRights.Private)
+				.RequiredParameters(0).Finish();
+			builder.New("link").Action(nameof(CommandLink)).Permission(CommandRights.Private)
 				.HelpData("Gets a link to the origin of the current song.").Finish();
-			builder.New("loop").Action(CommandLoop).Permission(CommandRights.Private)
+			builder.New("loop").Action(nameof(CommandLoop)).Permission(CommandRights.Private)
 				.HelpData("Sets whether or not to loop the entire playlist.")
 				.Parameter("(on|off)", "on or off").Finish();
-			builder.New("next").Action(CommandNext).Permission(CommandRights.Private)
+			builder.New("next").Action(nameof(CommandNext)).Permission(CommandRights.Private)
 				.HelpData("Plays the next song in the playlist.").Finish();
-			builder.New("pm").Action(CommandPM).Permission(CommandRights.Public)
+			builder.New("pm").Action(nameof(CommandPM)).Permission(CommandRights.Public)
 				.HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
-			builder.New("parse").Action(CommandParse).Permission(CommandRights.Admin)
+			builder.New("parse").Action(nameof(CommandParse)).Permission(CommandRights.Admin)
 				.HelpData("Displays the AST of the requested command.")
 				.Parameter("<command>", "The comand to be parsed").Finish();
-			builder.New("pause").Action(CommandPause).Permission(CommandRights.Private)
+			builder.New("pause").Action(nameof(CommandPause)).Permission(CommandRights.Private)
 				.HelpData("Well, pauses the song. Undo with !play").Finish();
-			builder.New("play").Action(CommandPlay).Permission(CommandRights.Private)
+			builder.New("play").Action(nameof(CommandPlay)).Permission(CommandRights.Private)
 				.HelpData("Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")
 				.Parameter("<link>", "Youtube, Soundcloud, local path or file link").Finish();
-			builder.New("previous").Action(CommandPrevious).Permission(CommandRights.Private)
+			builder.New("previous").Action(nameof(CommandPrevious)).Permission(CommandRights.Private)
 				.HelpData("Plays the previous song in the playlist.").Finish();
-			builder.New("print").Action(new Func<ExecutionInformation, string[], string>(CommandPrint).GetMethodInfo()).Permission(CommandRights.AnyVisibility)
+			builder.New("print").Action(nameof(CommandPrint)).Permission(CommandRights.AnyVisibility)
 				.HelpData("Lets you format multiple parameter to one.").Finish();
-			builder.New("quit").Action(CommandQuit).Permission(CommandRights.Admin)
+			builder.New("quit").Action(nameof(CommandQuit)).Permission(CommandRights.Admin)
 				.HelpData("Closes the TS3AudioBot application.").Finish();
-			builder.New("quiz").Action(CommandQuiz).Permission(CommandRights.Public)
+			builder.New("quiz").Action(nameof(CommandQuiz)).Permission(CommandRights.Public)
 				.HelpData("Enable to hide the songnames and let your friends guess the title.")
 				.Parameter("(on|off)", "on or off").Finish();
-			builder.New("repeat").Action(CommandRepeat).Permission(CommandRights.Private)
+			builder.New("repeat").Action(nameof(CommandRepeat)).Permission(CommandRights.Private)
 				.HelpData("Sets whether or not to loop a single song.")
 				.Parameter("(on|off)", "on or off").Finish();
-			builder.New("rng").Action(new Func<ExecutionInformation, int?, int?, string>(CommandRng).GetMethodInfo()).Permission(CommandRights.AnyVisibility)
+			builder.New("rng").Action(nameof(CommandRng)).Permission(CommandRights.AnyVisibility)
 				.HelpData("Gets a random number.")
 				.Parameter(string.Empty, "Gets a number between 0 and " + int.MaxValue)
 				.Parameter("<max>", "Gets a number between 0 and <max>")
 				.Parameter("<min> <max>", "Gets a number between <min> and <max>")
-			    .RequiredParameters(0).Finish();
-			builder.New("seek").Action(CommandSeek).Permission(CommandRights.Private)
+				.RequiredParameters(0).Finish();
+			builder.New("seek").Action(nameof(CommandSeek)).Permission(CommandRights.Private)
 				.HelpData("Jumps to a timemark within the current song.")
 				.Parameter("<sec>", "Time in seconds")
 				.Parameter("<min:sec>", "Time in Minutes:Seconds").Finish();
-			builder.New("song").Action(CommandSong).Permission(CommandRights.AnyVisibility)
+			builder.New("song").Action(nameof(CommandSong)).Permission(CommandRights.AnyVisibility)
 				.HelpData("Tells you the name of the current song.").Finish();
-			builder.New("soundcloud").Action(CommandSoundcloud).Permission(CommandRights.Private)
+			builder.New("soundcloud").Action(nameof(CommandSoundcloud)).Permission(CommandRights.Private)
 				.HelpData("Resolves the link as a soundcloud song to play it for you.").Finish();
-			builder.New("subscribe").Action(CommandSubscribe).Permission(CommandRights.Private)
+			builder.New("subscribe").Action(nameof(CommandSubscribe)).Permission(CommandRights.Private)
 				.HelpData("Lets you hear the music independent from the channel you are in.").Finish();
-			builder.New("stop").Action(CommandStop).Permission(CommandRights.Private)
+			builder.New("stop").Action(nameof(CommandStop)).Permission(CommandRights.Private)
 				.HelpData("Stops the current song.").Finish();
-			builder.New("take").Action(CommandTake).Permission(CommandRights.AnyVisibility)
-		        .HelpData("Take a substring from a string")
-		        .Parameter("<count> <text>", "Take only <count> parts of the text")
-		        .Parameter("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")
+			builder.New("take").Action(nameof(CommandTake)).Permission(CommandRights.AnyVisibility)
+				.HelpData("Take a substring from a string")
+				.Parameter("<count> <text>", "Take only <count> parts of the text")
+				.Parameter("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")
 				.Parameter("<count> <start> <delimiter> <text>", "Specify another delimiter for the parts than spaces").Finish();
-			builder.New("test").Action(CommandTest).Permission(CommandRights.Admin)
+			builder.New("test").Action(nameof(CommandTest)).Permission(CommandRights.Admin)
 				.HelpData("Only for debugging purposes").Finish();
-			builder.New("twitch").Action(CommandSoundcloud).Permission(CommandRights.Private)
+			builder.New("twitch").Action(nameof(CommandSoundcloud)).Permission(CommandRights.Private)
 				.HelpData("Resolves the link as a twitch stream to play it for you.").Finish();
-			builder.New("unsubscribe").Action(CommandUnsubscribe).Permission(CommandRights.Private)
+			builder.New("unsubscribe").Action(nameof(CommandUnsubscribe)).Permission(CommandRights.Private)
 				.HelpData("Only lets you hear the music in active channels again.").Finish();
-			builder.New("volume").Action(CommandVolume).Permission(CommandRights.AnyVisibility)
+			builder.New("volume").Action(nameof(CommandVolume)).Permission(CommandRights.AnyVisibility)
 				.HelpData("Sets the volume level of the music.")
 				.Parameter("<level>", "A new volume level between 0 and " + AudioFramework.MaxVolume).Finish();
-			builder.New("youtube").Action(CommandYoutube).Permission(CommandRights.Private)
+			builder.New("youtube").Action(nameof(CommandYoutube)).Permission(CommandRights.Private)
 				.HelpData("Resolves the link as a youtube video to play it for you.").Finish();
 
 			allCommands = allCommandsList.ToArray();
@@ -347,7 +347,7 @@ namespace TS3AudioBot
 			ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
 			if (parsedAst.Type == NodeType.Error)
 			{
-				PrintAstError(session, (ASTError) parsedAst);
+				PrintAstError(session, (ASTError)parsedAst);
 			}
 			else
 			{
@@ -365,7 +365,7 @@ namespace TS3AudioBot
 						new[] { CommandResultType.String, CommandResultType.Empty });
 					if (res.ResultType == CommandResultType.String)
 					{
-						var sRes = (StringCommandResult) res;
+						var sRes = (StringCommandResult)res;
 						// Write result to user
 						if (!string.IsNullOrEmpty(sRes.Content))
 							session.Write(sRes.Content);
@@ -423,19 +423,19 @@ namespace TS3AudioBot
 			if (arguments.Count < 1)
 				throw new CommandException("Need at least one argument to evaluate");
 			var leftArguments = new EnumerableCommandRange(arguments, 1);
-			var arg0 = arguments.Execute(0, info, new EmptyEnumerableCommand(), new []{ CommandResultType.Command, CommandResultType.String });
+			var arg0 = arguments.Execute(0, info, new EmptyEnumerableCommand(), new[] { CommandResultType.Command, CommandResultType.String });
 			if (arg0.ResultType == CommandResultType.Command)
-				return ((CommandCommandResult) arg0).Command.Execute(info, leftArguments, returnTypes);
+				return ((CommandCommandResult)arg0).Command.Execute(info, leftArguments, returnTypes);
 
 			// We got a string back so parse and evaluate it
 			var sb = new StringBuilder();
-			sb.Append(((StringCommandResult) arg0).Content);
+			sb.Append(((StringCommandResult)arg0).Content);
 
 			// Add the rest of the arguments
 			for (int i = 1; i < arguments.Count; i++)
 			{
 				var res = arguments.Execute(i, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String });
-				sb.Append(' ').Append(((StringCommandResult) res).Content);
+				sb.Append(' ').Append(((StringCommandResult)res).Content);
 			}
 
 			var cmd = commandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(sb.ToString()));
@@ -620,9 +620,9 @@ namespace TS3AudioBot
 		{
 			if (arguments.Count < 4)
 				throw new CommandException("Expected at least 4 arguments");
-			var arg0 = ((StringCommandResult) arguments.Execute(0, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
-			var cmp = ((StringCommandResult) arguments.Execute(1, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
-			var arg1 = ((StringCommandResult) arguments.Execute(2, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+			var arg0 = ((StringCommandResult)arguments.Execute(0, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
+			var cmp = ((StringCommandResult)arguments.Execute(1, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
+			var arg1 = ((StringCommandResult)arguments.Execute(2, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
 
 			bool cmpResult;
 			switch (cmp)
@@ -894,29 +894,29 @@ namespace TS3AudioBot
 			string delimiter = null;
 
 			// Get count
-			var res = ((StringCommandResult) arguments.Execute(0, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+			var res = ((StringCommandResult)arguments.Execute(0, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
 			if (!int.TryParse(res, out count))
 				throw new CommandException("Count must be an integer");
 
 			if (arguments.Count > 2)
 			{
 				// Get start
-				res = ((StringCommandResult) arguments.Execute(1, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+				res = ((StringCommandResult)arguments.Execute(1, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
 				if (!int.TryParse(res, out start))
 					throw new CommandException("Start must be an integer");
 			}
 
 			if (arguments.Count > 3)
 				// Get delimiter
-				delimiter = ((StringCommandResult) arguments.Execute(2, info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+				delimiter = ((StringCommandResult)arguments.Execute(2, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
 
-			string text = ((StringCommandResult) arguments.Execute(Math.Min(arguments.Count - 1, 3), info, new EmptyEnumerableCommand(), new []{ CommandResultType.String })).Content;
+			string text = ((StringCommandResult)arguments.Execute(Math.Min(arguments.Count - 1, 3), info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
 
 			IEnumerable<string> splitted;
 			if (delimiter == null)
 				splitted = text.Split();
 			else
-				splitted = text.Split(new []{ delimiter }, StringSplitOptions.None);
+				splitted = text.Split(new[] { delimiter }, StringSplitOptions.None);
 			if (splitted.Count() < start + count)
 				throw new CommandException("Not enough arguments to take");
 			splitted = splitted.Skip(start).Take(count);
@@ -1091,7 +1091,7 @@ namespace TS3AudioBot
 		public Tuple<string, string>[] ParameterList { get; private set; }
 		public int? RequiredParameters { get; private set; }
 
-		BotCommand() {}
+		BotCommand() { }
 
 		public string GetHelp()
 		{
@@ -1121,6 +1121,7 @@ namespace TS3AudioBot
 				strb.Append(param.Item1).Append('/');
 			return strb.ToString();
 		}
+
 
 		public class Builder
 		{
@@ -1170,21 +1171,13 @@ namespace TS3AudioBot
 
 			public Builder Action(MethodInfo command)
 			{
+				if (command == null)
+					throw new ArgumentNullException(nameof(command));
 				CheckAction();
 				this.command = command;
 				return this;
 			}
-
-			// Conveniance functions
-			public Builder Action(Action command) => Action(command.GetMethodInfo());
-			public Builder Action(Func<string> command) => Action(command.GetMethodInfo());
-			public Builder Action(Action<string> command) => Action(command.GetMethodInfo());
-			public Builder Action(Func<string, string> command) => Action(command.GetMethodInfo());
-			public Builder Action(Action<ExecutionInformation> command) => Action(command.GetMethodInfo());
-			public Builder Action(Func<ExecutionInformation, string> command) => Action(command.GetMethodInfo());
-			public Builder Action(Action<ExecutionInformation, string> command) => Action(command.GetMethodInfo());
-			public Builder Action(Func<ExecutionInformation, string, string> command) => Action(command.GetMethodInfo());
-			public Builder Action(Func<ExecutionInformation, IEnumerableCommand, IEnumerable<CommandResultType>, ICommandResult> command) => Action(command.GetMethodInfo());
+			public Builder Action(string methodName) => Action(typeof(MainBot).GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
 
 			public Builder Permission(CommandRights requiredRights)
 			{
