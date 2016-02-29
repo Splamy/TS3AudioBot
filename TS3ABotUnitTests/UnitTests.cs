@@ -27,7 +27,8 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void HistoryFileIntergrityTest()
 		{
-			if (File.Exists("test.txt")) File.Delete("test.txt");
+			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
+			if (File.Exists(testFile)) File.Delete(testFile);
 
 
 			var inv1 = Generator.ActivateResponse<ClientData>();
@@ -43,7 +44,7 @@ namespace TS3ABotUnitTests
 
 
 			HistoryFile hf = new HistoryFile();
-			hf.OpenFile("test.txt");
+			hf.OpenFile(testFile);
 
 			hf.Store(data1);
 
@@ -54,7 +55,7 @@ namespace TS3ABotUnitTests
 
 			hf.CloseFile();
 
-			hf.OpenFile("test.txt");
+			hf.OpenFile(testFile);
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
@@ -70,7 +71,7 @@ namespace TS3ABotUnitTests
 
 			hf.CloseFile();
 
-			hf.OpenFile("test.txt");
+			hf.OpenFile(testFile);
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0]);
@@ -81,7 +82,7 @@ namespace TS3ABotUnitTests
 
 			hf.CloseFile();
 
-			hf.OpenFile("test.txt");
+			hf.OpenFile(testFile);
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0]);
@@ -98,13 +99,14 @@ namespace TS3ABotUnitTests
 
 			hf.CloseFile();
 
-			Assert.DoesNotThrow(() => hf.OpenFile("test.txt"));
+			hf.OpenFile(testFile);
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0]);
 			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+			hf.CloseFile();
 
-			File.Delete("test.txt");
+			File.Delete(testFile);
 		}
 
 		// TODO positionfilereader test
@@ -180,7 +182,7 @@ namespace TS3ABotUnitTests
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
-			group.AddCommand("optional", new FunctionCommand(new Func<ExecutionInformation, string>(s => s == null ? "NULL" : "NOT NULL")).SetRequiredParameters(0));
+			group.AddCommand("optional", new FunctionCommand(new Func<string, string>(s => s == null ? "NULL" : "NOT NULL")).SetRequiredParameters(0));
 			var commandSystem = new XCommandSystem(group);
 
 			// Basic tests

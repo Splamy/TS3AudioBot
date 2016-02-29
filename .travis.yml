@@ -50,7 +50,7 @@ script:
 
   - cd "$MAIN_DIR"
   - xbuild /p:Configuration=Release TS3AudioBot.sln
-#  - mono ./nunit/NUnit.Console.*.*.*/tools/nunit-console.exe ./TS3AudioBot/TS3AudioBot/bin/Release/TS3AudioBot.exe
+  - mono ./nunit/NUnit.Console.*.*.*/tools/nunit3-console.exe ./TS3AudioBot/TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
 
 after_script:
   - cd $MAIN_DIR
