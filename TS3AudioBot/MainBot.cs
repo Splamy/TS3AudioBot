@@ -353,9 +353,9 @@ namespace TS3AudioBot
 			{
 				var info = new ExecutionInformation
 				{
-					session = session,
-					textMessage = textMessage,
-					isAdmin = isAdmin
+					Session = session,
+					TextMessage = textMessage,
+					IsAdmin = isAdmin
 				};
 				var command = commandSystem.AstToCommandResult(parsedAst);
 
@@ -408,8 +408,8 @@ namespace TS3AudioBot
 
 		void CommandAdd(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(new PlayData(info.session, client, parameter, true));
+			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+			FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, true));
 		}
 
 		void CommandClear()
@@ -544,8 +544,8 @@ namespace TS3AudioBot
 						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
 						if (ale != null)
 						{
-							ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-							FactoryManager.RestoreAndPlay(ale, new PlayData(info.session, client, null, false));
+							ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+							FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
 						}
 					}
 					break;
@@ -558,8 +558,8 @@ namespace TS3AudioBot
 						var ale = HistoryManager.GetEntryById(id);
 						if (ale != null)
 						{
-							ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-							FactoryManager.RestoreAndPlay(ale, new PlayData(info.session, client, null, false));
+							ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+							FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
 						}
 						else
 							return "Could not find track with this id";
@@ -687,9 +687,9 @@ namespace TS3AudioBot
 			try
 			{
 				if (string.IsNullOrEmpty(parameter) || parameter == "near")
-					QueryConnection.KickClientFromChannel(info.textMessage.InvokerId);
+					QueryConnection.KickClientFromChannel(info.TextMessage.InvokerId);
 				else if (parameter == "far")
-					QueryConnection.KickClientFromServer(info.textMessage.InvokerId);
+					QueryConnection.KickClientFromServer(info.TextMessage.InvokerId);
 			}
 			catch (QueryCommandException ex)
 			{
@@ -701,7 +701,7 @@ namespace TS3AudioBot
 		{
 			if (AudioFramework.CurrentPlayData == null)
 				return "There is nothing on right now...";
-			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.textMessage.InvokerId)
+			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId)
 				return "Sorry, you have to guess!";
 			else
 				return FactoryManager.RestoreLink(AudioFramework.CurrentPlayData);
@@ -720,8 +720,8 @@ namespace TS3AudioBot
 
 		void CommandMedia(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.Session, client, parameter, false));
 		}
 
 		void CommandNext()
@@ -731,8 +731,8 @@ namespace TS3AudioBot
 
 		void CommandPM(ExecutionInformation info)
 		{
-			BotSession ownSession = SessionManager.CreateSession(this, info.textMessage.InvokerId);
-			ownSession.Write("Hi " + info.textMessage.InvokerName);
+			BotSession ownSession = SessionManager.CreateSession(this, info.TextMessage.InvokerId);
+			ownSession.Write("Hi " + info.TextMessage.InvokerName);
 		}
 
 		string CommandParse(ExecutionInformation info, string parameter)
@@ -764,8 +764,8 @@ namespace TS3AudioBot
 				AudioFramework.Pause = false;
 			else
 			{
-				ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-				FactoryManager.LoadAndPlay(new PlayData(info.session, client, parameter, false));
+				ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+				FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, false));
 			}
 		}
 
@@ -785,14 +785,14 @@ namespace TS3AudioBot
 
 		void CommandQuit(ExecutionInformation info)
 		{
-			info.session.Write("Goodbye!");
+			info.Session.Write("Goodbye!");
 			Dispose();
 			Log.Write(Log.Level.Info, "Exiting...");
 		}
 
 		string CommandQuiz(ExecutionInformation info, string parameter)
 		{
-			if (info.session.IsPrivate)
+			if (info.Session.IsPrivate)
 				return "No cheatig! Everybody has to see it!";
 
 			if (parameter == "on")
@@ -862,7 +862,7 @@ namespace TS3AudioBot
 		{
 			if (AudioFramework.CurrentPlayData == null)
 				return "There is nothing on right now...";
-			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.textMessage.InvokerId)
+			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId)
 				return "Sorry, you have to guess!";
 			else
 				return $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.Resource.ResourceTitle}[/url]";
@@ -870,8 +870,8 @@ namespace TS3AudioBot
 
 		void CommandSoundcloud(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.Session, client, parameter, false));
 		}
 
 		void CommandStop()
@@ -881,7 +881,7 @@ namespace TS3AudioBot
 
 		void CommandSubscribe(ExecutionInformation info)
 		{
-			BobController.WhisperClientSubscribe(info.textMessage.InvokerId);
+			BobController.WhisperClientSubscribe(info.TextMessage.InvokerId);
 		}
 
 		ICommandResult CommandTake(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
@@ -934,26 +934,26 @@ namespace TS3AudioBot
 
 		void CommandTest(ExecutionInformation info)
 		{
-			if (!info.session.IsPrivate)
-				info.session.Write("Please use as private, admins too!");
+			if (!info.Session.IsPrivate)
+				info.Session.Write("Please use as private, admins too!");
 			else
 			{
-				info.session.Write("Good boy!");
+				info.Session.Write("Good boy!");
 				// stresstest
 				for (int i = 0; i < 10; i++)
-					info.session.Write(i.ToString());
+					info.Session.Write(i.ToString());
 			}
 		}
 
 		void CommandTwitch(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.Session, client, parameter, false));
 		}
 
 		void CommandUnsubscribe(ExecutionInformation info)
 		{
-			BobController.WhisperClientUnsubscribe(info.textMessage.InvokerId);
+			BobController.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
 		}
 
 		string CommandVolume(ExecutionInformation info, string parameter)
@@ -978,7 +978,7 @@ namespace TS3AudioBot
 				AudioFramework.Volume = newVolume;
 			else if (newVolume <= AudioFramework.MaxVolume)
 			{
-				info.session.SetResponse(ResponseVolume, newVolume, true);
+				info.Session.SetResponse(ResponseVolume, newVolume, true);
 				return "Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)";
 			}
 			return null;
@@ -986,8 +986,8 @@ namespace TS3AudioBot
 
 		void CommandYoutube(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(info.textMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(info.session, client, parameter, false));
+			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+			FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(info.Session, client, parameter, false));
 		}
 
 		#endregion
@@ -1240,7 +1240,7 @@ namespace TS3AudioBot
 
 			public override ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 			{
-				if (info.isAdmin.Value)
+				if (info.IsAdmin.Value)
 					return base.Execute(info, arguments, returnTypes);
 
 				switch (botCommand.CommandRights)
@@ -1248,11 +1248,11 @@ namespace TS3AudioBot
 				case CommandRights.Admin:
 					throw new CommandException("Command must be invoked by an admin!");
 				case CommandRights.Public:
-					if (info.textMessage.Target != MessageTarget.Server)
+					if (info.TextMessage.Target != MessageTarget.Server)
 						throw new CommandException("Command must be used in public mode!");
 					break;
 				case CommandRights.Private:
-					if (info.textMessage.Target != MessageTarget.Private)
+					if (info.TextMessage.Target != MessageTarget.Private)
 						throw new CommandException("Command must be used in a private session!");
 					break;
 				}

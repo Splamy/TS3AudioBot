@@ -94,16 +94,16 @@ namespace TS3AudioBot.Algorithm
 
 	public class CommandGroup : ICommand
 	{
-		readonly IList<Tuple<string, ICommand>> commands = new List<Tuple<string, ICommand>>();
-		// Cache all names
-		readonly IList<string> commandNames = new List<string>();
+		readonly IDictionary<string, ICommand> commands = new Dictionary<string, ICommand>();
 
-		public void AddCommand(string name, ICommand command)
+		public void AddCommand(string name, ICommand command) => commands.Add(name, command);
+		public void RemoveCommand(string name) => commands.Remove(name);
+		public void RemoveCommand(ICommand command)
 		{
-			commands.Add(new Tuple<string, ICommand>(name, command));
-			if (!commandNames.Contains(name))
-				commandNames.Add(name);
+			var commandPair = commands.Single(kvp => kvp.Value == command);
+			commands.Remove(commandPair);
 		}
+		public bool ContainsCommand(string name) => commands.ContainsKey(name);
 
 		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
 		{
@@ -116,21 +116,18 @@ namespace TS3AudioBot.Algorithm
 
 			var result = arguments.Execute(0, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String });
 
-			var commandResults = XCommandSystem.FilterList(commandNames, ((StringCommandResult)result).Content);
+			var commandResults = XCommandSystem.FilterList(commands.Keys, ((StringCommandResult)result).Content);
 			if (commandResults.Skip(1).Any())
 				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults));
 
-			return commands.First(c => c.Item1 == commandResults.First()).Item2.Execute(
-				info, new EnumerableCommandRange(arguments, 1), returnTypes);
+			return commands[commandResults.First()].Execute(info, new EnumerableCommandRange(arguments, 1), returnTypes);
 		}
 	}
 
 	public class FunctionCommand : ICommand
 	{
-		static IEnumerable<Type> GetSpecialTypes()
-		{
-			return new Type[] { typeof(ExecutionInformation), typeof(IEnumerableCommand), typeof(IEnumerable<CommandResultType>) };
-		}
+		static readonly Type[] SpecialTypes
+			= new Type[] { typeof(ExecutionInformation), typeof(IEnumerableCommand), typeof(IEnumerable<CommandResultType>) };
 
 		// Needed for non-static member methods
 		readonly object callee;
@@ -147,8 +144,7 @@ namespace TS3AudioBot.Algorithm
 			internCommand = command;
 			callee = obj;
 			// Require all parameters by default
-			IEnumerable<Type> specialTypes = GetSpecialTypes();
-			normalParameters = internCommand.GetParameters().Count(p => !specialTypes.Contains(p.ParameterType));
+			normalParameters = internCommand.GetParameters().Count(p => !SpecialTypes.Contains(p.ParameterType));
 			RequiredParameters = normalParameters;
 		}
 
@@ -357,9 +353,9 @@ namespace TS3AudioBot.Algorithm
 
 	public class ExecutionInformation
 	{
-		public BotSession session;
-		public TS3Query.Messages.TextMessage textMessage;
-		public Lazy<bool> isAdmin;
+		public BotSession Session { get; set; }
+		public TS3Query.Messages.TextMessage TextMessage { get; set; }
+		public Lazy<bool> IsAdmin { get; set; }
 	}
 
 	#endregion

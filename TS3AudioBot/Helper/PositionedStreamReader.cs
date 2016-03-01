@@ -3,7 +3,7 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Text;
 
-	class PositionedStreamReader : TextReader
+	public class PositionedStreamReader : TextReader
 	{
 		private const int BufferSize = 1 << 10; // 1024
 
@@ -20,12 +20,8 @@ namespace TS3AudioBot.Helper
 		private int charlen;
 		private int bytelen;
 
-		public Stream BaseStream
-		{
-			get { return stream; }
-		}
-
-		public int ReadPosition { get { return readPosition; } }
+		public Stream BaseStream => stream;
+		public int ReadPosition => readPosition;
 
 		public PositionedStreamReader(Stream stream) : this(stream, Encoding.UTF8) { }
 

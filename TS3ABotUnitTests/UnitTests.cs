@@ -7,6 +7,7 @@ namespace TS3ABotUnitTests
 	using LockCheck;
 	using NUnit.Framework;
 	using TS3AudioBot;
+	using TS3AudioBot.Helper;
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
@@ -109,7 +110,80 @@ namespace TS3ABotUnitTests
 			File.Delete(testFile);
 		}
 
-		// TODO positionfilereader test
+		[Test]
+		public void PositionedStreamReaderLineEndings()
+		{
+			using (var memStream = new MemoryStream())
+			{
+				// Setting streams up
+				var writer = new StreamWriter(memStream);
+				string[] values = new[] {
+					"11\n",
+					"22\n",
+					"33\n",
+					"44\r",
+					"55\r",
+					"66\r",
+					"77\r\n",
+					"88\r\n",
+					"99\r\n",
+					"xx\n","\r",
+					"yy\n","\r",
+					"zz\n","\r",
+					"a\r",
+					"b\n",
+					"c\r\n",
+					"d\n","\r",
+					"e" };
+				foreach (var val in values)
+					writer.Write(val);
+				writer.Flush();
+
+				memStream.Seek(0, SeekOrigin.Begin);
+				var reader = new PositionedStreamReader(memStream);
+
+				int pos = 0;
+				foreach (var val in values)
+				{
+					var line = reader.ReadLine();
+					pos += val.Length;
+
+					Assert.AreEqual(val.TrimEnd(new[] { '\r', '\n' }), line);
+					Assert.AreEqual(pos, reader.ReadPosition);
+				}
+			}
+		}
+
+		[Test]
+		public void PositionedStreamReaderBufferSize()
+		{
+			using (var memStream = new MemoryStream())
+			{
+				// Setting streams up
+				var writer = new StreamWriter(memStream);
+				string[] values = new[] {
+					new string('1', 1024) + '\n', // 1025: 1 over buffer size
+					new string('1', 1023) + '\n', // 1024: exactly the buffer size, but 1 over the 1024 line block due to the previous
+					new string('1', 1022) + '\n', // 1023: 1 less then the buffer size, should now match the line block again
+					new string('1', 1024) };
+				foreach (var val in values)
+					writer.Write(val);
+				writer.Flush();
+
+				memStream.Seek(0, SeekOrigin.Begin);
+				var reader = new PositionedStreamReader(memStream);
+
+				int pos = 0;
+				foreach (var val in values)
+				{
+					var line = reader.ReadLine();
+					pos += val.Length;
+
+					Assert.AreEqual(val.TrimEnd(new[] { '\r', '\n' }), line);
+					Assert.AreEqual(pos, reader.ReadPosition);
+				}
+			}
+		}
 
 		/* ====================== Algorithm Tests =========================*/
 
