@@ -12,6 +12,7 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using ResourceFactories;
+	using CommandSystem;
 
 	using TS3Query;
 	using TS3Query.Messages;
@@ -179,12 +180,9 @@ namespace TS3AudioBot
 			//rootCommand.AddCommand("help", new FunctionCommand((i, s) => CommandHelp(i.session, s)).SetRequiredParameters(0));
 			//rootCommand.AddCommand("quit", new FunctionCommand(i => CommandQuit(i.session)));
 
-			var builder = new BotCommand.Builder(botCommand =>
+			var builder = new BotCommand.Builder(this, botCommand =>
 			{
-				var command = new BotCommand.XBotCommand(botCommand, botCommand.Command, this);
-				if (botCommand.RequiredParameters.HasValue)
-					command.SetRequiredParameters(botCommand.RequiredParameters.Value);
-				rootCommand.AddCommand(botCommand.InvokeName, command);
+				rootCommand.AddCommand(botCommand.InvokeName, botCommand);
 				allCommandsList.Add(botCommand);
 			});
 
@@ -245,7 +243,8 @@ namespace TS3AudioBot
 				.HelpData("Well, pauses the song. Undo with !play").Finish();
 			builder.New("play").Action(nameof(CommandPlay)).Permission(CommandRights.Private)
 				.HelpData("Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")
-				.Parameter("<link>", "Youtube, Soundcloud, local path or file link").Finish();
+				.Parameter("<link>", "Youtube, Soundcloud, local path or file link")
+				.RequiredParameters(0).Finish();
 			builder.New("previous").Action(nameof(CommandPrevious)).Permission(CommandRights.Private)
 				.HelpData("Plays the previous song in the playlist.").Finish();
 			builder.New("print").Action(nameof(CommandPrint)).Permission(CommandRights.AnyVisibility)
@@ -345,7 +344,7 @@ namespace TS3AudioBot
 
 			// parse (and execute) the command
 			ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
-			if (parsedAst.Type == NodeType.Error)
+			if (parsedAst.Type == ASTType.Error)
 			{
 				PrintAstError(session, (ASTError)parsedAst);
 			}
@@ -1079,23 +1078,22 @@ namespace TS3AudioBot
 		}
 	}
 
-	public class BotCommand
+	public class BotCommand : FunctionCommand
 	{
 		public string InvokeName { get; private set; }
-
-		public MethodInfo Command { get; private set; }
 		public CommandRights CommandRights { get; private set; }
 
-		string outputCache = null;
+		string cachedHelp = null;
 		public string Description { get; private set; }
 		public Tuple<string, string>[] ParameterList { get; private set; }
-		public int? RequiredParameters { get; private set; }
 
-		BotCommand() { }
+		private BotCommand(MethodInfo command, object parentObject, int? requiredParameters)
+			: base(command, parentObject, requiredParameters)
+		{ }
 
 		public string GetHelp()
 		{
-			if (outputCache == null)
+			if (cachedHelp == null)
 			{
 				StringBuilder strb = new StringBuilder();
 				strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description);
@@ -1106,9 +1104,9 @@ namespace TS3AudioBot
 						strb.Append("\n!").Append(InvokeName).Append(" ").Append(para.Item1)
 							.Append(' ', longest - para.Item1.Length).Append(para.Item2);
 				}
-				outputCache = strb.ToString();
+				cachedHelp = strb.ToString();
 			}
-			return outputCache;
+			return cachedHelp;
 		}
 
 		public override string ToString()
@@ -1122,11 +1120,32 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			if (info.IsAdmin.Value)
+				return base.Execute(info, arguments, returnTypes);
+
+			switch (CommandRights)
+			{
+			case CommandRights.Admin:
+				throw new CommandException("Command must be invoked by an admin!");
+			case CommandRights.Public:
+				if (info.TextMessage.Target != MessageTarget.Server)
+					throw new CommandException("Command must be used in public mode!");
+				break;
+			case CommandRights.Private:
+				if (info.TextMessage.Target != MessageTarget.Private)
+					throw new CommandException("Command must be used in a private session!");
+				break;
+			}
+			return base.Execute(info, arguments, returnTypes);
+		}
 
 		public class Builder
 		{
 			bool buildMode;
 			readonly Action<BotCommand> registerAction;
+			readonly MainBot parent;
 
 			// Default values
 			const CommandRights defaultCommandRights = CommandRights.Admin;
@@ -1134,46 +1153,33 @@ namespace TS3AudioBot
 
 			// List of configurations for each command
 			string name;
-
-			bool setAction = false;
-			MethodInfo command;
-
-			bool setRights = false;
-			CommandRights commandRights;
-
-			bool setHelp = false;
-			string description;
-			readonly List<Tuple<string, string>> parameters = new List<Tuple<string, string>>();
+			MethodInfo command = null;
+			CommandRights? commandRights = null;
+			string description = null;
 			int? requiredParameters = null;
+			readonly List<Tuple<string, string>> parameters = new List<Tuple<string, string>>();
 
-			Builder(Action<BotCommand> finishAction, bool buildMode)
+			private Builder(MainBot parent, Action<BotCommand> finishAction, bool buildMode)
 			{
 				this.buildMode = buildMode;
+				this.parent = parent;
 				registerAction = finishAction;
 			}
-
-			public Builder(Action<BotCommand> finishAction) : this(finishAction, false) { }
+			public Builder(MainBot parent, Action<BotCommand> finishAction) : this(parent, finishAction, false) { }
 
 			public Builder New(string invokeName)
 			{
 				if (buildMode)
 					throw new InvalidOperationException("A new command cannot be created when the old one isn't finished.");
-				var builder = new Builder(registerAction, true);
+				var builder = new Builder(parent, registerAction, true);
 				builder.name = invokeName;
 				return builder;
 			}
 
-			void CheckAction()
-			{
-				if (setAction) throw new InvalidOperationException();
-				setAction = true;
-			}
-
 			public Builder Action(MethodInfo command)
 			{
-				if (command == null)
-					throw new ArgumentNullException(nameof(command));
-				CheckAction();
+				if (command == null) throw new ArgumentNullException(nameof(command));
+				if (this.command != null) throw new InvalidOperationException();
 				this.command = command;
 				return this;
 			}
@@ -1181,17 +1187,15 @@ namespace TS3AudioBot
 
 			public Builder Permission(CommandRights requiredRights)
 			{
-				if (setRights) throw new InvalidOperationException();
+				if (commandRights.HasValue) throw new InvalidOperationException();
 				commandRights = requiredRights;
-				setRights = true;
 				return this;
 			}
 
 			public Builder HelpData(string description)
 			{
-				if (setHelp) throw new InvalidOperationException();
+				if (this.description != null) throw new InvalidOperationException();
 				this.description = description;
-				setHelp = true;
 				return this;
 			}
 
@@ -1203,60 +1207,27 @@ namespace TS3AudioBot
 
 			public Builder RequiredParameters(int requiredParameters)
 			{
+				if (this.requiredParameters.HasValue) throw new InvalidOperationException();
 				this.requiredParameters = requiredParameters;
 				return this;
 			}
 
 			public BotCommand Finish()
 			{
-				if (!setAction) throw new InvalidProgramException("No action defined for " + name);
+				if (command == null) throw new InvalidProgramException("No action defined for " + name);
 
-				var command = new BotCommand
+				var botcommand = new BotCommand(command, null, requiredParameters)
 				{
 					InvokeName = name,
-					Command = this.command,
-					CommandRights = setRights ? commandRights : defaultCommandRights,
-					Description = setHelp ? description : defaultDescription,
+					CommandRights = commandRights.HasValue ? commandRights.Value : defaultCommandRights,
+					Description = description ?? defaultDescription,
 					ParameterList = parameters.ToArray(),
-					RequiredParameters = requiredParameters
 				};
 
-				if (registerAction != null)
-					registerAction(command);
+				registerAction?.Invoke(botcommand);
 
 				buildMode = false;
-				return command;
-			}
-		}
-
-		public class XBotCommand : FunctionCommand
-		{
-			readonly BotCommand botCommand;
-
-			public XBotCommand(BotCommand cmd, MethodInfo command, object obj) : base(command, obj)
-			{
-				botCommand = cmd;
-			}
-
-			public override ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
-			{
-				if (info.IsAdmin.Value)
-					return base.Execute(info, arguments, returnTypes);
-
-				switch (botCommand.CommandRights)
-				{
-				case CommandRights.Admin:
-					throw new CommandException("Command must be invoked by an admin!");
-				case CommandRights.Public:
-					if (info.TextMessage.Target != MessageTarget.Server)
-						throw new CommandException("Command must be used in public mode!");
-					break;
-				case CommandRights.Private:
-					if (info.TextMessage.Target != MessageTarget.Private)
-						throw new CommandException("Command must be used in a private session!");
-					break;
-				}
-				return base.Execute(info, arguments, returnTypes);
+				return botcommand;
 			}
 		}
 	}

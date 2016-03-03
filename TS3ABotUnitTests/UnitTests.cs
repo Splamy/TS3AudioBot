@@ -6,11 +6,14 @@ namespace TS3ABotUnitTests
 	using System.Linq;
 	using LockCheck;
 	using NUnit.Framework;
+
 	using TS3AudioBot;
-	using TS3AudioBot.Helper;
 	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
+	using TS3AudioBot.CommandSystem;
+
 	using TS3Query.Messages;
 
 	[TestFixture]

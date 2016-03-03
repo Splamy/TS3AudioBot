@@ -50,9 +50,38 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandSystem\ASTCommand.cs" />
+    <Compile Include="CommandSystem\ASTError.cs" />
+    <Compile Include="CommandSystem\ASTNode.cs" />
+    <Compile Include="CommandSystem\ASTType.cs" />
+    <Compile Include="CommandSystem\ASTValue.cs" />
+    <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="AudioFramework.cs" />
     <Compile Include="BobController.cs" />
     <Compile Include="BotSession.cs" />
+    <Compile Include="CommandSystem\CommandException.cs" />
+    <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
+    <Compile Include="CommandSystem\CommandResults\CommandResultType.cs" />
+    <Compile Include="CommandSystem\CommandResults\EmptyCommandResult.cs" />
+    <Compile Include="CommandSystem\CommandResults\EnumerableCommandResult.cs" />
+    <Compile Include="CommandSystem\CommandResults\EnumerableCommandResultMerge.cs" />
+    <Compile Include="CommandSystem\CommandResults\EnumerableCommandResultRange.cs" />
+    <Compile Include="CommandSystem\CommandResults\ICommandResult.cs" />
+    <Compile Include="CommandSystem\CommandResults\StaticEnumerableCommandResult.cs" />
+    <Compile Include="CommandSystem\Commands\AppliedCommand.cs" />
+    <Compile Include="CommandSystem\CommandAttribute.cs" />
+    <Compile Include="CommandSystem\Commands\CommandGroup.cs" />
+    <Compile Include="CommandSystem\EnumerableCommands\EmptyEnumerableCommand.cs" />
+    <Compile Include="CommandSystem\EnumerableCommands\EnumerableCommandMerge.cs" />
+    <Compile Include="CommandSystem\EnumerableCommands\EnumerableCommandRange.cs" />
+    <Compile Include="CommandSystem\EnumerableCommands\IEnumerableCommand.cs" />
+    <Compile Include="CommandSystem\EnumerableCommands\StaticEnumerableCommand.cs" />
+    <Compile Include="CommandSystem\ExecutionInformation.cs" />
+    <Compile Include="CommandSystem\Commands\FunctionCommand.cs" />
+    <Compile Include="CommandSystem\Commands\ICommand.cs" />
+    <Compile Include="CommandSystem\Commands\RootCommand.cs" />
+    <Compile Include="CommandSystem\Commands\StringCommand.cs" />
+    <Compile Include="CommandSystem\XCommandSystem.cs" />
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
@@ -63,7 +92,7 @@
     <Compile Include="QueryConnection.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="VLCConnection.cs" />
-    <Compile Include="Algorithm\CommandParser.cs" />
+    <Compile Include="CommandSystem\CommandParser.cs" />
     <Compile Include="Algorithm\ICommandFilter.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
     <Compile Include="Algorithm\ISubstringSearch.cs" />
@@ -106,8 +135,8 @@
     <Compile Include="TS3Query\QueryStringAttribute.cs" />
     <Compile Include="TS3Query\TS3QueryClient.cs" />
     <Compile Include="TS3Query\TS3QueryTools.cs" />
-    <Compile Include="Algorithm\XCommandSystem.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

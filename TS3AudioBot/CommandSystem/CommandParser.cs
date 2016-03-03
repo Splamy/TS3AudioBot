@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.Algorithm
+﻿namespace TS3AudioBot.CommandSystem
 {
 	using System;
 	using System.Collections.Generic;
@@ -231,94 +231,5 @@
 			ParseQuotedString,
 			End,
 		}
-	}
-
-	abstract class ASTNode
-	{
-		public abstract NodeType Type { get; }
-
-		public string FullRequest { get; set; }
-		public int Position { get; set; }
-		public int Length { get; set; }
-
-		protected const int SpacePerTab = 2;
-		protected StringBuilder Space(StringBuilder strb, int depth) => strb.Append(' ', depth * SpacePerTab);
-		public abstract void Write(StringBuilder strb, int depth);
-		public override sealed string ToString()
-		{
-			var strb = new StringBuilder();
-			Write(strb, 0);
-			return strb.ToString();
-		}
-	}
-
-	class ASTError : ASTNode
-	{
-		public override NodeType Type => NodeType.Error;
-
-		public string Description { get; }
-
-		public ASTError(ASTNode referenceNode, string description)
-		{
-			FullRequest = referenceNode.FullRequest;
-			Position = referenceNode.Position;
-			Length = referenceNode.Length;
-			Description = description;
-		}
-
-		public ASTError(string request, int pos, int len, string description)
-		{
-			FullRequest = request;
-			Position = pos;
-			Length = len;
-			Description = description;
-		}
-
-		public override void Write(StringBuilder strb, int depth)
-		{
-			strb.AppendLine(FullRequest);
-			if (Position == 1) strb.Append('.');
-			else if (Position > 1) strb.Append(' ', Position);
-			strb.Append('~', Length).Append('^').AppendLine();
-			strb.Append("Error: ").AppendLine(Description);
-		}
-	}
-
-	class ASTCommand : ASTNode
-	{
-		public override NodeType Type => NodeType.Command;
-
-		public List<ASTNode> Parameter { get; set; }
-
-		public BotCommand BotCommand { get; set; }
-		public string Value { get; set; }
-
-		public ASTCommand()
-		{
-			Parameter = new List<ASTNode>();
-		}
-
-		public override void Write(StringBuilder strb, int depth)
-		{
-			Space(strb, depth).Append(": ").Append(Value ?? string.Empty);
-			strb.AppendLine();
-			foreach (var para in Parameter)
-				para.Write(strb, depth + 1);
-		}
-	}
-
-	class ASTValue : ASTNode
-	{
-		public override NodeType Type => NodeType.Value;
-		public string Value { get; set; }
-
-		public override void Write(StringBuilder strb, int depth) => Space(strb, depth).AppendLine(Value);
-	}
-
-	enum NodeType
-	{
-		Command,
-		Value,
-		Error,
 	}
 }
