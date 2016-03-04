@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.History
+namespace TS3AudioBot.History
 {
 	using System;
 

@@ -1,4 +1,4 @@
-﻿namespace TS3Query
+namespace TS3Query
 {
 	using System;
 	using System.Collections.Concurrent;
