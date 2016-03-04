@@ -1,7 +1,7 @@
 # TS3AudioBot
 |master|develop|
 |:--:|:--:|
-|[![Build Status](https://travis-ci.org/Splamy/TS3MusicBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3MusicBot)|[![Build Status](https://travis-ci.org/Splamy/TS3MusicBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3MusicBot)|
+|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|
 
 ## About
 This is our open-source TeamSpeak 3 audiobot project since
@@ -87,7 +87,7 @@ For now we don't have any workaround for that.
    Windows: Copy the contents of the `Dependencies/bin` folder into the TeamSpeak-Client directory (near `ts3client_win64.exe`)
 
 ### Compilation
-Download the git repository with `git clone https://github.com/Splamy/TS3MusicBot.git`.
+Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
 1. Install all needed [dependencies](#dependencies) (e.g. scons and ffmpeg)
