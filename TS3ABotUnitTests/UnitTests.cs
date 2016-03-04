@@ -264,7 +264,7 @@ namespace TS3ABotUnitTests
 
 			// Basic tests
 			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(new ExecutionInformation(),
-				 new StaticEnumerableCommand(new ICommand[] { new StringCommand("one") }))).Content);
+				 new ICommand[] { new StringCommand("one") })).Content);
 			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!one"));
 			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(new ExecutionInformation(), "!t"));
 			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e TEST"));

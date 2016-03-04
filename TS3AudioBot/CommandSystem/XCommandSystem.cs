@@ -50,7 +50,7 @@
 				var cmd = (ASTCommand)node;
 				var arguments = new List<ICommand>();
 				arguments.AddRange(cmd.Parameter.Select(n => AstToCommandResult(n)));
-				return new AppliedCommand(rootCommand, new StaticEnumerableCommand(arguments));
+				return new AppliedCommand(rootCommand, arguments);
 			case ASTType.Value:
 				return new StringCommand(((ASTValue)node).Value);
 			}
@@ -66,15 +66,15 @@
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
-			return cmd.Execute(info, new EmptyEnumerableCommand(), returnTypes);
+			return cmd.Execute(info, new ICommand[] { }, returnTypes);
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments)
 		{
 			return Execute(info, arguments, new[] { CommandResultType.String, CommandResultType.Empty });
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			return rootCommand.Execute(info, arguments, returnTypes);
 		}

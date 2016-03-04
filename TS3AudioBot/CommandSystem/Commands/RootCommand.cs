@@ -8,16 +8,16 @@
 	/// </summary>
 	public class RootCommand : CommandGroup
 	{
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			if (arguments.Count < 1)
+			if (!arguments.Any())
 				return base.Execute(info, arguments, returnTypes);
 
-			var result = arguments.Execute(0, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.Command, CommandResultType.String });
+			var result = arguments.First().Execute(info, new ICommand[] { }, new CommandResultType[] { CommandResultType.Command, CommandResultType.String });
 			if (result.ResultType == CommandResultType.String)
 				return base.Execute(info, arguments, returnTypes);
 
-			return ((CommandCommandResult)result).Command.Execute(info, new EnumerableCommandRange(arguments, 1), returnTypes);
+			return ((CommandCommandResult)result).Command.Execute(info, arguments.Skip(1), returnTypes);
 		}
 	}
 }

@@ -11,7 +11,7 @@
 			content = contentArg;
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			return new StringCommandResult(content);
 		}

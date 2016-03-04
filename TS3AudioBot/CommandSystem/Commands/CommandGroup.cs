@@ -16,22 +16,22 @@
 		}
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			if (arguments.Count < 1)
+			if (!arguments.Any())
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 					return new CommandCommandResult(this);
 				throw new CommandException("Expected a string");
 			}
 
-			var result = arguments.Execute(0, info, new EmptyEnumerableCommand(), new CommandResultType[] { CommandResultType.String });
+			var result = arguments.First().Execute(info, new ICommand[] {}, new CommandResultType[] { CommandResultType.String });
 
 			var commandResults = XCommandSystem.FilterList(commands.Keys, ((StringCommandResult)result).Content);
 			if (commandResults.Skip(1).Any())
 				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults));
 
-			return commands[commandResults.First()].Execute(info, new EnumerableCommandRange(arguments, 1), returnTypes);
+			return commands[commandResults.First()].Execute(info, arguments.Skip(1), returnTypes);
 		}
 	}
 }

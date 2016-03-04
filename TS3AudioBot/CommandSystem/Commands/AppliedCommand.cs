@@ -1,22 +1,22 @@
 ﻿namespace TS3AudioBot.CommandSystem
 {
+	using System.Linq;
 	using System.Collections.Generic;
 
 	public class AppliedCommand : ICommand
 	{
 		readonly ICommand internCommand;
-		readonly IEnumerableCommand internArguments;
+		readonly IEnumerable<ICommand> internArguments;
 
-		public AppliedCommand(ICommand command, IEnumerableCommand arguments)
+		public AppliedCommand(ICommand command, IEnumerable<ICommand> arguments)
 		{
 			internCommand = command;
 			internArguments = arguments;
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			return internCommand.Execute(info, new EnumerableCommandMerge(new IEnumerableCommand[] { internArguments, arguments }), returnTypes);
+			return internCommand.Execute(info, internArguments.Concat(arguments), returnTypes);
 		}
 	}
-
 }

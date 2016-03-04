@@ -8,7 +8,7 @@
 	public class FunctionCommand : ICommand
 	{
 		static readonly Type[] SpecialTypes
-			= new Type[] { typeof(ExecutionInformation), typeof(IEnumerableCommand), typeof(IEnumerable<CommandResultType>) };
+			= { typeof(ExecutionInformation), typeof(IEnumerable<ICommand>), typeof(IEnumerable<CommandResultType>) };
 
 		// Needed for non-static member methods
 		readonly object callee;
@@ -51,7 +51,7 @@
 			}
 		}
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerableCommand arguments, IEnumerable<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			object[] parameters = new object[internCommand.GetParameters().Length];
 			// a: Iterate through arguments
@@ -62,14 +62,14 @@
 				var arg = internCommand.GetParameters()[p].ParameterType;
 				if (arg == typeof(ExecutionInformation))
 					parameters[p] = info;
-				else if (arg == typeof(IEnumerableCommand))
+				else if (arg == typeof(IEnumerable<ICommand>))
 					parameters[p] = arguments;
 				else if (arg == typeof(IEnumerable<CommandResultType>))
 					parameters[p] = returnTypes;
 				// Only add arguments if we still have some
-				else if (a < arguments.Count)
+				else if (a < arguments.Count())
 				{
-					var argResult = ((StringCommandResult)arguments.Execute(a, info, new EmptyEnumerableCommand(), new[] { CommandResultType.String })).Content;
+					var argResult = ((StringCommandResult)arguments.ElementAt(a).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
 					if (arg == typeof(string))
 						parameters[p] = argResult;
 					else if (arg == typeof(int) || arg == typeof(int?))
@@ -82,9 +82,9 @@
 					else if (arg == typeof(string[]))
 					{
 						// Use the remaining arguments for this parameter
-						var args = new string[arguments.Count - a];
+						var args = new string[arguments.Count() - a];
 						for (int i = 0; i < args.Length; i++, a++)
-							args[i] = ((StringCommandResult)arguments.Execute(a, info, new EmptyEnumerableCommand(),
+							args[i] = ((StringCommandResult)arguments.ElementAt(a).Execute(info, new ICommand[] { },
 								new[] { CommandResultType.String })).Content;
 						parameters[p] = args;
 						// Correct the argument index to the last used argument
@@ -100,7 +100,7 @@
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 				{
-					if (arguments.Count == 0)
+					if (!arguments.Any())
 						return new CommandCommandResult(this);
 					return new CommandCommandResult(new AppliedCommand(this, arguments));
 				}

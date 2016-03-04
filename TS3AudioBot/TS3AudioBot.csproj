@@ -71,11 +71,6 @@
     <Compile Include="CommandSystem\Commands\AppliedCommand.cs" />
     <Compile Include="CommandSystem\CommandAttribute.cs" />
     <Compile Include="CommandSystem\Commands\CommandGroup.cs" />
-    <Compile Include="CommandSystem\EnumerableCommands\EmptyEnumerableCommand.cs" />
-    <Compile Include="CommandSystem\EnumerableCommands\EnumerableCommandMerge.cs" />
-    <Compile Include="CommandSystem\EnumerableCommands\EnumerableCommandRange.cs" />
-    <Compile Include="CommandSystem\EnumerableCommands\IEnumerableCommand.cs" />
-    <Compile Include="CommandSystem\EnumerableCommands\StaticEnumerableCommand.cs" />
     <Compile Include="CommandSystem\ExecutionInformation.cs" />
     <Compile Include="CommandSystem\Commands\FunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\ICommand.cs" />
