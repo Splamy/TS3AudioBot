@@ -50,7 +50,7 @@ script:
   # Building the AudioBot (C# stuff)
   - cd "$TRAVIS_BUILD_DIR"
   - xbuild /p:Configuration=Release TS3AudioBot.sln
-  - mono ./nunit/NUnit.Console.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
+  - mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
 
 after_script:
   - cd $TRAVIS_BUILD_DIR

@@ -9,7 +9,6 @@ namespace TS3AudioBot.CommandSystem
 	public class FunctionCommand : ICommand
 	{
 		static readonly Type[] specialTypes = { typeof(ExecutionInformation), typeof(IEnumerable<ICommand>), typeof(IEnumerable<CommandResultType>) };
-		static readonly TypeConverter stringConverter = TypeDescriptor.GetConverter(typeof(string));
 
 		// Needed for non-static member methods
 		readonly object callee;
