@@ -14,14 +14,11 @@
 	public class BotCommandTests
 	{
 		MainBot bot;
-		XCommandSystem commandSystem;
-		
+
 		public BotCommandTests()
 		{
 			bot = new MainBot();
-			// Initialize through reflection
-			typeof(MainBot).GetMethod("InitializeCommands", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(bot, new object[] { });
-			commandSystem = (XCommandSystem)typeof(MainBot).GetField("commandSystem", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bot);
+			bot.CommandManager.RegisterMain(bot);
 		}
 
 		TextMessage CreateTextMessage()
@@ -43,7 +40,7 @@
 				TextMessage = CreateTextMessage(),
 				IsAdmin = new Lazy<bool>(true)
 			};
-			return commandSystem.ExecuteCommand(info, command);
+			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
 		}
 
 		[Test]

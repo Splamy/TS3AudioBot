@@ -13,7 +13,7 @@ namespace TS3AudioBot.CommandSystem
 			if (!arguments.Any())
 				return base.Execute(info, arguments, returnTypes);
 
-			var result = arguments.First().Execute(info, new ICommand[] { }, new CommandResultType[] { CommandResultType.Command, CommandResultType.String });
+			var result = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new CommandResultType[] { CommandResultType.Command, CommandResultType.String });
 			if (result.ResultType == CommandResultType.String)
 				return base.Execute(info, arguments, returnTypes);
 

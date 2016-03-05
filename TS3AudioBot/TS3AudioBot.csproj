@@ -55,6 +55,7 @@
     <Compile Include="CommandSystem\ASTNode.cs" />
     <Compile Include="CommandSystem\ASTType.cs" />
     <Compile Include="CommandSystem\ASTValue.cs" />
+    <Compile Include="CommandSystem\CommandManager.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="AudioFramework.cs" />
     <Compile Include="BobController.cs" />

@@ -8,36 +8,48 @@ namespace TS3AudioBot.CommandSystem
 	{
 		public static readonly CommandResultType[] AllTypes = Enum.GetValues(typeof(CommandResultType)).OfType<CommandResultType>().ToArray();
 
-		ICommand rootCommand;
+		public RootCommand RootCommand { get; }
 
-		public XCommandSystem(ICommand rootCommandArg)
+		public XCommandSystem()
 		{
-			rootCommand = rootCommandArg;
+			RootCommand = new RootCommand();
 		}
 
-		public ICommand RootCommand => rootCommand;
-
-		public static IEnumerable<string> FilterList(IEnumerable<string> list, string filter)
+		public static IEnumerable<KeyValuePair<string, T>> FilterList<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			// Convert result to list because it can be enumerated multiple times
-			var possibilities = list.Select(t => new Tuple<string, int>(t, 0)).ToList();
+			var possibilities = list.Select(t => new FilterItem<T>(t.Key, t.Value, 0)).ToList();
 			// Filter matching commands
 			foreach (var c in filter)
 			{
 				var newPossibilities = (from p in possibilities
-										let pos = p.Item1.IndexOf(c, p.Item2)
+										let pos = p.name.IndexOf(c, p.index)
 										where pos != -1
-										select new Tuple<string, int>(p.Item1, pos + 1)).ToList();
+										select new FilterItem<T>(p.name, p.value, pos + 1)).ToList();
 				if (newPossibilities.Any())
 					possibilities = newPossibilities;
 			}
 			// Take command with lowest index
-			int minIndex = possibilities.Min(t => t.Item2);
-			var cmds = possibilities.Where(t => t.Item2 == minIndex).Select(t => t.Item1).ToList();
+			int minIndex = possibilities.Min(t => t.index);
+			var cmds = possibilities.Where(t => t.index == minIndex);
 			// Take the smallest command
-			int minLength = cmds.Min(c => c.Length);
+			int minLength = cmds.Min(c => c.name.Length);
 
-			return cmds.Where(c => c.Length == minLength);
+			return cmds.Where(c => c.name.Length == minLength).Select(fi => new KeyValuePair<string, T>(fi.name, fi.value));
+		}
+
+		class FilterItem<T>
+		{
+			public string name;
+			public T value;
+			public int index;
+
+			public FilterItem(string n, T v, int i)
+			{
+				name = n;
+				value = v;
+				index = i;
+			}
 		}
 
 		internal ICommand AstToCommandResult(ASTNode node)
@@ -50,7 +62,7 @@ namespace TS3AudioBot.CommandSystem
 				var cmd = (ASTCommand)node;
 				var arguments = new List<ICommand>();
 				arguments.AddRange(cmd.Parameter.Select(n => AstToCommandResult(n)));
-				return new AppliedCommand(rootCommand, arguments);
+				return new AppliedCommand(RootCommand, arguments);
 			case ASTType.Value:
 				return new StringCommand(((ASTValue)node).Value);
 			}
@@ -66,7 +78,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
-			return cmd.Execute(info, new ICommand[] { }, returnTypes);
+			return cmd.Execute(info, Enumerable.Empty<ICommand>(), returnTypes);
 		}
 
 		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments)
@@ -76,7 +88,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			return rootCommand.Execute(info, arguments, returnTypes);
+			return RootCommand.Execute(info, arguments, returnTypes);
 		}
 
 		public string ExecuteCommand(ExecutionInformation info, string command)

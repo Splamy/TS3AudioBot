@@ -144,15 +144,6 @@ namespace TS3AudioBot.CommandSystem
 			return root;
 		}
 
-		static bool ValidateChar(ref int i, string text, char c)
-		{
-			if (i >= text.Length)
-				return false;
-			bool ok = text[i] == c;
-			if (ok) i++;
-			return ok;
-		}
-
 		class StringPtr
 		{
 			string text;

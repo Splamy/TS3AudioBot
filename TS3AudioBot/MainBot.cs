@@ -1,18 +1,18 @@
-using System.Reflection;
 namespace TS3AudioBot
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.IO;
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
 
-	using Algorithm;
+	using CommandSystem;
 	using Helper;
 	using History;
 	using ResourceFactories;
-	using CommandSystem;
+	using static CommandRights;
 
 	using TS3Query;
 	using TS3Query.Messages;
@@ -39,7 +39,6 @@ namespace TS3AudioBot
 
 				if (!bot.ReadParameter(args)) return;
 				if (!bot.InitializeBot()) return;
-				bot.InitializeCommands();
 				bot.Run();
 			}
 		}
@@ -48,11 +47,10 @@ namespace TS3AudioBot
 		private bool writeLog;
 		private bool writeLogStack;
 		private MainBotData mainBotData;
-		private XCommandSystem commandSystem;
-		private BotCommand[] allCommands;
 
 		private StreamWriter logStream;
 
+		public CommandManager CommandManager { get; }
 		public AudioFramework AudioFramework { get; private set; }
 		public BobController BobController { get; private set; }
 		public IQueryConnection QueryConnection { get; private set; }
@@ -64,6 +62,7 @@ namespace TS3AudioBot
 
 		public MainBot()
 		{
+			CommandManager = new CommandManager();
 			consoleOutput = false;
 			writeLog = false;
 		}
@@ -127,6 +126,9 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[=== Time: {0}{1} ===]", new string(' ', Math.Max(0, 32 - timeStr.Length)), timeStr);
 			Log.Write(Log.Level.Info, "[==============================================]");
 
+			Log.Write(Log.Level.Info, "[============ Initializing Commands ===========]");
+			CommandManager.RegisterMain(this);
+
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
 			BobController = new BobController(bcd, QueryConnection);
@@ -158,142 +160,15 @@ namespace TS3AudioBot
 			// Create a default session for all users in all chat
 			SessionManager.DefaultSession = new PublicSession(this);
 			// Connect the query after everyting is set up
-			try
-			{
-				QueryConnection.Connect();
-				Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
-			}
+			try { QueryConnection.Connect(); }
 			catch (QueryCommandException qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
 				return false;
 			}
 
+			Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
 			return true;
-		}
-
-		private void InitializeCommands()
-		{
-			var allCommandsList = new List<BotCommand>();
-			var rootCommand = new RootCommand();
-			//rootCommand.AddCommand("kickme", new FunctionCommand((i, s) => CommandKickme(i.session, i.textMessage, s)));
-			//rootCommand.AddCommand("help", new FunctionCommand((i, s) => CommandHelp(i.session, s)).SetRequiredParameters(0));
-			//rootCommand.AddCommand("quit", new FunctionCommand(i => CommandQuit(i.session)));
-
-			var builder = new BotCommand.Builder(this, botCommand =>
-			{
-				rootCommand.AddCommand(botCommand.InvokeName, botCommand);
-				allCommandsList.Add(botCommand);
-			});
-
-			// [...] = Optional
-			// <name> = Placeholder for a text
-			// [text] = Option for fixed text
-			// (a|b) = either or switch
-
-			builder.New("add").Action(nameof(CommandAdd)).Permission(CommandRights.Private)
-				.HelpData("Adds a new song to the queue.")
-				.Parameter("<link>", "Any link that is also recognized by !play").Finish();
-			builder.New("clear").Action(nameof(CommandClear)).Permission(CommandRights.Private)
-				.HelpData("Removes all songs from the current playlist.").Finish();
-			builder.New("eval").Action(nameof(CommandEval)).Permission(CommandRights.AnyVisibility)
-				.HelpData("Executes a given command or string")
-				.Parameter("<command> <arguments...>", "Executes the given command on arguments")
-				.Parameter("<strings...>", "Concat the strings and execute them with the command system").Finish();
-			builder.New("getuserid").Action(nameof(CommandGetUserId)).Permission(CommandRights.Admin)
-				.HelpData("Gets the unique Id of a user.")
-				.Parameter("<username>", "A user which is currently logged in to the server").Finish();
-			builder.New("help").Action(nameof(CommandHelp)).Permission(CommandRights.Private)
-				.HelpData("Shows all commands or detailed help about a specific command.")
-				.Parameter("[<command>]", "Any currently accepted command")
-				.RequiredParameters(0).Finish();
-			builder.New("history").Action(nameof(CommandHistory)).Permission(CommandRights.Private)
-				.HelpData("Shows recently played songs.")
-				.Parameter("from <user-dbid> <count>", "Gets the last <count> songs from the user with the given <user-dbid>")
-				.Parameter("help", "You know...")
-				.Parameter("id <id>", "Displays all saved informations about the song with <id>")
-				.Parameter("id (last|next)", "Gets the highest|next song id")
-				.Parameter("last", "Plays the last song again")
-				.Parameter("last <count>", "Gets the last <count> played songs.")
-				.Parameter("play <id>", "Playes the song with <id>")
-				.Parameter("till <time>", "Gets all songs plyed until <time>. Special options are: (hour|today|yesterday|week)")
-				.Parameter("title <string>", "Gets all songs which title contains <string>")
-				.RequiredParameters(1).Finish();
-			builder.New("if").Action(nameof(CommandIf)).Permission(CommandRights.AnyVisibility)
-				.HelpData("Executes a given command if a condition is fullfilled")
-				.Parameter("<argument0> <comparator> <argument1> <then>", "Compares the two arguments and returns or executes the then-argument")
-				.Parameter("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false").Finish();
-			builder.New("kickme").Action(nameof(CommandKickme)).Permission(CommandRights.Private)
-				.HelpData("Guess what?")
-				.Parameter("[far]", "Optional attribute for the extra punch strength")
-				.RequiredParameters(0).Finish();
-			builder.New("link").Action(nameof(CommandLink)).Permission(CommandRights.Private)
-				.HelpData("Gets a link to the origin of the current song.").Finish();
-			builder.New("loop").Action(nameof(CommandLoop)).Permission(CommandRights.Private)
-				.HelpData("Sets whether or not to loop the entire playlist.")
-				.Parameter("(on|off)", "on or off").Finish();
-			builder.New("next").Action(nameof(CommandNext)).Permission(CommandRights.Private)
-				.HelpData("Plays the next song in the playlist.").Finish();
-			builder.New("pm").Action(nameof(CommandPM)).Permission(CommandRights.Public)
-				.HelpData("Requests a private session with the ServerBot so you can invoke private commands.").Finish();
-			builder.New("parse").Action(nameof(CommandParse)).Permission(CommandRights.Admin)
-				.HelpData("Displays the AST of the requested command.")
-				.Parameter("<command>", "The comand to be parsed").Finish();
-			builder.New("pause").Action(nameof(CommandPause)).Permission(CommandRights.Private)
-				.HelpData("Well, pauses the song. Undo with !play").Finish();
-			builder.New("play").Action(nameof(CommandPlay)).Permission(CommandRights.Private)
-				.HelpData("Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")
-				.Parameter("<link>", "Youtube, Soundcloud, local path or file link")
-				.RequiredParameters(0).Finish();
-			builder.New("previous").Action(nameof(CommandPrevious)).Permission(CommandRights.Private)
-				.HelpData("Plays the previous song in the playlist.").Finish();
-			builder.New("print").Action(nameof(CommandPrint)).Permission(CommandRights.AnyVisibility)
-				.HelpData("Lets you format multiple parameter to one.").Finish();
-			builder.New("quit").Action(nameof(CommandQuit)).Permission(CommandRights.Admin)
-				.HelpData("Closes the TS3AudioBot application.").Finish();
-			builder.New("quiz").Action(nameof(CommandQuiz)).Permission(CommandRights.Public)
-				.HelpData("Enable to hide the songnames and let your friends guess the title.")
-				.Parameter("(on|off)", "on or off").Finish();
-			builder.New("repeat").Action(nameof(CommandRepeat)).Permission(CommandRights.Private)
-				.HelpData("Sets whether or not to loop a single song.")
-				.Parameter("(on|off)", "on or off").Finish();
-			builder.New("rng").Action(nameof(CommandRng)).Permission(CommandRights.AnyVisibility)
-				.HelpData("Gets a random number.")
-				.Parameter(string.Empty, "Gets a number between 0 and " + int.MaxValue)
-				.Parameter("<max>", "Gets a number between 0 and <max>")
-				.Parameter("<min> <max>", "Gets a number between <min> and <max>")
-				.RequiredParameters(0).Finish();
-			builder.New("seek").Action(nameof(CommandSeek)).Permission(CommandRights.Private)
-				.HelpData("Jumps to a timemark within the current song.")
-				.Parameter("<sec>", "Time in seconds")
-				.Parameter("<min:sec>", "Time in Minutes:Seconds").Finish();
-			builder.New("song").Action(nameof(CommandSong)).Permission(CommandRights.AnyVisibility)
-				.HelpData("Tells you the name of the current song.").Finish();
-			builder.New("soundcloud").Action(nameof(CommandSoundcloud)).Permission(CommandRights.Private)
-				.HelpData("Resolves the link as a soundcloud song to play it for you.").Finish();
-			builder.New("subscribe").Action(nameof(CommandSubscribe)).Permission(CommandRights.Private)
-				.HelpData("Lets you hear the music independent from the channel you are in.").Finish();
-			builder.New("stop").Action(nameof(CommandStop)).Permission(CommandRights.Private)
-				.HelpData("Stops the current song.").Finish();
-			builder.New("take").Action(nameof(CommandTake)).Permission(CommandRights.AnyVisibility)
-				.HelpData("Take a substring from a string")
-				.Parameter("<count> <text>", "Take only <count> parts of the text")
-				.Parameter("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")
-				.Parameter("<count> <start> <delimiter> <text>", "Specify another delimiter for the parts than spaces").Finish();
-			builder.New("test").Action(nameof(CommandTest)).Permission(CommandRights.Admin)
-				.HelpData("Only for debugging purposes").Finish();
-			builder.New("twitch").Action(nameof(CommandSoundcloud)).Permission(CommandRights.Private)
-				.HelpData("Resolves the link as a twitch stream to play it for you.").Finish();
-			builder.New("unsubscribe").Action(nameof(CommandUnsubscribe)).Permission(CommandRights.Private)
-				.HelpData("Only lets you hear the music in active channels again.").Finish();
-			builder.New("volume").Action(nameof(CommandVolume)).Permission(CommandRights.AnyVisibility)
-				.HelpData("Sets the volume level of the music.")
-				.Parameter("<level>", "A new volume level between 0 and " + AudioFramework.MaxVolume).Finish();
-			builder.New("youtube").Action(nameof(CommandYoutube)).Permission(CommandRights.Private)
-				.HelpData("Resolves the link as a youtube video to play it for you.").Finish();
-
-			allCommands = allCommandsList.ToArray();
-			commandSystem = new XCommandSystem(rootCommand);
 		}
 
 		private void Run()
@@ -356,11 +231,11 @@ namespace TS3AudioBot
 					TextMessage = textMessage,
 					IsAdmin = isAdmin
 				};
-				var command = commandSystem.AstToCommandResult(parsedAst);
+				var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
 
 				try
 				{
-					var res = command.Execute(info, new ICommand[] { },
+					var res = command.Execute(info, Enumerable.Empty<ICommand>(),
 						new[] { CommandResultType.String, CommandResultType.Empty });
 					if (res.ResultType == CommandResultType.String)
 					{
@@ -405,24 +280,35 @@ namespace TS3AudioBot
 
 		#region COMMANDS
 
+		// [...] = Optional
+		// <name> = Placeholder for a text
+		// [text] = Option for fixed text
+		// (a|b) = either or switch
+
+		[Command(Private, "add", "Adds a new song to the queue.")]
+		[Usage("<link>", "Any link that is also recognized by !play")]
 		void CommandAdd(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
 			FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, true));
 		}
 
+		[Command(Private, "clear", "Removes all songs from the current playlist.")]
 		void CommandClear()
 		{
 			AudioFramework.Clear();
 		}
 
+		[Command(AnyVisibility, "eval", "Executes a given command or string")]
+		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
+		[Usage("<strings...>", "Concat the strings and execute them with the command system")]
 		ICommandResult CommandEval(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			// Evaluate the first argument on the rest of the arguments
 			if (!arguments.Any())
 				throw new CommandException("Need at least one argument to evaluate");
 			var leftArguments = arguments.Skip(1);
-			var arg0 = arguments.First().Execute(info, new ICommand[] { }, new[] { CommandResultType.Command, CommandResultType.String });
+			var arg0 = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.Command, CommandResultType.String });
 			if (arg0.ResultType == CommandResultType.Command)
 				return ((CommandCommandResult)arg0).Command.Execute(info, leftArguments, returnTypes);
 
@@ -430,12 +316,15 @@ namespace TS3AudioBot
 			var args = ((StringCommandResult)arg0).Content;
 
 			// Add the rest of the arguments
-			args += string.Join(" ", arguments.Select(a => ((StringCommandResult)a.Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content));
+			args += string.Join(" ", arguments.Select(a =>
+				((StringCommandResult)a.Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content));
 
-			var cmd = commandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(args));
+			var cmd = CommandManager.CommandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(args));
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
+		[Command(Admin, "getuserid", "Gets the unique Id of a user.")]
+		[Usage("<username>", "A user which is currently logged in to the server")]
 		string CommandGetUserId(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientByName(parameter);
@@ -445,230 +334,200 @@ namespace TS3AudioBot
 				return $"Client: UID:{client.ClientId} DBID:{client.DatabaseId} ChanID:{client.ChannelId}";
 		}
 
-		string CommandHelp(ExecutionInformation info, string parameter)
+		[Command(AnyVisibility, "help", "Shows all commands or detailed help about a specific command.")]
+		[Usage("[<command>]", "Any currently accepted command")]
+		[RequiredParameters(0)]
+		string CommandHelp(ExecutionInformation info, params string[] parameter)
 		{
-			var strb = new StringBuilder();
-			if (string.IsNullOrEmpty(parameter))
+			if (parameter.Length == 0)
 			{
+				var strb = new StringBuilder();
 				strb.Append("\n========= Welcome to the TS3AudioBot ========="
-					+ "\nIf you need any help with a special command use !help commandName."
+					+ "\nIf you need any help with a special command use !help <commandName>."
 					+ "\nHere are all possible commands:\n");
-				strb.Append(string.Join(", ", allCommands.Select(c => c.InvokeName)));
+				foreach (var botCom in CommandManager.AllCommands.Select(c => c.InvokeName))
+					strb.Append(botCom).Append(", ");
+				strb.Length -= 2;
+				return strb.ToString();
 			}
 			else
 			{
-				var possibilities = XCommandSystem.FilterList(allCommands.Select(c => c.InvokeName), parameter).ToList();
-				if (possibilities.Count() != 1)
-					return "No matching command found! Try !help to get a list of all commands.";
-				BotCommand command = allCommands.First(c => c.InvokeName == possibilities[0]);
-
-				strb.Append(command.GetHelp());
-				if (command.InvokeName == "help")
+				CommandGroup group = CommandManager.CommandSystem.RootCommand;
+				ICommand target = null;
+				for (int i = 0; i < parameter.Length; i++)
 				{
-					strb.Append("\nProtips:\n> You can truncate any command as long as it stays unique:"
-						+ "\nfor example: !subscribe can be shortened with !sub or even !su");
+					var possibilities = XCommandSystem.FilterList(group.Commands, parameter[i]).ToList();
+					if (possibilities.Count == 0)
+						return "No matching command found! Try !help to get a list of all commands.";
+					else if (possibilities.Count > 1)
+						return "Requested command is ambiguous between: " + string.Join(", ", possibilities.Select(kvp => kvp.Key));
+					else if (possibilities.Count == 1)
+					{
+						target = possibilities.First().Value;
+						if (i < parameter.Length - 1)
+						{
+							group = target as CommandGroup;
+							if (group == null)
+								return "The command has no further subfunctions after " + string.Join(" ", parameter, 0, i);
+						}
+					}
 				}
+
+				var targetB = target as BotCommand;
+				if (targetB != null)
+					return targetB.GetHelp();
+
+				var targetCG = target as CommandGroup;
+				if (targetCG != null)
+					return "The command contains the following subfunctions: " + string.Join(", ", targetCG.Commands.Select(g => g.Key));
+
+				return "Seems like something went wrong. No help can be shown for this command path.";
 			}
-			return strb.ToString();
 		}
 
-		string CommandHistory(ExecutionInformation info, string[] args)
+		[Command(Private, "history from", "Gets the last <count> songs from the user with the given <user-dbid>")]
+		[RequiredParameters(1)]
+		string CommandHistoryFrom(ExecutionInformation info, uint userDbId, int? amount)
 		{
-			// TODO handle this better
-			string parameter = string.Join(" ", args);
-			if (args.Length == 0) args = new[] { "help" };
+			SeachQuery query = new SeachQuery();
+			query.UserId = userDbId;
 
-			else if (args.Length >= 1)
-			{
-				#region switch local variables
-				uint id;
-				int amount;
-				DateTime tillTime;
-				#endregion
+			if (amount.HasValue)
+				query.MaxResults = amount.Value;
 
-				switch (args[0])
-				{
-				#region from
-				case "from": // <user_dbid> <last x>
-					if (args.Length >= 1 && uint.TryParse(args[1], out id))
-					{
-						SeachQuery query = new SeachQuery();
-						query.UserId = id;
-
-						if (args.Length >= 2 && int.TryParse(args[1], out amount))
-							query.MaxResults = amount;
-
-						return HistoryManager.SearchParsed(query);
-					}
-					return "Missing or invalid user DbId.";
-				#endregion
-
-				#region help
-				case "help":
-				default:
-					return CommandHelp(info, "history");
-				#endregion
-
-				#region id
-				case "id": // [id]
-					bool arrLen2 = args.Length >= 2;
-					if (arrLen2 && uint.TryParse(args[1], out id))
-					{
-						var ale = HistoryManager.GetEntryById(id);
-						if (ale != null)
-							return HistoryManager.Formatter.ProcessQuery(ale);
-						return "Could not find track with this id";
-					}
-					if (arrLen2 && args[1] == "last")
-						return $"{HistoryManager.HighestId} is the currently highest song id.";
-					if (arrLen2 && args[1] == "next")
-						return $"{HistoryManager.HighestId + 1} will be the next song id.";
-					return "Missing or invalid track Id.";
-				#endregion
-
-				#region last
-				case "last": // [(x entries:] -> default to 1
-					if (args.Length >= 2 && int.TryParse(args[1], out amount))
-					{
-						var query = new SeachQuery { MaxResults = amount };
-						return HistoryManager.SearchParsed(query);
-					}
-					else
-					{
-						var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
-						if (ale != null)
-						{
-							ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-							FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
-						}
-					}
-					break;
-				#endregion
-
-				#region play
-				case "play": // [id]
-					if (args.Length >= 2 && uint.TryParse(args[1], out id))
-					{
-						var ale = HistoryManager.GetEntryById(id);
-						if (ale != null)
-						{
-							ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-							FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
-						}
-						else
-							return "Could not find track with this id";
-					}
-					else
-						return "Missing or invalid track Id.";
-					break;
-				#endregion
-
-				#region till
-				case "till": // [time]
-					if (args.Length >= 2)
-					{
-						switch (args[1].ToLower())
-						{
-						case "hour": tillTime = DateTime.Now.AddHours(-1); break;
-						case "today": tillTime = DateTime.Today; break;
-						case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
-						case "week": tillTime = DateTime.Today.AddDays(-7); break;
-						default:
-							string timeStr = string.Join(" ", args, 1, args.Length - 1);
-							if (!DateTime.TryParse(timeStr, out tillTime))
-								tillTime = DateTime.MinValue;
-							break;
-						}
-						if (tillTime != DateTime.MinValue)
-						{
-							var query = new SeachQuery { LastInvokedAfter = tillTime };
-							return HistoryManager.SearchParsed(query);
-						}
-						return "The date could not be parsed.";
-					}
-					return "Missing time or date.";
-				#endregion
-
-				#region title
-				case "title": // substr
-					if (args.Length >= 2)
-					{
-						int startSubstr = parameter.IndexOf("title");
-						string titleStr = parameter.Substring(startSubstr + 5).Trim(); // len of title + space
-						var query = new SeachQuery { TitlePart = titleStr };
-						return HistoryManager.SearchParsed(query);
-					}
-					return "Missing title to search.";
-				#endregion
-
-				case "where":
-
-
-					break;
-				}
-			}
-			return null;
+			return HistoryManager.SearchParsed(query);
 		}
 
+		[Command(Private, "history help", "You know...")]
+		string CommandHistoryHelp(ExecutionInformation info) => CommandHelp(info, "history");
+
+		// TODO split into 2 overloads: int, string
+		[Command(Private, "history id")]
+		[Usage("<id>", "Displays all saved informations about the song with <id>")]
+		[Usage("(last|next)]", "Gets the highest|next song id")]
+		string CommandHistoryId(ExecutionInformation info, string idStr)
+		{
+			uint id;
+			if (uint.TryParse(idStr, out id))
+			{
+				var ale = HistoryManager.GetEntryById(id);
+				if (ale != null)
+					return HistoryManager.Formatter.ProcessQuery(ale);
+				return "Could not find track with this id";
+			}
+			else if (idStr == "last")
+				return $"{HistoryManager.HighestId} is the currently highest song id.";
+			else if (idStr == "next")
+				return $"{HistoryManager.HighestId + 1} will be the next song id.";
+			else
+				return "Unrecognized id descriptor";
+		}
+
+		[Command(Private, "history last", "Plays the last song again")]
+		[Usage("last <count>", "Gets the last <count> played songs.")]
+		[RequiredParameters(0)]
+		string CommandHistoryLast(ExecutionInformation info, int? amount)
+		{
+			if (amount.HasValue)
+			{
+				var query = new SeachQuery { MaxResults = amount.Value };
+				return HistoryManager.SearchParsed(query);
+			}
+			else
+			{
+				var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
+				if (ale != null)
+				{
+					ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+					FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
+				}
+				return string.Empty;
+			}
+		}
+
+		[Command(Private, "history play", "Playes the song with <id>")]
+		string CommandHistoryPlay(ExecutionInformation info, uint id)
+		{
+			var ale = HistoryManager.GetEntryById(id);
+			if (ale != null)
+			{
+				ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+				FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
+				return string.Empty;
+			}
+			else return "Could not find track with this id";
+		}
+
+		// TODO split into 2 overloads: DateTime, string
+		[Command(Private, "history till", "Gets all songs played until <time>. Special options are: (hour|today|yesterday|week)]")]
+		string CommandHistoryTill(ExecutionInformation info, string time)
+		{
+			DateTime tillTime;
+			switch (time.ToLower())
+			{
+			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
+			case "today": tillTime = DateTime.Today; break;
+			case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
+			case "week": tillTime = DateTime.Today.AddDays(-7); break;
+			default:
+				if (!DateTime.TryParse(time, out tillTime))
+					tillTime = DateTime.MinValue;
+				break;
+			}
+			if (tillTime != DateTime.MinValue)
+			{
+				var query = new SeachQuery { LastInvokedAfter = tillTime };
+				return HistoryManager.SearchParsed(query);
+			}
+			return "The date could not be parsed.";
+		}
+
+		[Command(Private, "history title", "Gets all songs which title contains <string>")]
+		string CommandHistoryTitle(ExecutionInformation info, string part)
+		{
+			var query = new SeachQuery { TitlePart = part };
+			return HistoryManager.SearchParsed(query);
+		}
+
+		[Command(AnyVisibility, "if")]
+		[Usage("<argument0> <comparator> <argument1> <then>", "Compares the two arguments and returns or executes the then-argument")]
+		[Usage("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false")]
 		ICommandResult CommandIf(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
+			var argList = arguments.ToList();
 			if (arguments.Count() < 4)
 				throw new CommandException("Expected at least 4 arguments");
-			var arg0 = ((StringCommandResult)arguments.ElementAt(0).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
-			var cmp = ((StringCommandResult)arguments.ElementAt(1).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
-			var arg1 = ((StringCommandResult)arguments.ElementAt(2).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
+			var arg0 = ((StringCommandResult)argList[0].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+			var cmp = ((StringCommandResult)argList[1].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+			var arg1 = ((StringCommandResult)argList[2].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 
-			bool cmpResult;
+			Func<double, double, bool> comparer;
 			switch (cmp)
 			{
-			case "<":
-				// Try to parse arguments into doubles
-				double d0, d1;
-				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
-					cmpResult = d0 < d1;
-				else
-					cmpResult = arg0.CompareTo(arg1) < 0;
-				break;
-			case ">":
-				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
-					cmpResult = d0 > d1;
-				else
-					cmpResult = arg0.CompareTo(arg1) > 0;
-				break;
-			case "<=":
-				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
-					cmpResult = d0 <= d1;
-				else
-					cmpResult = arg0.CompareTo(arg1) <= 0;
-				break;
-			case ">=":
-				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
-					cmpResult = d0 >= d1;
-				else
-					cmpResult = arg0.CompareTo(arg1) >= 0;
-				break;
-			case "==":
-				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
-					cmpResult = d0 == d1;
-				else
-					cmpResult = arg0.CompareTo(arg1) == 0;
-				break;
-			case "!=":
-				if (double.TryParse(arg0, out d0) && double.TryParse(arg1, out d1))
-					cmpResult = d0 != d1;
-				else
-					cmpResult = arg0.CompareTo(arg1) != 0;
-				break;
-			default:
-				throw new CommandException("Unknown comparison operator");
+			case "<": comparer = (a, b) => a < b; break;
+			case ">": comparer = (a, b) => a > b; break;
+			case "<=": comparer = (a, b) => a <= b; break;
+			case ">=": comparer = (a, b) => a >= b; break;
+			case "==": comparer = (a, b) => a == b; break;
+			case "!=": comparer = (a, b) => a != b; break;
+			default: throw new CommandException("Unknown comparison operator");
 			}
+
+			double d0, d1;
+			bool cmpResult;
+			// Try to parse arguments into doubles
+			if (double.TryParse(arg0, NumberStyles.Number, CultureInfo.InvariantCulture, out d0)
+				&& double.TryParse(arg1, NumberStyles.Number, CultureInfo.InvariantCulture, out d1))
+				cmpResult = comparer(d0, d1);
+			else
+				cmpResult = comparer(arg0.CompareTo(arg1), 0);
 
 			// If branch
 			if (cmpResult)
-				return arguments.ElementAt(3).Execute(info, new ICommand[] { }, returnTypes);
+				return argList[3].Execute(info, Enumerable.Empty<ICommand>(), returnTypes);
 			// Else branch
 			if (arguments.Count() > 4)
-				return arguments.ElementAt(4).Execute(info, new ICommand[] { }, returnTypes);
+				return argList[4].Execute(info, Enumerable.Empty<ICommand>(), returnTypes);
 
 			// Try to return nothing
 			if (returnTypes.Contains(CommandResultType.Empty))
@@ -676,6 +535,9 @@ namespace TS3AudioBot
 			throw new CommandException("If found nothing to return");
 		}
 
+		[Command(Private, "kickme", "Guess what?")]
+		[Usage("[far]", "Optional attribute for the extra punch strength")]
+		[RequiredParameters(0)]
 		void CommandKickme(ExecutionInformation info, string parameter)
 		{
 			try
@@ -691,6 +553,7 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Private, "link", "Gets a link to the origin of the current song.")]
 		string CommandLink(ExecutionInformation info)
 		{
 			if (AudioFramework.CurrentPlayData == null)
@@ -701,6 +564,8 @@ namespace TS3AudioBot
 				return FactoryManager.RestoreLink(AudioFramework.CurrentPlayData);
 		}
 
+		[Command(Private, "loop", "Sets whether or not to loop the entire playlist.")]
+		[Usage("(on|off)]", "on or off")]
 		string CommandLoop(ExecutionInformation info, string parameter)
 		{
 			if (parameter == "on")
@@ -712,23 +577,28 @@ namespace TS3AudioBot
 			return null;
 		}
 
+		[Command(Private, "media", "Plays any local or online media file.")]
 		void CommandMedia(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
 			FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.Session, client, parameter, false));
 		}
 
+		[Command(Private, "next", "Plays the next song in the playlist.")]
 		void CommandNext()
 		{
 			AudioFramework.Next();
 		}
 
+		[Command(Public, "pm", "Requests a private session with the ServerBot so you can invoke private commands.")]
 		void CommandPM(ExecutionInformation info)
 		{
 			BotSession ownSession = SessionManager.CreateSession(this, info.TextMessage.InvokerId);
 			ownSession.Write("Hi " + info.TextMessage.InvokerName);
 		}
 
+		[Command(Admin, "parse", "Displays the AST of the requested command.")]
+		[Usage("<command>", "The comand to be parsed")]
 		string CommandParse(ExecutionInformation info, string parameter)
 		{
 			if (!parameter.TrimStart().StartsWith("!"))
@@ -747,11 +617,15 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Private, "pause", "Well, pauses the song. Undo with !play")]
 		void CommandPause()
 		{
 			AudioFramework.Pause = true;
 		}
 
+		[Command(Private, "play", "Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")]
+		[Usage("<link>", "Youtube, Soundcloud, local path or file link")]
+		[RequiredParameters(0)]
 		void CommandPlay(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
@@ -763,11 +637,13 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Private, "previous", "Plays the previous song in the playlist.")]
 		void CommandPrevious()
 		{
 			AudioFramework.Previous();
 		}
 
+		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
 		string CommandPrint(ExecutionInformation info, string[] parameter)
 		{
 			// << Desing changes expected >>
@@ -777,6 +653,7 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
+		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
 		void CommandQuit(ExecutionInformation info)
 		{
 			info.Session.Write("Goodbye!");
@@ -784,6 +661,8 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "Exiting...");
 		}
 
+		[Command(Public, "quiz", "Enable to hide the songnames and let your friends guess the title.")]
+		[Usage("(on|off)]", "on or off")]
 		string CommandQuiz(ExecutionInformation info, string parameter)
 		{
 			if (info.Session.IsPrivate)
@@ -798,6 +677,8 @@ namespace TS3AudioBot
 			return null;
 		}
 
+		[Command(Private, "repeat", "Sets whether or not to loop a single song.")]
+		[Usage("(on|off)]", "on or off")]
 		string CommandRepeat(ExecutionInformation info, string parameter)
 		{
 			if (parameter == "on")
@@ -809,6 +690,11 @@ namespace TS3AudioBot
 			return null;
 		}
 
+		[Command(AnyVisibility, "rng", "Gets a random number.")]
+		[Usage("", "Gets a number between 0 and 2147483647")]
+		[Usage("<max>", "Gets a number between 0 and <max>")]
+		[Usage("<min> <max>", "Gets a number between <min> and <max>")]
+		[RequiredParameters(0)]
 		string CommandRng(ExecutionInformation info, int? first, int? second)
 		{
 			if (second != null)
@@ -819,6 +705,9 @@ namespace TS3AudioBot
 				return Util.RngInstance.Next().ToString();
 		}
 
+		[Command(Private, "seek", "Jumps to a timemark within the current song.")]
+		[Usage("<sec>", "Time in seconds")]
+		[Usage("<min:sec>", "Time in Minutes:Seconds")]
 		string CommandSeek(ExecutionInformation info, string parameter)
 		{
 			TimeSpan span;
@@ -852,6 +741,7 @@ namespace TS3AudioBot
 			return null;
 		}
 
+		[Command(AnyVisibility, "song", "Tells you the name of the current song.")]
 		string CommandSong(ExecutionInformation info)
 		{
 			if (AudioFramework.CurrentPlayData == null)
@@ -862,25 +752,34 @@ namespace TS3AudioBot
 				return $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.Resource.ResourceTitle}[/url]";
 		}
 
+		[Command(Private, "soundcloud", "Resolves the link as a soundcloud song to play it for you.")]
 		void CommandSoundcloud(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
 			FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.Session, client, parameter, false));
 		}
 
+		[Command(Private, "stop", "Stops the current song.")]
 		void CommandStop()
 		{
 			AudioFramework.Stop();
 		}
 
+		[Command(Private, "subscribe", "Lets you hear the music independent from the channel you are in.")]
 		void CommandSubscribe(ExecutionInformation info)
 		{
 			BobController.WhisperClientSubscribe(info.TextMessage.InvokerId);
 		}
 
+		[Command(AnyVisibility, "take", "Take a substring from a string")]
+		[Usage("<count> <text>", "Take only <count> parts of the text")]
+		[Usage("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")]
+		[Usage("<count> <start> <delimiter> <text>", "Specify another delimiter for the parts than spaces")]
 		ICommandResult CommandTake(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			if (arguments.Count() < 2)
+			var argList = arguments.ToList();
+
+			if (argList.Count < 2)
 				throw new CommandException("Expected at least 2 parameters");
 
 			int start = 0;
@@ -888,23 +787,24 @@ namespace TS3AudioBot
 			string delimiter = null;
 
 			// Get count
-			var res = ((StringCommandResult)arguments.ElementAt(0).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
+			var res = ((StringCommandResult)argList[0].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 			if (!int.TryParse(res, out count) || count < 0)
 				throw new CommandException("Count must be an integer >= 0");
 
-			if (arguments.Count() > 2)
+			if (argList.Count > 2)
 			{
 				// Get start
-				res = ((StringCommandResult)arguments.ElementAt(1).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
+				res = ((StringCommandResult)argList[1].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 				if (!int.TryParse(res, out start) || start < 0)
 					throw new CommandException("Start must be an integer >= 0");
 			}
 
-			if (arguments.Count() > 3)
+			if (argList.Count > 3)
 				// Get delimiter
-				delimiter = ((StringCommandResult)arguments.ElementAt(2).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
+				delimiter = ((StringCommandResult)argList[2].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 
-			string text = ((StringCommandResult)arguments.ElementAt(Math.Min(arguments.Count() - 1, 3)).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
+			string text = ((StringCommandResult)argList[Math.Min(argList.Count - 1, 3)]
+				.Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 
 			IEnumerable<string> splitted;
 			if (delimiter == null)
@@ -926,6 +826,7 @@ namespace TS3AudioBot
 			throw new CommandException("Can't find a fitting return type for take");
 		}
 
+		[Command(Admin, "test", "Only for debugging purposes")]
 		void CommandTest(ExecutionInformation info)
 		{
 			if (!info.Session.IsPrivate)
@@ -939,17 +840,21 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Private, "twitch", "Resolves the link as a twitch stream to play it for you.")]
 		void CommandTwitch(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
 			FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.Session, client, parameter, false));
 		}
 
+		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
 		void CommandUnsubscribe(ExecutionInformation info)
 		{
 			BobController.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
 		}
 
+		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]
+		[Usage("<level>", "A new volume level between 0 and 100")]
 		string CommandVolume(ExecutionInformation info, string parameter)
 		{
 			bool relPos = parameter.StartsWith("+");
@@ -978,6 +883,7 @@ namespace TS3AudioBot
 			return null;
 		}
 
+		[Command(Private, "youtube", "Resolves the link as a youtube video to play it for you.")]
 		void CommandYoutube(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
@@ -1070,160 +976,6 @@ namespace TS3AudioBot
 			Enqueue = enqueue;
 			Resource = null;
 			Volume = -1;
-		}
-	}
-
-	public class BotCommand : FunctionCommand
-	{
-		public string InvokeName { get; private set; }
-		public CommandRights CommandRights { get; private set; }
-
-		string cachedHelp = null;
-		public string Description { get; private set; }
-		public Tuple<string, string>[] ParameterList { get; private set; }
-
-		private BotCommand(MethodInfo command, object parentObject, int? requiredParameters)
-			: base(command, parentObject, requiredParameters)
-		{ }
-
-		public string GetHelp()
-		{
-			if (cachedHelp == null)
-			{
-				StringBuilder strb = new StringBuilder();
-				strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description);
-				if (ParameterList.Length > 0)
-				{
-					int longest = ParameterList.Max(p => p.Item1.Length) + 1;
-					foreach (var para in ParameterList)
-						strb.Append("\n!").Append(InvokeName).Append(" ").Append(para.Item1)
-							.Append(' ', longest - para.Item1.Length).Append(para.Item2);
-				}
-				cachedHelp = strb.ToString();
-			}
-			return cachedHelp;
-		}
-
-		public override string ToString()
-		{
-			var strb = new StringBuilder();
-			strb.Append('!').Append(InvokeName);
-			strb.Append(" - ").Append(CommandRights);
-			strb.Append(" : ");
-			foreach (var param in ParameterList)
-				strb.Append(param.Item1).Append('/');
-			return strb.ToString();
-		}
-
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
-		{
-			if (info.IsAdmin.Value)
-				return base.Execute(info, arguments, returnTypes);
-
-			switch (CommandRights)
-			{
-			case CommandRights.Admin:
-				throw new CommandException("Command must be invoked by an admin!");
-			case CommandRights.Public:
-				if (info.TextMessage.Target != MessageTarget.Server)
-					throw new CommandException("Command must be used in public mode!");
-				break;
-			case CommandRights.Private:
-				if (info.TextMessage.Target != MessageTarget.Private)
-					throw new CommandException("Command must be used in a private session!");
-				break;
-			}
-			return base.Execute(info, arguments, returnTypes);
-		}
-
-		public class Builder
-		{
-			bool buildMode;
-			readonly Action<BotCommand> registerAction;
-			readonly MainBot parent;
-
-			// Default values
-			const CommandRights defaultCommandRights = CommandRights.Admin;
-			const string defaultDescription = "<no info>";
-
-			// List of configurations for each command
-			string name;
-			MethodInfo command = null;
-			CommandRights? commandRights = null;
-			string description = null;
-			int? requiredParameters = null;
-			readonly List<Tuple<string, string>> parameters = new List<Tuple<string, string>>();
-
-			private Builder(MainBot parent, Action<BotCommand> finishAction, bool buildMode)
-			{
-				this.buildMode = buildMode;
-				this.parent = parent;
-				registerAction = finishAction;
-			}
-			public Builder(MainBot parent, Action<BotCommand> finishAction) : this(parent, finishAction, false) { }
-
-			public Builder New(string invokeName)
-			{
-				if (buildMode)
-					throw new InvalidOperationException("A new command cannot be created when the old one isn't finished.");
-				var builder = new Builder(parent, registerAction, true);
-				builder.name = invokeName;
-				return builder;
-			}
-
-			public Builder Action(MethodInfo command)
-			{
-				if (command == null) throw new ArgumentNullException(nameof(command));
-				if (this.command != null) throw new InvalidOperationException();
-				this.command = command;
-				return this;
-			}
-			public Builder Action(string methodName) => Action(typeof(MainBot).GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
-
-			public Builder Permission(CommandRights requiredRights)
-			{
-				if (commandRights.HasValue) throw new InvalidOperationException();
-				commandRights = requiredRights;
-				return this;
-			}
-
-			public Builder HelpData(string description)
-			{
-				if (this.description != null) throw new InvalidOperationException();
-				this.description = description;
-				return this;
-			}
-
-			public Builder Parameter(string option, string help)
-			{
-				parameters.Add(new Tuple<string, string>(option, help));
-				return this;
-			}
-
-			public Builder RequiredParameters(int requiredParameters)
-			{
-				if (this.requiredParameters.HasValue) throw new InvalidOperationException();
-				this.requiredParameters = requiredParameters;
-				return this;
-			}
-
-			public BotCommand Finish()
-			{
-				if (command == null) throw new InvalidProgramException("No action defined for " + name);
-
-				var botcommand = new BotCommand(command, parent, requiredParameters)
-				{
-					InvokeName = name,
-					CommandRights = commandRights.HasValue ? commandRights.Value : defaultCommandRights,
-					Description = description ?? defaultDescription,
-					ParameterList = parameters.ToArray(),
-				};
-
-				registerAction?.Invoke(botcommand);
-
-				buildMode = false;
-				return botcommand;
-			}
 		}
 	}
 

@@ -212,55 +212,55 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void XCommandSystemFilterTest()
 		{
-			var filterList = new List<string>();
-			filterList.Add("help");
-			filterList.Add("quit");
-			filterList.Add("play");
-			filterList.Add("ply");
+			var filterList = new Dictionary<string, object>();
+			filterList.Add("help", null);
+			filterList.Add("quit", null);
+			filterList.Add("play", null);
+			filterList.Add("ply", null);
 
 			// Exact match
-			IEnumerable<string> result = XCommandSystem.FilterList(filterList, "help");
+			var result = XCommandSystem.FilterList(filterList, "help");
 			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("help", result.First());
+			Assert.AreEqual("help", result.First().Key);
 
 			// The first occurence of y
 			result = XCommandSystem.FilterList(filterList, "y");
 			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("ply", result.First());
+			Assert.AreEqual("ply", result.First().Key);
 
 			// The smallest word
 			result = XCommandSystem.FilterList(filterList, "zorn");
 			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("ply", result.First());
+			Assert.AreEqual("ply", result.First().Key);
 
 			// First letter match
 			result = XCommandSystem.FilterList(filterList, "q");
 			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("quit", result.First());
+			Assert.AreEqual("quit", result.First().Key);
 
 			// Ignore other letters
 			result = XCommandSystem.FilterList(filterList, "palyndrom");
 			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("play", result.First());
+			Assert.AreEqual("play", result.First().Key);
 
-			filterList.Add("pla");
+			filterList.Add("pla", null);
 
 			// Ambiguous command
 			result = XCommandSystem.FilterList(filterList, "p");
 			Assert.AreEqual(2, result.Count());
-			Assert.IsTrue(result.Contains("ply"));
-			Assert.IsTrue(result.Contains("pla"));
+			Assert.IsTrue(result.Where(r => r.Key == "ply").Any());
+			Assert.IsTrue(result.Where(r => r.Key == "pla").Any());
 		}
 
 		[Test]
 		public void XCommandSystemTest()
 		{
-			var group = new RootCommand();
+			var commandSystem = new XCommandSystem();
+			var group = commandSystem.RootCommand;
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
 			group.AddCommand("optional", new FunctionCommand(new Func<string, string>(s => s == null ? "NULL" : "NOT NULL")).SetRequiredParameters(0));
-			var commandSystem = new XCommandSystem(group);
 
 			// Basic tests
 			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(new ExecutionInformation(),

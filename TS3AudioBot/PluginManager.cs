@@ -38,7 +38,6 @@ namespace TS3AudioBot
 
 	public interface ITS3ABPlugin : IDisposable
 	{
-		IEnumerable<BotCommand> GetCommands();
 		void Initialize(MainBot bot);
 	}
 }

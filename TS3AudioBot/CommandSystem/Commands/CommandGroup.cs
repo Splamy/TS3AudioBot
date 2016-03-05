@@ -9,12 +9,14 @@ namespace TS3AudioBot.CommandSystem
 
 		public void AddCommand(string name, ICommand command) => commands.Add(name, command);
 		public void RemoveCommand(string name) => commands.Remove(name);
-		public void RemoveCommand(ICommand command)
-		{
-			var commandPair = commands.Single(kvp => kvp.Value == command);
-			commands.Remove(commandPair);
-		}
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
+		public ICommand GetCommand(string name)
+		{
+			ICommand com;
+			return commands.TryGetValue(name, out com) ? com : null;
+		}
+		public bool IsEmpty => !commands.Any();
+		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
 		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
@@ -25,13 +27,13 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException("Expected a string");
 			}
 
-			var result = arguments.First().Execute(info, new ICommand[] {}, new CommandResultType[] { CommandResultType.String });
+			var result = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new CommandResultType[] { CommandResultType.String });
 
-			var commandResults = XCommandSystem.FilterList(commands.Keys, ((StringCommandResult)result).Content);
+			var commandResults = XCommandSystem.FilterList(commands, ((StringCommandResult)result).Content);
 			if (commandResults.Skip(1).Any())
-				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults));
+				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults.Select(g => g.Key)));
 
-			return commands[commandResults.First()].Execute(info, arguments.Skip(1), returnTypes);
+			return commandResults.First().Value.Execute(info, arguments.Skip(1), returnTypes);
 		}
 	}
 }
