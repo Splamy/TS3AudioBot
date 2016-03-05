@@ -82,10 +82,11 @@ namespace TS3AudioBot.CommandSystem
 		public string ExecuteCommand(ExecutionInformation info, string command)
 		{
 			ICommandResult result = Execute(info, command);
-			if (result.ResultType == CommandResultType.String ||
-				result.ResultType == CommandResultType.Empty)
+			if (result.ResultType == CommandResultType.String)
 				return result.ToString();
-			throw new CommandException("Expected a string as result");
+			if (result.ResultType == CommandResultType.Empty)
+				return null;
+			throw new CommandException("Expected a string or nothing as result");
 		}
 	}
 }

@@ -74,6 +74,7 @@
     <Compile Include="MonoUtil.cs" />
     <Compile Include="UnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="BotCommandTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

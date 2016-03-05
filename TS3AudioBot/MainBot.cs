@@ -889,15 +889,15 @@ namespace TS3AudioBot
 
 			// Get count
 			var res = ((StringCommandResult)arguments.ElementAt(0).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
-			if (!int.TryParse(res, out count))
-				throw new CommandException("Count must be an integer");
+			if (!int.TryParse(res, out count) || count < 0)
+				throw new CommandException("Count must be an integer >= 0");
 
 			if (arguments.Count() > 2)
 			{
 				// Get start
 				res = ((StringCommandResult)arguments.ElementAt(1).Execute(info, new ICommand[] { }, new[] { CommandResultType.String })).Content;
-				if (!int.TryParse(res, out start))
-					throw new CommandException("Start must be an integer");
+				if (!int.TryParse(res, out start) || start < 0)
+					throw new CommandException("Start must be an integer >= 0");
 			}
 
 			if (arguments.Count() > 3)
@@ -1211,7 +1211,7 @@ namespace TS3AudioBot
 			{
 				if (command == null) throw new InvalidProgramException("No action defined for " + name);
 
-				var botcommand = new BotCommand(command, null, requiredParameters)
+				var botcommand = new BotCommand(command, parent, requiredParameters)
 				{
 					InvokeName = name,
 					CommandRights = commandRights.HasValue ? commandRights.Value : defaultCommandRights,
