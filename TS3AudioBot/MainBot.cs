@@ -252,6 +252,7 @@ namespace TS3AudioBot
 				catch (Exception ex)
 				{
 					session.Write("An unexpected error occured: " + ex.Message);
+					Log.Write(Log.Level.Error, "MB Unexpected command error: ", ex);
 				}
 			}
 		}

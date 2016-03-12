@@ -265,6 +265,7 @@ namespace TS3AudioBot.History
 		private void ReWriteToFile(AudioLogEntry logEntry)
 		{
 			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
+			fileReader.InvalidateBuffer();
 			byte[] curLine = FileEncoding.GetBytes(fileReader.ReadLine());
 			byte[] newLine = FileEncoding.GetBytes(logEntry.ToFileString());
 

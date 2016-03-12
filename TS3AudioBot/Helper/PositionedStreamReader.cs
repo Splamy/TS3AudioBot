@@ -11,6 +11,7 @@ namespace TS3AudioBot.Helper
 		private Encoding encoding;
 		private Decoder decoder;
 		private long baseStreamPosition;
+		private long baseStreamLength;
 
 		private StringBuilder strb;
 		private byte[] byteBuffer;
@@ -46,10 +47,11 @@ namespace TS3AudioBot.Helper
 			Endl endlStatus = Endl.Nothing;
 			while (true)
 			{
-				if (bufferpos >= BufferSize || bufferpos == 0 || stream.Position != baseStreamPosition)
+				if (bufferpos >= BufferSize || bufferpos == 0 || stream.Position != baseStreamPosition || stream.Length != baseStreamLength)
 				{
 					bytelen = stream.Read(byteBuffer, 0, byteBuffer.Length);
 					baseStreamPosition = stream.Position;
+					baseStreamLength = stream.Length;
 					if (bytelen == 0)
 						return FinalizeEOF();
 					charlen = decoder.GetChars(byteBuffer, 0, bytelen, charBuffer, 0, false);
@@ -149,6 +151,12 @@ namespace TS3AudioBot.Helper
 				default: break;
 				}
 			}
+		}
+
+		public void InvalidateBuffer()
+		{
+			baseStreamPosition = -1;
+			baseStreamLength = -1;
 		}
 
 		private string FinalizeEOF()
