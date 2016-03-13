@@ -162,7 +162,7 @@ private:
 	int computeWantedSamples(int sampleCount);
 
 	/** Sets the current stream position as stream dependant timestamp. */
-	void setPositionTime(int64_t position);
+	bool setPositionTime(int64_t position);
 	/** Gets the current stream position as stream dependant timestamp. */
 	int64_t getPositionTime() const;
 

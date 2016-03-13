@@ -109,8 +109,11 @@ void PacketReader::read()
 				if (finished)
 				{
 					if (player->loop)
-						player->setPositionTime(0);
-					else
+					{
+						// Stop if we can't loop
+						if (!player->setPositionTime(0))
+							break;
+					} else
 						break;
 				}
 			}

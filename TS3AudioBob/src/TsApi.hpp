@@ -43,7 +43,8 @@ public:
 	{
 		std::string message = Utils::format(format, args...);
 		Utils::sanitizeLines(message);
-		if (!handleTsError(functions.logMessage(message.c_str(), LogLevel_INFO, "", 0)))
+		if (!handleTsError(functions.logMessage(message.c_str(), LogLevel_INFO,
+				"AudioBob", 0)))
 		{
 			// Print the message to stdout when logging with TeamSpeak failed
 			// Remove every left control character for more security

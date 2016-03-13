@@ -368,12 +368,14 @@ int Player::computeWantedSamples(int sampleCount)
 	return wantedSamples;
 }
 
-void Player::setPositionTime(int64_t position)
+bool Player::setPositionTime(int64_t position)
 {
 	if (avformat_seek_file(formatContext, streamId, position, position,
 		position, 0) < 0)
+	{
 		setDecodeError(DECODE_ERROR_SEEK);
-	else
+		return false;
+	} else
 	{
 		std::lock_guard<std::mutex> lock(packetQueueMutex);
 		// Flush packet queue
@@ -386,6 +388,7 @@ void Player::setPositionTime(int64_t position)
 		}
 		packetQueue.push(flushPacket);
 	}
+	return true;
 }
 
 int64_t Player::getPositionTime() const
@@ -399,8 +402,7 @@ bool Player::setPosition(double time)
 	if (finished)
 		return false;
 	std::lock_guard<std::mutex> lock(readThreadMutex);
-	setPositionTime(time / av_q2d(stream->time_base));
-	return true;
+	return setPositionTime(time / av_q2d(stream->time_base));
 }
 
 double Player::getPosition() const
