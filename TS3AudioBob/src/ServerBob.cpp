@@ -266,7 +266,8 @@ void ServerBob::close()
 		connection.close(msg);
 	connections.clear();
 	// "Graceful" exit
-	exit(EXIT_SUCCESS);
+	// exit() crashes sometimes
+	abort();
 }
 
 void ServerBob::unknownCommand(ServerConnection *connection,

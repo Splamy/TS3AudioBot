@@ -118,7 +118,7 @@ int ts3plugin_init()
 		tsApi->log("Couldn't read config file");
 		// We don't want an uncontrollable Bob
 		tsApi.reset();
-		exit(EXIT_FAILURE);
+		abort();
 	}
 	return 0;
 }
