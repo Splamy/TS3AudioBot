@@ -496,7 +496,7 @@ namespace TS3AudioBot
 		ICommandResult CommandIf(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			var argList = arguments.ToList();
-			if (arguments.Count() < 4)
+			if (argList.Count < 4)
 				throw new CommandException("Expected at least 4 arguments");
 			var arg0 = ((StringCommandResult)argList[0].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 			var cmp = ((StringCommandResult)argList[1].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
@@ -527,7 +527,7 @@ namespace TS3AudioBot
 			if (cmpResult)
 				return argList[3].Execute(info, Enumerable.Empty<ICommand>(), returnTypes);
 			// Else branch
-			if (arguments.Count() > 4)
+			if (argList.Count > 4)
 				return argList[4].Execute(info, Enumerable.Empty<ICommand>(), returnTypes);
 
 			// Try to return nothing

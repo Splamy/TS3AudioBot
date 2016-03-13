@@ -45,7 +45,10 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(string id)
 		{
-			string jsonResponse = $"https://api.soundcloud.com/tracks/{id}?client_id={SoundcloudClientID}";
+			string jsonResponse;
+			var uri = new Uri($"https://api.soundcloud.com/tracks/{id}?client_id={SoundcloudClientID}");
+			if (!WebWrapper.DownloadString(out jsonResponse, uri))
+				return null;
 			var parsedDict = ParseJson(jsonResponse);
 			return (string)parsedDict["permalink_url"];
 		}
