@@ -280,6 +280,16 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(new ExecutionInformation(), "!e (!t)"));
 			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(new ExecutionInformation(), "!op (!e TEST)"));
 			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!(!e on)"));
+
+			// Command overloading
+			group.AddCommand("overlord", new OverloadedFunctionCommand(new FunctionCommand[] {
+				new FunctionCommand(new Func<int, string>((int i) => "INT").Method),
+				new FunctionCommand(new Func<string, string>((string s) => "STRING").Method)
+			}));
+
+			Assert.AreEqual("INT", commandSystem.ExecuteCommand(new ExecutionInformation(), "!overlord 1"));
+			Assert.AreEqual("STRING", commandSystem.ExecuteCommand(new ExecutionInformation(), "!overlord a"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(new ExecutionInformation(), "!overlord"));
 		}
 
 		[Test]

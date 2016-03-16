@@ -131,6 +131,8 @@
     <Compile Include="TS3Query\QueryStringAttribute.cs" />
     <Compile Include="TS3Query\TS3QueryClient.cs" />
     <Compile Include="TS3Query\TS3QueryTools.cs" />
+    <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
+    <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

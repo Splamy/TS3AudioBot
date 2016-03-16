@@ -15,7 +15,9 @@ namespace TS3AudioBot.CommandSystem
 
 			var result = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new CommandResultType[] { CommandResultType.Command, CommandResultType.String });
 			if (result.ResultType == CommandResultType.String)
-				return base.Execute(info, arguments, returnTypes);
+				// Use cached result so we don't execute the first argument twice
+				return base.Execute(info, new ICommand[] { new StringCommand(((StringCommandResult)result).Content) }
+				                    .Concat(arguments.Skip(1)), returnTypes);
 
 			return ((CommandCommandResult)result).Command.Execute(info, arguments.Skip(1), returnTypes);
 		}
