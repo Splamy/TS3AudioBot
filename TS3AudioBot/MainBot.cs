@@ -23,7 +23,7 @@ namespace TS3AudioBot
 	//	    method for registering events
 	// - implement history missing features
 	// - implement command stacking
-	public sealed class MainBot : IDisposable
+	public sealed class MainBot : MarshalByRefObject, IDisposable
 	{
 		static void Main(string[] args)
 		{
@@ -50,19 +50,19 @@ namespace TS3AudioBot
 
 		private StreamWriter logStream;
 
-		public CommandManager CommandManager { get; }
+		public PluginManager PluginManager { get; private set; }
+		public CommandManager CommandManager { get; private set; }
 		public AudioFramework AudioFramework { get; private set; }
 		public BobController BobController { get; private set; }
 		public IQueryConnection QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
-		internal HistoryManager HistoryManager { get; private set; }
+		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
 		public MainBot()
 		{
-			CommandManager = new CommandManager();
 			consoleOutput = false;
 			writeLog = false;
 		}
@@ -95,6 +95,7 @@ namespace TS3AudioBot
 			BobControllerData bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
 			QueryConnectionData qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
 			HistoryManagerData hmd = cfgFile.GetDataStruct<HistoryManagerData>(typeof(HistoryManager), true);
+			PluginManagerData pmd = cfgFile.GetDataStruct<PluginManagerData>(typeof(PluginManager), true);
 			mainBotData = cfgFile.GetDataStruct<MainBotData>(typeof(MainBot), true);
 			cfgFile.Close();
 
@@ -127,6 +128,7 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[==============================================]");
 
 			Log.Write(Log.Level.Info, "[============ Initializing Commands ===========]");
+			CommandManager = new CommandManager();
 			CommandManager.RegisterMain(this);
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
@@ -137,6 +139,7 @@ namespace TS3AudioBot
 			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
+			PluginManager = new PluginManager(this, pmd);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager(AudioFramework);
@@ -151,7 +154,7 @@ namespace TS3AudioBot
 			// Inform the BobClient on start/stop
 			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
 			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
-			// Register callback for all messages happeing
+			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerId);
@@ -638,6 +641,24 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Admin, "plugin list", "Lists all found plugins.")]
+		string CommandPluginList(ExecutionInformation info)
+		{
+			return PluginManager.GetPluginOverview();
+		}
+
+		[Command(Admin, "plugin unload", "Unloads a plugin.")]
+		string CommandPluginUnload(ExecutionInformation info, string identifier)
+		{
+			return PluginManager.UnloadPlugin(identifier).ToString();
+		}
+
+		[Command(Admin, "plugin load", "Unloads a plugin.")]
+		string CommandPluginLoad(ExecutionInformation info, string identifier)
+		{
+			return PluginManager.LoadPlugin(identifier).ToString();
+		}
+
 		[Command(Private, "previous", "Plays the previous song in the playlist.")]
 		void CommandPrevious()
 		{
@@ -921,6 +942,11 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
+			if (PluginManager != null)
+			{
+				PluginManager.Dispose();
+				PluginManager = null;
+			}
 			if (QueryConnection != null)
 			{
 				QueryConnection.Dispose();

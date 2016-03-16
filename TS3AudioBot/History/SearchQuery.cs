@@ -2,7 +2,7 @@ namespace TS3AudioBot.History
 {
 	using System;
 
-	class SeachQuery
+	public class SeachQuery
 	{
 		public string TitlePart;
 		public uint? UserId;

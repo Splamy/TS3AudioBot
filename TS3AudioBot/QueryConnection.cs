@@ -7,7 +7,7 @@ namespace TS3AudioBot
 	using TS3Query;
 	using TS3Query.Messages;
 
-	class QueryConnection : IQueryConnection
+	class QueryConnection : MarshalByRefObject, IQueryConnection
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
 		private void ExtendedTextMessage(object sender, TextMessage eventArgs)

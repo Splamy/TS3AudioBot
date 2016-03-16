@@ -24,24 +24,24 @@
 
 				// Sort out special arguments
 				// and remove the nullable wrapper
-				List<Type> params1 = f1.InternCommand.GetParameters()
-				                                .Where(p => !FunctionCommand.SpecialTypes.Contains(p.ParameterType))
-				                                .Select(p =>
+				List<Type> params1 = f1.CommandParameter
+												.Where(p => !FunctionCommand.SpecialTypes.Contains(p))
+												.Select(p =>
 				{
-					if (p.ParameterType.IsConstructedGenericType && p.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>))
-						return p.ParameterType.GenericTypeArguments[0];
-					return p.ParameterType;
+					if (p.IsConstructedGenericType && p.GetGenericTypeDefinition() == typeof(Nullable<>))
+						return p.GenericTypeArguments[0];
+					return p;
 				})
-				                                .ToList();
-				List<Type> params2 = f2.InternCommand.GetParameters()
-				                                .Where(p => !FunctionCommand.SpecialTypes.Contains(p.ParameterType))
-				                                .Select(p =>
+												.ToList();
+				List<Type> params2 = f2.CommandParameter
+												.Where(p => !FunctionCommand.SpecialTypes.Contains(p))
+												.Select(p =>
 				{
-					if (p.ParameterType.IsConstructedGenericType && p.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>))
-						return p.ParameterType.GenericTypeArguments[0];
-					return p.ParameterType;
+					if (p.IsConstructedGenericType && p.GetGenericTypeDefinition() == typeof(Nullable<>))
+						return p.GenericTypeArguments[0];
+					return p;
 				})
-				                                .ToList();
+												.ToList();
 
 				for (int i = 0; i < params1.Count; i++)
 				{
@@ -67,7 +67,7 @@
 			});
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c));

@@ -19,7 +19,9 @@ namespace TS3AudioBot.CommandSystem
 		/// <summary>
 		/// The method that will be called internally by this command.
 		/// </summary>
-		public readonly MethodInfo InternCommand;
+		private MethodInfo internCommand;
+		public Type[] CommandParameter { get; }
+		public Type CommandReturn { get; }
 		/// <summary>
 		/// How many free arguments have to be applied to this function.
 		/// This includes only user-supplied arguments, e.g. the ExecutionInformation is not included.
@@ -28,10 +30,13 @@ namespace TS3AudioBot.CommandSystem
 
 		public FunctionCommand(MethodInfo command, object obj = null, int? requiredParameters = null)
 		{
-			InternCommand = command;
+			internCommand = command;
+			CommandParameter = command.GetParameters().Select(p => p.ParameterType).ToArray();
+			CommandReturn = command.ReturnType;
+
 			callee = obj;
 			// Require all parameters by default
-			normalParameters = InternCommand.GetParameters().Count(p => !SpecialTypes.Contains(p.ParameterType));
+			normalParameters = CommandParameter.Count(p => !SpecialTypes.Contains(p));
 			RequiredParameters = requiredParameters ?? normalParameters;
 		}
 
@@ -45,11 +50,11 @@ namespace TS3AudioBot.CommandSystem
 		public FunctionCommand(Action<ExecutionInformation, string> command) : this(command.Method, command.Target) { }
 		public FunctionCommand(Func<ExecutionInformation, string, string> command) : this(command.Method, command.Target) { }
 
-		object ExecuteFunction(object[] parameters)
+		protected virtual object ExecuteFunction(object[] parameters)
 		{
 			try
 			{
-				return InternCommand.Invoke(callee, parameters);
+				return internCommand.Invoke(callee, parameters);
 			}
 			catch (TargetInvocationException ex)
 			{
@@ -57,9 +62,9 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			object[] parameters = new object[InternCommand.GetParameters().Length];
+			object[] parameters = new object[CommandParameter.Length];
 			Lazy<List<ICommand>> argList = new Lazy<List<ICommand>>(() => arguments.ToList());
 
 			// a: Iterate through arguments
@@ -67,7 +72,7 @@ namespace TS3AudioBot.CommandSystem
 			int a = 0;
 			for (int p = 0; p < parameters.Length; p++)
 			{
-				var arg = InternCommand.GetParameters()[p].ParameterType;
+				var arg = CommandParameter[p];
 				if (arg == typeof(ExecutionInformation))
 					parameters[p] = info;
 				else if (arg == typeof(IEnumerable<ICommand>))
@@ -119,10 +124,10 @@ namespace TS3AudioBot.CommandSystem
 						return new CommandCommandResult(this);
 					return new CommandCommandResult(new AppliedCommand(this, arguments));
 				}
-				throw new CommandException("Not enough arguments for function " + InternCommand.Name);
+				throw new CommandException("Not enough arguments for function " + internCommand.Name);
 			}
 
-			if (InternCommand.ReturnType == typeof(ICommandResult))
+			if (CommandReturn == typeof(ICommandResult))
 				return (ICommandResult)ExecuteFunction(parameters);
 
 			bool executed = false;
@@ -136,7 +141,7 @@ namespace TS3AudioBot.CommandSystem
 					// Return a command if possible
 					// Only do this if the command was not yet executed to prevent executing a command more than once
 					if (!executed &&
-						(InternCommand.GetParameters().Any(p => p.ParameterType == typeof(string[])) ||
+						(CommandParameter.Any(p => p == typeof(string[])) ||
 						 a < normalParameters))
 						return new CommandCommandResult(new AppliedCommand(this, arguments));
 					break;
@@ -145,7 +150,7 @@ namespace TS3AudioBot.CommandSystem
 						ExecuteFunction(parameters);
 					return new EmptyCommandResult();
 				case CommandResultType.Enumerable:
-					if (InternCommand.ReturnType == typeof(string[]))
+					if (CommandReturn == typeof(string[]))
 					{
 						if (!executed)
 							result = ExecuteFunction(parameters);
@@ -166,7 +171,7 @@ namespace TS3AudioBot.CommandSystem
 			// Try to return an empty string
 			if (returnTypes.Contains(CommandResultType.String) && executed)
 				return new StringCommandResult("");
-			throw new CommandException("Couldn't find a proper command result for function " + InternCommand.Name);
+			throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name);
 		}
 
 		private static string GetTypeName(Type type)

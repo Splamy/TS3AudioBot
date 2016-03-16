@@ -6,7 +6,7 @@ namespace TS3AudioBot.History
 	using System.Text;
 
 	// TODO either static all, or get an interface
-	internal class SmartHistoryFormatter
+	public class SmartHistoryFormatter
 	{
 		private const int TS3_MAXLENGTH = 1024;
 		private int LineLimit = 40;

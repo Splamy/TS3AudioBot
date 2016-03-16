@@ -1,5 +1,6 @@
 namespace TS3AudioBot.CommandSystem
 {
+	using System;
 	using System.Linq;
 	using System.Collections.Generic;
 
@@ -14,7 +15,7 @@ namespace TS3AudioBot.CommandSystem
 			internArguments = arguments;
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			return internCommand.Execute(info, internArguments.Concat(arguments), returnTypes);
 		}

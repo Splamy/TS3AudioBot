@@ -10,8 +10,6 @@ namespace TS3AudioBot.CommandSystem
 		public int Position { get; set; }
 		public int Length { get; set; }
 
-		protected const int SpacePerTab = 2;
-		protected StringBuilder Space(StringBuilder strb, int depth) => strb.Append(' ', depth * SpacePerTab);
 		public abstract void Write(StringBuilder strb, int depth);
 		public override sealed string ToString()
 		{
@@ -19,5 +17,11 @@ namespace TS3AudioBot.CommandSystem
 			Write(strb, 0);
 			return strb.ToString();
 		}
+	}
+
+	static class ASTNodeExtensions
+	{
+		public const int SpacePerTab = 2;
+		public static StringBuilder Space(this StringBuilder strb, int depth) => strb.Append(' ', depth * SpacePerTab);
 	}
 }

@@ -1,6 +1,8 @@
 namespace TS3AudioBot.CommandSystem
 {
-	public abstract class ICommandResult
+	using System;
+
+	public abstract class ICommandResult : MarshalByRefObject
 	{
 		public abstract CommandResultType ResultType { get; }
 

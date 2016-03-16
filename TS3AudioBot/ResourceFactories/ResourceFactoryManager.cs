@@ -53,7 +53,7 @@ namespace TS3AudioBot.ResourceFactories
 				Play(data);
 		}
 
-		internal void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
+		public void RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
 		{
 			var factory = GetFactoryFor(logEntry.AudioType);
 

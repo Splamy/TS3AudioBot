@@ -7,6 +7,6 @@ namespace TS3AudioBot.CommandSystem
 		public override ASTType Type => ASTType.Value;
 		public string Value { get; set; }
 
-		public override void Write(StringBuilder strb, int depth) => Space(strb, depth).AppendLine(Value);
+		public override void Write(StringBuilder strb, int depth) => strb.Space(depth).Append(Value);
 	}
 }

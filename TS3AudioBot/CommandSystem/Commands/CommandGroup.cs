@@ -18,7 +18,7 @@ namespace TS3AudioBot.CommandSystem
 		public bool IsEmpty => !commands.Any();
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (!arguments.Any())
 			{
@@ -33,7 +33,8 @@ namespace TS3AudioBot.CommandSystem
 			if (commandResults.Skip(1).Any())
 				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults.Select(g => g.Key)));
 
-			return commandResults.First().Value.Execute(info, arguments.Skip(1), returnTypes);
+			var argSubList = arguments.Skip(1).ToArray();
+			return commandResults.First().Value.Execute(info, argSubList, returnTypes);
 		}
 	}
 }

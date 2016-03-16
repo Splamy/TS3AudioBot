@@ -6,6 +6,7 @@
 	using System.Reflection;
 	using System.Text;
 	using TS3Query;
+	using Helper;
 	using static CommandRights;
 
 	public class CommandManager
@@ -14,7 +15,7 @@
 		public XCommandSystem CommandSystem { get; }
 
 		public IList<BotCommand> BaseCommands { get; private set; }
-		public Dictionary<ITS3ABPlugin, IList<BotCommand>> PluginCommands { get; }
+		public IDictionary<Plugin, IList<BotCommand>> PluginCommands { get; }
 
 		public IEnumerable<BotCommand> AllCommands
 		{
@@ -32,8 +33,8 @@
 		public CommandManager()
 		{
 			CommandSystem = new XCommandSystem();
-			PluginCommands = new Dictionary<ITS3ABPlugin, IList<BotCommand>>();
-			CommandPaths = new HashSet<string>();
+			PluginCommands = new Dictionary<Plugin, IList<BotCommand>>();
+			Util.Init(ref CommandPaths);
 		}
 
 		public void RegisterMain(MainBot main)
@@ -42,7 +43,7 @@
 				throw new InvalidOperationException("Operation can only be executed once.");
 
 			var comList = new List<BotCommand>();
-			foreach (var com in GetCommandMethods(main, CommandType.Main))
+			foreach (var com in GetBotCommands(GetCommandMethods(main)))
 			{
 				LoadCommand(com);
 				comList.Add(com);
@@ -51,12 +52,12 @@
 			BaseCommands = comList.AsReadOnly();
 		}
 
-		public void RegisterPlugin(ITS3ABPlugin plugin)
+		public void RegisterPlugin(Plugin plugin)
 		{
 			if (PluginCommands.ContainsKey(plugin))
 				throw new InvalidOperationException("Plugin is already laoded.");
 
-			var comList = GetCommandMethods(plugin, CommandType.Plugin).ToList();
+			var comList = plugin.GetWrappedCommands().ToList();
 
 			CheckDistinct(comList);
 
@@ -76,29 +77,37 @@
 			}
 		}
 
-		private IEnumerable<BotCommand> GetCommandMethods(object obj, CommandType type)
+		public void UnregisterPlugin(Plugin plugin)
+		{
+			IList<BotCommand> commands;
+			if (PluginCommands.TryGetValue(plugin, out commands))
+			{
+				foreach (var com in commands)
+				{
+					UnloadCommand(com);
+				}
+			}
+		}
+
+		private static IEnumerable<BotCommand> GetBotCommands(IEnumerable<CommandBuildInfo> methods)
+		{
+			foreach (var botData in methods)
+			{
+				botData.usageList = botData.method.GetCustomAttributes<UsageAttribute>();
+				yield return new BotCommand(botData);
+			}
+		}
+
+		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj)
 		{
 			var objType = obj.GetType();
 			foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
 			{
 				var comAtt = method.GetCustomAttribute<CommandAttribute>();
 				if (comAtt == null) continue;
-
 				var reqAtt = method.GetCustomAttribute<RequiredParametersAttribute>();
-
-				var botCommand = new BotCommand
-					(comAtt.CommandNameSpace,
-					comAtt.RequiredRights,
-					comAtt.CommandHelp,
-					method.GetCustomAttributes<UsageAttribute>(),
-					method,
-					method.IsStatic ? null : obj,
-					reqAtt == null ? null : (int?)reqAtt.Count);
-				botCommand.CommandType = type;
-
-				yield return botCommand;
+				yield return new CommandBuildInfo(obj, method, comAtt, reqAtt);
 			}
-			yield break;
 		}
 
 		private void CheckDistinct(IList<BotCommand> list) // TODO test
@@ -117,7 +126,7 @@
 			CommandPaths.Add(com.InvokeName);
 
 			var comPath = com.InvokeName.Split(' ');
-			
+
 			CommandGroup group = CommandSystem.RootCommand;
 			for (int i = 0; i < comPath.Length - 1; i++)
 			{
@@ -166,25 +175,39 @@
 		}
 	}
 
+	public class CommandBuildInfo
+	{
+		public object parent;
+		public MethodInfo method;
+		public CommandAttribute commandData;
+		public RequiredParametersAttribute reqiredParameters;
+		public IEnumerable<UsageAttribute> usageList;
+
+		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt, RequiredParametersAttribute reqAtt)
+		{
+			parent = p;
+			method = m;
+			commandData = comAtt;
+			reqiredParameters = reqAtt;
+		}
+	}
+
 	public class BotCommand : FunctionCommand
 	{
 		string cachedHelp = null;
 
-		public BotCommand(string invokeName, CommandRights rights, string descripion, IEnumerable<UsageAttribute> usageList,
-				MethodInfo command, object parentObject, int? requiredParameters)
-			: base(command, parentObject, requiredParameters)
+		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.method, buildInfo.parent, buildInfo.reqiredParameters?.Count)
 		{
-			InvokeName = invokeName;
-			CommandRights = rights;
-			Description = descripion;
-			UsageList = usageList;
+			InvokeName = buildInfo.commandData.CommandNameSpace;
+			CommandRights = buildInfo.commandData.RequiredRights;
+			Description = buildInfo.commandData.CommandHelp;
+			UsageList = buildInfo.usageList;
 		}
-
+		
 		public string InvokeName { get; }
 		public CommandRights CommandRights { get; }
 		public string Description { get; private set; }
 		public IEnumerable<UsageAttribute> UsageList { get; }
-		internal CommandType CommandType { get; set; }
 
 		public string GetHelp()
 		{
@@ -237,12 +260,5 @@
 			}
 			return base.Execute(info, arguments, returnTypes);
 		}
-	}
-
-	internal enum CommandType
-	{
-		Main,
-		Plugin,
-		Alias,
 	}
 }

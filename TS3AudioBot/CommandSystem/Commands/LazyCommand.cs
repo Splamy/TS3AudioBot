@@ -10,13 +10,13 @@
 		/// The cached result, if available.
 		/// </summary>
 		ICommandResult result;
-		
+
 		public LazyCommand(ICommand innerCommandArg)
 		{
 			innerCommand = innerCommandArg;
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
 			if (result == null)
 			{
