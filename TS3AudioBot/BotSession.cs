@@ -3,7 +3,7 @@ namespace TS3AudioBot
 	using System;
 	using TS3Query;
 	using TS3Query.Messages;
-	using Response = System.Func<BotSession, TS3Query.Messages.TextMessage, bool, bool>;
+	using Response = System.Func<BotSession, TS3Query.Messages.TextMessage, System.Lazy<bool>, bool>;
 
 	public abstract class BotSession : MarshalByRefObject
 	{
@@ -11,7 +11,6 @@ namespace TS3AudioBot
 
 		public PlayData UserResource { get; set; }
 		public Response ResponseProcessor { get; protected set; }
-		public bool AdminResponse { get; protected set; }
 		public object ResponseData { get; protected set; }
 
 		public abstract bool IsPrivate { get; }
@@ -26,18 +25,16 @@ namespace TS3AudioBot
 			ResponseData = null;
 		}
 
-		public void SetResponse(Response responseProcessor, object responseData, bool requiresAdminCheck)
+		public void SetResponse(Response responseProcessor, object responseData)
 		{
 			ResponseProcessor = responseProcessor;
 			ResponseData = responseData;
-			AdminResponse = requiresAdminCheck;
 		}
 
 		public void ClearResponse()
 		{
 			ResponseProcessor = null;
 			ResponseData = null;
-			AdminResponse = false;
 		}
 	}
 

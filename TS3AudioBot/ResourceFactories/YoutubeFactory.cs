@@ -151,10 +151,10 @@ namespace TS3AudioBot.ResourceFactories
 			abortPlay = true;
 			data.Session.Write(strb.ToString());
 			data.Session.UserResource = data;
-			data.Session.SetResponse(ResponseYoutube, null, false);
+			data.Session.SetResponse(ResponseYoutube, null);
 		}
 
-		private static bool ResponseYoutube(BotSession session, TextMessage tm, bool isAdmin)
+		private static bool ResponseYoutube(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
 		{
 			string[] command = tm.Message.SplitNoEmpty(' ');
 			if (command[0] != "!f")

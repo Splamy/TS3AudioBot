@@ -177,6 +177,8 @@ namespace TS3AudioBot
 			qc.tsClient.EventDispatcher.EnterEventLoop();
 		}
 
+		#region COMMAND EXECUTING & CHAINING
+
 		private void TextCallback(object sender, TextMessage textMessage)
 		{
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
@@ -209,7 +211,7 @@ namespace TS3AudioBot
 			// check if the user has an open request
 			if (session.ResponseProcessor != null)
 			{
-				if (session.ResponseProcessor(session, textMessage, session.AdminResponse && isAdmin.Value))
+				if (session.ResponseProcessor(session, textMessage, isAdmin))
 				{
 					session.ClearResponse();
 					return;
@@ -255,8 +257,6 @@ namespace TS3AudioBot
 				}
 			}
 		}
-
-		#region COMMAND EXECUTING & CHAINING
 
 		private void PrintAstError(BotSession session, ASTError asterror)
 		{
@@ -671,12 +671,31 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
-		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
+		[Command(Admin, "quit ", "Closes the TS3AudioBot application.")]
 		void CommandQuit(ExecutionInformation info)
+		{
+			info.Session.Write("Do you really want to quit? !(yes|no)");
+			info.Session.SetResponse(ResponseQuit, null);
+		}
+
+		[Command(Admin, "quit force", "Closes the TS3AudioBot application.")]
+		void CommandQuitForce(ExecutionInformation info)
 		{
 			info.Session.Write("Goodbye!");
 			Dispose();
 			Log.Write(Log.Level.Info, "Exiting...");
+		}
+
+		[Command(Admin, "quit last", "Disconnects the Bob when noone is on the server anymore.")]
+		void CommandQuitLast(ExecutionInformation info)
+		{
+			throw new NotImplementedException();
+		}
+
+		[Command(Admin, "quit reset", "Discards any \"quit last\" request.")]
+		void CommandQuitReset(ExecutionInformation info)
+		{
+			throw new NotImplementedException();
 		}
 
 		[Command(Public, "quiz", "Enable to hide the songnames and let your friends guess the title.")]
@@ -895,7 +914,7 @@ namespace TS3AudioBot
 				AudioFramework.Volume = newVolume;
 			else if (newVolume <= AudioFramework.MaxVolume)
 			{
-				info.Session.SetResponse(ResponseVolume, newVolume, true);
+				info.Session.SetResponse(ResponseVolume, newVolume);
 				return "Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)";
 			}
 			return null;
@@ -912,12 +931,12 @@ namespace TS3AudioBot
 
 		#region RESPONSES
 
-		private bool ResponseVolume(BotSession session, TextMessage tm, bool isAdmin)
+		private bool ResponseVolume(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
 		{
 			Answer answer = TextUtil.GetAnswer(tm.Message);
 			if (answer == Answer.Yes)
 			{
-				if (isAdmin)
+				if (isAdmin.Value)
 				{
 					if (!(session.ResponseData is int))
 					{
@@ -925,6 +944,23 @@ namespace TS3AudioBot
 						return true;
 					}
 					AudioFramework.Volume = (int)session.ResponseData;
+				}
+				else
+				{
+					session.Write("Command can only be answered by an admin.");
+				}
+			}
+			return answer != Answer.Unknown;
+		}
+
+		private bool ResponseQuit(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
+		{
+			Answer answer = TextUtil.GetAnswer(tm.Message);
+			if (answer == Answer.Yes)
+			{
+				if (isAdmin.Value)
+				{
+					CommandQuitForce(new ExecutionInformation() { Session = session, TextMessage = tm, IsAdmin = isAdmin });
 				}
 				else
 				{

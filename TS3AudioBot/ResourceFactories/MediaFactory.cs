@@ -117,11 +117,11 @@ namespace TS3AudioBot.ResourceFactories
 				data.Session.Write(
 					$"This uri might be invalid ({mediaResource.InternalResultCode}), do you want to start anyway?");
 				data.Session.UserResource = data;
-				data.Session.SetResponse(ResponseValidation, null, false);
+				data.Session.SetResponse(ResponseValidation, null);
 			}
 		}
 
-		private static bool ResponseValidation(BotSession session, TextMessage tm, bool isAdmin)
+		private static bool ResponseValidation(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
 		{
 			Answer answer = TextUtil.GetAnswer(tm.Message);
 			if (answer == Answer.Yes)

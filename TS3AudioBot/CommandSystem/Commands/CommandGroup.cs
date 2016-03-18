@@ -20,16 +20,21 @@ namespace TS3AudioBot.CommandSystem
 
 		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
+			string result;
 			if (!arguments.Any())
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 					return new CommandCommandResult(this);
-				throw new CommandException("Expected a string");
+				//throw new CommandException("Expected a string");
+				result = string.Empty;
+			}
+			else
+			{
+				var comResult = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new CommandResultType[] { CommandResultType.String });
+				result = ((StringCommandResult)comResult).Content;
 			}
 
-			var result = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new CommandResultType[] { CommandResultType.String });
-
-			var commandResults = XCommandSystem.FilterList(commands, ((StringCommandResult)result).Content);
+			var commandResults = XCommandSystem.FilterList(commands, result);
 			if (commandResults.Skip(1).Any())
 				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults.Select(g => g.Key)));
 
