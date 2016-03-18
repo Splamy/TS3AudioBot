@@ -104,7 +104,7 @@ namespace TS3AudioBot.CommandSystem
 					{
 						var argResult = ((StringCommandResult)argList.Value[a].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 						try { parameters[p] = ConvertParam(argResult, arg); }
-						catch (FormatException ex) { throw new CommandException("Could not convert to " + GetTypeName(arg), ex); }
+						catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex); }
 						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex); }
 
 						a++;
@@ -174,12 +174,12 @@ namespace TS3AudioBot.CommandSystem
 			throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name);
 		}
 
-		private static string GetTypeName(Type type)
+		public static Type UnwrapType(Type type)
 		{
 			if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-				return type.GenericTypeArguments[0].Name;
+				return type.GenericTypeArguments[0];
 			else
-				return type.Name;
+				return type;
 		}
 
 		private static object ConvertParam(string value, Type targetType)

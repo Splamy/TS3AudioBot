@@ -24,24 +24,13 @@
 
 				// Sort out special arguments
 				// and remove the nullable wrapper
-				List<Type> params1 = f1.CommandParameter
-												.Where(p => !FunctionCommand.SpecialTypes.Contains(p))
-												.Select(p =>
-				{
-					if (p.IsConstructedGenericType && p.GetGenericTypeDefinition() == typeof(Nullable<>))
-						return p.GenericTypeArguments[0];
-					return p;
-				})
-												.ToList();
-				List<Type> params2 = f2.CommandParameter
-												.Where(p => !FunctionCommand.SpecialTypes.Contains(p))
-												.Select(p =>
-				{
-					if (p.IsConstructedGenericType && p.GetGenericTypeDefinition() == typeof(Nullable<>))
-						return p.GenericTypeArguments[0];
-					return p;
-				})
-												.ToList();
+				List<Type> params1 = (from p in f1.CommandParameter
+									  where !FunctionCommand.SpecialTypes.Contains(p)
+									  select FunctionCommand.UnwrapType(p)).ToList();
+
+				List<Type> params2 = (from p in f2.CommandParameter
+									  where !FunctionCommand.SpecialTypes.Contains(p)
+									  select FunctionCommand.UnwrapType(p)).ToList();
 
 				for (int i = 0; i < params1.Count; i++)
 				{
@@ -57,7 +46,7 @@
 					// Prefer lower argument
 					if (i1 < i2)
 						return -1;
-					if (i2 < i1)
+					if (i1 > i2)
 						return 1;
 				}
 				if (params2.Count > params1.Count)
