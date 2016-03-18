@@ -18,6 +18,7 @@
 		public BotCommandTests()
 		{
 			bot = new MainBot();
+			typeof(MainBot).GetProperty(nameof(MainBot.CommandManager)).SetValue(bot, new CommandManager());
 			bot.CommandManager.RegisterMain(bot);
 		}
 

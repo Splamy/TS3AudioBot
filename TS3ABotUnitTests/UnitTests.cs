@@ -282,9 +282,11 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(new ExecutionInformation(), "!(!e on)"));
 
 			// Command overloading
-			group.AddCommand("overlord", new OverloadedFunctionCommand(new FunctionCommand[] {
-				new FunctionCommand(new Func<int, string>((int i) => "INT").Method),
-				new FunctionCommand(new Func<string, string>((string s) => "STRING").Method)
+			var intCom = new Func<int, string>((int i) => "INT");
+			var strCom = new Func<string, string>((string s) => "STRING");
+			group.AddCommand("overlord", new OverloadedFunctionCommand(new[] {
+				new FunctionCommand(intCom.Method, intCom.Target),
+				new FunctionCommand(strCom.Method, strCom.Target)
 			}));
 
 			Assert.AreEqual("INT", commandSystem.ExecuteCommand(new ExecutionInformation(), "!overlord 1"));
