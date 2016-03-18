@@ -191,25 +191,6 @@ namespace TS3ABotUnitTests
 		/* ====================== Algorithm Tests =========================*/
 
 		[Test]
-		public void TrieStructureTests()
-		{
-			var trie = new Trie<string>();
-			string[] values = { "val1", "val2", "val3", "val4", "val5" };
-			int adix = 0;
-
-			trie.Add("hans", values[adix++]);
-			Assert.AreEqual(string.Format("+(h*(a*(n*(s[{0}]))))", values), trie.ToString());
-			trie.Add("hani", values[adix++]);
-			Assert.AreEqual(string.Format("+(h(a(n(i[{1}]s[{0}]))))", values), trie.ToString());
-			trie.Add("hana", values[adix++]);
-			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}]))))", values), trie.ToString());
-			trie.Add("hansolo", values[adix++]);
-			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}](o*(l*(o[{3}])))))))", values), trie.ToString());
-			trie.Add("hansololo", values[adix++]);
-			Assert.AreEqual(string.Format("+(h(a(n(a[{2}]i[{1}]s[{0}](o(l(o[{3}](l*(o[{4}])))))))))", values), trie.ToString());
-		}
-
-		[Test]
 		public void XCommandSystemFilterTest()
 		{
 			var filterList = new Dictionary<string, object>();

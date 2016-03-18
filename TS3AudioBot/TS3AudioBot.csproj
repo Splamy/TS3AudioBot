@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -81,7 +81,6 @@
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
-    <Compile Include="IQueryConnection.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PluginManager.cs" />
@@ -89,12 +88,10 @@
     <Compile Include="SessionManager.cs" />
     <Compile Include="VLCConnection.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />
-    <Compile Include="Algorithm\ICommandFilter.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
     <Compile Include="Algorithm\ISubstringSearch.cs" />
     <Compile Include="Algorithm\ListedShuffle.cs" />
     <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
-    <Compile Include="Algorithm\Trie.cs" />
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\ConfigFile.cs" />

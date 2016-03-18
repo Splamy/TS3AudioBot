@@ -1,10 +1,11 @@
 namespace TS3AudioBot
 {
+	using System;
 	using TS3Query;
 	using TS3Query.Messages;
 	using Response = System.Func<BotSession, TS3Query.Messages.TextMessage, bool, bool>;
 
-	public abstract class BotSession
+	public abstract class BotSession : MarshalByRefObject
 	{
 		public MainBot Bot { get; private set; }
 
@@ -40,7 +41,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	sealed class PublicSession : BotSession
+	internal sealed class PublicSession : BotSession
 	{
 		public override bool IsPrivate { get { return false; } }
 
@@ -61,7 +62,7 @@ namespace TS3AudioBot
 		{ }
 	}
 
-	sealed class PrivateSession : BotSession
+	internal sealed class PrivateSession : BotSession
 	{
 		public ClientData Client { get; private set; }
 

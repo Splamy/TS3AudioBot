@@ -5,6 +5,7 @@ namespace TS3AudioBot.Helper
 	using System.Linq;
 	using System.Threading;
 
+	[Serializable]
 	public static class TickPool
 	{
 		private static Thread tickThread;
@@ -83,7 +84,7 @@ namespace TS3AudioBot.Helper
 		}
 	}
 
-	public class TickWorker
+	public class TickWorker : MarshalByRefObject
 	{
 		public Action Method { get; }
 		public TimeSpan Interval { get; }

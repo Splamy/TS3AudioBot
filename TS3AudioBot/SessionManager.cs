@@ -6,7 +6,7 @@ namespace TS3AudioBot
 	using TS3Query;
 	using TS3Query.Messages;
 
-	public class SessionManager
+	public class SessionManager : MarshalByRefObject
 	{
 		public BotSession DefaultSession { get; internal set; }
 		private readonly List<PrivateSession> openSessions;
@@ -49,9 +49,16 @@ namespace TS3AudioBot
 		}
 	}
 
+
 	[Serializable]
 	public class SessionManagerException : Exception
 	{
+		public SessionManagerException() { }
 		public SessionManagerException(string message) : base(message) { }
+		public SessionManagerException(string message, Exception inner) : base(message, inner) { }
+		protected SessionManagerException(
+		  System.Runtime.Serialization.SerializationInfo info,
+		  System.Runtime.Serialization.StreamingContext context) : base(info, context)
+		{ }
 	}
 }

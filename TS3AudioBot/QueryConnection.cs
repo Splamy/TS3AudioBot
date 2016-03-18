@@ -7,7 +7,7 @@ namespace TS3AudioBot
 	using TS3Query;
 	using TS3Query.Messages;
 
-	class QueryConnection : MarshalByRefObject, IQueryConnection
+	public class QueryConnection : MarshalByRefObject, IDisposable
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
 		private void ExtendedTextMessage(object sender, TextMessage eventArgs)
@@ -38,7 +38,7 @@ namespace TS3AudioBot
 		private QueryConnectionData connectionData;
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
-		public TS3QueryClient tsClient { get; private set; }
+		internal TS3QueryClient tsClient { get; private set; }
 		private ClientData me;
 
 		public QueryConnection(QueryConnectionData qcd)

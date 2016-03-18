@@ -9,7 +9,7 @@
 	using Helper;
 	using static CommandRights;
 
-	public class CommandManager
+	public class CommandManager : MarshalByRefObject
 	{
 		private HashSet<string> CommandPaths;
 		public XCommandSystem CommandSystem { get; }
@@ -203,7 +203,7 @@
 			Description = buildInfo.commandData.CommandHelp;
 			UsageList = buildInfo.usageList;
 		}
-		
+
 		public string InvokeName { get; }
 		public CommandRights CommandRights { get; }
 		public string Description { get; private set; }

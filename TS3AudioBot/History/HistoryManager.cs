@@ -5,7 +5,7 @@ namespace TS3AudioBot.History
 	using System.Linq;
 	using Helper;
 
-	public class HistoryManager : IDisposable
+	public class HistoryManager : MarshalByRefObject, IDisposable
 	{
 		private HistoryFile historyFile;
 		private IEnumerable<AudioLogEntry> lastResult;

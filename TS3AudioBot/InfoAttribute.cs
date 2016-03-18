@@ -3,7 +3,7 @@ namespace TS3AudioBot
 	using System;
 
 	[AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-	sealed class InfoAttribute : Attribute
+	internal sealed class InfoAttribute : Attribute
 	{
 		public bool HasDefault { get { return DefaultValue != null; } }
 		public string Description { get; private set; }

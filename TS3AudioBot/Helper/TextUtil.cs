@@ -3,6 +3,7 @@ namespace TS3AudioBot.Helper
 	using System;
 	using System.Text.RegularExpressions;
 
+	[Serializable]
 	public static class TextUtil
 	{
 		public static int[] ToIntArray(this string value)

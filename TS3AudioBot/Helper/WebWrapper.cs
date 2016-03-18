@@ -4,7 +4,7 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Net;
 
-	static class WebWrapper
+	internal static class WebWrapper
 	{
 		private static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(1);
 

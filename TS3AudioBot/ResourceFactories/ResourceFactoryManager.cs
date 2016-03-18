@@ -6,7 +6,7 @@ namespace TS3AudioBot.ResourceFactories
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 
-	public sealed class ResourceFactoryManager : IDisposable
+	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
 	{
 		public IResourceFactory DefaultFactorty { get; internal set; }
 		private IList<IResourceFactory> factories;

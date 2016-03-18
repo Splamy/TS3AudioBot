@@ -10,6 +10,7 @@ namespace TS3AudioBot
 	using System.Text.RegularExpressions;
 	using System.Threading;
 
+	[Serializable]
 	public static class Log
 	{
 		public static bool Active { get; set; }
@@ -355,5 +356,6 @@ namespace TS3AudioBot
 		}
 	}
 
+	[Serializable]
 	public delegate void CallbackActionDelegate(string result);
 }

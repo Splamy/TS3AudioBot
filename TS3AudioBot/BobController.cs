@@ -12,7 +12,7 @@ namespace TS3AudioBot
 		private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 		private static readonly TimeSpan BobTimeout = TimeSpan.FromSeconds(60);
 
-		private IQueryConnection queryConnection;
+		private QueryConnection queryConnection;
 		private BobControllerData bobControllerData;
 		private TickWorker timeout;
 		private DateTime lastUpdate = Util.GetNow();
@@ -124,7 +124,7 @@ namespace TS3AudioBot
 
 		#endregion
 
-		public BobController(BobControllerData data, IQueryConnection queryConnection)
+		public BobController(BobControllerData data, QueryConnection queryConnection)
 		{
 			if (queryConnection == null)
 				throw new ArgumentNullException(nameof(queryConnection));
@@ -459,7 +459,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	public class MusicData
+	public class MusicData : MarshalByRefObject
 	{
 		public MusicStatus Status { get; set; }
 		public TimeSpan Length { get; set; }

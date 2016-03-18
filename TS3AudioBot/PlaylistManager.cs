@@ -10,7 +10,8 @@ namespace TS3AudioBot
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.ResourceFactories;
 
-	class PlaylistManager : IDisposable
+	// TODO make public and byref when finished
+	internal class PlaylistManager : IDisposable
 	{
 		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 

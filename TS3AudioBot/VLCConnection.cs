@@ -10,7 +10,7 @@ namespace TS3AudioBot
 	using TS3AudioBot.Helper;
 
 	[Obsolete]
-	class VLCConnection : IPlayerConnection
+	internal class VLCConnection : IPlayerConnection
 	{
 		private string botLocation;
 		private string vlcLocation;

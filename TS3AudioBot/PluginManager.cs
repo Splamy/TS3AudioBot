@@ -11,7 +11,7 @@ namespace TS3AudioBot
 	using CommandSystem;
 	using System.Linq.Expressions;
 
-	public class PluginManager : IDisposable
+	internal class PluginManager : IDisposable
 	{
 		private MainBot mainBot;
 		private PluginManagerData pluginManagerData;
@@ -307,7 +307,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	class PluginProxy : MarshalByRefObject
+	internal class PluginProxy : MarshalByRefObject
 	{
 		public FileInfo ResolvePlugin;
 		public AssemblyName ResolveName;
@@ -330,19 +330,20 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				assembly = domain.Load(ResolveName);
+				var asmBin = File.ReadAllBytes(ResolvePlugin.FullName);
+				assembly = domain.Load(asmBin);
 
 				var types = assembly.GetExportedTypes().Where(t => typeof(ITS3ABPlugin).IsAssignableFrom(t));
-
 				if (!types.Any())
 					return PluginResponse.NoTypeMatch;
 
 				pluginType = types.First();
 				return PluginResponse.Ok;
 			}
-			catch (Exception ex)
+			catch
 			{
-				return PluginResponse.Crash;
+				Log.Write(Log.Level.Error, "LoadAssembly failed");
+				throw;
 			}
 		}
 
@@ -386,15 +387,12 @@ namespace TS3AudioBot
 			return Expression.GetDelegateType(tArgs.ToArray());
 		}
 
-		public object InvokeMethod(int num, object[] param)
-		{
-			return pluginMethods[num].Invoke(pluginObject, param);
-		}
+		public object InvokeMethod(int num, object[] param) => pluginMethods[num].Invoke(pluginObject, param);
 
 		public string Name => pluginType.Name;
 	}
 
-	class WrappedCommand : BotCommand
+	internal class WrappedCommand : BotCommand
 	{
 		private PluginProxy proxy;
 		private int mId;

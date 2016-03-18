@@ -1,6 +1,8 @@
 namespace TS3AudioBot.ResourceFactories
 {
-	public abstract class AudioResource
+	using System;
+
+	public abstract class AudioResource : MarshalByRefObject
 	{
 		public abstract AudioType AudioType { get; }
 		public string ResourceTitle { get; set; }

@@ -7,6 +7,7 @@ namespace TS3AudioBot.Helper
 	using System.Linq;
 	using System.Threading;
 
+	[Serializable]
 	public static class Util
 	{
 		public static bool IsLinux

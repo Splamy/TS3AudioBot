@@ -18,11 +18,7 @@ namespace TS3AudioBot
 	using TS3Query.Messages;
 
 	// Todo:
-	// - make the bot more pluing-able like (for e.g. history as plugin)
-	//	    method for registering commands
-	//	    method for registering events
 	// - implement history missing features
-	// - implement command stacking
 	public sealed class MainBot : MarshalByRefObject, IDisposable
 	{
 		static void Main(string[] args)
@@ -50,11 +46,11 @@ namespace TS3AudioBot
 
 		private StreamWriter logStream;
 
-		public PluginManager PluginManager { get; private set; }
+		internal PluginManager PluginManager { get; private set; }
 		public CommandManager CommandManager { get; private set; }
 		public AudioFramework AudioFramework { get; private set; }
 		public BobController BobController { get; private set; }
-		public IQueryConnection QueryConnection { get; private set; }
+		public QueryConnection QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
@@ -986,7 +982,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	public class PlayData
+	public class PlayData : MarshalByRefObject
 	{
 		public BotSession Session { get; private set; }
 		public ClientData Invoker { get; private set; }

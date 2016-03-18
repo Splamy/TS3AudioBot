@@ -9,7 +9,7 @@ namespace TS3AudioBot.History
 	using Algorithm;
 	using Helper;
 	using ResourceFactories;
-
+	
 	public class HistoryFile : IDisposable
 	{
 		private IDictionary<string, uint> resIdToId;
