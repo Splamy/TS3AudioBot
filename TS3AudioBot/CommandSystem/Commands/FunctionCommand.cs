@@ -19,7 +19,7 @@ namespace TS3AudioBot.CommandSystem
 		/// <summary>
 		/// The method that will be called internally by this command.
 		/// </summary>
-		private MethodInfo internCommand;
+		MethodInfo internCommand;
 		public Type[] CommandParameter { get; }
 		public Type CommandReturn { get; }
 		/// <summary>
@@ -62,14 +62,23 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		/// <summary>
+		/// Try to fit the given arguments to the underlying function.
+		/// This function will throw an exception if the parameters can't be applied.
+		/// The parameters that are extracted from the arguments will be returned if they can be applied successfully.
+		/// </summary>
+		/// <param name="info">The ExecutionInformation.</param>
+		/// <param name="arguments">The arguments that are applied to this function.</param>
+		/// <param name="returnTypes">The possible return types.</param>
+		/// <param name="availableArguments">How many arguments could be set.</param>
+		public object[] FitArguments(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes, out int availableArguments)
 		{
 			object[] parameters = new object[CommandParameter.Length];
-			Lazy<List<ICommand>> argList = new Lazy<List<ICommand>>(() => arguments.ToList());
+			var argList = new Lazy<List<ICommand>>(() => arguments.ToList());
 
-			// a: Iterate through arguments
+			// availableArguments: Iterate through arguments
 			// p: Iterate through parameters
-			int a = 0;
+			availableArguments = 0;
 			for (int p = 0; p < parameters.Length; p++)
 			{
 				var arg = CommandParameter[p];
@@ -80,17 +89,17 @@ namespace TS3AudioBot.CommandSystem
 				else if (arg == typeof(IEnumerable<CommandResultType>))
 					parameters[p] = returnTypes;
 				// Only add arguments if we still have some
-				else if (a < argList.Value.Count)
+				else if (availableArguments < argList.Value.Count)
 				{
 					if (arg.IsArray) // array
 					{
 						var typeArr = arg.GetElementType();
-						var args = Array.CreateInstance(typeArr, argList.Value.Count - a);
+						var args = Array.CreateInstance(typeArr, argList.Value.Count - availableArguments);
 						try
 						{
-							for (int i = 0; i < args.Length; i++, a++)
+							for (int i = 0; i < args.Length; i++, availableArguments++)
 							{
-								var argResult = ((StringCommandResult)argList.Value[a].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+								var argResult = ((StringCommandResult)argList.Value[availableArguments].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 								var convResult = ConvertParam(argResult, typeArr);
 								args.SetValue(convResult, i);
 							}
@@ -102,21 +111,34 @@ namespace TS3AudioBot.CommandSystem
 					}
 					else // primitive value
 					{
-						var argResult = ((StringCommandResult)argList.Value[a].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+						var argResult = ((StringCommandResult)argList.Value[availableArguments].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 						try { parameters[p] = ConvertParam(argResult, arg); }
 						catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex); }
 						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex); }
 
-						a++;
+						availableArguments++;
 					}
-					// TODO IEnumerable
 				}
 				else
 					parameters[p] = GetDefault(arg);
 			}
 
 			// Check if we were able to set enough arguments
-			if (a < Math.Min(parameters.Length, RequiredParameters))
+			if (availableArguments < Math.Min(parameters.Length, RequiredParameters) && !returnTypes.Contains(CommandResultType.Command))
+				throw new CommandException("Not enough arguments for function " + internCommand.Name);
+
+			return parameters;
+		}
+
+		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		{
+			// Make arguments lazy, we only want to execute them once
+			arguments = arguments.Select(c => new LazyCommand(c));
+			int availableArguments;
+			object[] parameters = FitArguments(info, arguments, returnTypes, out availableArguments);
+
+			// Check if we were able to set enough arguments
+			if (availableArguments < Math.Min(parameters.Length, RequiredParameters))
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 				{
@@ -138,25 +160,14 @@ namespace TS3AudioBot.CommandSystem
 				switch (returnType)
 				{
 				case CommandResultType.Command:
-					// Return a command if possible
-					// Only do this if the command was not yet executed to prevent executing a command more than once
-					if (!executed &&
-						(CommandParameter.Any(p => p == typeof(string[])) ||
-						 a < normalParameters))
+					// Return a command if we can take more arguments
+					if (CommandParameter.Any(p => p == typeof(string[])) || availableArguments < normalParameters)
 						return new CommandCommandResult(new AppliedCommand(this, arguments));
 					break;
 				case CommandResultType.Empty:
 					if (!executed)
 						ExecuteFunction(parameters);
 					return new EmptyCommandResult();
-				case CommandResultType.Enumerable:
-					if (CommandReturn == typeof(string[]))
-					{
-						if (!executed)
-							result = ExecuteFunction(parameters);
-						return new StaticEnumerableCommandResult(((string[])result).Select(s => new StringCommandResult(s)));
-					}
-					break;
 				case CommandResultType.String:
 					if (!executed)
 					{
@@ -178,21 +189,17 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
 				return type.GenericTypeArguments[0];
-			else
-				return type;
+			return type;
 		}
 
-		private static object ConvertParam(string value, Type targetType)
+		static object ConvertParam(string value, Type targetType)
 		{
 			if (targetType == typeof(string))
 				return value;
-			else
-			{
-				if (targetType.IsConstructedGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
-					targetType = targetType.GenericTypeArguments[0];
+			if (targetType.IsConstructedGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
+				targetType = targetType.GenericTypeArguments[0];
 
-				return Convert.ChangeType(value, targetType);
-			}
+			return Convert.ChangeType(value, targetType);
 		}
 
 		public static object GetDefault(Type type)
@@ -202,7 +209,7 @@ namespace TS3AudioBot.CommandSystem
 				var typeArr = type.GetElementType();
 				return Array.CreateInstance(typeArr, 0);
 			}
-			else if (type.IsValueType)
+			if (type.IsValueType)
 			{
 				return Activator.CreateInstance(type);
 			}

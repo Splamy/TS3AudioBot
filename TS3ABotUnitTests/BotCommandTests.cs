@@ -1,7 +1,6 @@
-﻿namespace TS3ABotUnitTests
+namespace TS3ABotUnitTests
 {
 	using System;
-	using System.Reflection;
 	using NUnit.Framework;
 
 	using TS3Query.Messages;

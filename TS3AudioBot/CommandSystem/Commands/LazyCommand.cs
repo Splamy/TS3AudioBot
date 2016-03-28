@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem
 {
 	using System.Collections.Generic;
 	using System.Linq;

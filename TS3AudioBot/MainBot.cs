@@ -856,8 +856,6 @@ namespace TS3AudioBot
 			{
 				if (returnType == CommandResultType.String)
 					return new StringCommandResult(string.Join(delimiter ?? " ", splitted));
-				if (returnType == CommandResultType.Enumerable)
-					return new StaticEnumerableCommandResult(splitted.Select(s => new StringCommandResult(s)));
 			}
 
 			throw new CommandException("Can't find a fitting return type for take");

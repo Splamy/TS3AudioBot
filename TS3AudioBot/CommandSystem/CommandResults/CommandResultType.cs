@@ -4,7 +4,6 @@ namespace TS3AudioBot.CommandSystem
 	{
 		Empty,
 		Command,
-		Enumerable,
 		String
 	}
 }

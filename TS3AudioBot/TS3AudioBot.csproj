@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -64,11 +64,7 @@
     <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandResultType.cs" />
     <Compile Include="CommandSystem\CommandResults\EmptyCommandResult.cs" />
-    <Compile Include="CommandSystem\CommandResults\EnumerableCommandResult.cs" />
-    <Compile Include="CommandSystem\CommandResults\EnumerableCommandResultMerge.cs" />
-    <Compile Include="CommandSystem\CommandResults\EnumerableCommandResultRange.cs" />
     <Compile Include="CommandSystem\CommandResults\ICommandResult.cs" />
-    <Compile Include="CommandSystem\CommandResults\StaticEnumerableCommandResult.cs" />
     <Compile Include="CommandSystem\Commands\AppliedCommand.cs" />
     <Compile Include="CommandSystem\CommandAttribute.cs" />
     <Compile Include="CommandSystem\Commands\CommandGroup.cs" />

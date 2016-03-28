@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem
 {
 	using System;
 	using System.Collections.Generic;
@@ -62,14 +62,22 @@
 			arguments = arguments.Select(c => new LazyCommand(c));
 			foreach (FunctionCommand f in functions)
 			{
+				bool fits = false;
 				try
 				{
-					// Try to call this overload
-					return f.Execute(info, arguments, returnTypes);
+					// Find out if this overload works
+					int i;
+					f.FitArguments(info, arguments, returnTypes, out i);
+					fits = true;
 				}
 				catch (CommandException)
 				{
 					// Do nothing, just move on to the next function
+				}
+				if (fits)
+				{
+					// Call this overload
+					return f.Execute(info, arguments, returnTypes);
 				}
 			}
 			throw new CommandException("No matching function could be found");

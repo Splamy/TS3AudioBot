@@ -120,7 +120,7 @@ namespace TS3ABotUnitTests
 			{
 				// Setting streams up
 				var writer = new StreamWriter(memStream);
-				string[] values = new[] {
+				string[] values = {
 					"11\n",
 					"22\n",
 					"33\n",
