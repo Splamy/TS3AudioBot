@@ -4,10 +4,10 @@ namespace TS3AudioBot.History
 
 	public class SeachQuery : MarshalByRefObject
 	{
-		public string TitlePart;
-		public uint? UserId;
-		public DateTime? LastInvokedAfter;
-		public int MaxResults;
+		public string TitlePart { get; set; }
+		public uint? UserId { get; set; }
+		public DateTime? LastInvokedAfter { get; set; }
+		public int MaxResults { get; set; }
 
 		public SeachQuery()
 		{

@@ -9,6 +9,8 @@ namespace TS3AudioBot.CommandSystem
 
 		public void AddCommand(string name, ICommand command) => commands.Add(name, command);
 		public void RemoveCommand(string name) => commands.Remove(name);
+		// TODO: test if command does not exist
+		public void RemoveCommand(ICommand command) => commands.Remove(commands.FirstOrDefault(kvp => kvp.Value == command).Key);
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
 		public ICommand GetCommand(string name)
 		{
@@ -25,7 +27,6 @@ namespace TS3AudioBot.CommandSystem
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 					return new CommandCommandResult(this);
-				//throw new CommandException("Expected a string");
 				result = string.Empty;
 			}
 			else

@@ -400,31 +400,29 @@ namespace TS3AudioBot
 
 		[Command(Private, "history help", "You know...")]
 		string CommandHistoryHelp(ExecutionInformation info) => CommandHelp(info, "history");
-
-		// TODO split into 2 overloads: int, string
-		[Command(Private, "history id")]
-		[Usage("<id>", "Displays all saved informations about the song with <id>")]
-		[Usage("(last|next)]", "Gets the highest|next song id")]
-		string CommandHistoryId(ExecutionInformation info, string idStr)
+		
+		[Command(Private, "history id", "<id> Displays all saved informations about the song with <id>")]
+		string CommandHistoryId(ExecutionInformation info, uint id)
 		{
-			uint id;
-			if (uint.TryParse(idStr, out id))
-			{
-				var ale = HistoryManager.GetEntryById(id);
-				if (ale != null)
-					return HistoryManager.Formatter.ProcessQuery(ale);
-				return "Could not find track with this id";
-			}
-			else if (idStr == "last")
+			var ale = HistoryManager.GetEntryById(id);
+			if (ale != null)
+				return HistoryManager.Formatter.ProcessQuery(ale);
+			return "Could not find track with this id";
+		}
+
+		[Command(Private, "history id", "(last|next) Gets the highest|next song id")]
+		string CommandHistoryId(ExecutionInformation info, string special)
+		{
+			if (special == "last")
 				return $"{HistoryManager.HighestId} is the currently highest song id.";
-			else if (idStr == "next")
+			else if (special == "next")
 				return $"{HistoryManager.HighestId + 1} will be the next song id.";
 			else
-				return "Unrecognized id descriptor";
+				return "Unrecognized name descriptor";
 		}
 
 		[Command(Private, "history last", "Plays the last song again")]
-		[Usage("last <count>", "Gets the last <count> played songs.")]
+		[Usage("<count>", "Gets the last <count> played songs.")]
 		[RequiredParameters(0)]
 		string CommandHistoryLast(ExecutionInformation info, int? amount)
 		{
@@ -458,8 +456,14 @@ namespace TS3AudioBot
 			else return "Could not find track with this id";
 		}
 
-		// TODO split into 2 overloads: DateTime, string
-		[Command(Private, "history till", "Gets all songs played until <time>. Special options are: (hour|today|yesterday|week)]")]
+		[Command(Private, "history till", "<date> Gets all songs played until <date>.")]
+		string CommandHistoryTill(ExecutionInformation info, DateTime time)
+		{
+			var query = new SeachQuery { LastInvokedAfter = time };
+			return HistoryManager.SearchParsed(query);
+		}
+
+		[Command(Private, "history till", "<name> Any of those desciptors: (hour|today|yesterday|week)")]
 		string CommandHistoryTill(ExecutionInformation info, string time)
 		{
 			DateTime tillTime;
@@ -469,17 +473,10 @@ namespace TS3AudioBot
 			case "today": tillTime = DateTime.Today; break;
 			case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
 			case "week": tillTime = DateTime.Today.AddDays(-7); break;
-			default:
-				if (!DateTime.TryParse(time, out tillTime))
-					tillTime = DateTime.MinValue;
-				break;
+			default: return "Not recognized time desciption.";
 			}
-			if (tillTime != DateTime.MinValue)
-			{
-				var query = new SeachQuery { LastInvokedAfter = tillTime };
-				return HistoryManager.SearchParsed(query);
-			}
-			return "The date could not be parsed.";
+			var query = new SeachQuery { LastInvokedAfter = tillTime };
+			return HistoryManager.SearchParsed(query);
 		}
 
 		[Command(Private, "history title", "Gets all songs which title contains <string>")]
@@ -671,7 +668,7 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
-		[Command(Admin, "quit ", "Closes the TS3AudioBot application.")]
+		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
 		void CommandQuit(ExecutionInformation info)
 		{
 			info.Session.Write("Do you really want to quit? !(yes|no)");

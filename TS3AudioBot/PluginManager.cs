@@ -54,8 +54,7 @@ namespace TS3AudioBot
 				}
 				else
 				{
-					plugin = new Plugin(file, mainBot);
-					plugin.Id = GetFreeId();
+					plugin = new Plugin(file, mainBot, GetFreeId());
 
 					if (plugin.Prepare() != PluginResponse.Ok)
 						continue;
@@ -215,14 +214,15 @@ namespace TS3AudioBot
 	public class Plugin : MarshalByRefObject
 	{
 		private MainBot mainBot;
-		public int Id;
+		public int Id { get; }
 		public FileInfo file;
 		public PluginStatus status;
 
-		public Plugin(FileInfo file, MainBot parent)
+		public Plugin(FileInfo file, MainBot parent, int id)
 		{
 			mainBot = parent;
 			this.file = file;
+			Id = id;
 			status = PluginStatus.Off;
 		}
 

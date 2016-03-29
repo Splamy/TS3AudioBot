@@ -9,13 +9,33 @@ namespace TS3AudioBot.CommandSystem
 		/// <summary>
 		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
 		/// </summary>
-		static Type[] typeOrder = { typeof(int), typeof(float), typeof(double), typeof(string) };
+		static Type[] typeOrder = {
+			typeof(bool),
+			typeof(sbyte), typeof(byte),
+			typeof(short), typeof(ushort),
+			typeof(int), typeof(uint),
+			typeof(long), typeof(ulong),
+			typeof(float), typeof(double),
+			typeof(TimeSpan), typeof(DateTime),
+			typeof(string) };
 
 		readonly List<FunctionCommand> functions;
 
+		public OverloadedFunctionCommand() : this(Enumerable.Empty<FunctionCommand>()) { }
 		public OverloadedFunctionCommand(IEnumerable<FunctionCommand> functionsArg)
 		{
 			functions = functionsArg.ToList();
+		}
+
+		public void AddCommand(FunctionCommand command)
+		{
+			functions.Add(command);
+			SortList();
+		}
+		public void RemoveCommand(FunctionCommand command) => functions.Remove(command);
+
+		void SortList()
+		{
 			functions.Sort((f1, f2) =>
 			{
 				// The first function in the list should be the most specialiced.
@@ -82,5 +102,6 @@ namespace TS3AudioBot.CommandSystem
 			}
 			throw new CommandException("No matching function could be found");
 		}
+
 	}
 }

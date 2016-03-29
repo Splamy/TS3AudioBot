@@ -4,10 +4,8 @@ namespace TS3AudioBot.CommandSystem
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Reflection;
-	using System.Text;
-	using TS3Query;
+	using System.Text.RegularExpressions;
 	using Helper;
-	using static CommandRights;
 
 	public class CommandManager : MarshalByRefObject
 	{
@@ -29,6 +27,8 @@ namespace TS3AudioBot.CommandSystem
 				// todo alias
 			}
 		}
+
+		private static readonly Regex CommandNamespaceValidator = new Regex(@"^[a-z]+( [a-z]+)*$", RegexOptions.Compiled);
 
 		public CommandManager()
 		{
@@ -121,144 +121,162 @@ namespace TS3AudioBot.CommandSystem
 
 		private void LoadCommand(BotCommand com) // TODO test
 		{
-			if (CommandPaths.Contains(com.InvokeName))
+			if (!CommandNamespaceValidator.IsMatch(com.InvokeName))
+				throw new InvalidOperationException("BotCommand has an invalid invoke name: " + com.InvokeName);
+			if (CommandPaths.Contains(com.FullQualifiedName))
 				throw new InvalidOperationException("Command already exists: " + com.InvokeName);
-			CommandPaths.Add(com.InvokeName);
+			CommandPaths.Add(com.FullQualifiedName);
 
 			var comPath = com.InvokeName.Split(' ');
 
 			CommandGroup group = CommandSystem.RootCommand;
+			// this for loop iterates through the seperate names of
+			// the command to be added.
 			for (int i = 0; i < comPath.Length - 1; i++)
 			{
-				ICommand curCom = group.GetCommand(comPath[i]);
-				if (curCom == null)
+				ICommand currentCommand = group.GetCommand(comPath[i]);
+
+				// if a group to hold the next level command doesn't exist
+				// it will be created here
+				if (currentCommand == null)
 				{
 					var nextGroup = new CommandGroup();
 					group.AddCommand(comPath[i], nextGroup);
 					group = nextGroup;
 				}
-				else if ((group = curCom as CommandGroup) == null)
-					throw new InvalidOperationException("The requested command cannot be extended.");
+				// if the group already exists we can take it.
+				else if (currentCommand is CommandGroup)
+				{
+					group = (CommandGroup)currentCommand;
+				}
+				// if the element is anything else, we have to replace it
+				// with a group and put the old element back into it.
+				else if (currentCommand is FunctionCommand)
+				{
+					var subGroup = new CommandGroup();
+					group.RemoveCommand(comPath[i]);
+					group.AddCommand(comPath[i], subGroup);
+
+					subGroup.AddCommand(string.Empty, currentCommand);
+					group = subGroup;
+				}
+				else
+					throw new InvalidOperationException("An overloaded command cannot be replaced by a CommandGroup: " + com.InvokeName);
 			}
 
-			if (group == null)
-				throw new InvalidOperationException("No group found to add to.");
-			group.AddCommand(comPath.Last(), com);
+			ICommand subCommand = group.GetCommand(comPath.Last());
+			// the group we are trying to insert has no element with the current
+			// name, so just insert it
+			if (subCommand == null)
+			{
+				group.AddCommand(comPath.Last(), com);
+				return;
+			}
+			// if we have a simple function, we need to create a overlaoder
+			// and then add both functions to it
+			else if (subCommand is FunctionCommand)
+			{
+				group.RemoveCommand(comPath.Last());
+				var overloader = new OverloadedFunctionCommand();
+				overloader.AddCommand((FunctionCommand)subCommand);
+				overloader.AddCommand(com);
+				group.AddCommand(comPath.Last(), overloader);
+			}
+			// if we have a overloaded function, we can simply add it
+			else if (subCommand is OverloadedFunctionCommand)
+			{
+				var insertCommand = (OverloadedFunctionCommand)subCommand;
+				insertCommand.AddCommand(com);
+			}
+			// to add a command to CommandGroup will have to treat it as a subcommand
+			// with an empty string as a name
+			else if (subCommand is CommandGroup)
+			{
+				var insertCommand = (CommandGroup)subCommand;
+				var noparamCommand = insertCommand.GetCommand(string.Empty);
+
+				if (noparamCommand == null)
+				{
+					insertCommand.AddCommand(string.Empty, com);
+					if (com.NormalParameters > 0)
+						Log.Write(Log.Level.Warning, "parameter of an empty named function under a group will be ignored!!");
+				}
+				else
+					throw new InvalidOperationException("An empty named function under a group cannot be overloaded (" + com.InvokeName + ")");
+			}
+			else
+				throw new InvalidOperationException("Unknown insertion error with " + com.FullQualifiedName);
 		}
 
 		private void UnloadCommand(BotCommand com)
 		{
-			if (!CommandPaths.Contains(com.InvokeName))
+			if (!CommandPaths.Contains(com.FullQualifiedName))
 				return;
-			CommandPaths.Remove(com.InvokeName);
+			CommandPaths.Remove(com.FullQualifiedName);
 
 			var comPath = com.InvokeName.Split(' ');
 
-			var comPathStack = new Stack<Tuple<CommandGroup, CommandGroup, string>>();
-			CommandGroup group = CommandSystem.RootCommand;
+			CommandUnloadNode node = new CommandUnloadNode
+			{
+				parentNode = null,
+				self = CommandSystem.RootCommand,
+			};
+
+			// build up the list to our desired node
 			for (int i = 0; i < comPath.Length - 1; i++)
 			{
-				var nextGroup = group.GetCommand(comPath[i]) as CommandGroup;
-				if (group == null)
+				var nextGroup = node.self.GetCommand(comPath[i]) as CommandGroup;
+				if (nextGroup == null)
 					break;
-				comPathStack.Push(new Tuple<CommandGroup, CommandGroup, string>(group, nextGroup, comPath[i]));
-				group = nextGroup;
-			}
-			if (group != null && group.ContainsCommand(comPath.Last()))
-				group.RemoveCommand(comPath.Last());
-			while (comPathStack.Any())
-			{
-				var curGroup = comPathStack.Pop();
-				if (curGroup.Item2.IsEmpty && curGroup.Item1.ContainsCommand(curGroup.Item3))
-					curGroup.Item1.RemoveCommand(curGroup.Item3);
-			}
-		}
-	}
 
-	public class CommandBuildInfo
-	{
-		public object parent;
-		public MethodInfo method;
-		public CommandAttribute commandData;
-		public RequiredParametersAttribute reqiredParameters;
-		public IEnumerable<UsageAttribute> usageList;
-
-		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt, RequiredParametersAttribute reqAtt)
-		{
-			parent = p;
-			method = m;
-			commandData = comAtt;
-			reqiredParameters = reqAtt;
-		}
-	}
-
-	public class BotCommand : FunctionCommand
-	{
-		string cachedHelp = null;
-
-		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.method, buildInfo.parent, buildInfo.reqiredParameters?.Count)
-		{
-			InvokeName = buildInfo.commandData.CommandNameSpace;
-			CommandRights = buildInfo.commandData.RequiredRights;
-			Description = buildInfo.commandData.CommandHelp;
-			UsageList = buildInfo.usageList;
-		}
-
-		public string InvokeName { get; }
-		public CommandRights CommandRights { get; }
-		public string Description { get; private set; }
-		public IEnumerable<UsageAttribute> UsageList { get; }
-
-		public string GetHelp()
-		{
-			if (cachedHelp == null)
-			{
-				StringBuilder strb = new StringBuilder();
-				if (!string.IsNullOrEmpty(Description))
-					strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description);
-
-				if (UsageList.Any())
+				node = new CommandUnloadNode
 				{
-					int longest = UsageList.Max(p => p.UsageSyntax.Length) + 1;
-					foreach (var para in UsageList)
-						strb.Append("\n!").Append(InvokeName).Append(" ").Append(para.UsageSyntax)
-							.Append(' ', longest - para.UsageSyntax.Length).Append(para.UsageHelp);
-				}
-				cachedHelp = strb.ToString();
+					parentNode = node,
+					self = nextGroup,
+				};
 			}
-			return cachedHelp;
-		}
-
-		public override string ToString()
-		{
-			var strb = new StringBuilder();
-			strb.Append('!').Append(InvokeName);
-			strb.Append(" - ").Append(CommandRights);
-			strb.Append(" : ");
-			foreach (var param in UsageList)
-				strb.Append(param.UsageSyntax).Append('/');
-			return strb.ToString();
-		}
-
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
-		{
-			if (info.IsAdmin.Value)
-				return base.Execute(info, arguments, returnTypes);
-
-			switch (CommandRights)
+			var subGroup = node.self.GetCommand(comPath.Last());
+			// nothing to remove
+			if (subGroup == null)
+				return;
+			// if the subnode is a plain FunctionCommand then we found our command to delete
+			else if (subGroup is FunctionCommand)
 			{
-			case Admin:
-				throw new CommandException("Command must be invoked by an admin!");
-			case Public:
-				if (info.TextMessage.Target != MessageTarget.Server)
-					throw new CommandException("Command must be used in public mode!");
-				break;
-			case Private:
-				if (info.TextMessage.Target != MessageTarget.Private)
-					throw new CommandException("Command must be used in a private session!");
-				break;
+				node.self.RemoveCommand(com);
 			}
-			return base.Execute(info, arguments, returnTypes);
+			// here we can delete our command from the overloader
+			else if (subGroup is OverloadedFunctionCommand)
+			{
+				((OverloadedFunctionCommand)subGroup).RemoveCommand(com);
+			}
+			// now to the special case when a command gets inserted with an empty string
+			else if (subGroup is CommandGroup)
+			{
+				var insertGroup = (CommandGroup)subGroup;
+				// since we check precisely that only one command and only a simple FunctionCommand
+				// can be added with an empty string, wen can delte it safely this way
+				insertGroup.RemoveCommand(string.Empty);
+				// add the node for cleanup
+				node = new CommandUnloadNode
+				{
+					parentNode = node,
+					self = insertGroup,
+				};
+			}
+
+			// and finally clean all empty nodes up
+			while (node != null)
+			{
+				if (node.self.IsEmpty && node.parentNode != null)
+					node.parentNode.self.RemoveCommand(node.self);
+				node = node.parentNode;
+			}
+		}
+
+		class CommandUnloadNode
+		{
+			public CommandUnloadNode parentNode;
+			public CommandGroup self;
 		}
 	}
 }

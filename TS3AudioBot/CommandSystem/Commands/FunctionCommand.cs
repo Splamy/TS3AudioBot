@@ -15,7 +15,7 @@ namespace TS3AudioBot.CommandSystem
 
 		// Needed for non-static member methods
 		readonly object callee;
-		readonly int normalParameters;
+		public int NormalParameters { get; }
 		/// <summary>
 		/// The method that will be called internally by this command.
 		/// </summary>
@@ -36,8 +36,8 @@ namespace TS3AudioBot.CommandSystem
 
 			callee = obj;
 			// Require all parameters by default
-			normalParameters = CommandParameter.Count(p => !SpecialTypes.Contains(p));
-			RequiredParameters = requiredParameters ?? normalParameters;
+			NormalParameters = CommandParameter.Count(p => !SpecialTypes.Contains(p));
+			RequiredParameters = requiredParameters ?? NormalParameters;
 		}
 
 		// Provide some constructors that take lambda expressions directly
@@ -161,7 +161,7 @@ namespace TS3AudioBot.CommandSystem
 				{
 				case CommandResultType.Command:
 					// Return a command if we can take more arguments
-					if (CommandParameter.Any(p => p == typeof(string[])) || availableArguments < normalParameters)
+					if (CommandParameter.Any(p => p == typeof(string[])) || availableArguments < NormalParameters)
 						return new CommandCommandResult(new AppliedCommand(this, arguments));
 					break;
 				case CommandResultType.Empty:
