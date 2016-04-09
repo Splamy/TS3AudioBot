@@ -1,15 +1,15 @@
 namespace TS3AudioBot
 {
 	using System;
+	using System.CodeDom.Compiler;
 	using System.Collections.Generic;
-	using System.Reflection;
-	using System.Reflection.Emit;
 	using System.IO;
 	using System.Linq;
-	using System.Text;
-	using Helper;
-	using CommandSystem;
 	using System.Linq.Expressions;
+	using System.Reflection;
+	using System.Text;
+	using CommandSystem;
+	using Helper;
 
 	internal class PluginManager : IDisposable
 	{
@@ -39,6 +39,9 @@ namespace TS3AudioBot
 		private void CheckLocalPlugins()
 		{
 			var dir = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, pluginManagerData.PluginPath));
+			if (!dir.Exists)
+				return;
+
 			foreach (var file in dir.EnumerateFiles())
 			{
 				Plugin plugin;
@@ -238,13 +241,30 @@ namespace TS3AudioBot
 		{
 			try
 			{
+				if (file.Extension != ".cs" && file.Extension != ".dll" && file.Extension != ".exe")
+					return PluginResponse.UnsupportedFile;
+
+				//todo test shadowcopying
+				domain = AppDomain.CreateDomain(
+					"Plugin_" + file.Name,
+					AppDomain.CurrentDomain.Evidence,
+					new AppDomainSetup
+					{
+						ApplicationBase = ts3File.Directory.FullName,
+						PrivateBinPath = "Plugin/..;Plugin",
+						PrivateBinPathProbe = ""
+					});
+				domain.UnhandledException += (s, e) => Unload();
+				proxy = (PluginProxy)domain.CreateInstanceAndUnwrap(
+					proxType.Assembly.FullName,
+					proxType.FullName);
+
 				PluginResponse result;
 				if (file.Extension == ".cs")
 					result = PrepareSource();
 				else if (file.Extension == ".dll" || file.Extension == ".exe")
-					result = PrepareBinary();
-				else
-					return PluginResponse.UnsupportedFile;
+					result = proxy.LoadAssembly(domain, file);
+				else throw new InvalidProgramException();
 
 				if (result == PluginResponse.Ok)
 					status = PluginStatus.Ready;
@@ -257,32 +277,49 @@ namespace TS3AudioBot
 			}
 		}
 
-		private PluginResponse PrepareBinary()
+		private static CompilerParameters GenerateCompilerParameter()
 		{
-			domain = AppDomain.CreateDomain(
-				"Plugin_" + file.Name,
-				AppDomain.CurrentDomain.Evidence,
-				new AppDomainSetup
-				{
-					ApplicationBase = ts3File.Directory.FullName,
-					PrivateBinPath = "Plugin/..;Plugin",
-					PrivateBinPathProbe = ""
-				});
-			domain.UnhandledException += (s, e) => Unload();
+			var cp = new CompilerParameters();
+			Assembly[] aarr = AppDomain.CurrentDomain.GetAssemblies();
+			for (int i = 0; i < aarr.Length; i++)
+			{
+				if (aarr[i].IsDynamic) continue;
+				cp.ReferencedAssemblies.Add(aarr[i].Location);
+			}
+			cp.ReferencedAssemblies.Add(Assembly.GetExecutingAssembly().Location);
 
-			proxy = (PluginProxy)domain.CreateInstanceAndUnwrap(
-				proxType.Assembly.FullName,
-				proxType.FullName);
-			proxy.ResolvePlugin = file;
-			proxy.ResolveName = AssemblyName.GetAssemblyName(file.FullName);
-			proxy.LoadAssembly(domain);
-
-			return PluginResponse.Ok;
+			// set preferences
+			cp.WarningLevel = 3;
+			cp.CompilerOptions = "/target:library /optimize";
+			cp.GenerateExecutable = false;
+			cp.GenerateInMemory = false;
+			return cp;
 		}
 
 		private PluginResponse PrepareSource()
 		{
-			return PluginResponse.UnsupportedFile;
+			var provider = CodeDomProvider.CreateProvider("CSharp");
+			var cp = GenerateCompilerParameter();
+			var result = provider.CompileAssemblyFromFile(cp, file.FullName);
+
+			if (result.Errors.Count > 0)
+			{
+				bool containsErrors = false;
+				foreach (CompilerError error in result.Errors)
+				{
+					containsErrors |= !error.IsWarning;
+					Log.Write(Log.Level.Warning, "Plugin_{0}: {1} L{2}/C{3}: {4}\n",
+						Id,
+						error.IsWarning ? "Warning" : "Error",
+						error.Line,
+						error.Column,
+						error.ErrorText);
+				}
+
+				if (containsErrors)
+					return PluginResponse.CompileError;
+			}
+			return proxy.LoadAssembly(domain, result.CompiledAssembly.GetName());
 		}
 
 		public void Unload()
@@ -309,33 +346,36 @@ namespace TS3AudioBot
 
 	internal class PluginProxy : MarshalByRefObject
 	{
-		public FileInfo ResolvePlugin;
-		public AssemblyName ResolveName;
-
 		private Type pluginType;
 		private Assembly assembly;
 		private ITS3ABPlugin pluginObject;
 		private MethodInfo[] pluginMethods;
-
-		private static readonly Type[] DynParam = new[] { typeof(object[]) };
-		private static readonly Type[] InvokeParam = new[] { typeof(object), typeof(object[]) };
-		private delegate void WrapperMethod(object obj, object[] param);
 
 		public PluginProxy()
 		{
 			pluginObject = null;
 		}
 
-		public PluginResponse LoadAssembly(AppDomain domain)
+		public PluginResponse LoadAssembly(AppDomain domain, FileInfo resolvePlugin)
+		{
+			var asmBin = File.ReadAllBytes(resolvePlugin.FullName);
+			assembly = domain.Load(asmBin);
+			return LoadAssembly(domain, assembly);
+		}
+
+		public PluginResponse LoadAssembly(AppDomain domain, AssemblyName resolveName)
+		{
+			assembly = domain.Load(resolveName);
+			return LoadAssembly(domain, assembly);
+		}
+
+		private PluginResponse LoadAssembly(AppDomain domain, Assembly assembly)
 		{
 			try
 			{
-				var asmBin = File.ReadAllBytes(ResolvePlugin.FullName);
-				assembly = domain.Load(asmBin);
-
 				var types = assembly.GetExportedTypes().Where(t => typeof(ITS3ABPlugin).IsAssignableFrom(t));
-				if (!types.Any())
-					return PluginResponse.NoTypeMatch;
+				var pluginOk = PluginCountCheck(types);
+				if (pluginOk != PluginResponse.Ok) return pluginOk;
 
 				pluginType = types.First();
 				return PluginResponse.Ok;
@@ -345,6 +385,19 @@ namespace TS3AudioBot
 				Log.Write(Log.Level.Error, "LoadAssembly failed");
 				throw;
 			}
+		}
+
+		private PluginResponse PluginCountCheck(IEnumerable<Type> types)
+		{
+			if (!types.Any())
+				return PluginResponse.NoTypeMatch;
+			else if (types.Skip(1).Any())
+			{
+				Log.Write(Log.Level.Warning, "Any source or binary file must only contain one plugin.");
+				return PluginResponse.TooManyPlugins;
+			}
+			else
+				return PluginResponse.Ok;
 		}
 
 		public void Run(MainBot bot)
@@ -389,7 +442,7 @@ namespace TS3AudioBot
 
 		public object InvokeMethod(int num, object[] param) => pluginMethods[num].Invoke(pluginObject, param);
 
-		public string Name => pluginType.Name;
+		public string Name => pluginType?.Name;
 	}
 
 	internal class WrappedCommand : BotCommand
@@ -434,8 +487,10 @@ namespace TS3AudioBot
 		UnsupportedFile,
 		Crash,
 		NoTypeMatch,
+		TooManyPlugins,
 		UnknownStatus,
 		PluginNotFound,
+		CompileError,
 	}
 
 	public struct PluginManagerData

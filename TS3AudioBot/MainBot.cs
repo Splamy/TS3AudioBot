@@ -400,7 +400,7 @@ namespace TS3AudioBot
 
 		[Command(Private, "history help", "You know...")]
 		string CommandHistoryHelp(ExecutionInformation info) => CommandHelp(info, "history");
-		
+
 		[Command(Private, "history id", "<id> Displays all saved informations about the song with <id>")]
 		string CommandHistoryId(ExecutionInformation info, uint id)
 		{
@@ -699,13 +699,14 @@ namespace TS3AudioBot
 		[Usage("(on|off)]", "on or off")]
 		string CommandQuiz(ExecutionInformation info, string parameter)
 		{
-			if (info.Session.IsPrivate)
-				return "No cheatig! Everybody has to see it!";
-
 			if (parameter == "on")
 				QuizMode = true;
 			else if (parameter == "off")
+			{
+				if (info.Session.IsPrivate)
+					return "No cheatig! Everybody has to see it!";
 				QuizMode = false;
+			}
 			else
 				CommandHelp(info, "quiz");
 			return null;
