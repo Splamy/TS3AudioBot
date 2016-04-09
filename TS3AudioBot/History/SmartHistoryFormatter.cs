@@ -80,7 +80,7 @@ namespace TS3AudioBot.History
 					else
 					{
 						int titleForceLen = Math.Max(LimitTo - (ConstLength + DOTS_LENGTH), TITLE_MIN_LENGTH);
-						string primSub = Title.Length > 10 ? Title.Substring(0, titleForceLen) : Title;
+						string primSub = (Title.Length <= titleForceLen) ? Title : Title.Substring(0, titleForceLen);
 						int curTrim = TokenLength(primSub);
 						if (curTrim > titleForceLen)
 						{
