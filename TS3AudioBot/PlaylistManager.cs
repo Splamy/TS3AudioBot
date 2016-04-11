@@ -11,7 +11,7 @@ namespace TS3AudioBot
 	using TS3AudioBot.ResourceFactories;
 
 	// TODO make public and byref when finished
-	internal class PlaylistManager : IDisposable
+	public class PlaylistManager : IDisposable
 	{
 		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -34,21 +34,21 @@ namespace TS3AudioBot
 		private List<DataSet> dataSets;
 		private int dataSetLength = 0;
 
-		private Queue<AudioResource> playQueue;
+		private Queue<PlayData> playQueue;
 
 		public bool Random { get; set; }
 		public bool Loop { get; set; }
 
-		public PlaylistManager(PlaylistManagerData pmd)
+		internal PlaylistManager(PlaylistManagerData pmd)
 		{
 			data = pmd;
 			json = new JavaScriptSerializer();
 			shuffle = new ListedShuffle();
 			dataSets = new List<DataSet>();
-			playQueue = new Queue<AudioResource>();
+			playQueue = new Queue<PlayData>();
 		}
 
-		public void Enqueue(AudioResource resource)
+		public void Enqueue(PlayData resource)
 		{
 			Random = false;
 			Loop = false;
@@ -69,7 +69,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public AudioResource Next()
+		public PlayData Next()
 		{
 			switch (mode)
 			{

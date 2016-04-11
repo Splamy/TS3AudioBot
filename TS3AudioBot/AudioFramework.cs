@@ -16,15 +16,16 @@ namespace TS3AudioBot
 
 		public PlayData CurrentPlayData { get; private set; }
 		private IPlayerConnection playerConnection;
-		private PlaylistManager playlistManager;
+		public PlaylistManager PlaylistManager { get; }
 
 		public event EventHandler<PlayData> OnResourceStarted;
 		public event EventHandler<bool> OnResourceStopped;
 
 		// Playerproperties
 
+		public bool IsPlaying => CurrentPlayData != null;
 		/// <summary>Loop state for the entire playlist.</summary>
-		public bool Loop { get { return playlistManager.Loop; } set { playlistManager.Loop = value; } }
+		public bool Loop { get { return PlaylistManager.Loop; } set { PlaylistManager.Loop = value; } }
 		/// <summary>Loop state for the current song.</summary>
 		public bool Repeat { get { return playerConnection.Repeated; } set { playerConnection.Repeated = value; } }
 		public int Volume { get { return playerConnection.Volume; } set { playerConnection.Volume = value; } }
@@ -47,14 +48,11 @@ namespace TS3AudioBot
 		/// <summary>Plays the next song in the playlist or queue.</summary>
 		public void Next()
 		{
-			var next = playlistManager.Next();
+			var next = PlaylistManager.Next();
 			if (next != null)
 			{
-				if (CurrentPlayData != null)
-				{
-					CurrentPlayData.Resource = next;
-					StartResource(CurrentPlayData);
-				}
+				CurrentPlayData = next;
+				StartResource(CurrentPlayData);
 			}
 			else
 			{
@@ -69,7 +67,7 @@ namespace TS3AudioBot
 		}
 
 		/// <summary>Clears the current playlist</summary>
-		public void Clear() => playlistManager.Clear();
+		public void Clear() => PlaylistManager.Clear();
 
 		private void OnSongEnd() => Next();
 
@@ -91,7 +89,7 @@ namespace TS3AudioBot
 			playerConnection = audioBackEnd;
 			playerConnection.Initialize();
 
-			playlistManager = playlistMgr;
+			PlaylistManager = playlistMgr;
 		}
 
 		/// <summary>

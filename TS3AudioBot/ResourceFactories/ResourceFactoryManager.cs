@@ -70,10 +70,9 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string Play(PlayData data)
 		{
-			if (data.Enqueue)
+			if (data.Enqueue && audioFramework.IsPlaying)
 			{
-				// TODO
-				throw new NotImplementedException();
+				audioFramework.PlaylistManager.Enqueue(data);
 			}
 			else
 			{
