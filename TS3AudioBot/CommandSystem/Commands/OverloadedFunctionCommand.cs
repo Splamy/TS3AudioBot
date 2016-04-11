@@ -19,24 +19,24 @@ namespace TS3AudioBot.CommandSystem
 			typeof(TimeSpan), typeof(DateTime),
 			typeof(string) };
 
-		readonly List<FunctionCommand> functions;
+		public List<FunctionCommand> Functions { get; }
 
 		public OverloadedFunctionCommand() : this(Enumerable.Empty<FunctionCommand>()) { }
 		public OverloadedFunctionCommand(IEnumerable<FunctionCommand> functionsArg)
 		{
-			functions = functionsArg.ToList();
+			Functions = functionsArg.ToList();
 		}
 
 		public void AddCommand(FunctionCommand command)
 		{
-			functions.Add(command);
+			Functions.Add(command);
 			SortList();
 		}
-		public void RemoveCommand(FunctionCommand command) => functions.Remove(command);
+		public void RemoveCommand(FunctionCommand command) => Functions.Remove(command);
 
 		void SortList()
 		{
-			functions.Sort((f1, f2) =>
+			Functions.Sort((f1, f2) =>
 			{
 				// The first function in the list should be the most specialiced.
 				// If the execute the command we will iterate through the list from the beginning
@@ -80,7 +80,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c));
-			foreach (FunctionCommand f in functions)
+			foreach (FunctionCommand f in Functions)
 			{
 				bool fits = false;
 				try

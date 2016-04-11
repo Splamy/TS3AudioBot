@@ -119,6 +119,10 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
+		// TODO: prevent stupid behaviour like:
+		// string A(int b)
+		// string A(ExecutionInformation i, int b)
+		// since the CommandManager can't distinguish these two, when calling
 		private void LoadCommand(BotCommand com) // TODO test
 		{
 			if (!CommandNamespaceValidator.IsMatch(com.InvokeName))
@@ -157,6 +161,9 @@ namespace TS3AudioBot.CommandSystem
 					group.RemoveCommand(comPath[i]);
 					group.AddCommand(comPath[i], subGroup);
 
+					var botCom = currentCommand as BotCommand;
+					if (botCom != null && botCom.NormalParameters > 0)
+						Log.Write(Log.Level.Warning, "\"{0}\" has at least one parameter and won't be reachable due to an overloading function.", botCom.InvokeName);
 					subGroup.AddCommand(string.Empty, currentCommand);
 					group = subGroup;
 				}

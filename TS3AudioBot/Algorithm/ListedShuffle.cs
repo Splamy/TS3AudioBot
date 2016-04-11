@@ -6,7 +6,6 @@ namespace TS3AudioBot.Algorithm
 	class ListedShuffle : IShuffleAlgorithm
 	{
 		private int[] permutation;
-		private int index;
 
 		private int seed = 0;
 		private int length = 0;
@@ -31,10 +30,8 @@ namespace TS3AudioBot.Algorithm
 		{
 			Random rngeesus = new Random(seed);
 			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(x => rngeesus.Next()).ToArray();
-			index = 0;
 		}
 
-		public int NextIndex() => permutation[(index = (index + 1) % permutation.Length)];
-		public int PrevIndex() => permutation[(index = (index - 1) % permutation.Length)];
+		public int SeedIndex(int i) => permutation[i % permutation.Length];
 	}
 }

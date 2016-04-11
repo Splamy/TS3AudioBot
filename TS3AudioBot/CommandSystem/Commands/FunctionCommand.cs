@@ -15,11 +15,13 @@ namespace TS3AudioBot.CommandSystem
 
 		// Needed for non-static member methods
 		readonly object callee;
+		/// <summary>The amount of non-special parameter.</summary>
 		public int NormalParameters { get; }
 		/// <summary>
 		/// The method that will be called internally by this command.
 		/// </summary>
 		MethodInfo internCommand;
+		/// <summary>All parameter types, including special types.</summary>
 		public Type[] CommandParameter { get; }
 		public Type CommandReturn { get; }
 		/// <summary>

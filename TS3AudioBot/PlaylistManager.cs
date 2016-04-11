@@ -28,10 +28,13 @@ namespace TS3AudioBot
 		private PlaylistManagerData data;
 		private JavaScriptSerializer json;
 
+		private PlaylistMode mode;
 		private int indexCount = 0;
 		private IShuffleAlgorithm shuffle;
 		private List<DataSet> dataSets;
 		private int dataSetLength = 0;
+
+		private Queue<AudioResource> playQueue;
 
 		public bool Random { get; set; }
 		public bool Loop { get; set; }
@@ -42,24 +45,50 @@ namespace TS3AudioBot
 			json = new JavaScriptSerializer();
 			shuffle = new ListedShuffle();
 			dataSets = new List<DataSet>();
+			playQueue = new Queue<AudioResource>();
 		}
 
 		public void Enqueue(AudioResource resource)
 		{
-
+			Random = false;
+			Loop = false;
+			mode = PlaylistMode.Queue;
+			playQueue.Enqueue(resource);
 		}
 
-		public void Next()
+		public void Clear()
 		{
-			indexCount++;
+			switch (mode)
+			{
+			case PlaylistMode.List:
+				break;
+			case PlaylistMode.Queue:
+				playQueue.Clear();
+				break;
+			default: throw new NotImplementedException();
+			}
+		}
 
-			int pseudoListIndex;
-			if (Random)
-				pseudoListIndex = shuffle.NextIndex();
-			else
-				pseudoListIndex = indexCount;
+		public AudioResource Next()
+		{
+			switch (mode)
+			{
+			case PlaylistMode.List:
+				indexCount++;
+				int pseudoListIndex;
+				if (Random)
+					pseudoListIndex = shuffle.SeedIndex(indexCount);
+				else
+					pseudoListIndex = indexCount;
+				return null;
 
+			case PlaylistMode.Queue:
+				if (playQueue.Any())
+					return playQueue.Dequeue();
+				return null;
 
+			default: throw new NotImplementedException();
+			}
 		}
 
 		private void AddDataSet(DataSet set)
@@ -136,6 +165,12 @@ namespace TS3AudioBot
 		public void Dispose() { }
 	}
 
+	enum PlaylistMode
+	{
+		List,
+		Queue,
+	}
+
 	abstract class DataSet
 	{
 		public int Length { get; protected set; }
@@ -172,15 +207,15 @@ namespace TS3AudioBot
 			}
 		}
 
-		public override AudioResource GetResource(int index)
-		{
-			return resources[index];
-		}
+		public override AudioResource GetResource(int index) => resources[index];
 	}
 
-	class YoutubePlaylist
+	class YoutubePlaylist : DataSet
 	{
-
+		public override AudioResource GetResource(int index)
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 	class YoutubePlaylistItem

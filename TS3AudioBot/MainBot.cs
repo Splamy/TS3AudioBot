@@ -87,11 +87,12 @@ namespace TS3AudioBot
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.GetDummy();
-			AudioFrameworkData afd = cfgFile.GetDataStruct<AudioFrameworkData>(typeof(AudioFramework), true);
-			BobControllerData bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
-			QueryConnectionData qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
-			HistoryManagerData hmd = cfgFile.GetDataStruct<HistoryManagerData>(typeof(HistoryManager), true);
-			PluginManagerData pmd = cfgFile.GetDataStruct<PluginManagerData>(typeof(PluginManager), true);
+			var afd = cfgFile.GetDataStruct<AudioFrameworkData>(typeof(AudioFramework), true);
+			var bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
+			var qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
+			var hmd = cfgFile.GetDataStruct<HistoryManagerData>(typeof(HistoryManager), true);
+			var pmd = cfgFile.GetDataStruct<PluginManagerData>(typeof(PluginManager), true);
+			var pld = cfgFile.GetDataStruct<PlaylistManagerData>(typeof(PlaylistManager), true);
 			mainBotData = cfgFile.GetDataStruct<MainBotData>(typeof(MainBot), true);
 			cfgFile.Close();
 
@@ -129,10 +130,11 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
+			var playlistManager = new PlaylistManager(pld);
 			BobController = new BobController(bcd, QueryConnection);
 			// old: new VLCConnection(afd.vlcLocation);
 			// new: BobController
-			AudioFramework = new AudioFramework(afd, BobController);
+			AudioFramework = new AudioFramework(afd, BobController, playlistManager);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
@@ -173,7 +175,7 @@ namespace TS3AudioBot
 		private void Run()
 		{
 			Thread.CurrentThread.Name = "Main/Eventloop";
-			var qc = (QueryConnection)QueryConnection;
+			var qc = QueryConnection;
 			qc.tsClient.EventDispatcher.EnterEventLoop();
 		}
 
@@ -287,10 +289,10 @@ namespace TS3AudioBot
 
 		[Command(Private, "add", "Adds a new song to the queue.")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
-		void CommandAdd(ExecutionInformation info, string parameter)
+		string CommandAdd(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, true));
+			return FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, true));
 		}
 
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
@@ -345,8 +347,8 @@ namespace TS3AudioBot
 				strb.Append("\n========= Welcome to the TS3AudioBot ========="
 					+ "\nIf you need any help with a special command use !help <commandName>."
 					+ "\nHere are all possible commands:\n");
-				foreach (var botCom in CommandManager.AllCommands.Select(c => c.InvokeName))
-					strb.Append(botCom).Append(", ");
+				foreach (var botCom in CommandManager.AllCommands.Select(c => c.InvokeName).GroupBy(n => n.Split(' ')[0]))
+					strb.Append(botCom.Key).Append(", ");
 				strb.Length -= 2;
 				return strb.ToString();
 			}
@@ -380,6 +382,15 @@ namespace TS3AudioBot
 				var targetCG = target as CommandGroup;
 				if (targetCG != null)
 					return "The command contains the following subfunctions: " + string.Join(", ", targetCG.Commands.Select(g => g.Key));
+
+				var targetOFC = target as OverloadedFunctionCommand;
+				if (targetOFC != null)
+				{
+					var strb = new StringBuilder();
+					foreach (var botCom in targetOFC.Functions.OfType<BotCommand>())
+						strb.Append(botCom.GetHelp());
+					return strb.ToString();
+				}
 
 				return "Seems like something went wrong. No help can be shown for this command path.";
 			}
@@ -437,9 +448,9 @@ namespace TS3AudioBot
 				if (ale != null)
 				{
 					ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-					FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
+					return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
 				}
-				return string.Empty;
+				else return "There is no song in the history";
 			}
 		}
 
@@ -450,8 +461,7 @@ namespace TS3AudioBot
 			if (ale != null)
 			{
 				ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-				FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
-				return string.Empty;
+				return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
 			}
 			else return "Could not find track with this id";
 		}
@@ -535,7 +545,7 @@ namespace TS3AudioBot
 		[Command(Private, "kickme", "Guess what?")]
 		[Usage("[far]", "Optional attribute for the extra punch strength")]
 		[RequiredParameters(0)]
-		void CommandKickme(ExecutionInformation info, string parameter)
+		string CommandKickme(ExecutionInformation info, string parameter)
 		{
 			try
 			{
@@ -543,10 +553,12 @@ namespace TS3AudioBot
 					QueryConnection.KickClientFromChannel(info.TextMessage.InvokerId);
 				else if (parameter == "far")
 					QueryConnection.KickClientFromServer(info.TextMessage.InvokerId);
+				return null;
 			}
 			catch (QueryCommandException ex)
 			{
 				Log.Write(Log.Level.Info, "Could not kick: {0}", ex);
+				return "I'm not strong enough, master!";
 			}
 		}
 
@@ -563,9 +575,12 @@ namespace TS3AudioBot
 
 		[Command(Private, "loop", "Sets whether or not to loop the entire playlist.")]
 		[Usage("(on|off)]", "on or off")]
+		[RequiredParameters(0)]
 		string CommandLoop(ExecutionInformation info, string parameter)
 		{
-			if (parameter == "on")
+			if (string.IsNullOrEmpty(parameter))
+				return "Loop is " + (AudioFramework.Loop ? "on" : "off");
+			else if (parameter == "on")
 				AudioFramework.Loop = true;
 			else if (parameter == "off")
 				AudioFramework.Loop = false;
@@ -575,10 +590,10 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "media", "Plays any local or online media file.")]
-		void CommandMedia(ExecutionInformation info, string parameter)
+		string CommandMedia(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.Session, client, parameter, false));
+			return FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.Session, client, parameter, false));
 		}
 
 		[Command(Private, "next", "Plays the next song in the playlist.")]
@@ -623,14 +638,17 @@ namespace TS3AudioBot
 		[Command(Private, "play", "Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")]
 		[Usage("<link>", "Youtube, Soundcloud, local path or file link")]
 		[RequiredParameters(0)]
-		void CommandPlay(ExecutionInformation info, string parameter)
+		string CommandPlay(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
+			{
 				AudioFramework.Pause = false;
+				return null;
+			}
 			else
 			{
 				ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-				FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, false));
+				return FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, false));
 			}
 		}
 
@@ -669,10 +687,10 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
-		void CommandQuit(ExecutionInformation info)
+		string CommandQuit(ExecutionInformation info)
 		{
-			info.Session.Write("Do you really want to quit? !(yes|no)");
 			info.Session.SetResponse(ResponseQuit, null);
+			return "Do you really want to quit? !(yes|no)";
 		}
 
 		[Command(Admin, "quit force", "Closes the TS3AudioBot application.")]
@@ -697,9 +715,12 @@ namespace TS3AudioBot
 
 		[Command(Public, "quiz", "Enable to hide the songnames and let your friends guess the title.")]
 		[Usage("(on|off)]", "on or off")]
+		[RequiredParameters(0)]
 		string CommandQuiz(ExecutionInformation info, string parameter)
 		{
-			if (parameter == "on")
+			if (string.IsNullOrEmpty(parameter))
+				return "Quizmode is " + (QuizMode ? "on" : "off");
+			else if (parameter == "on")
 				QuizMode = true;
 			else if (parameter == "off")
 			{
@@ -714,9 +735,12 @@ namespace TS3AudioBot
 
 		[Command(Private, "repeat", "Sets whether or not to loop a single song.")]
 		[Usage("(on|off)]", "on or off")]
+		[RequiredParameters(0)]
 		string CommandRepeat(ExecutionInformation info, string parameter)
 		{
-			if (parameter == "on")
+			if (string.IsNullOrEmpty(parameter))
+				return "Repeat is " + (AudioFramework.Repeat ? "on" : "off");
+			else if (parameter == "on")
 				AudioFramework.Repeat = true;
 			else if (parameter == "off")
 				AudioFramework.Repeat = false;
@@ -788,10 +812,10 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "soundcloud", "Resolves the link as a soundcloud song to play it for you.")]
-		void CommandSoundcloud(ExecutionInformation info, string parameter)
+		string CommandSoundcloud(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.Session, client, parameter, false));
+			return FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.Session, client, parameter, false));
 		}
 
 		[Command(Private, "stop", "Stops the current song.")]
@@ -860,24 +884,25 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "test", "Only for debugging purposes")]
-		void CommandTest(ExecutionInformation info)
+		string CommandTest(ExecutionInformation info)
 		{
 			if (!info.Session.IsPrivate)
-				info.Session.Write("Please use as private, admins too!");
+				return "Please use as private, admins too!";
 			else
 			{
 				info.Session.Write("Good boy!");
 				// stresstest
 				for (int i = 0; i < 10; i++)
 					info.Session.Write(i.ToString());
+				return "Test end";
 			}
 		}
 
 		[Command(Private, "twitch", "Resolves the link as a twitch stream to play it for you.")]
-		void CommandTwitch(ExecutionInformation info, string parameter)
+		string CommandTwitch(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.Session, client, parameter, false));
+			return FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.Session, client, parameter, false));
 		}
 
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
@@ -917,10 +942,10 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "youtube", "Resolves the link as a youtube video to play it for you.")]
-		void CommandYoutube(ExecutionInformation info, string parameter)
+		string CommandYoutube(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(info.Session, client, parameter, false));
+			return FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(info.Session, client, parameter, false));
 		}
 
 		#endregion

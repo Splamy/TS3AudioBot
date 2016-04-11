@@ -16,6 +16,7 @@ namespace TS3AudioBot
 
 		public PlayData CurrentPlayData { get; private set; }
 		private IPlayerConnection playerConnection;
+		private PlaylistManager playlistManager;
 
 		public event EventHandler<PlayData> OnResourceStarted;
 		public event EventHandler<bool> OnResourceStopped;
@@ -23,12 +24,7 @@ namespace TS3AudioBot
 		// Playerproperties
 
 		/// <summary>Loop state for the entire playlist.</summary>
-		public bool Loop // TODO
-		{
-			get { return false; }
-			set { throw new NotImplementedException(); }
-		}
-
+		public bool Loop { get { return playlistManager.Loop; } set { playlistManager.Loop = value; } }
 		/// <summary>Loop state for the current song.</summary>
 		public bool Repeat { get { return playerConnection.Repeated; } set { playerConnection.Repeated = value; } }
 		public int Volume { get { return playerConnection.Volume; } set { playerConnection.Volume = value; } }
@@ -48,49 +44,54 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		/// <summary>Plays the next song in the playlist.</summary>
+		/// <summary>Plays the next song in the playlist or queue.</summary>
 		public void Next()
 		{
-
+			var next = playlistManager.Next();
+			if (next != null)
+			{
+				if (CurrentPlayData != null)
+				{
+					CurrentPlayData.Resource = next;
+					StartResource(CurrentPlayData);
+				}
+			}
+			else
+			{
+				Stop(false);
+			}
 		}
 
 		/// <summary>Plays the previous song in the playlist.</summary>
 		public void Previous()
 		{
-
+			// TODO via history ?
 		}
 
 		/// <summary>Clears the current playlist</summary>
-		public void Clear()
-		{
+		public void Clear() => playlistManager.Clear();
 
-		}
-
-		public void SongEnd()
-		{
-			// if playlistmanager is off:
-			Stop(false);
-			// else:
-			// Stop(true);
-			// next song
-		}
+		private void OnSongEnd() => Next();
 
 		// Audioframework
 
 		/// <summary>Creates a new AudioFramework</summary>
 		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
-		public AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackEnd)
+		internal AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackEnd, PlaylistManager playlistMgr)
 		{
 			if (audioBackEnd == null)
 				throw new ArgumentNullException(nameof(audioBackEnd));
 
 			if (audioBackEnd.SupportsEndCallback)
-				audioBackEnd.OnSongEnd += (s, e) => SongEnd();
+				audioBackEnd.OnSongEnd += (s, e) => OnSongEnd();
 			else
 				waitEndTick = TickPool.RegisterTick(NotifyEnd, SongEndTimeoutInterval, false);
+
 			audioFrameworkData = afd;
 			playerConnection = audioBackEnd;
 			playerConnection.Initialize();
+
+			playlistManager = playlistMgr;
 		}
 
 		/// <summary>
@@ -113,7 +114,7 @@ namespace TS3AudioBot
 				else if (endTime + SongEndTimeout < Util.GetNow())
 				{
 					Log.Write(Log.Level.Debug, "AF Song ended with default timeout");
-					SongEnd();
+					OnSongEnd();
 					waitEndTick.Active = false;
 				}
 			}
