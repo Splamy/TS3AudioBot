@@ -11,7 +11,7 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class YoutubeFactory : IResourceFactory
 	{
-		private Regex idMatch = new Regex(@"(&|\?)v=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 		public AudioType FactoryFor => AudioType.Youtube;
@@ -28,7 +28,7 @@ namespace TS3AudioBot.ResourceFactories
 				result = null;
 				return RResultCode.YtIdNotFound;
 			}
-			return GetResourceById(matchYtId.Groups[2].Value, null, out result);
+			return GetResourceById(matchYtId.Groups[3].Value, null, out result);
 		}
 
 		public RResultCode GetResourceById(string ytID, string name, out AudioResource result)
