@@ -97,7 +97,13 @@ namespace TS3AudioBot
 			throw new InvalidOperationException();
 		}
 
-		public ClientData GetClientByName(string name) => ClientBufferRequest(user => user.NickName.Contains(name));
+		public ClientData GetClientByName(string name)
+		{
+			RefreshClientBuffer(false);
+			return CommandSystem.XCommandSystem.FilterList(
+				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.NickName, cb)), name)
+				.FirstOrDefault().Value;
+		}
 
 		private ClientData ClientBufferRequest(Func<ClientData, bool> pred)
 		{
