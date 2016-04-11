@@ -152,10 +152,13 @@ namespace TS3AudioBot
 			// Inform the BobClient on start/stop
 			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
 			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
+			// In own favor update the own status text to the current song title
+			AudioFramework.OnResourceStarted += SongUpdateEvent;
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerId);
+
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
 			// Create a default session for all users in all chat
@@ -721,12 +724,16 @@ namespace TS3AudioBot
 			if (string.IsNullOrEmpty(parameter))
 				return "Quizmode is " + (QuizMode ? "on" : "off");
 			else if (parameter == "on")
+			{
 				QuizMode = true;
+				QueryConnection.ChangeDescription("<Quiztime!>");
+			}
 			else if (parameter == "off")
 			{
 				if (info.Session.IsPrivate)
 					return "No cheatig! Everybody has to see it!";
 				QuizMode = false;
+				QueryConnection.ChangeDescription(AudioFramework.CurrentPlayData.Resource.ResourceTitle);
 			}
 			else
 				CommandHelp(info, "quiz");
@@ -992,6 +999,14 @@ namespace TS3AudioBot
 		}
 
 		#endregion
+
+		public void SongUpdateEvent(object sender, PlayData data)
+		{
+			if (!QuizMode)
+			{
+				QueryConnection.ChangeDescription(data.Resource.ResourceTitle);
+			}
+		}
 
 		public void Dispose()
 		{

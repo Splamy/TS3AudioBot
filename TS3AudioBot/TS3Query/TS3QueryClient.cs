@@ -174,6 +174,10 @@ namespace TS3Query
 		public void ChangeName(string newName)
 			=> Send("clientupdate",
 			new Parameter("client_nickname", newName));
+		public void ChangeDescription(string newDescription, ClientData client)
+			=> Send("clientdbedit",
+			new Parameter("cldbid", client.DatabaseId),
+			new Parameter("client_description", newDescription));
 		public void Quit()
 		{
 			lock (lockObj)
