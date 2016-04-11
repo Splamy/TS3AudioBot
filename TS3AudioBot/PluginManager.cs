@@ -82,7 +82,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public PluginResponse LoadPlugin(string identifier)
+		public string LoadPlugin(string identifier)
 		{
 			CheckLocalPlugins();
 
@@ -102,16 +102,16 @@ namespace TS3AudioBot
 			return LoadPlugin(plugin);
 		}
 
-		private PluginResponse LoadPlugin(Plugin plugin)
+		private string LoadPlugin(Plugin plugin)
 		{
 			if (plugin == null)
-				return PluginResponse.PluginNotFound;
+				return "Plugin not found";
 
 			if (plugin.status == PluginStatus.Off || plugin.status == PluginStatus.Disabled)
 			{
 				var response = plugin.Prepare();
 				if (response != PluginResponse.Ok)
-					return response;
+					return response.ToString();
 			}
 
 			if (plugin.status == PluginStatus.Ready)
@@ -121,16 +121,17 @@ namespace TS3AudioBot
 					plugin.proxy.Run(mainBot);
 					mainBot.CommandManager.RegisterPlugin(plugin);
 					plugin.status = PluginStatus.Active;
-					return PluginResponse.Ok;
+					return "Ok";
 				}
 				catch (Exception ex)
 				{
 					UnloadPlugin(plugin, false);
-					Log.Write(Log.Level.Warning, "Plugin could not be loaded: ", ex);
-					return PluginResponse.Crash;
+					string errMsg = "Plugin could not be loaded: " + ex.Message;
+					Log.Write(Log.Level.Warning, errMsg);
+					return errMsg;
 				}
 			}
-			return PluginResponse.UnknownStatus;
+			return "Unknown plugin error";
 		}
 
 		private int GetFreeId()

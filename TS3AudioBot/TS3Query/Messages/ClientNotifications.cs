@@ -67,7 +67,7 @@ namespace TS3Query.Messages
 
 	public interface ClientDbData : IResponse, ClientData, IClientBaseData2
 	{
-		[QuerySerialized("client_type")]
+		[QuerySerialized("client_created")]
 		DateTime CreationDate { get; set; }
 
 		[QuerySerialized("client_lastconnected")]

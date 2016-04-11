@@ -148,12 +148,17 @@ namespace TS3AudioBot
 		public string GetNameByDbId(ulong clientDbId)
 		{
 			string name;
-			if (!clientDbNames.TryGetValue(clientDbId, out name))
+			if (clientDbNames.TryGetValue(clientDbId, out name))
+				return name;
+
+			try
 			{
 				var response = tsClient.ClientDbInfo(clientDbId);
-				clientDbNames.Add(clientDbId, response?.NickName ?? string.Empty);
+				name = response?.NickName ?? string.Empty;
+				clientDbNames.Add(clientDbId, name);
+				return name;
 			}
-			return name;
+			catch (QueryCommandException) { return null; }
 		}
 
 		public void Dispose()

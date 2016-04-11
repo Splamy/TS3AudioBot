@@ -118,12 +118,22 @@ namespace TS3Query.Messages
 
 		private static IEnumerable<MapTarget> GetPropertyRequestsRecursive(Type t)
 		{
+			var metahashTable = new HashSet<int>();
+
 			foreach (var prop in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+			{
+				if (metahashTable.Contains(prop.MetadataToken)) continue;
+				metahashTable.Add(prop.MetadataToken);
 				yield return prop;
+			}
 
 			foreach (var iface in t.GetInterfaces())
 				foreach (var prop in GetPropertyRequestsRecursive(iface))
+				{
+					if (metahashTable.Contains(prop.MetadataToken)) continue;
+					metahashTable.Add(prop.MetadataToken);
 					yield return prop;
+				}
 		}
 	}
 

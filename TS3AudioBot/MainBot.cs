@@ -328,7 +328,7 @@ namespace TS3AudioBot
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
-		[Command(Admin, "getuserid", "Gets the unique Id of a user.")]
+		[Command(Admin, "getuser id", "Gets the unique Id of a user.")]
 		[Usage("<username>", "A user which is currently logged in to the server")]
 		public string CommandGetUserId(ExecutionInformation info, string parameter)
 		{
@@ -337,6 +337,17 @@ namespace TS3AudioBot
 				return "No user found...";
 			else
 				return $"Client: UID:{client.ClientId} DBID:{client.DatabaseId} ChanID:{client.ChannelId}";
+		}
+
+		[Command(Admin, "getuser db", "Gets the User name by dbid.")]
+		[Usage("<dbid>", "Any user dbid which is known by the server")]
+		public string GetUser(ExecutionInformation info, ulong parameter)
+		{
+			var client = QueryConnection.GetNameByDbId(parameter);
+			if (client == null)
+				return "No user found...";
+			else
+				return "Clientname: " + client;
 		}
 
 		[Command(AnyVisibility, "help", "Shows all commands or detailed help about a specific command.")]
