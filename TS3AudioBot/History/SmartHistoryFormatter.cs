@@ -11,12 +11,12 @@ namespace TS3AudioBot.History
 		private const int TS3_MAXLENGTH = 1024;
 		private int LineLimit = 40;
 
-		public string ProcessQuery(AudioLogEntry entry)
+		public string ProcessQuery(AudioLogEntry entry, string format)
 		{
-			return ProcessQuery(new[] { entry });
+			return ProcessQuery(new[] { entry }, format);
 		}
 
-		public string ProcessQuery(IEnumerable<AudioLogEntry> entries)
+		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, string format)
 		{
 			if (!entries.Any())
 				return "I found nothing!";

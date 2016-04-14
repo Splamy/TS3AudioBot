@@ -7,12 +7,16 @@ namespace TS3AudioBot.History
 
 	public class AudioLogEntry : AudioResource
 	{
+		/// <summary>A unique id for each <see cref="AudioRessource"/>, given by the history system.</summary>
 		public uint Id { get; }
+		/// <summary>The dbid of the teamspeak user, who played this song first.</summary>
 		public uint UserInvokeId { get; set; }
+		/// <summary>How often the song has been played.</summary>
 		public uint PlayCount { get; set; }
+		/// <summary>The last time this song has been played.</summary>
 		public DateTime Timestamp { get; set; }
 		public override AudioType AudioType { get; }
-
+		/// <summary>Zero based offset this entry is stored in the history file.</summary>
 		public long FilePosIndex { get; set; }
 
 		public AudioLogEntry(uint id, AudioType audioType, string resId) : base(resId, null)

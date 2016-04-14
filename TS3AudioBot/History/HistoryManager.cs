@@ -9,12 +9,12 @@ namespace TS3AudioBot.History
 	{
 		private HistoryFile historyFile;
 		private IEnumerable<AudioLogEntry> lastResult;
-		public SmartHistoryFormatter Formatter { get; private set; }
+		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => historyFile.CurrentID - 1;
 
 		public HistoryManager(HistoryManagerData hmd)
 		{
-			Formatter = new SmartHistoryFormatter();
+			Formatter = new SmartHistoryFormatter2();
 			historyFile = new HistoryFile();
 			historyFile.OpenFile(hmd.historyFile);
 		}
@@ -59,7 +59,7 @@ namespace TS3AudioBot.History
 		public string SearchParsed(SeachQuery query)
 		{
 			var aleList = Search(query);
-			return Formatter.ProcessQuery(aleList);
+			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter2.DefaultAleFormat);
 		}
 
 		public AudioLogEntry GetEntryById(uint id)

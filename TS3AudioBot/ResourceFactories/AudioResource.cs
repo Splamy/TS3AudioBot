@@ -4,11 +4,15 @@ namespace TS3AudioBot.ResourceFactories
 
 	public abstract class AudioResource : MarshalByRefObject
 	{
+		/// <summary>The resource type.</summary>
 		public abstract AudioType AudioType { get; }
+		/// <summary>The display title.</summary>
 		public string ResourceTitle { get; set; }
+		/// <summary>An identifier to create the song. This id is uniqe among same <see cref="AudioType"/> resources.</summary>
 		public string ResourceId { get; }
+		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and <see cref="AudioType"/>.</summary>
 		public string UniqueId => ResourceId + AudioType.ToString();
-
+ 
 		protected AudioResource(string resourceId, string resourceTitle)
 		{
 			ResourceTitle = resourceTitle;
