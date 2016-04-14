@@ -431,7 +431,7 @@ namespace TS3AudioBot
 		{
 			var ale = HistoryManager.GetEntryById(id);
 			if (ale != null)
-				return HistoryManager.Formatter.ProcessQuery(ale, SmartHistoryFormatter2.DefaultAleFormat);
+				return HistoryManager.Formatter.ProcessQuery(ale, SmartHistoryFormatter.DefaultAleFormat);
 			return "Could not find track with this id";
 		}
 

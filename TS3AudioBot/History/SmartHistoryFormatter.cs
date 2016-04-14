@@ -1,131 +1,143 @@
 namespace TS3AudioBot.History
 {
 	using System;
-	using System.Collections.Generic;
-	using System.Linq;
 	using System.Text;
+	using System.Linq;
+	using System.Collections.Generic;
 
-	// TODO either static all, or get an interface
-	public class SmartHistoryFormatter : MarshalByRefObject
+	public class SmartHistoryFormatter : MarshalByRefObject, IHistoryFormatter
 	{
-		private const int TS3_MAXLENGTH = 1024;
-		private int LineLimit = 40;
+		private const int TS3MAXLENGTH = 1024;
+		// configurable constansts
+		private const string LineBreak = "\n";
+		private const int MinTokenLine = 3;
+		private bool fairDistribute = false;
+		// resulting constansts from configuration
+		private static readonly int LineBreakLen = TokenLength(LineBreak);
+		private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;
 
-		public string ProcessQuery(AudioLogEntry entry, string format)
+		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)
 		{
-			return ProcessQuery(new[] { entry }, format);
+			throw new NotImplementedException();
 		}
 
-		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, string format)
+		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, Func<AudioLogEntry, string> format)
 		{
-			if (!entries.Any())
-				return "I found nothing!";
-
-			string header = string.Empty;
-			int currentLength = TokenLength(header);
-
-			var lines = entries.Select(entry => new LineBuilder(entry.Id.ToString(), entry.ResourceTitle, entry.UserInvokeId.ToString()));
-			lines = lines.Reverse();
-
-			// List all lines
-			var finList = new List<LineBuilder>();
-			var lenu = lines.GetEnumerator();
-			while (lenu.MoveNext())
+			//! entryLines[n] is the most recent entry
+			var entryLines = entries.Select(e =>
 			{
-				var line = lenu.Current;
+				string finStr = format(e);
+				return new Line { Value = finStr, TokenLength = TokenLength(finStr) };
+			});
 
-				line.LimitTo = LineLimit;
-				int tokenLen = line.TokenLength;
-				if (currentLength + tokenLen > TS3_MAXLENGTH)
+			//! entryLinesRev[0] is the most recent entry
+			var entryLinesRev = entryLines.Reverse();
+
+			var queryTokenLen = entryLines.Sum(eL => eL.TokenLength + LineBreakLen);
+			StringBuilder strb;
+
+			// If the entire content fits within the ts3 limitation, we can concat and return it.
+			if (queryTokenLen <= TS3MAXLENGTH)
+			{
+				strb = new StringBuilder(queryTokenLen, queryTokenLen);
+				// we want the most recent entry at the bottom so we reverse the list
+				foreach (var eL in entryLines)
+					strb.Append(eL.Value).Append(LineBreak);
+				return strb.ToString();
+			}
+
+			int spareToken = TS3MAXLENGTH;
+			int listStart = 0;
+
+			// Otherwise we go iteratively through the list to test how many entries we can add with our token
+			foreach (var eL in entryLinesRev)
+			{
+				// if we don't have enough token to fit in the next entry (even in shorted form)
+				// then we break and use the last few tokens in the next step to fill up.
+				if (spareToken < 0 || (spareToken < MinTokenLine && spareToken < eL.TokenLength))
 					break;
+				// now the further execution is legal because of either of those cases
+				// 1) !(spareToken < MinTokenLine):              entry will be trimmed to MinTokenLine and fits
+				// 2) !(spareToken < entryLines[i].TokenLength): entry alreay fits into spareTokens
 
-				finList.Add(line);
-				currentLength += tokenLen;
-			}
-
-			// Build the lines
-			var strb = new StringBuilder(header, TS3_MAXLENGTH);
-			foreach (var line in finList.Reverse<LineBuilder>())
-				line.InsertTo(strb);
-			string result = strb.ToString();
-
-			// Validate the result
-			if (TokenLength(result) > TS3_MAXLENGTH)
-			{
-				Log.Write(Log.Level.Error, "Formatter: Parsed string is too long: {0}", result);
-				result = "Internal parsing error";
-			}
-			return result;
-		}
-
-		class LineBuilder
-		{
-			private const int TITLE_MIN_LENGTH = 10;
-
-			private const string FORMATCHARS = " (): \n";
-			private static readonly int FORMAT_CHARS_LENGTH = TokenLength(FORMATCHARS);
-			private const int DOTS_LENGTH = 3;
-			public const int FORMAT_MIN_LENGTH = TITLE_MIN_LENGTH + DOTS_LENGTH;
-
-			public string Id { get; private set; }
-			public string Title { get; private set; }
-			public string User { get; private set; }
-
-			public string TitleFinal
-			{
-				get
+				if (eL.TokenLength < MinTokenLine)
 				{
-					if (LimitTo < 0 || TokenLength(Title) + ConstLength < LimitTo)
-						return Title;
-					else
+					spareToken -= eL.TokenLength;
+					listStart++;
+				}
+				else
+				{
+					spareToken -= MinTokenLine;
+					listStart++;
+				}
+			}
+
+			//! useList[0] is the most recent entry
+			var useList = entryLinesRev.Take(listStart).ToList();
+
+			if (fairDistribute)
+			{
+				// If the fairDistribute option is active this loop will start out by trying to give each
+				// entry an equal fraction of all spareToken.
+				for (int i = 0; i < useList.Count; i++)
+				{
+					if (spareToken <= 0) break;
+					int fairBonus = spareToken / (useList.Count - i);
+					int available = Math.Min(fairBonus, useList[i].TokenLength);
+					useList[i].BonusToken = available;
+					spareToken -= available;
+				}
+			}
+			else
+			{
+				// Now distribute the remaining tokens by first come first serve in reverse order
+				// so the more recent a entry is the more token it gets
+				foreach (var eL in useList)
+				{
+					if (spareToken <= 0) break;
+					if (eL.TokenLength > UseableTokenLine)
 					{
-						int titleForceLen = Math.Max(LimitTo - (ConstLength + DOTS_LENGTH), TITLE_MIN_LENGTH);
-						string primSub = (Title.Length <= titleForceLen) ? Title : Title.Substring(0, titleForceLen);
-						int curTrim = TokenLength(primSub);
-						if (curTrim > titleForceLen)
-						{
-							int trimCnt = 0;
-							for (int i = primSub.Length - 1; i >= 0 && curTrim > titleForceLen; i--, trimCnt++)
-								if (IsDoubleChar(primSub[i])) curTrim -= 2;
-								else curTrim--;
-							primSub = primSub.Substring(0, titleForceLen - trimCnt);
-						}
-						return primSub + "...";
+						int available = Math.Min(spareToken, eL.TokenLength - UseableTokenLine);
+						eL.BonusToken = available;
+						spareToken -= available;
 					}
 				}
 			}
-			public int TokenLength { get { return ConstLength + TokenLength(TitleFinal); } }
-			public int MinLength { get { return ConstLength + Math.Min(TokenLength(Title), FORMAT_MIN_LENGTH); } }
-			private int ConstLength { get { return TokenLength(Id) + TokenLength(User) + FORMAT_CHARS_LENGTH; } }
 
-			public int LimitTo { get; set; }
-
-			public LineBuilder(string id, string title, string user)
+			// now we can just build our result and return
+			strb = new StringBuilder(queryTokenLen, queryTokenLen);
+			for (int i = useList.Count - 1; i >= 0; i--)
 			{
-				Id = id;
-				Title = title;
-				User = user;
-				LimitTo = -1;
-				// <ID> (<USER>): <TITLE> = 5
+				var eL = useList[i];
+				if (eL.TokenLength < UseableTokenLine + eL.BonusToken)
+					strb.Append(eL.Value).Append(LineBreak);
+				else
+					strb.Append(SubstringToken(eL.Value, UseableTokenLine + eL.BonusToken)).Append(LineBreak);
 			}
 
-			public void InsertTo(StringBuilder strb)
-			{
-				strb.Append(Id)
-					.Append(" (")
-					.Append(User)
-					.Append("): ")
-					.Append(TitleFinal)
-					.Append('\n');
-			}
+			return strb.ToString();
 		}
 
-		private static int TokenLength(string str)
+		public static string DefaultAleFormat(AudioLogEntry e)
+			=> string.Format("{0} ({2}): {1}", e.Id, e.ResourceTitle, e.UserInvokeId, e.PlayCount, e.Timestamp);
+
+		/// <summary>Trims a string to have the given token count at max.</summary>
+		/// <param name="value">The string to substring from the left side.</param>
+		/// <param name="token">The max token count.</param>
+		/// <returns>The new substring.</returns>
+		private static string SubstringToken(string value, int token)
 		{
-			int finLen = str.Length;
-			finLen += str.Count(IsDoubleChar);
-			return finLen;
+			int tokens = 0;
+			for (int i = 0; i < value.Length; i++)
+			{
+				int addToken = IsDoubleChar(value[i]) ? 2 : 1;
+				if (tokens + addToken > token) return value.Substring(0, i);
+				else tokens += addToken;
+			}
+			return value;
 		}
+
+		private static int TokenLength(string str) => str.Length + str.Count(IsDoubleChar);
 
 		private static bool IsDoubleChar(char c)
 		{
@@ -138,6 +150,15 @@ namespace TS3AudioBot.History
 				c == '\r' ||
 				c == '\t' ||
 				c == '\v';
+		}
+
+		class Line
+		{
+			public string Value { get; set; } = null;
+			public int TokenLength { get; set; } = 0;
+			public int BonusToken { get; set; } = 0;
+
+			public override string ToString() => $"[{TokenLength:0000}+{BonusToken:0000}] {Value}";
 		}
 	}
 }

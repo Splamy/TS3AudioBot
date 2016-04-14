@@ -14,7 +14,7 @@ namespace TS3AudioBot.History
 
 		public HistoryManager(HistoryManagerData hmd)
 		{
-			Formatter = new SmartHistoryFormatter2();
+			Formatter = new SmartHistoryFormatter();
 			historyFile = new HistoryFile();
 			historyFile.OpenFile(hmd.historyFile);
 		}
@@ -59,7 +59,7 @@ namespace TS3AudioBot.History
 		public string SearchParsed(SeachQuery query)
 		{
 			var aleList = Search(query);
-			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter2.DefaultAleFormat);
+			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
 		}
 
 		public AudioLogEntry GetEntryById(uint id)
