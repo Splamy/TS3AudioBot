@@ -8,9 +8,12 @@ namespace TS3AudioBot.History
 	public class SmartHistoryFormatter2 : MarshalByRefObject, IHistoryFormatter
 	{
 		private const int TS3MAXLENGTH = 1024;
+        // configurable constansts
 		private const string LineBreak = "\n";
-		private static readonly int LineBreakLen = TokenLength(LineBreak);
 		private const int MinTokenLine = 100;
+        // resulting constansts from configuration
+		private static readonly int LineBreakLen = TokenLength(LineBreak);
+        private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;
 
 		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)
 		{
@@ -45,15 +48,23 @@ namespace TS3AudioBot.History
 				listStart = 0;
 			// case 3: same as 2 but we have to start a few entries later to fit as many as possible.
 			else
-				listStart = TS3MAXLENGTH / MinTokenLine;
+                listStart = entryLines.Count - (TS3MAXLENGTH / MinTokenLine);
 
 			int spareToken = TS3MAXLENGTH - (entryLines.Count * MinTokenLine);
 			strb = new StringBuilder(queryTokenLen, queryTokenLen);
 			for (int i = listStart; i < entryLines.Count; i++)
 			{
-				int bonusToken = spareToken / (entryLines.Count - i);
-				spareToken -= bonusToken;
-				strb.Append(SubstringToken(entryLines[i].Value, MinTokenLine - LineBreakLen + bonusToken)).Append(LineBreak);
+                if(entryLines[i].TokenLength < UseableTokenLine)
+                {
+                    strb.Append(entryLines[i].Value).Append(LineBreak);
+                    spareToken += UseableTokenLine - entryLines[i].TokenLength; 
+                }
+                else
+                {
+				    int bonusToken = spareToken / (entryLines.Count - i);
+                    strb.Append(SubstringToken(entryLines[i].Value, UseableTokenLine + bonusToken)).Append(LineBreak);
+                    spareToken -= bonusToken;
+                }
 			}
 
 			return strb.ToString();
