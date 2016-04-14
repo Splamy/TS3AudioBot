@@ -18,7 +18,7 @@ namespace TS3AudioBot.History
 
 		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)
 		{
-			throw new NotImplementedException();
+			return SubstringToken(format(entry), TS3MAXLENGTH);
 		}
 
 		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, Func<AudioLogEntry, string> format)
@@ -39,6 +39,7 @@ namespace TS3AudioBot.History
 			// If the entire content fits within the ts3 limitation, we can concat and return it.
 			if (queryTokenLen <= TS3MAXLENGTH)
 			{
+				if (queryTokenLen == 0) return "Nothing found!";
 				strb = new StringBuilder(queryTokenLen, queryTokenLen);
 				// we want the most recent entry at the bottom so we reverse the list
 				foreach (var eL in entryLines)
@@ -105,7 +106,7 @@ namespace TS3AudioBot.History
 			}
 
 			// now we can just build our result and return
-			strb = new StringBuilder(queryTokenLen, queryTokenLen);
+			strb = new StringBuilder(TS3MAXLENGTH - spareToken, TS3MAXLENGTH);
 			for (int i = useList.Count - 1; i >= 0; i--)
 			{
 				var eL = useList[i];
