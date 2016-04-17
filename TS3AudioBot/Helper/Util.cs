@@ -6,6 +6,8 @@ namespace TS3AudioBot.Helper
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Threading;
+	using System.Reflection;
+	using System.IO;
 
 	[Serializable]
 	public static class Util
@@ -56,5 +58,18 @@ namespace TS3AudioBot.Helper
 		public static void Init<T>(ref T obj) where T : new() => obj = new T();
 
 		public static Random RngInstance { get; } = new Random();
+
+		public static string GetResource(string file)
+		{
+			using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(file))
+			{
+				if (stream == null)
+					throw new InvalidOperationException("Resource not found");
+				using (var reader = new StreamReader(stream))
+				{
+					return reader.ReadToEnd();
+				}
+			}
+		}
 	}
 }

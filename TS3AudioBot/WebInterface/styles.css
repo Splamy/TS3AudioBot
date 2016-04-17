@@ -1,0 +1,114 @@
+:root {
+    --top-off: 80px;
+    --left-off: 150px;
+    --bot-off: 25px;
+}
+
+/*Unpad stuff here*/
+html, body, header, nav, #content, footer {
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    background-color: #050505;
+    color: #ee4d2e;
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+header {
+    color: white;
+    text-align: center;
+    position: fixed;
+    width: 100%;
+    height: var(--top-off);
+    z-index: 10;
+    cursor: default;
+}
+
+nav {
+    top: var(--top-off);
+    bottom: 0;
+    width: var(--left-off);
+    position: fixed;
+    line-height: 30px;
+    float: left;
+    z-index: 10;
+    animation-iteration-count: 1;
+    animation-duration: 1s;
+    /*animation-name: slidein;*/
+}
+
+@keyframes slidein {
+  from {
+    width: 0; 
+  }
+
+  to {
+     width: var(--left-off);
+  }
+}
+
+#content {
+    top: var(--top-off);
+    left: var(--left-off);
+    bottom: var(--bot-off);
+    right: 0;
+    width: auto;
+    position: absolute;
+    background-color: #202020;
+    overflow-y: auto;
+    overflow-x: auto;
+    display: block;
+}
+
+section {
+    width: 350px;
+    float: left;
+    padding: 10px;
+}
+
+footer {
+    bottom: 0;
+    height: var(--bot-off);
+    width: 100%;
+    color: white;
+    clear: both;
+    text-align: center;
+    position: fixed;
+    z-index: 10;
+    cursor: default;
+}
+
+nav > a {
+    background-color: #ee4d2e;
+    border: none;
+    color: white;
+    padding: 10px 0px;
+    width: 90%;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    font-size: 16px;
+    margin-left: 5%;
+    margin-right: 5%;
+    margin-bottom: 5px;
+    border-radius: 8px;
+    transition-duration: 0.4s;
+}
+
+nav > a:hover {
+    background-color: #ee745d;
+    color: black;
+}
+
+.unselectable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
