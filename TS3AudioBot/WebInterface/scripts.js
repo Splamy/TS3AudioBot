@@ -21,3 +21,9 @@ function main_click(event)
     load(newSite + "&content=true");
     window.history.pushState('mainpage', '', newSite);
 }
+
+function fill_history(jsonDict)
+{
+    var historylist = $("#historylist");
+    
+}

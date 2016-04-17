@@ -1,0 +1,30 @@
+<h2>History</h2>
+<div id="splitleft">
+    <form id="searchquery" action="/?page=history" method="get">
+        <fieldset class="unselectable">
+            <legend>Search for Entries</legend>
+            <input type="hidden" name="page" value="history.html">
+            <label>Title contains:   </label><input class="filledform" type="text" name="title">      
+            <label>From UserId:      </label><input class="filledform" type="number" name="userid">   
+            <label>Last called after:</label><input class="filledform" type="date" name="lastinvoked">
+            <button type="submit" form="searchquery" value="Search">Search</button>
+        </fieldset>
+    </form>
+</div>
+<div id="splitright">
+<table>
+    <caption>Query results</caption>
+    <tr>
+        <th>Id</th>
+        <th>Title</th> 
+        <th>Options</th>
+    </tr>
+    <div id="historylist">
+    <tr>
+        <td>Eve</td>
+        <td>Jackson</td> 
+        <td>delete | edit</td>
+    </tr>
+    <div>
+</table>
+</div>

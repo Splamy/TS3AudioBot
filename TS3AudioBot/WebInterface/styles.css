@@ -2,20 +2,26 @@
     --top-off: 80px;
     --left-off: 150px;
     --bot-off: 25px;
+    --site-color: #B0171F;
 }
 
 /*Unpad stuff here*/
-html, body, header, nav, #content, footer {
+html, body, header, nav, footer, section, label, .filledform {
     margin: 0;
     padding: 0;
+    border: 0;
 }
 
 html, body {
     background-color: #050505;
-    color: #ee4d2e;
+    color: var(--site-color);
     height: 100%;
     width: 100%;
     position: relative;
+}
+
+h2{
+    text-align: center;
 }
 
 header {
@@ -36,12 +42,12 @@ nav {
     line-height: 30px;
     float: left;
     z-index: 10;
-    animation-iteration-count: 1;
+    /*animation-iteration-count: 1;
     animation-duration: 1s;
-    /*animation-name: slidein;*/
+    animation-name: slidein;*/
 }
 
-@keyframes slidein {
+/*@keyframes slidein {
   from {
     width: 0; 
   }
@@ -49,25 +55,31 @@ nav {
   to {
      width: var(--left-off);
   }
-}
+}*/
 
-#content {
+section {
     top: var(--top-off);
     left: var(--left-off);
     bottom: var(--bot-off);
     right: 0;
-    width: auto;
-    position: absolute;
+    /* Firefox */
+    width: -moz-calc(100% - var(--left-off));
+    height: -moz-calc(100% - var(--bot-off) - var(--top-off));
+    /* WebKit */
+    width: -webkit-calc(100% - var(--left-off));
+    height: -webkit-calc(100% - var(--bot-off) - var(--top-off));
+    /* Opera */
+    width: -o-calc(100% - var(--left-off));
+    height: -o-calc(100% - var(--bot-off) - var(--top-off));
+    /* Standard */
+    width: calc(100% - var(--left-off));
+    height: calc(100% - var(--bot-off) - var(--top-off));
+    position: relative;
     background-color: #202020;
     overflow-y: auto;
     overflow-x: auto;
     display: block;
-}
-
-section {
-    width: 350px;
-    float: left;
-    padding: 10px;
+    z-index: 5;
 }
 
 footer {
@@ -82,8 +94,8 @@ footer {
     cursor: default;
 }
 
-nav > a {
-    background-color: #ee4d2e;
+#button, nav > a, button {
+    background-color: var(--site-color);
     border: none;
     color: white;
     padding: 10px 0px;
@@ -92,23 +104,84 @@ nav > a {
     text-decoration: none;
     text-align: center;
     font-size: 16px;
-    margin-left: 5%;
-    margin-right: 5%;
-    margin-bottom: 5px;
+    margin: 0px 5% 5px;
     border-radius: 8px;
     transition-duration: 0.4s;
 }
 
-nav > a:hover {
+#button:hover, nav > a:hover, button:hover {
     background-color: #ee745d;
     color: black;
 }
 
-.unselectable {
+label {
+    display: inline-block;
+    clear: left;
+    width: 40%;
+    position: relative;
+    text-align: right;
+    float:left;
+}
+
+.unselectable, nav > a {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -khtml-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+/* History related stuff */
+#splitleft, #splitright {
+    width: 48%;
+    position: relative;
+    margin: 0px 1%;
+}
+
+#splitleft {
+    float: left;
+}
+
+#splitright {
+    float: right;
+}
+
+.filledform {
+    display: inline-block;
+    width: 55%;
+    position: relative;
+    border: 2px 2.5%;
+    margin: 3px 0px;
+}
+
+fieldset {
+    border-radius: 8px;
+    border:1px var(--site-color);
+    border-style: solid none solid none;
+    cursor: default;
+}
+
+legend {
+  border: 1px solid var(--site-color);
+}
+
+caption {
+    padding: 5px;
+    border:1px solid var(--site-color);
+    border-style: solid none none none;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px var(--site-color);
+    border-style: none solid none solid;
+}
+
+th {
+    padding: 5px;
+    text-align: left;
+    border: 1px var(--site-color);
+    border-style: none solid solid solid;
 }

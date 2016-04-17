@@ -8,6 +8,7 @@ using System.Threading;
 using System.IO;
 using TS3AudioBot.Helper;
 using System.Web;
+using HtmlAgilityPack;
 
 namespace TS3AudioBot.WebInterface
 {
@@ -26,14 +27,14 @@ namespace TS3AudioBot.WebInterface
 			};
 			Util.Init(ref sites);
 
-			index = new WebFileSite("index.html", "text/html", new FileInfo("../../WebInterface/index.html"));
+			index = new WebFileSite("index.html", new FileInfo("../../WebInterface/index.html")) { MimeType = "text/html" };
 			PrepareSite(index);
 			PrepareSite(index, string.Empty);
-			PrepareSite(new WebFileSite("styles.css", "text/css", new FileInfo("../../WebInterface/styles.css")));
-			PrepareSite(new WebFileSite("scripts.js", "application/javascript", new FileInfo("../../WebInterface/scripts.js")));
-			PrepareSite(new WebStaticSite("jquery.js", "application/javascript", Util.GetResource("TS3AudioBot.WebInterface.jquery.js")));
-			PrepareSite(new WebFileSite("history.html", "text/html", new FileInfo("../../WebInterface/history.html")));
-			PrepareSite(new WebStaticSite("favicon.ico", "image/x-icon", Util.GetResource("TS3AudioBot.WebInterface.favicon.ico")));
+			PrepareSite(new WebFileSite("styles.css", new FileInfo("../../WebInterface/styles.css")) { MimeType = "text/css" });
+			PrepareSite(new WebFileSite("scripts.js", new FileInfo("../../WebInterface/scripts.js")) { MimeType = "application/javascript" });
+			PrepareSite(new WebStaticSite("jquery.js", Util.GetResource("TS3AudioBot.WebInterface.jquery.js")) { MimeType = "application/javascript" });
+			PrepareSite(new WebFileSite("history.html", new FileInfo("../../WebInterface/history.html")) { MimeType = "text/html" });
+			PrepareSite(new WebStaticSite("favicon.ico", Util.GetResource("TS3AudioBot.WebInterface.favicon.ico")) { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
 		}
 
 		public void EnterWebLoop()
@@ -66,10 +67,11 @@ namespace TS3AudioBot.WebInterface
 			}
 		}
 
+		private static readonly Uri helpUri = new Uri("http://localhost");
 		public void PrepareSite(WebSite site) => PrepareSite(site, site.SitePath);
 		public void PrepareSite(WebSite site, string page)
 		{
-			var genUrl = new Uri(new Uri("http://localhost"), page);
+			var genUrl = new Uri(helpUri, page);
 			sites.Add(genUrl.AbsolutePath, site);
 		}
 
@@ -101,42 +103,101 @@ namespace TS3AudioBot.WebInterface
 					}
 				}
 
-				if (site.MimeType != null) context.Response.ContentType = site.MimeType;
-				return site.GenerateSite();
+				return site.GenerateSite(context);
 			}
 
 			return Encoding.UTF8.GetBytes("<div>Wrong turn!</div>");
 		}
 	}
 
+	class FileProvider
+	{
+		private byte[] rawData;
+		private bool loadedOnce = false;
+		private FileInfo file = null;
+		private DateTime lastWrite = DateTime.MinValue;
+		private string resourceName = null;
+		public bool HasChanged => !CheckFile();
+
+		public FileProvider(FileInfo file)
+		{
+			if (file == null)
+				throw new ArgumentNullException(nameof(file));
+		}
+
+		public FileProvider(string resourceName)
+		{
+			if (resourceName == null)
+				throw new ArgumentNullException(nameof(resourceName));
+		}
+
+		private bool CheckFile()
+		{
+			if (resourceName != null)
+				return loadedOnce;
+			else if (file != null)
+				return file.LastWriteTime == lastWrite;
+			else
+				throw new InvalidOperationException();
+		}
+
+		public byte[] FetchFile()
+		{
+			if (!HasChanged)
+				return rawData;
+
+			if (resourceName != null)
+			{
+				rawData = Util.GetResource(resourceName);
+				loadedOnce = true;
+			}
+			else if (file != null)
+			{
+				rawData = File.ReadAllBytes(file.FullName);
+				lastWrite = file.LastWriteTime;
+			}
+			return rawData;
+		}
+	}
+
 	abstract class WebSite
 	{
 		public string SitePath { get; }
-		public string MimeType { get; }
+		private string mimeType = "text/html";
+		public string MimeType
+		{
+			get { return mimeType + (Encoding == Encoding.UTF8 ? "; charset=utf-8" : ""); }
+			set { mimeType = value; }
+		}
+		public Encoding Encoding { get; set; } = Encoding.UTF8;
 
-		public WebSite(string sitePath, string mimeType)
+		public WebSite(string sitePath)
 		{
 			SitePath = sitePath;
-			MimeType = mimeType + "; charset=utf-8";
 		}
 
-		public abstract byte[] GenerateSite();
+		public byte[] GenerateSite(HttpListenerContext context)
+		{
+			if (MimeType != null) context.Response.ContentType = MimeType;
+			if (Encoding != null) context.Response.ContentEncoding = Encoding;
+			return GenerateSite();
+		}
+
+		protected abstract byte[] GenerateSite();
 	}
 
 	class WebStaticSite : WebSite
 	{
-		private byte[] preGenerated;
-		private string originalSite;
+		private byte[] content;
 
-		public WebStaticSite(string sitePath, string mimetype, string siteContent) : base(sitePath, mimetype)
+		public WebStaticSite(string sitePath, byte[] siteContent) : base(sitePath)
 		{
-			preGenerated = Encoding.UTF8.GetBytes(siteContent);
-			originalSite = siteContent;
+			content = siteContent;
 		}
 
-		public override byte[] GenerateSite()
+		protected override byte[] GenerateSite()
 		{
-			return preGenerated;
+			return content;
 		}
 	}
 
@@ -146,19 +207,36 @@ namespace TS3AudioBot.WebInterface
 		private FileInfo liveFile;
 		private DateTime lastAccess;
 
-		public WebFileSite(string sitePath, string mimetype, FileInfo siteFile) : base(sitePath, mimetype)
+		public WebFileSite(string sitePath, FileInfo siteFile) : base(sitePath)
 		{
 			liveFile = siteFile;
 			lastAccess = DateTime.MinValue;
 		}
 
-		public override byte[] GenerateSite()
+		protected override byte[] GenerateSite()
 		{
 			if (liveFile.LastAccessTime > lastAccess)
 			{
 				preGenerated = File.ReadAllBytes(liveFile.FullName);
 			}
 			return preGenerated;
+		}
+	}
+
+	class WebIndexFile : WebSite
+	{
+		List<byte[]> preloadedBlocks;
+
+		public WebIndexFile(string sitePath) : base(sitePath)
+		{
+			var hdoc = new HtmlDocument();
+			hdoc.Load(sitePath);
+			var nodes = hdoc.DocumentNode.SelectNodes("/html/body/...");
+		}
+
+		protected override byte[] GenerateSite()
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

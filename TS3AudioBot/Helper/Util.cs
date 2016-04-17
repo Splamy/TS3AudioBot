@@ -59,15 +59,16 @@ namespace TS3AudioBot.Helper
 
 		public static Random RngInstance { get; } = new Random();
 
-		public static string GetResource(string file)
+		public static byte[] GetResource(string file)
 		{
 			using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(file))
 			{
 				if (stream == null)
 					throw new InvalidOperationException("Resource not found");
-				using (var reader = new StreamReader(stream))
+				using (MemoryStream ms = new MemoryStream())
 				{
-					return reader.ReadToEnd();
+					stream.CopyTo(ms);
+					return ms.ToArray();
 				}
 			}
 		}
