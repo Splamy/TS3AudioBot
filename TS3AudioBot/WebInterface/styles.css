@@ -80,6 +80,7 @@ section {
     overflow-x: auto;
     display: block;
     z-index: 5;
+    /*box-sizing: border-box*/
 }
 
 footer {

@@ -17,7 +17,9 @@ namespace TS3AudioBot.WebInterface
 		private readonly Uri[] hostPaths;
 		private readonly short port = 8080;
 		private Dictionary<string, WebSite> sites;
-		private WebSite index;
+		// Special sites
+		public WebSite Index { get; private set; }
+		public WebSite Site404 { get; private set; }
 
 		public WebDisplay()
 		{
@@ -27,14 +29,16 @@ namespace TS3AudioBot.WebInterface
 			};
 			Util.Init(ref sites);
 
-			index = new WebFileSite("index.html", new FileInfo("../../WebInterface/index.html")) { MimeType = "text/html" };
-			PrepareSite(index);
-			PrepareSite(index, string.Empty);
-			PrepareSite(new WebFileSite("styles.css", new FileInfo("../../WebInterface/styles.css")) { MimeType = "text/css" });
-			PrepareSite(new WebFileSite("scripts.js", new FileInfo("../../WebInterface/scripts.js")) { MimeType = "application/javascript" });
-			PrepareSite(new WebStaticSite("jquery.js", Util.GetResource("TS3AudioBot.WebInterface.jquery.js")) { MimeType = "application/javascript" });
-			PrepareSite(new WebFileSite("history.html", new FileInfo("../../WebInterface/history.html")) { MimeType = "text/html" });
-			PrepareSite(new WebStaticSite("favicon.ico", Util.GetResource("TS3AudioBot.WebInterface.favicon.ico")) { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
+			Index = new WebIndexFile("index.html", new FileProvider(new FileInfo("../../WebInterface/index.html")), GetWebsite) { MimeType = "text/html" };
+			PrepareSite(Index);
+			PrepareSite(Index, string.Empty);
+			PrepareSite(new WebStaticSite("styles.css", new FileInfo("../../WebInterface/styles.css")) { MimeType = "text/css" });
+			PrepareSite(new WebStaticSite("scripts.js", new FileInfo("../../WebInterface/scripts.js")) { MimeType = "application/javascript" });
+			PrepareSite(new WebStaticSite("jquery.js", "TS3AudioBot.WebInterface.jquery.js") { MimeType = "application/javascript" });
+			PrepareSite(new WebStaticSite("history.html", new FileInfo("../../WebInterface/history.html")) { MimeType = "text/html" });
+			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
+			Site404 = new WebStaticSite("404.html", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "text/html" };
+			PrepareSite(Site404);
 		}
 
 		public void EnterWebLoop()
@@ -55,14 +59,20 @@ namespace TS3AudioBot.WebInterface
 					catch (HttpListenerException) { throw; } // TODO
 					catch (InvalidOperationException) { continue; } // TODO
 
-					byte[] buffer = DisplayWebsite(context);
+					Console.Write("Requested: {0} (", context.Request.Url.PathAndQuery);
+					var site = GetWebsite(context.Request.Url); // is not null
 
 					using (var response = context.Response)
 					{
-						response.ContentEncoding = Encoding.UTF8;
-						response.ContentLength64 = buffer.Length;
-						response.OutputStream.Write(buffer, 0, buffer.Length);
+						var prepData = site.PrepareSite(context);
+						response.ContentLength64 = prepData.Length;
+						response.ContentEncoding = site.Encoding ?? Encoding.UTF8;
+						response.ContentType = site.MimeType ?? "text/html";
+						site.GenerateSite(context, prepData);
+						response.OutputStream.Flush();
 					}
+
+					Console.WriteLine(")");
 				}
 			}
 		}
@@ -75,38 +85,20 @@ namespace TS3AudioBot.WebInterface
 			sites.Add(genUrl.AbsolutePath, site);
 		}
 
-		private byte[] DisplayWebsite(HttpListenerContext context)
+		private WebSite GetWebsite(Uri url)
 		{
-			var request = context.Request;
-			Console.WriteLine("Requested: {0}", request.Url.PathAndQuery);
+			Console.Write("Fetch: {0} ", url?.PathAndQuery);
+			if (url == null) return Site404;
 
 			foreach (var host in hostPaths)
 			{
 				WebSite site;
-				if (!sites.TryGetValue(request.Url.AbsolutePath, out site))
+				if (!sites.TryGetValue(url.AbsolutePath, out site))
 					continue;
 
-				if (site == index)
-				{
-					var query = HttpUtility.ParseQueryString(request.Url.Query);
-
-					bool isContent = query["content"] == "true";
-					if (isContent)
-					{
-						var qSite = query["page"] ?? "menu";
-						if (!sites.TryGetValue("/" + qSite, out site))
-							continue;
-					}
-					else
-					{
-						// TODO: prepare index.html with querypage combined
-					}
-				}
-
-				return site.GenerateSite(context);
+				return site;
 			}
-
-			return Encoding.UTF8.GetBytes("<div>Wrong turn!</div>");
+			return Site404;
 		}
 	}
 
@@ -115,20 +107,32 @@ namespace TS3AudioBot.WebInterface
 		private byte[] rawData;
 		private bool loadedOnce = false;
 		private FileInfo file = null;
+		public FileInfo WebFile
+		{
+			get { return file; }
+			set { file = value; lastWrite = DateTime.MinValue; }
+		}
 		private DateTime lastWrite = DateTime.MinValue;
 		private string resourceName = null;
+		public string ResourceName
+		{
+			get { return resourceName; }
+			set { resourceName = value; loadedOnce = false; }
+		}
 		public bool HasChanged => !CheckFile();
 
 		public FileProvider(FileInfo file)
 		{
 			if (file == null)
 				throw new ArgumentNullException(nameof(file));
+			WebFile = file;
 		}
 
 		public FileProvider(string resourceName)
 		{
 			if (resourceName == null)
 				throw new ArgumentNullException(nameof(resourceName));
+			ResourceName = resourceName;
 		}
 
 		private bool CheckFile()
@@ -176,67 +180,148 @@ namespace TS3AudioBot.WebInterface
 			SitePath = sitePath;
 		}
 
-		public byte[] GenerateSite(HttpListenerContext context)
-		{
-			if (MimeType != null) context.Response.ContentType = MimeType;
-			if (Encoding != null) context.Response.ContentEncoding = Encoding;
-			return GenerateSite();
-		}
+		public abstract PreparedData PrepareSite(HttpListenerContext context);
 
-		protected abstract byte[] GenerateSite();
+		public abstract void GenerateSite(HttpListenerContext context, PreparedData callData);
+	}
+
+	struct PreparedData
+	{
+		public int Length { get; }
+		public object Data { get; }
+
+		public PreparedData(int len, object obj) { Length = len; Data = obj; }
 	}
 
 	class WebStaticSite : WebSite
 	{
-		private byte[] content;
+		protected FileProvider provider;
 
-		public WebStaticSite(string sitePath, byte[] siteContent) : base(sitePath)
+		public WebStaticSite(string sitePath, FileProvider provider) : base(sitePath)
 		{
-			content = siteContent;
+			this.provider = provider;
 		}
 
-		protected override byte[] GenerateSite()
-		{
-			return content;
-		}
-	}
+		public WebStaticSite(string sitePath, FileInfo file) : this(sitePath, new FileProvider(file)) { }
 
-	class WebFileSite : WebSite
-	{
-		private byte[] preGenerated;
-		private FileInfo liveFile;
-		private DateTime lastAccess;
+		public WebStaticSite(string sitePath, string resourcePath) : this(sitePath, new FileProvider(resourcePath)) { }
 
-		public WebFileSite(string sitePath, FileInfo siteFile) : base(sitePath)
+		public override PreparedData PrepareSite(HttpListenerContext context)
 		{
-			liveFile = siteFile;
-			lastAccess = DateTime.MinValue;
+			byte[] prepData = provider.FetchFile();
+			return new PreparedData(prepData.Length, prepData);
 		}
 
-		protected override byte[] GenerateSite()
+		public override void GenerateSite(HttpListenerContext context, PreparedData callData)
 		{
-			if (liveFile.LastAccessTime > lastAccess)
-			{
-				preGenerated = File.ReadAllBytes(liveFile.FullName);
-			}
-			return preGenerated;
+			byte[] prepData = (byte[])callData.Data;
+			context.Response.OutputStream.Write(prepData, 0, callData.Length);
 		}
 	}
 
-	class WebIndexFile : WebSite
+	class WebIndexFile : WebStaticSite
 	{
-		List<byte[]> preloadedBlocks;
+		int preloadLen;
+		byte[][] preloadedBlocks;
+		private Func<Uri, WebSite> siteFinder;
 
-		public WebIndexFile(string sitePath) : base(sitePath)
+		public WebIndexFile(string sitePath, FileProvider provider, Func<Uri, WebSite> finder) : base(sitePath, provider)
 		{
+			siteFinder = finder;
+			preloadedBlocks = new byte[2][];
+		}
+
+		private void ParseHtml()
+		{
+			if (!provider.HasChanged)
+				return;
+
+			byte[] fetchBlock = provider.FetchFile();
+			string htmlContent = Encoding.UTF8.GetString(fetchBlock);
+
 			var hdoc = new HtmlDocument();
-			hdoc.Load(sitePath);
-			var nodes = hdoc.DocumentNode.SelectNodes("/html/body/...");
+			hdoc.LoadHtml(htmlContent);
+			var node = hdoc.DocumentNode.SelectSingleNode("//div[@id='jqblock'][1]");
+
+			if (node == null)
+			{
+				preloadedBlocks[0] = fetchBlock;
+				preloadedBlocks[1] = new byte[0];
+			}
+			else
+			{
+				int split1 = node.StreamPosition;
+				int divLen = node.OuterHtml.Length;
+				int split2 = split1 + divLen;
+				int split2len = fetchBlock.Length - split2;
+				preloadedBlocks[0] = new byte[split1];
+				preloadedBlocks[1] = new byte[split2len];
+
+				Array.Copy(fetchBlock, 0, preloadedBlocks[0], 0, preloadedBlocks[0].Length);
+				Array.Copy(fetchBlock, split2, preloadedBlocks[1], 0, preloadedBlocks[1].Length);
+			}
+
+			preloadLen = preloadedBlocks[0].Length + preloadedBlocks[1].Length;
 		}
 
-		protected override byte[] GenerateSite()
+		public override PreparedData PrepareSite(HttpListenerContext context)
 		{
-			throw new NotImplementedException();
+			ParseHtml();
+			Uri reqUri = context.Request.Url;
+			var query = HttpUtility.ParseQueryString(reqUri.Query);
+
+			var querySiteName = query["page"] ?? string.Empty;
+
+			var querySite = siteFinder(new Uri(new Uri(reqUri.GetLeftPart(UriPartial.Authority)), querySiteName));
+
+			if (query["content"] == "true")
+			{
+				if (querySite == this)
+				{
+					querySite = siteFinder(null);
+				}
+				var prepInside = querySite.PrepareSite(context);
+				return new PreparedData(prepInside.Length, new ContentSite(querySite, prepInside, true));
+			}
+			else
+			{
+				var prepInside = querySite.PrepareSite(context);
+				return new PreparedData(preloadLen + prepInside.Length, new ContentSite(querySite, prepInside, false));
+			}
+		}
+
+		public override void GenerateSite(HttpListenerContext context, PreparedData callData)
+		{
+			ContentSite contentData = (ContentSite)callData.Data;
+			// An other site has been requested via this one
+			if (contentData.ContentOnly)
+			{
+				contentData.Site.GenerateSite(context, callData);
+			}
+			// The own site is called, we have to insert the inner data
+			else
+			{
+				// write first part
+				context.Response.OutputStream.Write(preloadedBlocks[0], 0, preloadedBlocks[0].Length);
+				// write the inner data
+				contentData.Site.GenerateSite(context, contentData.Data);
+				// write outer part
+				context.Response.OutputStream.Write(preloadedBlocks[1], 0, preloadedBlocks[1].Length);
+			}
+		}
+
+		class ContentSite
+		{
+			public WebSite Site { get; }
+			public PreparedData Data { get; }
+			public bool ContentOnly { get; }
+
+			public ContentSite(WebSite site, PreparedData data, bool contentOnly)
+			{
+				Site = site;
+				Data = data;
+				ContentOnly = contentOnly;
+			}
 		}
 	}
 }
