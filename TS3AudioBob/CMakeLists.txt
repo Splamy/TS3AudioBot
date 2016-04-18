@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 2.6.1)
 project(TS3AudioBob)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
-enable_testing()
+
+option(BUILD_TESTS "Build unit tests" OFF)
+option(BUILD_FUZZ "Build fuzzying binary" OFF)
+
+if(BUILD_TESTS)
+	enable_testing()
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
 	message(STATUS "No build type selected, default to 'Debug'")
@@ -39,16 +45,29 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 target_link_libraries(ts3audiobob ${FFMPEG_LIBRARIES})
 
 ## Test
-file(GLOB_RECURSE TEST_SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/test/*.cpp")
+if(BUILD_TESTS)
+	file(GLOB_RECURSE TEST_SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/test/*.cpp")
 
-find_package(CppUnit)
+	find_package(CppUnit)
 
-if(CPPUNIT_FOUND)
-	add_executable(ts3audiobobtest ${TEST_SOURCES})
-	include_directories(${CPPUNIT_INCLUDE_DIR})
-	target_link_libraries(ts3audiobobtest
-		${FFMPEG_LIBRARIES}
-		${CPPUNIT_LIBRARY})
+	if(CPPUNIT_FOUND)
+		add_executable(ts3audiobobtest ${TEST_SOURCES})
+		include_directories(${CPPUNIT_INCLUDE_DIR})
+		target_link_libraries(ts3audiobobtest
+			${FFMPEG_LIBRARIES}
+			${CPPUNIT_LIBRARY})
 
-	add_test(UnitTests test)
+		add_test(UnitTests test)
+	endif()
+endif()
+
+## Fuzz
+if(BUILD_FUZZ)
+	file(GLOB_RECURSE FUZZ_SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/fuzz/*.cpp")
+
+	#set(CMAKE_CXX_COMPILER /usr/bin/afl-clang++)
+	#set(CMAKE_C_COMPILER /usr/bin/afl-clang)
+	add_executable(ts3audiobobfuzz ${FUZZ_SOURCES})
+	target_link_libraries(ts3audiobobfuzz
+		${FFMPEG_LIBRARIES})
 endif()

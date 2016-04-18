@@ -73,15 +73,16 @@ This command will find every link containing something like ?v=Unique_TYID
 If the bot can't play a video it might be due to some embedding restrictions, which are blocking this.  
 For now we don't have any workaround for that.
 
-## How to set up the bot (uncomplete tutorial!)
+## How to set up the bot (incomplete tutorial!)
 ### Dependencies
 1. For compilation
   * A C# Compiler (Visual Studio or mono + xbuild) for the Bot
   * A C++ Compiler that supports C++11
-  * The [scons](http://scons.org) build system
+  * The [cmake](https://cmake.org/) build system
   * `ffmpeg` (libavcodec, libavformat, libswscale, libavutil, libswresample and libavfilter)  
    Windows: Included in the dependency package
   * (optional) `cppunit` for tests
+  * (optional) [american fuzzy lop](http://lcamtuf.coredump.cx/afl/) for fuzzying
 1. For usage
   * `ffmpeg` (same as for compilation except that you don't need the development headers)  
    Windows: Copy the contents of the `Dependencies/bin` folder into the TeamSpeak-Client directory (near `ts3client_win64.exe`)
@@ -90,17 +91,21 @@ For now we don't have any workaround for that.
 Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Install all needed [dependencies](#dependencies) (e.g. scons and ffmpeg)
+1. Install all needed [dependencies](#dependencies) (e.g. ffmpeg)
 1. Go into the directory of the repository and execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot.
-1. Go into `TS3AudioBob` and run `scons` to build the C++ TeamSpeak plugin, use `scons release` to build the release version.
+1. Go into `TS3AudioBob` and create a `bin` directory.
+1. Run `cmake ..` from the created `bin` folder (`cmake -DCMAKE_BUILD_TYPE=Release ..` to make a release build)
+1. and `make` to build the C++ TeamSpeak plugin.
 
 #### Windows
-1. Install all needed [dependencies](#dependencies) (e.g. scons)
+1. Install all needed [dependencies](#dependencies)
 1. Download the [dependencies package](https://mega.nz/#!VoZxhZYS!y2tLbGf5shDh6CxHoXdE1Oe_wYDRbrs8X2dNBde8_QI) and extract it
    into the TS3AudioBob directory (the `Dependencies` folder should be near the `src` folder).  
    It contains the assembled dependencies for x64 windows.
 1. Build the C# AudioBot with Visual Studio.
-1. Build the AudioBob by running `scons` (or `scons release`) from the `TS3AudioBob` folder.
+1. Go into `TS3AudioBob` and create a `bin` directory.
+1. Run `cmake-gui ..` from the created `bin` folder (`cmake -DCMAKE_BUILD_TYPE=Release ..` to make a release build).
+1. Open and build the created solution with Visual Studio.
 
 ### Installation
 1. Linux specific: you'll either need a X environment capable of running window applications or install
@@ -122,3 +127,8 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 1. The first time you'll need to start the TS3Audiobot.exe without parameter and
 it will ask you a few questions. You can get ServerGroupIds in the rights window.
 1. Now you can close the bot with the `!quit` command and start it in the background.
+
+### Testing and Fuzzying
+1. Run the *test* project of the Bot in Visual Studio or Monodevelop.
+1. Run `./ts3audiobobtest` in the cmake build folder to test the Bob.
+1. Use `./RunAFL.sh` in the Bob folder to fuzz the Bob command system.

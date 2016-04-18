@@ -1,0 +1,10 @@
+status whisper
+whisper client add 1
+whisper client add 2
+whisper client remove 2
+whisper channel add 1
+whisper channel remove 1
+audio on
+status whisper
+whisper clear
+audio off

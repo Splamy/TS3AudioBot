@@ -21,6 +21,9 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
+# Generated for fuzzying
+findings/
+TS3AudioBob/configTS3AudioBot.cfg
 
 # C++ Build results
 *.o

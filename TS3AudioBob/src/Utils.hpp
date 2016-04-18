@@ -165,7 +165,8 @@ namespace Utils
 		std::ostringstream out;
 		for (std::string::size_type i = 0; i < format.size(); i++)
 		{
-			if (format[i] == '{')
+			char c = format[i];
+			if (c == '{')
 			{
 				i++;
 				if (format[i] == '{')
@@ -193,7 +194,7 @@ namespace Utils
 
 					i = end;
 				}
-			} else if (format[i] == '}')
+			} else if (c == '}')
 			{
 				// Escaped closing bracket
 				i++;
@@ -203,7 +204,7 @@ namespace Utils
 				out << '}';
 			} else
 				// Normal character
-				out << format[i];
+				out << c;
 		}
 		return out.str();
 	}

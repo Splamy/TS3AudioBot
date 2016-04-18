@@ -1,0 +1,4 @@
+audio on
+whisper client add 2
+audio off
+list clients

@@ -77,8 +77,8 @@ void User::requestGroupUpdate()
 		groupUpdateRequested = true;
 		if (!dbIdRequested)
 		{
-			requestDbId();
 			dbIdRequested = true;
+			requestDbId();
 		}
 	}
 }
