@@ -20,7 +20,7 @@ html, body {
     position: relative;
 }
 
-h2{
+h2 {
     text-align: center;
 }
 
@@ -42,20 +42,20 @@ nav {
     line-height: 30px;
     float: left;
     z-index: 10;
-    /*animation-iteration-count: 1;
+    animation-iteration-count: 1;
     animation-duration: 1s;
-    animation-name: slidein;*/
+    animation-name: slidein;
 }
 
-/*@keyframes slidein {
-  from {
-    width: 0; 
-  }
+@keyframes slidein {
+    from {
+        left: calc(0px - var(--left-off));
+    }
 
-  to {
-     width: var(--left-off);
-  }
-}*/
+    to {
+        left: 0;
+    }
+}
 
 section {
     top: var(--top-off);
@@ -107,13 +107,12 @@ footer {
     font-size: 16px;
     margin: 0px 5% 5px;
     border-radius: 8px;
-    transition-duration: 0.4s;
 }
 
-#button:hover, nav > a:hover, button:hover {
-    background-color: #ee745d;
-    color: black;
-}
+    #button:hover, nav > a:hover, button:hover {
+        background-color: #ee745d;
+        color: black;
+    }
 
 label {
     display: inline-block;
@@ -121,7 +120,7 @@ label {
     width: 40%;
     position: relative;
     text-align: right;
-    float:left;
+    float: left;
 }
 
 .unselectable, nav > a {
@@ -158,19 +157,13 @@ label {
 
 fieldset {
     border-radius: 8px;
-    border:1px var(--site-color);
+    border: 1px var(--site-color);
     border-style: solid none solid none;
     cursor: default;
 }
 
 legend {
-  border: 1px solid var(--site-color);
-}
-
-caption {
-    padding: 5px;
-    border:1px solid var(--site-color);
-    border-style: solid none none none;
+    border: 1px solid var(--site-color);
 }
 
 table {
@@ -178,11 +171,28 @@ table {
     border-collapse: collapse;
     border: 1px var(--site-color);
     border-style: none solid none solid;
+    position: relative;
+    display: table;
+    overflow: hidden;
+    table-layout: fixed;
 }
 
-th {
+#historylist th {
     padding: 5px;
     text-align: left;
     border: 1px var(--site-color);
     border-style: none solid solid solid;
+    position: relative;
+    width: auto;
+}
+
+#historylist td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.autowrap {
+    width: 1%;
+    white-space: nowrap;
 }

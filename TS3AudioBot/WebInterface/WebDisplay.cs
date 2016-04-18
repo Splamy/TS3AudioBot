@@ -9,6 +9,7 @@ using System.IO;
 using TS3AudioBot.Helper;
 using System.Web;
 using HtmlAgilityPack;
+using System.Web.Script.Serialization;
 
 namespace TS3AudioBot.WebInterface
 {
@@ -16,13 +17,17 @@ namespace TS3AudioBot.WebInterface
 	{
 		private readonly Uri[] hostPaths;
 		private readonly short port = 8080;
-		private Dictionary<string, WebSite> sites;
+		private readonly Dictionary<string, WebSite> sites;
+		public static readonly JavaScriptSerializer serializer = new JavaScriptSerializer();
+		private readonly MainBot mainBot;
 		// Special sites
 		public WebSite Index { get; private set; }
 		public WebSite Site404 { get; private set; }
 
-		public WebDisplay()
+		public WebDisplay(MainBot bot)
 		{
+			mainBot = bot;
+
 			hostPaths = new[] {
 				new Uri($"http://splamy.de:{port}/"),
 				new Uri($"http://localhost:{port}/"),
@@ -35,10 +40,11 @@ namespace TS3AudioBot.WebInterface
 			PrepareSite(new WebStaticSite("styles.css", new FileInfo("../../WebInterface/styles.css")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("scripts.js", new FileInfo("../../WebInterface/scripts.js")) { MimeType = "application/javascript" });
 			PrepareSite(new WebStaticSite("jquery.js", "TS3AudioBot.WebInterface.jquery.js") { MimeType = "application/javascript" });
-			PrepareSite(new WebStaticSite("history.html", new FileInfo("../../WebInterface/history.html")) { MimeType = "text/html" });
+			PrepareSite(new WebStaticSite("history", new FileInfo("../../WebInterface/history.html")) { MimeType = "text/html" });
 			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
-			Site404 = new WebStaticSite("404.html", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "text/html" };
+			Site404 = new WebStaticSite("404", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "text/plain" };
 			PrepareSite(Site404);
+			PrepareSite(new WebHistorySearch("historysearch", mainBot) { MimeType = "text/plain" });
 		}
 
 		public void EnterWebLoop()
@@ -64,7 +70,7 @@ namespace TS3AudioBot.WebInterface
 
 					using (var response = context.Response)
 					{
-						var prepData = site.PrepareSite(context);
+						var prepData = site.PrepareSite(context.Request.Url);
 						response.ContentLength64 = prepData.Length;
 						response.ContentEncoding = site.Encoding ?? Encoding.UTF8;
 						response.ContentType = site.MimeType ?? "text/html";
@@ -140,7 +146,10 @@ namespace TS3AudioBot.WebInterface
 			if (resourceName != null)
 				return loadedOnce;
 			else if (file != null)
+			{
+				file.Refresh();
 				return file.LastWriteTime == lastWrite;
+			}
 			else
 				throw new InvalidOperationException();
 		}
@@ -164,6 +173,14 @@ namespace TS3AudioBot.WebInterface
 		}
 	}
 
+	struct PreparedData
+	{
+		public int Length { get; }
+		public object Context { get; }
+
+		public PreparedData(int len, object obj) { Length = len; Context = obj; }
+	}
+
 	abstract class WebSite
 	{
 		public string SitePath { get; }
@@ -180,17 +197,13 @@ namespace TS3AudioBot.WebInterface
 			SitePath = sitePath;
 		}
 
-		public abstract PreparedData PrepareSite(HttpListenerContext context);
+		public abstract PreparedData PrepareSite(Uri url);
 
-		public abstract void GenerateSite(HttpListenerContext context, PreparedData callData);
-	}
-
-	struct PreparedData
-	{
-		public int Length { get; }
-		public object Data { get; }
-
-		public PreparedData(int len, object obj) { Length = len; Data = obj; }
+		public virtual void GenerateSite(HttpListenerContext context, PreparedData callData)
+		{
+			byte[] prepData = (byte[])callData.Context;
+			context.Response.OutputStream.Write(prepData, 0, callData.Length);
+		}
 	}
 
 	class WebStaticSite : WebSite
@@ -206,16 +219,10 @@ namespace TS3AudioBot.WebInterface
 
 		public WebStaticSite(string sitePath, string resourcePath) : this(sitePath, new FileProvider(resourcePath)) { }
 
-		public override PreparedData PrepareSite(HttpListenerContext context)
+		public override PreparedData PrepareSite(Uri url)
 		{
 			byte[] prepData = provider.FetchFile();
 			return new PreparedData(prepData.Length, prepData);
-		}
-
-		public override void GenerateSite(HttpListenerContext context, PreparedData callData)
-		{
-			byte[] prepData = (byte[])callData.Data;
-			context.Response.OutputStream.Write(prepData, 0, callData.Length);
 		}
 	}
 
@@ -241,7 +248,7 @@ namespace TS3AudioBot.WebInterface
 
 			var hdoc = new HtmlDocument();
 			hdoc.LoadHtml(htmlContent);
-			var node = hdoc.DocumentNode.SelectSingleNode("//div[@id='jqblock'][1]");
+			var node = hdoc.DocumentNode.SelectSingleNode("//div[@data-jqload][1]");
 
 			if (node == null)
 			{
@@ -251,7 +258,7 @@ namespace TS3AudioBot.WebInterface
 			else
 			{
 				int split1 = node.StreamPosition;
-				int divLen = node.OuterHtml.Length;
+				int divLen = node.NextSibling.StreamPosition - node.StreamPosition;
 				int split2 = split1 + divLen;
 				int split2len = fetchBlock.Length - split2;
 				preloadedBlocks[0] = new byte[split1];
@@ -264,64 +271,93 @@ namespace TS3AudioBot.WebInterface
 			preloadLen = preloadedBlocks[0].Length + preloadedBlocks[1].Length;
 		}
 
-		public override PreparedData PrepareSite(HttpListenerContext context)
+		public override PreparedData PrepareSite(Uri url)
 		{
 			ParseHtml();
-			Uri reqUri = context.Request.Url;
-			var query = HttpUtility.ParseQueryString(reqUri.Query);
+			var query = HttpUtility.ParseQueryString(url.Query);
 
 			var querySiteName = query["page"] ?? string.Empty;
 
-			var querySite = siteFinder(new Uri(new Uri(reqUri.GetLeftPart(UriPartial.Authority)), querySiteName));
+			var querySite = siteFinder(new Uri(new Uri(url.GetLeftPart(UriPartial.Authority)), querySiteName));
+			if (querySite == this)
+				querySite = siteFinder(null);
 
-			if (query["content"] == "true")
-			{
-				if (querySite == this)
-				{
-					querySite = siteFinder(null);
-				}
-				var prepInside = querySite.PrepareSite(context);
-				return new PreparedData(prepInside.Length, new ContentSite(querySite, prepInside, true));
-			}
-			else
-			{
-				var prepInside = querySite.PrepareSite(context);
-				return new PreparedData(preloadLen + prepInside.Length, new ContentSite(querySite, prepInside, false));
-			}
+			var prepInside = querySite.PrepareSite(url);
+			return new PreparedData(preloadLen + prepInside.Length, new ContentSite(querySite, prepInside));
 		}
 
 		public override void GenerateSite(HttpListenerContext context, PreparedData callData)
 		{
-			ContentSite contentData = (ContentSite)callData.Data;
-			// An other site has been requested via this one
-			if (contentData.ContentOnly)
+			ContentSite contentData = (ContentSite)callData.Context;
+			// write first part
+			context.Response.OutputStream.Write(preloadedBlocks[0], 0, preloadedBlocks[0].Length);
+			if (contentData.WriteContent)
 			{
-				contentData.Site.GenerateSite(context, callData);
-			}
-			// The own site is called, we have to insert the inner data
-			else
-			{
-				// write first part
-				context.Response.OutputStream.Write(preloadedBlocks[0], 0, preloadedBlocks[0].Length);
 				// write the inner data
-				contentData.Site.GenerateSite(context, contentData.Data);
-				// write outer part
-				context.Response.OutputStream.Write(preloadedBlocks[1], 0, preloadedBlocks[1].Length);
+				contentData.Site.GenerateSite(context, contentData.PreparedData);
 			}
+			// write outer part
+			context.Response.OutputStream.Write(preloadedBlocks[1], 0, preloadedBlocks[1].Length);
 		}
 
 		class ContentSite
 		{
 			public WebSite Site { get; }
-			public PreparedData Data { get; }
-			public bool ContentOnly { get; }
+			public PreparedData PreparedData { get; }
+			public bool WriteContent { get; set; } = true;
 
-			public ContentSite(WebSite site, PreparedData data, bool contentOnly)
+			public ContentSite(WebSite site, PreparedData data)
 			{
 				Site = site;
-				Data = data;
-				ContentOnly = contentOnly;
+				PreparedData = data;
 			}
+		}
+	}
+
+	class WebHistorySearch : WebSite
+	{
+		private History.HistoryManager history;
+
+		public WebHistorySearch(string sitePath, MainBot bot) : base(sitePath)
+		{
+			history = bot.HistoryManager;
+		}
+
+		public override PreparedData PrepareSite(Uri url)
+		{
+			var query = HttpUtility.ParseQueryString(url.Query);
+
+			string tmpValue;
+			var search = new History.SeachQuery();
+
+			DateTime lastinvoked;
+			if ((tmpValue = query["lastinvoked"]) != null && DateTime.TryParse(tmpValue, out lastinvoked))
+				search.LastInvokedAfter = lastinvoked;
+
+			uint userId;
+			if ((tmpValue = query["userid"]) != null && uint.TryParse(tmpValue, out userId))
+				search.UserId = userId;
+
+			int max;
+			if ((tmpValue = query["max"]) != null && int.TryParse(tmpValue, out max))
+				search.MaxResults = max;
+
+			search.TitlePart = query["title"];
+
+			var result = history.Search(search).Select(e => new
+			{
+				id = e.Id,
+				atype = e.AudioType,
+				playcnt = e.PlayCount,
+				title = e.ResourceTitle,
+				time = e.Timestamp,
+				userid = e.UserInvokeId
+			});
+
+			string serialized = WebDisplay.serializer.Serialize(result);
+			var dataArray = Encoding.GetBytes(serialized);
+
+			return new PreparedData(dataArray.Length, dataArray);
 		}
 	}
 }

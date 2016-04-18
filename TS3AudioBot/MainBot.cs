@@ -23,10 +23,6 @@ namespace TS3AudioBot
 	{
 		static void Main(string[] args)
 		{
-			var wi = new WebInterface.WebDisplay();
-			wi.EnterWebLoop();
-			return;
-
 			using (MainBot bot = new MainBot())
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
@@ -148,6 +144,10 @@ namespace TS3AudioBot
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
+
+			var wi = new WebInterface.WebDisplay(this);
+			wi.EnterWebLoop();
+			return false;
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager(AudioFramework);
