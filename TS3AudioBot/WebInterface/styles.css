@@ -14,7 +14,7 @@ html, body, header, nav, footer, section, label, .filledform {
 
 html, body {
     background-color: #050505;
-    color: var(--site-color);
+    color: #FF6103;
     height: 100%;
     width: 100%;
     position: relative;
@@ -157,7 +157,7 @@ label {
 
 fieldset {
     border-radius: 8px;
-    border: 1px var(--site-color);
+    border: 2px var(--site-color);
     border-style: solid none solid none;
     cursor: default;
 }
@@ -174,7 +174,9 @@ table {
     position: relative;
     display: table;
     overflow: hidden;
-    table-layout: fixed;
+}
+
+#historylist tr {
 }
 
 #historylist th {
@@ -183,16 +185,22 @@ table {
     border: 1px var(--site-color);
     border-style: none solid solid solid;
     position: relative;
-    width: auto;
 }
 
 #historylist td {
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-all;
 }
 
 .autowrap {
     width: 1%;
     white-space: nowrap;
+}
+
+.fillwrap {
+    width: 1%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    word-break: break-all;
 }

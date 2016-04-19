@@ -7,6 +7,7 @@
             <label>Title contains:   </label><input class="filledform" type="text" name="title">
             <label>From UserId:      </label><input class="filledform" type="number" name="userid">
             <label>Last called after:</label><input class="filledform" type="date" name="lastinvoked">
+            <label>Max results:      </label><input class="filledform" type="number" name="max" value="10">
             <button type="submit" form="searchquery" value="Search">Search</button>
         </fieldset>
     </form>
@@ -17,8 +18,8 @@
         <tr>
             <th class="autowrap">Id</th>
             <th class="autowrap">UserId</th>
-            <th>Title</th>
-            <th>Options</th>
+            <th class="fillwrap">Title</th>
+            <th class="autowrap">Options</th>
         </tr>
         <div data-jqload />
     </table>

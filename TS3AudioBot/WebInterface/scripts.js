@@ -4,12 +4,12 @@ var content;
 
 function main() {
     content = $("#content");
-    content.ready(register_handler);
     $("nav a").click(main_click);
+    register_handler();
 }
 
 function load(page) {
-    content.load(page);
+    content.load(page, register_handler);
 }
 
 function register_handler() {
@@ -59,23 +59,22 @@ function history_search() {
 
 function fill_history(rawdata) {
     var data = jQuery.parseJSON(rawdata);
-    hresult = $("#historylist");
+    hresult = $("#historylist tbody");
     hresult.empty();
     hresult.append(
-        "<caption>Query results</caption>" +
         "<tr>" +
-            "<th class=\"autowrap,block\">Id</th>" +
-            "<th class=\"autowrap,block\">UserId</th>" +
-            "<th>Title</th>" +
-            "<th>Options</th>" +
+            "<th class=\"autowrap\">Id</th>" +
+            "<th class=\"autowrap\">UserId</th>" +
+            "<th class=\"fillwrap\">Title</th>" +
+            "<th class=\"autowrap\">Options</th>" +
        "</tr>");
 
     for (var i = 0; i < data.length; i++) {
         var elem = data[i];
         hresult.append(
-            "<tr><td>" + elem["id"] +
-            "</td><td>" + elem["userid"] +
-            "</td><td>" + elem["title"] +
-            "</td><td>Options</td></tr>");
+            "<tr><td class=\"autowrap\">" + elem["id"] +
+            "</td><td class=\"autowrap\">" + elem["userid"] +
+            "</td><td class=\"fillwrap\">" + elem["title"] +
+            "</td><td class=\"autowrap\">Options</td></tr>");
     }
 }
