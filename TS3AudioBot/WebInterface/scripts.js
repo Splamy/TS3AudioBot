@@ -63,18 +63,18 @@ function fill_history(rawdata) {
     hresult.empty();
     hresult.append(
         "<tr>" +
-            "<th class=\"autowrap\">Id</th>" +
-            "<th class=\"autowrap\">UserId</th>" +
+            "<th>Id</th>" +
+            "<th>UserId</th>" +
             "<th class=\"fillwrap\">Title</th>" +
-            "<th class=\"autowrap\">Options</th>" +
+            "<th>Options</th>" +
        "</tr>");
 
     for (var i = 0; i < data.length; i++) {
         var elem = data[i];
         hresult.append(
-            "<tr><td class=\"autowrap\">" + elem["id"] +
-            "</td><td class=\"autowrap\">" + elem["userid"] +
+            "<tr><td>" + elem["id"] +
+            "</td><td>" + elem["userid"] +
             "</td><td class=\"fillwrap\">" + elem["title"] +
-            "</td><td class=\"autowrap\">Options</td></tr>");
+            "</td><td>Options</td></tr>");
     }
 }

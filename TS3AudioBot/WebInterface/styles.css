@@ -170,37 +170,28 @@ table {
     width: 100%;
     border-collapse: collapse;
     border: 1px var(--site-color);
-    border-style: none solid none solid;
     position: relative;
     display: table;
     overflow: hidden;
 }
 
-#historylist tr {
+th, td {
+    border-bottom: 1px solid #ddd;
+    padding: 2px 3px;
 }
 
-#historylist th {
-    padding: 5px;
-    text-align: left;
-    border: 1px var(--site-color);
-    border-style: none solid solid solid;
-    position: relative;
-}
-
-#historylist td {
-    white-space: nowrap;
-    overflow: hidden;
-    word-break: break-all;
-}
-
-.autowrap {
-    width: 1%;
-    white-space: nowrap;
+th:not(:last-child):not(:first-child),
+td:not(:last-child):not(:first-child) {
+    border-left: 1px solid var(--site-color);
+    border-right: 1px solid var(--site-color);
 }
 
 .fillwrap {
-    width: 1%;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    word-break: break-all;
+    width: 100%;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+#historylist > tbody > tr > td:nth-child(2) {
+    text-align: right;
 }

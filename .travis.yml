@@ -1,6 +1,9 @@
 sudo: false
 language: csharp
 
+notifications:
+  email: false
+
 compiler:
   - clang
 
