@@ -8,6 +8,7 @@ namespace TS3AudioBot.Helper
 	using System.Threading;
 	using System.Reflection;
 	using System.IO;
+	using System.Security.Principal;
 
 	[Serializable]
 	public static class Util
@@ -69,6 +70,27 @@ namespace TS3AudioBot.Helper
 				{
 					stream.CopyTo(ms);
 					return ms.ToArray();
+				}
+			}
+		}
+
+		public static bool IsAdmin
+		{
+			get
+			{
+				try
+				{
+					using (WindowsIdentity user = WindowsIdentity.GetCurrent())
+					{
+						WindowsPrincipal principal = new WindowsPrincipal(user);
+						return principal.IsInRole(WindowsBuiltInRole.Administrator);
+					}
+				}
+				catch (UnauthorizedAccessException) { return false; }
+				catch (Exception)
+				{
+					Log.Write(Log.Level.Warning, "Uncatched admin check.");
+					return false;
 				}
 			}
 		}
