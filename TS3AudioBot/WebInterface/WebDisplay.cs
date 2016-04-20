@@ -64,7 +64,6 @@ namespace TS3AudioBot.WebInterface
 			{
 				foreach (var host in hostPaths)
 					webListener.Prefixes.Add(host.AbsoluteUri);
-				//webListener.Prefixes.Add($"http://+:{port}/");
 
 				try { webListener.Start(); }
 				catch (HttpListenerException) { throw; } // TODO

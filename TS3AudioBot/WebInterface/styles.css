@@ -30,57 +30,34 @@ header {
     position: fixed;
     width: 100%;
     height: var(--top-off);
-    z-index: 10;
+    z-index: 15;
     cursor: default;
 }
 
 nav {
-    top: var(--top-off);
+    top: 0;
     bottom: 0;
     width: var(--left-off);
-    position: fixed;
+    padding-top: var(--top-off);
+    position: absolute;
     line-height: 30px;
+    background-color: #050505;
     float: left;
     z-index: 10;
-    animation-iteration-count: 1;
-    animation-duration: 1s;
-    animation-name: slidein;
-}
-
-@keyframes slidein {
-    from {
-        left: calc(0px - var(--left-off));
-    }
-
-    to {
-        left: 0;
-    }
 }
 
 section {
     top: var(--top-off);
-    left: var(--left-off);
+    left: 0;
     bottom: var(--bot-off);
     right: 0;
-    /* Firefox */
-    width: -moz-calc(100% - var(--left-off));
-    height: -moz-calc(100% - var(--bot-off) - var(--top-off));
-    /* WebKit */
-    width: -webkit-calc(100% - var(--left-off));
-    height: -webkit-calc(100% - var(--bot-off) - var(--top-off));
-    /* Opera */
-    width: -o-calc(100% - var(--left-off));
-    height: -o-calc(100% - var(--bot-off) - var(--top-off));
-    /* Standard */
-    width: calc(100% - var(--left-off));
-    height: calc(100% - var(--bot-off) - var(--top-off));
-    position: relative;
+    margin-left: var(--left-off);
+    position: absolute;
     background-color: #202020;
     overflow-y: auto;
     overflow-x: auto;
-    display: block;
+    display: inline-block;
     z-index: 5;
-    /*box-sizing: border-box*/
 }
 
 footer {
@@ -109,10 +86,10 @@ footer {
     border-radius: 8px;
 }
 
-    #button:hover, nav > a:hover, button:hover {
-        background-color: #ee745d;
-        color: black;
-    }
+#button:hover, nav > a:hover, button:hover {
+    background-color: #ee745d;
+    color: black;
+}
 
 label {
     display: inline-block;
@@ -171,8 +148,8 @@ table {
     border-collapse: collapse;
     border: 1px var(--site-color);
     position: relative;
-    display: table;
-    overflow: hidden;
+    display: block;
+    overflow: auto;
 }
 
 th, td {
@@ -189,7 +166,7 @@ td:not(:last-child):not(:first-child) {
 .fillwrap {
     width: 100%;
     word-wrap: break-word;
-    word-break: break-word;
+    word-break: break-all;
 }
 
 #historylist > tbody > tr > td:nth-child(2) {
