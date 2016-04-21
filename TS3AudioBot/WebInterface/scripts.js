@@ -1,6 +1,7 @@
 $(document).ready(main);
 
-var content;
+var content = null;
+var playevent = null;
 
 function main() {
     content = $("#content");
@@ -19,11 +20,15 @@ function register_handler() {
         $(this).bind('keyup change click', history_search);
     });
     // PlayControls
+    if (playevent !== null)
+    {
+        playevent.close();
+    }
     var handler = $("#playhandler");
     if(handler.length != 0)
     {
-        var source = new EventSource("demo_sse.php");
-        source.onmessage = function (event) {
+        playevent = new EventSource("playdata");
+        playevent.onmessage = function (event) {
             handler.html(event.data);
         };
     }

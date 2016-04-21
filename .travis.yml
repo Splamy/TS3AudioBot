@@ -4,6 +4,14 @@ language: csharp
 notifications:
   email: false
 
+branches:
+  only:
+    - master
+    - develop
+
+git:
+  depth: 1
+
 compiler:
   - clang
 

@@ -57,6 +57,7 @@ namespace TS3AudioBot.WebInterface
 			PrepareSite(historystatic);
 			PrepareSite(new WebJSFillSite("history", new FileProvider(new FileInfo("../../WebInterface/history.html")), historystatic) { MimeType = "text/html" });
 			PrepareSite(new WebStaticSite("playcontrols", new FileInfo("../../WebInterface/playcontrols.html")) { MimeType = "text/html" });
+			PrepareSite(new SongChangedEvent("playdata", mainBot));
 		}
 
 		public void EnterWebLoop()
@@ -79,15 +80,10 @@ namespace TS3AudioBot.WebInterface
 					Console.Write("Requested: {0} (", context.Request.Url.PathAndQuery);
 					var site = GetWebsite(context.Request.Url); // is not null
 
-					using (var response = context.Response)
-					{
-						var prepData = site.PrepareSite(new UriExt(context.Request.Url));
-						response.ContentLength64 = prepData.Length;
-						response.ContentEncoding = site.Encoding ?? Encoding.UTF8;
-						response.ContentType = site.MimeType ?? "text/html";
-						site.GenerateSite(context, prepData);
-						response.OutputStream.Flush();
-					}
+					var callData = site.PrepareSite(new UriExt(context.Request.Url));
+					site.PrepareHeader(context, callData);
+					site.GenerateSite(context, callData);
+					site.FinalizeResponse(context);
 
 					Console.WriteLine(")");
 				}
@@ -185,17 +181,17 @@ namespace TS3AudioBot.WebInterface
 
 	struct PreparedData
 	{
-		public int Length { get; }
+		public long Length { get; }
 		public object Context { get; }
 
-		public PreparedData(int len, object obj) { Length = len; Context = obj; }
+		public PreparedData(long len, object obj) { Length = len; Context = obj; }
 	}
 
 	abstract class WebSite
 	{
 		public string SitePath { get; }
-		private string mimeType = "text/html";
-		public string MimeType
+		protected string mimeType = "text/html";
+		public virtual string MimeType
 		{
 			get { return mimeType + (Encoding == Encoding.UTF8 ? "; charset=utf-8" : ""); }
 			set { mimeType = value; }
@@ -209,10 +205,25 @@ namespace TS3AudioBot.WebInterface
 
 		public abstract PreparedData PrepareSite(UriExt url);
 
+		public virtual void PrepareHeader(HttpListenerContext context, PreparedData callData)
+		{
+			var response = context.Response;
+			response.StatusCode = (int)HttpStatusCode.OK;
+			response.ContentLength64 = callData.Length;
+			response.ContentEncoding = Encoding ?? Encoding.UTF8;
+			response.ContentType = MimeType ?? "text/html";
+		}
+
 		public virtual void GenerateSite(HttpListenerContext context, PreparedData callData)
 		{
 			byte[] prepData = (byte[])callData.Context;
-			context.Response.OutputStream.Write(prepData, 0, callData.Length);
+			context.Response.OutputStream.Write(prepData, 0, prepData.Length);
+		}
+
+		public virtual void FinalizeResponse(HttpListenerContext context)
+		{
+			context.Response.OutputStream.Flush();
+			context.Response.OutputStream.Dispose();
 		}
 	}
 
@@ -315,6 +326,64 @@ namespace TS3AudioBot.WebInterface
 		}
 	}
 
+	abstract class WebEvent : WebSite
+	{
+		public override string MimeType { set { throw new InvalidOperationException(); } }
+		private List<HttpListenerResponse> response;
+
+		public WebEvent(string sitePath) : base(sitePath)
+		{
+			response = new List<HttpListenerResponse>();
+			mimeType = "text/event-stream";
+		}
+
+		public sealed override PreparedData PrepareSite(UriExt url) => new PreparedData(long.MaxValue, null);
+		public sealed override void PrepareHeader(HttpListenerContext context, PreparedData callData)
+		{
+			base.PrepareHeader(context, callData);
+			context.Response.KeepAlive = true;
+		}
+		public sealed override void GenerateSite(HttpListenerContext context, PreparedData callData)
+		{
+			response.Add(context.Response);
+			InvokeEvent();
+		}
+
+		public void InvokeEvent()
+		{
+			string eventText = "data: " + GetData() + "\n\n";
+			var data = Encoding.GetBytes(eventText);
+			for (int i = 0; i < response.Count; i++)
+			{
+				try
+				{
+					//response[i].ContentLength64 = data.Length;
+					response[i].OutputStream.Write(data, 0, data.Length);
+					response[i].OutputStream.Flush();
+				}
+				catch (HttpListenerException ex)
+				{
+					response.RemoveAt(i);
+					i--;
+				}
+				catch (InvalidOperationException ex)
+				{
+					response.RemoveAt(i);
+					i--;
+				}
+			}
+		}
+
+		protected abstract string GetData();
+
+		public override void FinalizeResponse(HttpListenerContext context)
+		{
+			context.Response.OutputStream.Flush();
+		}
+	}
+
+	// Specialized Sites
+
 	class WebIndexFile : WebJSFillSite
 	{
 		private readonly Func<Uri, WebSite> siteFinder;
@@ -341,8 +410,6 @@ namespace TS3AudioBot.WebInterface
 		}
 	}
 
-	// Specialized Sites
-
 	class WebHistorySearch : WebSite
 	{
 		private readonly HistoryManager history;
@@ -360,7 +427,7 @@ namespace TS3AudioBot.WebInterface
 				id = e.Id,
 				atype = e.AudioType,
 				playcnt = e.PlayCount,
-				title = e.ResourceTitle,
+				title = HttpUtility.HtmlEncode(e.ResourceTitle),
 				time = e.Timestamp,
 				userid = e.UserInvokeId
 			});
@@ -412,13 +479,45 @@ namespace TS3AudioBot.WebInterface
 			{
 				strb.Append("<tr><td>").Append(entry.Id)
 					.Append("</td><td>").Append(entry.UserInvokeId)
-					.Append("</td><td class=\"fillwrap\">").Append(entry.ResourceTitle)
+					.Append("</td><td class=\"fillwrap\">").Append(HttpUtility.HtmlEncode(entry.ResourceTitle))
 					.Append("</td><td>Options</td></tr>");
 			}
 			string finString = strb.ToString();
 			byte[] finBlock = Encoding.GetBytes(finString);
 
 			return new PreparedData(finString.Length, finBlock);
+		}
+	}
+
+	class SongChangedEvent : WebEvent
+	{
+		AudioFramework audio;
+		float cnt = 0;
+
+		public SongChangedEvent(string sitePath, MainBot bot) : base(sitePath)
+		{
+			audio = bot.AudioFramework;
+			audio.OnResourceStarted += Audio_OnResourceStarted;
+
+			new System.Threading.Thread(() =>
+			{
+				while (true)
+				{
+					InvokeEvent();
+					System.Threading.Thread.Sleep(10);
+					cnt++;
+				}
+			}).Start();
+		}
+
+		private void Audio_OnResourceStarted(object sender, PlayData e)
+		{
+			InvokeEvent();
+		}
+
+		protected override string GetData()
+		{
+			return "teeeeeeest" + (cnt);// audio.CurrentPlayData?.Resource.ResourceTitle;
 		}
 	}
 
