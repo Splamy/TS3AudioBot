@@ -56,6 +56,7 @@ namespace TS3AudioBot.WebInterface
 			var historystatic = new WebHistorySearchList("historystatic", mainBot) { MimeType = "text/html" };
 			PrepareSite(historystatic);
 			PrepareSite(new WebJSFillSite("history", new FileProvider(new FileInfo("../../WebInterface/history.html")), historystatic) { MimeType = "text/html" });
+			PrepareSite(new WebStaticSite("playcontrols", new FileInfo("../../WebInterface/playcontrols.html")) { MimeType = "text/html" });
 		}
 
 		public void EnterWebLoop()

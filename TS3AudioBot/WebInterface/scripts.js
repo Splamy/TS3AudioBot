@@ -18,6 +18,15 @@ function register_handler() {
     $("#searchquery :input").each(function () {
         $(this).bind('keyup change click', history_search);
     });
+    // PlayControls
+    var handler = $("#playhandler");
+    if(handler.length != 0)
+    {
+        var source = new EventSource("demo_sse.php");
+        source.onmessage = function (event) {
+            handler.html(event.data);
+        };
+    }
 }
 
 function main_click(event) {
