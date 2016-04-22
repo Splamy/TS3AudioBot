@@ -9,6 +9,7 @@ namespace TS3AudioBot.Helper
 	using System.Reflection;
 	using System.IO;
 	using System.Security.Principal;
+	using System.Security.Permissions;
 
 	[Serializable]
 	public static class Util
@@ -93,6 +94,25 @@ namespace TS3AudioBot.Helper
 					return false;
 				}
 			}
+		}
+
+		//[PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
+		public static bool RegisterFolderEvents(DirectoryInfo dir, FileSystemEventHandler callback)
+		{
+			if (!IsAdmin)
+				return false;
+
+			if (!dir.Exists)
+				return false;
+
+			var watcher = new FileSystemWatcher
+			{
+				Path = dir.FullName,
+				NotifyFilter = NotifyFilters.LastWrite,
+			};
+			watcher.Changed += callback;
+			watcher.EnableRaisingEvents = true;
+			return true;
 		}
 	}
 }

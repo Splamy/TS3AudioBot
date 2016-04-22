@@ -58,6 +58,14 @@ namespace TS3AudioBot.WebInterface
 			PrepareSite(new WebJSFillSite("history", new FileProvider(new FileInfo("../../WebInterface/history.html")), historystatic) { MimeType = "text/html" });
 			PrepareSite(new WebStaticSite("playcontrols", new FileInfo("../../WebInterface/playcontrols.html")) { MimeType = "text/html" });
 			PrepareSite(new SongChangedEvent("playdata", mainBot));
+			var devupdate = new SiteChangedEvent("devupdate");
+			PrepareSite(devupdate);
+			if (!Util.RegisterFolderEvents(new DirectoryInfo("../../WebInterface"), (s, e) =>
+			{
+				if (e.ChangeType == WatcherChangeTypes.Changed)
+					devupdate.InvokeEvent();
+			}))
+				Log.Write(Log.Level.Info, "Devupdate disabled");
 		}
 
 		public void EnterWebLoop()
@@ -519,6 +527,13 @@ namespace TS3AudioBot.WebInterface
 		{
 			return "teeeeeeest" + (cnt);// audio.CurrentPlayData?.Resource.ResourceTitle;
 		}
+	}
+
+	class SiteChangedEvent : WebEvent
+	{
+		public SiteChangedEvent(string sitePath) : base(sitePath) { }
+
+		protected override string GetData() => "update";
 	}
 
 	// Helper

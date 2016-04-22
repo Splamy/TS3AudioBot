@@ -3,13 +3,29 @@ $(document).ready(main);
 var content = null;
 var playevent = null;
 
+var devupdate = null;
+var lastreq = null;
+
 function main() {
     content = $("#content");
     $("nav a").click(main_click);
     register_handler();
+
+    if (devupdate !== null) {
+        devupdate.close();
+    }
+    if ($("#devupdate").length != 0) {
+        devupdate = new EventSource("devupdate");
+        devupdate.onmessage = function (event) {
+            if (event.data == "update") {
+                load(lastreq);
+            }
+        };
+    }
 }
 
 function load(page) {
+    lastreq = page;
     content.load(page, register_handler);
 }
 
@@ -20,13 +36,11 @@ function register_handler() {
         $(this).bind('keyup change click', history_search);
     });
     // PlayControls
-    if (playevent !== null)
-    {
+    if (playevent !== null) {
         playevent.close();
     }
     var handler = $("#playhandler");
-    if(handler.length != 0)
-    {
+    if (handler.length != 0) {
         playevent = new EventSource("playdata");
         playevent.onmessage = function (event) {
             handler.html(event.data);
