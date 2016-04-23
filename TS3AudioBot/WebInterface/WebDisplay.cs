@@ -44,6 +44,7 @@ namespace TS3AudioBot.WebInterface
 			Index = new WebIndexFile("index.html", new FileProvider(new FileInfo("../../WebInterface/index.html")), GetWebsite) { MimeType = "text/html" };
 			PrepareSite(Index);
 			PrepareSite(Index, string.Empty);
+			PrepareSite(new WebStaticSite("main", new FileInfo("../../WebInterface/main.html")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("styles.css", new FileInfo("../../WebInterface/styles.css")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("scripts.js", new FileInfo("../../WebInterface/scripts.js")) { MimeType = "application/javascript" });
 			PrepareSite(new WebStaticSite("jquery.js", "TS3AudioBot.WebInterface.jquery.js") { MimeType = "application/javascript" });
@@ -55,12 +56,13 @@ namespace TS3AudioBot.WebInterface
 			PrepareSite(historystatic);
 			PrepareSite(new WebJSFillSite("history", new FileProvider(new FileInfo("../../WebInterface/history.html")), historystatic) { MimeType = "text/html" });
 			PrepareSite(new WebStaticSite("playcontrols", new FileInfo("../../WebInterface/playcontrols.html")) { MimeType = "text/html" });
+			PrepareSite(new WebPlayControls("control", mainBot) { MimeType = "text/html" });
 			PrepareSite(new SongChangedEvent("playdata", mainBot));
 			var devupdate = new SiteChangedEvent("devupdate");
 			PrepareSite(devupdate);
 			if (!Util.RegisterFolderEvents(new DirectoryInfo("../../WebInterface"), (s, e) =>
 			{
-				if (e.ChangeType == WatcherChangeTypes.Changed)
+				if (e.ChangeType == WatcherChangeTypes.Changed && !e.Name.EndsWith("~"))
 					devupdate.InvokeEvent();
 			}))
 				Log.Write(Log.Level.Info, "Devupdate disabled");
@@ -492,6 +494,46 @@ namespace TS3AudioBot.WebInterface
 			byte[] finBlock = Encoding.GetBytes(finString);
 
 			return new PreparedData(finString.Length, finBlock);
+		}
+	}
+	
+	class WebPlayControls : WebSite
+	{
+		AudioFramework audio;
+		public WebPlayControls(string sitePath, MainBot bot) : base(sitePath)
+		{
+			audio = bot.AudioFramework;
+		}
+
+		public override PreparedData PrepareSite(UriExt url)
+		{
+			switch (url.QueryParam["op"])
+			{
+			default:
+			case null: break;
+			case "volume":
+				var volumeStr = url.QueryParam["volume"];
+				int volume;
+				if (int.TryParse(volumeStr, out volume))
+					audio.Volume = volume;
+				break;
+
+			case "prev": audio.Previous(); break;
+			case "play": audio.Pause = !audio.Pause; break; break;
+			case "next": audio.Next(); break;
+			case "loop": audio.Repeat = !audio.Repeat; break;
+			case "seek":
+				var seekStr = url.QueryParam["volume"];
+				double seek;
+				if (double.TryParse(seekStr, out seek))
+				{
+					var pos = TimeSpan.FromSeconds(seek);
+					if (pos >= TimeSpan.Zero && pos <= audio.Length)
+						audio.Position = pos;
+				}
+				break;
+			}
+			return new PreparedData(0, new byte[0]);
 		}
 	}
 

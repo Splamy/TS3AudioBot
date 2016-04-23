@@ -93,6 +93,7 @@ footer {
     width: 90%;
     display: inline-block;
     margin: 0px 5% 0.4em;
+    cursor: pointer;
 }
 
     .button:active {

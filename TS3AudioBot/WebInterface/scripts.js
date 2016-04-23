@@ -1,57 +1,36 @@
+/// <reference path="jquery_dev.js" />
+
 $(document).ready(main);
 
+//+ main page div/section
 var content = null;
-var playevent = null;
-
-var devupdate = null;
+//+ playcontrols event handler
+var ev_playdata = null;
+var playcontrols = null;
+var playdata = null;
+var playticker = null;
+//+ devupdate event handler
+var ev_devupdate = null;
 var lastreq = null;
+
+// MAIN FUNCTIONS
 
 function main() {
     content = $("#content");
-    $("nav a").click(main_click);
-    register_handler();
+    $("nav a").click(navbar_click);
+    content_loaded();
 
-    if (devupdate !== null) {
-        devupdate.close();
+    if (ev_devupdate !== null) {
+        ev_devupdate.close();
+        ev_devupdate = null;
     }
     if ($("#devupdate").length !== 0) {
-        devupdate = new EventSource("devupdate");
-        devupdate.onmessage = function (event) {
-            if (event.data == "update") {
-                load(lastreq);
-            }
-        };
+        ev_devupdate = new EventSource("devupdate");
+        ev_devupdate.onmessage = update_site;
     }
 }
 
-function load(page) {
-    lastreq = page;
-    content.load(page, register_handler);
-}
-
-function register_handler() {
-    // History handler
-    $("button[form='searchquery']").remove();
-    $("#searchquery :input").each(function () {
-        $(this).bind('keyup change click', history_search);
-    });
-    // PlayControls
-    if (playevent !== null) {
-        playevent.close();
-    }
-    var handler = $("#playhandler");
-    if (handler.length != 0) {
-        playevent = new EventSource("playdata");
-        playevent.onmessage = function (event) {
-            var data = jQuery.parseJSON(event.data);
-            if (data.hassong) {
-                // TODO ...
-            }
-        };
-    }
-}
-
-function main_click(event) {
+function navbar_click(event) {
     event.preventDefault();
     $(this).blur();
     var newSite = $(this).attr("href");
@@ -60,21 +39,109 @@ function main_click(event) {
     window.history.pushState('mainpage', '', newSite);
 }
 
+function load(page) {
+    lastreq = page;
+    content.load(page, content_loaded);
+}
+
+// SPECIAL EVENT HANDLER
+
+function content_loaded() {
+    // History handler
+    $("button[form='searchquery']").remove();
+    $("#searchquery :input").each(function () {
+        $(this).bind('keyup change click', history_search);
+    });
+
+    // PlayControls
+    if (ev_playdata !== null) {
+        ev_playdata.close();
+        ev_playdata = null;
+    }
+    if (playticker !== null) {
+        clearInterval(playticker);
+        playticker = null;
+    }
+
+    var handler = $("#playhandler");
+    if (handler.length != 0) {
+        handler.load("/playcontrols", function () {
+            // gather all controls
+            playcontrols = {};
+            playcontrols.mute = handler.find("#playctrlmute");
+            playcontrols.volume = handler.find("input[name='volume']");
+            playcontrols.prev = handler.find("#playctrlprev");
+            playcontrols.play = handler.find("#playctrlplay");
+            playcontrols.next = handler.find("#playctrlnext");
+            playcontrols.loop = handler.find("#playctrlloop");
+            playcontrols.position = handler.find("input[name='position']");
+
+            // register sse
+            ev_playdata = new EventSource("playdata");
+            ev_playdata.onmessage = update_song;
+
+            // register events
+            playcontrols.mute.click(function () { $.get("/control?op=volume&volume=0"); }); // todo on/off
+            playcontrols.volume.on("input", function () { $.get("/control?op=volume&volume=" + value_to_logarithmic(this.value)); });
+            playcontrols.prev.click(function () { $.get("/control?op=prev"); });
+            playcontrols.play.click(function () { $.get("/control?op=play"); });
+            playcontrols.next.click(function () { $.get("/control?op=next"); });
+            playcontrols.loop.click(function () { $.get("/control?op=loop"); }); // todo on/off
+            playcontrols.position.on("change", function () { $.get("/control?op=seek&pos=" + this.value); });
+        });
+    }
+}
+
+function update_site(event) {
+    if (event.data == "update") {
+        load(lastreq);
+    }
+}
+
+// HELPER
+
+function value_to_logarithmic(val) {
+    const top = 7.0;
+    const scale = 100.0;
+
+    if (val < 0) val = 0;
+    else if (val > top) val = top;
+
+    return (1.0 / Math.log10(10 - val) - 1) * (scale / (1.0 / Math.log10(10 - top) - 1));
+}
+
 function get_query(url) {
     var match,
-        pl = /\+/g,  // Regex for replacing addition symbol with a space
         search = /([^&=]+)=?([^&]*)/g,
-        decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+        decode = function (s) { return decodeURIComponent(s.replace(/\+/g, " ")); },
     urlParams = {};
     while (match = search.exec(url))
         urlParams[decode(match[1])] = decode(match[2]);
     return urlParams;
 }
 
-function history_search_click(event) {
-    event.preventDefault();
-    history_search();
+// PLAYCONTROLS
+
+function update_song(event) {
+    playdata = jQuery.parseJSON(event.data);
+    if (playdata.hassong) {
+        // TODO ......
+
+        playticker = setInterval(song_position_tick, 1000);
+    } else {
+
+    }
 }
+
+function song_position_tick() {
+    if (playdata.paused === false
+        && playdata.hassong === true
+        && playdata.position < playdata.length) {
+        playdata.position.slider('value', playdata.position.val() + 1);
+    }
+}
+
+// HISTORY FUNCTIONS
 
 function history_search() {
     var builder = {};
@@ -108,14 +175,4 @@ function fill_history(rawdata) {
             "</td><td class=\"fillwrap\">" + elem["title"] +
             "</td><td>Options</td></tr>");
     }
-}
-
-function log_slide(val) {
-    const top = 7.0;
-    const scale = 100.0;
-
-    if (val < 0) val = 0;
-    else if (val > top) val = top;
-
-    return (1.0 / Math.log10(10 - val) - 1) * (scale / (1.0 / Math.log10(10 - top) - 1));
 }
