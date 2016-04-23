@@ -856,8 +856,10 @@ namespace TS3AudioBot
 			if (!parsed)
 				return CommandHelp(info, "seek");
 
-			if (!AudioFramework.Seek(span))
+			if (span < TimeSpan.Zero || span > AudioFramework.Length)
 				return "The point of time is not within the songlenth.";
+			else
+				AudioFramework.Position = span;
 			return null;
 		}
 

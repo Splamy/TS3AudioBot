@@ -31,19 +31,12 @@ namespace TS3AudioBot
 		public int Volume { get { return playerConnection.Volume; } set { playerConnection.Volume = value; } }
 		/// <summary>Starts or resumes the current song.</summary>
 		public bool Pause { get { return playerConnection.Pause; } set { playerConnection.Pause = value; } }
+		/// <summary>Length of the current song.</summary>
+		public TimeSpan Length { get { return playerConnection.Length; } }
+		/// <summary>Gets or sets the play position of the current song.</summary>
+		public TimeSpan Position { get { return playerConnection.Position; } set { playerConnection.Position = value; } }
 
 		// Playermethods
-
-		/// <summary>Jumps to the position in the audiostream if available.</summary>
-		/// <param name="pos">Position in seconds from the start.</param>
-		/// <returns>True if the seek request was valid, false otherwise.</returns>
-		public bool Seek(TimeSpan pos)
-		{
-			if (pos < TimeSpan.Zero || pos > playerConnection.Length)
-				return false;
-			playerConnection.Position = pos;
-			return true;
-		}
 
 		/// <summary>Plays the next song in the playlist or queue.</summary>
 		public void Next()

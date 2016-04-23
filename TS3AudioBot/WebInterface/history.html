@@ -1,5 +1,5 @@
 <h2>History</h2>
-<div id="splitleft">
+<div class="splitleft">
     <form id="searchquery" action="/?page=history" onsubmit="history_search_click(event);" method="get">
         <fieldset class="unselectable">
             <legend>Search for Entries</legend>
@@ -8,11 +8,11 @@
             <label>From UserId:      </label><input class="filledform" type="number" name="userid">
             <label>Last called after:</label><input class="filledform" type="date" name="lastinvoked">
             <label>Max results:      </label><input class="filledform" type="number" name="max" value="10">
-            <button type="submit" form="searchquery" value="Search">Search</button>
+            <button class="button" type="submit" form="searchquery" value="Search">Search</button>
         </fieldset>
     </form>
 </div>
-<div id="splitright">
+<div class="splitright">
     <table id="historylist">
         <caption>Query results</caption>
         <tbody>

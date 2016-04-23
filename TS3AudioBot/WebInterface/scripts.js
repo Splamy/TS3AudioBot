@@ -14,7 +14,7 @@ function main() {
     if (devupdate !== null) {
         devupdate.close();
     }
-    if ($("#devupdate").length != 0) {
+    if ($("#devupdate").length !== 0) {
         devupdate = new EventSource("devupdate");
         devupdate.onmessage = function (event) {
             if (event.data == "update") {
@@ -43,7 +43,10 @@ function register_handler() {
     if (handler.length != 0) {
         playevent = new EventSource("playdata");
         playevent.onmessage = function (event) {
-            handler.html(event.data);
+            var data = jQuery.parseJSON(event.data);
+            if (data.hassong) {
+                // TODO ...
+            }
         };
     }
 }
@@ -105,4 +108,14 @@ function fill_history(rawdata) {
             "</td><td class=\"fillwrap\">" + elem["title"] +
             "</td><td>Options</td></tr>");
     }
+}
+
+function log_slide(val) {
+    const top = 7.0;
+    const scale = 100.0;
+
+    if (val < 0) val = 0;
+    else if (val > top) val = top;
+
+    return (1.0 / Math.log10(10 - val) - 1) * (scale / (1.0 / Math.log10(10 - top) - 1));
 }

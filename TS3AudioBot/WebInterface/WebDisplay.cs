@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web;
-using System.Web.Script.Serialization;
 using HtmlAgilityPack;
 using TS3AudioBot.Helper;
 using TS3AudioBot.History;
@@ -18,7 +17,6 @@ namespace TS3AudioBot.WebInterface
 		private readonly Uri[] hostPaths;
 		private const short port = 8080;
 		private readonly Dictionary<string, WebSite> sites;
-		public static readonly JavaScriptSerializer serializer = new JavaScriptSerializer();
 		private readonly MainBot mainBot;
 		private static readonly Uri localhost = new Uri($"http://localhost:{port}/");
 		// Special sites
@@ -440,7 +438,7 @@ namespace TS3AudioBot.WebInterface
 				userid = e.UserInvokeId
 			});
 
-			string serialized = WebDisplay.serializer.Serialize(result);
+			string serialized = Util.Serializer.Serialize(result);
 			var dataArray = Encoding.GetBytes(serialized);
 
 			return new PreparedData(dataArray.Length, dataArray);
@@ -500,22 +498,10 @@ namespace TS3AudioBot.WebInterface
 	class SongChangedEvent : WebEvent
 	{
 		AudioFramework audio;
-		float cnt = 0;
-
 		public SongChangedEvent(string sitePath, MainBot bot) : base(sitePath)
 		{
 			audio = bot.AudioFramework;
-			audio.OnResourceStarted += Audio_OnResourceStarted;
-
-			new System.Threading.Thread(() =>
-			{
-				while (true)
-				{
-					InvokeEvent();
-					System.Threading.Thread.Sleep(10);
-					cnt++;
-				}
-			}).Start();
+			bot.AudioFramework.OnResourceStarted += Audio_OnResourceStarted;
 		}
 
 		private void Audio_OnResourceStarted(object sender, PlayData e)
@@ -525,7 +511,26 @@ namespace TS3AudioBot.WebInterface
 
 		protected override string GetData()
 		{
-			return "teeeeeeest" + (cnt);// audio.CurrentPlayData?.Resource.ResourceTitle;
+			if (audio.IsPlaying)
+			{
+				var data = new
+				{
+					hassong = true,
+					titel = audio.CurrentPlayData.Resource.ResourceTitle,
+					length = audio.Length,
+					position = audio.Position,
+					paused = audio.Pause,
+					repeat = audio.Repeat,
+					loop = audio.Loop,
+					volume = audio.Volume,
+				};
+				return Util.Serializer.Serialize(data);
+			}
+			else
+			{
+				var data = new { hassong = false, };
+				return Util.Serializer.Serialize(data);
+			}
 		}
 	}
 

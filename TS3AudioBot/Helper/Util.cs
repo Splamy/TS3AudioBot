@@ -10,6 +10,7 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Security.Principal;
 	using System.Security.Permissions;
+	using System.Web.Script.Serialization;
 
 	[Serializable]
 	public static class Util
@@ -60,6 +61,8 @@ namespace TS3AudioBot.Helper
 		public static void Init<T>(ref T obj) where T : new() => obj = new T();
 
 		public static Random RngInstance { get; } = new Random();
+
+		public static JavaScriptSerializer Serializer { get; } = new JavaScriptSerializer();
 
 		public static byte[] GetResource(string file)
 		{
