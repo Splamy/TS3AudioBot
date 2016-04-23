@@ -9,7 +9,6 @@ namespace TS3AudioBot.Helper
 	using System.Reflection;
 	using System.IO;
 	using System.Security.Principal;
-	using System.Security.Permissions;
 	using System.Web.Script.Serialization;
 
 	[Serializable]
@@ -50,6 +49,9 @@ namespace TS3AudioBot.Helper
 			return source.Skip(Math.Max(0, source.Count() - amount));
 		}
 
+		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
+		/// <param name="predicate">Check function that will be called every millisecond.</param>
+		/// <param name="msTimeout">Timeout in millisenconds.</param>
 		public static void WaitOrTimeout(Func<bool> predicate, int msTimeout)
 		{
 			while (!predicate() && msTimeout-- > 0)
@@ -98,8 +100,7 @@ namespace TS3AudioBot.Helper
 				}
 			}
 		}
-
-		//[PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
+		
 		public static bool RegisterFolderEvents(DirectoryInfo dir, FileSystemEventHandler callback)
 		{
 			if (!IsAdmin)

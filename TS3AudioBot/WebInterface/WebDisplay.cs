@@ -9,16 +9,19 @@ using System.Web;
 using HtmlAgilityPack;
 using TS3AudioBot.Helper;
 using TS3AudioBot.History;
+using System.Threading;
 
 namespace TS3AudioBot.WebInterface
 {
-	class WebDisplay
+	public class WebDisplay : IDisposable
 	{
 		private readonly Uri[] hostPaths;
 		private const short port = 8080;
 		private readonly Dictionary<string, WebSite> sites;
 		private readonly MainBot mainBot;
 		private static readonly Uri localhost = new Uri($"http://localhost:{port}/");
+		private HttpListener webListener;
+		private Thread serverThread;
 		// Special sites
 		public WebSite Index { get; private set; }
 		public WebSite Site404 { get; private set; }
@@ -27,7 +30,7 @@ namespace TS3AudioBot.WebInterface
 		{
 			mainBot = bot;
 
-			if (Util.IsAdmin)
+			if (Util.IsAdmin || Util.IsLinux)
 			{
 				hostPaths = new[] {
 					new Uri($"http://splamy.de:{port}/"),
@@ -68,32 +71,41 @@ namespace TS3AudioBot.WebInterface
 				Log.Write(Log.Level.Info, "Devupdate disabled");
 		}
 
+		public void StartServerAsync()
+		{
+			serverThread = new Thread(EnterWebLoop);
+			serverThread.Name = "WebInterface";
+			serverThread.Start();
+		}
+
 		public void EnterWebLoop()
 		{
-			using (var webListener = new HttpListener())
+			using (webListener = new HttpListener())
 			{
 				foreach (var host in hostPaths)
 					webListener.Prefixes.Add(host.AbsoluteUri);
 
 				try { webListener.Start(); }
-				catch (HttpListenerException) { throw; } // TODO
+				catch (HttpListenerException ex)
+				{
+					Log.Write(Log.Level.Info, "The webserver could not be started ({0})", ex.Message);
+					return;
+				} // TODO
 
 				while (webListener.IsListening)
 				{
 					HttpListenerContext context;
 					try { context = webListener.GetContext(); }
-					catch (HttpListenerException) { throw; } // TODO
-					catch (InvalidOperationException) { continue; } // TODO
+					catch (HttpListenerException) { break; }
+					catch (InvalidOperationException) { break; }
 
-					Console.Write("Requested: {0} (", context.Request.Url.PathAndQuery);
+					Log.Write(Log.Level.Info, "Requested: {0}", context.Request.Url.PathAndQuery);
 					var site = GetWebsite(context.Request.Url); // is not null
 
 					var callData = site.PrepareSite(new UriExt(context.Request.Url));
 					site.PrepareHeader(context, callData);
 					site.GenerateSite(context, callData);
 					site.FinalizeResponse(context);
-
-					Console.WriteLine(")");
 				}
 			}
 		}
@@ -107,7 +119,6 @@ namespace TS3AudioBot.WebInterface
 
 		private WebSite GetWebsite(Uri url)
 		{
-			Console.Write("Fetch: {0} ", url?.PathAndQuery);
 			if (url == null) return Site404;
 
 			foreach (var host in hostPaths)
@@ -120,9 +131,24 @@ namespace TS3AudioBot.WebInterface
 			}
 			return Site404;
 		}
+
+		public void Dispose()
+		{
+			webListener?.Stop();
+			webListener = null;
+			if (serverThread != null && serverThread.IsAlive)
+			{
+				Util.WaitOrTimeout(() => serverThread.IsAlive, 100);
+				if (serverThread.IsAlive)
+				{
+					serverThread.Abort();
+					serverThread = null;
+				}
+			}
+		}
 	}
 
-	class FileProvider
+	public class FileProvider
 	{
 		private byte[] rawData;
 		private bool loadedOnce = false;
@@ -187,7 +213,7 @@ namespace TS3AudioBot.WebInterface
 		}
 	}
 
-	struct PreparedData
+	public struct PreparedData
 	{
 		public long Length { get; }
 		public object Context { get; }
@@ -195,7 +221,7 @@ namespace TS3AudioBot.WebInterface
 		public PreparedData(long len, object obj) { Length = len; Context = obj; }
 	}
 
-	abstract class WebSite
+	public abstract class WebSite
 	{
 		public string SitePath { get; }
 		protected string mimeType = "text/html";
@@ -365,16 +391,11 @@ namespace TS3AudioBot.WebInterface
 			{
 				try
 				{
-					//response[i].ContentLength64 = data.Length;
 					response[i].OutputStream.Write(data, 0, data.Length);
 					response[i].OutputStream.Flush();
 				}
-				catch (HttpListenerException ex)
-				{
-					response.RemoveAt(i);
-					i--;
-				}
-				catch (InvalidOperationException ex)
+				catch (Exception ex)
+					when (ex is HttpListenerException || ex is InvalidOperationException || ex is IOException)
 				{
 					response.RemoveAt(i);
 					i--;
@@ -496,7 +517,7 @@ namespace TS3AudioBot.WebInterface
 			return new PreparedData(finString.Length, finBlock);
 		}
 	}
-	
+
 	class WebPlayControls : WebSite
 	{
 		AudioFramework audio;
@@ -519,11 +540,11 @@ namespace TS3AudioBot.WebInterface
 				break;
 
 			case "prev": audio.Previous(); break;
-			case "play": audio.Pause = !audio.Pause; break; break;
+			case "play": audio.Pause = !audio.Pause; break;
 			case "next": audio.Next(); break;
 			case "loop": audio.Repeat = !audio.Repeat; break;
 			case "seek":
-				var seekStr = url.QueryParam["volume"];
+				var seekStr = url.QueryParam["pos"];
 				double seek;
 				if (double.TryParse(seekStr, out seek))
 				{
@@ -540,10 +561,12 @@ namespace TS3AudioBot.WebInterface
 	class SongChangedEvent : WebEvent
 	{
 		AudioFramework audio;
+		TickWorker pushUpdate;
 		public SongChangedEvent(string sitePath, MainBot bot) : base(sitePath)
 		{
 			audio = bot.AudioFramework;
 			bot.AudioFramework.OnResourceStarted += Audio_OnResourceStarted;
+			//pushUpdate = TickPool.RegisterTick(InvokeEvent, TimeSpan.FromSeconds(5), true);
 		}
 
 		private void Audio_OnResourceStarted(object sender, PlayData e)
@@ -585,7 +608,7 @@ namespace TS3AudioBot.WebInterface
 
 	// Helper
 
-	class UriExt : Uri
+	public class UriExt : Uri
 	{
 		private NameValueCollection queryParam = null;
 		public NameValueCollection QueryParam => queryParam ?? (queryParam = HttpUtility.ParseQueryString(Query));

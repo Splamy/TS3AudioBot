@@ -1,5 +1,4 @@
 /// <reference path="jquery_dev.js" />
-
 $(document).ready(main);
 
 //+ main page div/section
@@ -79,10 +78,11 @@ function content_loaded() {
             // register sse
             ev_playdata = new EventSource("playdata");
             ev_playdata.onmessage = update_song;
+            playticker = setInterval(song_position_tick, 1000);
 
             // register events
             playcontrols.mute.click(function () { $.get("/control?op=volume&volume=0"); }); // todo on/off
-            playcontrols.volume.on("input", function () { $.get("/control?op=volume&volume=" + value_to_logarithmic(this.value)); });
+            playcontrols.volume.on("input", function () { $.get("/control?op=volume&volume=" + value_to_logarithmic(this.value).toFixed(0)); });
             playcontrols.prev.click(function () { $.get("/control?op=prev"); });
             playcontrols.play.click(function () { $.get("/control?op=play"); });
             playcontrols.next.click(function () { $.get("/control?op=next"); });
@@ -100,14 +100,21 @@ function update_site(event) {
 
 // HELPER
 
+const slmax = 7.0;
+const scale = 100.0;
+
 function value_to_logarithmic(val) {
-    const top = 7.0;
-    const scale = 100.0;
-
     if (val < 0) val = 0;
-    else if (val > top) val = top;
+    else if (val > slmax) val = slmax;
 
-    return (1.0 / Math.log10(10 - val) - 1) * (scale / (1.0 / Math.log10(10 - top) - 1));
+    return (1.0 / Math.log10(10 - val) - 1) * (scale / (1.0 / Math.log10(10 - slmax) - 1));
+}
+
+function logarithmic_to_value(val) {
+    if (val < 0) val = 0;
+    else if (val > scale) val = scale;
+
+    return 10 - Math.pow(10, 1.0 / ((val / (scale / (1.0 / Math.log10(10 - slmax) - 1))) + 1));
 }
 
 function get_query(url) {
@@ -124,20 +131,24 @@ function get_query(url) {
 
 function update_song(event) {
     playdata = jQuery.parseJSON(event.data);
-    if (playdata.hassong) {
-        // TODO ......
+    var jsSlider = playcontrols.position.get(0);
 
-        playticker = setInterval(song_position_tick, 1000);
+    if (playdata.hassong === true) {
+        playcontrols.volume.get(0).value = parseInt(logarithmic_to_value(playdata.volume));
+        jsSlider.max = parseInt(playdata.length.TotalSeconds);
+        jsSlider.value = playdata.position.TotalSeconds;
     } else {
-
+        jsSlider.max = 0;
+        jsSlider.value = 0;
     }
 }
 
 function song_position_tick() {
-    if (playdata.paused === false
-        && playdata.hassong === true
-        && playdata.position < playdata.length) {
-        playdata.position.slider('value', playdata.position.val() + 1);
+    if (playdata.paused === false && playdata.hassong === true) {
+        var jsSlider = playcontrols.position.get(0);
+        if (parseInt(jsSlider.value) < playdata.length.TotalSeconds) {
+            jsSlider.value = parseInt(jsSlider.value) + 1;
+        }
     }
 }
 

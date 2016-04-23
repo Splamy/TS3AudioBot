@@ -12,10 +12,12 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using ResourceFactories;
-	using static CommandRights;
+	using WebInterface;
 
 	using TS3Query;
 	using TS3Query.Messages;
+
+	using static CommandRights;
 
 	// Todo:
 	// - implement history missing features
@@ -59,6 +61,7 @@ namespace TS3AudioBot
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
+		public WebDisplay WebInterface { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -144,10 +147,8 @@ namespace TS3AudioBot
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
-
-			var wi = new WebInterface.WebDisplay(this);
-			wi.EnterWebLoop();
-			return false;
+			WebInterface = new WebDisplay(this);
+			WebInterface.StartServerAsync();
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager(AudioFramework);
@@ -160,7 +161,7 @@ namespace TS3AudioBot
 			// Inform our HistoryManager when a new resource started successfully
 			AudioFramework.OnResourceStarted += HistoryManager.LogAudioResource;
 			// Inform the BobClient on start/stop
-			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
+			AudioFramework.OnResourceStarting += BobController.OnResourceStarting;
 			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
 			// In own favor update the own status text to the current song title
 			AudioFramework.OnResourceStarted += SongUpdateEvent;
@@ -1105,6 +1106,11 @@ namespace TS3AudioBot
 			if (!isDisposed) isDisposed = true;
 			else return;
 
+			if (WebInterface != null)
+			{
+				WebInterface.Dispose();
+				WebInterface = null;
+			}
 			if (PluginManager != null)
 			{
 				PluginManager.Dispose();
