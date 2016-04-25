@@ -21,6 +21,7 @@ namespace TS3AudioBot
 
 	// Todo:
 	// - implement history missing features
+	// - add songtext to webinterface
 	public sealed class MainBot : MarshalByRefObject, IDisposable
 	{
 		static void Main(string[] args)
@@ -165,6 +166,7 @@ namespace TS3AudioBot
 			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
 			// In own favor update the own status text to the current song title
 			AudioFramework.OnResourceStarted += SongUpdateEvent;
+			AudioFramework.OnResourceStopped += SongStopEvent;
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
@@ -1099,6 +1101,10 @@ namespace TS3AudioBot
 			{
 				QueryConnection.ChangeDescription(data.Resource.ResourceTitle);
 			}
+		}
+		public void SongStopEvent(object sender, bool data)
+		{
+			QueryConnection.ChangeDescription("<Sleeping>");
 		}
 
 		public void Dispose()

@@ -55,14 +55,16 @@ namespace TS3AudioBot.Helper
 		public static void UnregisterTicker(TickWorker worker)
 		{
 			if (worker == null) throw new ArgumentNullException(nameof(worker));
-			lock (workList)
-			{
-				workList.Remove(worker);
-				if (workList.Count > 0)
-					curTick = workList.Min(w => w.Interval);
-				else
-					curTick = minTick;
-			}
+			lock (workList) { RemoveUnlocked(worker); }
+		}
+
+		private static void RemoveUnlocked(TickWorker worker)
+		{
+			workList.Remove(worker);
+			if (workList.Count > 0)
+				curTick = workList.Min(w => w.Interval);
+			else
+				curTick = minTick;
 		}
 
 		private static void Tick()
@@ -83,7 +85,7 @@ namespace TS3AudioBot.Helper
 						}
 						if (worker.TickOnce)
 						{
-							workList.RemoveAt(i);
+							RemoveUnlocked(worker);
 							i--;
 						}
 					}
