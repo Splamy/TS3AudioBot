@@ -338,7 +338,7 @@ namespace TS3AudioBot
 			if (netStream != null)
 			{
 				netStream.Close();
-				Util.WaitOrTimeout(() => vlcClient != null, 100);
+				Util.WaitOrTimeout(() => vlcClient != null, TimeSpan.FromMilliseconds(100));
 				netStream = null;
 			}
 			if (vlcproc != null)

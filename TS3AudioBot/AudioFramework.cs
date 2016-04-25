@@ -142,10 +142,10 @@ namespace TS3AudioBot
 			else
 				Volume = playData.Volume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
-			
+
 			OnResourceStarting?.Invoke(this, playData);
 			CurrentPlayData = playData;
-			OnResourceStarted?.Invoke(this, playData);
+			TickPool.RegisterTickOnce(() => OnResourceStarted?.Invoke(this, playData));
 
 			if (!playerConnection.SupportsEndCallback)
 			{

@@ -136,15 +136,8 @@ namespace TS3AudioBot.WebInterface
 		{
 			webListener?.Stop();
 			webListener = null;
-			if (serverThread != null && serverThread.IsAlive)
-			{
-				Util.WaitOrTimeout(() => serverThread.IsAlive, 100);
-				if (serverThread.IsAlive)
-				{
-					serverThread.Abort();
-					serverThread = null;
-				}
-			}
+			Util.WaitForThreadEnd(serverThread, TimeSpan.FromMilliseconds(100));
+			serverThread = null;
 		}
 	}
 

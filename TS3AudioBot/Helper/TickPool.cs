@@ -24,12 +24,22 @@ namespace TS3AudioBot.Helper
 			tickThread.Name = "TickPool";
 		}
 
+		public static void RegisterTickOnce(Action method)
+		{
+			AddWorker(new TickWorker(method, TimeSpan.Zero) { Active = true, TickOnce = true });
+		}
+
 		public static TickWorker RegisterTick(Action method, TimeSpan interval, bool active)
 		{
 			if (method == null) throw new ArgumentNullException(nameof(method));
 			if (interval <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(interval));
-			var worker = new TickWorker(method, interval);
-			worker.Active = active;
+			var worker = new TickWorker(method, interval) { Active = active };
+			AddWorker(worker);
+			return worker;
+		}
+
+		private static void AddWorker(TickWorker worker)
+		{
 			lock (workList)
 			{
 				workList.Add(worker);
@@ -40,7 +50,6 @@ namespace TS3AudioBot.Helper
 					tickThread.Start();
 				}
 			}
-			return worker;
 		}
 
 		public static void UnregisterTicker(TickWorker worker)
@@ -62,14 +71,20 @@ namespace TS3AudioBot.Helper
 			{
 				lock (workList)
 				{
-					foreach (var worker in workList)
+					for (int i = 0; i < workList.Count; i++)
 					{
+						var worker = workList[i];
 						if (!worker.Active) continue;
 						worker.IntervalRemain -= curTick;
 						if (worker.IntervalRemain <= TimeSpan.Zero)
 						{
 							worker.IntervalRemain = worker.Interval;
 							worker.Method.Invoke();
+						}
+						if (worker.TickOnce)
+						{
+							workList.RemoveAt(i);
+							i--;
 						}
 					}
 				}
@@ -81,6 +96,8 @@ namespace TS3AudioBot.Helper
 		public static void Close()
 		{
 			run = false;
+			Util.WaitForThreadEnd(tickThread, TimeSpan.FromMilliseconds(100));
+			tickThread = null;
 		}
 	}
 
@@ -88,8 +105,9 @@ namespace TS3AudioBot.Helper
 	{
 		public Action Method { get; }
 		public TimeSpan Interval { get; }
-		public TimeSpan IntervalRemain { get; set; }
-		public bool Active { get; set; }
+		public TimeSpan IntervalRemain { get; set; } = TimeSpan.Zero;
+		public bool Active { get; set; } = false;
+		public bool TickOnce { get; set; } = false;
 
 		public TickWorker(Action method, TimeSpan interval) { Method = method; Interval = interval; }
 	}

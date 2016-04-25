@@ -499,19 +499,23 @@ namespace TS3Query
 		{
 			if (IsConnected)
 			{
-				Close();
-			}
+				TextMessageReceivedHandler = null;
+				ClientEnterViewHandler = null;
+				ClientLeftViewHandler = null;
 
-			if (tcpReader != null)
-			{
-				tcpReader.Dispose();
-				tcpReader = null;
-			}
+				Quit();
 
-			if (tcpClient != null)
-			{
-				tcpClient.Close();
-				tcpClient = null;
+				lock (lockObj)
+				{
+					tcpWriter.Dispose();
+					tcpWriter = null;
+
+					tcpReader.Dispose();
+					tcpReader = null;
+
+					tcpClient.Close();
+					tcpClient = null;
+				}
 			}
 
 			if (EventDispatcher != null)

@@ -1106,48 +1106,48 @@ namespace TS3AudioBot
 			if (!isDisposed) isDisposed = true;
 			else return;
 
-			if (WebInterface != null)
+			if (WebInterface != null) // before:
 			{
 				WebInterface.Dispose();
 				WebInterface = null;
 			}
-			if (PluginManager != null)
+			if (PluginManager != null) // before: SessionManager, logStream,
 			{
 				PluginManager.Dispose();
 				PluginManager = null;
 			}
-			if (QueryConnection != null)
-			{
-				QueryConnection.Dispose();
-				QueryConnection = null;
-			}
-			TickPool.Close();
-			if (HistoryManager != null)
-			{
-				HistoryManager.Dispose();
-				HistoryManager = null;
-			}
-			if (FactoryManager != null)
-			{
-				FactoryManager.Dispose();
-				FactoryManager = null;
-			}
-			if (AudioFramework != null)
+			if (AudioFramework != null) // before: BobController, logStream,
 			{
 				AudioFramework.Dispose();
 				AudioFramework = null;
 			}
-			if (BobController != null)
+			if (BobController != null) // before: QueryConnection, logStream,
 			{
 				BobController.Dispose();
 				BobController = null;
 			}
-			if (SessionManager != null)
+			if (QueryConnection != null) // before: logStream,
+			{
+				QueryConnection.Dispose();
+				QueryConnection = null;
+			}
+			TickPool.Close(); // before:
+			if (HistoryManager != null) // before: logStream,
+			{
+				HistoryManager.Dispose();
+				HistoryManager = null;
+			}
+			if (FactoryManager != null) // before:
+			{
+				FactoryManager.Dispose();
+				FactoryManager = null;
+			}
+			if (SessionManager != null) // before:
 			{
 				//sessionManager.Dispose();
 				SessionManager = null;
 			}
-			if (logStream != null)
+			if (logStream != null) // before:
 			{
 				logStream.Dispose();
 				logStream = null;

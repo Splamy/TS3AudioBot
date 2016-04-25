@@ -52,10 +52,23 @@ namespace TS3AudioBot.Helper
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
 		/// <param name="msTimeout">Timeout in millisenconds.</param>
-		public static void WaitOrTimeout(Func<bool> predicate, int msTimeout)
+		public static void WaitOrTimeout(Func<bool> predicate, TimeSpan timeout)
 		{
+			int msTimeout = (int)timeout.TotalSeconds;
 			while (!predicate() && msTimeout-- > 0)
 				Thread.Sleep(1);
+		}
+
+		public static void WaitForThreadEnd(Thread thread, TimeSpan timeout)
+		{
+			if (thread != null && thread.IsAlive)
+			{
+				WaitOrTimeout(() => thread.IsAlive, timeout);
+				if (thread.IsAlive)
+				{
+					thread.Abort();
+				}
+			}
 		}
 
 		public static DateTime GetNow() => DateTime.Now;

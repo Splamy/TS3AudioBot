@@ -122,6 +122,8 @@ namespace TS3AudioBot
 			SendMessage("music stop");
 		}
 
+		public void Initialize() { }
+
 		#endregion
 
 		public BobController(BobControllerData data, QueryConnection queryConnection)
@@ -141,8 +143,6 @@ namespace TS3AudioBot
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
 		}
-
-		public void Initialize() { }
 
 		#region SendMethods
 
@@ -366,6 +366,7 @@ namespace TS3AudioBot
 			{
 				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
 				BobExit();
+				// TODO: add safety check after n times if bob actually exists...
 			}
 		}
 
@@ -456,6 +457,7 @@ namespace TS3AudioBot
 				musicInfoWaiter = null;
 			}
 			BobExit();
+			isRunning = false;
 		}
 	}
 
