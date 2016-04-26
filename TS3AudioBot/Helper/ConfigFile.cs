@@ -130,10 +130,8 @@ namespace TS3AudioBot.Helper
 				string rawValue = string.Empty;
 				object parsedValue = null;
 
-				// determine the raw data string, wether from Console or File
-				bool gotInput = ReadKey(entryName, out rawValue);
-				bool manualInput = false;
-				if (!gotInput)
+				// determine the raw data string, whether from Console or File
+				if (!ReadKey(entryName, out rawValue))
 				{
 					// Check if we can use the default value
 					if (iAtt != null && defaultIfPossible && iAtt.HasDefault)
@@ -142,9 +140,7 @@ namespace TS3AudioBot.Helper
 					{
 						Console.Write("Please enter {0}: ", iAtt != null ? iAtt.Description : entryName);
 						rawValue = Console.ReadLine();
-						manualInput = true;
 					}
-					gotInput = true;
 				}
 
 				// Try to parse it and save if necessary
@@ -154,8 +150,7 @@ namespace TS3AudioBot.Helper
 					Console.WriteLine("Input parse failed [Ignoring]");
 					continue;
 				}
-				if (manualInput)
-					WriteValueToConfig(entryName, parsedValue);
+				WriteValueToConfig(entryName, parsedValue);
 				//TODO write outcommented line inf config file
 
 				// finally set the value to our object

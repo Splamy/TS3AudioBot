@@ -27,10 +27,14 @@ namespace TS3AudioBot
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 				{
-					var ex = e.ExceptionObject as Exception;
-					Log.Write(Log.Level.Error, "Critical program failure: {0}", ex ?? new Exception("Unknown Exception!"));
-					if (bot != null)
-						bot.Dispose();
+					Log.Write(Log.Level.Error, "Critical program failure! Logs will follow.");
+					Exception ex = e.ExceptionObject as Exception;
+					while (ex != null)
+					{
+						Log.Write(Log.Level.Error, "MSG: {0}\nSTACK:{1}", ex.Message, ex.StackTrace);
+						ex = ex.InnerException;
+					}
+					bot?.Dispose();
 				};
 
 				if (!bot.ReadParameter(args)) return;
@@ -39,6 +43,7 @@ namespace TS3AudioBot
 			}
 		}
 
+		private bool isDisposed;
 		private bool consoleOutput;
 		private bool writeLog;
 		private bool writeLogStack;
@@ -59,6 +64,7 @@ namespace TS3AudioBot
 
 		public MainBot()
 		{
+			isDisposed = false;
 			consoleOutput = false;
 			writeLog = false;
 		}
@@ -1021,6 +1027,9 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
+			if (!isDisposed) isDisposed = true;
+			else return;
+
 			if (PluginManager != null)
 			{
 				PluginManager.Dispose();

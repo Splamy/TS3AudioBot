@@ -78,7 +78,7 @@
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />
     <Compile Include="History\SmartHistoryFormatter.cs" />
-    <Compile Include="InfoAttribute.cs" />
+    <Compile Include="Helper\InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
