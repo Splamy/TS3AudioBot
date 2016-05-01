@@ -99,6 +99,7 @@ Player::Player(std::string streamAddress) :
 		fprintf(stderr, "A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
 	});
 	setOnFinished([](Player*) {});
+	setOnStart([](Player*) {});
 }
 
 Player::~Player()
@@ -592,4 +593,9 @@ void Player::setOnDecodeError(std::function<void(Player*, DecodeError)> onDecode
 void Player::setOnFinished(std::function<void(Player*)> onFinished)
 {
 	this->onFinished = onFinished;
+}
+
+void Player::setOnStart(std::function<void(Player*)> onStart)
+{
+	this->onStart = onStart;
 }

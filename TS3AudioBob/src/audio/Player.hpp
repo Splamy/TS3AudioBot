@@ -131,6 +131,7 @@ private:
 	std::function<void(Player*, ReadError)> onReadError;
 	std::function<void(Player*, DecodeError)> onDecodeError;
 	std::function<void(Player*)> onFinished;
+	std::function<void(Player*)> onStart;
 
 	static uint64_t getValidChannelLayout(uint64_t channelLayout, int channelCount);
 	static const char* searchEntry(const AVDictionary *dict, const char *key);
@@ -206,6 +207,7 @@ public:
 	void setOnReadError(std::function<void(Player*, ReadError)> onReadError);
 	void setOnDecodeError(std::function<void(Player*, DecodeError)> onDecodeError);
 	void setOnFinished(std::function<void(Player*)> onFinished);
+	void setOnStart(std::function<void(Player*)> onStart);
 };
 }
 

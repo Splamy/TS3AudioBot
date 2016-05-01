@@ -14,7 +14,8 @@
 const std::vector<std::string> ServerBob::quitMessages =
 	{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
 	  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet...",
-	  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz" };
+	  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
+	  "Never gonna give you up", "Never gonna let you down" };
 
 ServerBob::ServerBob(std::shared_ptr<TsApi> tsApi, uint64_t botAdminGroup) :
 	rootCommand("root command"),
