@@ -31,7 +31,7 @@ namespace TS3AudioBot.Helper
 		public static string ExtractUrlFromBB(string ts3link)
 		{
 			if (ts3link.Contains("[URL]"))
-				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
+				return bbMatch.Match(ts3link).Groups[1].Value;
 			else
 				return ts3link;
 		}

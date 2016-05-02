@@ -19,9 +19,6 @@ namespace TS3AudioBot
 
 	using static CommandRights;
 
-	// Todo:
-	// - implement history missing features
-	// - add songtext to webinterface
 	public sealed class MainBot : MarshalByRefObject, IDisposable
 	{
 		static void Main(string[] args)

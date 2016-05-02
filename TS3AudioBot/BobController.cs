@@ -244,7 +244,11 @@ namespace TS3AudioBot
 				switch (result[0])
 				{
 				case "address": musicData.Address = result[1]; break;
-				case "length": musicData.Length = TimeSpan.FromSeconds(double.Parse(result[1], CultureInfo.InvariantCulture)); break;
+				case "length":
+					double length = double.Parse(result[1], CultureInfo.InvariantCulture);
+					// prevent exceptions when dealing with live streams
+					musicData.Length = TimeSpan.FromSeconds(Math.Max(0, length));
+					break;
 				case "loop": musicData.Loop = result[1] != "off"; break;
 				case "position": musicData.Position = TimeSpan.FromSeconds(double.Parse(result[1], CultureInfo.InvariantCulture)); break;
 				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1], true); break;

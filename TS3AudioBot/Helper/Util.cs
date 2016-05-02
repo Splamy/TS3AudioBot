@@ -113,7 +113,7 @@ namespace TS3AudioBot.Helper
 				}
 			}
 		}
-		
+
 		public static bool RegisterFolderEvents(DirectoryInfo dir, FileSystemEventHandler callback)
 		{
 			if (!IsAdmin)
