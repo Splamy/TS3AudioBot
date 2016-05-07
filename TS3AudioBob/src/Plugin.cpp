@@ -8,6 +8,7 @@
 #include <array>
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <functional>
@@ -118,7 +119,7 @@ int ts3plugin_init()
 		tsApi->log("Couldn't read config file");
 		// We don't want an uncontrollable Bob
 		tsApi.reset();
-		quick_exit(0);
+		std::exit(0);
 	}
 	return 0;
 }

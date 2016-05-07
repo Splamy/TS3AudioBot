@@ -15,7 +15,7 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-option(CLANG "Use clang/llvm for compilation (if not on Windows)." ON)
+option(CLANG "Use clang/llvm for compilation (if not on Windows)." OFF)
 
 if(MSVC)
 	set(CLANG OFF)

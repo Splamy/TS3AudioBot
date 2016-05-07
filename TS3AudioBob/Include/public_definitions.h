@@ -17,18 +17,17 @@
 //minimum amount of seconds before a clientID that was in use can be assigned to a new client
 #define TS3_MIN_SECONDS_CLIENTID_REUSE 300
 
+#include <cstdint>
+typedef std::uint16_t anyID;
+typedef std::uint64_t uint64;
+
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
-	typedef unsigned __int16 anyID;
-	typedef unsigned __int64 uint64;
 	#ifdef BUILDING_DLL
 		#define EXPORTDLL __declspec(dllexport)
 	#else
 		#define EXPORTDLL
 	#endif
 #else
-	#include <stdint.h>
-	typedef uint16_t anyID;
-	typedef uint64_t uint64;
 	#ifdef BUILDING_DLL
 		#define EXPORTDLL __attribute__ ((visibility("default")))
 	#else

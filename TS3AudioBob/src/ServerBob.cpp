@@ -8,6 +8,7 @@
 #include <public_errors.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <sstream>
 #include <stdexcept>
 
@@ -267,7 +268,7 @@ void ServerBob::close()
 		connection.close(msg);
 	connections.clear();
 	// "Graceful" exit
-	quick_exit(0);
+	std::exit(0);
 }
 
 void ServerBob::unknownCommand(ServerConnection *connection,
