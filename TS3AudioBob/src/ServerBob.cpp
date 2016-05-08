@@ -78,8 +78,8 @@ ServerBob::ServerBob(ServerBob &&bob) :
 void ServerBob::gotDbId(uint64_t handlerId, const char *uniqueId, uint64_t dbId)
 {
 	ServerConnection *connection = getServer(handlerId);
-	std::vector<User*> users = connection->getUsers(uniqueId);
-	for (User *user : users)
+	std::vector<std::shared_ptr<User> > users = connection->getUsers(uniqueId);
+	for (std::shared_ptr<User> user : users)
 	{
 		if (!user->hasDbId())
 		{
@@ -92,10 +92,10 @@ void ServerBob::gotDbId(uint64_t handlerId, const char *uniqueId, uint64_t dbId)
 void ServerBob::gotServerGroup(uint64_t handlerId, uint64_t dbId, uint64_t serverGroup)
 {
 	ServerConnection *connection = getServer(handlerId);
-	std::vector<User*> users = connection->getUsers(dbId);
+	std::vector<std::shared_ptr<User> > users = connection->getUsers(dbId);
 	if (users.empty())
 		tsApi->log("User not found");
-	for (User *user : users)
+	for (std::shared_ptr<User> user : users)
 	{
 		user->addGroup(serverGroup);
 		if (serverGroup == botAdminGroup)
@@ -164,7 +164,7 @@ void ServerBob::handleCommand(uint64_t handlerId, anyID sender,
 		return;
 	}
 
-	User *user = connection->getUser(sender);
+	std::shared_ptr<User> user = connection->getUser(sender);
 	if (!user)
 	{
 		// Try to get that user
@@ -183,7 +183,7 @@ void ServerBob::handleCommand(uint64_t handlerId, anyID sender,
 		executeCommand(&(*connection), user, user->dequeueCommand());
 }
 
-void ServerBob::executeCommand(ServerConnection *connection, User *sender,
+void ServerBob::executeCommand(ServerConnection *connection, std::shared_ptr<User> sender,
 	const std::string &message)
 {
 	if (!sender->inGroup(botAdminGroup))
@@ -209,7 +209,7 @@ void ServerBob::executeCommand(ServerConnection *connection, User *sender,
 
 template <class... Args>
 void ServerBob::addCommand(const std::string &command, CommandResult (ServerBob::*fun)
-	(ServerConnection*, User*, const std::string&, const std::string&, Args...),
+	(ServerConnection*, std::shared_ptr<User>, const std::string&, const std::string&, Args...),
 	const std::string &description, bool displayDescription)
 {
 	addCommand(command, Utils::myBindMember(fun, this), description, displayDescription);
@@ -217,7 +217,7 @@ void ServerBob::addCommand(const std::string &command, CommandResult (ServerBob:
 
 template <class... Args>
 void ServerBob::addCommand(const std::string &command, std::function<
-	CommandResult(ServerConnection*, User*, const std::string&, const std::string&, Args...)> fun,
+	CommandResult(ServerConnection*, std::shared_ptr<User>, const std::string&, const std::string&, Args...)> fun,
 	const std::string &description, bool displayDescription)
 {
 	rootCommand.addCommand(command, fun, description, displayDescription);
@@ -272,7 +272,7 @@ void ServerBob::close()
 }
 
 void ServerBob::unknownCommand(ServerConnection *connection,
-	User *sender, const std::string &message)
+	std::shared_ptr<User> sender, const std::string &message)
 {
 	std::string msg = message;
 	Utils::sanitizeLines(msg);
@@ -284,7 +284,7 @@ void ServerBob::unknownCommand(ServerConnection *connection,
 
 // Commands
 CommandResult ServerBob::errorCommand(ServerConnection * /*connection*/,
-	User * /*sender*/, const std::string &message, const std::string &/*rest*/, std::string /*r*/)
+	std::shared_ptr<User> /*sender*/, const std::string &message, const std::string &/*rest*/, std::string /*r*/)
 {
 	if (Utils::startsWith(message, "error"))
 	{
@@ -295,14 +295,14 @@ CommandResult ServerBob::errorCommand(ServerConnection * /*connection*/,
 }
 
 CommandResult ServerBob::audioCommand(ServerConnection * /*connection*/,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, bool on)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, bool on)
 {
 	setAudio(on);
 	return CommandResult();
 }
 
 CommandResult ServerBob::musicStartCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, std::string address)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, std::string address)
 {
 	// Strip [URL] and [/URL]
 	if (Utils::startsWith(address, "[URL]"))
@@ -316,14 +316,14 @@ CommandResult ServerBob::musicStartCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::musicVolumeCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, double volume)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, double volume)
 {
 	connection->setVolume(volume);
 	return CommandResult();
 }
 
 CommandResult ServerBob::musicSeekCommand(ServerConnection *connection,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/, double position)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/, double position)
 {
 	if (!connection->hasAudioPlayer())
 		return CommandResult(CommandResult::ERROR,
@@ -334,21 +334,21 @@ CommandResult ServerBob::musicSeekCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::musicLoopCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, bool on)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, bool on)
 {
 	connection->setLooped(on);
 	return CommandResult();
 }
 
 CommandResult ServerBob::musicStopCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	connection->stopAudio();
 	return CommandResult();
 }
 
 CommandResult ServerBob::musicPauseCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	if (!connection->hasAudioPlayer())
 		return CommandResult(CommandResult::ERROR,
@@ -358,7 +358,7 @@ CommandResult ServerBob::musicPauseCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::musicUnpauseCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	if (!connection->hasAudioPlayer())
 		return CommandResult(CommandResult::ERROR,
@@ -368,7 +368,7 @@ CommandResult ServerBob::musicUnpauseCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::musicAddressCommand(ServerConnection *connection,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	if (!connection->hasAudioPlayer())
 		return CommandResult(CommandResult::ERROR,
@@ -381,19 +381,19 @@ CommandResult ServerBob::musicAddressCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::qualityCommand(ServerConnection * /*connection*/,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, bool on)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, bool on)
 {
 	setQuality(on);
 	return CommandResult();
 }
 
 CommandResult ServerBob::whisperClientAddCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
 {
 	if (id < 0)
 		return CommandResult(CommandResult::ERROR,
 			"error client id can't be negative");
-	User *user = connection->getUser(static_cast<anyID>(id));
+	std::shared_ptr<User> user = connection->getUser(static_cast<anyID>(id));
 	if (!user)
 	{
 		// Try to add that user
@@ -412,12 +412,12 @@ CommandResult ServerBob::whisperClientAddCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::whisperClientRemoveCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
 {
 	if (id < 0)
 		return CommandResult(CommandResult::ERROR,
 			"error client id can't be negative");
-	User *user = connection->getUser(static_cast<anyID>(id));
+	std::shared_ptr<User> user = connection->getUser(static_cast<anyID>(id));
 	if (user)
 		connection->removeWhisperUser(user);
 	else
@@ -427,7 +427,7 @@ CommandResult ServerBob::whisperClientRemoveCommand(ServerConnection *connection
 }
 
 CommandResult ServerBob::whisperChannelAddCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
 {
 	if (id < 0)
 		return CommandResult(CommandResult::ERROR,
@@ -437,7 +437,7 @@ CommandResult ServerBob::whisperChannelAddCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::whisperChannelRemoveCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/, int id)
 {
 	if (id < 0)
 		return CommandResult(CommandResult::ERROR,
@@ -449,25 +449,25 @@ CommandResult ServerBob::whisperChannelRemoveCommand(ServerConnection *connectio
 }
 
 CommandResult ServerBob::whisperClearCommand(ServerConnection *connection,
-	User * /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User>  /*sender*/, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	connection->clearWhisper();
 	return CommandResult();
 }
 
 CommandResult ServerBob::statusAudioCommand(ServerConnection *connection,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	connection->sendCommand(sender, "answer audio\nstatus {0}", audioOn ? "on" : "off");
 	return CommandResult();
 }
 
 CommandResult ServerBob::statusWhisperCommand(ServerConnection *connection,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	std::ostringstream out;
 	out << "answer whisper\nclients";
-	for (const User *user : *connection->getWhisperUsers())
+	for (const std::shared_ptr<User> user : *connection->getWhisperUsers())
 		out << ' ' << user->getId();
 	out << "\nchannels";
 	for (const uint64_t channel : *connection->getWhisperChannels())
@@ -477,7 +477,7 @@ CommandResult ServerBob::statusWhisperCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::statusMusicCommand(ServerConnection *connection,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	std::ostringstream out;
 	out << "answer music" << connection->getAudioStatus();
@@ -486,7 +486,7 @@ CommandResult ServerBob::statusMusicCommand(ServerConnection *connection,
 	return CommandResult();
 }
 
-CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
+CommandResult ServerBob::helpCommand(ServerConnection *connection, std::shared_ptr<User> sender,
 	const std::string& /*message*/, const std::string &/*rest*/)
 {
 	std::ostringstream output;
@@ -506,7 +506,7 @@ CommandResult ServerBob::helpCommand(ServerConnection *connection, User *sender,
 }
 
 CommandResult ServerBob::helpMusicCommand(ServerConnection *connection,
-	User *sender, const std::string& /*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User> sender, const std::string& /*message*/, const std::string &/*rest*/)
 {
 	std::ostringstream output;
 	output << "answer help music";
@@ -524,7 +524,7 @@ CommandResult ServerBob::helpMusicCommand(ServerConnection *connection,
 	return CommandResult();
 }
 
-CommandResult ServerBob::pingCommand(ServerConnection *connection, User *sender,
+CommandResult ServerBob::pingCommand(ServerConnection *connection, std::shared_ptr<User> sender,
 	const std::string& /*message*/, const std::string &/*rest*/)
 {
 	connection->sendCommand(sender, "pong");
@@ -532,7 +532,7 @@ CommandResult ServerBob::pingCommand(ServerConnection *connection, User *sender,
 }
 
 CommandResult ServerBob::listClientsCommand(ServerConnection *connection,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	std::vector<anyID> clientIds;
 	std::vector<std::string> clientNames;
@@ -568,7 +568,7 @@ CommandResult ServerBob::listClientsCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::listChannelsCommand(ServerConnection *connection,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/)
 {
 	std::vector<uint64> channelIds;
 	std::vector<std::string> channelNames;
@@ -604,14 +604,14 @@ CommandResult ServerBob::listChannelsCommand(ServerConnection *connection,
 }
 
 CommandResult ServerBob::callbackCommand(ServerConnection * /*connection*/,
-	User *sender, const std::string &/*message*/, const std::string &/*rest*/, bool on)
+	std::shared_ptr<User> sender, const std::string &/*message*/, const std::string &/*rest*/, bool on)
 {
 	sender->setEnableCallbacks(on);
 	return CommandResult();
 }
 
 CommandResult ServerBob::exitCommand(ServerConnection* /*connection*/,
-	User * /*sender*/, const std::string& /*message*/, const std::string &/*rest*/)
+	std::shared_ptr<User>  /*sender*/, const std::string& /*message*/, const std::string &/*rest*/)
 {
 	close();
 	return CommandResult();

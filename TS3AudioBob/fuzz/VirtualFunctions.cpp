@@ -18,6 +18,8 @@ static const char *OTHER_UID = "own_uid";
 static const char *OWN_NAME = "own_name";
 static const char *OWN_UID = "own_uid";
 
+std::queue<std::function<void()> > commandQueue;
+
 unsigned int logMessage(const char *message, LogLevel severity, const char *channel, uint64 /*id*/)
 {
 	std::cout << Utils::format("Log: [{0}] {1} {2}\n", channel, severity, message);
@@ -83,13 +85,13 @@ void getResourcesPath(char *path, size_t maxLen)
 
 unsigned int requestClientDBIDfromUID(uint64 serverConnectionHandlerID, const char *clientUniqueIdentifier, const char * /*returnCode*/)
 {
-	ts3plugin_onClientDBIDfromUIDEvent(serverConnectionHandlerID, clientUniqueIdentifier, OTHER_DBID);
+	commandQueue.push(std::bind(ts3plugin_onClientDBIDfromUIDEvent, serverConnectionHandlerID, clientUniqueIdentifier, OTHER_DBID));
 	return 0;
 }
 
 unsigned int requestServerGroupsByClientID(uint64 serverConnectionHandlerID, uint64 clientDatabaseID, const char * /*returnCode*/)
 {
-	ts3plugin_onServerGroupByClientIDEvent(serverConnectionHandlerID, OTHER_NAME, ADMIN_GROUP_ID, clientDatabaseID);
+	commandQueue.push(std::bind(ts3plugin_onServerGroupByClientIDEvent, serverConnectionHandlerID, OTHER_NAME, ADMIN_GROUP_ID, clientDatabaseID));
 	return 0;
 }
 
@@ -118,7 +120,7 @@ unsigned int getChannelVariableAsString(uint64 /*serverConnectionHandlerID*/, ui
 {
 	if (flag == CHANNEL_NAME)
 	{
-		*result = static_cast<char*>(std::malloc(strlen(MY_CHANNEL_NAME) * sizeof(char)));
+		*result = static_cast<char*>(std::malloc(strlen(MY_CHANNEL_NAME) + 1));
 		std::memcpy(*result, MY_CHANNEL_NAME, strlen(MY_CHANNEL_NAME) + 1);
 		return 0;
 	}
@@ -141,12 +143,12 @@ unsigned int getClientVariableAsString(uint64 /*serverConnectionHandlerID*/, any
 	{
 		if (clientID == OWN_ID)
 		{
-			*result = static_cast<char*>(std::malloc(strlen(OWN_NAME) * sizeof(char)));
+			*result = static_cast<char*>(std::malloc(strlen(OWN_NAME) + 1));
 			std::memcpy(*result, OWN_NAME, strlen(OWN_NAME) + 1);
 		}
 		else if (clientID == OTHER_ID)
 		{
-			*result = static_cast<char*>(std::malloc(strlen(OTHER_NAME) * sizeof(char)));
+			*result = static_cast<char*>(std::malloc(strlen(OTHER_NAME) + 1));
 			std::memcpy(*result, OTHER_NAME, strlen(OTHER_NAME) + 1);
 		}
 		else
@@ -157,12 +159,12 @@ unsigned int getClientVariableAsString(uint64 /*serverConnectionHandlerID*/, any
 	{
 		if (clientID == OWN_ID)
 		{
-			*result = static_cast<char*>(std::malloc(strlen(OWN_UID) * sizeof(char)));
+			*result = static_cast<char*>(std::malloc(strlen(OWN_UID) + 1));
 			std::memcpy(*result, OWN_UID, strlen(OWN_UID) + 1);
 		}
 		else if (clientID == OTHER_ID)
 		{
-			*result = static_cast<char*>(std::malloc(strlen(OTHER_UID) * sizeof(char)));
+			*result = static_cast<char*>(std::malloc(strlen(OTHER_UID) + 1));
 			std::memcpy(*result, OTHER_UID, strlen(OTHER_UID) + 1);
 		}
 		else
@@ -179,7 +181,7 @@ unsigned int getErrorMessage(unsigned int errorCode, char **result)
 {
 	static const char *ERROR_MESSAGE = "error_message";
 	std::cout << Utils::format("Asked error message for {0}\n", errorCode);
-	*result = static_cast<char*>(std::malloc(strlen(ERROR_MESSAGE) * sizeof(char)));
+	*result = static_cast<char*>(std::malloc(strlen(ERROR_MESSAGE) + 1));
 	std::memcpy(*result, ERROR_MESSAGE, strlen(ERROR_MESSAGE) + 1);
 	return 0;
 }
@@ -212,9 +214,23 @@ void initTS3Plugin()
 	ts3plugin_init();
 }
 
+void shutdownTS3Plugin()
+{
+	ts3plugin_shutdown();
+}
+
 void sendMessage(const char *message)
 {
 	// Send message from 1 to 2
 	std::cout << Utils::format("Writing message: {0}\n", message);
 	ts3plugin_onTextMessageEvent(SERVER_ID, TextMessageTarget_CLIENT, OWN_ID, OTHER_ID, nullptr, OWN_UID, message, false);
+}
+
+void workCommandQueue()
+{
+	while (!commandQueue.empty())
+	{
+		commandQueue.front()();
+		commandQueue.pop();
+	}
 }

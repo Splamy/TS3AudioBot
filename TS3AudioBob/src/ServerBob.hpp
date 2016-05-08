@@ -41,17 +41,17 @@ public:
 	ServerConnection* getServer(uint64_t handlerId);
 	void handleCommand(uint64_t handlerId, anyID sender, const char *uniqueId,
 		const std::string &message);
-	void executeCommand(ServerConnection *connection, User *sender,
+	void executeCommand(ServerConnection *connection, std::shared_ptr<User> sender,
 		const std::string &message);
 
 private:
 	template <class... Args>
 	void addCommand(const std::string &command, CommandResult (ServerBob::*fun)
-		(ServerConnection*, User*, const std::string&, const std::string&, Args...),
+		(ServerConnection*, std::shared_ptr<User>, const std::string&, const std::string&, Args...),
 		const std::string &description = "", bool displayDescription = true);
 	template <class... Args>
 	void addCommand(const std::string &command, std::function<CommandResult
-		(ServerConnection*, User*, const std::string&, const std::string&, Args...)> fun,
+		(ServerConnection*, std::shared_ptr<User>, const std::string&, const std::string&, Args...)> fun,
 		const std::string &description = "", bool displayDescription = true);
 
 	void setAudio(bool on);
@@ -59,35 +59,35 @@ private:
 	std::string combineHelp(std::vector<std::pair<std::string, std::string> >
 		descriptions);
 	void close();
-	void unknownCommand(ServerConnection *connection, User *sender, const std::string &message);
+	void unknownCommand(ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message);
 
 	// Commands
-	CommandResult errorCommand         (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, std::string s);
-	CommandResult audioCommand         (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, bool on);
-	CommandResult musicStartCommand    (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, std::string address);
-	CommandResult musicVolumeCommand   (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, double volume);
-	CommandResult musicSeekCommand     (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, double position);
-	CommandResult musicLoopCommand     (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, bool on);
-	CommandResult musicStopCommand     (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult musicPauseCommand    (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult musicUnpauseCommand  (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult musicAddressCommand  (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult qualityCommand       (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, bool on);
-	CommandResult whisperClientAddCommand    (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, int id);
-	CommandResult whisperClientRemoveCommand (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, int id);
-	CommandResult whisperChannelAddCommand   (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, int id);
-	CommandResult whisperChannelRemoveCommand(ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, int id);
-	CommandResult whisperClearCommand  (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult statusAudioCommand   (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult statusWhisperCommand (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult statusMusicCommand   (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult helpCommand          (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult helpMusicCommand     (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult pingCommand          (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult listClientsCommand   (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult listChannelsCommand  (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
-	CommandResult callbackCommand      (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest, bool on);
-	CommandResult exitCommand          (ServerConnection *connection, User *sender, const std::string &message, const std::string &rest);
+	CommandResult errorCommand         (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, std::string s);
+	CommandResult audioCommand         (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, bool on);
+	CommandResult musicStartCommand    (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, std::string address);
+	CommandResult musicVolumeCommand   (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, double volume);
+	CommandResult musicSeekCommand     (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, double position);
+	CommandResult musicLoopCommand     (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, bool on);
+	CommandResult musicStopCommand     (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult musicPauseCommand    (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult musicUnpauseCommand  (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult musicAddressCommand  (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult qualityCommand       (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, bool on);
+	CommandResult whisperClientAddCommand    (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, int id);
+	CommandResult whisperClientRemoveCommand (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, int id);
+	CommandResult whisperChannelAddCommand   (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, int id);
+	CommandResult whisperChannelRemoveCommand(ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, int id);
+	CommandResult whisperClearCommand  (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult statusAudioCommand   (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult statusWhisperCommand (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult statusMusicCommand   (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult helpCommand          (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult helpMusicCommand     (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult pingCommand          (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult listClientsCommand   (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult listChannelsCommand  (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
+	CommandResult callbackCommand      (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest, bool on);
+	CommandResult exitCommand          (ServerConnection *connection, std::shared_ptr<User> sender, const std::string &message, const std::string &rest);
 };
 
 #endif

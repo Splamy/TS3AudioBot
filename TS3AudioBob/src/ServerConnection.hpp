@@ -19,9 +19,9 @@ private:
 	int channelQuality;
 	bool hasGoodQuality;
 	bool audioOn;
-	std::vector<User> users;
+	std::vector<std::shared_ptr<User> > users;
 	std::vector<uint64> whisperChannels;
-	std::vector<const User*> whisperUsers;
+	std::vector<std::shared_ptr<User> > whisperUsers;
 
 	// Audio player
 	std::unique_ptr<audio::Player> audioPlayer;
@@ -45,17 +45,17 @@ public:
 	bool shouldWhisper() const;
 	void setAudio(bool on);
 	void setQuality(bool on);
-	std::vector<User*> getUsers(const std::string &uniqueId);
-	std::vector<User*> getUsers(uint64 dbId);
-	User* getUser(anyID userId);
+	std::vector<std::shared_ptr<User> > getUsers(const std::string &uniqueId);
+	std::vector<std::shared_ptr<User> > getUsers(uint64 dbId);
+	std::shared_ptr<User> getUser(anyID userId);
 	// TODO remove users again
 	void addUser(anyID id, const std::string &uniqueId);
-	void addWhisperUser(const User *user);
+	void addWhisperUser(std::shared_ptr<User> user);
 	void addWhisperChannel(uint64 channel);
-	bool removeWhisperUser(const User *user);
+	bool removeWhisperUser(std::shared_ptr<User> user);
 	bool removeWhisperChannel(uint64 channel);
 	void clearWhisper();
-	const std::vector<const User*>* getWhisperUsers() const;
+	const std::vector<std::shared_ptr<User> >* getWhisperUsers() const;
 	const std::vector<uint64>* getWhisperChannels() const;
 
 	/** Sets the volume of the audio player.
@@ -87,7 +87,7 @@ public:
 	void close(const std::string &quitMessage);
 
 	template <class... Args>
-	void sendCommand(const User *user, const std::string &message, Args... args)
+	void sendCommand(std::shared_ptr<User> user, const std::string &message, Args... args)
 	{
 		std::string msg = Utils::format(message, args...);
 		// Crop message if it's longer than 1024 bytes

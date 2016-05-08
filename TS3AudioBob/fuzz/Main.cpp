@@ -22,7 +22,12 @@ int main()
 	// Read commands
 	std::string cmd;
 	while (std::getline(std::cin, cmd))
+	{
+		workCommandQueue();
 		sendMessage(cmd.c_str());
+	}
+
+	shutdownTS3Plugin();
 
 	return 0;
 }

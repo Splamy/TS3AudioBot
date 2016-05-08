@@ -141,8 +141,8 @@ public:
 	 *  This has to be done before creating a player object.
 	 */
 	static void init();
-	static const std::string& getReadErrorDescription(ReadError error);
-	static const std::string& getDecodeErrorDescription(DecodeError error);
+	static const std::string* getReadErrorDescription(ReadError error);
+	static const std::string* getDecodeErrorDescription(DecodeError error);
 
 	Player(std::string streamAddress);
 	~Player();

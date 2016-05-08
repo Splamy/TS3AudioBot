@@ -1,6 +1,7 @@
 #ifndef COMMANDS_ABSTRACT_COMMAND_HPP
 #define COMMANDS_ABSTRACT_COMMAND_HPP
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -43,7 +44,7 @@ public:
 	 *  The message is the part of the input that should be parsed and used by
 	 *  this command. completeMessage contains the original input.
 	 */
-	virtual CommandResult operator()(ServerConnection *connection, User *sender,
+	virtual CommandResult operator()(ServerConnection *connection, std::shared_ptr<User> sender,
 		const std::string &completeMessage, const std::string &message) const = 0;
 	virtual ~AbstractCommand() {}
 };

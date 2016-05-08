@@ -80,7 +80,7 @@ std::vector<std::pair<std::string, std::string> >
 }
 
 CommandResult CommandGroup::operator()(ServerConnection *connection,
-	User *sender, const std::string &completeMessage, const std::string &message) const
+	std::shared_ptr<User> sender, const std::string &completeMessage, const std::string &message) const
 {
 	if (subCommands.empty())
 		// Useless command group

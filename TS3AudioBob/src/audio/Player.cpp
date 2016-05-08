@@ -66,14 +66,14 @@ void Player::init()
 	}
 }
 
-const std::string& Player::getReadErrorDescription(ReadError error)
+const std::string* Player::getReadErrorDescription(ReadError error)
 {
-	return readErrorDescription[error];
+	return &readErrorDescription[error];
 }
 
-const std::string& Player::getDecodeErrorDescription(DecodeError error)
+const std::string* Player::getDecodeErrorDescription(DecodeError error)
 {
-	return decodeErrorDescription[error];
+	return &decodeErrorDescription[error];
 }
 
 Player::Player(std::string streamAddress) :
@@ -93,10 +93,10 @@ Player::Player(std::string streamAddress) :
 		fputs(message.c_str(), stderr);
 	});
 	setOnReadError([](Player*, ReadError error) {
-		fprintf(stderr, "A read error occured: %s\n", getReadErrorDescription(error).c_str());
+		fprintf(stderr, "A read error occured: %s\n", getReadErrorDescription(error)->c_str());
 	});
 	setOnDecodeError([](Player*, DecodeError error) {
-		fprintf(stderr, "A decode error occured: %s\n", getDecodeErrorDescription(error).c_str());
+		fprintf(stderr, "A decode error occured: %s\n", getDecodeErrorDescription(error)->c_str());
 	});
 	setOnFinished([](Player*) {});
 	setOnStart([](Player*) {});

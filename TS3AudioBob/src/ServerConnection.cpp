@@ -8,12 +8,12 @@
 namespace
 {
 // Simple functions used to pass to standard functions
-static anyID getUserId(const User *u)
+static anyID getUserId(std::shared_ptr<User> u)
 {
 	return u->getId();
 }
 
-static bool userIdEqual(anyID id, const User *u)
+static bool userIdEqual(anyID id, std::shared_ptr<User> u)
 {
 	return id == u->getId();
 }
@@ -146,47 +146,47 @@ void ServerConnection::setQuality(bool on)
 	}
 }
 
-std::vector<User*> ServerConnection::getUsers(const std::string &uniqueId)
+std::vector<std::shared_ptr<User> > ServerConnection::getUsers(const std::string &uniqueId)
 {
-	std::vector<User*> result;
-	for (User &user : users)
+	std::vector<std::shared_ptr<User> > result;
+	for (std::shared_ptr<User> user : users)
 	{
-		if (user.getUniqueId() == uniqueId)
-			result.push_back(&user);
+		if (user->getUniqueId() == uniqueId)
+			result.push_back(user);
 	}
 	return result;
 }
 
-std::vector<User*> ServerConnection::getUsers(uint64 dbId)
+std::vector<std::shared_ptr<User> > ServerConnection::getUsers(uint64 dbId)
 {
-	std::vector<User*> result;
-	for (User &user : users)
+	std::vector<std::shared_ptr<User> > result;
+	for (std::shared_ptr<User> user : users)
 	{
-		if (user.hasDbId() && user.getDbId() == dbId)
-			result.push_back(&user);
+		if (user->hasDbId() && user->getDbId() == dbId)
+			result.push_back(user);
 	}
 	return result;
 }
 
-User* ServerConnection::getUser(anyID userId)
+std::shared_ptr<User> ServerConnection::getUser(anyID userId)
 {
-	for (User &user : users)
+	for (std::shared_ptr<User> user : users)
 	{
-		if (user.getId() == userId)
-			return &user;
+		if (user->getId() == userId)
+			return user;
 	}
 	return nullptr;
 }
 
 void ServerConnection::addUser(anyID userId, const std::string &uniqueId)
 {
-	users.emplace_back(this, tsApi, userId, uniqueId);
+	users.push_back(std::make_shared<User>(this, tsApi, userId, uniqueId));
 }
 
-void ServerConnection::addWhisperUser(const User *user)
+void ServerConnection::addWhisperUser(std::shared_ptr<User> user)
 {
 	// Check if the user is already in the whisper list
-	std::vector<const User*>::iterator it = std::find_if(whisperUsers.begin(),
+	std::vector<std::shared_ptr<User>>::iterator it = std::find_if(whisperUsers.begin(),
 		whisperUsers.end(), std::bind(userIdEqual, user->getId(),
 		std::placeholders::_1));
 	if (it == whisperUsers.end())
@@ -209,9 +209,9 @@ void ServerConnection::addWhisperChannel(uint64 channel)
 	}
 }
 
-bool ServerConnection::removeWhisperUser(const User *user)
+bool ServerConnection::removeWhisperUser(std::shared_ptr<User> user)
 {
-	std::vector<const User*>::iterator it = std::find_if(whisperUsers.begin(),
+	std::vector<std::shared_ptr<User>>::iterator it = std::find_if(whisperUsers.begin(),
 		whisperUsers.end(), std::bind(userIdEqual, user->getId(),
 		std::placeholders::_1));
 	if (it == whisperUsers.end())
@@ -239,7 +239,7 @@ void ServerConnection::clearWhisper()
 	setAudio(audioOn);
 }
 
-const std::vector<const User*>* ServerConnection::getWhisperUsers() const
+const std::vector<std::shared_ptr<User>>* ServerConnection::getWhisperUsers() const
 {
 	return &whisperUsers;
 }
@@ -398,36 +398,36 @@ void ServerConnection::onLog(audio::Player*, const std::string &message)
 
 void ServerConnection::onReadError(audio::Player*, audio::Player::ReadError error)
 {
-	const std::string &message = audio::Player::getReadErrorDescription(error);
-	tsApi->log("AudioPlayer-ReadError: {0}", message);
+	const std::string *message = audio::Player::getReadErrorDescription(error);
+	tsApi->log("AudioPlayer-ReadError: {0}", *message);
 
 	// Send callback
-	for (User &user : users)
+	for (std::shared_ptr<User> user : users)
 	{
-		if (user.getEnableCallbacks())
-			sendCommand(&user, "callback musicreaderror\ndescription {0}", message);
+		if (user->getEnableCallbacks())
+			sendCommand(user, "callback musicreaderror\ndescription {0}", message);
 	}
 }
 
 void ServerConnection::onDecodeError(audio::Player*, audio::Player::DecodeError error)
 {
-	const std::string &message = audio::Player::getDecodeErrorDescription(error);
-	tsApi->log("AudioPlayer-DecodeError: {0}", message);
+	const std::string *message = audio::Player::getDecodeErrorDescription(error);
+	tsApi->log("AudioPlayer-DecodeError: {0}", *message);
 
 	// Send callback
-	for (User &user : users)
+	for (std::shared_ptr<User> user : users)
 	{
-		if (user.getEnableCallbacks())
-			sendCommand(&user, "callback musicdecodeerror\ndescription {0}", message);
+		if (user->getEnableCallbacks())
+			sendCommand(user, "callback musicdecodeerror\ndescription {0}", message);
 	}
 }
 
 void ServerConnection::onFinished(audio::Player*)
 {
 	// Send callback
-	for (User &user : users)
+	for (std::shared_ptr<User> user : users)
 	{
-		if (user.getEnableCallbacks())
-			sendCommand(&user, "callback musicfinished");
+		if (user->getEnableCallbacks())
+			sendCommand(user, "callback musicfinished");
 	}
 }

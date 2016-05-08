@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 #include <sstream>
 
 //#define COMMAND_DEBUG
@@ -57,7 +58,7 @@ class Command : public AbstractCommand
 {
 public:
 	typedef std::function<CommandResult(ServerConnection *connection,
-		User *sender, const std::string &message, const std::string &rest, Args...)> FuncType;
+		std::shared_ptr<User> sender, const std::string &message, const std::string &rest, Args...)> FuncType;
 
 private:
 	/** The name of this command, e.g. 'status'. */
@@ -140,7 +141,7 @@ public:
 		return result;
 	}
 
-	CommandResult operator()(ServerConnection *connection, User *sender,
+	CommandResult operator()(ServerConnection *connection, std::shared_ptr<User> sender,
 		const std::string &completeMessage, const std::string &message) const override
 	{
 		// Bind already known arguments

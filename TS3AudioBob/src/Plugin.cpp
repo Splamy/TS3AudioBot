@@ -86,6 +86,7 @@ int ts3plugin_init()
 		std::ifstream configFile(file);
 		if (configFile)
 		{
+			tsApi->log("Found config file at {0}", file);
 			// Read the config file to get the admin group id
 			std::string line;
 			while (std::getline(configFile, line))
@@ -110,9 +111,7 @@ int ts3plugin_init()
 				tsApi->log("Couldn't find admin group id field");
 			break;
 		} else
-		{
 			tsApi->log("Couldn't find config file at {0}", file);
-		}
 	}
 	if (!serverBob)
 	{
