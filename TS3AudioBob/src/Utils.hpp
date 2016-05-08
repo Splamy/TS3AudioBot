@@ -221,12 +221,12 @@ namespace Utils
 		{
 			in >> t;
 			if (!in && !in.eof())
-				return;
+				return result;
 			result.push_back(t);
 			// Read the comma or other separating character
 			in >> c;
 			if (!in && !in.eof())
-				return;
+				return result;
 		}
 		*success = true;
 		return result;

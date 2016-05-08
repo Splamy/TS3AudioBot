@@ -5,6 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
 option(BUILD_TESTS "Build unit tests" OFF)
 option(BUILD_FUZZ "Build fuzzying binary" OFF)
+option(USE_ASAN "Build with Leak/Address sanitizer" OFF)
 
 if(BUILD_TESTS)
 	enable_testing()
@@ -15,18 +16,11 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-option(CLANG "Use clang/llvm for compilation (if not on Windows)." OFF)
-
-if(MSVC)
-	set(CLANG OFF)
+if(UNIX AND NOT APPLE AND USE_ASAN)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
 endif()
 
-if(CLANG)
-	set(CMAKE_CXX_COMPILER "clang++")
-	set(CMAKE_CC_COMPILER  "clang")
-endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++11 -fPIC -fvisibility=hidden -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfatal-errors -std=c++11 -fPIC -fvisibility=hidden -pthread")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lpthread")
 set(CMAKE_EXECUTABLE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lpthread")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
@@ -44,6 +38,10 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 
 target_link_libraries(ts3audiobob ${FFMPEG_LIBRARIES})
 
+if(UNIX AND NOT APPLE AND USE_ASAN)
+	target_link_libraries(ts3audiobob "-fsanitize=address")
+endif()
+
 ## Test
 if(BUILD_TESTS)
 	file(GLOB_RECURSE TEST_SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/test/*.cpp")
@@ -58,6 +56,10 @@ if(BUILD_TESTS)
 			${CPPUNIT_LIBRARY})
 
 		add_test(UnitTests test)
+
+		if(UNIX AND NOT APPLE AND USE_ASAN)
+			target_link_libraries(ts3audiobobtest "-fsanitize=address")
+		endif()
 	endif()
 endif()
 
@@ -70,4 +72,8 @@ if(BUILD_FUZZ)
 	add_executable(ts3audiobobfuzz ${FUZZ_SOURCES})
 	target_link_libraries(ts3audiobobfuzz
 		${FFMPEG_LIBRARIES})
+
+	if(UNIX AND NOT APPLE AND USE_ASAN)
+		target_link_libraries(ts3audiobobfuzz "-fsanitize=address")
+	endif()
 endif()
