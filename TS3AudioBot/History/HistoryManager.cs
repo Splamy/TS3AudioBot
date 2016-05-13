@@ -62,9 +62,20 @@ namespace TS3AudioBot.History
 			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
 		}
 
-		public AudioLogEntry GetEntryById(uint id)
+		public AudioLogEntry GetEntryById(uint id) => historyFile.GetEntryById(id);
+
+		public string RemoveEntryById(uint id)
 		{
-			return historyFile.GetEntryById(id);
+			try { historyFile.LogEntryRemove(id); return null; }
+			catch (ArgumentOutOfRangeException) { return "Id not found"; }
+		}
+
+		public string RenameEntryById(uint id, string newName)
+		{
+			if (string.IsNullOrWhiteSpace(newName))
+				return "The new name must not be null, empty or only whitespaces";
+			try { historyFile.LogEntryRemove(id); return null; }
+			catch (ArgumentOutOfRangeException) { return "Id not found"; }
 		}
 
 		public void Dispose()

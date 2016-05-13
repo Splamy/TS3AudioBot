@@ -218,11 +218,12 @@ namespace TS3AudioBot
 			}
 
 			var isAdmin = new Lazy<bool>(() => HasInvokerAdminRights(textMessage));
+			var execInfo = new ExecutionInformation(session, textMessage, isAdmin);
 
 			// check if the user has an open request
 			if (session.ResponseProcessor != null)
 			{
-				if (session.ResponseProcessor(session, textMessage, isAdmin))
+				if (session.ResponseProcessor(execInfo))
 				{
 					session.ClearResponse();
 					return;
@@ -237,17 +238,11 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				var info = new ExecutionInformation
-				{
-					Session = session,
-					TextMessage = textMessage,
-					IsAdmin = isAdmin
-				};
 				var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
 
 				try
 				{
-					var res = command.Execute(info, Enumerable.Empty<ICommand>(),
+					var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
 						new[] { CommandResultType.String, CommandResultType.Empty });
 					if (res.ResultType == CommandResultType.String)
 					{
@@ -416,6 +411,13 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Admin, "history delete", "<id> Removes the entry with <id> from the history")]
+		public string CommandHistoryDelete(ExecutionInformation info, uint id)
+		{
+			info.Session.SetResponse(ResponseHistoryDelete, id);
+			return $"Do you really want to delete the Entry with the id {id} !(yes|no)";
+		}
+
 		[Command(Private, "history from", "Gets the last <count> songs from the user with the given <user-dbid>")]
 		[RequiredParameters(1)]
 		public string CommandHistoryFrom(ExecutionInformation info, uint userDbId, int? amount)
@@ -474,7 +476,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Private, "history play", "Playes the song with <id>")]
+		[Command(Private, "history play", "<id> Playes the song with <id>")]
 		public string CommandHistoryPlay(ExecutionInformation info, uint id)
 		{
 			var ale = HistoryManager.GetEntryById(id);
@@ -976,40 +978,64 @@ namespace TS3AudioBot
 
 		#region RESPONSES
 
-		private bool ResponseVolume(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
+		private bool ResponseVolume(ExecutionInformation info)
 		{
-			Answer answer = TextUtil.GetAnswer(tm.Message);
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (isAdmin.Value)
+				if (info.IsAdmin.Value)
 				{
-					if (!(session.ResponseData is int))
+					var respInt = info.Session.ResponseData as int?;
+					if (respInt.HasValue)
 					{
 						Log.Write(Log.Level.Error, "responseData is not an int.");
 						return true;
 					}
-					AudioFramework.Volume = (int)session.ResponseData;
+					AudioFramework.Volume = respInt.Value;
 				}
 				else
 				{
-					session.Write("Command can only be answered by an admin.");
+					info.Session.Write("Command can only be answered by an admin.");
 				}
 			}
 			return answer != Answer.Unknown;
 		}
 
-		private bool ResponseQuit(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
+		private bool ResponseQuit(ExecutionInformation info)
 		{
-			Answer answer = TextUtil.GetAnswer(tm.Message);
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (isAdmin.Value)
+				if (info.IsAdmin.Value)
 				{
-					CommandQuitForce(new ExecutionInformation() { Session = session, TextMessage = tm, IsAdmin = isAdmin });
+					CommandQuitForce(info);
 				}
 				else
 				{
-					session.Write("Command can only be answered by an admin.");
+					info.Session.Write("Command can only be answered by an admin.");
+				}
+			}
+			return answer != Answer.Unknown;
+		}
+
+		private bool ResponseHistoryDelete(ExecutionInformation info)
+		{
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
+			if (answer == Answer.Yes)
+			{
+				if (info.IsAdmin.Value)
+				{
+					var respInt = info.Session.ResponseData as uint?;
+					if (respInt.HasValue)
+					{
+						Log.Write(Log.Level.Error, "responseData is not an uint.");
+						return true;
+					}
+					HistoryManager.RemoveEntryById(respInt.Value);
+				}
+				else
+				{
+					info.Session.Write("Command can only be answered by an admin.");
 				}
 			}
 			return answer != Answer.Unknown;

@@ -36,14 +36,12 @@ namespace TS3AudioBot.ResourceFactories
 				return false;
 
 			return AudioType == other.AudioType
-				&& ResourceTitle == other.ResourceTitle
 				&& ResourceId == other.ResourceId;
 		}
 
 		public override int GetHashCode()
 		{
 			int hash = 0x7FFFF + (int)AudioType;
-			hash = (hash * 0x1FFFF) + ResourceTitle.GetHashCode();
 			hash = (hash * 0x1FFFF) + ResourceId.GetHashCode();
 			return hash;
 		}

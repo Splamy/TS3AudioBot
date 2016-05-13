@@ -3,7 +3,7 @@ namespace TS3AudioBot
 	using System;
 	using TS3Query;
 	using TS3Query.Messages;
-	using Response = System.Func<BotSession, TS3Query.Messages.TextMessage, System.Lazy<bool>, bool>;
+	using Response = System.Func<CommandSystem.ExecutionInformation, bool>;
 
 	public abstract class BotSession : MarshalByRefObject
 	{

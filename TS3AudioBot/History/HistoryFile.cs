@@ -9,7 +9,7 @@ namespace TS3AudioBot.History
 	using Algorithm;
 	using Helper;
 	using ResourceFactories;
-	
+
 	public class HistoryFile : IDisposable
 	{
 		private IDictionary<string, uint> resIdToId;
@@ -41,6 +41,9 @@ namespace TS3AudioBot.History
 
 		public void OpenFile(string path)
 		{
+			if (path == null)
+				throw new ArgumentNullException(nameof(path));
+
 			CloseFile();
 			Clear();
 
@@ -120,6 +123,9 @@ namespace TS3AudioBot.History
 
 		public void Store(PlayData playData)
 		{
+			if (playData == null)
+				throw new ArgumentNullException(nameof(playData));
+
 			uint? index = Contains(playData.Resource);
 			if (!index.HasValue)
 			{
@@ -134,11 +140,12 @@ namespace TS3AudioBot.History
 			}
 			else
 			{
-				UpdateLogEntry(index.Value, playData);
+				var ale = GetEntryById(index.Value);
+				LogEntryPlay(ale);
 			}
 		}
 
-		private uint? Contains(AudioResource resource)
+		public uint? Contains(AudioResource resource)
 		{
 			uint rId;
 			if (resIdToId.TryGetValue(resource.UniqueId, out rId))
@@ -216,6 +223,54 @@ namespace TS3AudioBot.History
 			return result;
 		}
 
+		// User features
+
+		/// <summary>Increases the playcount and updates the last playtime.</summary>
+		/// <param name="id">The id of the AudioLogEntry to update.</param>
+		/// <param name="flush">True when the changes should be applied directly to the file.
+		/// False to write it manually later with <see cref="ReWriteToFile(AudioLogEntry)"/></param>
+		public void LogEntryPlay(AudioLogEntry ale, bool flush = true)
+		{
+			// update the playtime
+			timeFilter.Remove(ale.Timestamp);
+			ale.Timestamp = Util.GetNow();
+			timeFilter.Add(ale.Timestamp, ale);
+
+			// update the playcount
+			ale.PlayCount++;
+
+			if (flush) ReWriteToFile(ale);
+		}
+
+		/// <summary>Sets the name of a AudioLogEntry.</summary>
+		/// <param name="id">The id of the AudioLogEntry to rename.</param>
+		/// <param name="name">The new name for the AudioLogEntry.</param>
+		/// <param name="flush">True when the changes should be applied directly to the file.
+		/// False to write it manually later with <see cref="ReWriteToFile(AudioLogEntry)"/></param>
+		/// <exception cref="ArgumentNullException">When the name is null, empty or only whitspaces</exception>
+		public void LogEntryRename(AudioLogEntry ale, string newName, bool flush = true)
+		{
+			if (string.IsNullOrWhiteSpace(newName))
+				throw new ArgumentNullException(nameof(newName));
+
+			// update the name
+			ale.ResourceTitle = newName;
+
+			if (flush) ReWriteToFile(ale);
+		}
+
+		/// <summary>Removes the AudioLogEntry from the memory index list and file.</summary>
+		/// <param name="id">The id of the AudioLogEntry to delete.</param>
+		public void LogEntryRemove(AudioLogEntry ale)
+		{
+			if (ale == null)
+				throw new ArgumentNullException(nameof(ale));
+
+			RemoveFromFile(ale);
+			RemoveFromMemoryIndex(ale);
+		}
+
+		// Internal features
 
 		private AudioLogEntry CreateLogEntry(PlayData playData)
 		{
@@ -234,29 +289,12 @@ namespace TS3AudioBot.History
 			return ale;
 		}
 
-		private void UpdateLogEntry(uint index, PlayData playData)
-		{
-			AudioLogEntry ale = idFilter[index];
-
-			// update the playtime
-			timeFilter.Remove(ale.Timestamp);
-			ale.Timestamp = Util.GetNow();
-			timeFilter.Add(ale.Timestamp, ale);
-
-			// update the playcount
-			ale.PlayCount++;
-
-			// update title
-			ale.ResourceTitle = playData.Resource.ResourceTitle;
-
-			ReWriteToFile(ale);
-		}
-
 		private void AppendToFile(AudioLogEntry logEntry)
 		{
 			logEntry.FilePosIndex = fileStream.Position;
 
-			var strBytes = FileEncoding.GetBytes(logEntry.ToFileString());
+			var fileString = logEntry.ToFileString();
+			var strBytes = FileEncoding.GetBytes(fileString);
 			fileStream.Write(strBytes, 0, strBytes.Length);
 			fileStream.Write(NewLineArray, 0, NewLineArray.Length);
 			fileStream.Flush(true);
@@ -277,10 +315,7 @@ namespace TS3AudioBot.History
 			{
 				fileStream.Write(newLine, 0, newLine.Length);
 				if (newLine.Length < curLine.Length)
-				{
-					byte[] filler = Enumerable.Repeat((byte)' ', curLine.Length - newLine.Length).ToArray();
-					fileStream.Write(filler, 0, filler.Length);
-				}
+					CleanLine(curLine.Length - newLine.Length);
 				fileStream.Seek(0, SeekOrigin.End);
 				fileStream.Flush(true);
 			}
@@ -300,6 +335,29 @@ namespace TS3AudioBot.History
 			titleFilter.Add(logEntry.ResourceTitle.ToLower(CultureInfo.InvariantCulture), logEntry);
 			AutoAdd(userIdFilter, logEntry);
 			timeFilter.Add(logEntry.Timestamp, logEntry);
+		}
+
+		private void RemoveFromFile(AudioLogEntry logEntry)
+		{
+			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
+			byte[] curLine = FileEncoding.GetBytes(fileReader.ReadLine());
+			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
+			CleanLine(curLine.Length);
+		}
+
+		private void CleanLine(int length)
+		{
+			byte[] filler = Enumerable.Repeat((byte)' ', length).ToArray();
+			fileStream.Write(filler, 0, length);
+		}
+
+		private void RemoveFromMemoryIndex(AudioLogEntry logEntry)
+		{
+			resIdToId.Remove(logEntry.UniqueId);
+			idFilter.Remove(logEntry.Id);
+			titleFilter.Remove(logEntry.ResourceTitle);
+			userIdFilter[logEntry.UserInvokeId].Remove(logEntry);
+			timeFilter.Remove(logEntry.Timestamp);
 		}
 
 		private static void AutoAdd(IDictionary<uint, IList<AudioLogEntry>> dict, AudioLogEntry value)

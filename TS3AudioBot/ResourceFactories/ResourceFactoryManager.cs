@@ -2,9 +2,8 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
-	using TS3AudioBot.Helper;
-	using TS3AudioBot.History;
+	using Helper;
+	using History;
 
 	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
 	{

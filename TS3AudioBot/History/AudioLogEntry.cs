@@ -3,7 +3,7 @@ namespace TS3AudioBot.History
 	using System;
 	using System.Globalization;
 	using System.Text;
-	using TS3AudioBot.ResourceFactories;
+	using ResourceFactories;
 
 	public class AudioLogEntry : AudioResource
 	{

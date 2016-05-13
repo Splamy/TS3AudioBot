@@ -4,7 +4,7 @@ namespace TS3AudioBot
 	using System.Collections.Generic;
 	using System.Globalization;
 	using System.Linq;
-	using TS3AudioBot.Helper;
+	using Helper;
 	using TS3Query.Messages;
 
 	public sealed class BobController : IPlayerConnection
