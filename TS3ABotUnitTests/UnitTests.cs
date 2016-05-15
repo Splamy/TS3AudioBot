@@ -80,9 +80,8 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0]);
 			Assert.AreEqual(ar2, lastXEntriesArray[1]);
-			
-			hf.LogEntryRename(ar1, "sc_ar1X");
-			hf.Store(data1);
+
+			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar1).Value), "sc_ar1X");
 
 			hf.CloseFile();
 
@@ -92,16 +91,11 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(ar2, lastXEntriesArray[0]);
 			Assert.AreEqual(ar1, lastXEntriesArray[1]);
 
-			hf.LogEntryRename(hf.Contains(ar1).Value, "sc_ar1X");
-			ar2.ResourceTitle = "me_ar2_loong1";
-			hf.Store(data2);
+			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar2).Value), "me_ar2_loong1");
 
-			hf.LogEntryRename(hf.Contains(ar1).Value, "sc_ar1X");
-			ar1.ResourceTitle = "sc_ar1X_loong1";
-			hf.Store(data1);
+			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar1).Value), "sc_ar1X_loong1");
 
-			ar2.ResourceTitle = "me_ar2_exxxxxtra_loong1";
-			hf.Store(data2);
+			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar2).Value), "me_ar2_exxxxxtra_loong1");
 
 			hf.CloseFile();
 
@@ -112,7 +106,14 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(ar2, lastXEntriesArray[1]);
 			hf.CloseFile();
 
-			// TODO: add indepth tests deleting resources
+			hf.OpenFile(testFile);
+			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar2).Value));
+
+			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
+			Assert.AreEqual(2, lastXEntriesArray.Length);
+			Assert.AreEqual(ar1, lastXEntriesArray[0]);
+			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+			hf.CloseFile();
 
 			File.Delete(testFile);
 		}

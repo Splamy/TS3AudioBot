@@ -64,18 +64,20 @@ namespace TS3AudioBot.History
 
 		public AudioLogEntry GetEntryById(uint id) => historyFile.GetEntryById(id);
 
-		public string RemoveEntryById(uint id)
+		public void RemoveEntry(AudioLogEntry ale)
 		{
-			try { historyFile.LogEntryRemove(id); return null; }
-			catch (ArgumentOutOfRangeException) { return "Id not found"; }
+			if (ale == null)
+				throw new ArgumentNullException(nameof(ale));
+			historyFile.LogEntryRemove(ale);
 		}
 
-		public string RenameEntryById(uint id, string newName)
+		public void RenameEntry(AudioLogEntry ale, string newName)
 		{
+			if (ale == null)
+				throw new ArgumentNullException(nameof(ale));
 			if (string.IsNullOrWhiteSpace(newName))
-				return "The new name must not be null, empty or only whitespaces";
-			try { historyFile.LogEntryRemove(id); return null; }
-			catch (ArgumentOutOfRangeException) { return "Id not found"; }
+				throw new ArgumentNullException(nameof(newName));
+			historyFile.LogEntryRemove(ale);
 		}
 
 		public void Dispose()
