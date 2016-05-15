@@ -11,7 +11,7 @@ namespace TS3Query
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
-	using TS3Query.Messages;
+	using Messages;
 	using KVEnu = System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>;
 
 	class TS3QueryClient : IDisposable
@@ -38,11 +38,9 @@ namespace TS3Query
 
 		// SEMI-PUBLIC PROPERTIES
 
-		public bool IsConnected { get; private set; }
+		public bool IsConnected => status == QueryClientStatus.Connected;
 		public string CurrentHost { get; private set; }
 		public int CurrentPort { get; private set; }
-
-		public IEventDispatcher EventDispatcher { get; private set; }
 
 		// CONSTANTS
 
@@ -58,9 +56,17 @@ namespace TS3Query
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
 		private StreamWriter tcpWriter;
-		private Thread readQueryThread;
+		private IEventDispatcher EventDispatcher;
 
-		private bool isQuitting;
+		enum QueryClientStatus
+		{
+			Disconnected,
+			Connecting,
+			Connected,
+			Quitting,
+		}
+		private QueryClientStatus status;
+		private bool isInQueue;
 		private readonly object lockObj = new object();
 		private Queue<WaitBlock> requestQueue = new Queue<WaitBlock>();
 
@@ -104,14 +110,15 @@ namespace TS3Query
 
 		public TS3QueryClient(EventDispatchType dispatcher)
 		{
+			status = QueryClientStatus.Disconnected;
 			tcpClient = new TcpClient();
-			IsConnected = false;
+			isInQueue = false;
 
 			switch (dispatcher)
 			{
 			case EventDispatchType.None: EventDispatcher = new NoEventDispatcher(); break;
-			case EventDispatchType.CurrentThread: throw new NotSupportedException(); //break;
-			case EventDispatchType.Manual: EventDispatcher = new ManualEventDispatcher(); break;
+			case EventDispatchType.CurrentThread: EventDispatcher = new CurrentThreadEventDisptcher(); break;
+			case EventDispatchType.DoubleThread: EventDispatcher = new DoubleThreadEventDispatcher(); break;
 			case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
 			case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
 			default: throw new NotSupportedException();
@@ -128,9 +135,9 @@ namespace TS3Query
 			if (port <= 0) throw new ArgumentOutOfRangeException(nameof(port));
 
 			if (IsConnected)
-				Quit();
+				Close();
 
-			isQuitting = false;
+			status = QueryClientStatus.Connecting;
 			CurrentHost = hostname;
 			CurrentPort = port;
 
@@ -142,24 +149,24 @@ namespace TS3Query
 			tcpReader = new StreamReader(tcpStream);
 			tcpWriter = new StreamWriter(tcpStream) { NewLine = "\n" };
 
-			IsConnected = true;
-
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
 
-			if (readQueryThread != null)
+			status = QueryClientStatus.Connected;
+		}
+
+		public void Close()
+		{
+			lock (lockObj)
 			{
-				for (int i = 0; i < 100 && readQueryThread.IsAlive; i++)
-					Thread.Sleep(1);
-				if (readQueryThread.IsAlive)
-				{
-					readQueryThread.Abort();
-					readQueryThread = null;
-				}
+				TextMessageReceivedHandler = null;
+				ClientEnterViewHandler = null;
+				ClientLeftViewHandler = null;
+
+				status = QueryClientStatus.Quitting;
+				tcpWriter.WriteLine("quit");
+				tcpWriter.Flush();
 			}
-			readQueryThread = new Thread(ReadQueryLoop);
-			readQueryThread.Name = "TS3Query MessageLoop";
-			readQueryThread.Start();
 		}
 
 		#region QUERY METHODS
@@ -178,16 +185,7 @@ namespace TS3Query
 			=> Send("clientdbedit",
 			new Parameter("cldbid", client.DatabaseId),
 			new Parameter("client_description", newDescription));
-		public void Quit()
-		{
-			lock (lockObj)
-			{
-				isQuitting = true;
-				tcpWriter.WriteLine("quit");
-				tcpWriter.Flush();
-				IsConnected = false;
-			}
-		}
+		public void Quit() => Close();
 		public WhoAmI WhoAmI()
 			=> Send<WhoAmI>("whoami").FirstOrDefault();
 		public void SendMessage(string message, ClientData client)
@@ -249,6 +247,20 @@ namespace TS3Query
 			handler = (EventHandler<T>)Delegate.Remove(handler, remove);
 		}
 
+		/// <summary>Use this method to start the event dispatcher.
+		/// Please keep in mind that this call might be blocking or non-blocking depending on the dispatch-method.
+		/// <see cref="EventDispatchType.CurrentThread"/> and <see cref="EventDispatchType.DoubleThread"/> will enter a loop and block the calling thread.
+		/// Any other method will start special subroutines and return to the caller.</summary>
+		public void EnterEventLoop()
+		{
+			if (!isInQueue)
+			{
+				isInQueue = true;
+				EventDispatcher.EnterEventLoop(ReadQueryLoop);
+			}
+			else throw new InvalidOperationException("EventLoop can only be run once until disposed.");
+		}
+
 		private void ReadQueryLoop()
 		{
 			string dataBuffer = null;
@@ -267,7 +279,7 @@ namespace TS3Query
 					// we (hopefully) only need to lock here for the dequeue
 					lock (lockObj)
 					{
-						if (isQuitting) break;
+						if (!(status == QueryClientStatus.Connected || status == QueryClientStatus.Connecting)) break;
 
 						var errorStatus = GenerateErrorStatus(message);
 						if (!errorStatus.Ok)
@@ -291,7 +303,7 @@ namespace TS3Query
 					dataBuffer = line;
 				}
 			}
-			IsConnected = false;
+			status = QueryClientStatus.Disconnected;
 		}
 
 		private void InvokeEvent(INotification notification)
@@ -486,15 +498,17 @@ namespace TS3Query
 		{
 			if (IsConnected)
 			{
-				TextMessageReceivedHandler = null;
-				ClientEnterViewHandler = null;
-				ClientLeftViewHandler = null;
+				Close();
+			}
 
-				Quit();
-
+			if (tcpReader != null)
+			{
 				tcpReader.Dispose();
 				tcpReader = null;
+			}
 
+			if (tcpClient != null)
+			{
 				tcpClient.Close();
 				tcpClient = null;
 			}

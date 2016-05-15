@@ -184,8 +184,7 @@ namespace TS3AudioBot
 		private void Run()
 		{
 			Thread.CurrentThread.Name = "Main/Eventloop";
-			var qc = QueryConnection;
-			qc.tsClient.EventDispatcher.EnterEventLoop();
+			QueryConnection.tsClient.EnterEventLoop();
 		}
 
 		#region COMMAND EXECUTING & CHAINING

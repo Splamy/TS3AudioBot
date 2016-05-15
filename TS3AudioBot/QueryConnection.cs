@@ -46,7 +46,7 @@ namespace TS3AudioBot
 			clientDbNames = new Dictionary<ulong, string>();
 
 			connectionData = qcd;
-			tsClient = new TS3QueryClient(EventDispatchType.Manual);
+			tsClient = new TS3QueryClient(EventDispatchType.CurrentThread);
 			tsClient.OnClientLeftView += ExtendedClientLeftView;
 			tsClient.OnClientEnterView += ExtendedClientEnterView;
 			tsClient.OnTextMessageReceived += ExtendedTextMessage;
