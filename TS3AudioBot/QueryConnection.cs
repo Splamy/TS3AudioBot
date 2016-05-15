@@ -75,7 +75,7 @@ namespace TS3AudioBot
 		private void Diconnect()
 		{
 			if (tsClient.IsConnected)
-				tsClient.Quit();
+				tsClient.Close();
 		}
 
 		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);

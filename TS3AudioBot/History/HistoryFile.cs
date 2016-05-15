@@ -24,9 +24,11 @@ namespace TS3AudioBot.History
 
 		private static readonly Encoding FileEncoding = Encoding.ASCII;
 		private static readonly byte[] NewLineArray = new byte[] { (byte)'\n' };
+		private FileInfo historyFile;
 		private FileStream fileStream;
 		private PositionedStreamReader fileReader;
 
+		const string VersionHeader = "VERSION-";
 		private const int HistoryManagerVersion = 1;
 
 
@@ -43,11 +45,12 @@ namespace TS3AudioBot.History
 		{
 			if (path == null)
 				throw new ArgumentNullException(nameof(path));
+			historyFile = new FileInfo(path);
 
 			CloseFile();
 			Clear();
 
-			fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+			fileStream = historyFile.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 			fileReader = new PositionedStreamReader(fileStream, FileEncoding);
 			VersionCheckAndUpgrade();
 			RestoreFromFile();
@@ -69,14 +72,11 @@ namespace TS3AudioBot.History
 
 		private void VersionCheckAndUpgrade()
 		{
-			const string VersionHeader = "VERSION-";
 			string line = fileReader.ReadLine();
 			if (line == null)
 			{
 				// fresh file
-				byte[] versionHeader = FileEncoding.GetBytes(VersionHeader + HistoryManagerVersion);
-				fileStream.Write(versionHeader, 0, versionHeader.Length);
-				fileStream.Write(NewLineArray, 0, NewLineArray.Length);
+				WriteHeader();
 				return;
 			}
 
@@ -84,6 +84,9 @@ namespace TS3AudioBot.History
 			if (!line.StartsWith(VersionHeader)
 			|| !int.TryParse(line.Substring(VersionHeader.Length), out fileVersion))
 				throw new FormatException("The history file has an invalid header.");
+
+			if (fileVersion < HistoryManagerVersion)
+				BackupFile();
 
 			switch (fileVersion)
 			{
@@ -97,7 +100,22 @@ namespace TS3AudioBot.History
 
 		public void CleanFile()
 		{
-			throw new NotImplementedException();
+			BackupFile();
+
+			fileStream.SetLength(0);
+			fileStream.Seek(0, SeekOrigin.Begin); // TODO check required ??!?
+			WriteHeader();
+
+			for (uint i = 0; i < CurrentID; i++)
+			{
+				var ale = GetEntryById(i);
+				if (ale != null)
+					AppendToFile(ale, false);
+			}
+			fileStream.Flush(true);
+
+			fileStream.Seek(0, SeekOrigin.Begin);
+			fileReader.InvalidateBuffer();
 		}
 
 		private void RestoreFromFile()
@@ -118,6 +136,25 @@ namespace TS3AudioBot.History
 				}
 				readIndex = fileReader.ReadPosition;
 			}
+		}
+
+		private void WriteHeader()
+		{
+			byte[] versionHeader = FileEncoding.GetBytes(VersionHeader + HistoryManagerVersion);
+			fileStream.Write(versionHeader, 0, versionHeader.Length);
+			fileStream.Write(NewLineArray, 0, NewLineArray.Length);
+		}
+
+		private void BackupFile()
+		{
+			int backUpNum = 0;
+			string fileName;
+			do
+			{
+				fileName = Path.Combine(historyFile.DirectoryName, historyFile.Name + "_old_" + backUpNum + historyFile.Extension);
+				backUpNum++;
+			} while (File.Exists(fileName));
+			historyFile.CopyTo(fileName);
 		}
 
 
@@ -289,7 +326,7 @@ namespace TS3AudioBot.History
 			return ale;
 		}
 
-		private void AppendToFile(AudioLogEntry logEntry)
+		private void AppendToFile(AudioLogEntry logEntry, bool flush = true)
 		{
 			logEntry.FilePosIndex = fileStream.Position;
 
@@ -297,7 +334,7 @@ namespace TS3AudioBot.History
 			var strBytes = FileEncoding.GetBytes(fileString);
 			fileStream.Write(strBytes, 0, strBytes.Length);
 			fileStream.Write(NewLineArray, 0, NewLineArray.Length);
-			fileStream.Flush(true);
+			if (flush) fileStream.Flush(true);
 		}
 
 		private void ReWriteToFile(AudioLogEntry logEntry)
@@ -317,15 +354,15 @@ namespace TS3AudioBot.History
 				if (newLine.Length < curLine.Length)
 					CleanLine(curLine.Length - newLine.Length);
 				fileStream.Seek(0, SeekOrigin.End);
-				fileStream.Flush(true);
 			}
 			else
 			{
 				byte[] filler = Enumerable.Repeat((byte)' ', curLine.Length).ToArray();
 				fileStream.Write(filler, 0, filler.Length);
 				fileStream.Seek(0, SeekOrigin.End);
-				AppendToFile(logEntry);
+				AppendToFile(logEntry, false);
 			}
+			fileStream.Flush(true);
 		}
 
 		private void AddToMemoryIndex(AudioLogEntry logEntry)
