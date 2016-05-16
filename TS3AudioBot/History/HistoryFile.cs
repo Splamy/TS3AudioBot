@@ -124,7 +124,7 @@ namespace TS3AudioBot.History
 			long readIndex = fileReader.ReadPosition;
 			while ((line = fileReader.ReadLine()) != null)
 			{
-				if (!string.IsNullOrWhiteSpace(line))
+				if (!string.IsNullOrEmpty(line) && line[0] != ' ')
 				{
 					var ale = AudioLogEntry.Parse(line, readIndex);
 					if (ale != null)

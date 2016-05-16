@@ -77,7 +77,7 @@ namespace TS3AudioBot.History
 				throw new ArgumentNullException(nameof(ale));
 			if (string.IsNullOrWhiteSpace(newName))
 				throw new ArgumentNullException(nameof(newName));
-			historyFile.LogEntryRemove(ale);
+			historyFile.LogEntryRename(ale, newName);
 		}
 
 		public void Dispose()

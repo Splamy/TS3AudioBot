@@ -152,6 +152,7 @@ namespace TS3Query
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
 
+			EventDispatcher.Init(ReadQueryLoop);
 			status = QueryClientStatus.Connected;
 		}
 
@@ -256,7 +257,7 @@ namespace TS3Query
 			if (!isInQueue)
 			{
 				isInQueue = true;
-				EventDispatcher.EnterEventLoop(ReadQueryLoop);
+				EventDispatcher.EnterEventLoop();
 			}
 			else throw new InvalidOperationException("EventLoop can only be run once until disposed.");
 		}

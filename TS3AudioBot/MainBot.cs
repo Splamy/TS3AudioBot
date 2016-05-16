@@ -723,7 +723,7 @@ namespace TS3AudioBot
 		}
 
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
-		public string CommandPrint(string[] parameter)
+		public string CommandPrint(params string[] parameter)
 		{
 			// << Desing changes expected >>
 			var strb = new StringBuilder();

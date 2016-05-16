@@ -75,30 +75,41 @@ namespace TS3ABotUnitTests
 
 			hf.CloseFile();
 
+			// store and order check
 			hf.OpenFile(testFile);
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0]);
 			Assert.AreEqual(ar2, lastXEntriesArray[1]);
 
-			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar1).Value), "sc_ar1X");
+			var ale1 = hf.GetEntryById(hf.Contains(ar1).Value);
+			hf.LogEntryRename(ale1, "sc_ar1X", false);
+			hf.LogEntryPlay(ale1);
+
 
 			hf.CloseFile();
 
+			// check entry renaming
 			hf.OpenFile(testFile);
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0]);
 			Assert.AreEqual(ar1, lastXEntriesArray[1]);
 
-			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar2).Value), "me_ar2_loong1");
+			var ale2 = hf.GetEntryById(hf.Contains(ar2).Value);
+			hf.LogEntryRename(ale2, "me_ar2_loong1");
+			hf.LogEntryPlay(ale2);
 
-			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar1).Value), "sc_ar1X_loong1");
+			ale1 = hf.GetEntryById(hf.Contains(ar1).Value);
+			hf.LogEntryRename(ale1, "sc_ar1X_loong1");
+			hf.LogEntryPlay(ale1);
 
-			hf.LogEntryRename(hf.GetEntryById(hf.Contains(ar2).Value), "me_ar2_exxxxxtra_loong1");
+			hf.LogEntryRename(ale2, "me_ar2_exxxxxtra_loong1");
+			hf.LogEntryPlay(ale2);
 
 			hf.CloseFile();
 
+			// reckeck order
 			hf.OpenFile(testFile);
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -106,13 +117,21 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(ar2, lastXEntriesArray[1]);
 			hf.CloseFile();
 
+			// delete entry 2
 			hf.OpenFile(testFile);
 			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar2).Value));
 
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
-			Assert.AreEqual(2, lastXEntriesArray.Length);
+			Assert.AreEqual(1, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0]);
-			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+			hf.CloseFile();
+
+			// delete entry 1
+			hf.OpenFile(testFile);
+			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar1).Value));
+
+			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
+			Assert.AreEqual(0, lastXEntriesArray.Length);
 			hf.CloseFile();
 
 			File.Delete(testFile);
