@@ -10,8 +10,8 @@ namespace TS3AudioBot.History
 		private const int TS3MAXLENGTH = 1024;
 		// configurable constansts
 		private const string LineBreak = "\n";
-		private const int MinTokenLine = 3;
-		private bool fairDistribute = false;
+		private const int MinTokenLine = 40;
+		private bool fairDistribute = true;
 		// resulting constansts from configuration
 		private static readonly int LineBreakLen = TokenLength(LineBreak);
 		private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;

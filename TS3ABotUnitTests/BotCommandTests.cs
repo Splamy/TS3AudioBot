@@ -34,12 +34,7 @@ namespace TS3ABotUnitTests
 
 		string CallCommand(string command)
 		{
-			var info = new ExecutionInformation
-			{
-				Session = null,
-				TextMessage = CreateTextMessage(),
-				IsAdmin = new Lazy<bool>(true)
-			};
+			var info = new ExecutionInformation(null, CreateTextMessage(), new Lazy<bool>(true));
 			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
 		}
 

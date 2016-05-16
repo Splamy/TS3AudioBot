@@ -46,7 +46,7 @@ namespace TS3AudioBot
 			clientDbNames = new Dictionary<ulong, string>();
 
 			connectionData = qcd;
-			tsClient = new TS3QueryClient(EventDispatchType.Manual);
+			tsClient = new TS3QueryClient(EventDispatchType.DoubleThread);
 			tsClient.OnClientLeftView += ExtendedClientLeftView;
 			tsClient.OnClientEnterView += ExtendedClientEnterView;
 			tsClient.OnTextMessageReceived += ExtendedTextMessage;
@@ -75,7 +75,7 @@ namespace TS3AudioBot
 		private void Diconnect()
 		{
 			if (tsClient.IsConnected)
-				tsClient.Quit();
+				tsClient.Close();
 		}
 
 		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);

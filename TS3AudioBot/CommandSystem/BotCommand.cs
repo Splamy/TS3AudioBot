@@ -74,19 +74,18 @@ namespace TS3AudioBot.CommandSystem
 
 		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			if (info.IsAdmin.Value)
-				return base.Execute(info, arguments, returnTypes);
-
 			switch (CommandRights)
 			{
 			case Admin:
-				throw new CommandException("Command must be invoked by an admin!");
+				if (!info.IsAdmin.Value)
+					throw new CommandException("Command must be invoked by an admin!");
+				break;
 			case Public:
-				if (info.TextMessage.Target != MessageTarget.Server)
+				if (info.TextMessage.Target != MessageTarget.Server && !info.IsAdmin.Value)
 					throw new CommandException("Command must be used in public mode!");
 				break;
 			case Private:
-				if (info.TextMessage.Target != MessageTarget.Private)
+				if (info.TextMessage.Target != MessageTarget.Private && !info.IsAdmin.Value)
 					throw new CommandException("Command must be used in a private session!");
 				break;
 			}

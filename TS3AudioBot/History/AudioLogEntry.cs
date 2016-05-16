@@ -3,7 +3,7 @@ namespace TS3AudioBot.History
 	using System;
 	using System.Globalization;
 	using System.Text;
-	using TS3AudioBot.ResourceFactories;
+	using ResourceFactories;
 
 	public class AudioLogEntry : AudioResource
 	{
@@ -51,7 +51,7 @@ namespace TS3AudioBot.History
 
 		public static AudioLogEntry Parse(string line, long readIndex)
 		{
-			string[] strParts = line.Split(',');
+			string[] strParts = line.TrimEnd(' ').Split(',');
 			if (strParts.Length != 7)
 				return null;
 			// Array.ForEach(strParts) // check if spacetrims are needed

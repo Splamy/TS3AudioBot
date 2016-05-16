@@ -26,6 +26,26 @@ namespace TS3AudioBot.Algorithm
 			}
 		}
 
+		public void Remove(string key)
+		{
+			for (int i = 0; i < keys.Count; i++)
+			{
+				if (keys[i] == key)
+				{
+					RemoveIndex(i);
+					return;
+				}
+			}
+		}
+
+		private void RemoveIndex(int i)
+		{
+			string value = keys[i];
+			keys.RemoveAt(i);
+			values.RemoveAt(i);
+			keyHash.Remove(value);
+		}
+
 		public IList<T> GetValues(string key)
 		{
 			var result = new List<T>();

@@ -6,8 +6,8 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
-	using TS3AudioBot.Helper;
-	using TS3Query.Messages;
+	using Helper;
+	using CommandSystem;
 
 	public sealed class YoutubeFactory : IResourceFactory
 	{
@@ -154,9 +154,9 @@ namespace TS3AudioBot.ResourceFactories
 			data.Session.SetResponse(ResponseYoutube, null);
 		}
 
-		private static bool ResponseYoutube(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
+		private static bool ResponseYoutube(ExecutionInformation info)
 		{
-			string[] command = tm.Message.SplitNoEmpty(' ');
+			string[] command = info.TextMessage.Message.SplitNoEmpty(' ');
 			if (command[0] != "!f")
 				return false;
 			if (command.Length != 2)
@@ -164,18 +164,18 @@ namespace TS3AudioBot.ResourceFactories
 			int entry;
 			if (int.TryParse(command[1], out entry))
 			{
-				PlayData data = session.UserResource;
+				PlayData data = info.Session.UserResource;
 				if (data == null || data.Resource as YoutubeResource == null)
 				{
-					session.Write("An unexpected error with the ytresource occured: null.");
+					info.Session.Write("An unexpected error with the ytresource occured: null.");
 					return true;
 				}
 				YoutubeResource ytResource = (YoutubeResource)data.Resource;
 				if (entry < 0 || entry >= ytResource.AvailableTypes.Count)
 					return true;
 				ytResource.Selected = entry;
-				if (ValidateMedia(session, ytResource))
-					session.Bot.FactoryManager.Play(data);
+				if (ValidateMedia(info.Session, ytResource))
+					info.Session.Bot.FactoryManager.Play(data);
 			}
 			return true;
 		}

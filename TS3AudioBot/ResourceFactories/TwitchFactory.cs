@@ -4,7 +4,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Collections.Generic;
 	using System.Text.RegularExpressions;
 	using System.Web.Script.Serialization;
-	using TS3AudioBot.Helper;
+	using Helper;
 
 	public sealed class TwitchFactory : IResourceFactory
 	{

@@ -184,8 +184,7 @@ namespace TS3AudioBot
 		private void Run()
 		{
 			Thread.CurrentThread.Name = "Main/Eventloop";
-			var qc = QueryConnection;
-			qc.tsClient.EventDispatcher.EnterEventLoop();
+			QueryConnection.tsClient.EnterEventLoop();
 		}
 
 		#region COMMAND EXECUTING & CHAINING
@@ -218,11 +217,12 @@ namespace TS3AudioBot
 			}
 
 			var isAdmin = new Lazy<bool>(() => HasInvokerAdminRights(textMessage));
+			var execInfo = new ExecutionInformation(session, textMessage, isAdmin);
 
 			// check if the user has an open request
 			if (session.ResponseProcessor != null)
 			{
-				if (session.ResponseProcessor(session, textMessage, isAdmin))
+				if (session.ResponseProcessor(execInfo))
 				{
 					session.ClearResponse();
 					return;
@@ -237,17 +237,11 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				var info = new ExecutionInformation
-				{
-					Session = session,
-					TextMessage = textMessage,
-					IsAdmin = isAdmin
-				};
 				var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
 
 				try
 				{
-					var res = command.Execute(info, Enumerable.Empty<ICommand>(),
+					var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
 						new[] { CommandResultType.String, CommandResultType.Empty });
 					if (res.ResultType == CommandResultType.String)
 					{
@@ -347,7 +341,7 @@ namespace TS3AudioBot
 
 		[Command(Admin, "getuser db", "Gets the User name by dbid.")]
 		[Usage("<dbid>", "Any user dbid which is known by the server")]
-		public string GetUser(ExecutionInformation info, ulong parameter)
+		public string GetUser(ulong parameter)
 		{
 			var client = QueryConnection.GetNameByDbId(parameter);
 			if (client == null)
@@ -416,9 +410,26 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Admin, "history delete", "<id> Removes the entry with <id> from the history")]
+		public string CommandHistoryDelete(ExecutionInformation info, uint id)
+		{
+			AudioLogEntry ale = HistoryManager.GetEntryById(id);
+			if (ale == null)
+				return "Could not find track with this id";
+			info.Session.SetResponse(ResponseHistoryDelete, ale);
+			return $"Do you really want to delete the entry with the id {id}? !(yes|no)";
+		}
+
+		[Command(Admin, "history clean", "Cleans up the history file for better startup performance.")]
+		public string CommandHistoryClean(ExecutionInformation info)
+		{
+			info.Session.SetResponse(ResponseHistoryClean, null);
+			return $"Dou want to clean the history file now? This might take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+		}
+
 		[Command(Private, "history from", "Gets the last <count> songs from the user with the given <user-dbid>")]
 		[RequiredParameters(1)]
-		public string CommandHistoryFrom(ExecutionInformation info, uint userDbId, int? amount)
+		public string CommandHistoryFrom(uint userDbId, int? amount)
 		{
 			SeachQuery query = new SeachQuery();
 			query.UserId = userDbId;
@@ -433,16 +444,16 @@ namespace TS3AudioBot
 		public string CommandHistoryHelp(ExecutionInformation info) => CommandHelp(info, "history");
 
 		[Command(Private, "history id", "<id> Displays all saved informations about the song with <id>")]
-		public string CommandHistoryId(ExecutionInformation info, uint id)
+		public string CommandHistoryId(uint id)
 		{
 			var ale = HistoryManager.GetEntryById(id);
-			if (ale != null)
-				return HistoryManager.Formatter.ProcessQuery(ale, SmartHistoryFormatter.DefaultAleFormat);
-			return "Could not find track with this id";
+			if (ale == null)
+				return "Could not find track with this id";
+			return HistoryManager.Formatter.ProcessQuery(ale, SmartHistoryFormatter.DefaultAleFormat);
 		}
 
 		[Command(Private, "history id", "(last|next) Gets the highest|next song id")]
-		public string CommandHistoryId(ExecutionInformation info, string special)
+		public string CommandHistoryId(string special)
 		{
 			if (special == "last")
 				return $"{HistoryManager.HighestId} is the currently highest song id.";
@@ -474,27 +485,49 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Private, "history play", "Playes the song with <id>")]
+		[Command(Private, "history play", "<id> Playes the song with <id>")]
 		public string CommandHistoryPlay(ExecutionInformation info, uint id)
 		{
 			var ale = HistoryManager.GetEntryById(id);
-			if (ale != null)
-			{
-				ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-				return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
-			}
-			else return "Could not find track with this id";
+			if (ale == null)
+				return "Could not find track with this id";
+			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+			return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
+		}
+
+		[Command(Private, "history queue", "<id> Adds the song with <id> to the queue")]
+		public string CommandHistoryQueue(ExecutionInformation info, uint id)
+		{
+			var ale = HistoryManager.GetEntryById(id);
+			if (ale == null)
+				return "Could not find track with this id";
+			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
+			return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, true));
+		}
+
+		[Command(Admin, "history rename", "<id> <name> Sets the name of the song with <id> to <name>")]
+		public string CommandHistoryRename(uint id, string newName)
+		{
+			var ale = HistoryManager.GetEntryById(id);
+			if (ale == null)
+				return "Could not find track with this id";
+
+			if (string.IsNullOrWhiteSpace(newName))
+				return "The new name must not be empty or only whitespaces";
+
+			HistoryManager.RenameEntry(ale, newName);
+			return null;
 		}
 
 		[Command(Private, "history till", "<date> Gets all songs played until <date>.")]
-		public string CommandHistoryTill(ExecutionInformation info, DateTime time)
+		public string CommandHistoryTill(DateTime time)
 		{
 			var query = new SeachQuery { LastInvokedAfter = time };
 			return HistoryManager.SearchParsed(query);
 		}
 
 		[Command(Private, "history till", "<name> Any of those desciptors: (hour|today|yesterday|week)")]
-		public string CommandHistoryTill(ExecutionInformation info, string time)
+		public string CommandHistoryTill(string time)
 		{
 			DateTime tillTime;
 			switch (time.ToLower())
@@ -510,7 +543,7 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "history title", "Gets all songs which title contains <string>")]
-		public string CommandHistoryTitle(ExecutionInformation info, string part)
+		public string CommandHistoryTitle(string part)
 		{
 			var query = new SeachQuery { TitlePart = part };
 			return HistoryManager.SearchParsed(query);
@@ -631,7 +664,7 @@ namespace TS3AudioBot
 
 		[Command(Admin, "parse", "Displays the AST of the requested command.")]
 		[Usage("<command>", "The comand to be parsed")]
-		public string CommandParse(ExecutionInformation info, string parameter)
+		public string CommandParse(string parameter)
 		{
 			if (!parameter.TrimStart().StartsWith("!"))
 				return "This is not a command";
@@ -673,19 +706,19 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "plugin list", "Lists all found plugins.")]
-		public string CommandPluginList(ExecutionInformation info)
+		public string CommandPluginList()
 		{
 			return PluginManager.GetPluginOverview();
 		}
 
 		[Command(Admin, "plugin unload", "Unloads a plugin.")]
-		public string CommandPluginUnload(ExecutionInformation info, string identifier)
+		public string CommandPluginUnload(string identifier)
 		{
 			return PluginManager.UnloadPlugin(identifier).ToString();
 		}
 
 		[Command(Admin, "plugin load", "Unloads a plugin.")]
-		public string CommandPluginLoad(ExecutionInformation info, string identifier)
+		public string CommandPluginLoad(string identifier)
 		{
 			return PluginManager.LoadPlugin(identifier).ToString();
 		}
@@ -697,7 +730,7 @@ namespace TS3AudioBot
 		}
 
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
-		public string CommandPrint(ExecutionInformation info, string[] parameter)
+		public string CommandPrint(params string[] parameter)
 		{
 			// << Desing changes expected >>
 			var strb = new StringBuilder();
@@ -778,7 +811,7 @@ namespace TS3AudioBot
 		[Usage("<max>", "Gets a number between 0 and <max>")]
 		[Usage("<min> <max>", "Gets a number between <min> and <max>")]
 		[RequiredParameters(0)]
-		public string CommandRng(ExecutionInformation info, int? first, int? second)
+		public string CommandRng(int? first, int? second)
 		{
 			if (second != null)
 				return Util.RngInstance.Next(first.Value, second.Value).ToString();
@@ -976,41 +1009,77 @@ namespace TS3AudioBot
 
 		#region RESPONSES
 
-		private bool ResponseVolume(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
+		private bool ResponseVolume(ExecutionInformation info)
 		{
-			Answer answer = TextUtil.GetAnswer(tm.Message);
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (isAdmin.Value)
+				if (info.IsAdmin.Value)
 				{
-					if (!(session.ResponseData is int))
+					var respInt = info.Session.ResponseData as int?;
+					if (!respInt.HasValue)
 					{
 						Log.Write(Log.Level.Error, "responseData is not an int.");
 						return true;
 					}
-					AudioFramework.Volume = (int)session.ResponseData;
+					AudioFramework.Volume = respInt.Value;
 				}
 				else
 				{
-					session.Write("Command can only be answered by an admin.");
+					info.Session.Write("Command can only be answered by an admin.");
 				}
 			}
 			return answer != Answer.Unknown;
 		}
 
-		private bool ResponseQuit(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
+		private bool ResponseQuit(ExecutionInformation info)
 		{
-			Answer answer = TextUtil.GetAnswer(tm.Message);
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (isAdmin.Value)
+				if (info.IsAdmin.Value)
+					CommandQuitForce(info);
+				else
+					info.Session.Write("Command can only be answered by an admin.");
+			}
+			return answer != Answer.Unknown;
+		}
+
+		private bool ResponseHistoryDelete(ExecutionInformation info)
+		{
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
+			if (answer == Answer.Yes)
+			{
+				if (info.IsAdmin.Value)
 				{
-					CommandQuitForce(new ExecutionInformation() { Session = session, TextMessage = tm, IsAdmin = isAdmin });
+					var ale = info.Session.ResponseData as AudioLogEntry;
+					if (ale == null)
+					{
+						Log.Write(Log.Level.Error, "No entry provided.");
+						return true;
+					}
+					HistoryManager.RemoveEntry(ale);
 				}
 				else
 				{
-					session.Write("Command can only be answered by an admin.");
+					info.Session.Write("Command can only be answered by an admin.");
 				}
+			}
+			return answer != Answer.Unknown;
+		}
+
+		private bool ResponseHistoryClean(ExecutionInformation info)
+		{
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
+			if (answer == Answer.Yes)
+			{
+				if (info.IsAdmin.Value)
+				{
+					HistoryManager.CleanHistoryFile();
+					info.Session.Write("Cleanup done!");
+				}
+				else
+					info.Session.Write("Command can only be answered by an admin.");
 			}
 			return answer != Answer.Unknown;
 		}

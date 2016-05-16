@@ -2,10 +2,9 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.IO;
-	using System.Net;
-	using TS3AudioBot.Helper;
-	using TS3AudioBot.Helper.AudioTags;
-	using TS3Query.Messages;
+	using Helper;
+	using Helper.AudioTags;
+	using CommandSystem;
 
 	public sealed class MediaFactory : IResourceFactory
 	{
@@ -121,17 +120,17 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private static bool ResponseValidation(BotSession session, TextMessage tm, Lazy<bool> isAdmin)
+		private static bool ResponseValidation(ExecutionInformation info)
 		{
-			Answer answer = TextUtil.GetAnswer(tm.Message);
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				PlayData data = session.UserResource;
-				session.Bot.FactoryManager.Play(data);
+				PlayData data = info.Session.UserResource;
+				info.Session.Bot.FactoryManager.Play(data);
 			}
 			else if (answer == Answer.No)
 			{
-				session.UserResource = null;
+				info.Session.UserResource = null;
 			}
 			return answer != Answer.Unknown;
 		}
