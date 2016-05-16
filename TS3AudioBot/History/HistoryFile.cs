@@ -103,7 +103,6 @@ namespace TS3AudioBot.History
 			BackupFile();
 
 			fileStream.SetLength(0);
-			fileStream.Seek(0, SeekOrigin.Begin); // TODO check required ??!?
 			WriteHeader();
 
 			for (uint i = 0; i < CurrentID; i++)
@@ -113,8 +112,6 @@ namespace TS3AudioBot.History
 					AppendToFile(ale, false);
 			}
 			fileStream.Flush(true);
-
-			fileStream.Seek(0, SeekOrigin.Begin);
 			fileReader.InvalidateBuffer();
 		}
 
@@ -151,7 +148,9 @@ namespace TS3AudioBot.History
 			string fileName;
 			do
 			{
-				fileName = Path.Combine(historyFile.DirectoryName, historyFile.Name + "_old_" + backUpNum + historyFile.Extension);
+				fileName = Path.Combine(historyFile.DirectoryName,
+							historyFile.Name.Substring(0, historyFile.Name.Length - historyFile.Extension.Length)
+							+ "_old_" + backUpNum + historyFile.Extension);
 				backUpNum++;
 			} while (File.Exists(fileName));
 			historyFile.CopyTo(fileName);
@@ -184,6 +183,9 @@ namespace TS3AudioBot.History
 
 		public uint? Contains(AudioResource resource)
 		{
+			if (resource == null)
+				throw new ArgumentNullException(nameof(resource));
+
 			uint rId;
 			if (resIdToId.TryGetValue(resource.UniqueId, out rId))
 				return rId;
@@ -254,6 +256,7 @@ namespace TS3AudioBot.History
 		{
 			if (idAmount <= 0)
 				return noResult;
+
 			var aleArray = timeFilter.Values.ToArray();
 			var result = new AudioLogEntry[Math.Min(aleArray.Length, idAmount)];
 			Array.Copy(aleArray, Math.Max(0, aleArray.Length - idAmount), result, 0, Math.Min(aleArray.Length, result.Length));
@@ -268,6 +271,9 @@ namespace TS3AudioBot.History
 		/// False to write it manually later with <see cref="ReWriteToFile(AudioLogEntry)"/></param>
 		public void LogEntryPlay(AudioLogEntry ale, bool flush = true)
 		{
+			if (ale == null)
+				throw new ArgumentNullException(nameof(ale));
+
 			// update the playtime
 			timeFilter.Remove(ale.Timestamp);
 			ale.Timestamp = Util.GetNow();
@@ -425,5 +431,4 @@ namespace TS3AudioBot.History
 			Clear();
 		}
 	}
-
 }

@@ -420,6 +420,13 @@ namespace TS3AudioBot
 			return $"Do you really want to delete the entry with the id {id}? !(yes|no)";
 		}
 
+		[Command(Admin, "history clean", "Cleans up the history file for better startup performance.")]
+		public string CommandHistoryClean(ExecutionInformation info)
+		{
+			info.Session.SetResponse(ResponseHistoryClean, null);
+			return $"Dou want to clean the history file now? This might take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+		}
+
 		[Command(Private, "history from", "Gets the last <count> songs from the user with the given <user-dbid>")]
 		[RequiredParameters(1)]
 		public string CommandHistoryFrom(uint userDbId, int? amount)
@@ -1031,13 +1038,9 @@ namespace TS3AudioBot
 			if (answer == Answer.Yes)
 			{
 				if (info.IsAdmin.Value)
-				{
 					CommandQuitForce(info);
-				}
 				else
-				{
 					info.Session.Write("Command can only be answered by an admin.");
-				}
 			}
 			return answer != Answer.Unknown;
 		}
@@ -1061,6 +1064,19 @@ namespace TS3AudioBot
 				{
 					info.Session.Write("Command can only be answered by an admin.");
 				}
+			}
+			return answer != Answer.Unknown;
+		}
+
+		private bool ResponseHistoryClean(ExecutionInformation info)
+		{
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
+			if (answer == Answer.Yes)
+			{
+				if (info.IsAdmin.Value)
+					HistoryManager.CleanHistoryFile();
+				else
+					info.Session.Write("Command can only be answered by an admin.");
 			}
 			return answer != Answer.Unknown;
 		}
