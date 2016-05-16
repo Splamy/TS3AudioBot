@@ -1074,7 +1074,10 @@ namespace TS3AudioBot
 			if (answer == Answer.Yes)
 			{
 				if (info.IsAdmin.Value)
+				{
 					HistoryManager.CleanHistoryFile();
+					info.Session.Write("Cleanup done!");
+				}
 				else
 					info.Session.Write("Command can only be answered by an admin.");
 			}
