@@ -120,23 +120,22 @@ namespace TS3AudioBot
 		/// <para>Stops the old resource and starts the new one.</para>
 		/// <para>The volume gets resetted and the OnStartEvent gets triggered.</para>
 		/// </summary>
-		/// <param name="playData">The info struct contaiting the AudioResource to start.</param>
-		/// <returns>An infocode on what happened.</returns>
-		internal AudioResultCode StartResource(PlayData playData)
+		/// <param name="playData">The info struct containing the PlayResource to start.</param>
+		internal R StartResource(PlayData playData)
 		{
-			if (playData == null || playData.Resource == null)
+			if (playData?.PlayResource == null)
 			{
 				Log.Write(Log.Level.Debug, "AF audioResource is null");
-				return AudioResultCode.NoNewResource;
+				return "No new resource";
 			}
 
 			Stop(true);
 
-			string resourceLink = playData.Resource.Play();
+			string resourceLink = playData.PlayResource.Play();
 			if (string.IsNullOrWhiteSpace(resourceLink))
-				return AudioResultCode.ResouceInternalError;
+				return "Internal resource error: link is empty";
 
-			Log.Write(Log.Level.Debug, "AF ar start: {0}", playData.Resource);
+			Log.Write(Log.Level.Debug, "AF ar start: {0}", playData.ResourceData);
 			playerConnection.AudioStart(resourceLink);
 
 			Volume = playData.Volume ?? audioFrameworkData.defaultVolume;
@@ -150,7 +149,7 @@ namespace TS3AudioBot
 				endTime = Util.GetNow();
 				waitEndTick.Active = true;
 			}
-			return AudioResultCode.Success;
+			return R.OkR;
 		}
 
 		public void Stop()
@@ -206,12 +205,5 @@ namespace TS3AudioBot
 		Youtube,
 		Soundcloud,
 		Twitch,
-	}
-
-	enum AudioResultCode
-	{
-		Success,
-		NoNewResource,
-		ResouceInternalError,
 	}
 }

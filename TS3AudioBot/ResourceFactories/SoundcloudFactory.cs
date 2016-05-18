@@ -21,32 +21,28 @@ namespace TS3AudioBot.ResourceFactories
 
 		public bool MatchLink(string link) => Regex.IsMatch(link, @"^https?\:\/\/(www\.)?soundcloud\.");
 
-		public RResultCode GetResource(string link, out AudioResource resource)
+		public R<PlayResource> GetResource(string link)
 		{
 			string jsonResponse;
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientID}");
 			if (!WebWrapper.DownloadString(out jsonResponse, uri))
-			{
-				resource = null;
-				return RResultCode.ScInvalidLink;
-			}
+				return RResultCode.ScInvalidLink.ToString();
 			var parsedDict = ParseJson(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
-			return GetResourceById(id.ToString(), title, out resource);
+			return GetResourceById(id.ToString(), title);
 		}
 
-		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
+		public R<PlayResource> GetResourceById(string id, string name)
 		{
 			if (name == null)
 			{
 				string link = RestoreLink(id);
-				return GetResource(link, out resource);
+				return GetResource(link);
 			}
 
 			string finalRequest = $"https://api.soundcloud.com/tracks/{id}/stream?client_id={SoundcloudClientID}";
-			resource = new SoundcloudResource(id, name, finalRequest);
-			return RResultCode.Success;
+			return new SoundcloudResource(finalRequest, new AudioResource(id, name, AudioType.Soundcloud));
 		}
 
 		public string RestoreLink(string id)
@@ -61,22 +57,19 @@ namespace TS3AudioBot.ResourceFactories
 
 		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
 
-		public void PostProcess(PlayData data, out bool abortPlay)
+		public R<PlayResource> PostProcess(PlayData data)
 		{
-			abortPlay = false;
+			return data.PlayResource;
 		}
 
 		public void Dispose() { }
 	}
 
-	public sealed class SoundcloudResource : AudioResource
+	public sealed class SoundcloudResource : PlayResource
 	{
-		public override AudioType AudioType => AudioType.Soundcloud;
-
 		public string ResourceURL { get; private set; }
 
-		public SoundcloudResource(string id, string name, string url)
-			: base(id, name)
+		public SoundcloudResource(string url, AudioResource baseData) : base(baseData)
 		{
 			ResourceURL = url;
 		}

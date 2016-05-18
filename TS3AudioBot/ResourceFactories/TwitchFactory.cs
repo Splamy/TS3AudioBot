@@ -19,28 +19,22 @@ namespace TS3AudioBot.ResourceFactories
 
 		public AudioType FactoryFor => AudioType.Twitch;
 
-		public RResultCode GetResource(string url, out AudioResource resource)
+		public R<PlayResource> GetResource(string url)
 		{
 			var match = twitchMatch.Match(url);
 			if (!match.Success)
-			{
-				resource = null;
-				return RResultCode.TwitchInvalidUrl;
-			}
-			return GetResourceById(match.Groups[3].Value, null, out resource);
+				return RResultCode.TwitchInvalidUrl.ToString();
+			return GetResourceById(match.Groups[3].Value, null);
 		}
 
-		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
+		public R<PlayResource> GetResourceById(string id, string name)
 		{
 			var channel = id;
 
 			// request api token
 			string jsonResponse;
 			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token")))
-			{
-				resource = null;
-				return RResultCode.NoConnection;
-			}
+				return RResultCode.NoConnection.ToString();
 
 			var jsonDict = (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
 
@@ -51,10 +45,7 @@ namespace TS3AudioBot.ResourceFactories
 			var random = 4;
 			string m3u8;
 			if (!WebWrapper.DownloadString(out m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))
-			{
-				resource = null;
-				return RResultCode.NoConnection;
-			}
+				return RResultCode.NoConnection.ToString();
 
 			// parse m3u8 file
 			var dataList = new List<StreamData>();
@@ -62,10 +53,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var header = reader.ReadLine();
 				if (string.IsNullOrEmpty(header) || header != "#EXTM3U")
-				{
-					resource = null;
-					return RResultCode.TwitchMalformedM3u8File;
-				}
+					return RResultCode.TwitchMalformedM3u8File.ToString();
 
 				while (true)
 				{
@@ -86,10 +74,7 @@ namespace TS3AudioBot.ResourceFactories
 						if (string.IsNullOrEmpty(streamInfo) ||
 							 !(infoMatch = m3u8ExtMatch.Match(streamInfo)).Success ||
 							 infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
-						{
-							resource = null;
-							return RResultCode.TwitchMalformedM3u8File;
-						}
+							return RResultCode.TwitchMalformedM3u8File.ToString();
 
 						var streamData = new StreamData();
 						// #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=128000,CODECS="mp4a.40.2",VIDEO="audio_only"
@@ -120,27 +105,27 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 
-			resource = new TwitchResource(channel, name ?? $"Twitch channel: {channel}", dataList);
-			return dataList.Count > 0 ? RResultCode.Success : RResultCode.TwitchNoStreamsExtracted;
+			if (dataList.Count > 0)
+				return new TwitchResource(dataList, new AudioResource(channel, name ?? $"Twitch channel: {channel}", AudioType.Twitch));
+			else
+				return RResultCode.TwitchNoStreamsExtracted.ToString();
 		}
 
 		public bool MatchLink(string uri) => twitchMatch.IsMatch(uri);
 
-		public void PostProcess(PlayData data, out bool abortPlay)
+		public R<PlayResource> PostProcess(PlayData data)
 		{
-			var twResource = (TwitchResource)data.Resource;
-			// selecting the best stream
+			var twResource = (TwitchResource)data.PlayResource;
+			// TODO: selecting the best stream (better)
 			int autoselectIndex = twResource.AvailableStreams.FindIndex(s => s.QualityType == StreamQuality.audio_only);
 			if (autoselectIndex != -1)
 			{
 				twResource.Selected = autoselectIndex;
-				abortPlay = false;
-				return;
+				return twResource;
 			}
 
 			// TODO add response like youtube
-			data.Session.Write("The stream has no audio_only version.");
-			abortPlay = true;
+			return "The stream has no audio_only version.";
 		}
 
 		public string RestoreLink(string id) => "http://www.twitch.tv/" + id;
@@ -167,14 +152,12 @@ namespace TS3AudioBot.ResourceFactories
 		audio_only,
 	}
 
-	public sealed class TwitchResource : AudioResource
+	public sealed class TwitchResource : PlayResource
 	{
 		public List<StreamData> AvailableStreams { get; private set; }
 		public int Selected { get; set; }
 
-		public override AudioType AudioType => AudioType.Twitch;
-
-		public TwitchResource(string channel, string name, List<StreamData> availableStreams) : base(channel, name)
+		public TwitchResource(List<StreamData> availableStreams, AudioResource baseData) : base(baseData)
 		{
 			AvailableStreams = availableStreams;
 		}

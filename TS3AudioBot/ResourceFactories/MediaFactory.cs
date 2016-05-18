@@ -12,27 +12,25 @@ namespace TS3AudioBot.ResourceFactories
 
 		public bool MatchLink(string uri) => true;
 
-		public RResultCode GetResource(string uri, out AudioResource resource)
+		public R<PlayResource> GetResource(string uri)
 		{
-			return GetResourceById(uri, null, out resource);
+			return GetResourceById(uri, null);
 		}
 
-		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
+		public R<PlayResource> GetResourceById(string id, string name)
 		{
 			string outName;
 			var result = ValidateUri(out outName, id);
-			if (string.IsNullOrWhiteSpace(outName))
-				outName = id;
 
 			if (result == RResultCode.MediaNoWebResponse)
 			{
-				resource = null;
-				return result;
+				return result.ToString();
 			}
 			else
 			{
-				resource = new MediaResource(id, name ?? outName, id, result);
-				return RResultCode.Success;
+				if (string.IsNullOrWhiteSpace(outName))
+					outName = id;
+				return new MediaResource(id, result, new AudioResource(id, name ?? outName, AudioType.MediaLink));
 			}
 		}
 
@@ -109,20 +107,17 @@ namespace TS3AudioBot.ResourceFactories
 			catch (NotSupportedException) { return RResultCode.AccessDenied; }
 		}
 
-		public void PostProcess(PlayData data, out bool abortPlay)
+		public R<PlayResource> PostProcess(PlayData data)
 		{
-			MediaResource mediaResource = (MediaResource)data.Resource;
+			MediaResource mediaResource = (MediaResource)data.PlayResource;
 			if (mediaResource.InternalResultCode == RResultCode.Success)
 			{
-				abortPlay = false;
+				return data.PlayResource;
 			}
 			else
 			{
-				abortPlay = true;
-				data.Session.Write(
-					$"This uri might be invalid ({mediaResource.InternalResultCode}), do you want to start anyway?");
-				data.Session.UserResource = data;
-				data.Session.SetResponse(ResponseValidation, null);
+				data.Session.SetResponse(ResponseValidation, data);
+				return $"This uri might be invalid ({mediaResource.InternalResultCode}), do you want to start anyway?";
 			}
 		}
 
@@ -130,14 +125,7 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
-			{
-				PlayData data = info.Session.UserResource;
-				info.Session.Bot.FactoryManager.Play(data);
-			}
-			else if (answer == Answer.No)
-			{
-				info.Session.UserResource = null;
-			}
+				info.Session.Bot.FactoryManager.Play((PlayData)info.Session.ResponseData);
 			return answer != Answer.Unknown;
 		}
 
@@ -147,15 +135,12 @@ namespace TS3AudioBot.ResourceFactories
 		}
 	}
 
-	public sealed class MediaResource : AudioResource
+	public sealed class MediaResource : PlayResource
 	{
-		public override AudioType AudioType => AudioType.MediaLink;
-
 		public string ResourceURL { get; private set; }
 		public RResultCode InternalResultCode { get; private set; }
 
-		public MediaResource(string id, string name, string url, RResultCode internalRC)
-			: base(id, name)
+		public MediaResource(string url, RResultCode internalRC, AudioResource baseData) : base(baseData)
 		{
 			ResourceURL = url;
 			InternalResultCode = internalRC;

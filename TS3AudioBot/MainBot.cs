@@ -786,7 +786,7 @@ namespace TS3AudioBot
 				if (info.Session.IsPrivate)
 					return "No cheatig! Everybody has to see it!";
 				QuizMode = false;
-				QueryConnection.ChangeDescription(AudioFramework.CurrentPlayData.Resource.ResourceTitle);
+				QueryConnection.ChangeDescription(AudioFramework.CurrentPlayData.ResourceData.ResourceTitle);
 			}
 			else
 				CommandHelp(info, "quiz");
@@ -868,7 +868,7 @@ namespace TS3AudioBot
 			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId)
 				return "Sorry, you have to guess!";
 			else
-				return $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.Resource.ResourceTitle}[/url]";
+				return $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.ResourceData.ResourceTitle}[/url]";
 		}
 
 		[Command(Private, "soundcloud", "Resolves the link as a soundcloud song to play it for you.")]
@@ -1093,7 +1093,7 @@ namespace TS3AudioBot
 		{
 			if (!QuizMode)
 			{
-				QueryConnection.ChangeDescription(data.Resource.ResourceTitle);
+				QueryConnection.ChangeDescription(data.ResourceData.ResourceTitle);
 			}
 		}
 
@@ -1153,7 +1153,8 @@ namespace TS3AudioBot
 		public string Message { get; }
 		public bool Enqueue { get; }
 		public int? Volume { get; }
-		public AudioResource Resource { get; set; }
+		public AudioResource ResourceData { get; set; }
+		public PlayResource PlayResource { get; set; }
 
 		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue)
 		{
@@ -1161,7 +1162,8 @@ namespace TS3AudioBot
 			Invoker = invoker;
 			Message = message;
 			Enqueue = enqueue;
-			Resource = null;
+			ResourceData = null;
+			PlayResource = null;
 			Volume = null;
 		}
 	}

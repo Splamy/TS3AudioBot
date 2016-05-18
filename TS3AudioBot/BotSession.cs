@@ -9,7 +9,6 @@ namespace TS3AudioBot
 	{
 		public MainBot Bot { get; private set; }
 
-		public PlayData UserResource { get; set; }
 		public Response ResponseProcessor { get; protected set; }
 		public object ResponseData { get; protected set; }
 
@@ -20,7 +19,6 @@ namespace TS3AudioBot
 		protected BotSession(MainBot bot)
 		{
 			Bot = bot;
-			UserResource = null;
 			ResponseProcessor = null;
 			ResponseData = null;
 		}

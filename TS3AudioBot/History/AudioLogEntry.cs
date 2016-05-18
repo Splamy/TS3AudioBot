@@ -15,15 +15,13 @@ namespace TS3AudioBot.History
 		public uint PlayCount { get; set; }
 		/// <summary>The last time this song has been played.</summary>
 		public DateTime Timestamp { get; set; }
-		public override AudioType AudioType { get; }
 		/// <summary>Zero based offset this entry is stored in the history file.</summary>
 		public long FilePosIndex { get; set; }
 
-		public AudioLogEntry(uint id, AudioType audioType, string resId) : base(resId, null)
+		public AudioLogEntry(uint id, AudioType audioType, string resId) : base(resId, null, audioType)
 		{
 			Id = id;
 			PlayCount = 0;
-			AudioType = audioType;
 		}
 
 		public string ToFileString()
@@ -82,11 +80,6 @@ namespace TS3AudioBot.History
 		public override string ToString()
 		{
 			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, ResourceTitle, ResourceId);
-		}
-
-		public override string Play()
-		{
-			throw new NotSupportedException();
 		}
 	}
 

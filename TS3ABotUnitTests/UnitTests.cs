@@ -40,11 +40,11 @@ namespace TS3ABotUnitTests
 			var inv2 = Generator.ActivateResponse<ClientData>();
 			{ inv2.ClientId = 20; inv2.DatabaseId = 102; inv2.NickName = "Invoker2"; }
 
-			var ar1 = new SoundcloudResource("asdf", "sc_ar1", "https://soundcloud.de/sc_ar1");
-			var ar2 = new MediaResource("./File.mp3", "me_ar2", "https://splamy.de/sc_ar2", RResultCode.Success);
+			var ar1 = new AudioResource("asdf", "sc_ar1", AudioType.Soundcloud);
+			var ar2 = new AudioResource("./File.mp3", "me_ar2", AudioType.MediaLink);
 
-			var data1 = new PlayData(null, inv1, "", false) { Resource = ar1, };
-			var data2 = new PlayData(null, inv2, "", false) { Resource = ar2, };
+			var data1 = new PlayData(null, inv1, "", false) { ResourceData = ar1, };
+			var data2 = new PlayData(null, inv2, "", false) { ResourceData = ar2, };
 
 
 			HistoryFile hf = new HistoryFile();

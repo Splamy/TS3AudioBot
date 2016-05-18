@@ -27,7 +27,16 @@ namespace TS3AudioBot
 		// ln:<link> and a link which can be opened with a resourcefactory
 		// id:<id>   for any already resolved link
 
-		// > playlist must only contain [a-zA-Z ]+ to prevent security issues, max len 63 ??!?
+		// > playlist must only contain [a-zA-Z _-]+ to prevent security issues, max len 63 ??!?
+
+		// !playlist remove <hid>|<id>
+		// !playlist add <song>
+		// !playlist load <list>
+		// !playlist save
+		// !playlist rename <toNew>
+		// !playlist status
+		// !playlist merge <otherlist>
+		// !playlist move <song> <somewhere?>
 
 		private PlaylistManagerData data;
 		private JavaScriptSerializer json;
@@ -110,16 +119,18 @@ namespace TS3AudioBot
 				var videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoDicts.Length];
 				for (int i = 0; i < videoDicts.Length; i++)
-					itemBuffer[i] = new YoutubePlaylistItem
+					itemBuffer[i] = new YoutubePlaylistItem()
 					{
-						ResourceType = AudioType.Youtube,
-						ResourceId = (string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["videoId"]),
+						Resource = new AudioResource(
+							(string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["videoId"]),
+							null, // TODO: check if name is already available (and for rename conflict when the entry already exists)
+							AudioType.Youtube),
 					};
 				hasNext = parsed.TryGetValue("nextPageToken", out nextToken);
 
 				if (loadLength)
 				{
-					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.ResourceId))}&part=contentDetails&key={data.youtubeApiKey}");
+					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.youtubeApiKey}");
 					if (!WebWrapper.DownloadString(out response, queryString))
 						throw new Exception(); // TODO correct error handling
 					parsed = (Dictionary<string, object>)json.DeserializeObject(response);
@@ -141,11 +152,11 @@ namespace TS3AudioBot
 		// playdata holds all needed information for playing + first possiblity
 		// > can be a resource (+ in future lazily loaded resource)
 		public PlayData MetaData { get; set; }
-		// data to load the AR via RFM.RestoreAndPlay
-		public string ResourceId { get; set; }
-		public AudioType ResourceType { get; set; }
+		// > data to load the AR via RFM.RestoreAndPlay
+		public AudioResource Resource { get; set; }
 		// > can be a history entry (will need to fall back to id-load if entry is deleted in meanwhile)
 		public uint HistoryId { get; set; }
+		// 
 	}
 
 	class Playlist
@@ -168,7 +179,7 @@ namespace TS3AudioBot
 
 		public void AddResource(PlayData resource)
 		{
-			if (!resourceSet.Contains(resource.Resource))
+			if (!resourceSet.Contains(resource.ResourceData))
 			{
 
 
@@ -206,6 +217,8 @@ namespace TS3AudioBot
 	{
 		[Info("a youtube apiv3 'Browser' type key")]
 		public string youtubeApiKey;
+		[Info("skip songs where user-input is required")]
+		public bool skipPostProcessor;
 	}
 #pragma warning restore CS0649
 }

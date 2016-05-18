@@ -162,7 +162,7 @@ namespace TS3AudioBot.History
 			if (playData == null)
 				throw new ArgumentNullException(nameof(playData));
 
-			uint? index = Contains(playData.Resource);
+			uint? index = Contains(playData.ResourceData);
 			if (!index.HasValue)
 			{
 				var ale = CreateLogEntry(playData);
@@ -319,7 +319,7 @@ namespace TS3AudioBot.History
 
 		private AudioLogEntry CreateLogEntry(PlayData playData)
 		{
-			var resource = playData.Resource;
+			var resource = playData.ResourceData;
 			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
 				return null;
 			var ale = new AudioLogEntry(CurrentID, resource.AudioType, resource.ResourceId)

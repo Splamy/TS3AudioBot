@@ -32,47 +32,48 @@ namespace TS3AudioBot.ResourceFactories
 
 		private R LoadAndPlay(IResourceFactory factory, PlayData data)
 		{
-			if (data.Resource == null)
+			if (data.ResourceData == null)
 			{
 				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 
-				AudioResource resource;
-				RResultCode result = factory.GetResource(netlinkurl, out resource);
-				if (result != RResultCode.Success)
-					return $"Could not play ({result})";
-				data.Resource = resource;
+				var result = factory.GetResource(netlinkurl);
+				if (!result)
+					return $"Could not play ({result.Message})";
+				data.PlayResource = result.Value;
 			}
-			return PostProcessStart(factory, data);
+			return PostProcessAndStartInternal(factory, data);
 		}
 
-		public R<AudioResource> Restore(AudioType audioType, string resourceId, string name = null)
-		{
-			var factory = GetFactoryFor(audioType);
+		public R<PlayResource> Restore(AudioResource resource)
+			=> RestoreInternal(GetFactoryFor(resource.AudioType), resource);
 
-			AudioResource resource;
-			RResultCode result = factory.GetResourceById(resourceId, name, out resource);
-			if (result != RResultCode.Success)
-				return $"Could not restore ({result})";
-			return resource;
+		private R<PlayResource> RestoreInternal(IResourceFactory factory, AudioResource resource)
+		{
+			var result = factory.GetResourceById(resource.ResourceId, resource.ResourceTitle);
+			if (!result)
+				return $"Could not restore ({result.Message})";
+			return result;
 		}
 
 		public R RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
 		{
-			if (data.Resource == null)
-			{
-				var r = Restore(logEntry.AudioType, logEntry.ResourceId, logEntry.ResourceTitle);
-				if (!r) return r.Message;
-				data.Resource = r.Result;
-			}
 			var factory = GetFactoryFor(logEntry.AudioType);
-			return PostProcessStart(factory, data);
+			var result = RestoreInternal(factory, logEntry);
+			if (!result) return result.Message;
+			data.PlayResource = result.Value;
+			return PostProcessAndStartInternal(factory, data);
 		}
 
-		private R PostProcessStart(IResourceFactory factory, PlayData data)
+		public R PostProcessAndStart(PlayData data)
+			=> PostProcessAndStartInternal(GetFactoryFor(data.ResourceData.AudioType), data);
+
+		private R PostProcessAndStartInternal(IResourceFactory factory, PlayData data)
 		{
-			bool abortPlay;
-			factory.PostProcess(data, out abortPlay);
-			return abortPlay ? R.OkR : Play(data);
+			var result = factory.PostProcess(data);
+			if (!result)
+				return result.Message;
+			else
+				return Play(data);
 		}
 
 		public R Play(PlayData data)
@@ -80,14 +81,12 @@ namespace TS3AudioBot.ResourceFactories
 			if (data.Enqueue && audioFramework.IsPlaying)
 			{
 				audioFramework.PlaylistManager.AddToPlaylist(data);
+				return R.OkR;
 			}
 			else
 			{
-				var result = audioFramework.StartResource(data);
-				if (result != AudioResultCode.Success)
-					return $"The resource could not be played ({result}).";
+				return audioFramework.StartResource(data);
 			}
-			return R.OkR;
 		}
 
 		private IResourceFactory GetFactoryFor(AudioType audioType)
@@ -108,7 +107,7 @@ namespace TS3AudioBot.ResourceFactories
 			factories.Add(factory);
 		}
 
-		public string RestoreLink(PlayData data) => RestoreLink(data.Resource);
+		public string RestoreLink(PlayData data) => RestoreLink(data.ResourceData);
 		public string RestoreLink(AudioResource res)
 		{
 			IResourceFactory factory = GetFactoryFor(res.AudioType);
