@@ -82,7 +82,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public string LoadPlugin(string identifier)
+		public R LoadPlugin(string identifier)
 		{
 			CheckLocalPlugins();
 
@@ -102,7 +102,7 @@ namespace TS3AudioBot
 			return LoadPlugin(plugin);
 		}
 
-		private string LoadPlugin(Plugin plugin)
+		private R LoadPlugin(Plugin plugin)
 		{
 			if (plugin == null)
 				return "Plugin not found";
@@ -121,7 +121,7 @@ namespace TS3AudioBot
 					plugin.proxy.Run(mainBot);
 					mainBot.CommandManager.RegisterPlugin(plugin);
 					plugin.status = PluginStatus.Active;
-					return "Ok";
+					return R.OkR;
 				}
 				catch (Exception ex)
 				{

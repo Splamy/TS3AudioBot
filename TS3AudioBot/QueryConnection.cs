@@ -7,6 +7,7 @@ namespace TS3AudioBot
 	using TS3Query;
 	using TS3Query.Messages;
 
+	// TODO: add back a ITeamspeakControl interface for abstracting the communication between bot and ts3server
 	public class QueryConnection : MarshalByRefObject, IDisposable
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
@@ -38,7 +39,7 @@ namespace TS3AudioBot
 		private QueryConnectionData connectionData;
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
-		internal TS3QueryClient tsClient { get; private set; }
+		private TS3QueryClient tsClient;
 		private ClientData me;
 
 		public QueryConnection(QueryConnectionData qcd)
@@ -71,6 +72,8 @@ namespace TS3AudioBot
 				TickPool.RegisterTick(() => tsClient.WhoAmI(), PingInterval, true);
 			}
 		}
+
+		public void EnterEventLoop() => tsClient.EnterEventLoop();
 
 		private void Diconnect()
 		{

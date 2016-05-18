@@ -66,9 +66,6 @@ namespace TS3AudioBot
 			// TODO via history ?
 		}
 
-		/// <summary>Clears the current playlist</summary>
-		public void Clear() => PlaylistManager.Clear();
-
 		private void OnSongEnd() => Next();
 
 		// Audioframework
@@ -142,10 +139,7 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Debug, "AF ar start: {0}", playData.Resource);
 			playerConnection.AudioStart(resourceLink);
 
-			if (playData.Volume == -1)
-				Volume = audioFrameworkData.defaultVolume;
-			else
-				Volume = playData.Volume;
+			Volume = playData.Volume ?? audioFrameworkData.defaultVolume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 
 			OnResourceStarted?.Invoke(this, playData);

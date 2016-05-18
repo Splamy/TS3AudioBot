@@ -38,6 +38,12 @@ namespace TS3AudioBot.ResourceFactories
 
 		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
 		{
+			if (name == null)
+			{
+				string link = RestoreLink(id);
+				return GetResource(link, out resource);
+			}
+
 			string finalRequest = $"https://api.soundcloud.com/tracks/{id}/stream?client_id={SoundcloudClientID}";
 			resource = new SoundcloudResource(id, name, finalRequest);
 			return RResultCode.Success;

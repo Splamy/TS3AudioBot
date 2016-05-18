@@ -4,6 +4,7 @@ namespace TS3AudioBot.History
 	using System.Collections.Generic;
 	using System.Linq;
 	using Helper;
+	using ResourceFactories;
 
 	public class HistoryManager : MarshalByRefObject, IDisposable
 	{
@@ -65,6 +66,14 @@ namespace TS3AudioBot.History
 		{
 			var aleList = Search(query);
 			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
+		}
+
+		public uint? FindEntryId(AudioResource resource)
+		{
+			lock(accessLock)
+			{
+				return historyFile.Contains(resource);
+			}
 		}
 
 		public AudioLogEntry GetEntryById(uint id)

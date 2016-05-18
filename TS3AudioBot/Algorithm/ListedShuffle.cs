@@ -32,6 +32,6 @@ namespace TS3AudioBot.Algorithm
 			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(x => rngeesus.Next()).ToArray();
 		}
 
-		public int SeedIndex(int i) => permutation[i % permutation.Length];
+		public int Get(int i) => permutation[i % permutation.Length];
 	}
 }

@@ -184,7 +184,7 @@ namespace TS3AudioBot
 		private void Run()
 		{
 			Thread.CurrentThread.Name = "Main/Eventloop";
-			QueryConnection.tsClient.EnterEventLoop();
+			QueryConnection.EnterEventLoop();
 		}
 
 		#region COMMAND EXECUTING & CHAINING
@@ -290,6 +290,7 @@ namespace TS3AudioBot
 		// [text] = Option for fixed text
 		// (a|b) = either or switch
 
+		// TODO: to be replaced with "queue"
 		[Command(Private, "add", "Adds a new song to the queue.")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
 		public string CommandAdd(ExecutionInformation info, string parameter)
@@ -301,7 +302,9 @@ namespace TS3AudioBot
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
 		public void CommandClear()
 		{
-			AudioFramework.Clear();
+			// TODO: maby change, i'm not too happy about that accecs to a submember...
+			// but i dont want to be the AF a wrapper for PLM
+			AudioFramework.PlaylistManager.ClearPlaylist();
 		}
 
 		[Command(AnyVisibility, "eval", "Executes a given command or string")]
@@ -1145,11 +1148,11 @@ namespace TS3AudioBot
 
 	public class PlayData : MarshalByRefObject
 	{
-		public BotSession Session { get; private set; }
-		public ClientData Invoker { get; private set; }
-		public string Message { get; private set; }
-		public bool Enqueue { get; private set; }
-		public int Volume { get; private set; }
+		public BotSession Session { get; }
+		public ClientData Invoker { get; }
+		public string Message { get; }
+		public bool Enqueue { get; }
+		public int? Volume { get; }
 		public AudioResource Resource { get; set; }
 
 		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue)
@@ -1159,7 +1162,7 @@ namespace TS3AudioBot
 			Message = message;
 			Enqueue = enqueue;
 			Resource = null;
-			Volume = -1;
+			Volume = null;
 		}
 	}
 

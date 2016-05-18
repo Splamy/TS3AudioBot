@@ -76,6 +76,7 @@
     <Compile Include="CommandSystem\Commands\StringCommand.cs" />
     <Compile Include="CommandSystem\XCommandSystem.cs" />
     <Compile Include="ErrorLogger.cs" />
+    <Compile Include="Helper\R.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />
     <Compile Include="History\SmartHistoryFormatter.cs" />
     <Compile Include="Helper\InfoAttribute.cs" />

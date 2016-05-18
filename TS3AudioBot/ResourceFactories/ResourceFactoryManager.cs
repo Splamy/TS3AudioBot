@@ -17,20 +17,20 @@ namespace TS3AudioBot.ResourceFactories
 			this.audioFramework = audioFramework;
 		}
 
-		public string LoadAndPlay(PlayData data)
+		public R LoadAndPlay(PlayData data)
 		{
 			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
 			IResourceFactory factory = GetFactoryFor(netlinkurl);
 			return LoadAndPlay(factory, data);
 		}
 
-		public string LoadAndPlay(AudioType audioType, PlayData data)
+		public R LoadAndPlay(AudioType audioType, PlayData data)
 		{
 			var factory = GetFactoryFor(audioType);
 			return LoadAndPlay(factory, data);
 		}
 
-		private string LoadAndPlay(IResourceFactory factory, PlayData data)
+		private R LoadAndPlay(IResourceFactory factory, PlayData data)
 		{
 			if (data.Resource == null)
 			{
@@ -45,33 +45,41 @@ namespace TS3AudioBot.ResourceFactories
 			return PostProcessStart(factory, data);
 		}
 
-		public string RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
+		public R<AudioResource> Restore(AudioType audioType, string resourceId, string name = null)
 		{
-			var factory = GetFactoryFor(logEntry.AudioType);
+			var factory = GetFactoryFor(audioType);
 
+			AudioResource resource;
+			RResultCode result = factory.GetResourceById(resourceId, name, out resource);
+			if (result != RResultCode.Success)
+				return $"Could not restore ({result})";
+			return resource;
+		}
+
+		public R RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
+		{
 			if (data.Resource == null)
 			{
-				AudioResource resource;
-				RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.ResourceTitle, out resource);
-				if (result != RResultCode.Success)
-					return $"Could not restore ({result})";
-				data.Resource = resource;
+				var r = Restore(logEntry.AudioType, logEntry.ResourceId, logEntry.ResourceTitle);
+				if (!r) return r.Message;
+				data.Resource = r.Result;
 			}
+			var factory = GetFactoryFor(logEntry.AudioType);
 			return PostProcessStart(factory, data);
 		}
 
-		private string PostProcessStart(IResourceFactory factory, PlayData data)
+		private R PostProcessStart(IResourceFactory factory, PlayData data)
 		{
 			bool abortPlay;
 			factory.PostProcess(data, out abortPlay);
-			return abortPlay ? null : Play(data);
+			return abortPlay ? R.OkR : Play(data);
 		}
 
-		public string Play(PlayData data)
+		public R Play(PlayData data)
 		{
 			if (data.Enqueue && audioFramework.IsPlaying)
 			{
-				audioFramework.PlaylistManager.Enqueue(data);
+				audioFramework.PlaylistManager.AddToPlaylist(data);
 			}
 			else
 			{
@@ -79,7 +87,7 @@ namespace TS3AudioBot.ResourceFactories
 				if (result != AudioResultCode.Success)
 					return $"The resource could not be played ({result}).";
 			}
-			return null;
+			return R.OkR;
 		}
 
 		private IResourceFactory GetFactoryFor(AudioType audioType)

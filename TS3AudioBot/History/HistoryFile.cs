@@ -308,9 +308,11 @@ namespace TS3AudioBot.History
 		{
 			if (ale == null)
 				throw new ArgumentNullException(nameof(ale));
+			if (!Contains(ale).HasValue)
+				throw new ArgumentException("The requested entry was not found.");
 
-			RemoveFromFile(ale);
 			RemoveFromMemoryIndex(ale);
+			RemoveFromFile(ale);
 		}
 
 		// Internal features

@@ -5,6 +5,6 @@ namespace TS3AudioBot.Algorithm
 		void SetData(int length);
 		void SetData(int seed, int length);
 
-		int SeedIndex(int i);
+		int Get(int i);
 	}
 }

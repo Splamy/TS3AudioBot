@@ -19,7 +19,10 @@ namespace TS3AudioBot.ResourceFactories
 
 		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
 		{
-			var result = ValidateUri(id, ref name, id);
+			string outName;
+			var result = ValidateUri(out outName, id);
+			if (string.IsNullOrWhiteSpace(outName))
+				outName = id;
 
 			if (result == RResultCode.MediaNoWebResponse)
 			{
@@ -28,18 +31,21 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else
 			{
-				resource = new MediaResource(id, name, id, result);
+				resource = new MediaResource(id, name ?? outName, id, result);
 				return RResultCode.Success;
 			}
 		}
 
 		public string RestoreLink(string id) => id;
 
-		private static RResultCode ValidateUri(string id, ref string name, string uri)
+		private static RResultCode ValidateUri(out string name, string uri)
 		{
 			Uri uriResult;
 			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out uriResult))
+			{
+				name = null;
 				return RResultCode.MediaInvalidUri;
+			}
 
 			try
 			{
@@ -47,43 +53,43 @@ namespace TS3AudioBot.ResourceFactories
 				if (scheme == Uri.UriSchemeHttp
 					|| scheme == Uri.UriSchemeHttps
 					|| scheme == Uri.UriSchemeFtp)
-					return ValidateWeb(id, ref name, uri);
+					return ValidateWeb(out name, uri);
 				else if (uriResult.Scheme == Uri.UriSchemeFile)
-					return ValidateFile(id, ref name, uri);
+					return ValidateFile(out name, uri);
 				else
+				{
+					name = null;
 					return RResultCode.MediaUnknownUri;
+				}
 			}
 			catch (InvalidOperationException)
 			{
-				return ValidateFile(id, ref name, uri);
+				return ValidateFile(out name, uri);
 			}
 		}
 
-		private static void GetStreamData(string id, ref string name, Stream stream)
+		private static string GetStreamName(Stream stream) => AudioTagReader.GetTitle(stream);
+
+		private static RResultCode ValidateWeb(out string name, string link)
 		{
-			if (string.IsNullOrEmpty(name))
+			string outName = null;
+			if (WebWrapper.GetResponse(new Uri(link), response => { using (var stream = response.GetResponseStream()) outName = GetStreamName(stream); })
+				== ValidateCode.Ok)
 			{
-				if (stream != null)
-				{
-					name = AudioTagReader.GetTitle(stream);
-					name = string.IsNullOrWhiteSpace(name) ? id : name;
-				}
-				else name = id;
+				name = outName;
+				return RResultCode.Success;
+			}
+			else
+			{
+				name = null;
+				return RResultCode.MediaNoWebResponse;
 			}
 		}
 
-		private static RResultCode ValidateWeb(string id, ref string name, string link)
+		private static RResultCode ValidateFile(out string name, string path)
 		{
-			string refname = name;
-			if (WebWrapper.GetResponse(new Uri(link), response => { using (var stream = response.GetResponseStream()) GetStreamData(id, ref refname, stream); }) != ValidateCode.Ok)
-				return RResultCode.MediaNoWebResponse;
+			name = null;
 
-			name = refname;
-			return RResultCode.Success;
-		}
-
-		private static RResultCode ValidateFile(string id, ref string name, string path)
-		{
 			if (!File.Exists(path))
 				return RResultCode.MediaFileNotFound;
 
@@ -91,7 +97,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
 				{
-					GetStreamData(id, ref name, stream);
+					name = GetStreamName(stream);
 					return RResultCode.Success;
 				}
 			}
