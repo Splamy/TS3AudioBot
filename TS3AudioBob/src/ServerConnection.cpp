@@ -405,7 +405,7 @@ void ServerConnection::onReadError(audio::Player*, audio::Player::ReadError erro
 	for (std::shared_ptr<User> user : users)
 	{
 		if (user->getEnableCallbacks())
-			sendCommand(user, "callback musicreaderror\ndescription {0}", message);
+			sendCommand(user, "callback musicreaderror\ndescription {0}", *message);
 	}
 }
 
@@ -418,7 +418,7 @@ void ServerConnection::onDecodeError(audio::Player*, audio::Player::DecodeError 
 	for (std::shared_ptr<User> user : users)
 	{
 		if (user->getEnableCallbacks())
-			sendCommand(user, "callback musicdecodeerror\ndescription {0}", message);
+			sendCommand(user, "callback musicdecodeerror\ndescription {0}", *message);
 	}
 }
 
