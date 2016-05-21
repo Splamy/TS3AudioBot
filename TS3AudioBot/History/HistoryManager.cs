@@ -21,7 +21,7 @@ namespace TS3AudioBot.History
 			historyFile.OpenFile(hmd.historyFile);
 		}
 
-		public void LogAudioResource(object sender, PlayData playData)
+		public void LogAudioResource(object sender, PlayInfoEventArgs playData)
 		{
 			lock (accessLock)
 				historyFile.Store(playData);

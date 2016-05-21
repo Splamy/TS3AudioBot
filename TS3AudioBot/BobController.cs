@@ -260,7 +260,7 @@ namespace TS3AudioBot
 
 		#region Bob & Events
 
-		internal void OnResourceStarted(object sender, PlayData playData)
+		internal void OnResourceStarted(object sender, PlayInfoEventArgs playData)
 		{
 			Log.Write(Log.Level.Debug, "BC Ressource started");
 			BobStart();

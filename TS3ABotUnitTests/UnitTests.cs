@@ -43,8 +43,8 @@ namespace TS3ABotUnitTests
 			var ar1 = new AudioResource("asdf", "sc_ar1", AudioType.Soundcloud);
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", AudioType.MediaLink);
 
-			var data1 = new PlayData(null, inv1, "", false) { ResourceData = ar1, };
-			var data2 = new PlayData(null, inv2, "", false) { ResourceData = ar2, };
+			var data1 = new PlayInfoEventArgs(inv1, new SoundcloudResource(ar1.ResourceId, ar1));
+			var data2 = new PlayInfoEventArgs(inv2, new MediaResource(ar2.ResourceId, RResultCode.Success, ar2));
 
 
 			HistoryFile hf = new HistoryFile();

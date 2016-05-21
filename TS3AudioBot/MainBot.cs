@@ -1094,7 +1094,7 @@ namespace TS3AudioBot
 
 		#endregion
 
-		public void SongUpdateEvent(object sender, PlayData data)
+		public void SongUpdateEvent(object sender, PlayInfoEventArgs data)
 		{
 			if (!QuizMode)
 			{
@@ -1184,6 +1184,19 @@ namespace TS3AudioBot
 				Volume = Volume,
 				PlayResource = PlayResource,
 			};
+	}
+
+	public class PlayInfoEventArgs : EventArgs
+	{
+		public ClientData Invoker { get; }
+		public PlayResource PlayResource { get; }
+		public AudioResource ResourceData => PlayResource.BaseData;
+
+		public PlayInfoEventArgs(ClientData invoker, PlayResource playResource)
+		{
+			Invoker = invoker;
+			PlayResource = playResource;
+		}
 	}
 
 	public enum CommandRights

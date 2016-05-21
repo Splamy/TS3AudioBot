@@ -17,7 +17,7 @@ namespace TS3AudioBot
 		public PlayData CurrentPlayData { get; private set; }
 		private IPlayerConnection playerConnection;
 
-		public event EventHandler<PlayData> OnResourceStarted;
+		public event EventHandler<PlayInfoEventArgs> OnResourceStarted;
 		public event EventHandler<SongEndEventArgs> OnResourceStopped;
 		public event EventHandler OnPlayStopped;
 
@@ -142,8 +142,8 @@ namespace TS3AudioBot
 			Volume = playData.Volume ?? audioFrameworkData.defaultVolume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 
-			OnResourceStarted?.Invoke(this, playData);
 			CurrentPlayData = playData;
+			OnResourceStarted?.Invoke(this, new PlayInfoEventArgs(playData.Invoker, playData.PlayResource));
 
 			if (!playerConnection.SupportsEndCallback)
 			{

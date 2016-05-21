@@ -157,7 +157,7 @@ namespace TS3AudioBot.History
 		}
 
 
-		public void Store(PlayData playData)
+		public void Store(PlayInfoEventArgs playData)
 		{
 			if (playData == null)
 				throw new ArgumentNullException(nameof(playData));
@@ -317,7 +317,7 @@ namespace TS3AudioBot.History
 
 		// Internal features
 
-		private AudioLogEntry CreateLogEntry(PlayData playData)
+		private AudioLogEntry CreateLogEntry(PlayInfoEventArgs playData)
 		{
 			var resource = playData.ResourceData;
 			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
@@ -400,7 +400,7 @@ namespace TS3AudioBot.History
 		{
 			resIdToId.Remove(logEntry.UniqueId);
 			idFilter.Remove(logEntry.Id);
-			titleFilter.Remove(logEntry.ResourceTitle);
+			titleFilter.RemoveValue(logEntry);
 			userIdFilter[logEntry.UserInvokeId].Remove(logEntry);
 			timeFilter.Remove(logEntry.Timestamp);
 		}

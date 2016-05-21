@@ -5,7 +5,8 @@ namespace TS3AudioBot.Algorithm
 	public interface ISubstringSearch<T>
 	{
 		void Add(string key, T value);
-		void Remove(string key);
+		void RemoveKey(string key);
+		void RemoveValue(T key);
 		IList<T> GetValues(string key);
 		void Clear();
 	}
