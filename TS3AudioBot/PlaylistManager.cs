@@ -48,6 +48,7 @@ namespace TS3AudioBot
 		private int dataSetLength = 0;
 
 		public bool Random { get; set; }
+		/// <summary>Loop state for the entire playlist.</summary>
 		public bool Loop { get; set; }
 
 		public PlaylistManager(PlaylistManagerData pmd)
@@ -71,6 +72,11 @@ namespace TS3AudioBot
 			else
 				pseudoListIndex = indexCount;
 			return freeList.GetResource(pseudoListIndex);
+		}
+
+		public PlayData Previous()
+		{
+			throw new NotImplementedException();
 		}
 
 		public void AddToPlaylist(PlayData resource)

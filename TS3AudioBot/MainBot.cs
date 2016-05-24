@@ -54,6 +54,7 @@ namespace TS3AudioBot
 		internal PluginManager PluginManager { get; private set; }
 		public CommandManager CommandManager { get; private set; }
 		public AudioFramework AudioFramework { get; private set; }
+		public PlaylistManager PlaylistManager { get; private set; }
 		public BobController BobController { get; private set; }
 		public QueryConnection QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
@@ -136,17 +137,17 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
-			var playlistManager = new PlaylistManager(pld);
+			PlaylistManager = new PlaylistManager(pld);
 			BobController = new BobController(bcd, QueryConnection);
 			// old: new VLCConnection(afd.vlcLocation);
 			// new: BobController
-			AudioFramework = new AudioFramework(afd, BobController, playlistManager);
+			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
-			FactoryManager = new ResourceFactoryManager(AudioFramework);
+			FactoryManager = new ResourceFactoryManager(AudioFramework, PlaylistManager);
 			FactoryManager.DefaultFactorty = new MediaFactory();
 			FactoryManager.AddFactory(new YoutubeFactory());
 			FactoryManager.AddFactory(new SoundcloudFactory());
@@ -157,7 +158,7 @@ namespace TS3AudioBot
 			AudioFramework.OnResourceStarted += HistoryManager.LogAudioResource;
 			// Inform the BobClient on start/stop
 			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
-			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
+			AudioFramework.OnPlayStopped += BobController.OnPlayStopped;
 			// In own favor update the own status text to the current song title
 			AudioFramework.OnResourceStarted += SongUpdateEvent;
 			// Register callback for all messages happening
@@ -302,9 +303,7 @@ namespace TS3AudioBot
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
 		public void CommandClear()
 		{
-			// TODO: maby change, i'm not too happy about that accecs to a submember...
-			// but i dont want to be the AF a wrapper for PLM
-			AudioFramework.PlaylistManager.ClearPlaylist();
+			PlaylistManager.ClearPlaylist();
 		}
 
 		[Command(AnyVisibility, "eval", "Executes a given command or string")]
@@ -482,7 +481,7 @@ namespace TS3AudioBot
 				if (ale != null)
 				{
 					ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-					return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
+					return FactoryManager.RestoreAndPlay(new PlayData(info.Session, client, null, false, ale));
 				}
 				else return "There is no song in the history";
 			}
@@ -495,7 +494,7 @@ namespace TS3AudioBot
 			if (ale == null)
 				return "Could not find track with this id";
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
+			return FactoryManager.RestoreAndPlay(new PlayData(info.Session, client, null, false, ale));
 		}
 
 		[Command(Private, "history queue", "<id> Adds the song with <id> to the queue")]
@@ -505,7 +504,7 @@ namespace TS3AudioBot
 			if (ale == null)
 				return "Could not find track with this id";
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, true));
+			return FactoryManager.RestoreAndPlay(new PlayData(info.Session, client, null, true, ale));
 		}
 
 		[Command(Admin, "history rename", "<id> <name> Sets the name of the song with <id> to <name>")]
@@ -635,11 +634,11 @@ namespace TS3AudioBot
 		public string CommandLoop(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
-				return "Loop is " + (AudioFramework.Loop ? "on" : "off");
+				return "Loop is " + (PlaylistManager.Loop ? "on" : "off");
 			else if (parameter == "on")
-				AudioFramework.Loop = true;
+				PlaylistManager.Loop = true;
 			else if (parameter == "off")
-				AudioFramework.Loop = false;
+				PlaylistManager.Loop = false;
 			else
 				return CommandHelp(info, "loop");
 			return null;
@@ -653,9 +652,12 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "next", "Plays the next song in the playlist.")]
-		public void CommandNext()
+		public string CommandNext()
 		{
-			AudioFramework.Next();
+			var playData = PlaylistManager.Next();
+			if (playData == null)
+				return "No next song available";
+			return FactoryManager.RestoreAndPlay(playData);
 		}
 
 		[Command(Public, "pm", "Requests a private session with the ServerBot so you can invoke private commands.")]
@@ -727,9 +729,12 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "previous", "Plays the previous song in the playlist.")]
-		public void CommandPrevious()
+		public string CommandPrevious()
 		{
-			AudioFramework.Previous();
+			var playData = PlaylistManager.Previous();
+			if (playData == null)
+				return "No previous song available";
+			return FactoryManager.RestoreAndPlay(playData);
 		}
 
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
@@ -816,9 +821,9 @@ namespace TS3AudioBot
 		[RequiredParameters(0)]
 		public string CommandRng(int? first, int? second)
 		{
-			if (second != null)
+			if (second.HasValue)
 				return Util.RngInstance.Next(first.Value, second.Value).ToString();
-			else if (first != null)
+			else if (first.HasValue)
 				return Util.RngInstance.Next(first.Value).ToString();
 			else
 				return Util.RngInstance.Next().ToString();
@@ -1165,6 +1170,12 @@ namespace TS3AudioBot
 			ResourceData = null;
 			PlayResource = null;
 			Volume = null;
+		}
+
+		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue, AudioResource ar) :
+			this(session, invoker, message, enqueue)
+		{
+			ResourceData = ar;
 		}
 	}
 

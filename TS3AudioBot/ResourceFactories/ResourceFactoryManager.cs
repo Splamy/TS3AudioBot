@@ -10,13 +10,22 @@ namespace TS3AudioBot.ResourceFactories
 		public IResourceFactory DefaultFactorty { get; internal set; }
 		private IList<IResourceFactory> factories;
 		private AudioFramework audioFramework;
+		private PlaylistManager playlistManager;
 
-		public ResourceFactoryManager(AudioFramework audioFramework)
+		public ResourceFactoryManager(AudioFramework audioFramework, PlaylistManager playlistManager)
 		{
 			factories = new List<IResourceFactory>();
 			this.audioFramework = audioFramework;
+			this.playlistManager = playlistManager;
 		}
 
+		/// <summary>
+		/// Creates a new <see cref="PlayResource"/> which can be played.
+		/// The build data will be taken from <see cref="PlayData.ResourceData"/> or 
+		/// <see cref="PlayData.Message"/> if no AudioResource is given.
+		/// </summary>
+		/// <param name="data">The building parameters for the resource.</param>
+		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R LoadAndPlay(PlayData data)
 		{
 			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
@@ -24,6 +33,13 @@ namespace TS3AudioBot.ResourceFactories
 			return LoadAndPlay(factory, data);
 		}
 
+		/// <summary>
+		/// Same as <see cref="LoadAndPlay(PlayData)"/> except it lets you pick an
+		/// <see cref="IResourceFactory"/> identifier to manually select a factory.
+		/// </summary>
+		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
+		/// <param name="data">The building parameters for the resource.</param>
+		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R LoadAndPlay(AudioType audioType, PlayData data)
 		{
 			var factory = GetFactoryFor(audioType);
@@ -44,8 +60,8 @@ namespace TS3AudioBot.ResourceFactories
 			return PostProcessAndStartInternal(factory, data);
 		}
 
-		public R<PlayResource> Restore(AudioResource resource)
-			=> RestoreInternal(GetFactoryFor(resource.AudioType), resource);
+		//public R<PlayResource> Restore(AudioResource resource)
+		//	=> RestoreInternal(GetFactoryFor(resource.AudioType), resource);
 
 		private R<PlayResource> RestoreInternal(IResourceFactory factory, AudioResource resource)
 		{
@@ -55,15 +71,32 @@ namespace TS3AudioBot.ResourceFactories
 			return result;
 		}
 
-		public R RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
+		/// <summary>
+		/// Creates a new <see cref="PlayResource"/> which can be played, but restores values like
+		/// title or first invoker from the history database.
+		/// </summary>
+		/// <param name="data">The building parameters for the resource.</param>
+		/// <returns>Ok if successful, or an error message otherwise.</returns>
+		public R RestoreAndPlay(PlayData data)
 		{
-			var factory = GetFactoryFor(logEntry.AudioType);
-			var result = RestoreInternal(factory, logEntry);
+			if (data == null)
+				throw new ArgumentNullException(nameof(data));
+			if (data.ResourceData == null)
+				throw new ArgumentNullException(nameof(data.ResourceData));
+
+			var factory = GetFactoryFor(data.ResourceData.AudioType);
+			var result = RestoreInternal(factory, data.ResourceData);
 			if (!result) return result.Message;
 			data.PlayResource = result.Value;
 			return PostProcessAndStartInternal(factory, data);
 		}
 
+		/// <summary>
+		/// Invokes postprocess operations for the passed <see cref="PlayData.ResourceData"/> and
+		/// the corresponding factory. Starts the resource afterwards if the pp was successful.
+		/// </summary>
+		/// <param name="data">The building parameters for the resource.</param>
+		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R PostProcessAndStart(PlayData data)
 			=> PostProcessAndStartInternal(GetFactoryFor(data.ResourceData.AudioType), data);
 
@@ -76,11 +109,14 @@ namespace TS3AudioBot.ResourceFactories
 				return Play(data);
 		}
 
+		/// <summary>Playes the passed <see cref="PlayData.PlayResource"/></summary>
+		/// <param name="data">The building parameters for the resource.</param>
+		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R Play(PlayData data)
 		{
 			if (data.Enqueue && audioFramework.IsPlaying)
 			{
-				audioFramework.PlaylistManager.AddToPlaylist(data);
+				playlistManager.AddToPlaylist(data);
 				return R.OkR;
 			}
 			else

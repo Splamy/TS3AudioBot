@@ -269,14 +269,10 @@ namespace TS3AudioBot
 			RestoreSubscriptions(playData.Invoker);
 		}
 
-		internal void OnResourceStopped(object sender, bool restart)
+		internal void OnPlayStopped(object sender, EventArgs e)
 		{
-			Log.Write(Log.Level.Debug, "BC Ressource ended ({0})", restart);
-			if (!restart)
-			{
-				Sending = false;
-				BobStop();
-			}
+			Sending = false;
+			BobStop();
 		}
 
 		private void BobStart()

@@ -16,19 +16,28 @@ namespace TS3AudioBot
 
 		public PlayData CurrentPlayData { get; private set; }
 		private IPlayerConnection playerConnection;
-		public PlaylistManager PlaylistManager { get; }
 
 		public event EventHandler<PlayData> OnResourceStarted;
-		public event EventHandler<bool> OnResourceStopped;
+		public event EventHandler<SongEndEventArgs> OnResourceStopped;
+		public event EventHandler OnPlayStopped;
 
 		// Playerproperties
 
 		public bool IsPlaying => CurrentPlayData != null;
-		/// <summary>Loop state for the entire playlist.</summary>
-		public bool Loop { get { return PlaylistManager.Loop; } set { PlaylistManager.Loop = value; } }
 		/// <summary>Loop state for the current song.</summary>
 		public bool Repeat { get { return playerConnection.Repeated; } set { playerConnection.Repeated = value; } }
-		public int Volume { get { return playerConnection.Volume; } set { playerConnection.Volume = value; } }
+		/// <summary>Gets or sets the volume for the current song.
+		/// Value between 0 and MaxVolume. 40 Is usually pretty loud already :).</summary>
+		public int Volume
+		{
+			get { return playerConnection.Volume; }
+			set
+			{
+				if (Volume < 0 || Volume > MaxVolume)
+					throw new ArgumentOutOfRangeException(nameof(value));
+				playerConnection.Volume = value;
+			}
+		}
 		/// <summary>Starts or resumes the current song.</summary>
 		public bool Pause { get { return playerConnection.Pause; } set { playerConnection.Pause = value; } }
 
@@ -45,34 +54,11 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		/// <summary>Plays the next song in the playlist or queue.</summary>
-		public void Next()
-		{
-			var next = PlaylistManager.Next();
-			if (next != null)
-			{
-				CurrentPlayData = next;
-				StartResource(CurrentPlayData);
-			}
-			else
-			{
-				Stop(false);
-			}
-		}
-
-		/// <summary>Plays the previous song in the playlist.</summary>
-		public void Previous()
-		{
-			// TODO via history ?
-		}
-
-		private void OnSongEnd() => Next();
-
 		// Audioframework
 
 		/// <summary>Creates a new AudioFramework</summary>
 		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
-		internal AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackEnd, PlaylistManager playlistMgr)
+		internal AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackEnd)
 		{
 			if (audioBackEnd == null)
 				throw new ArgumentNullException(nameof(audioBackEnd));
@@ -85,8 +71,6 @@ namespace TS3AudioBot
 			audioFrameworkData = afd;
 			playerConnection = audioBackEnd;
 			playerConnection.Initialize();
-
-			PlaylistManager = playlistMgr;
 		}
 
 		/// <summary>
@@ -112,6 +96,23 @@ namespace TS3AudioBot
 					OnSongEnd();
 					waitEndTick.Active = false;
 				}
+			}
+		}
+
+		private void OnSongEnd()
+		{
+			var songEndArgs = new SongEndEventArgs();
+			OnResourceStopped?.Invoke(this, songEndArgs);
+
+			var next = songEndArgs.NextSong;
+			if (next != null)
+			{
+				CurrentPlayData = next;
+				StartResource(CurrentPlayData);
+			}
+			else
+			{
+				Stop(false);
 			}
 		}
 
@@ -152,10 +153,7 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
-		public void Stop()
-		{
-			Stop(false);
-		}
+		public void Stop() => Stop(false);
 
 		/// <summary>Stops the currently played song.</summary>
 		/// <param name="restart">When set to true, the AudioBob won't be notified aubout the stop.
@@ -167,8 +165,10 @@ namespace TS3AudioBot
 			{
 				CurrentPlayData = null;
 				if (!restart)
+				{
 					playerConnection.AudioStop();
-				OnResourceStopped?.Invoke(this, restart);
+					OnPlayStopped?.Invoke(this, new EventArgs());
+				}
 			}
 		}
 
@@ -185,6 +185,11 @@ namespace TS3AudioBot
 				Log.Write(Log.Level.Debug, "AF playerConnection disposed");
 			}
 		}
+	}
+
+	public class SongEndEventArgs : EventArgs
+	{
+		public PlayData NextSong { get; set; }
 	}
 
 	public struct AudioFrameworkData
