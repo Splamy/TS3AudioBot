@@ -6,6 +6,8 @@ namespace TS3AudioBot
 	using System.Text.RegularExpressions;
 	using System.Web.Script.Serialization;
 	using System.Xml;
+	using System.IO;
+	using System.Text;
 	using Algorithm;
 	using Helper;
 	using ResourceFactories;
@@ -41,6 +43,7 @@ namespace TS3AudioBot
 		private PlaylistManagerData data;
 		private JavaScriptSerializer json;
 		private History.HistoryManager HistoryManager;
+		private static readonly Encoding FileEncoding = Encoding.ASCII;
 
 		private int indexCount = 0;
 		private IShuffleAlgorithm shuffle;
@@ -95,9 +98,37 @@ namespace TS3AudioBot
 			freeList.Clear();
 		}
 
-		private void LoadPlaylist(string name)
+		public R LoadPlaylist(PlayData playData, string name)
 		{
-			throw new NotImplementedException();
+			var fi = new FileInfo(Path.Combine(data.playlistPath, name));
+			if (fi.Exists)
+				return "Playlist not found";
+
+			using (var sr = new StreamReader(fi.OpenRead(), FileEncoding))
+			{
+				Playlist plist = null;
+
+				string line;
+				while ((line = sr.ReadLine()) != null)
+				{
+					var kvp = line.Split(new[] { ':' }, 2);
+					if (kvp.Length != 2) continue;
+					string val = kvp[1].Trim();
+					switch (kvp[0].Trim())
+					{
+					case "user":
+						ulong userid;
+						if (plist != null || !ulong.TryParse(val, out userid))
+							return "Invalid playlist file: duplicate userid";
+						plist = new Playlist(userid, name);
+						break;
+					case "ln": plist.AddItem(new PlaylistItem(new PlayData(,, val, false))); break;
+					case "id": break;
+					default: Log.Write(Log.Level.Warning, "Unknown playlist entry {0}:{1}", kvp); break;
+					}
+				}
+			}
+			return R.OkR;
 		}
 
 		private void SavePlaylist(string name)
@@ -231,6 +262,8 @@ namespace TS3AudioBot
 #pragma warning disable CS0649
 	public struct PlaylistManagerData
 	{
+		[Info("absolute or relative path the playlist folder", "Playlists")]
+		public string playlistPath;
 		[Info("a youtube apiv3 'Browser' type key")]
 		public string youtubeApiKey;
 		[Info("skip songs where user-input is required")]

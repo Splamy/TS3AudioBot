@@ -19,6 +19,14 @@ namespace TS3AudioBot
 
 	// Todo:
 	// - implement history missing features
+	//
+	// The RFM has too much functionality
+	// split the factory managing and resource playing
+	// resource playing => PlayManager
+	// - will start diffrerent resource via RFM + AF
+	// - will invoke several building and ending events
+	// + make all events internal and move them to the new PlayManager
+
 	public sealed class MainBot : MarshalByRefObject, IDisposable
 	{
 		static void Main(string[] args)
