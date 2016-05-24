@@ -79,9 +79,14 @@ namespace TS3AudioBot
 			throw new NotImplementedException();
 		}
 
-		public void AddToPlaylist(PlayData resource)
+		public void AddToPlaylist(PlayData playData)
 		{
-			freeList.AddResource(resource);
+			freeList.AddItem(new PlaylistItem(playData));
+		}
+
+		public void AddToPlaylist(PlayData playData, uint hId)
+		{
+			freeList.AddItem(new PlaylistItem(playData, hId));
 		}
 
 		/// <summary>Clears the current playlist</summary>
@@ -100,17 +105,19 @@ namespace TS3AudioBot
 			throw new NotImplementedException();
 		}
 
-		public void LoadYoutubePlaylist(string ytLink, bool loadLength)
+		private Playlist LoadYoutubePlaylist(PlayData playData, string ytLink, bool loadLength)
 		{
 			Match matchYtId = ytListMatch.Match(ytLink);
 			if (!matchYtId.Success)
 			{
 				// error here
-				return;
+				return null;
 			}
 			string id = matchYtId.Groups[2].Value;
 
-			List<YoutubePlaylistItem> videoList = new List<YoutubePlaylistItem>();
+			var plist = new Playlist(playData.Invoker.DatabaseId, "Youtube playlist: " + id);
+			playData.ResourceData = null;
+			playData.PlayResource = null;
 
 			bool hasNext = false;
 			object nextToken = null;
@@ -125,18 +132,19 @@ namespace TS3AudioBot
 				var videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoDicts.Length];
 				for (int i = 0; i < videoDicts.Length; i++)
-					itemBuffer[i] = new YoutubePlaylistItem()
-					{
-						Resource = new AudioResource(
+				{
+					var pdCopy = playData.Clone();
+					pdCopy.ResourceData = new AudioResource(
 							(string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["videoId"]),
 							null, // TODO: check if name is already available (and for rename conflict when the entry already exists)
-							AudioType.Youtube),
-					};
+							AudioType.Youtube);
+					itemBuffer[i] = new YoutubePlaylistItem(pdCopy);
+				}
 				hasNext = parsed.TryGetValue("nextPageToken", out nextToken);
 
 				if (loadLength)
 				{
-					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.youtubeApiKey}");
+					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.MetaData.ResourceData.ResourceId))}&part=contentDetails&key={data.youtubeApiKey}");
 					if (!WebWrapper.DownloadString(out response, queryString))
 						throw new Exception(); // TODO correct error handling
 					parsed = (Dictionary<string, object>)json.DeserializeObject(response);
@@ -145,8 +153,9 @@ namespace TS3AudioBot
 						itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
 				}
 
-				videoList.AddRange(itemBuffer);
+				plist.AddRange(itemBuffer);
 			} while (hasNext);
+			return plist;
 		}
 
 		public void Dispose() { }
@@ -157,53 +166,52 @@ namespace TS3AudioBot
 		//one of these:
 		// playdata holds all needed information for playing + first possiblity
 		// > can be a resource (+ in future lazily loaded resource)
-		public PlayData MetaData { get; set; }
-		// > data to load the AR via RFM.RestoreAndPlay
-		public AudioResource Resource { get; set; }
+		public PlayData MetaData { get; }
 		// > can be a history entry (will need to fall back to id-load if entry is deleted in meanwhile)
-		public uint HistoryId { get; set; }
-		// 
+		public uint? HistoryId { get; }
+
+		public PlaylistItem(PlayData playData) { MetaData = playData; HistoryId = null; }
+		public PlaylistItem(PlayData playData, uint hId) { MetaData = playData; HistoryId = hId; }
 	}
 
 	class Playlist
 	{
 		// metainfo
 		public string Name { get; }
-		public uint CreatorDbId { get; }
+		public ulong CreatorDbId { get; }
 		// file behaviour: persistent playlist will be synced to a file
 		public bool FilePersistent { get; set; }
 		// playlist data
-		public int Length { get; protected set; }
-		private HashSet<AudioResource> resourceSet;
+		public int Length => resources.Count;
 		private List<PlaylistItem> resources;
 
-		public Playlist()
+		public Playlist(ulong creatorDbId, string name)
 		{
-			Util.Init(ref resourceSet);
 			Util.Init(ref resources);
+			CreatorDbId = creatorDbId;
+			Name = name;
 		}
 
-		public void AddResource(PlayData resource)
+		public void AddItem(PlaylistItem item)
 		{
-			if (!resourceSet.Contains(resource.ResourceData))
-			{
-
-
-				Length++;
-			}
+			resources.Add(item);
 		}
 
-		public void RemoveResource(AudioResource resource)
+		public void AddRange(IEnumerable<PlaylistItem> items)
 		{
-			if (!resourceSet.Contains(resource))
-			{
+			resources.AddRange(items);
+		}
 
-			}
+		public void RemoveItemAt(int i)
+		{
+			if (i < 0 || i >= resources.Count)
+				return;
+			resources.RemoveAt(i);
 		}
 
 		public void Clear()
 		{
-
+			resources.Clear();
 		}
 
 		public PlayData GetResource(int index)
@@ -216,6 +224,8 @@ namespace TS3AudioBot
 	class YoutubePlaylistItem : PlaylistItem
 	{
 		public TimeSpan Length { get; set; }
+
+		public YoutubePlaylistItem(PlayData playData) : base(playData) { }
 	}
 
 #pragma warning disable CS0649

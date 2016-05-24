@@ -1157,7 +1157,7 @@ namespace TS3AudioBot
 		public ClientData Invoker { get; }
 		public string Message { get; }
 		public bool Enqueue { get; }
-		public int? Volume { get; }
+		public int? Volume { get; set; }
 		public AudioResource ResourceData { get; set; }
 		public PlayResource PlayResource { get; set; }
 
@@ -1177,6 +1177,13 @@ namespace TS3AudioBot
 		{
 			ResourceData = ar;
 		}
+
+		public PlayData Clone()
+			=> new PlayData(Session, Invoker, Message, Enqueue, ResourceData)
+			{
+				Volume = Volume,
+				PlayResource = PlayResource,
+			};
 	}
 
 	public enum CommandRights
