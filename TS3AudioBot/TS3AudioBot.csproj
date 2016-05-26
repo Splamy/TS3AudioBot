@@ -83,6 +83,7 @@
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
+    <Compile Include="PlayManager.cs" />
     <Compile Include="PluginManager.cs" />
     <Compile Include="QueryConnection.cs" />
     <Compile Include="SessionManager.cs" />

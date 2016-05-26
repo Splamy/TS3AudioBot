@@ -40,12 +40,12 @@ namespace TS3AudioBot.ResourceFactories
 			var match = twitchMatch.Match(url);
 			if (!match.Success)
 				return RResultCode.TwitchInvalidUrl.ToString();
-			return GetResourceById(match.Groups[3].Value, null);
+			return GetResourceById(new AudioResource(match.Groups[3].Value, null, AudioType.Twitch));
 		}
 
-		public R<PlayResource> GetResourceById(string id, string name)
+		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
-			var channel = id;
+			var channel = resource.ResourceId;
 
 			// request api token
 			string jsonResponse;
@@ -122,7 +122,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			if (dataList.Count > 0)
-				return new TwitchResource(dataList, new AudioResource(channel, name ?? $"Twitch channel: {channel}", AudioType.Twitch));
+				return new TwitchResource(dataList, resource.ResourceTitle != null ? resource : resource.WithName($"Twitch channel: {channel}"));
 			else
 				return RResultCode.TwitchNoStreamsExtracted.ToString();
 		}

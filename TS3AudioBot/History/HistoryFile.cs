@@ -313,7 +313,7 @@ namespace TS3AudioBot.History
 				throw new ArgumentNullException(nameof(newName));
 
 			// update the name
-			ale.ResourceTitle = newName;
+			ale.SetName(newName);
 
 			if (flush) ReWriteToFile(ale);
 		}
@@ -324,7 +324,7 @@ namespace TS3AudioBot.History
 		{
 			if (ale == null)
 				throw new ArgumentNullException(nameof(ale));
-			if (!Contains(ale).HasValue)
+			if (!Contains(ale.AudioResource).HasValue)
 				throw new ArgumentException("The requested entry was not found.");
 
 			RemoveFromMemoryIndex(ale);
@@ -338,11 +338,10 @@ namespace TS3AudioBot.History
 			var resource = playData.ResourceData;
 			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
 				return null;
-			var ale = new AudioLogEntry(CurrentID, resource.AudioType, resource.ResourceId)
+			var ale = new AudioLogEntry(CurrentID, resource)
 			{
 				UserInvokeId = (uint)playData.Invoker.DatabaseId,
 				Timestamp = Util.GetNow(),
-				ResourceTitle = resource.ResourceTitle,
 				PlayCount = 1,
 			};
 			CurrentID++;
@@ -391,9 +390,9 @@ namespace TS3AudioBot.History
 
 		private void AddToMemoryIndex(AudioLogEntry logEntry)
 		{
-			resIdToId.Add(logEntry.UniqueId, logEntry.Id);
+			resIdToId.Add(logEntry.AudioResource.UniqueId, logEntry.Id);
 			idFilter.Add(logEntry.Id, logEntry);
-			titleFilter.Add(logEntry.ResourceTitle.ToLower(CultureInfo.InvariantCulture), logEntry);
+			titleFilter.Add(logEntry.AudioResource.ResourceTitle.ToLower(CultureInfo.InvariantCulture), logEntry);
 			AutoAdd(userIdFilter, logEntry);
 			timeFilter.Add(logEntry.Timestamp, logEntry);
 		}
@@ -414,7 +413,7 @@ namespace TS3AudioBot.History
 
 		private void RemoveFromMemoryIndex(AudioLogEntry logEntry)
 		{
-			resIdToId.Remove(logEntry.UniqueId);
+			resIdToId.Remove(logEntry.AudioResource.UniqueId);
 			idFilter.Remove(logEntry.Id);
 			titleFilter.RemoveValue(logEntry);
 			userIdFilter[logEntry.UserInvokeId].Remove(logEntry);

@@ -163,7 +163,6 @@ namespace TS3AudioBot
 			string id = matchYtId.Groups[2].Value;
 
 			var plist = new Playlist(playData.Invoker.DatabaseId, "Youtube playlist: " + id);
-			playData.ResourceData = null;
 			playData.PlayResource = null;
 
 			bool hasNext = false;
@@ -181,10 +180,10 @@ namespace TS3AudioBot
 				for (int i = 0; i < videoDicts.Length; i++)
 				{
 					var pdCopy = playData.Clone();
-					pdCopy.ResourceData = new AudioResource(
+					pdCopy.Via(new AudioResource(
 							(string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["videoId"]),
 							null, // TODO: check if name is already available (and for rename conflict when the entry already exists)
-							AudioType.Youtube);
+							AudioType.Youtube));
 					itemBuffer[i] = new YoutubePlaylistItem(pdCopy);
 				}
 				hasNext = parsed.TryGetValue("nextPageToken", out nextToken);

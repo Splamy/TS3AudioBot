@@ -34,15 +34,7 @@ namespace TS3AudioBot
 	using TS3Query.Messages;
 
 	// Todo:
-	// - implement history missing features
-	//
-	// The RFM has too much functionality
-	// split the factory managing and resource playing
-	// resource playing => PlayManager
-	// - will start diffrerent resource via RFM + AF
-	// - will invoke several building and ending events
-	// + make all events internal and move them to the new PlayManager
-
+	// - implement history missing 
 	public sealed class MainBot : MarshalByRefObject, IDisposable
 	{
 		static void Main(string[] args)
@@ -84,6 +76,7 @@ namespace TS3AudioBot
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
+		public PlayManager PlayManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -169,7 +162,7 @@ namespace TS3AudioBot
 			PluginManager = new PluginManager(this, pmd);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
-			FactoryManager = new ResourceFactoryManager(AudioFramework, PlaylistManager);
+			FactoryManager = new ResourceFactoryManager();
 			FactoryManager.DefaultFactorty = new MediaFactory();
 			FactoryManager.AddFactory(new YoutubeFactory());
 			FactoryManager.AddFactory(new SoundcloudFactory());
@@ -319,7 +312,7 @@ namespace TS3AudioBot
 		public string CommandAdd(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, true));
+			return PlayManager.Play(new PlayData(info.Session, client, true).Via(parameter));
 		}
 
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
@@ -503,7 +496,7 @@ namespace TS3AudioBot
 				if (ale != null)
 				{
 					ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-					return FactoryManager.RestoreAndPlay(new PlayData(info.Session, client, null, false, ale));
+					return PlayManager.Play(new PlayData(info.Session, client, false).Via(ale.AudioResource));
 				}
 				else return "There is no song in the history";
 			}
@@ -516,7 +509,7 @@ namespace TS3AudioBot
 			if (ale == null)
 				return "Could not find track with this id";
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.RestoreAndPlay(new PlayData(info.Session, client, null, false, ale));
+			return PlayManager.Play(new PlayData(info.Session, client, false).Via(ale.AudioResource));
 		}
 
 		[Command(Private, "history queue", "<id> Adds the song with <id> to the queue")]
@@ -526,7 +519,7 @@ namespace TS3AudioBot
 			if (ale == null)
 				return "Could not find track with this id";
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.RestoreAndPlay(new PlayData(info.Session, client, null, true, ale));
+			return PlayManager.Play(new PlayData(info.Session, client, true).Via(ale.AudioResource));
 		}
 
 		[Command(Admin, "history rename", "<id> <name> Sets the name of the song with <id> to <name>")]
@@ -670,7 +663,7 @@ namespace TS3AudioBot
 		public string CommandMedia(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.Session, client, parameter, false));
+			return PlayManager.Play(new PlayData(info.Session, client, false).Via(parameter), AudioType.MediaLink);
 		}
 
 		[Command(Private, "next", "Plays the next song in the playlist.")]
@@ -679,7 +672,7 @@ namespace TS3AudioBot
 			var playData = PlaylistManager.Next();
 			if (playData == null)
 				return "No next song available";
-			return FactoryManager.RestoreAndPlay(playData);
+			return PlayManager.Play(playData);
 		}
 
 		[Command(Public, "pm", "Requests a private session with the ServerBot so you can invoke private commands.")]
@@ -728,7 +721,7 @@ namespace TS3AudioBot
 			else
 			{
 				ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-				return FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, false));
+				return PlayManager.Play(new PlayData(info.Session, client, false).Via(parameter));
 			}
 		}
 
@@ -756,7 +749,7 @@ namespace TS3AudioBot
 			var playData = PlaylistManager.Previous();
 			if (playData == null)
 				return "No previous song available";
-			return FactoryManager.RestoreAndPlay(playData);
+			return PlayManager.Play(playData);
 		}
 
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
@@ -902,7 +895,7 @@ namespace TS3AudioBot
 		public string CommandSoundcloud(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.Session, client, parameter, false));
+			return PlayManager.Play(new PlayData(info.Session, client, false).Via(parameter), AudioType.Soundcloud);
 		}
 
 		[Command(Private, "stop", "Stops the current song.")]
@@ -989,7 +982,7 @@ namespace TS3AudioBot
 		public string CommandTwitch(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.Session, client, parameter, false));
+			return PlayManager.Play(new PlayData(info.Session, client, false).Via(parameter), AudioType.Twitch);
 		}
 
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
@@ -1032,7 +1025,7 @@ namespace TS3AudioBot
 		public string CommandYoutube(ExecutionInformation info, string parameter)
 		{
 			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(info.Session, client, parameter, false));
+			return PlayManager.Play(new PlayData(info.Session, client, false).Via(parameter), AudioType.Youtube);
 		}
 
 		#endregion
@@ -1177,34 +1170,35 @@ namespace TS3AudioBot
 	{
 		public BotSession Session { get; }
 		public ClientData Invoker { get; }
-		public string Message { get; }
+		public string Message { get; private set; }
 		public bool Enqueue { get; }
+		public bool UsePostProcess { get; set; }
 		public int? Volume { get; set; }
-		public AudioResource ResourceData { get; set; }
+		public AudioResource ResourceData { get; private set; }
 		public PlayResource PlayResource { get; set; }
 
-		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue)
+		public PlayData(BotSession session, ClientData invoker, bool enqueue)
 		{
 			Session = session;
 			Invoker = invoker;
-			Message = message;
 			Enqueue = enqueue;
+			UsePostProcess = true;
+			Message = null;
 			ResourceData = null;
 			PlayResource = null;
 			Volume = null;
 		}
 
-		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue, AudioResource ar) :
-			this(session, invoker, message, enqueue)
-		{
-			ResourceData = ar;
-		}
+		public PlayData Via(string message) { Message = message; return this; }
+		public PlayData Via(AudioResource resource) { ResourceData = resource; return this; }
 
 		public PlayData Clone()
-			=> new PlayData(Session, Invoker, Message, Enqueue, ResourceData)
+			=> new PlayData(Session, Invoker, Enqueue)
 			{
 				Volume = Volume,
 				PlayResource = PlayResource,
+				Message = Message,
+				ResourceData = ResourceData,
 			};
 	}
 

@@ -30,13 +30,13 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<PlayResource> GetResource(string uri)
 		{
-			return GetResourceById(uri, null);
+			return GetResourceById(new AudioResource(uri, null, AudioType.MediaLink));
 		}
 
-		public R<PlayResource> GetResourceById(string id, string name)
+		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
 			string outName;
-			var result = ValidateUri(out outName, id);
+			var result = ValidateUri(out outName, resource.ResourceId);
 
 			if (result == RResultCode.MediaNoWebResponse)
 			{
@@ -45,8 +45,8 @@ namespace TS3AudioBot.ResourceFactories
 			else
 			{
 				if (string.IsNullOrWhiteSpace(outName))
-					outName = id;
-				return new MediaResource(id, result, new AudioResource(id, name ?? outName, AudioType.MediaLink));
+					outName = resource.ResourceId;
+				return new MediaResource(resource.ResourceId, result, resource.ResourceTitle != null ? resource : resource.WithName(outName));
 			}
 		}
 
@@ -141,7 +141,11 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
-				info.Session.Bot.FactoryManager.Play((PlayData)info.Session.ResponseData);
+			{
+				var pd = (PlayData)info.Session.ResponseData;
+				pd.UsePostProcess = false;
+				info.Session.Bot.PlayManager.Play(pd);
+			}
 			return answer != Answer.Unknown;
 		}
 

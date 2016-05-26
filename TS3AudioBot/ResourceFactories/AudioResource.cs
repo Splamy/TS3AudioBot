@@ -36,7 +36,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// <summary>An identifier to create the song. This id is uniqe among same <see cref="TS3AudioBot.AudioType"/> resources.</summary>
 		public string ResourceId { get; }
 		/// <summary>The display title.</summary>
-		public string ResourceTitle { get; set; }
+		public string ResourceTitle { get; }
 		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and <see cref="TS3AudioBot.AudioType"/>.</summary>
 		public string UniqueId => ResourceId + AudioType.ToString();
 
@@ -46,6 +46,17 @@ namespace TS3AudioBot.ResourceFactories
 			ResourceTitle = resourceTitle;
 			AudioType = type;
 		}
+
+		public AudioResource(AudioResource copyResource)
+		{
+			ResourceId = copyResource.ResourceId;
+			ResourceTitle = copyResource.ResourceTitle;
+			AudioType = copyResource.AudioType;
+		}
+
+		public AudioResource WithName(string newName) => new AudioResource(ResourceId, newName, AudioType);
+
+		public AudioResource Clone() => new AudioResource(ResourceId, ResourceTitle, AudioType);
 
 		public override bool Equals(object obj)
 		{

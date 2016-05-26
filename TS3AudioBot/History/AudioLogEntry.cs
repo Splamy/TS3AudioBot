@@ -21,7 +21,7 @@ namespace TS3AudioBot.History
 	using System.Text;
 	using ResourceFactories;
 
-	public class AudioLogEntry : AudioResource
+	public class AudioLogEntry
 	{
 		/// <summary>A unique id for each <see cref="AudioRessource"/>, given by the history system.</summary>
 		public uint Id { get; }
@@ -34,10 +34,21 @@ namespace TS3AudioBot.History
 		/// <summary>Zero based offset this entry is stored in the history file.</summary>
 		public long FilePosIndex { get; set; }
 
-		public AudioLogEntry(uint id, AudioType audioType, string resId) : base(resId, null, audioType)
+		public AudioResource AudioResource { get; private set; }
+
+		public AudioLogEntry(uint id, AudioResource resource)
 		{
 			Id = id;
 			PlayCount = 0;
+			AudioResource = resource;
+		}
+
+		public AudioLogEntry(uint id, string resourceId, string resourceTitle, AudioType type)
+			: this(id, new AudioResource(resourceId, resourceTitle, type)) { }
+
+		public void SetName(string newName)
+		{
+			AudioResource = AudioResource.WithName(newName);
 		}
 
 		public string ToFileString()
@@ -54,11 +65,11 @@ namespace TS3AudioBot.History
 			strb.Append(",");
 
 			// OTHER STRINGS
-			strb.Append(AudioType.ToString());
+			strb.Append(AudioResource.AudioType.ToString());
 			strb.Append(",");
-			strb.Append(Uri.EscapeDataString(ResourceId));
+			strb.Append(Uri.EscapeDataString(AudioResource.ResourceId));
 			strb.Append(",");
-			strb.Append(Uri.EscapeDataString(ResourceTitle));
+			strb.Append(Uri.EscapeDataString(AudioResource.ResourceTitle));
 
 			return strb.ToString();
 		}
@@ -80,11 +91,10 @@ namespace TS3AudioBot.History
 				return null;
 			string resId = Uri.UnescapeDataString(strParts[index++]);
 			string title = Uri.UnescapeDataString(strParts[index++]);
-			return new AudioLogEntry(id, audioType, resId)
+			return new AudioLogEntry(id, resId, title, audioType)
 			{
 				PlayCount = playCount,
 				Timestamp = dateTime,
-				ResourceTitle = title,
 				UserInvokeId = userInvId,
 				FilePosIndex = readIndex,
 			};
@@ -95,7 +105,7 @@ namespace TS3AudioBot.History
 
 		public override string ToString()
 		{
-			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, ResourceTitle, ResourceId);
+			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, AudioResource.ResourceTitle, AudioResource);
 		}
 	}
 

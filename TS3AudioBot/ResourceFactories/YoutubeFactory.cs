@@ -41,13 +41,13 @@ namespace TS3AudioBot.ResourceFactories
 			Match matchYtId = idMatch.Match(ytLink);
 			if (!matchYtId.Success)
 				return RResultCode.YtIdNotFound.ToString();
-			return GetResourceById(matchYtId.Groups[3].Value, null);
+			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, AudioType.Youtube));
 		}
 
-		public R<PlayResource> GetResourceById(string ytID, string name)
+		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
 			string resulthtml;
-			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={ytID}&el=info")))
+			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
 				return RResultCode.NoConnection.ToString();
 
 			var videoTypes = new List<VideoData>();
@@ -117,9 +117,8 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 
-			string finalName = name ?? dataParse["title"] ?? $"<YT - no title : {ytID}>";
 			if (videoTypes.Count > 0)
-				return new YoutubeResource(videoTypes, new AudioResource(ytID, finalName, AudioType.Youtube));
+				return new YoutubeResource(videoTypes, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
 			else
 				return RResultCode.YtNoVideosExtracted.ToString();
 		}
@@ -186,7 +185,10 @@ namespace TS3AudioBot.ResourceFactories
 					return true;
 				ytResource.Selected = entry;
 				if (ValidateMedia(ytResource))
-					info.Session.Bot.FactoryManager.Play(data);
+				{
+					data.UsePostProcess = false;
+					info.Session.Bot.PlayManager.Play(data);
+				}
 			}
 			return true;
 		}

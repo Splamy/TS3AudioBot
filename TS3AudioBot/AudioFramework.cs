@@ -17,7 +17,7 @@
 namespace TS3AudioBot
 {
 	using System;
-	using TS3AudioBot.Helper;
+	using Helper;
 
 	public sealed class AudioFramework : MarshalByRefObject, IDisposable
 	{
@@ -99,7 +99,7 @@ namespace TS3AudioBot
 		}
 
 		/// <summary>
-		/// <para>Do NOT call this method directly! Use the FactoryManager instead.</para>
+		/// <para>Do NOT call this method directly! Use the <see cref="PlayManager"/> instead.</para>
 		/// <para>Stops the old resource and starts the new one.</para>
 		/// <para>The volume gets resetted and the OnStartEvent gets triggered.</para>
 		/// </summary>
@@ -159,7 +159,6 @@ namespace TS3AudioBot
 			{
 				playerConnection.Dispose();
 				playerConnection = null;
-				Log.Write(Log.Level.Debug, "AF playerConnection disposed");
 			}
 		}
 	}

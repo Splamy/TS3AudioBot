@@ -19,21 +19,22 @@ namespace TS3AudioBot.ResourceFactories
 	using System;
 	using System.Collections.Generic;
 	using Helper;
-	using History;
 
 	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
 	{
 		public IResourceFactory DefaultFactorty { get; internal set; }
 		private IList<IResourceFactory> factories;
-		private AudioFramework audioFramework;
-		private PlaylistManager playlistManager;
 
-		public ResourceFactoryManager(AudioFramework audioFramework, PlaylistManager playlistManager)
+		public ResourceFactoryManager()
 		{
 			factories = new List<IResourceFactory>();
-			this.audioFramework = audioFramework;
-			this.playlistManager = playlistManager;
 		}
+
+		// Load lookup stages
+		// PlayResource != null    => ret PlayResource
+		// ResourceData != null    => call RF.RestoreFromId
+		// TextMessage != null     => call RF.GetResoruce
+		// else                    => ret Error
 
 		/// <summary>
 		/// Creates a new <see cref="PlayResource"/> which can be played.
@@ -41,12 +42,21 @@ namespace TS3AudioBot.ResourceFactories
 		/// <see cref="PlayData.Message"/> if no AudioResource is given.
 		/// </summary>
 		/// <param name="data">The building parameters for the resource.</param>
-		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R LoadAndPlay(PlayData data)
+		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
+		public R<PlayResource> Load(PlayData playData)
 		{
-			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
+			if (playData == null)
+				throw new ArgumentNullException(nameof(playData));
+
+			if (playData.PlayResource != null)
+				return playData.PlayResource;
+
+			if (playData.ResourceData != null)
+				return Load(playData, playData.ResourceData.AudioType);
+
+			string netlinkurl = TextUtil.ExtractUrlFromBB(playData.Message);
 			IResourceFactory factory = GetFactoryFor(netlinkurl);
-			return LoadAndPlay(factory, data);
+			return Load(playData, factory);
 		}
 
 		/// <summary>
@@ -55,90 +65,51 @@ namespace TS3AudioBot.ResourceFactories
 		/// </summary>
 		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
 		/// <param name="data">The building parameters for the resource.</param>
-		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R LoadAndPlay(AudioType audioType, PlayData data)
+		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
+		public R<PlayResource> Load(PlayData playData, AudioType audioType)
 		{
+			if (playData == null)
+				throw new ArgumentNullException(nameof(playData));
+
+			if (playData.PlayResource != null)
+				return playData.PlayResource;
+
 			var factory = GetFactoryFor(audioType);
-			return LoadAndPlay(factory, data);
+			return Load(playData, factory);
 		}
 
-		private R LoadAndPlay(IResourceFactory factory, PlayData data)
+		private R<PlayResource> Load(PlayData playData, IResourceFactory factory)
 		{
-			if (data.ResourceData == null)
+			if (playData.ResourceData != null)
 			{
-				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
+				var result = factory.GetResourceById(playData.ResourceData);
+				if (!result)
+					return $"Could not restore ({result.Message})";
+				return result;
+			}
+			else if (playData.Message != null)
+			{
+				string netlinkurl = TextUtil.ExtractUrlFromBB(playData.Message);
 
 				var result = factory.GetResource(netlinkurl);
 				if (!result)
 					return $"Could not play ({result.Message})";
-				data.PlayResource = result.Value;
+				return result;
 			}
-			return PostProcessAndStartInternal(factory, data);
-		}
-
-		//public R<PlayResource> Restore(AudioResource resource)
-		//	=> RestoreInternal(GetFactoryFor(resource.AudioType), resource);
-
-		private R<PlayResource> RestoreInternal(IResourceFactory factory, AudioResource resource)
-		{
-			var result = factory.GetResourceById(resource.ResourceId, resource.ResourceTitle);
-			if (!result)
-				return $"Could not restore ({result.Message})";
-			return result;
-		}
-
-		/// <summary>
-		/// Creates a new <see cref="PlayResource"/> which can be played, but restores values like
-		/// title or first invoker from the history database.
-		/// </summary>
-		/// <param name="data">The building parameters for the resource.</param>
-		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R RestoreAndPlay(PlayData data)
-		{
-			if (data == null)
-				throw new ArgumentNullException(nameof(data));
-			if (data.ResourceData == null)
-				throw new ArgumentNullException(nameof(data.ResourceData));
-
-			var factory = GetFactoryFor(data.ResourceData.AudioType);
-			var result = RestoreInternal(factory, data.ResourceData);
-			if (!result) return result.Message;
-			data.PlayResource = result.Value;
-			return PostProcessAndStartInternal(factory, data);
+			else
+				return "No method matched to load this resource";
 		}
 
 		/// <summary>
 		/// Invokes postprocess operations for the passed <see cref="PlayData.ResourceData"/> and
-		/// the corresponding factory. Starts the resource afterwards if the pp was successful.
+		/// the corresponding factory.
 		/// </summary>
 		/// <param name="data">The building parameters for the resource.</param>
-		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R PostProcessAndStart(PlayData data)
-			=> PostProcessAndStartInternal(GetFactoryFor(data.ResourceData.AudioType), data);
-
-		private R PostProcessAndStartInternal(IResourceFactory factory, PlayData data)
+		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
+		public R<PlayResource> PostProcess(PlayData data)
 		{
-			var result = factory.PostProcess(data);
-			if (!result)
-				return result.Message;
-			else
-				return Play(data);
-		}
-
-		/// <summary>Playes the passed <see cref="PlayData.PlayResource"/></summary>
-		/// <param name="data">The building parameters for the resource.</param>
-		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(PlayData data)
-		{
-			if (data.Enqueue && audioFramework.IsPlaying)
-			{
-				playlistManager.AddToPlaylist(data);
-				return R.OkR;
-			}
-			else
-			{
-				return audioFramework.StartResource(data);
-			}
+			var factory = GetFactoryFor(data.ResourceData.AudioType);
+			return factory.PostProcess(data);
 		}
 
 		private IResourceFactory GetFactoryFor(AudioType audioType)
