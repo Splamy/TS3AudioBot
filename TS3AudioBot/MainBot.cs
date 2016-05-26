@@ -163,8 +163,6 @@ namespace TS3AudioBot
 			QueryConnection = new QueryConnection(qcd);
 			PlaylistManager = new PlaylistManager(pld);
 			BobController = new BobController(bcd, QueryConnection);
-			// old: new VLCConnection(afd.vlcLocation);
-			// new: BobController
 			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);

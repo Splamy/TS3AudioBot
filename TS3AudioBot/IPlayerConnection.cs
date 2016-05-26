@@ -22,7 +22,6 @@ namespace TS3AudioBot
 	{
 		void Initialize();
 
-		bool SupportsEndCallback { get; }
 		event EventHandler OnSongEnd;
 
 		int Volume { get; set; }

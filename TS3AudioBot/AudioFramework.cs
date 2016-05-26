@@ -23,12 +23,8 @@ namespace TS3AudioBot
 	{
 		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
 		public const int MaxVolume = 100;
-		private static readonly TimeSpan SongEndTimeout = TimeSpan.FromSeconds(30);
-		private static readonly TimeSpan SongEndTimeoutInterval = TimeSpan.FromSeconds(1);
 
 		private AudioFrameworkData audioFrameworkData;
-		private TickWorker waitEndTick;
-		private DateTime endTime;
 
 		public PlayData CurrentPlayData { get; private set; }
 		private IPlayerConnection playerConnection;
@@ -79,40 +75,11 @@ namespace TS3AudioBot
 			if (audioBackEnd == null)
 				throw new ArgumentNullException(nameof(audioBackEnd));
 
-			if (audioBackEnd.SupportsEndCallback)
-				audioBackEnd.OnSongEnd += (s, e) => OnSongEnd();
-			else
-				waitEndTick = TickPool.RegisterTick(NotifyEnd, SongEndTimeoutInterval, false);
+			audioBackEnd.OnSongEnd += (s, e) => OnSongEnd();
 
 			audioFrameworkData = afd;
 			playerConnection = audioBackEnd;
 			playerConnection.Initialize();
-		}
-
-		/// <summary>
-		/// <para>Gets started at the beginning of a new resource.</para>
-		/// <para>It calls the stop event when a resource is finished.</para>
-		/// <para>Is used for player backends which are not supporting an end callback.</para>
-		/// </summary>
-		private void NotifyEnd()
-		{
-			if (endTime < Util.GetNow())
-			{
-				if (playerConnection.IsPlaying)
-				{
-					var playtime = playerConnection.Length;
-					var position = playerConnection.Position;
-
-					var endspan = playtime - position;
-					endTime = Util.GetNow().Add(endspan);
-				}
-				else if (endTime + SongEndTimeout < Util.GetNow())
-				{
-					Log.Write(Log.Level.Debug, "AF Song ended with default timeout");
-					OnSongEnd();
-					waitEndTick.Active = false;
-				}
-			}
 		}
 
 		private void OnSongEnd()
@@ -123,8 +90,7 @@ namespace TS3AudioBot
 			var next = songEndArgs.NextSong;
 			if (next != null)
 			{
-				CurrentPlayData = next;
-				StartResource(CurrentPlayData);
+				StartResource(next);
 			}
 			else
 			{
@@ -161,11 +127,6 @@ namespace TS3AudioBot
 			CurrentPlayData = playData;
 			OnResourceStarted?.Invoke(this, new PlayInfoEventArgs(playData.Invoker, playData.PlayResource));
 
-			if (!playerConnection.SupportsEndCallback)
-			{
-				endTime = Util.GetNow();
-				waitEndTick.Active = true;
-			}
 			return R.OkR;
 		}
 
@@ -216,8 +177,6 @@ namespace TS3AudioBot
 		public int defaultVolume;
 		[Info("the maximum volume a normal user can request")]
 		public int maxUserVolume;
-		[Info("the location of the vlc player (if the vlc backend is used)", "vlc")]
-		public string vlcLocation;
 	}
 
 	public enum AudioType

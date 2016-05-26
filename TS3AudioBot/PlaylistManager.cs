@@ -138,7 +138,7 @@ namespace TS3AudioBot
 							return "Invalid playlist file: duplicate userid";
 						plist = new Playlist(userid, name);
 						break;
-					case "ln": plist.AddItem(new PlaylistItem(new PlayData(,, val, false))); break;
+					case "ln": plist.AddItem(new PlaylistItem(null)); break;
 					case "id": break;
 					default: Log.Write(Log.Level.Warning, "Unknown playlist entry {0}:{1}", kvp); break;
 					}

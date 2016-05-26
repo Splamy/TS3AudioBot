@@ -86,7 +86,6 @@
     <Compile Include="PluginManager.cs" />
     <Compile Include="QueryConnection.cs" />
     <Compile Include="SessionManager.cs" />
-    <Compile Include="VLCConnection.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
     <Compile Include="Algorithm\ISubstringSearch.cs" />
