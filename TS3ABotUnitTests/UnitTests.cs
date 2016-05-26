@@ -71,7 +71,7 @@ namespace TS3ABotUnitTests
 			var lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			var lastEntry = lastXEntries.First();
-			Assert.AreEqual(ar1, lastEntry);
+			Assert.AreEqual(ar1, lastEntry.AudioResource);
 
 			hf.CloseFile();
 
@@ -79,7 +79,7 @@ namespace TS3ABotUnitTests
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
-			Assert.AreEqual(ar1, lastEntry);
+			Assert.AreEqual(ar1, lastEntry.AudioResource);
 
 			hf.Store(data1);
 			hf.Store(data2);
@@ -87,7 +87,7 @@ namespace TS3ABotUnitTests
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
-			Assert.AreEqual(ar2, lastEntry);
+			Assert.AreEqual(ar2, lastEntry.AudioResource);
 
 			hf.CloseFile();
 
@@ -95,8 +95,8 @@ namespace TS3ABotUnitTests
 			hf.OpenFile(testFile);
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
-			Assert.AreEqual(ar1, lastXEntriesArray[0]);
-			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
+			Assert.AreEqual(ar2, lastXEntriesArray[1].AudioResource);
 
 			var ale1 = hf.GetEntryById(hf.Contains(ar1).Value);
 			hf.LogEntryRename(ale1, "sc_ar1X", false);
@@ -109,8 +109,8 @@ namespace TS3ABotUnitTests
 			hf.OpenFile(testFile);
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
-			Assert.AreEqual(ar2, lastXEntriesArray[0]);
-			Assert.AreEqual(ar1, lastXEntriesArray[1]);
+			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
+			Assert.AreEqual(ar1, lastXEntriesArray[1].AudioResource);
 
 			var ale2 = hf.GetEntryById(hf.Contains(ar2).Value);
 			hf.LogEntryRename(ale2, "me_ar2_loong1");
@@ -129,8 +129,8 @@ namespace TS3ABotUnitTests
 			hf.OpenFile(testFile);
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
-			Assert.AreEqual(ar1, lastXEntriesArray[0]);
-			Assert.AreEqual(ar2, lastXEntriesArray[1]);
+			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
+			Assert.AreEqual(ar2, lastXEntriesArray[1].AudioResource);
 			hf.CloseFile();
 
 			// delete entry 2
@@ -139,7 +139,7 @@ namespace TS3ABotUnitTests
 
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(1, lastXEntriesArray.Length);
-			Assert.AreEqual(ar1, lastXEntriesArray[0]);
+			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
 			hf.CloseFile();
 
 			// delete entry 1

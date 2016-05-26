@@ -143,7 +143,9 @@ namespace TS3Query
 
 		// METHODS
 
+		[DebuggerStepThrough]
 		public void Connect() => Connect(defaultHost, defaultPort);
+		[DebuggerStepThrough]
 		public void Connect(string hostname) => Connect(hostname, defaultPort);
 		public void Connect(string hostname, int port)
 		{
@@ -157,7 +159,8 @@ namespace TS3Query
 			CurrentHost = hostname;
 			CurrentPort = port;
 
-			tcpClient.Connect(CurrentHost, CurrentPort);
+			try { tcpClient.Connect(CurrentHost, CurrentPort); }
+			catch (SocketException) { }
 			if (!tcpClient.Connected)
 				throw new InvalidOperationException("Could not connect to the query server.");
 
