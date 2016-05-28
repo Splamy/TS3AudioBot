@@ -1,6 +1,17 @@
 sudo: false
 language: csharp
 
+notifications:
+  email: false
+
+branches:
+  only:
+    - master
+    - develop
+
+git:
+  depth: 1
+
 compiler:
   - clang
 
@@ -37,7 +48,6 @@ before_script:
   - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then $HOME/FFmpeg/configure --enable-shared --disable-mmx; fi
   - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then make -j $THREADS; fi
 
-solution: TS3AudioBot.sln
 script:
   # Building the AudioBob (C++ stuff)
   - cd $TRAVIS_BUILD_DIR/TS3AudioBob
