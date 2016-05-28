@@ -32,7 +32,7 @@ before_script:
   - export THREADS=$((`nproc` + 1))
   - echo "THREADS = $THREADS"
   - cd "$HOME"
-  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then git clone --depth 1 --branch n3.0 https://github.com/FFmpeg/FFmpeg.git; fi
+  - if [ ! -f "$HOME/FFmpeg/libavcodec/avcodec.h" ]; then git clone --depth 1 --branch n3.0 https://github.com/FFmpeg/FFmpeg.git; fi
   - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then mkdir -p FFmpegbin; cd FFmpegbin; fi
   - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then $HOME/FFmpeg/configure --enable-shared --disable-mmx; fi
   - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then make -j $THREADS; fi
