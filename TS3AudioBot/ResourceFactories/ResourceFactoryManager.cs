@@ -43,73 +43,43 @@ namespace TS3AudioBot.ResourceFactories
 		/// </summary>
 		/// <param name="data">The building parameters for the resource.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource> Load(PlayData playData)
+		public R<PlayResource> Load(AudioResource resource)
 		{
-			if (playData == null)
-				throw new ArgumentNullException(nameof(playData));
+			if (resource == null)
+				throw new ArgumentNullException(nameof(resource));
 
-			if (playData.PlayResource != null)
-				return playData.PlayResource;
+			IResourceFactory factory = GetFactoryFor(resource.AudioType);
 
-			if (playData.ResourceData != null)
-				return Load(playData, playData.ResourceData.AudioType);
-
-			string netlinkurl = TextUtil.ExtractUrlFromBB(playData.Message);
-			IResourceFactory factory = GetFactoryFor(netlinkurl);
-			return Load(playData, factory);
+			var result = factory.GetResourceById(resource);
+			if (!result)
+				return $"Could not load ({result.Message})";
+			return result;
 		}
 
 		/// <summary>
 		/// Same as <see cref="LoadAndPlay(PlayData)"/> except it lets you pick an
 		/// <see cref="IResourceFactory"/> identifier to manually select a factory.
 		/// </summary>
+		/// <param name="message">The link/uri to resolve for the resource.</param>
 		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
-		/// <param name="data">The building parameters for the resource.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource> Load(PlayData playData, AudioType audioType)
+		public R<PlayResource> Load(string message, AudioType? audioType = null)
 		{
-			if (playData == null)
-				throw new ArgumentNullException(nameof(playData));
+			if (string.IsNullOrWhiteSpace(message))
+				throw new ArgumentNullException(nameof(message));
 
-			if (playData.PlayResource != null)
-				return playData.PlayResource;
+			IResourceFactory factory;
+			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
 
-			var factory = GetFactoryFor(audioType);
-			return Load(playData, factory);
-		}
-
-		private R<PlayResource> Load(PlayData playData, IResourceFactory factory)
-		{
-			if (playData.ResourceData != null)
-			{
-				var result = factory.GetResourceById(playData.ResourceData);
-				if (!result)
-					return $"Could not restore ({result.Message})";
-				return result;
-			}
-			else if (playData.Message != null)
-			{
-				string netlinkurl = TextUtil.ExtractUrlFromBB(playData.Message);
-
-				var result = factory.GetResource(netlinkurl);
-				if (!result)
-					return $"Could not play ({result.Message})";
-				return result;
-			}
+			if (audioType != null)
+				factory = GetFactoryFor(audioType.Value);
 			else
-				return "No method matched to load this resource";
-		}
+				factory = GetFactoryFor(netlinkurl);
 
-		/// <summary>
-		/// Invokes postprocess operations for the passed <see cref="PlayData.ResourceData"/> and
-		/// the corresponding factory.
-		/// </summary>
-		/// <param name="data">The building parameters for the resource.</param>
-		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource> PostProcess(PlayData data)
-		{
-			var factory = GetFactoryFor(data.ResourceData.AudioType);
-			return factory.PostProcess(data);
+			var result = factory.GetResource(netlinkurl);
+			if (!result)
+				return $"Could not load ({result.Message})";
+			return result;
 		}
 
 		private IResourceFactory GetFactoryFor(AudioType audioType)
@@ -130,7 +100,6 @@ namespace TS3AudioBot.ResourceFactories
 			factories.Add(factory);
 		}
 
-		public string RestoreLink(PlayData data) => RestoreLink(data.ResourceData);
 		public string RestoreLink(AudioResource res)
 		{
 			IResourceFactory factory = GetFactoryFor(res.AudioType);

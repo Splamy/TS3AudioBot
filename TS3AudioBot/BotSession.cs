@@ -23,7 +23,7 @@ namespace TS3AudioBot
 
 	public abstract class BotSession : MarshalByRefObject
 	{
-		public MainBot Bot { get; private set; }
+		public MainBot Bot { get; }
 
 		public Response ResponseProcessor { get; protected set; }
 		public object ResponseData { get; protected set; }
@@ -54,7 +54,7 @@ namespace TS3AudioBot
 
 	internal sealed class PublicSession : BotSession
 	{
-		public override bool IsPrivate { get { return false; } }
+		public override bool IsPrivate => false;
 
 		public override void Write(string message)
 		{
@@ -75,9 +75,9 @@ namespace TS3AudioBot
 
 	internal sealed class PrivateSession : BotSession
 	{
-		public ClientData Client { get; private set; }
+		public ClientData Client { get; }
 
-		public override bool IsPrivate { get { return true; } }
+		public override bool IsPrivate => true;
 
 		public override void Write(string message)
 		{

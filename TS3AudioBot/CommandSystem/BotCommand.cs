@@ -93,15 +93,15 @@ namespace TS3AudioBot.CommandSystem
 			switch (CommandRights)
 			{
 			case Admin:
-				if (!info.IsAdmin.Value)
+				if (!info.IsAdmin)
 					throw new CommandException("Command must be invoked by an admin!");
 				break;
 			case Public:
-				if (info.TextMessage.Target != MessageTarget.Server && !info.IsAdmin.Value)
+				if (info.TextMessage.Target != MessageTarget.Server && !info.IsAdmin)
 					throw new CommandException("Command must be used in public mode!");
 				break;
 			case Private:
-				if (info.TextMessage.Target != MessageTarget.Private && !info.IsAdmin.Value)
+				if (info.TextMessage.Target != MessageTarget.Private && !info.IsAdmin)
 					throw new CommandException("Command must be used in a private session!");
 				break;
 			}

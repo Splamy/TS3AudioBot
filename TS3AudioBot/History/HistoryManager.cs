@@ -37,10 +37,14 @@ namespace TS3AudioBot.History
 			historyFile.OpenFile(hmd.historyFile);
 		}
 
-		public void LogAudioResource(object sender, PlayInfoEventArgs playData)
+		public R<AudioLogEntry> LogAudioResource(HistorySaveData saveData)
 		{
 			lock (accessLock)
-				historyFile.Store(playData);
+			{
+				var entry = historyFile.Store(saveData);
+				if (entry != null) return entry;
+				else return "Entry could not be stored";
+			}
 		}
 
 		public IEnumerable<AudioLogEntry> Search(SeachQuery query)
@@ -92,10 +96,14 @@ namespace TS3AudioBot.History
 			}
 		}
 
-		public AudioLogEntry GetEntryById(uint id)
+		public R<AudioLogEntry> GetEntryById(uint id)
 		{
 			lock (accessLock)
-				return historyFile.GetEntryById(id);
+			{
+				var entry = historyFile.GetEntryById(id);
+				if (entry != null) return entry;
+				else return "Could not find track with this id";
+			}
 		}
 
 		public void RemoveEntry(AudioLogEntry ale)

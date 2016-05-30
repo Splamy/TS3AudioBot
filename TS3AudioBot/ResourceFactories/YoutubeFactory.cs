@@ -23,7 +23,6 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Text.RegularExpressions;
 	using System.Web;
 	using Helper;
-	using CommandSystem;
 
 	public sealed class YoutubeFactory : IResourceFactory
 	{
@@ -117,85 +116,44 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 
-			if (videoTypes.Count > 0)
-				return new YoutubeResource(videoTypes, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
-			else
+			// Validation Process
+
+			if (videoTypes.Count <= 0)
 				return RResultCode.YtNoVideosExtracted.ToString();
+
+			int codec = SelectStream(videoTypes);
+			if (codec < 0)
+				return "No playable codec found";
+
+			var result = ValidateMedia(videoTypes[codec]);
+			if (!result)
+				return result.Message;
+
+			return new PlayResource(videoTypes[codec].link, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
 		}
 
 		public string RestoreLink(string id) => "https://youtu.be/" + id;
 
-		public R<PlayResource> PostProcess(PlayData data)
+		private int SelectStream(List<VideoData> list)
 		{
-			YoutubeResource ytResource = (YoutubeResource)data.PlayResource;
-
 #if DEBUG
 			StringBuilder dbg = new StringBuilder("YT avail codecs: ");
-			foreach (var yd in ytResource.AvailableTypes)
+			foreach (var yd in list)
 				dbg.Append(yd.qualitydesciption).Append(" @ ").Append(yd.codec).Append(", ");
 			Log.Write(Log.Level.Debug, dbg.ToString());
 #endif
 
-			var availList = ytResource.AvailableTypes;
-			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
+			int autoselectIndex = list.FindIndex(t => t.codec == VideoCodec.M4A);
 			if (autoselectIndex == -1)
-				autoselectIndex = availList.FindIndex(t => t.audioOnly);
-			if (autoselectIndex != -1)
-			{
-				ytResource.Selected = autoselectIndex;
-				var result = ValidateMedia(ytResource);
-				if (!result)
-					return result.Message;
-				return ytResource;
-			}
+				autoselectIndex = list.FindIndex(t => t.audioOnly);
+			if (autoselectIndex == -1)
+				autoselectIndex = list.FindIndex(t => !t.videoOnly);
 
-			StringBuilder strb = new StringBuilder();
-			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
-			int count = 0;
-			foreach (var videoType in ytResource.AvailableTypes)
-				strb.Append("[")
-					.Append(count++)
-					.Append("] ")
-					.Append(videoType.codec.ToString())
-					.Append(" @ ")
-					.AppendLine(videoType.qualitydesciption);
-
-			data.Session.SetResponse(ResponseYoutube, data);
-			return strb.ToString();
+			return autoselectIndex;
 		}
 
-		private static bool ResponseYoutube(ExecutionInformation info)
+		private static R ValidateMedia(VideoData media)
 		{
-			string[] command = info.TextMessage.Message.SplitNoEmpty(' ');
-			if (command[0] != "!f")
-				return false;
-			if (command.Length != 2)
-				return true;
-			int entry;
-			if (int.TryParse(command[1], out entry))
-			{
-				PlayData data = (PlayData)info.Session.ResponseData;
-				if (data?.PlayResource as YoutubeResource == null)
-				{
-					info.Session.Write("An unexpected error with the ytresource occured: null.");
-					return true;
-				}
-				YoutubeResource ytResource = (YoutubeResource)data.PlayResource;
-				if (entry < 0 || entry >= ytResource.AvailableTypes.Count)
-					return true;
-				ytResource.Selected = entry;
-				if (ValidateMedia(ytResource))
-				{
-					data.UsePostProcess = false;
-					info.Session.Bot.PlayManager.Play(data);
-				}
-			}
-			return true;
-		}
-
-		private static R ValidateMedia(YoutubeResource resource)
-		{
-			var media = resource.AvailableTypes[resource.Selected];
 			var vcode = WebWrapper.GetResponse(new Uri(media.link), TimeSpan.FromSeconds(1));
 
 			switch (vcode)
@@ -255,27 +213,6 @@ namespace TS3AudioBot.ResourceFactories
 		public bool videoOnly = false;
 
 		public override string ToString() => $"{qualitydesciption} @ {codec} - {link}";
-	}
-
-	public sealed class YoutubeResource : PlayResource
-	{
-		public List<VideoData> AvailableTypes { get; }
-		public int Selected { get; set; }
-
-		public YoutubeResource(List<VideoData> availableTypes, AudioResource baseData)
-			: base(baseData)
-		{
-			AvailableTypes = availableTypes;
-			Selected = 0;
-		}
-
-		public override string Play()
-		{
-			if (Selected < 0 && Selected >= AvailableTypes.Count)
-				return null;
-			Log.Write(Log.Level.Debug, "YT Playing: {0}", AvailableTypes[Selected]);
-			return AvailableTypes[Selected].link;
-		}
 	}
 
 	public enum VideoCodec

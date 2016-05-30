@@ -40,9 +40,5 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="id">The unique id for a song this factory is responsible for.</param>
 		/// <returns>The (close to) original link if successful, null otherwise.</returns>
 		string RestoreLink(string id);
-		/// <summary>Gives the factory a second chance to validate the generated <see cref="PlayResource"/> with option for user-interaction.</summary>
-		/// <param name="data">The startparameter for this resource.</param>
-		/// <returns>The <see cref="PlayResource"/> is everythin is ok, an error/request message otherwise.</returns>
-		R<PlayResource> PostProcess(PlayData data);
 	}
 }

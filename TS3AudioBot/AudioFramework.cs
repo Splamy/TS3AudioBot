@@ -18,6 +18,7 @@ namespace TS3AudioBot
 {
 	using System;
 	using Helper;
+	using ResourceFactories;
 
 	public sealed class AudioFramework : MarshalByRefObject, IDisposable
 	{
@@ -26,16 +27,12 @@ namespace TS3AudioBot
 
 		private AudioFrameworkData audioFrameworkData;
 
-		public PlayData CurrentPlayData { get; private set; }
 		private IPlayerConnection playerConnection;
 
-		public event EventHandler<PlayInfoEventArgs> OnResourceStarted;
-		public event EventHandler<SongEndEventArgs> OnResourceStopped;
-		public event EventHandler OnPlayStopped;
+		internal event EventHandler OnResourceStopped;
 
 		// Playerproperties
 
-		public bool IsPlaying => CurrentPlayData != null;
 		/// <summary>Loop state for the current song.</summary>
 		public bool Repeat { get { return playerConnection.Repeated; } set { playerConnection.Repeated = value; } }
 		/// <summary>Gets or sets the volume for the current song.
@@ -70,33 +67,19 @@ namespace TS3AudioBot
 
 		/// <summary>Creates a new AudioFramework</summary>
 		/// <param name="afd">Required initialization data from a ConfigFile interpreter.</param>
-		internal AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackEnd)
+		public AudioFramework(AudioFrameworkData afd, IPlayerConnection audioBackEnd)
 		{
 			if (audioBackEnd == null)
 				throw new ArgumentNullException(nameof(audioBackEnd));
 
-			audioBackEnd.OnSongEnd += (s, e) => OnSongEnd();
+			audioBackEnd.OnSongEnd += OnResourceEnd;
 
 			audioFrameworkData = afd;
 			playerConnection = audioBackEnd;
 			playerConnection.Initialize();
 		}
 
-		private void OnSongEnd()
-		{
-			var songEndArgs = new SongEndEventArgs();
-			OnResourceStopped?.Invoke(this, songEndArgs);
-
-			var next = songEndArgs.NextSong;
-			if (next != null)
-			{
-				StartResource(next);
-			}
-			else
-			{
-				Stop(false);
-			}
-		}
+		private void OnResourceEnd(object sender, EventArgs e) => OnResourceStopped?.Invoke(this, e);
 
 		/// <summary>
 		/// <para>Do NOT call this method directly! Use the <see cref="PlayManager"/> instead.</para>
@@ -104,9 +87,9 @@ namespace TS3AudioBot
 		/// <para>The volume gets resetted and the OnStartEvent gets triggered.</para>
 		/// </summary>
 		/// <param name="playData">The info struct containing the PlayResource to start.</param>
-		internal R StartResource(PlayData playData)
+		internal R StartResource(PlayResource playResource, MetaData config)
 		{
-			if (playData?.PlayResource == null)
+			if (playResource == null)
 			{
 				Log.Write(Log.Level.Debug, "AF audioResource is null");
 				return "No new resource";
@@ -114,18 +97,14 @@ namespace TS3AudioBot
 
 			Stop(true);
 
-			string resourceLink = playData.PlayResource.Play();
-			if (string.IsNullOrWhiteSpace(resourceLink))
+			if (string.IsNullOrWhiteSpace(playResource.PlayUri))
 				return "Internal resource error: link is empty";
 
-			Log.Write(Log.Level.Debug, "AF ar start: {0}", playData.ResourceData);
-			playerConnection.AudioStart(resourceLink);
+			Log.Write(Log.Level.Debug, "AF ar start: {0}", playResource);
+			playerConnection.AudioStart(playResource.PlayUri);
 
-			Volume = playData.Volume ?? audioFrameworkData.defaultVolume;
+			Volume = config.Volume ?? audioFrameworkData.defaultVolume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
-
-			CurrentPlayData = playData;
-			OnResourceStarted?.Invoke(this, new PlayInfoEventArgs(playData.Invoker, playData.PlayResource));
 
 			return R.OkR;
 		}
@@ -133,20 +112,13 @@ namespace TS3AudioBot
 		public void Stop() => Stop(false);
 
 		/// <summary>Stops the currently played song.</summary>
-		/// <param name="restart">When set to true, the AudioBob won't be notified aubout the stop.
-		/// Use this parameter to prevent fast off-on switching.</param>
 		private void Stop(bool restart)
 		{
-			Log.Write(Log.Level.Debug, "AF stop old (restart:{0})", restart);
-			if (CurrentPlayData != null)
-			{
-				CurrentPlayData = null;
-				if (!restart)
-				{
-					playerConnection.AudioStop();
-					OnPlayStopped?.Invoke(this, new EventArgs());
-				}
-			}
+			Log.Write(Log.Level.Debug, "AF stop old");
+
+			playerConnection.AudioStop();
+			if (!restart)
+				OnResourceEnd(this, new EventArgs());
 		}
 
 		public void Dispose()
@@ -161,11 +133,6 @@ namespace TS3AudioBot
 				playerConnection = null;
 			}
 		}
-	}
-
-	public class SongEndEventArgs : EventArgs
-	{
-		public PlayData NextSong { get; set; }
 	}
 
 	public struct AudioFrameworkData

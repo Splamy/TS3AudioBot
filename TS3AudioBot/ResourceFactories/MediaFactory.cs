@@ -38,7 +38,7 @@ namespace TS3AudioBot.ResourceFactories
 			string outName;
 			var result = ValidateUri(out outName, resource.ResourceId);
 
-			if (result == RResultCode.MediaNoWebResponse)
+			if (result != RResultCode.Success)
 			{
 				return result.ToString();
 			}
@@ -46,7 +46,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				if (string.IsNullOrWhiteSpace(outName))
 					outName = resource.ResourceId;
-				return new MediaResource(resource.ResourceId, result, resource.ResourceTitle != null ? resource : resource.WithName(outName));
+				return new PlayResource(resource.ResourceId, resource.ResourceTitle != null ? resource : resource.WithName(outName));
 			}
 		}
 
@@ -123,52 +123,9 @@ namespace TS3AudioBot.ResourceFactories
 			catch (NotSupportedException) { return RResultCode.AccessDenied; }
 		}
 
-		public R<PlayResource> PostProcess(PlayData data)
-		{
-			MediaResource mediaResource = (MediaResource)data.PlayResource;
-			if (mediaResource.InternalResultCode == RResultCode.Success)
-			{
-				return data.PlayResource;
-			}
-			else
-			{
-				data.Session.SetResponse(ResponseValidation, data);
-				return $"This uri might be invalid ({mediaResource.InternalResultCode}), do you want to start anyway?";
-			}
-		}
-
-		private static bool ResponseValidation(ExecutionInformation info)
-		{
-			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
-			if (answer == Answer.Yes)
-			{
-				var pd = (PlayData)info.Session.ResponseData;
-				pd.UsePostProcess = false;
-				info.Session.Bot.PlayManager.Play(pd);
-			}
-			return answer != Answer.Unknown;
-		}
-
 		public void Dispose()
 		{
 
-		}
-	}
-
-	public sealed class MediaResource : PlayResource
-	{
-		public string ResourceURL { get; private set; }
-		public RResultCode InternalResultCode { get; private set; }
-
-		public MediaResource(string url, RResultCode internalRC, AudioResource baseData) : base(baseData)
-		{
-			ResourceURL = url;
-			InternalResultCode = internalRC;
-		}
-
-		public override string Play()
-		{
-			return ResourceURL;
 		}
 	}
 }

@@ -58,7 +58,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientID}";
-			return new SoundcloudResource(finalRequest, resource);
+			return new PlayResource(finalRequest, resource);
 		}
 
 		public string RestoreLink(string id)
@@ -73,26 +73,6 @@ namespace TS3AudioBot.ResourceFactories
 
 		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
 
-		public R<PlayResource> PostProcess(PlayData data)
-		{
-			return data.PlayResource;
-		}
-
 		public void Dispose() { }
-	}
-
-	public sealed class SoundcloudResource : PlayResource
-	{
-		public string ResourceURL { get; private set; }
-
-		public SoundcloudResource(string url, AudioResource baseData) : base(baseData)
-		{
-			ResourceURL = url;
-		}
-
-		public override string Play()
-		{
-			return ResourceURL;
-		}
 	}
 }

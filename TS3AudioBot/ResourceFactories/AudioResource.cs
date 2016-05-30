@@ -18,13 +18,16 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 
-	public abstract class PlayResource
+	public sealed class PlayResource
 	{
-		public AudioResource BaseData;
+		public AudioResource BaseData { get; }
+		public string PlayUri { get; }
 
-		protected PlayResource(AudioResource baseData) { BaseData = baseData; }
-
-		public abstract string Play();
+		public PlayResource(string uri, AudioResource baseData)
+		{
+			BaseData = baseData;
+			PlayUri = uri;
+		}
 
 		public override string ToString() => BaseData.ToString();
 	}

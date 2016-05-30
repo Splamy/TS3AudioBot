@@ -173,15 +173,16 @@ namespace TS3AudioBot.History
 		}
 
 
-		public void Store(PlayInfoEventArgs playData)
+		public AudioLogEntry Store(HistorySaveData saveData)
 		{
-			if (playData == null)
-				throw new ArgumentNullException(nameof(playData));
+			if (saveData == null)
+				throw new ArgumentNullException(nameof(saveData));
 
-			uint? index = Contains(playData.ResourceData);
+			AudioLogEntry ale;
+			uint? index = Contains(saveData.Resource);
 			if (!index.HasValue)
 			{
-				var ale = CreateLogEntry(playData);
+				ale = CreateLogEntry(saveData);
 				if (ale != null)
 				{
 					AddToMemoryIndex(ale);
@@ -192,9 +193,10 @@ namespace TS3AudioBot.History
 			}
 			else
 			{
-				var ale = GetEntryById(index.Value);
+				ale = GetEntryById(index.Value);
 				LogEntryPlay(ale);
 			}
+			return ale;
 		}
 
 		public uint? Contains(AudioResource resource)
@@ -333,14 +335,13 @@ namespace TS3AudioBot.History
 
 		// Internal features
 
-		private AudioLogEntry CreateLogEntry(PlayInfoEventArgs playData)
+		private AudioLogEntry CreateLogEntry(HistorySaveData saveData)
 		{
-			var resource = playData.ResourceData;
-			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
+			if (string.IsNullOrWhiteSpace(saveData.Resource.ResourceTitle))
 				return null;
-			var ale = new AudioLogEntry(CurrentID, resource)
+			var ale = new AudioLogEntry(CurrentID, saveData.Resource)
 			{
-				UserInvokeId = (uint)playData.Invoker.DatabaseId,
+				UserInvokeId = (uint)saveData.OwnerDbId,
 				Timestamp = Util.GetNow(),
 				PlayCount = 1,
 			};
@@ -446,6 +447,20 @@ namespace TS3AudioBot.History
 		{
 			CloseFile();
 			Clear();
+		}
+	}
+
+	public class HistorySaveData
+	{
+		public AudioResource Resource { get; }
+		public ulong OwnerDbId { get; }
+
+		public HistorySaveData(AudioResource resource, ulong ownerDbId)
+		{
+			if (resource == null)
+				throw new ArgumentNullException(nameof(resource));
+			Resource = resource;
+			OwnerDbId = ownerDbId;
 		}
 	}
 }

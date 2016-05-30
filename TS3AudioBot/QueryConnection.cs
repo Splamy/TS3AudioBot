@@ -19,7 +19,7 @@ namespace TS3AudioBot
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using TS3AudioBot.Helper;
+	using Helper;
 	using TS3Query;
 	using TS3Query.Messages;
 

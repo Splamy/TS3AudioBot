@@ -19,6 +19,7 @@ namespace TS3AudioBot
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using Helper;
 	using TS3Query;
 	using TS3Query.Messages;
 
@@ -32,7 +33,7 @@ namespace TS3AudioBot
 			openSessions = new List<PrivateSession>();
 		}
 
-		public BotSession CreateSession(MainBot bot, ushort invokerId)
+		public R<BotSession> CreateSession(MainBot bot, ushort invokerId)
 		{
 			if (bot == null)
 				throw new ArgumentNullException(nameof(bot));
@@ -41,7 +42,7 @@ namespace TS3AudioBot
 				return GetSession(MessageTarget.Private, invokerId);
 			ClientData client = bot.QueryConnection.GetClientById(invokerId);
 			if (client == null)
-				throw new SessionManagerException("Could not find the requested client.");
+				return "Could not find the requested client.";
 			var newSession = new PrivateSession(bot, client);
 			openSessions.Add(newSession);
 			return newSession;
@@ -63,18 +64,5 @@ namespace TS3AudioBot
 		{
 			openSessions.RemoveAll((ps) => ps.Client.ClientId == invokerId);
 		}
-	}
-
-
-	[Serializable]
-	public class SessionManagerException : Exception
-	{
-		public SessionManagerException() { }
-		public SessionManagerException(string message) : base(message) { }
-		public SessionManagerException(string message, Exception inner) : base(message, inner) { }
-		protected SessionManagerException(
-		  System.Runtime.Serialization.SerializationInfo info,
-		  System.Runtime.Serialization.StreamingContext context) : base(info, context)
-		{ }
 	}
 }

@@ -16,8 +16,12 @@
 
 namespace TS3AudioBot
 {
-	using ResourceFactories;
+	using System;
+	using CommandSystem;
 	using Helper;
+	using History;
+	using ResourceFactories;
+	using TS3Query.Messages;
 
 	public class PlayManager
 	{
@@ -25,59 +29,165 @@ namespace TS3AudioBot
 		private AudioFramework audioFramework => botParent.AudioFramework;
 		private PlaylistManager playlistManager => botParent.PlaylistManager;
 		private ResourceFactoryManager resourceFactoryManager => botParent.FactoryManager;
+		private HistoryManager historyManager => botParent.HistoryManager;
 
-		// TODO add all events here
+		public PlayInfoEventArgs CurrentPlayData { get; private set; }
+		public bool IsPlaying => CurrentPlayData != null;
+
+		public event EventHandler BeforeResourceStarted;
+		public event EventHandler<PlayInfoEventArgs> AfterResourceStarted;
+		public event EventHandler BeforeResourceStopped;
+		public event EventHandler AfterResourceStopped;
 
 		public PlayManager(MainBot parent)
 		{
 			botParent = parent;
 		}
+		
+		public R Enqueue(ClientData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar, new MetaData()));
+		public R Enqueue(ClientData invoker, string message, AudioType? type = null) => EnqueueInternal(invoker, new PlaylistItem(message, type, new MetaData()));
+		public R Enqueue(ClientData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId, new MetaData()));
 
-		/// <summary>Playes the passed <see cref="PlayData.PlayResource"/></summary>
-		/// <param name="data">The building parameters for the resource.</param>
-		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(PlayData playData)
+		private R EnqueueInternal(ClientData invoker, PlaylistItem pli)
 		{
-			var result = resourceFactoryManager.Load(playData);
-			if (!result)
-				return result.Message;
-			return Play(playData, result.Value);
+			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
+			playlistManager.AddToPlaylist(pli);
+
+			// TODO: make start check is nothis is playing right now
+
+			return R.OkR;
 		}
 
+		/// <summary>Playes the passed <see cref="AudioResource"/></summary>
+		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
+		/// <param name="ar">The resource to load and play.</param>
+		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
+		/// <returns>Ok if successful, or an error message otherwise.</returns>
+		public R Play(ClientData invoker, AudioResource ar, MetaData meta = null)
+		{
+			var result = resourceFactoryManager.Load(ar);
+			if (!result)
+				return result.Message;
+			return Play(invoker, result.Value, meta);
+		}
 		/// <summary>Playes the passed <see cref="PlayData.PlayResource"/></summary>
-		/// <param name="data">The building parameters for the resource.</param>
+		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
 		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
+		/// <param name="link">The link to resolve, load and play.</param>
+		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(PlayData playData, AudioType audioType)
+		public R Play(ClientData invoker, string link, AudioType? type = null, MetaData meta = null)
 		{
-			var result = resourceFactoryManager.Load(playData, audioType);
+			var result = resourceFactoryManager.Load(link, type);
 			if (!result)
 				return result.Message;
-			return Play(playData, result.Value);
+			return Play(invoker, result.Value, meta);
+		}
+		public R Play(ClientData invoker, uint historyId, MetaData meta = null)
+		{
+			var getresult = historyManager.GetEntryById(historyId);
+			if (!getresult)
+				return getresult.Message;
+
+			var loadresult = resourceFactoryManager.Load(getresult.Value.AudioResource);
+			if (!loadresult)
+				return loadresult.Message;
+
+			return Play(invoker, loadresult.Value, meta);
+		}
+		public R Play(ClientData invoker, PlaylistItem item)
+		{
+			R lastResult = R.OkR;
+			if (item.HistoryId.HasValue)
+			{
+				lastResult = Play(CurrentPlayData.Invoker, item.HistoryId.Value, item.Meta);
+				if (lastResult)
+					return R.OkR;
+			}
+			if (!string.IsNullOrWhiteSpace(item.Link))
+			{
+				lastResult = Play(CurrentPlayData.Invoker, item.Link, item.AudioType, item.Meta);
+				if (lastResult)
+					return R.OkR;
+			}
+			if (item.Resource != null)
+			{
+				lastResult = Play(CurrentPlayData.Invoker, item.Resource, item.Meta);
+				if (lastResult)
+					return R.OkR;
+			}
+			return $"Playlist item could not be played ({lastResult.Message})";
 		}
 
-		private R Play(PlayData playData, PlayResource playRes)
+		public R Play(ClientData invoker, PlayResource play, MetaData meta)
 		{
-			if (playData.Enqueue && audioFramework.IsPlaying)
-			{
-				playlistManager.AddToPlaylist(playData);
-				return R.OkR;
-			}
+			meta = meta ?? new MetaData();
 
-			if (playData.UsePostProcess)
-			{
-				var result = resourceFactoryManager.PostProcess(playData);
-				if (!result)
-					return result.Message;
-				else
-					playData.PlayResource = result.Value;
-			}
-			else
-			{
-				playData.PlayResource = playRes;
-			}
+			// add optional beforestart here. maybe for blocking/interrupting etc.
+			BeforeResourceStarted?.Invoke(this, new EventArgs());
 
-			return audioFramework.StartResource(playData);
+			// pass the song to the AF to start it
+			var result = audioFramework.StartResource(play, meta);
+			if (!result) return result;
+
+			// Log our resource in the history
+			ulong owner = meta.ResourceOwnerDbId ?? invoker.DatabaseId;
+			historyManager.LogAudioResource(new HistorySaveData(play.BaseData, owner));
+
+			CurrentPlayData = new PlayInfoEventArgs(invoker, play, meta); // TODO meta as readonly
+			AfterResourceStarted?.Invoke(this, CurrentPlayData);
+
+			return R.OkR;
+		}
+
+		public R Next(ClientData invoker)
+		{
+			PlaylistItem pli;
+			while ((pli = playlistManager.Next()) != null)
+			{
+				if (Play(invoker, pli))
+					return R.OkR;
+				// optional message here that playlist entry has been skipped
+			}
+			return "No next song could be played";
+		}
+		public R Previous(ClientData invoker)
+		{
+			return "Not working yet";
+		}
+
+		public void SongStoppedHook(object sender, EventArgs e)
+		{
+			BeforeResourceStopped?.Invoke(this, e);
+
+			if (Next(CurrentPlayData.Invoker))
+				return;
+
+			CurrentPlayData = null;
+			AfterResourceStopped?.Invoke(this, new EventArgs());
+		}
+	}
+
+	public class MetaData
+	{
+		/// <summary>Defaults to: invoker.DbId - Can be set if the owner of a song differs from the invoker.</summary>
+		public ulong? ResourceOwnerDbId { get; set; } = null;
+		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
+		public int? Volume { get; set; } = null;
+	}
+
+	public class PlayInfoEventArgs : EventArgs
+	{
+		public ClientData Invoker { get; }
+		public PlayResource PlayResource { get; }
+		public AudioResource ResourceData => PlayResource.BaseData;
+		public MetaData MetaData { get; }
+
+		public PlayInfoEventArgs(ClientData invoker, PlayResource playResource, MetaData meta)
+		{
+			Invoker = invoker;
+			PlayResource = playResource;
+			MetaData = meta;
 		}
 	}
 }

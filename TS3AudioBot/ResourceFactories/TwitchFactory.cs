@@ -121,27 +121,24 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 
-			if (dataList.Count > 0)
-				return new TwitchResource(dataList, resource.ResourceTitle != null ? resource : resource.WithName($"Twitch channel: {channel}"));
-			else
+			// Validation Process
+
+			if (dataList.Count <= 0)
 				return RResultCode.TwitchNoStreamsExtracted.ToString();
+
+			int codec = SelectStream(dataList);
+			if (codec < 0)
+				return "The stream has no audio_only version.";
+
+			return new PlayResource(dataList[codec].Url, resource.ResourceTitle != null ? resource : resource.WithName($"Twitch channel: {channel}"));
 		}
 
 		public bool MatchLink(string uri) => twitchMatch.IsMatch(uri);
 
-		public R<PlayResource> PostProcess(PlayData data)
+		public int SelectStream(List<StreamData> list)
 		{
-			var twResource = (TwitchResource)data.PlayResource;
-			// TODO: selecting the best stream (better)
-			int autoselectIndex = twResource.AvailableStreams.FindIndex(s => s.QualityType == StreamQuality.audio_only);
-			if (autoselectIndex != -1)
-			{
-				twResource.Selected = autoselectIndex;
-				return twResource;
-			}
-
-			// TODO add response like youtube
-			return "The stream has no audio_only version.";
+			int autoselectIndex = list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
+			return autoselectIndex;
 		}
 
 		public string RestoreLink(string id) => "http://www.twitch.tv/" + id;
@@ -166,24 +163,5 @@ namespace TS3AudioBot.ResourceFactories
 		low,
 		mobile,
 		audio_only,
-	}
-
-	public sealed class TwitchResource : PlayResource
-	{
-		public List<StreamData> AvailableStreams { get; private set; }
-		public int Selected { get; set; }
-
-		public TwitchResource(List<StreamData> availableStreams, AudioResource baseData) : base(baseData)
-		{
-			AvailableStreams = availableStreams;
-		}
-
-		public override string Play()
-		{
-			if (Selected < 0 && Selected >= AvailableStreams.Count)
-				return null;
-			Log.Write(Log.Level.Debug, "YT Playing: {0}", AvailableStreams[Selected]);
-			return AvailableStreams[Selected].Url;
-		}
 	}
 }
