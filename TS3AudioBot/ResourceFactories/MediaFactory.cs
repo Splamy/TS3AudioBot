@@ -54,8 +54,19 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static RResultCode ValidateUri(out string name, string uri)
 		{
+			// if the uri is a relative local path, we can resolve it to a full path
+			string fullUri;
+			try
+			{
+				fullUri = Path.GetFullPath(uri);
+			}
+			catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException)
+			{
+				fullUri = uri;
+			}
+
 			Uri uriResult;
-			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out uriResult))
+			if (!Uri.TryCreate(fullUri, UriKind.RelativeOrAbsolute, out uriResult))
 			{
 				name = null;
 				return RResultCode.MediaInvalidUri;
@@ -69,7 +80,7 @@ namespace TS3AudioBot.ResourceFactories
 					|| scheme == Uri.UriSchemeFtp)
 					return ValidateWeb(out name, uri);
 				else if (uriResult.Scheme == Uri.UriSchemeFile)
-					return ValidateFile(out name, uri);
+					return ValidateFile(out name, fullUri);
 				else
 				{
 					name = null;
@@ -78,7 +89,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			catch (InvalidOperationException)
 			{
-				return ValidateFile(out name, uri);
+				return ValidateFile(out name, fullUri);
 			}
 		}
 

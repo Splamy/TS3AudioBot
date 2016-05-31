@@ -75,10 +75,13 @@ namespace TS3AudioBot
 			data = pmd;
 			json = new JavaScriptSerializer();
 			shuffle = new ListedShuffle();
+			freeList = new Playlist(string.Empty);
 		}
 
 		public PlaylistItem Next()
 		{
+			if (freeList.Length == 0) return null;
+
 			indexCount++;
 			if (Loop)
 				indexCount %= freeList.Length;
@@ -220,14 +223,16 @@ namespace TS3AudioBot
 	{
 		// metainfo
 		public string Name { get; }
-		public ulong CreatorDbId { get; }
+		public ulong? CreatorDbId { get; }
 		// file behaviour: persistent playlist will be synced to a file
 		public bool FilePersistent { get; set; }
 		// playlist data
 		public int Length => resources.Count;
 		private List<PlaylistItem> resources;
 
-		public Playlist(ulong creatorDbId, string name)
+		public Playlist(string name) : this(null, name) { }
+		public Playlist(ulong creatorDbId, string name) : this((ulong?)creatorDbId, name) { }
+		private Playlist(ulong? creatorDbId, string name)
 		{
 			Util.Init(ref resources);
 			CreatorDbId = creatorDbId;
@@ -277,8 +282,6 @@ namespace TS3AudioBot
 		public string playlistPath;
 		[Info("a youtube apiv3 'Browser' type key")]
 		public string youtubeApiKey;
-		[Info("skip songs where user-input is required")]
-		public bool skipPostProcessor;
 	}
 #pragma warning restore CS0649
 }

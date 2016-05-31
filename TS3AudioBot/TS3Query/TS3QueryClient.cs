@@ -160,9 +160,7 @@ namespace TS3Query
 			CurrentPort = port;
 
 			try { tcpClient.Connect(CurrentHost, CurrentPort); }
-			catch (SocketException) { }
-			if (!tcpClient.Connected)
-				throw new InvalidOperationException("Could not connect to the query server.");
+			catch (SocketException ex) { throw new QueryCommandException(new ErrorStatus(), ex); }
 
 			tcpStream = tcpClient.GetStream();
 			tcpReader = new StreamReader(tcpStream);

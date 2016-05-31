@@ -29,7 +29,7 @@ namespace TS3AudioBot
 
 		private IPlayerConnection playerConnection;
 
-		internal event EventHandler OnResourceStopped;
+		internal event EventHandler<SongEndEventArgs> OnResourceStopped;
 
 		// Playerproperties
 
@@ -42,7 +42,7 @@ namespace TS3AudioBot
 			get { return playerConnection.Volume; }
 			set
 			{
-				if (Volume < 0 || Volume > MaxVolume)
+				if (value < 0 || value > MaxVolume)
 					throw new ArgumentOutOfRangeException(nameof(value));
 				playerConnection.Volume = value;
 			}
@@ -72,14 +72,14 @@ namespace TS3AudioBot
 			if (audioBackEnd == null)
 				throw new ArgumentNullException(nameof(audioBackEnd));
 
-			audioBackEnd.OnSongEnd += OnResourceEnd;
+			audioBackEnd.OnSongEnd += (s, e) => OnResourceEnd(true);
 
 			audioFrameworkData = afd;
 			playerConnection = audioBackEnd;
 			playerConnection.Initialize();
 		}
 
-		private void OnResourceEnd(object sender, EventArgs e) => OnResourceStopped?.Invoke(this, e);
+		private void OnResourceEnd(bool val) => OnResourceStopped?.Invoke(this, new SongEndEventArgs(val));
 
 		/// <summary>
 		/// <para>Do NOT call this method directly! Use the <see cref="PlayManager"/> instead.</para>
@@ -118,7 +118,7 @@ namespace TS3AudioBot
 
 			playerConnection.AudioStop();
 			if (!restart)
-				OnResourceEnd(this, new EventArgs());
+				OnResourceEnd(false);
 		}
 
 		public void Dispose()
@@ -133,6 +133,12 @@ namespace TS3AudioBot
 				playerConnection = null;
 			}
 		}
+	}
+
+	public class SongEndEventArgs : EventArgs
+	{
+		public bool SongEndedByCallback { get; }
+		public SongEndEventArgs(bool songEndedByCallback) { SongEndedByCallback = songEndedByCallback; }
 	}
 
 	public struct AudioFrameworkData

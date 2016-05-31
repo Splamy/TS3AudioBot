@@ -36,14 +36,14 @@ namespace TS3AudioBot
 
 		public event EventHandler BeforeResourceStarted;
 		public event EventHandler<PlayInfoEventArgs> AfterResourceStarted;
-		public event EventHandler BeforeResourceStopped;
+		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
 		public PlayManager(MainBot parent)
 		{
 			botParent = parent;
 		}
-		
+
 		public R Enqueue(ClientData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar, new MetaData()));
 		public R Enqueue(ClientData invoker, string message, AudioType? type = null) => EnqueueInternal(invoker, new PlaylistItem(message, type, new MetaData()));
 		public R Enqueue(ClientData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId, new MetaData()));
@@ -156,11 +156,11 @@ namespace TS3AudioBot
 			return "Not working yet";
 		}
 
-		public void SongStoppedHook(object sender, EventArgs e)
+		public void SongStoppedHook(object sender, SongEndEventArgs e)
 		{
 			BeforeResourceStopped?.Invoke(this, e);
 
-			if (Next(CurrentPlayData.Invoker))
+			if (e.SongEndedByCallback && CurrentPlayData != null && Next(CurrentPlayData.Invoker))
 				return;
 
 			CurrentPlayData = null;

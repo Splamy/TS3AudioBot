@@ -160,6 +160,7 @@ namespace TS3AudioBot
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
+			PlayManager = new PlayManager(this);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager();
@@ -273,7 +274,7 @@ namespace TS3AudioBot
 				catch (Exception ex)
 				{
 					session.Write("An unexpected error occured: " + ex.Message);
-					Log.Write(Log.Level.Error, "MB Unexpected command error: ", ex);
+					Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex);
 				}
 			}
 		}
