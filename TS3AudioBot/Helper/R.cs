@@ -14,7 +14,10 @@ namespace TS3AudioBot.Helper
 		public bool Ok => !isError;
 		public string Message { get; }
 
-		public R(string message) { isError = true; Message = message; }
+		private R(string message) { isError = true; Message = message; }
+		/// <summary>Creates a new failed result with a message</summary>
+		/// <param name="message">The message</param>
+		public static R Err(string message) => new R(message);
 
 		public static implicit operator bool(R result) => result.Ok;
 		public static implicit operator string(R result) => result.Message;
@@ -36,8 +39,15 @@ namespace TS3AudioBot.Helper
 		public string Message { get; }
 		public T Value { get; }
 
-		public R(T value) { isError = false; Message = null; Value = value; }
-		public R(string message) { isError = true; Message = message; Value = default(T); }
+		private R(T value) { isError = false; Message = null; Value = value; }
+		private R(string message) { isError = true; Message = message; Value = default(T); }
+
+		/// <summary>Creates a new failed result with a message</summary>
+		/// <param name="message">The message</param>
+		public static R<T> Err(string message) => new R<T>(message);
+		/// <summary>Creates a new successful result with a value</summary>
+		/// <param name="value">The value</param>
+		public static R<T> OkR(T value) => new R<T>(value);
 
 		public static implicit operator bool(R<T> result) => result.Ok;
 		public static implicit operator string(R<T> result) => result.Message;

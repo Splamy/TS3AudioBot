@@ -17,7 +17,6 @@
 namespace TS3AudioBot
 {
 	using System;
-	using CommandSystem;
 	using Helper;
 	using History;
 	using ResourceFactories;

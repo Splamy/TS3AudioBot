@@ -756,6 +756,7 @@ namespace TS3AudioBot
 			switch (param)
 			{
 			case "force":
+				QueryConnection.OnMessageReceived -= TextCallback;
 				info.Session.Write("Goodbye!");
 				Dispose();
 				Log.Write(Log.Level.Info, "Exiting...");

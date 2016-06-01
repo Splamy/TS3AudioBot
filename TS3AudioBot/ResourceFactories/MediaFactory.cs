@@ -35,103 +35,89 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
-			string outName;
-			var result = ValidateUri(out outName, resource.ResourceId);
+			var result = ValidateUri(resource.ResourceId);
 
-			if (result != RResultCode.Success)
+			if (!result)
 			{
-				return result.ToString();
+				return result.Message;
 			}
 			else
 			{
-				if (string.IsNullOrWhiteSpace(outName))
-					outName = resource.ResourceId;
-				return new PlayResource(resource.ResourceId, resource.ResourceTitle != null ? resource : resource.WithName(outName));
+				AudioResource finalResource;
+				if (resource.ResourceTitle != null)
+					finalResource = resource;
+				else if (!string.IsNullOrWhiteSpace(result.Value))
+					finalResource = resource.WithName(result.Value);
+				else
+					finalResource = resource.WithName(resource.ResourceId);
+				return new PlayResource(resource.ResourceId, finalResource);
 			}
 		}
 
 		public string RestoreLink(string id) => id;
 
-		private static RResultCode ValidateUri(out string name, string uri)
+		private static R<string> ValidateUri(string uri)
 		{
-			// if the uri is a relative local path, we can resolve it to a full path
-			string fullUri;
-			try
-			{
-				fullUri = Path.GetFullPath(uri);
-			}
-			catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException)
-			{
-				fullUri = uri;
-			}
-
 			Uri uriResult;
-			if (!Uri.TryCreate(fullUri, UriKind.RelativeOrAbsolute, out uriResult))
+			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out uriResult))
+				return R<string>.Err(RResultCode.MediaInvalidUri.ToString());
+
+			string fullUri = uri;
+			if (!uriResult.IsAbsoluteUri)
 			{
-				name = null;
-				return RResultCode.MediaInvalidUri;
+				try
+				{
+					fullUri = Path.GetFullPath(uri);
+					Uri.TryCreate(uri, UriKind.Absolute, out uriResult);
+				}
+				catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException) { }
 			}
 
-			try
-			{
-				string scheme = uriResult.Scheme;
-				if (scheme == Uri.UriSchemeHttp
-					|| scheme == Uri.UriSchemeHttps
-					|| scheme == Uri.UriSchemeFtp)
-					return ValidateWeb(out name, uri);
-				else if (uriResult.Scheme == Uri.UriSchemeFile)
-					return ValidateFile(out name, fullUri);
-				else
-				{
-					name = null;
-					return RResultCode.MediaUnknownUri;
-				}
-			}
-			catch (InvalidOperationException)
-			{
-				return ValidateFile(out name, fullUri);
-			}
+			string scheme = uriResult.Scheme;
+			if (scheme == Uri.UriSchemeHttp
+				|| scheme == Uri.UriSchemeHttps
+				|| scheme == Uri.UriSchemeFtp)
+				return ValidateWeb(uri);
+			else if (uriResult.Scheme == Uri.UriSchemeFile)
+				return ValidateFile(fullUri);
+			else
+				return R<string>.Err(RResultCode.MediaUnknownUri.ToString());
 		}
 
 		private static string GetStreamName(Stream stream) => AudioTagReader.GetTitle(stream);
 
-		private static RResultCode ValidateWeb(out string name, string link)
+		private static R<string> ValidateWeb(string link)
 		{
 			string outName = null;
-			if (WebWrapper.GetResponse(new Uri(link), response => { using (var stream = response.GetResponseStream()) outName = GetStreamName(stream); })
-				== ValidateCode.Ok)
+			var valCode = WebWrapper.GetResponse(new Uri(link), response => { using (var stream = response.GetResponseStream()) outName = GetStreamName(stream); });
+			if (valCode == ValidateCode.Ok)
 			{
-				name = outName;
-				return RResultCode.Success;
+				return R<string>.OkR(outName);
 			}
 			else
 			{
-				name = null;
-				return RResultCode.MediaNoWebResponse;
+				return R<string>.Err(RResultCode.MediaNoWebResponse.ToString());
 			}
 		}
 
-		private static RResultCode ValidateFile(out string name, string path)
+		private static R<string> ValidateFile(string path)
 		{
-			name = null;
-
 			if (!File.Exists(path))
-				return RResultCode.MediaFileNotFound;
+				return R<string>.Err(RResultCode.MediaFileNotFound.ToString());
 
 			try
 			{
 				using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
 				{
-					name = GetStreamName(stream);
-					return RResultCode.Success;
+					return R<string>.OkR(GetStreamName(stream));
 				}
 			}
-			catch (PathTooLongException) { return RResultCode.AccessDenied; }
-			catch (DirectoryNotFoundException) { return RResultCode.MediaFileNotFound; }
-			catch (FileNotFoundException) { return RResultCode.MediaFileNotFound; }
-			catch (IOException) { return RResultCode.AccessDenied; }
-			catch (UnauthorizedAccessException) { return RResultCode.AccessDenied; }
-			catch (NotSupportedException) { return RResultCode.AccessDenied; }
+			catch (PathTooLongException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (DirectoryNotFoundException) { return R<string>.Err(RResultCode.MediaFileNotFound.ToString()); }
+			catch (FileNotFoundException) { return R<string>.Err(RResultCode.MediaFileNotFound.ToString()); }
+			catch (IOException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (UnauthorizedAccessException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (NotSupportedException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
 		}
 
 		public void Dispose()
