@@ -311,7 +311,7 @@ namespace TS3AudioBot
 		[Usage("<link>", "Any link that is also recognized by !play")]
 		public string CommandAdd(ExecutionInformation info, string parameter)
 		{
-			return PlayManager.Play(info.Invoker, parameter);
+			return PlayManager.Enqueue(info.Invoker, parameter);
 		}
 
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
