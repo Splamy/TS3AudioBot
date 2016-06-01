@@ -20,7 +20,6 @@ namespace TS3AudioBot.ResourceFactories
 	using System.IO;
 	using Helper;
 	using Helper.AudioTags;
-	using CommandSystem;
 
 	public sealed class MediaFactory : IResourceFactory
 	{
@@ -120,9 +119,6 @@ namespace TS3AudioBot.ResourceFactories
 			catch (NotSupportedException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
 		}
 
-		public void Dispose()
-		{
-
-		}
+		public void Dispose() { }
 	}
 }
