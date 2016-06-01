@@ -82,10 +82,9 @@ namespace TS3AudioBot
 		{
 			if (freeList.Length == 0) return null;
 
-			indexCount++;
 			if (Loop)
 				indexCount %= freeList.Length;
-			else if (indexCount > freeList.Length)
+			else if (indexCount >= freeList.Length)
 				return null;
 
 			int pseudoListIndex;
@@ -93,6 +92,8 @@ namespace TS3AudioBot
 				pseudoListIndex = shuffle.Get(indexCount);
 			else
 				pseudoListIndex = indexCount;
+			indexCount++;
+
 			return freeList.GetResource(pseudoListIndex);
 		}
 
@@ -178,7 +179,7 @@ namespace TS3AudioBot
 				{
 					itemBuffer[i] = new YoutubePlaylistItem(new AudioResource(
 							(string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["videoId"]),
-							null, // TODO: check if name is already available (and for rename conflict when the entry already exists)
+							null,
 							AudioType.Youtube));
 				}
 				hasNext = parsed.TryGetValue("nextPageToken", out nextToken);
@@ -207,10 +208,11 @@ namespace TS3AudioBot
 		public MetaData Meta { get; }
 		//one of these:
 		// playdata holds all needed information for playing + first possiblity
-		// > can be a resource (+ in future lazily loaded resource)
+		// > can be a resource
 		public AudioResource Resource { get; } = null;
 		// > can be a history entry (will need to fall back to resource-load if entry is deleted in meanwhile)
 		public uint? HistoryId { get; } = null;
+		// > can be a link to be resolved normally (+ optional audio type)
 		public string Link { get; } = null;
 		public AudioType? AudioType { get; } = null;
 
@@ -263,8 +265,7 @@ namespace TS3AudioBot
 
 		public PlaylistItem GetResource(int index)
 		{
-			//resources[index];
-			throw new NotImplementedException();
+			return resources[index];
 		}
 	}
 
