@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -98,21 +98,23 @@ namespace TS3AudioBot
 		public R Play(ClientData invoker, PlaylistItem item)
 		{
 			R lastResult = R.OkR;
+			ClientData realInvoker = CurrentPlayData?.Invoker ?? invoker;
+
 			if (item.HistoryId.HasValue)
 			{
-				lastResult = Play(CurrentPlayData.Invoker, item.HistoryId.Value, item.Meta);
+				lastResult = Play(realInvoker, item.HistoryId.Value, item.Meta);
 				if (lastResult)
 					return R.OkR;
 			}
 			if (!string.IsNullOrWhiteSpace(item.Link))
 			{
-				lastResult = Play(CurrentPlayData.Invoker, item.Link, item.AudioType, item.Meta);
+				lastResult = Play(realInvoker, item.Link, item.AudioType, item.Meta);
 				if (lastResult)
 					return R.OkR;
 			}
 			if (item.Resource != null)
 			{
-				lastResult = Play(CurrentPlayData.Invoker, item.Resource, item.Meta);
+				lastResult = Play(realInvoker, item.Resource, item.Meta);
 				if (lastResult)
 					return R.OkR;
 			}

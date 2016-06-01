@@ -509,7 +509,7 @@ namespace TS3AudioBot
 			return PlayManager.Play(info.Invoker, id);
 		}
 
-		[Command(Private, "history queue", "<id> Adds the song with <id> to the queue")]
+		[Command(Private, "history add", "<id> Adds the song with <id> to the queue")]
 		public string CommandHistoryQueue(ExecutionInformation info, uint id)
 		{
 			return PlayManager.Enqueue(info.Invoker, id);
@@ -751,30 +751,20 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
-		public string CommandQuit(ExecutionInformation info)
+		public string CommandQuit(ExecutionInformation info, string param)
 		{
-			info.Session.SetResponse(ResponseQuit, null);
-			return "Do you really want to quit? !(yes|no)";
-		}
+			switch (param)
+			{
+			case "force":
+				info.Session.Write("Goodbye!");
+				Dispose();
+				Log.Write(Log.Level.Info, "Exiting...");
+				return null;
 
-		[Command(Admin, "quit force", "Closes the TS3AudioBot application.")]
-		public void CommandQuitForce(ExecutionInformation info)
-		{
-			info.Session.Write("Goodbye!");
-			Dispose();
-			Log.Write(Log.Level.Info, "Exiting...");
-		}
-
-		[Command(Admin, "quit last", "Disconnects the Bob when noone is on the server anymore.")]
-		public void CommandQuitLast(ExecutionInformation info)
-		{
-			throw new NotImplementedException();
-		}
-
-		[Command(Admin, "quit reset", "Discards any \"quit last\" request.")]
-		public void CommandQuitReset(ExecutionInformation info)
-		{
-			throw new NotImplementedException();
+			default:
+				info.Session.SetResponse(ResponseQuit, null);
+				return "Do you really want to quit? !(yes|no)";
+			}
 		}
 
 		[Command(Public, "quiz", "Enable to hide the songnames and let your friends guess the title.")]
@@ -1046,7 +1036,7 @@ namespace TS3AudioBot
 			if (answer == Answer.Yes)
 			{
 				if (info.IsAdmin)
-					CommandQuitForce(info);
+					CommandQuit(info, "force");
 				else
 					info.Session.Write("Command can only be answered by an admin.");
 			}
