@@ -52,8 +52,6 @@ namespace TS3AudioBot
 			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
 			playlistManager.AddToPlaylist(pli);
 
-			// TODO: make start check is nothis is playing right now
-
 			return R.OkR;
 		}
 
@@ -143,18 +141,33 @@ namespace TS3AudioBot
 
 		public R Next(ClientData invoker)
 		{
-			PlaylistItem pli;
-			while ((pli = playlistManager.Next()) != null)
+			PlaylistItem pli = null;
+			for (int i = 0; i < 10; i++)
 			{
+				if ((pli = playlistManager.Next()) == null) break;
 				if (Play(invoker, pli))
 					return R.OkR;
 				// optional message here that playlist entry has been skipped
 			}
-			return "No next song could be played";
+			if (pli == null)
+				return "No next song could be played";
+			else
+				return "A few songs failed to start, use !next to continue";
 		}
 		public R Previous(ClientData invoker)
 		{
-			return "Not working yet";
+			PlaylistItem pli = null;
+			for (int i = 0; i < 10; i++)
+			{
+				if ((pli = playlistManager.Previous()) == null) break;
+				if (Play(invoker, pli))
+					return R.OkR;
+				// optional message here that playlist entry has been skipped
+			}
+			if (pli == null)
+				return "No previous song could be played";
+			else
+				return "A few songs failed to start, use !previous to continue";
 		}
 
 		public void SongStoppedHook(object sender, SongEndEventArgs e)

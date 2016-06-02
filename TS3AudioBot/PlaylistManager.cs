@@ -58,7 +58,6 @@ namespace TS3AudioBot
 
 		private PlaylistManagerData data;
 		private JavaScriptSerializer json;
-		private History.HistoryManager HistoryManager;
 		private static readonly Encoding FileEncoding = Encoding.ASCII;
 
 		private int indexCount = 0;
@@ -80,26 +79,41 @@ namespace TS3AudioBot
 
 		public PlaylistItem Next()
 		{
-			if (freeList.Length == 0) return null;
+			if (freeList.Count == 0) return null;
 
-			if (Loop)
-				indexCount %= freeList.Length;
-			else if (indexCount >= freeList.Length)
-				return null;
-
-			int pseudoListIndex;
-			if (Random)
-				pseudoListIndex = shuffle.Get(indexCount);
-			else
-				pseudoListIndex = indexCount;
 			indexCount++;
-
-			return freeList.GetResource(pseudoListIndex);
+			return NPMove();
 		}
 
 		public PlaylistItem Previous()
 		{
-			throw new NotImplementedException();
+			if (freeList.Count == 0) return null;
+
+			indexCount--;
+			return NPMove();
+		}
+
+		private PlaylistItem NPMove()
+		{
+			if (Loop)
+				indexCount = ((indexCount % freeList.Count) + freeList.Count) % freeList.Count;
+			else if (indexCount < freeList.Count || indexCount >= freeList.Count)
+				return null;
+
+			int pseudoListIndex;
+			if (Random)
+			{
+				if (dataSetLength != freeList.Count)
+				{
+					dataSetLength = freeList.Count;
+					shuffle.SetData(dataSetLength);
+				}
+				pseudoListIndex = shuffle.Get(indexCount);
+			}
+			else
+				pseudoListIndex = indexCount;
+
+			return freeList.GetResource(pseudoListIndex);
 		}
 
 		public void AddToPlaylist(PlaylistItem item)
@@ -229,7 +243,7 @@ namespace TS3AudioBot
 		// file behaviour: persistent playlist will be synced to a file
 		public bool FilePersistent { get; set; }
 		// playlist data
-		public int Length => resources.Count;
+		public int Count => resources.Count;
 		private List<PlaylistItem> resources;
 
 		public Playlist(string name) : this(null, name) { }

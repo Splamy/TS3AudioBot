@@ -74,9 +74,9 @@ namespace TS3AudioBot.CommandSystem
 			{
 				return internCommand.Invoke(callee, parameters);
 			}
-			catch (TargetInvocationException ex)
+			catch (TargetInvocationException)
 			{
-				throw ex.InnerException;
+				throw;
 			}
 		}
 
