@@ -348,6 +348,29 @@ namespace TS3ABotUnitTests
 
 		static bool HaveSameItems<T>(IEnumerable<T> self, IEnumerable<T> other) => !other.Except(self).Any() && !self.Except(other).Any();
 
+		[Test]
+		public void ListedShuffleTest()
+		{
+			TestShuffleAlgorithm(new ListedShuffle());
+		}
+
+		public void TestShuffleAlgorithm(IShuffleAlgorithm algo)
+		{
+			for (int i = 0; i < 1000; i++)
+			{
+				HashSet<int> checkNumbers = new HashSet<int>();
+
+				algo.SetData(i);
+
+				for (int j = 0; j < i; j++)
+				{
+					int shufNum = algo.Get(j);
+					Assert.False(checkNumbers.Contains(shufNum));
+					checkNumbers.Add(shufNum);
+				}
+			}
+		}
+
 		/* =================== ResourceFactories Tests =====================*/
 
 		[Test]

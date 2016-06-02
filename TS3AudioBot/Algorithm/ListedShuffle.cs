@@ -19,7 +19,7 @@ namespace TS3AudioBot.Algorithm
 	using System;
 	using System.Linq;
 
-	class ListedShuffle : IShuffleAlgorithm
+	public class ListedShuffle : IShuffleAlgorithm
 	{
 		private int[] permutation;
 
