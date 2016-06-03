@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="CommandSystem\ASTCommand.cs" />
     <Compile Include="CommandSystem\ASTError.cs" />
     <Compile Include="CommandSystem\ASTNode.cs" />

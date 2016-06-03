@@ -39,7 +39,7 @@ namespace TS3AudioBot.Helper
 		public string Message { get; }
 		public T Value { get; }
 
-		private R(T value) { isError = false; Message = null; Value = value; }
+		private R(T value) { isError = false; Message = null; if (value == null) throw new System.Exception("Return of ok must not be null."); Value = value; }
 		private R(string message) { isError = true; Message = message; Value = default(T); }
 
 		/// <summary>Creates a new failed result with a message</summary>

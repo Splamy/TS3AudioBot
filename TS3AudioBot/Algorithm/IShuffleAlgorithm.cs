@@ -18,9 +18,10 @@ namespace TS3AudioBot.Algorithm
 {
 	public interface IShuffleAlgorithm
 	{
-		void SetData(int length);
-		void SetData(int seed, int length);
-
-		int Get(int i);
+		int Seed { get; }
+		int Length { get; }
+		void Set(int seed, int length);
+		int Next();
+		int Prev();
 	}
 }

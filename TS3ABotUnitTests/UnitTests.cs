@@ -17,6 +17,7 @@
 namespace TS3ABotUnitTests
 {
 	using System;
+	using System.Collections;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
@@ -354,19 +355,26 @@ namespace TS3ABotUnitTests
 			TestShuffleAlgorithm(new ListedShuffle());
 		}
 
+		[Test]
+		public void LinearFeedbackShiftRegisterTest()
+		{
+			TestShuffleAlgorithm(new LinearFeedbackShiftRegister());
+		}
+
 		public void TestShuffleAlgorithm(IShuffleAlgorithm algo)
 		{
-			for (int i = 0; i < 1000; i++)
+			for (int i = 1; i < 1000; i++)
 			{
-				HashSet<int> checkNumbers = new HashSet<int>();
+				BitArray checkNumbers = new BitArray(i, false);
 
-				algo.SetData(i);
+				algo.Set(0, i);
 
 				for (int j = 0; j < i; j++)
 				{
-					int shufNum = algo.Get(j);
-					Assert.False(checkNumbers.Contains(shufNum));
-					checkNumbers.Add(shufNum);
+					int shufNum = algo.Next();
+					if (checkNumbers.Get(shufNum))
+						Assert.Fail("Duplicate number");
+					checkNumbers.Set(shufNum, true);
 				}
 			}
 		}

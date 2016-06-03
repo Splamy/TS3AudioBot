@@ -32,7 +32,7 @@ namespace TS3AudioBot
 
 		public abstract void Write(string message);
 
-		protected BotSession(MainBot bot)
+		internal BotSession(MainBot bot)
 		{
 			Bot = bot;
 			ResponseProcessor = null;

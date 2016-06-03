@@ -73,28 +73,19 @@ namespace TS3AudioBot
 		{
 			data = pmd;
 			json = new JavaScriptSerializer();
-			shuffle = new ListedShuffle();
+			shuffle = new LinearFeedbackShiftRegister();
 			freeList = new Playlist(string.Empty);
 		}
 
-		public PlaylistItem Next()
+		public PlaylistItem Next() => NPMove(true);
+
+		public PlaylistItem Previous() => NPMove(false);
+
+		private PlaylistItem NPMove(bool forward)
 		{
 			if (freeList.Count == 0) return null;
+			indexCount += forward ? 1 : -1;
 
-			indexCount++;
-			return NPMove();
-		}
-
-		public PlaylistItem Previous()
-		{
-			if (freeList.Count == 0) return null;
-
-			indexCount--;
-			return NPMove();
-		}
-
-		private PlaylistItem NPMove()
-		{
 			if (Loop)
 				indexCount = ((indexCount % freeList.Count) + freeList.Count) % freeList.Count;
 			else if (indexCount < freeList.Count || indexCount >= freeList.Count)
@@ -106,9 +97,9 @@ namespace TS3AudioBot
 				if (dataSetLength != freeList.Count)
 				{
 					dataSetLength = freeList.Count;
-					shuffle.SetData(dataSetLength);
+					shuffle.Set(Util.RngInstance.Next(), dataSetLength);
 				}
-				pseudoListIndex = shuffle.Get(indexCount);
+				pseudoListIndex = forward ? shuffle.Next() : shuffle.Prev();
 			}
 			else
 				pseudoListIndex = indexCount;

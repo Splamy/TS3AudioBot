@@ -18,28 +18,28 @@ namespace TS3AudioBot.Algorithm
 {
 	using System;
 	using System.Linq;
+	using Helper;
 
 	public class ListedShuffle : IShuffleAlgorithm
 	{
 		private int[] permutation;
 
+		private int index = 0;
 		private int seed = 0;
 		private int length = 0;
 
 		public int Seed => seed;
+		public int Length => length;
 
-		public void SetData(int length)
+		public void Set(int seed, int length)
 		{
-			Random rngeesus = new Random();
-			SetData(rngeesus.Next(), length);
-		}
-		public void SetData(int seed, int length)
-		{
+			if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length));
+
 			this.seed = seed;
 			this.length = length;
+			index %= length;
 
-			if (length != 0)
-				GenList();
+			GenList();
 		}
 
 		private void GenList()
@@ -48,6 +48,7 @@ namespace TS3AudioBot.Algorithm
 			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(x => rngeesus.Next()).ToArray();
 		}
 
-		public int Get(int i) => permutation[i % permutation.Length];
+		public int Next() => permutation[(index++) % permutation.Length];
+		public int Prev() => permutation[(index--) % permutation.Length];
 	}
 }
