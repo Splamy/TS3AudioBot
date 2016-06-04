@@ -67,40 +67,48 @@ namespace TS3AudioBot.Algorithm
 			return val;
 		}
 
-		private static readonly int[] GauloiseLFSRs = new int[] { 0001, 0001, 0002, 0002, 0006, 0006, 0018, 0016, 0048, 0060, 0176, 0144, 0630, 0756, 1800, 2048 };
 		private static int GenerateGaloisMask(int bits, int seedOffset)
 		{
+			if (bits == 1) return 1;
+			if (bits == 2) return 3;
+
 			int start = 1 << (bits - 1);
 			int end = 1 << (bits);
-			int skipCnt = 0;
+			int diff = end - start;
 
-			int maxOff = seedOffset % GauloiseLFSRs[Math.Min(bits, GauloiseLFSRs.Length) - 1];
-			var bitOks = new BitArray(end, false);
-			for (int i = start; i < end; i++)
+			for (int i = 0; i < diff; i++)
 			{
-				if (TestLFSR(bitOks, i, end))
-				{
-					skipCnt++;
-					if (skipCnt >= maxOff)
-						return i;
-				}
-				bitOks.SetAll(false);
+				int checkMask = MathMod(i + seedOffset, diff) + start;
+				if (NumberOfSetBits(checkMask) % 2 != 0) continue;
+
+				if (TestLFSR(checkMask, end))
+					return checkMask;
 			}
 			throw new InvalidOperationException();
 		}
 
-		private static bool TestLFSR(BitArray bitOks, int mask, int max)
+		private static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
+
+		private static bool TestLFSR(int mask, int max)
 		{
-			int field = 1;
-			for (uint i = 1; i < max; i++)
+			const int start = 1;
+			int field = start;
+
+			for (int i = 2; i < max; i++)
 			{
-				var lsb = field & 1;
+				int lsb = field & 1;
 				field >>= 1;
 				field ^= -lsb & mask;
-				if (bitOks.Get(field)) return false;
-				bitOks.Set(field, true);
+				if (field == start) return false;
 			}
 			return true;
+		}
+
+		private static int NumberOfSetBits(int i)
+		{
+			i = i - ((i >> 1) & 0x55555555);
+			i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+			return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 		}
 	}
 }
