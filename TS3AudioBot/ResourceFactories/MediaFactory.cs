@@ -64,12 +64,11 @@ namespace TS3AudioBot.ResourceFactories
 			string fullUri = uri;
 			if (!uriResult.IsAbsoluteUri)
 			{
-				try
-				{
-					fullUri = Path.GetFullPath(uri);
-					Uri.TryCreate(uri, UriKind.Absolute, out uriResult);
-				}
+				try { fullUri = Path.GetFullPath(uri); }
 				catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException) { }
+
+				if (!Uri.TryCreate(fullUri, UriKind.Absolute, out uriResult))
+					return R<string>.Err(RResultCode.MediaInvalidUri.ToString());
 			}
 
 			string scheme = uriResult.Scheme;
