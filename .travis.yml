@@ -15,18 +15,20 @@ branches:
 git:
   depth: 1
 
-cache:
-  directories:
-    - $HOME/docker
+#cache:
+#  directories:
+#    - $HOME/docker
 
 install:
     # Use the cached docker image if it is available
+  - mkdir -p "$HOME/docker"
   - if [ -f "$HOME/docker/ts3audiobot.tar" ]; then
       docker import "$HOME/docker/ts3audiobot.tar" ts3audiobot:latest;
     else
       docker build -t ts3audiobot -f Dockerfile .;
-      docker save -o "$HOME/docker/ts3audiobot.tar" ts3audiobot;
     fi
+#      docker save -o "$HOME/docker/ts3audiobot.tar" ts3audiobot;
+#    fi
 
 script:
   - docker run -v "$TRAVIS_BUILD_DIR:/build" ts3audiobot sh -c "
