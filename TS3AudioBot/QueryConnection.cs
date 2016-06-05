@@ -193,7 +193,7 @@ namespace TS3AudioBot
 		[Info("the address of the TeamSpeak3 Query")]
 		public string host;
 		[Info("the port of the TeamSpeak3 Query", "10011")]
-		public short port;
+		public ushort port;
 		[Info("the user for the TeamSpeak3 Query")]
 		public string user;
 		[Info("the password for the TeamSpeak3 Query")]
