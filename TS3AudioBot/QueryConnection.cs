@@ -72,7 +72,7 @@ namespace TS3AudioBot
 		{
 			if (!tsClient.IsConnected)
 			{
-				tsClient.Connect(connectionData.host);
+				tsClient.Connect(connectionData.host, connectionData.port);
 				tsClient.Login(connectionData.user, connectionData.passwd);
 				tsClient.UseServer(1);
 				try { tsClient.ChangeName("TS3AudioBot"); }
@@ -192,6 +192,8 @@ namespace TS3AudioBot
 	{
 		[Info("the address of the TeamSpeak3 Query")]
 		public string host;
+		[Info("the port of the TeamSpeak3 Query", "10011")]
+		public short port;
 		[Info("the user for the TeamSpeak3 Query")]
 		public string user;
 		[Info("the password for the TeamSpeak3 Query")]
