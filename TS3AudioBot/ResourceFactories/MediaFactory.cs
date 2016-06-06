@@ -42,24 +42,25 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else
 			{
+				var resData = result.Value;
 				AudioResource finalResource;
 				if (resource.ResourceTitle != null)
 					finalResource = resource;
-				else if (!string.IsNullOrWhiteSpace(result.Value))
-					finalResource = resource.WithName(result.Value);
+				else if (!string.IsNullOrWhiteSpace(resData.Title))
+					finalResource = resource.WithName(resData.Title);
 				else
 					finalResource = resource.WithName(resource.ResourceId);
-				return new PlayResource(resource.ResourceId, finalResource);
+				return new PlayResource(resData.FullUri, finalResource);
 			}
 		}
 
 		public string RestoreLink(string id) => id;
 
-		private static R<string> ValidateUri(string uri)
+		private static R<ResData> ValidateUri(string uri)
 		{
 			Uri uriResult;
 			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out uriResult))
-				return R<string>.Err(RResultCode.MediaInvalidUri.ToString());
+				return R<ResData>.Err(RResultCode.MediaInvalidUri.ToString());
 
 			string fullUri = uri;
 			if (!uriResult.IsAbsoluteUri)
@@ -68,56 +69,72 @@ namespace TS3AudioBot.ResourceFactories
 				catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException) { }
 
 				if (!Uri.TryCreate(fullUri, UriKind.Absolute, out uriResult))
-					return R<string>.Err(RResultCode.MediaInvalidUri.ToString());
+					return R<ResData>.Err(RResultCode.MediaInvalidUri.ToString());
 			}
 
-			string scheme = uriResult.Scheme;
-			if (scheme == Uri.UriSchemeHttp
-				|| scheme == Uri.UriSchemeHttps
-				|| scheme == Uri.UriSchemeFtp)
-				return ValidateWeb(uri);
+			if (uriResult.Scheme == Uri.UriSchemeHttp
+			 || uriResult.Scheme == Uri.UriSchemeHttps
+			 || uriResult.Scheme == Uri.UriSchemeFtp)
+				return ValidateWeb(uriResult);
 			else if (uriResult.Scheme == Uri.UriSchemeFile)
 				return ValidateFile(fullUri);
 			else
-				return R<string>.Err(RResultCode.MediaUnknownUri.ToString());
+				return R<ResData>.Err(RResultCode.MediaUnknownUri.ToString());
 		}
 
-		private static string GetStreamName(Stream stream) => AudioTagReader.GetTitle(stream);
+		private static string GetStreamName(Stream stream)
+			=> AudioTagReader.GetTitle(stream) ?? string.Empty;
 
-		private static R<string> ValidateWeb(string link)
+		private static R<ResData> ValidateWeb(Uri link)
 		{
 			string outName = null;
-			var valCode = WebWrapper.GetResponse(new Uri(link), response => { using (var stream = response.GetResponseStream()) outName = GetStreamName(stream); });
+			var valCode = WebWrapper.GetResponse(link, response =>
+			{
+				using (var stream = response.GetResponseStream())
+					outName = GetStreamName(stream);
+			});
+
 			if (valCode == ValidateCode.Ok)
 			{
-				return R<string>.OkR(outName);
+				return R<ResData>.OkR(new ResData(link.AbsoluteUri, outName));
 			}
 			else
 			{
-				return R<string>.Err(RResultCode.MediaNoWebResponse.ToString());
+				return R<ResData>.Err(RResultCode.MediaNoWebResponse.ToString());
 			}
 		}
 
-		private static R<string> ValidateFile(string path)
+		private static R<ResData> ValidateFile(string path)
 		{
 			if (!File.Exists(path))
-				return R<string>.Err(RResultCode.MediaFileNotFound.ToString());
+				return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString());
 
 			try
 			{
 				using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
 				{
-					return R<string>.OkR(GetStreamName(stream));
+					return R<ResData>.OkR(new ResData(path, GetStreamName(stream)));
 				}
 			}
-			catch (PathTooLongException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
-			catch (DirectoryNotFoundException) { return R<string>.Err(RResultCode.MediaFileNotFound.ToString()); }
-			catch (FileNotFoundException) { return R<string>.Err(RResultCode.MediaFileNotFound.ToString()); }
-			catch (IOException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
-			catch (UnauthorizedAccessException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
-			catch (NotSupportedException) { return R<string>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (PathTooLongException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (DirectoryNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
+			catch (FileNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
+			catch (IOException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (UnauthorizedAccessException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (NotSupportedException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
 		}
 
 		public void Dispose() { }
+
+		class ResData
+		{
+			public string FullUri { get; set; }
+			public string Title { get; set; }
+			public ResData(string fullUri, string title)
+			{
+				FullUri = fullUri;
+				Title = title;
+			}
+		}
 	}
 }
