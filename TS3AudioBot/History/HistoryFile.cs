@@ -26,7 +26,7 @@ namespace TS3AudioBot.History
 	using Helper;
 	using ResourceFactories;
 
-	public class HistoryFile : IDisposable
+	public sealed class HistoryFile : IDisposable
 	{
 		private IDictionary<string, uint> resIdToId;
 		private IDictionary<uint, AudioLogEntry> idFilter;

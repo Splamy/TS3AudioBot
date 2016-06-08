@@ -29,7 +29,7 @@ namespace TS3AudioBot
 	using ResourceFactories;
 
 	// TODO make public and byref when finished
-	public class PlaylistManager : IDisposable
+	public sealed class PlaylistManager : IDisposable
 	{
 		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -67,7 +67,7 @@ namespace TS3AudioBot
 
 		public int Index
 		{
-			get { return Random ? shuffle.Index : indexCount; }
+			get { return Random ? (shuffle.Length > 0 ? shuffle.Index : 0) : indexCount; }
 			set
 			{
 				if (Random)
@@ -116,7 +116,7 @@ namespace TS3AudioBot
 
 			if (Loop)
 				indexCount = Util.MathMod(indexCount, freeList.Count);
-			else if (indexCount < freeList.Count || indexCount >= freeList.Count)
+			else if (indexCount < 0 || indexCount >= freeList.Count)
 				return null;
 
 			if (Random)
@@ -142,7 +142,7 @@ namespace TS3AudioBot
 
 		public int InsertToPlaylist(PlaylistItem item)
 		{
-			return freeList.InsertItem(item, shuffle.Index);
+			return freeList.InsertItem(item, Index);
 		}
 
 		/// <summary>Clears the current playlist</summary>

@@ -22,7 +22,7 @@ namespace TS3AudioBot.History
 	using Helper;
 	using ResourceFactories;
 
-	public class HistoryManager : MarshalByRefObject, IDisposable
+	public sealed class HistoryManager : MarshalByRefObject, IDisposable
 	{
 		private readonly object accessLock = new object();
 		private HistoryFile historyFile;
