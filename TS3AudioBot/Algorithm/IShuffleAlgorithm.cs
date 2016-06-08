@@ -20,8 +20,9 @@ namespace TS3AudioBot.Algorithm
 	{
 		int Seed { get; }
 		int Length { get; }
+		int Index { get; set; }
 		void Set(int seed, int length);
-		int Next();
-		int Prev();
+		void Next();
+		void Prev();
 	}
 }

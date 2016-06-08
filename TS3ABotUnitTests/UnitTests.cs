@@ -371,7 +371,8 @@ namespace TS3ABotUnitTests
 
 				for (int j = 0; j < i; j++)
 				{
-					int shufNum = algo.Next();
+					algo.Next();
+					int shufNum = algo.Index;
 					if (checkNumbers.Get(shufNum))
 						Assert.Fail("Duplicate number");
 					checkNumbers.Set(shufNum, true);

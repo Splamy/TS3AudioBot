@@ -30,6 +30,15 @@ namespace TS3AudioBot.Algorithm
 
 		public int Seed => seed;
 		public int Length => length;
+		public int Index
+		{
+			get { return permutation[index]; }
+			set
+			{
+				if (value >= permutation.Length) throw new IndexOutOfRangeException(nameof(value));
+				index = Array.IndexOf(permutation, value);
+			}
+		}
 
 		public void Set(int seed, int length)
 		{
@@ -48,7 +57,7 @@ namespace TS3AudioBot.Algorithm
 			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(x => rngeesus.Next()).ToArray();
 		}
 
-		public int Next() => permutation[(index++) % permutation.Length];
-		public int Prev() => permutation[(index--) % permutation.Length];
+		public void Next() => index = (index + 1) % permutation.Length;
+		public void Prev() => index = (index - 1) % permutation.Length;
 	}
 }

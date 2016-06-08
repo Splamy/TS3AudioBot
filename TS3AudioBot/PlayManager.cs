@@ -129,6 +129,12 @@ namespace TS3AudioBot
 			var result = audioFramework.StartResource(play, meta);
 			if (!result) return result;
 
+			if (!meta.FromPlaylist)
+			{
+				int index = playlistManager.InsertToPlaylist(new PlaylistItem(play.BaseData));
+				playlistManager.Index = index;
+			}
+
 			// Log our resource in the history
 			ulong owner = meta.ResourceOwnerDbId ?? invoker.DatabaseId;
 			historyManager.LogAudioResource(new HistorySaveData(play.BaseData, owner));
@@ -188,6 +194,8 @@ namespace TS3AudioBot
 		public ulong? ResourceOwnerDbId { get; set; } = null;
 		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
 		public int? Volume { get; set; } = null;
+		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
+		public bool FromPlaylist { get; set; } = false;
 	}
 
 	public class PlayInfoEventArgs : EventArgs

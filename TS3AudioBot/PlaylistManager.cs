@@ -65,7 +65,33 @@ namespace TS3AudioBot
 		private Playlist freeList;
 		private int dataSetLength = 0;
 
-		public bool Random { get; set; }
+		public int Index
+		{
+			get { return Random ? shuffle.Index : indexCount; }
+			set
+			{
+				if (Random)
+				{
+					shuffle.Index = value;
+					indexCount = 0;
+				}
+				else
+				{
+					indexCount = value;
+				}
+			}
+		}
+		private bool random;
+		public bool Random
+		{
+			get { return random; }
+			set
+			{
+				random = value;
+				if (random) shuffle.Index = indexCount;
+				else indexCount = shuffle.Index;
+			}
+		}
 		/// <summary>Loop state for the entire playlist.</summary>
 		public bool Loop { get; set; }
 
@@ -77,21 +103,22 @@ namespace TS3AudioBot
 			freeList = new Playlist(string.Empty);
 		}
 
-		public PlaylistItem Next() => NPMove(true);
+		public PlaylistItem Current() => NPMove(0);
 
-		public PlaylistItem Previous() => NPMove(false);
+		public PlaylistItem Next() => NPMove(+1);
 
-		private PlaylistItem NPMove(bool forward)
+		public PlaylistItem Previous() => NPMove(-1);
+
+		private PlaylistItem NPMove(sbyte off)
 		{
 			if (freeList.Count == 0) return null;
-			indexCount += forward ? 1 : -1;
+			indexCount += Math.Sign(off);
 
 			if (Loop)
-				indexCount = ((indexCount % freeList.Count) + freeList.Count) % freeList.Count;
+				indexCount = Util.MathMod(indexCount, freeList.Count);
 			else if (indexCount < freeList.Count || indexCount >= freeList.Count)
 				return null;
 
-			int pseudoListIndex;
 			if (Random)
 			{
 				if (dataSetLength != freeList.Count)
@@ -99,17 +126,23 @@ namespace TS3AudioBot
 					dataSetLength = freeList.Count;
 					shuffle.Set(Util.RngInstance.Next(), dataSetLength);
 				}
-				pseudoListIndex = forward ? shuffle.Next() : shuffle.Prev();
+				if (off > 0) shuffle.Next();
+				if (off < 0) shuffle.Prev();
 			}
-			else
-				pseudoListIndex = indexCount;
 
-			return freeList.GetResource(pseudoListIndex);
+			var entry = freeList.GetResource(Index);
+			entry.Meta.FromPlaylist = true;
+			return entry;
 		}
 
-		public void AddToPlaylist(PlaylistItem item)
+		public int AddToPlaylist(PlaylistItem item)
 		{
-			freeList.AddItem(item);
+			return freeList.AddItem(item);
+		}
+
+		public int InsertToPlaylist(PlaylistItem item)
+		{
+			return freeList.InsertItem(item, shuffle.Index);
 		}
 
 		/// <summary>Clears the current playlist</summary>
@@ -246,9 +279,16 @@ namespace TS3AudioBot
 			Name = name;
 		}
 
-		public void AddItem(PlaylistItem item)
+		public int AddItem(PlaylistItem item)
 		{
 			resources.Add(item);
+			return resources.Count - 1;
+		}
+
+		public int InsertItem(PlaylistItem item, int index)
+		{
+			resources.Insert(index, item);
+			return index;
 		}
 
 		public void AddRange(IEnumerable<PlaylistItem> items)

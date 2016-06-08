@@ -17,7 +17,7 @@
 namespace TS3AudioBot.Algorithm
 {
 	using System;
-	using System.Collections;
+	using Helper;
 
 	public class LinearFeedbackShiftRegister : IShuffleAlgorithm
 	{
@@ -25,6 +25,11 @@ namespace TS3AudioBot.Algorithm
 		private int mask = 0;
 		public int Seed { get; private set; }
 		public int Length { get; private set; }
+		public int Index
+		{
+			get { return Util.MathMod(register + Seed, Length); }
+			set { register = Util.MathMod(value - Seed, Length); }
+		}
 
 		public void Set(int seed, int length)
 		{
@@ -34,27 +39,27 @@ namespace TS3AudioBot.Algorithm
 			Length = length;
 			register = (register % Length) + 1;
 
+			// get the highest set bit (+1) to hold at least all values with a power of 2
 			int maxPow = 31;
 			while (((1 << maxPow) & Length) == 0 && maxPow >= 0) maxPow--;
 			mask = GenerateGaloisMask(maxPow + 1, seed);
 		}
 
-		public int Next()
+		public void Next()
 		{
 			do
 			{
 				register = NextOf(register);
 			} while ((uint)register > Length);
-			return (register + Seed) % Length;
 		}
 
-		public int Prev()
+		public void Prev()
 		{
 			for (int i = 0; i < Length; i++)
 				if (NextOf(i) == register)
 				{
 					register = i;
-					return (register + Seed) % Length;
+					return;
 				}
 			throw new InvalidOperationException();
 		}
@@ -78,7 +83,7 @@ namespace TS3AudioBot.Algorithm
 
 			for (int i = 0; i < diff; i++)
 			{
-				int checkMask = MathMod(i + seedOffset, diff) + start;
+				int checkMask = Util.MathMod(i + seedOffset, diff) + start;
 				if (NumberOfSetBits(checkMask) % 2 != 0) continue;
 
 				if (TestLFSR(checkMask, end))
@@ -86,8 +91,6 @@ namespace TS3AudioBot.Algorithm
 			}
 			throw new InvalidOperationException();
 		}
-
-		private static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
 
 		private static bool TestLFSR(int mask, int max)
 		{

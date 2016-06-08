@@ -72,5 +72,7 @@ namespace TS3AudioBot.Helper
 		public static void Init<T>(ref T obj) where T : new() => obj = new T();
 
 		public static Random RngInstance { get; } = new Random();
+
+		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
 	}
 }
