@@ -50,7 +50,7 @@ namespace TS3AudioBot
 		private R EnqueueInternal(ClientData invoker, PlaylistItem pli)
 		{
 			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
-			playlistManager.AddToPlaylist(pli);
+			playlistManager.AddToFreelist(pli);
 
 			return R.OkR;
 		}
@@ -131,7 +131,7 @@ namespace TS3AudioBot
 
 			if (!meta.FromPlaylist)
 			{
-				int index = playlistManager.InsertToPlaylist(new PlaylistItem(play.BaseData));
+				int index = playlistManager.InsertToFreelist(new PlaylistItem(play.BaseData));
 				playlistManager.Index = index;
 			}
 

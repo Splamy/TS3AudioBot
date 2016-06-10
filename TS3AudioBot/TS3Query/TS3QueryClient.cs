@@ -292,7 +292,7 @@ namespace TS3Query
 				else if (string.IsNullOrWhiteSpace(line)) continue;
 
 				var message = line.Trim();
-				if (message.StartsWith("error "))
+				if (message.StartsWith("error ", StringComparison.Ordinal))
 				{
 					// we (hopefully) only need to lock here for the dequeue
 					lock (lockObj)
@@ -311,7 +311,7 @@ namespace TS3Query
 						}
 					}
 				}
-				else if (message.StartsWith("notify"))
+				else if (message.StartsWith("notify", StringComparison.Ordinal))
 				{
 					var notify = GenerateNotification(message);
 					InvokeEvent(notify);

@@ -97,7 +97,7 @@ namespace TS3AudioBot.History
 			}
 
 			int fileVersion = -1;
-			if (!line.StartsWith(VersionHeader)
+			if (!line.StartsWith(VersionHeader, StringComparison.Ordinal)
 			|| !int.TryParse(line.Substring(VersionHeader.Length), out fileVersion))
 				throw new FormatException("The history file has an invalid header.");
 

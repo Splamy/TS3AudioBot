@@ -131,27 +131,28 @@ namespace TS3AudioBot
 			}
 
 			var entry = freeList.GetResource(Index);
+			if (entry == null) return null;
 			entry.Meta.FromPlaylist = true;
 			return entry;
 		}
 
-		public int AddToPlaylist(PlaylistItem item)
+		public int AddToFreelist(PlaylistItem item)
 		{
 			return freeList.AddItem(item);
 		}
 
-		public int InsertToPlaylist(PlaylistItem item)
+		public int InsertToFreelist(PlaylistItem item)
 		{
 			return freeList.InsertItem(item, Index);
 		}
 
 		/// <summary>Clears the current playlist</summary>
-		public void ClearPlaylist()
+		public void ClearFreelist()
 		{
 			freeList.Clear();
 		}
 
-		public R LoadPlaylist(string name)
+		public R<Playlist> LoadPlaylist(string name)
 		{
 			var fi = new FileInfo(Path.Combine(data.playlistPath, name));
 			if (fi.Exists)
@@ -161,10 +162,11 @@ namespace TS3AudioBot
 			{
 				Playlist plist = null;
 
+				// TODO: seems like every line will need a userbdid...
 				string line;
 				while ((line = sr.ReadLine()) != null)
 				{
-					var kvp = line.Split(new[] { ':' }, 2);
+					var kvp = line.Split(new[] { ':' }, 3);
 					if (kvp.Length != 2) continue;
 					string val = kvp[1].Trim();
 					switch (kvp[0].Trim())
@@ -175,16 +177,16 @@ namespace TS3AudioBot
 							return "Invalid playlist file: duplicate userid";
 						plist = new Playlist(userid, name);
 						break;
-					case "ln": plist.AddItem(new PlaylistItem(null)); break;
-					case "id": break;
+					case "ln": plist.AddItem(new PlaylistItem(kvp[1], null)); break;
+					case "id": plist.AddItem(new PlaylistItem(uint.Parse(kvp[1]))); break;
 					default: Log.Write(Log.Level.Warning, "Unknown playlist entry {0}:{1}", kvp); break;
 					}
 				}
+				return plist;
 			}
-			return R.OkR;
 		}
 
-		private void SavePlaylist(string name)
+		private R SavePlaylist(string name)
 		{
 			throw new NotImplementedException();
 		}
@@ -259,7 +261,7 @@ namespace TS3AudioBot
 		public PlaylistItem(string message, AudioType? type, MetaData meta = null) { Link = message; AudioType = type; Meta = meta; }
 	}
 
-	class Playlist
+	public class Playlist
 	{
 		// metainfo
 		public string Name { get; }

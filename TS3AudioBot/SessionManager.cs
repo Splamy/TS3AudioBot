@@ -20,49 +20,47 @@ namespace TS3AudioBot
 	using System.Collections.Generic;
 	using System.Linq;
 	using Helper;
-	using TS3Query;
 	using TS3Query.Messages;
 
 	public class SessionManager : MarshalByRefObject
 	{
-		public BotSession DefaultSession { get; internal set; }
-		private readonly List<PrivateSession> openSessions;
+		private readonly List<UserSession> openSessions = new List<UserSession>();
 
-		public SessionManager()
-		{
-			openSessions = new List<PrivateSession>();
-		}
+		public SessionManager() { }
 
-		public R<BotSession> CreateSession(MainBot bot, ushort invokerId)
+		public R<UserSession> CreateSession(MainBot bot, ushort invokerId)
 		{
 			if (bot == null)
 				throw new ArgumentNullException(nameof(bot));
 
-			if (ExistsSession(invokerId))
-				return GetSession(MessageTarget.Private, invokerId);
+			var result = GetSession(invokerId);
+			if (result) return result.Value;
+
 			ClientData client = bot.QueryConnection.GetClientById(invokerId);
 			if (client == null)
 				return "Could not find the requested client.";
-			var newSession = new PrivateSession(bot, client);
+
+			Log.Write(Log.Level.Debug, "SM User {0} created session with the bot", client.NickName);
+			var newSession = new UserSession(bot, client);
 			openSessions.Add(newSession);
 			return newSession;
 		}
 
 		public bool ExistsSession(ushort invokerId)
 		{
-			return openSessions.Any((ps) => ps.Client.ClientId == invokerId);
+			return openSessions.Any((ps) => ps.ClientCached.ClientId == invokerId);
 		}
 
-		public BotSession GetSession(MessageTarget target, ushort invokerId)
+		public R<UserSession> GetSession(ushort invokerId)
 		{
-			if (target == MessageTarget.Server)
-				return DefaultSession;
-			return openSessions.FirstOrDefault((bs) => bs.Client.ClientId == invokerId) ?? DefaultSession;
+			var session = openSessions.FirstOrDefault((bs) => bs.ClientCached.ClientId == invokerId);
+			if (session == null) return "Session not found";
+			else return session;
 		}
 
 		public void RemoveSession(ushort invokerId)
 		{
-			openSessions.RemoveAll((ps) => ps.Client.ClientId == invokerId);
+			openSessions.RemoveAll((ps) => ps.ClientCached.ClientId == invokerId);
 		}
 	}
 }

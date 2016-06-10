@@ -53,9 +53,12 @@ namespace TS3AudioBot.Helper
 					while (!input.EndOfStream)
 					{
 						string s = input.ReadLine();
-						if (!s.StartsWith(";") && !s.StartsWith("//") && !s.StartsWith("#"))
+						if (!s.StartsWith(";", StringComparison.Ordinal)
+							&& !s.StartsWith("//", StringComparison.Ordinal)
+							&& !s.StartsWith("#", StringComparison.Ordinal))
 						{
 							int index = s.IndexOf('=');
+							if (index == -1) { Log.Write(Log.Level.Error, "Invalid log entry: \"{0}\"", s); continue; }
 							cfgFile.data.Add(s.Substring(0, index).Trim(), s.Substring(index + 1).Trim());
 						}
 					}

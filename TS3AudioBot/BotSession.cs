@@ -17,50 +17,45 @@
 namespace TS3AudioBot
 {
 	using System;
+	using System.Collections.Generic;
+	using Helper;
 	using TS3Query;
 	using TS3Query.Messages;
+	using System.Threading;
 	using Response = System.Func<CommandSystem.ExecutionInformation, bool>;
 
-	public abstract class BotSession : MarshalByRefObject
+	public sealed class UserSession
 	{
+		private Dictionary<Type, object> assocMap = null;
+		private bool tokenToken = false;
+
+		public Response ResponseProcessor { get; private set; }
+		public object ResponseData { get; private set; }
+
 		public MainBot Bot { get; }
+		public ClientData ClientCached { get; private set; }
+		public ClientData Client => ClientCached = Bot.QueryConnection.GetClientById(ClientCached.ClientId);
+		public bool IsPrivate { get; internal set; }
 
-		public Response ResponseProcessor { get; protected set; }
-		public object ResponseData { get; protected set; }
-
-		public abstract bool IsPrivate { get; }
-
-		public abstract void Write(string message);
-
-		internal BotSession(MainBot bot)
+		public UserSession(MainBot bot, ClientData client)
 		{
 			Bot = bot;
+			ClientCached = client;
 			ResponseProcessor = null;
 			ResponseData = null;
 		}
 
-		public void SetResponse(Response responseProcessor, object responseData)
+		public void Write(string message)
 		{
-			ResponseProcessor = responseProcessor;
-			ResponseData = responseData;
-		}
+			if (!tokenToken)
+				throw new InvalidOperationException("No token is currently active");
 
-		public void ClearResponse()
-		{
-			ResponseProcessor = null;
-			ResponseData = null;
-		}
-	}
-
-	internal sealed class PublicSession : BotSession
-	{
-		public override bool IsPrivate => false;
-
-		public override void Write(string message)
-		{
 			try
 			{
-				Bot.QueryConnection.SendGlobalMessage(message);
+				if (IsPrivate)
+					Bot.QueryConnection.SendMessage(message, ClientCached);
+				else
+					Bot.QueryConnection.SendGlobalMessage(message);
 			}
 			catch (QueryCommandException ex)
 			{
@@ -68,26 +63,72 @@ namespace TS3AudioBot
 			}
 		}
 
-		public PublicSession(MainBot bot)
-			: base(bot)
-		{ }
-	}
-
-	internal sealed class PrivateSession : BotSession
-	{
-		public ClientData Client { get; }
-
-		public override bool IsPrivate => true;
-
-		public override void Write(string message)
+		public void SetResponse(Response responseProcessor, object responseData)
 		{
-			Bot.QueryConnection.SendMessage(message, Client);
+			if (!tokenToken)
+				throw new InvalidOperationException("No token is currently active");
+
+			ResponseProcessor = responseProcessor;
+			ResponseData = responseData;
 		}
 
-		public PrivateSession(MainBot bot, ClientData client)
-			: base(bot)
+		public void ClearResponse()
 		{
-			Client = client;
+			if (!tokenToken)
+				throw new InvalidOperationException("No token is currently active");
+
+			ResponseProcessor = null;
+			ResponseData = null;
+		}
+
+		public R<TData> Get<TAssoc, TData>()
+		{
+			if (!tokenToken)
+				throw new InvalidOperationException("No token is currently active");
+
+			if (assocMap == null)
+				return "Value not set";
+
+			object value;
+			if (!assocMap.TryGetValue(typeof(TAssoc), out value))
+				return "Value not set";
+
+			if (value?.GetType() != typeof(TAssoc))
+				return "Invalid request type";
+
+			return (TData)value;
+		}
+
+		public void Set<TAssoc, TData>(TData data)
+		{
+			if (!tokenToken)
+				throw new InvalidOperationException("No token is currently active");
+
+			if (assocMap == null)
+				Util.Init(ref assocMap);
+
+			if (assocMap.ContainsKey(typeof(TAssoc)))
+				assocMap[typeof(TAssoc)] = data;
+			else
+				assocMap.Add(typeof(TAssoc), data);
+		}
+
+		public SessionToken GetToken(bool isPrivate)
+		{
+			var sessionToken = new SessionToken(this);
+			sessionToken.Take();
+			IsPrivate = isPrivate;
+			return sessionToken;
+		}
+
+		public class SessionToken : IDisposable
+		{
+			private UserSession session;
+			public SessionToken(UserSession session) { this.session = session; }
+
+			public void Take() { Monitor.Enter(session); session.tokenToken = true; }
+			public void Free() { Monitor.Exit(session); session.tokenToken = false; }
+			public void Dispose() => Free();
 		}
 	}
 }

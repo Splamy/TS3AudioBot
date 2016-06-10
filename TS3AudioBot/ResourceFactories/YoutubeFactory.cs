@@ -95,9 +95,9 @@ namespace TS3AudioBot.ResourceFactories
 						continue;
 
 					bool audioOnly = false;
-					if (vType.StartsWith("video/"))
+					if (vType.StartsWith("video/", StringComparison.Ordinal))
 						continue;
-					else if (vType.StartsWith("audio/"))
+					else if (vType.StartsWith("audio/", StringComparison.Ordinal))
 						audioOnly = true;
 
 					string vLink = videoparse["url"];
@@ -171,9 +171,9 @@ namespace TS3AudioBot.ResourceFactories
 			string lowtype = type.ToLower();
 			bool audioOnly = false;
 			string codecSubStr;
-			if (lowtype.StartsWith("video/"))
+			if (lowtype.StartsWith("video/", StringComparison.Ordinal))
 				codecSubStr = lowtype.Substring("video/".Length);
-			else if (lowtype.StartsWith("audio/"))
+			else if (lowtype.StartsWith("audio/", StringComparison.Ordinal))
 			{
 				codecSubStr = lowtype.Substring("audio/".Length);
 				audioOnly = true;

@@ -35,9 +35,9 @@ namespace TS3AudioBot.Helper
 		public static Answer GetAnswer(string answer)
 		{
 			string lowAnswer = answer.ToLower();
-			if (lowAnswer.StartsWith("!y"))
+			if (lowAnswer.StartsWith("!y", StringComparison.Ordinal))
 				return Answer.Yes;
-			else if (lowAnswer.StartsWith("!n"))
+			else if (lowAnswer.StartsWith("!n", StringComparison.Ordinal))
 				return Answer.No;
 			else
 				return Answer.Unknown;
@@ -60,8 +60,8 @@ namespace TS3AudioBot.Helper
 		public static string StripQuotes(string quotedString)
 		{
 			if (quotedString.Length <= 1 ||
-				!quotedString.StartsWith("\"") ||
-				!quotedString.EndsWith("\""))
+				!quotedString.StartsWith("\"", StringComparison.Ordinal) ||
+				!quotedString.EndsWith("\"", StringComparison.Ordinal))
 				throw new ArgumentException("The string is not properly quoted");
 
 			return quotedString.Substring(1, quotedString.Length - 2);
