@@ -9,6 +9,7 @@
 *.userprefs
 .buildvars.py
 .sconsign.dblite
+.vs/config/*
 
 # Build results
 [Dd]ebug/

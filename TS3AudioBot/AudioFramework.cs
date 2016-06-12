@@ -49,6 +49,10 @@ namespace TS3AudioBot
 		}
 		/// <summary>Starts or resumes the current song.</summary>
 		public bool Pause { get { return playerConnection.Pause; } set { playerConnection.Pause = value; } }
+		/// <summary>Length of the current song.</summary>
+		public TimeSpan Length { get { return playerConnection.Length; } }
+		/// <summary>Gets or sets the play position of the current song.</summary>
+		public TimeSpan Position { get { return playerConnection.Position; } set { playerConnection.Position = value; } }
 
 		// Playermethods
 

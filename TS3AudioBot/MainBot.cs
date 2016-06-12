@@ -28,13 +28,13 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using ResourceFactories;
-	using static CommandRights;
+	using WebInterface;
 
 	using TS3Query;
 	using TS3Query.Messages;
 
-	// Todo:
-	// - implement history missing 
+	using static CommandRights;
+
 	public sealed class MainBot : MarshalByRefObject, IDisposable
 	{
 		static void Main(string[] args)
@@ -76,6 +76,7 @@ namespace TS3AudioBot
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
+		public WebDisplay WebInterface { get; private set; }
 		public PlayManager PlayManager { get; private set; }
 
 		public bool QuizMode { get; set; }
@@ -160,6 +161,8 @@ namespace TS3AudioBot
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
+			WebInterface = new WebDisplay(this);
+			WebInterface.StartServerAsync();
 			PlayManager = new PlayManager(this);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
@@ -893,8 +896,10 @@ namespace TS3AudioBot
 			if (!parsed)
 				return CommandHelp(info, "seek");
 
-			if (!AudioFramework.Seek(span))
+			if (span < TimeSpan.Zero || span > AudioFramework.Length)
 				return "The point of time is not within the songlenth.";
+			else
+				AudioFramework.Position = span;
 			return null;
 		}
 
@@ -1131,49 +1136,58 @@ namespace TS3AudioBot
 				QueryConnection.ChangeDescription(data.ResourceData.ResourceTitle);
 			}
 		}
+		public void SongStopEvent(object sender, bool data)
+		{
+			QueryConnection.ChangeDescription("<Sleeping>");
+		}
 
 		public void Dispose()
 		{
 			if (!isDisposed) isDisposed = true;
 			else return;
 
-			if (PluginManager != null)
+			if (WebInterface != null) // before:
+			{
+				WebInterface.Dispose();
+				WebInterface = null;
+			}
+			if (PluginManager != null) // before: SessionManager, logStream,
 			{
 				PluginManager.Dispose();
 				PluginManager = null;
 			}
-			if (QueryConnection != null)
-			{
-				QueryConnection.Dispose();
-				QueryConnection = null;
-			}
-			TickPool.Close();
-			if (HistoryManager != null)
-			{
-				HistoryManager.Dispose();
-				HistoryManager = null;
-			}
-			if (FactoryManager != null)
-			{
-				FactoryManager.Dispose();
-				FactoryManager = null;
-			}
-			if (AudioFramework != null)
+			if (AudioFramework != null) // before: BobController, logStream,
 			{
 				AudioFramework.Dispose();
 				AudioFramework = null;
 			}
-			if (BobController != null)
+			if (BobController != null) // before: QueryConnection, logStream,
 			{
 				BobController.Dispose();
 				BobController = null;
 			}
-			if (SessionManager != null)
+			if (QueryConnection != null) // before: logStream,
+			{
+				QueryConnection.Dispose();
+				QueryConnection = null;
+			}
+			TickPool.Close(); // before:
+			if (HistoryManager != null) // before: logStream,
+			{
+				HistoryManager.Dispose();
+				HistoryManager = null;
+			}
+			if (FactoryManager != null) // before:
+			{
+				FactoryManager.Dispose();
+				FactoryManager = null;
+			}
+			if (SessionManager != null) // before:
 			{
 				//sessionManager.Dispose();
 				SessionManager = null;
 			}
-			if (logStream != null)
+			if (logStream != null) // before:
 			{
 				logStream.Dispose();
 				logStream = null;

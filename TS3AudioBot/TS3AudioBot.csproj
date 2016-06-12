@@ -40,7 +40,14 @@
     <CodeAnalysisRuleSet>
     </CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>favicon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="HtmlAgilityPack, Version=1.4.9.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlAgilityPack.1.4.9\lib\Net45\HtmlAgilityPack.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net" />
@@ -130,8 +137,24 @@
     <Compile Include="TS3Query\TS3QueryTools.cs" />
     <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
+    <Compile Include="WebInterface\WebDisplay.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="WebInterface\index.html" />
+    <EmbeddedResource Include="WebInterface\styles.css" />
+    <EmbeddedResource Include="WebInterface\jquery.js" />
+    <EmbeddedResource Include="WebInterface\scripts.js" />
+    <EmbeddedResource Include="favicon.ico" />
+    <EmbeddedResource Include="WebInterface\favicon.ico" />
+    <EmbeddedResource Include="WebInterface\history.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="WebInterface\main.html" />
+    <Content Include="WebInterface\playcontrols.html" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

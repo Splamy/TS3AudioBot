@@ -22,6 +22,10 @@ namespace TS3AudioBot.Helper
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Threading;
+	using System.Reflection;
+	using System.IO;
+	using System.Security.Principal;
+	using System.Web.Script.Serialization;
 
 	[Serializable]
 	public static class Util
@@ -61,10 +65,26 @@ namespace TS3AudioBot.Helper
 			return source.Skip(Math.Max(0, source.Count() - amount));
 		}
 
-		public static void WaitOrTimeout(Func<bool> predicate, int msTimeout)
+		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
+		/// <param name="predicate">Check function that will be called every millisecond.</param>
+		/// <param name="msTimeout">Timeout in millisenconds.</param>
+		public static void WaitOrTimeout(Func<bool> predicate, TimeSpan timeout)
 		{
+			int msTimeout = (int)timeout.TotalSeconds;
 			while (!predicate() && msTimeout-- > 0)
 				Thread.Sleep(1);
+		}
+
+		public static void WaitForThreadEnd(Thread thread, TimeSpan timeout)
+		{
+			if (thread != null && thread.IsAlive)
+			{
+				WaitOrTimeout(() => thread.IsAlive, timeout);
+				if (thread.IsAlive)
+				{
+					thread.Abort();
+				}
+			}
 		}
 
 		public static DateTime GetNow() => DateTime.Now;
@@ -72,6 +92,61 @@ namespace TS3AudioBot.Helper
 		public static void Init<T>(ref T obj) where T : new() => obj = new T();
 
 		public static Random RngInstance { get; } = new Random();
+
+		public static JavaScriptSerializer Serializer { get; } = new JavaScriptSerializer();
+
+		public static byte[] GetResource(string file)
+		{
+			using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(file))
+			{
+				if (stream == null)
+					throw new InvalidOperationException("Resource not found");
+				using (MemoryStream ms = new MemoryStream())
+				{
+					stream.CopyTo(ms);
+					return ms.ToArray();
+				}
+			}
+		}
+
+		public static bool IsAdmin
+		{
+			get
+			{
+				try
+				{
+					using (WindowsIdentity user = WindowsIdentity.GetCurrent())
+					{
+						WindowsPrincipal principal = new WindowsPrincipal(user);
+						return principal.IsInRole(WindowsBuiltInRole.Administrator);
+					}
+				}
+				catch (UnauthorizedAccessException) { return false; }
+				catch (Exception)
+				{
+					Log.Write(Log.Level.Warning, "Uncatched admin check.");
+					return false;
+				}
+			}
+		}
+
+		public static bool RegisterFolderEvents(DirectoryInfo dir, FileSystemEventHandler callback)
+		{
+			if (!IsAdmin)
+				return false;
+
+			if (!dir.Exists)
+				return false;
+
+			var watcher = new FileSystemWatcher
+			{
+				Path = dir.FullName,
+				NotifyFilter = NotifyFilters.LastWrite,
+			};
+			watcher.Changed += callback;
+			watcher.EnableRaisingEvents = true;
+			return true;
+		}
 
 		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
 	}

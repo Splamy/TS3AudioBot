@@ -138,6 +138,8 @@ namespace TS3AudioBot
 			SendMessage("music stop");
 		}
 
+		public void Initialize() { }
+
 		#endregion
 
 		public BobController(BobControllerData data, QueryConnection queryConnection)
@@ -157,8 +159,6 @@ namespace TS3AudioBot
 			commandQueue = new Queue<string>();
 			channelSubscriptions = new Dictionary<int, SubscriptionData>();
 		}
-
-		public void Initialize() { }
 
 		#region SendMethods
 
@@ -260,7 +260,11 @@ namespace TS3AudioBot
 				switch (result[0])
 				{
 				case "address": musicData.Address = result[1]; break;
-				case "length": musicData.Length = TimeSpan.FromSeconds(double.Parse(result[1], CultureInfo.InvariantCulture)); break;
+				case "length":
+					double length = double.Parse(result[1], CultureInfo.InvariantCulture);
+					// prevent exceptions when dealing with live streams
+					musicData.Length = TimeSpan.FromSeconds(Math.Max(0, length));
+					break;
 				case "loop": musicData.Loop = result[1] != "off"; break;
 				case "position": musicData.Position = TimeSpan.FromSeconds(double.Parse(result[1], CultureInfo.InvariantCulture)); break;
 				case "status": musicData.Status = (MusicStatus)Enum.Parse(typeof(MusicStatus), result[1], true); break;
@@ -378,6 +382,7 @@ namespace TS3AudioBot
 			{
 				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
 				BobExit();
+				// TODO: add safety check after n times if bob actually exists...
 			}
 		}
 
@@ -468,6 +473,7 @@ namespace TS3AudioBot
 				musicInfoWaiter = null;
 			}
 			BobExit();
+			isRunning = false;
 		}
 	}
 
