@@ -57,7 +57,6 @@ namespace TS3AudioBot
 		// !playlist move <song> <somewhere?>
 
 		private PlaylistManagerData data;
-		private JavaScriptSerializer json;
 		private static readonly Encoding FileEncoding = Encoding.ASCII;
 
 		private int indexCount = 0;
@@ -98,7 +97,6 @@ namespace TS3AudioBot
 		public PlaylistManager(PlaylistManagerData pmd)
 		{
 			data = pmd;
-			json = new JavaScriptSerializer();
 			shuffle = new LinearFeedbackShiftRegister();
 			freeList = new Playlist(string.Empty);
 		}
@@ -212,7 +210,7 @@ namespace TS3AudioBot
 				string response;
 				if (!WebWrapper.DownloadString(out response, queryString))
 					throw new Exception(); // TODO correct error handling
-				var parsed = (Dictionary<string, object>)json.DeserializeObject(response);
+				var parsed = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
 				var videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoDicts.Length];
 				for (int i = 0; i < videoDicts.Length; i++)
@@ -229,7 +227,7 @@ namespace TS3AudioBot
 					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.youtubeApiKey}");
 					if (!WebWrapper.DownloadString(out response, queryString))
 						throw new Exception(); // TODO correct error handling
-					parsed = (Dictionary<string, object>)json.DeserializeObject(response);
+					parsed = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
 					videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 					for (int i = 0; i < videoDicts.Length; i++)
 						itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));

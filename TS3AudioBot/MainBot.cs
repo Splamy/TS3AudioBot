@@ -161,9 +161,8 @@ namespace TS3AudioBot
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
-			WebInterface = new WebDisplay(this);
-			WebInterface.StartServerAsync();
 			PlayManager = new PlayManager(this);
+			WebInterface = new WebDisplay(this);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager();
@@ -186,6 +185,7 @@ namespace TS3AudioBot
 
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
+			WebInterface.StartServerAsync();
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
 			catch (QueryCommandException qcex)
@@ -793,6 +793,7 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
+		[RequiredParameters(0)]
 		public string CommandQuit(ExecutionInformation info, string param)
 		{
 			switch (param)

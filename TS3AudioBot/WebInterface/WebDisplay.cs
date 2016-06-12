@@ -10,6 +10,7 @@ using HtmlAgilityPack;
 using TS3AudioBot.Helper;
 using TS3AudioBot.History;
 using System.Threading;
+using TS3Query.Messages;
 
 namespace TS3AudioBot.WebInterface
 {
@@ -447,9 +448,9 @@ namespace TS3AudioBot.WebInterface
 			var result = history.Search(search).Select(e => new
 			{
 				id = e.Id,
-				atype = e.AudioType,
+				atype = e.AudioResource.AudioType,
 				playcnt = e.PlayCount,
-				title = HttpUtility.HtmlEncode(e.ResourceTitle),
+				title = HttpUtility.HtmlEncode(e.AudioResource.ResourceTitle),
 				time = e.Timestamp,
 				userid = e.UserInvokeId
 			});
@@ -501,7 +502,7 @@ namespace TS3AudioBot.WebInterface
 			{
 				strb.Append("<tr><td>").Append(entry.Id)
 					.Append("</td><td>").Append(entry.UserInvokeId)
-					.Append("</td><td class=\"fillwrap\">").Append(HttpUtility.HtmlEncode(entry.ResourceTitle))
+					.Append("</td><td class=\"fillwrap\">").Append(HttpUtility.HtmlEncode(entry.AudioResource.ResourceTitle))
 					.Append("</td><td>Options</td></tr>");
 			}
 			string finString = strb.ToString();
@@ -513,10 +514,12 @@ namespace TS3AudioBot.WebInterface
 
 	class WebPlayControls : WebSite
 	{
+		PlayManager playMgr;
 		AudioFramework audio;
 		public WebPlayControls(string sitePath, MainBot bot) : base(sitePath)
 		{
 			audio = bot.AudioFramework;
+			playMgr = bot.PlayManager;
 		}
 
 		public override PreparedData PrepareSite(UriExt url)
@@ -532,9 +535,9 @@ namespace TS3AudioBot.WebInterface
 					audio.Volume = volume;
 				break;
 
-			case "prev": audio.Previous(); break;
+			case "prev": playMgr.Previous(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
 			case "play": audio.Pause = !audio.Pause; break;
-			case "next": audio.Next(); break;
+			case "next": playMgr.Next(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
 			case "loop": audio.Repeat = !audio.Repeat; break;
 			case "seek":
 				var seekStr = url.QueryParam["pos"];
@@ -554,32 +557,39 @@ namespace TS3AudioBot.WebInterface
 	class SongChangedEvent : WebEvent
 	{
 		AudioFramework audio;
-		TickWorker pushUpdate;
+		PlayManager playMgr;
+		PlaylistManager playListMgr;
+		//TickWorker pushUpdate;
 		public SongChangedEvent(string sitePath, MainBot bot) : base(sitePath)
 		{
+			playMgr = bot.PlayManager;
 			audio = bot.AudioFramework;
-			bot.AudioFramework.OnResourceStarted += Audio_OnResourceStarted;
+			playListMgr = bot.PlaylistManager;
+			playMgr.AfterResourceStarted += Audio_OnResourceStarted;
 			//pushUpdate = TickPool.RegisterTick(InvokeEvent, TimeSpan.FromSeconds(5), true);
 		}
 
-		private void Audio_OnResourceStarted(object sender, PlayData e)
+		private void Audio_OnResourceStarted(object sender, PlayInfoEventArgs e)
 		{
-			InvokeEvent();
+			// TODO: temporary fix till multithread dispatcher works
+			try { InvokeEvent(); }
+			catch (TimeoutException) { }
 		}
 
 		protected override string GetData()
 		{
-			if (audio.IsPlaying)
+			if (playMgr.IsPlaying)
 			{
 				var data = new
 				{
+					// TODO: temporary fix till multithread dispatcher works
 					hassong = true,
-					titel = audio.CurrentPlayData.Resource.ResourceTitle,
-					length = audio.Length,
-					position = audio.Position,
+					titel = playMgr.CurrentPlayData.ResourceData.ResourceTitle,
+					//length = audio.Length,
+					//position = audio.Position,
 					paused = audio.Pause,
 					repeat = audio.Repeat,
-					loop = audio.Loop,
+					loop = playListMgr.Loop,
 					volume = audio.Volume,
 				};
 				return Util.Serializer.Serialize(data);

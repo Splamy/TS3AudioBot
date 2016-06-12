@@ -24,14 +24,11 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class SoundcloudFactory : IResourceFactory
 	{
-		private JavaScriptSerializer jsonParser;
-
 		public AudioType FactoryFor => AudioType.Soundcloud;
 		public string SoundcloudClientID { get; private set; }
 
 		public SoundcloudFactory()
 		{
-			jsonParser = new JavaScriptSerializer();
 			SoundcloudClientID = "a9dd3403f858e105d7e266edc162a0c5";
 		}
 
@@ -71,7 +68,7 @@ namespace TS3AudioBot.ResourceFactories
 			return (string)parsedDict["permalink_url"];
 		}
 
-		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
+		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
 
 		public void Dispose() { }
 	}

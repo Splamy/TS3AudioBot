@@ -26,12 +26,8 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		private Regex twitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private Regex m3u8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		private JavaScriptSerializer jsonParser;
 
-		public TwitchFactory()
-		{
-			jsonParser = new JavaScriptSerializer();
-		}
+		public TwitchFactory() { }
 
 		public AudioType FactoryFor => AudioType.Twitch;
 
@@ -52,7 +48,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token")))
 				return RResultCode.NoConnection.ToString();
 
-			var jsonDict = (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
+			var jsonDict = (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
 
 			// request m3u8 file
 			var token = Uri.EscapeUriString(jsonDict["token"].ToString());
