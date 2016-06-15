@@ -49,6 +49,9 @@ namespace TS3AudioBot
 
 		private R EnqueueInternal(ClientData invoker, PlaylistItem pli)
 		{
+			if (pli.Meta == null)
+				throw new ArgumentNullException(nameof(pli.Meta));
+
 			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
 			playlistManager.AddToFreelist(pli);
 

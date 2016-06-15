@@ -134,23 +134,14 @@ namespace TS3AudioBot
 			return entry;
 		}
 
-		public int AddToFreelist(PlaylistItem item)
-		{
-			return freeList.AddItem(item);
-		}
+		public int AddToFreelist(PlaylistItem item) => freeList.AddItem(item);
 
-		public int InsertToFreelist(PlaylistItem item)
-		{
-			return freeList.InsertItem(item, Index);
-		}
+		public int InsertToFreelist(PlaylistItem item) => freeList.InsertItem(item, Index);
 
 		/// <summary>Clears the current playlist</summary>
-		public void ClearFreelist()
-		{
-			freeList.Clear();
-		}
+		public void ClearFreelist() => freeList.Clear();
 
-		public R<Playlist> LoadPlaylist(string name)
+		public R<Playlist> LoadPlaylist(string name, bool headOnly = false)
 		{
 			var fi = new FileInfo(Path.Combine(data.playlistPath, name));
 			if (fi.Exists)
@@ -158,35 +149,74 @@ namespace TS3AudioBot
 
 			using (var sr = new StreamReader(fi.OpenRead(), FileEncoding))
 			{
-				Playlist plist = null;
+				Playlist plist = new Playlist(name);
 
 				// TODO: seems like every line will need a userbdid...
+				// Info; owner:<dbid>
+				// Line: <proto>:<userdbid>:<data>
 				string line;
 				while ((line = sr.ReadLine()) != null)
 				{
+					if (headOnly && plist.CreatorDbId != null)
+						break;
+
 					var kvp = line.Split(new[] { ':' }, 3);
-					if (kvp.Length != 2) continue;
-					string val = kvp[1].Trim();
+					if (kvp.Length != 3) continue;
+
+					ulong userid;
+					if (!ulong.TryParse(kvp[1].Trim(), out userid))
+						return "Invalid dbid for entry: " + line;
+
+					string val = kvp[2].Trim();
+
 					switch (kvp[0].Trim())
 					{
-					case "user":
-						ulong userid;
-						if (plist != null || !ulong.TryParse(val, out userid))
+					case "owner":
+						if (plist.CreatorDbId != null)
 							return "Invalid playlist file: duplicate userid";
-						plist = new Playlist(userid, name);
+						plist.CreatorDbId = userid;
 						break;
-					case "ln": plist.AddItem(new PlaylistItem(kvp[1], null)); break;
-					case "id": plist.AddItem(new PlaylistItem(uint.Parse(kvp[1]))); break;
-					default: Log.Write(Log.Level.Warning, "Unknown playlist entry {0}:{1}", kvp); break;
+
+					case "ln":
+						plist.AddItem(new PlaylistItem(kvp[1], null));
+						break;
+
+					case "id":
+						uint hid;
+						if (!uint.TryParse(kvp[1], out hid))
+							goto default;
+						plist.AddItem(new PlaylistItem(hid));
+						break;
+
+					default: Log.Write(Log.Level.Warning, "Erroneus playlist entry: {0}", line); break;
 					}
 				}
 				return plist;
 			}
 		}
 
-		private R SavePlaylist(string name)
+		public R SavePlaylist(Playlist plist)
 		{
-			throw new NotImplementedException();
+			if (plist == null)
+				throw new ArgumentNullException(nameof(plist));
+
+			var fi = new FileInfo(Path.Combine(data.playlistPath, plist.Name));
+			if (fi.Exists)
+			{
+				var tempList = LoadPlaylist(plist.Name, true);
+				if (!tempList)
+					return "Existing playlist ist corrupted, please use another name or repair the existing";
+				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != plist.CreatorDbId)
+					return "You cannot overwrite a playlist which you dont own.";
+			}
+
+
+			using (var sw = fi.Open(FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
+			{
+				throw new NotImplementedException();
+			}
+
+			return R.OkR;
 		}
 
 		private Playlist LoadYoutubePlaylist(ulong ownerDbId, string ytLink, bool loadLength)
@@ -263,7 +293,7 @@ namespace TS3AudioBot
 	{
 		// metainfo
 		public string Name { get; }
-		public ulong? CreatorDbId { get; }
+		public ulong? CreatorDbId { get; set; }
 		// file behaviour: persistent playlist will be synced to a file
 		public bool FilePersistent { get; set; }
 		// playlist data
@@ -271,8 +301,7 @@ namespace TS3AudioBot
 		private List<PlaylistItem> resources;
 
 		public Playlist(string name) : this(null, name) { }
-		public Playlist(ulong creatorDbId, string name) : this((ulong?)creatorDbId, name) { }
-		private Playlist(ulong? creatorDbId, string name)
+		public Playlist(ulong? creatorDbId, string name)
 		{
 			Util.Init(ref resources);
 			CreatorDbId = creatorDbId;
