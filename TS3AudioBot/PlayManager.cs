@@ -43,15 +43,12 @@ namespace TS3AudioBot
 			botParent = parent;
 		}
 
-		public R Enqueue(ClientData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar, new MetaData()));
-		public R Enqueue(ClientData invoker, string message, AudioType? type = null) => EnqueueInternal(invoker, new PlaylistItem(message, type, new MetaData()));
-		public R Enqueue(ClientData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId, new MetaData()));
+		public R Enqueue(ClientData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
+		public R Enqueue(ClientData invoker, string message, AudioType? type = null) => EnqueueInternal(invoker, new PlaylistItem(message, type));
+		public R Enqueue(ClientData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId));
 
 		private R EnqueueInternal(ClientData invoker, PlaylistItem pli)
 		{
-			if (pli.Meta == null)
-				throw new ArgumentNullException(nameof(pli.Meta));
-
 			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
 			playlistManager.AddToFreelist(pli);
 
@@ -97,6 +94,9 @@ namespace TS3AudioBot
 		}
 		public R Play(ClientData invoker, PlaylistItem item)
 		{
+			if (item == null)
+				throw new ArgumentNullException(nameof(item));
+
 			R lastResult = R.OkR;
 			ClientData realInvoker = CurrentPlayData?.Invoker ?? invoker;
 
@@ -123,7 +123,8 @@ namespace TS3AudioBot
 
 		public R Play(ClientData invoker, PlayResource play, MetaData meta)
 		{
-			meta = meta ?? new MetaData();
+			if (!meta.FromPlaylist)
+				meta.ResourceOwnerDbId = invoker.DatabaseId;
 
 			// add optional beforestart here. maybe for blocking/interrupting etc.
 			BeforeResourceStarted?.Invoke(this, new EventArgs());
@@ -132,9 +133,10 @@ namespace TS3AudioBot
 			var result = audioFramework.StartResource(play, meta);
 			if (!result) return result;
 
+			// add it to our freelist for comfort
 			if (!meta.FromPlaylist)
 			{
-				int index = playlistManager.InsertToFreelist(new PlaylistItem(play.BaseData));
+				int index = playlistManager.InsertToFreelist(new PlaylistItem(play.BaseData, meta));
 				playlistManager.Index = index;
 			}
 

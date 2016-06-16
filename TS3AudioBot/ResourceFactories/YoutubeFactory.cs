@@ -19,6 +19,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
+	using System.Globalization;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
@@ -74,9 +75,9 @@ namespace TS3AudioBot.ResourceFactories
 						continue;
 
 					var vt = new VideoData();
-					vt.link = vLink;
-					vt.codec = GetCodec(vType);
-					vt.qualitydesciption = vQuality;
+					vt.Link = vLink;
+					vt.Codec = GetCodec(vType);
+					vt.Qualitydesciption = vQuality;
 					videoTypes.Add(vt);
 				}
 			}
@@ -105,13 +106,13 @@ namespace TS3AudioBot.ResourceFactories
 						continue;
 
 					var vt = new VideoData();
-					vt.codec = GetCodec(vType);
-					vt.qualitydesciption = vType;
-					vt.link = vLink;
+					vt.Codec = GetCodec(vType);
+					vt.Qualitydesciption = vType;
+					vt.Link = vLink;
 					if (audioOnly)
-						vt.audioOnly = true;
+						vt.AudioOnly = true;
 					else
-						vt.videoOnly = true;
+						vt.VideoOnly = true;
 					videoTypes.Add(vt);
 				}
 			}
@@ -129,7 +130,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!result)
 				return result.Message;
 
-			return new PlayResource(videoTypes[codec].link, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
+			return new PlayResource(videoTypes[codec].Link, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
 		}
 
 		public string RestoreLink(string id) => "https://youtu.be/" + id;
@@ -139,22 +140,22 @@ namespace TS3AudioBot.ResourceFactories
 #if DEBUG
 			StringBuilder dbg = new StringBuilder("YT avail codecs: ");
 			foreach (var yd in list)
-				dbg.Append(yd.qualitydesciption).Append(" @ ").Append(yd.codec).Append(", ");
+				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
 			Log.Write(Log.Level.Debug, dbg.ToString());
 #endif
 
-			int autoselectIndex = list.FindIndex(t => t.codec == VideoCodec.M4A);
+			int autoselectIndex = list.FindIndex(t => t.Codec == VideoCodec.M4A);
 			if (autoselectIndex == -1)
-				autoselectIndex = list.FindIndex(t => t.audioOnly);
+				autoselectIndex = list.FindIndex(t => t.AudioOnly);
 			if (autoselectIndex == -1)
-				autoselectIndex = list.FindIndex(t => !t.videoOnly);
+				autoselectIndex = list.FindIndex(t => !t.VideoOnly);
 
 			return autoselectIndex;
 		}
 
 		private static R ValidateMedia(VideoData media)
 		{
-			var vcode = WebWrapper.GetResponse(new Uri(media.link), TimeSpan.FromSeconds(1));
+			var vcode = WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(1));
 
 			switch (vcode)
 			{
@@ -168,7 +169,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static VideoCodec GetCodec(string type)
 		{
-			string lowtype = type.ToLower();
+			string lowtype = type.ToLower(CultureInfo.InvariantCulture);
 			bool audioOnly = false;
 			string codecSubStr;
 			if (lowtype.StartsWith("video/", StringComparison.Ordinal))
@@ -206,13 +207,13 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class VideoData
 	{
-		public string link;
-		public string qualitydesciption;
-		public VideoCodec codec;
-		public bool audioOnly = false;
-		public bool videoOnly = false;
+		public string Link { get; set; }
+		public string Qualitydesciption { get; set; }
+		public VideoCodec Codec { get; set; }
+		public bool AudioOnly { get; set; } = false;
+		public bool VideoOnly { get; set; } = false;
 
-		public override string ToString() => $"{qualitydesciption} @ {codec} - {link}";
+		public override string ToString() => $"{Qualitydesciption} @ {Codec} - {Link}";
 	}
 
 	public enum VideoCodec

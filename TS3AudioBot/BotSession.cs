@@ -93,7 +93,7 @@ namespace TS3AudioBot
 			if (!assocMap.TryGetValue(typeof(TAssoc), out value))
 				return "Value not set";
 
-			if (value?.GetType() != typeof(TAssoc))
+			if (value?.GetType() != typeof(TData))
 				return "Invalid request type";
 
 			return (TData)value;
@@ -121,7 +121,7 @@ namespace TS3AudioBot
 			return sessionToken;
 		}
 
-		public class SessionToken : IDisposable
+		public sealed class SessionToken : IDisposable
 		{
 			private UserSession session;
 			public SessionToken(UserSession session) { this.session = session; }

@@ -111,7 +111,7 @@ namespace TS3AudioBot
 		{
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
-			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.GetDummy();
+			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = cfgFile.GetDataStruct<AudioFrameworkData>(typeof(AudioFramework), true);
 			var bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
 			var qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
@@ -178,6 +178,7 @@ namespace TS3AudioBot
 			PlayManager.AfterResourceStopped += BobController.OnPlayStopped;
 			// In own favor update the own status text to the current song title
 			PlayManager.AfterResourceStarted += SongUpdateEvent;
+			PlayManager.AfterResourceStopped += SongStopEvent;
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
@@ -345,7 +346,7 @@ namespace TS3AudioBot
 
 		[Command(Admin, "getuser id", "Gets the unique Id of a user.")]
 		[Usage("<username>", "A user which is currently logged in to the server")]
-		public string CommandGetUserId(ExecutionInformation info, string parameter)
+		public string CommandGetUserId(string parameter)
 		{
 			ClientData client = QueryConnection.GetClientByName(parameter);
 			if (client == null)
@@ -539,7 +540,7 @@ namespace TS3AudioBot
 		public string CommandHistoryTill(string time)
 		{
 			DateTime tillTime;
-			switch (time.ToLower())
+			switch (time.ToLower(CultureInfo.InvariantCulture))
 			{
 			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
 			case "today": tillTime = DateTime.Today; break;
@@ -589,7 +590,7 @@ namespace TS3AudioBot
 				&& double.TryParse(arg1, NumberStyles.Number, CultureInfo.InvariantCulture, out d1))
 				cmpResult = comparer(d0, d1);
 			else
-				cmpResult = comparer(arg0.CompareTo(arg1), 0);
+				cmpResult = comparer(string.CompareOrdinal(arg0, arg1), 0);
 
 			// If branch
 			if (cmpResult)
@@ -636,12 +637,35 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "list add")]
-		public void CommandListAdd(ExecutionInformation info, string name) { }
+		public string CommandListAdd(ExecutionInformation info, string link)
+		{
+			var result = info.Session.Get<PlaylistManager, Playlist>();
+			if (!result)
+				return "No playlist active";
+
+			result.Value.AddItem(new PlaylistItem(TextUtil.ExtractUrlFromBB(link), null, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			return null;
+		}
+
 		[Command(Private, "list add")]
-		public void CommandListAdd(ExecutionInformation info, uint hid) { }
+		public string CommandListAdd(ExecutionInformation info, uint hid)
+		{
+			var result = info.Session.Get<PlaylistManager, Playlist>();
+			if (!result)
+				return "No playlist active";
+
+			if (!HistoryManager.GetEntryById(hid))
+				return "History entry not found";
+
+			result.Value.AddItem(new PlaylistItem(hid, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			return null;
+		}
 
 		[Command(Private, "list clear")]
 		public void CommandListClear(ExecutionInformation info) { }
+
+		[Command(Private, "list delete")]
+		public void CommandListDelete(ExecutionInformation info) { }
 
 		[Command(Private, "list load")]
 		public string CommandListLoad(ExecutionInformation info, string name)
@@ -650,36 +674,77 @@ namespace TS3AudioBot
 			if (!result)
 				return result.Message;
 
+			result.Value.CreatorDbId = info.Session.ClientCached.DatabaseId;
 			info.Session.Set<PlaylistManager, Playlist>(result.Value);
 			return $"Loaded: \"{name}\" with {result.Value.Count} songs";
 		}
 
 		[Command(Private, "list merge")]
-		public void CommandListShow(ExecutionInformation info, string name) { }
+		public void CommandListMerge(ExecutionInformation info, string name) { }
 
 		[Command(Private, "list move")]
 		public void CommandListMove(ExecutionInformation info, int from, int to) { }
 
+		[Command(Private, "list new")]
+		public string CommandListNew(ExecutionInformation info, string name)
+		{
+			if (!PlaylistManager.IsNameValid(name))
+				return "The new name is invalid please only use [a-zA-Z0-9 _-]";
+
+			info.Session.Set<PlaylistManager, Playlist>(new Playlist(name, info.Session.ClientCached.DatabaseId));
+			return "Created new list: " + name;
+		}
+
 		[Command(Private, "list play")]
-		public void CommandListMove(ExecutionInformation info) { }
+		public string CommandListPlay(ExecutionInformation info)
+		{
+			var result = info.Session.Get<PlaylistManager, Playlist>();
+			if (!result)
+				return "No playlist active";
+
+			PlaylistManager.PlayFreelist(result.Value);
+			var item = PlaylistManager.Current();
+			if (item != null)
+			{
+				PlayManager.Play(info.Session.Client, item);
+				return null;
+			}
+			else return "Nothing to play...";
+		}
 
 		[Command(Private, "list save")]
-		public void CommandListSave(ExecutionInformation info, string name) { }
+		public string CommandListSave(ExecutionInformation info)
+		{
+			var result = info.Session.Get<PlaylistManager, Playlist>();
+			if (!result)
+				return "No playlist active";
+
+			var sresult = PlaylistManager.SavePlaylist(result.Value);
+			if (sresult)
+				return "Ok";
+			else
+				return sresult.Message;
+		}
 
 		[Command(Private, "list remove")]
 		public void CommandListRemove(ExecutionInformation info, int index) { }
 
+		[Command(Private, "list rename")]
+		public string CommandListRename(ExecutionInformation info, string name)
+		{
+			if (!PlaylistManager.IsNameValid(name))
+				return "The new name is invalid please only use [a-zA-Z0-9 _-]";
+
+			var result = info.Session.Get<PlaylistManager, Playlist>();
+			if (!result)
+				return "No playlist active";
+
+			result.Value.Name = name;
+			return null;
+		}
+
 		[Command(Private, "list show")]
 		public void CommandListShow(ExecutionInformation info) { }
-
-		// !playlist remove <hid>|<id>
-		// !playlist add <song>
-		// !playlist load <list>
-		// !playlist save
-		// !playlist rename <toNew>
-		// !playlist status
-		// !playlist merge <otherlist>
-		// !playlist move <song> <somewhere?>
 
 		[Command(Private, "loop", "Sets whether or not to loop the entire playlist.")]
 		[Usage("(on|off)]", "on or off")]
@@ -720,7 +785,7 @@ namespace TS3AudioBot
 		[Usage("<command>", "The comand to be parsed")]
 		public string CommandParse(string parameter)
 		{
-			if (!parameter.TrimStart().StartsWith("!"))
+			if (!parameter.TrimStart().StartsWith("!", StringComparison.Ordinal))
 				return "This is not a command";
 			try
 			{
@@ -859,11 +924,11 @@ namespace TS3AudioBot
 		public string CommandRng(int? first, int? second)
 		{
 			if (second.HasValue)
-				return Util.RngInstance.Next(first.Value, second.Value).ToString();
+				return Util.RngInstance.Next(first.Value, second.Value).ToString(CultureInfo.InvariantCulture);
 			else if (first.HasValue)
-				return Util.RngInstance.Next(first.Value).ToString();
+				return Util.RngInstance.Next(first.Value).ToString(CultureInfo.InvariantCulture);
 			else
-				return Util.RngInstance.Next().ToString();
+				return Util.RngInstance.Next().ToString(CultureInfo.InvariantCulture);
 		}
 
 		[Command(Private, "seek", "Jumps to a timemark within the current song.")]
@@ -996,7 +1061,7 @@ namespace TS3AudioBot
 				info.Session.Write("Good boy!");
 				// stresstest
 				for (int i = 0; i < 10; i++)
-					info.Session.Write(i.ToString());
+					info.Session.Write(i.ToString(CultureInfo.InvariantCulture));
 				return "Test end";
 			}
 		}
@@ -1017,8 +1082,8 @@ namespace TS3AudioBot
 		[Usage("<level>", "A new volume level between 0 and 100")]
 		public string CommandVolume(ExecutionInformation info, string parameter)
 		{
-			bool relPos = parameter.StartsWith("+");
-			bool relNeg = parameter.StartsWith("-");
+			bool relPos = parameter.StartsWith("+", StringComparison.Ordinal);
+			bool relNeg = parameter.StartsWith("-", StringComparison.Ordinal);
 			string numberString = (relPos || relNeg) ? parameter.Remove(0, 1) : parameter;
 
 			int volume;
@@ -1137,7 +1202,7 @@ namespace TS3AudioBot
 				QueryConnection.ChangeDescription(data.ResourceData.ResourceTitle);
 			}
 		}
-		public void SongStopEvent(object sender, bool data)
+		public void SongStopEvent(object sender, EventArgs e)
 		{
 			QueryConnection.ChangeDescription("<Sleeping>");
 		}

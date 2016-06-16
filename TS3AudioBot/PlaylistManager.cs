@@ -20,7 +20,6 @@ namespace TS3AudioBot
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text.RegularExpressions;
-	using System.Web.Script.Serialization;
 	using System.Xml;
 	using System.IO;
 	using System.Text;
@@ -31,7 +30,8 @@ namespace TS3AudioBot
 	// TODO make public and byref when finished
 	public sealed class PlaylistManager : IDisposable
 	{
-		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex ytListMatch = new Regex(@"(&|\?)list=([\w-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex validPlistName = new Regex(@"^[\w -]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 		// get video info
 		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
@@ -62,7 +62,7 @@ namespace TS3AudioBot
 		private int indexCount = 0;
 		private IShuffleAlgorithm shuffle;
 		private Playlist freeList;
-		private int dataSetLength = 0;
+		private int dataSetLength = -1;
 
 		public int Index
 		{
@@ -134,9 +134,25 @@ namespace TS3AudioBot
 			return entry;
 		}
 
+		public void PlayFreelist(Playlist plist)
+		{
+			if (plist == null)
+				throw new ArgumentNullException(nameof(plist));
+
+			freeList = plist;
+			Reset();
+		}
+
+		private void Reset()
+		{
+			indexCount = 0;
+			dataSetLength = -1;
+			Index = 0;
+		}
+
 		public int AddToFreelist(PlaylistItem item) => freeList.AddItem(item);
 
-		public int InsertToFreelist(PlaylistItem item) => freeList.InsertItem(item, Index);
+		public int InsertToFreelist(PlaylistItem item) => freeList.InsertItem(item, Math.Min(Index + 1, freeList.Count));
 
 		/// <summary>Clears the current playlist</summary>
 		public void ClearFreelist() => freeList.Clear();
@@ -144,10 +160,10 @@ namespace TS3AudioBot
 		public R<Playlist> LoadPlaylist(string name, bool headOnly = false)
 		{
 			var fi = new FileInfo(Path.Combine(data.playlistPath, name));
-			if (fi.Exists)
+			if (!fi.Exists)
 				return "Playlist not found";
 
-			using (var sr = new StreamReader(fi.OpenRead(), FileEncoding))
+			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
 			{
 				Playlist plist = new Playlist(name);
 
@@ -161,13 +177,15 @@ namespace TS3AudioBot
 						break;
 
 					var kvp = line.Split(new[] { ':' }, 3);
-					if (kvp.Length != 3) continue;
 
+					var meta = new MetaData();
 					ulong userid;
-					if (!ulong.TryParse(kvp[1].Trim(), out userid))
+					if (string.IsNullOrWhiteSpace(kvp[1]))
+						meta.ResourceOwnerDbId = null;
+					if (ulong.TryParse(kvp[1].Trim(), out userid))
+						meta.ResourceOwnerDbId = userid;
+					else
 						return "Invalid dbid for entry: " + line;
-
-					string val = kvp[2].Trim();
 
 					switch (kvp[0].Trim())
 					{
@@ -178,14 +196,31 @@ namespace TS3AudioBot
 						break;
 
 					case "ln":
-						plist.AddItem(new PlaylistItem(kvp[1], null));
+						if (kvp.Length < 3) goto default;
+						var lnSplit = kvp[2].Trim().Split(new[] { '.' }, 2);
+						if (lnSplit.Length < 2) goto default;
+						AudioType audioType;
+						if (!string.IsNullOrWhiteSpace(lnSplit[0]) && Enum.TryParse(lnSplit[0], out audioType))
+							plist.AddItem(new PlaylistItem(lnSplit[1], audioType, meta));
+						else
+							plist.AddItem(new PlaylistItem(lnSplit[1], null, meta));
+						break;
+
+					case "rs":
+						if (kvp.Length < 3) goto default;
+						var rsSplit = kvp[2].Trim().Split(new[] { '.' }, 2);
+						if (rsSplit.Length < 2) goto default;
+						if (!string.IsNullOrWhiteSpace(rsSplit[0]) && Enum.TryParse(rsSplit[0], out audioType))
+							plist.AddItem(new PlaylistItem(new AudioResource(rsSplit[1], null, audioType), meta));
+						else goto default;
 						break;
 
 					case "id":
+						if (kvp.Length < 3) goto default;
 						uint hid;
-						if (!uint.TryParse(kvp[1], out hid))
+						if (!uint.TryParse(kvp[2].Trim(), out hid))
 							goto default;
-						plist.AddItem(new PlaylistItem(hid));
+						plist.AddItem(new PlaylistItem(hid, meta));
 						break;
 
 					default: Log.Write(Log.Level.Warning, "Erroneus playlist entry: {0}", line); break;
@@ -200,36 +235,81 @@ namespace TS3AudioBot
 			if (plist == null)
 				throw new ArgumentNullException(nameof(plist));
 
+			if (!IsNameValid(plist.Name))
+				return "Invalid playlist name.";
+
+			var di = new DirectoryInfo(data.playlistPath);
+			if (!di.Exists)
+				return "No playlist directory has been set up.";
+
 			var fi = new FileInfo(Path.Combine(data.playlistPath, plist.Name));
 			if (fi.Exists)
 			{
 				var tempList = LoadPlaylist(plist.Name, true);
 				if (!tempList)
-					return "Existing playlist ist corrupted, please use another name or repair the existing";
+					return "Existing playlist ist corrupted, please use another name or repair the existing.";
 				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != plist.CreatorDbId)
 					return "You cannot overwrite a playlist which you dont own.";
 			}
 
-
-			using (var sw = fi.Open(FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
+			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
 			{
-				throw new NotImplementedException();
+				if (plist.CreatorDbId.HasValue)
+				{
+					sw.Write("owner:");
+					sw.Write(plist.CreatorDbId.Value);
+					sw.WriteLine();
+				}
+
+				foreach (var pli in plist.AsEnumerable())
+				{
+					if (pli.HistoryId.HasValue)
+					{
+						sw.Write("id:");
+						if (pli.Meta.ResourceOwnerDbId.HasValue)
+							sw.Write(pli.Meta.ResourceOwnerDbId.Value);
+						sw.Write(":");
+						sw.Write(pli.HistoryId.Value);
+					}
+					else if (!string.IsNullOrWhiteSpace(pli.Link))
+					{
+						sw.Write("ln:");
+						if (pli.Meta.ResourceOwnerDbId.HasValue)
+							sw.Write(pli.Meta.ResourceOwnerDbId.Value);
+						sw.Write(":");
+						if (pli.AudioType.HasValue)
+							sw.Write(pli.AudioType.Value);
+						sw.Write(".");
+						sw.Write(pli.Link);
+					}
+					else if (pli.Resource != null)
+					{
+						sw.Write("rs:");
+						if (pli.Meta.ResourceOwnerDbId.HasValue)
+							sw.Write(pli.Meta.ResourceOwnerDbId.Value);
+						sw.Write(":");
+						sw.Write(pli.Resource.AudioType);
+						sw.Write(".");
+						sw.Write(pli.Resource.ResourceId);
+					}
+					else
+						continue;
+
+					sw.WriteLine();
+				}
 			}
 
 			return R.OkR;
 		}
 
-		private Playlist LoadYoutubePlaylist(ulong ownerDbId, string ytLink, bool loadLength)
+		private R<Playlist> LoadYoutubePlaylist(string ytLink, bool loadLength)
 		{
 			Match matchYtId = ytListMatch.Match(ytLink);
 			if (!matchYtId.Success)
-			{
-				// error here
-				return null;
-			}
-			string id = matchYtId.Groups[2].Value;
+				return "Could not extract a playlist id";
 
-			var plist = new Playlist(ownerDbId, "Youtube playlist: " + id);
+			string id = matchYtId.Groups[2].Value;
+			var plist = new Playlist("Youtube playlist: " + id);
 
 			bool hasNext = false;
 			object nextToken = null;
@@ -239,7 +319,7 @@ namespace TS3AudioBot
 
 				string response;
 				if (!WebWrapper.DownloadString(out response, queryString))
-					throw new Exception(); // TODO correct error handling
+					return "Web response error";
 				var parsed = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
 				var videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoDicts.Length];
@@ -256,7 +336,7 @@ namespace TS3AudioBot
 				{
 					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.youtubeApiKey}");
 					if (!WebWrapper.DownloadString(out response, queryString))
-						throw new Exception(); // TODO correct error handling
+						return "Web response error";
 					parsed = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
 					videoDicts = ((object[])parsed["items"]).Cast<Dictionary<string, object>>().ToArray();
 					for (int i = 0; i < videoDicts.Length; i++)
@@ -267,6 +347,8 @@ namespace TS3AudioBot
 			} while (hasNext);
 			return plist;
 		}
+
+		public static bool IsNameValid(string name) => validPlistName.IsMatch(name);
 
 		public void Dispose() { }
 	}
@@ -284,7 +366,7 @@ namespace TS3AudioBot
 		public string Link { get; } = null;
 		public AudioType? AudioType { get; } = null;
 
-		public PlaylistItem(AudioResource resource, MetaData meta = null) { Resource = resource; Meta = meta; }
+		public PlaylistItem(AudioResource resource, MetaData meta = null) { Resource = resource; Meta = meta ?? new MetaData(); }
 		public PlaylistItem(uint hId, MetaData meta = null) { HistoryId = hId; Meta = meta; }
 		public PlaylistItem(string message, AudioType? type, MetaData meta = null) { Link = message; AudioType = type; Meta = meta; }
 	}
@@ -292,7 +374,7 @@ namespace TS3AudioBot
 	public class Playlist
 	{
 		// metainfo
-		public string Name { get; }
+		public string Name { get; set; }
 		public ulong? CreatorDbId { get; set; }
 		// file behaviour: persistent playlist will be synced to a file
 		public bool FilePersistent { get; set; }
@@ -300,8 +382,8 @@ namespace TS3AudioBot
 		public int Count => resources.Count;
 		private List<PlaylistItem> resources;
 
-		public Playlist(string name) : this(null, name) { }
-		public Playlist(ulong? creatorDbId, string name)
+		public Playlist(string name) : this(name, null) { }
+		public Playlist(string name, ulong? creatorDbId)
 		{
 			Util.Init(ref resources);
 			CreatorDbId = creatorDbId;
@@ -336,6 +418,8 @@ namespace TS3AudioBot
 		{
 			resources.Clear();
 		}
+
+		public IEnumerable<PlaylistItem> AsEnumerable() => resources;
 
 		public PlaylistItem GetResource(int index)
 		{

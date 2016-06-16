@@ -151,7 +151,7 @@ namespace TS3AudioBot
 			musicInfoWaiter = new WaitEventBlock<MusicData>();
 			isRunning = false;
 			awaitingConnect = false;
-			this.bobControllerData = data;
+			bobControllerData = data;
 			this.queryConnection = queryConnection;
 			queryConnection.OnMessageReceived += GetResponse;
 			queryConnection.OnClientConnect += OnBobConnect;

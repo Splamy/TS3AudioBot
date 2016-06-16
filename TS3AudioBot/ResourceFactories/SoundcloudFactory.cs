@@ -18,8 +18,8 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.Text.RegularExpressions;
-	using System.Web.Script.Serialization;
 	using Helper;
 
 	public sealed class SoundcloudFactory : IResourceFactory
@@ -43,7 +43,7 @@ namespace TS3AudioBot.ResourceFactories
 			var parsedDict = ParseJson(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
-			return GetResourceById(new AudioResource(id.ToString(), title, AudioType.Soundcloud));
+			return GetResourceById(new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud));
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource)

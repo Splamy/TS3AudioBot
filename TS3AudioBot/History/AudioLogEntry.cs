@@ -81,10 +81,10 @@ namespace TS3AudioBot.History
 				return null;
 			// Array.ForEach(strParts) // check if spacetrims are needed
 			int index = 0;
-			uint id = uint.Parse(strParts[index++], NumberStyles.HexNumber);
-			uint userInvId = uint.Parse(strParts[index++], NumberStyles.HexNumber);
-			uint playCount = uint.Parse(strParts[index++], NumberStyles.HexNumber);
-			long dtStamp = long.Parse(strParts[index++], NumberStyles.HexNumber);
+			uint id = uint.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+			uint userInvId = uint.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+			uint playCount = uint.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+			long dtStamp = long.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 			DateTime dateTime = DateTime.FromFileTime(dtStamp);
 			AudioType audioType;
 			if (!Enum.TryParse(strParts[index++], out audioType))

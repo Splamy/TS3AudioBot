@@ -22,7 +22,7 @@ namespace TS3AudioBot.Algorithm
 	{
 		void Add(string key, T value);
 		void RemoveKey(string key);
-		void RemoveValue(T key);
+		void RemoveValue(T value);
 		IList<T> GetValues(string key);
 		void Clear();
 	}

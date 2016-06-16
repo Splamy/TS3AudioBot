@@ -5,16 +5,16 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Web;
 using HtmlAgilityPack;
 using TS3AudioBot.Helper;
 using TS3AudioBot.History;
-using System.Threading;
 using TS3Query.Messages;
 
 namespace TS3AudioBot.WebInterface
 {
-	public class WebDisplay : IDisposable
+	public sealed class WebDisplay : IDisposable
 	{
 		private readonly Uri[] hostPaths;
 		private const short port = 8080;
@@ -66,7 +66,7 @@ namespace TS3AudioBot.WebInterface
 			PrepareSite(devupdate);
 			if (!Util.RegisterFolderEvents(new DirectoryInfo("../../WebInterface"), (s, e) =>
 			{
-				if (e.ChangeType == WatcherChangeTypes.Changed && !e.Name.EndsWith("~"))
+				if (e.ChangeType == WatcherChangeTypes.Changed && !e.Name.EndsWith("~", StringComparison.Ordinal))
 					devupdate.InvokeEvent();
 			}))
 				Log.Write(Log.Level.Info, "Devupdate disabled");
@@ -125,7 +125,7 @@ namespace TS3AudioBot.WebInterface
 			foreach (var host in hostPaths)
 			{
 				WebSite site;
-				if (!sites.TryGetValue(url.AbsolutePath, out site))
+				if (!sites.TryGetValue(host.AbsolutePath, out site))
 					continue;
 
 				return site;
@@ -611,6 +611,7 @@ namespace TS3AudioBot.WebInterface
 
 	// Helper
 
+	[Serializable]
 	public class UriExt : Uri
 	{
 		private NameValueCollection queryParam = null;

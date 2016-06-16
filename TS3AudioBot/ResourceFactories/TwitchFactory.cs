@@ -18,8 +18,8 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.Text.RegularExpressions;
-	using System.Web.Script.Serialization;
 	using Helper;
 
 	public sealed class TwitchFactory : IResourceFactory
@@ -92,12 +92,12 @@ namespace TS3AudioBot.ResourceFactories
 						// #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=128000,CODECS="mp4a.40.2",VIDEO="audio_only"
 						for (int i = 0; i < infoMatch.Groups[3].Captures.Count; i++)
 						{
-							string key = infoMatch.Groups[4].Captures[i].Value.ToUpper();
+							string key = infoMatch.Groups[4].Captures[i].Value.ToUpper(CultureInfo.InvariantCulture);
 							string value = infoMatch.Groups[5].Captures[i].Value;
 
 							switch (key)
 							{
-							case "BANDWIDTH": streamData.Bandwidth = int.Parse(value); break;
+							case "BANDWIDTH": streamData.Bandwidth = int.Parse(value, CultureInfo.InvariantCulture); break;
 							case "CODECS": streamData.Codec = TextUtil.StripQuotes(value); break;
 							case "VIDEO":
 								StreamQuality quality;
@@ -131,7 +131,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public bool MatchLink(string uri) => twitchMatch.IsMatch(uri);
 
-		public int SelectStream(List<StreamData> list)
+		private int SelectStream(List<StreamData> list)
 		{
 			int autoselectIndex = list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
 			return autoselectIndex;
@@ -144,10 +144,10 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class StreamData
 	{
-		public StreamQuality QualityType;
-		public int Bandwidth;
-		public string Codec;
-		public string Url;
+		public StreamQuality QualityType { get; set; }
+		public int Bandwidth { get; set; }
+		public string Codec { get; set; }
+		public string Url { get; set; }
 	}
 
 	public enum StreamQuality

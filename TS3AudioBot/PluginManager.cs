@@ -19,6 +19,7 @@ namespace TS3AudioBot
 	using System;
 	using System.CodeDom.Compiler;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.IO;
 	using System.Linq;
 	using System.Linq.Expressions;
@@ -204,7 +205,7 @@ namespace TS3AudioBot
 				int digits = (int)Math.Floor(Math.Log10(plugins.Count) + 1);
 				foreach (var plugin in plugins.Values)
 				{
-					strb.Append("#").Append(plugin.Id.ToString("D" + digits)).Append('|');
+					strb.Append("#").Append(plugin.Id.ToString("D" + digits, CultureInfo.InvariantCulture)).Append('|');
 					switch (plugin.status)
 					{
 					case PluginStatus.Off: strb.Append("OFF"); break;

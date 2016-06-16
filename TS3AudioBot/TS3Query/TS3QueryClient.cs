@@ -353,9 +353,9 @@ namespace TS3Query
 			{
 				switch (responseParam.Key.ToUpperInvariant())
 				{
-				case "ID": errorStatus.Id = int.Parse(responseParam.Value); break;
+				case "ID": errorStatus.Id = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
 				case "MSG": errorStatus.Message = TS3QueryTools.Unescape(responseParam.Value); break;
-				case "FAILED_PERMID": errorStatus.MissingPermissionId = int.Parse(responseParam.Value); break;
+				case "FAILED_PERMID": errorStatus.MissingPermissionId = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
 				}
 			}
 			return errorStatus;
@@ -426,7 +426,7 @@ namespace TS3Query
 			if (convertMap.TryGetValue(dataType, out converter))
 				return converter(data, dataType);
 			else if (dataType.IsEnum)
-				return Enum.ToObject(dataType, Convert.ChangeType(data, dataType.GetEnumUnderlyingType()));
+				return Enum.ToObject(dataType, Convert.ChangeType(data, dataType.GetEnumUnderlyingType(), CultureInfo.InvariantCulture));
 			else
 				throw new NotSupportedException();
 		}
@@ -661,8 +661,8 @@ namespace TS3Query
 		public PrimitiveParameter(float value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(double value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(string value) { QueryValue = TS3QueryTools.Escape(value); }
-		public PrimitiveParameter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString("F0"); }
-		public PrimitiveParameter(DateTime value) { QueryValue = (value - unixTimeStart).TotalSeconds.ToString("F0"); }
+		public PrimitiveParameter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
+		public PrimitiveParameter(DateTime value) { QueryValue = (value - unixTimeStart).TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
 
 		public static implicit operator PrimitiveParameter(bool value) => new PrimitiveParameter(value);
 		public static implicit operator PrimitiveParameter(sbyte value) => new PrimitiveParameter(value);
@@ -701,7 +701,7 @@ namespace TS3Query
 
 		protected Binder() { }
 
-		public static Binder NewBind<T>(string key, IEnumerable<T> parameter) => new Binder().Bind<T>(key, parameter);
+		public static Binder NewBind<T>(string key, IEnumerable<T> parameter) => new Binder().Bind(key, parameter);
 		public Binder Bind<T>(string key, IEnumerable<T> parameter)
 		{
 			var ctor = GetValueCtor(typeof(T));

@@ -17,6 +17,7 @@
 namespace TS3AudioBot.Helper
 {
 	using System;
+	using System.Globalization;
 	using System.Text.RegularExpressions;
 
 	[Serializable]
@@ -34,7 +35,7 @@ namespace TS3AudioBot.Helper
 
 		public static Answer GetAnswer(string answer)
 		{
-			string lowAnswer = answer.ToLower();
+			string lowAnswer = answer.ToLower(CultureInfo.InvariantCulture);
 			if (lowAnswer.StartsWith("!y", StringComparison.Ordinal))
 				return Answer.Yes;
 			else if (lowAnswer.StartsWith("!n", StringComparison.Ordinal))
@@ -47,9 +48,13 @@ namespace TS3AudioBot.Helper
 		public static string ExtractUrlFromBB(string ts3link)
 		{
 			if (ts3link.Contains("[URL]"))
-				return bbMatch.Match(ts3link).Groups[1].Value;
-			else
-				return ts3link;
+			{
+				var match = bbMatch.Match(ts3link);
+				if (match.Success)
+					return match.Groups[1].Value;
+			}
+
+			return ts3link;
 		}
 
 		public static string RemoveUrlBB(string ts3link)

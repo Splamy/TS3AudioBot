@@ -17,9 +17,9 @@
 namespace TS3AudioBot.History
 {
 	using System;
-	using System.Text;
-	using System.Linq;
 	using System.Collections.Generic;
+	using System.Linq;
+	using System.Text;
 
 	public class SmartHistoryFormatter : MarshalByRefObject, IHistoryFormatter
 	{
