@@ -639,71 +639,118 @@ namespace TS3AudioBot
 		[Command(Private, "list add")]
 		public string CommandListAdd(ExecutionInformation info, string link)
 		{
-			var result = info.Session.Get<PlaylistManager, Playlist>();
-			if (!result)
-				return "No playlist active";
-
-			result.Value.AddItem(new PlaylistItem(TextUtil.ExtractUrlFromBB(link), null, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			var plist = AutoGetPlaylist(info.Session);
+			plist.AddItem(new PlaylistItem(TextUtil.ExtractUrlFromBB(link), null, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
 			return null;
 		}
 
 		[Command(Private, "list add")]
 		public string CommandListAdd(ExecutionInformation info, uint hid)
 		{
-			var result = info.Session.Get<PlaylistManager, Playlist>();
-			if (!result)
-				return "No playlist active";
+			var plist = AutoGetPlaylist(info.Session);
 
-			if (!HistoryManager.GetEntryById(hid))
+			if (hid < 0 || !HistoryManager.GetEntryById(hid))
 				return "History entry not found";
 
-			result.Value.AddItem(new PlaylistItem(hid, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			plist.AddItem(new PlaylistItem(hid, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
 			return null;
 		}
 
 		[Command(Private, "list clear")]
-		public void CommandListClear(ExecutionInformation info) { }
+		public string CommandListClear(ExecutionInformation info)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+			plist.Clear();
+			return null;
+		}
 
 		[Command(Private, "list delete")]
-		public void CommandListDelete(ExecutionInformation info) { }
+		public string CommandListDelete(ExecutionInformation info, string name)
+		{
+			var hresult = PlaylistManager.LoadPlaylist(name, true);
+			if (!hresult)
+			{
+				info.Session.SetResponse(ResponseListDelete, name);
+				return $"Do you really wan to delete the playlist \"{name}\" (error:{hresult.Message})";
+			}
+			else
+			{
+				if (hresult.Value.CreatorDbId.HasValue
+					&& hresult.Value.CreatorDbId.Value != info.Session.ClientCached.DatabaseId
+					&& !info.IsAdmin)
+					return "You are not allowed to delete others playlists";
+
+				info.Session.SetResponse(ResponseListDelete, name);
+				return $"Do you really wan to delete the playlist \"{name}\"";
+			}
+		}
 
 		[Command(Private, "list load")]
 		public string CommandListLoad(ExecutionInformation info, string name)
 		{
+			Playlist loadList = AutoGetPlaylist(info.Session);
+
 			var result = PlaylistManager.LoadPlaylist(name);
 			if (!result)
 				return result.Message;
-
-			result.Value.CreatorDbId = info.Session.ClientCached.DatabaseId;
-			info.Session.Set<PlaylistManager, Playlist>(result.Value);
-			return $"Loaded: \"{name}\" with {result.Value.Count} songs";
+			else
+			{
+				loadList.Clear();
+				loadList.AddRange(result.Value.AsEnumerable());
+				return $"Loaded: \"{name}\" with {loadList.Count} songs";
+			}
 		}
 
 		[Command(Private, "list merge")]
-		public void CommandListMerge(ExecutionInformation info, string name) { }
+		public string CommandListMerge(ExecutionInformation info, string name)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			var lresult = PlaylistManager.LoadPlaylist(name);
+			if (!lresult)
+				return "The other playlist could not be found";
+
+			plist.AddRange(lresult.Value.AsEnumerable());
+			return null;
+		}
 
 		[Command(Private, "list move")]
-		public void CommandListMove(ExecutionInformation info, int from, int to) { }
-
-		[Command(Private, "list new")]
-		public string CommandListNew(ExecutionInformation info, string name)
+		public string CommandListMove(ExecutionInformation info, int from, int to)
 		{
-			if (!PlaylistManager.IsNameValid(name))
-				return "The new name is invalid please only use [a-zA-Z0-9 _-]";
+			var plist = AutoGetPlaylist(info.Session);
 
-			info.Session.Set<PlaylistManager, Playlist>(new Playlist(name, info.Session.ClientCached.DatabaseId));
-			return "Created new list: " + name;
+			if (from < 0 || from >= plist.Count
+				|| to < 0 || to >= plist.Count)
+				return "Index must be within playlist length";
+
+			if (from == to)
+				return null;
+
+			var plitem = plist.GetResource(from);
+			plist.RemoveItemAt(from);
+			plist.InsertItem(plitem, Math.Min(to, plist.Count));
+			return null;
 		}
 
 		[Command(Private, "list play")]
-		public string CommandListPlay(ExecutionInformation info)
+		[RequiredParameters(0)]
+		public string CommandListPlay(ExecutionInformation info, int? index)
 		{
-			var result = info.Session.Get<PlaylistManager, Playlist>();
-			if (!result)
-				return "No playlist active";
+			var plist = AutoGetPlaylist(info.Session);
 
-			PlaylistManager.PlayFreelist(result.Value);
-			var item = PlaylistManager.Current();
+			PlaylistItem item = null;
+			if (!index.HasValue || index.Value == 0)
+			{
+				PlaylistManager.PlayFreelist(plist);
+				item = PlaylistManager.Current();
+			}
+			else if (index >= 0 && index < plist.Count)
+			{
+				PlaylistManager.PlayFreelist(plist);
+				item = PlaylistManager.Current();
+			}
+			else return "Invalid starting index";
+
 			if (item != null)
 			{
 				PlayManager.Play(info.Session.Client, item);
@@ -715,11 +762,9 @@ namespace TS3AudioBot
 		[Command(Private, "list save")]
 		public string CommandListSave(ExecutionInformation info)
 		{
-			var result = info.Session.Get<PlaylistManager, Playlist>();
-			if (!result)
-				return "No playlist active";
+			var plist = AutoGetPlaylist(info.Session);
 
-			var sresult = PlaylistManager.SavePlaylist(result.Value);
+			var sresult = PlaylistManager.SavePlaylist(plist);
 			if (sresult)
 				return "Ok";
 			else
@@ -727,24 +772,47 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "list remove")]
-		public void CommandListRemove(ExecutionInformation info, int index) { }
-
-		[Command(Private, "list rename")]
-		public string CommandListRename(ExecutionInformation info, string name)
+		public string CommandListRemove(ExecutionInformation info, int index)
 		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (index < 0 || index >= plist.Count)
+				return "Index must be within playlist length";
+
+			var deletedItem = plist.GetResource(index);
+			plist.RemoveItemAt(index);
+			return "Removed: " + deletedItem.DisplayString;
+		}
+
+		[Command(Private, "list name")]
+		public string CommandListName(ExecutionInformation info, string name)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (string.IsNullOrEmpty(name))
+				return plist.Name;
+
 			if (!PlaylistManager.IsNameValid(name))
 				return "The new name is invalid please only use [a-zA-Z0-9 _-]";
 
-			var result = info.Session.Get<PlaylistManager, Playlist>();
-			if (!result)
-				return "No playlist active";
-
-			result.Value.Name = name;
+			plist.Name = name;
 			return null;
 		}
 
 		[Command(Private, "list show")]
-		public void CommandListShow(ExecutionInformation info) { }
+		[RequiredParameters(0)]
+		public string CommandListShow(ExecutionInformation info, int? offset)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			var strb = new StringBuilder();
+			strb.Append($"Playlist: \"").Append(plist.Name).Append("\" with ").Append(plist.Count).AppendLine(" songs.");
+			int from = Math.Max(offset ?? 0, 0);
+			foreach (var plitem in plist.AsEnumerable().Skip(from).Take(10))
+				strb.Append(from++).Append(": ").AppendLine(plitem.DisplayString);
+
+			return strb.ToString();
+		}
 
 		[Command(Private, "loop", "Sets whether or not to loop the entire playlist.")]
 		[Usage("(on|off)]", "on or off")]
@@ -1193,6 +1261,19 @@ namespace TS3AudioBot
 			return answer != Answer.Unknown;
 		}
 
+		private bool ResponseListDelete(ExecutionInformation info)
+		{
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
+			if (answer == Answer.Yes)
+			{
+				var name = info.Session.ResponseData as string;
+				var result = PlaylistManager.DeletePlaylist(name, info.Session.ClientCached.DatabaseId, info.IsAdmin);
+				if (!result) info.Session.Write(result.Message);
+				else info.Session.Write("Ok");
+			}
+			return answer != Answer.Unknown;
+		}
+
 		#endregion
 
 		public void SongUpdateEvent(object sender, PlayInfoEventArgs data)
@@ -1205,6 +1286,17 @@ namespace TS3AudioBot
 		public void SongStopEvent(object sender, EventArgs e)
 		{
 			QueryConnection.ChangeDescription("<Sleeping>");
+		}
+
+		private Playlist AutoGetPlaylist(UserSession session)
+		{
+			var result = session.Get<PlaylistManager, Playlist>();
+			if (result)
+				return result.Value;
+
+			var newPlist = new Playlist(session.Client.NickName, session.ClientCached.DatabaseId);
+			session.Set<PlaylistManager, Playlist>(newPlist);
+			return newPlist;
 		}
 
 		public void Dispose()

@@ -65,7 +65,7 @@ namespace TS3AudioBot
 			var result = resourceFactoryManager.Load(ar);
 			if (!result)
 				return result.Message;
-			return Play(invoker, result.Value, meta);
+			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
 		/// <summary>Playes the passed <see cref="PlayData.PlayResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
@@ -78,7 +78,7 @@ namespace TS3AudioBot
 			var result = resourceFactoryManager.Load(link, type);
 			if (!result)
 				return result.Message;
-			return Play(invoker, result.Value, meta);
+			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
 		public R Play(ClientData invoker, uint historyId, MetaData meta = null)
 		{
@@ -90,7 +90,7 @@ namespace TS3AudioBot
 			if (!loadresult)
 				return loadresult.Message;
 
-			return Play(invoker, loadresult.Value, meta);
+			return Play(invoker, loadresult.Value, meta ?? new MetaData());
 		}
 		public R Play(ClientData invoker, PlaylistItem item)
 		{

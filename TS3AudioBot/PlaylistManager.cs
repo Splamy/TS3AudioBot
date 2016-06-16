@@ -115,7 +115,11 @@ namespace TS3AudioBot
 			if (Loop)
 				indexCount = Util.MathMod(indexCount, freeList.Count);
 			else if (indexCount < 0 || indexCount >= freeList.Count)
+			{
+				indexCount = Math.Max(indexCount, 0);
+				indexCount = Math.Min(indexCount, freeList.Count);
 				return null;
+			}
 
 			if (Random)
 			{
@@ -139,7 +143,8 @@ namespace TS3AudioBot
 			if (plist == null)
 				throw new ArgumentNullException(nameof(plist));
 
-			freeList = plist;
+			freeList.Clear();
+			freeList.AddRange(plist.AsEnumerable());
 			Reset();
 		}
 
@@ -159,15 +164,22 @@ namespace TS3AudioBot
 
 		public R<Playlist> LoadPlaylist(string name, bool headOnly = false)
 		{
-			var fi = new FileInfo(Path.Combine(data.playlistPath, name));
-			if (!fi.Exists)
-				return "Playlist not found";
+			if (name.StartsWith(".", StringComparison.Ordinal))
+			{
+				if (name == ".queue")
+					return freeList;
+				else
+					return "Unrecognized special list (Options: '.queue')";
+			}
 
-			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
+			var fi = PlaylistExists(name);
+			if (!fi)
+				return fi.Message;
+
+			using (var sr = new StreamReader(fi.Value.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
 			{
 				Playlist plist = new Playlist(name);
 
-				// TODO: seems like every line will need a userbdid...
 				// Info; owner:<dbid>
 				// Line: <proto>:<userdbid>:<data>
 				string line;
@@ -242,8 +254,8 @@ namespace TS3AudioBot
 			if (!di.Exists)
 				return "No playlist directory has been set up.";
 
-			var fi = new FileInfo(Path.Combine(data.playlistPath, plist.Name));
-			if (fi.Exists)
+			var fi = PlaylistExists(plist.Name);
+			if (fi)
 			{
 				var tempList = LoadPlaylist(plist.Name, true);
 				if (!tempList)
@@ -252,7 +264,7 @@ namespace TS3AudioBot
 					return "You cannot overwrite a playlist which you dont own.";
 			}
 
-			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
+			using (var sw = new StreamWriter(fi.Value.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
 			{
 				if (plist.CreatorDbId.HasValue)
 				{
@@ -300,6 +312,38 @@ namespace TS3AudioBot
 			}
 
 			return R.OkR;
+		}
+
+		private R<FileInfo> PlaylistExists(string name)
+		{
+			var fi = new FileInfo(Path.Combine(data.playlistPath, name ?? string.Empty));
+			if (fi.Exists)
+				return fi;
+			else
+				return "Playlist not found";
+		}
+
+		public R DeletePlaylist(string name, ulong requestingClientDbId, bool force = false)
+		{
+			var fi = PlaylistExists(name);
+			if (!fi)
+				return fi.Message;
+			else if (!force)
+			{
+				var tempList = LoadPlaylist(name, true);
+				if (!tempList)
+					return "Existing playlist ist corrupted, please use another name or repair the existing.";
+				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != requestingClientDbId)
+					return "You cannot delete a playlist which you dont own.";
+			}
+
+			try
+			{
+				fi.Value.Delete();
+				return R.OkR;
+			}
+			catch (IOException) { return "File still in use"; }
+			catch (System.Security.SecurityException) { return "Missing rights to delete this file"; }
 		}
 
 		private R<Playlist> LoadYoutubePlaylist(string ytLink, bool loadLength)
@@ -366,9 +410,25 @@ namespace TS3AudioBot
 		public string Link { get; } = null;
 		public AudioType? AudioType { get; } = null;
 
-		public PlaylistItem(AudioResource resource, MetaData meta = null) { Resource = resource; Meta = meta ?? new MetaData(); }
-		public PlaylistItem(uint hId, MetaData meta = null) { HistoryId = hId; Meta = meta; }
-		public PlaylistItem(string message, AudioType? type, MetaData meta = null) { Link = message; AudioType = type; Meta = meta; }
+		public string DisplayString
+		{
+			get
+			{
+				if (Resource != null)
+					return Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";
+				else if (HistoryId.HasValue)
+					return $"HistoryID: {HistoryId.Value}";
+				else if (!string.IsNullOrWhiteSpace(Link))
+					return (AudioType.HasValue ? AudioType.Value + ": " : string.Empty) + Link;
+				else
+					return "<Invalid entry>";
+			}
+		}
+
+		private PlaylistItem(MetaData meta) { Meta = meta ?? new MetaData(); }
+		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { Resource = resource; }
+		public PlaylistItem(uint hId, MetaData meta = null) : this(meta) { HistoryId = hId; }
+		public PlaylistItem(string message, AudioType? type, MetaData meta = null) : this(meta) { Link = message; AudioType = type; }
 	}
 
 	public class Playlist
