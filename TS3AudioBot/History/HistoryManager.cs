@@ -90,7 +90,7 @@ namespace TS3AudioBot.History
 
 		public uint? FindEntryId(AudioResource resource)
 		{
-			lock(accessLock)
+			lock (accessLock)
 			{
 				return historyFile.Contains(resource);
 			}
@@ -128,6 +128,24 @@ namespace TS3AudioBot.History
 		{
 			lock (accessLock)
 				historyFile.CleanFile();
+		}
+
+		public void RemoveBrokenLinks(UserSession session)
+		{
+			lock (accessLock)
+			{
+				historyFile.BackupFile();
+				var allEntries = historyFile.GetAll();
+				foreach (var entry in allEntries)
+				{
+					var result = session.Bot.FactoryManager.Load(entry.AudioResource);
+					if (!result)
+					{
+						historyFile.LogEntryRemove(entry);
+						session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
+					}
+				}
+			}
 		}
 
 		public void Dispose()

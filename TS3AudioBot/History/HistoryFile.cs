@@ -158,7 +158,7 @@ namespace TS3AudioBot.History
 			fileStream.Write(NewLineArray, 0, NewLineArray.Length);
 		}
 
-		private void BackupFile()
+		public void BackupFile()
 		{
 			int backUpNum = 0;
 			string fileName;
@@ -280,6 +280,8 @@ namespace TS3AudioBot.History
 			Array.Copy(aleArray, Math.Max(0, aleArray.Length - idAmount), result, 0, Math.Min(aleArray.Length, result.Length));
 			return result;
 		}
+
+		public IList<AudioLogEntry> GetAll() => idFilter.Values.ToList();
 
 		// User features
 

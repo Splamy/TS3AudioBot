@@ -443,7 +443,16 @@ namespace TS3AudioBot
 		public string CommandHistoryClean(ExecutionInformation info)
 		{
 			info.Session.SetResponse(ResponseHistoryClean, null);
-			return $"Dou want to clean the history file now? This might take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+			return $"Do want to clean the history file now? " +
+					"This might take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+		}
+
+		[Command(Admin, "history clean removedefective", "Cleans up the history file for better startup performance.")]
+		public string CommandHistoryCleanRemove(ExecutionInformation info)
+		{
+			info.Session.SetResponse(ResponseHistoryClean, "removedefective");
+			return $"Do want to remove all defective links file now? " +
+					"This might(will!) take a while and make the bot unresponsive in meanwhile. !(yes|no)";
 		}
 
 		[Command(Private, "history from", "Gets the last <count> songs from the user with the given <user-dbid>")]
@@ -686,6 +695,7 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "list list")]
+		[RequiredParameters(0)]
 		public string CommandListList(ExecutionInformation info, string pattern)
 		{
 			var files = PlaylistManager.GetAvailablePlaylists(pattern);
@@ -1293,8 +1303,19 @@ namespace TS3AudioBot
 			{
 				if (info.IsAdmin)
 				{
-					HistoryManager.CleanHistoryFile();
-					info.Session.Write("Cleanup done!");
+					string param = info.Session.ResponseData as string;
+					if (string.IsNullOrEmpty(param))
+					{
+						HistoryManager.CleanHistoryFile();
+						info.Session.Write("Cleanup done!");
+					}
+					else if (param == "removedefective")
+					{
+						HistoryManager.RemoveBrokenLinks(info.Session);
+						info.Session.Write("Cleanup done!");
+					}
+					else
+						info.Session.Write("Unknown parameter!");
 				}
 				else
 					info.Session.Write("Command can only be answered by an admin.");
