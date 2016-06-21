@@ -20,6 +20,7 @@ namespace TS3AudioBot.History
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using TS3Query;
 
 	public class SmartHistoryFormatter : MarshalByRefObject, IHistoryFormatter
 	{
@@ -29,7 +30,7 @@ namespace TS3AudioBot.History
 		private const int MinTokenLine = 40;
 		private bool fairDistribute = true;
 		// resulting constansts from configuration
-		private static readonly int LineBreakLen = TokenLength(LineBreak);
+		private static readonly int LineBreakLen = TS3QueryTools.TokenLength(LineBreak);
 		private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;
 
 		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)
@@ -43,7 +44,7 @@ namespace TS3AudioBot.History
 			var entryLines = entries.Select(e =>
 			{
 				string finStr = format(e);
-				return new Line { Value = finStr, TokenLength = TokenLength(finStr) };
+				return new Line { Value = finStr, TokenLength = TS3QueryTools.TokenLength(finStr) };
 			});
 
 			//! entryLinesRev[0] is the most recent entry
@@ -147,26 +148,11 @@ namespace TS3AudioBot.History
 			int tokens = 0;
 			for (int i = 0; i < value.Length; i++)
 			{
-				int addToken = IsDoubleChar(value[i]) ? 2 : 1;
+				int addToken = TS3QueryTools.IsDoubleChar(value[i]) ? 2 : 1;
 				if (tokens + addToken > token) return value.Substring(0, i);
 				else tokens += addToken;
 			}
 			return value;
-		}
-
-		private static int TokenLength(string str) => str.Length + str.Count(IsDoubleChar);
-
-		private static bool IsDoubleChar(char c)
-		{
-			return c == '\\' ||
-				c == '/' ||
-				c == ' ' ||
-				c == '|' ||
-				c == '\f' ||
-				c == '\n' ||
-				c == '\r' ||
-				c == '\t' ||
-				c == '\v';
 		}
 
 		class Line

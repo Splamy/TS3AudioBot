@@ -95,6 +95,7 @@
     <Compile Include="PlayManager.cs" />
     <Compile Include="PluginManager.cs" />
     <Compile Include="QueryConnection.cs" />
+    <Compile Include="ResourceFactories\IPlaylistFactory.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />

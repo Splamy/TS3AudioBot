@@ -17,6 +17,7 @@
 namespace TS3Query
 {
 	using System;
+	using System.Linq;
 	using System.Text;
 
 	public static class TS3QueryTools
@@ -62,6 +63,21 @@ namespace TS3Query
 				else strb.Append(c);
 			}
 			return strb.ToString();
+		}
+
+		public static int TokenLength(string str) => str.Length + str.Count(IsDoubleChar);
+
+		public static bool IsDoubleChar(char c)
+		{
+			return c == '\\' ||
+				c == '/' ||
+				c == ' ' ||
+				c == '|' ||
+				c == '\f' ||
+				c == '\n' ||
+				c == '\r' ||
+				c == '\t' ||
+				c == '\v';
 		}
 	}
 

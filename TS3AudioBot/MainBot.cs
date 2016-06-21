@@ -685,6 +685,31 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Private, "list list")]
+		public string CommandListList(ExecutionInformation info, string pattern)
+		{
+			var files = PlaylistManager.GetAvailablePlaylists(pattern);
+			if (!files.Any())
+				return "No saved playlists";
+
+			var strb = new StringBuilder();
+			int tokenLen = 0;
+			foreach (var file in files)
+			{
+				int newTokenLen = tokenLen + TS3QueryTools.TokenLength(file) + 3;
+				if (newTokenLen < 1024)
+				{
+					strb.Append(file).Append(", ");
+					tokenLen = newTokenLen;
+				}
+				else
+					break;
+			}
+
+			if (strb.Length > 2) strb.Length -= 2;
+			return strb.ToString();
+		}
+
 		[Command(Private, "list load")]
 		public string CommandListLoad(ExecutionInformation info, string name)
 		{
@@ -801,7 +826,7 @@ namespace TS3AudioBot
 
 		[Command(Private, "list show")]
 		[RequiredParameters(0)]
-		public string CommandListShow(ExecutionInformation info, int? offset)
+		public string CommandListShow(ExecutionInformation info, int? offset) // todo: add show for not loaded list
 		{
 			var plist = AutoGetPlaylist(info.Session);
 
@@ -965,6 +990,22 @@ namespace TS3AudioBot
 			}
 			else
 				CommandHelp(info, "quiz");
+			return null;
+		}
+
+		[Command(Private, "random", "Sets whether or not to play playlists in random order.")]
+		[Usage("(on|off)]", "on or off")]
+		[RequiredParameters(0)]
+		public string CommandRandom(ExecutionInformation info, string parameter)
+		{
+			if (string.IsNullOrEmpty(parameter))
+				return "Random is " + (PlaylistManager.Random ? "on" : "off");
+			else if (parameter == "on")
+				PlaylistManager.Random = true;
+			else if (parameter == "off")
+				PlaylistManager.Random = false;
+			else
+				return CommandHelp(info, "random");
 			return null;
 		}
 

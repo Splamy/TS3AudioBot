@@ -39,23 +39,6 @@ namespace TS3AudioBot
 		// get playlist videos
 		// https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId=...&key=...
 
-		// Idea:
-		// > File as playist
-		// each line starts with either
-		// ln:<link> and a link which can be opened with a resourcefactory
-		// id:<id>   for any already resolved link
-
-		// > playlist must only contain [a-zA-Z _-]+ to prevent security issues, max len 63 ??!?
-
-		// !playlist remove <hid>|<id>
-		// !playlist add <song>
-		// !playlist load <list>
-		// !playlist save
-		// !playlist rename <toNew>
-		// !playlist status
-		// !playlist merge <otherlist>
-		// !playlist move <song> <somewhere?>
-
 		private PlaylistManagerData data;
 		private static readonly Encoding FileEncoding = Encoding.ASCII;
 
@@ -171,12 +154,11 @@ namespace TS3AudioBot
 				else
 					return "Unrecognized special list (Options: '.queue')";
 			}
+			var fi = GetFileInfo(name);
+			if (!fi.Exists)
+				return "Playlist not found";
 
-			var fi = PlaylistExists(name);
-			if (!fi)
-				return fi.Message;
-
-			using (var sr = new StreamReader(fi.Value.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
+			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
 			{
 				Playlist plist = new Playlist(name);
 
@@ -254,8 +236,8 @@ namespace TS3AudioBot
 			if (!di.Exists)
 				return "No playlist directory has been set up.";
 
-			var fi = PlaylistExists(plist.Name);
-			if (fi)
+			var fi = GetFileInfo(plist.Name);
+			if (fi.Exists)
 			{
 				var tempList = LoadPlaylist(plist.Name, true);
 				if (!tempList)
@@ -264,7 +246,7 @@ namespace TS3AudioBot
 					return "You cannot overwrite a playlist which you dont own.";
 			}
 
-			using (var sw = new StreamWriter(fi.Value.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
+			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
 			{
 				if (plist.CreatorDbId.HasValue)
 				{
@@ -314,20 +296,13 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
-		private R<FileInfo> PlaylistExists(string name)
-		{
-			var fi = new FileInfo(Path.Combine(data.playlistPath, name ?? string.Empty));
-			if (fi.Exists)
-				return fi;
-			else
-				return "Playlist not found";
-		}
+		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(data.playlistPath, name ?? string.Empty));
 
 		public R DeletePlaylist(string name, ulong requestingClientDbId, bool force = false)
 		{
-			var fi = PlaylistExists(name);
-			if (!fi)
-				return fi.Message;
+			var fi = GetFileInfo(name);
+			if (!fi.Exists)
+				return "Playlist not found";
 			else if (!force)
 			{
 				var tempList = LoadPlaylist(name, true);
@@ -339,7 +314,7 @@ namespace TS3AudioBot
 
 			try
 			{
-				fi.Value.Delete();
+				fi.Delete();
 				return R.OkR;
 			}
 			catch (IOException) { return "File still in use"; }
@@ -392,7 +367,23 @@ namespace TS3AudioBot
 			return plist;
 		}
 
-		public static bool IsNameValid(string name) => validPlistName.IsMatch(name);
+		public static bool IsNameValid(string name) => validPlistName.IsMatch(name) && name.Length < 32;
+
+		public IEnumerable<string> GetAvailablePlaylists() => GetAvailablePlaylists(null);
+		public IEnumerable<string> GetAvailablePlaylists(string pattern)
+		{
+			var di = new DirectoryInfo(data.playlistPath);
+			if (!di.Exists)
+				return Enumerable.Empty<string>();
+
+			IEnumerable<FileInfo> fileEnu;
+			if (string.IsNullOrEmpty(pattern))
+				fileEnu = di.EnumerateFiles();
+			else
+				fileEnu = di.EnumerateFiles(pattern, SearchOption.TopDirectoryOnly);
+
+			return fileEnu.Select(fi => fi.Name);
+		}
 
 		public void Dispose() { }
 	}
