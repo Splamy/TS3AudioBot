@@ -23,14 +23,12 @@ namespace TS3ABotUnitTests
 	using System.Linq;
 	using LockCheck;
 	using NUnit.Framework;
-
 	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
-	using TS3AudioBot.CommandSystem;
-
 	using TS3Query.Messages;
 
 	[TestFixture]
@@ -59,9 +57,11 @@ namespace TS3ABotUnitTests
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", AudioType.Soundcloud);
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", AudioType.MediaLink);
+			var ar3 = new AudioResource("kitty", "tw_ar3", AudioType.Twitch);
 
 			var data1 = new HistorySaveData(ar1, inv1.DatabaseId);
 			var data2 = new HistorySaveData(ar2, inv2.DatabaseId);
+			var data3 = new HistorySaveData(ar3, 103);
 
 
 			HistoryFile hf = new HistoryFile();
@@ -126,7 +126,7 @@ namespace TS3ABotUnitTests
 
 			hf.CloseFile();
 
-			// reckeck order
+			// recheck order
 			hf.OpenFile(testFile);
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -134,22 +134,34 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(ar2, lastXEntriesArray[1].AudioResource);
 			hf.CloseFile();
 
-			// delete entry 2
-			hf.OpenFile(testFile);
-			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar2).Value));
-
-			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
-			Assert.AreEqual(1, lastXEntriesArray.Length);
-			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
-			hf.CloseFile();
-
 			// delete entry 1
 			hf.OpenFile(testFile);
 			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar1).Value));
 
-			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
-			Assert.AreEqual(0, lastXEntriesArray.Length);
+			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
+			Assert.AreEqual(1, lastXEntriesArray.Length);
+
+			// .. store new entry to check correct stream position writes
+			hf.Store(data3);
+
+			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
+			Assert.AreEqual(2, lastXEntriesArray.Length);
 			hf.CloseFile();
+
+			// delete entry 2
+			hf.OpenFile(testFile);
+			// .. check integrity from previous store
+			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
+			Assert.AreEqual(2, lastXEntriesArray.Length);
+
+			// .. delete and recheck
+			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar2).Value));
+
+			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
+			Assert.AreEqual(1, lastXEntriesArray.Length);
+			Assert.AreEqual(ar3, lastXEntriesArray[0].AudioResource);
+			hf.CloseFile();
+
 
 			File.Delete(testFile);
 		}
@@ -273,7 +285,7 @@ namespace TS3ABotUnitTests
 			Assert.IsTrue(result.Where(r => r.Key == "ply").Any());
 			Assert.IsTrue(result.Where(r => r.Key == "pla").Any());
 		}
-		
+
 		[Test]
 		public void XCommandSystemTest()
 		{

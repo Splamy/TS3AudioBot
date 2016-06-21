@@ -352,6 +352,7 @@ namespace TS3AudioBot.History
 
 		private void AppendToFile(AudioLogEntry logEntry, bool flush = true)
 		{
+			fileStream.Seek(0, SeekOrigin.End);
 			logEntry.FilePosIndex = fileStream.Position;
 
 			var fileString = logEntry.ToFileString();
@@ -377,13 +378,11 @@ namespace TS3AudioBot.History
 				fileStream.Write(newLine, 0, newLine.Length);
 				if (newLine.Length < curLine.Length)
 					CleanLine(curLine.Length - newLine.Length);
-				fileStream.Seek(0, SeekOrigin.End);
 			}
 			else
 			{
 				byte[] filler = Enumerable.Repeat((byte)' ', curLine.Length).ToArray();
 				fileStream.Write(filler, 0, filler.Length);
-				fileStream.Seek(0, SeekOrigin.End);
 				AppendToFile(logEntry, false);
 			}
 			fileStream.Flush(true);
@@ -401,9 +400,11 @@ namespace TS3AudioBot.History
 		private void RemoveFromFile(AudioLogEntry logEntry)
 		{
 			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
+			fileReader.InvalidateBuffer();
 			byte[] curLine = FileEncoding.GetBytes(fileReader.ReadLine());
 			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
 			CleanLine(curLine.Length);
+			fileStream.Flush(true);
 		}
 
 		private void CleanLine(int length)
