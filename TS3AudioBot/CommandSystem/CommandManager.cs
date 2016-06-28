@@ -29,6 +29,7 @@ namespace TS3AudioBot.CommandSystem
 		public XCommandSystem CommandSystem { get; }
 
 		public IList<BotCommand> BaseCommands { get; private set; }
+		private List<BotCommand> dynamicCommands;
 		public IDictionary<Plugin, IList<BotCommand>> PluginCommands { get; }
 
 		public IEnumerable<BotCommand> AllCommands
@@ -36,6 +37,8 @@ namespace TS3AudioBot.CommandSystem
 			get
 			{
 				foreach (var com in BaseCommands)
+					yield return com;
+				foreach (var com in dynamicCommands)
 					yield return com;
 				foreach (var comArr in PluginCommands.Values)
 					foreach (var com in comArr)
@@ -50,6 +53,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			CommandSystem = new XCommandSystem();
 			PluginCommands = new Dictionary<Plugin, IList<BotCommand>>();
+			Util.Init(ref dynamicCommands);
 			Util.Init(ref CommandPaths);
 		}
 
@@ -66,6 +70,13 @@ namespace TS3AudioBot.CommandSystem
 			}
 
 			BaseCommands = comList.AsReadOnly();
+		}
+
+		public void RegisterCommand(CommandBuildInfo buildInfo)
+		{
+			var com = new BotCommand(buildInfo);
+			LoadCommand(com);
+			dynamicCommands.Add(com);
 		}
 
 		public void RegisterPlugin(Plugin plugin)

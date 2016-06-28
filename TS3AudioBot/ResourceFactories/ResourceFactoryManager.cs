@@ -18,15 +18,20 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Reflection;
+	using System.Reflection.Emit;
+	using CommandSystem;
 	using Helper;
 
 	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
 	{
+		private MainBot bot;
 		public IResourceFactory DefaultFactorty { get; internal set; }
 		private IList<IResourceFactory> factories;
 
-		public ResourceFactoryManager()
+		public ResourceFactoryManager(MainBot parent)
 		{
+			bot = parent;
 			factories = new List<IResourceFactory>();
 		}
 
@@ -85,19 +90,38 @@ namespace TS3AudioBot.ResourceFactories
 		private IResourceFactory GetFactoryFor(AudioType audioType)
 		{
 			foreach (var fac in factories)
-				if (fac.FactoryFor == audioType) return fac;
+				if (fac != DefaultFactorty && fac.FactoryFor == audioType) return fac;
 			return DefaultFactorty;
 		}
 		private IResourceFactory GetFactoryFor(string uri)
 		{
 			foreach (var fac in factories)
-				if (fac.MatchLink(uri)) return fac;
+				if (fac != DefaultFactorty && fac.MatchLink(uri)) return fac;
 			return DefaultFactorty;
 		}
 
 		public void AddFactory(IResourceFactory factory)
 		{
 			factories.Add(factory);
+
+			// will represent:
+			 //(info, parameter) => info.Session.Bot.PlayManager.Play(info.Session.Client, parameter, factory.FactoryFor)
+			DynamicMethod dynLog = new DynamicMethod("CommandFrom_" + factory.SubCommandName, MethodAttributes.Static, CallingConventions.Any, typeof(void), new[] { typeof(ExecutionInformation), typeof(string) }, typeof(ResourceFactoryManager).Module, false);
+			var ilGen = dynLog.GetILGenerator();
+			ilGen.Emit(OpCodes.Ldarg_0);
+			ilGen.EmitCall(OpCodes.Call, typeof(ExecutionInformation).GetProperty(nameof(ExecutionInformation.Session)).GetMethod, null);
+			ilGen.EmitCall(OpCodes.Call, typeof(UserSession).GetProperty(nameof(UserSession.Bot)).GetMethod, null);
+			ilGen.EmitCall(OpCodes.Call, typeof(MainBot).GetProperty(nameof(MainBot.PlaylistManager)).GetMethod, null);
+			ilGen.EmitCall(OpCodes.Call, typeof(PlayManager).GetMethod(nameof(PlayManager.Play), new Type[] { typeof(TS3Query.Messages.ClientData), typeof(string), typeof(AudioType) }), null);
+
+			bot.CommandManager.RegisterCommand(
+				new CommandBuildInfo(
+					null,
+					callMethod.Method,
+					new CommandAttribute(CommandRights.Private, "from " + factory.SubCommandName),
+					null
+				)
+			);
 		}
 
 		public string RestoreLink(AudioResource res)

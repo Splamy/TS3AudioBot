@@ -29,6 +29,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public TwitchFactory() { }
 
+		public string SubCommandName => "twitch";
 		public AudioType FactoryFor => AudioType.Twitch;
 
 		public R<PlayResource> GetResource(string url)

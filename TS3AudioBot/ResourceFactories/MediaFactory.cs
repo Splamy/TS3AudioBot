@@ -23,6 +23,7 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class MediaFactory : IResourceFactory
 	{
+		public string SubCommandName => "link";
 		public AudioType FactoryFor => AudioType.MediaLink;
 
 		public bool MatchLink(string uri) => true;

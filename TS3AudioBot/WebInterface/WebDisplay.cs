@@ -128,7 +128,7 @@ namespace TS3AudioBot.WebInterface
 			foreach (var host in hostPaths)
 			{
 				WebSite site;
-				if (!sites.TryGetValue(host.AbsolutePath, out site))
+				if (!sites.TryGetValue(url.AbsolutePath, out site))
 					continue;
 
 				return site;

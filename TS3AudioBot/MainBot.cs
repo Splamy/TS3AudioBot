@@ -165,8 +165,9 @@ namespace TS3AudioBot
 			WebInterface = new WebDisplay(this);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
-			FactoryManager = new ResourceFactoryManager();
-			FactoryManager.DefaultFactorty = new MediaFactory();
+			FactoryManager = new ResourceFactoryManager(this);
+			FactoryManager.DefaultFactorty = new MediaFactory(); // TODO: nicer
+			FactoryManager.AddFactory(FactoryManager.DefaultFactorty);
 			FactoryManager.AddFactory(new YoutubeFactory());
 			FactoryManager.AddFactory(new SoundcloudFactory());
 			FactoryManager.AddFactory(new TwitchFactory());
@@ -343,6 +344,9 @@ namespace TS3AudioBot
 			var cmd = CommandManager.CommandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(args));
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
+
+		[Command(Private, "from dummy", "Removes all songs from the current playlist.")]
+		public void CommandFrom() { }
 
 		[Command(Admin, "getuser id", "Gets the unique Id of a user.")]
 		[Usage("<username>", "A user which is currently logged in to the server")]

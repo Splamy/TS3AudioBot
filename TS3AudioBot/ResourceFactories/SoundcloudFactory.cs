@@ -24,6 +24,7 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class SoundcloudFactory : IResourceFactory
 	{
+		public string SubCommandName => "soundcloud";
 		public AudioType FactoryFor => AudioType.Soundcloud;
 		public string SoundcloudClientID { get; private set; }
 

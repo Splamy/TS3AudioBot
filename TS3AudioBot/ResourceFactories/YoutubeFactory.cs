@@ -30,6 +30,7 @@ namespace TS3AudioBot.ResourceFactories
 		private Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		private Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+		public string SubCommandName => "youtube";
 		public AudioType FactoryFor => AudioType.Youtube;
 
 		public YoutubeFactory() { }

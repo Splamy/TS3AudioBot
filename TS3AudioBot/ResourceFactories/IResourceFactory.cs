@@ -21,6 +21,7 @@ namespace TS3AudioBot.ResourceFactories
 
 	public interface IResourceFactory : IDisposable
 	{
+		string SubCommandName { get; }
 		AudioType FactoryFor { get; }
 
 		/// <summary>Check method to ask if a factory can load the given link.</summary>
