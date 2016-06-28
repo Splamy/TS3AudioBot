@@ -45,12 +45,15 @@ namespace TS3AudioBot.WebInterface
 			}
 			Util.Init(ref sites);
 
-			Index = new WebIndexFile("index.html", new FileProvider(new FileInfo("../../WebInterface/index.html")), GetWebsite) { MimeType = "text/html" };
+			DirectoryInfo baseDir = new DirectoryInfo(Path.Combine("..", "..", "WebInterface"));
+			Func<DirectoryInfo, string, FileInfo> dirFile = (d, s) => d.GetFiles(s, SearchOption.TopDirectoryOnly).FirstOrDefault();
+
+			Index = new WebIndexFile("index.html", new FileProvider().Set(dirFile(baseDir, "index.html")), GetWebsite) { MimeType = "text/html" };
 			PrepareSite(Index);
 			PrepareSite(Index, string.Empty);
-			PrepareSite(new WebStaticSite("main", new FileInfo("../../WebInterface/main.html")) { MimeType = "text/css" });
-			PrepareSite(new WebStaticSite("styles.css", new FileInfo("../../WebInterface/styles.css")) { MimeType = "text/css" });
-			PrepareSite(new WebStaticSite("scripts.js", new FileInfo("../../WebInterface/scripts.js")) { MimeType = "application/javascript" });
+			PrepareSite(new WebStaticSite("main", dirFile(baseDir, "main.html")) { MimeType = "text/css" });
+			PrepareSite(new WebStaticSite("styles.css", dirFile(baseDir, "styles.css")) { MimeType = "text/css" });
+			PrepareSite(new WebStaticSite("scripts.js", dirFile(baseDir, "scripts.js")) { MimeType = "application/javascript" });
 			PrepareSite(new WebStaticSite("jquery.js", "TS3AudioBot.WebInterface.jquery.js") { MimeType = "application/javascript" });
 			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
 			Site404 = new WebStaticSite("404", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "text/plain" };
@@ -58,13 +61,13 @@ namespace TS3AudioBot.WebInterface
 			PrepareSite(new WebHistorySearch("historysearch", mainBot) { MimeType = "text/plain" });
 			var historystatic = new WebHistorySearchList("historystatic", mainBot) { MimeType = "text/html" };
 			PrepareSite(historystatic);
-			PrepareSite(new WebJSFillSite("history", new FileProvider(new FileInfo("../../WebInterface/history.html")), historystatic) { MimeType = "text/html" });
-			PrepareSite(new WebStaticSite("playcontrols", new FileInfo("../../WebInterface/playcontrols.html")) { MimeType = "text/html" });
+			PrepareSite(new WebJSFillSite("history", new FileProvider().Set(dirFile(baseDir, "history.html")), historystatic) { MimeType = "text/html" });
+			PrepareSite(new WebStaticSite("playcontrols", dirFile(baseDir, "playcontrols.html")) { MimeType = "text/html" });
 			PrepareSite(new WebPlayControls("control", mainBot) { MimeType = "text/html" });
 			PrepareSite(new SongChangedEvent("playdata", mainBot));
 			var devupdate = new SiteChangedEvent("devupdate");
 			PrepareSite(devupdate);
-			if (!Util.RegisterFolderEvents(new DirectoryInfo("../../WebInterface"), (s, e) =>
+			if (!Util.RegisterFolderEvents(baseDir, (s, e) =>
 			{
 				if (e.ChangeType == WatcherChangeTypes.Changed && !e.Name.EndsWith("~", StringComparison.Ordinal))
 					devupdate.InvokeEvent();
@@ -160,24 +163,29 @@ namespace TS3AudioBot.WebInterface
 			set { resourceName = value; loadedOnce = false; }
 		}
 		public bool HasChanged => !CheckFile();
+		public bool FromFile { get; set; }
 
-		public FileProvider(FileInfo file)
+		public FileProvider() { }
+
+		public FileProvider Set(FileInfo file)
 		{
 			if (file == null)
 				throw new ArgumentNullException(nameof(file));
 			WebFile = file;
+			return this;
 		}
 
-		public FileProvider(string resourceName)
+		public FileProvider Set(string resourceName)
 		{
 			if (resourceName == null)
 				throw new ArgumentNullException(nameof(resourceName));
 			ResourceName = resourceName;
+			return this;
 		}
 
 		private bool CheckFile()
 		{
-			if (resourceName != null)
+			if (resourceName != null && (file == null || !FromFile))
 				return loadedOnce;
 			else if (file != null)
 			{
@@ -193,7 +201,7 @@ namespace TS3AudioBot.WebInterface
 			if (!HasChanged)
 				return rawData;
 
-			if (resourceName != null)
+			if (resourceName != null && (file == null || !FromFile))
 			{
 				rawData = Util.GetResource(resourceName);
 				loadedOnce = true;
@@ -264,9 +272,9 @@ namespace TS3AudioBot.WebInterface
 			this.provider = provider;
 		}
 
-		public WebStaticSite(string sitePath, FileInfo file) : this(sitePath, new FileProvider(file)) { }
+		public WebStaticSite(string sitePath, FileInfo file) : this(sitePath, new FileProvider().Set(file)) { }
 
-		public WebStaticSite(string sitePath, string resourcePath) : this(sitePath, new FileProvider(resourcePath)) { }
+		public WebStaticSite(string sitePath, string resourcePath) : this(sitePath, new FileProvider().Set(resourcePath)) { }
 
 		public override PreparedData PrepareSite(UriExt url)
 		{
