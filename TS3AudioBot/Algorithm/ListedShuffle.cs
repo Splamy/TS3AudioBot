@@ -32,10 +32,11 @@ namespace TS3AudioBot.Algorithm
 		public int Length => length;
 		public int Index
 		{
-			get { return permutation[index]; }
+			get { return Length > 0 ? permutation[index] : -1; }
 			set
 			{
-				if (value >= permutation.Length) throw new IndexOutOfRangeException(nameof(value));
+				if (Length <= 0) return;
+				if (value >= permutation.Length) throw new ArgumentOutOfRangeException(nameof(value));
 				index = Array.IndexOf(permutation, value);
 			}
 		}

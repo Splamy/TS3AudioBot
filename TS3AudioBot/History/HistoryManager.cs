@@ -134,18 +134,42 @@ namespace TS3AudioBot.History
 		{
 			lock (accessLock)
 			{
+				const int iterations = 3;
 				historyFile.BackupFile();
-				var allEntries = historyFile.GetAll();
-				foreach (var entry in allEntries)
+				var currentIter = historyFile.GetAll();
+
+				for (int i = 0; i < iterations; i++)
 				{
-					var result = session.Bot.FactoryManager.Load(entry.AudioResource);
-					if (!result)
-					{
-						historyFile.LogEntryRemove(entry);
-						session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
-					}
+					session.Write("Filter iteration " + i);
+					currentIter = FilterList(session, currentIter);
+				}
+
+				foreach (var entry in currentIter)
+				{
+					historyFile.LogEntryRemove(entry);
+					session.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
+					session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
 				}
 			}
+		}
+
+		private List<AudioLogEntry> FilterList(UserSession session, IList<AudioLogEntry> list)
+		{
+			int userNotityCnt = 0;
+			var nextIter = new List<AudioLogEntry>();
+			foreach (var entry in list)
+			{
+				var result = session.Bot.FactoryManager.Load(entry.AudioResource);
+				if (!result)
+				{
+					session.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}");
+					nextIter.Add(entry);
+				}
+
+				if (++userNotityCnt % 100 == 0)
+					session.Write("Working" + new string('.', userNotityCnt / 100));
+			}
+			return nextIter;
 		}
 
 		public void Dispose()

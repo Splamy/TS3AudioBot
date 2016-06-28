@@ -426,17 +426,10 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Admin, "history delete", "<id> Removes the entry with <id> from the history")]
-		public string CommandHistoryDelete(ExecutionInformation info, uint id)
+		[Command(Private, "history add", "<id> Adds the song with <id> to the queue")]
+		public string CommandHistoryQueue(ExecutionInformation info, uint id)
 		{
-			var result = HistoryManager.GetEntryById(id);
-			if (!result)
-				return result.Message;
-			info.Session.SetResponse(ResponseHistoryDelete, result.Value);
-			string name = result.Value.AudioResource.ResourceTitle;
-			if (name.Length > 100)
-				name = name.Substring(100) + "...";
-			return $"Do you really want to delete the entry \"{name}\"\nwith the id {id}? !(yes|no)";
+			return PlayManager.Enqueue(info.Session.Client, id);
 		}
 
 		[Command(Admin, "history clean", "Cleans up the history file for better startup performance.")]
@@ -453,6 +446,19 @@ namespace TS3AudioBot
 			info.Session.SetResponse(ResponseHistoryClean, "removedefective");
 			return $"Do want to remove all defective links file now? " +
 					"This might(will!) take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+		}
+
+		[Command(Admin, "history delete", "<id> Removes the entry with <id> from the history")]
+		public string CommandHistoryDelete(ExecutionInformation info, uint id)
+		{
+			var result = HistoryManager.GetEntryById(id);
+			if (!result)
+				return result.Message;
+			info.Session.SetResponse(ResponseHistoryDelete, result.Value);
+			string name = result.Value.AudioResource.ResourceTitle;
+			if (name.Length > 100)
+				name = name.Substring(100) + "...";
+			return $"Do you really want to delete the entry \"{name}\"\nwith the id {id}? !(yes|no)";
 		}
 
 		[Command(Private, "history from", "Gets the last <count> songs from the user with the given <user-dbid>")]
@@ -516,12 +522,6 @@ namespace TS3AudioBot
 		public string CommandHistoryPlay(ExecutionInformation info, uint id)
 		{
 			return PlayManager.Play(info.Session.Client, id);
-		}
-
-		[Command(Private, "history add", "<id> Adds the song with <id> to the queue")]
-		public string CommandHistoryQueue(ExecutionInformation info, uint id)
-		{
-			return PlayManager.Enqueue(info.Session.Client, id);
 		}
 
 		[Command(Admin, "history rename", "<id> <name> Sets the name of the song with <id> to <name>")]
@@ -666,11 +666,10 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "list clear")]
-		public string CommandListClear(ExecutionInformation info)
+		public void CommandListClear(ExecutionInformation info)
 		{
 			var plist = AutoGetPlaylist(info.Session);
 			plist.Clear();
-			return null;
 		}
 
 		[Command(Private, "list delete")]
@@ -767,6 +766,22 @@ namespace TS3AudioBot
 			return null;
 		}
 
+		[Command(Private, "list name")]
+		public string CommandListName(ExecutionInformation info, string name)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (string.IsNullOrEmpty(name))
+				return plist.Name;
+
+			var result = PlaylistManager.IsNameValid(name);
+			if (!result)
+				return result;
+
+			plist.Name = name;
+			return null;
+		}
+
 		[Command(Private, "list play")]
 		[RequiredParameters(0)]
 		public string CommandListPlay(ExecutionInformation info, int? index)
@@ -794,18 +809,6 @@ namespace TS3AudioBot
 			else return "Nothing to play...";
 		}
 
-		[Command(Private, "list save")]
-		public string CommandListSave(ExecutionInformation info)
-		{
-			var plist = AutoGetPlaylist(info.Session);
-
-			var sresult = PlaylistManager.SavePlaylist(plist);
-			if (sresult)
-				return "Ok";
-			else
-				return sresult.Message;
-		}
-
 		[Command(Private, "list remove")]
 		public string CommandListRemove(ExecutionInformation info, int index)
 		{
@@ -819,26 +822,44 @@ namespace TS3AudioBot
 			return "Removed: " + deletedItem.DisplayString;
 		}
 
-		[Command(Private, "list name")]
-		public string CommandListName(ExecutionInformation info, string name)
+		[Command(Private, "list save")]
+		[RequiredParameters(0)]
+		public string CommandListSave(ExecutionInformation info, string optNewName)
 		{
 			var plist = AutoGetPlaylist(info.Session);
+			if (!string.IsNullOrEmpty(optNewName))
+			{
+				var result = PlaylistManager.IsNameValid(optNewName);
+				if (!result)
+					return result;
+				plist.Name = optNewName;
+			}
 
-			if (string.IsNullOrEmpty(name))
-				return plist.Name;
-
-			if (!PlaylistManager.IsNameValid(name))
-				return "The new name is invalid please only use [a-zA-Z0-9 _-]";
-
-			plist.Name = name;
-			return null;
+			var sresult = PlaylistManager.SavePlaylist(plist);
+			if (sresult)
+				return "Ok";
+			else
+				return sresult.Message;
 		}
 
 		[Command(Private, "list show")]
 		[RequiredParameters(0)]
-		public string CommandListShow(ExecutionInformation info, int? offset) // todo: add show for not loaded list
+		public string CommandListShow(ExecutionInformation info, int? offset) => CommandListShow(info, null, offset);
+
+		[Command(Private, "list show")]
+		[RequiredParameters(0)]
+		public string CommandListShow(ExecutionInformation info, string name, int? offset)
 		{
-			var plist = AutoGetPlaylist(info.Session);
+			Playlist plist;
+			if (string.IsNullOrEmpty(name))
+			{
+				var result = PlaylistManager.LoadPlaylist(name);
+				if (!result)
+					return result.Message;
+				plist = result.Value;
+			}
+			else
+				plist = AutoGetPlaylist(info.Session);
 
 			var strb = new StringBuilder();
 			strb.Append($"Playlist: \"").Append(plist.Name).Append("\" with ").Append(plist.Count).AppendLine(" songs.");
@@ -849,8 +870,8 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
-		[Command(Private, "loop", "Sets whether or not to loop the entire playlist.")]
-		[Usage("(on|off)]", "on or off")]
+		[Command(Private, "loop", "Gets or sets whether or not to loop the entire playlist.")]
+		[Usage("[(on|off)]", "on or off")]
 		[RequiredParameters(0)]
 		public string CommandLoop(ExecutionInformation info, string parameter)
 		{
@@ -980,7 +1001,7 @@ namespace TS3AudioBot
 		}
 
 		[Command(Public, "quiz", "Enable to hide the songnames and let your friends guess the title.")]
-		[Usage("(on|off)]", "on or off")]
+		[Usage("[(on|off)]", "on or off")]
 		[RequiredParameters(0)]
 		public string CommandQuiz(ExecutionInformation info, string parameter)
 		{
@@ -1003,8 +1024,8 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "random", "Sets whether or not to play playlists in random order.")]
-		[Usage("(on|off)]", "on or off")]
+		[Command(Private, "random", "Gets or sets whether or not to play playlists in random order.")]
+		[Usage("[(on|off)]", "on or off")]
 		[RequiredParameters(0)]
 		public string CommandRandom(ExecutionInformation info, string parameter)
 		{
@@ -1019,8 +1040,8 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "repeat", "Sets whether or not to loop a single song.")]
-		[Usage("(on|off)]", "on or off")]
+		[Command(Private, "repeat", "Gets or sets whether or not to loop a single song.")]
+		[Usage("[(on|off)]", "on or off")]
 		[RequiredParameters(0)]
 		public string CommandRepeat(ExecutionInformation info, string parameter)
 		{

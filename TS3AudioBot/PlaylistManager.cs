@@ -41,10 +41,11 @@ namespace TS3AudioBot
 
 		private PlaylistManagerData data;
 		private static readonly Encoding FileEncoding = Encoding.ASCII;
+		private readonly Playlist freeList;
+		private readonly Playlist trashList;
 
 		private int indexCount = 0;
 		private IShuffleAlgorithm shuffle;
-		private Playlist freeList;
 		private int dataSetLength = -1;
 
 		public int Index
@@ -82,6 +83,7 @@ namespace TS3AudioBot
 			data = pmd;
 			shuffle = new LinearFeedbackShiftRegister();
 			freeList = new Playlist(string.Empty);
+			trashList = new Playlist(string.Empty);
 		}
 
 		public PlaylistItem Current() => NPMove(0);
@@ -139,20 +141,21 @@ namespace TS3AudioBot
 		}
 
 		public int AddToFreelist(PlaylistItem item) => freeList.AddItem(item);
+		public int AddToTrash(PlaylistItem item) => trashList.AddItem(item);
 
 		public int InsertToFreelist(PlaylistItem item) => freeList.InsertItem(item, Math.Min(Index + 1, freeList.Count));
 
 		/// <summary>Clears the current playlist</summary>
 		public void ClearFreelist() => freeList.Clear();
+		public void ClearTrash() => trashList.Clear();
 
 		public R<Playlist> LoadPlaylist(string name, bool headOnly = false)
 		{
 			if (name.StartsWith(".", StringComparison.Ordinal))
 			{
-				if (name == ".queue")
-					return freeList;
-				else
-					return "Unrecognized special list (Options: '.queue')";
+				var result = GetSpecialPlaylist(name);
+				if (result)
+					return result;
 			}
 			var fi = GetFileInfo(name);
 			if (!fi.Exists)
@@ -367,7 +370,14 @@ namespace TS3AudioBot
 			return plist;
 		}
 
-		public static bool IsNameValid(string name) => validPlistName.IsMatch(name) && name.Length < 32;
+		public static R IsNameValid(string name)
+		{
+			if (name.Length >= 32)
+				return "Length must be <32";
+			if (!validPlistName.IsMatch(name))
+				return "The new name is invalid please only use [a-zA-Z0-9 _-]";
+			return R.OkR;
+		}
 
 		public IEnumerable<string> GetAvailablePlaylists() => GetAvailablePlaylists(null);
 		public IEnumerable<string> GetAvailablePlaylists(string pattern)
@@ -383,6 +393,19 @@ namespace TS3AudioBot
 				fileEnu = di.EnumerateFiles(pattern, SearchOption.TopDirectoryOnly);
 
 			return fileEnu.Select(fi => fi.Name);
+		}
+
+		private R<Playlist> GetSpecialPlaylist(string name)
+		{
+			if (!name.StartsWith(".", StringComparison.Ordinal))
+				return "Not a reserved list type.";
+
+			switch (name)
+			{
+			case ".queue": return freeList;
+			case ".trash": return trashList;
+			default: return "Special list not found";
+			}
 		}
 
 		public void Dispose() { }

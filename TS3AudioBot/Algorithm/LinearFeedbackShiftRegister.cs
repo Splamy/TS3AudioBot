@@ -27,8 +27,8 @@ namespace TS3AudioBot.Algorithm
 		public int Length { get; private set; }
 		public int Index
 		{
-			get { return Util.MathMod(register + Seed, Length); }
-			set { register = Util.MathMod(value - Seed, Length); }
+			get { return Length > 0 ? Util.MathMod(register + Seed, Length) : -1; }
+			set { if (Length > 0) register = Util.MathMod(value - Seed, Length); }
 		}
 
 		public void Set(int seed, int length)
