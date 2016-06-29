@@ -26,13 +26,14 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
 	{
-		private MainBot bot;
+		private const string playResourcePath = "from";
+		private CommandManager commandManager;
 		public IResourceFactory DefaultFactorty { get; internal set; }
 		private IList<IResourceFactory> factories;
 
 		public ResourceFactoryManager(MainBot parent)
 		{
-			bot = parent;
+			commandManager = parent.CommandManager;
 			factories = new List<IResourceFactory>();
 		}
 
@@ -105,66 +106,9 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			factories.Add(factory);
 
-			// will represent:
-			//(info, parameter) => info.Session.Bot.PlayManager.Play(info.Session.Client, parameter, factory.FactoryFor)
-			DynamicMethod dynLog = new DynamicMethod(
-				"CommandFrom_" + factory.SubCommandName,
-				MethodAttributes.Static | MethodAttributes.Public,
-				CallingConventions.Standard,
-				typeof(void),
-				new[] { typeof(ExecutionInformation), typeof(string) },
-				typeof(ResourceFactoryManager).Module,
-				false);
-
-			var ilGen = dynLog.GetILGenerator();
-			// prepare call
-			ilGen.Emit(OpCodes.Ldarg_0);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(ExecutionInformation).GetProperty(nameof(ExecutionInformation.Session)).GetMethod, null);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(UserSession).GetProperty(nameof(UserSession.Bot)).GetMethod, null);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(MainBot).GetProperty(nameof(MainBot.PlaylistManager)).GetMethod, null);
-			// param 0
-			ilGen.Emit(OpCodes.Ldarg_0);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(ExecutionInformation).GetProperty(nameof(ExecutionInformation.Session)).GetMethod, null);
-			ilGen.EmitCall(OpCodes.Callvirt, typeof(UserSession).GetProperty(nameof(UserSession.ClientCached)).GetMethod, null);
-			// param 1
-			ilGen.Emit(OpCodes.Ldarg_1);
-			// param 2
-			ilGen.Emit(OpCodes.Ldc_I4, (int)factory.FactoryFor);
-			ilGen.Emit(OpCodes.Newobj, typeof(AudioType?).GetConstructor(new[] { typeof(AudioType) }));
-			// param 3
-			ilGen.Emit(OpCodes.Ldnull);
-			// final call
-			ilGen.EmitCall(
-				OpCodes.Callvirt,
-				typeof(PlayManager).GetMethod(
-					nameof(PlayManager.Play),
-					new Type[] { typeof(ClientData), typeof(string), typeof(AudioType?), typeof(MetaData) }),
-				null);
-			ilGen.Emit(OpCodes.Pop);
-			ilGen.Emit(OpCodes.Ret);
-
-			var deleg = dynLog.CreateDelegate(typeof(Action<ExecutionInformation, string>));
-
-			//var cd = Generator.ActivateResponse<ClientData>();
-			//cd.ClientId = 42;
-
-			//dynLog.Invoke(null, new object[] {
-			//	new ExecutionInformation(
-			//		new UserSession(
-			//			bot,
-			//			cd),
-			//		null,
-			//		null),
-			//	"blaa" });
-
-			bot.CommandManager.RegisterCommand(
-				new CommandBuildInfo(
-					null,
-					dynLog,
-					new CommandAttribute(CommandRights.Private, "from " + factory.SubCommandName),
-					null
-				)
-			);
+			// register factory command node
+			var playCommand = new PlayCommand(factory.SubCommandName, factory.FactoryFor);
+			commandManager.RegisterCommand(playCommand.Command);
 		}
 
 		public string RestoreLink(AudioResource res)
@@ -177,6 +121,29 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			foreach (var fac in factories)
 				fac.Dispose();
+		}
+
+		sealed class PlayCommand
+		{
+			public BotCommand Command { get; }
+			private AudioType audioType;
+			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
+
+			public PlayCommand(string name, AudioType audioType)
+			{
+				this.audioType = audioType;
+				var builder = new CommandBuildInfo(
+					this,
+					playMethod,
+					new CommandAttribute(CommandRights.Private, playResourcePath + " " + name),
+					null);
+				Command = new BotCommand(builder);
+			}
+
+			public string PropagiatePlay(ExecutionInformation info, string parameter)
+			{
+				return info.Session.Bot.PlayManager.Play(info.Session.Client, parameter, audioType);
+			}
 		}
 	}
 }

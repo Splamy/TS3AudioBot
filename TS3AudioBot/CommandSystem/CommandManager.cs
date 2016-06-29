@@ -72,11 +72,10 @@ namespace TS3AudioBot.CommandSystem
 			BaseCommands = comList.AsReadOnly();
 		}
 
-		public void RegisterCommand(CommandBuildInfo buildInfo)
+		public void RegisterCommand(BotCommand command)
 		{
-			var com = new BotCommand(buildInfo);
-			LoadCommand(com);
-			dynamicCommands.Add(com);
+			LoadCommand(command);
+			dynamicCommands.Add(command);
 		}
 
 		public void RegisterPlugin(Plugin plugin)

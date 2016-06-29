@@ -345,9 +345,6 @@ namespace TS3AudioBot
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
-		[Command(Private, "from dummy", "Removes all songs from the current playlist.")]
-		public void CommandFrom() { }
-
 		[Command(Admin, "getuser id", "Gets the unique Id of a user.")]
 		[Usage("<username>", "A user which is currently logged in to the server")]
 		public string CommandGetUserId(string parameter)
@@ -855,7 +852,7 @@ namespace TS3AudioBot
 		public string CommandListShow(ExecutionInformation info, string name, int? offset)
 		{
 			Playlist plist;
-			if (string.IsNullOrEmpty(name))
+			if (!string.IsNullOrEmpty(name))
 			{
 				var result = PlaylistManager.LoadPlaylist(name);
 				if (!result)
@@ -888,12 +885,6 @@ namespace TS3AudioBot
 			else
 				return CommandHelp(info, "loop");
 			return null;
-		}
-
-		[Command(Private, "media", "Plays any local or online media file.")]
-		public string CommandMedia(ExecutionInformation info, string parameter)
-		{
-			return PlayManager.Play(info.Session.Client, parameter, AudioType.MediaLink);
 		}
 
 		[Command(Private, "next", "Plays the next song in the playlist.")]
@@ -1124,12 +1115,6 @@ namespace TS3AudioBot
 				return $"[url={FactoryManager.RestoreLink(PlayManager.CurrentPlayData.ResourceData)}]{PlayManager.CurrentPlayData.ResourceData.ResourceTitle}[/url]";
 		}
 
-		[Command(Private, "soundcloud", "Resolves the link as a soundcloud song to play it for you.")]
-		public string CommandSoundcloud(ExecutionInformation info, string parameter)
-		{
-			return PlayManager.Play(info.Session.Client, parameter, AudioType.Soundcloud);
-		}
-
 		[Command(Private, "stop", "Stops the current song.")]
 		public void CommandStop()
 		{
@@ -1210,12 +1195,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Private, "twitch", "Resolves the link as a twitch stream to play it for you.")]
-		public string CommandTwitch(ExecutionInformation info, string parameter)
-		{
-			return PlayManager.Play(info.Session.Client, parameter, AudioType.Twitch);
-		}
-
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
 		public void CommandUnsubscribe(ExecutionInformation info)
 		{
@@ -1250,12 +1229,6 @@ namespace TS3AudioBot
 				return "Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)";
 			}
 			return null;
-		}
-
-		[Command(Private, "youtube", "Resolves the link as a youtube video to play it for you.")]
-		public string CommandYoutube(ExecutionInformation info, string parameter)
-		{
-			return PlayManager.Play(info.Session.Client, parameter, AudioType.Youtube);
 		}
 
 		#endregion
