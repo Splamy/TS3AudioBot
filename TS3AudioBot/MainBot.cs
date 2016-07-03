@@ -118,6 +118,7 @@ namespace TS3AudioBot
 			var hmd = cfgFile.GetDataStruct<HistoryManagerData>(typeof(HistoryManager), true);
 			var pmd = cfgFile.GetDataStruct<PluginManagerData>(typeof(PluginManager), true);
 			var pld = cfgFile.GetDataStruct<PlaylistManagerData>(typeof(PlaylistManager), true);
+			var yfd = cfgFile.GetDataStruct<YoutubeFactoryData>(typeof(YoutubeFactory), true);
 			mainBotData = cfgFile.GetDataStruct<MainBotData>(typeof(MainBot), true);
 			cfgFile.Close();
 
@@ -155,7 +156,7 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
-			PlaylistManager = new PlaylistManager(pld);
+			PlaylistManager = new PlaylistManager(this, pld);
 			BobController = new BobController(bcd, QueryConnection);
 			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
@@ -168,9 +169,11 @@ namespace TS3AudioBot
 			FactoryManager = new ResourceFactoryManager(this);
 			FactoryManager.DefaultFactorty = new MediaFactory(); // TODO: nicer
 			FactoryManager.AddFactory(FactoryManager.DefaultFactorty);
-			FactoryManager.AddFactory(new YoutubeFactory());
+			var youtubeFactory = new YoutubeFactory(yfd);
+			FactoryManager.AddFactory(youtubeFactory);
 			FactoryManager.AddFactory(new SoundcloudFactory());
 			FactoryManager.AddFactory(new TwitchFactory());
+			PlaylistManager.AddFactory(youtubeFactory);
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
 			AudioFramework.OnResourceStopped += PlayManager.SongStoppedHook;
@@ -694,6 +697,19 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(Private, "list get")]
+		public string CommandListGet(ExecutionInformation info, string link)
+		{
+			var result = info.Session.Bot.PlaylistManager.LoadPlaylistFrom(link);
+
+			if (!result)
+				return result;
+
+			result.Value.CreatorDbId = info.Session.ClientCached.DatabaseId;
+			info.Session.Set<PlaylistManager, Playlist>(result.Value);
+			return "Ok";
+		}
+
 		[Command(Private, "list list")]
 		[RequiredParameters(0)]
 		public string CommandListList(ExecutionInformation info, string pattern)
@@ -732,6 +748,7 @@ namespace TS3AudioBot
 			{
 				loadList.Clear();
 				loadList.AddRange(result.Value.AsEnumerable());
+				loadList.Name = result.Value.Name;
 				return $"Loaded: \"{name}\" with {loadList.Count} songs";
 			}
 		}

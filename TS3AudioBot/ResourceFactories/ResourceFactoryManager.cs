@@ -29,12 +29,12 @@ namespace TS3AudioBot.ResourceFactories
 		private const string playResourcePath = "from";
 		private CommandManager commandManager;
 		public IResourceFactory DefaultFactorty { get; internal set; }
-		private IList<IResourceFactory> factories;
+		private List<IResourceFactory> factories;
 
 		public ResourceFactoryManager(MainBot parent)
 		{
 			commandManager = parent.CommandManager;
-			factories = new List<IResourceFactory>();
+			Util.Init(ref factories);
 		}
 
 		// Load lookup stages
@@ -78,7 +78,7 @@ namespace TS3AudioBot.ResourceFactories
 			IResourceFactory factory;
 			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
 
-			if (audioType != null)
+			if (audioType.HasValue)
 				factory = GetFactoryFor(audioType.Value);
 			else
 				factory = GetFactoryFor(netlinkurl);

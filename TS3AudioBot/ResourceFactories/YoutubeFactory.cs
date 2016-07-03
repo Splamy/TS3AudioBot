@@ -17,6 +17,7 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using System;
+	using System.Linq;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
 	using System.Globalization;
@@ -24,18 +25,27 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Text.RegularExpressions;
 	using System.Web;
 	using Helper;
+	using System.Xml;
 
-	public sealed class YoutubeFactory : IResourceFactory
+	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
 	{
-		private Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		private Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex listMatch = new Regex(@"(&|\?)list=([\w-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 		public string SubCommandName => "youtube";
 		public AudioType FactoryFor => AudioType.Youtube;
 
-		public YoutubeFactory() { }
+		private YoutubeFactoryData data;
 
-		public bool MatchLink(string link) => linkMatch.IsMatch(link);
+		public YoutubeFactory(YoutubeFactoryData yfd)
+		{
+			data = yfd;
+		}
+
+		public bool MatchLink(string link) => linkMatch.IsMatch(link) || listMatch.IsMatch(link);
+		bool IResourceFactory.MatchLink(string link) => linkMatch.IsMatch(link);
+		bool IPlaylistFactory.MatchLink(string link) => listMatch.IsMatch(link);
 
 		public R<PlayResource> GetResource(string ytLink)
 		{
@@ -203,8 +213,96 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
+		public R<Playlist> GetPlaylist(string url)
+		{
+			const bool loadLength = false;
+
+			Match matchYtId = listMatch.Match(url);
+			if (!matchYtId.Success)
+				return "Could not extract a playlist id";
+
+			string id = matchYtId.Groups[2].Value;
+			var plist = new Playlist(id);
+			
+			string nextToken = null;
+			do
+			{
+				var queryString =
+					new Uri("https://www.googleapis.com/youtube/v3/playlistItems"
+							+ "?part=contentDetails,snippet"
+							+ "&maxResults=50"
+							+ "&playlistId=" + id
+							+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
+							+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
+							+ "&key=" + data.apiKey);
+
+				string response;
+				if (!WebWrapper.DownloadString(out response, queryString))
+					return "Web response error";
+				var parsed = Util.Serializer.Deserialize<JSON_PlaylistItems>(response);
+				var videoItems = parsed.items;
+				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoItems.Length];
+				for (int i = 0; i < videoItems.Length; i++)
+				{
+					itemBuffer[i] = new YoutubePlaylistItem(new AudioResource(
+							videoItems[i].contentDetails.videoId,
+							videoItems[i].snippet.title,
+							AudioType.Youtube));
+				}
+
+				if (loadLength)
+				{
+					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.apiKey}");
+					if (!WebWrapper.DownloadString(out response, queryString))
+						return "Web response error";
+					var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
+					var videoDicts = ((object[])parsedTime["items"]).Cast<Dictionary<string, object>>().ToArray();
+					for (int i = 0; i < videoDicts.Length; i++)
+						itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
+				}
+
+				plist.AddRange(itemBuffer);
+
+				nextToken = parsed.nextPageToken;
+			} while (nextToken != null);
+
+			return plist;
+		}
+
 		public void Dispose() { }
+
+#pragma warning disable CS0649
+		class JSON_PlaylistItems
+		{
+			public string nextPageToken;
+			public Item[] items;
+
+			public class Item
+			{
+				public ContentDetails contentDetails;
+				public Snippet snippet;
+
+				public class ContentDetails
+				{
+					public string videoId;
+				}
+
+				public class Snippet
+				{
+					public string title;
+				}
+			}
+		}
+#pragma warning restore CS0649
 	}
+
+#pragma warning disable CS0649
+	public struct YoutubeFactoryData
+	{
+		[Info("a youtube apiv3 'Browser' type key")]
+		public string apiKey;
+	}
+#pragma warning restore CS0649
 
 	public sealed class VideoData
 	{
