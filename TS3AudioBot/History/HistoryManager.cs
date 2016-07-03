@@ -34,6 +34,7 @@ namespace TS3AudioBot.History
 		{
 			Formatter = new SmartHistoryFormatter();
 			historyFile = new HistoryFile();
+			historyFile.ReuseUnusedIds = hmd.fillDeletedIds;
 			historyFile.OpenFile(hmd.historyFile);
 		}
 
@@ -192,5 +193,7 @@ namespace TS3AudioBot.History
 	{
 		[Info("the absolute or relative path to the history database file")]
 		public string historyFile;
+		[Info("wether or not deleted history ids should be filled up with new songs")]
+		public bool fillDeletedIds;
 	}
 }

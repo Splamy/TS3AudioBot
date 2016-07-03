@@ -33,8 +33,10 @@ namespace TS3AudioBot.History
 		private ISubstringSearch<AudioLogEntry> titleFilter;
 		private IDictionary<uint, IList<AudioLogEntry>> userIdFilter;
 		private SortedList<DateTime, AudioLogEntry> timeFilter;
+		private LinkedList<uint> unusedIds;
 
 		public uint CurrentID { get; private set; } = 0;
+		public bool ReuseUnusedIds { get; set; }
 
 		private readonly IList<AudioLogEntry> noResult = new List<AudioLogEntry>().AsReadOnly();
 
@@ -55,6 +57,7 @@ namespace TS3AudioBot.History
 			titleFilter = new SimpleSubstringFinder<AudioLogEntry>();
 			userIdFilter = new SortedList<uint, IList<AudioLogEntry>>();
 			timeFilter = new SortedList<DateTime, AudioLogEntry>();
+			unusedIds = new LinkedList<uint>();
 		}
 
 		public void OpenFile(string path)
@@ -148,6 +151,13 @@ namespace TS3AudioBot.History
 					}
 				}
 				readIndex = fileReader.ReadPosition;
+			}
+
+			// fill up unused-id list
+			for(uint i = 0; i < CurrentID; i++)
+			{
+				if (GetEntryById(i) == null)
+					unusedIds.AddLast(i);
 			}
 		}
 
@@ -341,13 +351,25 @@ namespace TS3AudioBot.History
 		{
 			if (string.IsNullOrWhiteSpace(saveData.Resource.ResourceTitle))
 				return null;
-			var ale = new AudioLogEntry(CurrentID, saveData.Resource)
+
+			uint nextHid;
+			if (ReuseUnusedIds && unusedIds.Any())
+			{
+				nextHid = unusedIds.First.Value;
+				unusedIds.RemoveFirst();
+			}
+			else
+			{
+				nextHid = CurrentID;
+				CurrentID++;
+			}
+
+			var ale = new AudioLogEntry(nextHid, saveData.Resource)
 			{
 				UserInvokeId = (uint)saveData.OwnerDbId,
 				Timestamp = Util.GetNow(),
 				PlayCount = 1,
 			};
-			CurrentID++;
 
 			return ale;
 		}
@@ -422,6 +444,7 @@ namespace TS3AudioBot.History
 			titleFilter.RemoveValue(logEntry);
 			userIdFilter[logEntry.UserInvokeId].Remove(logEntry);
 			timeFilter.Remove(logEntry.Timestamp);
+			unusedIds.AddLast(logEntry.Id);
 		}
 
 		private static void AutoAdd(IDictionary<uint, IList<AudioLogEntry>> dict, AudioLogEntry value)
@@ -442,6 +465,7 @@ namespace TS3AudioBot.History
 			titleFilter.Clear();
 			userIdFilter.Clear();
 			timeFilter.Clear();
+			unusedIds.Clear();
 
 			CurrentID = 0;
 		}
