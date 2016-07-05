@@ -149,5 +149,54 @@ namespace TS3AudioBot.Helper
 		}
 
 		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
+
+		private static long Pow(long b, int pow)
+		{
+			long ret = 1;
+			while (pow != 0)
+			{
+				if ((pow & 1) == 1)
+					ret *= b;
+				b *= b;
+				pow >>= 1;
+			}
+			return ret;
+		}
+
+		public static string FromSeed(int seed)
+		{
+			char[] seedstr = new char[7];
+			uint plainseed = unchecked((uint)seed);
+			for (int i = 0; i < 7; i++)
+			{
+				if (plainseed > 26)
+				{
+					seedstr[i] = (char)((plainseed % 26) + 'a' - 1);
+					plainseed /= 26;
+				}
+				else if (plainseed > 0)
+				{
+					seedstr[i] = (char)(plainseed + 'a' - 1);
+					plainseed = 0;
+				}
+				else
+					seedstr[i] = '\0';
+			}
+			return new string(seedstr).TrimEnd('\0');
+		}
+
+		public static int ToSeed(string seed)
+		{
+			long finalValue = 0;
+
+			for (int i = 0; i < seed.Length; i++)
+			{
+				long powVal = (seed[i] - 'a' + 1) * Pow(26, i % 7);
+				finalValue += powVal;
+				finalValue %= ((long)uint.MaxValue + 1);
+			}
+			uint uval = (uint)finalValue;
+			return unchecked((int)uval);
+		}
 	}
 }

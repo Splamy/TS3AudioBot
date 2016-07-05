@@ -21,22 +21,26 @@ namespace TS3AudioBot.Algorithm
 
 	public class LinearFeedbackShiftRegister : IShuffleAlgorithm
 	{
-		private int register = 1;
+		private int register = 1; // aka index
 		private int mask = 0;
-		public int Seed { get; private set; }
-		public int Length { get; private set; }
+		private int seed;
+		private int length;
+		private bool needsRefresh = true;
+
+		public int Seed { get { return seed; } set { needsRefresh = true; seed = value; } }
+		public int Length { get { return length; } set { needsRefresh = true; length = value; } }
 		public int Index
 		{
-			get { return Length > 0 ? Util.MathMod(register + Seed, Length) : -1; }
-			set { if (Length > 0) register = Util.MathMod(value - Seed, Length); }
+			get { if (Length <= 0) return -1; return Util.MathMod(register + Seed, Length); }
+			set { if (Length <= 0) return; Recalc(); register = Util.MathMod(value - Seed, Length); }
 		}
 
-		public void Set(int seed, int length)
+		private void Recalc()
 		{
-			if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length));
+			if (!needsRefresh) return;
+			needsRefresh = false;
 
-			Seed = seed;
-			Length = length;
+			if (Length <= 0) return;
 			register = (register % Length) + 1;
 
 			// get the highest set bit (+1) to hold at least all values with a power of 2
@@ -47,6 +51,8 @@ namespace TS3AudioBot.Algorithm
 
 		public void Next()
 		{
+			if (Length <= 0) return;
+			Recalc();
 			do
 			{
 				register = NextOf(register);
@@ -55,6 +61,8 @@ namespace TS3AudioBot.Algorithm
 
 		public void Prev()
 		{
+			if (Length <= 0) return;
+			Recalc();
 			for (int i = 0; i < Length; i++)
 				if (NextOf(i) == register)
 				{

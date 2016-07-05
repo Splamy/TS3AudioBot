@@ -24,41 +24,50 @@ namespace TS3AudioBot.Algorithm
 	{
 		private int[] permutation;
 
+		private bool needsRecalc = true;
 		private int index = 0;
 		private int seed = 0;
 		private int length = 0;
 
-		public int Seed => seed;
-		public int Length => length;
+		public int Seed
+		{
+			get { return seed; }
+			set { needsRecalc = true; seed = value; }
+		}
+		public int Length
+		{
+			get { return length; }
+			set { needsRecalc = true; length = value; }
+		}
 		public int Index
 		{
-			get { return Length > 0 ? permutation[index] : -1; }
+			get
+			{
+				if (Length <= 0) return -1;
+				GenList();
+				return permutation[index];
+			}
 			set
 			{
 				if (Length <= 0) return;
-				if (value >= permutation.Length) throw new ArgumentOutOfRangeException(nameof(value));
-				index = Array.IndexOf(permutation, value);
+				GenList();
+				index = Array.IndexOf(permutation, Util.MathMod(value, permutation.Length));
 			}
-		}
-
-		public void Set(int seed, int length)
-		{
-			if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length));
-
-			this.seed = seed;
-			this.length = length;
-			index %= length;
-
-			GenList();
 		}
 
 		private void GenList()
 		{
+			if (!needsRecalc) return;
+			needsRecalc = false;
+
+			if (Length <= 0) return;
+
 			Random rngeesus = new Random(seed);
 			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(x => rngeesus.Next()).ToArray();
+			index %= Length;
 		}
 
-		public void Next() => index = (index + 1) % permutation.Length;
-		public void Prev() => index = (index - 1) % permutation.Length;
+		public void Next() { if (Length <= 0) return; GenList(); index = (index + 1) % permutation.Length; }
+		public void Prev() { if (Length <= 0) return; GenList(); index = (index - 1) % permutation.Length; }
 	}
 }

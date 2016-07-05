@@ -50,7 +50,7 @@ namespace TS3AudioBot
 
 		public int Index
 		{
-			get { return Random ? (shuffle.Length > 0 ? shuffle.Index : 0) : indexCount; }
+			get { return Random ? shuffle.Index : indexCount; }
 			set
 			{
 				if (Random)
@@ -75,6 +75,11 @@ namespace TS3AudioBot
 				else indexCount = shuffle.Index;
 			}
 		}
+		public int Seed
+		{
+			get { return shuffle.Seed; }
+			set { shuffle.Seed = value; }
+		}
 		/// <summary>Loop state for the entire playlist.</summary>
 		public bool Loop { get; set; }
 
@@ -87,6 +92,7 @@ namespace TS3AudioBot
 		{
 			data = pmd;
 			shuffle = new LinearFeedbackShiftRegister();
+			shuffle.Seed = Util.RngInstance.Next();
 			freeList = new Playlist(string.Empty);
 			trashList = new Playlist(string.Empty);
 
@@ -119,12 +125,13 @@ namespace TS3AudioBot
 				if (dataSetLength != freeList.Count)
 				{
 					dataSetLength = freeList.Count;
-					shuffle.Set(Util.RngInstance.Next(), dataSetLength);
+					shuffle.Length = dataSetLength;
 				}
 				if (off > 0) shuffle.Next();
 				if (off < 0) shuffle.Prev();
 			}
 
+			if (Index < 0) return null;
 			var entry = freeList.GetResource(Index);
 			if (entry == null) return null;
 			entry.Meta.FromPlaylist = true;

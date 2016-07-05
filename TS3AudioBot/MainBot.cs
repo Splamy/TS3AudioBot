@@ -1036,21 +1036,28 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "random", "Gets or sets whether or not to play playlists in random order.")]
-		[Usage("[(on|off)]", "on or off")]
-		[RequiredParameters(0)]
-		public string CommandRandom(ExecutionInformation info, string parameter)
+		[Command(Private, "random", "Gets whether or not to play playlists in random order.")]
+		public string CommandRandom() => "Random is " + (PlaylistManager.Random ? "on" : "off");
+		[Command(Private, "random on", "Enables random playlist playback")]
+		public void CommandRandomOn() => PlaylistManager.Random = true;
+		[Command(Private, "random off", "Disables random playlist playback")]
+		public void CommandRandomOff() => PlaylistManager.Random = false;
+		[Command(Private, "random seed", "Gets the unique seed for a certain playback order")]
+		public string CommandRandomSeed()
 		{
-			if (string.IsNullOrEmpty(parameter))
-				return "Random is " + (PlaylistManager.Random ? "on" : "off");
-			else if (parameter == "on")
-				PlaylistManager.Random = true;
-			else if (parameter == "off")
-				PlaylistManager.Random = false;
-			else
-				return CommandHelp(info, "random");
+			string seed = Util.FromSeed(PlaylistManager.Seed);
+			return string.IsNullOrEmpty(seed) ? "<empty>" : seed;
+		}
+		[Command(Private, "random seed", "Sets the unique seed for a certain playback order")]
+		public string CommandRandomSeed(string newSeed)
+		{
+			if (newSeed.Any(c => !char.IsLetter(c)))
+				return "Only letter allowed";
+			PlaylistManager.Seed = Util.ToSeed(newSeed.ToLowerInvariant());
 			return null;
 		}
+		[Command(Private, "random seed", "Sets the unique seed for a certain playback order")]
+		public void CommandRandomSeed(int newSeed) => PlaylistManager.Seed = newSeed;
 
 		[Command(Private, "repeat", "Gets or sets whether or not to loop a single song.")]
 		[Usage("[(on|off)]", "on or off")]

@@ -379,7 +379,8 @@ namespace TS3ABotUnitTests
 			{
 				BitArray checkNumbers = new BitArray(i, false);
 
-				algo.Set(i, i);
+				algo.Length = i;
+				algo.Seed = i;
 
 				for (int j = 0; j < i; j++)
 				{
