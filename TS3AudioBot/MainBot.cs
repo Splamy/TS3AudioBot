@@ -156,7 +156,7 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
-			PlaylistManager = new PlaylistManager(this, pld);
+			PlaylistManager = new PlaylistManager(pld);
 			BobController = new BobController(bcd, QueryConnection);
 			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
@@ -166,14 +166,17 @@ namespace TS3AudioBot
 			WebInterface = new WebDisplay(this);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
-			FactoryManager = new ResourceFactoryManager(this);
+			FactoryManager = new ResourceFactoryManager();
 			FactoryManager.DefaultFactorty = new MediaFactory(); // TODO: nicer
 			FactoryManager.AddFactory(FactoryManager.DefaultFactorty);
 			var youtubeFactory = new YoutubeFactory(yfd);
 			FactoryManager.AddFactory(youtubeFactory);
 			FactoryManager.AddFactory(new SoundcloudFactory());
 			FactoryManager.AddFactory(new TwitchFactory());
+			CommandManager.RegisterCommand(FactoryManager.CommandNode, "from");
+
 			PlaylistManager.AddFactory(youtubeFactory);
+			CommandManager.RegisterCommand(PlaylistManager.CommandNode, "list from");
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
 			AudioFramework.OnResourceStopped += PlayManager.SongStoppedHook;
@@ -806,19 +809,15 @@ namespace TS3AudioBot
 		{
 			var plist = AutoGetPlaylist(info.Session);
 
-			PlaylistItem item = null;
-			if (!index.HasValue || index.Value == 0)
+			if (!index.HasValue
+				|| (index.HasValue && index.Value >= 0 && index.Value < plist.Count))
 			{
 				PlaylistManager.PlayFreelist(plist);
-				item = PlaylistManager.Current();
-			}
-			else if (index >= 0 && index < plist.Count)
-			{
-				PlaylistManager.PlayFreelist(plist);
-				item = PlaylistManager.Current();
+				PlaylistManager.Index = index.Value;
 			}
 			else return "Invalid starting index";
 
+			PlaylistItem item = PlaylistManager.Current();
 			if (item != null)
 			{
 				PlayManager.Play(info.Session.Client, item);

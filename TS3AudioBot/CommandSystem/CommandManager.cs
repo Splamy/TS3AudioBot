@@ -47,7 +47,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		private static readonly Regex CommandNamespaceValidator = new Regex(@"^[a-z]+( [a-z]+)*$", RegexOptions.Compiled);
+		private static readonly Regex CommandNamespaceValidator = new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
 		public CommandManager()
 		{
@@ -76,6 +76,12 @@ namespace TS3AudioBot.CommandSystem
 		{
 			LoadCommand(command);
 			dynamicCommands.Add(command);
+		}
+
+		internal void RegisterCommand(ICommand command, string path)
+		{
+			LoadICommand(command, path);
+			// TODO: add BotCommand (tree-)scan
 		}
 
 		public void RegisterPlugin(Plugin plugin)
@@ -157,21 +163,37 @@ namespace TS3AudioBot.CommandSystem
 				throw new InvalidOperationException("Command already exists: " + com.InvokeName);
 			CommandPaths.Add(com.FullQualifiedName);
 
-			var comPath = com.InvokeName.Split(' ');
+			LoadICommand(com, com.InvokeName);
+		}
 
+		private void LoadICommand(ICommand com, string path)
+		{
+			string[] comPath = path.Split(' ');
+
+			var buildResult = BuildAndGet(comPath.Take(comPath.Length - 1));
+			if (!buildResult)
+				GenerateError(buildResult.Message, com as BotCommand);
+
+			var result = InsertInto(buildResult.Value, com, comPath.Last());
+			if (!result)
+				GenerateError(result.Message, com as BotCommand);
+		}
+
+		private R<CommandGroup> BuildAndGet(IEnumerable<string> comPath)
+		{
 			CommandGroup group = CommandSystem.RootCommand;
 			// this for loop iterates through the seperate names of
 			// the command to be added.
-			for (int i = 0; i < comPath.Length - 1; i++)
+			foreach (var comPathPart in comPath)
 			{
-				ICommand currentCommand = group.GetCommand(comPath[i]);
+				ICommand currentCommand = group.GetCommand(comPathPart);
 
 				// if a group to hold the next level command doesn't exist
 				// it will be created here
 				if (currentCommand == null)
 				{
 					var nextGroup = new CommandGroup();
-					group.AddCommand(comPath[i], nextGroup);
+					group.AddCommand(comPathPart, nextGroup);
 					group = nextGroup;
 				}
 				// if the group already exists we can take it.
@@ -184,42 +206,28 @@ namespace TS3AudioBot.CommandSystem
 				else if (currentCommand is FunctionCommand)
 				{
 					var subGroup = new CommandGroup();
-					group.RemoveCommand(comPath[i]);
-					group.AddCommand(comPath[i], subGroup);
-
-					var botCom = currentCommand as BotCommand;
-					if (botCom != null && botCom.NormalParameters > 0)
-						Log.Write(Log.Level.Warning, "\"{0}\" has at least one parameter and won't be reachable due to an overloading function.", botCom.InvokeName);
-					subGroup.AddCommand(string.Empty, currentCommand);
+					group.RemoveCommand(comPathPart);
+					group.AddCommand(comPathPart, subGroup);
+					if (!InsertInto(group, currentCommand, comPathPart))
+						throw new InvalidOperationException("Unexpected group error");
 					group = subGroup;
 				}
 				else
-					throw new InvalidOperationException("An overloaded command cannot be replaced by a CommandGroup: " + com.InvokeName);
+					return "An overloaded command cannot be replaced by a CommandGroup";
 			}
 
-			ICommand subCommand = group.GetCommand(comPath.Last());
+			return group;
+		}
+
+		private R InsertInto(CommandGroup group, ICommand com, string name)
+		{
+			ICommand subCommand = group.GetCommand(name);
 			// the group we are trying to insert has no element with the current
 			// name, so just insert it
 			if (subCommand == null)
 			{
-				group.AddCommand(comPath.Last(), com);
-				return;
-			}
-			// if we have a simple function, we need to create a overlaoder
-			// and then add both functions to it
-			else if (subCommand is FunctionCommand)
-			{
-				group.RemoveCommand(comPath.Last());
-				var overloader = new OverloadedFunctionCommand();
-				overloader.AddCommand((FunctionCommand)subCommand);
-				overloader.AddCommand(com);
-				group.AddCommand(comPath.Last(), overloader);
-			}
-			// if we have a overloaded function, we can simply add it
-			else if (subCommand is OverloadedFunctionCommand)
-			{
-				var insertCommand = (OverloadedFunctionCommand)subCommand;
-				insertCommand.AddCommand(com);
+				group.AddCommand(name, com);
+				return R.OkR;
 			}
 			// to add a command to CommandGroup will have to treat it as a subcommand
 			// with an empty string as a name
@@ -231,14 +239,47 @@ namespace TS3AudioBot.CommandSystem
 				if (noparamCommand == null)
 				{
 					insertCommand.AddCommand(string.Empty, com);
-					if (com.NormalParameters > 0)
-						Log.Write(Log.Level.Warning, "parameter of an empty named function under a group will be ignored!!");
+					var botCom = com as BotCommand;
+					if (botCom != null && botCom.NormalParameters > 0)
+						Log.Write(Log.Level.Warning, $"\"{botCom.FullQualifiedName}\" has at least one parameter and won't be reachable due to an overloading function.");
+					return R.OkR;
 				}
 				else
-					throw new InvalidOperationException("An empty named function under a group cannot be overloaded (" + com.InvokeName + ")");
+					return "An empty named function under a group cannot be overloaded.";
+			}
+
+			FunctionCommand funcCom = com as FunctionCommand;
+			if (funcCom == null)
+				return $"The command cannot be inserted into a complex node ({name}).";
+
+			// if we have is a simple function, we need to create a overlaoder
+			// and then add both functions to it
+			if (subCommand is FunctionCommand)
+			{
+				group.RemoveCommand(name);
+				var overloader = new OverloadedFunctionCommand();
+				overloader.AddCommand((FunctionCommand)subCommand);
+				overloader.AddCommand(funcCom);
+				group.AddCommand(name, overloader);
+			}
+			// if we have a overloaded function, we can simply add it
+			else if (subCommand is OverloadedFunctionCommand)
+			{
+				var insertCommand = (OverloadedFunctionCommand)subCommand;
+				insertCommand.AddCommand(funcCom);
 			}
 			else
-				throw new InvalidOperationException("Unknown insertion error with " + com.FullQualifiedName);
+				return "Unknown node to insert to.";
+
+			return R.OkR;
+		}
+
+		private void GenerateError(string msg, BotCommand involvedCom)
+		{
+			throw new InvalidOperationException(
+					$@"Command error path: {involvedCom?.InvokeName}
+					Command: {involvedCom?.FullQualifiedName}
+					Error: {msg}");
 		}
 
 		private void UnloadCommand(BotCommand com)

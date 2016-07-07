@@ -29,9 +29,9 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
 	{
-		private static readonly Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		private static readonly Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		private static readonly Regex listMatch = new Regex(@"(&|\?)list=([\w-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);
+		private static readonly Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
+		private static readonly Regex listMatch = new Regex(@"(&|\?)list=([\w-]+)", Util.DefaultRegexConfig);
 
 		public string SubCommandName => "youtube";
 		public AudioType FactoryFor => AudioType.Youtube;

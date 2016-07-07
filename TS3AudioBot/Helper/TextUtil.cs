@@ -44,7 +44,7 @@ namespace TS3AudioBot.Helper
 				return Answer.Unknown;
 		}
 
-		private static readonly Regex bbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex bbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", Util.DefaultRegexConfig);
 		public static string ExtractUrlFromBB(string ts3link)
 		{
 			if (ts3link.Contains("[URL]"))

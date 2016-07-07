@@ -31,7 +31,7 @@ namespace TS3AudioBot
 	// TODO make public and byref when finished
 	public sealed class PlaylistManager : IDisposable
 	{
-		private static readonly Regex validPlistName = new Regex(@"^[\w -]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex validPlistName = new Regex(@"^[\w -]+$", Util.DefaultRegexConfig);
 
 		// get video info
 		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
@@ -84,11 +84,10 @@ namespace TS3AudioBot
 		public bool Loop { get; set; }
 
 		// Playlistfactory related stuff
-		private const string playResourcePath = "list from";
-		private CommandManager commandManager;
+		public CommandGroup CommandNode { get; } = new CommandGroup();
 		private List<IPlaylistFactory> factories;
 
-		public PlaylistManager(MainBot bot, PlaylistManagerData pmd)
+		public PlaylistManager(PlaylistManagerData pmd)
 		{
 			data = pmd;
 			shuffle = new LinearFeedbackShiftRegister();
@@ -96,7 +95,6 @@ namespace TS3AudioBot
 			freeList = new Playlist(string.Empty);
 			trashList = new Playlist(string.Empty);
 
-			commandManager = bot.CommandManager;
 			Util.Init(ref factories);
 		}
 
@@ -447,8 +445,8 @@ namespace TS3AudioBot
 			factories.Add(factory);
 
 			// register factory command node
-			var playCommand = new PlayCommand(factory.SubCommandName, factory.FactoryFor);
-			commandManager.RegisterCommand(playCommand.Command);
+			var playCommand = new PlayCommand(factory.FactoryFor);
+			CommandNode.AddCommand(factory.SubCommandName, playCommand.Command);
 		}
 
 		public void Dispose() { }
@@ -459,13 +457,13 @@ namespace TS3AudioBot
 			private AudioType audioType;
 			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiateLoad));
 
-			public PlayCommand(string name, AudioType audioType)
+			public PlayCommand(AudioType audioType)
 			{
 				this.audioType = audioType;
 				var builder = new CommandBuildInfo(
 					this,
 					playMethod,
-					new CommandAttribute(CommandRights.Private, playResourcePath + " " + name),
+					new CommandAttribute(CommandRights.Private, string.Empty),
 					null);
 				Command = new BotCommand(builder);
 			}

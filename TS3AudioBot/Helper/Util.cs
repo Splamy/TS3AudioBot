@@ -26,6 +26,7 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Security.Principal;
 	using System.Web.Script.Serialization;
+	using System.Text.RegularExpressions;
 
 	[Serializable]
 	public static class Util
@@ -198,5 +199,7 @@ namespace TS3AudioBot.Helper
 			uint uval = (uint)finalValue;
 			return unchecked((int)uval);
 		}
+
+		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
 	}
 }

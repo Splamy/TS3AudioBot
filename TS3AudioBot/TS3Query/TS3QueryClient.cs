@@ -64,7 +64,7 @@ namespace TS3Query
 		private const short defaultPort = 10011;
 		private static readonly Parameter[] NoParameter = new Parameter[0];
 		private static readonly Option[] NoOptions = new Option[0];
-		private static readonly Regex commandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled);
+		private static readonly Regex commandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
 		// PRIVATE STUFF
 

@@ -17,7 +17,7 @@ namespace TS3AudioBot.WebInterface
 	public sealed class WebDisplay : IDisposable
 	{
 		private readonly Uri[] hostPaths;
-		private const short port = 8080;
+		private const ushort port = 8080;
 		private readonly Dictionary<string, WebSite> sites;
 		private readonly MainBot mainBot;
 		private static readonly Uri localhost = new Uri($"http://localhost:{port}/");
