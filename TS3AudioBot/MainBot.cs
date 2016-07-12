@@ -167,15 +167,17 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager();
-			FactoryManager.DefaultFactorty = new MediaFactory(); // TODO: nicer
-			FactoryManager.AddFactory(FactoryManager.DefaultFactorty);
+			var mediaFactory = new MediaFactory();
+			FactoryManager.AddFactory(mediaFactory);
 			var youtubeFactory = new YoutubeFactory(yfd);
 			FactoryManager.AddFactory(youtubeFactory);
 			FactoryManager.AddFactory(new SoundcloudFactory());
 			FactoryManager.AddFactory(new TwitchFactory());
+			FactoryManager.DefaultFactorty = mediaFactory;
 			CommandManager.RegisterCommand(FactoryManager.CommandNode, "from");
 
 			PlaylistManager.AddFactory(youtubeFactory);
+			PlaylistManager.AddFactory(mediaFactory);
 			CommandManager.RegisterCommand(PlaylistManager.CommandNode, "list from");
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");

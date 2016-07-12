@@ -18,15 +18,18 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.IO;
+	using System.Linq;
 	using Helper;
 	using Helper.AudioTags;
 
-	public sealed class MediaFactory : IResourceFactory
+	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory
 	{
-		public string SubCommandName => "link";
+		string IResourceFactory.SubCommandName => "link";
+		string IPlaylistFactory.SubCommandName => "folder";
 		public AudioType FactoryFor => AudioType.MediaLink;
 
-		public bool MatchLink(string uri) => true;
+		bool IResourceFactory.MatchLink(string uri) => true;
+		bool IPlaylistFactory.MatchLink(string uri) => Directory.Exists(uri);
 
 		public R<PlayResource> GetResource(string uri)
 		{
@@ -117,6 +120,7 @@ namespace TS3AudioBot.ResourceFactories
 					return R<ResData>.OkR(new ResData(path, GetStreamName(stream)));
 				}
 			}
+			// TODO: correct errors
 			catch (PathTooLongException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
 			catch (DirectoryNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
 			catch (FileNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
@@ -127,15 +131,39 @@ namespace TS3AudioBot.ResourceFactories
 
 		public void Dispose() { }
 
-		class ResData
+		public R<Playlist> GetPlaylist(string url)
 		{
-			public string FullUri { get; set; }
-			public string Title { get; set; }
-			public ResData(string fullUri, string title)
+			if (!Directory.Exists(url))
+				return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString());
+
+			try
 			{
-				FullUri = fullUri;
-				Title = title;
+				var di = new DirectoryInfo(url);
+				var resources = di.EnumerateFiles()
+					.Select(file => ValidateFile(file.FullName))
+					.Where(result => result)
+					.Select(result => result.Value)
+					.Select(val => new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, AudioType.MediaLink))
+					.Select(res => new PlaylistItem(res));
+				var plist = new Playlist(di.Name);
+				plist.AddRange(resources);
+
+				return plist;
 			}
+			// TODO: correct errors
+			catch (PathTooLongException) { return R<Playlist>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (ArgumentException) { return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString()); }
+		}
+	}
+
+	class ResData
+	{
+		public string FullUri { get; set; }
+		public string Title { get; set; }
+		public ResData(string fullUri, string title)
+		{
+			FullUri = fullUri;
+			Title = title;
 		}
 	}
 }
