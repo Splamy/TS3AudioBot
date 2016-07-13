@@ -1152,6 +1152,12 @@ namespace TS3AudioBot
 			BobController.WhisperClientSubscribe(info.TextMessage.InvokerId);
 		}
 
+		[Command(Admin, "subscribe channel", "Adds your current channel to the music playback.")]
+		public void CommandSubscribeChannel(ExecutionInformation info)
+		{
+			BobController.WhisperChannelSubscribe(info.Session.Client.ChannelId, true);
+		}
+
 		[Command(AnyVisibility, "take", "Take a substring from a string")]
 		[Usage("<count> <text>", "Take only <count> parts of the text")]
 		[Usage("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")]
@@ -1224,6 +1230,12 @@ namespace TS3AudioBot
 		public void CommandUnsubscribe(ExecutionInformation info)
 		{
 			BobController.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
+		}
+
+		[Command(Private, "unsubscribe channel", "Removes your current channel from the music playback.")]
+		public void CommandUnsubscribeChannel(ExecutionInformation info)
+		{
+			BobController.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
 		}
 
 		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]
