@@ -238,17 +238,19 @@ namespace TS3AudioBot
 					else
 						Log.Write(Log.Level.Warning, "Erroneus playlist meta data: {0}", line);
 
+					AudioType audioType;
 					switch (kind)
 					{
 					case "ln":
 						var lnSplit = content.Split(new[] { ',' }, 2);
 						if (lnSplit.Length < 2)
 							goto default;
-						AudioType audioType;
+#pragma warning disable CS0612
 						if (!string.IsNullOrWhiteSpace(lnSplit[0]) && Enum.TryParse(lnSplit[0], out audioType))
 							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), audioType, meta));
 						else
 							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), null, meta));
+#pragma warning restore CS0612
 						break;
 
 					case "rs":
@@ -513,6 +515,7 @@ namespace TS3AudioBot
 		private PlaylistItem(MetaData meta) { Meta = meta ?? new MetaData(); }
 		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { Resource = resource; }
 		public PlaylistItem(uint hId, MetaData meta = null) : this(meta) { HistoryId = hId; }
+		[Obsolete]
 		public PlaylistItem(string message, AudioType? type, MetaData meta = null) : this(meta) { Link = message; AudioType = type; }
 	}
 

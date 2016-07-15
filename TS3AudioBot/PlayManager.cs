@@ -44,7 +44,13 @@ namespace TS3AudioBot
 		}
 
 		public R Enqueue(ClientData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
-		public R Enqueue(ClientData invoker, string message, AudioType? type = null) => EnqueueInternal(invoker, new PlaylistItem(message, type));
+		public R Enqueue(ClientData invoker, string message, AudioType? type = null)
+		{
+			var result = resourceFactoryManager.Load(message, type);
+			if (!result)
+				return result.Message;
+			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
+		}
 		public R Enqueue(ClientData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId));
 
 		private R EnqueueInternal(ClientData invoker, PlaylistItem pli)

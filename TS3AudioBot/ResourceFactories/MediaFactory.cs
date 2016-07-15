@@ -139,13 +139,13 @@ namespace TS3AudioBot.ResourceFactories
 			try
 			{
 				var di = new DirectoryInfo(url);
-				var resources = di.EnumerateFiles()
-					.Select(file => ValidateFile(file.FullName))
-					.Where(result => result)
-					.Select(result => result.Value)
-					.Select(val => new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, AudioType.MediaLink))
-					.Select(res => new PlaylistItem(res));
 				var plist = new Playlist(di.Name);
+				var resources = from file in di.EnumerateFiles()
+								select ValidateFile(file.FullName) into result
+								where result.Ok
+								select result.Value into val
+								select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, AudioType.MediaLink) into res
+								select new PlaylistItem(res);
 				plist.AddRange(resources);
 
 				return plist;

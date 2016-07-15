@@ -215,15 +215,13 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Playlist> GetPlaylist(string url)
 		{
-			const bool loadLength = false;
-
 			Match matchYtId = listMatch.Match(url);
 			if (!matchYtId.Success)
 				return "Could not extract a playlist id";
 
 			string id = matchYtId.Groups[2].Value;
 			var plist = new Playlist(id);
-			
+
 			string nextToken = null;
 			do
 			{
@@ -250,16 +248,15 @@ namespace TS3AudioBot.ResourceFactories
 							AudioType.Youtube));
 				}
 
-				if (loadLength)
-				{
-					queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.apiKey}");
-					if (!WebWrapper.DownloadString(out response, queryString))
-						return "Web response error";
-					var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
-					var videoDicts = ((object[])parsedTime["items"]).Cast<Dictionary<string, object>>().ToArray();
-					for (int i = 0; i < videoDicts.Length; i++)
-						itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
-				}
+#if getlength
+				queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.apiKey}");
+				if (!WebWrapper.DownloadString(out response, queryString))
+					return "Web response error";
+				var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
+				var videoDicts = ((object[])parsedTime["items"]).Cast<Dictionary<string, object>>().ToArray();
+				for (int i = 0; i < videoDicts.Length; i++)
+					itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
+#endif
 
 				plist.AddRange(itemBuffer);
 
@@ -299,7 +296,7 @@ namespace TS3AudioBot.ResourceFactories
 #pragma warning disable CS0649
 	public struct YoutubeFactoryData
 	{
-		[Info("a youtube apiv3 'Browser' type key")]
+		[Info("a youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
 		public string apiKey;
 	}
 #pragma warning restore CS0649

@@ -658,7 +658,10 @@ namespace TS3AudioBot
 		public string CommandListAdd(ExecutionInformation info, string link)
 		{
 			var plist = AutoGetPlaylist(info.Session);
-			plist.AddItem(new PlaylistItem(TextUtil.ExtractUrlFromBB(link), null, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			var result = FactoryManager.Load(link);
+			if (!result)
+				return result.Message;
+			plist.AddItem(new PlaylistItem(result.Value.BaseData, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
 			return null;
 		}
 
@@ -714,6 +717,39 @@ namespace TS3AudioBot
 			info.Session.Set<PlaylistManager, Playlist>(result.Value);
 			return "Ok";
 		}
+
+		[Command(Private, "list item move")]
+		public string CommandListMove(ExecutionInformation info, int from, int to)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (from < 0 || from >= plist.Count
+				|| to < 0 || to >= plist.Count)
+				return "Index must be within playlist length";
+
+			if (from == to)
+				return null;
+
+			var plitem = plist.GetResource(from);
+			plist.RemoveItemAt(from);
+			plist.InsertItem(plitem, Math.Min(to, plist.Count));
+			return null;
+		}
+
+		[Command(Private, "list item delete")]
+		public string CommandListRemove(ExecutionInformation info, int index)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (index < 0 || index >= plist.Count)
+				return "Index must be within playlist length";
+
+			var deletedItem = plist.GetResource(index);
+			plist.RemoveItemAt(index);
+			return "Removed: " + deletedItem.DisplayString;
+		}
+
+		// add list item rename
 
 		[Command(Private, "list list")]
 		[RequiredParameters(0)]
@@ -771,24 +807,6 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "list move")]
-		public string CommandListMove(ExecutionInformation info, int from, int to)
-		{
-			var plist = AutoGetPlaylist(info.Session);
-
-			if (from < 0 || from >= plist.Count
-				|| to < 0 || to >= plist.Count)
-				return "Index must be within playlist length";
-
-			if (from == to)
-				return null;
-
-			var plitem = plist.GetResource(from);
-			plist.RemoveItemAt(from);
-			plist.InsertItem(plitem, Math.Min(to, plist.Count));
-			return null;
-		}
-
 		[Command(Private, "list name")]
 		public string CommandListName(ExecutionInformation info, string name)
 		{
@@ -815,7 +833,7 @@ namespace TS3AudioBot
 				|| (index.HasValue && index.Value >= 0 && index.Value < plist.Count))
 			{
 				PlaylistManager.PlayFreelist(plist);
-				PlaylistManager.Index = index.Value;
+				PlaylistManager.Index = index ?? 0;
 			}
 			else return "Invalid starting index";
 
@@ -826,19 +844,6 @@ namespace TS3AudioBot
 				return null;
 			}
 			else return "Nothing to play...";
-		}
-
-		[Command(Private, "list remove")]
-		public string CommandListRemove(ExecutionInformation info, int index)
-		{
-			var plist = AutoGetPlaylist(info.Session);
-
-			if (index < 0 || index >= plist.Count)
-				return "Index must be within playlist length";
-
-			var deletedItem = plist.GetResource(index);
-			plist.RemoveItemAt(index);
-			return "Removed: " + deletedItem.DisplayString;
 		}
 
 		[Command(Private, "list save")]
