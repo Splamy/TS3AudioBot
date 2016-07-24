@@ -200,6 +200,6 @@ namespace TS3AudioBot.Helper
 			return unchecked((int)uval);
 		}
 
-		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
+		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 	}
 }

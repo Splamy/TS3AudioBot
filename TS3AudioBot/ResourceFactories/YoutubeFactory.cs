@@ -266,6 +266,44 @@ namespace TS3AudioBot.ResourceFactories
 			return plist;
 		}
 
+		public static string LoadAlternative(string id)
+		{
+			string resulthtml;
+			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
+				return "No con";
+
+			int indexof = resulthtml.IndexOf("ytplayer.config =");
+			int ptr = indexof;
+			while (resulthtml[ptr] != '{') ptr++;
+			int start = ptr;
+			int stackcnt = 1;
+			while (stackcnt > 0)
+			{
+				ptr++;
+				if (resulthtml[ptr] == '{') stackcnt++;
+				else if (resulthtml[ptr] == '}') stackcnt--;
+			}
+
+			var jsonobj = Util.Serializer.DeserializeObject(resulthtml.Substring(start, ptr - start + 1));
+			var args = GetDictVal(jsonobj, "args");
+			var url_encoded_fmt_stream_map = GetDictVal(args, "url_encoded_fmt_stream_map");
+
+			string[] enco_split = ((string)url_encoded_fmt_stream_map).Split(',');
+			foreach(var single_enco in enco_split)
+			{
+				var lis = HttpUtility.ParseQueryString(single_enco);
+
+				var signature = lis["s"];
+				var url = lis["url"];
+				if (!url.Contains("signature"))
+					url += "&signature=" + signature;
+				return url;
+			}
+			return "No match";
+		}
+
+		private static object GetDictVal(object dict, string field) => (dict as Dictionary<string, object>)?[field];
+
 		public void Dispose() { }
 
 #pragma warning disable CS0649

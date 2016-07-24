@@ -31,7 +31,7 @@ namespace TS3AudioBot
 	// TODO make public and byref when finished
 	public sealed class PlaylistManager : IDisposable
 	{
-		private static readonly Regex validPlistName = new Regex(@"^[\w -]+$", Util.DefaultRegexConfig);
+		private static readonly Regex validPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
 
 		// get video info
 		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
