@@ -17,15 +17,17 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using System;
-	using System.Linq;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
+	using System.ComponentModel;
+	using System.Diagnostics;
 	using System.Globalization;
+	using System.IO;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
 	using Helper;
-	using System.Xml;
+
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
 	{
@@ -139,7 +141,12 @@ namespace TS3AudioBot.ResourceFactories
 
 			var result = ValidateMedia(videoTypes[codec]);
 			if (!result)
-				return result.Message;
+			{
+				if (string.IsNullOrWhiteSpace(data.youtubedlpath))
+					return result.Message;
+
+				return YoutubeDlWrapped(resource);
+			}
 
 			return new PlayResource(videoTypes[codec].Link, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
 		}
@@ -289,7 +296,7 @@ namespace TS3AudioBot.ResourceFactories
 			var url_encoded_fmt_stream_map = GetDictVal(args, "url_encoded_fmt_stream_map");
 
 			string[] enco_split = ((string)url_encoded_fmt_stream_map).Split(',');
-			foreach(var single_enco in enco_split)
+			foreach (var single_enco in enco_split)
 			{
 				var lis = HttpUtility.ParseQueryString(single_enco);
 
@@ -303,6 +310,47 @@ namespace TS3AudioBot.ResourceFactories
 		}
 
 		private static object GetDictVal(object dict, string field) => (dict as Dictionary<string, object>)?[field];
+
+		public R<PlayResource> YoutubeDlWrapped(AudioResource resource)
+		{
+			string title = null;
+			string url = null;
+
+			Log.Write(Log.Level.Debug, "YT Ruined!");
+			try
+			{
+				string startpath = Path.GetFullPath(data.youtubedlpath);
+
+				using (Process tmproc = new Process())
+				{
+					tmproc.StartInfo.FileName = "python";
+					tmproc.StartInfo.Arguments = $"\"{Path.Combine(startpath, "youtube_dl", "__main__.py")}\" --get-title --get-url --id {resource.ResourceId}";
+					tmproc.StartInfo.UseShellExecute = false;
+					tmproc.StartInfo.CreateNoWindow = true;
+					tmproc.StartInfo.RedirectStandardOutput = true;
+					tmproc.StartInfo.RedirectStandardError = true;
+					tmproc.Start();
+					tmproc.WaitForExit(10000);
+
+					using (StreamReader reader = tmproc.StandardError)
+					{
+						string result = reader.ReadToEnd();
+						if (!string.IsNullOrEmpty(result))
+							return result;
+					}
+
+					title = tmproc.StandardOutput.ReadLine();
+					url = tmproc.StandardOutput.ReadLine();
+				}
+			}
+			catch (Win32Exception) { return "Failed to run youtube-dl"; }
+
+			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+				return "No youtube-dl response";
+
+			Log.Write(Log.Level.Debug, "YT Saved!");
+			return new PlayResource(url, resource.WithName(title));
+		}
 
 		public void Dispose() { }
 
@@ -336,6 +384,8 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		[Info("a youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
 		public string apiKey;
+		[Info("absolute or relative path to the youtube-dl repository", "")]
+		public string youtubedlpath;
 	}
 #pragma warning restore CS0649
 

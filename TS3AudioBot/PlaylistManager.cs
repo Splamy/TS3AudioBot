@@ -409,7 +409,7 @@ namespace TS3AudioBot
 			if (name.Length >= 64)
 				return "Length must be <64";
 			if (!validPlistName.IsMatch(name))
-				return "The new name is invalid please only use [a-zA-Z0-9 _-]";
+				return "The new name is invalid please only use [a-zA-Z0-9_-]";
 			return R.OkR;
 		}
 
