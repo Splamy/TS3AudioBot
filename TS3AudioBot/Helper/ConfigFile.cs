@@ -26,6 +26,7 @@ namespace TS3AudioBot.Helper
 		private string path;
 		private readonly Dictionary<string, string> data;
 		private bool changed;
+		private static readonly char[] splitChar = new[] { '=' };
 
 		private ConfigFile()
 		{
@@ -55,9 +56,9 @@ namespace TS3AudioBot.Helper
 						&& !s.StartsWith("//", StringComparison.Ordinal)
 						&& !s.StartsWith("#", StringComparison.Ordinal))
 					{
-						int index = s.IndexOf('=');
-						if (index == -1) { Log.Write(Log.Level.Error, "Invalid log entry: \"{0}\"", s); continue; }
-						cfgFile.data.Add(s.Substring(0, index).Trim(), s.Substring(index + 1).Trim());
+						string[] kvp = s.Split(splitChar, 2);
+						if (kvp.Length < 2) { Console.WriteLine("Invalid log entry: \"{0}\"", s); continue; }
+						cfgFile.data.Add(kvp[0], kvp[1]);
 					}
 				}
 			}
@@ -68,8 +69,7 @@ namespace TS3AudioBot.Helper
 		{
 			try
 			{
-				FileStream fs = File.Create(pPath);
-				fs.Close();
+				using (FileStream fs = File.Create(pPath)) { }
 				return new ConfigFile
 				{
 					path = pPath,

@@ -316,15 +316,17 @@ namespace TS3AudioBot.ResourceFactories
 			string title = null;
 			string url = null;
 
+			var ytdlPath = DetectYoutubeDl(resource.ResourceId);
+			if (ytdlPath == null)
+				return "Youtube-Dl could not be found. The video cannot be played due to youtube restrictions";
+
 			Log.Write(Log.Level.Debug, "YT Ruined!");
 			try
 			{
-				string startpath = Path.GetFullPath(data.youtubedlpath);
-
 				using (Process tmproc = new Process())
 				{
 					tmproc.StartInfo.FileName = "python";
-					tmproc.StartInfo.Arguments = $"\"{Path.Combine(startpath, "youtube_dl", "__main__.py")}\" --get-title --get-url --id {resource.ResourceId}";
+					tmproc.StartInfo.Arguments = $"\"{ytdlPath}\" --get-title --get-url --id {resource.ResourceId}";
 					tmproc.StartInfo.UseShellExecute = false;
 					tmproc.StartInfo.CreateNoWindow = true;
 					tmproc.StartInfo.RedirectStandardOutput = true;
@@ -350,6 +352,31 @@ namespace TS3AudioBot.ResourceFactories
 
 			Log.Write(Log.Level.Debug, "YT Saved!");
 			return new PlayResource(url, resource.WithName(title));
+		}
+
+		private string DetectYoutubeDl(string id)
+		{
+			// Default path youtube-dl is suggesting to install
+			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
+			if (File.Exists(defaultYtDlPath))
+				return defaultYtDlPath;
+
+			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
+			string fullCustomPath = Path.GetFullPath(data.youtubedlpath);
+			if (File.Exists(fullCustomPath))
+				return fullCustomPath;
+
+			// Example: /home/teamspeak where the binary 'youtube-dl' lies in ./teamspeak/
+			string fullCustomPathWithoutFile = Path.Combine(fullCustomPath, "youtube-dl");
+			if (File.Exists(fullCustomPathWithoutFile))
+				return fullCustomPathWithoutFile;
+
+			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the github project folder
+			string fullCustomPathGhProject = Path.Combine(fullCustomPath, "youtube_dl", "__main__.py");
+			if (File.Exists(fullCustomPathGhProject))
+				return fullCustomPathGhProject;
+
+			return null;
 		}
 
 		public void Dispose() { }
