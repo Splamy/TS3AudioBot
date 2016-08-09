@@ -17,6 +17,7 @@
 namespace TS3AudioBot
 {
 	using System;
+	using Helper;
 
 	public interface IPlayerConnection : IDisposable
 	{
@@ -24,15 +25,18 @@ namespace TS3AudioBot
 
 		event EventHandler OnSongEnd;
 
-		int Volume { get; set; }
-		TimeSpan Position { get; set; }
-		bool Repeated { get; set; }
-		bool Pause { get; set; }
-		TimeSpan Length { get; }
-		bool IsPlaying { get; }
+		R<int> GetVolume();
+		void SetVolume(int value);
+		R<TimeSpan> GetPosition();
+		void SetPosition(TimeSpan value);
+		R<bool> IsRepeated();
+		void SetRepeated(bool value);
+		R<bool> IsPaused();
+		void SetPaused(bool value);
+		R<TimeSpan> GetLength();
+		R<bool> IsPlaying();
 
-		// TODO check change in uri ??
-		void AudioStart(string url);
-		void AudioStop();
+		R AudioStart(string url);
+		R AudioStop();
 	}
 }

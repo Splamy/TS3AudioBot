@@ -34,37 +34,74 @@ namespace TS3AudioBot
 		// Playerproperties
 
 		/// <summary>Loop state for the current song.</summary>
-		public bool Repeat { get { return playerConnection.Repeated; } set { playerConnection.Repeated = value; } }
+		public bool Repeat
+		{
+			get
+			{
+				var result = playerConnection.IsRepeated();
+				if (result) return result.Value;
+				Log.Write(Log.Level.Error, "Broken playerConnection request! (Repeat)");
+				return false;
+			}
+			set { playerConnection.SetRepeated(value); }
+		}
 		/// <summary>Gets or sets the volume for the current song.
 		/// Value between 0 and MaxVolume. 40 Is usually pretty loud already :).</summary>
 		public int Volume
 		{
-			get { return playerConnection.Volume; }
+			get
+			{
+				var result = playerConnection.GetVolume();
+				if (result) return result.Value;
+				Log.Write(Log.Level.Error, "Broken playerConnection request! (Volume)");
+				return 0;
+			}
 			set
 			{
 				if (value < 0 || value > MaxVolume)
 					throw new ArgumentOutOfRangeException(nameof(value));
-				playerConnection.Volume = value;
+				playerConnection.SetVolume(value);
 			}
 		}
 		/// <summary>Starts or resumes the current song.</summary>
-		public bool Pause { get { return playerConnection.Pause; } set { playerConnection.Pause = value; } }
-		/// <summary>Length of the current song.</summary>
-		public TimeSpan Length { get { return playerConnection.Length; } }
-		/// <summary>Gets or sets the play position of the current song.</summary>
-		public TimeSpan Position { get { return playerConnection.Position; } set { playerConnection.Position = value; } }
-
-		// Playermethods
-
-		/// <summary>Jumps to the position in the audiostream if available.</summary>
-		/// <param name="pos">Position in seconds from the start.</param>
-		/// <returns>True if the seek request was valid, false otherwise.</returns>
-		public bool Seek(TimeSpan pos)
+		public bool Pause
 		{
-			if (pos < TimeSpan.Zero || pos > playerConnection.Length)
+			get
+			{
+				var result = playerConnection.IsPaused();
+				if (result) return result.Value;
+				Log.Write(Log.Level.Error, "Broken playerConnection request! (Pause)");
 				return false;
-			playerConnection.Position = pos;
-			return true;
+			}
+			set { playerConnection.SetPaused(value); }
+		}
+		/// <summary>Length of the current song.</summary>
+		public TimeSpan Length
+		{
+			get
+			{
+				var result = playerConnection.GetLength();
+				if (result) return result.Value;
+				Log.Write(Log.Level.Error, "Broken playerConnection request! (Length)");
+				return TimeSpan.Zero;
+			}
+		}
+		/// <summary>Gets or sets the play position of the current song.</summary>
+		public TimeSpan Position
+		{
+			get
+			{
+				var result = playerConnection.GetPosition();
+				if (result) return result.Value;
+				Log.Write(Log.Level.Error, "Broken playerConnection request! (Position)");
+				return TimeSpan.Zero;
+			}
+			set
+			{
+				if (value < TimeSpan.Zero || value > Length)
+					throw new ArgumentOutOfRangeException(nameof(value));
+				playerConnection.SetPosition(value);
+			}
 		}
 
 		// Audioframework
@@ -105,7 +142,12 @@ namespace TS3AudioBot
 				return "Internal resource error: link is empty";
 
 			Log.Write(Log.Level.Debug, "AF ar start: {0}", playResource);
-			playerConnection.AudioStart(playResource.PlayUri);
+			var result = playerConnection.AudioStart(playResource.PlayUri);
+			if (!result)
+			{
+				Log.Write(Log.Level.Error, "Error return from player: {0}", result.Message);
+				return $"Internal player error ({result.Message})";
+			}
 
 			Volume = config.Volume ?? audioFrameworkData.defaultVolume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);

@@ -18,10 +18,10 @@ namespace TS3AudioBot
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Threading;
 	using Helper;
 	using TS3Query;
 	using TS3Query.Messages;
-	using System.Threading;
 	using Response = System.Func<CommandSystem.ExecutionInformation, bool>;
 
 	public sealed class UserSession
@@ -53,7 +53,7 @@ namespace TS3AudioBot
 			try
 			{
 				if (IsPrivate)
-					Bot.QueryConnection.SendMessage(message, ClientCached);
+					Bot.QueryConnection.SendMessage(message, ClientCached.ClientId);
 				else
 					Bot.QueryConnection.SendGlobalMessage(message);
 			}

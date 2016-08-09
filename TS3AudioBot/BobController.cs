@@ -21,6 +21,7 @@ namespace TS3AudioBot
 	using System.Globalization;
 	using System.Linq;
 	using Helper;
+	using TS3Query;
 	using TS3Query.Messages;
 
 	public sealed class BobController : IPlayerConnection
@@ -28,7 +29,7 @@ namespace TS3AudioBot
 		private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 		private static readonly TimeSpan BobTimeout = TimeSpan.FromSeconds(60);
 
-		private QueryConnection queryConnection;
+		private ITeamspeakControl queryConnection;
 		private BobControllerData bobControllerData;
 		private TickWorker timeout;
 		private DateTime lastUpdate = Util.GetNow();
@@ -60,89 +61,63 @@ namespace TS3AudioBot
 		private bool repeated = false;
 		private bool pause = false;
 
-		public bool SupportsEndCallback => true;
 		public event EventHandler OnSongEnd;
 
-		public int Volume
+		public R<int> GetVolume() => volume;
+		public void SetVolume(int value)
 		{
-			get { return volume; }
-			set
-			{
-				volume = value;
-				SendMessage("music volume " + (value / 100d));
-			}
+			volume = value;
+			SendMessage("music volume " + (value / 100d).ToString(CultureInfo.InvariantCulture));
 		}
 
-		public TimeSpan Position
+		public R<TimeSpan> GetPosition()
 		{
-			get
-			{
-				SendMessage("status music");
-				musicInfoWaiter.Wait(RequestTimeout);
-				return CurrentMusicInfo.Position;
-			}
-			set
-			{
-				SendMessage("music seek " + value.TotalSeconds.ToString(CultureInfo.InvariantCulture));
-			}
+			SendMessage("status music");
+			try { musicInfoWaiter.Wait(RequestTimeout); } catch (TimeoutException) { return "Request timed out"; }
+			return CurrentMusicInfo.Position;
+		}
+		public void SetPosition(TimeSpan value)
+		{
+			SendMessage("music seek " + value.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 		}
 
-		public bool Repeated
+		public R<bool> IsRepeated() => repeated;
+		public void SetRepeated(bool value)
 		{
-			get { return repeated; }
-			set
-			{
-				repeated = value;
-				SendMessage("music loop " + (value ? "on" : "off"));
-			}
+			repeated = value;
+			SendMessage("music loop " + (value ? "on" : "off"));
 		}
 
-		public bool Pause
+		public R<bool> IsPaused() => pause;
+		public void SetPaused(bool value)
 		{
-			get { return pause; }
-			set
-			{
-				pause = value;
-				SendMessage("music " + (value ? "pause" : "unpause"));
-			}
+			pause = value;
+			SendMessage("music " + (value ? "pause" : "unpause"));
 		}
 
-		public TimeSpan Length
+		public R<TimeSpan> GetLength()
 		{
-			get
-			{
-				SendMessage("status music");
-				musicInfoWaiter.Wait(RequestTimeout);
-				return CurrentMusicInfo.Length;
-			}
+			SendMessage("status music");
+			try { musicInfoWaiter.Wait(RequestTimeout); } catch (TimeoutException) { return "Request timed out"; }
+			return CurrentMusicInfo.Length;
 		}
 
-		public bool IsPlaying
+		public R<bool> IsPlaying()
 		{
-			get
-			{
-				SendMessage("status music");
-				musicInfoWaiter.Wait(RequestTimeout);
-				return CurrentMusicInfo.Status == MusicStatus.Playing;
-			}
+			SendMessage("status music");
+			try { musicInfoWaiter.Wait(RequestTimeout); } catch (TimeoutException) { return "Request timed out"; }
+			return CurrentMusicInfo.Status == MusicStatus.Playing;
 		}
 
 
-		public void AudioStart(string url)
-		{
-			SendMessage("music start " + url);
-		}
-
-		public void AudioStop()
-		{
-			SendMessage("music stop");
-		}
+		public R AudioStart(string url) => SendMessage("music start " + url);
+		public R AudioStop() => SendMessage("music stop");
 
 		public void Initialize() { }
 
 		#endregion
 
-		public BobController(BobControllerData data, QueryConnection queryConnection)
+		public BobController(BobControllerData data, ITeamspeakControl queryConnection)
 		{
 			if (queryConnection == null)
 				throw new ArgumentNullException(nameof(queryConnection));
@@ -162,40 +137,54 @@ namespace TS3AudioBot
 
 		#region SendMethods
 
-		public void SendMessage(string message)
+		public R SendMessage(string message)
 		{
 			if (isRunning)
 			{
 				lock (lockObject)
-					SendMessageRaw(message);
+					return SendMessageRaw(message);
 			}
 			else
 			{
 				Log.Write(Log.Level.Debug, "BC Enqueing: {0}", message);
 				commandQueue.Enqueue(message);
+				return R.OkR;
 			}
 		}
 
-		private void SendMessageRaw(string message)
+		private R SendMessageRaw(string message)
 		{
 			if (bobClient == null)
 			{
-				Log.Write(Log.Level.Debug, "BC bobClient is null! Message is lost: {0}", message);
-				return;
+				Log.Write(Log.Level.Error, "BC bobClient is null! Message is lost: {0}", message);
+				return "Internal BobController Error: bobClient == null";
 			}
 
 			Log.Write(Log.Level.Debug, "BC sending to bobC: {0}", message);
-			queryConnection.SendMessage(message, bobClient);
+			try
+			{
+				queryConnection.SendMessage(message, bobClient.ClientId);
+				return R.OkR;
+			}
+			catch (QueryCommandException qcex)
+			{
+				Log.Write(Log.Level.Error, "BC failed to send to bobC ({0})", qcex.Message);
+				return R.Err(qcex.Message);
+			}
 		}
 
-		private void SendQueue()
+		private R SendQueue()
 		{
 			if (!isRunning)
 				throw new InvalidOperationException("The bob must run to send the commandQueue");
 
 			lock (lockObject)
 				while (commandQueue.Count > 0)
-					SendMessageRaw(commandQueue.Dequeue());
+				{
+					var result = SendMessageRaw(commandQueue.Dequeue());
+					if (!result) return result;
+				}
+			return R.OkR;
 		}
 
 		#endregion
@@ -284,7 +273,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "BC Ressource started");
 			BobStart();
-			Pause = false;
+			SetPaused(false);
 			Sending = true;
 			RestoreSubscriptions(playData.Invoker);
 		}

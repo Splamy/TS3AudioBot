@@ -47,7 +47,7 @@ namespace TS3AudioBot
 					Exception ex = e.ExceptionObject as Exception;
 					while (ex != null)
 					{
-						Log.Write(Log.Level.Error, "MSG: {0}\nSTACK:{1}", ex.Message, ex.StackTrace);
+						Log.Write(Log.Level.Error, "MSG: {0}\nTYPE:{1}\nSTACK:{2}", ex.Message, ex.GetType().Name, ex.StackTrace);
 						ex = ex.InnerException;
 					}
 					bot?.Dispose();
@@ -72,7 +72,7 @@ namespace TS3AudioBot
 		public AudioFramework AudioFramework { get; private set; }
 		public PlaylistManager PlaylistManager { get; private set; }
 		public BobController BobController { get; private set; }
-		public QueryConnection QueryConnection { get; private set; }
+		public ITeamspeakControl QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }

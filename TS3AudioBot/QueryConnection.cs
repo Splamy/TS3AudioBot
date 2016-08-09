@@ -24,7 +24,7 @@ namespace TS3AudioBot
 	using TS3Query.Messages;
 
 	// TODO: add back a ITeamspeakControl interface for abstracting the communication between bot and ts3server
-	public sealed class QueryConnection : MarshalByRefObject, IDisposable
+	public sealed class QueryConnection : MarshalByRefObject, ITeamspeakControl
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
 		private void ExtendedTextMessage(object sender, TextMessage eventArgs)
@@ -97,7 +97,7 @@ namespace TS3AudioBot
 				tsClient.Close();
 		}
 
-		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);
+		public void SendMessage(string message, ushort clientId) => tsClient.SendMessage(MessageTarget.Private, clientId, message);
 		public void SendGlobalMessage(string message) => tsClient.SendMessage(MessageTarget.Server, 1, message);
 		public void KickClientFromServer(ushort clientId) => tsClient.KickClientFromServer(new[] { clientId });
 		public void KickClientFromChannel(ushort clientId) => tsClient.KickClientFromChannel(new[] { clientId });

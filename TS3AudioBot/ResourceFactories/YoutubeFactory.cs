@@ -411,7 +411,7 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		[Info("a youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
 		public string apiKey;
-		[Info("absolute or relative path to the youtube-dl repository", "")]
+		[Info("absolute or relative path to the youtube-dl binary or repository", "")]
 		public string youtubedlpath;
 	}
 #pragma warning restore CS0649

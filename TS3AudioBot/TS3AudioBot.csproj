@@ -94,6 +94,7 @@
     <Compile Include="History\SmartHistoryFormatter.cs" />
     <Compile Include="Helper\InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
+    <Compile Include="ITeamspeakControl.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PlayManager.cs" />
@@ -128,6 +129,7 @@
     <Compile Include="ResourceFactories\SoundcloudFactory.cs" />
     <Compile Include="ResourceFactories\TwitchFactory.cs" />
     <Compile Include="ResourceFactories\YoutubeFactory.cs" />
+    <Compile Include="TeamspeakClient.cs" />
     <Compile Include="TS3Query\DocumentedEnums.cs" />
     <Compile Include="TS3Query\Extensions.cs" />
     <Compile Include="TS3Query\KnownEnums.cs" />
