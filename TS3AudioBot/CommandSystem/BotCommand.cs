@@ -20,7 +20,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
-	using TS3Query;
+	using TS3Client;
 	using static CommandRights;
 
 	public class BotCommand : FunctionCommand

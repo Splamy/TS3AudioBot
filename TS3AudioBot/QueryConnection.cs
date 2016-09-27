@@ -20,8 +20,8 @@ namespace TS3AudioBot
 	using System.Collections.Generic;
 	using System.Linq;
 	using Helper;
-	using TS3Query;
-	using TS3Query.Messages;
+	using TS3Client;
+	using TS3Client.Messages;
 
 	// TODO: add back a ITeamspeakControl interface for abstracting the communication between bot and ts3server
 	public sealed class QueryConnection : MarshalByRefObject, ITeamspeakControl
@@ -55,7 +55,7 @@ namespace TS3AudioBot
 		private QueryConnectionData connectionData;
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
-		private TS3QueryClient tsClient;
+		private TS3BaseClient tsClient;
 		private ClientData me;
 
 		public QueryConnection(QueryConnectionData qcd)
@@ -63,7 +63,7 @@ namespace TS3AudioBot
 			clientDbNames = new Dictionary<ulong, string>();
 
 			connectionData = qcd;
-			tsClient = new TS3QueryClient(EventDispatchType.DoubleThread);
+			tsClient = new TS3Client.Query.TS3QueryClient(EventDispatchType.DoubleThread);
 			tsClient.OnClientLeftView += ExtendedClientLeftView;
 			tsClient.OnClientEnterView += ExtendedClientEnterView;
 			tsClient.OnTextMessageReceived += ExtendedTextMessage;
@@ -73,11 +73,11 @@ namespace TS3AudioBot
 		{
 			if (!tsClient.IsConnected)
 			{
-				tsClient.Connect(connectionData.host);
+				tsClient.Connect(new ConnectionData() { Hostname = connectionData.host, Port = 10011 });
 				tsClient.Login(connectionData.user, connectionData.passwd);
 				tsClient.UseServer(1);
 				try { tsClient.ChangeName("TS3AudioBot"); }
-				catch (QueryCommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
+				catch (TS3CommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
 
 				me = GetSelf();
 
@@ -94,7 +94,7 @@ namespace TS3AudioBot
 		private void Diconnect()
 		{
 			if (tsClient.IsConnected)
-				tsClient.Close();
+				tsClient.Disconnect();
 		}
 
 		public void SendMessage(string message, ushort clientId) => tsClient.SendMessage(MessageTarget.Private, clientId, message);
@@ -108,7 +108,7 @@ namespace TS3AudioBot
 			var cd = ClientBufferRequest(client => client.ClientId == id);
 			if (cd != null) return cd;
 			Log.Write(Log.Level.Warning, "Slow double request, due to missing or wrong permission confinguration!");
-			cd = tsClient.Send<ClientData>("clientinfo", new Parameter("clid", id)).FirstOrDefault();
+			cd = tsClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault();
 			if (cd != null)
 			{
 				cd.ClientId = id;
@@ -177,7 +177,7 @@ namespace TS3AudioBot
 				clientDbNames.Add(clientDbId, name);
 				return name;
 			}
-			catch (QueryCommandException) { return null; }
+			catch (TS3CommandException) { return null; }
 		}
 
 		public void Dispose()

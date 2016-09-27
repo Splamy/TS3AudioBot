@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -14,26 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3Client
 {
-	using System;
-	using TS3Client.Messages;
-
-	public class ExecutionInformation : MarshalByRefObject
+	public class ConnectionData
 	{
-		public UserSession Session { get; }
-		public TextMessage TextMessage { get; }
-		private Lazy<bool> lazyIsAdmin;
-		public bool IsAdmin => lazyIsAdmin.Value;
-
-		private ExecutionInformation() { Session = null; TextMessage = null; lazyIsAdmin = new Lazy<bool>(() => true); }
-		public ExecutionInformation(UserSession session, TextMessage textMessage, Lazy<bool> isAdmin)
-		{
-			Session = session;
-			TextMessage = textMessage;
-			lazyIsAdmin = isAdmin;
-		}
-
-		public static readonly ExecutionInformation Debug = new ExecutionInformation();
+		public string Hostname { get; set; }
+		public ushort Port { get; set; }
+		public string PrivateKey { get; set; }
+		// etc
 	}
 }

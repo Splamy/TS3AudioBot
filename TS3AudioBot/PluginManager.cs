@@ -212,6 +212,7 @@ namespace TS3AudioBot
 					case PluginStatus.Ready: strb.Append("RDY"); break;
 					case PluginStatus.Active: strb.Append("+ON"); break;
 					case PluginStatus.Disabled: strb.Append("UNL"); break;
+					case PluginStatus.Error: strb.Append("ERR"); break;
 					default: throw new InvalidProgramException();
 					}
 					strb.Append('|').AppendLine(plugin.proxy?.Name ?? "<not loaded>");
@@ -394,7 +395,7 @@ namespace TS3AudioBot
 				var types = assembly.GetExportedTypes().Where(t => typeof(ITS3ABPlugin).IsAssignableFrom(t));
 				var pluginOk = PluginCountCheck(types);
 				if (pluginOk != PluginResponse.Ok) return pluginOk;
-
+				
 				pluginType = types.First();
 				return PluginResponse.Ok;
 			}
@@ -497,6 +498,8 @@ namespace TS3AudioBot
 		Active,
 		/// <summary>The plugin has been plugged off intentionally and will not be prepared with the next scan.</summary>
 		Disabled,
+		/// <summary>The plugin failed to load.</summary>
+		Error,
 	}
 
 	public enum PluginResponse

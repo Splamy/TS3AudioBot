@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Query
+namespace TS3Client
 {
 	// http://media.teamspeak.com/ts3_literature/TeamSpeak%203%20Server%20Query%20Manual.pdf
 	// public_definitions.h from the ts3 plugin library
@@ -30,7 +30,7 @@ namespace TS3Query
 		/// <summary>Display message in modal dialog and close connection.</summary>
 		ModalQuit
 	}
-	
+
 	public enum HostBannerMode
 	{
 		///<summary>Do not adjust.</summary>
@@ -54,9 +54,9 @@ namespace TS3Query
 		///<summary>mono, 16bit, 48kHz, optimized for voice</summary>
 		OpusVoice,
 		///<summary>stereo, 16bit, 48kHz, optimized for music</summary>
-		OpusMusic, 
+		OpusMusic,
 	}
-	
+
 	public enum CodecEncryptionMode
 	{
 		///<summary>Configure per channel.</summary>

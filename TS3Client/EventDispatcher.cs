@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Query
+namespace TS3Client
 {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Threading;
 
-	interface IEventDispatcher : IDisposable
+	public interface IEventDispatcher : IDisposable
 	{
 		EventDispatchType DispatcherType { get; }
 		void Init(Action eventLoop);
@@ -113,7 +113,7 @@ namespace TS3Query
 		public void Dispose() { }
 	}
 
-	enum EventDispatchType
+	public enum EventDispatchType
 	{
 		None,
 		CurrentThread,

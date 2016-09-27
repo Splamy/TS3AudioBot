@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Query.Messages
+namespace TS3Client.Messages
 {
 	using System;
 	using System.Collections;
@@ -22,7 +22,7 @@ namespace TS3Query.Messages
 	using KeyType = System.String;
 	using ValueType = System.String;
 
-	class ResponseDictionary : IDictionary<KeyType, ValueType>, IResponse
+	public class ResponseDictionary : IDictionary<KeyType, ValueType>, IResponse
 	{
 		private IDictionary<KeyType, ValueType> data;
 		public ResponseDictionary(IDictionary<KeyType, ValueType> dataDict) { data = dataDict; }

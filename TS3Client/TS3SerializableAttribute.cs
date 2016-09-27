@@ -14,26 +14,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3Client
 {
 	using System;
-	using TS3Client.Messages;
 
-	public class ExecutionInformation : MarshalByRefObject
+	[AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+	sealed class TS3SerializableAttribute : Attribute
 	{
-		public UserSession Session { get; }
-		public TextMessage TextMessage { get; }
-		private Lazy<bool> lazyIsAdmin;
-		public bool IsAdmin => lazyIsAdmin.Value;
+		public string QueryString { get; }
 
-		private ExecutionInformation() { Session = null; TextMessage = null; lazyIsAdmin = new Lazy<bool>(() => true); }
-		public ExecutionInformation(UserSession session, TextMessage textMessage, Lazy<bool> isAdmin)
+		public TS3SerializableAttribute(string queryString)
 		{
-			Session = session;
-			TextMessage = textMessage;
-			lazyIsAdmin = isAdmin;
+			QueryString = queryString;
 		}
-
-		public static readonly ExecutionInformation Debug = new ExecutionInformation();
 	}
 }

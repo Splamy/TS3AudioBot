@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Query
+namespace TS3Client
 {
 	using System;
 	using System.Collections.Generic;
@@ -28,8 +28,8 @@ namespace TS3Query
 
 			Type enumType = valueEnum.GetType();
 			var valueField = enumType.GetField(Enum.GetName(enumType, valueEnum));
-			var fieldAttributes = valueField.GetCustomAttributes(typeof(QueryStringAttribute), false);
-			var fieldAttribute = fieldAttributes.Cast<QueryStringAttribute>().FirstOrDefault();
+			var fieldAttributes = valueField.GetCustomAttributes(typeof(TS3SerializableAttribute), false);
+			var fieldAttribute = fieldAttributes.Cast<TS3SerializableAttribute>().FirstOrDefault();
 			if (fieldAttribute == null)
 				throw new InvalidOperationException("This enum doesn't contain the QueryString attribute");
 			return fieldAttribute.QueryString;

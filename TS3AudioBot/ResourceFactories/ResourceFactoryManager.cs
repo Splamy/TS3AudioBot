@@ -22,7 +22,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Reflection.Emit;
 	using CommandSystem;
 	using Helper;
-	using TS3Query.Messages;
+	using TS3Client.Messages;
 
 	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
 	{

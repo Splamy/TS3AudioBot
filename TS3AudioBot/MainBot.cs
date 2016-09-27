@@ -30,8 +30,8 @@ namespace TS3AudioBot
 	using ResourceFactories;
 	using WebInterface;
 
-	using TS3Query;
-	using TS3Query.Messages;
+	using TS3Client;
+	using TS3Client.Messages;
 
 	using static CommandRights;
 
@@ -198,7 +198,7 @@ namespace TS3AudioBot
 			WebInterface.StartServerAsync();
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
-			catch (QueryCommandException qcex)
+			catch (TS3CommandException qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
 				return false;
@@ -315,7 +315,6 @@ namespace TS3AudioBot
 		// [text] = Option for fixed text
 		// (a|b) = either or switch
 
-		// TODO: to be replaced with "queue"
 		[Command(Private, "add", "Adds a new song to the queue.")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
 		public string CommandAdd(ExecutionInformation info, string parameter)
@@ -560,11 +559,11 @@ namespace TS3AudioBot
 			DateTime tillTime;
 			switch (time.ToLower(CultureInfo.InvariantCulture))
 			{
-			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
-			case "today": tillTime = DateTime.Today; break;
-			case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
-			case "week": tillTime = DateTime.Today.AddDays(-7); break;
-			default: return "Not recognized time desciption.";
+				case "hour": tillTime = DateTime.Now.AddHours(-1); break;
+				case "today": tillTime = DateTime.Today; break;
+				case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
+				case "week": tillTime = DateTime.Today.AddDays(-7); break;
+				default: return "Not recognized time desciption.";
 			}
 			var query = new SeachQuery { LastInvokedAfter = tillTime };
 			return HistoryManager.SearchParsed(query);
@@ -592,13 +591,13 @@ namespace TS3AudioBot
 			Func<double, double, bool> comparer;
 			switch (cmp)
 			{
-			case "<": comparer = (a, b) => a < b; break;
-			case ">": comparer = (a, b) => a > b; break;
-			case "<=": comparer = (a, b) => a <= b; break;
-			case ">=": comparer = (a, b) => a >= b; break;
-			case "==": comparer = (a, b) => a == b; break;
-			case "!=": comparer = (a, b) => a != b; break;
-			default: throw new CommandException("Unknown comparison operator");
+				case "<": comparer = (a, b) => a < b; break;
+				case ">": comparer = (a, b) => a > b; break;
+				case "<=": comparer = (a, b) => a <= b; break;
+				case ">=": comparer = (a, b) => a >= b; break;
+				case "==": comparer = (a, b) => a == b; break;
+				case "!=": comparer = (a, b) => a != b; break;
+				default: throw new CommandException("Unknown comparison operator");
 			}
 
 			double d0, d1;
@@ -636,7 +635,7 @@ namespace TS3AudioBot
 					QueryConnection.KickClientFromServer(info.TextMessage.InvokerId);
 				return null;
 			}
-			catch (QueryCommandException ex)
+			catch (TS3CommandException ex)
 			{
 				Log.Write(Log.Level.Info, "Could not kick: {0}", ex);
 				return "I'm not strong enough, master!";
@@ -763,7 +762,7 @@ namespace TS3AudioBot
 			int tokenLen = 0;
 			foreach (var file in files)
 			{
-				int newTokenLen = tokenLen + TS3QueryTools.TokenLength(file) + 3;
+				int newTokenLen = tokenLen + TS3String.TokenLength(file) + 3;
 				if (newTokenLen < 1024)
 				{
 					strb.Append(file).Append(", ");
@@ -1005,16 +1004,16 @@ namespace TS3AudioBot
 		{
 			switch (param)
 			{
-			case "force":
-				QueryConnection.OnMessageReceived -= TextCallback;
-				info.Session.Write("Goodbye!");
-				Dispose();
-				Log.Write(Log.Level.Info, "Exiting...");
-				return null;
+				case "force":
+					QueryConnection.OnMessageReceived -= TextCallback;
+					info.Session.Write("Goodbye!");
+					Dispose();
+					Log.Write(Log.Level.Info, "Exiting...");
+					return null;
 
-			default:
-				info.Session.SetResponse(ResponseQuit, null);
-				return "Do you really want to quit? !(yes|no)";
+				default:
+					info.Session.SetResponse(ResponseQuit, null);
+					return "Do you really want to quit? !(yes|no)";
 			}
 		}
 

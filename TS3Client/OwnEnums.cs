@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Query
+namespace TS3Client
 {
 	using System;
 
@@ -39,47 +39,47 @@ namespace TS3Query
 
 	public enum MessageTarget
 	{
-		[QueryString("textprivate")]
+		[TS3Serializable("textprivate")]
 		Private = 1,
-		[QueryString("textchannel")]
+		[TS3Serializable("textchannel")]
 		Channel,
-		[QueryString("textserver")]
+		[TS3Serializable("textserver")]
 		Server,
 	}
 
 	public enum RequestTarget
 	{
-		[QueryString("channel")]
+		[TS3Serializable("channel")]
 		Channel = 4,
-		[QueryString("server")]
+		[TS3Serializable("server")]
 		Server,
 	}
 
 	public enum NotificationType
 	{
-		[QueryString("notifychannelcreated")]
+		[TS3Serializable("notifychannelcreated")]
 		ChannelCreated,
-		[QueryString("notifychanneldeleted")]
+		[TS3Serializable("notifychanneldeleted")]
 		ChannelDeleted,
-		[QueryString("notifychannelchanged")]
+		[TS3Serializable("notifychannelchanged")]
 		ChannelChanged,
-		[QueryString("notifychanneledited")]
+		[TS3Serializable("notifychanneledited")]
 		ChannelEdited,
-		[QueryString("notifychannelmoved")]
+		[TS3Serializable("notifychannelmoved")]
 		ChannelMoved,
-		[QueryString("notifychannelpasswordchanged")]
+		[TS3Serializable("notifychannelpasswordchanged")]
 		ChannelPasswordChanged,
-		[QueryString("notifycliententerview")]
+		[TS3Serializable("notifycliententerview")]
 		ClientEnterView,
-		[QueryString("notifyclientleftview")]
+		[TS3Serializable("notifyclientleftview")]
 		ClientLeftView,
-		[QueryString("notifyclientmoved")]
+		[TS3Serializable("notifyclientmoved")]
 		ClientMoved,
-		[QueryString("notifyserveredited")]
+		[TS3Serializable("notifyserveredited")]
 		ServerEdited,
-		[QueryString("notifytextmessage")]
+		[TS3Serializable("notifytextmessage")]
 		TextMessage,
-		[QueryString("notifytokenused")]
+		[TS3Serializable("notifytokenused")]
 		TokenUsed,
 	}
 

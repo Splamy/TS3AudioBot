@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Query
+namespace TS3Client
 {
 	using System;
 	using System.Linq;
 	using System.Text;
 
-	public static class TS3QueryTools
+	public static class TS3String
 	{
 		public static string Escape(string stringToEscape)
 		{
@@ -48,16 +48,16 @@ namespace TS3Query
 					if (++i >= stringToUnescape.Length) throw new FormatException();
 					switch (stringToUnescape[i])
 					{
-					case 'v': strb.Append('\v'); break;  // Vertical Tab
-					case 't': strb.Append('\t'); break;  // Horizontal Tab
-					case 'r': strb.Append('\r'); break;  // Carriage Return
-					case 'n': strb.Append('\n'); break;  // Newline
-					case 'f': strb.Append('\f'); break;  // Formfeed
-					case 'p': strb.Append('|'); break;   // Pipe
-					case 's': strb.Append(' '); break;   // Whitespace
-					case '/': strb.Append('/'); break;   // Slash
-					case '\\': strb.Append('\\'); break; // Backslash
-					default: throw new FormatException();
+						case 'v': strb.Append('\v'); break;  // Vertical Tab
+						case 't': strb.Append('\t'); break;  // Horizontal Tab
+						case 'r': strb.Append('\r'); break;  // Carriage Return
+						case 'n': strb.Append('\n'); break;  // Newline
+						case 'f': strb.Append('\f'); break;  // Formfeed
+						case 'p': strb.Append('|'); break;   // Pipe
+						case 's': strb.Append(' '); break;   // Whitespace
+						case '/': strb.Append('/'); break;   // Slash
+						case '\\': strb.Append('\\'); break; // Backslash
+						default: throw new FormatException();
 					}
 				}
 				else strb.Append(c);

@@ -6,8 +6,8 @@ namespace TS3AudioBot
 	using System.Text;
 	using System.Threading.Tasks;
 	using Helper;
-	using TS3Query;
-	using TS3Query.Messages;
+	using TS3Client;
+	using TS3Client.Messages;
 
 	public interface ITeamspeakControl : IDisposable
 	{

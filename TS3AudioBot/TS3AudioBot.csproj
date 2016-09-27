@@ -130,19 +130,6 @@
     <Compile Include="ResourceFactories\TwitchFactory.cs" />
     <Compile Include="ResourceFactories\YoutubeFactory.cs" />
     <Compile Include="TeamspeakClient.cs" />
-    <Compile Include="TS3Query\DocumentedEnums.cs" />
-    <Compile Include="TS3Query\Extensions.cs" />
-    <Compile Include="TS3Query\KnownEnums.cs" />
-    <Compile Include="TS3Query\Messages\BaseTypes.cs" />
-    <Compile Include="TS3Query\Messages\ChannelNotifications.cs" />
-    <Compile Include="TS3Query\Messages\ClientNotifications.cs" />
-    <Compile Include="TS3Query\Messages\Generator.cs" />
-    <Compile Include="TS3Query\Messages\OtherNotifications.cs" />
-    <Compile Include="TS3Query\Messages\ResponseDictionary.cs" />
-    <Compile Include="TS3Query\QueryEventDispatcher.cs" />
-    <Compile Include="TS3Query\QueryStringAttribute.cs" />
-    <Compile Include="TS3Query\TS3QueryClient.cs" />
-    <Compile Include="TS3Query\TS3QueryTools.cs" />
     <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
     <Compile Include="WebInterface\WebDisplay.cs" />
@@ -163,6 +150,12 @@
   <ItemGroup>
     <Content Include="WebInterface\main.html" />
     <Content Include="WebInterface\playcontrols.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TS3Client\TS3Client.csproj">
+      <Project>{0eb99e9d-87e5-4534-a100-55d231c2b6a6}</Project>
+      <Name>TS3Client</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

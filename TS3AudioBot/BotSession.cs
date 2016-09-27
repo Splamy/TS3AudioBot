@@ -20,8 +20,8 @@ namespace TS3AudioBot
 	using System.Collections.Generic;
 	using System.Threading;
 	using Helper;
-	using TS3Query;
-	using TS3Query.Messages;
+	using TS3Client;
+	using TS3Client.Messages;
 	using Response = System.Func<CommandSystem.ExecutionInformation, bool>;
 
 	public sealed class UserSession
@@ -57,7 +57,7 @@ namespace TS3AudioBot
 				else
 					Bot.QueryConnection.SendGlobalMessage(message);
 			}
-			catch (QueryCommandException ex)
+			catch (TS3CommandException ex)
 			{
 				Log.Write(Log.Level.Error, "Could not write public message ({0})", ex);
 			}

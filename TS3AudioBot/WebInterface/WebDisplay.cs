@@ -10,7 +10,7 @@ using System.Web;
 using HtmlAgilityPack;
 using TS3AudioBot.Helper;
 using TS3AudioBot.History;
-using TS3Query.Messages;
+using TS3Client.Messages;
 
 namespace TS3AudioBot.WebInterface
 {

@@ -20,7 +20,7 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using ResourceFactories;
-	using TS3Query.Messages;
+	using TS3Client.Messages;
 
 	public class PlayManager
 	{

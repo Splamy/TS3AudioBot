@@ -21,8 +21,8 @@ namespace TS3AudioBot
 	using System.Globalization;
 	using System.Linq;
 	using Helper;
-	using TS3Query;
-	using TS3Query.Messages;
+	using TS3Client;
+	using TS3Client.Messages;
 
 	public sealed class BobController : IPlayerConnection
 	{
@@ -166,7 +166,7 @@ namespace TS3AudioBot
 				queryConnection.SendMessage(message, bobClient.ClientId);
 				return R.OkR;
 			}
-			catch (QueryCommandException qcex)
+			catch (TS3CommandException qcex)
 			{
 				Log.Write(Log.Level.Error, "BC failed to send to bobC ({0})", qcex.Message);
 				return R.Err(qcex.Message);
