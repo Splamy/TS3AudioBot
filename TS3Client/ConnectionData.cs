@@ -18,9 +18,11 @@ namespace TS3Client
 {
 	public class ConnectionData
 	{
-		public string Hostname { get; set; }
-		public ushort Port { get; set; }
-		public string PrivateKey { get; set; }
-		// etc
+		public string Hostname { get; set; } // Q F
+		public ushort Port { get; set; } // Q F
+		public string PrivateKey { get; set; } // F
+		
+		public string UserName { get; set; } // Q F
+		public string QueryPassword { get; set; } // Q
 	}
 }

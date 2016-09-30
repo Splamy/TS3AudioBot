@@ -25,20 +25,17 @@ namespace TS3Client.Query
 
 	public class TS3QueryClient : TS3BaseClient
 	{
-		private Queue<WaitBlock> requestQueue = new Queue<WaitBlock>();
-		private TcpClient tcpClient;
+		private readonly Queue<WaitBlock> requestQueue;
+		private readonly TcpClient tcpClient;
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
 		private StreamWriter tcpWriter;
 
-		// CTORS
-
 		public TS3QueryClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
+			requestQueue = new Queue<WaitBlock>();
 			tcpClient = new TcpClient();
 		}
-
-		// METHODS
 
 		protected override void ConnectInternal(ConnectionData conData)
 		{
@@ -55,9 +52,9 @@ namespace TS3Client.Query
 
 		protected override void DisconnectInternal()
 		{
-			status = TS3ClientStatus.Quitting;
-			tcpWriter.WriteLine("quit");
-			tcpWriter.Flush();
+			tcpWriter?.WriteLine("quit");
+			tcpWriter?.Flush();
+			tcpClient.Close();
 		}
 
 		protected override void NetworkLoop()
@@ -76,9 +73,9 @@ namespace TS3Client.Query
 				if (message.StartsWith("error ", StringComparison.Ordinal))
 				{
 					// we (hopefully) only need to lock here for the dequeue
-					lock (lockObj)
+					lock (LockObj)
 					{
-						if (!(status == TS3ClientStatus.Connected || status == TS3ClientStatus.Connecting)) break;
+						if (!(Status == TS3ClientStatus.Connected || Status == TS3ClientStatus.Connecting)) break;
 
 						var errorStatus = CommandDeserializer.GenerateErrorStatus(message);
 						if (!errorStatus.Ok)
@@ -103,14 +100,14 @@ namespace TS3Client.Query
 					dataBuffer = line;
 				}
 			}
-			status = TS3ClientStatus.Disconnected;
+			Status = TS3ClientStatus.Disconnected;
 		}
 
 		protected override IEnumerable<IResponse> SendCommand(string data, Type targetType) // Synchronous
 		{
 			using (WaitBlock wb = new WaitBlock(targetType))
 			{
-				lock (lockObj)
+				lock (LockObj)
 				{
 					requestQueue.Enqueue(wb);
 					SendRaw(data);
@@ -120,10 +117,22 @@ namespace TS3Client.Query
 			}
 		}
 
-		protected override void SendRaw(string data)
+		private void SendRaw(string data)
 		{
 			tcpWriter.WriteLine(data);
 			tcpWriter.Flush();
 		}
+
+		#region QUERY SPECIFIC COMMANDS
+
+		public void Login(string username, string password)
+			=> Send("login",
+			new CommandParameter("client_login_name", username),
+			new CommandParameter("client_login_password", password));
+		public void UseServer(int svrId)
+			=> Send("use",
+			new CommandParameter("sid", svrId));
+
+		#endregion
 	}
 }

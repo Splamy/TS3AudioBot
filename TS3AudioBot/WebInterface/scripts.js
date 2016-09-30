@@ -63,7 +63,7 @@ function content_loaded() {
     }
 
     var handler = $("#playhandler");
-    if (handler.length != 0) {
+    if (handler.length !== 0) {
         handler.load("/playcontrols", function () {
             // gather all controls
             playcontrols = {};
@@ -93,7 +93,7 @@ function content_loaded() {
 }
 
 function update_site(event) {
-    if (event.data == "update") {
+    if (event.data === "update") {
         load(lastreq);
     }
 }
@@ -114,7 +114,7 @@ function logarithmic_to_value(val) {
     if (val < 0) val = 0;
     else if (val > scale) val = scale;
 
-    return 10 - Math.pow(10, 1.0 / ((val / (scale / (1.0 / Math.log10(10 - slmax) - 1))) + 1));
+    return 10 - Math.pow(10, 1.0 / (val / (scale / (1.0 / Math.log10(10 - slmax) - 1)) + 1));
 }
 
 function get_query(url) {

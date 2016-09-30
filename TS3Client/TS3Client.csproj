@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0EB99E9D-87E5-4534-A100-55D231C2B6A6}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TS3Client</RootNamespace>
     <AssemblyName>TS3Client</AssemblyName>
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -30,7 +31,14 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+      <HintPath>..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -42,9 +50,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConnectionData.cs" />
+    <Compile Include="DebugTests.cs" />
     <Compile Include="DocumentedEnums.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="Messages\ClientMessages.cs" />
+    <Compile Include="Full\BasePacket.cs" />
+    <Compile Include="Full\PacketHandler.cs" />
+    <Compile Include="Full\IncomingPacket.cs" />
+    <Compile Include="Full\NetUtil.cs" />
+    <Compile Include="Full\OutgoingPacket.cs" />
+    <Compile Include="Full\PacketType.cs" />
+    <Compile Include="Full\QuickLZ.cs" />
+    <Compile Include="Full\RingQueue.cs" />
+    <Compile Include="Full\TS3Crypt.cs" />
+    <Compile Include="Full\TS3FullClient.cs" />
+    <Compile Include="Util.cs" />
+    <Compile Include="Messages\FullClientMessages.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
     <Compile Include="Messages\ChannelNotifications.cs" />
@@ -62,13 +82,13 @@
     <Compile Include="CommandOption.cs" />
     <Compile Include="CommandParameter.cs" />
     <Compile Include="ParameterConverter.cs" />
-    <Compile Include="CommandException.cs" />
+    <Compile Include="TS3CommandException.cs" />
     <Compile Include="TS3String.cs" />
     <Compile Include="CommandDeserializer.cs" />
     <Compile Include="Query\WaitBlock.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Full\" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

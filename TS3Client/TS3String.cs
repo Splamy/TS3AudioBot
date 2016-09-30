@@ -80,9 +80,4 @@ namespace TS3Client
 				c == '\v';
 		}
 	}
-
-	static class Helper
-	{
-		public static T Init<T>(ref T fld) where T : new() => fld = new T();
-	}
 }

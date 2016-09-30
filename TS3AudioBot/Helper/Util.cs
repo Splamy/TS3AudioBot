@@ -63,12 +63,25 @@ namespace TS3AudioBot.Helper
 
 		public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int amount)
 		{
-			return source.Skip(Math.Max(0, source.Count() - amount));
+			// if the array has fixed length like a list or array we can cast it to IList<T> und use skip + count efficiently
+			var list = source as IList<T>;
+			if (list != null)
+				return list.Skip(Math.Max(0, list.Count - amount));
+
+			// otherwise we need to evaluate the entire array
+			var temp = new LinkedList<T>();
+			foreach (var value in source)
+			{
+				temp.AddLast(value);
+				if (temp.Count > amount)
+					temp.RemoveFirst();
+			}
+			return temp;
 		}
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
-		/// <param name="msTimeout">Timeout in millisenconds.</param>
+		/// <param name="timeout">Timeout in millisenconds.</param>
 		public static void WaitOrTimeout(Func<bool> predicate, TimeSpan timeout)
 		{
 			int msTimeout = (int)timeout.TotalSeconds;

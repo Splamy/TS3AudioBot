@@ -23,21 +23,21 @@ namespace TS3Client
 
 	public class CommandBinder : CommandParameter
 	{
-		private static Dictionary<Type, ConstructorInfo> constrBuffer = new Dictionary<Type, ConstructorInfo>();
+		private static readonly Dictionary<Type, ConstructorInfo> ConstrBuffer = new Dictionary<Type, ConstructorInfo>();
 		private static ConstructorInfo GetValueCtor(Type t)
 		{
 			ConstructorInfo ci;
-			if (!constrBuffer.TryGetValue(t, out ci))
+			if (!ConstrBuffer.TryGetValue(t, out ci))
 			{
 				var ctor = typeof(PrimitiveParameter).GetConstructors().Where(c => c.GetParameters().First().ParameterType == t).FirstOrDefault();
 				if (ctor == null)
 					throw new InvalidCastException();
 				ci = ctor;
-				constrBuffer.Add(t, ci);
+				ConstrBuffer.Add(t, ci);
 			}
 			return ci;
 		}
-		private List<string> buildList = new List<string>();
+		private readonly List<string> buildList = new List<string>();
 		public override string QueryString => string.Join(" ", buildList);
 
 		protected CommandBinder() { }

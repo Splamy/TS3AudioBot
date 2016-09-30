@@ -31,9 +31,9 @@ namespace TS3Client
 		// STATIC LOOKUPS
 
 		/// <summary>Maps the name of a notification to the class.</summary>
-		private static Dictionary<string, Type> notifyLookup;
+		private static readonly Dictionary<string, Type> NotifyLookup;
 		/// <summary>Map of functions to deserialize from query values.</summary>
-		private static Dictionary<Type, Func<string, Type, object>> convertMap;
+		private static readonly Dictionary<Type, Func<string, Type, object>> ConvertMap;
 
 		static CommandDeserializer()
 		{
@@ -45,23 +45,23 @@ namespace TS3Client
 							  let ntfyAtt = type.GetCustomAttribute(typeof(QueryNotificationAttribute), false)
 							  where ntfyAtt != null
 							  select new KeyValuePair<string, Type>(((QueryNotificationAttribute)ntfyAtt).Name, type);
-			notifyLookup = derivedNtfy.ToDictionary(x => x.Key, x => x.Value);
+			NotifyLookup = derivedNtfy.ToDictionary(x => x.Key, x => x.Value);
 
-			Helper.Init(ref convertMap);
-			convertMap.Add(typeof(bool), (v, t) => v != "0");
-			convertMap.Add(typeof(sbyte), (v, t) => sbyte.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(byte), (v, t) => byte.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(short), (v, t) => short.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(ushort), (v, t) => ushort.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(int), (v, t) => int.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(uint), (v, t) => uint.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(long), (v, t) => long.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(ulong), (v, t) => ulong.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(float), (v, t) => float.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(double), (v, t) => double.Parse(v, CultureInfo.InvariantCulture));
-			convertMap.Add(typeof(string), (v, t) => TS3String.Unescape(v));
-			convertMap.Add(typeof(TimeSpan), (v, t) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
-			convertMap.Add(typeof(DateTime), (v, t) => PrimitiveParameter.unixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
+			Util.Init(ref ConvertMap);
+			ConvertMap.Add(typeof(bool), (v, t) => v != "0");
+			ConvertMap.Add(typeof(sbyte), (v, t) => sbyte.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(byte), (v, t) => byte.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(short), (v, t) => short.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(ushort), (v, t) => ushort.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(int), (v, t) => int.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(uint), (v, t) => uint.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(long), (v, t) => long.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(ulong), (v, t) => ulong.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(float), (v, t) => float.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(double), (v, t) => double.Parse(v, CultureInfo.InvariantCulture));
+			ConvertMap.Add(typeof(string), (v, t) => TS3String.Unescape(v));
+			ConvertMap.Add(typeof(TimeSpan), (v, t) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
+			ConvertMap.Add(typeof(DateTime), (v, t) => PrimitiveParameter.UnixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
 		}
 
 		// data to error
@@ -88,7 +88,7 @@ namespace TS3Client
 			if (splitindex < 0) throw new ArgumentException("line couldn't be parsed");
 			Type targetNotification;
 			string notifyname = line.Substring(0, splitindex);
-			if (notifyLookup.TryGetValue(notifyname, out targetNotification))
+			if (NotifyLookup.TryGetValue(notifyname, out targetNotification))
 			{
 				var notification = Generator.ActivateNotification(targetNotification);
 				var incommingData = ParseKeyValueLine(line, true);
@@ -146,7 +146,7 @@ namespace TS3Client
 		private static object DeserializeValue(string data, Type dataType)
 		{
 			Func<string, Type, object> converter;
-			if (convertMap.TryGetValue(dataType, out converter))
+			if (ConvertMap.TryGetValue(dataType, out converter))
 				return converter(data, dataType);
 			else if (dataType.IsEnum)
 				return Enum.ToObject(dataType, Convert.ChangeType(data, dataType.GetEnumUnderlyingType(), CultureInfo.InvariantCulture));

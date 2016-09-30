@@ -24,7 +24,7 @@ namespace TS3Client.Messages
 
 	public static class Generator
 	{
-		private static readonly Dictionary<Type, InitializerData> generatedTypes;
+		private static readonly Dictionary<Type, InitializerData> GeneratedTypes;
 		private static readonly AssemblyName GenAssemblyName = new AssemblyName("QueryMessages");
 		private static readonly AssemblyBuilder GenAssemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(GenAssemblyName, AssemblyBuilderAccess.Run);
 		private static readonly ModuleBuilder GenModuleBuilder = GenAssemblyBuilder.DefineDynamicModule("MainModule");
@@ -32,7 +32,7 @@ namespace TS3Client.Messages
 
 		static Generator()
 		{
-			Helper.Init(ref generatedTypes);
+			Util.Init(ref GeneratedTypes);
 		}
 
 		public static T ActivateNotification<T>() where T : INotification => (T)ActivateNotification(typeof(T));
@@ -41,15 +41,15 @@ namespace TS3Client.Messages
 		public static T ActivateResponse<T>() where T : IResponse => (T)ActivateResponse(typeof(T));
 		public static IResponse ActivateResponse(Type t) => (IResponse)Activate(t, false);
 
-		public static Dictionary<string, MapTarget> GetAccessMap(Type t) => generatedTypes[t].AccessMap;
+		public static Dictionary<string, MapTarget> GetAccessMap(Type t) => GeneratedTypes[t].AccessMap;
 
 		private static object Activate(Type backingInterface, bool notifyProp)
 		{
 			InitializerData genType;
-			if (!generatedTypes.TryGetValue(backingInterface, out genType))
+			if (!GeneratedTypes.TryGetValue(backingInterface, out genType))
 			{
 				genType = Generate(backingInterface, notifyProp);
-				generatedTypes.Add(backingInterface, genType);
+				GeneratedTypes.Add(backingInterface, genType);
 			}
 			return Activator.CreateInstance(genType.ActivationType);
 		}

@@ -29,7 +29,7 @@ namespace TS3ABotUnitTests
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
-	using TS3Query.Messages;
+	using TS3Client.Messages;
 
 	[TestFixture]
 	public class UnitTests
@@ -282,8 +282,8 @@ namespace TS3ABotUnitTests
 			// Ambiguous command
 			result = XCommandSystem.FilterList(filterList, "p");
 			Assert.AreEqual(2, result.Count());
-			Assert.IsTrue(result.Where(r => r.Key == "ply").Any());
-			Assert.IsTrue(result.Where(r => r.Key == "pla").Any());
+			Assert.IsTrue(result.Any(r => r.Key == "ply"));
+			Assert.IsTrue(result.Any(r => r.Key == "pla"));
 		}
 
 		[Test]
@@ -335,7 +335,7 @@ namespace TS3ABotUnitTests
 			TestISubstringFinder(subf);
 		}
 
-		public void TestISubstringFinder(ISubstringSearch<string> subf)
+		private static void TestISubstringFinder(ISubstringSearch<string> subf)
 		{
 			subf.Add("thisIsASongName", "1");
 			subf.Add("abcdefghijklmnopqrstuvwxyz", "2");
@@ -359,7 +359,7 @@ namespace TS3ABotUnitTests
 			Assert.True(HaveSameItems(res, new string[0]));
 		}
 
-		static bool HaveSameItems<T>(IEnumerable<T> self, IEnumerable<T> other) => !other.Except(self).Any() && !self.Except(other).Any();
+		private static bool HaveSameItems<T>(IEnumerable<T> self, IEnumerable<T> other) => !other.Except(self).Any() && !self.Except(other).Any();
 
 		[Test]
 		public void ListedShuffleTest()
@@ -373,7 +373,7 @@ namespace TS3ABotUnitTests
 			TestShuffleAlgorithm(new LinearFeedbackShiftRegister());
 		}
 
-		public void TestShuffleAlgorithm(IShuffleAlgorithm algo)
+		private static void TestShuffleAlgorithm(IShuffleAlgorithm algo)
 		{
 			for (int i = 1; i < 1000; i++)
 			{

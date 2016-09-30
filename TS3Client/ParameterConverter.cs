@@ -27,7 +27,7 @@ namespace TS3Client
 	public class PrimitiveParameter : IParameterConverter
 	{
 		public string QueryValue { get; }
-		public static readonly DateTime unixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
 		public PrimitiveParameter(bool value) { QueryValue = (value ? "1" : "0"); }
 		public PrimitiveParameter(sbyte value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
@@ -42,7 +42,7 @@ namespace TS3Client
 		public PrimitiveParameter(double value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(string value) { QueryValue = TS3String.Escape(value); }
 		public PrimitiveParameter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(DateTime value) { QueryValue = (value - unixTimeStart).TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
+		public PrimitiveParameter(DateTime value) { QueryValue = (value - UnixTimeStart).TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
 
 		public static implicit operator PrimitiveParameter(bool value) => new PrimitiveParameter(value);
 		public static implicit operator PrimitiveParameter(sbyte value) => new PrimitiveParameter(value);

@@ -10,9 +10,9 @@
 
 	public abstract class TS3BaseClient : IDisposable
 	{
-		protected readonly object lockObj = new object();
+		protected readonly object LockObj = new object();
 		private bool eventLoopRunning;
-		protected TS3ClientStatus status;
+		protected TS3ClientStatus Status;
 		protected IEventDispatcher EventDispatcher;
 
 		// EVENTS
@@ -21,12 +21,12 @@
 		public event EventHandler<ClientLeftView> OnClientLeftView;
 
 
-		public bool IsConnected => status == TS3ClientStatus.Connected;
+		public bool IsConnected => Status == TS3ClientStatus.Connected;
 		public ConnectionData CurrentConnectionData { get; private set; }
 
-		public TS3BaseClient(EventDispatchType dispatcher)
+		protected TS3BaseClient(EventDispatchType dispatcher)
 		{
-			status = TS3ClientStatus.Disconnected;
+			Status = TS3ClientStatus.Disconnected;
 			eventLoopRunning = false;
 
 			switch (dispatcher)
@@ -48,21 +48,22 @@
 			if (IsConnected)
 				Disconnect();
 
-			lock (lockObj)
+			lock (LockObj)
 			{
-				status = TS3ClientStatus.Connecting;
+				Status = TS3ClientStatus.Connecting;
 				CurrentConnectionData = conData;
 				ConnectInternal(conData);
 
 				EventDispatcher.Init(NetworkLoop);
-				status = TS3ClientStatus.Connected;
+				Status = TS3ClientStatus.Connected;
 			}
 		}
 		protected abstract void ConnectInternal(ConnectionData conData);
 		public void Disconnect()
 		{
-			lock (lockObj)
+			lock (LockObj)
 			{
+				Status = TS3ClientStatus.Quitting;
 				OnTextMessageReceived = null;
 				OnClientEnterView = null;
 				OnClientLeftView = null;
@@ -117,7 +118,7 @@
 
 		private static readonly CommandParameter[] NoParameter = new CommandParameter[0];
 		private static readonly CommandOption[] NoOptions = new CommandOption[0];
-		private static readonly Regex commandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
+		private static readonly Regex CommandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command)
@@ -155,7 +156,7 @@
 		{
 			if (string.IsNullOrWhiteSpace(command))
 				throw new ArgumentNullException(nameof(command));
-			if (!commandMatch.IsMatch(command))
+			if (!CommandMatch.IsMatch(command))
 				throw new ArgumentException("Invalid command characters", nameof(command));
 
 			StringBuilder strb = new StringBuilder(TS3String.Escape(command));
@@ -172,8 +173,6 @@
 
 		protected abstract IEnumerable<IResponse> SendCommand(string data, Type targetType);
 
-		protected abstract void SendRaw(string data);
-
 		#endregion
 
 		#region UNIVERSAL COMMANDS
@@ -182,20 +181,14 @@
 		public void RegisterNotification(RequestTarget target, int channel) => RegisterNotification(target.GetQueryString(), channel);
 		private void RegisterNotification(string target, int channel)
 		{
-			var ev = new CommandParameter("event", target.ToString().ToLowerInvariant());
+			var ev = new CommandParameter("event", target.ToLowerInvariant());
 			if (target == "channel")
 				Send("servernotifyregister", ev, new CommandParameter("id", channel));
 			else
 				Send("servernotifyregister", ev);
 		}
 
-		public void Login(string username, string password) // Q
-			=> Send("login",
-			new CommandParameter("client_login_name", username),
-			new CommandParameter("client_login_password", password));
-		public void UseServer(int svrId) // Q
-			=> Send("use",
-			new CommandParameter("sid", svrId));
+
 		public void ChangeName(string newName)
 			=> Send("clientupdate",
 			new CommandParameter("client_nickname", newName));
@@ -203,7 +196,7 @@
 			=> Send("clientdbedit",
 			new CommandParameter("cldbid", client.DatabaseId),
 			new CommandParameter("client_description", newDescription));
-		public WhoAmI WhoAmI()
+		public WhoAmI WhoAmI() // Q ?
 			=> Send<WhoAmI>("whoami").FirstOrDefault();
 		public void SendMessage(string message, ClientData client)
 			=> SendMessage(MessageTarget.Private, client.ClientId, message);

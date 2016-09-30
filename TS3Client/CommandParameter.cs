@@ -18,8 +18,8 @@ namespace TS3Client
 {
 	public class CommandParameter
 	{
-		public string Key { get; protected set; }
-		public string Value { get; protected set; }
+		public string Key { get; }
+		public string Value { get; }
 		public virtual string QueryString => string.Concat(Key, "=", Value);
 
 		protected CommandParameter() { }

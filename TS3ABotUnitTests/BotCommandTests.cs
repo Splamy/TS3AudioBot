@@ -19,11 +19,11 @@ namespace TS3ABotUnitTests
 	using System;
 	using NUnit.Framework;
 
-	using TS3Query.Messages;
+	using TS3Client.Messages;
 
 	using TS3AudioBot;
 	using TS3AudioBot.CommandSystem;
-	using TS3Query;
+	using TS3Client;
 
 	[TestFixture]
 	public class BotCommandTests

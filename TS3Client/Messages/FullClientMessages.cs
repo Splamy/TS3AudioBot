@@ -6,7 +6,5 @@ using System.Threading.Tasks;
 
 namespace TS3Client.Messages
 {
-	class ClientMessages
-	{
-	}
+
 }

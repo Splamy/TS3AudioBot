@@ -31,7 +31,7 @@ namespace TS3Client
 		void EnterEventLoop();
 	}
 
-	class CurrentThreadEventDisptcher : IEventDispatcher
+	internal class CurrentThreadEventDisptcher : IEventDispatcher
 	{
 		private Action eventLoop;
 		public EventDispatchType DispatcherType => EventDispatchType.CurrentThread;
@@ -42,21 +42,18 @@ namespace TS3Client
 		public void Dispose() { }
 	}
 
-	class DoubleThreadEventDispatcher : IEventDispatcher
+	internal class DoubleThreadEventDispatcher : IEventDispatcher
 	{
 		public EventDispatchType DispatcherType => EventDispatchType.DoubleThread;
 
 		private Thread readQueryThread;
-		private ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
-		private AutoResetEvent eventBlock = new AutoResetEvent(false);
+		private readonly ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
+		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private bool run = true;
-
-		public DoubleThreadEventDispatcher() { }
 
 		public void Init(Action eventLoop)
 		{
-			readQueryThread = new Thread(eventLoop.Invoke);
-			readQueryThread.Name = "TS3Query MessageLoop";
+			readQueryThread = new Thread(eventLoop.Invoke) { Name = "TS3Query MessageLoop" };
 			readQueryThread.Start();
 		}
 
@@ -68,7 +65,7 @@ namespace TS3Client
 
 		public void EnterEventLoop()
 		{
-			while (run && eventBlock != null)
+			while (run)
 			{
 				eventBlock.WaitOne();
 				while (!eventQueue.IsEmpty)
@@ -82,7 +79,9 @@ namespace TS3Client
 
 		public void Dispose()
 		{
-			// TODO: replace with thread close util call from webdev branch
+			run = false;
+			eventBlock.Set();
+
 			if (readQueryThread != null)
 			{
 				for (int i = 0; i < 100 && readQueryThread.IsAlive; i++)
@@ -94,17 +93,11 @@ namespace TS3Client
 				}
 			}
 
-			run = false;
-			if (eventBlock != null)
-			{
-				eventBlock.Set();
-				eventBlock.Dispose();
-				eventBlock = null;
-			}
+			eventBlock.Dispose();
 		}
 	}
 
-	class NoEventDispatcher : IEventDispatcher
+	internal class NoEventDispatcher : IEventDispatcher
 	{
 		public EventDispatchType DispatcherType => EventDispatchType.None;
 		public void Init(Action eventLoop) { }
