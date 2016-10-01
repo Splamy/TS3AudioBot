@@ -41,8 +41,26 @@ namespace TS3Client.Full
 			{
 				var packet = packetHandler.FetchPacket();
 
-				
+				switch (packet.PacketType)
+				{
+					case PacketType.Command:
+
+						break;
+
+					case PacketType.Readable:
+
+						break;
+
+					case PacketType.Init1:
+
+						break;
+				}
 			}
+		}
+
+		private void ProcessInit1()
+		{
+			
 		}
 
 		protected override IEnumerable<IResponse> SendCommand(string data, Type targetType)
@@ -52,7 +70,7 @@ namespace TS3Client.Full
 
 		#region FULLCLIENT SPECIFIC COMMANDS
 
-		public void ClientInit(string nickname, string version, string plattform, bool inputHardware, bool outputHardware, 
+		public void ClientInit(string nickname, string version, string plattform, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string versionSign, int keyOffset, string nicknamePhonetic, string defaultToken, string hwid)
 			=> Send("clientinit",

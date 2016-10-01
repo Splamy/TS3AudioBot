@@ -17,20 +17,8 @@
 
 		public void BuildHeader()
 		{
-			if (!BitConverter.IsLittleEndian)
-			{
-				Header[0] = (byte)((ClientId >> 8) & 0xFF);
-				Header[1] = (byte)(ClientId & 0xFF);
-				Header[2] = (byte)((PacketId >> 8) & 0xFF);
-				Header[3] = (byte)(PacketId & 0xFF);
-			}
-			else
-			{
-				Header[0] = (byte)(ClientId & 0xFF);
-				Header[1] = (byte)((ClientId >> 8) & 0xFF);
-				Header[2] = (byte)(PacketId & 0xFF);
-				Header[3] = (byte)((PacketId >> 8) & 0xFF);
-			}
+			NetUtil.H2N(ClientId, Header, 0);
+			NetUtil.H2N(PacketId, Header, 2);
 			Header[4] = PacketTypeFlagged;
 		}
 	}

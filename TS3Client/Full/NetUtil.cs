@@ -1,4 +1,6 @@
-﻿namespace TS3Client.Full
+﻿using System;
+
+namespace TS3Client.Full
 {
 	using System.Net;
 
@@ -13,5 +15,31 @@
 		public static int N2H(int value) => IPAddress.NetworkToHostOrder(value);
 		public static ulong H2N(ulong value) => unchecked((ulong)IPAddress.HostToNetworkOrder((long)value));
 		public static ulong N2H(ulong value) => unchecked((ulong)IPAddress.NetworkToHostOrder((long)value));
+
+
+		public static ushort N2Hushort(byte[] intArr, int inOff)
+		{
+			if (BitConverter.IsLittleEndian)
+			{
+				return (ushort)(intArr[inOff] | (intArr[inOff + 1] << 8));
+			}
+			else // IsBigEndian
+			{
+				return (ushort)((intArr[inOff] << 8) | intArr[inOff + 1]);
+			}
+		}
+		public static void H2N(ushort value, byte[] outArr, int outOff)
+		{
+			if (BitConverter.IsLittleEndian)
+			{
+				outArr[outOff] = (byte)(value & 0xFF);
+				outArr[outOff + 1] = (byte)((value >> 8) & 0xFF);
+			}
+			else // IsBigEndian
+			{
+				outArr[outOff] = (byte)((value >> 8) & 0xFF);
+				outArr[outOff + 1] = (byte)(value & 0xFF);
+			}
+		}
 	}
 }

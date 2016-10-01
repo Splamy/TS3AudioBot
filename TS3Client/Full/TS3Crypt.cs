@@ -22,7 +22,6 @@ namespace TS3Client.Full
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly Tuple<byte[], byte[]> DummyKeyAndNonceTuple = new Tuple<byte[], byte[]>(DummyKey, DummyIv);
 		private static readonly byte[] TS3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly byte[] Initheader = new byte[] { 0x00, 0x65, 0x00, 0x00, 0x88 };
 		private static readonly byte[] Initversion = new byte[] { 0x06, 0x3b, 0xec, 0xe9 };
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 
@@ -66,6 +65,7 @@ namespace TS3Client.Full
 		}
 
 		private static readonly ECKeyGenerationParameters KeyGenParams = new ECKeyGenerationParameters(X9ObjectIdentifiers.Prime256v1, new SecureRandom());
+
 		private static ECPoint ImportPublicKey(byte[] asnByteArray)
 		{
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
@@ -80,6 +80,27 @@ namespace TS3Client.Full
 		{
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
 			return (asnKeyData[4] as DerInteger).Value;
+		}
+
+		private static string ExportPublicKey(ECPoint publicKeyPoint)
+		{
+			var dataArray = new DerSequence(
+					new DerBitString(new byte[] { 0 }, 7),
+					new DerInteger(32),
+					new DerInteger(publicKeyPoint.AffineXCoord.ToBigInteger()),
+					new DerInteger(publicKeyPoint.AffineYCoord.ToBigInteger())).GetDerEncoded();
+			return Convert.ToBase64String(dataArray);
+		}
+
+		private static string ExportPrivateKey(ECPoint publicKeyPoint, BigInteger privNum)
+		{
+			var dataArray = new DerSequence(
+					new DerBitString(new byte[] { 128 }, 7),
+					new DerInteger(32),
+					new DerInteger(publicKeyPoint.AffineXCoord.ToBigInteger()),
+					new DerInteger(publicKeyPoint.AffineYCoord.ToBigInteger()),
+					new DerInteger(privNum)).GetDerEncoded();
+			return Convert.ToBase64String(dataArray);
 		}
 
 		#endregion
@@ -137,19 +158,75 @@ namespace TS3Client.Full
 			Array.Copy(buffer, 0, fakeSignature, 0, 8);
 		}
 
+		public OutgoingPacket ProcessInit1(int type, byte[] data)
+		{
+			OutgoingPacket packet = null;
+			if (type == -1)
+			{
+				var sendData = new byte[4 + 1 + 4 + 4 + 8];
+				Array.Copy(Initversion, 0, sendData, 0, 4);
+				sendData[4] = 0x00;
+				for (int i = 0; i < 8; i++) sendData[i + 5] = 0x42; // should be 4byte timestamp + 4byte random
+
+				packet = new OutgoingPacket(sendData, PacketType.Init1)
+				{
+					UnencryptedFlag = true,
+					ClientId = 0,
+					PacketId = 101
+				};
+			}
+			else if (type == 1)
+			{
+				var sendData = new byte[4 + 1 + 16 + 4];
+				Array.Copy(Initversion, 0, sendData, 0, 4);
+				sendData[4] = 0x02;
+				sendData[5] = data[1];
+				for (int i = 0; i < 4; i++) sendData[i + 21] = 0x42; // should be second 4byte (random), swapped
+
+				packet = new OutgoingPacket(sendData, PacketType.Init1)
+				{
+					UnencryptedFlag = true,
+					ClientId = 0,
+					PacketId = 101
+				};
+			}
+			if (type == 3)
+			{
+				var sendData = new byte[4 + data.Length + 64];
+				Array.Copy(Initversion, 0, sendData, 0, 4);
+				sendData[4] = 0x04;
+				sendData[5] = data[1];
+				for (int i = 0; i < 4; i++) sendData[i + 21] = 0x42; // should be second 4byte (random), swapped
+
+				var exportedPublic = ExportPublicKey(publicKey);
+				
+				var finalMod = @"clientinitiv alpha=AAAAAAAAAAAAAA== omega=" + exportedPublic + " ip";
+
+				packet = new OutgoingPacket(sendData, PacketType.Init1)
+				{
+					UnencryptedFlag = true,
+					ClientId = 0,
+					PacketId = 101
+				};
+			}
+			return packet;
+		}
+
 		#endregion
 
-		public void Encrypt(OutgoingPacket packet)
+		#region ENCRYPTION/DECRYPTION
+
+		public bool Encrypt(OutgoingPacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
 			{
 				FakeEncrypt(packet, TS3InitMac);
-				return;
+				return true;
 			}
 			if (packet.UnencryptedFlag)
 			{
 				FakeEncrypt(packet, fakeSignature);
-				return;
+				return true;
 			}
 
 			var keyNonce = GetKeyNonce(false, packet.PacketId, 0, packet.PacketType);
@@ -164,7 +241,7 @@ namespace TS3Client.Full
 				len = eaxCipher.ProcessBytes(packet.Data, 0, packet.Size, result, 0);
 				len += eaxCipher.DoFinal(result, len);
 			}
-			catch (Exception) { throw; }
+			catch (Exception) { return false; }
 
 			// cryptOutArr consists of [Data..., Mac...]
 			// to build the final TS3/libtomcrypt we need to copy it into another order
@@ -178,9 +255,10 @@ namespace TS3Client.Full
 			// Copy the Data from [Data..., Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(result, 0, packet.Raw, MacLen + OutHeaderLen, len);
 			// Raw is now [Mac..., Header..., Data...]
+			return true;
 		}
 
-		public void FakeEncrypt(OutgoingPacket packet, byte[] mac)
+		private void FakeEncrypt(OutgoingPacket packet, byte[] mac)
 		{
 			packet.Raw = new byte[packet.Data.Length + MacLen + OutHeaderLen];
 			// Copy the Mac from [Data..., Mac...] to [Mac..., Header..., Data...]
@@ -252,6 +330,8 @@ namespace TS3Client.Full
 			packet.Data = new byte[dataLen];
 			Array.Copy(packet.Raw, MacLen + InHeaderLen, packet.Data, 0, dataLen);
 		}
+
+		#endregion
 
 		#region OTHER CRYPT FUNCTIONS
 

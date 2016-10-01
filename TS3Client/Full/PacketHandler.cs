@@ -73,8 +73,9 @@ namespace TS3Client.Full
 
 			if (packet.PacketType == PacketType.Command)
 				sendQueue.AddLast(packet);
-			if (!packet.UnencryptedFlag)
-				ts3Crypt.Encrypt(packet);
+			if (!ts3Crypt.Encrypt(packet))
+				throw new Exception(); // TODO
+
 			SendInternal(packet);
 		}
 
@@ -125,12 +126,39 @@ namespace TS3Client.Full
 				if (packet == null)
 					continue;
 
+				switch (packet.PacketType)
+				{
+					case PacketType.Readable: break;
+					case PacketType.Voice: break;
+					case PacketType.Command: ReceiveCommand(packet); break;
+					case PacketType.CommandLow: break;
+					case PacketType.Ping: break;
+					case PacketType.Pong: break;
+					case PacketType.Ack: ReceiveAck(packet); break;
+					case PacketType.Type7Closeconnection: break;
+					case PacketType.Init1: ReceiveInit1(packet); break;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+
 				return packet;
 			}
 		}
 
-		private void Ack(ushort packetId)
+		private void ReceiveCommand(IncomingPacket packet)
 		{
+			if (receiveQueue.IsSet(packet.PacketId))
+			{
+				receiveQueue.Set(packet, packet.PacketId);
+			}
+		}
+
+		private void ReceiveAck(IncomingPacket packet)
+		{
+			if (packet.Data.Length < 2)
+				return;
+			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
+
 			for (var node = sendQueue.First; node != null; node = node.Next)
 			{
 				if (node.Value.PacketId == packetId)
@@ -141,6 +169,11 @@ namespace TS3Client.Full
 					}
 				}
 			}
+		}
+
+		private void ReceiveInit1(IncomingPacket packet)
+		{
+
 		}
 
 		/// <summary>
