@@ -158,58 +158,46 @@ namespace TS3Client.Full
 			Array.Copy(buffer, 0, fakeSignature, 0, 8);
 		}
 
-		public OutgoingPacket ProcessInit1(int type, byte[] data)
+		public byte[] ProcessInit1(byte[] data)
 		{
-			OutgoingPacket packet = null;
-			if (type == -1)
+			if (data == null)
 			{
 				var sendData = new byte[4 + 1 + 4 + 4 + 8];
 				Array.Copy(Initversion, 0, sendData, 0, 4);
 				sendData[4] = 0x00;
 				for (int i = 0; i < 8; i++) sendData[i + 5] = 0x42; // should be 4byte timestamp + 4byte random
-
-				packet = new OutgoingPacket(sendData, PacketType.Init1)
-				{
-					UnencryptedFlag = true,
-					ClientId = 0,
-					PacketId = 101
-				};
+				return sendData;
 			}
-			else if (type == 1)
+
+			if (data.Length < 4) return null;
+			int type = data[4];
+			if (type == 1)
 			{
 				var sendData = new byte[4 + 1 + 16 + 4];
 				Array.Copy(Initversion, 0, sendData, 0, 4);
 				sendData[4] = 0x02;
 				sendData[5] = data[1];
-				for (int i = 0; i < 4; i++) sendData[i + 21] = 0x42; // should be second 4byte (random), swapped
-
-				packet = new OutgoingPacket(sendData, PacketType.Init1)
-				{
-					UnencryptedFlag = true,
-					ClientId = 0,
-					PacketId = 101
-				};
+				for (int i = 0; i < 4; i++) sendData[i + 21] = 0x42; // should be second 4byte (the random), swapped
+				return sendData;
 			}
-			if (type == 3)
+			else if (type == 3)
 			{
 				var sendData = new byte[4 + data.Length + 64];
 				Array.Copy(Initversion, 0, sendData, 0, 4);
+				Array.Copy(data, 0, sendData, 4, data.Length);
 				sendData[4] = 0x04;
-				sendData[5] = data[1];
-				for (int i = 0; i < 4; i++) sendData[i + 21] = 0x42; // should be second 4byte (random), swapped
 
 				var exportedPublic = ExportPublicKey(publicKey);
-				
-				var finalMod = @"clientinitiv alpha=AAAAAAAAAAAAAA== omega=" + exportedPublic + " ip";
-
-				packet = new OutgoingPacket(sendData, PacketType.Init1)
-				{
-					UnencryptedFlag = true,
-					ClientId = 0,
-					PacketId = 101
-				};
+				string initAdd = TS3Command.BuildToString("clientinit",
+					new[] {
+						new CommandParameter("alpha", "AAAAAAAAAAAAAA=="),
+						new CommandParameter("omega", exportedPublic),
+						new CommandParameter("ip") },
+					TS3Command.NoOptions);
+				return Util.Encoder.GetBytes(initAdd);
 			}
-			return packet;
+			else
+				return null;
 		}
 
 		#endregion

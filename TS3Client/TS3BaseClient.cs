@@ -10,6 +10,9 @@
 
 	public abstract class TS3BaseClient : IDisposable
 	{
+		/// <summary>This object needs to be lcked when one of these situations applies:</br>
+		/// The connection status needs to be changed.</br>
+		/// An internal message queue is accessed.</summary>
 		protected readonly object LockObj = new object();
 		private bool eventLoopRunning;
 		protected TS3ClientStatus Status;
@@ -31,12 +34,12 @@
 
 			switch (dispatcher)
 			{
-				case EventDispatchType.None: EventDispatcher = new NoEventDispatcher(); break;
-				case EventDispatchType.CurrentThread: EventDispatcher = new CurrentThreadEventDisptcher(); break;
-				case EventDispatchType.DoubleThread: EventDispatcher = new DoubleThreadEventDispatcher(); break;
-				case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
-				case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
-				default: throw new NotSupportedException();
+			case EventDispatchType.None: EventDispatcher = new NoEventDispatcher(); break;
+			case EventDispatchType.CurrentThread: EventDispatcher = new CurrentThreadEventDisptcher(); break;
+			case EventDispatchType.DoubleThread: EventDispatcher = new DoubleThreadEventDispatcher(); break;
+			case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
+			case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
+			default: throw new NotSupportedException();
 			}
 		}
 
@@ -63,11 +66,14 @@
 		{
 			lock (LockObj)
 			{
-				Status = TS3ClientStatus.Quitting;
-				OnTextMessageReceived = null;
-				OnClientEnterView = null;
-				OnClientLeftView = null;
-				DisconnectInternal();
+				if (IsConnected)
+				{
+					Status = TS3ClientStatus.Quitting;
+					OnTextMessageReceived = null;
+					OnClientEnterView = null;
+					OnClientLeftView = null;
+					DisconnectInternal();
+				}
 			}
 		}
 		protected abstract void DisconnectInternal();
@@ -96,19 +102,19 @@
 			// TODO rework
 			switch (notification.NotifyType)
 			{
-				case NotificationType.ChannelCreated: break;
-				case NotificationType.ChannelDeleted: break;
-				case NotificationType.ChannelChanged: break;
-				case NotificationType.ChannelEdited: break;
-				case NotificationType.ChannelMoved: break;
-				case NotificationType.ChannelPasswordChanged: break;
-				case NotificationType.ClientEnterView: EventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (ClientEnterView)notification)); break;
-				case NotificationType.ClientLeftView: EventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (ClientLeftView)notification)); break;
-				case NotificationType.ClientMoved: break;
-				case NotificationType.ServerEdited: break;
-				case NotificationType.TextMessage: EventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
-				case NotificationType.TokenUsed: break;
-				default: throw new InvalidOperationException();
+			case NotificationType.ChannelCreated: break;
+			case NotificationType.ChannelDeleted: break;
+			case NotificationType.ChannelChanged: break;
+			case NotificationType.ChannelEdited: break;
+			case NotificationType.ChannelMoved: break;
+			case NotificationType.ChannelPasswordChanged: break;
+			case NotificationType.ClientEnterView: EventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (ClientEnterView)notification)); break;
+			case NotificationType.ClientLeftView: EventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (ClientLeftView)notification)); break;
+			case NotificationType.ClientMoved: break;
+			case NotificationType.ServerEdited: break;
+			case NotificationType.TextMessage: EventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
+			case NotificationType.TokenUsed: break;
+			default: throw new InvalidOperationException();
 			}
 		}
 
@@ -116,62 +122,31 @@
 
 		#region NETWORK SEND
 
-		private static readonly CommandParameter[] NoParameter = new CommandParameter[0];
-		private static readonly CommandOption[] NoOptions = new CommandOption[0];
-		private static readonly Regex CommandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
-
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command)
-			=> Send(command, NoParameter);
+			=> Send(command, TS3Command.NoParameter);
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, params CommandParameter[] parameter)
-			=> Send(command, parameter, NoOptions);
-
-		[DebuggerStepThrough]
-		public IEnumerable<ResponseDictionary> Send(string command, CommandParameter[] parameter, CommandOption options)
-			=> Send(command, parameter, new[] { options });
+			=> Send(command, parameter, TS3Command.NoOptions);
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, CommandParameter[] parameter, params CommandOption[] options)
-			=> SendInternal(command, parameter, options, null).Cast<ResponseDictionary>();
+			=> SendCommand(new TS3Command(command, parameter, options), null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command) where T : IResponse
-			=> Send<T>(command, NoParameter);
+			=> Send<T>(command, TS3Command.NoParameter);
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, params CommandParameter[] parameter) where T : IResponse
-			=> Send<T>(command, parameter, NoOptions);
-
-		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command, CommandParameter[] parameter, CommandOption options) where T : IResponse
-			=> Send<T>(command, parameter, new[] { options });
+			=> Send<T>(command, parameter, TS3Command.NoOptions);
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, CommandParameter[] parameter, params CommandOption[] options) where T : IResponse
-			=> SendInternal(command, parameter, options, typeof(T)).Cast<T>();
+			=> SendCommand(new TS3Command(command, parameter, options), typeof(T)).Cast<T>();
 
-		private IEnumerable<IResponse> SendInternal(string command, CommandParameter[] parameter, CommandOption[] options, Type targetType)
-		{
-			if (string.IsNullOrWhiteSpace(command))
-				throw new ArgumentNullException(nameof(command));
-			if (!CommandMatch.IsMatch(command))
-				throw new ArgumentException("Invalid command characters", nameof(command));
-
-			StringBuilder strb = new StringBuilder(TS3String.Escape(command));
-
-			foreach (var param in parameter)
-				strb.Append(' ').Append(param.QueryString);
-
-			foreach (var option in options)
-				strb.Append(option.Value);
-
-			string finalCommand = strb.ToString();
-			return SendCommand(finalCommand, targetType);
-		}
-
-		protected abstract IEnumerable<IResponse> SendCommand(string data, Type targetType);
+		protected abstract IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType);
 
 		#endregion
 
@@ -223,7 +198,7 @@
 		public IEnumerable<ClientData> ClientList()
 			=> ClientList(0);
 		public IEnumerable<ClientData> ClientList(ClientListOptions options) => Send<ClientData>("clientlist",
-			NoParameter, options);
+			TS3Command.NoParameter, options);
 		public IEnumerable<ClientServerGroup> ServerGroupsOfClientDbId(ClientData client)
 			=> ServerGroupsOfClientDbId(client.DatabaseId);
 		public IEnumerable<ClientServerGroup> ServerGroupsOfClientDbId(ulong clDbId)
@@ -235,30 +210,12 @@
 
 		#endregion
 
-		public void Dispose()
+		public virtual void Dispose()
 		{
-			if (IsConnected)
-			{
-				Disconnect();
+			Disconnect();
 
-				/*lock (lockObj)
-				{
-					tcpWriter.Dispose();
-					tcpWriter = null;
-
-					tcpReader.Dispose();
-					tcpReader = null;
-
-					tcpClient.Close();
-					tcpClient = null;
-				}*/
-			}
-
-			if (EventDispatcher != null)
-			{
-				EventDispatcher.Dispose();
-				EventDispatcher = null;
-			}
+			EventDispatcher?.Dispose();
+			EventDispatcher = null;
 		}
 
 		protected enum TS3ClientStatus

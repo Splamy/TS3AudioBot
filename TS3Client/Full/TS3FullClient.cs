@@ -9,7 +9,7 @@ using System.Net.Sockets;
 
 namespace TS3Client.Full
 {
-	public class TS3FullClient : TS3BaseClient
+	public sealed class TS3FullClient : TS3BaseClient
 	{
 		private readonly UdpClient udpClient;
 		private readonly TS3Crypt ts3Crypt;
@@ -27,12 +27,17 @@ namespace TS3Client.Full
 			ts3Crypt.Reset();
 			packetHandler.Reset();
 
-			// TODO: connect
+			try { udpClient.Connect(conData.Hostname, conData.Port); }
+			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
+
+			var initData = ts3Crypt.ProcessInit1(null);
+			packetHandler.AddOutgoingPacket(initData, PacketType.Init1);
 		}
 
 		protected override void DisconnectInternal()
 		{
-			throw new NotImplementedException();
+			// TODO send quit message
+			udpClient.Close();
 		}
 
 		protected override void NetworkLoop()
@@ -40,30 +45,46 @@ namespace TS3Client.Full
 			while (true)
 			{
 				var packet = packetHandler.FetchPacket();
+				if (packet == null) break;
 
 				switch (packet.PacketType)
 				{
-					case PacketType.Command:
+				case PacketType.Command:
+					string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
+					if (message.StartsWith("error ", StringComparison.Ordinal))
+					{
+						// todo add return_code logic
+					}
+					else if (message.StartsWith("notify", StringComparison.Ordinal))
+					{
+						var notify = CommandDeserializer.GenerateNotification(message);
+						InvokeEvent(notify);
+					}
+					else if (true /*Special commands*/)
+					{
 
-						break;
+					}
+					else
+					{
 
-					case PacketType.Readable:
+					}
+					break;
 
-						break;
+				case PacketType.Readable:
+					// VOICE
 
-					case PacketType.Init1:
+					break;
 
-						break;
+				case PacketType.Init1:
+					var forwardData = ts3Crypt.ProcessInit1(packet.Data);
+					packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
+					break;
 				}
 			}
+			Status = TS3ClientStatus.Disconnected;
 		}
 
-		private void ProcessInit1()
-		{
-			
-		}
-
-		protected override IEnumerable<IResponse> SendCommand(string data, Type targetType)
+		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType)
 		{
 			throw new NotImplementedException();
 		}
@@ -90,5 +111,10 @@ namespace TS3Client.Full
 			new CommandParameter("hwid", hwid));
 
 		#endregion
+
+		public override void Dispose()
+		{
+			base.Dispose();
+		}
 	}
 }

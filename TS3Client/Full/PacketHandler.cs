@@ -13,6 +13,7 @@ namespace TS3Client.Full
 
 	internal class PacketHandler
 	{
+		/// <summary>Greatest allowed packet size, including the complete heder.</summary>
 		private const int MaxPacketSize = 500;
 		private const int HeaderSize = 13;
 
@@ -42,6 +43,7 @@ namespace TS3Client.Full
 		public void Start()
 		{
 			Reset();
+			// TODO: check run! i think we need to recreate the thread....
 			if (!resendThread.IsAlive)
 				resendThread.Start();
 		}
@@ -67,8 +69,15 @@ namespace TS3Client.Full
 		private void AddOutgoingPacket(OutgoingPacket packet, PacketFlags flags = PacketFlags.None)
 		{
 			packet.PacketFlags |= flags | PacketFlags.Newprotocol;
-			packet.PacketId = GetPacketCounter(packet.PacketType);
-			IncPacketCounter(packet.PacketType);
+			if (packet.PacketType == PacketType.Init1)
+			{
+
+			}
+			else
+			{
+				packet.PacketId = GetPacketCounter(packet.PacketType);
+				IncPacketCounter(packet.PacketType);
+			}
 			packet.ClientId = ClientId;
 
 			if (packet.PacketType == PacketType.Command)
@@ -76,7 +85,7 @@ namespace TS3Client.Full
 			if (!ts3Crypt.Encrypt(packet))
 				throw new Exception(); // TODO
 
-			SendInternal(packet);
+			SendRaw(packet);
 		}
 
 		private ushort GetPacketCounter(PacketType packetType) => packetCounter[(int)packetType];
@@ -112,7 +121,6 @@ namespace TS3Client.Full
 
 		private static bool NeedsSplitting(int dataSize) => dataSize + HeaderSize <= MaxPacketSize;
 
-
 		public IncomingPacket FetchPacket()
 		{
 			while (true)
@@ -128,22 +136,27 @@ namespace TS3Client.Full
 
 				switch (packet.PacketType)
 				{
-					case PacketType.Readable: break;
-					case PacketType.Voice: break;
-					case PacketType.Command: ReceiveCommand(packet); break;
-					case PacketType.CommandLow: break;
-					case PacketType.Ping: break;
-					case PacketType.Pong: break;
-					case PacketType.Ack: ReceiveAck(packet); break;
-					case PacketType.Type7Closeconnection: break;
-					case PacketType.Init1: ReceiveInit1(packet); break;
-					default:
-						throw new ArgumentOutOfRangeException();
+				case PacketType.Readable: break;
+				case PacketType.Voice: break;
+				case PacketType.Command: ReceiveCommand(packet); break;
+				case PacketType.CommandLow: break;
+				case PacketType.Ping: break;
+				case PacketType.Pong: break;
+				case PacketType.Ack: ReceiveAck(packet); break;
+				case PacketType.Type7Closeconnection: break;
+				case PacketType.Init1: break;
+				default:
+					throw new ArgumentOutOfRangeException();
 				}
 
 				return packet;
 			}
 		}
+
+		#region Packet checking
+
+		// These methods are for low level packet processing which the
+		// rather high level TS3FullClient should not worry about.
 
 		private void ReceiveCommand(IncomingPacket packet)
 		{
@@ -151,6 +164,14 @@ namespace TS3Client.Full
 			{
 				receiveQueue.Set(packet, packet.PacketId);
 			}
+			SendAck(packet.PacketId);
+		}
+
+		private void SendAck(ushort ackId)
+		{
+			byte[] ackData = new byte[2];
+			NetUtil.H2N(ackId, ackData, 0);
+			AddOutgoingPacket(ackData, PacketType.Ack);
 		}
 
 		private void ReceiveAck(IncomingPacket packet)
@@ -171,10 +192,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void ReceiveInit1(IncomingPacket packet)
-		{
-
-		}
+		#endregion
 
 		/// <summary>
 		/// ResendLoop will regularly check if a packet has be acknowleged and trys to send it again
@@ -200,7 +218,7 @@ namespace TS3Client.Full
 					{
 						var nextTest = nowTimeout - outgoingPacket.LastSendTime;
 						if (nextTest < TimeSpan.Zero)
-							SendInternal(outgoingPacket);
+							SendRaw(outgoingPacket);
 						else if (nextTest < sleepSpan)
 							sleepSpan = nextTest;
 					}
@@ -208,7 +226,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void SendInternal(OutgoingPacket packet)
+		private void SendRaw(OutgoingPacket packet)
 		{
 			packet.LastSendTime = DateTime.UtcNow;
 			udpClient.Send(packet.Raw, packet.Raw.Length);

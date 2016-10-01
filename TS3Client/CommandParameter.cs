@@ -20,11 +20,17 @@ namespace TS3Client
 	{
 		public string Key { get; }
 		public string Value { get; }
-		public virtual string QueryString => string.Concat(Key, "=", Value);
+		public virtual string QueryString => Value != null ? string.Concat(Key, "=", Value) : Key;
 
 		protected CommandParameter() { }
 
-		public CommandParameter(string name, IParameterConverter rawValue)
+        public CommandParameter(string name)
+        {
+            Key = name;
+            Value = null;
+        }
+
+        public CommandParameter(string name, IParameterConverter rawValue)
 		{
 			Key = name;
 			Value = rawValue.QueryValue;

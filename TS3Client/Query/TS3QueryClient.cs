@@ -23,7 +23,7 @@ namespace TS3Client.Query
 	using System.Linq;
 	using System.Net.Sockets;
 
-	public class TS3QueryClient : TS3BaseClient
+	public sealed class TS3QueryClient : TS3BaseClient
 	{
 		private readonly Queue<WaitBlock> requestQueue;
 		private readonly TcpClient tcpClient;
@@ -43,8 +43,8 @@ namespace TS3Client.Query
 			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
 
 			tcpStream = tcpClient.GetStream();
-			tcpReader = new StreamReader(tcpStream);
-			tcpWriter = new StreamWriter(tcpStream) { NewLine = "\n" };
+			tcpReader = new StreamReader(tcpStream, Util.Encoder);
+			tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
 
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
@@ -103,14 +103,14 @@ namespace TS3Client.Query
 			Status = TS3ClientStatus.Disconnected;
 		}
 
-		protected override IEnumerable<IResponse> SendCommand(string data, Type targetType) // Synchronous
+		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType) // Synchronous
 		{
 			using (WaitBlock wb = new WaitBlock(targetType))
 			{
 				lock (LockObj)
 				{
 					requestQueue.Enqueue(wb);
-					SendRaw(data);
+					SendRaw(com.ToString());
 				}
 
 				return wb.WaitForMessage();
@@ -134,5 +134,19 @@ namespace TS3Client.Query
 			new CommandParameter("sid", svrId));
 
 		#endregion
+
+		public override void Dispose()
+		{
+			base.Dispose();
+
+			lock (LockObj)
+			{
+				tcpWriter?.Dispose();
+				tcpWriter = null;
+
+				tcpReader?.Dispose();
+				tcpReader = null;
+			}
+		}
 	}
 }
