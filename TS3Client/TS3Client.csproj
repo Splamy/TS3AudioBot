@@ -86,7 +86,7 @@
     <Compile Include="TS3CommandException.cs" />
     <Compile Include="TS3String.cs" />
     <Compile Include="CommandDeserializer.cs" />
-    <Compile Include="Query\WaitBlock.cs" />
+    <Compile Include="WaitBlock.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

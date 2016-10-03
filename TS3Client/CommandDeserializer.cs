@@ -25,7 +25,6 @@ namespace TS3Client
 	using System.Reflection;
 	using KVEnu = System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>;
 
-
 	static class CommandDeserializer
 	{
 		// STATIC LOOKUPS
@@ -76,6 +75,7 @@ namespace TS3Client
 					case "ID": errorStatus.Id = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
 					case "MSG": errorStatus.Message = TS3String.Unescape(responseParam.Value); break;
 					case "FAILED_PERMID": errorStatus.MissingPermissionId = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
+					case "RETURN_CODE": errorStatus.ReturnCode = TS3String.Unescape(responseParam.Value); break;
 				}
 			}
 			return errorStatus;
@@ -91,8 +91,8 @@ namespace TS3Client
 			if (NotifyLookup.TryGetValue(notifyname, out targetNotification))
 			{
 				var notification = Generator.ActivateNotification(targetNotification);
-				var incommingData = ParseKeyValueLine(line, true);
-				FillQueryMessage(targetNotification, notification, incommingData);
+				var incomingData = ParseKeyValueLine(line, true);
+				FillQueryMessage(targetNotification, notification, incomingData);
 				return notification;
 			}
 			else throw new NotSupportedException("No matching notification derivative");
@@ -100,12 +100,7 @@ namespace TS3Client
 
 		public static IEnumerable<IResponse> GenerateResponse(string line, Type answerType)
 		{
-			/*if (!requestQueue.Any())
-				throw new InvalidOperationException();
-
-			var peekResponse = requestQueue.Peek();*/
-
-			var messageList = line?.Split('|');
+			var messageList = line.Split('|');
 			if (answerType == null)
 			{
 				if (string.IsNullOrWhiteSpace(line))
@@ -118,11 +113,26 @@ namespace TS3Client
 					return Enumerable.Empty<IResponse>();
 				return messageList.Select(msg =>
 				{
-					var response = Generator.ActivateResponse(answerType);
-					FillQueryMessage(answerType, response, ParseKeyValueLine(msg, false));
-					return response;
+					var incomingData = ParseKeyValueLine(msg, false);
+					return DictToResponse(incomingData, answerType);
 				});
 			}
+		}
+
+		// TODO implement fillMissingDuplicates
+		public static IEnumerable<ResponseDictionary> PreGenerateResponse(string line, bool fillMissingDuplicates)
+		{
+			var messageList = line.Split('|');
+			if (string.IsNullOrWhiteSpace(line))
+				return Enumerable.Empty<ResponseDictionary>();
+			return messageList.Select(msg => new ResponseDictionary(ParseKeyValueLineDict(msg, false)));
+		}
+
+		public static IResponse DictToResponse(KVEnu dict, Type answerType)
+		{
+			var response = Generator.ActivateResponse(answerType);
+			FillQueryMessage(answerType, response, dict);
+			return response;
 		}
 
 		// HELPER
@@ -164,9 +174,9 @@ namespace TS3Client
 				   select part.Split(new[] { '=' }, 2) into keyValuePair
 				   select new KeyValuePair<string, string>(keyValuePair[0], keyValuePair.Length > 1 ? keyValuePair[1] : string.Empty);
 		}
-		private static IDictionary<string, string> ParseKeyValueLineDict(string line, bool ignoreFirst)
+		private static Dictionary<string, string> ParseKeyValueLineDict(string line, bool ignoreFirst)
 			=> ParseKeyValueLineDict(ParseKeyValueLine(line, ignoreFirst));
-		private static IDictionary<string, string> ParseKeyValueLineDict(KVEnu data)
+		private static Dictionary<string, string> ParseKeyValueLineDict(KVEnu data)
 			=> data.ToDictionary(pair => pair.Key, pair => pair.Value);
 	}
 }

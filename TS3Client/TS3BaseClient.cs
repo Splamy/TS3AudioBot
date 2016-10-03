@@ -5,13 +5,11 @@
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Linq;
-	using System.Text;
-	using System.Text.RegularExpressions;
 
 	public abstract class TS3BaseClient : IDisposable
 	{
-		/// <summary>This object needs to be lcked when one of these situations applies:</br>
-		/// The connection status needs to be changed.</br>
+		/// <summary>This object needs to be locked when one of these situations applies:<para/>
+		/// The connection status needs to be changed.<para/>
 		/// An internal message queue is accessed.</summary>
 		protected readonly object LockObj = new object();
 		private bool eventLoopRunning;
@@ -34,12 +32,12 @@
 
 			switch (dispatcher)
 			{
-			case EventDispatchType.None: EventDispatcher = new NoEventDispatcher(); break;
-			case EventDispatchType.CurrentThread: EventDispatcher = new CurrentThreadEventDisptcher(); break;
-			case EventDispatchType.DoubleThread: EventDispatcher = new DoubleThreadEventDispatcher(); break;
-			case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
-			case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
-			default: throw new NotSupportedException();
+				case EventDispatchType.None: EventDispatcher = new NoEventDispatcher(); break;
+				case EventDispatchType.CurrentThread: EventDispatcher = new CurrentThreadEventDisptcher(); break;
+				case EventDispatchType.DoubleThread: EventDispatcher = new DoubleThreadEventDispatcher(); break;
+				case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
+				case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
+				default: throw new NotSupportedException();
 			}
 		}
 
@@ -78,6 +76,20 @@
 		}
 		protected abstract void DisconnectInternal();
 
+		private string cmdLineBuffer = null;
+		/// <summary></summary>
+		/// <returns>True if the command was processed, false otherwise.</returns>
+		protected bool ProcessCommand(string message)
+		{
+			if (message.StartsWith("notify", StringComparison.Ordinal))
+			{
+				var notify = CommandDeserializer.GenerateNotification(message);
+				InvokeEvent(notify);
+				return true;
+			}
+
+
+		}
 
 		#region NETWORK RECEIVE AND DESERIALIZE
 
@@ -102,19 +114,19 @@
 			// TODO rework
 			switch (notification.NotifyType)
 			{
-			case NotificationType.ChannelCreated: break;
-			case NotificationType.ChannelDeleted: break;
-			case NotificationType.ChannelChanged: break;
-			case NotificationType.ChannelEdited: break;
-			case NotificationType.ChannelMoved: break;
-			case NotificationType.ChannelPasswordChanged: break;
-			case NotificationType.ClientEnterView: EventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (ClientEnterView)notification)); break;
-			case NotificationType.ClientLeftView: EventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (ClientLeftView)notification)); break;
-			case NotificationType.ClientMoved: break;
-			case NotificationType.ServerEdited: break;
-			case NotificationType.TextMessage: EventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
-			case NotificationType.TokenUsed: break;
-			default: throw new InvalidOperationException();
+				case NotificationType.ChannelCreated: break;
+				case NotificationType.ChannelDeleted: break;
+				case NotificationType.ChannelChanged: break;
+				case NotificationType.ChannelEdited: break;
+				case NotificationType.ChannelMoved: break;
+				case NotificationType.ChannelPasswordChanged: break;
+				case NotificationType.ClientEnterView: EventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (ClientEnterView)notification)); break;
+				case NotificationType.ClientLeftView: EventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (ClientLeftView)notification)); break;
+				case NotificationType.ClientMoved: break;
+				case NotificationType.ServerEdited: break;
+				case NotificationType.TextMessage: EventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
+				case NotificationType.TokenUsed: break;
+				default: throw new InvalidOperationException();
 			}
 		}
 
@@ -124,27 +136,35 @@
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command)
-			=> Send(command, TS3Command.NoParameter);
+			=> SendCommand(new TS3Command(command), null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, params CommandParameter[] parameter)
-			=> Send(command, parameter, TS3Command.NoOptions);
+			=> SendCommand(new TS3Command(command, parameter.ToList()), null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, CommandParameter[] parameter, params CommandOption[] options)
-			=> SendCommand(new TS3Command(command, parameter, options), null).Cast<ResponseDictionary>();
+			=> SendCommand(new TS3Command(command, parameter.ToList(), options.ToList()), null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command) where T : IResponse
-			=> Send<T>(command, TS3Command.NoParameter);
+			=> SendCommand(new TS3Command(command), typeof(T)).Cast<T>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, params CommandParameter[] parameter) where T : IResponse
-			=> Send<T>(command, parameter, TS3Command.NoOptions);
+			=> Send<T>(command, parameter.ToList());
+
+		[DebuggerStepThrough]
+		public IEnumerable<T> Send<T>(string command, List<CommandParameter> parameter) where T : IResponse
+			=> SendCommand(new TS3Command(command, parameter), typeof(T)).Cast<T>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, CommandParameter[] parameter, params CommandOption[] options) where T : IResponse
-			=> SendCommand(new TS3Command(command, parameter, options), typeof(T)).Cast<T>();
+			=> SendCommand(new TS3Command(command, parameter.ToList(), options.ToList()), typeof(T)).Cast<T>();
+
+		[DebuggerStepThrough]
+		public IEnumerable<T> Send<T>(string command, List<CommandParameter> parameter, params CommandOption[] options) where T : IResponse
+			=> SendCommand(new TS3Command(command, parameter.ToList(), options.ToList()), typeof(T)).Cast<T>();
 
 		protected abstract IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType);
 

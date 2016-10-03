@@ -25,6 +25,8 @@ namespace TS3Client
 		// failed_permid
 		public int MissingPermissionId { get; set; } = -1;
 
+		public string ReturnCode { get; set; } = string.Empty;
+
 		public bool Ok => Id == 0 && Message == "ok";
 
 		public string ErrorFormat() => $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";

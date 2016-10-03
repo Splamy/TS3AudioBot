@@ -33,9 +33,9 @@ namespace TS3Client.Full
 		private ECPoint publicKey;
 		private BigInteger privateKey;
 
-		public bool cryptoInitComplete { get; private set; }
-		private byte[] ivStruct = new byte[20];
-		private byte[] fakeSignature = new byte[MacLen];
+		private bool CryptoInitComplete { get; set; }
+		private readonly byte[] ivStruct = new byte[20];
+		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly Tuple<byte[], byte[]>[] cachedKeyNonces = new Tuple<byte[], byte[]>[PacketTypeKinds * 2];
 
 		public TS3Crypt()
@@ -45,9 +45,9 @@ namespace TS3Client.Full
 
 		public void Reset()
 		{
-			cryptoInitComplete = false;
-			fakeSignature = null;
+			CryptoInitComplete = false;
 			Array.Clear(ivStruct, 0, ivStruct.Length);
+			Array.Clear(fakeSignature, 0, fakeSignature.Length);
 			Array.Clear(cachedKeyNonces, 0, cachedKeyNonces.Length);
 		}
 
@@ -124,7 +124,7 @@ namespace TS3Client.Full
 			byte[] sharedKey = GetSharedSecret(serverPublicKey);
 			SetSharedSecret(alphaBytes, betaBytes, sharedKey);
 
-			cryptoInitComplete = true;
+			CryptoInitComplete = true;
 		}
 
 		/// <summary>Calculates a shared secred with ECDH from the client private and server public key.</summary>
@@ -323,7 +323,7 @@ namespace TS3Client.Full
 
 		#region OTHER CRYPT FUNCTIONS
 
-		/// <summary>TS3 generates a new key and nonce for each packet sent and received. This method generates and caches these.</summary>
+		/// <summary>TS3 uses a new key and nonce for each packet sent and received. This method generates and caches these.</summary>
 		/// <param name="fromServer">True if the packet is from server to client, false for client to server.</param>
 		/// <param name="packetId">The id of the packet, host order.</param>
 		/// <param name="generationId">Seriously no idea, just pass 0 and it should be fine.</param>
@@ -331,7 +331,7 @@ namespace TS3Client.Full
 		/// <returns></returns>
 		private Tuple<byte[], byte[]> GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
 		{
-			if (!cryptoInitComplete)
+			if (!CryptoInitComplete)
 				return DummyKeyAndNonceTuple;
 
 			// only the lower 4 bits are used for the real packetType
@@ -376,9 +376,9 @@ namespace TS3Client.Full
 		/// <summary>This method calculates x ^ (2^level) % n = y which is the solution to the server RSA puzzle.</summary>
 		/// <param name="x">The x number, unsigned, as a bytearray from BigInteger. x is the base.</param>
 		/// <param name="n">The n number, unsigned, as a bytearray from BigInteger. n is the modulus.</param>
-		/// <param name="level"></param>
+		/// <param name="level">The exponent to x.</param>
 		/// <returns>The y value, unsigned, as a bytearray from BigInteger</returns>
-		private static byte[] SolveRsaChallange(byte[] x, byte[] n, int level = 10000)
+		private static byte[] SolveRsaChallange(byte[] x, byte[] n, int level)
 		{
 			if (x == null || n == null) return null;
 			var bign = new BigInteger(1, n);
@@ -405,9 +405,9 @@ namespace TS3Client.Full
 		}
 
 		private static readonly Sha1Digest Sha1Hash = new Sha1Digest();
-		private static readonly Sha256Digest Sha265Hash = new Sha256Digest();
+		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
 		private static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha1Hash, data, offset, len);
-		private static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha265Hash, data, offset, len);
+		private static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
 		private static byte[] HashIt(GeneralDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			byte[] result;

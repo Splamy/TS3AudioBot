@@ -1,14 +1,10 @@
-﻿using System.Reflection;
-
-namespace TS3Client.Full
+﻿namespace TS3Client.Full
 {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Net;
 	using System.Net.Sockets;
-	using System.Text;
-	using System.Threading.Tasks;
 	using System.Threading;
 
 	internal class PacketHandler
@@ -71,17 +67,19 @@ namespace TS3Client.Full
 			packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 			if (packet.PacketType == PacketType.Init1)
 			{
-
+				packet.PacketId = 101;
+				packet.ClientId = 0;
 			}
 			else
 			{
 				packet.PacketId = GetPacketCounter(packet.PacketType);
 				IncPacketCounter(packet.PacketType);
+				packet.ClientId = ClientId;
 			}
-			packet.ClientId = ClientId;
 
 			if (packet.PacketType == PacketType.Command)
-				sendQueue.AddLast(packet);
+				lock (sendLoopMonitor)
+					sendQueue.AddLast(packet);
 			if (!ts3Crypt.Encrypt(packet))
 				throw new Exception(); // TODO
 
@@ -136,17 +134,17 @@ namespace TS3Client.Full
 
 				switch (packet.PacketType)
 				{
-				case PacketType.Readable: break;
-				case PacketType.Voice: break;
-				case PacketType.Command: ReceiveCommand(packet); break;
-				case PacketType.CommandLow: break;
-				case PacketType.Ping: break;
-				case PacketType.Pong: break;
-				case PacketType.Ack: ReceiveAck(packet); break;
-				case PacketType.Type7Closeconnection: break;
-				case PacketType.Init1: break;
-				default:
-					throw new ArgumentOutOfRangeException();
+					case PacketType.Readable: break;
+					case PacketType.Voice: break;
+					case PacketType.Command: ReceiveCommand(packet); break; // TODO MERGE LOGIC !
+					case PacketType.CommandLow: break;
+					case PacketType.Ping: break;
+					case PacketType.Pong: break;
+					case PacketType.Ack: ReceiveAck(packet); break;
+					case PacketType.Type7Closeconnection: break;
+					case PacketType.Init1: break;
+					default:
+						throw new ArgumentOutOfRangeException();
 				}
 
 				return packet;
@@ -154,7 +152,6 @@ namespace TS3Client.Full
 		}
 
 		#region Packet checking
-
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
@@ -180,16 +177,10 @@ namespace TS3Client.Full
 				return;
 			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
 
-			for (var node = sendQueue.First; node != null; node = node.Next)
-			{
-				if (node.Value.PacketId == packetId)
-				{
-					lock (sendLoopMonitor)
-					{
+			lock (sendLoopMonitor)
+				for (var node = sendQueue.First; node != null; node = node.Next)
+					if (node.Value.PacketId == packetId)
 						sendQueue.Remove(node);
-					}
-				}
-			}
 		}
 
 		#endregion

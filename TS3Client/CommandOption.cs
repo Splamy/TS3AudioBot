@@ -21,7 +21,7 @@ namespace TS3Client
 
 	public class CommandOption
 	{
-		public string Value { get; protected set; }
+		public string Value { get; }
 
 		public CommandOption(string name) { Value = string.Concat(" -", name); }
 		public CommandOption(Enum values) { Value = string.Join(" -", values.GetFlags().Select(enu => Enum.GetName(typeof(Enum), enu))); }

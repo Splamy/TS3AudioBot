@@ -24,7 +24,7 @@ namespace TS3Client.Messages
 
 	public class ResponseDictionary : IDictionary<KeyType, ValueType>, IResponse
 	{
-		private IDictionary<KeyType, ValueType> data;
+		private readonly IDictionary<KeyType, ValueType> data;
 		public ResponseDictionary(IDictionary<KeyType, ValueType> dataDict) { data = dataDict; }
 
 		public ValueType this[KeyType key] { get { return data[key]; } set { throw new NotSupportedException(); } }
@@ -43,5 +43,15 @@ namespace TS3Client.Messages
 		public bool Remove(KeyType key) { throw new NotSupportedException(); }
 		public bool TryGetValue(KeyType key, out ValueType value) => data.TryGetValue(key, out value);
 		IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
+
+		public string ReturnCode
+		{
+			get { return data.ContainsKey("return_code") ? data["return_code"] : string.Empty; }
+			set
+			{
+				if (data.ContainsKey("return_code")) data["return_code"] = value;
+				else data.Add("return_code", value);
+			}
+		}
 	}
 }

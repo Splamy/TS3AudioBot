@@ -1,31 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TS3Client.Messages;
-using System.Net;
-using System.Net.Sockets;
-
-namespace TS3Client.Full
+﻿namespace TS3Client.Full
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Net.Sockets;
+	using Messages;
+
 	public sealed class TS3FullClient : TS3BaseClient
 	{
 		private readonly UdpClient udpClient;
 		private readonly TS3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
 
+		private int returnCode;
+		private readonly Dictionary<int, WaitBlock> requestDict;
+
 		public TS3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
 			udpClient = new UdpClient();
 			ts3Crypt = new TS3Crypt();
 			packetHandler = new PacketHandler(ts3Crypt, udpClient);
+
+			returnCode = 0;
+			requestDict = new Dictionary<int, WaitBlock>();
 		}
 
 		protected override void ConnectInternal(ConnectionData conData)
 		{
-			ts3Crypt.Reset();
-			packetHandler.Reset();
+			Reset();
 
 			try { udpClient.Connect(conData.Hostname, conData.Port); }
 			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
@@ -49,44 +50,101 @@ namespace TS3Client.Full
 
 				switch (packet.PacketType)
 				{
-				case PacketType.Command:
-					string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-					if (message.StartsWith("error ", StringComparison.Ordinal))
-					{
-						// todo add return_code logic
-					}
-					else if (message.StartsWith("notify", StringComparison.Ordinal))
-					{
-						var notify = CommandDeserializer.GenerateNotification(message);
-						InvokeEvent(notify);
-					}
-					else if (true /*Special commands*/)
-					{
+					case PacketType.Command:
+						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
 
-					}
-					else
-					{
+						if (message.StartsWith("notify", StringComparison.Ordinal))
+						{
+							var notify = CommandDeserializer.GenerateNotification(message);
+							InvokeEvent(notify);
+							break;
+						}
 
-					}
-					break;
+						if (message.StartsWith("error ", StringComparison.Ordinal))
+						{
+							var error = CommandDeserializer.GenerateErrorStatus(message);
+							int errorReturnCode;
+							WaitBlock requestBlock = null;
+							if (int.TryParse(error.ReturnCode, out errorReturnCode))
+							{
+								lock (LockObj)
+								{
+									if (requestDict.TryGetValue(errorReturnCode, out requestBlock))
+										requestDict.Remove(errorReturnCode);
+								}
+								requestBlock?.SetAnswer(error);
+							}
+							if (requestBlock == null)
+							{
+								UnrequestedAnswers(error);
+							}
+						}
+						else
+						{
+							var error = CommandDeserializer.GenerateResponse(message);
+							int errorReturnCode;
+							WaitBlock requestBlock = null;
+							if (int.TryParse(error.ReturnCode, out errorReturnCode))
+							{
+								lock (LockObj)
+								{
+									if (requestDict.TryGetValue(errorReturnCode, out requestBlock))
+										requestDict.Remove(errorReturnCode);
+								}
+								requestBlock?.SetAnswer(error);
+							}
+							if (requestBlock == null)
+							{
+								UnrequestedAnswers(error);
+							}
+						}
+						break;
 
-				case PacketType.Readable:
-					// VOICE
+					case PacketType.Readable:
+						// VOICE
 
-					break;
+						break;
 
-				case PacketType.Init1:
-					var forwardData = ts3Crypt.ProcessInit1(packet.Data);
-					packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
-					break;
+					case PacketType.Init1:
+						var forwardData = ts3Crypt.ProcessInit1(packet.Data);
+						packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
+						break;
 				}
 			}
 			Status = TS3ClientStatus.Disconnected;
 		}
 
+		// temporary logic. It should be replaced by proper event handlers
+		private void UnrequestedAnswers(object msg)
+		{
+			// objects here arent requested anyway so we dont need to process them
+		}
+
 		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType)
 		{
-			throw new NotImplementedException();
+			com.AppendParameter(new CommandParameter("return_code", returnCode));
+
+			using (WaitBlock wb = new WaitBlock(targetType))
+			{
+				lock (LockObj)
+				{
+					requestDict.Add(returnCode, wb);
+					returnCode++;
+				}
+
+				byte[] data = Util.Encoder.GetBytes(com.ToString());
+				packetHandler.AddOutgoingPacket(data, PacketType.Command);
+				return wb.WaitForMessage();
+			}
+		}
+
+		private void Reset()
+		{
+			ts3Crypt.Reset();
+			packetHandler.Reset();
+
+			returnCode = 0;
+			requestDict.Clear();
 		}
 
 		#region FULLCLIENT SPECIFIC COMMANDS
@@ -111,10 +169,5 @@ namespace TS3Client.Full
 			new CommandParameter("hwid", hwid));
 
 		#endregion
-
-		public override void Dispose()
-		{
-			base.Dispose();
-		}
 	}
 }

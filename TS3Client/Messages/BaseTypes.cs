@@ -25,7 +25,11 @@ namespace TS3Client.Messages
 		NotificationType NotifyType { get; }
 	}
 
-	public interface IResponse : IQueryMessage { }
+	public interface IResponse : IQueryMessage
+	{
+		[QuerySerialized("return_code")]
+		string ReturnCode { get; set; }
+	}
 
 	[AttributeUsage(AttributeTargets.Interface, Inherited = true, AllowMultiple = false)]
 	sealed class QuerySubInterfaceAttribute : Attribute { }
