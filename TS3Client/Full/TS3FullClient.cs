@@ -12,7 +12,6 @@
 		private readonly PacketHandler packetHandler;
 
 		private int returnCode;
-		private readonly Dictionary<int, WaitBlock> requestDict;
 
 		public TS3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
@@ -21,7 +20,6 @@
 			packetHandler = new PacketHandler(ts3Crypt, udpClient);
 
 			returnCode = 0;
-			requestDict = new Dictionary<int, WaitBlock>();
 		}
 
 		protected override void ConnectInternal(ConnectionData conData)
@@ -52,52 +50,13 @@
 				{
 					case PacketType.Command:
 						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-
-						if (message.StartsWith("notify", StringComparison.Ordinal))
-						{
-							var notify = CommandDeserializer.GenerateNotification(message);
-							InvokeEvent(notify);
-							break;
-						}
-
-						if (message.StartsWith("error ", StringComparison.Ordinal))
-						{
-							var error = CommandDeserializer.GenerateErrorStatus(message);
-							int errorReturnCode;
-							WaitBlock requestBlock = null;
-							if (int.TryParse(error.ReturnCode, out errorReturnCode))
-							{
-								lock (LockObj)
-								{
-									if (requestDict.TryGetValue(errorReturnCode, out requestBlock))
-										requestDict.Remove(errorReturnCode);
-								}
-								requestBlock?.SetAnswer(error);
-							}
-							if (requestBlock == null)
-							{
-								UnrequestedAnswers(error);
-							}
-						}
+						if (message.StartsWith("initivexpand ", StringComparison.Ordinal)
+							|| message.StartsWith("initserver ", StringComparison.Ordinal)
+							|| message.StartsWith("channellist ", StringComparison.Ordinal)
+							|| message.StartsWith("channellistfinished ", StringComparison.Ordinal))
+							UnrequestedAnswers(message); // TODO
 						else
-						{
-							var error = CommandDeserializer.GenerateResponse(message);
-							int errorReturnCode;
-							WaitBlock requestBlock = null;
-							if (int.TryParse(error.ReturnCode, out errorReturnCode))
-							{
-								lock (LockObj)
-								{
-									if (requestDict.TryGetValue(errorReturnCode, out requestBlock))
-										requestDict.Remove(errorReturnCode);
-								}
-								requestBlock?.SetAnswer(error);
-							}
-							if (requestBlock == null)
-							{
-								UnrequestedAnswers(error);
-							}
-						}
+							ProcessCommand(message);
 						break;
 
 					case PacketType.Readable:
@@ -115,7 +74,7 @@
 		}
 
 		// temporary logic. It should be replaced by proper event handlers
-		private void UnrequestedAnswers(object msg)
+		private void UnrequestedAnswers(string msg)
 		{
 			// objects here arent requested anyway so we dont need to process them
 		}
@@ -128,23 +87,25 @@
 			{
 				lock (LockObj)
 				{
-					requestDict.Add(returnCode, wb);
+					requestQueue.Enqueue(wb);
 					returnCode++;
+
+					byte[] data = Util.Encoder.GetBytes(com.ToString());
+					packetHandler.AddOutgoingPacket(data, PacketType.Command);
 				}
 
-				byte[] data = Util.Encoder.GetBytes(com.ToString());
-				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 				return wb.WaitForMessage();
 			}
 		}
 
-		private void Reset()
+		protected override void Reset()
 		{
+			base.Reset();
+
 			ts3Crypt.Reset();
 			packetHandler.Reset();
 
 			returnCode = 0;
-			requestDict.Clear();
 		}
 
 		#region FULLCLIENT SPECIFIC COMMANDS

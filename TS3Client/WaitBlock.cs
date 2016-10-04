@@ -21,7 +21,7 @@ namespace TS3Client
 	using System.Collections.Generic;
 	using System.Threading;
 
-	class WaitBlock : IDisposable
+	internal class WaitBlock : IDisposable
 	{
 		private AutoResetEvent waiter = new AutoResetEvent(false);
 		private IEnumerable<IResponse> answer = null;

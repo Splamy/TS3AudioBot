@@ -1,4 +1,6 @@
-﻿namespace TS3Client
+﻿using System.Resources;
+
+namespace TS3Client
 {
 	using Messages;
 	using System;
@@ -15,6 +17,7 @@
 		private bool eventLoopRunning;
 		protected TS3ClientStatus Status;
 		protected IEventDispatcher EventDispatcher;
+		internal readonly Queue<WaitBlock> requestQueue;
 
 		// EVENTS
 		public event EventHandler<TextMessage> OnTextMessageReceived;
@@ -29,6 +32,7 @@
 		{
 			Status = TS3ClientStatus.Disconnected;
 			eventLoopRunning = false;
+			requestQueue = new Queue<WaitBlock>();
 
 			switch (dispatcher)
 			{
@@ -76,19 +80,40 @@
 		}
 		protected abstract void DisconnectInternal();
 
-		private string cmdLineBuffer = null;
+		private string cmdLineBuffer;
 		/// <summary></summary>
 		/// <returns>True if the command was processed, false otherwise.</returns>
-		protected bool ProcessCommand(string message)
+		protected void ProcessCommand(string message)
 		{
 			if (message.StartsWith("notify", StringComparison.Ordinal))
 			{
 				var notify = CommandDeserializer.GenerateNotification(message);
 				InvokeEvent(notify);
-				return true;
 			}
+			if (message.StartsWith("error ", StringComparison.Ordinal))
+			{
+				// we (hopefully) only need to lock here for the dequeue
+				lock (LockObj)
+				{
+					if (!(Status == TS3ClientStatus.Connected || Status == TS3ClientStatus.Connecting)) return;
 
+					var errorStatus = CommandDeserializer.GenerateErrorStatus(message);
+					if (!errorStatus.Ok)
+						requestQueue.Dequeue().SetAnswer(errorStatus);
+					else
+					{
+						var peek = requestQueue.Any() ? requestQueue.Peek() : null;
+						var response = CommandDeserializer.GenerateResponse(cmdLineBuffer, peek?.AnswerType);
+						cmdLineBuffer = null;
 
+						requestQueue.Dequeue().SetAnswer(errorStatus, response);
+					}
+				}
+			}
+			else
+			{
+				cmdLineBuffer = message;
+			}
 		}
 
 		#region NETWORK RECEIVE AND DESERIALIZE
@@ -229,6 +254,12 @@
 			=> Send<ClientDbData>("clientdbinfo", new CommandParameter("cldbid", clDbId)).FirstOrDefault();
 
 		#endregion
+
+		protected virtual void Reset()
+		{
+			cmdLineBuffer = null;
+			requestQueue.Clear();
+		}
 
 		public virtual void Dispose()
 		{

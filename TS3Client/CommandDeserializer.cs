@@ -100,17 +100,18 @@ namespace TS3Client
 
 		public static IEnumerable<IResponse> GenerateResponse(string line, Type answerType)
 		{
-			var messageList = line.Split('|');
 			if (answerType == null)
 			{
 				if (string.IsNullOrWhiteSpace(line))
 					return Enumerable.Empty<ResponseDictionary>();
+				var messageList = line.Split('|');
 				return messageList.Select(msg => new ResponseDictionary(ParseKeyValueLineDict(msg, false)));
 			}
 			else
 			{
 				if (string.IsNullOrWhiteSpace(line))
 					return Enumerable.Empty<IResponse>();
+				var messageList = line.Split('|');
 				return messageList.Select(msg =>
 				{
 					var incomingData = ParseKeyValueLine(msg, false);
@@ -119,16 +120,7 @@ namespace TS3Client
 			}
 		}
 
-		// TODO implement fillMissingDuplicates
-		public static IEnumerable<ResponseDictionary> PreGenerateResponse(string line, bool fillMissingDuplicates)
-		{
-			var messageList = line.Split('|');
-			if (string.IsNullOrWhiteSpace(line))
-				return Enumerable.Empty<ResponseDictionary>();
-			return messageList.Select(msg => new ResponseDictionary(ParseKeyValueLineDict(msg, false)));
-		}
-
-		public static IResponse DictToResponse(KVEnu dict, Type answerType)
+		private static IResponse DictToResponse(KVEnu dict, Type answerType)
 		{
 			var response = Generator.ActivateResponse(answerType);
 			FillQueryMessage(answerType, response, dict);

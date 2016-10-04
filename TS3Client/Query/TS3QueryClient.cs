@@ -25,7 +25,6 @@ namespace TS3Client.Query
 
 	public sealed class TS3QueryClient : TS3BaseClient
 	{
-		private readonly Queue<WaitBlock> requestQueue;
 		private readonly TcpClient tcpClient;
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
@@ -33,7 +32,6 @@ namespace TS3Client.Query
 
 		public TS3QueryClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
-			requestQueue = new Queue<WaitBlock>();
 			tcpClient = new TcpClient();
 		}
 
@@ -59,46 +57,16 @@ namespace TS3Client.Query
 
 		protected override void NetworkLoop()
 		{
-			string dataBuffer = null;
-
 			while (true)
 			{
 				string line;
 				try { line = tcpReader.ReadLine(); }
 				catch (IOException) { line = null; }
 				if (line == null) break;
-				else if (string.IsNullOrWhiteSpace(line)) continue;
+				if (string.IsNullOrWhiteSpace(line)) continue;
 
 				var message = line.Trim();
-				if (message.StartsWith("error ", StringComparison.Ordinal))
-				{
-					// we (hopefully) only need to lock here for the dequeue
-					lock (LockObj)
-					{
-						if (!(Status == TS3ClientStatus.Connected || Status == TS3ClientStatus.Connecting)) break;
-
-						var errorStatus = CommandDeserializer.GenerateErrorStatus(message);
-						if (!errorStatus.Ok)
-							requestQueue.Dequeue().SetAnswer(errorStatus);
-						else
-						{
-							var peek = requestQueue.Any() ? requestQueue.Peek() : null;
-							var response = CommandDeserializer.GenerateResponse(dataBuffer, peek?.AnswerType);
-							dataBuffer = null;
-
-							requestQueue.Dequeue().SetAnswer(errorStatus, response);
-						}
-					}
-				}
-				else if (message.StartsWith("notify", StringComparison.Ordinal))
-				{
-					var notify = CommandDeserializer.GenerateNotification(message);
-					InvokeEvent(notify);
-				}
-				else
-				{
-					dataBuffer = line;
-				}
+				ProcessCommand(message);
 			}
 			Status = TS3ClientStatus.Disconnected;
 		}

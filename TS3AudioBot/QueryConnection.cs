@@ -23,8 +23,7 @@ namespace TS3AudioBot
 	using TS3Client;
 	using TS3Client.Query;
 	using TS3Client.Messages;
-
-	// TODO: add back a ITeamspeakControl interface for abstracting the communication between bot and ts3server
+	
 	public sealed class QueryConnection : MarshalByRefObject, ITeamspeakControl
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
