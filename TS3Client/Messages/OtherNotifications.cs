@@ -149,7 +149,7 @@ namespace TS3Client.Messages
 		ushort ClientId { get; set; }
 
 		[QuerySerialized("client_channel_id")]
-		int ChannelId { get; set; }
+		ulong ChannelId { get; set; }
 
 		[QuerySerialized("client_nickname")]
 		string NickName { get; set; }
@@ -161,6 +161,6 @@ namespace TS3Client.Messages
 		string LoginName { get; set; }
 
 		[QuerySerialized("client_origin_server_id")]
-		int OriginServerId { get; set; }
+		ulong OriginServerId { get; set; }
 	}
 }

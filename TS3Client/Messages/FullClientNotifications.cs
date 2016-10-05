@@ -15,7 +15,7 @@
 		string Omega { get; set; }
 	}
 
-	[QueryNotification(NotificationType.InitIvExpand)]
+	[QueryNotification(NotificationType.InitServer)]
 	public interface InitServer : INotification, IServerName, ServerBaseData2
 	{
 		[QuerySerialized("virtualserver_welcomemessage")]

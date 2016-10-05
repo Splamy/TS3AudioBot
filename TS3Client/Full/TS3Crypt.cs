@@ -22,7 +22,7 @@ namespace TS3Client.Full
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly Tuple<byte[], byte[]> DummyKeyAndNonceTuple = new Tuple<byte[], byte[]>(DummyKey, DummyIv);
 		private static readonly byte[] TS3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly byte[] Initversion = new byte[] { 0x06, 0x3b, 0xec, 0xe9 };
+		private static readonly byte[] Initversion = { 0x06, 0x3b, 0xec, 0xe9 };
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 
 		private const int MacLen = 8;
@@ -186,7 +186,7 @@ namespace TS3Client.Full
 			else if (type == 3)
 			{
 				var exportedPublic = ExportPublicKey(publicKey);
-				string initAdd = TS3Command.BuildToString("clientinit",
+				string initAdd = TS3Command.BuildToString("clientinitiv",
 					new[] {
 						new CommandParameter("alpha", "AAAAAAAAAAAAAA=="),
 						new CommandParameter("omega", exportedPublic),
@@ -198,7 +198,7 @@ namespace TS3Client.Full
 				int level = NetUtil.N2Hint(data, initTypeLen + 128);
 				byte[] y = SolveRsaChallange(data, initTypeLen, level);
 
-				// Copy bytes for this result: [Version..., InitType..., data..., y..., text... ]
+				// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
 				var sendData = new byte[versionLen + initTypeLen + 232 + 64 + textBytes.Length];
 				// Copy this.Version
 				Array.Copy(Initversion, 0, sendData, 0, versionLen);

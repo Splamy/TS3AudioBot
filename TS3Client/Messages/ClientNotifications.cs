@@ -22,7 +22,7 @@ namespace TS3Client.Messages
 	public interface ITargetChannelId
 	{
 		[QuerySerialized("ctid")]
-		int TargetChannelId { get; set; }
+		ulong TargetChannelId { get; set; }
 	}
 
 	[QuerySubInterface]

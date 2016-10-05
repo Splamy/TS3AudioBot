@@ -17,8 +17,8 @@
 
 		public void BuildHeader()
 		{
-			NetUtil.H2N(ClientId, Header, 0);
-			NetUtil.H2N(PacketId, Header, 2);
+			NetUtil.H2N(PacketId, Header, 0);
+			NetUtil.H2N(ClientId, Header, 2);
 			Header[4] = PacketTypeFlagged;
 		}
 	}

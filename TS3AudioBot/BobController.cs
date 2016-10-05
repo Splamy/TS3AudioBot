@@ -42,7 +42,7 @@ namespace TS3AudioBot
 		private readonly object lockObject = new object();
 		private ClientData bobClient;
 
-		private Dictionary<int, SubscriptionData> channelSubscriptions;
+		private Dictionary<ulong, SubscriptionData> channelSubscriptions;
 
 		private bool sending = false;
 		public bool Sending
@@ -131,8 +131,8 @@ namespace TS3AudioBot
 			queryConnection.OnMessageReceived += GetResponse;
 			queryConnection.OnClientConnect += OnBobConnect;
 			queryConnection.OnClientDisconnect += OnBobDisconnnect;
-			commandQueue = new Queue<string>();
-			channelSubscriptions = new Dictionary<int, SubscriptionData>();
+			Util.Init(ref commandQueue);
+			Util.Init(ref channelSubscriptions);
 		}
 
 		#region SendMethods
@@ -383,7 +383,7 @@ namespace TS3AudioBot
 		/// <param name="channel">The id of the channel.</param>
 		/// <param name="manual">Should be true if the command was invoked by a user,
 		/// or false if the channel is added automatically by a play command.</param>
-		public void WhisperChannelSubscribe(int channel, bool manual)
+		public void WhisperChannelSubscribe(ulong channel, bool manual)
 		{
 			SendMessage("whisper channel add " + channel);
 			SubscriptionData subscriptionData;
@@ -400,7 +400,7 @@ namespace TS3AudioBot
 		/// <param name="channel">The id of the channel.</param>
 		/// <param name="manual">Should be true if the command was invoked by a user,
 		/// or false if the channel was removed automatically by an internal stop.</param>
-		public void WhisperChannelUnsubscribe(int channel, bool manual)
+		public void WhisperChannelUnsubscribe(ulong channel, bool manual)
 		{
 			SendMessage("whisper channel remove " + channel);
 			SubscriptionData subscriptionData;
@@ -447,7 +447,7 @@ namespace TS3AudioBot
 
 		private class SubscriptionData
 		{
-			public int Id { get; set; }
+			public ulong Id { get; set; }
 			public bool Enabled { get; set; }
 			public bool Manual { get; set; }
 		}
