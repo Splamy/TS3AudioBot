@@ -25,17 +25,17 @@ namespace TS3Client.Messages
 		string ServerName { get; set; }
 	}
 
-	[QueryNotification(NotificationType.ServerEdited)]
-	public interface ServerEdited : INotification, IInvokedNotification, IReason, IServerName
+	[QuerySubInterface]
+	public interface ServerBaseData2
 	{
 		[QuerySerialized("virtualserver_codec_encryption_mode")]
 		CodecEncryptionMode CodecEncryptionMode { get; set; }
 
 		[QuerySerialized("virtualserver_default_server_group")]
-		int DefaultServerGroup { get; set; }
+		ulong DefaultServerGroup { get; set; }
 
 		[QuerySerialized("virtualserver_default_channel_group")]
-		int DefaultChannelGroup { get; set; }
+		ulong DefaultChannelGroup { get; set; }
 
 		[QuerySerialized("virtualserver_hostbanner_url")]
 		string HostbannerUrl { get; set; }
@@ -50,26 +50,29 @@ namespace TS3Client.Messages
 		float PrioritySpeakerDimmModificator { get; set; }
 
 		[QuerySerialized("virtualserver_hostbutton_tooltip")]
-		string HostButtonTooltipText { get; set; }
+		string HostbuttonTooltip { get; set; }
 
 		[QuerySerialized("virtualserver_hostbutton_url")]
-		string HostButtonUrl { get; set; }
+		string HostbuttonUrl { get; set; }
 
 		[QuerySerialized("virtualserver_hostbutton_gfx_url")]
-		string HostButtonGfxUrl { get; set; }
+		string HostbuttonGfxUrl { get; set; }
 
 		[QuerySerialized("virtualserver_name_phonetic")]
 		string PhoneticName { get; set; }
 
 		[QuerySerialized("virtualserver_icon_id")]
-		long IconId { get; set; }
+		ulong IconId { get; set; }
 
 		[QuerySerialized("virtualserver_hostbanner_mode")]
 		HostBannerMode HostbannerMode { get; set; }
 
 		[QuerySerialized("virtualserver_channel_temp_delete_delay_default")]
-		TimeSpan TempChannelDefaultDeleteDelay { get; set; }
+		TimeSpan DefaultTempChannelDeleteDelay { get; set; }
 	}
+
+	[QueryNotification(NotificationType.ServerEdited)]
+	public interface ServerEdited : INotification, IInvokedNotification, IReason, IServerName, ServerBaseData2 { }
 
 	[QueryNotification(NotificationType.TextMessage)]
 	public interface TextMessage : INotification, IInvokedNotification
@@ -107,7 +110,7 @@ namespace TS3Client.Messages
 	public interface ServerBaseData
 	{
 		[QuerySerialized("virtualserver_id")]
-		int VirtualServerId { get; set; }
+		ulong VirtualServerId { get; set; }
 
 		[QuerySerialized("virtualserver_unique_identifier")]
 		string VirtualServerUid { get; set; }
@@ -118,7 +121,7 @@ namespace TS3Client.Messages
 		[QuerySerialized("virtualserver_status")]
 		string VirtualServerStatus { get; set; }
 	}
-	
+
 	public interface ServerData : IResponse, IServerName, ServerBaseData
 	{
 		[QuerySerialized("virtualserver_clientsonline")]
@@ -128,7 +131,7 @@ namespace TS3Client.Messages
 		int QueriesOnline { get; set; }
 
 		[QuerySerialized("virtualserver_maxclients")]
-		int MaxClients { get; set; }
+		ushort MaxClients { get; set; }
 
 		[QuerySerialized("virtualserver_uptime")]
 		TimeSpan Uptime { get; set; }
@@ -139,7 +142,7 @@ namespace TS3Client.Messages
 		[QuerySerialized("virtualserver_machine_id")]
 		string MachineId { get; set; }
 	}
-	
+
 	public interface WhoAmI : IResponse, ServerBaseData, IClientUidLong
 	{
 		[QuerySerialized("client_id")]

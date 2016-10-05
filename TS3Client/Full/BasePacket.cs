@@ -11,12 +11,12 @@ namespace TS3Client.Full
 		public PacketType PacketType
 		{
 			get { return (PacketType)(PacketTypeFlagged & 0x0F); }
-			set { PacketTypeFlagged = (byte)((byte)value & 0x0F); }
+			set { PacketTypeFlagged = (byte)((PacketTypeFlagged & 0xF0) | ((byte)value & 0x0F)); }
 		}
 		public PacketFlags PacketFlags
 		{
 			get { return (PacketFlags)(PacketTypeFlagged & 0xF0); }
-			set { PacketTypeFlagged = (byte)((byte)value & 0xF0); }
+			set { PacketTypeFlagged = (byte)((PacketTypeFlagged & 0x0F) | ((byte)value & 0xF0)); }
 		}
 		public byte PacketTypeFlagged { get; set; }
 		public ushort PacketId { get; set; }

@@ -13,53 +13,22 @@ using static System.Console;
 
 namespace TS3Client
 {
-	class DebugTests
+	static class DebugTests
 	{
 		static void Main(string[] args)
 		{
-			var test = new OutgoingPacket(new byte[5], PacketType.Command);
-
-			const int tests = 10000000;
-			var rnd = new Random();
-			Stopwatch sw = new Stopwatch();
-
-			TestA(1);
-			TestB(1);
-
-			sw.Restart();
-			TestA(tests);
-			sw.Stop();
-			WriteLine("Norm: {0}", sw.ElapsedMilliseconds);
-			
-			sw.Restart();
-			TestB(tests);
-			sw.Stop();
-			WriteLine("Opt: {0}", sw.ElapsedMilliseconds);
-
+			TS3FullClient fc = new TS3FullClient(EventDispatchType.DoubleThread);
+			fc.Connect(new ConnectionData
+			{
+				Hostname = "splamy.de",
+				Port = 9987,
+				PrivateKey = "MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=",
+				PrivateSign = "a1OYzvM18mrmfUQBUgxYBxYz2DUU6y5k3/mEL6FurzU0y97Bd1FL7+PRpcHyPkg4R+kKAFZ1nhyzbgkGphDWDg==",
+				KeyOff = 83,
+			});
+			fc.EnterEventLoop();
 
 			ReadLine();
-		}
-
-		static void TestA(int runs)
-		{
-			ICollection<ushort> col = null;
-			for (int i = 0; i < runs; i++)
-			{
-				col = new LinkedList<ushort>();
-				col.Add(42);
-			}
-			col?.Clear();
-		}
-
-		static void TestB(int runs)
-		{
-			ICollection<ushort> col = null;
-			for (int i = 0; i < runs; i++)
-			{
-				col = new List<ushort>();
-				col.Add(42);
-			}
-			col?.Clear();
 		}
 	}
 }

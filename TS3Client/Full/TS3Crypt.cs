@@ -160,33 +160,31 @@ namespace TS3Client.Full
 
 		public byte[] ProcessInit1(byte[] data)
 		{
+			const int versionLen = 4;
+			const int initTypeLen = 1;
+
 			if (data == null)
 			{
-				var sendData = new byte[4 + 1 + 4 + 4 + 8];
-				Array.Copy(Initversion, 0, sendData, 0, 4);
-				sendData[4] = 0x00;
-				for (int i = 0; i < 8; i++) sendData[i + 5] = 0x42; // should be 4byte timestamp + 4byte random
+				var sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
+				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+				sendData[versionLen] = 0x00; // initType
+				for (int i = 0; i < 8; i++) sendData[i + versionLen + initTypeLen] = 0x42; // should be 4byte timestamp + 4byte random
 				return sendData;
 			}
 
-			if (data.Length < 4) return null;
-			int type = data[4];
+			if (data.Length < initTypeLen) return null;
+			int type = data[0];
 			if (type == 1)
 			{
-				var sendData = new byte[4 + 1 + 16 + 4];
-				Array.Copy(Initversion, 0, sendData, 0, 4);
-				sendData[4] = 0x02;
-				sendData[5] = data[1];
-				for (int i = 0; i < 4; i++) sendData[i + 21] = 0x42; // should be second 4byte (the random), swapped
+				var sendData = new byte[versionLen + initTypeLen + 16 + 4];
+				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+				sendData[versionLen] = 0x02; // initType
+				sendData[versionLen + initTypeLen] = data[initTypeLen]; // cookieNum
+				for (int i = 0; i < 4; i++) sendData[i + 21] = data[17 + i]; // should be second 4byte (the random), swapped
 				return sendData;
 			}
 			else if (type == 3)
 			{
-				var sendData = new byte[4 + data.Length + 64];
-				Array.Copy(Initversion, 0, sendData, 0, 4);
-				Array.Copy(data, 0, sendData, 4, data.Length);
-				sendData[4] = 0x04;
-
 				var exportedPublic = ExportPublicKey(publicKey);
 				string initAdd = TS3Command.BuildToString("clientinit",
 					new[] {
@@ -194,7 +192,26 @@ namespace TS3Client.Full
 						new CommandParameter("omega", exportedPublic),
 						new CommandParameter("ip") },
 					TS3Command.NoOptions);
-				return Util.Encoder.GetBytes(initAdd);
+				var textBytes = Util.Encoder.GetBytes(initAdd);
+
+				// Prepare solution
+				int level = NetUtil.N2Hint(data, initTypeLen + 128);
+				byte[] y = SolveRsaChallange(data, initTypeLen, level);
+
+				// Copy bytes for this result: [Version..., InitType..., data..., y..., text... ]
+				var sendData = new byte[versionLen + initTypeLen + 232 + 64 + textBytes.Length];
+				// Copy this.Version
+				Array.Copy(Initversion, 0, sendData, 0, versionLen);
+				// Write InitType
+				sendData[versionLen] = 0x04;
+				// Copy data
+				Array.Copy(data, initTypeLen, sendData, versionLen + initTypeLen, 232);
+				// Copy y
+				Array.Copy(y, 0, sendData, versionLen + initTypeLen + 232, 64);
+				// Copy text
+				Array.Copy(textBytes, 0, sendData, versionLen + initTypeLen + 232 + 64, textBytes.Length);
+
+				return sendData;
 			}
 			else
 				return null;
@@ -239,20 +256,21 @@ namespace TS3Client.Full
 			// Copy the Mac from [Data..., Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(result, len - MacLen, packet.Raw, 0, MacLen);
 			// Copy the Header from packet.Header to [Mac..., Header..., Data...]
-			Array.Copy(packet.Header, 0, packet.Raw, MacLen, MacLen);
+			Array.Copy(packet.Header, 0, packet.Raw, MacLen, OutHeaderLen);
 			// Copy the Data from [Data..., Mac...] to [Mac..., Header..., Data...]
-			Array.Copy(result, 0, packet.Raw, MacLen + OutHeaderLen, len);
+			Array.Copy(result, 0, packet.Raw, MacLen + OutHeaderLen, len - MacLen);
 			// Raw is now [Mac..., Header..., Data...]
 			return true;
 		}
 
 		private void FakeEncrypt(OutgoingPacket packet, byte[] mac)
 		{
+			packet.BuildHeader();
 			packet.Raw = new byte[packet.Data.Length + MacLen + OutHeaderLen];
 			// Copy the Mac from [Data..., Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(mac, 0, packet.Raw, 0, MacLen);
 			// Copy the Header from this.Header to [Mac..., Header..., Data...]
-			Array.Copy(packet.Header, 0, packet.Raw, MacLen, MacLen);
+			Array.Copy(packet.Header, 0, packet.Raw, MacLen, OutHeaderLen);
 			// Copy the Data from [Data..., Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(packet.Data, 0, packet.Raw, MacLen + OutHeaderLen, packet.Data.Length);
 			// Raw is now [Mac..., Header..., Data...]
@@ -271,16 +289,15 @@ namespace TS3Client.Full
 
 			if (packet.PacketType == PacketType.Init1)
 			{
-				if (!CheckEqual(data, 0, TS3InitMac, 0, MacLen))
+				if (!FakeDecrypt(packet, TS3InitMac))
 					return null;
 			}
 			else
 			{
 				if (packet.UnencryptedFlag)
 				{
-					if (!CheckEqual(data, 0, fakeSignature, 0, MacLen))
+					if (!FakeDecrypt(packet, fakeSignature))
 						return null;
-					FakeDecrypt(packet);
 				}
 				else
 				{
@@ -312,11 +329,14 @@ namespace TS3Client.Full
 			return true;
 		}
 
-		private static void FakeDecrypt(IncomingPacket packet)
+		private static bool FakeDecrypt(IncomingPacket packet, byte[] mac)
 		{
+			if (!CheckEqual(packet.Raw, 0, mac, 0, MacLen))
+				return false;
 			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
 			packet.Data = new byte[dataLen];
 			Array.Copy(packet.Raw, MacLen + InHeaderLen, packet.Data, 0, dataLen);
+			return true;
 		}
 
 		#endregion
@@ -374,16 +394,16 @@ namespace TS3Client.Full
 		}
 
 		/// <summary>This method calculates x ^ (2^level) % n = y which is the solution to the server RSA puzzle.</summary>
-		/// <param name="x">The x number, unsigned, as a bytearray from BigInteger. x is the base.</param>
-		/// <param name="n">The n number, unsigned, as a bytearray from BigInteger. n is the modulus.</param>
+		/// <param name="data">The data array, containing x=[0,64] and n=[64,128], each unsigned, as a BigInteger bytearray.</param>
+		/// <param name="offset">The offset of x and n in the data array.</param>
 		/// <param name="level">The exponent to x.</param>
-		/// <returns>The y value, unsigned, as a bytearray from BigInteger</returns>
-		private static byte[] SolveRsaChallange(byte[] x, byte[] n, int level)
+		/// <returns>The y value, unsigned, as a BigInteger bytearray.</returns>
+		private static byte[] SolveRsaChallange(byte[] data, int offset, int level)
 		{
-			if (x == null || n == null) return null;
-			var bign = new BigInteger(1, n);
-			var bigx = new BigInteger(1, x);
-			return bigx.ModPow(BigInteger.Two.Pow(level), bign).ToByteArrayUnsigned();
+			// x is the base, n is the modulus.
+			var x = new BigInteger(1, data, 00 + offset, 64);
+			var n = new BigInteger(1, data, 64 + offset, 64);
+			return x.ModPow(BigInteger.Two.Pow(level), n).ToByteArrayUnsigned();
 		}
 
 		#endregion

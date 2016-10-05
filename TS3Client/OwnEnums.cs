@@ -18,6 +18,16 @@ namespace TS3Client
 {
 	using System;
 
+	/*
+	 * Most important Id datatypes:
+	 * 
+	 * ClientUid: ulong
+	 * ClientId: ushort
+	 * ChannelId: ulong
+	 * ServerGroupId: ulong
+	 * ChannelGroupId: ulong
+	*/
+
 	public enum ClientType
 	{
 		Full = 0,
@@ -57,6 +67,7 @@ namespace TS3Client
 
 	public enum NotificationType
 	{
+		// Official notifies, used by client and query
 		[TS3Serializable("notifychannelcreated")]
 		ChannelCreated,
 		[TS3Serializable("notifychanneldeleted")]
@@ -81,6 +92,16 @@ namespace TS3Client
 		TextMessage,
 		[TS3Serializable("notifytokenused")]
 		TokenUsed,
+
+		// Internal notifies, used by client
+		[TS3Serializable("initivexpand")]
+		InitIvExpand,
+		[TS3Serializable("initserver")]
+		InitServer,
+		[TS3Serializable("channellist")]
+		ChannelList,
+		[TS3Serializable("channellistfinished")]
+		ChannelListFinished,
 	}
 
 	public enum MoveReason

@@ -63,9 +63,9 @@
     <Compile Include="Full\RingQueue.cs" />
     <Compile Include="Full\TS3Crypt.cs" />
     <Compile Include="Full\TS3FullClient.cs" />
+    <Compile Include="Messages\FullClientNotifications.cs" />
     <Compile Include="TS3Command.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="Messages\FullClientMessages.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
     <Compile Include="Messages\ChannelNotifications.cs" />

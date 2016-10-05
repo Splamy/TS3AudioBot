@@ -19,7 +19,7 @@ namespace TS3Client.Full
 
 		public static ushort N2Hushort(byte[] intArr, int inOff)
 		{
-			if (BitConverter.IsLittleEndian)
+			if (!BitConverter.IsLittleEndian)
 			{
 				return (ushort)(intArr[inOff] | (intArr[inOff + 1] << 8));
 			}
@@ -39,6 +39,18 @@ namespace TS3Client.Full
 			{
 				outArr[outOff] = (byte)((value >> 8) & 0xFF);
 				outArr[outOff + 1] = (byte)(value & 0xFF);
+			}
+		}
+
+		public static int N2Hint(byte[] intArr, int inOff)
+		{
+			if (!BitConverter.IsLittleEndian)
+			{
+				return intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24);
+			}
+			else // IsBigEndian
+			{
+				return (intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3];
 			}
 		}
 	}

@@ -29,6 +29,7 @@
 			try { udpClient.Connect(conData.Hostname, conData.Port); }
 			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
 
+			ts3Crypt.ImportOwnKeys(conData.PrivateKey);
 			var initData = ts3Crypt.ProcessInit1(null);
 			packetHandler.AddOutgoingPacket(initData, PacketType.Init1);
 		}
@@ -50,12 +51,7 @@
 				{
 					case PacketType.Command:
 						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-						if (message.StartsWith("initivexpand ", StringComparison.Ordinal)
-							|| message.StartsWith("initserver ", StringComparison.Ordinal)
-							|| message.StartsWith("channellist ", StringComparison.Ordinal)
-							|| message.StartsWith("channellistfinished ", StringComparison.Ordinal))
-							UnrequestedAnswers(message); // TODO
-						else
+						if (!SpecialCommandProcess(message))
 							ProcessCommand(message);
 						break;
 
@@ -73,10 +69,44 @@
 			Status = TS3ClientStatus.Disconnected;
 		}
 
-		// temporary logic. It should be replaced by proper event handlers
-		private void UnrequestedAnswers(string msg)
+		private bool SpecialCommandProcess(string message)
 		{
-			// objects here arent requested anyway so we dont need to process them
+			if (message.StartsWith("initivexpand ", StringComparison.Ordinal)
+				|| message.StartsWith("initserver ", StringComparison.Ordinal)
+				|| message.StartsWith("channellist ", StringComparison.Ordinal)
+				|| message.StartsWith("channellistfinished ", StringComparison.Ordinal))
+
+			{
+				var notification = CommandDeserializer.GenerateNotification(message);
+				switch (notification.NotifyType)
+				{
+					case NotificationType.InitIvExpand:
+						var iieNotify = (InitIvExpand)notification;
+						ts3Crypt.CryptoInit(iieNotify.Alpha, iieNotify.Beta, iieNotify.Omega);
+						ClientInit(
+							ConnectionData.UserName,
+							"3.0.19.3 [Build: 1466672534]",
+							"Windows",
+							true, true,
+							string.Empty, string.Empty,
+							ConnectionData.Password,
+							string.Empty,
+							ConnectionData.PrivateSign,
+							ConnectionData.KeyOff,
+							string.Empty, string.Empty, "123,456");
+						break;
+
+					case NotificationType.InitServer:
+						var isNotify = (InitServer)notification;
+						packetHandler.ClientId = isNotify.ClientId;
+						break;
+					default:
+						return false;
+				}
+				InvokeEvent(notification);
+				return true;
+			}
+			return false;
 		}
 
 		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType)
@@ -87,7 +117,7 @@
 			{
 				lock (LockObj)
 				{
-					requestQueue.Enqueue(wb);
+					RequestQueue.Enqueue(wb);
 					returnCode++;
 
 					byte[] data = Util.Encoder.GetBytes(com.ToString());
@@ -112,7 +142,7 @@
 
 		public void ClientInit(string nickname, string version, string plattform, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
-				string versionSign, int keyOffset, string nicknamePhonetic, string defaultToken, string hwid)
+				string versionSign, ulong keyOffset, string nicknamePhonetic, string defaultToken, string hwid)
 			=> Send("clientinit",
 			new CommandParameter("client_nickname", nickname),
 			new CommandParameter("client_version", version),

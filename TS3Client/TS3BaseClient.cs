@@ -15,9 +15,10 @@ namespace TS3Client
 		/// An internal message queue is accessed.</summary>
 		protected readonly object LockObj = new object();
 		private bool eventLoopRunning;
+		private string cmdLineBuffer;
+		private IEventDispatcher eventDispatcher;
 		protected TS3ClientStatus Status;
-		protected IEventDispatcher EventDispatcher;
-		internal readonly Queue<WaitBlock> requestQueue;
+		internal readonly Queue<WaitBlock> RequestQueue;
 
 		// EVENTS
 		public event EventHandler<TextMessage> OnTextMessageReceived;
@@ -26,19 +27,19 @@ namespace TS3Client
 
 
 		public bool IsConnected => Status == TS3ClientStatus.Connected;
-		public ConnectionData CurrentConnectionData { get; private set; }
+		public ConnectionData ConnectionData { get; private set; }
 
 		protected TS3BaseClient(EventDispatchType dispatcher)
 		{
 			Status = TS3ClientStatus.Disconnected;
 			eventLoopRunning = false;
-			requestQueue = new Queue<WaitBlock>();
+			RequestQueue = new Queue<WaitBlock>();
 
 			switch (dispatcher)
 			{
-				case EventDispatchType.None: EventDispatcher = new NoEventDispatcher(); break;
-				case EventDispatchType.CurrentThread: EventDispatcher = new CurrentThreadEventDisptcher(); break;
-				case EventDispatchType.DoubleThread: EventDispatcher = new DoubleThreadEventDispatcher(); break;
+				case EventDispatchType.None: eventDispatcher = new NoEventDispatcher(); break;
+				case EventDispatchType.CurrentThread: eventDispatcher = new CurrentThreadEventDisptcher(); break;
+				case EventDispatchType.DoubleThread: eventDispatcher = new DoubleThreadEventDispatcher(); break;
 				case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
 				case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
 				default: throw new NotSupportedException();
@@ -56,10 +57,10 @@ namespace TS3Client
 			lock (LockObj)
 			{
 				Status = TS3ClientStatus.Connecting;
-				CurrentConnectionData = conData;
+				ConnectionData = conData;
 				ConnectInternal(conData);
 
-				EventDispatcher.Init(NetworkLoop);
+				eventDispatcher.Init(NetworkLoop);
 				Status = TS3ClientStatus.Connected;
 			}
 		}
@@ -80,7 +81,24 @@ namespace TS3Client
 		}
 		protected abstract void DisconnectInternal();
 
-		private string cmdLineBuffer;
+		#region NETWORK RECEIVE AND DESERIALIZE
+
+		/// <summary>Use this method to start the event dispatcher.
+		/// Please keep in mind that this call might be blocking or non-blocking depending on the dispatch-method.
+		/// <see cref="EventDispatchType.CurrentThread"/> and <see cref="EventDispatchType.DoubleThread"/> will enter a loop and block the calling thread.
+		/// Any other method will start special subroutines and return to the caller.</summary>
+		public void EnterEventLoop()
+		{
+			if (!eventLoopRunning)
+			{
+				eventLoopRunning = true;
+				eventDispatcher.EnterEventLoop();
+			}
+			else throw new InvalidOperationException("EventLoop can only be run once until disposed.");
+		}
+
+		protected abstract void NetworkLoop();
+
 		/// <summary></summary>
 		/// <returns>True if the command was processed, false otherwise.</returns>
 		protected void ProcessCommand(string message)
@@ -99,14 +117,14 @@ namespace TS3Client
 
 					var errorStatus = CommandDeserializer.GenerateErrorStatus(message);
 					if (!errorStatus.Ok)
-						requestQueue.Dequeue().SetAnswer(errorStatus);
+						RequestQueue.Dequeue().SetAnswer(errorStatus);
 					else
 					{
-						var peek = requestQueue.Any() ? requestQueue.Peek() : null;
+						var peek = RequestQueue.Any() ? RequestQueue.Peek() : null;
 						var response = CommandDeserializer.GenerateResponse(cmdLineBuffer, peek?.AnswerType);
 						cmdLineBuffer = null;
 
-						requestQueue.Dequeue().SetAnswer(errorStatus, response);
+						RequestQueue.Dequeue().SetAnswer(errorStatus, response);
 					}
 				}
 			}
@@ -115,24 +133,6 @@ namespace TS3Client
 				cmdLineBuffer = message;
 			}
 		}
-
-		#region NETWORK RECEIVE AND DESERIALIZE
-
-		/// <summary>Use this method to start the event dispatcher.
-		/// Please keep in mind that this call might be blocking or non-blocking depending on the dispatch-method.
-		/// <see cref="EventDispatchType.CurrentThread"/> and <see cref="EventDispatchType.DoubleThread"/> will enter a loop and block the calling thread.
-		/// Any other method will start special subroutines and return to the caller.</summary>
-		public void EnterEventLoop()
-		{
-			if (!eventLoopRunning)
-			{
-				eventLoopRunning = true;
-				EventDispatcher.EnterEventLoop();
-			}
-			else throw new InvalidOperationException("EventLoop can only be run once until disposed.");
-		}
-
-		protected abstract void NetworkLoop();
 
 		protected void InvokeEvent(INotification notification)
 		{
@@ -145,12 +145,17 @@ namespace TS3Client
 				case NotificationType.ChannelEdited: break;
 				case NotificationType.ChannelMoved: break;
 				case NotificationType.ChannelPasswordChanged: break;
-				case NotificationType.ClientEnterView: EventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (ClientEnterView)notification)); break;
-				case NotificationType.ClientLeftView: EventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (ClientLeftView)notification)); break;
+				case NotificationType.ClientEnterView: eventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (ClientEnterView)notification)); break;
+				case NotificationType.ClientLeftView: eventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (ClientLeftView)notification)); break;
 				case NotificationType.ClientMoved: break;
 				case NotificationType.ServerEdited: break;
-				case NotificationType.TextMessage: EventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
+				case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
 				case NotificationType.TokenUsed: break;
+
+				case NotificationType.InitIvExpand: /*Do not expose*/ break;
+				case NotificationType.InitServer: break;
+				case NotificationType.ChannelList: break;
+				case NotificationType.ChannelListFinished: break;
 				default: throw new InvalidOperationException();
 			}
 		}
@@ -221,12 +226,12 @@ namespace TS3Client
 		public void SendMessage(string message, ClientData client)
 			=> SendMessage(MessageTarget.Private, client.ClientId, message);
 		public void SendMessage(string message, ChannelData channel)
-			=> SendMessage(MessageTarget.Channel, channel.Id, message);
+			=> SendMessage(MessageTarget.Channel, (ulong)channel.Id, message);
 		public void SendMessage(string message, ServerData server)
 			=> SendMessage(MessageTarget.Server, server.VirtualServerId, message);
-		public void SendMessage(MessageTarget target, int id, string message)
+		public void SendMessage(MessageTarget target, ulong id, string message)
 			=> Send("sendtextmessage",
-			new CommandParameter("targetmode", (int)target),
+			new CommandParameter("targetmode", (ulong)target),
 			new CommandParameter("target", id),
 			new CommandParameter("msg", message));
 		public void SendGlobalMessage(string message)
@@ -258,15 +263,15 @@ namespace TS3Client
 		protected virtual void Reset()
 		{
 			cmdLineBuffer = null;
-			requestQueue.Clear();
+			RequestQueue.Clear();
 		}
 
 		public virtual void Dispose()
 		{
 			Disconnect();
 
-			EventDispatcher?.Dispose();
-			EventDispatcher = null;
+			eventDispatcher?.Dispose();
+			eventDispatcher = null;
 		}
 
 		protected enum TS3ClientStatus

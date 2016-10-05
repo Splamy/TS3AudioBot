@@ -77,7 +77,7 @@ namespace TS3Client.Query
 			{
 				lock (LockObj)
 				{
-					requestQueue.Enqueue(wb);
+					RequestQueue.Enqueue(wb);
 					SendRaw(com.ToString());
 				}
 

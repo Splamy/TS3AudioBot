@@ -64,14 +64,15 @@
 
 		private void AddOutgoingPacket(OutgoingPacket packet, PacketFlags flags = PacketFlags.None)
 		{
-			packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 			if (packet.PacketType == PacketType.Init1)
 			{
+				packet.PacketFlags |= flags | PacketFlags.Unencrypted;
 				packet.PacketId = 101;
 				packet.ClientId = 0;
 			}
 			else
 			{
+				packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 				packet.PacketId = GetPacketCounter(packet.PacketType);
 				IncPacketCounter(packet.PacketType);
 				packet.ClientId = ClientId;
@@ -117,7 +118,7 @@
 			} while (!last);
 		}
 
-		private static bool NeedsSplitting(int dataSize) => dataSize + HeaderSize <= MaxPacketSize;
+		private static bool NeedsSplitting(int dataSize) => dataSize + HeaderSize > MaxPacketSize;
 
 		public IncomingPacket FetchPacket()
 		{
