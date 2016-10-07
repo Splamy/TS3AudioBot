@@ -179,8 +179,7 @@ namespace TS3Client.Full
 				var sendData = new byte[versionLen + initTypeLen + 16 + 4];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
 				sendData[versionLen] = 0x02; // initType
-				sendData[versionLen + initTypeLen] = data[initTypeLen]; // cookieNum
-				for (int i = 0; i < 4; i++) sendData[i + 21] = data[17 + i]; // should be second 4byte (the random), swapped
+				Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
 				return sendData;
 			}
 			else if (type == 3)

@@ -75,7 +75,6 @@
 				|| message.StartsWith("initserver ", StringComparison.Ordinal)
 				|| message.StartsWith("channellist ", StringComparison.Ordinal)
 				|| message.StartsWith("channellistfinished ", StringComparison.Ordinal))
-
 			{
 				var notification = CommandDeserializer.GenerateNotification(message);
 				switch (notification.NotifyType)

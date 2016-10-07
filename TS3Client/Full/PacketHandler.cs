@@ -72,7 +72,10 @@
 			}
 			else
 			{
-				packet.PacketFlags |= flags | PacketFlags.Newprotocol;
+				if (packet.PacketType != PacketType.Ack)
+					packet.PacketFlags |= flags | PacketFlags.Newprotocol;
+				else
+					packet.PacketFlags |= flags;
 				packet.PacketId = GetPacketCounter(packet.PacketType);
 				IncPacketCounter(packet.PacketType);
 				packet.ClientId = ClientId;
