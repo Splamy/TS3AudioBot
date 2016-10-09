@@ -54,6 +54,7 @@
     <Compile Include="DocumentedEnums.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Full\BasePacket.cs" />
+    <Compile Include="Full\IdentityData.cs" />
     <Compile Include="Full\PacketHandler.cs" />
     <Compile Include="Full\IncomingPacket.cs" />
     <Compile Include="Full\NetUtil.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="Full\RingQueue.cs" />
     <Compile Include="Full\TS3Crypt.cs" />
     <Compile Include="Full\TS3FullClient.cs" />
+    <Compile Include="Full\VersionSign.cs" />
     <Compile Include="Messages\FullClientNotifications.cs" />
     <Compile Include="TS3Command.cs" />
     <Compile Include="Util.cs" />

@@ -29,7 +29,7 @@
 			try { udpClient.Connect(conData.Hostname, conData.Port); }
 			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
 
-			ts3Crypt.ImportOwnKeys(conData.PrivateKey);
+			ts3Crypt.LoadIdentity(conData.PrivateKey, conData.KeyOffset, conData.LastCheckedKeyOffset);
 			var initData = ts3Crypt.ProcessInit1(null);
 			packetHandler.AddOutgoingPacket(initData, PacketType.Init1);
 		}
@@ -84,15 +84,13 @@
 						ts3Crypt.CryptoInit(iieNotify.Alpha, iieNotify.Beta, iieNotify.Omega);
 						ClientInit(
 							ConnectionData.UserName,
-							"3.0.19.3 [Build: 1466672534]",
 							"Windows",
 							true, true,
 							string.Empty, string.Empty,
 							ConnectionData.Password,
 							string.Empty,
-							ConnectionData.PrivateSign,
-							ConnectionData.KeyOff,
-							string.Empty, string.Empty, "123,456");
+							ConnectionData.KeyOffset,
+							string.Empty, string.Empty, "123,456", VersionSign.VER_3_0_19_03);
 						break;
 
 					case NotificationType.InitServer:
@@ -139,12 +137,12 @@
 
 		#region FULLCLIENT SPECIFIC COMMANDS
 
-		public void ClientInit(string nickname, string version, string plattform, bool inputHardware, bool outputHardware,
+		public void ClientInit(string nickname, string plattform, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
-				string versionSign, ulong keyOffset, string nicknamePhonetic, string defaultToken, string hwid)
+				ulong keyOffset, string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> Send("clientinit",
 			new CommandParameter("client_nickname", nickname),
-			new CommandParameter("client_version", version),
+			new CommandParameter("client_version", versionSign.Name),
 			new CommandParameter("client_platform", plattform),
 			new CommandParameter("client_input_hardware", inputHardware),
 			new CommandParameter("client_output_hardware", outputHardware),
@@ -152,7 +150,7 @@
 			new CommandParameter("client_default_channel_password", defaultChannelPassword),
 			new CommandParameter("client_server_password", serverPassword),
 			new CommandParameter("client_meta_data", metaData),
-			new CommandParameter("client_version_sign", versionSign),
+			new CommandParameter("client_version_sign", versionSign.Sign),
 			new CommandParameter("client_key_offset", keyOffset),
 			new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
 			new CommandParameter("client_default_token", defaultToken),

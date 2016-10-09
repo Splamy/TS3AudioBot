@@ -23,11 +23,10 @@ namespace TS3Client
 				Hostname = "splamy.de",
 				Port = 9987,
 				PrivateKey = "MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=",
-				PrivateSign = "a1OYzvM18mrmfUQBUgxYBxYz2DUU6y5k3/mEL6FurzU0y97Bd1FL7+PRpcHyPkg4R+kKAFZ1nhyzbgkGphDWDg==",
-				KeyOff = 83,
+				KeyOffset = 57451630,
+				LastCheckedKeyOffset = 57451630,
 			});
 			fc.EnterEventLoop();
-
 			ReadLine();
 		}
 	}

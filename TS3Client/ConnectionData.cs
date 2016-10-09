@@ -20,11 +20,10 @@ namespace TS3Client
 	{
 		public string Hostname { get; set; } // Q F
 		public ushort Port { get; set; } // Q F
-		public string PrivateKey { get; set; } // F
-		public string PrivateSign { get; set; } // F
-		public ulong KeyOff { get; set; } // F
-
 		public string UserName { get; set; } // Q F
 		public string Password { get; set; } // Q F
+		public string PrivateKey { get; set; } // F
+		public ulong KeyOffset { get; set; } // F
+		public ulong LastCheckedKeyOffset { get; set; } // F (optional)
 	}
 }
