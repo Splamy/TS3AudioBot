@@ -102,6 +102,8 @@ namespace TS3Client
 		ChannelList,
 		[TS3Serializable("channellistfinished")]
 		ChannelListFinished,
+		[TS3Serializable("notifyclientneededpermissions")]
+		ClientNeededPermissions,
 	}
 
 	public enum MoveReason

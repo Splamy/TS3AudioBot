@@ -79,4 +79,14 @@
 
 	[QueryNotification(NotificationType.ChannelListFinished)]
 	public interface ChannelListFinished : INotification { }
+
+	[QueryNotification(NotificationType.ClientNeededPermissions)]
+	public interface ClientNeededPermissions : INotification
+	{
+		[QuerySerialized("permid")]
+		int PermissionId { get; set; }
+
+		[QuerySerialized("permvalue")]
+		int PermissionValue { get; set; }
+	}
 }

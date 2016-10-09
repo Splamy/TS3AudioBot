@@ -38,7 +38,6 @@
 
 		public void Start()
 		{
-			Reset();
 			// TODO: check run! i think we need to recreate the thread....
 			if (!resendThread.IsAlive)
 				resendThread.Start();
@@ -72,26 +71,37 @@
 			}
 			else
 			{
-				if (packet.PacketType != PacketType.Ack)
-					packet.PacketFlags |= flags | PacketFlags.Newprotocol;
-				else
+				if (packet.PacketType == PacketType.Pong)
+					packet.PacketFlags |= flags | PacketFlags.Unencrypted;
+				else if (packet.PacketType == PacketType.Ack)
 					packet.PacketFlags |= flags;
+				else
+					packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 				packet.PacketId = GetPacketCounter(packet.PacketType);
-				IncPacketCounter(packet.PacketType);
+				if (ts3Crypt.CryptoInitComplete)
+					IncPacketCounter(packet.PacketType);
 				packet.ClientId = ClientId;
 			}
+
+			if (!ts3Crypt.Encrypt(packet))
+				throw new Exception(); // TODO
 
 			if (packet.PacketType == PacketType.Command)
 				lock (sendLoopMonitor)
 					sendQueue.AddLast(packet);
-			if (!ts3Crypt.Encrypt(packet))
-				throw new Exception(); // TODO
 
 			SendRaw(packet);
 		}
 
 		private ushort GetPacketCounter(PacketType packetType) => packetCounter[(int)packetType];
 		private void IncPacketCounter(PacketType packetType) => packetCounter[(int)packetType]++;
+
+		public void CryptoInitDone()
+		{
+			if (!ts3Crypt.CryptoInitComplete)
+				throw new Exception("No it's not >:(");
+			IncPacketCounter(PacketType.Command);
+		}
 
 		private static IEnumerable<OutgoingPacket> BuildSplitList(byte[] rawData, PacketType packetType)
 		{
@@ -143,7 +153,7 @@
 					case PacketType.Voice: break;
 					case PacketType.Command: ReceiveCommand(packet); break; // TODO MERGE LOGIC !
 					case PacketType.CommandLow: break;
-					case PacketType.Ping: break;
+					case PacketType.Ping: ReceivePing(packet); break;
 					case PacketType.Pong: break;
 					case PacketType.Ack: ReceiveAck(packet); break;
 					case PacketType.Type7Closeconnection: break;
@@ -188,6 +198,13 @@
 						sendQueue.Remove(node);
 		}
 
+		private void ReceivePing(IncomingPacket packet)
+		{
+			byte[] pongData = new byte[2];
+			NetUtil.H2N(packet.PacketId, pongData, 0);
+			AddOutgoingPacket(pongData, PacketType.Pong);
+		}
+
 		#endregion
 
 		/// <summary>
@@ -196,10 +213,10 @@
 		/// </summary>
 		private void ResendLoop()
 		{
-			TimeSpan sleepSpan = PacketTimeout;
-
 			while (true)
 			{
+				TimeSpan sleepSpan = PacketTimeout;
+
 				lock (sendLoopMonitor)
 				{
 					if (!sendQueue.Any())
@@ -208,16 +225,16 @@
 					if (!sendQueue.Any())
 						continue;
 
-					DateTime nowTimeout = DateTime.UtcNow - PacketTimeout;
-
 					foreach (var outgoingPacket in sendQueue)
 					{
-						var nextTest = nowTimeout - outgoingPacket.LastSendTime;
+						var nextTest = (outgoingPacket.LastSendTime - DateTime.UtcNow) + PacketTimeout;
 						if (nextTest < TimeSpan.Zero)
 							SendRaw(outgoingPacket);
 						else if (nextTest < sleepSpan)
 							sleepSpan = nextTest;
 					}
+
+					Thread.Sleep(sleepSpan);
 				}
 			}
 		}
@@ -235,7 +252,6 @@
 			sendQueue.Clear();
 			receiveQueue.Clear();
 			Array.Clear(packetCounter, 0, packetCounter.Length);
-			IncPacketCounter(PacketType.Command);
 		}
 	}
 }

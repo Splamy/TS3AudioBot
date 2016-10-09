@@ -6,7 +6,7 @@
 	{
 		public ushort ClientId { get; set; }
 
-		public DateTime LastSendTime { get; set; } = DateTime.MinValue;
+		public DateTime LastSendTime { get; set; } = DateTime.MaxValue;
 
 		public OutgoingPacket(byte[] data, PacketType type)
 		{

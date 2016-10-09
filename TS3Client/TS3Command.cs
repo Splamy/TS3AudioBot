@@ -11,7 +11,7 @@
 		public static List<CommandParameter> NoParameter => new List<CommandParameter>();
 		public static List<CommandOption> NoOptions => new List<CommandOption>();
 
-		private string command;
+		public string Command { get; private set; }
 		private List<CommandParameter> parameter;
 		private List<CommandOption> options;
 
@@ -19,7 +19,7 @@
 		public TS3Command(string command, List<CommandParameter> parameter) : this(command, parameter, NoOptions) { }
 		public TS3Command(string command, List<CommandParameter> parameter, List<CommandOption> options)
 		{
-			this.command = command;
+			this.Command = command;
 			this.parameter = parameter;
 			this.options = options;
 		}
@@ -27,7 +27,7 @@
 		public void AppendParameter(CommandParameter addParameter) => parameter.Add(addParameter);
 		public void AppendOption(CommandOption addOption) => options.Add(addOption);
 
-		public override string ToString() => BuildToString(command, parameter, options);
+		public override string ToString() => BuildToString(Command, parameter, options);
 
 		public static string BuildToString(string command, IEnumerable<CommandParameter> parameter, IEnumerable<CommandOption> options)
 		{

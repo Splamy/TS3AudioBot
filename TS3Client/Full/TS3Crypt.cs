@@ -32,7 +32,7 @@
 
 		public IdentityData Identity { get; private set; }
 
-		private bool CryptoInitComplete { get; set; }
+		public bool CryptoInitComplete { get; private set; }
 		private readonly byte[] ivStruct = new byte[20];
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly Tuple<byte[], byte[]>[] cachedKeyNonces = new Tuple<byte[], byte[]>[PacketTypeKinds * 2];
@@ -208,7 +208,7 @@
 					new[] {
 						new CommandParameter("alpha", "AAAAAAAAAAAAAA=="),
 						new CommandParameter("omega", Identity.PublicKeyString),
-						new CommandParameter("ip") },
+						new CommandParameter("ip", string.Empty) },
 					TS3Command.NoOptions);
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
@@ -315,7 +315,7 @@
 			var packet = new IncomingPacket(data)
 			{
 				PacketTypeFlagged = data[MacLen + 2],
-				PacketId = (ushort)(data[MacLen] | (data[MacLen + 1] << 8))
+				PacketId = NetUtil.N2Hushort(data, MacLen),
 			};
 
 			if (packet.PacketType == PacketType.Init1)
@@ -343,7 +343,7 @@
 		private bool Decrypt(IncomingPacket packet)
 		{
 			Array.Copy(packet.Raw, MacLen, packet.Header, 0, InHeaderLen);
-			var keyNonce = GetKeyNonce(false, packet.PacketId, 0, packet.PacketType);
+			var keyNonce = GetKeyNonce(true, packet.PacketId, 0, packet.PacketType);
 			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
 
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
@@ -351,9 +351,16 @@
 			byte[] result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
 			try
 			{
+				byte[] comb = new byte[dataLen + MacLen];
+				Array.Copy(packet.Raw, MacLen + InHeaderLen, comb, 0, dataLen);
+				Array.Copy(packet.Raw, 0, comb, dataLen, MacLen);
+
+				int len2 = eaxCipher.ProcessBytes(comb, 0, comb.Length, result, 0);
+				len2 += eaxCipher.DoFinal(result, len2);
+
 				int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
 				len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);
-				eaxCipher.DoFinal(result, len);
+				len += eaxCipher.DoFinal(result, len);
 			}
 			catch (Exception) { return false; }
 			packet.Data = result;

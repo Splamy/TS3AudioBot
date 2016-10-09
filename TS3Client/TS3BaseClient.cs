@@ -136,7 +136,6 @@ namespace TS3Client
 
 		protected void InvokeEvent(INotification notification)
 		{
-			// TODO rework
 			switch (notification.NotifyType)
 			{
 				case NotificationType.ChannelCreated: break;
@@ -151,14 +150,17 @@ namespace TS3Client
 				case NotificationType.ServerEdited: break;
 				case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
 				case NotificationType.TokenUsed: break;
-
-				case NotificationType.InitIvExpand: /*Do not expose*/ break;
+				// private events
+				case NotificationType.InitIvExpand: eventDispatcher.Invoke(() => ProcessInitIvExpand((InitIvExpand)notification)); break;
 				case NotificationType.InitServer: break;
 				case NotificationType.ChannelList: break;
 				case NotificationType.ChannelListFinished: break;
 				default: throw new InvalidOperationException();
 			}
 		}
+
+		protected virtual void ProcessInitIvExpand(InitIvExpand initIvExpand) { }
+		protected virtual void ProcessInitServer(InitServer initServer) { }
 
 		#endregion
 

@@ -26,6 +26,8 @@
 		{
 			Reset();
 
+			packetHandler.Start();
+
 			try { udpClient.Connect(conData.Hostname, conData.Port); }
 			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
 
@@ -77,38 +79,35 @@
 				|| message.StartsWith("channellistfinished ", StringComparison.Ordinal))
 			{
 				var notification = CommandDeserializer.GenerateNotification(message);
-				switch (notification.NotifyType)
-				{
-					case NotificationType.InitIvExpand:
-						var iieNotify = (InitIvExpand)notification;
-						ts3Crypt.CryptoInit(iieNotify.Alpha, iieNotify.Beta, iieNotify.Omega);
-						ClientInit(
-							ConnectionData.UserName,
-							"Windows",
-							true, true,
-							string.Empty, string.Empty,
-							ConnectionData.Password,
-							string.Empty,
-							ConnectionData.KeyOffset,
-							string.Empty, string.Empty, "123,456", VersionSign.VER_3_0_19_03);
-						break;
-
-					case NotificationType.InitServer:
-						var isNotify = (InitServer)notification;
-						packetHandler.ClientId = isNotify.ClientId;
-						break;
-					default:
-						return false;
-				}
 				InvokeEvent(notification);
 				return true;
 			}
 			return false;
 		}
 
+		protected override void ProcessInitIvExpand(InitIvExpand initIvExpand)
+		{
+			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
+			packetHandler.CryptoInitDone();
+			ClientInit(
+				ConnectionData.UserName,
+				"Windows",
+				true, true,
+				string.Empty, string.Empty,
+				ConnectionData.Password,
+				string.Empty, string.Empty, string.Empty, "123,456",
+				VersionSign.VER_3_0_19_03);
+		}
+
+		protected override void ProcessInitServer(InitServer initServer)
+		{
+			packetHandler.ClientId = initServer.ClientId;
+		}
+
 		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType)
 		{
-			com.AppendParameter(new CommandParameter("return_code", returnCode));
+			if (com.Command != "clientinit")
+				com.AppendParameter(new CommandParameter("return_code", returnCode));
 
 			using (WaitBlock wb = new WaitBlock(targetType))
 			{
@@ -139,7 +138,7 @@
 
 		public void ClientInit(string nickname, string plattform, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
-				ulong keyOffset, string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
+				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> Send("clientinit",
 			new CommandParameter("client_nickname", nickname),
 			new CommandParameter("client_version", versionSign.Name),
@@ -151,7 +150,7 @@
 			new CommandParameter("client_server_password", serverPassword),
 			new CommandParameter("client_meta_data", metaData),
 			new CommandParameter("client_version_sign", versionSign.Sign),
-			new CommandParameter("client_key_offset", keyOffset),
+			new CommandParameter("client_key_offset", ts3Crypt.Identity.ValidKeyOffset),
 			new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
 			new CommandParameter("client_default_token", defaultToken),
 			new CommandParameter("hwid", hwid));
