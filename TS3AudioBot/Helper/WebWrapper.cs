@@ -24,9 +24,11 @@ namespace TS3AudioBot.Helper
 	{
 		private static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(1);
 
-		public static bool DownloadString(out string site, Uri link)
+		public static bool DownloadString(out string site, Uri link, params Tuple<string, string>[] optionalHeaders)
 		{
 			var request = WebRequest.Create(link);
+			foreach (var header in optionalHeaders)
+				request.Headers.Add(header.Item1, header.Item2);
 			try
 			{
 				using (var response = request.GetResponse())

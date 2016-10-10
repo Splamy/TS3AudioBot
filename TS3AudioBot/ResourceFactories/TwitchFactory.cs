@@ -27,10 +27,14 @@ namespace TS3AudioBot.ResourceFactories
 		private Regex twitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
 		private Regex m3u8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
 
-		public TwitchFactory() { }
-
 		public string SubCommandName => "twitch";
 		public AudioType FactoryFor => AudioType.Twitch;
+		public string TwitchClientID { get; private set; }
+
+		public TwitchFactory()
+		{
+			TwitchClientID = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
+		}
 
 		public R<PlayResource> GetResource(string url)
 		{
@@ -46,7 +50,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			// request api token
 			string jsonResponse;
-			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token")))
+			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", TwitchClientID)))
 				return RResultCode.NoConnection.ToString();
 
 			var jsonDict = (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
@@ -80,40 +84,40 @@ namespace TS3AudioBot.ResourceFactories
 
 					switch (match.Groups[1].Value)
 					{
-					case "EXT-X-TWITCH-INFO": break; // Ignore twitch info line
-					case "EXT-X-MEDIA":
-						string streamInfo = reader.ReadLine();
-						Match infoMatch;
-						if (string.IsNullOrEmpty(streamInfo) ||
-							 !(infoMatch = m3u8ExtMatch.Match(streamInfo)).Success ||
-							 infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
-							return RResultCode.TwitchMalformedM3u8File.ToString();
+						case "EXT-X-TWITCH-INFO": break; // Ignore twitch info line
+						case "EXT-X-MEDIA":
+							string streamInfo = reader.ReadLine();
+							Match infoMatch;
+							if (string.IsNullOrEmpty(streamInfo) ||
+								 !(infoMatch = m3u8ExtMatch.Match(streamInfo)).Success ||
+								 infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
+								return RResultCode.TwitchMalformedM3u8File.ToString();
 
-						var streamData = new StreamData();
-						// #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=128000,CODECS="mp4a.40.2",VIDEO="audio_only"
-						for (int i = 0; i < infoMatch.Groups[3].Captures.Count; i++)
-						{
-							string key = infoMatch.Groups[4].Captures[i].Value.ToUpper(CultureInfo.InvariantCulture);
-							string value = infoMatch.Groups[5].Captures[i].Value;
-
-							switch (key)
+							var streamData = new StreamData();
+							// #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=128000,CODECS="mp4a.40.2",VIDEO="audio_only"
+							for (int i = 0; i < infoMatch.Groups[3].Captures.Count; i++)
 							{
-							case "BANDWIDTH": streamData.Bandwidth = int.Parse(value, CultureInfo.InvariantCulture); break;
-							case "CODECS": streamData.Codec = TextUtil.StripQuotes(value); break;
-							case "VIDEO":
-								StreamQuality quality;
-								if (Enum.TryParse(TextUtil.StripQuotes(value), out quality))
-									streamData.QualityType = quality;
-								else
-									streamData.QualityType = StreamQuality.unknown;
-								break;
-							}
-						}
+								string key = infoMatch.Groups[4].Captures[i].Value.ToUpper(CultureInfo.InvariantCulture);
+								string value = infoMatch.Groups[5].Captures[i].Value;
 
-						streamData.Url = reader.ReadLine();
-						dataList.Add(streamData);
-						break;
-					default: break;
+								switch (key)
+								{
+									case "BANDWIDTH": streamData.Bandwidth = int.Parse(value, CultureInfo.InvariantCulture); break;
+									case "CODECS": streamData.Codec = TextUtil.StripQuotes(value); break;
+									case "VIDEO":
+										StreamQuality quality;
+										if (Enum.TryParse(TextUtil.StripQuotes(value), out quality))
+											streamData.QualityType = quality;
+										else
+											streamData.QualityType = StreamQuality.unknown;
+										break;
+								}
+							}
+
+							streamData.Url = reader.ReadLine();
+							dataList.Add(streamData);
+							break;
+						default: break;
 					}
 				}
 			}
