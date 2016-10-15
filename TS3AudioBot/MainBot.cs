@@ -302,7 +302,7 @@ namespace TS3AudioBot
 			ClientData client = QueryConnection.GetClientById(clientId);
 			if (client == null)
 				return false;
-			int[] clientSgIds = QueryConnection.GetClientServerGroups(client);
+			var clientSgIds = QueryConnection.GetClientServerGroups(client);
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 
@@ -1468,7 +1468,7 @@ namespace TS3AudioBot
 		[Info("path to the logfile", "log_ts3audiobot")]
 		public string logFile;
 		[Info("group able to execute admin commands from the bot")]
-		public int adminGroupId;
+		public ulong adminGroupId;
 	}
 #pragma warning restore CS0649
 }

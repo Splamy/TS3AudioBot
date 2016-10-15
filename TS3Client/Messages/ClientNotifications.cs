@@ -33,6 +33,13 @@ namespace TS3Client.Messages
 	}
 
 	[QuerySubInterface]
+	public interface IClientUid
+	{
+		[QuerySerialized("cluid")]
+		string ClientUid { get; set; }
+	}
+
+	[QuerySubInterface]
 	public interface IClientDbId
 	{
 		[QuerySerialized("cldbid")]
@@ -50,7 +57,7 @@ namespace TS3Client.Messages
 	public interface ISourceChannelId
 	{
 		[QuerySerialized("cfid")]
-		int SourceChannelId { get; set; }
+		ulong SourceChannelId { get; set; }
 	}
 
 	[QuerySubInterface]
@@ -117,7 +124,7 @@ namespace TS3Client.Messages
 		string Name { get; set; }
 
 		[QuerySerialized("sgid")]
-		int ServerGroupId { get; set; }
+		ulong ServerGroupId { get; set; }
 	}
 
 	[QueryNotification(NotificationType.ClientEnterView)]

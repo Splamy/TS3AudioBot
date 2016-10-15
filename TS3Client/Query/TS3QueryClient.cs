@@ -30,6 +30,8 @@ namespace TS3Client.Query
 		private StreamReader tcpReader;
 		private StreamWriter tcpWriter;
 
+		public override ClientType ClientType => ClientType.Query;
+
 		public TS3QueryClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
 			tcpClient = new TcpClient();

@@ -147,22 +147,24 @@
 				if (packet == null)
 					continue;
 
+				bool passToReturn = true;
 				switch (packet.PacketType)
 				{
 					case PacketType.Readable: break;
 					case PacketType.Voice: break;
-					case PacketType.Command: ReceiveCommand(packet); break; // TODO MERGE LOGIC !
+					case PacketType.Command: passToReturn = ReceiveCommand(packet); break;
 					case PacketType.CommandLow: break;
-					case PacketType.Ping: ReceivePing(packet); break;
+					case PacketType.Ping: passToReturn = ReceivePing(packet); break;
 					case PacketType.Pong: break;
-					case PacketType.Ack: ReceiveAck(packet); break;
+					case PacketType.Ack: passToReturn = ReceiveAck(packet); break;
 					case PacketType.Type7Closeconnection: break;
 					case PacketType.Init1: break;
 					default:
 						throw new ArgumentOutOfRangeException();
 				}
 
-				return packet;
+				if (passToReturn)
+					return packet;
 			}
 		}
 
@@ -170,13 +172,81 @@
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-		private void ReceiveCommand(IncomingPacket packet)
+		private bool ReceiveCommand(IncomingPacket packet)
 		{
-			if (receiveQueue.IsSet(packet.PacketId))
+			SendAck(packet.PacketId);
+			if (!receiveQueue.IsSet(packet.PacketId))
 			{
 				receiveQueue.Set(packet, packet.PacketId);
+				int take = 0;
+				int takeLen = 0;
+				bool hasStart = false;
+				bool hasEnd = false;
+				for (int i = 0; i < receiveQueue.Count; i++)
+				{
+					IncomingPacket peekPacket;
+					if (receiveQueue.TryPeek(receiveQueue.StartIndex, out peekPacket))
+					{
+						take++;
+						takeLen += peekPacket.Size;
+						if (peekPacket.FragmentedFlag)
+						{
+							if (!hasStart) { hasStart = true; }
+							else if (!hasEnd) { hasEnd = true; break; }
+						}
+						else
+						{
+							if (!hasStart) { hasStart = true; hasEnd = true; break; }
+						}
+					}
+					else
+						break;
+				}
+				if (hasStart && hasEnd)
+				{
+					IncomingPacket preFinalPacket = null;
+					if (take == 1)
+					{
+						// MERGE (skip with only 1)
+						if (!receiveQueue.TryDequeue(out preFinalPacket))
+							throw new InvalidOperationException();
+						// DECOMPRESS
+						if (preFinalPacket.CompressedFlag)
+							packet.Data = QuickLZ.decompress(preFinalPacket.Data);
+						return true;
+					}
+					else // take > 1
+					{
+						// MERGE
+						var preFinalArray = new byte[takeLen];
+						int curCopyPos = 0;
+						bool firstSet = false;
+						bool isCompressed = false;
+						for (int i = 0; i < take; i++)
+						{
+							if (!receiveQueue.TryDequeue(out preFinalPacket))
+								throw new InvalidOperationException();
+							if(!firstSet)
+							{
+								isCompressed = preFinalPacket.CompressedFlag;
+								firstSet = true;
+							}
+							Array.Copy(preFinalPacket.Data, 0, preFinalArray, curCopyPos, preFinalPacket.Size);
+							curCopyPos += preFinalPacket.Size;
+						}
+						// DECOMPRESS
+						if (isCompressed)
+							packet.Data = QuickLZ.decompress(preFinalArray);
+						else
+							packet.Data = preFinalArray;
+					}
+
+					return true;
+				}
+				else
+					return false;
 			}
-			SendAck(packet.PacketId);
+			return false;
 		}
 
 		private void SendAck(ushort ackId)
@@ -186,23 +256,25 @@
 			AddOutgoingPacket(ackData, PacketType.Ack);
 		}
 
-		private void ReceiveAck(IncomingPacket packet)
+		private bool ReceiveAck(IncomingPacket packet)
 		{
 			if (packet.Data.Length < 2)
-				return;
+				return false;
 			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
 
 			lock (sendLoopMonitor)
 				for (var node = sendQueue.First; node != null; node = node.Next)
 					if (node.Value.PacketId == packetId)
 						sendQueue.Remove(node);
+			return true;
 		}
 
-		private void ReceivePing(IncomingPacket packet)
+		private bool ReceivePing(IncomingPacket packet)
 		{
 			byte[] pongData = new byte[2];
 			NetUtil.H2N(packet.PacketId, pongData, 0);
 			AddOutgoingPacket(pongData, PacketType.Pong);
+			return true;
 		}
 
 		#endregion

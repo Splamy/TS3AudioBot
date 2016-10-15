@@ -29,7 +29,7 @@ namespace TS3AudioBot
 		ClientData GetSelf();
 
 		void RefreshClientBuffer(bool force);
-		int[] GetClientServerGroups(ClientData client);
+		ulong[] GetClientServerGroups(ClientData client);
 		string GetNameByDbId(ulong clientDbId);
 	}
 }

@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 
 namespace TS3Client.Full
 {
-	internal class RingQueue<T> : IEnumerable<T>
+	internal class RingQueue<T>
 	{
 		private int currentStart;
-		private int length;
 		private T[] ringBuffer;
 		private bool[] ringDoneState;
 
 		public int StartIndex { get; private set; }
-		public int EndIndex => StartIndex + length;
+		public int EndIndex => StartIndex + Count;
+		public int Count { get; private set; }
 
 		public RingQueue(int bufferSize)
 		{
@@ -36,20 +36,26 @@ namespace TS3Client.Full
 			int localIndex = IndexToLocal(index);
 			ringBuffer[localIndex] = data;
 			ringDoneState[localIndex] = true;
-			length++;
+			Count++;
 		}
 
 		public bool TryDequeue(out T obj)
 		{
-			if (ringDoneState[currentStart] != true) { obj = default(T); return false; }
+			if (!TryPeek(StartIndex, out obj)) return false;
 
 			ringDoneState[currentStart] = false;
-			obj = ringBuffer[currentStart];
 
 			StartIndex++;
-			length--;
+			Count--;
 			currentStart = (currentStart + 1) % ringBuffer.Length;
 			return true;
+		}
+
+		public bool TryPeek(int index, out T obj)
+		{
+			int localIndex = IndexToLocal(index);
+			if (ringDoneState[localIndex] != true) { obj = default(T); return false; }
+			else { obj = ringBuffer[localIndex]; return true; }
 		}
 
 		public bool IsSet(int index)
@@ -59,48 +65,13 @@ namespace TS3Client.Full
 			return ringDoneState[IndexToLocal(index)];
 		}
 
-		private int IndexToLocal(int index) => currentStart + index % ringBuffer.Length;
+		private int IndexToLocal(int index) => (currentStart + index - StartIndex) % ringBuffer.Length;
 
 		public void Clear()
 		{
 			currentStart = 0;
 			StartIndex = 0;
-			length = 0;
+			Count = 0;
 		}
-
-		#region IEnumerable
-
-		public IEnumerator<T> GetEnumerator() => new RingQueueEnumerator(this, currentStart);
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-		private class RingQueueEnumerator : IEnumerator<T>
-		{
-			private readonly RingQueue<T> parent;
-			private readonly int startIndex;
-			private int index;
-			public RingQueueEnumerator(RingQueue<T> parent, int startIndex)
-			{
-				this.parent = parent;
-				this.startIndex = startIndex;
-				index = startIndex;
-			}
-
-			public void Dispose() { }
-
-			public bool MoveNext()
-			{
-				if (index > startIndex + parent.ringBuffer.Length) return false;
-				index++;
-				return true;
-			}
-
-			public void Reset() => index = startIndex;
-
-			public T Current => parent.ringBuffer[index % parent.ringBuffer.Length];
-
-			object IEnumerator.Current => Current;
-		}
-
-		#endregion
 	}
 }

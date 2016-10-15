@@ -20,12 +20,14 @@ namespace TS3Client
 		protected TS3ClientStatus Status;
 		internal readonly Queue<WaitBlock> RequestQueue;
 
+		public delegate void NotifyEventHandler<TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
 		// EVENTS
-		public event EventHandler<TextMessage> OnTextMessageReceived;
-		public event EventHandler<ClientEnterView> OnClientEnterView;
-		public event EventHandler<ClientLeftView> OnClientLeftView;
+		public event NotifyEventHandler<TextMessage> OnTextMessageReceived;
+		public event NotifyEventHandler<ClientEnterView> OnClientEnterView;
+		public event NotifyEventHandler<ClientLeftView> OnClientLeftView;
 
 
+		public abstract ClientType ClientType { get; }
 		public bool IsConnected => Status == TS3ClientStatus.Connected;
 		public ConnectionData ConnectionData { get; private set; }
 
@@ -105,8 +107,8 @@ namespace TS3Client
 		{
 			if (message.StartsWith("notify", StringComparison.Ordinal))
 			{
-				var notify = CommandDeserializer.GenerateNotification(message);
-				InvokeEvent(notify);
+				var notification = CommandDeserializer.GenerateNotification(message);
+				InvokeEvent(notification.Item1, notification.Item2);
 			}
 			if (message.StartsWith("error ", StringComparison.Ordinal))
 			{
@@ -134,9 +136,9 @@ namespace TS3Client
 			}
 		}
 
-		protected void InvokeEvent(INotification notification)
+		protected void InvokeEvent(IEnumerable<INotification> notification, NotificationType notifyType)
 		{
-			switch (notification.NotifyType)
+			switch (notifyType)
 			{
 				case NotificationType.ChannelCreated: break;
 				case NotificationType.ChannelDeleted: break;
@@ -144,17 +146,26 @@ namespace TS3Client
 				case NotificationType.ChannelEdited: break;
 				case NotificationType.ChannelMoved: break;
 				case NotificationType.ChannelPasswordChanged: break;
-				case NotificationType.ClientEnterView: eventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (ClientEnterView)notification)); break;
-				case NotificationType.ClientLeftView: eventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (ClientLeftView)notification)); break;
+				case NotificationType.ClientEnterView: eventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (IEnumerable<ClientEnterView>)notification)); break;
+				case NotificationType.ClientLeftView: eventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (IEnumerable<ClientLeftView>)notification)); break;
 				case NotificationType.ClientMoved: break;
 				case NotificationType.ServerEdited: break;
-				case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (TextMessage)notification)); break;
+				case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (IEnumerable<TextMessage>)notification)); break;
 				case NotificationType.TokenUsed: break;
-				// private events
-				case NotificationType.InitIvExpand: eventDispatcher.Invoke(() => ProcessInitIvExpand((InitIvExpand)notification)); break;
-				case NotificationType.InitServer: break;
+				// full client events
+				case NotificationType.InitIvExpand: eventDispatcher.Invoke(() => ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault())); break;
+				case NotificationType.InitServer: eventDispatcher.Invoke(() => ProcessInitServer((InitServer)notification.FirstOrDefault())); break;
 				case NotificationType.ChannelList: break;
 				case NotificationType.ChannelListFinished: break;
+				case NotificationType.ClientNeededPermissions: break;
+				case NotificationType.ClientChannelGroupChanged: break;
+				case NotificationType.ClientServerGroupAdded: break;
+				case NotificationType.ConnectionInfoRequest: break;
+				case NotificationType.ChannelSubscribed: break;
+				case NotificationType.ChannelUnsubscribed: break;
+				case NotificationType.ClientChatComposing: break;
+				// special
+				case NotificationType.Unknown: Debug.WriteLine("Unknown notification passed!"); break;
 				default: throw new InvalidOperationException();
 			}
 		}
@@ -197,6 +208,13 @@ namespace TS3Client
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, List<CommandParameter> parameter, params CommandOption[] options) where T : IResponse
 			=> SendCommand(new TS3Command(command, parameter.ToList(), options.ToList()), typeof(T)).Cast<T>();
+
+		[DebuggerStepThrough]
+		protected void SendNoResponsed(TS3Command command)
+		{
+			command.ExpectResponse = false;
+			SendCommand(command, null);
+		}
 
 		protected abstract IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType);
 

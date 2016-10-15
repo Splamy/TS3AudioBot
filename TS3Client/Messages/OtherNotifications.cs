@@ -88,11 +88,8 @@ namespace TS3Client.Messages
 	}
 
 	[QueryNotification(NotificationType.TokenUsed)]
-	public interface TokenUsed : INotification, IClientId, IClientDbId
+	public interface TokenUsed : INotification, IClientId, IClientDbId, IClientUid
 	{
-		[QuerySerialized("cluid")]
-		string ClientUid { get; set; }
-
 		[QuerySerialized("token")]
 		string UsedToken { get; set; }
 

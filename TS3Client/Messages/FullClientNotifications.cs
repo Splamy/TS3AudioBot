@@ -1,7 +1,5 @@
 ﻿namespace TS3Client.Messages
 {
-	using System;
-
 	[QueryNotification(NotificationType.InitIvExpand)]
 	public interface InitIvExpand : INotification
 	{
@@ -89,4 +87,42 @@
 		[QuerySerialized("permvalue")]
 		int PermissionValue { get; set; }
 	}
+
+	[QueryNotification(NotificationType.ClientChannelGroupChanged)]
+	public interface ClientChannelGroupChanged : INotification, IChannelId, IClientId
+	{
+		[QuerySerialized("invokerid")]
+		ushort InvokerId { get; set; }
+
+		[QuerySerialized("invokername")]
+		string InvokerName { get; set; }
+
+		[QuerySerialized("cgid")]
+		ulong ChannelGroupId { get; set; }
+
+		[QuerySerialized("cgi")]
+		ulong ChannelGroupIndex { get; set; } // always same as ChannelId ??!?
+	}
+
+	[QueryNotification(NotificationType.ClientServerGroupAdded)]
+	public interface ClientServerGroupAdded : INotification, IInvokedNotification, IClientId, IClientUid
+	{
+		[QuerySerialized("name")]
+		string Name { get; set; }
+
+		[QuerySerialized("sgid")]
+		ulong ServerGroupId { get; set; }
+	}
+
+	[QueryNotification(NotificationType.ConnectionInfoRequest)]
+	public interface ConnectionInfoRequest : INotification { }
+
+	[QueryNotification(NotificationType.ChannelSubscribed)]
+	public interface ChannelSubscribed : INotification, IChannelId { }
+
+	[QueryNotification(NotificationType.ChannelUnsubscribed)]
+	public interface ChannelUnsubscribed : INotification, IChannelId { }
+
+	[QueryNotification(NotificationType.ClientChatComposing)]
+	public interface ClientChatComposing : INotification, IClientId, IClientUid { }
 }

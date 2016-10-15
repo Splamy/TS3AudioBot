@@ -13,6 +13,8 @@
 
 		private int returnCode;
 
+		public override ClientType ClientType => ClientType.Full;
+
 		public TS3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
 			udpClient = new UdpClient();
@@ -79,7 +81,7 @@
 				|| message.StartsWith("channellistfinished ", StringComparison.Ordinal))
 			{
 				var notification = CommandDeserializer.GenerateNotification(message);
-				InvokeEvent(notification);
+				InvokeEvent(notification.Item1, notification.Item2);
 				return true;
 			}
 			return false;
@@ -106,21 +108,27 @@
 
 		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType)
 		{
-			if (com.Command != "clientinit")
+			if (com.ExpectResponse)
 				com.AppendParameter(new CommandParameter("return_code", returnCode));
 
 			using (WaitBlock wb = new WaitBlock(targetType))
 			{
 				lock (LockObj)
 				{
-					RequestQueue.Enqueue(wb);
-					returnCode++;
+					if (com.ExpectResponse)
+					{
+						RequestQueue.Enqueue(wb);
+						returnCode++;
+					}
 
 					byte[] data = Util.Encoder.GetBytes(com.ToString());
 					packetHandler.AddOutgoingPacket(data, PacketType.Command);
 				}
 
-				return wb.WaitForMessage();
+				if (com.ExpectResponse)
+					return wb.WaitForMessage();
+				else
+					return null;
 			}
 		}
 
@@ -139,22 +147,22 @@
 		public void ClientInit(string nickname, string plattform, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
-			=> Send("clientinit",
-			new CommandParameter("client_nickname", nickname),
-			new CommandParameter("client_version", versionSign.Name),
-			new CommandParameter("client_platform", plattform),
-			new CommandParameter("client_input_hardware", inputHardware),
-			new CommandParameter("client_output_hardware", outputHardware),
-			new CommandParameter("client_default_channel", defaultChannel),
-			new CommandParameter("client_default_channel_password", defaultChannelPassword),
-			new CommandParameter("client_server_password", serverPassword),
-			new CommandParameter("client_meta_data", metaData),
-			new CommandParameter("client_version_sign", versionSign.Sign),
-			new CommandParameter("client_key_offset", ts3Crypt.Identity.ValidKeyOffset),
-			new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
-			new CommandParameter("client_default_token", defaultToken),
-			new CommandParameter("hwid", hwid));
-
+			=> SendNoResponsed(
+				new TS3Command("clientinit", new List<CommandParameter>() {
+					new CommandParameter("client_nickname", nickname),
+					new CommandParameter("client_version", versionSign.Name),
+					new CommandParameter("client_platform", plattform),
+					new CommandParameter("client_input_hardware", inputHardware),
+					new CommandParameter("client_output_hardware", outputHardware),
+					new CommandParameter("client_default_channel", defaultChannel),
+					new CommandParameter("client_default_channel_password", defaultChannelPassword),
+					new CommandParameter("client_server_password", serverPassword),
+					new CommandParameter("client_meta_data", metaData),
+					new CommandParameter("client_version_sign", versionSign.Sign),
+					new CommandParameter("client_key_offset", ts3Crypt.Identity.ValidKeyOffset),
+					new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
+					new CommandParameter("client_default_token", defaultToken),
+					new CommandParameter("hwid", hwid) }));
 		#endregion
 	}
 }

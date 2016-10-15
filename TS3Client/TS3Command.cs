@@ -11,6 +11,7 @@
 		public static List<CommandParameter> NoParameter => new List<CommandParameter>();
 		public static List<CommandOption> NoOptions => new List<CommandOption>();
 
+		public bool ExpectResponse { get; set; }
 		public string Command { get; private set; }
 		private List<CommandParameter> parameter;
 		private List<CommandOption> options;
@@ -19,6 +20,7 @@
 		public TS3Command(string command, List<CommandParameter> parameter) : this(command, parameter, NoOptions) { }
 		public TS3Command(string command, List<CommandParameter> parameter, List<CommandOption> options)
 		{
+			ExpectResponse = true;
 			this.Command = command;
 			this.parameter = parameter;
 			this.options = options;

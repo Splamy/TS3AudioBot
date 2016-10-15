@@ -30,7 +30,7 @@ namespace TS3Client
 		// STATIC LOOKUPS
 
 		/// <summary>Maps the name of a notification to the class.</summary>
-		private static readonly Dictionary<string, Type> NotifyLookup;
+		private static readonly Dictionary<string, NotifyTypeInfo> NotifyLookup;
 		/// <summary>Map of functions to deserialize from query values.</summary>
 		private static readonly Dictionary<Type, Func<string, Type, object>> ConvertMap;
 
@@ -41,9 +41,9 @@ namespace TS3Client
 							  from type in asm.GetTypes()
 							  where type.IsInterface
 							  where typeof(INotification).IsAssignableFrom(type)
-							  let ntfyAtt = type.GetCustomAttribute(typeof(QueryNotificationAttribute), false)
+							  let ntfyAtt = (QueryNotificationAttribute)type.GetCustomAttribute(typeof(QueryNotificationAttribute), false)
 							  where ntfyAtt != null
-							  select new KeyValuePair<string, Type>(((QueryNotificationAttribute)ntfyAtt).Name, type);
+							  select new KeyValuePair<string, NotifyTypeInfo>(ntfyAtt.Name, new NotifyTypeInfo(type, ntfyAtt.NotificationType));
 			NotifyLookup = derivedNtfy.ToDictionary(x => x.Key, x => x.Value);
 
 			Util.Init(ref ConvertMap);
@@ -82,20 +82,36 @@ namespace TS3Client
 		}
 
 		// data to notification
-		public static INotification GenerateNotification(string line)
+		public static Tuple<IEnumerable<INotification>, NotificationType> GenerateNotification(string line)
 		{
+			string notifyname;
 			int splitindex = line.IndexOf(' ');
-			if (splitindex < 0) throw new ArgumentException("line couldn't be parsed");
-			Type targetNotification;
-			string notifyname = line.Substring(0, splitindex);
+			if (splitindex < 0)
+				notifyname = line.TrimEnd();
+			else
+				notifyname = line.Substring(0, splitindex);
+
+			NotifyTypeInfo targetNotification;
 			if (NotifyLookup.TryGetValue(notifyname, out targetNotification))
 			{
-				var notification = Generator.ActivateNotification(targetNotification);
-				var incomingData = ParseKeyValueLine(line, true);
-				FillQueryMessage(targetNotification, notification, incomingData);
-				return notification;
+				string[] messageList;
+				if (splitindex < 0)
+					messageList = new string[0];
+				else
+					messageList = line.Substring(splitindex).TrimStart().Split('|');
+				return new Tuple<IEnumerable<INotification>, NotificationType>(messageList.Select(msg =>
+				{
+					var incomingData = ParseKeyValueLine(msg, false);
+					var notification = Generator.ActivateNotification(targetNotification.ClassType);
+					FillQueryMessage(targetNotification.ClassType, notification, incomingData);
+					return notification;
+				}), targetNotification.EnumType);
 			}
-			else throw new NotSupportedException("No matching notification derivative");
+			else
+			{
+				Debug.WriteLine($"No matching notification derivative ({line})");
+				return new Tuple<IEnumerable<INotification>, NotificationType>(Enumerable.Empty<INotification>(), NotificationType.Unknown);
+			}
 		}
 
 		public static IEnumerable<IResponse> GenerateResponse(string line, Type answerType)
@@ -115,16 +131,11 @@ namespace TS3Client
 				return messageList.Select(msg =>
 				{
 					var incomingData = ParseKeyValueLine(msg, false);
-					return DictToResponse(incomingData, answerType);
+					var response = Generator.ActivateResponse(answerType);
+					FillQueryMessage(answerType, response, incomingData);
+					return response;
 				});
 			}
-		}
-
-		private static IResponse DictToResponse(KVEnu dict, Type answerType)
-		{
-			var response = Generator.ActivateResponse(answerType);
-			FillQueryMessage(answerType, response, dict);
-			return response;
 		}
 
 		// HELPER
@@ -137,7 +148,7 @@ namespace TS3Client
 				PropertyInfo prop;
 				if (!map.TryGetValue(kvp.Key, out prop))
 				{
-					Debug.Write($"Missing Parameter '{kvp.Key}' in '{qm}'");
+					Debug.WriteLine($"Missing Parameter '{kvp.Key}' in '{qm}'");
 					continue;
 				}
 				object value = DeserializeValue(kvp.Value, prop.PropertyType);
@@ -170,5 +181,13 @@ namespace TS3Client
 			=> ParseKeyValueLineDict(ParseKeyValueLine(line, ignoreFirst));
 		private static Dictionary<string, string> ParseKeyValueLineDict(KVEnu data)
 			=> data.ToDictionary(pair => pair.Key, pair => pair.Value);
+
+		private sealed class NotifyTypeInfo
+		{
+			public Type ClassType { get; }
+			public NotificationType EnumType { get; }
+
+			public NotifyTypeInfo(Type classType, NotificationType enumType) { ClassType = classType; EnumType = enumType; }
+		}
 	}
 }

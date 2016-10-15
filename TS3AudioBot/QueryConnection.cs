@@ -23,29 +23,41 @@ namespace TS3AudioBot
 	using TS3Client;
 	using TS3Client.Query;
 	using TS3Client.Messages;
-	
+
 	public sealed class QueryConnection : MarshalByRefObject, ITeamspeakControl
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
-		private void ExtendedTextMessage(object sender, TextMessage eventArgs)
+		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)
 		{
-			if (connectionData.suppressLoopback && eventArgs.InvokerId == me.ClientId)
-				return;
-			OnMessageReceived?.Invoke(sender, eventArgs);
+			if (OnMessageReceived == null) return;
+			foreach (var evData in eventArgs)
+			{
+				if (connectionData.suppressLoopback && evData.InvokerId == me.ClientId)
+					continue;
+				OnMessageReceived?.Invoke(sender, evData);
+			}
 		}
 
 		public event EventHandler<ClientEnterView> OnClientConnect;
-		private void ExtendedClientEnterView(object sender, ClientEnterView eventArgs)
+		private void ExtendedClientEnterView(object sender, IEnumerable<ClientEnterView> eventArgs)
 		{
-			clientbufferOutdated = true;
-			OnClientConnect?.Invoke(sender, eventArgs);
+			if (OnClientConnect == null) return;
+			foreach (var evData in eventArgs)
+			{
+				clientbufferOutdated = true;
+				OnClientConnect?.Invoke(sender, evData);
+			}
 		}
 
 		public event EventHandler<ClientLeftView> OnClientDisconnect;
-		private void ExtendedClientLeftView(object sender, ClientLeftView eventArgs)
+		private void ExtendedClientLeftView(object sender, IEnumerable<ClientLeftView> eventArgs)
 		{
-			clientbufferOutdated = true;
-			OnClientDisconnect?.Invoke(sender, eventArgs);
+			if (OnClientDisconnect == null) return;
+			foreach (var evData in eventArgs)
+			{
+				clientbufferOutdated = true;
+				OnClientDisconnect?.Invoke(sender, evData);
+			}
 		}
 
 		private IEnumerable<ClientData> clientbuffer;
@@ -139,7 +151,7 @@ namespace TS3AudioBot
 			cd.DatabaseId = data.DatabaseId;
 			cd.ClientId = data.ClientId;
 			cd.NickName = data.NickName;
-			cd.ClientType = ClientType.Query;
+			cd.ClientType = tsClient.ClientType;
 			return cd;
 		}
 
@@ -152,7 +164,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int[] GetClientServerGroups(ClientData client)
+		public ulong[] GetClientServerGroups(ClientData client)
 		{
 			if (client == null)
 				throw new ArgumentNullException(nameof(client));
@@ -160,7 +172,7 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			var response = tsClient.ServerGroupsOfClientDbId(client);
 			if (!response.Any())
-				return new int[0];
+				return new ulong[0];
 			return response.Select(csg => csg.ServerGroupId).ToArray();
 		}
 

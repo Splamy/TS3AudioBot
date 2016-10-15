@@ -67,6 +67,7 @@ namespace TS3Client
 
 	public enum NotificationType
 	{
+		Unknown,
 		// Official notifies, used by client and query
 		[TS3Serializable("notifychannelcreated")]
 		ChannelCreated,
@@ -104,6 +105,18 @@ namespace TS3Client
 		ChannelListFinished,
 		[TS3Serializable("notifyclientneededpermissions")]
 		ClientNeededPermissions,
+		[TS3Serializable("notifyclientchannelgroupchanged")]
+		ClientChannelGroupChanged,
+		[TS3Serializable("notifyservergroupclientadded")]
+		ClientServerGroupAdded,
+		[TS3Serializable("notifyconnectioninforequest")]
+		ConnectionInfoRequest,
+		[TS3Serializable("notifychannelsubscribed")]
+		ChannelSubscribed,
+		[TS3Serializable("notifychannelunsubscribed")]
+		ChannelUnsubscribed,
+		[TS3Serializable("notifyclientchatcomposing")]
+		ClientChatComposing,
 	}
 
 	public enum MoveReason
