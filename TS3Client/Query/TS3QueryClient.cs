@@ -48,6 +48,8 @@ namespace TS3Client.Query
 
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
+
+			ConnectDone();
 		}
 
 		protected override void DisconnectInternal()
@@ -94,6 +96,17 @@ namespace TS3Client.Query
 		}
 
 		#region QUERY SPECIFIC COMMANDS
+
+		public void RegisterNotification(MessageTarget target, int channel) => RegisterNotification(target.GetQueryString(), channel);
+		public void RegisterNotification(RequestTarget target, int channel) => RegisterNotification(target.GetQueryString(), channel);
+		private void RegisterNotification(string target, int channel)
+		{
+			var ev = new CommandParameter("event", target.ToLowerInvariant());
+			if (target == "channel")
+				Send("servernotifyregister", ev, new CommandParameter("id", channel));
+			else
+				Send("servernotifyregister", ev);
+		}
 
 		public void Login(string username, string password)
 			=> Send("login",

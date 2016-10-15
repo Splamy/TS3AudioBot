@@ -104,6 +104,7 @@
 		protected override void ProcessInitServer(InitServer initServer)
 		{
 			packetHandler.ClientId = initServer.ClientId;
+			ConnectDone();
 		}
 
 		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType)

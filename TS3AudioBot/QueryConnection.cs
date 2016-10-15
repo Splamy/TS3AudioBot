@@ -79,6 +79,7 @@ namespace TS3AudioBot
 			tsClient.OnClientLeftView += ExtendedClientLeftView;
 			tsClient.OnClientEnterView += ExtendedClientEnterView;
 			tsClient.OnTextMessageReceived += ExtendedTextMessage;
+			tsClient.OnConnected += OnConnected;
 		}
 
 		public void Connect()
@@ -90,15 +91,18 @@ namespace TS3AudioBot
 				tsClient.UseServer(1);
 				try { tsClient.ChangeName("TS3AudioBot"); }
 				catch (TS3CommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
-
-				me = GetSelf();
-
-				tsClient.RegisterNotification(MessageTarget.Server, -1);
-				tsClient.RegisterNotification(MessageTarget.Private, -1);
-				tsClient.RegisterNotification(RequestTarget.Server, -1);
-
-				TickPool.RegisterTick(() => tsClient.WhoAmI(), PingInterval, true);
 			}
+		}
+
+		private void OnConnected(object sender, EventArgs e)
+		{
+			me = GetSelf();
+
+			tsClient.RegisterNotification(MessageTarget.Server, -1);
+			tsClient.RegisterNotification(MessageTarget.Private, -1);
+			tsClient.RegisterNotification(RequestTarget.Server, -1);
+
+			TickPool.RegisterTick(() => tsClient.WhoAmI(), PingInterval, true);
 		}
 
 		public void EnterEventLoop() => tsClient.EnterEventLoop();

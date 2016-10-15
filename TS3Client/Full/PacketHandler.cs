@@ -139,7 +139,6 @@
 			{
 				var dummy = new IPEndPoint(IPAddress.Any, 0);
 				byte[] buffer = udpClient.Receive(ref dummy);
-				Console.WriteLine("RECV {0:X4} : {1}", buffer.Length, buffer.Byte2Hex());
 				if (/*dummy.Address.Equals(remoteIpAddress) &&*/ dummy.Port != 9987) // todo
 					continue;
 
@@ -313,7 +312,6 @@
 
 		private void SendRaw(OutgoingPacket packet)
 		{
-			Console.WriteLine("SEND {0:X4} : {1}", packet.Size, packet.Raw.Byte2Hex());
 			packet.LastSendTime = DateTime.UtcNow;
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}

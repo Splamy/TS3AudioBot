@@ -117,6 +117,7 @@ namespace TS3Client
 		ChannelUnsubscribed,
 		[TS3Serializable("notifyclientchatcomposing")]
 		ClientChatComposing,
+		// TODO: notifyservergroupsbyclientid
 	}
 
 	public enum MoveReason

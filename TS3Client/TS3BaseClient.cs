@@ -25,6 +25,7 @@ namespace TS3Client
 		public event NotifyEventHandler<TextMessage> OnTextMessageReceived;
 		public event NotifyEventHandler<ClientEnterView> OnClientEnterView;
 		public event NotifyEventHandler<ClientLeftView> OnClientLeftView;
+		public event EventHandler OnConnected;
 
 
 		public abstract ClientType ClientType { get; }
@@ -82,6 +83,7 @@ namespace TS3Client
 			}
 		}
 		protected abstract void DisconnectInternal();
+		protected void ConnectDone() => OnConnected?.Invoke(this, new EventArgs());
 
 		#region NETWORK RECEIVE AND DESERIALIZE
 
@@ -146,11 +148,11 @@ namespace TS3Client
 				case NotificationType.ChannelEdited: break;
 				case NotificationType.ChannelMoved: break;
 				case NotificationType.ChannelPasswordChanged: break;
-				case NotificationType.ClientEnterView: eventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, (IEnumerable<ClientEnterView>)notification)); break;
-				case NotificationType.ClientLeftView: eventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, (IEnumerable<ClientLeftView>)notification)); break;
+				case NotificationType.ClientEnterView: eventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>())); break;
+				case NotificationType.ClientLeftView: eventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>())); break;
 				case NotificationType.ClientMoved: break;
 				case NotificationType.ServerEdited: break;
-				case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, (IEnumerable<TextMessage>)notification)); break;
+				case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>())); break;
 				case NotificationType.TokenUsed: break;
 				// full client events
 				case NotificationType.InitIvExpand: eventDispatcher.Invoke(() => ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault())); break;
@@ -221,19 +223,6 @@ namespace TS3Client
 		#endregion
 
 		#region UNIVERSAL COMMANDS
-
-		public void RegisterNotification(MessageTarget target, int channel) => RegisterNotification(target.GetQueryString(), channel);
-		public void RegisterNotification(RequestTarget target, int channel) => RegisterNotification(target.GetQueryString(), channel);
-		private void RegisterNotification(string target, int channel)
-		{
-			var ev = new CommandParameter("event", target.ToLowerInvariant());
-			if (target == "channel")
-				Send("servernotifyregister", ev, new CommandParameter("id", channel));
-			else
-				Send("servernotifyregister", ev);
-		}
-
-
 		public void ChangeName(string newName)
 			=> Send("clientupdate",
 			new CommandParameter("client_nickname", newName));
