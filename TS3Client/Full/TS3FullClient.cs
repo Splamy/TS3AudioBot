@@ -40,8 +40,8 @@
 
 		protected override void DisconnectInternal()
 		{
-			// TODO send quit message
-			udpClient.Close();
+            ClientDisconnect(MoveReason.LeftServer, "Disconnected");
+            //udpClient.Close();
 		}
 
 		protected override void NetworkLoop()
@@ -164,6 +164,11 @@
 					new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
 					new CommandParameter("client_default_token", defaultToken),
 					new CommandParameter("hwid", hwid) }));
+
+        public void ClientDisconnect(MoveReason reason, string reasonMsg)
+            => Send("clientdisconnect", 
+                new CommandParameter("reasonid", (int)reason),
+                new CommandParameter("reasonmsg", reasonMsg));
 		#endregion
 	}
 }
