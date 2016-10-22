@@ -36,7 +36,7 @@ namespace TS3AudioBot.CommandSystem
 			// Convert result to list because it can be enumerated multiple times
 			var possibilities = list.Select(t => new FilterItem<T>(t.Key, t.Value, 0)).ToList();
 			// Filter matching commands
-			foreach (var c in filter)
+			foreach (var c in filter.ToLowerInvariant())
 			{
 				var newPossibilities = (from p in possibilities
 										let pos = p.name.IndexOf(c, p.index)

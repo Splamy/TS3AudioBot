@@ -82,7 +82,6 @@ namespace TS3AudioBot.Helper.AudioTags
 
 			public override string TagID { get { return "ID3"; } }
 
-#pragma warning disable CS0219
 			public override string GetTitle(BinaryReader fileStream)
 			{
 				// using the official id3 tag documentation
@@ -93,8 +92,8 @@ namespace TS3AudioBot.Helper.AudioTags
 				// read + validate header                                    [10 bytes]
 				// skipped for TagID                                         >03 bytes
 				byte version_major = fileStream.ReadByte(); //               >01 bytes
-				byte version_minor = fileStream.ReadByte(); //               >01 bytes
-				byte data_flags = fileStream.ReadByte(); //                  >01 bytes
+				/*byte version_minor =*/ fileStream.ReadByte(); //           >01 bytes
+				/*byte data_flags =*/ fileStream.ReadByte(); //              >01 bytes
 				byte[] tag_size = fileStream.ReadBytes(4); //                >04 bytes
 				int tag_size_int = 0;
 				for (int i = 0; i < 4; i++)
@@ -135,10 +134,10 @@ namespace TS3AudioBot.Helper.AudioTags
 				{
 					while (read_count < tag_size_int + 10)
 					{
-						// frame header                                      [10 bytes]
-						uint frame_id = fileStream.ReadUInt32BE(); //        >04 bytes
-						int frame_size = fileStream.ReadInt32BE(); //        >04 bytes
-						ushort frame_flags = fileStream.ReadUInt16BE(); //   >02 bytes 
+						// frame header                                        [10 bytes]
+						uint frame_id = fileStream.ReadUInt32BE(); //          >04 bytes
+						int frame_size = fileStream.ReadInt32BE(); //          >04 bytes
+						/*ushort frame_flags =*/ fileStream.ReadUInt16BE(); // >02 bytes 
 						read_count += 10;
 
 						// content
@@ -175,7 +174,6 @@ namespace TS3AudioBot.Helper.AudioTags
 				#endregion
 				return null;
 			}
-#pragma warning restore
 
 			private static int FrameIdV2(string id)
 			{

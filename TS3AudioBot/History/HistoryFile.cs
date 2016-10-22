@@ -26,15 +26,17 @@ namespace TS3AudioBot.History
 	using Helper;
 	using ResourceFactories;
 
-	public class HistoryFile : IDisposable
+	public sealed class HistoryFile : IDisposable
 	{
 		private IDictionary<string, uint> resIdToId;
 		private IDictionary<uint, AudioLogEntry> idFilter;
 		private ISubstringSearch<AudioLogEntry> titleFilter;
 		private IDictionary<uint, IList<AudioLogEntry>> userIdFilter;
 		private SortedList<DateTime, AudioLogEntry> timeFilter;
+		private LinkedList<uint> unusedIds;
 
 		public uint CurrentID { get; private set; } = 0;
+		public bool ReuseUnusedIds { get; set; }
 
 		private readonly IList<AudioLogEntry> noResult = new List<AudioLogEntry>().AsReadOnly();
 
@@ -55,6 +57,7 @@ namespace TS3AudioBot.History
 			titleFilter = new SimpleSubstringFinder<AudioLogEntry>();
 			userIdFilter = new SortedList<uint, IList<AudioLogEntry>>();
 			timeFilter = new SortedList<DateTime, AudioLogEntry>();
+			unusedIds = new LinkedList<uint>();
 		}
 
 		public void OpenFile(string path)
@@ -97,7 +100,7 @@ namespace TS3AudioBot.History
 			}
 
 			int fileVersion = -1;
-			if (!line.StartsWith(VersionHeader)
+			if (!line.StartsWith(VersionHeader, StringComparison.Ordinal)
 			|| !int.TryParse(line.Substring(VersionHeader.Length), out fileVersion))
 				throw new FormatException("The history file has an invalid header.");
 
@@ -149,6 +152,13 @@ namespace TS3AudioBot.History
 				}
 				readIndex = fileReader.ReadPosition;
 			}
+
+			// fill up unused-id list
+			for(uint i = 0; i < CurrentID; i++)
+			{
+				if (GetEntryById(i) == null)
+					unusedIds.AddLast(i);
+			}
 		}
 
 		private void WriteHeader()
@@ -158,7 +168,7 @@ namespace TS3AudioBot.History
 			fileStream.Write(NewLineArray, 0, NewLineArray.Length);
 		}
 
-		private void BackupFile()
+		public void BackupFile()
 		{
 			int backUpNum = 0;
 			string fileName;
@@ -173,15 +183,16 @@ namespace TS3AudioBot.History
 		}
 
 
-		public void Store(PlayData playData)
+		public AudioLogEntry Store(HistorySaveData saveData)
 		{
-			if (playData == null)
-				throw new ArgumentNullException(nameof(playData));
+			if (saveData == null)
+				throw new ArgumentNullException(nameof(saveData));
 
-			uint? index = Contains(playData.Resource);
+			AudioLogEntry ale;
+			uint? index = Contains(saveData.Resource);
 			if (!index.HasValue)
 			{
-				var ale = CreateLogEntry(playData);
+				ale = CreateLogEntry(saveData);
 				if (ale != null)
 				{
 					AddToMemoryIndex(ale);
@@ -192,9 +203,10 @@ namespace TS3AudioBot.History
 			}
 			else
 			{
-				var ale = GetEntryById(index.Value);
+				ale = GetEntryById(index.Value);
 				LogEntryPlay(ale);
 			}
+			return ale;
 		}
 
 		public uint? Contains(AudioResource resource)
@@ -279,6 +291,8 @@ namespace TS3AudioBot.History
 			return result;
 		}
 
+		public IList<AudioLogEntry> GetAll() => idFilter.Values.ToList();
+
 		// User features
 
 		/// <summary>Increases the playcount and updates the last playtime.</summary>
@@ -313,7 +327,7 @@ namespace TS3AudioBot.History
 				throw new ArgumentNullException(nameof(newName));
 
 			// update the name
-			ale.ResourceTitle = newName;
+			ale.SetName(newName);
 
 			if (flush) ReWriteToFile(ale);
 		}
@@ -324,32 +338,45 @@ namespace TS3AudioBot.History
 		{
 			if (ale == null)
 				throw new ArgumentNullException(nameof(ale));
+			if (!Contains(ale.AudioResource).HasValue)
+				throw new ArgumentException("The requested entry was not found.");
 
-			RemoveFromFile(ale);
 			RemoveFromMemoryIndex(ale);
+			RemoveFromFile(ale);
 		}
 
 		// Internal features
 
-		private AudioLogEntry CreateLogEntry(PlayData playData)
+		private AudioLogEntry CreateLogEntry(HistorySaveData saveData)
 		{
-			var resource = playData.Resource;
-			if (string.IsNullOrWhiteSpace(resource.ResourceTitle))
+			if (string.IsNullOrWhiteSpace(saveData.Resource.ResourceTitle))
 				return null;
-			var ale = new AudioLogEntry(CurrentID, resource.AudioType, resource.ResourceId)
+
+			uint nextHid;
+			if (ReuseUnusedIds && unusedIds.Any())
 			{
-				UserInvokeId = (uint)playData.Invoker.DatabaseId,
+				nextHid = unusedIds.First.Value;
+				unusedIds.RemoveFirst();
+			}
+			else
+			{
+				nextHid = CurrentID;
+				CurrentID++;
+			}
+
+			var ale = new AudioLogEntry(nextHid, saveData.Resource)
+			{
+				UserInvokeId = (uint)saveData.OwnerDbId,
 				Timestamp = Util.GetNow(),
-				ResourceTitle = resource.ResourceTitle,
 				PlayCount = 1,
 			};
-			CurrentID++;
 
 			return ale;
 		}
 
 		private void AppendToFile(AudioLogEntry logEntry, bool flush = true)
 		{
+			fileStream.Seek(0, SeekOrigin.End);
 			logEntry.FilePosIndex = fileStream.Position;
 
 			var fileString = logEntry.ToFileString();
@@ -375,13 +402,11 @@ namespace TS3AudioBot.History
 				fileStream.Write(newLine, 0, newLine.Length);
 				if (newLine.Length < curLine.Length)
 					CleanLine(curLine.Length - newLine.Length);
-				fileStream.Seek(0, SeekOrigin.End);
 			}
 			else
 			{
 				byte[] filler = Enumerable.Repeat((byte)' ', curLine.Length).ToArray();
 				fileStream.Write(filler, 0, filler.Length);
-				fileStream.Seek(0, SeekOrigin.End);
 				AppendToFile(logEntry, false);
 			}
 			fileStream.Flush(true);
@@ -389,9 +414,9 @@ namespace TS3AudioBot.History
 
 		private void AddToMemoryIndex(AudioLogEntry logEntry)
 		{
-			resIdToId.Add(logEntry.UniqueId, logEntry.Id);
+			resIdToId.Add(logEntry.AudioResource.UniqueId, logEntry.Id);
 			idFilter.Add(logEntry.Id, logEntry);
-			titleFilter.Add(logEntry.ResourceTitle.ToLower(CultureInfo.InvariantCulture), logEntry);
+			titleFilter.Add(logEntry.AudioResource.ResourceTitle.ToLower(CultureInfo.InvariantCulture), logEntry);
 			AutoAdd(userIdFilter, logEntry);
 			timeFilter.Add(logEntry.Timestamp, logEntry);
 		}
@@ -399,9 +424,11 @@ namespace TS3AudioBot.History
 		private void RemoveFromFile(AudioLogEntry logEntry)
 		{
 			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
+			fileReader.InvalidateBuffer();
 			byte[] curLine = FileEncoding.GetBytes(fileReader.ReadLine());
 			fileStream.Seek(logEntry.FilePosIndex, SeekOrigin.Begin);
 			CleanLine(curLine.Length);
+			fileStream.Flush(true);
 		}
 
 		private void CleanLine(int length)
@@ -412,11 +439,12 @@ namespace TS3AudioBot.History
 
 		private void RemoveFromMemoryIndex(AudioLogEntry logEntry)
 		{
-			resIdToId.Remove(logEntry.UniqueId);
+			resIdToId.Remove(logEntry.AudioResource.UniqueId);
 			idFilter.Remove(logEntry.Id);
-			titleFilter.Remove(logEntry.ResourceTitle);
+			titleFilter.RemoveValue(logEntry);
 			userIdFilter[logEntry.UserInvokeId].Remove(logEntry);
 			timeFilter.Remove(logEntry.Timestamp);
+			unusedIds.AddLast(logEntry.Id);
 		}
 
 		private static void AutoAdd(IDictionary<uint, IList<AudioLogEntry>> dict, AudioLogEntry value)
@@ -437,6 +465,7 @@ namespace TS3AudioBot.History
 			titleFilter.Clear();
 			userIdFilter.Clear();
 			timeFilter.Clear();
+			unusedIds.Clear();
 
 			CurrentID = 0;
 		}
@@ -445,6 +474,20 @@ namespace TS3AudioBot.History
 		{
 			CloseFile();
 			Clear();
+		}
+	}
+
+	public class HistorySaveData
+	{
+		public AudioResource Resource { get; }
+		public ulong OwnerDbId { get; }
+
+		public HistorySaveData(AudioResource resource, ulong ownerDbId)
+		{
+			if (resource == null)
+				throw new ArgumentNullException(nameof(resource));
+			Resource = resource;
+			OwnerDbId = ownerDbId;
 		}
 	}
 }

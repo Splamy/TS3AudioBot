@@ -18,105 +18,97 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Reflection;
+	using System.Reflection.Emit;
+	using CommandSystem;
 	using Helper;
-	using History;
+	using TS3Client.Messages;
 
-	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
+	public sealed class ResourceFactoryManager : IDisposable
 	{
+		public CommandGroup CommandNode { get; } = new CommandGroup();
 		public IResourceFactory DefaultFactorty { get; internal set; }
-		private IList<IResourceFactory> factories;
-		private AudioFramework audioFramework;
+		private List<IResourceFactory> factories;
 
-		public ResourceFactoryManager(AudioFramework audioFramework)
+		public ResourceFactoryManager()
 		{
-			factories = new List<IResourceFactory>();
-			this.audioFramework = audioFramework;
+			Util.Init(ref factories);
 		}
 
-		public string LoadAndPlay(PlayData data)
+		// Load lookup stages
+		// PlayResource != null    => ret PlayResource
+		// ResourceData != null    => call RF.RestoreFromId
+		// TextMessage != null     => call RF.GetResoruce
+		// else                    => ret Error
+
+		/// <summary>
+		/// Creates a new <see cref="PlayResource"/> which can be played.
+		/// The build data will be taken from <see cref="PlayData.ResourceData"/> or 
+		/// <see cref="PlayData.Message"/> if no AudioResource is given.
+		/// </summary>
+		/// <param name="data">The building parameters for the resource.</param>
+		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
+		public R<PlayResource> Load(AudioResource resource)
 		{
-			string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
-			IResourceFactory factory = GetFactoryFor(netlinkurl);
-			return LoadAndPlay(factory, data);
+			if (resource == null)
+				throw new ArgumentNullException(nameof(resource));
+
+			IResourceFactory factory = GetFactoryFor(resource.AudioType);
+
+			var result = factory.GetResourceById(resource);
+			if (!result)
+				return $"Could not load ({result.Message})";
+			return result;
 		}
 
-		public string LoadAndPlay(AudioType audioType, PlayData data)
+		/// <summary>
+		/// Same as <see cref="LoadAndPlay(PlayData)"/> except it lets you pick an
+		/// <see cref="IResourceFactory"/> identifier to manually select a factory.
+		/// </summary>
+		/// <param name="message">The link/uri to resolve for the resource.</param>
+		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
+		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
+		public R<PlayResource> Load(string message, AudioType? audioType = null)
 		{
-			var factory = GetFactoryFor(audioType);
-			return LoadAndPlay(factory, data);
-		}
+			if (string.IsNullOrWhiteSpace(message))
+				throw new ArgumentNullException(nameof(message));
 
-		private string LoadAndPlay(IResourceFactory factory, PlayData data)
-		{
-			if (data.Resource == null)
-			{
-				string netlinkurl = TextUtil.ExtractUrlFromBB(data.Message);
+			IResourceFactory factory;
+			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
 
-				AudioResource resource;
-				RResultCode result = factory.GetResource(netlinkurl, out resource);
-				if (result != RResultCode.Success)
-					return $"Could not play ({result})";
-				data.Resource = resource;
-			}
-			return PostProcessStart(factory, data);
-		}
-
-		public string RestoreAndPlay(AudioLogEntry logEntry, PlayData data)
-		{
-			var factory = GetFactoryFor(logEntry.AudioType);
-
-			if (data.Resource == null)
-			{
-				AudioResource resource;
-				RResultCode result = factory.GetResourceById(logEntry.ResourceId, logEntry.ResourceTitle, out resource);
-				if (result != RResultCode.Success)
-					return $"Could not restore ({result})";
-				data.Resource = resource;
-			}
-			return PostProcessStart(factory, data);
-		}
-
-		private string PostProcessStart(IResourceFactory factory, PlayData data)
-		{
-			bool abortPlay;
-			factory.PostProcess(data, out abortPlay);
-			return abortPlay ? null : Play(data);
-		}
-
-		public string Play(PlayData data)
-		{
-			if (data.Enqueue && audioFramework.IsPlaying)
-			{
-				audioFramework.PlaylistManager.Enqueue(data);
-			}
+			if (audioType.HasValue)
+				factory = GetFactoryFor(audioType.Value);
 			else
-			{
-				var result = audioFramework.StartResource(data);
-				if (result != AudioResultCode.Success)
-					return $"The resource could not be played ({result}).";
-			}
-			return null;
+				factory = GetFactoryFor(netlinkurl);
+
+			var result = factory.GetResource(netlinkurl);
+			if (!result)
+				return $"Could not load ({result.Message})";
+			return result;
 		}
 
 		private IResourceFactory GetFactoryFor(AudioType audioType)
 		{
 			foreach (var fac in factories)
-				if (fac.FactoryFor == audioType) return fac;
+				if (fac != DefaultFactorty && fac.FactoryFor == audioType) return fac;
 			return DefaultFactorty;
 		}
 		private IResourceFactory GetFactoryFor(string uri)
 		{
 			foreach (var fac in factories)
-				if (fac.MatchLink(uri)) return fac;
+				if (fac != DefaultFactorty && fac.MatchLink(uri)) return fac;
 			return DefaultFactorty;
 		}
 
 		public void AddFactory(IResourceFactory factory)
 		{
 			factories.Add(factory);
+
+			// register factory command node
+			var playCommand = new PlayCommand(factory.FactoryFor);
+			CommandNode.AddCommand(factory.SubCommandName, playCommand.Command);
 		}
 
-		public string RestoreLink(PlayData data) => RestoreLink(data.Resource);
 		public string RestoreLink(AudioResource res)
 		{
 			IResourceFactory factory = GetFactoryFor(res.AudioType);
@@ -127,6 +119,29 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			foreach (var fac in factories)
 				fac.Dispose();
+		}
+
+		sealed class PlayCommand
+		{
+			public BotCommand Command { get; }
+			private AudioType audioType;
+			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
+
+			public PlayCommand(AudioType audioType)
+			{
+				this.audioType = audioType;
+				var builder = new CommandBuildInfo(
+					this,
+					playMethod,
+					new CommandAttribute(CommandRights.Private, string.Empty),
+					null);
+				Command = new BotCommand(builder);
+			}
+
+			public string PropagiatePlay(ExecutionInformation info, string parameter)
+			{
+				return info.Session.Bot.PlayManager.Play(info.Session.Client, parameter, audioType);
+			}
 		}
 	}
 }

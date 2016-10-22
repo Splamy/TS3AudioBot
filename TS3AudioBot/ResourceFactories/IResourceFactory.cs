@@ -17,15 +17,29 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using System;
+	using Helper;
 
 	public interface IResourceFactory : IDisposable
 	{
+		string SubCommandName { get; }
 		AudioType FactoryFor { get; }
 
+		/// <summary>Check method to ask if a factory can load the given link.</summary>
+		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
+		/// <returns>True if the factory thinks it can parse it, false otherwise.</returns>
 		bool MatchLink(string uri);
-		RResultCode GetResource(string url, out AudioResource resource);
-		RResultCode GetResourceById(string id, string name, out AudioResource resource);
+		/// <summary>The factory will try to parse the uri and create a playable resource from it.</summary>
+		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
+		/// <returns>The playable resource if successful, or an error message otherwise</returns>
+		R<PlayResource> GetResource(string url);
+		/// <summary>The factory will try to parse the unique identifier of its scope of responsibility and create a playable resource from it.</summary>
+		/// <param name="id">The unique id for a song this factory is responsible for.</param>
+		/// <param name="name">A custom dislay name for the song. Can be null to tell the factory to restore the original one.</param>
+		/// <returns>The playable resource if successful, or an error message otherwise</returns>
+		R<PlayResource> GetResourceById(AudioResource resource);
+		/// <summary>Gets a link to the original site/location. This may differ from the link the resource was orininally created.</summary>
+		/// <param name="id">The unique id for a song this factory is responsible for.</param>
+		/// <returns>The (close to) original link if successful, null otherwise.</returns>
 		string RestoreLink(string id);
-		void PostProcess(PlayData data, out bool abortPlay);
 	}
 }

@@ -17,6 +17,7 @@
 namespace TS3AudioBot.Helper
 {
 	using System;
+	using System.Globalization;
 	using System.Text.RegularExpressions;
 
 	[Serializable]
@@ -34,22 +35,26 @@ namespace TS3AudioBot.Helper
 
 		public static Answer GetAnswer(string answer)
 		{
-			string lowAnswer = answer.ToLower();
-			if (lowAnswer.StartsWith("!y"))
+			string lowAnswer = answer.ToLower(CultureInfo.InvariantCulture);
+			if (lowAnswer.StartsWith("!y", StringComparison.Ordinal))
 				return Answer.Yes;
-			else if (lowAnswer.StartsWith("!n"))
+			else if (lowAnswer.StartsWith("!n", StringComparison.Ordinal))
 				return Answer.No;
 			else
 				return Answer.Unknown;
 		}
 
-		private static readonly Regex bbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex bbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", Util.DefaultRegexConfig);
 		public static string ExtractUrlFromBB(string ts3link)
 		{
 			if (ts3link.Contains("[URL]"))
-				return Regex.Match(ts3link, @"\[URL\](.+?)\[\/URL\]").Groups[1].Value;
-			else
-				return ts3link;
+			{
+				var match = bbMatch.Match(ts3link);
+				if (match.Success)
+					return match.Groups[1].Value;
+			}
+
+			return ts3link;
 		}
 
 		public static string RemoveUrlBB(string ts3link)
@@ -60,8 +65,8 @@ namespace TS3AudioBot.Helper
 		public static string StripQuotes(string quotedString)
 		{
 			if (quotedString.Length <= 1 ||
-				!quotedString.StartsWith("\"") ||
-				!quotedString.EndsWith("\""))
+				!quotedString.StartsWith("\"", StringComparison.Ordinal) ||
+				!quotedString.EndsWith("\"", StringComparison.Ordinal))
 				throw new ArgumentException("The string is not properly quoted");
 
 			return quotedString.Substring(1, quotedString.Length - 2);

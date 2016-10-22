@@ -18,45 +18,45 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.Text.RegularExpressions;
-	using System.Web.Script.Serialization;
 	using Helper;
 
 	public sealed class SoundcloudFactory : IResourceFactory
 	{
-		private JavaScriptSerializer jsonParser;
-
+		public string SubCommandName => "soundcloud";
 		public AudioType FactoryFor => AudioType.Soundcloud;
 		public string SoundcloudClientID { get; private set; }
 
 		public SoundcloudFactory()
 		{
-			jsonParser = new JavaScriptSerializer();
 			SoundcloudClientID = "a9dd3403f858e105d7e266edc162a0c5";
 		}
 
 		public bool MatchLink(string link) => Regex.IsMatch(link, @"^https?\:\/\/(www\.)?soundcloud\.");
 
-		public RResultCode GetResource(string link, out AudioResource resource)
+		public R<PlayResource> GetResource(string link)
 		{
 			string jsonResponse;
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientID}");
 			if (!WebWrapper.DownloadString(out jsonResponse, uri))
-			{
-				resource = null;
-				return RResultCode.ScInvalidLink;
-			}
+				return RResultCode.ScInvalidLink.ToString();
 			var parsedDict = ParseJson(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
-			return GetResourceById(id.ToString(), title, out resource);
+			return GetResourceById(new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud));
 		}
 
-		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
+		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
-			string finalRequest = $"https://api.soundcloud.com/tracks/{id}/stream?client_id={SoundcloudClientID}";
-			resource = new SoundcloudResource(id, name, finalRequest);
-			return RResultCode.Success;
+			if (resource.ResourceTitle == null)
+			{
+				string link = RestoreLink(resource.ResourceId);
+				return GetResource(link); // TODO: rework recursive request call here (care endless loop)
+			}
+
+			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientID}";
+			return new PlayResource(finalRequest, resource);
 		}
 
 		public string RestoreLink(string id)
@@ -69,31 +69,8 @@ namespace TS3AudioBot.ResourceFactories
 			return (string)parsedDict["permalink_url"];
 		}
 
-		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)jsonParser.DeserializeObject(jsonResponse);
-
-		public void PostProcess(PlayData data, out bool abortPlay)
-		{
-			abortPlay = false;
-		}
+		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
 
 		public void Dispose() { }
-	}
-
-	public sealed class SoundcloudResource : AudioResource
-	{
-		public override AudioType AudioType => AudioType.Soundcloud;
-
-		public string ResourceURL { get; private set; }
-
-		public SoundcloudResource(string id, string name, string url)
-			: base(id, name)
-		{
-			ResourceURL = url;
-		}
-
-		public override string Play()
-		{
-			return ResourceURL;
-		}
 	}
 }

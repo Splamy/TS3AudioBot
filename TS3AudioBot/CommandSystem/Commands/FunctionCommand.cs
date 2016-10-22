@@ -18,6 +18,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.Linq;
 	using System.Reflection;
 
@@ -76,6 +77,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 			catch (TargetInvocationException ex)
 			{
+				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
 				throw ex.InnerException;
 			}
 		}
@@ -217,7 +219,7 @@ namespace TS3AudioBot.CommandSystem
 			if (targetType.IsConstructedGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
 				targetType = targetType.GenericTypeArguments[0];
 
-			return Convert.ChangeType(value, targetType);
+			return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
 		}
 
 		public static object GetDefault(Type type)

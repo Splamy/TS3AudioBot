@@ -20,8 +20,9 @@ namespace TS3AudioBot.History
 	using System.Collections.Generic;
 	using System.Linq;
 	using Helper;
+	using ResourceFactories;
 
-	public class HistoryManager : MarshalByRefObject, IDisposable
+	public sealed class HistoryManager : IDisposable
 	{
 		private readonly object accessLock = new object();
 		private HistoryFile historyFile;
@@ -33,13 +34,18 @@ namespace TS3AudioBot.History
 		{
 			Formatter = new SmartHistoryFormatter();
 			historyFile = new HistoryFile();
+			historyFile.ReuseUnusedIds = hmd.fillDeletedIds;
 			historyFile.OpenFile(hmd.historyFile);
 		}
 
-		public void LogAudioResource(object sender, PlayData playData)
+		public R<AudioLogEntry> LogAudioResource(HistorySaveData saveData)
 		{
 			lock (accessLock)
-				historyFile.Store(playData);
+			{
+				var entry = historyFile.Store(saveData);
+				if (entry != null) return entry;
+				else return "Entry could not be stored";
+			}
 		}
 
 		public IEnumerable<AudioLogEntry> Search(SeachQuery query)
@@ -83,10 +89,22 @@ namespace TS3AudioBot.History
 			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
 		}
 
-		public AudioLogEntry GetEntryById(uint id)
+		public uint? FindEntryId(AudioResource resource)
 		{
 			lock (accessLock)
-				return historyFile.GetEntryById(id);
+			{
+				return historyFile.Contains(resource);
+			}
+		}
+
+		public R<AudioLogEntry> GetEntryById(uint id)
+		{
+			lock (accessLock)
+			{
+				var entry = historyFile.GetEntryById(id);
+				if (entry != null) return entry;
+				else return "Could not find track with this id";
+			}
 		}
 
 		public void RemoveEntry(AudioLogEntry ale)
@@ -113,6 +131,48 @@ namespace TS3AudioBot.History
 				historyFile.CleanFile();
 		}
 
+		public void RemoveBrokenLinks(UserSession session)
+		{
+			lock (accessLock)
+			{
+				const int iterations = 3;
+				historyFile.BackupFile();
+				var currentIter = historyFile.GetAll();
+
+				for (int i = 0; i < iterations; i++)
+				{
+					session.Write("Filter iteration " + i);
+					currentIter = FilterList(session, currentIter);
+				}
+
+				foreach (var entry in currentIter)
+				{
+					historyFile.LogEntryRemove(entry);
+					session.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
+					session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
+				}
+			}
+		}
+
+		private List<AudioLogEntry> FilterList(UserSession session, IList<AudioLogEntry> list)
+		{
+			int userNotityCnt = 0;
+			var nextIter = new List<AudioLogEntry>();
+			foreach (var entry in list)
+			{
+				var result = session.Bot.FactoryManager.Load(entry.AudioResource);
+				if (!result)
+				{
+					session.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}");
+					nextIter.Add(entry);
+				}
+
+				if (++userNotityCnt % 100 == 0)
+					session.Write("Working" + new string('.', userNotityCnt / 100));
+			}
+			return nextIter;
+		}
+
 		public void Dispose()
 		{
 			if (historyFile != null)
@@ -133,5 +193,7 @@ namespace TS3AudioBot.History
 	{
 		[Info("the absolute or relative path to the history database file")]
 		public string historyFile;
+		[Info("wether or not deleted history ids should be filled up with new songs", "true")]
+		public bool fillDeletedIds;
 	}
 }

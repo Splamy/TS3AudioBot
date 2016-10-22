@@ -17,20 +17,21 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using System;
-	using TS3Query.Messages;
+	using TS3Client.Messages;
 
-	public class ExecutionInformation : MarshalByRefObject
+	public class ExecutionInformation
 	{
-		public BotSession Session { get; }
+		public UserSession Session { get; }
 		public TextMessage TextMessage { get; }
-		public Lazy<bool> IsAdmin { get; }
+		private Lazy<bool> lazyIsAdmin;
+		public bool IsAdmin => lazyIsAdmin.Value;
 
-		private ExecutionInformation() { Session = null; TextMessage = null; IsAdmin = new Lazy<bool>(() => true); }
-		public ExecutionInformation(BotSession session, TextMessage textMessage, Lazy<bool> isAdmin)
+		private ExecutionInformation() { Session = null; TextMessage = null; lazyIsAdmin = new Lazy<bool>(() => true); }
+		public ExecutionInformation(UserSession session, TextMessage textMessage, Lazy<bool> isAdmin)
 		{
 			Session = session;
 			TextMessage = textMessage;
-			IsAdmin = isAdmin;
+			lazyIsAdmin = isAdmin;
 		}
 
 		public static readonly ExecutionInformation Debug = new ExecutionInformation();

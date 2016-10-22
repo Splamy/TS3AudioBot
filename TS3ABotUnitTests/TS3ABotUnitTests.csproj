@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -86,6 +86,10 @@
     <ProjectReference Include="..\TS3AudioBot\TS3AudioBot.csproj">
       <Project>{0ecc38f3-de6e-4d7f-81eb-58b15f584635}</Project>
       <Name>TS3AudioBot</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TS3Client\TS3Client.csproj">
+      <Project>{0eb99e9d-87e5-4534-a100-55d231c2b6a6}</Project>
+      <Name>TS3Client</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

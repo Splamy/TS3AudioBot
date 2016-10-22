@@ -21,11 +21,12 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Reflection;
 
-	public class ConfigFile : MarshalByRefObject
+	public class ConfigFile
 	{
 		private string path;
 		private readonly Dictionary<string, string> data;
 		private bool changed;
+		private static readonly char[] splitChar = new[] { '=' };
 
 		private ConfigFile()
 		{
@@ -46,18 +47,18 @@ namespace TS3AudioBot.Helper
 				return null;
 			}
 
-			using (FileStream fs = File.Open(pPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+			using (StreamReader input = new StreamReader(File.Open(pPath, FileMode.Open, FileAccess.Read, FileShare.Read)))
 			{
-				using (StreamReader input = new StreamReader(fs))
+				while (!input.EndOfStream)
 				{
-					while (!input.EndOfStream)
+					string s = input.ReadLine();
+					if (!s.StartsWith(";", StringComparison.Ordinal)
+						&& !s.StartsWith("//", StringComparison.Ordinal)
+						&& !s.StartsWith("#", StringComparison.Ordinal))
 					{
-						string s = input.ReadLine();
-						if (!s.StartsWith(";") && !s.StartsWith("//") && !s.StartsWith("#"))
-						{
-							int index = s.IndexOf('=');
-							cfgFile.data.Add(s.Substring(0, index).Trim(), s.Substring(index + 1).Trim());
-						}
+						string[] kvp = s.Split(splitChar, 2);
+						if (kvp.Length < 2) { Console.WriteLine("Invalid log entry: \"{0}\"", s); continue; }
+						cfgFile.data.Add(kvp[0], kvp[1]);
 					}
 				}
 			}
@@ -68,8 +69,7 @@ namespace TS3AudioBot.Helper
 		{
 			try
 			{
-				FileStream fs = File.Create(pPath);
-				fs.Close();
+				using (FileStream fs = File.Create(pPath)) { }
 				return new ConfigFile
 				{
 					path = pPath,
@@ -85,7 +85,7 @@ namespace TS3AudioBot.Helper
 		/// <summary> Creates a dummy object which cannot save or read values.
 		/// Its only purpose is to show the console dialog and create a DataStruct </summary>
 		/// <returns>Returns a dummy-ConfigFile</returns>
-		public static ConfigFile GetDummy()
+		public static ConfigFile CreateDummy()
 		{
 			return new DummyConfigFile();
 		}
@@ -231,18 +231,15 @@ namespace TS3AudioBot.Helper
 				return;
 			}
 
-			using (FileStream fs = File.Open(path, FileMode.Create, FileAccess.Write))
+			using (StreamWriter output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
 			{
-				using (StreamWriter output = new StreamWriter(fs))
+				foreach (string key in data.Keys)
 				{
-					foreach (string key in data.Keys)
-					{
-						output.Write(key);
-						output.Write('=');
-						output.WriteLine(data[key]);
-					}
-					output.Flush();
+					output.Write(key);
+					output.Write('=');
+					output.WriteLine(data[key]);
 				}
+				output.Flush();
 			}
 		}
 

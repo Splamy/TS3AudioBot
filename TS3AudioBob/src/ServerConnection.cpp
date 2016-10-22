@@ -368,7 +368,7 @@ std::string ServerConnection::getAudioStatus() const
 	else
 	{
 		if (audioPlayer->getReadError() != audio::Player::READ_ERROR_NONE)
-			out << "error\nread error " << audio::Player::getReadErrorDescription(
+			out << "error\nread error " << *audio::Player::getReadErrorDescription(
 				audioPlayer->getReadError());
 		else if (audioPlayer->isFinished())
 			out << "finished";
@@ -378,7 +378,7 @@ std::string ServerConnection::getAudioStatus() const
 			out << "playing";
 
 		if (audioPlayer->getDecodeError() != audio::Player::DECODE_ERROR_NONE)
-			out << "\ndecode error " << audio::Player::getDecodeErrorDescription(
+			out << "\ndecode error " << *audio::Player::getDecodeErrorDescription(
 				audioPlayer->getDecodeError());
 
 		if (audioPlayer->getReadError() == audio::Player::READ_ERROR_NONE)

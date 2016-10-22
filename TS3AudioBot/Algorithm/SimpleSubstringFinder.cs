@@ -18,68 +18,43 @@ namespace TS3AudioBot.Algorithm
 {
 	using System;
 	using System.Collections.Generic;
+	using Helper;
+	using System.Linq;
 
 	public class SimpleSubstringFinder<T> : ISubstringSearch<T>
 	{
-		private List<string> keys;
-		private List<T> values;
-		private HashSet<string> keyHash;
+		private Dictionary<string, T> values;
 
 		public SimpleSubstringFinder()
 		{
-			keys = new List<string>();
-			values = new List<T>();
-			keyHash = new HashSet<string>();
+			Util.Init(ref values);
 		}
 
 		public void Add(string key, T value)
 		{
-			if (!keyHash.Contains(key))
-			{
-				keys.Add(key);
-				keyHash.Add(key);
-				values.Add(value);
-			}
+			if (!values.ContainsKey(key))
+				values.Add(key, value);
 		}
 
-		public void Remove(string key)
+		public void RemoveKey(string key)
 		{
-			for (int i = 0; i < keys.Count; i++)
-			{
-				if (keys[i] == key)
-				{
-					RemoveIndex(i);
-					return;
-				}
-			}
+			if (!values.ContainsKey(key))
+				values.Remove(key);
 		}
 
-		private void RemoveIndex(int i)
+		public void RemoveValue(T value)
 		{
-			string value = keys[i];
-			keys.RemoveAt(i);
-			values.RemoveAt(i);
-			keyHash.Remove(value);
+			var arr = values.Where(v => v.Value.Equals(value)).ToArray();
+			for (int i = 0; i < arr.Length; i++)
+				values.Remove(arr[i].Key);
 		}
 
 		public IList<T> GetValues(string key)
-		{
-			var result = new List<T>();
-			for (int i = 0; i < keys.Count; i++)
-			{
-				if (keys[i].IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0)
-				{
-					result.Add(values[i]);
-				}
-			}
-			return result;
-		}
+			=> values.Where(v => v.Key.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0).Select(v => v.Value).ToList();
 
 		public void Clear()
 		{
-			keys.Clear();
 			values.Clear();
-			keyHash.Clear();
 		}
 	}
 }

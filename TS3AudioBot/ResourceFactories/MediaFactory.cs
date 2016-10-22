@@ -18,162 +18,152 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.IO;
+	using System.Linq;
 	using Helper;
 	using Helper.AudioTags;
-	using CommandSystem;
 
-	public sealed class MediaFactory : IResourceFactory
+	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory
 	{
+		string IResourceFactory.SubCommandName => "link";
+		string IPlaylistFactory.SubCommandName => "folder";
 		public AudioType FactoryFor => AudioType.MediaLink;
 
-		public bool MatchLink(string uri) => true;
+		bool IResourceFactory.MatchLink(string uri) => true;
+		bool IPlaylistFactory.MatchLink(string uri) => Directory.Exists(uri);
 
-		public RResultCode GetResource(string uri, out AudioResource resource)
+		public R<PlayResource> GetResource(string uri)
 		{
-			return GetResourceById(uri, null, out resource);
+			return GetResourceById(new AudioResource(uri, null, AudioType.MediaLink));
 		}
 
-		public RResultCode GetResourceById(string id, string name, out AudioResource resource)
+		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
-			var result = ValidateUri(id, ref name, id);
+			var result = ValidateUri(resource.ResourceId);
 
-			if (result == RResultCode.MediaNoWebResponse)
+			if (!result)
 			{
-				resource = null;
-				return result;
+				return result.Message;
 			}
 			else
 			{
-				resource = new MediaResource(id, name, id, result);
-				return RResultCode.Success;
+				var resData = result.Value;
+				AudioResource finalResource;
+				if (resource.ResourceTitle != null)
+					finalResource = resource;
+				else if (!string.IsNullOrWhiteSpace(resData.Title))
+					finalResource = resource.WithName(resData.Title);
+				else
+					finalResource = resource.WithName(resource.ResourceId);
+				return new PlayResource(resData.FullUri, finalResource);
 			}
 		}
 
 		public string RestoreLink(string id) => id;
 
-		private static RResultCode ValidateUri(string id, ref string name, string uri)
+		private static R<ResData> ValidateUri(string uri)
 		{
 			Uri uriResult;
 			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out uriResult))
-				return RResultCode.MediaInvalidUri;
+				return R<ResData>.Err(RResultCode.MediaInvalidUri.ToString());
 
-			try
+			string fullUri = uri;
+			if (!uriResult.IsAbsoluteUri)
 			{
-				string scheme = uriResult.Scheme;
-				if (scheme == Uri.UriSchemeHttp
-					|| scheme == Uri.UriSchemeHttps
-					|| scheme == Uri.UriSchemeFtp)
-					return ValidateWeb(id, ref name, uri);
-				else if (uriResult.Scheme == Uri.UriSchemeFile)
-					return ValidateFile(id, ref name, uri);
-				else
-					return RResultCode.MediaUnknownUri;
+				try { fullUri = Path.GetFullPath(uri); }
+				catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException) { }
+
+				if (!Uri.TryCreate(fullUri, UriKind.Absolute, out uriResult))
+					return R<ResData>.Err(RResultCode.MediaInvalidUri.ToString());
 			}
-			catch (InvalidOperationException)
-			{
-				return ValidateFile(id, ref name, uri);
-			}
+
+			if (uriResult.Scheme == Uri.UriSchemeHttp
+			 || uriResult.Scheme == Uri.UriSchemeHttps
+			 || uriResult.Scheme == Uri.UriSchemeFtp)
+				return ValidateWeb(uriResult);
+			else if (uriResult.Scheme == Uri.UriSchemeFile)
+				return ValidateFile(fullUri);
+			else
+				return R<ResData>.Err(RResultCode.MediaUnknownUri.ToString());
 		}
 
-		private static void GetStreamData(string id, ref string name, Stream stream)
+		private static string GetStreamName(Stream stream)
+			=> AudioTagReader.GetTitle(stream) ?? string.Empty;
+
+		private static R<ResData> ValidateWeb(Uri link)
 		{
-			if (string.IsNullOrEmpty(name))
+			string outName = null;
+			var valCode = WebWrapper.GetResponse(link, response =>
 			{
-				if (stream != null)
-				{
-					name = AudioTagReader.GetTitle(stream);
-					name = string.IsNullOrWhiteSpace(name) ? id : name;
-				}
-				else name = id;
+				using (var stream = response.GetResponseStream())
+					outName = GetStreamName(stream);
+			});
+
+			if (valCode == ValidateCode.Ok)
+			{
+				return R<ResData>.OkR(new ResData(link.AbsoluteUri, outName));
+			}
+			else
+			{
+				return R<ResData>.Err(RResultCode.MediaNoWebResponse.ToString());
 			}
 		}
 
-		private static RResultCode ValidateWeb(string id, ref string name, string link)
-		{
-			string refname = name;
-			if (WebWrapper.GetResponse(new Uri(link), response => { using (var stream = response.GetResponseStream()) GetStreamData(id, ref refname, stream); }) != ValidateCode.Ok)
-				return RResultCode.MediaNoWebResponse;
-
-			name = refname;
-			return RResultCode.Success;
-		}
-
-		private static RResultCode ValidateFile(string id, ref string name, string path)
+		private static R<ResData> ValidateFile(string path)
 		{
 			if (!File.Exists(path))
-				return RResultCode.MediaFileNotFound;
+				return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString());
 
 			try
 			{
 				using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
 				{
-					GetStreamData(id, ref name, stream);
-					return RResultCode.Success;
+					return R<ResData>.OkR(new ResData(path, GetStreamName(stream)));
 				}
 			}
-			catch (PathTooLongException) { return RResultCode.AccessDenied; }
-			catch (DirectoryNotFoundException) { return RResultCode.MediaFileNotFound; }
-			catch (FileNotFoundException) { return RResultCode.MediaFileNotFound; }
-			catch (IOException) { return RResultCode.AccessDenied; }
-			catch (UnauthorizedAccessException) { return RResultCode.AccessDenied; }
-			catch (NotSupportedException) { return RResultCode.AccessDenied; }
+			// TODO: correct errors
+			catch (PathTooLongException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (DirectoryNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
+			catch (FileNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
+			catch (IOException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (UnauthorizedAccessException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (NotSupportedException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
 		}
 
-		public void PostProcess(PlayData data, out bool abortPlay)
-		{
-			MediaResource mediaResource = (MediaResource)data.Resource;
-			if (mediaResource.InternalResultCode == RResultCode.Success)
-			{
-				abortPlay = false;
-			}
-			else
-			{
-				abortPlay = true;
-				data.Session.Write(
-					$"This uri might be invalid ({mediaResource.InternalResultCode}), do you want to start anyway?");
-				data.Session.UserResource = data;
-				data.Session.SetResponse(ResponseValidation, null);
-			}
-		}
+		public void Dispose() { }
 
-		private static bool ResponseValidation(ExecutionInformation info)
+		public R<Playlist> GetPlaylist(string url)
 		{
-			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
-			if (answer == Answer.Yes)
-			{
-				PlayData data = info.Session.UserResource;
-				info.Session.Bot.FactoryManager.Play(data);
-			}
-			else if (answer == Answer.No)
-			{
-				info.Session.UserResource = null;
-			}
-			return answer != Answer.Unknown;
-		}
+			if (!Directory.Exists(url))
+				return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString());
 
-		public void Dispose()
-		{
+			try
+			{
+				var di = new DirectoryInfo(url);
+				var plist = new Playlist(di.Name);
+				var resources = from file in di.EnumerateFiles()
+								select ValidateFile(file.FullName) into result
+								where result.Ok
+								select result.Value into val
+								select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, AudioType.MediaLink) into res
+								select new PlaylistItem(res);
+				plist.AddRange(resources);
 
+				return plist;
+			}
+			// TODO: correct errors
+			catch (PathTooLongException) { return R<Playlist>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (ArgumentException) { return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString()); }
 		}
 	}
 
-	public sealed class MediaResource : AudioResource
+	class ResData
 	{
-		public override AudioType AudioType => AudioType.MediaLink;
-
-		public string ResourceURL { get; private set; }
-		public RResultCode InternalResultCode { get; private set; }
-
-		public MediaResource(string id, string name, string url, RResultCode internalRC)
-			: base(id, name)
+		public string FullUri { get; set; }
+		public string Title { get; set; }
+		public ResData(string fullUri, string title)
 		{
-			ResourceURL = url;
-			InternalResultCode = internalRC;
-		}
-
-		public override string Play()
-		{
-			return ResourceURL;
+			FullUri = fullUri;
+			Title = title;
 		}
 	}
 }

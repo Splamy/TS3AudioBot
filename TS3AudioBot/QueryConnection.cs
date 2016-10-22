@@ -19,32 +19,45 @@ namespace TS3AudioBot
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using TS3AudioBot.Helper;
-	using TS3Query;
-	using TS3Query.Messages;
+	using Helper;
+	using TS3Client;
+	using TS3Client.Query;
+	using TS3Client.Messages;
 
-	public class QueryConnection : MarshalByRefObject, IDisposable
+	public sealed class QueryConnection : ITeamspeakControl
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
-		private void ExtendedTextMessage(object sender, TextMessage eventArgs)
+		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)
 		{
-			if (connectionData.suppressLoopback && eventArgs.InvokerId == me.ClientId)
-				return;
-			OnMessageReceived?.Invoke(sender, eventArgs);
+			if (OnMessageReceived == null) return;
+			foreach (var evData in eventArgs)
+			{
+				if (connectionData.suppressLoopback && evData.InvokerId == me.ClientId)
+					continue;
+				OnMessageReceived?.Invoke(sender, evData);
+			}
 		}
 
 		public event EventHandler<ClientEnterView> OnClientConnect;
-		private void ExtendedClientEnterView(object sender, ClientEnterView eventArgs)
+		private void ExtendedClientEnterView(object sender, IEnumerable<ClientEnterView> eventArgs)
 		{
-			clientbufferOutdated = true;
-			OnClientConnect?.Invoke(sender, eventArgs);
+			if (OnClientConnect == null) return;
+			foreach (var evData in eventArgs)
+			{
+				clientbufferOutdated = true;
+				OnClientConnect?.Invoke(sender, evData);
+			}
 		}
 
 		public event EventHandler<ClientLeftView> OnClientDisconnect;
-		private void ExtendedClientLeftView(object sender, ClientLeftView eventArgs)
+		private void ExtendedClientLeftView(object sender, IEnumerable<ClientLeftView> eventArgs)
 		{
-			clientbufferOutdated = true;
-			OnClientDisconnect?.Invoke(sender, eventArgs);
+			if (OnClientDisconnect == null) return;
+			foreach (var evData in eventArgs)
+			{
+				clientbufferOutdated = true;
+				OnClientDisconnect?.Invoke(sender, evData);
+			}
 		}
 
 		private IEnumerable<ClientData> clientbuffer;
@@ -54,7 +67,7 @@ namespace TS3AudioBot
 		private QueryConnectionData connectionData;
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
-		internal TS3QueryClient tsClient { get; private set; }
+		private TS3QueryClient tsClient;
 		private ClientData me;
 
 		public QueryConnection(QueryConnectionData qcd)
@@ -66,35 +79,41 @@ namespace TS3AudioBot
 			tsClient.OnClientLeftView += ExtendedClientLeftView;
 			tsClient.OnClientEnterView += ExtendedClientEnterView;
 			tsClient.OnTextMessageReceived += ExtendedTextMessage;
+			tsClient.OnConnected += OnConnected;
 		}
 
 		public void Connect()
 		{
 			if (!tsClient.IsConnected)
 			{
-				tsClient.Connect(connectionData.host, connectionData.port);
+				tsClient.Connect(new ConnectionData() { Hostname = connectionData.host, Port = connectionData.port });
 				tsClient.Login(connectionData.user, connectionData.passwd);
 				tsClient.UseServer(1);
 				try { tsClient.ChangeName("TS3AudioBot"); }
-				catch (QueryCommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
-
-				me = GetSelf();
-
-				tsClient.RegisterNotification(MessageTarget.Server, -1);
-				tsClient.RegisterNotification(MessageTarget.Private, -1);
-				tsClient.RegisterNotification(RequestTarget.Server, -1);
-
-				TickPool.RegisterTick(() => tsClient.WhoAmI(), PingInterval, true);
+				catch (TS3CommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
 			}
 		}
+
+		private void OnConnected(object sender, EventArgs e)
+		{
+			me = GetSelf();
+
+			tsClient.RegisterNotification(MessageTarget.Server, -1);
+			tsClient.RegisterNotification(MessageTarget.Private, -1);
+			tsClient.RegisterNotification(RequestTarget.Server, -1);
+
+			TickPool.RegisterTick(() => tsClient.WhoAmI(), PingInterval, true);
+		}
+
+		public void EnterEventLoop() => tsClient.EnterEventLoop();
 
 		private void Diconnect()
 		{
 			if (tsClient.IsConnected)
-				tsClient.Close();
+				tsClient.Disconnect();
 		}
 
-		public void SendMessage(string message, ClientData client) => tsClient.SendMessage(message, client);
+		public void SendMessage(string message, ushort clientId) => tsClient.SendMessage(MessageTarget.Private, clientId, message);
 		public void SendGlobalMessage(string message) => tsClient.SendMessage(MessageTarget.Server, 1, message);
 		public void KickClientFromServer(ushort clientId) => tsClient.KickClientFromServer(new[] { clientId });
 		public void KickClientFromChannel(ushort clientId) => tsClient.KickClientFromChannel(new[] { clientId });
@@ -105,7 +124,7 @@ namespace TS3AudioBot
 			var cd = ClientBufferRequest(client => client.ClientId == id);
 			if (cd != null) return cd;
 			Log.Write(Log.Level.Warning, "Slow double request, due to missing or wrong permission confinguration!");
-			cd = tsClient.Send<ClientData>("clientinfo", new Parameter("clid", id)).FirstOrDefault();
+			cd = tsClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault();
 			if (cd != null)
 			{
 				cd.ClientId = id;
@@ -136,7 +155,7 @@ namespace TS3AudioBot
 			cd.DatabaseId = data.DatabaseId;
 			cd.ClientId = data.ClientId;
 			cd.NickName = data.NickName;
-			cd.ClientType = ClientType.Query;
+			cd.ClientType = tsClient.ClientType;
 			return cd;
 		}
 
@@ -149,7 +168,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int[] GetClientServerGroups(ClientData client)
+		public ulong[] GetClientServerGroups(ClientData client)
 		{
 			if (client == null)
 				throw new ArgumentNullException(nameof(client));
@@ -157,7 +176,7 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
 			var response = tsClient.ServerGroupsOfClientDbId(client);
 			if (!response.Any())
-				return new int[0];
+				return new ulong[0];
 			return response.Select(csg => csg.ServerGroupId).ToArray();
 		}
 
@@ -174,7 +193,7 @@ namespace TS3AudioBot
 				clientDbNames.Add(clientDbId, name);
 				return name;
 			}
-			catch (QueryCommandException) { return null; }
+			catch (TS3CommandException) { return null; }
 		}
 
 		public void Dispose()

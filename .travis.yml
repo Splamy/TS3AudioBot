@@ -1,56 +1,54 @@
-sudo: false
-language: csharp
+language: generic
+# Build with docker to have an up-to-date version of ubuntu
+sudo: required
+services:
+  - docker
 
-compiler:
-  - clang
+notifications:
+  email: false
 
-cache:
-  apt: true
-  directories:
-  - $HOME/FFmpegbin
+branches:
+  only:
+    - master
+    - develop
 
-addons:
-  apt:
-    sources:
-    # Try to add up to date compilers
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-precise-3.6
-    packages:
-    - nasm
-    - build-essential
-    - cmake
-    - libcppunit-dev
-    - gcc-5
-    - g++-5
-    - clang-3.6
+git:
+  depth: 1
+
+#cache:
+#  directories:
+#    - $HOME/docker
 
 install:
-  - nuget restore TS3AudioBot.sln
-  - nuget install NUnit.Runners -OutputDirectory nunit
+    # Use the cached docker image if it is available
+  - mkdir -p "$HOME/docker"
+  - if [ -f "$HOME/docker/ts3audiobot.tar" ]; then
+      docker import "$HOME/docker/ts3audiobot.tar" ts3audiobot:latest;
+    else
+      docker build -t ts3audiobot -f Dockerfile .;
+    fi
+#      docker save -o "$HOME/docker/ts3audiobot.tar" ts3audiobot;
+#    fi
 
-before_script:
-  - export THREADS=$((`nproc` + 1))
-  - echo "THREADS = $THREADS"
-  - cd "$HOME"
-  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then git clone --depth 1 --branch n3.0 https://github.com/FFmpeg/FFmpeg.git; fi
-  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then mkdir -p FFmpegbin; cd FFmpegbin; fi
-  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then $HOME/FFmpeg/configure --enable-shared; fi
-  - if [ ! -f "$HOME/FFmpegbin/libavcodec/libavcodec.so" ]; then make -j $THREADS; fi
-
-solution: TS3AudioBot.sln
 script:
-  # Building the AudioBob (C++ stuff)
-  - cd $TRAVIS_BUILD_DIR/TS3AudioBob
-  - mkdir bin
-  - cd bin
-  - cmake .. -DAVCODEC_INCLUDE_DIRS="$HOME/FFmpeg" -DAVCODEC_LIBRARIES="$HOME/FFmpegbin/libavcodec/libavcodec.so" -DAVFILTER_INCLUDE_DIRS="$HOME/FFmpeg" -DAVFILTER_LIBRARIES="$HOME/FFmpegbin/libavfilter/libavfilter.so" -DAVFORMAT_INCLUDE_DIRS="$HOME/FFmpeg" -DAVFORMAT_LIBRARIES="$HOME/FFmpegbin/libavformat/libavformat.so" -DAVUTIL_INCLUDE_DIRS="$HOME/FFmpegbin" -DAVUTIL_LIBRARIES="$HOME/FFmpegbin/libavutil/libavutil.so" -DSWSCALE_INCLUDE_DIRS="$HOME/FFmpeg" -DSWSCALE_LIBRARIES="$HOME/FFmpegbin/libswscale/libswscale.so" -DSWRESAMPLE_INCLUDE_DIRS="$HOME/FFmpeg" -DSWRESAMPLE_LIBRARIES="$HOME/FFmpegbin/libswresample/libswresample.so" -DSWSCALE_INCLUDE_DIRS="$HOME/FFmpeg" -DSWSCALE_LIBRARIES="$HOME/FFmpegbin/libswscale/libswscale.so" -DBUILD_TESTS=1 -DBUILD_FUZZ=1 -DCMAKE_C_COMPILER=`which clang` -DCMAKE_CXX_COMPILER=`which clang++`
-  - make VERBOSE=1 -j $THREADS
-  - LD_LIBRARY_PATH="$HOME/FFmpegbin/libavcodec:$HOME/FFmpegbin/libavfilter:$HOME/FFmpegbin/libavformat:$HOME/FFmpegbin/libavutil:$HOME/FFmpegbin/libswresample:$HOME/FFmpegbin/libswscale" ./ts3audiobobtest
+  - docker run -v "$TRAVIS_BUILD_DIR:/build" ts3audiobot sh -c "
+      export THREADS=\$((`nproc` + 1)) &&
+      echo \"THREADS = \$THREADS\" &&
 
-  # Building the AudioBot (C# stuff)
-  - cd "$TRAVIS_BUILD_DIR"
-  - xbuild /p:Configuration=Release TS3AudioBot.sln
-  - mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
+      echo Building the AudioBob \(C++ stuff\) &&
+      cd TS3AudioBob &&
+      mkdir bin && cd bin &&
+      cmake .. -DBUILD_TESTS=1 -DBUILD_FUZZ=1 &&
+      make VERBOSE=1 -j \$THREADS &&
+      ./ts3audiobobtest &&
+      cd ../.. &&
+
+      echo Building the AudioBot \(C# Stuff\) &&
+      nuget restore TS3AudioBot.sln &&
+      nuget install NUnit.Runners -OutputDirectory nunit &&
+      xbuild /p:Configuration=Release TS3AudioBot.sln &&
+      mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
+    "
 
 after_script:
   - cd $TRAVIS_BUILD_DIR

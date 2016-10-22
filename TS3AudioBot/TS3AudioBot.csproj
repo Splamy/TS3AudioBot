@@ -26,7 +26,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>
+    </CodeAnalysisRuleSet>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -40,7 +42,17 @@
     <CodeAnalysisRuleSet>
     </CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>favicon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>TS3AudioBot.MainBot</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="HtmlAgilityPack, Version=1.4.9.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlAgilityPack.1.4.9\lib\Net45\HtmlAgilityPack.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net" />
@@ -50,6 +62,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="CommandSystem\ASTCommand.cs" />
     <Compile Include="CommandSystem\ASTError.cs" />
     <Compile Include="CommandSystem\ASTNode.cs" />
@@ -76,16 +89,19 @@
     <Compile Include="CommandSystem\Commands\StringCommand.cs" />
     <Compile Include="CommandSystem\XCommandSystem.cs" />
     <Compile Include="ErrorLogger.cs" />
+    <Compile Include="Helper\R.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />
     <Compile Include="History\SmartHistoryFormatter.cs" />
     <Compile Include="Helper\InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
+    <Compile Include="ITeamspeakControl.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
+    <Compile Include="PlayManager.cs" />
     <Compile Include="PluginManager.cs" />
     <Compile Include="QueryConnection.cs" />
+    <Compile Include="ResourceFactories\IPlaylistFactory.cs" />
     <Compile Include="SessionManager.cs" />
-    <Compile Include="VLCConnection.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
     <Compile Include="Algorithm\ISubstringSearch.cs" />
@@ -113,23 +129,34 @@
     <Compile Include="ResourceFactories\SoundcloudFactory.cs" />
     <Compile Include="ResourceFactories\TwitchFactory.cs" />
     <Compile Include="ResourceFactories\YoutubeFactory.cs" />
-    <Compile Include="TS3Query\DocumentedEnums.cs" />
-    <Compile Include="TS3Query\Extensions.cs" />
-    <Compile Include="TS3Query\KnownEnums.cs" />
-    <Compile Include="TS3Query\Messages\BaseTypes.cs" />
-    <Compile Include="TS3Query\Messages\ChannelNotifications.cs" />
-    <Compile Include="TS3Query\Messages\ClientNotifications.cs" />
-    <Compile Include="TS3Query\Messages\Generator.cs" />
-    <Compile Include="TS3Query\Messages\OtherNotifications.cs" />
-    <Compile Include="TS3Query\Messages\ResponseDictionary.cs" />
-    <Compile Include="TS3Query\QueryEventDispatcher.cs" />
-    <Compile Include="TS3Query\QueryStringAttribute.cs" />
-    <Compile Include="TS3Query\TS3QueryClient.cs" />
-    <Compile Include="TS3Query\TS3QueryTools.cs" />
+    <Compile Include="TeamspeakClient.cs" />
     <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
+    <Compile Include="WebInterface\WebDisplay.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="WebInterface\index.html" />
+    <EmbeddedResource Include="WebInterface\styles.css" />
+    <EmbeddedResource Include="WebInterface\jquery.js" />
+    <EmbeddedResource Include="WebInterface\scripts.js" />
+    <EmbeddedResource Include="favicon.ico" />
+    <EmbeddedResource Include="WebInterface\favicon.ico" />
+    <EmbeddedResource Include="WebInterface\history.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="TS3AudioBot.ruleset" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="WebInterface\main.html" />
+    <Content Include="WebInterface\playcontrols.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TS3Client\TS3Client.csproj">
+      <Project>{0eb99e9d-87e5-4534-a100-55d231c2b6a6}</Project>
+      <Name>TS3Client</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

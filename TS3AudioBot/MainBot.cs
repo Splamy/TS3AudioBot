@@ -28,14 +28,14 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using ResourceFactories;
+	using WebInterface;
+
+	using TS3Client;
+	using TS3Client.Messages;
+
 	using static CommandRights;
 
-	using TS3Query;
-	using TS3Query.Messages;
-
-	// Todo:
-	// - implement history missing features
-	public sealed class MainBot : MarshalByRefObject, IDisposable
+	public sealed class MainBot : IDisposable
 	{
 		static void Main(string[] args)
 		{
@@ -47,7 +47,7 @@ namespace TS3AudioBot
 					Exception ex = e.ExceptionObject as Exception;
 					while (ex != null)
 					{
-						Log.Write(Log.Level.Error, "MSG: {0}\nSTACK:{1}", ex.Message, ex.StackTrace);
+						Log.Write(Log.Level.Error, "MSG: {0}\nTYPE:{1}\nSTACK:{2}", ex.Message, ex.GetType().Name, ex.StackTrace);
 						ex = ex.InnerException;
 					}
 					bot?.Dispose();
@@ -70,11 +70,14 @@ namespace TS3AudioBot
 		internal PluginManager PluginManager { get; private set; }
 		public CommandManager CommandManager { get; private set; }
 		public AudioFramework AudioFramework { get; private set; }
+		public PlaylistManager PlaylistManager { get; private set; }
 		public BobController BobController { get; private set; }
-		public QueryConnection QueryConnection { get; private set; }
+		public ITeamspeakControl QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
+		public WebDisplay WebInterface { get; private set; }
+		public PlayManager PlayManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -108,13 +111,14 @@ namespace TS3AudioBot
 		{
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
-			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.GetDummy();
+			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = cfgFile.GetDataStruct<AudioFrameworkData>(typeof(AudioFramework), true);
 			var bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
 			var qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
 			var hmd = cfgFile.GetDataStruct<HistoryManagerData>(typeof(HistoryManager), true);
 			var pmd = cfgFile.GetDataStruct<PluginManagerData>(typeof(PluginManager), true);
 			var pld = cfgFile.GetDataStruct<PlaylistManagerData>(typeof(PlaylistManager), true);
+			var yfd = cfgFile.GetDataStruct<YoutubeFactoryData>(typeof(YoutubeFactory), true);
 			mainBotData = cfgFile.GetDataStruct<MainBotData>(typeof(MainBot), true);
 			cfgFile.Close();
 
@@ -152,30 +156,38 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			QueryConnection = new QueryConnection(qcd);
-			var playlistManager = new PlaylistManager(pld);
+			PlaylistManager = new PlaylistManager(pld);
 			BobController = new BobController(bcd, QueryConnection);
-			// old: new VLCConnection(afd.vlcLocation);
-			// new: BobController
-			AudioFramework = new AudioFramework(afd, BobController, playlistManager);
+			AudioFramework = new AudioFramework(afd, BobController);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
+			PlayManager = new PlayManager(this);
+			WebInterface = new WebDisplay(this);
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
-			FactoryManager = new ResourceFactoryManager(AudioFramework);
-			FactoryManager.DefaultFactorty = new MediaFactory();
-			FactoryManager.AddFactory(new YoutubeFactory());
+			FactoryManager = new ResourceFactoryManager();
+			var mediaFactory = new MediaFactory();
+			FactoryManager.AddFactory(mediaFactory);
+			var youtubeFactory = new YoutubeFactory(yfd);
+			FactoryManager.AddFactory(youtubeFactory);
 			FactoryManager.AddFactory(new SoundcloudFactory());
 			FactoryManager.AddFactory(new TwitchFactory());
+			FactoryManager.DefaultFactorty = mediaFactory;
+			CommandManager.RegisterCommand(FactoryManager.CommandNode, "from");
+
+			PlaylistManager.AddFactory(youtubeFactory);
+			PlaylistManager.AddFactory(mediaFactory);
+			CommandManager.RegisterCommand(PlaylistManager.CommandNode, "list from");
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
-			// Inform our HistoryManager when a new resource started successfully
-			AudioFramework.OnResourceStarted += HistoryManager.LogAudioResource;
+			AudioFramework.OnResourceStopped += PlayManager.SongStoppedHook;
 			// Inform the BobClient on start/stop
-			AudioFramework.OnResourceStarted += BobController.OnResourceStarted;
-			AudioFramework.OnResourceStopped += BobController.OnResourceStopped;
+			PlayManager.AfterResourceStarted += BobController.OnResourceStarted;
+			PlayManager.AfterResourceStopped += BobController.OnPlayStopped;
 			// In own favor update the own status text to the current song title
-			AudioFramework.OnResourceStarted += SongUpdateEvent;
+			PlayManager.AfterResourceStarted += SongUpdateEvent;
+			PlayManager.AfterResourceStopped += SongStopEvent;
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
@@ -183,11 +195,10 @@ namespace TS3AudioBot
 
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
-			// Create a default session for all users in all chat
-			SessionManager.DefaultSession = new PublicSession(this);
+			WebInterface.StartServerAsync();
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
-			catch (QueryCommandException qcex)
+			catch (TS3CommandException qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
 				return false;
@@ -200,7 +211,7 @@ namespace TS3AudioBot
 		private void Run()
 		{
 			Thread.CurrentThread.Name = "Main/Eventloop";
-			QueryConnection.tsClient.EnterEventLoop();
+			QueryConnection.EnterEventLoop();
 		}
 
 		#region COMMAND EXECUTING & CHAINING
@@ -210,76 +221,74 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
 			textMessage.Message = textMessage.Message.TrimStart(new[] { ' ' });
-			if (!textMessage.Message.StartsWith("!"))
+			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
 			BobController.HasUpdate();
 
 			QueryConnection.RefreshClientBuffer(true);
 
 			// get the current session
-			BotSession session = SessionManager.GetSession(textMessage.Target, textMessage.InvokerId);
-			if (textMessage.Target == MessageTarget.Private && session == SessionManager.DefaultSession)
+			var result = SessionManager.GetSession(textMessage.InvokerId);
+			if (!result)
+				result = SessionManager.CreateSession(this, textMessage.InvokerId);
+			if (!result)
 			{
-				Log.Write(Log.Level.Debug, "MB User {0} created auto-private session with the bot", textMessage.InvokerName);
-				try
-				{
-					session = SessionManager.CreateSession(this, textMessage.InvokerId);
-				}
-				catch (SessionManagerException smex)
-				{
-					Log.Write(Log.Level.Error, smex.ToString());
-					return;
-				}
+				Log.Write(Log.Level.Error, result.Message);
+				return;
 			}
 
-			var isAdmin = new Lazy<bool>(() => HasInvokerAdminRights(textMessage));
-			var execInfo = new ExecutionInformation(session, textMessage, isAdmin);
-
-			// check if the user has an open request
-			if (session.ResponseProcessor != null)
+			UserSession session = result.Value;
+			using (session.GetToken(textMessage.Target == MessageTarget.Private))
 			{
-				if (session.ResponseProcessor(execInfo))
+				var execInfo = new ExecutionInformation(session, textMessage,
+					new Lazy<bool>(() => HasInvokerAdminRights(textMessage.InvokerId)));
+
+				// check if the user has an open request
+				if (session.ResponseProcessor != null)
 				{
-					session.ClearResponse();
-					return;
-				}
-			}
-
-			// parse (and execute) the command
-			ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
-			if (parsedAst.Type == ASTType.Error)
-			{
-				PrintAstError(session, (ASTError)parsedAst);
-			}
-			else
-			{
-				var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
-
-				try
-				{
-					var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
-						new[] { CommandResultType.String, CommandResultType.Empty });
-					if (res.ResultType == CommandResultType.String)
+					if (session.ResponseProcessor(execInfo))
 					{
-						var sRes = (StringCommandResult)res;
-						// Write result to user
-						if (!string.IsNullOrEmpty(sRes.Content))
-							session.Write(sRes.Content);
+						session.ClearResponse();
+						return;
 					}
 				}
-				catch (CommandException ex)
+
+				// parse (and execute) the command
+				ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
+				if (parsedAst.Type == ASTType.Error)
 				{
-					session.Write("Error: " + ex.Message);
+					PrintAstError(session, (ASTError)parsedAst);
 				}
-				catch (Exception ex)
+				else
 				{
-					session.Write("An unexpected error occured: " + ex.Message);
-					Log.Write(Log.Level.Error, "MB Unexpected command error: ", ex);
+					var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
+
+					try
+					{
+						var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
+							new[] { CommandResultType.String, CommandResultType.Empty });
+						if (res.ResultType == CommandResultType.String)
+						{
+							var sRes = (StringCommandResult)res;
+							// Write result to user
+							if (!string.IsNullOrEmpty(sRes.Content))
+								session.Write(sRes.Content);
+						}
+					}
+					catch (CommandException ex)
+					{
+						session.Write("Error: " + ex.Message);
+					}
+					catch (Exception ex)
+					{
+						Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex);
+						session.Write("An unexpected error occured: " + ex.Message);
+					}
 				}
 			}
 		}
 
-		private void PrintAstError(BotSession session, ASTError asterror)
+		private void PrintAstError(UserSession session, ASTError asterror)
 		{
 			StringBuilder strb = new StringBuilder();
 			strb.AppendLine();
@@ -287,13 +296,13 @@ namespace TS3AudioBot
 			session.Write(strb.ToString());
 		}
 
-		private bool HasInvokerAdminRights(TextMessage textMessage)
+		private bool HasInvokerAdminRights(ushort clientId)
 		{
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
-			ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
+			ClientData client = QueryConnection.GetClientById(clientId);
 			if (client == null)
 				return false;
-			int[] clientSgIds = QueryConnection.GetClientServerGroups(client);
+			var clientSgIds = QueryConnection.GetClientServerGroups(client);
 			return clientSgIds.Contains(mainBotData.adminGroupId);
 		}
 
@@ -310,14 +319,13 @@ namespace TS3AudioBot
 		[Usage("<link>", "Any link that is also recognized by !play")]
 		public string CommandAdd(ExecutionInformation info, string parameter)
 		{
-			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, true));
+			return PlayManager.Enqueue(info.Session.Client, parameter);
 		}
 
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
 		public void CommandClear()
 		{
-			AudioFramework.Clear();
+			PlaylistManager.ClearFreelist();
 		}
 
 		[Command(AnyVisibility, "eval", "Executes a given command or string")]
@@ -346,7 +354,7 @@ namespace TS3AudioBot
 
 		[Command(Admin, "getuser id", "Gets the unique Id of a user.")]
 		[Usage("<username>", "A user which is currently logged in to the server")]
-		public string CommandGetUserId(ExecutionInformation info, string parameter)
+		public string CommandGetUserId(string parameter)
 		{
 			ClientData client = QueryConnection.GetClientByName(parameter);
 			if (client == null)
@@ -426,21 +434,39 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Admin, "history delete", "<id> Removes the entry with <id> from the history")]
-		public string CommandHistoryDelete(ExecutionInformation info, uint id)
+		[Command(Private, "history add", "<id> Adds the song with <id> to the queue")]
+		public string CommandHistoryQueue(ExecutionInformation info, uint id)
 		{
-			AudioLogEntry ale = HistoryManager.GetEntryById(id);
-			if (ale == null)
-				return "Could not find track with this id";
-			info.Session.SetResponse(ResponseHistoryDelete, ale);
-			return $"Do you really want to delete the entry with the id {id}? !(yes|no)";
+			return PlayManager.Enqueue(info.Session.Client, id);
 		}
 
 		[Command(Admin, "history clean", "Cleans up the history file for better startup performance.")]
 		public string CommandHistoryClean(ExecutionInformation info)
 		{
 			info.Session.SetResponse(ResponseHistoryClean, null);
-			return $"Dou want to clean the history file now? This might take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+			return $"Do want to clean the history file now? " +
+					"This might take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+		}
+
+		[Command(Admin, "history clean removedefective", "Cleans up the history file for better startup performance.")]
+		public string CommandHistoryCleanRemove(ExecutionInformation info)
+		{
+			info.Session.SetResponse(ResponseHistoryClean, "removedefective");
+			return $"Do want to remove all defective links file now? " +
+					"This might(will!) take a while and make the bot unresponsive in meanwhile. !(yes|no)";
+		}
+
+		[Command(Admin, "history delete", "<id> Removes the entry with <id> from the history")]
+		public string CommandHistoryDelete(ExecutionInformation info, uint id)
+		{
+			var result = HistoryManager.GetEntryById(id);
+			if (!result)
+				return result.Message;
+			info.Session.SetResponse(ResponseHistoryDelete, result.Value);
+			string name = result.Value.AudioResource.ResourceTitle;
+			if (name.Length > 100)
+				name = name.Substring(100) + "...";
+			return $"Do you really want to delete the entry \"{name}\"\nwith the id {id}? !(yes|no)";
 		}
 
 		[Command(Private, "history from", "Gets the last <count> songs from the user with the given <user-dbid>")]
@@ -462,10 +488,10 @@ namespace TS3AudioBot
 		[Command(Private, "history id", "<id> Displays all saved informations about the song with <id>")]
 		public string CommandHistoryId(uint id)
 		{
-			var ale = HistoryManager.GetEntryById(id);
-			if (ale == null)
-				return "Could not find track with this id";
-			return HistoryManager.Formatter.ProcessQuery(ale, SmartHistoryFormatter.DefaultAleFormat);
+			var result = HistoryManager.GetEntryById(id);
+			if (!result)
+				return result.Message;
+			return HistoryManager.Formatter.ProcessQuery(result.Value, SmartHistoryFormatter.DefaultAleFormat);
 		}
 
 		[Command(Private, "history id", "(last|next) Gets the highest|next song id")]
@@ -494,8 +520,7 @@ namespace TS3AudioBot
 				var ale = HistoryManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
 				if (ale != null)
 				{
-					ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-					return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
+					return PlayManager.Play(info.Session.Client, ale.AudioResource);
 				}
 				else return "There is no song in the history";
 			}
@@ -504,34 +529,20 @@ namespace TS3AudioBot
 		[Command(Private, "history play", "<id> Playes the song with <id>")]
 		public string CommandHistoryPlay(ExecutionInformation info, uint id)
 		{
-			var ale = HistoryManager.GetEntryById(id);
-			if (ale == null)
-				return "Could not find track with this id";
-			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, false));
-		}
-
-		[Command(Private, "history queue", "<id> Adds the song with <id> to the queue")]
-		public string CommandHistoryQueue(ExecutionInformation info, uint id)
-		{
-			var ale = HistoryManager.GetEntryById(id);
-			if (ale == null)
-				return "Could not find track with this id";
-			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.RestoreAndPlay(ale, new PlayData(info.Session, client, null, true));
+			return PlayManager.Play(info.Session.Client, id);
 		}
 
 		[Command(Admin, "history rename", "<id> <name> Sets the name of the song with <id> to <name>")]
 		public string CommandHistoryRename(uint id, string newName)
 		{
-			var ale = HistoryManager.GetEntryById(id);
-			if (ale == null)
-				return "Could not find track with this id";
+			var result = HistoryManager.GetEntryById(id);
+			if (!result)
+				return result.Message;
 
 			if (string.IsNullOrWhiteSpace(newName))
 				return "The new name must not be empty or only whitespaces";
 
-			HistoryManager.RenameEntry(ale, newName);
+			HistoryManager.RenameEntry(result.Value, newName);
 			return null;
 		}
 
@@ -546,13 +557,13 @@ namespace TS3AudioBot
 		public string CommandHistoryTill(string time)
 		{
 			DateTime tillTime;
-			switch (time.ToLower())
+			switch (time.ToLower(CultureInfo.InvariantCulture))
 			{
-			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
-			case "today": tillTime = DateTime.Today; break;
-			case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
-			case "week": tillTime = DateTime.Today.AddDays(-7); break;
-			default: return "Not recognized time desciption.";
+				case "hour": tillTime = DateTime.Now.AddHours(-1); break;
+				case "today": tillTime = DateTime.Today; break;
+				case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
+				case "week": tillTime = DateTime.Today.AddDays(-7); break;
+				default: return "Not recognized time desciption.";
 			}
 			var query = new SeachQuery { LastInvokedAfter = tillTime };
 			return HistoryManager.SearchParsed(query);
@@ -580,13 +591,13 @@ namespace TS3AudioBot
 			Func<double, double, bool> comparer;
 			switch (cmp)
 			{
-			case "<": comparer = (a, b) => a < b; break;
-			case ">": comparer = (a, b) => a > b; break;
-			case "<=": comparer = (a, b) => a <= b; break;
-			case ">=": comparer = (a, b) => a >= b; break;
-			case "==": comparer = (a, b) => a == b; break;
-			case "!=": comparer = (a, b) => a != b; break;
-			default: throw new CommandException("Unknown comparison operator");
+				case "<": comparer = (a, b) => a < b; break;
+				case ">": comparer = (a, b) => a > b; break;
+				case "<=": comparer = (a, b) => a <= b; break;
+				case ">=": comparer = (a, b) => a >= b; break;
+				case "==": comparer = (a, b) => a == b; break;
+				case "!=": comparer = (a, b) => a != b; break;
+				default: throw new CommandException("Unknown comparison operator");
 			}
 
 			double d0, d1;
@@ -596,7 +607,7 @@ namespace TS3AudioBot
 				&& double.TryParse(arg1, NumberStyles.Number, CultureInfo.InvariantCulture, out d1))
 				cmpResult = comparer(d0, d1);
 			else
-				cmpResult = comparer(arg0.CompareTo(arg1), 0);
+				cmpResult = comparer(string.CompareOrdinal(arg0, arg1), 0);
 
 			// If branch
 			if (cmpResult)
@@ -624,7 +635,7 @@ namespace TS3AudioBot
 					QueryConnection.KickClientFromServer(info.TextMessage.InvokerId);
 				return null;
 			}
-			catch (QueryCommandException ex)
+			catch (TS3CommandException ex)
 			{
 				Log.Write(Log.Level.Info, "Could not kick: {0}", ex);
 				return "I'm not strong enough, master!";
@@ -634,55 +645,288 @@ namespace TS3AudioBot
 		[Command(Private, "link", "Gets a link to the origin of the current song.")]
 		public string CommandLink(ExecutionInformation info)
 		{
-			if (AudioFramework.CurrentPlayData == null)
+			if (PlayManager.CurrentPlayData == null)
 				return "There is nothing on right now...";
-			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId)
+			else if (QuizMode && PlayManager.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId)
 				return "Sorry, you have to guess!";
 			else
-				return FactoryManager.RestoreLink(AudioFramework.CurrentPlayData);
+				return FactoryManager.RestoreLink(PlayManager.CurrentPlayData.ResourceData);
 		}
 
-		[Command(Private, "loop", "Sets whether or not to loop the entire playlist.")]
-		[Usage("(on|off)]", "on or off")]
+		[Command(Private, "list add")]
+		public string CommandListAdd(ExecutionInformation info, string link)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+			var result = FactoryManager.Load(link);
+			if (!result)
+				return result.Message;
+			plist.AddItem(new PlaylistItem(result.Value.BaseData, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			return null;
+		}
+
+		[Command(Private, "list add")]
+		public string CommandListAdd(ExecutionInformation info, uint hid)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (hid < 0 || !HistoryManager.GetEntryById(hid))
+				return "History entry not found";
+
+			plist.AddItem(new PlaylistItem(hid, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			return null;
+		}
+
+		[Command(Private, "list clear")]
+		public void CommandListClear(ExecutionInformation info)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+			plist.Clear();
+		}
+
+		[Command(Private, "list delete")]
+		public string CommandListDelete(ExecutionInformation info, string name)
+		{
+			var hresult = PlaylistManager.LoadPlaylist(name, true);
+			if (!hresult)
+			{
+				info.Session.SetResponse(ResponseListDelete, name);
+				return $"Do you really wan to delete the playlist \"{name}\" (error:{hresult.Message})";
+			}
+			else
+			{
+				if (hresult.Value.CreatorDbId.HasValue
+					&& hresult.Value.CreatorDbId.Value != info.Session.ClientCached.DatabaseId
+					&& !info.IsAdmin)
+					return "You are not allowed to delete others playlists";
+
+				info.Session.SetResponse(ResponseListDelete, name);
+				return $"Do you really wan to delete the playlist \"{name}\"";
+			}
+		}
+
+		[Command(Private, "list get")]
+		public string CommandListGet(ExecutionInformation info, string link)
+		{
+			var result = info.Session.Bot.PlaylistManager.LoadPlaylistFrom(link);
+
+			if (!result)
+				return result;
+
+			result.Value.CreatorDbId = info.Session.ClientCached.DatabaseId;
+			info.Session.Set<PlaylistManager, Playlist>(result.Value);
+			return "Ok";
+		}
+
+		[Command(Private, "list item move")]
+		public string CommandListMove(ExecutionInformation info, int from, int to)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (from < 0 || from >= plist.Count
+				|| to < 0 || to >= plist.Count)
+				return "Index must be within playlist length";
+
+			if (from == to)
+				return null;
+
+			var plitem = plist.GetResource(from);
+			plist.RemoveItemAt(from);
+			plist.InsertItem(plitem, Math.Min(to, plist.Count));
+			return null;
+		}
+
+		[Command(Private, "list item delete")]
+		public string CommandListRemove(ExecutionInformation info, int index)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (index < 0 || index >= plist.Count)
+				return "Index must be within playlist length";
+
+			var deletedItem = plist.GetResource(index);
+			plist.RemoveItemAt(index);
+			return "Removed: " + deletedItem.DisplayString;
+		}
+
+		// add list item rename
+
+		[Command(Private, "list list")]
+		[RequiredParameters(0)]
+		public string CommandListList(ExecutionInformation info, string pattern)
+		{
+			var files = PlaylistManager.GetAvailablePlaylists(pattern);
+			if (!files.Any())
+				return "No saved playlists";
+
+			var strb = new StringBuilder();
+			int tokenLen = 0;
+			foreach (var file in files)
+			{
+				int newTokenLen = tokenLen + TS3String.TokenLength(file) + 3;
+				if (newTokenLen < 1024)
+				{
+					strb.Append(file).Append(", ");
+					tokenLen = newTokenLen;
+				}
+				else
+					break;
+			}
+
+			if (strb.Length > 2) strb.Length -= 2;
+			return strb.ToString();
+		}
+
+		[Command(Private, "list load")]
+		public string CommandListLoad(ExecutionInformation info, string name)
+		{
+			Playlist loadList = AutoGetPlaylist(info.Session);
+
+			var result = PlaylistManager.LoadPlaylist(name);
+			if (!result)
+				return result.Message;
+			else
+			{
+				loadList.Clear();
+				loadList.AddRange(result.Value.AsEnumerable());
+				loadList.Name = result.Value.Name;
+				return $"Loaded: \"{name}\" with {loadList.Count} songs";
+			}
+		}
+
+		[Command(Private, "list merge")]
+		public string CommandListMerge(ExecutionInformation info, string name)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			var lresult = PlaylistManager.LoadPlaylist(name);
+			if (!lresult)
+				return "The other playlist could not be found";
+
+			plist.AddRange(lresult.Value.AsEnumerable());
+			return null;
+		}
+
+		[Command(Private, "list name")]
+		public string CommandListName(ExecutionInformation info, string name)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (string.IsNullOrEmpty(name))
+				return plist.Name;
+
+			var result = PlaylistManager.IsNameValid(name);
+			if (!result)
+				return result;
+
+			plist.Name = name;
+			return null;
+		}
+
+		[Command(Private, "list play")]
+		[RequiredParameters(0)]
+		public string CommandListPlay(ExecutionInformation info, int? index)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+
+			if (!index.HasValue
+				|| (index.HasValue && index.Value >= 0 && index.Value < plist.Count))
+			{
+				PlaylistManager.PlayFreelist(plist);
+				PlaylistManager.Index = index ?? 0;
+			}
+			else return "Invalid starting index";
+
+			PlaylistItem item = PlaylistManager.Current();
+			if (item != null)
+			{
+				PlayManager.Play(info.Session.Client, item);
+				return null;
+			}
+			else return "Nothing to play...";
+		}
+
+		[Command(Private, "list save")]
+		[RequiredParameters(0)]
+		public string CommandListSave(ExecutionInformation info, string optNewName)
+		{
+			var plist = AutoGetPlaylist(info.Session);
+			if (!string.IsNullOrEmpty(optNewName))
+			{
+				var result = PlaylistManager.IsNameValid(optNewName);
+				if (!result)
+					return result;
+				plist.Name = optNewName;
+			}
+
+			var sresult = PlaylistManager.SavePlaylist(plist);
+			if (sresult)
+				return "Ok";
+			else
+				return sresult.Message;
+		}
+
+		[Command(Private, "list show")]
+		[RequiredParameters(0)]
+		public string CommandListShow(ExecutionInformation info, int? offset) => CommandListShow(info, null, offset);
+
+		[Command(Private, "list show")]
+		[RequiredParameters(0)]
+		public string CommandListShow(ExecutionInformation info, string name, int? offset)
+		{
+			Playlist plist;
+			if (!string.IsNullOrEmpty(name))
+			{
+				var result = PlaylistManager.LoadPlaylist(name);
+				if (!result)
+					return result.Message;
+				plist = result.Value;
+			}
+			else
+				plist = AutoGetPlaylist(info.Session);
+
+			var strb = new StringBuilder();
+			strb.Append($"Playlist: \"").Append(plist.Name).Append("\" with ").Append(plist.Count).AppendLine(" songs.");
+			int from = Math.Max(offset ?? 0, 0);
+			foreach (var plitem in plist.AsEnumerable().Skip(from).Take(10))
+				strb.Append(from++).Append(": ").AppendLine(plitem.DisplayString);
+
+			return strb.ToString();
+		}
+
+		[Command(Private, "loop", "Gets or sets whether or not to loop the entire playlist.")]
+		[Usage("[(on|off)]", "on or off")]
 		[RequiredParameters(0)]
 		public string CommandLoop(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
-				return "Loop is " + (AudioFramework.Loop ? "on" : "off");
+				return "Loop is " + (PlaylistManager.Loop ? "on" : "off");
 			else if (parameter == "on")
-				AudioFramework.Loop = true;
+				PlaylistManager.Loop = true;
 			else if (parameter == "off")
-				AudioFramework.Loop = false;
+				PlaylistManager.Loop = false;
 			else
 				return CommandHelp(info, "loop");
 			return null;
 		}
 
-		[Command(Private, "media", "Plays any local or online media file.")]
-		public string CommandMedia(ExecutionInformation info, string parameter)
-		{
-			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.MediaLink, new PlayData(info.Session, client, parameter, false));
-		}
-
 		[Command(Private, "next", "Plays the next song in the playlist.")]
-		public void CommandNext()
+		public string CommandNext(ExecutionInformation info)
 		{
-			AudioFramework.Next();
+			return PlayManager.Next(info.Session.Client);
 		}
 
 		[Command(Public, "pm", "Requests a private session with the ServerBot so you can invoke private commands.")]
-		public void CommandPM(ExecutionInformation info)
+		public string CommandPM(ExecutionInformation info)
 		{
-			BotSession ownSession = SessionManager.CreateSession(this, info.TextMessage.InvokerId);
-			ownSession.Write("Hi " + info.TextMessage.InvokerName);
+			info.Session.IsPrivate = true;
+			return "Hi " + info.TextMessage.InvokerName;
 		}
 
 		[Command(Admin, "parse", "Displays the AST of the requested command.")]
 		[Usage("<command>", "The comand to be parsed")]
 		public string CommandParse(string parameter)
 		{
-			if (!parameter.TrimStart().StartsWith("!"))
+			if (!parameter.TrimStart().StartsWith("!", StringComparison.Ordinal))
 				return "This is not a command";
 			try
 			{
@@ -716,8 +960,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-				return FactoryManager.LoadAndPlay(new PlayData(info.Session, client, parameter, false));
+				return PlayManager.Play(info.Session.Client, parameter);
 			}
 		}
 
@@ -740,9 +983,9 @@ namespace TS3AudioBot
 		}
 
 		[Command(Private, "previous", "Plays the previous song in the playlist.")]
-		public void CommandPrevious()
+		public string CommandPrevious(ExecutionInformation info)
 		{
-			AudioFramework.Previous();
+			return PlayManager.Previous(info.Session.Client);
 		}
 
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
@@ -756,34 +999,26 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
-		public string CommandQuit(ExecutionInformation info)
+		[RequiredParameters(0)]
+		public string CommandQuit(ExecutionInformation info, string param)
 		{
-			info.Session.SetResponse(ResponseQuit, null);
-			return "Do you really want to quit? !(yes|no)";
-		}
+			switch (param)
+			{
+				case "force":
+					QueryConnection.OnMessageReceived -= TextCallback;
+					info.Session.Write("Goodbye!");
+					Dispose();
+					Log.Write(Log.Level.Info, "Exiting...");
+					return null;
 
-		[Command(Admin, "quit force", "Closes the TS3AudioBot application.")]
-		public void CommandQuitForce(ExecutionInformation info)
-		{
-			info.Session.Write("Goodbye!");
-			Dispose();
-			Log.Write(Log.Level.Info, "Exiting...");
-		}
-
-		[Command(Admin, "quit last", "Disconnects the Bob when noone is on the server anymore.")]
-		public void CommandQuitLast(ExecutionInformation info)
-		{
-			throw new NotImplementedException();
-		}
-
-		[Command(Admin, "quit reset", "Discards any \"quit last\" request.")]
-		public void CommandQuitReset(ExecutionInformation info)
-		{
-			throw new NotImplementedException();
+				default:
+					info.Session.SetResponse(ResponseQuit, null);
+					return "Do you really want to quit? !(yes|no)";
+			}
 		}
 
 		[Command(Public, "quiz", "Enable to hide the songnames and let your friends guess the title.")]
-		[Usage("(on|off)]", "on or off")]
+		[Usage("[(on|off)]", "on or off")]
 		[RequiredParameters(0)]
 		public string CommandQuiz(ExecutionInformation info, string parameter)
 		{
@@ -799,15 +1034,38 @@ namespace TS3AudioBot
 				if (info.Session.IsPrivate)
 					return "No cheatig! Everybody has to see it!";
 				QuizMode = false;
-				QueryConnection.ChangeDescription(AudioFramework.CurrentPlayData.Resource.ResourceTitle);
+				QueryConnection.ChangeDescription(PlayManager.CurrentPlayData.ResourceData.ResourceTitle);
 			}
 			else
 				CommandHelp(info, "quiz");
 			return null;
 		}
 
-		[Command(Private, "repeat", "Sets whether or not to loop a single song.")]
-		[Usage("(on|off)]", "on or off")]
+		[Command(Private, "random", "Gets whether or not to play playlists in random order.")]
+		public string CommandRandom() => "Random is " + (PlaylistManager.Random ? "on" : "off");
+		[Command(Private, "random on", "Enables random playlist playback")]
+		public void CommandRandomOn() => PlaylistManager.Random = true;
+		[Command(Private, "random off", "Disables random playlist playback")]
+		public void CommandRandomOff() => PlaylistManager.Random = false;
+		[Command(Private, "random seed", "Gets the unique seed for a certain playback order")]
+		public string CommandRandomSeed()
+		{
+			string seed = Util.FromSeed(PlaylistManager.Seed);
+			return string.IsNullOrEmpty(seed) ? "<empty>" : seed;
+		}
+		[Command(Private, "random seed", "Sets the unique seed for a certain playback order")]
+		public string CommandRandomSeed(string newSeed)
+		{
+			if (newSeed.Any(c => !char.IsLetter(c)))
+				return "Only letter allowed";
+			PlaylistManager.Seed = Util.ToSeed(newSeed.ToLowerInvariant());
+			return null;
+		}
+		[Command(Private, "random seed", "Sets the unique seed for a certain playback order")]
+		public void CommandRandomSeed(int newSeed) => PlaylistManager.Seed = newSeed;
+
+		[Command(Private, "repeat", "Gets or sets whether or not to loop a single song.")]
+		[Usage("[(on|off)]", "on or off")]
 		[RequiredParameters(0)]
 		public string CommandRepeat(ExecutionInformation info, string parameter)
 		{
@@ -829,12 +1087,12 @@ namespace TS3AudioBot
 		[RequiredParameters(0)]
 		public string CommandRng(int? first, int? second)
 		{
-			if (second != null)
-				return Util.RngInstance.Next(first.Value, second.Value).ToString();
-			else if (first != null)
-				return Util.RngInstance.Next(first.Value).ToString();
+			if (second.HasValue)
+				return Util.RngInstance.Next(first.Value, second.Value).ToString(CultureInfo.InvariantCulture);
+			else if (first.HasValue)
+				return Util.RngInstance.Next(first.Value).ToString(CultureInfo.InvariantCulture);
 			else
-				return Util.RngInstance.Next().ToString();
+				return Util.RngInstance.Next().ToString(CultureInfo.InvariantCulture);
 		}
 
 		[Command(Private, "seek", "Jumps to a timemark within the current song.")]
@@ -868,27 +1126,22 @@ namespace TS3AudioBot
 			if (!parsed)
 				return CommandHelp(info, "seek");
 
-			if (!AudioFramework.Seek(span))
+			if (span < TimeSpan.Zero || span > AudioFramework.Length)
 				return "The point of time is not within the songlenth.";
+			else
+				AudioFramework.Position = span;
 			return null;
 		}
 
 		[Command(AnyVisibility, "song", "Tells you the name of the current song.")]
 		public string CommandSong(ExecutionInformation info)
 		{
-			if (AudioFramework.CurrentPlayData == null)
+			if (PlayManager.CurrentPlayData == null)
 				return "There is nothing on right now...";
-			else if (QuizMode && AudioFramework.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId)
+			else if (QuizMode && PlayManager.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId)
 				return "Sorry, you have to guess!";
 			else
-				return $"[url={FactoryManager.RestoreLink(AudioFramework.CurrentPlayData)}]{AudioFramework.CurrentPlayData.Resource.ResourceTitle}[/url]";
-		}
-
-		[Command(Private, "soundcloud", "Resolves the link as a soundcloud song to play it for you.")]
-		public string CommandSoundcloud(ExecutionInformation info, string parameter)
-		{
-			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.Soundcloud, new PlayData(info.Session, client, parameter, false));
+				return $"[url={FactoryManager.RestoreLink(PlayManager.CurrentPlayData.ResourceData)}]{PlayManager.CurrentPlayData.ResourceData.ResourceTitle}[/url]";
 		}
 
 		[Command(Private, "stop", "Stops the current song.")]
@@ -901,6 +1154,12 @@ namespace TS3AudioBot
 		public void CommandSubscribe(ExecutionInformation info)
 		{
 			BobController.WhisperClientSubscribe(info.TextMessage.InvokerId);
+		}
+
+		[Command(Admin, "subscribe channel", "Adds your current channel to the music playback.")]
+		public void CommandSubscribeChannel(ExecutionInformation info)
+		{
+			BobController.WhisperChannelSubscribe(info.Session.Client.ChannelId, true);
 		}
 
 		[Command(AnyVisibility, "take", "Take a substring from a string")]
@@ -966,16 +1225,9 @@ namespace TS3AudioBot
 				info.Session.Write("Good boy!");
 				// stresstest
 				for (int i = 0; i < 10; i++)
-					info.Session.Write(i.ToString());
+					info.Session.Write(i.ToString(CultureInfo.InvariantCulture));
 				return "Test end";
 			}
-		}
-
-		[Command(Private, "twitch", "Resolves the link as a twitch stream to play it for you.")]
-		public string CommandTwitch(ExecutionInformation info, string parameter)
-		{
-			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.Twitch, new PlayData(info.Session, client, parameter, false));
 		}
 
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
@@ -984,12 +1236,18 @@ namespace TS3AudioBot
 			BobController.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
 		}
 
+		[Command(Private, "unsubscribe channel", "Removes your current channel from the music playback.")]
+		public void CommandUnsubscribeChannel(ExecutionInformation info)
+		{
+			BobController.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
+		}
+
 		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]
 		[Usage("<level>", "A new volume level between 0 and 100")]
 		public string CommandVolume(ExecutionInformation info, string parameter)
 		{
-			bool relPos = parameter.StartsWith("+");
-			bool relNeg = parameter.StartsWith("-");
+			bool relPos = parameter.StartsWith("+", StringComparison.Ordinal);
+			bool relNeg = parameter.StartsWith("-", StringComparison.Ordinal);
 			string numberString = (relPos || relNeg) ? parameter.Remove(0, 1) : parameter;
 
 			int volume;
@@ -1014,13 +1272,6 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "youtube", "Resolves the link as a youtube video to play it for you.")]
-		public string CommandYoutube(ExecutionInformation info, string parameter)
-		{
-			ClientData client = QueryConnection.GetClientById(info.TextMessage.InvokerId);
-			return FactoryManager.LoadAndPlay(AudioType.Youtube, new PlayData(info.Session, client, parameter, false));
-		}
-
 		#endregion
 
 		#region RESPONSES
@@ -1030,7 +1281,7 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.IsAdmin.Value)
+				if (info.IsAdmin)
 				{
 					var respInt = info.Session.ResponseData as int?;
 					if (!respInt.HasValue)
@@ -1053,8 +1304,8 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.IsAdmin.Value)
-					CommandQuitForce(info);
+				if (info.IsAdmin)
+					CommandQuit(info, "force");
 				else
 					info.Session.Write("Command can only be answered by an admin.");
 			}
@@ -1066,7 +1317,7 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.IsAdmin.Value)
+				if (info.IsAdmin)
 				{
 					var ale = info.Session.ResponseData as AudioLogEntry;
 					if (ale == null)
@@ -1089,10 +1340,21 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.IsAdmin.Value)
+				if (info.IsAdmin)
 				{
-					HistoryManager.CleanHistoryFile();
-					info.Session.Write("Cleanup done!");
+					string param = info.Session.ResponseData as string;
+					if (string.IsNullOrEmpty(param))
+					{
+						HistoryManager.CleanHistoryFile();
+						info.Session.Write("Cleanup done!");
+					}
+					else if (param == "removedefective")
+					{
+						HistoryManager.RemoveBrokenLinks(info.Session);
+						info.Session.Write("Cleanup done!");
+					}
+					else
+						info.Session.Write("Unknown parameter!");
 				}
 				else
 					info.Session.Write("Command can only be answered by an admin.");
@@ -1100,14 +1362,42 @@ namespace TS3AudioBot
 			return answer != Answer.Unknown;
 		}
 
+		private bool ResponseListDelete(ExecutionInformation info)
+		{
+			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
+			if (answer == Answer.Yes)
+			{
+				var name = info.Session.ResponseData as string;
+				var result = PlaylistManager.DeletePlaylist(name, info.Session.ClientCached.DatabaseId, info.IsAdmin);
+				if (!result) info.Session.Write(result.Message);
+				else info.Session.Write("Ok");
+			}
+			return answer != Answer.Unknown;
+		}
+
 		#endregion
 
-		public void SongUpdateEvent(object sender, PlayData data)
+		public void SongUpdateEvent(object sender, PlayInfoEventArgs data)
 		{
 			if (!QuizMode)
 			{
-				QueryConnection.ChangeDescription(data.Resource.ResourceTitle);
+				QueryConnection.ChangeDescription(data.ResourceData.ResourceTitle);
 			}
+		}
+		public void SongStopEvent(object sender, EventArgs e)
+		{
+			QueryConnection.ChangeDescription("<Sleeping>");
+		}
+
+		private Playlist AutoGetPlaylist(UserSession session)
+		{
+			var result = session.Get<PlaylistManager, Playlist>();
+			if (result)
+				return result.Value;
+
+			var newPlist = new Playlist(session.Client.NickName, session.ClientCached.DatabaseId);
+			session.Set<PlaylistManager, Playlist>(newPlist);
+			return newPlist;
 		}
 
 		public void Dispose()
@@ -1115,67 +1405,52 @@ namespace TS3AudioBot
 			if (!isDisposed) isDisposed = true;
 			else return;
 
-			if (PluginManager != null)
+			if (WebInterface != null) // before:
+			{
+				WebInterface.Dispose();
+				WebInterface = null;
+			}
+			if (PluginManager != null) // before: SessionManager, logStream,
 			{
 				PluginManager.Dispose();
 				PluginManager = null;
 			}
-			if (QueryConnection != null)
-			{
-				QueryConnection.Dispose();
-				QueryConnection = null;
-			}
-			TickPool.Close();
-			if (HistoryManager != null)
-			{
-				HistoryManager.Dispose();
-				HistoryManager = null;
-			}
-			if (FactoryManager != null)
-			{
-				FactoryManager.Dispose();
-				FactoryManager = null;
-			}
-			if (AudioFramework != null)
+			if (AudioFramework != null) // before: BobController, logStream,
 			{
 				AudioFramework.Dispose();
 				AudioFramework = null;
 			}
-			if (BobController != null)
+			if (BobController != null) // before: QueryConnection, logStream,
 			{
 				BobController.Dispose();
 				BobController = null;
 			}
-			if (SessionManager != null)
+			if (QueryConnection != null) // before: logStream,
+			{
+				QueryConnection.Dispose();
+				QueryConnection = null;
+			}
+			TickPool.Close(); // before:
+			if (HistoryManager != null) // before: logStream,
+			{
+				HistoryManager.Dispose();
+				HistoryManager = null;
+			}
+			if (FactoryManager != null) // before:
+			{
+				FactoryManager.Dispose();
+				FactoryManager = null;
+			}
+			if (SessionManager != null) // before:
 			{
 				//sessionManager.Dispose();
 				SessionManager = null;
 			}
-			if (logStream != null)
+			if (logStream != null) // before:
 			{
 				logStream.Dispose();
 				logStream = null;
 			}
-		}
-	}
-
-	public class PlayData : MarshalByRefObject
-	{
-		public BotSession Session { get; private set; }
-		public ClientData Invoker { get; private set; }
-		public string Message { get; private set; }
-		public bool Enqueue { get; private set; }
-		public int Volume { get; private set; }
-		public AudioResource Resource { get; set; }
-
-		public PlayData(BotSession session, ClientData invoker, string message, bool enqueue)
-		{
-			Session = session;
-			Invoker = invoker;
-			Message = message;
-			Enqueue = enqueue;
-			Resource = null;
-			Volume = -1;
 		}
 	}
 
@@ -1193,7 +1468,7 @@ namespace TS3AudioBot
 		[Info("path to the logfile", "log_ts3audiobot")]
 		public string logFile;
 		[Info("group able to execute admin commands from the bot")]
-		public int adminGroupId;
+		public ulong adminGroupId;
 	}
 #pragma warning restore CS0649
 }

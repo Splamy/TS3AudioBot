@@ -19,11 +19,11 @@ namespace TS3ABotUnitTests
 	using System;
 	using NUnit.Framework;
 
-	using TS3Query.Messages;
+	using TS3Client.Messages;
 
 	using TS3AudioBot;
 	using TS3AudioBot.CommandSystem;
-	using TS3Query;
+	using TS3Client;
 
 	[TestFixture]
 	public class BotCommandTests
@@ -50,7 +50,7 @@ namespace TS3ABotUnitTests
 
 		string CallCommand(string command)
 		{
-			var info = new ExecutionInformation(null, CreateTextMessage(), new Lazy<bool>(true));
+			var info = new ExecutionInformation(null, CreateTextMessage(), new Lazy<bool>(() => true));
 			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
 		}
 

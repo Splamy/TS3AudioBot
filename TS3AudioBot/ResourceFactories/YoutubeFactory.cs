@@ -19,42 +19,49 @@ namespace TS3AudioBot.ResourceFactories
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
+	using System.ComponentModel;
+	using System.Diagnostics;
+	using System.Globalization;
+	using System.IO;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
 	using Helper;
-	using CommandSystem;
 
-	public sealed class YoutubeFactory : IResourceFactory
+
+	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
 	{
-		private Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		private Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static readonly Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);
+		private static readonly Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
+		private static readonly Regex listMatch = new Regex(@"(&|\?)list=([\w-]+)", Util.DefaultRegexConfig);
 
+		public string SubCommandName => "youtube";
 		public AudioType FactoryFor => AudioType.Youtube;
 
-		public YoutubeFactory() { }
+		private YoutubeFactoryData data;
 
-		public bool MatchLink(string link) => linkMatch.IsMatch(link);
+		public YoutubeFactory(YoutubeFactoryData yfd)
+		{
+			data = yfd;
+		}
 
-		public RResultCode GetResource(string ytLink, out AudioResource result)
+		public bool MatchLink(string link) => linkMatch.IsMatch(link) || listMatch.IsMatch(link);
+		bool IResourceFactory.MatchLink(string link) => linkMatch.IsMatch(link);
+		bool IPlaylistFactory.MatchLink(string link) => listMatch.IsMatch(link);
+
+		public R<PlayResource> GetResource(string ytLink)
 		{
 			Match matchYtId = idMatch.Match(ytLink);
 			if (!matchYtId.Success)
-			{
-				result = null;
-				return RResultCode.YtIdNotFound;
-			}
-			return GetResourceById(matchYtId.Groups[3].Value, null, out result);
+				return RResultCode.YtIdNotFound.ToString();
+			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, AudioType.Youtube));
 		}
 
-		public RResultCode GetResourceById(string ytID, string name, out AudioResource result)
+		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
 			string resulthtml;
-			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={ytID}&el=info")))
-			{
-				result = null;
-				return RResultCode.NoConnection;
-			}
+			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
+				return RResultCode.NoConnection.ToString();
 
 			var videoTypes = new List<VideoData>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
@@ -81,9 +88,9 @@ namespace TS3AudioBot.ResourceFactories
 						continue;
 
 					var vt = new VideoData();
-					vt.link = vLink;
-					vt.codec = GetCodec(vType);
-					vt.qualitydesciption = vQuality;
+					vt.Link = vLink;
+					vt.Codec = GetCodec(vType);
+					vt.Qualitydesciption = vQuality;
 					videoTypes.Add(vt);
 				}
 			}
@@ -102,9 +109,9 @@ namespace TS3AudioBot.ResourceFactories
 						continue;
 
 					bool audioOnly = false;
-					if (vType.StartsWith("video/"))
+					if (vType.StartsWith("video/", StringComparison.Ordinal))
 						continue;
-					else if (vType.StartsWith("audio/"))
+					else if (vType.StartsWith("audio/", StringComparison.Ordinal))
 						audioOnly = true;
 
 					string vLink = videoparse["url"];
@@ -112,116 +119,80 @@ namespace TS3AudioBot.ResourceFactories
 						continue;
 
 					var vt = new VideoData();
-					vt.codec = GetCodec(vType);
-					vt.qualitydesciption = vType;
-					vt.link = vLink;
+					vt.Codec = GetCodec(vType);
+					vt.Qualitydesciption = vType;
+					vt.Link = vLink;
 					if (audioOnly)
-						vt.audioOnly = true;
+						vt.AudioOnly = true;
 					else
-						vt.videoOnly = true;
+						vt.VideoOnly = true;
 					videoTypes.Add(vt);
 				}
 			}
 
-			string finalName = name ?? dataParse["title"] ?? $"<YT - no title : {ytID}>";
-			var ytResult = new YoutubeResource(ytID, finalName, videoTypes);
-			result = ytResult;
-			return ytResult.AvailableTypes.Count > 0 ? RResultCode.Success : RResultCode.YtNoVideosExtracted;
+			// Validation Process
+
+			if (videoTypes.Count <= 0)
+				return RResultCode.YtNoVideosExtracted.ToString();
+
+			int codec = SelectStream(videoTypes);
+			if (codec < 0)
+				return "No playable codec found";
+
+			var result = ValidateMedia(videoTypes[codec]);
+			if (!result)
+			{
+				if (string.IsNullOrWhiteSpace(data.youtubedlpath))
+					return result.Message;
+
+				return YoutubeDlWrapped(resource);
+			}
+
+			return new PlayResource(videoTypes[codec].Link, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
 		}
 
 		public string RestoreLink(string id) => "https://youtu.be/" + id;
 
-		public void PostProcess(PlayData data, out bool abortPlay)
+		private int SelectStream(List<VideoData> list)
 		{
-			YoutubeResource ytResource = (YoutubeResource)data.Resource;
-
 #if DEBUG
 			StringBuilder dbg = new StringBuilder("YT avail codecs: ");
-			foreach (var yd in ytResource.AvailableTypes)
-				dbg.Append(yd.qualitydesciption).Append(" @ ").Append(yd.codec).Append(", ");
+			foreach (var yd in list)
+				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
 			Log.Write(Log.Level.Debug, dbg.ToString());
 #endif
 
-			var availList = ytResource.AvailableTypes;
-			int autoselectIndex = availList.FindIndex(t => t.codec == VideoCodec.M4A);
+			int autoselectIndex = list.FindIndex(t => t.Codec == VideoCodec.M4A);
 			if (autoselectIndex == -1)
-				autoselectIndex = availList.FindIndex(t => t.audioOnly);
-			if (autoselectIndex != -1)
-			{
-				ytResource.Selected = autoselectIndex;
-				abortPlay = !ValidateMedia(data.Session, ytResource);
-				return;
-			}
+				autoselectIndex = list.FindIndex(t => t.AudioOnly);
+			if (autoselectIndex == -1)
+				autoselectIndex = list.FindIndex(t => !t.VideoOnly);
 
-			StringBuilder strb = new StringBuilder();
-			strb.AppendLine("\nMultiple formats found please choose one with !f <number>");
-			int count = 0;
-			foreach (var videoType in ytResource.AvailableTypes)
-				strb.Append("[")
-					.Append(count++)
-					.Append("] ")
-					.Append(videoType.codec.ToString())
-					.Append(" @ ")
-					.AppendLine(videoType.qualitydesciption);
-
-			abortPlay = true;
-			data.Session.Write(strb.ToString());
-			data.Session.UserResource = data;
-			data.Session.SetResponse(ResponseYoutube, null);
+			return autoselectIndex;
 		}
 
-		private static bool ResponseYoutube(ExecutionInformation info)
+		private static R ValidateMedia(VideoData media)
 		{
-			string[] command = info.TextMessage.Message.SplitNoEmpty(' ');
-			if (command[0] != "!f")
-				return false;
-			if (command.Length != 2)
-				return true;
-			int entry;
-			if (int.TryParse(command[1], out entry))
-			{
-				PlayData data = info.Session.UserResource;
-				if (data == null || data.Resource as YoutubeResource == null)
-				{
-					info.Session.Write("An unexpected error with the ytresource occured: null.");
-					return true;
-				}
-				YoutubeResource ytResource = (YoutubeResource)data.Resource;
-				if (entry < 0 || entry >= ytResource.AvailableTypes.Count)
-					return true;
-				ytResource.Selected = entry;
-				if (ValidateMedia(info.Session, ytResource))
-					info.Session.Bot.FactoryManager.Play(data);
-			}
-			return true;
-		}
+			var vcode = WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(1));
 
-		private static bool ValidateMedia(BotSession session, YoutubeResource resource)
-		{
-			switch (ValidateMedia(resource))
+			switch (vcode)
 			{
-			case ValidateCode.Ok: return true;
-			case ValidateCode.Restricted: session.Write("The video cannot be played due to youtube restrictions."); return false;
-			case ValidateCode.Timeout: session.Write("No connection could be established to youtube. Please try again later."); return false;
-			case ValidateCode.UnknownError: session.Write("Unknown error occoured"); return false;
+			case ValidateCode.Ok: return R.OkR;
+			case ValidateCode.Restricted: return "The video cannot be played due to youtube restrictions.";
+			case ValidateCode.Timeout: return "No connection could be established to youtube. Please try again later.";
+			case ValidateCode.UnknownError: return "Unknown error occoured";
 			default: throw new InvalidOperationException();
 			}
 		}
 
-		private static ValidateCode ValidateMedia(YoutubeResource resource)
-		{
-			var media = resource.AvailableTypes[resource.Selected];
-			return WebWrapper.GetResponse(new Uri(media.link), TimeSpan.FromSeconds(1));
-		}
-
 		private static VideoCodec GetCodec(string type)
 		{
-			string lowtype = type.ToLower();
+			string lowtype = type.ToLower(CultureInfo.InvariantCulture);
 			bool audioOnly = false;
 			string codecSubStr;
-			if (lowtype.StartsWith("video/"))
+			if (lowtype.StartsWith("video/", StringComparison.Ordinal))
 				codecSubStr = lowtype.Substring("video/".Length);
-			else if (lowtype.StartsWith("audio/"))
+			else if (lowtype.StartsWith("audio/", StringComparison.Ordinal))
 			{
 				codecSubStr = lowtype.Substring("audio/".Length);
 				audioOnly = true;
@@ -249,41 +220,211 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
+		public R<Playlist> GetPlaylist(string url)
+		{
+			Match matchYtId = listMatch.Match(url);
+			if (!matchYtId.Success)
+				return "Could not extract a playlist id";
+
+			string id = matchYtId.Groups[2].Value;
+			var plist = new Playlist(id);
+
+			string nextToken = null;
+			do
+			{
+				var queryString =
+					new Uri("https://www.googleapis.com/youtube/v3/playlistItems"
+							+ "?part=contentDetails,snippet"
+							+ "&maxResults=50"
+							+ "&playlistId=" + id
+							+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
+							+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
+							+ "&key=" + data.apiKey);
+
+				string response;
+				if (!WebWrapper.DownloadString(out response, queryString))
+					return "Web response error";
+				var parsed = Util.Serializer.Deserialize<JSON_PlaylistItems>(response);
+				var videoItems = parsed.items;
+				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoItems.Length];
+				for (int i = 0; i < videoItems.Length; i++)
+				{
+					itemBuffer[i] = new YoutubePlaylistItem(new AudioResource(
+							videoItems[i].contentDetails.videoId,
+							videoItems[i].snippet.title,
+							AudioType.Youtube));
+				}
+
+#if getlength
+				queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.apiKey}");
+				if (!WebWrapper.DownloadString(out response, queryString))
+					return "Web response error";
+				var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
+				var videoDicts = ((object[])parsedTime["items"]).Cast<Dictionary<string, object>>().ToArray();
+				for (int i = 0; i < videoDicts.Length; i++)
+					itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
+#endif
+
+				plist.AddRange(itemBuffer);
+
+				nextToken = parsed.nextPageToken;
+			} while (nextToken != null);
+
+			return plist;
+		}
+
+		public static string LoadAlternative(string id)
+		{
+			string resulthtml;
+			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
+				return "No con";
+
+			int indexof = resulthtml.IndexOf("ytplayer.config =");
+			int ptr = indexof;
+			while (resulthtml[ptr] != '{') ptr++;
+			int start = ptr;
+			int stackcnt = 1;
+			while (stackcnt > 0)
+			{
+				ptr++;
+				if (resulthtml[ptr] == '{') stackcnt++;
+				else if (resulthtml[ptr] == '}') stackcnt--;
+			}
+
+			var jsonobj = Util.Serializer.DeserializeObject(resulthtml.Substring(start, ptr - start + 1));
+			var args = GetDictVal(jsonobj, "args");
+			var url_encoded_fmt_stream_map = GetDictVal(args, "url_encoded_fmt_stream_map");
+
+			string[] enco_split = ((string)url_encoded_fmt_stream_map).Split(',');
+			foreach (var single_enco in enco_split)
+			{
+				var lis = HttpUtility.ParseQueryString(single_enco);
+
+				var signature = lis["s"];
+				var url = lis["url"];
+				if (!url.Contains("signature"))
+					url += "&signature=" + signature;
+				return url;
+			}
+			return "No match";
+		}
+
+		private static object GetDictVal(object dict, string field) => (dict as Dictionary<string, object>)?[field];
+
+		public R<PlayResource> YoutubeDlWrapped(AudioResource resource)
+		{
+			string title = null;
+			string url = null;
+
+			var ytdlPath = DetectYoutubeDl(resource.ResourceId);
+			if (ytdlPath == null)
+				return "Youtube-Dl could not be found. The video cannot be played due to youtube restrictions";
+
+			Log.Write(Log.Level.Debug, "YT Ruined!");
+			try
+			{
+				using (Process tmproc = new Process())
+				{
+					tmproc.StartInfo.FileName = "python";
+					tmproc.StartInfo.Arguments = $"\"{ytdlPath}\" --get-title --get-url --id {resource.ResourceId}";
+					tmproc.StartInfo.UseShellExecute = false;
+					tmproc.StartInfo.CreateNoWindow = true;
+					tmproc.StartInfo.RedirectStandardOutput = true;
+					tmproc.StartInfo.RedirectStandardError = true;
+					tmproc.Start();
+					tmproc.WaitForExit(10000);
+
+					using (StreamReader reader = tmproc.StandardError)
+					{
+						string result = reader.ReadToEnd();
+						if (!string.IsNullOrEmpty(result))
+							return result;
+					}
+
+					title = tmproc.StandardOutput.ReadLine();
+					url = tmproc.StandardOutput.ReadLine();
+				}
+			}
+			catch (Win32Exception) { return "Failed to run youtube-dl"; }
+
+			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+				return "No youtube-dl response";
+
+			Log.Write(Log.Level.Debug, "YT Saved!");
+			return new PlayResource(url, resource.WithName(title));
+		}
+
+		private string DetectYoutubeDl(string id)
+		{
+			// Default path youtube-dl is suggesting to install
+			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
+			if (File.Exists(defaultYtDlPath))
+				return defaultYtDlPath;
+
+			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
+			string fullCustomPath = Path.GetFullPath(data.youtubedlpath);
+			if (File.Exists(fullCustomPath))
+				return fullCustomPath;
+
+			// Example: /home/teamspeak where the binary 'youtube-dl' lies in ./teamspeak/
+			string fullCustomPathWithoutFile = Path.Combine(fullCustomPath, "youtube-dl");
+			if (File.Exists(fullCustomPathWithoutFile))
+				return fullCustomPathWithoutFile;
+
+			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the github project folder
+			string fullCustomPathGhProject = Path.Combine(fullCustomPath, "youtube_dl", "__main__.py");
+			if (File.Exists(fullCustomPathGhProject))
+				return fullCustomPathGhProject;
+
+			return null;
+		}
+
 		public void Dispose() { }
+
+#pragma warning disable CS0649
+		class JSON_PlaylistItems
+		{
+			public string nextPageToken;
+			public Item[] items;
+
+			public class Item
+			{
+				public ContentDetails contentDetails;
+				public Snippet snippet;
+
+				public class ContentDetails
+				{
+					public string videoId;
+				}
+
+				public class Snippet
+				{
+					public string title;
+				}
+			}
+		}
+#pragma warning restore CS0649
 	}
+
+#pragma warning disable CS0649
+	public struct YoutubeFactoryData
+	{
+		[Info("a youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
+		public string apiKey;
+		[Info("absolute or relative path to the youtube-dl binary or repository", "")]
+		public string youtubedlpath;
+	}
+#pragma warning restore CS0649
 
 	public sealed class VideoData
 	{
-		public string link;
-		public string qualitydesciption;
-		public VideoCodec codec;
-		public bool audioOnly = false;
-		public bool videoOnly = false;
+		public string Link { get; set; }
+		public string Qualitydesciption { get; set; }
+		public VideoCodec Codec { get; set; }
+		public bool AudioOnly { get; set; } = false;
+		public bool VideoOnly { get; set; } = false;
 
-		public override string ToString() => $"{qualitydesciption} @ {codec} - {link}";
-	}
-
-	public sealed class YoutubeResource : AudioResource
-	{
-		public List<VideoData> AvailableTypes { get; }
-		public int Selected { get; set; }
-
-		public override AudioType AudioType => AudioType.Youtube;
-
-		public YoutubeResource(string ytId, string youtubeName, List<VideoData> availableTypes)
-			: base(ytId, youtubeName)
-		{
-			AvailableTypes = availableTypes;
-			Selected = 0;
-		}
-
-		public override string Play()
-		{
-			if (Selected < 0 && Selected >= AvailableTypes.Count)
-				return null;
-			Log.Write(Log.Level.Debug, "YT Playing: {0}", AvailableTypes[Selected]);
-			return AvailableTypes[Selected].link;
-		}
+		public override string ToString() => $"{Qualitydesciption} @ {Codec} - {Link}";
 	}
 
 	public enum VideoCodec

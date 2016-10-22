@@ -18,9 +18,19 @@ namespace TS3AudioBot.Algorithm
 {
 	public interface IShuffleAlgorithm
 	{
-		void SetData(int length);
-		void SetData(int seed, int length);
-
-		int SeedIndex(int i);
+		int Seed { get; set; }
+		int Length { get; set; }
+		int Index { get; set; }
+		void Next();
+		void Prev();
 	}
+
+	// Output conventions:
+	//
+	// if Index = x, x >= Length
+	//   => Index = Util.MathMod(Index, Length)
+	// if Index = x, x < 0
+	//   => Index : undefined
+	// if Index = x, Length < 0
+	//   => Index = -1
 }

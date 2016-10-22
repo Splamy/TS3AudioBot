@@ -19,6 +19,7 @@ namespace TS3AudioBot
 	using System;
 	using System.CodeDom.Compiler;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.IO;
 	using System.Linq;
 	using System.Linq.Expressions;
@@ -98,7 +99,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public string LoadPlugin(string identifier)
+		public R LoadPlugin(string identifier)
 		{
 			CheckLocalPlugins();
 
@@ -118,7 +119,7 @@ namespace TS3AudioBot
 			return LoadPlugin(plugin);
 		}
 
-		private string LoadPlugin(Plugin plugin)
+		private R LoadPlugin(Plugin plugin)
 		{
 			if (plugin == null)
 				return "Plugin not found";
@@ -137,7 +138,7 @@ namespace TS3AudioBot
 					plugin.proxy.Run(mainBot);
 					mainBot.CommandManager.RegisterPlugin(plugin);
 					plugin.status = PluginStatus.Active;
-					return "Ok";
+					return R.OkR;
 				}
 				catch (Exception ex)
 				{
@@ -204,13 +205,14 @@ namespace TS3AudioBot
 				int digits = (int)Math.Floor(Math.Log10(plugins.Count) + 1);
 				foreach (var plugin in plugins.Values)
 				{
-					strb.Append("#").Append(plugin.Id.ToString("D" + digits)).Append('|');
+					strb.Append("#").Append(plugin.Id.ToString("D" + digits, CultureInfo.InvariantCulture)).Append('|');
 					switch (plugin.status)
 					{
 					case PluginStatus.Off: strb.Append("OFF"); break;
 					case PluginStatus.Ready: strb.Append("RDY"); break;
 					case PluginStatus.Active: strb.Append("+ON"); break;
 					case PluginStatus.Disabled: strb.Append("UNL"); break;
+					case PluginStatus.Error: strb.Append("ERR"); break;
 					default: throw new InvalidProgramException();
 					}
 					strb.Append('|').AppendLine(plugin.proxy?.Name ?? "<not loaded>");
@@ -231,7 +233,7 @@ namespace TS3AudioBot
 		void Initialize(MainBot bot);
 	}
 
-	public class Plugin : MarshalByRefObject
+	public class Plugin
 	{
 		private MainBot mainBot;
 		public int Id { get; }
@@ -361,7 +363,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	internal class PluginProxy : MarshalByRefObject
+	internal class PluginProxy
 	{
 		private Type pluginType;
 		private Assembly assembly;
@@ -393,7 +395,7 @@ namespace TS3AudioBot
 				var types = assembly.GetExportedTypes().Where(t => typeof(ITS3ABPlugin).IsAssignableFrom(t));
 				var pluginOk = PluginCountCheck(types);
 				if (pluginOk != PluginResponse.Ok) return pluginOk;
-
+				
 				pluginType = types.First();
 				return PluginResponse.Ok;
 			}
@@ -496,6 +498,8 @@ namespace TS3AudioBot
 		Active,
 		/// <summary>The plugin has been plugged off intentionally and will not be prepared with the next scan.</summary>
 		Disabled,
+		/// <summary>The plugin failed to load.</summary>
+		Error,
 	}
 
 	public enum PluginResponse

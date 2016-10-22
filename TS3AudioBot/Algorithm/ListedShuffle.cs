@@ -18,36 +18,56 @@ namespace TS3AudioBot.Algorithm
 {
 	using System;
 	using System.Linq;
+	using Helper;
 
-	class ListedShuffle : IShuffleAlgorithm
+	public class ListedShuffle : IShuffleAlgorithm
 	{
 		private int[] permutation;
 
+		private bool needsRecalc = true;
+		private int index = 0;
 		private int seed = 0;
 		private int length = 0;
 
-		public int Seed => seed;
-
-		public void SetData(int length)
+		public int Seed
 		{
-			Random rngeesus = new Random();
-			SetData(rngeesus.Next(), length);
+			get { return seed; }
+			set { needsRecalc = true; seed = value; }
 		}
-		public void SetData(int seed, int length)
+		public int Length
 		{
-			this.seed = seed;
-			this.length = length;
-
-			if (length != 0)
+			get { return length; }
+			set { needsRecalc = true; length = value; }
+		}
+		public int Index
+		{
+			get
+			{
+				if (Length <= 0) return -1;
 				GenList();
+				return permutation[index];
+			}
+			set
+			{
+				if (Length <= 0) return;
+				GenList();
+				index = Array.IndexOf(permutation, Util.MathMod(value, permutation.Length));
+			}
 		}
 
 		private void GenList()
 		{
+			if (!needsRecalc) return;
+			needsRecalc = false;
+
+			if (Length <= 0) return;
+
 			Random rngeesus = new Random(seed);
 			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(x => rngeesus.Next()).ToArray();
+			index %= Length;
 		}
 
-		public int SeedIndex(int i) => permutation[i % permutation.Length];
+		public void Next() { if (Length <= 0) return; GenList(); index = (index + 1) % permutation.Length; }
+		public void Prev() { if (Length <= 0) return; GenList(); index = (index - 1) % permutation.Length; }
 	}
 }
