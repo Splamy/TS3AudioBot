@@ -19,7 +19,7 @@ namespace TS3AudioBot.CommandSystem
 	using System;
 	using TS3Client.Messages;
 
-	public class ExecutionInformation : MarshalByRefObject
+	public class ExecutionInformation
 	{
 		public UserSession Session { get; }
 		public TextMessage TextMessage { get; }

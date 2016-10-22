@@ -20,7 +20,7 @@ namespace TS3AudioBot
 	using Helper;
 	using ResourceFactories;
 
-	public sealed class AudioFramework : MarshalByRefObject, IDisposable
+	public sealed class AudioFramework : IDisposable
 	{
 		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
 		public const int MaxVolume = 100;

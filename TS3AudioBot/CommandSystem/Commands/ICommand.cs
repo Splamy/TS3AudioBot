@@ -19,7 +19,7 @@ namespace TS3AudioBot.CommandSystem
 	using System;
 	using System.Collections.Generic;
 
-	public abstract class ICommand : MarshalByRefObject
+	public abstract class ICommand
 	{
 		/// <summary>Execute this command.</summary>
 		/// <param name="info">All global informations for this execution.</param>

@@ -466,7 +466,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	public class MusicData : MarshalByRefObject
+	public class MusicData
 	{
 		public MusicStatus Status { get; set; }
 		public TimeSpan Length { get; set; }

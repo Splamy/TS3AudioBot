@@ -22,7 +22,7 @@ namespace TS3AudioBot.History
 	using System.Text;
 	using TS3Client;
 
-	public class SmartHistoryFormatter : MarshalByRefObject, IHistoryFormatter
+	public class SmartHistoryFormatter : IHistoryFormatter
 	{
 		private const int TS3MAXLENGTH = 1024;
 		// configurable constansts

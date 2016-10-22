@@ -233,7 +233,7 @@ namespace TS3AudioBot
 		void Initialize(MainBot bot);
 	}
 
-	public class Plugin : MarshalByRefObject
+	public class Plugin
 	{
 		private MainBot mainBot;
 		public int Id { get; }
@@ -363,7 +363,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	internal class PluginProxy : MarshalByRefObject
+	internal class PluginProxy
 	{
 		private Type pluginType;
 		private Assembly assembly;

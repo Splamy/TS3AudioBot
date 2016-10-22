@@ -23,7 +23,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Text.RegularExpressions;
 	using Helper;
 
-	public class CommandManager : MarshalByRefObject
+	public class CommandManager
 	{
 		private HashSet<string> CommandPaths;
 		public XCommandSystem CommandSystem { get; }

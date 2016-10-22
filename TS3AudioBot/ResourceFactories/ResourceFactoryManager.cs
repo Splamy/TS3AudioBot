@@ -24,7 +24,7 @@ namespace TS3AudioBot.ResourceFactories
 	using Helper;
 	using TS3Client.Messages;
 
-	public sealed class ResourceFactoryManager : MarshalByRefObject, IDisposable
+	public sealed class ResourceFactoryManager : IDisposable
 	{
 		public CommandGroup CommandNode { get; } = new CommandGroup();
 		public IResourceFactory DefaultFactorty { get; internal set; }

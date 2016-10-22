@@ -119,7 +119,7 @@ namespace TS3AudioBot.Helper
 		}
 	}
 
-	public class TickWorker : MarshalByRefObject
+	public class TickWorker
 	{
 		public Action Method { get; }
 		public TimeSpan Interval { get; }

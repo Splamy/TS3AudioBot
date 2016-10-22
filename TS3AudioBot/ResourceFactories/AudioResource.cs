@@ -32,7 +32,7 @@ namespace TS3AudioBot.ResourceFactories
 		public override string ToString() => BaseData.ToString();
 	}
 
-	public class AudioResource : MarshalByRefObject
+	public class AudioResource
 	{
 		/// <summary>The resource type.</summary>
 		public AudioType AudioType { get; }

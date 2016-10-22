@@ -19,7 +19,7 @@ namespace TS3AudioBot.Helper
 	using System;
 	using System.Threading;
 
-	public sealed class WaitEventBlock<T> : MarshalByRefObject, IDisposable
+	public sealed class WaitEventBlock<T> : IDisposable
 	{
 		private T response;
 		private AutoResetEvent blocker;

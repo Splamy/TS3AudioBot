@@ -24,7 +24,7 @@ namespace TS3AudioBot
 	using TS3Client.Query;
 	using TS3Client.Messages;
 
-	public sealed class QueryConnection : MarshalByRefObject, ITeamspeakControl
+	public sealed class QueryConnection : ITeamspeakControl
 	{
 		public event EventHandler<TextMessage> OnMessageReceived;
 		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)

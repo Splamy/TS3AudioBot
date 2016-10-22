@@ -35,7 +35,7 @@ namespace TS3AudioBot
 
 	using static CommandRights;
 
-	public sealed class MainBot : MarshalByRefObject, IDisposable
+	public sealed class MainBot : IDisposable
 	{
 		static void Main(string[] args)
 		{

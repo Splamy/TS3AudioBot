@@ -22,7 +22,7 @@ namespace TS3AudioBot
 	using Helper;
 	using TS3Client.Messages;
 
-	public class SessionManager : MarshalByRefObject
+	public class SessionManager
 	{
 		private readonly List<UserSession> openSessions = new List<UserSession>();
 

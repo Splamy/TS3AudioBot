@@ -21,7 +21,7 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Reflection;
 
-	public class ConfigFile : MarshalByRefObject
+	public class ConfigFile
 	{
 		private string path;
 		private readonly Dictionary<string, string> data;
