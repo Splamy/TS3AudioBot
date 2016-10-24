@@ -107,7 +107,7 @@ namespace TS3AudioBot.Helper
 					}
 				}
 
-				Thread.Sleep(curTick);
+				Thread.Sleep(curTick); // TODO: improve precision
 			}
 		}
 

@@ -1,9 +1,9 @@
 ﻿namespace TS3Client.Full
 {
+	using Messages;
 	using System;
 	using System.Collections.Generic;
 	using System.Net.Sockets;
-	using Messages;
 
 	public sealed class TS3FullClient : TS3BaseClient
 	{
@@ -40,8 +40,8 @@
 
 		protected override void DisconnectInternal()
 		{
-            ClientDisconnect(MoveReason.LeftServer, "Disconnected");
-            //udpClient.Close();
+			ClientDisconnect(MoveReason.LeftServer, "Disconnected");
+			//udpClient.Close();
 		}
 
 		protected override void NetworkLoop()
@@ -165,10 +165,24 @@
 					new CommandParameter("client_default_token", defaultToken),
 					new CommandParameter("hwid", hwid) }));
 
-        public void ClientDisconnect(MoveReason reason, string reasonMsg)
-            => Send("clientdisconnect", 
-                new CommandParameter("reasonid", (int)reason),
-                new CommandParameter("reasonmsg", reasonMsg));
+		public void ClientDisconnect(MoveReason reason, string reasonMsg)
+			=> Send("clientdisconnect",
+				new CommandParameter("reasonid", (int)reason),
+				new CommandParameter("reasonmsg", reasonMsg));
+
+		public void SendAudio(byte[] buffer, int length, Codec codec)
+		{
+			// [X,X,Y,DATA]
+			// > X is ushort in H2N order of a own audio packet counter
+			//     it seem it can be the same as the packet counter so we will let the packethandler do it.
+			// > Y is the codec byte (see Enum)
+			byte[] tmpBuffer = new byte[length + 3];
+			tmpBuffer[2] = (byte)codec;
+			Array.Copy(buffer, 0, tmpBuffer, 3, length);
+			buffer = tmpBuffer;
+
+			packetHandler.AddOutgoingPacket(buffer, PacketType.Readable);
+		}
 		#endregion
 	}
 }

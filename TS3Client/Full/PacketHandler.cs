@@ -48,6 +48,9 @@
 			var addFlags = PacketFlags.None;
 			if (NeedsSplitting(packet.Length))
 			{
+				if (packetType == PacketType.Readable)
+					return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
+
 				packet = QuickLZ.compress(packet, 3);
 				addFlags |= PacketFlags.Compressed;
 
@@ -71,13 +74,15 @@
 			}
 			else
 			{
-				if (packet.PacketType == PacketType.Pong)
+				if (packet.PacketType == PacketType.Pong || packet.PacketType == PacketType.Readable)
 					packet.PacketFlags |= flags | PacketFlags.Unencrypted;
 				else if (packet.PacketType == PacketType.Ack)
 					packet.PacketFlags |= flags;
 				else
 					packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 				packet.PacketId = GetPacketCounter(packet.PacketType);
+				if (packet.PacketType == PacketType.Readable)
+					NetUtil.H2N(packet.PacketId, packet.Data, 0);
 				if (ts3Crypt.CryptoInitComplete)
 					IncPacketCounter(packet.PacketType);
 				packet.ClientId = ClientId;
@@ -225,7 +230,7 @@
 						{
 							if (!receiveQueue.TryDequeue(out preFinalPacket))
 								throw new InvalidOperationException();
-							if(!firstSet)
+							if (!firstSet)
 							{
 								isCompressed = preFinalPacket.CompressedFlag;
 								firstSet = true;

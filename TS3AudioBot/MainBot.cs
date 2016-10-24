@@ -71,8 +71,8 @@ namespace TS3AudioBot
 		public CommandManager CommandManager { get; private set; }
 		public AudioFramework AudioFramework { get; private set; }
 		public PlaylistManager PlaylistManager { get; private set; }
-		public BobController BobController { get; private set; }
-		public ITeamspeakControl QueryConnection { get; private set; }
+		//public BobController BobController { get; private set; }
+		public TeamspeakControl QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
@@ -112,14 +112,14 @@ namespace TS3AudioBot
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.CreateDummy();
-			var afd = cfgFile.GetDataStruct<AudioFrameworkData>(typeof(AudioFramework), true);
-			var bcd = cfgFile.GetDataStruct<BobControllerData>(typeof(BobController), true);
-			var qcd = cfgFile.GetDataStruct<QueryConnectionData>(typeof(QueryConnection), true);
-			var hmd = cfgFile.GetDataStruct<HistoryManagerData>(typeof(HistoryManager), true);
-			var pmd = cfgFile.GetDataStruct<PluginManagerData>(typeof(PluginManager), true);
-			var pld = cfgFile.GetDataStruct<PlaylistManagerData>(typeof(PlaylistManager), true);
-			var yfd = cfgFile.GetDataStruct<YoutubeFactoryData>(typeof(YoutubeFactory), true);
-			mainBotData = cfgFile.GetDataStruct<MainBotData>(typeof(MainBot), true);
+			var afd = cfgFile.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
+			var bcd = cfgFile.GetDataStruct<BobControllerData>("BobController", true);
+			var qcd = cfgFile.GetDataStruct<QueryConnectionData>("QueryConnection", true);
+			var hmd = cfgFile.GetDataStruct<HistoryManagerData>("HistoryManager", true);
+			var pmd = cfgFile.GetDataStruct<PluginManagerData>("PluginManager", true);
+			var pld = cfgFile.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
+			var yfd = cfgFile.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
+			mainBotData = cfgFile.GetDataStruct<MainBotData>("MainBot", true);
 			cfgFile.Close();
 
 			if (consoleOutput)
@@ -155,10 +155,11 @@ namespace TS3AudioBot
 			CommandManager.RegisterMain(this);
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
-			QueryConnection = new QueryConnection(qcd);
+			var teamspeakClient = new TeamspeakClient();
+			QueryConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
-			BobController = new BobController(bcd, QueryConnection);
-			AudioFramework = new AudioFramework(afd, BobController);
+			//BobController = new BobController(bcd, QueryConnection);
+			AudioFramework = new AudioFramework(afd, teamspeakClient);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
@@ -183,8 +184,8 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
 			AudioFramework.OnResourceStopped += PlayManager.SongStoppedHook;
 			// Inform the BobClient on start/stop
-			PlayManager.AfterResourceStarted += BobController.OnResourceStarted;
-			PlayManager.AfterResourceStopped += BobController.OnPlayStopped;
+			//PlayManager.AfterResourceStarted += BobController.OnResourceStarted;
+			//PlayManager.AfterResourceStopped += BobController.OnPlayStopped;
 			// In own favor update the own status text to the current song title
 			PlayManager.AfterResourceStarted += SongUpdateEvent;
 			PlayManager.AfterResourceStopped += SongStopEvent;
@@ -223,7 +224,7 @@ namespace TS3AudioBot
 			textMessage.Message = textMessage.Message.TrimStart(new[] { ' ' });
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
-			BobController.HasUpdate();
+			//BobController.HasUpdate();
 
 			QueryConnection.RefreshClientBuffer(true);
 
@@ -1153,13 +1154,13 @@ namespace TS3AudioBot
 		[Command(Private, "subscribe", "Lets you hear the music independent from the channel you are in.")]
 		public void CommandSubscribe(ExecutionInformation info)
 		{
-			BobController.WhisperClientSubscribe(info.TextMessage.InvokerId);
+			//BobController.WhisperClientSubscribe(info.TextMessage.InvokerId);
 		}
 
 		[Command(Admin, "subscribe channel", "Adds your current channel to the music playback.")]
 		public void CommandSubscribeChannel(ExecutionInformation info)
 		{
-			BobController.WhisperChannelSubscribe(info.Session.Client.ChannelId, true);
+			//BobController.WhisperChannelSubscribe(info.Session.Client.ChannelId, true);
 		}
 
 		[Command(AnyVisibility, "take", "Take a substring from a string")]
@@ -1233,13 +1234,13 @@ namespace TS3AudioBot
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
 		public void CommandUnsubscribe(ExecutionInformation info)
 		{
-			BobController.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
+			//BobController.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
 		}
 
 		[Command(Private, "unsubscribe channel", "Removes your current channel from the music playback.")]
 		public void CommandUnsubscribeChannel(ExecutionInformation info)
 		{
-			BobController.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
+			//BobController.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
 		}
 
 		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]
@@ -1420,11 +1421,11 @@ namespace TS3AudioBot
 				AudioFramework.Dispose();
 				AudioFramework = null;
 			}
-			if (BobController != null) // before: QueryConnection, logStream,
+			/*if (BobController != null) // before: QueryConnection, logStream,
 			{
 				BobController.Dispose();
 				BobController = null;
-			}
+			}*/
 			if (QueryConnection != null) // before: logStream,
 			{
 				QueryConnection.Dispose();

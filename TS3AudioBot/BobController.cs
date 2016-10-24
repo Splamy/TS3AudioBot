@@ -24,12 +24,13 @@ namespace TS3AudioBot
 	using TS3Client;
 	using TS3Client.Messages;
 
+	[Obsolete]
 	public sealed class BobController : IPlayerConnection
 	{
 		private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 		private static readonly TimeSpan BobTimeout = TimeSpan.FromSeconds(60);
 
-		private ITeamspeakControl queryConnection;
+		private TeamspeakControl queryConnection;
 		private BobControllerData bobControllerData;
 		private TickWorker timeout;
 		private DateTime lastUpdate = Util.GetNow();
@@ -117,7 +118,7 @@ namespace TS3AudioBot
 
 		#endregion
 
-		public BobController(BobControllerData data, ITeamspeakControl queryConnection)
+		public BobController(BobControllerData data, TeamspeakControl queryConnection)
 		{
 			if (queryConnection == null)
 				throw new ArgumentNullException(nameof(queryConnection));

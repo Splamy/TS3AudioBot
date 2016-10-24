@@ -131,18 +131,17 @@ namespace TS3AudioBot.Helper
 		/// <param name="defaultIfPossible">If set to <c>true</c> the method will use the default value from the InfoAttribute if it exists,
 		/// if no default value exists or set to <c>false</c> it will ask for the value on the console.</param>
 		/// <typeparam name="T">Struct to be read from the file.</typeparam>
-		public T GetDataStruct<T>(MemberInfo associatedClass, bool defaultIfPossible) where T : struct
+		public T GetDataStruct<T>(string associatedClass, bool defaultIfPossible) where T : struct
 		{
 			if (associatedClass == null)
 				throw new ArgumentNullException(nameof(associatedClass));
 
 			object dataStruct = new T();
-			string assocName = associatedClass.Name;
 			var fields = typeof(T).GetFields();
 			foreach (var field in fields)
 			{
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
-				string entryName = assocName + "::" + field.Name;
+				string entryName = associatedClass + "::" + field.Name;
 				string rawValue = string.Empty;
 				object parsedValue = null;
 
