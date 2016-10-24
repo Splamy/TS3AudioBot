@@ -45,6 +45,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\Release\</OutputPath>
@@ -54,6 +55,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CSCore, Version=1.1.5992.18249, Culture=neutral, PublicKeyToken=5a08f2b6f4415dea, processorArchitecture=MSIL">
@@ -71,6 +73,9 @@
   <ItemGroup>
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\AudioEncoder.cs" />
+    <Compile Include="Audio\Opus\API.cs" />
+    <Compile Include="Audio\Opus\OpusDecoder.cs" />
+    <Compile Include="Audio\Opus\OpusEncoder.cs" />
     <Compile Include="Audio\PreciseAudioTimer.cs" />
     <Compile Include="CommandSystem\ASTCommand.cs" />
     <Compile Include="CommandSystem\ASTError.cs" />
@@ -154,6 +159,9 @@
     <EmbeddedResource Include="WebInterface\history.html" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Audio\Opus\LICENSE" />
+    <None Include="Audio\Opus\OPUS_LICENSE" />
+    <None Include="Audio\Opus\README" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -164,10 +172,6 @@
     <Content Include="WebInterface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OpusWrapper\OpusWrapper.csproj">
-      <Project>{838bdb0b-5eb1-4c1e-9026-0a8842ac00c6}</Project>
-      <Name>OpusWrapper</Name>
-    </ProjectReference>
     <ProjectReference Include="..\TS3Client\TS3Client.csproj">
       <Project>{0eb99e9d-87e5-4534-a100-55d231c2b6a6}</Project>
       <Name>TS3Client</Name>

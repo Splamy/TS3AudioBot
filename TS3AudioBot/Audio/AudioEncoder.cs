@@ -16,8 +16,7 @@
 
 namespace TS3AudioBot.Audio
 {
-	using FragLabs.Audio.Codecs;
-	using FragLabs.Audio.Codecs.Opus;
+	using Opus;
 	using Helper;
 	using System;
 	using System.Collections.Generic;
