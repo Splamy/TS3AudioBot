@@ -45,6 +45,7 @@ namespace TS3AudioBot
 
 		public TeamspeakClient() : base(ClientType.Full)
 		{
+            Util.Init(ref channelSubscriptions);
 			tsFullClient = (TS3FullClient)tsBaseClient;
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);

@@ -14,14 +14,11 @@ The bot is split up into 2 parts:
 
 1. The Main-Bot:
   * is processing all your commands via TeamSpeak's serverquery.
-  * starts the "SeverBob" if music should be played.
-2. The ServerBob:
-  * is a plain TeamSpeak3 client with a custom plugin.
-  * is able to stream to different Channels and/or Users simultaneously with TeamSpeak's whisper feature.
-  * streams all the music with the awesome ffmpeg library.
+  * Connects the ts3-audio-client if music should be played. (Support for more at once i planned)
+  * [broken] is able to stream to different Channels and/or Users simultaneously with TeamSpeak's whisper feature.
 
 ## Features & Plannings
-Working:
+Done:
 * Extract Youtube and Soundcloud songs as well as stream Twitch
 * Extensive history manager, including features like:
   - getting the last x played songs
@@ -29,15 +26,17 @@ Working:
   - start any once played song again via id
   - search in title from played songs
   - (planned) combined search expressions
-* (un)subscribe to the Bob to hear music in any channel
-* (un)subscribe the Bob to certain channels
+* [broken] (un)subscribe to the Bob to hear music in any channel
+* [broken] (un)subscribe the Bob to certain channels
+* Playlist management for all users
+* [broken] Basic plugin support
 
 In progress:
-* Playlist manager
+* -- nothing --
 
 In planning:
 * Create multiple client instances automatically for diffrent channels
-* Add plugin support
+* Rights system
 
 ## Existing commands
 All in all, the bot is fully operable only via chat (and actually only via chat).  
@@ -73,49 +72,20 @@ This command will find every link containing something like ?v=Unique_TYID
 If the bot can't play a video it might be due to some embedding restrictions, which are blocking this.  
 For now we don't have any workaround for that.
 
-## How to set up the bot (incomplete tutorial!)
+## How to set up the bot
 ### Dependencies
-1. For compilation
-  * A C# Compiler (Visual Studio or mono + xbuild) for the Bot
-  * A C++ Compiler that supports C++11
-  * The [cmake](https://cmake.org/) build system
-  * `ffmpeg` (libavcodec, libavformat, libswscale, libavutil, libswresample and libavfilter)  
-   Windows: Included in the dependency package
-  * (optional) `cppunit` for tests
-  * (optional) [american fuzzy lop](http://lcamtuf.coredump.cx/afl/) for fuzzying
-1. For usage
-  * `ffmpeg` (same as for compilation except that you don't need the development headers)  
-   Windows: Copy the contents of the `Dependencies/bin` folder into the TeamSpeak-Client directory (near `ts3client_win64.exe`)
+Any C# Compiler (Visual Studio or mono 4.0.0+ and xbuild)
 
 ### Compilation
 Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Install all needed [dependencies](#dependencies) (e.g. ffmpeg)
-1. Go into the directory of the repository and execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot.
-1. Go into `TS3AudioBob` and create a `bin` directory.
-1. Run `cmake ..` from the created `bin` folder (`cmake -DCMAKE_BUILD_TYPE=Release ..` to make a release build)
-1. and `make` to build the C++ TeamSpeak plugin.
+Go into the directory of the repository and execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot.
 
 #### Windows
-1. Install all needed [dependencies](#dependencies)
-1. Download the [dependencies package](https://mega.nz/#!VoZxhZYS!y2tLbGf5shDh6CxHoXdE1Oe_wYDRbrs8X2dNBde8_QI) and extract it
-   into the TS3AudioBob directory (the `Dependencies` folder should be near the `src` folder).  
-   It contains the assembled dependencies for x64 windows.
-1. Build the C# AudioBot with Visual Studio.
-1. Go into `TS3AudioBob` and create a `bin` directory.
-1. Run `cmake-gui ..` from the created `bin` folder (`cmake -DCMAKE_BUILD_TYPE=Release ..` to make a release build).
-1. Open and build the created solution with Visual Studio.
+Build the C# AudioBot with Visual Studio.
 
 ### Installation
-1. Linux specific: you'll either need a X environment capable of running window applications or install
-   a virtual X interface like Xvfb.
-   Our Xvfb one time start looks like this: `Xvfb :1 -screen 0 640x480x24 > /dev/null 2>&1 & disown`  
-   Windows specific: Copy the libraries from the `Dependencies/bin` folder into your TeamSpeak client directory
-   (they should be near `ts3client_win64.exe`).
-1. Linux: Create a script called `StartTsBot.sh` and add the containing folder to your `PATH` variable.
-   The scipt should execute `export DISPLAY=:1` and start the ts3client.  
-   Windows: not yet working.
 1. Create 2 groups on the TeamSpeak server:
   * one for the ServerBot with enough rights so he can
     * join as a serverquery
@@ -123,12 +93,11 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
     * write in all/private chat
     * optionally kick clients form channel/server
   * one for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).  
-   You need to add the Bot to this group so he can communicate with the Bob.
-1. The first time you'll need to start the TS3Audiobot.exe without parameter and
+1. The first time you'll need to run the TS3Audiobot.exe without parameter and
 it will ask you a few questions. You can get ServerGroupIds in the rights window.
-1. Now you can close the bot with the `!quit` command and start it in the background.
+1. Now you can move the process to the backgroud or close the bot with `!quit` in teamspeak and run it in the background.  
+The recommended start from now on is `TS3AudioBot.exe -q` to disable writing to stdout since the bot logs everything to a log file anyway.
+1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).
 
 ### Testing and Fuzzying
-1. Run the *test* project of the Bot in Visual Studio or Monodevelop.
-1. Run `./ts3audiobobtest` in the cmake build folder to test the Bob.
-1. Use `./RunAFL.sh` in the Bob folder to fuzz the Bob command system.
+1. Run the *TS3ABotUnitTests* project in Visual Studio or Monodevelop.
