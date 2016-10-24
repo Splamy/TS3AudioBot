@@ -1,2 +1,0 @@
-status music
-status whisper

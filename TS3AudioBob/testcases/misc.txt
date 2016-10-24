@@ -1,4 +1,0 @@
-ping
-exit
-list clients
-list channels
