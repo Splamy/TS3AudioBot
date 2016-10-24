@@ -25,7 +25,7 @@ namespace TS3AudioBot
 	using TS3Client.Messages;
 
 	[Obsolete]
-	public sealed class BobController : IPlayerConnection
+	public sealed class BobController : IPlayerConnection, ITargetManager
 	{
 		private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 		private static readonly TimeSpan BobTimeout = TimeSpan.FromSeconds(60);
@@ -270,7 +270,7 @@ namespace TS3AudioBot
 
 		#region Bob & Events
 
-		internal void OnResourceStarted(object sender, PlayInfoEventArgs playData)
+		public void OnResourceStarted(object sender, PlayInfoEventArgs playData)
 		{
 			Log.Write(Log.Level.Debug, "BC Ressource started");
 			BobStart();
@@ -279,7 +279,7 @@ namespace TS3AudioBot
 			RestoreSubscriptions(playData.Invoker);
 		}
 
-		internal void OnPlayStopped(object sender, EventArgs e)
+		public void OnResourceStopped(object sender, EventArgs e)
 		{
 			Sending = false;
 			BobStop();
@@ -421,12 +421,12 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void WhisperClientSubscribe(int userId)
+		public void WhisperClientSubscribe(ushort userId)
 		{
 			SendMessage("whisper client add " + userId);
 		}
 
-		public void WhisperClientUnsubscribe(int userId)
+		public void WhisperClientUnsubscribe(ushort userId)
 		{
 			SendMessage("whisper client remove " + userId);
 		}
@@ -446,13 +446,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		private class SubscriptionData
-		{
-			public ulong Id { get; set; }
-			public bool Enabled { get; set; }
-			public bool Manual { get; set; }
-		}
-
 		#endregion
 
 		public void Dispose()
@@ -465,6 +458,13 @@ namespace TS3AudioBot
 			BobExit();
 			isRunning = false;
 		}
+	}
+
+	public class SubscriptionData
+	{
+		public ulong Id { get; set; }
+		public bool Enabled { get; set; }
+		public bool Manual { get; set; }
 	}
 
 	public class MusicData

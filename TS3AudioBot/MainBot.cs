@@ -71,13 +71,13 @@ namespace TS3AudioBot
 		public CommandManager CommandManager { get; private set; }
 		public AudioFramework AudioFramework { get; private set; }
 		public PlaylistManager PlaylistManager { get; private set; }
-		//public BobController BobController { get; private set; }
 		public TeamspeakControl QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
 		public HistoryManager HistoryManager { get; private set; }
 		public ResourceFactoryManager FactoryManager { get; private set; }
 		public WebDisplay WebInterface { get; private set; }
 		public PlayManager PlayManager { get; private set; }
+		public ITargetManager TargetManager { get; private set;}
 
 		public bool QuizMode { get; set; }
 
@@ -113,7 +113,6 @@ namespace TS3AudioBot
 			const string configFilePath = "configTS3AudioBot.cfg";
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = cfgFile.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
-			var bcd = cfgFile.GetDataStruct<BobControllerData>("BobController", true);
 			var qcd = cfgFile.GetDataStruct<QueryConnectionData>("QueryConnection", true);
 			var hmd = cfgFile.GetDataStruct<HistoryManagerData>("HistoryManager", true);
 			var pmd = cfgFile.GetDataStruct<PluginManagerData>("PluginManager", true);
@@ -158,13 +157,13 @@ namespace TS3AudioBot
 			var teamspeakClient = new TeamspeakClient();
 			QueryConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
-			//BobController = new BobController(bcd, QueryConnection);
 			AudioFramework = new AudioFramework(afd, teamspeakClient);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
 			PlayManager = new PlayManager(this);
 			WebInterface = new WebDisplay(this);
+			TargetManager = teamspeakClient;
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			FactoryManager = new ResourceFactoryManager();
@@ -184,8 +183,8 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
 			AudioFramework.OnResourceStopped += PlayManager.SongStoppedHook;
 			// Inform the BobClient on start/stop
-			//PlayManager.AfterResourceStarted += BobController.OnResourceStarted;
-			//PlayManager.AfterResourceStopped += BobController.OnPlayStopped;
+			PlayManager.AfterResourceStarted += TargetManager.OnResourceStarted;
+			PlayManager.AfterResourceStopped += TargetManager.OnResourceStopped;
 			// In own favor update the own status text to the current song title
 			PlayManager.AfterResourceStarted += SongUpdateEvent;
 			PlayManager.AfterResourceStopped += SongStopEvent;
@@ -1154,13 +1153,13 @@ namespace TS3AudioBot
 		[Command(Private, "subscribe", "Lets you hear the music independent from the channel you are in.")]
 		public void CommandSubscribe(ExecutionInformation info)
 		{
-			//BobController.WhisperClientSubscribe(info.TextMessage.InvokerId);
+			TargetManager.WhisperClientSubscribe(info.TextMessage.InvokerId);
 		}
 
 		[Command(Admin, "subscribe channel", "Adds your current channel to the music playback.")]
 		public void CommandSubscribeChannel(ExecutionInformation info)
 		{
-			//BobController.WhisperChannelSubscribe(info.Session.Client.ChannelId, true);
+			TargetManager.WhisperChannelSubscribe(info.Session.Client.ChannelId, true);
 		}
 
 		[Command(AnyVisibility, "take", "Take a substring from a string")]
@@ -1234,13 +1233,13 @@ namespace TS3AudioBot
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
 		public void CommandUnsubscribe(ExecutionInformation info)
 		{
-			//BobController.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
+			TargetManager.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
 		}
 
 		[Command(Private, "unsubscribe channel", "Removes your current channel from the music playback.")]
 		public void CommandUnsubscribeChannel(ExecutionInformation info)
 		{
-			//BobController.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
+			TargetManager.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
 		}
 
 		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]

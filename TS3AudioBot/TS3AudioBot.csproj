@@ -57,9 +57,6 @@
       <HintPath>..\packages\HtmlAgilityPack.1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OpusWrapper">
-      <HintPath>lib\OpusWrapper.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net" />
@@ -103,6 +100,7 @@
     <Compile Include="History\SmartHistoryFormatter.cs" />
     <Compile Include="Helper\InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
+    <Compile Include="ITargetManager.cs" />
     <Compile Include="TeamspeakControl.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
@@ -163,6 +161,10 @@
     <Content Include="WebInterface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\OpusWrapper\OpusWrapper.csproj">
+      <Project>{838bdb0b-5eb1-4c1e-9026-0a8842ac00c6}</Project>
+      <Name>OpusWrapper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\TS3Client\TS3Client.csproj">
       <Project>{0eb99e9d-87e5-4534-a100-55d231c2b6a6}</Project>
       <Name>TS3Client</Name>

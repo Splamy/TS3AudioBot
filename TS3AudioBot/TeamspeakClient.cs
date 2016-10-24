@@ -24,8 +24,10 @@ namespace TS3AudioBot
 	using System;
 	using TS3Client;
 	using TS3Client.Full;
+	using TS3Client.Messages;
+	using System.Collections.Generic;
 
-	class TeamspeakClient : TeamspeakControl, IPlayerConnection
+	class TeamspeakClient : TeamspeakControl, IPlayerConnection, ITargetManager
 	{
 		protected TS3FullClient tsFullClient;
 
@@ -39,6 +41,7 @@ namespace TS3AudioBot
 		private AudioEncoder encoder;
 		private PreciseAudioTimer audioTimer;
 		private byte[] audioBuffer;
+		private Dictionary<ulong, SubscriptionData> channelSubscriptions;
 
 		public TeamspeakClient() : base(ClientType.Full)
 		{
@@ -175,6 +178,79 @@ namespace TS3AudioBot
 		public void SetRepeated(bool value)
 		{
 			//throw new NotImplementedException();
+		}
+
+		#endregion
+
+		#region ITargetManager
+
+		public void OnResourceStarted(object sender, PlayInfoEventArgs playData)
+		{
+			throw new NotImplementedException();
+			RestoreSubscriptions(playData.Invoker);
+		}
+
+		public void OnResourceStopped(object sender, EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void WhisperChannelSubscribe(ulong channel, bool manual)
+		{
+			throw new NotImplementedException();
+			SubscriptionData subscriptionData;
+			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
+			{
+				subscriptionData = new SubscriptionData { Id = channel, Manual = manual };
+				channelSubscriptions.Add(channel, subscriptionData);
+			}
+			subscriptionData.Enabled = true;
+			subscriptionData.Manual = subscriptionData.Manual || manual;
+		}
+
+		public void WhisperChannelUnsubscribe(ulong channel, bool manual)
+		{
+			throw new NotImplementedException();
+			SubscriptionData subscriptionData;
+			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
+			{
+				subscriptionData = new SubscriptionData { Id = channel, Manual = false };
+				channelSubscriptions.Add(channel, subscriptionData);
+			}
+			if (manual)
+			{
+				subscriptionData.Manual = true;
+				subscriptionData.Enabled = false;
+			}
+			else if (!subscriptionData.Manual)
+			{
+				subscriptionData.Enabled = false;
+			}
+		}
+
+		public void WhisperClientSubscribe(ushort userId)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void WhisperClientUnsubscribe(ushort userId)
+		{
+			throw new NotImplementedException();	
+		}
+
+		private void RestoreSubscriptions(ClientData invokingUser)
+		{
+			WhisperChannelSubscribe(invokingUser.ChannelId, false);
+			foreach (var data in channelSubscriptions)
+			{
+				if (data.Value.Enabled)
+				{
+					if (data.Value.Manual)
+						WhisperChannelSubscribe(data.Value.Id, false);
+					else if (!data.Value.Manual && invokingUser.ChannelId != data.Value.Id)
+						WhisperChannelUnsubscribe(data.Value.Id, false);
+				}
+			}
 		}
 
 		#endregion
