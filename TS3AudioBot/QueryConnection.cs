@@ -51,13 +51,25 @@ namespace TS3AudioBot
 
 		protected override void OnConnected(object sender, EventArgs e)
 		{
-			me = GetSelf();
+			base.OnConnected(sender, e);
 
 			tsQueryClient.RegisterNotification(MessageTarget.Server, -1);
 			tsQueryClient.RegisterNotification(MessageTarget.Private, -1);
 			tsQueryClient.RegisterNotification(RequestTarget.Server, -1);
 
 			TickPool.RegisterTick(() => tsBaseClient.WhoAmI(), PingInterval, true);
+		}
+
+		public override ClientData GetSelf()
+		{
+			var cd = Generator.ActivateResponse<ClientData>();
+			var data = tsBaseClient.WhoAmI();
+			cd.ChannelId = data.ChannelId;
+			cd.DatabaseId = data.DatabaseId;
+			cd.ClientId = data.ClientId;
+			cd.NickName = data.NickName;
+			cd.ClientType = tsBaseClient.ClientType;
+			return cd;
 		}
 	}
 

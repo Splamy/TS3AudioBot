@@ -29,28 +29,28 @@ namespace TS3AudioBot.Audio.Opus
 	/// </summary>
 	internal class API
 	{
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern IntPtr opus_encoder_create(int Fs, int channels, int application, out IntPtr error);
 
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern void opus_encoder_destroy(IntPtr encoder);
 
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encode(IntPtr st, byte[] pcm, int frame_size, IntPtr data, int max_data_bytes);
 
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern IntPtr opus_decoder_create(int Fs, int channels, out IntPtr error);
 
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern void opus_decoder_destroy(IntPtr decoder);
 
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_decode(IntPtr st, byte[] data, int len, IntPtr pcm, int frame_size, int decode_fec);
 
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, int value);
 
-		[DllImport("opus", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, out int value);
 	}
 

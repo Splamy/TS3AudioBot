@@ -69,7 +69,10 @@ namespace TS3AudioBot
 		}
 
 		public abstract void Connect();
-		protected abstract void OnConnected(object sender, EventArgs e);
+		protected virtual void OnConnected(object sender, EventArgs e)
+		{
+			me = GetSelf();
+		}
 
 		public void EnterEventLoop() => tsBaseClient.EnterEventLoop();
 
@@ -107,17 +110,7 @@ namespace TS3AudioBot
 			return clientbuffer.FirstOrDefault(pred);
 		}
 
-		public ClientData GetSelf()
-		{
-			var cd = Generator.ActivateResponse<ClientData>();
-			var data = tsBaseClient.WhoAmI();
-			cd.ChannelId = data.ChannelId;
-			cd.DatabaseId = data.DatabaseId;
-			cd.ClientId = data.ClientId;
-			cd.NickName = data.NickName;
-			cd.ClientType = tsBaseClient.ClientType;
-			return cd;
-		}
+		public abstract ClientData GetSelf();
 
 		public void RefreshClientBuffer(bool force)
 		{

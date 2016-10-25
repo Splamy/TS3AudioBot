@@ -74,13 +74,15 @@ For now we don't have any workaround for that.
 
 ## How to set up the bot
 ### Dependencies
-Any C# Compiler (Visual Studio or mono 4.0.0+ and xbuild)
+ * Any C# Compiler (Visual Studio or mono 4.0.0+ and xbuild)
+ * A C Compiler for Opus
 
 ### Compilation
 Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-Go into the directory of the repository and execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot.
+1. Run the `InstallOpus.sh`
+1. Go into the directory of the repository and execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot.
 
 #### Windows
 Build the C# AudioBot with Visual Studio.

@@ -65,11 +65,10 @@ namespace TS3AudioBot
 			});
 		}
 
-		protected override void OnConnected(object sender, EventArgs e)
+		public override ClientData GetSelf()
 		{
-			me = GetSelf();
-
-			// subscribe to all channel ?
+			// TODO call to clientinfo with own id
+			throw new NotImplementedException();
 		}
 
 		private void AudioSend()
