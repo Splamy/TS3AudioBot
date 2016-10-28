@@ -77,7 +77,7 @@ namespace TS3AudioBot
 		public ResourceFactoryManager FactoryManager { get; private set; }
 		public WebDisplay WebInterface { get; private set; }
 		public PlayManager PlayManager { get; private set; }
-		public ITargetManager TargetManager { get; private set;}
+		public ITargetManager TargetManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 

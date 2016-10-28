@@ -20,21 +20,19 @@ namespace TS3AudioBot.Helper
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Threading;
+	using System.Diagnostics;
 
 	[Serializable]
 	public static class TickPool
 	{
 		private static Thread tickThread;
-		private static TimeSpan curTick;
-		private static readonly TimeSpan minTick;
+		private static readonly TimeSpan minTick = TimeSpan.FromMilliseconds(1000);
 		private static List<TickWorker> workList;
 		private static bool run;
 
 		static TickPool()
 		{
 			run = false;
-			minTick = TimeSpan.FromMilliseconds(100);
-			curTick = TimeSpan.MaxValue;
 			workList = new List<TickWorker>();
 			tickThread = new Thread(Tick);
 			tickThread.Name = "TickPool";
@@ -59,7 +57,7 @@ namespace TS3AudioBot.Helper
 			lock (workList)
 			{
 				workList.Add(worker);
-				curTick = workList.Min(w => w.Interval);
+				worker.Timer.Start();
 				if (!run)
 				{
 					run = true;
@@ -77,37 +75,44 @@ namespace TS3AudioBot.Helper
 		private static void RemoveUnlocked(TickWorker worker)
 		{
 			workList.Remove(worker);
-			if (workList.Count > 0)
-				curTick = workList.Min(w => w.Interval);
-			else
-				curTick = minTick;
+			worker.Timer.Stop();
 		}
 
 		private static void Tick()
 		{
 			while (run)
 			{
+				var curSleep = minTick;
+
 				lock (workList)
 				{
 					for (int i = 0; i < workList.Count; i++)
 					{
 						var worker = workList[i];
 						if (!worker.Active) continue;
-						worker.IntervalRemain -= curTick;
-						if (worker.IntervalRemain <= TimeSpan.Zero)
+
+						var remaining = worker.Interval - worker.Timer.Elapsed;
+						if (remaining <= TimeSpan.Zero)
 						{
-							worker.IntervalRemain = worker.Interval;
 							worker.Method.Invoke();
+
+							if (worker.TickOnce)
+							{
+								RemoveUnlocked(worker);
+								i--;
+							}
+							else
+							{
+								worker.Timer.Restart();
+								remaining = worker.Interval;
+							}
 						}
-						if (worker.TickOnce)
-						{
-							RemoveUnlocked(worker);
-							i--;
-						}
+						if (remaining < curSleep)
+							curSleep = remaining;
 					}
 				}
 
-				Thread.Sleep(curTick); // TODO: improve precision
+				Thread.Sleep(curSleep);
 			}
 		}
 
@@ -123,7 +128,7 @@ namespace TS3AudioBot.Helper
 	{
 		public Action Method { get; }
 		public TimeSpan Interval { get; }
-		public TimeSpan IntervalRemain { get; set; } = TimeSpan.Zero;
+		public Stopwatch Timer { get; set; } = new Stopwatch();
 		public bool Active { get; set; } = false;
 		public bool TickOnce { get; set; } = false;
 
