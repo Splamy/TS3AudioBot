@@ -332,7 +332,7 @@ namespace TS3AudioBot
 			if (!awaitingConnect) return;
 
 			Log.Write(Log.Level.Debug, "BC user entered with GrId {0}", e.ServerGroups);
-			if (e.ServerGroups.ToIntArray().Contains(bobControllerData.bobGroupId))
+			if (e.ServerGroups.Contains(bobControllerData.bobGroupId))
 			{
 				Log.Write(Log.Level.Debug, "BC user with correct UID found");
 				bobClient = Generator.ActivateResponse<ClientData>();
@@ -372,7 +372,6 @@ namespace TS3AudioBot
 			{
 				Log.Write(Log.Level.Debug, "BC Timeout ran out...");
 				BobExit();
-				// TODO: add safety check after n times if bob actually exists...
 			}
 		}
 

@@ -44,15 +44,18 @@ namespace TS3AudioBot.ResourceFactories
 			var parsedDict = ParseJson(jsonResponse);
 			int id = (int)parsedDict["id"];
 			string title = (string)parsedDict["title"];
-			return GetResourceById(new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud));
+			return GetResourceById(new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud), false);
 		}
 
-		public R<PlayResource> GetResourceById(AudioResource resource)
+		public R<PlayResource> GetResourceById(AudioResource resource) => GetResourceById(resource, true);
+		private R<PlayResource> GetResourceById(AudioResource resource, bool allowNullName)
 		{
 			if (resource.ResourceTitle == null)
 			{
+				if (!allowNullName) return "Could not restore null title.";
 				string link = RestoreLink(resource.ResourceId);
-				return GetResource(link); // TODO: rework recursive request call here (care endless loop)
+				if (link == null) return "Could not restore link from id";
+				return GetResource(link);
 			}
 
 			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientID}";

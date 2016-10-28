@@ -45,7 +45,7 @@ namespace TS3AudioBot
 
 		public TeamspeakClient() : base(ClientType.Full)
 		{
-            Util.Init(ref channelSubscriptions);
+			Util.Init(ref channelSubscriptions);
 			tsFullClient = (TS3FullClient)tsBaseClient;
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
@@ -67,8 +67,14 @@ namespace TS3AudioBot
 
 		public override ClientData GetSelf()
 		{
-			// TODO call to clientinfo with own id
-			throw new NotImplementedException();
+			var cd = Generator.ActivateResponse<ClientData>();
+			var data = tsBaseClient.ClientInfo(tsFullClient.ClientId);
+			cd.ChannelId = data.ChannelId;
+			cd.DatabaseId = data.DatabaseId;
+			cd.ClientId = tsFullClient.ClientId;
+			cd.NickName = data.NickName;
+			cd.ClientType = tsBaseClient.ClientType;
+			return cd;
 		}
 
 		private void AudioSend()
@@ -128,9 +134,9 @@ namespace TS3AudioBot
 
 		public R<TimeSpan> GetLength()
 		{
-			var len = audioStream.Length;
-			if (len == 0) return "No length could be returned";
-			else return TimeSpan.FromSeconds(len); // TODO Unit ???????
+			var len = AudioEncoder.GetPlayLength(audioStream);
+			if (!len.HasValue) return "This audio surce does not support getting a length";
+			else return len.Value;
 		}
 
 		public R<TimeSpan> GetPosition()
@@ -186,18 +192,18 @@ namespace TS3AudioBot
 
 		public void OnResourceStarted(object sender, PlayInfoEventArgs playData)
 		{
-			throw new NotImplementedException();
 			RestoreSubscriptions(playData.Invoker);
 		}
 
 		public void OnResourceStopped(object sender, EventArgs e)
 		{
-			throw new NotImplementedException();
+			// TODO despawn or go back
 		}
 
 		public void WhisperChannelSubscribe(ulong channel, bool manual)
 		{
-			throw new NotImplementedException();
+			// TODO move to requested channel
+			// TODO spawn new client
 			SubscriptionData subscriptionData;
 			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
 			{
@@ -210,7 +216,6 @@ namespace TS3AudioBot
 
 		public void WhisperChannelUnsubscribe(ulong channel, bool manual)
 		{
-			throw new NotImplementedException();
 			SubscriptionData subscriptionData;
 			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
 			{
@@ -235,9 +240,10 @@ namespace TS3AudioBot
 
 		public void WhisperClientUnsubscribe(ushort userId)
 		{
-			throw new NotImplementedException();	
+			throw new NotImplementedException();
 		}
 
+		// Use for whisper feature later
 		private void RestoreSubscriptions(ClientData invokingUser)
 		{
 			WhisperChannelSubscribe(invokingUser.ChannelId, false);

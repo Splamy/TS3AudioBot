@@ -16,8 +16,9 @@
 
 namespace TS3AudioBot.Audio
 {
-	using Opus;
+	using CSCore;
 	using Helper;
+	using Opus;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -108,6 +109,14 @@ namespace TS3AudioBot.Audio
 				return opusQueue.Dequeue();
 			else
 				return null;
+		}
+
+		public static TimeSpan? GetPlayLength(IWaveSource source)
+		{
+			var len = source.Length;
+			if (len == 0) return null;
+			var format = source.WaveFormat;
+			return TimeSpan.FromSeconds(len / (double)(format.SampleRate * (format.BitsPerSample / 8) * format.Channels));
 		}
 
 		public void Clear()

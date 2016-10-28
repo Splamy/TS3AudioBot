@@ -14,6 +14,7 @@
 		private int returnCode;
 
 		public override ClientType ClientType => ClientType.Full;
+        public ushort ClientId => packetHandler.ClientId;
 
 		public TS3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{

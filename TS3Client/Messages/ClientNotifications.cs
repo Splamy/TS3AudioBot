@@ -88,7 +88,7 @@ namespace TS3Client.Messages
 
 	public interface ClientData : IResponse, IClientId, IChannelId, IClientBaseData { }
 
-	public interface ClientDbData : IResponse, ClientData, IClientBaseData2
+	public interface IClientDbDataBase
 	{
 		[QuerySerialized("client_created")]
 		DateTime CreationDate { get; set; }
@@ -113,7 +113,10 @@ namespace TS3Client.Messages
 
 		[QuerySerialized("client_base64HashClientUID")]
 		string Base64HashClientUID { get; set; }
+	}
 
+	public interface ClientDbData : IResponse, ClientData, IClientBaseData2, IClientDbDataBase
+	{
 		[QuerySerialized("client_lastip")]
 		string LastIp { get; set; }
 	}
@@ -127,8 +130,8 @@ namespace TS3Client.Messages
 		ulong ServerGroupId { get; set; }
 	}
 
-	[QueryNotification(NotificationType.ClientEnterView)]
-	public interface ClientEnterView : INotification, IReason, ITargetChannelId, IInvokedNotification, IClientId, IClientBaseData, ISourceChannelId, IClientUidLong, IClientBaseData2
+	[QuerySubInterface]
+	public interface IClientInfoBase
 	{
 		[QuerySerialized("client_input_muted")]
 		bool IsInputMuted { get; set; }
@@ -152,10 +155,10 @@ namespace TS3Client.Messages
 		bool IsRecording { get; set; }
 
 		[QuerySerialized("client_channel_group_id")]
-		int ChannelGroupId { get; set; }
+		long ChannelGroupId { get; set; }
 
 		[QuerySerialized("client_servergroups")]
-		string ServerGroups { get; set; }
+		long[] ServerGroups { get; set; }
 
 		[QuerySerialized("client_away")]
 		bool IsAway { get; set; }
@@ -194,11 +197,15 @@ namespace TS3Client.Messages
 		string CountryCode { get; set; }
 
 		[QuerySerialized("client_channel_group_inherited_channel_id")]
-		int InheritedChannelGroupFromChannelId { get; set; }
+		long InheritedChannelGroupFromChannelId { get; set; }
 
 		[QuerySerialized("client_badges")]
 		string Badges { get; set; }
 	}
+
+	[QueryNotification(NotificationType.ClientEnterView)]
+	public interface ClientEnterView : INotification, IReason, ITargetChannelId, IInvokedNotification, IClientId, IClientBaseData, ISourceChannelId, IClientUidLong, IClientBaseData2, IClientInfoBase
+	{ }
 
 	[QueryNotification(NotificationType.ClientLeftView)]
 	public interface ClientLeftView : INotification, IReason, ITargetChannelId, IInvokedNotification, IClientId, ISourceChannelId
@@ -215,5 +222,68 @@ namespace TS3Client.Messages
 	{
 		[QuerySerialized("clid")]
 		ushort[] ClientIds { get; set; }
+	}
+
+	public interface ClientInfo : IResponse, IChannelId, IClientUidLong, IClientBaseData, IClientInfoBase, IClientDbDataBase, IClientBaseData2
+	{
+		[QuerySerialized("client_idle_time")]
+		long ClientIdleTimeMs { get; set; }
+
+		[QuerySerialized("client_version")]
+		string ClientVersion { get; set; }
+
+		[QuerySerialized("client_version_sign")]
+		string ClientVersionSign { get; set; }
+
+		[QuerySerialized("client_platform")]
+		string ClientPlattform { get; set; }
+
+		[QuerySerialized("client_default_channel")]
+		string DefaultChannel { get; set; }
+
+		[QuerySerialized("client_security_hash")]
+		string SecurityHash { get; set; }
+
+		[QuerySerialized("client_login_name")]
+		string LoginName { get; set; }
+
+		[QuerySerialized("client_default_token")]
+		string DefaultToken { get; set; }
+
+		[QuerySerialized("connection_filetransfer_bandwidth_sent")]
+		long ConnectionFiletransferSent { get; set; }
+
+		[QuerySerialized("connection_filetransfer_bandwidth_received")]
+		long ConnectionFiletransferReceived { get; set; }
+
+		[QuerySerialized("connection_packets_sent_total")]
+		long ConnectionPacketsSent { get; set; }
+
+		[QuerySerialized("connection_packets_received_total")]
+		long ConnectionPacketsReceived { get; set; }
+
+		[QuerySerialized("connection_bytes_sent_total")]
+		long ConnectionBytesSent { get; set; }
+
+		[QuerySerialized("connection_bytes_received_total")]
+		long ConnectionBytesReceived { get; set; }
+
+		[QuerySerialized("connection_bandwidth_sent_last_second_total")]
+		long ConnectionBandwidtSentLastSecond { get; set; }
+
+		[QuerySerialized("connection_bandwidth_received_last_second_total")]
+		long ConnectionBandwidtReceivedLastSecond { get; set; }
+
+		[QuerySerialized("connection_bandwidth_sent_last_minute_total")]
+		long ConnectionBandwidtSentLastMinute { get; set; }
+
+		[QuerySerialized("connection_bandwidth_received_last_minute_total")]
+		long ConnectionBandwidtReceivedLastMinute { get; set; }
+
+		[QuerySerialized("connection_connected_time")]
+		long ConnectionTimeMs { get; set; }
+
+		[QuerySerialized("connection_client_ip")]
+		string Ip { get; set; }
 	}
 }

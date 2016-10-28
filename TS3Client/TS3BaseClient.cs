@@ -266,6 +266,8 @@ namespace TS3Client
 			=> ClientDbInfo(client.DatabaseId);
 		public ClientDbData ClientDbInfo(ulong clDbId)
 			=> Send<ClientDbData>("clientdbinfo", new CommandParameter("cldbid", clDbId)).FirstOrDefault();
+        public ClientInfo ClientInfo(ushort clientId)
+            => Send<ClientInfo>("clientinfo", new CommandParameter("clid", clientId)).FirstOrDefault();
 
 		#endregion
 
