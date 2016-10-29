@@ -90,7 +90,7 @@
 			}
 
 			if (!ts3Crypt.Encrypt(packet))
-				throw new Exception(); // TODO
+				throw new TS3Exception("Internal encryption error.");
 
 			if (packet.PacketType == PacketType.Command)
 				lock (sendLoopMonitor)
@@ -105,7 +105,7 @@
 		public void CryptoInitDone()
 		{
 			if (!ts3Crypt.CryptoInitComplete)
-				throw new Exception("No it's not >:(");
+				throw new InvalidOperationException($"{nameof(CryptoInitDone)} was called although it isn't initialized");
 			IncPacketCounter(PacketType.Command);
 		}
 

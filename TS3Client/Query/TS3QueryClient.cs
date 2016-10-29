@@ -40,7 +40,7 @@ namespace TS3Client.Query
 		protected override void ConnectInternal(ConnectionData conData)
 		{
 			try { tcpClient.Connect(conData.Hostname, conData.Port); }
-			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
+			catch (SocketException ex) { throw new TS3Exception("Could not connect.", ex); }
 
 			tcpStream = tcpClient.GetStream();
 			tcpReader = new StreamReader(tcpStream, Util.Encoder);

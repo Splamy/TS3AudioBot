@@ -19,7 +19,14 @@ namespace TS3Client
 	using System;
 
 	[Serializable]
-	public class TS3CommandException : Exception
+	public class TS3Exception : Exception
+	{
+		public TS3Exception(string message) : base(message) { }
+		public TS3Exception(string message, Exception innerException) : base(message, innerException) { }
+	}
+
+	[Serializable]
+	public class TS3CommandException : TS3Exception
 	{
 		public CommandError ErrorStatus { get; private set; }
 

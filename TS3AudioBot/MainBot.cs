@@ -198,7 +198,7 @@ namespace TS3AudioBot
 			WebInterface.StartServerAsync();
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
-			catch (TS3CommandException qcex)
+			catch (TS3Exception qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
 				return false;

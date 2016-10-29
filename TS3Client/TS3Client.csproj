@@ -78,7 +78,7 @@
     <Compile Include="CommandOption.cs" />
     <Compile Include="CommandParameter.cs" />
     <Compile Include="ParameterConverter.cs" />
-    <Compile Include="TS3CommandException.cs" />
+    <Compile Include="TS3Exceptions.cs" />
     <Compile Include="TS3String.cs" />
     <Compile Include="CommandDeserializer.cs" />
     <Compile Include="WaitBlock.cs" />

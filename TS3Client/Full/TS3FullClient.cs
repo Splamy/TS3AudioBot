@@ -37,11 +37,11 @@
 			{
 				var hostEntry = Dns.GetHostEntry(conData.Hostname);
 				var ipAddr = hostEntry.AddressList.FirstOrDefault();
-				if (ipAddr == null) throw new TS3CommandException(new CommandError() { Message = "Could not resove DNS." });
+				if (ipAddr == null) throw new TS3Exception("Could not resove DNS.");
 				packetHandler.RemoteAddress = new IPEndPoint(ipAddr, conData.Port);
 				udpClient.Connect(packetHandler.RemoteAddress);
 			}
-			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
+			catch (SocketException ex) { throw new TS3Exception("Could not connect", ex); }
 
 			ts3Crypt.LoadIdentity(conData.PrivateKey, conData.KeyOffset, conData.LastCheckedKeyOffset);
 			var initData = ts3Crypt.ProcessInit1(null);
