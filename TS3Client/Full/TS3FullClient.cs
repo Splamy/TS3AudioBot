@@ -3,6 +3,8 @@
 	using Messages;
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
+	using System.Net;
 	using System.Net.Sockets;
 
 	public sealed class TS3FullClient : TS3BaseClient
@@ -14,7 +16,7 @@
 		private int returnCode;
 
 		public override ClientType ClientType => ClientType.Full;
-        public ushort ClientId => packetHandler.ClientId;
+		public ushort ClientId => packetHandler.ClientId;
 
 		public TS3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
@@ -31,7 +33,14 @@
 
 			packetHandler.Start();
 
-			try { udpClient.Connect(conData.Hostname, conData.Port); }
+			try
+			{
+				var hostEntry = Dns.GetHostEntry(conData.Hostname);
+				var ipAddr = hostEntry.AddressList.FirstOrDefault();
+				if (ipAddr == null) throw new TS3CommandException(new CommandError() { Message = "Could not resove DNS." });
+				packetHandler.RemoteAddress = new IPEndPoint(ipAddr, conData.Port);
+				udpClient.Connect(packetHandler.RemoteAddress);
+			}
 			catch (SocketException ex) { throw new TS3CommandException(new CommandError(), ex); }
 
 			ts3Crypt.LoadIdentity(conData.PrivateKey, conData.KeyOffset, conData.LastCheckedKeyOffset);

@@ -25,6 +25,7 @@
 		private readonly UdpClient udpClient;
 
 		public ushort ClientId { get; set; }
+		public IPEndPoint RemoteAddress { get; set; }
 
 		public PacketHandler(TS3Crypt ts3Crypt, UdpClient udpClient)
 		{
@@ -144,7 +145,7 @@
 			{
 				var dummy = new IPEndPoint(IPAddress.Any, 0);
 				byte[] buffer = udpClient.Receive(ref dummy);
-				if (/*dummy.Address.Equals(remoteIpAddress) &&*/ dummy.Port != 9987) // todo
+				if (dummy.Address.Equals(RemoteAddress.Address) && dummy.Port != RemoteAddress.Port)
 					continue;
 
 				var packet = ts3Crypt.Decrypt(buffer);
