@@ -113,7 +113,7 @@ namespace TS3AudioBot
 			const string configFilePath = "configTS3AudioBot.cfg";
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = cfgFile.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
-			var qcd = cfgFile.GetDataStruct<QueryConnectionData>("QueryConnection", true);
+			var tfcd = cfgFile.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 			var hmd = cfgFile.GetDataStruct<HistoryManagerData>("HistoryManager", true);
 			var pmd = cfgFile.GetDataStruct<PluginManagerData>("PluginManager", true);
 			var pld = cfgFile.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
@@ -154,7 +154,7 @@ namespace TS3AudioBot
 			CommandManager.RegisterMain(this);
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
-			var teamspeakClient = new TeamspeakClient();
+			var teamspeakClient = new TeamspeakClient(tfcd);
 			QueryConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
 			AudioFramework = new AudioFramework(afd, teamspeakClient);

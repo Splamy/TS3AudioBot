@@ -29,6 +29,12 @@
 
 		protected override void ConnectInternal(ConnectionData conData)
 		{
+			var conDataFull = conData as ConnectionDataFull;
+			if (conDataFull == null)
+				throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
+			if (conDataFull.Identity == null)
+				throw new ArgumentNullException(nameof(conData));
+
 			Reset();
 
 			packetHandler.Start();
@@ -43,7 +49,7 @@
 			}
 			catch (SocketException ex) { throw new TS3Exception("Could not connect", ex); }
 
-			ts3Crypt.LoadIdentity(conData.PrivateKey, conData.KeyOffset, conData.LastCheckedKeyOffset);
+			ts3Crypt.Identity = conDataFull.Identity;
 			var initData = ts3Crypt.ProcessInit1(null);
 			packetHandler.AddOutgoingPacket(initData, PacketType.Init1);
 		}
@@ -102,7 +108,7 @@
 			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			packetHandler.CryptoInitDone();
 			ClientInit(
-				ConnectionData.UserName,
+				ConnectionData.Username,
 				"Windows",
 				true, true,
 				string.Empty, string.Empty,
@@ -166,8 +172,8 @@
 					new CommandParameter("client_input_hardware", inputHardware),
 					new CommandParameter("client_output_hardware", outputHardware),
 					new CommandParameter("client_default_channel", defaultChannel),
-					new CommandParameter("client_default_channel_password", defaultChannelPassword),
-					new CommandParameter("client_server_password", serverPassword),
+					new CommandParameter("client_default_channel_password", defaultChannelPassword), // base64(sha1(pass))
+					new CommandParameter("client_server_password", serverPassword), // base64(sha1(pass))
 					new CommandParameter("client_meta_data", metaData),
 					new CommandParameter("client_version_sign", versionSign.Sign),
 					new CommandParameter("client_key_offset", ts3Crypt.Identity.ValidKeyOffset),

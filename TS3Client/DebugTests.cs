@@ -18,14 +18,12 @@ namespace TS3Client
 		static void Main(string[] args)
 		{
 			TS3FullClient fc = new TS3FullClient(EventDispatchType.DoubleThread);
-			fc.Connect(new ConnectionData
+			fc.Connect(new ConnectionDataFull
 			{
-				UserName = "HAAAX",
+				Username = "HAAAX",
 				Hostname = "splamy.de",
 				Port = 9987,
-				PrivateKey = "MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=",
-				KeyOffset = 57451630,
-				LastCheckedKeyOffset = 57451630,
+				Identity = TS3Crypt.LoadIdentity("MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=", 57451630, 57451630),
 			});
 			fc.EnterEventLoop();
 			ReadLine();

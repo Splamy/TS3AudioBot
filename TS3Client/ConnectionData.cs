@@ -16,14 +16,18 @@
 
 namespace TS3Client
 {
+	using Full;
+
 	public class ConnectionData
 	{
-		public string Hostname { get; set; } // Q F
-		public ushort Port { get; set; } // Q F
-		public string UserName { get; set; } // Q F
-		public string Password { get; set; } // Q F
-		public string PrivateKey { get; set; } // F
-		public ulong KeyOffset { get; set; } // F
-		public ulong LastCheckedKeyOffset { get; set; } // F (optional)
+		public string Hostname { get; set; }
+		public ushort Port { get; set; }
+		public string Username { get; set; }
+		public string Password { get; set; }
+	}
+
+	public class ConnectionDataFull : ConnectionData
+	{
+		public IdentityData Identity { get; set; }
 	}
 }

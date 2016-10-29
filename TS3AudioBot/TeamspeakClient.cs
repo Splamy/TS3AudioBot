@@ -42,9 +42,11 @@ namespace TS3AudioBot
 		private PreciseAudioTimer audioTimer;
 		private byte[] audioBuffer;
 		private Dictionary<ulong, SubscriptionData> channelSubscriptions;
+		private Ts3FullClientData ts3FullClientData;
 
-		public TeamspeakClient() : base(ClientType.Full)
+		public TeamspeakClient(Ts3FullClientData tfcd) : base(ClientType.Full)
 		{
+			ts3FullClientData = tfcd;
 			Util.Init(ref channelSubscriptions);
 			tsFullClient = (TS3FullClient)tsBaseClient;
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
@@ -54,14 +56,24 @@ namespace TS3AudioBot
 
 		public override void Connect()
 		{
-			tsFullClient.Connect(new ConnectionData
+			IdentityData identity;
+			if (string.IsNullOrEmpty(ts3FullClientData.identity))
 			{
-				UserName = "AudioBot",
-				Hostname = "splamy.de",
-				Port = 9987,
-				PrivateKey = "MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=",
-				KeyOffset = 57451630,
-				LastCheckedKeyOffset = 57451630,
+				identity = TS3Crypt.GenerateNewIdentity();
+				ts3FullClientData.identity = identity.PrivateKeyString;
+				ts3FullClientData.identityoffset = identity.ValidKeyOffset;
+			}
+			else
+			{
+				identity = TS3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
+			}
+
+			tsFullClient.Connect(new ConnectionDataFull
+			{
+				Username = "AudioBot",
+				Hostname = ts3FullClientData.host,
+				Port = ts3FullClientData.port,
+				Identity = identity,
 			});
 		}
 
@@ -260,5 +272,17 @@ namespace TS3AudioBot
 		}
 
 		#endregion
+	}
+
+	public struct Ts3FullClientData
+	{
+		[Info("the address of the TeamSpeak3 Query")]
+		public string host;
+		[Info("the port of the TeamSpeak3 Query", "9987")]
+		public ushort port;
+		[Info("the client identity", "")]
+		public string identity;
+		[Info("the client identity security offset", "0")]
+		public ulong identityoffset;
 	}
 }
