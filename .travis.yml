@@ -1,8 +1,5 @@
-language: generic
-# Build with docker to have an up-to-date version of ubuntu
-sudo: required
-services:
-  - docker
+sudo: false
+language: csharp
 
 notifications:
   email: false
@@ -15,42 +12,14 @@ branches:
 git:
   depth: 1
 
-#cache:
-#  directories:
-#    - $HOME/docker
-
 install:
-    # Use the cached docker image if it is available
-  - mkdir -p "$HOME/docker"
-  - if [ -f "$HOME/docker/ts3audiobot.tar" ]; then
-      docker import "$HOME/docker/ts3audiobot.tar" ts3audiobot:latest;
-    else
-      docker build -t ts3audiobot -f Dockerfile .;
-    fi
-#      docker save -o "$HOME/docker/ts3audiobot.tar" ts3audiobot;
-#    fi
+  - nuget restore TS3AudioBot.sln
+  - nuget install NUnit.Runners -OutputDirectory nunit
 
 script:
-  - docker run -v "$TRAVIS_BUILD_DIR:/build" ts3audiobot sh -c "
-      export THREADS=\$((`nproc` + 1)) &&
-      echo \"THREADS = \$THREADS\" &&
-
-      echo Building the AudioBob \(C++ stuff\) &&
-      cd TS3AudioBob &&
-      mkdir bin && cd bin &&
-      cmake .. -DBUILD_TESTS=1 -DBUILD_FUZZ=1 &&
-      make VERBOSE=1 -j \$THREADS &&
-      ./ts3audiobobtest &&
-      cd ../.. &&
-
-      echo Building the AudioBot \(C# Stuff\) &&
-      nuget restore TS3AudioBot.sln &&
-      nuget install NUnit.Runners -OutputDirectory nunit &&
-      xbuild /p:Configuration=Release TS3AudioBot.sln &&
-      mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
-    "
+  - xbuild /p:Configuration=Release TS3AudioBot.sln
+  - mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
 
 after_script:
-  - cd $TRAVIS_BUILD_DIR
   - chmod u+x ts3notify.sh
   - ./ts3notify.sh
