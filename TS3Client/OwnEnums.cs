@@ -118,6 +118,12 @@ namespace TS3Client
 		[TS3Serializable("notifyclientchatcomposing")]
 		ClientChatComposing,
 		// TODO: notifyservergroupsbyclientid
+		// TODO: notifyclientchatclosed 
+		// TODO: notifyclientpoke
+		// TODO: notifyclientupdated
+		// TODO: notifyclientchannelgroupchanged
+		// TODO: notifychannelpasswordchanged
+		// TODO: notifychanneldescriptionchanged
 	}
 
 	public enum MoveReason

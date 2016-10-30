@@ -11,7 +11,7 @@
 		Ping = 0x4,
 		Pong = 0x5,
 		Ack = 0x6,
-		Type7Closeconnection = 0x7,
+		AckLow = 0x7,
 		Init1 = 0x8,
 	}
 

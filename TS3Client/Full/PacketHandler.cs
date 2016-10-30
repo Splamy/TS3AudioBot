@@ -19,6 +19,7 @@
 		private readonly ushort[] packetCounter;
 		private readonly LinkedList<OutgoingPacket> sendQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
+		private readonly RingQueue<IncomingPacket> receiveQueueLow;
 		private readonly Thread resendThread;
 		private readonly object sendLoopMonitor = new object();
 		private readonly TS3Crypt ts3Crypt;
@@ -30,6 +31,7 @@
 		{
 			sendQueue = new LinkedList<OutgoingPacket>();
 			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize);
+			receiveQueueLow = new RingQueue<IncomingPacket>(PacketBufferSize);
 			resendThread = new Thread(ResendLoop);
 			packetCounter = new ushort[9];
 			this.ts3Crypt = ts3Crypt;
@@ -91,7 +93,7 @@
 			if (!ts3Crypt.Encrypt(packet))
 				throw new Exception(); // TODO
 
-			if (packet.PacketType == PacketType.Command)
+			if (packet.PacketType == PacketType.Command || packet.PacketType == PacketType.CommandLow)
 				lock (sendLoopMonitor)
 					sendQueue.AddLast(packet);
 
@@ -157,11 +159,11 @@
 					case PacketType.Readable: break;
 					case PacketType.Voice: break;
 					case PacketType.Command: passToReturn = ReceiveCommand(packet); break;
-					case PacketType.CommandLow: break;
+					case PacketType.CommandLow: passToReturn = ReceiveCommand(packet); break;
 					case PacketType.Ping: passToReturn = ReceivePing(packet); break;
 					case PacketType.Pong: break;
 					case PacketType.Ack: passToReturn = ReceiveAck(packet); break;
-					case PacketType.Type7Closeconnection: break;
+					case PacketType.AckLow: break;
 					case PacketType.Init1: break;
 					default:
 						throw new ArgumentOutOfRangeException();
@@ -178,18 +180,31 @@
 
 		private bool ReceiveCommand(IncomingPacket packet)
 		{
-			SendAck(packet.PacketId);
-			if (!receiveQueue.IsSet(packet.PacketId))
+			RingQueue<IncomingPacket> packetQueue;
+			if (packet.PacketType == PacketType.Command)
 			{
-				receiveQueue.Set(packet, packet.PacketId);
+				SendAck(packet.PacketId, PacketType.Ack);
+				packetQueue = receiveQueue;
+			}
+			else if (packet.PacketType == PacketType.CommandLow)
+			{
+				SendAck(packet.PacketId, PacketType.AckLow);
+				packetQueue = receiveQueueLow;
+			}
+			else
+				throw new InvalidOperationException("The packet is not a command");
+
+			if (!packetQueue.IsSet(packet.PacketId))
+			{
+				packetQueue.Set(packet, packet.PacketId);
 				int take = 0;
 				int takeLen = 0;
 				bool hasStart = false;
 				bool hasEnd = false;
-				for (int i = 0; i < receiveQueue.Count; i++)
+				for (int i = 0; i < packetQueue.Count; i++)
 				{
 					IncomingPacket peekPacket;
-					if (receiveQueue.TryPeek(receiveQueue.StartIndex, out peekPacket))
+					if (packetQueue.TryPeek(packetQueue.StartIndex, out peekPacket))
 					{
 						take++;
 						takeLen += peekPacket.Size;
@@ -211,8 +226,8 @@
 					IncomingPacket preFinalPacket = null;
 					if (take == 1)
 					{
-						// MERGE (skip with only 1)
-						if (!receiveQueue.TryDequeue(out preFinalPacket))
+						// GET & (MERGE, skip with only 1)
+						if (!packetQueue.TryDequeue(out preFinalPacket))
 							throw new InvalidOperationException();
 						// DECOMPRESS
 						if (preFinalPacket.CompressedFlag)
@@ -221,14 +236,14 @@
 					}
 					else // take > 1
 					{
-						// MERGE
+						// GET & MERGE
 						var preFinalArray = new byte[takeLen];
 						int curCopyPos = 0;
 						bool firstSet = false;
 						bool isCompressed = false;
 						for (int i = 0; i < take; i++)
 						{
-							if (!receiveQueue.TryDequeue(out preFinalPacket))
+							if (!packetQueue.TryDequeue(out preFinalPacket))
 								throw new InvalidOperationException();
 							if (!firstSet)
 							{
@@ -253,11 +268,14 @@
 			return false;
 		}
 
-		private void SendAck(ushort ackId)
+		private void SendAck(ushort ackId, PacketType ackType)
 		{
 			byte[] ackData = new byte[2];
 			NetUtil.H2N(ackId, ackData, 0);
-			AddOutgoingPacket(ackData, PacketType.Ack);
+			if (ackType == PacketType.Ack || ackType == PacketType.AckLow)
+				AddOutgoingPacket(ackData, ackType);
+			else
+				throw new InvalidOperationException("Packet type is not an Ack-type");
 		}
 
 		private bool ReceiveAck(IncomingPacket packet)
