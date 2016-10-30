@@ -418,12 +418,10 @@
 			Array.Copy(cachedKeyNonces[cacheIndex].Item2, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
-			// TODO: this could be written more efficiently
-			var startData = NetUtil.N2H(BitConverter.ToUInt16(key, 0));
-			startData = (ushort)(startData ^ packetId);
-			var xordata = BitConverter.GetBytes(NetUtil.H2N(startData));
-			Array.Copy(xordata, 0, key, 0, xordata.Length);
-
+			var packetIdH2N = NetUtil.H2N(packetId);
+			key[0] = (byte)((packetId >> 8) & 0xFF);
+			key[1] = (byte)((packetId) & 0xFF);
+			
 			return new Tuple<byte[], byte[]>(key, nonce);
 		}
 
