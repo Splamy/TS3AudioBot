@@ -190,7 +190,7 @@
 				for (int i = 0; i < receiveQueue.Count; i++)
 				{
 					IncomingPacket peekPacket;
-					if (receiveQueue.TryPeek(receiveQueue.StartIndex, out peekPacket))
+					if (receiveQueue.TryPeek(receiveQueue.StartIndex + i, out peekPacket))
 					{
 						take++;
 						takeLen += peekPacket.Size;

@@ -163,6 +163,14 @@ namespace TS3Client
 				return converter(data, dataType);
 			else if (dataType.IsEnum)
 				return Enum.ToObject(dataType, Convert.ChangeType(data, dataType.GetEnumUnderlyingType(), CultureInfo.InvariantCulture));
+			else if (dataType.IsArray)
+			{
+				Type arrayElementType = dataType.GetElementType();
+				var tempArray = data.Split(',').Select(x => DeserializeValue(x, arrayElementType)).ToArray();
+				var resultArray = Array.CreateInstance(arrayElementType, tempArray.Length);
+				Array.Copy(tempArray, resultArray, tempArray.Length);
+				return resultArray;
+			}
 			else
 				throw new NotSupportedException();
 		}
