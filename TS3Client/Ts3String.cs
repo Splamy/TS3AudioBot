@@ -20,7 +20,7 @@ namespace TS3Client
 	using System.Linq;
 	using System.Text;
 
-	public static class TS3String
+	public static class Ts3String
 	{
 		public static string Escape(string stringToEscape)
 		{

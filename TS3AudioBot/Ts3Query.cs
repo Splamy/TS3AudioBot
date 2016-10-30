@@ -22,15 +22,15 @@ namespace TS3AudioBot
 	using TS3Client.Messages;
 	using TS3Client.Query;
 
-	public class QueryConnection : TeamspeakControl
+	public class Ts3Query : TeamspeakControl
 	{
-		private TS3QueryClient tsQueryClient;
+		private Ts3QueryClient tsQueryClient;
 		private QueryConnectionData connectionData;
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
-		public QueryConnection(QueryConnectionData qcd) : base(ClientType.Query)
+		public Ts3Query(QueryConnectionData qcd) : base(ClientType.Query)
 		{
-			tsQueryClient = (TS3QueryClient)tsBaseClient;
+			tsQueryClient = (Ts3QueryClient)tsBaseClient;
 			connectionData = qcd;
 			SuppressLoopback = qcd.suppressLoopback;
 		}
@@ -43,7 +43,7 @@ namespace TS3AudioBot
 				tsQueryClient.Login(connectionData.user, connectionData.passwd);
 				tsQueryClient.UseServer(1);
 				try { tsQueryClient.ChangeName("TS3AudioBot"); }
-				catch (TS3CommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
+				catch (Ts3CommandException) { Log.Write(Log.Level.Warning, "TS3AudioBot name already in use!"); }
 			}
 		}
 

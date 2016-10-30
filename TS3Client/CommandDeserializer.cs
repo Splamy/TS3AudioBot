@@ -58,7 +58,7 @@ namespace TS3Client
 			ConvertMap.Add(typeof(ulong), (v, t) => ulong.Parse(v, CultureInfo.InvariantCulture));
 			ConvertMap.Add(typeof(float), (v, t) => float.Parse(v, CultureInfo.InvariantCulture));
 			ConvertMap.Add(typeof(double), (v, t) => double.Parse(v, CultureInfo.InvariantCulture));
-			ConvertMap.Add(typeof(string), (v, t) => TS3String.Unescape(v));
+			ConvertMap.Add(typeof(string), (v, t) => Ts3String.Unescape(v));
 			ConvertMap.Add(typeof(TimeSpan), (v, t) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
 			ConvertMap.Add(typeof(DateTime), (v, t) => PrimitiveParameter.UnixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture)));
 		}
@@ -73,9 +73,9 @@ namespace TS3Client
 				switch (responseParam.Key.ToUpperInvariant())
 				{
 					case "ID": errorStatus.Id = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
-					case "MSG": errorStatus.Message = TS3String.Unescape(responseParam.Value); break;
+					case "MSG": errorStatus.Message = Ts3String.Unescape(responseParam.Value); break;
 					case "FAILED_PERMID": errorStatus.MissingPermissionId = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
-					case "RETURN_CODE": errorStatus.ReturnCode = TS3String.Unescape(responseParam.Value); break;
+					case "RETURN_CODE": errorStatus.ReturnCode = Ts3String.Unescape(responseParam.Value); break;
 				}
 			}
 			return errorStatus;

@@ -37,7 +37,7 @@ namespace TS3Client
 		{
 			waiter.WaitOne();
 			if (!errorStatus.Ok)
-				throw new TS3CommandException(errorStatus);
+				throw new Ts3CommandException(errorStatus);
 			return answer;
 		}
 

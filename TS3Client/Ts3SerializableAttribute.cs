@@ -19,11 +19,11 @@ namespace TS3Client
 	using System;
 
 	[AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
-	sealed class TS3SerializableAttribute : Attribute
+	sealed class Ts3SerializableAttribute : Attribute
 	{
 		public string QueryString { get; }
 
-		public TS3SerializableAttribute(string queryString)
+		public Ts3SerializableAttribute(string queryString)
 		{
 			QueryString = queryString;
 		}

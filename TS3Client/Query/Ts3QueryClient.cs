@@ -20,10 +20,9 @@ namespace TS3Client.Query
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
-	using System.Linq;
 	using System.Net.Sockets;
 
-	public sealed class TS3QueryClient : TS3BaseClient
+	public sealed class Ts3QueryClient : Ts3BaseClient
 	{
 		private readonly TcpClient tcpClient;
 		private NetworkStream tcpStream;
@@ -32,7 +31,7 @@ namespace TS3Client.Query
 
 		public override ClientType ClientType => ClientType.Query;
 
-		public TS3QueryClient(EventDispatchType dispatcher) : base(dispatcher)
+		public Ts3QueryClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
 			tcpClient = new TcpClient();
 		}
@@ -40,7 +39,7 @@ namespace TS3Client.Query
 		protected override void ConnectInternal(ConnectionData conData)
 		{
 			try { tcpClient.Connect(conData.Hostname, conData.Port); }
-			catch (SocketException ex) { throw new TS3Exception("Could not connect.", ex); }
+			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
 
 			tcpStream = tcpClient.GetStream();
 			tcpReader = new StreamReader(tcpStream, Util.Encoder);
@@ -72,10 +71,10 @@ namespace TS3Client.Query
 				var message = line.Trim();
 				ProcessCommand(message);
 			}
-			Status = TS3ClientStatus.Disconnected;
+			Status = Ts3ClientStatus.Disconnected;
 		}
 
-		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType) // Synchronous
+		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType) // Synchronous
 		{
 			using (WaitBlock wb = new WaitBlock(targetType))
 			{

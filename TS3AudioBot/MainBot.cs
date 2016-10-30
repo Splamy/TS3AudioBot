@@ -154,7 +154,7 @@ namespace TS3AudioBot
 			CommandManager.RegisterMain(this);
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
-			var teamspeakClient = new TeamspeakClient(tfcd);
+			var teamspeakClient = new Ts3Full(tfcd);
 			QueryConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
 			AudioFramework = new AudioFramework(afd, teamspeakClient);
@@ -198,7 +198,7 @@ namespace TS3AudioBot
 			WebInterface.StartServerAsync();
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
-			catch (TS3Exception qcex)
+			catch (Ts3Exception qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
 				return false;
@@ -635,7 +635,7 @@ namespace TS3AudioBot
 					QueryConnection.KickClientFromServer(info.TextMessage.InvokerId);
 				return null;
 			}
-			catch (TS3CommandException ex)
+			catch (Ts3CommandException ex)
 			{
 				Log.Write(Log.Level.Info, "Could not kick: {0}", ex);
 				return "I'm not strong enough, master!";
@@ -762,7 +762,7 @@ namespace TS3AudioBot
 			int tokenLen = 0;
 			foreach (var file in files)
 			{
-				int newTokenLen = tokenLen + TS3String.TokenLength(file) + 3;
+				int newTokenLen = tokenLen + Ts3String.TokenLength(file) + 3;
 				if (newTokenLen < 1024)
 				{
 					strb.Append(file).Append(", ");

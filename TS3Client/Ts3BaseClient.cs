@@ -6,7 +6,7 @@
 	using System.Diagnostics;
 	using System.Linq;
 
-	public abstract class TS3BaseClient : IDisposable
+	public abstract class Ts3BaseClient : IDisposable
 	{
 		/// <summary>This object needs to be locked when one of these situations applies:<para/>
 		/// The connection status needs to be changed.<para/>
@@ -15,7 +15,7 @@
 		private bool eventLoopRunning;
 		private string cmdLineBuffer;
 		private IEventDispatcher eventDispatcher;
-		protected TS3ClientStatus Status;
+		protected Ts3ClientStatus Status;
 		internal readonly Queue<WaitBlock> RequestQueue;
 
 		public delegate void NotifyEventHandler<TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
@@ -27,12 +27,12 @@
 
 
 		public abstract ClientType ClientType { get; }
-		public bool IsConnected => Status == TS3ClientStatus.Connected;
+		public bool IsConnected => Status == Ts3ClientStatus.Connected;
 		public ConnectionData ConnectionData { get; private set; }
 
-		protected TS3BaseClient(EventDispatchType dispatcher)
+		protected Ts3BaseClient(EventDispatchType dispatcher)
 		{
-			Status = TS3ClientStatus.Disconnected;
+			Status = Ts3ClientStatus.Disconnected;
 			eventLoopRunning = false;
 			RequestQueue = new Queue<WaitBlock>();
 
@@ -59,16 +59,16 @@
 			{
 				try
 				{
-					Status = TS3ClientStatus.Connecting;
+					Status = Ts3ClientStatus.Connecting;
 					ConnectionData = conData;
 					ConnectInternal(conData);
 
 					eventDispatcher.Init(NetworkLoop);
-					Status = TS3ClientStatus.Connected;
+					Status = Ts3ClientStatus.Connected;
 				}
 				catch
 				{
-					Status = TS3ClientStatus.Disconnected;
+					Status = Ts3ClientStatus.Disconnected;
 					throw;
 				}
 			}
@@ -80,7 +80,7 @@
 			{
 				if (IsConnected)
 				{
-					Status = TS3ClientStatus.Quitting;
+					Status = Ts3ClientStatus.Quitting;
 					OnTextMessageReceived = null;
 					OnClientEnterView = null;
 					OnClientLeftView = null;
@@ -123,7 +123,7 @@
 				// we (hopefully) only need to lock here for the dequeue
 				lock (LockObj)
 				{
-					if (!(Status == TS3ClientStatus.Connected || Status == TS3ClientStatus.Connecting)) return;
+					if (!(Status == Ts3ClientStatus.Connected || Status == Ts3ClientStatus.Connecting)) return;
 
 					var errorStatus = CommandDeserializer.GenerateErrorStatus(message);
 					if (!errorStatus.Ok)
@@ -187,19 +187,19 @@
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command)
-			=> SendCommand(new TS3Command(command), null).Cast<ResponseDictionary>();
+			=> SendCommand(new Ts3Command(command), null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, params CommandParameter[] parameter)
-			=> SendCommand(new TS3Command(command, parameter.ToList()), null).Cast<ResponseDictionary>();
+			=> SendCommand(new Ts3Command(command, parameter.ToList()), null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, CommandParameter[] parameter, params CommandOption[] options)
-			=> SendCommand(new TS3Command(command, parameter.ToList(), options.ToList()), null).Cast<ResponseDictionary>();
+			=> SendCommand(new Ts3Command(command, parameter.ToList(), options.ToList()), null).Cast<ResponseDictionary>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command) where T : IResponse
-			=> SendCommand(new TS3Command(command), typeof(T)).Cast<T>();
+			=> SendCommand(new Ts3Command(command), typeof(T)).Cast<T>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, params CommandParameter[] parameter) where T : IResponse
@@ -207,24 +207,24 @@
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, List<CommandParameter> parameter) where T : IResponse
-			=> SendCommand(new TS3Command(command, parameter), typeof(T)).Cast<T>();
+			=> SendCommand(new Ts3Command(command, parameter), typeof(T)).Cast<T>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, CommandParameter[] parameter, params CommandOption[] options) where T : IResponse
-			=> SendCommand(new TS3Command(command, parameter.ToList(), options.ToList()), typeof(T)).Cast<T>();
+			=> SendCommand(new Ts3Command(command, parameter.ToList(), options.ToList()), typeof(T)).Cast<T>();
 
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, List<CommandParameter> parameter, params CommandOption[] options) where T : IResponse
-			=> SendCommand(new TS3Command(command, parameter.ToList(), options.ToList()), typeof(T)).Cast<T>();
+			=> SendCommand(new Ts3Command(command, parameter.ToList(), options.ToList()), typeof(T)).Cast<T>();
 
 		[DebuggerStepThrough]
-		protected void SendNoResponsed(TS3Command command)
+		protected void SendNoResponsed(Ts3Command command)
 		{
 			command.ExpectResponse = false;
 			SendCommand(command, null);
 		}
 
-		protected abstract IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType);
+		protected abstract IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType);
 
 		#endregion
 
@@ -263,7 +263,7 @@
 		public IEnumerable<ClientData> ClientList()
 			=> ClientList(0);
 		public IEnumerable<ClientData> ClientList(ClientListOptions options) => Send<ClientData>("clientlist",
-			TS3Command.NoParameter, options);
+			Ts3Command.NoParameter, options);
 		public IEnumerable<ClientServerGroup> ServerGroupsOfClientDbId(ClientData client)
 			=> ServerGroupsOfClientDbId(client.DatabaseId);
 		public IEnumerable<ClientServerGroup> ServerGroupsOfClientDbId(ulong clDbId)
@@ -291,7 +291,7 @@
 			eventDispatcher = null;
 		}
 
-		protected enum TS3ClientStatus
+		protected enum Ts3ClientStatus
 		{
 			Disconnected,
 			Connecting,

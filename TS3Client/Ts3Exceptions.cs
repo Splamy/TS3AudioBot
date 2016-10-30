@@ -19,18 +19,18 @@ namespace TS3Client
 	using System;
 
 	[Serializable]
-	public class TS3Exception : Exception
+	public class Ts3Exception : Exception
 	{
-		public TS3Exception(string message) : base(message) { }
-		public TS3Exception(string message, Exception innerException) : base(message, innerException) { }
+		public Ts3Exception(string message) : base(message) { }
+		public Ts3Exception(string message, Exception innerException) : base(message, innerException) { }
 	}
 
 	[Serializable]
-	public class TS3CommandException : TS3Exception
+	public class Ts3CommandException : Ts3Exception
 	{
 		public CommandError ErrorStatus { get; private set; }
 
-		internal TS3CommandException(CommandError message) : base(message.ErrorFormat()) { ErrorStatus = message; }
-		internal TS3CommandException(CommandError message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
+		internal Ts3CommandException(CommandError message) : base(message.ErrorFormat()) { ErrorStatus = message; }
+		internal Ts3CommandException(CommandError message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
 	}
 }

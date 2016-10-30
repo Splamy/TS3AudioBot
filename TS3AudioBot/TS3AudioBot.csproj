@@ -119,7 +119,7 @@
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PlayManager.cs" />
     <Compile Include="PluginManager.cs" />
-    <Compile Include="QueryConnection.cs" />
+    <Compile Include="Ts3Query.cs" />
     <Compile Include="ResourceFactories\IPlaylistFactory.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />
@@ -149,7 +149,7 @@
     <Compile Include="ResourceFactories\SoundcloudFactory.cs" />
     <Compile Include="ResourceFactories\TwitchFactory.cs" />
     <Compile Include="ResourceFactories\YoutubeFactory.cs" />
-    <Compile Include="TeamspeakClient.cs" />
+    <Compile Include="Ts3Full.cs" />
     <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
     <Compile Include="WebInterface\WebDisplay.cs" />

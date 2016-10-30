@@ -27,13 +27,13 @@ namespace TS3AudioBot
 	using TS3Client.Messages;
 	using System.Collections.Generic;
 
-	class TeamspeakClient : TeamspeakControl, IPlayerConnection, ITargetManager
+	class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
 	{
-		protected TS3FullClient tsFullClient;
+		protected Ts3FullClient tsFullClient;
 
 		private const Codec SendCodec = Codec.OpusMusic;
-		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(50);
-		private readonly TimeSpan audioBufferLength = TimeSpan.FromSeconds(1);
+		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(5);
+		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
 
 		private TickWorker sendTick;
 		private VolumeSource audioVolume;
@@ -44,11 +44,11 @@ namespace TS3AudioBot
 		private Dictionary<ulong, SubscriptionData> channelSubscriptions;
 		private Ts3FullClientData ts3FullClientData;
 
-		public TeamspeakClient(Ts3FullClientData tfcd) : base(ClientType.Full)
+		public Ts3Full(Ts3FullClientData tfcd) : base(ClientType.Full)
 		{
 			ts3FullClientData = tfcd;
 			Util.Init(ref channelSubscriptions);
-			tsFullClient = (TS3FullClient)tsBaseClient;
+			tsFullClient = (Ts3FullClient)tsBaseClient;
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
 			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channel);
@@ -59,13 +59,13 @@ namespace TS3AudioBot
 			IdentityData identity;
 			if (string.IsNullOrEmpty(ts3FullClientData.identity))
 			{
-				identity = TS3Crypt.GenerateNewIdentity();
+				identity = Ts3Crypt.GenerateNewIdentity();
 				ts3FullClientData.identity = identity.PrivateKeyString;
 				ts3FullClientData.identityoffset = identity.ValidKeyOffset;
 			}
 			else
 			{
-				identity = TS3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
+				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
 			}
 
 			tsFullClient.Connect(new ConnectionDataFull

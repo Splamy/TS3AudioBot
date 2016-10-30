@@ -15,7 +15,7 @@
 	using System.Linq;
 	using System.Text;
 
-	public sealed class TS3Crypt
+	public sealed class Ts3Crypt
 	{
 		private const string DummyKeyAndNonceString = "c:\\windows\\system\\firewall32.cpl";
 		private static readonly byte[] DummyKey = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(0, 16));
@@ -37,7 +37,7 @@
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly Tuple<byte[], byte[]>[] cachedKeyNonces = new Tuple<byte[], byte[]>[PacketTypeKinds * 2];
 
-		internal TS3Crypt()
+		internal Ts3Crypt()
 		{
 			Reset();
 		}
@@ -204,12 +204,12 @@
 			}
 			else if (type == 3)
 			{
-				string initAdd = TS3Command.BuildToString("clientinitiv",
+				string initAdd = Ts3Command.BuildToString("clientinitiv",
 					new[] {
 						new CommandParameter("alpha", "AAAAAAAAAAAAAA=="),
 						new CommandParameter("omega", Identity.PublicKeyString),
 						new CommandParameter("ip", string.Empty) },
-					TS3Command.NoOptions);
+					Ts3Command.NoOptions);
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
 				// Prepare solution
@@ -418,10 +418,9 @@
 			Array.Copy(cachedKeyNonces[cacheIndex].Item2, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
-			var packetIdH2N = NetUtil.H2N(packetId);
-			key[0] = (byte)((packetId >> 8) & 0xFF);
-			key[1] = (byte)((packetId) & 0xFF);
-			
+			key[0] ^= (byte)((packetId >> 8) & 0xFF);
+			key[1] ^= (byte)((packetId) & 0xFF);
+
 			return new Tuple<byte[], byte[]>(key, nonce);
 		}
 
@@ -480,10 +479,6 @@
 			while (true)
 			{
 				if (best >= toLevel) return;
-
-				var numberBytes = Encoding.ASCII.GetBytes(identity.LastCheckedKeyOffset.ToString());
-				Array.Copy(numberBytes, 0, hashBuffer, pubKeyBytes.Length, numberBytes.Length);
-				byte[] outHash = Hash1It(hashBuffer, 0, pubKeyBytes.Length + numberBytes.Length);
 
 				int curr = GetSecurityLevel(hashBuffer, pubKeyBytes.Length, identity.LastCheckedKeyOffset);
 				if (curr > best)

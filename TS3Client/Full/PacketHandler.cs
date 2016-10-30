@@ -22,13 +22,13 @@
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
 		private readonly Thread resendThread;
 		private readonly object sendLoopMonitor = new object();
-		private readonly TS3Crypt ts3Crypt;
+		private readonly Ts3Crypt ts3Crypt;
 		private readonly UdpClient udpClient;
 
 		public ushort ClientId { get; set; }
 		public IPEndPoint RemoteAddress { get; set; }
 
-		public PacketHandler(TS3Crypt ts3Crypt, UdpClient udpClient)
+		public PacketHandler(Ts3Crypt ts3Crypt, UdpClient udpClient)
 		{
 			sendQueue = new LinkedList<OutgoingPacket>();
 			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize);
@@ -92,7 +92,7 @@
 			}
 
 			if (!ts3Crypt.Encrypt(packet))
-				throw new TS3Exception("Internal encryption error.");
+				throw new Ts3Exception("Internal encryption error.");
 
 			if (packet.PacketType == PacketType.Command || packet.PacketType == PacketType.CommandLow)
 				lock (sendLoopMonitor)

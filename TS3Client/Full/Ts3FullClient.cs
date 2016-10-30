@@ -7,10 +7,10 @@
 	using System.Net;
 	using System.Net.Sockets;
 
-	public sealed class TS3FullClient : TS3BaseClient
+	public sealed class Ts3FullClient : Ts3BaseClient
 	{
 		private readonly UdpClient udpClient;
-		private readonly TS3Crypt ts3Crypt;
+		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
 
 		private int returnCode;
@@ -18,10 +18,10 @@
 		public override ClientType ClientType => ClientType.Full;
 		public ushort ClientId => packetHandler.ClientId;
 
-		public TS3FullClient(EventDispatchType dispatcher) : base(dispatcher)
+		public Ts3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
 			udpClient = new UdpClient();
-			ts3Crypt = new TS3Crypt();
+			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler(ts3Crypt, udpClient);
 
 			returnCode = 0;
@@ -43,11 +43,11 @@
 			{
 				var hostEntry = Dns.GetHostEntry(conData.Hostname);
 				var ipAddr = hostEntry.AddressList.FirstOrDefault();
-				if (ipAddr == null) throw new TS3Exception("Could not resove DNS.");
+				if (ipAddr == null) throw new Ts3Exception("Could not resove DNS.");
 				packetHandler.RemoteAddress = new IPEndPoint(ipAddr, conData.Port);
 				udpClient.Connect(packetHandler.RemoteAddress);
 			}
-			catch (SocketException ex) { throw new TS3Exception("Could not connect", ex); }
+			catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
 
 			ts3Crypt.Identity = conDataFull.Identity;
 			var initData = ts3Crypt.ProcessInit1(null);
@@ -86,7 +86,7 @@
 						break;
 				}
 			}
-			Status = TS3ClientStatus.Disconnected;
+			Status = Ts3ClientStatus.Disconnected;
 		}
 
 		private bool SpecialCommandProcess(string message)
@@ -123,7 +123,7 @@
 			ConnectDone();
 		}
 
-		protected override IEnumerable<IResponse> SendCommand(TS3Command com, Type targetType)
+		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType)
 		{
 			if (com.ExpectResponse)
 				com.AppendParameter(new CommandParameter("return_code", returnCode));
@@ -165,7 +165,7 @@
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> SendNoResponsed(
-				new TS3Command("clientinit", new List<CommandParameter>() {
+				new Ts3Command("clientinit", new List<CommandParameter>() {
 					new CommandParameter("client_nickname", nickname),
 					new CommandParameter("client_version", versionSign.Name),
 					new CommandParameter("client_platform", plattform),

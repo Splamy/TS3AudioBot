@@ -28,8 +28,8 @@ namespace TS3Client
 
 			Type enumType = valueEnum.GetType();
 			var valueField = enumType.GetField(Enum.GetName(enumType, valueEnum));
-			var fieldAttributes = valueField.GetCustomAttributes(typeof(TS3SerializableAttribute), false);
-			var fieldAttribute = fieldAttributes.Cast<TS3SerializableAttribute>().FirstOrDefault();
+			var fieldAttributes = valueField.GetCustomAttributes(typeof(Ts3SerializableAttribute), false);
+			var fieldAttribute = fieldAttributes.Cast<Ts3SerializableAttribute>().FirstOrDefault();
 			if (fieldAttribute == null)
 				throw new InvalidOperationException("This enum doesn't contain the QueryString attribute");
 			return fieldAttribute.QueryString;

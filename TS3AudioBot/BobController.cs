@@ -167,7 +167,7 @@ namespace TS3AudioBot
 				queryConnection.SendMessage(message, bobClient.ClientId);
 				return R.OkR;
 			}
-			catch (TS3CommandException qcex)
+			catch (Ts3CommandException qcex)
 			{
 				Log.Write(Log.Level.Error, "BC failed to send to bobC ({0})", qcex.Message);
 				return R.Err(qcex.Message);

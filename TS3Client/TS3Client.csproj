@@ -55,11 +55,11 @@
     <Compile Include="Full\PacketType.cs" />
     <Compile Include="Full\QuickLZ.cs" />
     <Compile Include="Full\RingQueue.cs" />
-    <Compile Include="Full\TS3Crypt.cs" />
-    <Compile Include="Full\TS3FullClient.cs" />
+    <Compile Include="Full\Ts3Crypt.cs" />
+    <Compile Include="Full\Ts3FullClient.cs" />
     <Compile Include="Full\VersionSign.cs" />
     <Compile Include="Messages\FullClientNotifications.cs" />
-    <Compile Include="TS3Command.cs" />
+    <Compile Include="Ts3Command.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
@@ -70,16 +70,16 @@
     <Compile Include="Messages\ResponseDictionary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EventDispatcher.cs" />
-    <Compile Include="TS3SerializableAttribute.cs" />
-    <Compile Include="TS3BaseClient.cs" />
-    <Compile Include="Query\TS3QueryClient.cs" />
+    <Compile Include="Ts3SerializableAttribute.cs" />
+    <Compile Include="Ts3BaseClient.cs" />
+    <Compile Include="Query\Ts3QueryClient.cs" />
     <Compile Include="CommandBinder.cs" />
     <Compile Include="CommandError.cs" />
     <Compile Include="CommandOption.cs" />
     <Compile Include="CommandParameter.cs" />
     <Compile Include="ParameterConverter.cs" />
-    <Compile Include="TS3Exceptions.cs" />
-    <Compile Include="TS3String.cs" />
+    <Compile Include="Ts3Exceptions.cs" />
+    <Compile Include="Ts3String.cs" />
     <Compile Include="CommandDeserializer.cs" />
     <Compile Include="WaitBlock.cs" />
   </ItemGroup>

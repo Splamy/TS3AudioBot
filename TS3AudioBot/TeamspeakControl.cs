@@ -50,7 +50,7 @@ namespace TS3AudioBot
 		private bool clientbufferOutdated = true;
 		private IDictionary<ulong, string> clientDbNames;
 
-		protected TS3BaseClient tsBaseClient;
+		protected Ts3BaseClient tsBaseClient;
 		protected ClientData me;
 
 		public TeamspeakControl(ClientType connectionType)
@@ -58,9 +58,9 @@ namespace TS3AudioBot
 			clientDbNames = new Dictionary<ulong, string>();
 
 			if (connectionType == ClientType.Full)
-				tsBaseClient = new TS3FullClient(EventDispatchType.DoubleThread);
+				tsBaseClient = new Ts3FullClient(EventDispatchType.DoubleThread);
 			else if (connectionType == ClientType.Query)
-				tsBaseClient = new TS3QueryClient(EventDispatchType.DoubleThread);
+				tsBaseClient = new Ts3QueryClient(EventDispatchType.DoubleThread);
 
 			tsBaseClient.OnClientLeftView += ExtendedClientLeftView;
 			tsBaseClient.OnClientEnterView += ExtendedClientEnterView;
@@ -146,7 +146,7 @@ namespace TS3AudioBot
 				clientDbNames.Add(clientDbId, name);
 				return name;
 			}
-			catch (TS3CommandException) { return null; }
+			catch (Ts3CommandException) { return null; }
 		}
 
 		public void Dispose()

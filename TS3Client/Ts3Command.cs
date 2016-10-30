@@ -5,7 +5,7 @@
 	using System.Text;
 	using System.Text.RegularExpressions;
 
-	public class TS3Command
+	public class Ts3Command
 	{
 		private static readonly Regex CommandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 		public static List<CommandParameter> NoParameter => new List<CommandParameter>();
@@ -16,9 +16,9 @@
 		private List<CommandParameter> parameter;
 		private List<CommandOption> options;
 
-		public TS3Command(string command) : this(command, NoParameter) { }
-		public TS3Command(string command, List<CommandParameter> parameter) : this(command, parameter, NoOptions) { }
-		public TS3Command(string command, List<CommandParameter> parameter, List<CommandOption> options)
+		public Ts3Command(string command) : this(command, NoParameter) { }
+		public Ts3Command(string command, List<CommandParameter> parameter) : this(command, parameter, NoOptions) { }
+		public Ts3Command(string command, List<CommandParameter> parameter, List<CommandOption> options)
 		{
 			ExpectResponse = true;
 			this.Command = command;
@@ -38,7 +38,7 @@
 			if (!CommandMatch.IsMatch(command))
 				throw new ArgumentException("Invalid command characters", nameof(command));
 
-			StringBuilder strb = new StringBuilder(TS3String.Escape(command));
+			StringBuilder strb = new StringBuilder(Ts3String.Escape(command));
 
 			foreach (var param in parameter)
 				strb.Append(' ').Append(param.QueryString);

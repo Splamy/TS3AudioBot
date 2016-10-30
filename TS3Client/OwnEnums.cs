@@ -49,19 +49,19 @@ namespace TS3Client
 
 	public enum MessageTarget
 	{
-		[TS3Serializable("textprivate")]
+		[Ts3Serializable("textprivate")]
 		Private = 1,
-		[TS3Serializable("textchannel")]
+		[Ts3Serializable("textchannel")]
 		Channel,
-		[TS3Serializable("textserver")]
+		[Ts3Serializable("textserver")]
 		Server,
 	}
 
 	public enum RequestTarget
 	{
-		[TS3Serializable("channel")]
+		[Ts3Serializable("channel")]
 		Channel = 4,
-		[TS3Serializable("server")]
+		[Ts3Serializable("server")]
 		Server,
 	}
 
@@ -69,53 +69,53 @@ namespace TS3Client
 	{
 		Unknown,
 		// Official notifies, used by client and query
-		[TS3Serializable("notifychannelcreated")]
+		[Ts3Serializable("notifychannelcreated")]
 		ChannelCreated,
-		[TS3Serializable("notifychanneldeleted")]
+		[Ts3Serializable("notifychanneldeleted")]
 		ChannelDeleted,
-		[TS3Serializable("notifychannelchanged")]
+		[Ts3Serializable("notifychannelchanged")]
 		ChannelChanged,
-		[TS3Serializable("notifychanneledited")]
+		[Ts3Serializable("notifychanneledited")]
 		ChannelEdited,
-		[TS3Serializable("notifychannelmoved")]
+		[Ts3Serializable("notifychannelmoved")]
 		ChannelMoved,
-		[TS3Serializable("notifychannelpasswordchanged")]
+		[Ts3Serializable("notifychannelpasswordchanged")]
 		ChannelPasswordChanged,
-		[TS3Serializable("notifycliententerview")]
+		[Ts3Serializable("notifycliententerview")]
 		ClientEnterView,
-		[TS3Serializable("notifyclientleftview")]
+		[Ts3Serializable("notifyclientleftview")]
 		ClientLeftView,
-		[TS3Serializable("notifyclientmoved")]
+		[Ts3Serializable("notifyclientmoved")]
 		ClientMoved,
-		[TS3Serializable("notifyserveredited")]
+		[Ts3Serializable("notifyserveredited")]
 		ServerEdited,
-		[TS3Serializable("notifytextmessage")]
+		[Ts3Serializable("notifytextmessage")]
 		TextMessage,
-		[TS3Serializable("notifytokenused")]
+		[Ts3Serializable("notifytokenused")]
 		TokenUsed,
 
 		// Internal notifies, used by client
-		[TS3Serializable("initivexpand")]
+		[Ts3Serializable("initivexpand")]
 		InitIvExpand,
-		[TS3Serializable("initserver")]
+		[Ts3Serializable("initserver")]
 		InitServer,
-		[TS3Serializable("channellist")]
+		[Ts3Serializable("channellist")]
 		ChannelList,
-		[TS3Serializable("channellistfinished")]
+		[Ts3Serializable("channellistfinished")]
 		ChannelListFinished,
-		[TS3Serializable("notifyclientneededpermissions")]
+		[Ts3Serializable("notifyclientneededpermissions")]
 		ClientNeededPermissions,
-		[TS3Serializable("notifyclientchannelgroupchanged")]
+		[Ts3Serializable("notifyclientchannelgroupchanged")]
 		ClientChannelGroupChanged,
-		[TS3Serializable("notifyservergroupclientadded")]
+		[Ts3Serializable("notifyservergroupclientadded")]
 		ClientServerGroupAdded,
-		[TS3Serializable("notifyconnectioninforequest")]
+		[Ts3Serializable("notifyconnectioninforequest")]
 		ConnectionInfoRequest,
-		[TS3Serializable("notifychannelsubscribed")]
+		[Ts3Serializable("notifychannelsubscribed")]
 		ChannelSubscribed,
-		[TS3Serializable("notifychannelunsubscribed")]
+		[Ts3Serializable("notifychannelunsubscribed")]
 		ChannelUnsubscribed,
-		[TS3Serializable("notifyclientchatcomposing")]
+		[Ts3Serializable("notifyclientchatcomposing")]
 		ClientChatComposing,
 		// TODO: notifyservergroupsbyclientid
 		// TODO: notifyclientchatclosed 

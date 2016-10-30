@@ -40,7 +40,7 @@ namespace TS3Client
 		public PrimitiveParameter(ulong value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(float value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(double value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(string value) { QueryValue = TS3String.Escape(value); }
+		public PrimitiveParameter(string value) { QueryValue = Ts3String.Escape(value); }
 		public PrimitiveParameter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
 		public PrimitiveParameter(DateTime value) { QueryValue = (value - UnixTimeStart).TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
 

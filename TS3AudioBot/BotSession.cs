@@ -57,7 +57,7 @@ namespace TS3AudioBot
 				else
 					Bot.QueryConnection.SendGlobalMessage(message);
 			}
-			catch (TS3CommandException ex)
+			catch (Ts3CommandException ex)
 			{
 				Log.Write(Log.Level.Error, "Could not write public message ({0})", ex);
 			}
