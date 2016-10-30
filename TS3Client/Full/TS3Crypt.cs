@@ -15,7 +15,7 @@
 	using System.Linq;
 	using System.Text;
 
-	sealed class TS3Crypt
+	public sealed class TS3Crypt
 	{
 		private const string DummyKeyAndNonceString = "c:\\windows\\system\\firewall32.cpl";
 		private static readonly byte[] DummyKey = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(0, 16));
@@ -30,19 +30,19 @@
 		private const int InHeaderLen = 3;
 		private const int PacketTypeKinds = 9;
 
-		public IdentityData Identity { get; private set; }
+		public IdentityData Identity { get; set; }
 
 		public bool CryptoInitComplete { get; private set; }
 		private readonly byte[] ivStruct = new byte[20];
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly Tuple<byte[], byte[]>[] cachedKeyNonces = new Tuple<byte[], byte[]>[PacketTypeKinds * 2];
 
-		public TS3Crypt()
+		internal TS3Crypt()
 		{
 			Reset();
 		}
 
-		public void Reset()
+		internal void Reset()
 		{
 			CryptoInitComplete = false;
 			Array.Clear(ivStruct, 0, ivStruct.Length);
@@ -52,23 +52,23 @@
 		}
 
 		#region KEY IMPORT/EXPROT
-
-		/// <summary>This methods loads the public and private key of our own identity.</summary>
+		/// <summary>This methods loads a secret identity.</summary>
 		/// <param name="key">The key stored in base64, encoded like the libtomcrypt export method (of a private key).</param>
 		/// <param name="keyOffset">A number which determines the security level of an identity.</param>
-		/// <param name="lastCheckedKeyOffset">The last brute forced number.</param>
-		public void LoadIdentity(string key, ulong keyOffset, ulong lastCheckedKeyOffset = 0)
+		/// <param name="lastCheckedKeyOffset">The last brute forced number. Default 0: will take the current keyOffset.</param>
+		/// <returns>The identity information.</returns>
+		public static IdentityData LoadIdentity(string key, ulong keyOffset, ulong lastCheckedKeyOffset = 0)
 		{
 			// Note: libtomcrypt stores the private AND public key when exporting a private key
 			// This makes importing very convenient :)
 			byte[] asnByteArray = Convert.FromBase64String(key);
 			var pubPrivKey = ImportPrivateKey(asnByteArray);
-			LoadIdentity(pubPrivKey, keyOffset, lastCheckedKeyOffset);
+			return LoadIdentity(pubPrivKey, keyOffset, lastCheckedKeyOffset);
 		}
 
-		private void LoadIdentity(Tuple<ECPoint, BigInteger> pubPrivKey, ulong keyOffset, ulong lastCheckedKeyOffset)
+		private static IdentityData LoadIdentity(Tuple<ECPoint, BigInteger> pubPrivKey, ulong keyOffset, ulong lastCheckedKeyOffset)
 		{
-			Identity = new IdentityData
+			return new IdentityData
 			{
 				PublicKey = pubPrivKey.Item1,
 				PrivateKey = pubPrivKey.Item2,
@@ -131,7 +131,7 @@
 		/// <param name="alpha">The alpha key from clientinit encoded in base64.</param>
 		/// <param name="beta">The beta key from clientinit encoded in base64.</param>
 		/// <param name="omega">The omega key from clientinit encoded in base64.</param>
-		public void CryptoInit(string alpha, string beta, string omega)
+		internal void CryptoInit(string alpha, string beta, string omega)
 		{
 			if (Identity == null)
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
@@ -178,7 +178,7 @@
 			Array.Copy(buffer, 0, fakeSignature, 0, 8);
 		}
 
-		public byte[] ProcessInit1(byte[] data)
+		internal byte[] ProcessInit1(byte[] data)
 		{
 			const int versionLen = 4;
 			const int initTypeLen = 1;
@@ -252,7 +252,7 @@
 
 		#region ENCRYPTION/DECRYPTION
 
-		public bool Encrypt(OutgoingPacket packet)
+		internal bool Encrypt(OutgoingPacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
 			{
@@ -307,7 +307,7 @@
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		public IncomingPacket Decrypt(byte[] data)
+		internal IncomingPacket Decrypt(byte[] data)
 		{
 			if (data.Length < InHeaderLen + MacLen)
 				return null;
@@ -418,12 +418,10 @@
 			Array.Copy(cachedKeyNonces[cacheIndex].Item2, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
-			// TODO: this could be written more efficiently
-			var startData = NetUtil.N2H(BitConverter.ToUInt16(key, 0));
-			startData = (ushort)(startData ^ packetId);
-			var xordata = BitConverter.GetBytes(NetUtil.H2N(startData));
-			Array.Copy(xordata, 0, key, 0, xordata.Length);
-
+			var packetIdH2N = NetUtil.H2N(packetId);
+			key[0] = (byte)((packetId >> 8) & 0xFF);
+			key[1] = (byte)((packetId) & 0xFF);
+			
 			return new Tuple<byte[], byte[]>(key, nonce);
 		}
 
@@ -438,7 +436,7 @@
 			return true;
 		}
 
-		public static void XorBinary(byte[] a, byte[] b, int len, byte[] outBuf)
+		private static void XorBinary(byte[] a, byte[] b, int len, byte[] outBuf)
 		{
 			if (a.Length < len || b.Length < len || outBuf.Length < len) throw new ArgumentException();
 			for (int i = 0; i < len; i++)
@@ -466,32 +464,41 @@
 
 		#region IDENTITY & SECURITY LEVEL
 
-		public void ImproveSecurity(int toLevel)
+		/// <summary><para>Tries to improve the security level of the provided identity to the new level.</para>
+		/// <para>The algorithm takes approximately 2^toLevel milliseconds to calculate; so be careful!</para>
+		/// This method can be canceled anytime since progress which is not enough for the next level
+		/// will be saved in <see cref="IdentityData.LastCheckedKeyOffset"/> continuously.</summary>
+		/// <param name="identity">The identity to improve.</param>
+		/// <param name="toLevel">The targeted level.</param>
+		public static void ImproveSecurity(IdentityData identity, int toLevel)
 		{
-			byte[] hashBuffer = new byte[Identity.PublicKeyString.Length + ulong.MaxValue.ToString().Length];
-			byte[] pubKeyBytes = Encoding.ASCII.GetBytes(Identity.PublicKeyString);
+			byte[] hashBuffer = new byte[identity.PublicKeyString.Length + ulong.MaxValue.ToString().Length];
+			byte[] pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
 			Array.Copy(pubKeyBytes, 0, hashBuffer, 0, pubKeyBytes.Length);
 
-			int best = GetSecurityLevel(hashBuffer, pubKeyBytes.Length, Identity.ValidKeyOffset);
+			int best = GetSecurityLevel(hashBuffer, pubKeyBytes.Length, identity.ValidKeyOffset);
 			while (true)
 			{
 				if (best >= toLevel) return;
 
-				var numberBytes = Encoding.ASCII.GetBytes(Identity.LastCheckedKeyOffset.ToString());
+				var numberBytes = Encoding.ASCII.GetBytes(identity.LastCheckedKeyOffset.ToString());
 				Array.Copy(numberBytes, 0, hashBuffer, pubKeyBytes.Length, numberBytes.Length);
 				byte[] outHash = Hash1It(hashBuffer, 0, pubKeyBytes.Length + numberBytes.Length);
 
-				int curr = GetSecurityLevel(hashBuffer, pubKeyBytes.Length, Identity.LastCheckedKeyOffset);
+				int curr = GetSecurityLevel(hashBuffer, pubKeyBytes.Length, identity.LastCheckedKeyOffset);
 				if (curr > best)
 				{
-					Identity.ValidKeyOffset = Identity.LastCheckedKeyOffset;
+					identity.ValidKeyOffset = identity.LastCheckedKeyOffset;
 					best = curr;
 				}
-				Identity.LastCheckedKeyOffset++;
+				identity.LastCheckedKeyOffset++;
 			}
 		}
 
-		public void GenerateNewIdentity(int securityLevel = 8)
+		/// <summary>Creates a new TeamSpeak3 identity</summary>
+		/// <param name="securityLevel">Minimum security level this identity will have.</param>
+		/// <returns>The identity information.</returns>
+		public static IdentityData GenerateNewIdentity(int securityLevel = 8)
 		{
 			var ecp = ECNamedCurveTable.GetByName("prime256v1");
 			var domainParams = new ECDomainParameters(ecp.Curve, ecp.G, ecp.N, ecp.H, ecp.GetSeed());
@@ -504,19 +511,20 @@
 			var publicKey = (ECPublicKeyParameters)keyPair.Public;
 
 			var pubPrivKey = new Tuple<ECPoint, BigInteger>(publicKey.Q.Normalize(), privateKey.D);
-			LoadIdentity(pubPrivKey, 0, 0);
-			ImproveSecurity(securityLevel);
+			var identity = LoadIdentity(pubPrivKey, 0, 0);
+			ImproveSecurity(identity, securityLevel);
+			return identity;
 		}
 
-		private int GetSecurityLevel(byte[] hashBuffer, int pubKeyLen, ulong level)
+		private static int GetSecurityLevel(byte[] hashBuffer, int pubKeyLen, ulong level)
 		{
-			var numberBytes = Encoding.ASCII.GetBytes(Identity.LastCheckedKeyOffset.ToString());
+			var numberBytes = Encoding.ASCII.GetBytes(level.ToString());
 			Array.Copy(numberBytes, 0, hashBuffer, pubKeyLen, numberBytes.Length);
 			byte[] outHash = Hash1It(hashBuffer, 0, pubKeyLen + numberBytes.Length);
 			return GetLeadingZeroBits(outHash);
 		}
 
-		private int GetLeadingZeroBits(byte[] data)
+		private static int GetLeadingZeroBits(byte[] data)
 		{
 			int curr = 0;
 			int i;

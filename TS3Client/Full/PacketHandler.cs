@@ -26,6 +26,7 @@
 		private readonly UdpClient udpClient;
 
 		public ushort ClientId { get; set; }
+		public IPEndPoint RemoteAddress { get; set; }
 
 		public PacketHandler(TS3Crypt ts3Crypt, UdpClient udpClient)
 		{
@@ -91,7 +92,7 @@
 			}
 
 			if (!ts3Crypt.Encrypt(packet))
-				throw new Exception(); // TODO
+				throw new TS3Exception("Internal encryption error.");
 
 			if (packet.PacketType == PacketType.Command || packet.PacketType == PacketType.CommandLow)
 				lock (sendLoopMonitor)
@@ -106,7 +107,7 @@
 		public void CryptoInitDone()
 		{
 			if (!ts3Crypt.CryptoInitComplete)
-				throw new Exception("No it's not >:(");
+				throw new InvalidOperationException($"{nameof(CryptoInitDone)} was called although it isn't initialized");
 			IncPacketCounter(PacketType.Command);
 		}
 
@@ -146,7 +147,7 @@
 			{
 				var dummy = new IPEndPoint(IPAddress.Any, 0);
 				byte[] buffer = udpClient.Receive(ref dummy);
-				if (/*dummy.Address.Equals(remoteIpAddress) &&*/ dummy.Port != 9987) // todo
+				if (dummy.Address.Equals(RemoteAddress.Address) && dummy.Port != RemoteAddress.Port)
 					continue;
 
 				var packet = ts3Crypt.Decrypt(buffer);
@@ -204,7 +205,7 @@
 				for (int i = 0; i < packetQueue.Count; i++)
 				{
 					IncomingPacket peekPacket;
-					if (packetQueue.TryPeek(packetQueue.StartIndex, out peekPacket))
+					if (packetQueue.TryPeek(packetQueue.StartIndex + i, out peekPacket))
 					{
 						take++;
 						takeLen += peekPacket.Size;

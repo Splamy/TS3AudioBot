@@ -77,7 +77,7 @@ namespace TS3AudioBot
 		public ResourceFactoryManager FactoryManager { get; private set; }
 		public WebDisplay WebInterface { get; private set; }
 		public PlayManager PlayManager { get; private set; }
-		public ITargetManager TargetManager { get; private set;}
+		public ITargetManager TargetManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -113,7 +113,7 @@ namespace TS3AudioBot
 			const string configFilePath = "configTS3AudioBot.cfg";
 			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = cfgFile.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
-			var qcd = cfgFile.GetDataStruct<QueryConnectionData>("QueryConnection", true);
+			var tfcd = cfgFile.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 			var hmd = cfgFile.GetDataStruct<HistoryManagerData>("HistoryManager", true);
 			var pmd = cfgFile.GetDataStruct<PluginManagerData>("PluginManager", true);
 			var pld = cfgFile.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
@@ -154,7 +154,7 @@ namespace TS3AudioBot
 			CommandManager.RegisterMain(this);
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
-			var teamspeakClient = new TeamspeakClient();
+			var teamspeakClient = new TeamspeakClient(tfcd);
 			QueryConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
 			AudioFramework = new AudioFramework(afd, teamspeakClient);
@@ -198,7 +198,7 @@ namespace TS3AudioBot
 			WebInterface.StartServerAsync();
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
-			catch (TS3CommandException qcex)
+			catch (TS3Exception qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
 				return false;

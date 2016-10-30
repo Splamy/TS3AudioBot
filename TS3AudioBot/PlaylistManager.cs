@@ -27,8 +27,7 @@ namespace TS3AudioBot
 	using ResourceFactories;
 	using CommandSystem;
 	using System.Reflection;
-
-	// TODO make public and byref when finished
+	
 	public sealed class PlaylistManager : IDisposable
 	{
 		private static readonly Regex validPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);

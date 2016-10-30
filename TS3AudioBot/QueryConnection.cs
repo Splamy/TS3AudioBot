@@ -16,13 +16,11 @@
 
 namespace TS3AudioBot
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
 	using Helper;
+	using System;
 	using TS3Client;
-	using TS3Client.Query;
 	using TS3Client.Messages;
+	using TS3Client.Query;
 
 	public class QueryConnection : TeamspeakControl
 	{

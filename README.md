@@ -82,7 +82,10 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 
 #### Linux
 1. Run the `InstallOpus.sh`
-1. Go into the directory of the repository and execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot.
+1. Get `NuGet.exe` (if you dont have it yet) with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
+1. Go into the directory of the repository with `cd TS3AudioBot`
+1. Execute `mono Nuget.exe restore` to download all dependencies
+1. Execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot
 
 #### Windows
 Build the C# AudioBot with Visual Studio.

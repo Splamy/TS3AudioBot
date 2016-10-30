@@ -42,10 +42,12 @@ namespace TS3AudioBot
 		private PreciseAudioTimer audioTimer;
 		private byte[] audioBuffer;
 		private Dictionary<ulong, SubscriptionData> channelSubscriptions;
+		private Ts3FullClientData ts3FullClientData;
 
-		public TeamspeakClient() : base(ClientType.Full)
+		public TeamspeakClient(Ts3FullClientData tfcd) : base(ClientType.Full)
 		{
-            Util.Init(ref channelSubscriptions);
+			ts3FullClientData = tfcd;
+			Util.Init(ref channelSubscriptions);
 			tsFullClient = (TS3FullClient)tsBaseClient;
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
@@ -54,21 +56,37 @@ namespace TS3AudioBot
 
 		public override void Connect()
 		{
-			tsFullClient.Connect(new ConnectionData
+			IdentityData identity;
+			if (string.IsNullOrEmpty(ts3FullClientData.identity))
 			{
-				UserName = "AudioBot",
-				Hostname = "splamy.de",
-				Port = 9987,
-				PrivateKey = "MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=",
-				KeyOffset = 57451630,
-				LastCheckedKeyOffset = 57451630,
+				identity = TS3Crypt.GenerateNewIdentity();
+				ts3FullClientData.identity = identity.PrivateKeyString;
+				ts3FullClientData.identityoffset = identity.ValidKeyOffset;
+			}
+			else
+			{
+				identity = TS3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
+			}
+
+			tsFullClient.Connect(new ConnectionDataFull
+			{
+				Username = "AudioBot",
+				Hostname = ts3FullClientData.host,
+				Port = ts3FullClientData.port,
+				Identity = identity,
 			});
 		}
 
 		public override ClientData GetSelf()
 		{
-			// TODO call to clientinfo with own id
-			throw new NotImplementedException();
+			var cd = Generator.ActivateResponse<ClientData>();
+			var data = tsBaseClient.ClientInfo(tsFullClient.ClientId);
+			cd.ChannelId = data.ChannelId;
+			cd.DatabaseId = data.DatabaseId;
+			cd.ClientId = tsFullClient.ClientId;
+			cd.NickName = data.NickName;
+			cd.ClientType = tsBaseClient.ClientType;
+			return cd;
 		}
 
 		private void AudioSend()
@@ -128,9 +146,9 @@ namespace TS3AudioBot
 
 		public R<TimeSpan> GetLength()
 		{
-			var len = audioStream.Length;
-			if (len == 0) return "No length could be returned";
-			else return TimeSpan.FromSeconds(len); // TODO Unit ???????
+			var len = AudioEncoder.GetPlayLength(audioStream);
+			if (!len.HasValue) return "This audio surce does not support getting a length";
+			else return len.Value;
 		}
 
 		public R<TimeSpan> GetPosition()
@@ -186,18 +204,18 @@ namespace TS3AudioBot
 
 		public void OnResourceStarted(object sender, PlayInfoEventArgs playData)
 		{
-			throw new NotImplementedException();
 			RestoreSubscriptions(playData.Invoker);
 		}
 
 		public void OnResourceStopped(object sender, EventArgs e)
 		{
-			throw new NotImplementedException();
+			// TODO despawn or go back
 		}
 
 		public void WhisperChannelSubscribe(ulong channel, bool manual)
 		{
-			throw new NotImplementedException();
+			// TODO move to requested channel
+			// TODO spawn new client
 			SubscriptionData subscriptionData;
 			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
 			{
@@ -210,7 +228,6 @@ namespace TS3AudioBot
 
 		public void WhisperChannelUnsubscribe(ulong channel, bool manual)
 		{
-			throw new NotImplementedException();
 			SubscriptionData subscriptionData;
 			if (!channelSubscriptions.TryGetValue(channel, out subscriptionData))
 			{
@@ -235,9 +252,10 @@ namespace TS3AudioBot
 
 		public void WhisperClientUnsubscribe(ushort userId)
 		{
-			throw new NotImplementedException();	
+			throw new NotImplementedException();
 		}
 
+		// Use for whisper feature later
 		private void RestoreSubscriptions(ClientData invokingUser)
 		{
 			WhisperChannelSubscribe(invokingUser.ChannelId, false);
@@ -254,5 +272,17 @@ namespace TS3AudioBot
 		}
 
 		#endregion
+	}
+
+	public struct Ts3FullClientData
+	{
+		[Info("the address of the TeamSpeak3 Query")]
+		public string host;
+		[Info("the port of the TeamSpeak3 Query", "9987")]
+		public ushort port;
+		[Info("the client identity", "")]
+		public string identity;
+		[Info("the client identity security offset", "0")]
+		public ulong identityoffset;
 	}
 }

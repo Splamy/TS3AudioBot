@@ -1,6 +1,4 @@
-﻿using System.Resources;
-
-namespace TS3Client
+﻿namespace TS3Client
 {
 	using Messages;
 	using System;
@@ -59,12 +57,20 @@ namespace TS3Client
 
 			lock (LockObj)
 			{
-				Status = TS3ClientStatus.Connecting;
-				ConnectionData = conData;
-				ConnectInternal(conData);
+				try
+				{
+					Status = TS3ClientStatus.Connecting;
+					ConnectionData = conData;
+					ConnectInternal(conData);
 
-				eventDispatcher.Init(NetworkLoop);
-				Status = TS3ClientStatus.Connected;
+					eventDispatcher.Init(NetworkLoop);
+					Status = TS3ClientStatus.Connected;
+				}
+				catch
+				{
+					Status = TS3ClientStatus.Disconnected;
+					throw;
+				}
 			}
 		}
 		protected abstract void ConnectInternal(ConnectionData conData);
@@ -266,6 +272,8 @@ namespace TS3Client
 			=> ClientDbInfo(client.DatabaseId);
 		public ClientDbData ClientDbInfo(ulong clDbId)
 			=> Send<ClientDbData>("clientdbinfo", new CommandParameter("cldbid", clDbId)).FirstOrDefault();
+		public ClientInfo ClientInfo(ushort clientId)
+			=> Send<ClientInfo>("clientinfo", new CommandParameter("clid", clientId)).FirstOrDefault();
 
 		#endregion
 
