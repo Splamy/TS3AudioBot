@@ -407,7 +407,7 @@ namespace TS3AudioBot.ResourceFactories
 	}
 
 #pragma warning disable CS0649
-	public struct YoutubeFactoryData
+	public class YoutubeFactoryData : ConfigData
 	{
 		[Info("a youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
 		public string apiKey;

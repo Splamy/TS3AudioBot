@@ -16,8 +16,10 @@
 
 namespace TS3AudioBot.Helper
 {
+	using PropertyChanged;
 	using System;
 	using System.Collections.Generic;
+	using System.ComponentModel;
 	using System.IO;
 	using System.Reflection;
 
@@ -131,12 +133,12 @@ namespace TS3AudioBot.Helper
 		/// <param name="defaultIfPossible">If set to <c>true</c> the method will use the default value from the InfoAttribute if it exists,
 		/// if no default value exists or set to <c>false</c> it will ask for the value on the console.</param>
 		/// <typeparam name="T">Struct to be read from the file.</typeparam>
-		public T GetDataStruct<T>(string associatedClass, bool defaultIfPossible) where T : struct
+		public T GetDataStruct<T>(string associatedClass, bool defaultIfPossible) where T : ConfigData, new()
 		{
 			if (associatedClass == null)
 				throw new ArgumentNullException(nameof(associatedClass));
 
-			object dataStruct = new T();
+			T dataStruct = new T();
 			var fields = typeof(T).GetFields();
 			foreach (var field in fields)
 			{
@@ -172,6 +174,11 @@ namespace TS3AudioBot.Helper
 				field.SetValue(dataStruct, parsedValue);
 			}
 			return (T)dataStruct;
+		}
+
+		protected void RegisterConfigObj()
+		{
+
 		}
 
 		protected bool WriteValueToConfig(string entryName, object value)
@@ -248,5 +255,11 @@ namespace TS3AudioBot.Helper
 			public override bool ReadKey(string name, out string value) { value = null; return false; }
 			public override void WriteKey(string name, string value) { }
 		}
+	}
+
+	[ImplementPropertyChanged]
+	public class ConfigData : INotifyPropertyChanged
+	{
+		public event PropertyChangedEventHandler PropertyChanged;
 	}
 }

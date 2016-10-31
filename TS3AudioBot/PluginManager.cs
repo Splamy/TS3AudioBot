@@ -514,7 +514,7 @@ namespace TS3AudioBot
 		CompileError,
 	}
 
-	public struct PluginManagerData
+	public class PluginManagerData : ConfigData
 	{
 		[Info("The relative path to the pugins", "Plugins")]
 		public string PluginPath;

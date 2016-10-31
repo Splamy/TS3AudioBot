@@ -189,7 +189,7 @@ namespace TS3AudioBot.History
 		}
 	}
 
-	public struct HistoryManagerData
+	public class HistoryManagerData : ConfigData
 	{
 		[Info("the absolute or relative path to the history database file")]
 		public string historyFile;

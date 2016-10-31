@@ -187,7 +187,7 @@ namespace TS3AudioBot
 		public SongEndEventArgs(bool songEndedByCallback) { SongEndedByCallback = songEndedByCallback; }
 	}
 
-	public struct AudioFrameworkData
+	public class AudioFrameworkData : ConfigData
 	{
 		//[InfoAttribute("the absolute or relative path to the local music folder")]
 		//public string localAudioPath;

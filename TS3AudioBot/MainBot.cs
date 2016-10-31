@@ -1463,12 +1463,12 @@ namespace TS3AudioBot
 	}
 
 #pragma warning disable CS0649
-	struct MainBotData
+	class MainBotData : ConfigData
 	{
 		[Info("path to the logfile", "log_ts3audiobot")]
-		public string logFile;
+		public string logFile { get; set; }
 		[Info("group able to execute admin commands from the bot")]
-		public ulong adminGroupId;
+		public ulong adminGroupId { get; set; }
 	}
 #pragma warning restore CS0649
 }

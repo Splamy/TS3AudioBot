@@ -573,7 +573,7 @@ namespace TS3AudioBot
 	}
 
 #pragma warning disable CS0649
-	public struct PlaylistManagerData
+	public class PlaylistManagerData : ConfigData
 	{
 		[Info("absolute or relative path the playlist folder", "Playlists")]
 		public string playlistPath;

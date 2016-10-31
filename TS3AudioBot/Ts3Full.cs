@@ -274,7 +274,7 @@ namespace TS3AudioBot
 		#endregion
 	}
 
-	public struct Ts3FullClientData
+	public class Ts3FullClientData : ConfigData
 	{
 		[Info("the address of the TeamSpeak3 Query")]
 		public string host;
