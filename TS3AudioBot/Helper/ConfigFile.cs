@@ -23,25 +23,13 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Reflection;
 
-	public class ConfigFile
+	public abstract class ConfigFile
 	{
-		private string path;
-		private readonly Dictionary<string, string> data;
-		private bool changed;
 		private static readonly char[] splitChar = new[] { '=' };
-
-		private ConfigFile()
-		{
-			changed = false;
-			data = new Dictionary<string, string>();
-		}
 
 		public static ConfigFile Open(string pPath)
 		{
-			ConfigFile cfgFile = new ConfigFile()
-			{
-				path = pPath,
-			};
+			NormalConfigFile cfgFile = new NormalConfigFile(pPath);
 
 			if (!File.Exists(pPath))
 			{
@@ -72,10 +60,7 @@ namespace TS3AudioBot.Helper
 			try
 			{
 				using (FileStream fs = File.Create(pPath)) { }
-				return new ConfigFile
-				{
-					path = pPath,
-				};
+				return new NormalConfigFile(pPath);
 			}
 			catch (Exception ex)
 			{
@@ -89,43 +74,38 @@ namespace TS3AudioBot.Helper
 		/// <returns>Returns a dummy-ConfigFile</returns>
 		public static ConfigFile CreateDummy()
 		{
-			return new DummyConfigFile();
+			return new MemoryConfigFile();
 		}
 
-		public virtual void WriteKey(string name, string value)
+		protected static object ParseToType(Type targetType, string value)
 		{
-			changed = true;
-
-			if (data.ContainsKey(name))
-			{
-				data[name] = value;
-			}
-			else
-			{
-				data.Add(name, value);
-			}
+			if (targetType == typeof(string))
+				return value;
+			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
+			if (mi == null)
+				throw new ArgumentException("The value of the DataStruct couldn't be parsed.");
+			object[] result = { value, null };
+			object success = mi.Invoke(null, result);
+			if (!(bool)success)
+				return null;
+			return result[1];
 		}
 
-		public string ReadKey(string name)
+		protected static bool IsNumeric(Type type)
 		{
-			string value;
-			ReadKey(name, out value);
-			return value;
+			return type == typeof(sbyte)
+				|| type == typeof(byte)
+				|| type == typeof(short)
+				|| type == typeof(ushort)
+				|| type == typeof(int)
+				|| type == typeof(uint)
+				|| type == typeof(long)
+				|| type == typeof(ulong)
+				|| type == typeof(float)
+				|| type == typeof(double)
+				|| type == typeof(decimal);
 		}
 
-		public virtual bool ReadKey(string name, out string value)
-		{
-			if (!data.ContainsKey(name))
-			{
-				value = null;
-				return false;
-			}
-			else
-			{
-				value = data[name];
-				return true;
-			}
-		}
 
 		/// <summary>Reads an object from the currently loaded file.</summary>
 		/// <returns>A new struct instance with the read values.</returns>
@@ -173,14 +153,8 @@ namespace TS3AudioBot.Helper
 				// finally set the value to our object
 				field.SetValue(dataStruct, parsedValue);
 			}
-			return (T)dataStruct;
+			return dataStruct;
 		}
-
-		protected void RegisterConfigObj()
-		{
-
-		}
-
 		protected bool WriteValueToConfig(string entryName, object value)
 		{
 			if (value == null)
@@ -190,7 +164,7 @@ namespace TS3AudioBot.Helper
 			{
 				WriteKey(entryName, (string)value);
 			}
-			if (tType == typeof(bool) || IsNumeric(tType) || tType == typeof(char))
+			else if (tType == typeof(bool) || IsNumeric(tType) || tType == typeof(char))
 			{
 				WriteKey(entryName, value.ToString());
 			}
@@ -201,55 +175,90 @@ namespace TS3AudioBot.Helper
 			return true;
 		}
 
-		protected static object ParseToType(Type targetType, string value)
-		{
-			if (targetType == typeof(string))
-				return value;
-			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
-			if (mi == null)
-				throw new ArgumentException("The value of the DataStruct couldn't be parsed.");
-			object[] result = { value, null };
-			object success = mi.Invoke(null, result);
-			if (!(bool)success)
-				return null;
-			return result[1];
-		}
+		public abstract void WriteKey(string name, string value);
+		public abstract bool ReadKey(string name, out string value);
+		public abstract void Close();
 
-		protected static bool IsNumeric(Type type)
-		{
-			return type == typeof(sbyte)
-				|| type == typeof(byte)
-				|| type == typeof(short)
-				|| type == typeof(ushort)
-				|| type == typeof(int)
-				|| type == typeof(uint)
-				|| type == typeof(long)
-				|| type == typeof(ulong)
-				|| type == typeof(float)
-				|| type == typeof(double)
-				|| type == typeof(decimal);
-		}
 
-		public virtual void Close()
+		private class NormalConfigFile : ConfigFile
 		{
-			if (!changed)
+			public string Path { get; }
+			public readonly Dictionary<string, string> data;
+			private bool changed;
+
+			public NormalConfigFile(string path)
 			{
-				return;
+				Path = path;
+				changed = false;
+				data = new Dictionary<string, string>();
 			}
 
-			using (StreamWriter output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
+			public override void WriteKey(string name, string value)
 			{
-				foreach (string key in data.Keys)
+				changed = true;
+
+				if (data.ContainsKey(name))
 				{
-					output.Write(key);
-					output.Write('=');
-					output.WriteLine(data[key]);
+					data[name] = value;
 				}
-				output.Flush();
+				else
+				{
+					data.Add(name, value);
+				}
+			}
+
+			public string ReadKey(string name)
+			{
+				string value;
+				ReadKey(name, out value);
+				return value;
+			}
+
+			public override bool ReadKey(string name, out string value)
+			{
+				if (!data.ContainsKey(name))
+				{
+					value = null;
+					return false;
+				}
+				else
+				{
+					value = data[name];
+					return true;
+				}
+			}
+
+			protected void RegisterConfigObj<T>(T obj) where T : ConfigData
+			{
+				obj.PropertyChanged += ConfigDataPropertyChanged;
+			}
+
+			private void ConfigDataPropertyChanged(object sender, PropertyChangedEventArgs e)
+			{
+				//e.PropertyName;
+			}
+
+			public override void Close()
+			{
+				if (!changed)
+				{
+					return;
+				}
+
+				using (StreamWriter output = new StreamWriter(File.Open(Path, FileMode.Create, FileAccess.Write)))
+				{
+					foreach (string key in data.Keys)
+					{
+						output.Write(key);
+						output.Write('=');
+						output.WriteLine(data[key]);
+					}
+					output.Flush();
+				}
 			}
 		}
 
-		private class DummyConfigFile : ConfigFile
+		private class MemoryConfigFile : ConfigFile
 		{
 			public override void Close() { }
 			public override bool ReadKey(string name, out string value) { value = null; return false; }

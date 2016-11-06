@@ -23,6 +23,7 @@
 		public event NotifyEventHandler<TextMessage> OnTextMessageReceived;
 		public event NotifyEventHandler<ClientEnterView> OnClientEnterView;
 		public event NotifyEventHandler<ClientLeftView> OnClientLeftView;
+		public event EventHandler<CommandError> OnErrorEvent;
 		public event EventHandler OnConnected;
 
 
@@ -127,7 +128,12 @@
 
 					var errorStatus = CommandDeserializer.GenerateErrorStatus(message);
 					if (!errorStatus.Ok)
-						RequestQueue.Dequeue().SetAnswer(errorStatus);
+					{
+						if (!string.IsNullOrEmpty(errorStatus.ReturnCode))
+							RequestQueue.Dequeue().SetAnswer(errorStatus);
+						else
+							OnErrorEvent?.Invoke(this, errorStatus); // TODO: not qite nice yet
+					}
 					else
 					{
 						var peek = RequestQueue.Any() ? RequestQueue.Peek() : null;

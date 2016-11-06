@@ -89,6 +89,8 @@ namespace TS3AudioBot
 			return cd;
 		}
 
+		ulong[] chan = new ulong[] { 4 };
+		ushort[] cli = new ushort[] { };
 		private void AudioSend()
 		{
 			if ((audioBuffer?.Length ?? 0) < encoder.OptimalPacketSize)
@@ -109,7 +111,7 @@ namespace TS3AudioBot
 				Tuple<byte[], int> encodedArr = null;
 				while ((encodedArr = encoder.GetPacket()) != null)
 				{
-					tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
+					tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, chan, cli);
 				}
 			}
 		}
@@ -141,6 +143,7 @@ namespace TS3AudioBot
 		{
 			sendTick.Active = false;
 			audioTimer.Stop();
+			audioStream?.Dispose();
 			return R.OkR;
 		}
 

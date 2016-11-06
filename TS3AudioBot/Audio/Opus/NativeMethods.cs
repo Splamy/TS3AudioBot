@@ -27,7 +27,7 @@ namespace TS3AudioBot.Audio.Opus
 	/// <summary>
 	/// Wraps the Opus API.
 	/// </summary>
-	internal class API
+	internal class NativeMethods
 	{
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern IntPtr opus_encoder_create(int Fs, int channels, int application, out IntPtr error);

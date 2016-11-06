@@ -78,7 +78,7 @@
   <ItemGroup>
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\AudioEncoder.cs" />
-    <Compile Include="Audio\Opus\API.cs" />
+    <Compile Include="Audio\Opus\NativeMethods.cs" />
     <Compile Include="Audio\Opus\OpusDecoder.cs" />
     <Compile Include="Audio\Opus\OpusEncoder.cs" />
     <Compile Include="Audio\PreciseAudioTimer.cs" />

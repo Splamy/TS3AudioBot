@@ -27,7 +27,7 @@ namespace TS3AudioBot.Audio.Opus
 	/// <summary>
 	/// Opus audio decoder.
 	/// </summary>
-	public class OpusDecoder : IDisposable
+	public sealed class OpusDecoder : IDisposable
 	{
 		/// <summary>
 		/// Creates a new Opus decoder.
@@ -47,7 +47,7 @@ namespace TS3AudioBot.Audio.Opus
 				throw new ArgumentOutOfRangeException("inputChannels");
 
 			IntPtr error;
-			IntPtr decoder = API.opus_decoder_create(outputSampleRate, outputChannels, out error);
+			IntPtr decoder = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out error);
 			if ((Errors)error != Errors.OK)
 			{
 				throw new Exception("Exception occured while creating decoder");
@@ -83,9 +83,9 @@ namespace TS3AudioBot.Audio.Opus
 
 			IntPtr decodedPtr = Marshal.UnsafeAddrOfPinnedArrayElement(decoded, 0);
 			if (inputOpusData != null)
-				length = API.opus_decode(_decoder, inputOpusData, dataLength, decodedPtr, frameCount, 0);
+				length = NativeMethods.opus_decode(_decoder, inputOpusData, dataLength, decodedPtr, frameCount, 0);
 			else
-				length = API.opus_decode(_decoder, null, 0, decodedPtr, frameCount, (ForwardErrorCorrection) ? 1 : 0);
+				length = NativeMethods.opus_decode(_decoder, null, 0, decodedPtr, frameCount, (ForwardErrorCorrection) ? 1 : 0);
 
 			decodedLength = length * 2;
 			if (length < 0)
@@ -142,7 +142,7 @@ namespace TS3AudioBot.Audio.Opus
 
 			if (_decoder != IntPtr.Zero)
 			{
-				API.opus_decoder_destroy(_decoder);
+				NativeMethods.opus_decoder_destroy(_decoder);
 				_decoder = IntPtr.Zero;
 			}
 

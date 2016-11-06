@@ -51,7 +51,7 @@
 			var addFlags = PacketFlags.None;
 			if (NeedsSplitting(packet.Length))
 			{
-				if (packetType == PacketType.Readable)
+				if (packetType == PacketType.Readable || packetType == PacketType.Voice)
 					return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
 
 				packet = QuickLZ.compress(packet, 3);
@@ -77,14 +77,14 @@
 			}
 			else
 			{
-				if (packet.PacketType == PacketType.Pong || packet.PacketType == PacketType.Readable)
+				if (packet.PacketType == PacketType.Pong || packet.PacketType == PacketType.Readable || packet.PacketType == PacketType.Voice)
 					packet.PacketFlags |= flags | PacketFlags.Unencrypted;
 				else if (packet.PacketType == PacketType.Ack)
 					packet.PacketFlags |= flags;
 				else
 					packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 				packet.PacketId = GetPacketCounter(packet.PacketType);
-				if (packet.PacketType == PacketType.Readable)
+				if (packet.PacketType == PacketType.Readable || packet.PacketType == PacketType.Voice)
 					NetUtil.H2N(packet.PacketId, packet.Data, 0);
 				if (ts3Crypt.CryptoInitComplete)
 					IncPacketCounter(packet.PacketType);
