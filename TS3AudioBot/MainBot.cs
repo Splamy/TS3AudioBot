@@ -1466,9 +1466,9 @@ namespace TS3AudioBot
 	class MainBotData : ConfigData
 	{
 		[Info("path to the logfile", "log_ts3audiobot")]
-		public string logFile { get; set; }
+		public string logFile;
 		[Info("group able to execute admin commands from the bot")]
-		public ulong adminGroupId { get; set; }
+		public ulong adminGroupId;
 	}
 #pragma warning restore CS0649
 }
