@@ -22,45 +22,24 @@ namespace TS3AudioBot.Helper
 	using System.ComponentModel;
 	using System.IO;
 	using System.Reflection;
+	using System.Text;
 
 	public abstract class ConfigFile
 	{
 		private static readonly char[] splitChar = new[] { '=' };
 
-		public static ConfigFile Open(string pPath)
+		public static ConfigFile OpenFile(string pPath)
 		{
 			NormalConfigFile cfgFile = new NormalConfigFile(pPath);
-
-			if (!File.Exists(pPath))
-			{
-				Console.WriteLine("Config file does not exist");
-				return null;
-			}
-
-			using (StreamReader input = new StreamReader(File.Open(pPath, FileMode.Open, FileAccess.Read, FileShare.Read)))
-			{
-				while (!input.EndOfStream)
-				{
-					string s = input.ReadLine();
-					if (!s.StartsWith(";", StringComparison.Ordinal)
-						&& !s.StartsWith("//", StringComparison.Ordinal)
-						&& !s.StartsWith("#", StringComparison.Ordinal))
-					{
-						string[] kvp = s.Split(splitChar, 2);
-						if (kvp.Length < 2) { Console.WriteLine("Invalid log entry: \"{0}\"", s); continue; }
-						cfgFile.data.Add(kvp[0], kvp[1]);
-					}
-				}
-			}
-			return cfgFile;
+			return cfgFile.Open() ? cfgFile : null;
 		}
 
-		public static ConfigFile Create(string pPath)
+		public static ConfigFile CreateFile(string path)
 		{
 			try
 			{
-				using (FileStream fs = File.Create(pPath)) { }
-				return new NormalConfigFile(pPath);
+				using (FileStream fs = File.Create(path)) { }
+				return new NormalConfigFile(path);
 			}
 			catch (Exception ex)
 			{
@@ -155,6 +134,7 @@ namespace TS3AudioBot.Helper
 			}
 			return dataStruct;
 		}
+		protected virtual void RegisterConfigObj<T>(T obj) where T : ConfigData { }
 		protected bool WriteValueToConfig(string entryName, object value)
 		{
 			if (value == null)
@@ -175,25 +155,51 @@ namespace TS3AudioBot.Helper
 			return true;
 		}
 
-		public abstract void WriteKey(string name, string value);
-		public abstract bool ReadKey(string name, out string value);
+		protected abstract bool Open();
+		protected abstract void WriteKey(string name, string value);
+		protected abstract bool ReadKey(string name, out string value);
 		public abstract void Close();
 
 
 		private class NormalConfigFile : ConfigFile
 		{
-			public string Path { get; }
-			public readonly Dictionary<string, string> data;
+			private string path;
+			private string[] fileLines;
+			private readonly Dictionary<string, string> data;
 			private bool changed;
 
 			public NormalConfigFile(string path)
 			{
-				Path = path;
+				this.path = path;
 				changed = false;
 				data = new Dictionary<string, string>();
 			}
 
-			public override void WriteKey(string name, string value)
+			protected override bool Open()
+			{
+				if (!File.Exists(path))
+				{
+					Console.WriteLine("Config file does not exist");
+					return false;
+				}
+
+				fileLines = File.ReadAllLines(path, new UTF8Encoding(false));
+				for (int i = 0; i < fileLines.Length; i++)
+				{
+					var s = fileLines[i];
+					if (!s.StartsWith(";", StringComparison.Ordinal)
+						&& !s.StartsWith("//", StringComparison.Ordinal)
+						&& !s.StartsWith("#", StringComparison.Ordinal))
+					{
+						string[] kvp = s.Split(splitChar, 2);
+						if (kvp.Length < 2) { Console.WriteLine("Invalid log entry: \"{0}\"", s); continue; }
+						data.Add(kvp[0], kvp[1]);
+					}
+				}
+				return true;
+			}
+
+			protected override void WriteKey(string name, string value)
 			{
 				changed = true;
 
@@ -207,14 +213,7 @@ namespace TS3AudioBot.Helper
 				}
 			}
 
-			public string ReadKey(string name)
-			{
-				string value;
-				ReadKey(name, out value);
-				return value;
-			}
-
-			public override bool ReadKey(string name, out string value)
+			protected override bool ReadKey(string name, out string value)
 			{
 				if (!data.ContainsKey(name))
 				{
@@ -228,7 +227,7 @@ namespace TS3AudioBot.Helper
 				}
 			}
 
-			protected void RegisterConfigObj<T>(T obj) where T : ConfigData
+			protected override void RegisterConfigObj<T>(T obj)
 			{
 				obj.PropertyChanged += ConfigDataPropertyChanged;
 			}
@@ -245,7 +244,7 @@ namespace TS3AudioBot.Helper
 					return;
 				}
 
-				using (StreamWriter output = new StreamWriter(File.Open(Path, FileMode.Create, FileAccess.Write)))
+				using (StreamWriter output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
 				{
 					foreach (string key in data.Keys)
 					{
@@ -256,13 +255,21 @@ namespace TS3AudioBot.Helper
 					output.Flush();
 				}
 			}
+
+			private class LineData
+			{
+				public int Line { get; set; }
+				public string Content { get; set; }
+			}
 		}
 
 		private class MemoryConfigFile : ConfigFile
 		{
 			public override void Close() { }
-			public override bool ReadKey(string name, out string value) { value = null; return false; }
-			public override void WriteKey(string name, string value) { }
+
+			protected override bool Open() { return true; }
+			protected override bool ReadKey(string name, out string value) { value = null; return false; }
+			protected override void WriteKey(string name, string value) { }
 		}
 	}
 

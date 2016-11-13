@@ -17,16 +17,14 @@
 namespace TS3AudioBot
 {
 	using Audio;
-	using CSCore;
-	using CSCore.Codecs;
-	using CSCore.Streams;
 	using Helper;
 	using System;
+	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using TS3Client;
 	using TS3Client.Full;
 	using TS3Client.Messages;
-	using System.Collections.Generic;
 
 	class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
 	{
@@ -37,8 +35,8 @@ namespace TS3AudioBot
 		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
 
 		private TickWorker sendTick;
-		private VolumeSource audioVolume;
-		private IWaveSource audioStream;
+		private float volume = 1;
+		private Process ffmpegProcess;
 		private AudioEncoder encoder;
 		private PreciseAudioTimer audioTimer;
 		private byte[] audioBuffer;
@@ -56,7 +54,7 @@ namespace TS3AudioBot
 			tsFullClient = (Ts3FullClient)tsBaseClient;
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
-			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channel);
+			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channels);
 		}
 
 		public override void Connect()
@@ -96,12 +94,16 @@ namespace TS3AudioBot
 
 		private void AudioSend()
 		{
+			if (ffmpegProcess == null)
+				return;
+
 			if ((audioBuffer?.Length ?? 0) < encoder.OptimalPacketSize)
 				audioBuffer = new byte[encoder.OptimalPacketSize];
 
 			while (audioTimer.BufferLength < audioBufferLength)
 			{
-				int read = audioStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
+				int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
+				AudioModifier.AdjustVolume(audioBuffer, read, volume);
 				if (read == 0)
 				{
 					OnSongEnd?.Invoke(this, new EventArgs());
@@ -127,13 +129,18 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				var baseStream = CodecFactory.Instance.GetCodec(new Uri(url));
-				var sampleStream = baseStream.ToSampleSource();
-				if (audioVolume == null)
-					audioVolume = new VolumeSource(sampleStream);
-				else
-					audioVolume.BaseSource = sampleStream;
-				audioStream = audioVolume.ChangeSampleRate(48000).ToWaveSource(16);
+				ffmpegProcess = new Process()
+				{
+					StartInfo = new ProcessStartInfo()
+					{
+						FileName = ts3FullClientData.ffmpegpath,
+						Arguments = $"-hide_banner -nostats -loglevel panic -i \"{ url }\" -ar 48000 -f s16le -acodec pcm_s16le pipe:1",
+						RedirectStandardOutput = true,
+						UseShellExecute = false,
+						CreateNoWindow = true,
+					}
+				};
+				ffmpegProcess.Start();
 
 				audioTimer.Start();
 				sendTick.Active = true;
@@ -146,15 +153,16 @@ namespace TS3AudioBot
 		{
 			sendTick.Active = false;
 			audioTimer.Stop();
-			audioStream?.Dispose();
+			ffmpegProcess?.Kill();
+			ffmpegProcess?.WaitForExit();
+			ffmpegProcess?.Close();
+			ffmpegProcess = null;
 			return R.OkR;
 		}
 
 		public R<TimeSpan> GetLength()
 		{
-			var len = AudioEncoder.GetPlayLength(audioStream);
-			if (!len.HasValue) return "This audio surce does not support getting a length";
-			else return len.Value;
+			throw new NotImplementedException();
 		}
 
 		public R<TimeSpan> GetPosition()
@@ -166,16 +174,8 @@ namespace TS3AudioBot
 			throw new NotImplementedException();
 		}
 
-		public R<int> GetVolume()
-		{
-			if (audioVolume == null) return "No active stream for volume";
-			return (int)(audioVolume.Volume * 100);
-		}
-		public void SetVolume(int value)
-		{
-			if (audioVolume != null)
-				audioVolume.Volume = value / 100f;
-		}
+		public R<int> GetVolume() => (int)(volume * 100);
+		public void SetVolume(int value) => volume = value / 100f;
 
 		public void Initialize() { }
 
@@ -292,5 +292,7 @@ namespace TS3AudioBot
 		public string identity;
 		[Info("the client identity security offset", "0")]
 		public ulong identityoffset;
+		[Info("the relative or full path to ffmpeg", "ffmpeg")]
+		public string ffmpegpath;
 	}
 }

@@ -16,7 +16,6 @@
 
 namespace TS3AudioBot.Audio
 {
-	using CSCore;
 	using Helper;
 	using Opus;
 	using System;
@@ -28,7 +27,7 @@ namespace TS3AudioBot.Audio
 	{
 		public Codec Codec { get; }
 		public int SampleRate { get; }
-		public int Channel { get; }
+		public int Channels { get; }
 		public int BitsPerSample { get; }
 
 		public int OptimalPacketSize => bytesPerSegment;
@@ -59,15 +58,15 @@ namespace TS3AudioBot.Audio
 
 				case Codec.OpusVoice:
 					SampleRate = 48000;
-					Channel = 1;
-					opusEncoder = OpusEncoder.Create(SampleRate, Channel, Application.Voip);
+					Channels = 1;
+					opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Voip);
 					opusEncoder.Bitrate = 8192 * 2;
 					break;
 
 				case Codec.OpusMusic:
 					SampleRate = 48000;
-					Channel = 2;
-					opusEncoder = OpusEncoder.Create(SampleRate, Channel, Application.Audio);
+					Channels = 2;
+					opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Audio);
 					opusEncoder.Bitrate = 8192 * 4;
 					break;
 
@@ -111,12 +110,9 @@ namespace TS3AudioBot.Audio
 				return null;
 		}
 
-		public static TimeSpan? GetPlayLength(IWaveSource source)
+		public TimeSpan GetPlayLength(int bytes)
 		{
-			var len = source.Length;
-			if (len == 0) return null;
-			var format = source.WaveFormat;
-			return TimeSpan.FromSeconds(len / (double)(format.SampleRate * (format.BitsPerSample / 8) * format.Channels));
+			return TimeSpan.FromSeconds(bytes / (double)(SampleRate * (BitsPerSample / 8) * Channels));
 		}
 
 		public void Clear()

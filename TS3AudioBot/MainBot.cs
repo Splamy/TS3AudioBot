@@ -111,7 +111,7 @@ namespace TS3AudioBot
 		{
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
-			ConfigFile cfgFile = ConfigFile.Open(configFilePath) ?? ConfigFile.Create(configFilePath) ?? ConfigFile.CreateDummy();
+			ConfigFile cfgFile = ConfigFile.OpenFile(configFilePath) ?? ConfigFile.CreateFile(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = cfgFile.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
 			var tfcd = cfgFile.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 			var hmd = cfgFile.GetDataStruct<HistoryManagerData>("HistoryManager", true);

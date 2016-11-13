@@ -58,10 +58,6 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CSCore, Version=1.1.5992.18249, Culture=neutral, PublicKeyToken=5a08f2b6f4415dea, processorArchitecture=MSIL">
-      <HintPath>..\packages\CSCore.1.1.0\lib\net35-client\CSCore.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="HtmlAgilityPack, Version=1.4.9.5, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
       <HintPath>..\packages\HtmlAgilityPack.1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
       <Private>True</Private>
@@ -78,6 +74,7 @@
   <ItemGroup>
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\AudioEncoder.cs" />
+    <Compile Include="Audio\AudioModifier.cs" />
     <Compile Include="Audio\Opus\NativeMethods.cs" />
     <Compile Include="Audio\Opus\OpusDecoder.cs" />
     <Compile Include="Audio\Opus\OpusEncoder.cs" />
