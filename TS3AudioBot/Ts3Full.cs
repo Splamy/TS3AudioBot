@@ -153,9 +153,15 @@ namespace TS3AudioBot
 		{
 			sendTick.Active = false;
 			audioTimer.Stop();
-			ffmpegProcess?.Kill();
-			ffmpegProcess?.WaitForExit();
-			ffmpegProcess?.Close();
+			if (!ffmpegProcess?.HasExited ?? false)
+			{
+				try { ffmpegProcess?.Kill(); }
+				catch (InvalidOperationException) { }
+			}
+			else
+			{
+				ffmpegProcess?.Close();
+			}
 			ffmpegProcess = null;
 			return R.OkR;
 		}
