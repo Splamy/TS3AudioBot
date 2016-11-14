@@ -179,6 +179,10 @@
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
+#if DEBUG
+		Dictionary<ushort, int> multiGetPackCount = new Dictionary<ushort, int>();
+#endif
+
 		private bool ReceiveCommand(IncomingPacket packet)
 		{
 			RingQueue<IncomingPacket> packetQueue;
@@ -266,6 +270,18 @@
 				else
 					return false;
 			}
+#if DEBUG
+			else
+			{
+				if (!multiGetPackCount.ContainsKey(packet.PacketId))
+					multiGetPackCount.Add(packet.PacketId, 0);
+				var cnt = ++multiGetPackCount[packet.PacketId];
+				if (cnt > 3)
+				{
+					Console.WriteLine("Non-get-able packet id {0} DATA: {1}", packet.PacketId, string.Join(" ", packet.Raw.Select(x => x.ToString("X2"))));
+				}
+			}
+#endif
 			return false;
 		}
 
@@ -279,16 +295,43 @@
 				throw new InvalidOperationException("Packet type is not an Ack-type");
 		}
 
+#if DEBUG
+		Dictionary<ushort, int> multiGetAckCount = new Dictionary<ushort, int>();
+#endif
+
 		private bool ReceiveAck(IncomingPacket packet)
 		{
 			if (packet.Data.Length < 2)
 				return false;
 			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
 
+#if DEBUG
+			lock (sendLoopMonitor)
+			{
+				bool hasRemoved = false;
+				for (var node = sendQueue.First; node != null; node = node.Next)
+					if (node.Value.PacketId == packetId)
+					{
+						sendQueue.Remove(node);
+						hasRemoved = true;
+					}
+				if (!hasRemoved)
+				{
+					if (!multiGetAckCount.ContainsKey(packetId))
+						multiGetAckCount.Add(packetId, 0);
+					var cnt = ++multiGetAckCount[packetId];
+					if (cnt > 3)
+					{
+						Console.WriteLine("Non-ack-able packet id {0} DATA: {1}", packetId, string.Join(" ", sendQueue.First(x => x.PacketId == packetId).Raw.Select(x => x.ToString("X2"))));
+					}
+				}
+			}
+#else
 			lock (sendLoopMonitor)
 				for (var node = sendQueue.First; node != null; node = node.Next)
 					if (node.Value.PacketId == packetId)
 						sendQueue.Remove(node);
+#endif
 			return true;
 		}
 

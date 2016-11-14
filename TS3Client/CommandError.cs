@@ -30,5 +30,7 @@ namespace TS3Client
 		public bool Ok => Id == 0 && Message == "ok";
 
 		public string ErrorFormat() => $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";
-	}
+
+        public override string ToString() => ErrorFormat();
+    }
 }

@@ -71,6 +71,7 @@ namespace TS3AudioBot
 				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
 			}
 
+			tsFullClient.OnErrorEvent += (s, e) => { Log.Write(Log.Level.Debug, e.ErrorFormat()); };
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = "AudioBot",
@@ -153,15 +154,14 @@ namespace TS3AudioBot
 		{
 			sendTick.Active = false;
 			audioTimer.Stop();
-			if (!ffmpegProcess?.HasExited ?? false)
+			try
 			{
-				try { ffmpegProcess?.Kill(); }
-				catch (InvalidOperationException) { }
+				if (!ffmpegProcess?.HasExited ?? false)
+					ffmpegProcess?.Kill();
+				else
+					ffmpegProcess?.Close();
 			}
-			else
-			{
-				ffmpegProcess?.Close();
-			}
+			catch (InvalidOperationException) { }
 			ffmpegProcess = null;
 			return R.OkR;
 		}
