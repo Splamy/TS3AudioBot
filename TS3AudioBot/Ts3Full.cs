@@ -104,13 +104,14 @@ namespace TS3AudioBot
 			while (audioTimer.BufferLength < audioBufferLength)
 			{
 				int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
-				AudioModifier.AdjustVolume(audioBuffer, read, volume);
 				if (read == 0)
 				{
 					OnSongEnd?.Invoke(this, new EventArgs());
+					AudioStop();
 					return;
 				}
 
+				AudioModifier.AdjustVolume(audioBuffer, read, volume);
 				encoder.PushPCMAudio(audioBuffer, read);
 				audioTimer.PushBytes(read);
 
@@ -137,6 +138,8 @@ namespace TS3AudioBot
 						FileName = ts3FullClientData.ffmpegpath,
 						Arguments = $"-hide_banner -nostats -loglevel panic -i \"{ url }\" -ar 48000 -f s16le -acodec pcm_s16le pipe:1",
 						RedirectStandardOutput = true,
+						RedirectStandardInput = true,
+						RedirectStandardError = true,
 						UseShellExecute = false,
 						CreateNoWindow = true,
 					}
