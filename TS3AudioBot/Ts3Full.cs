@@ -106,8 +106,8 @@ namespace TS3AudioBot
 				int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
 				if (read == 0)
 				{
-					OnSongEnd?.Invoke(this, new EventArgs());
 					AudioStop();
+					OnSongEnd?.Invoke(this, new EventArgs());
 					return;
 				}
 
