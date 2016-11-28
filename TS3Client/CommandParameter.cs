@@ -16,6 +16,8 @@
 
 namespace TS3Client
 {
+	using System.Diagnostics;
+
 	public class CommandParameter
 	{
 		public string Key { get; }
@@ -24,12 +26,14 @@ namespace TS3Client
 
 		protected CommandParameter() { }
 
-        public CommandParameter(string name, IParameterConverter rawValue)
+		[DebuggerStepThrough]
+		public CommandParameter(string name, IParameterConverter rawValue)
 		{
 			Key = name;
 			Value = rawValue.QueryValue;
 		}
 
+		[DebuggerStepThrough]
 		public CommandParameter(string name, PrimitiveParameter value) : this(name, (IParameterConverter)value) { }
 	}
 }

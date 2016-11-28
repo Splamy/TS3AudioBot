@@ -223,18 +223,19 @@ namespace TS3AudioBot
 			textMessage.Message = textMessage.Message.TrimStart(new[] { ' ' });
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
-			//BobController.HasUpdate();
 
 			QueryConnection.RefreshClientBuffer(true);
 
 			// get the current session
 			var result = SessionManager.GetSession(textMessage.InvokerId);
 			if (!result)
-				result = SessionManager.CreateSession(this, textMessage.InvokerId);
-			if (!result)
 			{
-				Log.Write(Log.Level.Error, result.Message);
-				return;
+				result = SessionManager.CreateSession(this, textMessage.InvokerId);
+				if (!result)
+				{
+					Log.Write(Log.Level.Error, result.Message);
+					return;
+				}
 			}
 
 			UserSession session = result.Value;
