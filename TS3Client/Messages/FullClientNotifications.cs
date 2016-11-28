@@ -1,4 +1,4 @@
-﻿namespace TS3Client.Messages
+namespace TS3Client.Messages
 {
 	[QueryNotification(NotificationType.InitIvExpand)]
 	public interface InitIvExpand : INotification

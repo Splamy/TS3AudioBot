@@ -1,4 +1,4 @@
-﻿namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio
 {
 	using System;
 

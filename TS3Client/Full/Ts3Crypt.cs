@@ -1,4 +1,4 @@
-﻿namespace TS3Client.Full
+namespace TS3Client.Full
 {
 	using Org.BouncyCastle.Asn1;
 	using Org.BouncyCastle.Asn1.X9;

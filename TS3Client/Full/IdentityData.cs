@@ -1,4 +1,4 @@
-﻿namespace TS3Client.Full
+namespace TS3Client.Full
 {
 	using Org.BouncyCastle.Math.EC;
 	using Org.BouncyCastle.Math;
