@@ -26,7 +26,10 @@ cd "$OpusBaseName"
 # Go back
 cd "$baseDir"
 
-# Copy the required libopus.so
-cp "$OpusBaseName/.libs/libopus.so" "."
+# Copy the required libopus.so to the local folder
+cp "$OpusBaseName/.libs/libopus.so" "./"
+
+# Copy the libopus.so to the folder we need
+cp "./libopus.so" "$baseDir/TS3AudioBot/bin/Release/libopus.so"
 
 echo "Done"

@@ -46,6 +46,8 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\Release\</OutputPath>
@@ -104,6 +106,7 @@
     <Compile Include="CommandSystem\Commands\RootCommand.cs" />
     <Compile Include="CommandSystem\Commands\StringCommand.cs" />
     <Compile Include="CommandSystem\XCommandSystem.cs" />
+    <Compile Include="DocGen.cs" />
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="Helper\R.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />

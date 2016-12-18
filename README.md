@@ -10,12 +10,14 @@ The bot has come a long way is pretty stable by now, though somtimes he hangs up
 For now I'd only recomment this bot on small servers since it doesn't cover any more complex right systems and relies on discipline.  
 
 ## How our Bot works
-The bot is split up into 2 parts:
+The TS3AudioBot connects with at least 1 TeamSpeak3 Client instance wich allows you to:
+  * issue commands to that instance.
+  * play music for your channel.
+  * tell him to stream to different Channels and/or Users simultaneously with TeamSpeak's whisper feature.
 
-1. The Main-Bot:
-  * is processing all your commands via TeamSpeak's serverquery.
-  * Connects the ts3-audio-client if music should be played. (Support for more at once i planned)
-  * [broken] is able to stream to different Channels and/or Users simultaneously with TeamSpeak's whisper feature.
+We use a self written TeamSpeak3 Client which gives us very low memory and cpu usage.  
+About _35MB_ Ram with 1500+ songs in history indexed  
+And _3-7% CPU_ usage on a single shared vCore from a _Intel Xeon E5-1650 v2 @ 3.50GHz_  
 
 ## Features & Plannings
 Done:
@@ -26,17 +28,19 @@ Done:
   - start any once played song again via id
   - search in title from played songs
   - (planned) combined search expressions
-* [broken] (un)subscribe to the Bob to hear music in any channel
-* [broken] (un)subscribe the Bob to certain channels
+* (un)subscribe to the Bob to hear music in any channel
+* (un)subscribe the Bob to certain channels
 * Playlist management for all users
-* [broken] Basic plugin support
+* *broken* | Basic plugin support
 
 In progress:
-* -- nothing --
+* Getting some really annoying bugs fixed :/
 
 In planning:
 * Create multiple client instances automatically for diffrent channels
-* Rights system
+* (Improved) Rights system
+* Own web-interface
+* Inteface API
 
 ## Existing commands
 All in all, the bot is fully operable only via chat (and actually only via chat).  
@@ -45,50 +49,62 @@ Some commands have restrictions, like they can only be used in a private chat, o
 
 * *add*: Adds a new song to the queue.
 * *clear*: Removes all songs from the current playlist.
-* *getuserid*: Gets the unique Id of a user.
+* *eval*: Executes a given command or string
 * *help*: Shows all commands or detailed help about a specific command.
 * *history*: Shows recently played songs.
+* *if*:  - no description yet -
 * *kickme*: Guess what?
-* *link*: Gets a close to original link so you can open the original song in youtube, soundcloud, etc.
-* *loop*: Sets whether of not to loop the entire playlist.
+* *link*: Gets a link to the origin of the current song.
+* *loop*: Gets or sets whether or not to loop the entire playlist.
 * *next*: Plays the next song in the playlist.
-* *pm*: Requests private session with the ServerBot so you can invoke private commands.
-* *play*: Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it.
+* *parse*: Displays the AST of the requested command.
+* *pause*: Well, pauses the song. Undo with !play
+* *play*: Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it
+* *pm*: Requests a private session with the ServerBot so you can invoke private commands.
 * *previous*: Plays the previous song in the playlist.
+* *print*: Lets you format multiple parameter to one.
 * *quit*: Closes the TS3AudioBot application.
 * *quiz*: Enable to hide the songnames and let your friends guess the title.
-* *repeat*: Sets whether or not to loop a single song
+* *random*: Gets whether or not to play playlists in random order.
+* *repeat*: Gets or sets whether or not to loop a single song.
+* *rng*: Gets a random number.
 * *seek*: Jumps to a timemark within the current song.
 * *song*: Tells you the name of the current song.
-* *soundcloud*: Resolves the link as a soundcloud song to play it for you.
-* *subscribe*: Lets you hear the music independent from the channel you are in.
 * *stop*: Stops the current song.
+* *subscribe*: Lets you hear the music independent from the channel you are in.
+* *take*: Take a substring from a string
 * *test*: Only for debugging purposes
-* *twitch*: Resolves the link as a twitch stream to play it for you.
 * *unsubscribe*: Only lets you hear the music in active channels again.
 * *volume*: Sets the volume level of the music.
-* *youtube*: Resolves the link as a youtube video to play it for you.  
-This command will find every link containing something like ?v=Unique_TYID  
-If the bot can't play a video it might be due to some embedding restrictions, which are blocking this.  
-For now we don't have any workaround for that.
+
+If the bot can't play some youtube videos it might be due to some embedding restrictions, which are blocking this.  
+You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source folder and specify the path in the config to try to bypass this.
 
 ## How to set up the bot
 ### Dependencies
  * Any C# Compiler (Visual Studio or mono 4.0.0+ and xbuild)
- * A C Compiler for Opus
+ * (Linux only) A C Compiler for Opus
 
 ### Compilation
-Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
+Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.  
+_If you know what you are doing_ you can alternatively compile each depenency referenced here from source/git by yourself, but I won't add a tutorial for that.
 
 #### Linux
-1. Run the `InstallOpus.sh`
-1. Get `NuGet.exe` (if you dont have it yet) with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
+1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
 1. Go into the directory of the repository with `cd TS3AudioBot`
-1. Execute `mono Nuget.exe restore` to download all dependencies
+1. Execute `nuget restore` or `mono ../Nuget.exe restore` to download all dependencies
 1. Execute `xbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot
+1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
+1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-32bit-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-64bit-static.tar.xz) binary.
+1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-XXbit-static.tar.xz`
+1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-64bit-static\ffmpeg` and copy it to `TS3AudioBot/bin/Release/`
 
 #### Windows
-Build the C# AudioBot with Visual Studio.
+1. Build the C# AudioBot with Visual Studio.
+1. Download the latest libopus file from [here](https://archive.mozilla.org/pub/opus/win32/opusfile-0.7-win32.zip)
+1. Open the archive and copy the file from `opusfile-0.7-win32\libopus-0.dll`, move **and rename** it to `TS3AudioBot\bin\Release\libopus.dll`
+1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
+1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static\bin\ffmpeg.exe` to `TS3AudioBot\bin\Release\`
 
 ### Installation
 1. Create 2 groups on the TeamSpeak server:
@@ -97,6 +113,7 @@ Build the C# AudioBot with Visual Studio.
     * view all server/channel/clients
     * write in all/private chat
     * optionally kick clients form channel/server
+    * See [here](https://github.com/Splamy/TS3AudioBot/issues/29#issuecomment-233582408) for a more detailed list until I update the readme...
   * one for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).  
 1. The first time you'll need to run the TS3Audiobot.exe without parameter and
 it will ask you a few questions. You can get ServerGroupIds in the rights window.
