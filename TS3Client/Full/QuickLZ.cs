@@ -312,7 +312,7 @@ static class QuickLZ
         //preventing this from happening by capping over 10mb
         if (size > 1024 * 1024)
         {
-            Debug.WriteLine("DECOMP SIZE too big", size);
+            Debug.WriteLine("DECOMP SIZE too big ({0})", size);
             return new byte[1];
         }
         byte[] destination = new byte[size];
