@@ -78,6 +78,7 @@ namespace TS3AudioBot
 		public WebDisplay WebInterface { get; private set; }
 		public PlayManager PlayManager { get; private set; }
 		public ITargetManager TargetManager { get; private set; }
+		public ConfigFile ConfigManager { get; set; }
 
 		public bool QuizMode { get; set; }
 
@@ -111,15 +112,15 @@ namespace TS3AudioBot
 		{
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
-			ConfigFile cfgFile = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
-			var afd = cfgFile.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
-			var tfcd = cfgFile.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
-			var hmd = cfgFile.GetDataStruct<HistoryManagerData>("HistoryManager", true);
-			var pmd = cfgFile.GetDataStruct<PluginManagerData>("PluginManager", true);
-			var pld = cfgFile.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
-			var yfd = cfgFile.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
-			mainBotData = cfgFile.GetDataStruct<MainBotData>("MainBot", true);
-			cfgFile.Close();
+			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
+			var afd = ConfigManager.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
+			var tfcd = ConfigManager.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
+			var hmd = ConfigManager.GetDataStruct<HistoryManagerData>("HistoryManager", true);
+			var pmd = ConfigManager.GetDataStruct<PluginManagerData>("PluginManager", true);
+			var pld = ConfigManager.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
+			var yfd = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
+			mainBotData = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
+			ConfigManager.Close();
 
 			if (consoleOutput)
 			{
@@ -1132,6 +1133,41 @@ namespace TS3AudioBot
 			else
 				AudioFramework.Position = span;
 			return null;
+		}
+
+		[Command(Admin, "settings", "Changes values from the settigns. Not all changes can be applied immediately.")]
+		[Usage("<key>", "Get the value of a setting")]
+		[Usage("<key> <value>", "Set the value of a setting")]
+		[RequiredParameters(0)]
+		public string CommandSettings(ExecutionInformation info, string key, string value)
+		{
+			var configMap = ConfigManager.GetConfigMap();
+			if(string.IsNullOrEmpty(key))
+				return "Please specify a key like: \n  " + string.Join("\n  ", configMap.Take(3).Select(kvp => kvp.Key));
+
+			var filtered = XCommandSystem.FilterList(configMap, key);
+			var filteredArr = filtered.ToArray();
+
+			if (filteredArr.Length == 0)
+			{
+				return "No config key matching the pattern found";
+			}
+			else if (filteredArr.Length == 1)
+			{
+				if (string.IsNullOrEmpty(value))
+				{
+					return filteredArr[0].Key + " = " + filteredArr[0].Value;
+				}
+				else
+				{
+					var result = ConfigManager.SetSetting(filteredArr[0].Key, value);
+					return result ? null : result.Message;
+				}
+			}
+			else
+			{
+				return "Found more than one matching key: \n  " + string.Join("\n  ", filteredArr.Take(3).Select(kvp => kvp.Key));
+			}
 		}
 
 		[Command(AnyVisibility, "song", "Tells you the name of the current song.")]

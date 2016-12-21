@@ -183,7 +183,7 @@ namespace TS3AudioBot
 			throw new NotImplementedException();
 		}
 
-		public R<int> GetVolume() => (int)(volume * 100);
+		public R<int> GetVolume() => (int)Math.Round(volume * 100);
 		public void SetVolume(int value) => volume = value / 100f;
 
 		public void Initialize() { }

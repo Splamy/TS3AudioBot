@@ -39,7 +39,7 @@ namespace TS3AudioBot.CommandSystem
 			foreach (var c in filter.ToLowerInvariant())
 			{
 				var newPossibilities = (from p in possibilities
-										let pos = p.name.IndexOf(c, p.index)
+										let pos = p.name.ToLowerInvariant().IndexOf(c, p.index)
 										where pos != -1
 										select new FilterItem<T>(p.name, p.value, pos + 1)).ToList();
 				if (newPossibilities.Any())

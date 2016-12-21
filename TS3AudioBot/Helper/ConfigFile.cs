@@ -24,12 +24,19 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Reflection;
 	using System.Text;
+	using System.Linq;
 
 	public abstract class ConfigFile
 	{
 		private static readonly char[] splitChar = new[] { '=' };
 		private const string nameSeperator = "::";
 		private bool changed;
+		private List<ConfigData> confObjects;
+
+		public ConfigFile()
+		{
+			confObjects = new List<ConfigData>();
+		}
 
 		public static ConfigFile OpenOrCreate(string path)
 		{
@@ -101,7 +108,44 @@ namespace TS3AudioBot.Helper
 
 			return dataStruct;
 		}
-		protected virtual void RegisterConfigObj(ConfigData obj) { }
+
+		protected virtual void RegisterConfigObj(ConfigData obj)
+		{
+			confObjects.Add(obj);
+		}
+
+		public R SetSetting(string key, string value)
+		{
+			if (string.IsNullOrEmpty(value))
+				throw new ArgumentNullException(nameof(value));
+
+			string[] keyParam = key.Split(new[] { nameSeperator }, StringSplitOptions.None);
+			var filteredObjects = confObjects.Where(co => co.AssociatedClass == keyParam[0]);
+			if (!filteredObjects.Any())
+				return "No active entries found for this key";
+
+			PropertyInfo prop = null;
+			object convertedValue = null;
+			foreach (var co in filteredObjects)
+			{
+				if (prop == null)
+				{
+					prop = co.GetType().GetProperty(keyParam[1]);
+					try
+					{
+						convertedValue = Convert.ChangeType(value, prop.PropertyType, CultureInfo.InvariantCulture);
+					}
+					catch (Exception ex) when (ex is FormatException || ex is OverflowException)
+					{
+						return "The value could not be parsed";
+					}
+				}
+				prop.SetValue(co, convertedValue);
+			}
+			WriteValueToConfig(key, convertedValue);
+			return R.OkR;
+		}
+
 		protected void WriteValueToConfig(string entryName, object value)
 			=> WriteKey(entryName, Convert.ToString(value, CultureInfo.InvariantCulture));
 
@@ -109,6 +153,7 @@ namespace TS3AudioBot.Helper
 		protected abstract bool ReadKey(string key, out string value);
 		public abstract void Close();
 
+		public abstract IEnumerable<KeyValuePair<string, string>> GetConfigMap();
 
 		private class NormalConfigFile : ConfigFile
 		{
@@ -193,6 +238,7 @@ namespace TS3AudioBot.Helper
 
 			protected override void RegisterConfigObj(ConfigData obj)
 			{
+				base.RegisterConfigObj(obj);
 				obj.PropertyChanged += ConfigDataPropertyChanged;
 			}
 
@@ -249,6 +295,9 @@ namespace TS3AudioBot.Helper
 				changed = false;
 			}
 
+			public override IEnumerable<KeyValuePair<string, string>> GetConfigMap()
+				=> fileLines.Where(e => !e.Comment).Select(e => new KeyValuePair<string, string>(e.Key, e.Value));
+
 			private class LineData
 			{
 				public bool Comment { get; }
@@ -271,8 +320,10 @@ namespace TS3AudioBot.Helper
 			}
 
 			protected override bool ReadKey(string key, out string value) => data.TryGetValue(key, out value);
-			protected override void WriteKey(string key, string value) =>  data[key] = value;
+			protected override void WriteKey(string key, string value) => data[key] = value;
 			public override void Close() { }
+
+			public override IEnumerable<KeyValuePair<string, string>> GetConfigMap() => data;
 		}
 	}
 
