@@ -41,12 +41,9 @@ namespace TS3AudioBot.ResourceFactories
 		// TextMessage != null     => call RF.GetResoruce
 		// else                    => ret Error
 
-		/// <summary>
-		/// Creates a new <see cref="PlayResource"/> which can be played.
-		/// The build data will be taken from <see cref="PlayData.ResourceData"/> or 
-		/// <see cref="PlayData.Message"/> if no AudioResource is given.
-		/// </summary>
-		/// <param name="data">The building parameters for the resource.</param>
+		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.</summary>
+		/// <param name="resource">An <see cref="AudioResource"/> with at least
+		/// <see cref="AudioResource.AudioType"/> and<see cref="AudioResource.ResourceId"/> set.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
 		public R<PlayResource> Load(AudioResource resource)
 		{
@@ -61,12 +58,13 @@ namespace TS3AudioBot.ResourceFactories
 			return result;
 		}
 
-		/// <summary>
-		/// Same as <see cref="LoadAndPlay(PlayData)"/> except it lets you pick an
-		/// <see cref="IResourceFactory"/> identifier to manually select a factory.
+		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.
+		/// The message used will be cleared of bb-tags. Also lets you pick an
+		/// <see cref="IResourceFactory"/> identifier to optionally select a factory.
 		/// </summary>
 		/// <param name="message">The link/uri to resolve for the resource.</param>
-		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
+		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.
+		/// Leave null to let it detect automatically.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
 		public R<PlayResource> Load(string message, AudioType? audioType = null)
 		{

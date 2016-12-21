@@ -271,7 +271,6 @@ namespace TS3AudioBot
 			clientSubscriptions.Remove(userId);
 		}
 
-		// Use for whisper feature later
 		private void RestoreSubscriptions(ClientData invokingUser)
 		{
 			WhisperChannelSubscribe(invokingUser.ChannelId, false);
@@ -294,14 +293,14 @@ namespace TS3AudioBot
 	public class Ts3FullClientData : ConfigData
 	{
 		[Info("the address of the TeamSpeak3 Query")]
-		public string host;
+		public string host { get; set; }
 		[Info("the port of the TeamSpeak3 Query", "9987")]
-		public ushort port;
+		public ushort port { get; set; }
 		[Info("the client identity", "")]
-		public string identity;
+		public string identity { get; set; }
 		[Info("the client identity security offset", "0")]
-		public ulong identityoffset;
+		public ulong identityoffset { get; set; }
 		[Info("the relative or full path to ffmpeg", "ffmpeg")]
-		public string ffmpegpath;
+		public string ffmpegpath { get; set; }
 	}
 }

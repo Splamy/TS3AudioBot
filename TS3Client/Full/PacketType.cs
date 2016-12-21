@@ -18,8 +18,8 @@ namespace TS3Client.Full
 	[Flags]
 	public enum PacketFlags : byte
 	{
-        None = 0x0,
-        Fragmented = 0x10,
+		None = 0x0,
+		Fragmented = 0x10,
 		Newprotocol = 0x20,
 		Compressed = 0x40,
 		Unencrypted = 0x80,

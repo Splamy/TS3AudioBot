@@ -189,12 +189,10 @@ namespace TS3AudioBot
 
 	public class AudioFrameworkData : ConfigData
 	{
-		//[InfoAttribute("the absolute or relative path to the local music folder")]
-		//public string localAudioPath;
 		[Info("the default volume a song should start with")]
-		public int defaultVolume;
+		public int defaultVolume { get; set; }
 		[Info("the maximum volume a normal user can request")]
-		public int maxUserVolume;
+		public int maxUserVolume { get; set; }
 	}
 
 	public enum AudioType

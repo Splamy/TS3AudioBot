@@ -192,8 +192,8 @@ namespace TS3AudioBot.History
 	public class HistoryManagerData : ConfigData
 	{
 		[Info("the absolute or relative path to the history database file")]
-		public string historyFile;
+		public string historyFile { get; set; }
 		[Info("wether or not deleted history ids should be filled up with new songs", "true")]
-		public bool fillDeletedIds;
+		public bool fillDeletedIds { get; set; }
 	}
 }

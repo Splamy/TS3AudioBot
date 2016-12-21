@@ -111,7 +111,7 @@ namespace TS3AudioBot
 		{
 			// Read Config File
 			const string configFilePath = "configTS3AudioBot.cfg";
-			ConfigFile cfgFile = ConfigFile.OpenFile(configFilePath) ?? ConfigFile.CreateFile(configFilePath) ?? ConfigFile.CreateDummy();
+			ConfigFile cfgFile = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = cfgFile.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
 			var tfcd = cfgFile.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 			var hmd = cfgFile.GetDataStruct<HistoryManagerData>("HistoryManager", true);
@@ -1467,9 +1467,9 @@ namespace TS3AudioBot
 	class MainBotData : ConfigData
 	{
 		[Info("path to the logfile", "log_ts3audiobot")]
-		public string logFile;
+		public string logFile { get; set; }
 		[Info("group able to execute admin commands from the bot")]
-		public ulong adminGroupId;
+		public ulong adminGroupId { get; set; }
 	}
 #pragma warning restore CS0649
 }

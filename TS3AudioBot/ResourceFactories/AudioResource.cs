@@ -59,8 +59,6 @@ namespace TS3AudioBot.ResourceFactories
 
 		public AudioResource WithName(string newName) => new AudioResource(ResourceId, newName, AudioType);
 
-		public AudioResource Clone() => new AudioResource(ResourceId, ResourceTitle, AudioType);
-
 		public override bool Equals(object obj)
 		{
 			if (obj == null)

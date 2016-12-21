@@ -20,6 +20,7 @@ namespace TS3AudioBot.Helper
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
+	using System.Globalization;
 	using System.IO;
 	using System.Reflection;
 	using System.Text;
@@ -27,64 +28,22 @@ namespace TS3AudioBot.Helper
 	public abstract class ConfigFile
 	{
 		private static readonly char[] splitChar = new[] { '=' };
+		private const string nameSeperator = "::";
+		private bool changed;
 
-		public static ConfigFile OpenFile(string pPath)
+		public static ConfigFile OpenOrCreate(string path)
 		{
-			NormalConfigFile cfgFile = new NormalConfigFile(pPath);
+			NormalConfigFile cfgFile = new NormalConfigFile(path);
 			return cfgFile.Open() ? cfgFile : null;
 		}
 
-		public static ConfigFile CreateFile(string path)
-		{
-			try
-			{
-				using (FileStream fs = File.Create(path)) { }
-				return new NormalConfigFile(path);
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("Could not create ConfigFile: " + ex.Message);
-				return null;
-			}
-		}
-
-		/// <summary> Creates a dummy object which cannot save or read values.
-		/// Its only purpose is to show the console dialog and create a DataStruct </summary>
+		/// <summary> Creates a dummy object, all setting will be in memory only.
+		/// Its only purpose is to show the console dialog and create a DataStruct.</summary>
 		/// <returns>Returns a dummy-ConfigFile</returns>
 		public static ConfigFile CreateDummy()
 		{
 			return new MemoryConfigFile();
 		}
-
-		protected static object ParseToType(Type targetType, string value)
-		{
-			if (targetType == typeof(string))
-				return value;
-			MethodInfo mi = targetType.GetMethod("TryParse", new[] { typeof(string), targetType.MakeByRefType() });
-			if (mi == null)
-				throw new ArgumentException("The value of the DataStruct couldn't be parsed.");
-			object[] result = { value, null };
-			object success = mi.Invoke(null, result);
-			if (!(bool)success)
-				return null;
-			return result[1];
-		}
-
-		protected static bool IsNumeric(Type type)
-		{
-			return type == typeof(sbyte)
-				|| type == typeof(byte)
-				|| type == typeof(short)
-				|| type == typeof(ushort)
-				|| type == typeof(int)
-				|| type == typeof(uint)
-				|| type == typeof(long)
-				|| type == typeof(ulong)
-				|| type == typeof(float)
-				|| type == typeof(double)
-				|| type == typeof(decimal);
-		}
-
 
 		/// <summary>Reads an object from the currently loaded file.</summary>
 		/// <returns>A new struct instance with the read values.</returns>
@@ -94,21 +53,22 @@ namespace TS3AudioBot.Helper
 		/// <typeparam name="T">Struct to be read from the file.</typeparam>
 		public T GetDataStruct<T>(string associatedClass, bool defaultIfPossible) where T : ConfigData, new()
 		{
-			if (associatedClass == null)
+			if (string.IsNullOrEmpty(associatedClass))
 				throw new ArgumentNullException(nameof(associatedClass));
 
 			T dataStruct = new T();
-			var fields = typeof(T).GetFields();
+			var fields = typeof(T).GetProperties();
 			foreach (var field in fields)
 			{
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
-				string entryName = associatedClass + "::" + field.Name;
+				string entryName = associatedClass + nameSeperator + field.Name;
 				string rawValue = string.Empty;
 				object parsedValue = null;
 
 				// determine the raw data string, whether from Console or File
 				if (!ReadKey(entryName, out rawValue))
 				{
+					changed = true;
 					// Check if we can use the default value
 					if (iAtt != null && defaultIfPossible && iAtt.HasDefault)
 						rawValue = iAtt.DefaultValue;
@@ -120,162 +80,207 @@ namespace TS3AudioBot.Helper
 				}
 
 				// Try to parse it and save if necessary
-				parsedValue = ParseToType(field.FieldType, rawValue);
-				if (parsedValue == null)
+				try
 				{
-					Console.WriteLine("Input parse failed [Ignoring]");
+					parsedValue = Convert.ChangeType(rawValue, field.PropertyType, CultureInfo.InvariantCulture);
+				}
+				catch (Exception ex) when (ex is FormatException || ex is OverflowException)
+				{
+					Console.WriteLine("Input parse of {0} failed [Ignoring]", entryName);
 					continue;
 				}
+
 				WriteValueToConfig(entryName, parsedValue);
-				//TODO write outcommented line inf config file
 
 				// finally set the value to our object
 				field.SetValue(dataStruct, parsedValue);
 			}
+
+			dataStruct.AssociatedClass = associatedClass;
+			RegisterConfigObj(dataStruct);
+
 			return dataStruct;
 		}
-		protected virtual void RegisterConfigObj<T>(T obj) where T : ConfigData { }
-		protected bool WriteValueToConfig(string entryName, object value)
-		{
-			if (value == null)
-				return false;
-			Type tType = value.GetType();
-			if (tType == typeof(string))
-			{
-				WriteKey(entryName, (string)value);
-			}
-			else if (tType == typeof(bool) || IsNumeric(tType) || tType == typeof(char))
-			{
-				WriteKey(entryName, value.ToString());
-			}
-			else
-			{
-				return false;
-			}
-			return true;
-		}
+		protected virtual void RegisterConfigObj(ConfigData obj) { }
+		protected void WriteValueToConfig(string entryName, object value)
+			=> WriteKey(entryName, Convert.ToString(value, CultureInfo.InvariantCulture));
 
-		protected abstract bool Open();
-		protected abstract void WriteKey(string name, string value);
-		protected abstract bool ReadKey(string name, out string value);
+		protected abstract void WriteKey(string key, string value);
+		protected abstract bool ReadKey(string key, out string value);
 		public abstract void Close();
 
 
 		private class NormalConfigFile : ConfigFile
 		{
 			private string path;
-			private string[] fileLines;
-			private readonly Dictionary<string, string> data;
-			private bool changed;
+			private List<LineData> fileLines;
+			private readonly Dictionary<string, int> data;
+			private List<object> registeredObjects = new List<object>();
+			private bool open;
+			private readonly object writeLock = new object();
 
 			public NormalConfigFile(string path)
 			{
 				this.path = path;
 				changed = false;
-				data = new Dictionary<string, string>();
+				data = new Dictionary<string, int>();
 			}
 
-			protected override bool Open()
+			public bool Open()
 			{
 				if (!File.Exists(path))
 				{
-					Console.WriteLine("Config file does not exist");
-					return false;
+					Console.WriteLine("Config file does not exist...");
+					return true;
 				}
+				open = true;
 
-				fileLines = File.ReadAllLines(path, new UTF8Encoding(false));
-				for (int i = 0; i < fileLines.Length; i++)
+				var strLines = File.ReadAllLines(path, new UTF8Encoding(false));
+				fileLines = new List<LineData>(strLines.Length);
+				for (int i = 0; i < strLines.Length; i++)
 				{
-					var s = fileLines[i];
-					if (!s.StartsWith(";", StringComparison.Ordinal)
-						&& !s.StartsWith("//", StringComparison.Ordinal)
-						&& !s.StartsWith("#", StringComparison.Ordinal))
+					var s = strLines[i];
+					if (s.StartsWith(";", StringComparison.Ordinal)
+						|| s.StartsWith("//", StringComparison.Ordinal)
+						|| s.StartsWith("#", StringComparison.Ordinal)
+						|| string.IsNullOrWhiteSpace(s))
+					{
+						fileLines.Add(new LineData(s));
+					}
+					else
 					{
 						string[] kvp = s.Split(splitChar, 2);
 						if (kvp.Length < 2) { Console.WriteLine("Invalid log entry: \"{0}\"", s); continue; }
-						data.Add(kvp[0], kvp[1]);
+						WriteKey(kvp[0], kvp[1]);
 					}
 				}
 				return true;
 			}
 
-			protected override void WriteKey(string name, string value)
+			protected override void WriteKey(string key, string value)
 			{
-				changed = true;
+				if (!open)
+					changed = true;
 
-				if (data.ContainsKey(name))
+				int line;
+				if (data.TryGetValue(key, out line))
 				{
-					data[name] = value;
+					fileLines[line].Value = value;
 				}
 				else
 				{
-					data.Add(name, value);
+					line = fileLines.Count;
+					fileLines.Add(new LineData(key, value));
+					data.Add(key, line);
 				}
+				FlushToFile();
 			}
 
-			protected override bool ReadKey(string name, out string value)
+			protected override bool ReadKey(string key, out string value)
 			{
-				if (!data.ContainsKey(name))
+				int line;
+				if (data.TryGetValue(key, out line))
+				{
+					value = fileLines[line].Value;
+					return true;
+				}
+				else
 				{
 					value = null;
 					return false;
 				}
-				else
-				{
-					value = data[name];
-					return true;
-				}
 			}
 
-			protected override void RegisterConfigObj<T>(T obj)
+			protected override void RegisterConfigObj(ConfigData obj)
 			{
 				obj.PropertyChanged += ConfigDataPropertyChanged;
 			}
 
 			private void ConfigDataPropertyChanged(object sender, PropertyChangedEventArgs e)
 			{
-				//e.PropertyName;
+				ConfigData cd = sender as ConfigData;
+				if (cd == null)
+					return;
+
+				string key = cd.AssociatedClass + nameSeperator + e.PropertyName;
+				var property = cd.GetType().GetProperty(e.PropertyName);
+				WriteValueToConfig(key, property.GetValue(cd));
 			}
 
 			public override void Close()
 			{
-				if (!changed)
-				{
+				open = false;
+				FlushToFile();
+			}
+
+			private void FlushToFile()
+			{
+				if (open || !changed)
 					return;
+
+				lock (writeLock)
+				{
+					try
+					{
+						using (StreamWriter output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
+						{
+							foreach (var line in fileLines)
+							{
+								if (line.Comment)
+								{
+									output.WriteLine(line.Value);
+								}
+								else
+								{
+									output.Write(line.Key);
+									output.Write('=');
+									output.WriteLine(line.Value);
+								}
+							}
+							output.Flush();
+						}
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine("Could not create ConfigFile: " + ex.Message);
+					}
 				}
 
-				using (StreamWriter output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
-				{
-					foreach (string key in data.Keys)
-					{
-						output.Write(key);
-						output.Write('=');
-						output.WriteLine(data[key]);
-					}
-					output.Flush();
-				}
+				changed = false;
 			}
 
 			private class LineData
 			{
-				public int Line { get; set; }
-				public string Content { get; set; }
+				public bool Comment { get; }
+				public string Key { get; set; }
+				public string Value { get; set; }
+
+				public LineData(string comment) { Value = comment; Comment = true; }
+				public LineData(string key, string value) { Key = key; Value = value; Comment = false; }
+				public override string ToString() => Comment ? "#" + Value : Key + " = " + Value;
 			}
 		}
 
 		private class MemoryConfigFile : ConfigFile
 		{
-			public override void Close() { }
+			private readonly Dictionary<string, string> data;
 
-			protected override bool Open() { return true; }
-			protected override bool ReadKey(string name, out string value) { value = null; return false; }
-			protected override void WriteKey(string name, string value) { }
+			public MemoryConfigFile()
+			{
+				data = new Dictionary<string, string>();
+			}
+
+			protected override bool ReadKey(string key, out string value) => data.TryGetValue(key, out value);
+			protected override void WriteKey(string key, string value) =>  data[key] = value;
+			public override void Close() { }
 		}
 	}
 
 	[ImplementPropertyChanged]
 	public class ConfigData : INotifyPropertyChanged
 	{
+		[DoNotNotify]
+		internal string AssociatedClass { get; set; }
 		public event PropertyChangedEventHandler PropertyChanged;
 	}
 }

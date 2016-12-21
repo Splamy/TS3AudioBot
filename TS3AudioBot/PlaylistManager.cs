@@ -27,7 +27,7 @@ namespace TS3AudioBot
 	using ResourceFactories;
 	using CommandSystem;
 	using System.Reflection;
-	
+
 	public sealed class PlaylistManager : IDisposable
 	{
 		private static readonly Regex validPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
@@ -197,18 +197,18 @@ namespace TS3AudioBot
 
 					switch (key)
 					{
-					case "version": // skip, not yet needed
-						break;
+						case "version": // skip, not yet needed
+							break;
 
-					case "owner":
-						if (plist.CreatorDbId != null)
-							return "Invalid playlist file: duplicate userid";
-						ulong userid;
-						if (ulong.TryParse(value, out userid))
-							plist.CreatorDbId = userid;
-						else
-							return "Broken playlist header";
-						break;
+						case "owner":
+							if (plist.CreatorDbId != null)
+								return "Invalid playlist file: duplicate userid";
+							ulong userid;
+							if (ulong.TryParse(value, out userid))
+								plist.CreatorDbId = userid;
+							else
+								return "Broken playlist header";
+							break;
 					}
 				}
 
@@ -240,38 +240,38 @@ namespace TS3AudioBot
 					AudioType audioType;
 					switch (kind)
 					{
-					case "ln":
-						var lnSplit = content.Split(new[] { ',' }, 2);
-						if (lnSplit.Length < 2)
-							goto default;
+						case "ln":
+							var lnSplit = content.Split(new[] { ',' }, 2);
+							if (lnSplit.Length < 2)
+								goto default;
 #pragma warning disable CS0612
-						if (!string.IsNullOrWhiteSpace(lnSplit[0]) && Enum.TryParse(lnSplit[0], out audioType))
-							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), audioType, meta));
-						else
-							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), null, meta));
+							if (!string.IsNullOrWhiteSpace(lnSplit[0]) && Enum.TryParse(lnSplit[0], out audioType))
+								plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), audioType, meta));
+							else
+								plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), null, meta));
 #pragma warning restore CS0612
-						break;
+							break;
 
-					case "rs":
-						var rsSplit = content.Split(new[] { ',' }, 3);
-						if (rsSplit.Length < 3)
-							goto default;
-						if (!string.IsNullOrWhiteSpace(rsSplit[0]) && Enum.TryParse(rsSplit[0], out audioType))
-							plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), audioType), meta));
-						else
-							goto default;
-						break;
+						case "rs":
+							var rsSplit = content.Split(new[] { ',' }, 3);
+							if (rsSplit.Length < 3)
+								goto default;
+							if (!string.IsNullOrWhiteSpace(rsSplit[0]) && Enum.TryParse(rsSplit[0], out audioType))
+								plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), audioType), meta));
+							else
+								goto default;
+							break;
 
-					case "id":
-						uint hid;
-						if (!uint.TryParse(content, out hid))
-							goto default;
-						plist.AddItem(new PlaylistItem(hid, meta));
-						break;
+						case "id":
+							uint hid;
+							if (!uint.TryParse(content, out hid))
+								goto default;
+							plist.AddItem(new PlaylistItem(hid, meta));
+							break;
 
-					default:
-						Log.Write(Log.Level.Warning, "Erroneus playlist data block: {0}", line);
-						break;
+						default:
+							Log.Write(Log.Level.Warning, "Erroneus playlist data block: {0}", line);
+							break;
 					}
 				}
 				return plist;
@@ -435,9 +435,9 @@ namespace TS3AudioBot
 
 			switch (name)
 			{
-			case ".queue": return freeList;
-			case ".trash": return trashList;
-			default: return "Special list not found";
+				case ".queue": return freeList;
+				case ".trash": return trashList;
+				default: return "Special list not found";
 			}
 		}
 
@@ -576,7 +576,7 @@ namespace TS3AudioBot
 	public class PlaylistManagerData : ConfigData
 	{
 		[Info("absolute or relative path the playlist folder", "Playlists")]
-		public string playlistPath;
+		public string playlistPath { get; set; }
 	}
 #pragma warning restore CS0649
 }

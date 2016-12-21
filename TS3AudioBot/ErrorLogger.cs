@@ -101,18 +101,18 @@ namespace TS3AudioBot
 					{
 						switch (format[c + 1])
 						{
-						case 'M': // Message
-							validator.Add(new ParseToken(MethodBuildToken.ErrorTextFormatted, null));
-							break;
-						case 'T': // Time
-							validator.Add(new ParseToken(MethodBuildToken.DateFormatted, null));
-							break;
-						case 'L': // Level
-							validator.Add(new ParseToken(MethodBuildToken.LogLevelSpaced, null));
-							break;
-						case 'S': // Stack
-							validator.Add(new ParseToken(MethodBuildToken.StackFormatted, null));
-							break;
+							case 'M': // Message
+								validator.Add(new ParseToken(MethodBuildToken.ErrorTextFormatted, null));
+								break;
+							case 'T': // Time
+								validator.Add(new ParseToken(MethodBuildToken.DateFormatted, null));
+								break;
+							case 'L': // Level
+								validator.Add(new ParseToken(MethodBuildToken.LogLevelSpaced, null));
+								break;
+							case 'S': // Stack
+								validator.Add(new ParseToken(MethodBuildToken.StackFormatted, null));
+								break;
 						}
 						c++;
 						starttext = c + 1;
@@ -158,29 +158,29 @@ namespace TS3AudioBot
 			{
 				switch (part.TokenType)
 				{
-				case MethodBuildToken.Text:
-					ilGen.Emit(OpCodes.Ldstr, (string)part.Value);
-					break;
-				case MethodBuildToken.LogLevelSpaced:
-					ilGen.Emit(OpCodes.Ldarg_0);
-					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenLogLevelSpaced, null);
-					break;
-				case MethodBuildToken.ErrorTextFormatted:
-					ilGen.Emit(OpCodes.Ldarg_0);
-					ilGen.Emit(OpCodes.Ldc_I4_0);
-					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenErrorTextFormatted, null);
-					break;
-				case MethodBuildToken.DateFormatted:
-					ilGen.Emit(OpCodes.Ldarg_0);
-					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenDateFormatted, null);
-					break;
-				case MethodBuildToken.StackFormatted:
-					ilGen.Emit(OpCodes.Ldarg_0);
-					ilGen.Emit(OpCodes.Ldc_I4_M1);
-					ilGen.EmitCall(OpCodes.Callvirt, miLog_GenStackTraceFormatted, null);
-					break;
-				default:
-					throw new InvalidProgramException("Undefined MethodBuildToken occoured");
+					case MethodBuildToken.Text:
+						ilGen.Emit(OpCodes.Ldstr, (string)part.Value);
+						break;
+					case MethodBuildToken.LogLevelSpaced:
+						ilGen.Emit(OpCodes.Ldarg_0);
+						ilGen.EmitCall(OpCodes.Callvirt, miLog_GenLogLevelSpaced, null);
+						break;
+					case MethodBuildToken.ErrorTextFormatted:
+						ilGen.Emit(OpCodes.Ldarg_0);
+						ilGen.Emit(OpCodes.Ldc_I4_0);
+						ilGen.EmitCall(OpCodes.Callvirt, miLog_GenErrorTextFormatted, null);
+						break;
+					case MethodBuildToken.DateFormatted:
+						ilGen.Emit(OpCodes.Ldarg_0);
+						ilGen.EmitCall(OpCodes.Callvirt, miLog_GenDateFormatted, null);
+						break;
+					case MethodBuildToken.StackFormatted:
+						ilGen.Emit(OpCodes.Ldarg_0);
+						ilGen.Emit(OpCodes.Ldc_I4_M1);
+						ilGen.EmitCall(OpCodes.Callvirt, miLog_GenStackTraceFormatted, null);
+						break;
+					default:
+						throw new InvalidProgramException("Undefined MethodBuildToken occoured");
 				}
 				ilGen.EmitCall(OpCodes.Callvirt, miStringBuilder_Append_String, null);
 			}
@@ -234,6 +234,8 @@ namespace TS3AudioBot
 			lh.GenStackTraceFormatted(-1);
 			lock (writeLock)
 			{
+				if (callbackProcessor == null)
+					return;
 				foreach (var callbackProc in callbackProcessor)
 					callbackProc(lh);
 			}

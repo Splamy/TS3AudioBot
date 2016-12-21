@@ -208,12 +208,12 @@ namespace TS3AudioBot
 					strb.Append("#").Append(plugin.Id.ToString("D" + digits, CultureInfo.InvariantCulture)).Append('|');
 					switch (plugin.status)
 					{
-					case PluginStatus.Off: strb.Append("OFF"); break;
-					case PluginStatus.Ready: strb.Append("RDY"); break;
-					case PluginStatus.Active: strb.Append("+ON"); break;
-					case PluginStatus.Disabled: strb.Append("UNL"); break;
-					case PluginStatus.Error: strb.Append("ERR"); break;
-					default: throw new InvalidProgramException();
+						case PluginStatus.Off: strb.Append("OFF"); break;
+						case PluginStatus.Ready: strb.Append("RDY"); break;
+						case PluginStatus.Active: strb.Append("+ON"); break;
+						case PluginStatus.Disabled: strb.Append("UNL"); break;
+						case PluginStatus.Error: strb.Append("ERR"); break;
+						default: throw new InvalidProgramException();
 					}
 					strb.Append('|').AppendLine(plugin.proxy?.Name ?? "<not loaded>");
 				}
@@ -395,7 +395,7 @@ namespace TS3AudioBot
 				var types = assembly.GetExportedTypes().Where(t => typeof(ITS3ABPlugin).IsAssignableFrom(t));
 				var pluginOk = PluginCountCheck(types);
 				if (pluginOk != PluginResponse.Ok) return pluginOk;
-				
+
 				pluginType = types.First();
 				return PluginResponse.Ok;
 			}
@@ -517,6 +517,6 @@ namespace TS3AudioBot
 	public class PluginManagerData : ConfigData
 	{
 		[Info("The relative path to the pugins", "Plugins")]
-		public string PluginPath;
+		public string PluginPath { get; set; }
 	}
 }
