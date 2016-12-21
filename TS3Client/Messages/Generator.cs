@@ -29,6 +29,7 @@ namespace TS3Client.Messages
 		private static readonly AssemblyBuilder GenAssemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(GenAssemblyName, AssemblyBuilderAccess.Run);
 		private static readonly ModuleBuilder GenModuleBuilder = GenAssemblyBuilder.DefineDynamicModule("MainModule");
 		private const MethodAttributes PropMethods = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.Virtual;
+		private static readonly object typeMapLock = new object();
 
 		static Generator()
 		{
@@ -41,15 +42,18 @@ namespace TS3Client.Messages
 		public static T ActivateResponse<T>() where T : IResponse => (T)ActivateResponse(typeof(T));
 		public static IResponse ActivateResponse(Type t) => (IResponse)Activate(t, false);
 
-		public static Dictionary<string, MapTarget> GetAccessMap(Type t) => GeneratedTypes[t].AccessMap;
+		public static Dictionary<string, MapTarget> GetAccessMap(Type t) { lock (typeMapLock) { return GeneratedTypes[t].AccessMap; } }
 
 		private static object Activate(Type backingInterface, bool notifyProp)
 		{
 			InitializerData genType;
-			if (!GeneratedTypes.TryGetValue(backingInterface, out genType))
+			lock(typeMapLock)
 			{
-				genType = Generate(backingInterface, notifyProp);
-				GeneratedTypes.Add(backingInterface, genType);
+				if (!GeneratedTypes.TryGetValue(backingInterface, out genType))
+				{
+					genType = Generate(backingInterface, notifyProp);
+					GeneratedTypes.Add(backingInterface, genType);
+				}
 			}
 			return Activator.CreateInstance(genType.ActivationType);
 		}
