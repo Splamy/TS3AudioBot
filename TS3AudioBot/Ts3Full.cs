@@ -292,9 +292,9 @@ namespace TS3AudioBot
 
 	public class Ts3FullClientData : ConfigData
 	{
-		[Info("the address of the TeamSpeak3 Query")]
+		[Info("the address of the TeamSpeak3 server")]
 		public string host { get; set; }
-		[Info("the port of the TeamSpeak3 Query", "9987")]
+		[Info("the port of the TeamSpeak3 server", "9987")]
 		public ushort port { get; set; }
 		[Info("the client identity", "")]
 		public string identity { get; set; }
