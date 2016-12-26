@@ -42,9 +42,9 @@ namespace TS3Client
 		public void Dispose() { }
 	}
 
-	internal class DoubleThreadEventDispatcher : IEventDispatcher
+	internal class ExtraThreadEventDispatcher : IEventDispatcher
 	{
-		public EventDispatchType DispatcherType => EventDispatchType.DoubleThread;
+		public EventDispatchType DispatcherType => EventDispatchType.ExtraDispatchThread;
 
 		private Thread readQueryThread;
 		private readonly ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
@@ -81,18 +81,6 @@ namespace TS3Client
 		{
 			run = false;
 			eventBlock.Set();
-
-			if (readQueryThread != null)
-			{
-				for (int i = 0; i < 100 && readQueryThread.IsAlive; i++)
-					Thread.Sleep(1);
-				if (readQueryThread.IsAlive)
-				{
-					readQueryThread.Abort();
-					readQueryThread = null;
-				}
-			}
-
 			eventBlock.Dispose();
 		}
 	}
@@ -106,12 +94,39 @@ namespace TS3Client
 		public void Dispose() { }
 	}
 
+	// TODO change used method when mving evdisp start to connect
 	public enum EventDispatchType
 	{
+		/// <summary>
+		/// All events will be dropped.
+		/// </summary>
 		None,
+		/// <summary>
+		/// Will use the same thread that entered the <see cref="Ts3BaseClient.EnterEventLoop"/>
+		/// for receiving and invoking all events. This method is not recommended since it mostly
+		/// only produces deadlocks. (Usually only for debugging)
+		/// </summary>
 		CurrentThread,
+		/// <summary>
+		/// Will use the thread that entered the <see cref="Ts3BaseClient.EnterEventLoop"/> for
+		/// receiving and starts a second thread for invoking all events. This is the best method for
+		/// lightweight dipatching with no parallelization.
+		/// </summary>
+		ExtraDispatchThread,
+		/// <summary>
+		/// Will start one thread for receiving and a second thread for invoking all events.
+		/// This is the best method for lightweight asynchronous dipatching with no parallelization.
+		/// </summary>
 		DoubleThread,
+		/// <summary>
+		/// This method will use the <see cref="ThreadPool"/> from .NET to dispatch all events.
+		/// This is the best method for high parallelization with low overhead when using many instances.
+		/// </summary>
 		AutoThreadPooled,
+		/// <summary>
+		/// This method will create a new Thread for each event. This method is not recommended
+		/// due to high overhead and resource consumption. Only try it when all else fails.
+		/// </summary>
 		NewThreadEach,
 	}
 }

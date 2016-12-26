@@ -2,6 +2,7 @@ namespace TS3Client.Full
 {
 	using System;
 	using System.Collections.Generic;
+	using System.IO;
 	using System.Linq;
 	using System.Net;
 	using System.Net.Sockets;
@@ -20,10 +21,11 @@ namespace TS3Client.Full
 		private readonly LinkedList<OutgoingPacket> sendQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
-		private readonly Thread resendThread;
 		private readonly object sendLoopMonitor = new object();
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly UdpClient udpClient;
+		private Thread resendThread;
+		private int resendThreadId;
 
 		public ushort ClientId { get; set; }
 		public IPEndPoint RemoteAddress { get; set; }
@@ -33,17 +35,30 @@ namespace TS3Client.Full
 			sendQueue = new LinkedList<OutgoingPacket>();
 			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize);
 			receiveQueueLow = new RingQueue<IncomingPacket>(PacketBufferSize);
-			resendThread = new Thread(ResendLoop);
+
 			packetCounter = new ushort[9];
 			this.ts3Crypt = ts3Crypt;
 			this.udpClient = udpClient;
+			resendThreadId = -1;
 		}
 
 		public void Start()
 		{
-			// TODO: check run! i think we need to recreate the thread....
-			if (!resendThread.IsAlive)
-				resendThread.Start();
+			Stop();
+			resendThread = new Thread(ResendLoop) { Name = "PacketHandler" };
+			resendThreadId = resendThread.ManagedThreadId;
+			Reset();
+			resendThread.Start();
+		}
+
+		public void Stop()
+		{
+			resendThreadId = -1;
+			if (Monitor.TryEnter(sendLoopMonitor))
+			{
+				Monitor.Pulse(sendLoopMonitor);
+				Monitor.Exit(sendLoopMonitor);
+			}
 		}
 
 		public void AddOutgoingPacket(byte[] packet, PacketType packetType)
@@ -146,7 +161,9 @@ namespace TS3Client.Full
 			while (true)
 			{
 				var dummy = new IPEndPoint(IPAddress.Any, 0);
-				byte[] buffer = udpClient.Receive(ref dummy);
+				byte[] buffer;
+				try { buffer = udpClient.Receive(ref dummy); }
+				catch (IOException) { return null; }
 				if (dummy.Address.Equals(RemoteAddress.Address) && dummy.Port != RemoteAddress.Port)
 					continue;
 
@@ -345,23 +362,26 @@ namespace TS3Client.Full
 
 		#endregion
 
+		// TODO count based wait time: [100, 200, 500, 1000, 1000, ..]
+		// count since last acked package, not per package !
 		/// <summary>
 		/// ResendLoop will regularly check if a packet has be acknowleged and trys to send it again
 		/// if the timeout for a packet ran out.
 		/// </summary>
 		private void ResendLoop()
 		{
-			while (true)
+			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
 			{
 				TimeSpan sleepSpan = PacketTimeout;
 
 				lock (sendLoopMonitor)
 				{
 					if (!sendQueue.Any())
+					{
 						Monitor.Wait(sendLoopMonitor, sleepSpan);
-
-					if (!sendQueue.Any())
-						continue;
+						if (!sendQueue.Any())
+							continue;
+					}
 
 					foreach (var outgoingPacket in sendQueue)
 					{
@@ -372,7 +392,7 @@ namespace TS3Client.Full
 							sleepSpan = nextTest;
 					}
 
-					Thread.Sleep(sleepSpan);
+					Monitor.Wait(sendLoopMonitor, sleepSpan);
 				}
 			}
 		}

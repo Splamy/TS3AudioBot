@@ -27,13 +27,15 @@ namespace TS3Client.Full
 			returnCode = 0;
 		}
 
-		protected override void ConnectInternal(ConnectionData conData)
+		protected override bool ConnectInternal(ConnectionData conData)
 		{
+			if (conData == null)
+				throw new ArgumentNullException(nameof(conData));
 			var conDataFull = conData as ConnectionDataFull;
 			if (conDataFull == null)
 				throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity == null)
-				throw new ArgumentNullException(nameof(conData));
+				throw new ArgumentNullException(nameof(conDataFull.Identity));
 
 			Reset();
 
@@ -52,18 +54,34 @@ namespace TS3Client.Full
 			ts3Crypt.Identity = conDataFull.Identity;
 			var initData = ts3Crypt.ProcessInit1(null);
 			packetHandler.AddOutgoingPacket(initData, PacketType.Init1);
+			return false;
 		}
 
 		protected override void DisconnectInternal()
 		{
 			ClientDisconnect(MoveReason.LeftServer, "Disconnected");
-			//udpClient.Close();
+		}
+
+		protected override void InvokeEvent(IEnumerable<INotification> notification, NotificationType notifyType)
+		{
+			// we need to check for clientleftview to know when we disconnect from the server
+			if (notifyType == NotificationType.ClientLeftView
+				&& notification.Cast<ClientLeftView>().Any(clv => clv.ClientId == packetHandler.ClientId))
+			{
+				packetHandler.Stop();
+				udpClient.Close();
+				DisconnectDone();
+				return;
+			}
+
+			base.InvokeEvent(notification, notifyType);
 		}
 
 		protected override void NetworkLoop()
 		{
 			while (true)
 			{
+				if (udpClient.Client == null) break;
 				var packet = packetHandler.FetchPacket();
 				if (packet == null) break;
 
@@ -87,7 +105,6 @@ namespace TS3Client.Full
 						break;
 				}
 			}
-			Status = Ts3ClientStatus.Disconnected;
 		}
 
 		private bool SpecialCommandProcess(string message)
@@ -155,7 +172,7 @@ namespace TS3Client.Full
 			base.Reset();
 
 			ts3Crypt.Reset();
-			packetHandler.Reset();
+			packetHandler.Stop();
 
 			returnCode = 0;
 		}
@@ -183,9 +200,10 @@ namespace TS3Client.Full
 					new CommandParameter("hwid", hwid) }));
 
 		public void ClientDisconnect(MoveReason reason, string reasonMsg)
-			=> Send("clientdisconnect",
-				new CommandParameter("reasonid", (int)reason),
-				new CommandParameter("reasonmsg", reasonMsg));
+			=> SendNoResponsed(
+				new Ts3Command("clientdisconnect", new List<CommandParameter>() {
+					new CommandParameter("reasonid", (int)reason),
+					new CommandParameter("reasonmsg", reasonMsg) }));
 
 		public void SendAudio(byte[] buffer, int length, Codec codec)
 		{

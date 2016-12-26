@@ -35,5 +35,7 @@ namespace TS3Client
 
 		[DebuggerStepThrough]
 		public CommandParameter(string name, PrimitiveParameter value) : this(name, (IParameterConverter)value) { }
+
+		public override string ToString() => QueryString;
 	}
 }

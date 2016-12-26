@@ -17,15 +17,22 @@ namespace TS3Client
 	{
 		static void Main(string[] args)
 		{
-			Ts3FullClient fc = new Ts3FullClient(EventDispatchType.DoubleThread);
+			Ts3FullClient fc = new Ts3FullClient(EventDispatchType.ExtraDispatchThread);
+			fc.OnConnected += (s, e) => WriteLine("Connected");
+			fc.OnDisconnected += (s, e) => WriteLine("Disconnected");
 			fc.Connect(new ConnectionDataFull
 			{
 				Username = "HAAAX",
-				Hostname = "splamy.de",
+				Hostname = "127.0.0.1",
 				Port = 9987,
 				Identity = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=", 57451630, 57451630),
 			});
-			fc.EnterEventLoop();
+			Task.Run(() => fc.EnterEventLoop());
+			WriteLine("Running");
+			ReadLine();
+			WriteLine("Request stop");
+			fc.Disconnect();
+			WriteLine("REquest done");
 			ReadLine();
 		}
 	}

@@ -225,7 +225,9 @@ namespace TS3Client.Full
 				// Copy data
 				Array.Copy(data, initTypeLen, sendData, versionLen + initTypeLen, 232);
 				// Copy y
-				Array.Copy(y, 0, sendData, versionLen + initTypeLen + 232, 64);
+				if(y.Length < 64)
+					Console.WriteLine();
+				Array.Copy(y, 0, sendData, versionLen + initTypeLen + 232 + (64 - y.Length), y.Length);
 				// Copy text
 				Array.Copy(textBytes, 0, sendData, versionLen + initTypeLen + 232 + 64, textBytes.Length);
 

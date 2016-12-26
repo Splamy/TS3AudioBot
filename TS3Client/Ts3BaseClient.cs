@@ -14,6 +14,7 @@ namespace TS3Client
 		protected readonly object LockObj = new object();
 		private bool eventLoopRunning;
 		private string cmdLineBuffer;
+		private EventDispatchType dispatcherType;
 		private IEventDispatcher eventDispatcher;
 		protected Ts3ClientStatus Status;
 		internal readonly Queue<WaitBlock> RequestQueue;
@@ -25,6 +26,7 @@ namespace TS3Client
 		public event NotifyEventHandler<ClientLeftView> OnClientLeftView;
 		public event EventHandler<CommandError> OnErrorEvent;
 		public event EventHandler OnConnected;
+		public event EventHandler OnDisconnected;
 
 
 		public abstract ClientType ClientType { get; }
@@ -35,17 +37,8 @@ namespace TS3Client
 		{
 			Status = Ts3ClientStatus.Disconnected;
 			eventLoopRunning = false;
+			dispatcherType = dispatcher;
 			RequestQueue = new Queue<WaitBlock>();
-
-			switch (dispatcher)
-			{
-				case EventDispatchType.None: eventDispatcher = new NoEventDispatcher(); break;
-				case EventDispatchType.CurrentThread: eventDispatcher = new CurrentThreadEventDisptcher(); break;
-				case EventDispatchType.DoubleThread: eventDispatcher = new DoubleThreadEventDispatcher(); break;
-				case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
-				case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
-				default: throw new NotSupportedException();
-			}
 		}
 
 		public void Connect(ConnectionData conData)
@@ -56,16 +49,15 @@ namespace TS3Client
 			if (IsConnected)
 				Disconnect();
 
+			bool connectDone = false;
 			lock (LockObj)
 			{
 				try
 				{
 					Status = Ts3ClientStatus.Connecting;
 					ConnectionData = conData;
-					ConnectInternal(conData);
-
-					eventDispatcher.Init(NetworkLoop);
-					Status = Ts3ClientStatus.Connected;
+					connectDone = ConnectInternal(conData);
+					StartEventDispatcher();
 				}
 				catch
 				{
@@ -73,8 +65,20 @@ namespace TS3Client
 					throw;
 				}
 			}
+
+			if (connectDone)
+				ConnectDone();
 		}
-		protected abstract void ConnectInternal(ConnectionData conData);
+		protected abstract bool ConnectInternal(ConnectionData conData);
+		protected void ConnectDone()
+		{
+			lock (LockObj)
+			{
+				Status = Ts3ClientStatus.Connected;
+			}
+			eventDispatcher.Invoke(() => OnConnected?.Invoke(this, new EventArgs()));
+		}
+
 		public void Disconnect()
 		{
 			lock (LockObj)
@@ -82,21 +86,45 @@ namespace TS3Client
 				if (IsConnected)
 				{
 					Status = Ts3ClientStatus.Quitting;
-					OnTextMessageReceived = null;
-					OnClientEnterView = null;
-					OnClientLeftView = null;
 					DisconnectInternal();
 				}
 			}
 		}
 		protected abstract void DisconnectInternal();
-		protected void ConnectDone() => OnConnected?.Invoke(this, new EventArgs());
+		protected void DisconnectDone()
+		{
+			lock (LockObj)
+			{
+				Status = Ts3ClientStatus.Disconnected;
+			}
+			IEventDispatcher evd = eventDispatcher;
+			eventDispatcher = null;
+			eventLoopRunning = false;
+			evd.Invoke(() => OnDisconnected?.Invoke(this, new EventArgs()));
+			evd.Dispose();
+		}
+
+		private void StartEventDispatcher()
+		{
+			switch (dispatcherType)
+			{
+				case EventDispatchType.None: eventDispatcher = new NoEventDispatcher(); break;
+				case EventDispatchType.CurrentThread: eventDispatcher = new CurrentThreadEventDisptcher(); break;
+				case EventDispatchType.ExtraDispatchThread: eventDispatcher = new ExtraThreadEventDispatcher(); break;
+				case EventDispatchType.DoubleThread: throw new NotSupportedException(); //break;
+				case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
+				case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
+				default: throw new NotSupportedException();
+			}
+			eventDispatcher.Init(NetworkLoop);
+		}
 
 		#region NETWORK RECEIVE AND DESERIALIZE
 
 		/// <summary>Use this method to start the event dispatcher.
 		/// Please keep in mind that this call might be blocking or non-blocking depending on the dispatch-method.
-		/// <see cref="EventDispatchType.CurrentThread"/> and <see cref="EventDispatchType.DoubleThread"/> will enter a loop and block the calling thread.
+		/// <see cref="EventDispatchType.CurrentThread"/> and <see cref="EventDispatchType.ExtraDispatchThread"/>
+		/// will enter a loop and block the calling thread.
 		/// Any other method will start special subroutines and return to the caller.</summary>
 		public void EnterEventLoop()
 		{
@@ -150,7 +178,7 @@ namespace TS3Client
 			}
 		}
 
-		protected void InvokeEvent(IEnumerable<INotification> notification, NotificationType notifyType)
+		protected virtual void InvokeEvent(IEnumerable<INotification> notification, NotificationType notifyType)
 		{
 			switch (notifyType)
 			{

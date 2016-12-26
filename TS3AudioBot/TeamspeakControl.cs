@@ -58,9 +58,9 @@ namespace TS3AudioBot
 			clientDbNames = new Dictionary<ulong, string>();
 
 			if (connectionType == ClientType.Full)
-				tsBaseClient = new Ts3FullClient(EventDispatchType.DoubleThread);
+				tsBaseClient = new Ts3FullClient(EventDispatchType.ExtraDispatchThread);
 			else if (connectionType == ClientType.Query)
-				tsBaseClient = new Ts3QueryClient(EventDispatchType.DoubleThread);
+				tsBaseClient = new Ts3QueryClient(EventDispatchType.ExtraDispatchThread);
 
 			tsBaseClient.OnClientLeftView += ExtendedClientLeftView;
 			tsBaseClient.OnClientEnterView += ExtendedClientEnterView;

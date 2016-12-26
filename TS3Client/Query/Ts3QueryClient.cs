@@ -36,7 +36,7 @@ namespace TS3Client.Query
 			tcpClient = new TcpClient();
 		}
 
-		protected override void ConnectInternal(ConnectionData conData)
+		protected override bool ConnectInternal(ConnectionData conData)
 		{
 			try { tcpClient.Connect(conData.Hostname, conData.Port); }
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
@@ -48,7 +48,7 @@ namespace TS3Client.Query
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
 
-			ConnectDone();
+            return true;
 		}
 
 		protected override void DisconnectInternal()
@@ -56,6 +56,7 @@ namespace TS3Client.Query
 			tcpWriter?.WriteLine("quit");
 			tcpWriter?.Flush();
 			tcpClient.Close();
+			DisconnectDone();
 		}
 
 		protected override void NetworkLoop()
