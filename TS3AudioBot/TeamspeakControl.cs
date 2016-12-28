@@ -73,9 +73,7 @@ namespace TS3AudioBot
 		{
 			me = GetSelf();
 		}
-
-		public void EnterEventLoop() => tsBaseClient.EnterEventLoop();
-
+		
 		public void SendMessage(string message, ushort clientId) => tsBaseClient.SendMessage(MessageTarget.Private, clientId, message);
 		public void SendGlobalMessage(string message) => tsBaseClient.SendMessage(MessageTarget.Server, 1, message);
 		public void KickClientFromServer(ushort clientId) => tsBaseClient.KickClientFromServer(new[] { clientId });

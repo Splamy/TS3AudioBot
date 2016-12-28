@@ -65,7 +65,6 @@ namespace TS3Client
 				{
 					Status = Ts3ClientStatus.Connecting;
 					ConnectionData = conData;
-					InitEventDispatcher();
 					ConnectInternal(conData);
 				}
 				catch
@@ -75,6 +74,7 @@ namespace TS3Client
 				}
 			}
 
+			InitEventDispatcher();
 			eventDispatcher.EnterEventLoop();
 		}
 		/// <summary>Locked call</summary>

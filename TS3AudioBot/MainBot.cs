@@ -197,22 +197,21 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
 			WebInterface.StartServerAsync();
+
+			//Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
+			return true;
+		}
+
+		// TODO rework later for multi instance feature
+		private void Run()
+		{
+			Thread.CurrentThread.Name = "Main/Eventloop";
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
 			catch (Ts3Exception qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
-				return false;
 			}
-
-			Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
-			return true;
-		}
-
-		private void Run()
-		{
-			Thread.CurrentThread.Name = "Main/Eventloop";
-			QueryConnection.EnterEventLoop();
 		}
 
 		#region COMMAND EXECUTING & CHAINING

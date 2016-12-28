@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using TS3Client.Full;
+using TS3Client.Query;
 using System.Diagnostics;
 using System.Net;
 using static System.Console;
@@ -15,7 +16,7 @@ namespace TS3Client
 {
 	static class DebugTests
 	{
-		static Ts3FullClient fc = new Ts3FullClient(EventDispatchType.ExtraDispatchThread);
+		static Ts3BaseClient fc = new Ts3FullClient(EventDispatchType.ExtraDispatchThread);
 		static bool init = false;
 
 		static void Main(string[] args)
@@ -70,6 +71,12 @@ namespace TS3Client
 					Port = 9987,
 					Identity = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEA76LIMLxiti7JTkl4yeNRPiApiGyIRqF9km3ByalVZd8CIQDGz9jUYZIXgkSsyCYVywl0HTKoP+0Ch8OG+ia4boW0UAIgSY/aeQNjq0ryRiaifd6SMKbG9+KuoN/oXEu/lyr+SNg=", 57451630, 57451630),
 				});
+				//fc.Connect(new ConnectionData
+				//{
+				//	Username = "HAAAX",
+				//	Hostname = "127.0.0.1",
+				//	Port = 9987,
+				//});
 			});
 		}
 	}
