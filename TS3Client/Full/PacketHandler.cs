@@ -52,8 +52,6 @@ namespace TS3Client.Full
 
 		public void Start(UdpClient udpClient)
 		{
-			Stop();
-
 			resendThread = new Thread(ResendLoop) { Name = "PacketHandler" };
 			resendThreadId = resendThread.ManagedThreadId;
 
@@ -75,7 +73,6 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 			if (Monitor.TryEnter(sendLoopMonitor))
 			{
-				Console.WriteLine("Stopping");
 				udpClient?.Close();
 				Monitor.Pulse(sendLoopMonitor);
 				Monitor.Exit(sendLoopMonitor);

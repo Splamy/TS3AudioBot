@@ -22,7 +22,6 @@ namespace TS3Client
 
 	public interface IEventDispatcher : IDisposable
 	{
-		EventDispatchType DispatcherType { get; }
 		void Init(Action eventLoop);
 		/// <summary>Do NOT call this method manually (Unless you know what you do).
 		/// Invokes an Action, when the EventLoop receives a new packet.</summary>
@@ -34,7 +33,6 @@ namespace TS3Client
 	internal class CurrentThreadEventDisptcher : IEventDispatcher
 	{
 		private Action eventLoop;
-		public EventDispatchType DispatcherType => EventDispatchType.CurrentThread;
 
 		public void Init(Action eventLoop) => this.eventLoop = eventLoop;
 		public void EnterEventLoop() => eventLoop();
@@ -44,8 +42,6 @@ namespace TS3Client
 
 	internal class ExtraThreadEventDispatcher : IEventDispatcher
 	{
-		public EventDispatchType DispatcherType => EventDispatchType.ExtraDispatchThread;
-
 		private Thread readQueryThread;
 		private readonly ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
@@ -88,10 +84,24 @@ namespace TS3Client
 
 	internal class NoEventDispatcher : IEventDispatcher
 	{
-		public EventDispatchType DispatcherType => EventDispatchType.None;
 		public void Init(Action eventLoop) { }
 		public void EnterEventLoop() { }
 		public void Invoke(Action eventAction) { }
+		public void Dispose() { }
+	}
+
+	internal class AutoThreadPooledEventDispatcher : IEventDispatcher
+	{
+		private Thread readQueryThread;
+
+		public void Init(Action eventLoop)
+		{
+			readQueryThread = new Thread(eventLoop.Invoke) { Name = "TS3Query MessageLoop" };
+			readQueryThread.Start();
+		}
+		public void EnterEventLoop() { }
+		public void Invoke(Action eventAction) => ThreadPool.QueueUserWorkItem(Call, eventAction);
+		private static void Call(object obj) => ((Action)obj)();
 		public void Dispose() { }
 	}
 

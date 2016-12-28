@@ -12,9 +12,8 @@ namespace TS3Client
 		/// The connection status needs to be changed.<para/>
 		/// An internal message queue is accessed.</summary>
 		protected readonly object LockObj = new object();
-		private bool eventLoopRunning;
 		private string cmdLineBuffer;
-		private EventDispatchType dispatcherType;
+		private readonly EventDispatchType dispatcherType;
 		private IEventDispatcher eventDispatcher;
 		private Ts3ClientStatus Status;
 		internal readonly Queue<WaitBlock> RequestQueue;
@@ -36,7 +35,6 @@ namespace TS3Client
 		protected Ts3BaseClient(EventDispatchType dispatcher)
 		{
 			Status = Ts3ClientStatus.Disconnected;
-			eventLoopRunning = false;
 			dispatcherType = dispatcher;
 			RequestQueue = new Queue<WaitBlock>();
 		}
@@ -105,7 +103,6 @@ namespace TS3Client
 				Status = Ts3ClientStatus.Disconnected;
 				IEventDispatcher evd = eventDispatcher;
 				eventDispatcher = null;
-				eventLoopRunning = false;
 				evd.Invoke(() => OnDisconnected?.Invoke(this, new DisconnectEventArgs(exitReason)));
 				evd.Dispose();
 			}
@@ -119,7 +116,7 @@ namespace TS3Client
 				case EventDispatchType.CurrentThread: eventDispatcher = new CurrentThreadEventDisptcher(); break;
 				case EventDispatchType.ExtraDispatchThread: eventDispatcher = new ExtraThreadEventDispatcher(); break;
 				case EventDispatchType.DoubleThread: throw new NotSupportedException(); //break;
-				case EventDispatchType.AutoThreadPooled: throw new NotSupportedException(); //break;
+				case EventDispatchType.AutoThreadPooled: eventDispatcher = new AutoThreadPooledEventDispatcher(); break;
 				case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
 				default: throw new NotSupportedException();
 			}
@@ -310,9 +307,6 @@ namespace TS3Client
 		public virtual void Dispose()
 		{
 			Disconnect();
-
-			eventDispatcher?.Dispose();
-			eventDispatcher = null;
 		}
 
 		protected enum Ts3ClientStatus
