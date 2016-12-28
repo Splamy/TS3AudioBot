@@ -169,6 +169,7 @@ namespace TS3AudioBot.Helper
 				this.path = path;
 				changed = false;
 				data = new Dictionary<string, int>();
+				fileLines = new List<LineData>();
 			}
 
 			public bool Open()
@@ -181,7 +182,7 @@ namespace TS3AudioBot.Helper
 				open = true;
 
 				var strLines = File.ReadAllLines(path, new UTF8Encoding(false));
-				fileLines = new List<LineData>(strLines.Length);
+				fileLines.Clear();
 				for (int i = 0; i < strLines.Length; i++)
 				{
 					var s = strLines[i];
