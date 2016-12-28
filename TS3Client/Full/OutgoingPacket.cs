@@ -7,6 +7,7 @@ namespace TS3Client.Full
 		public ushort ClientId { get; set; }
 
 		public DateTime LastSendTime { get; set; } = DateTime.MaxValue;
+		public int ResendCount { get; set; } = 0;
 
 		public OutgoingPacket(byte[] data, PacketType type)
 		{

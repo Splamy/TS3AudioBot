@@ -15,22 +15,31 @@ namespace TS3Client.Full
 		private const int HeaderSize = 13;
 
 		private const int PacketBufferSize = 50;
-		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(1);
-		
+		private const int RetryTimeout = 5;
+		private static readonly TimeSpan[] PacketTimeouts = new[]
+		{
+			TimeSpan.FromMilliseconds(200),
+			TimeSpan.FromMilliseconds(200),
+			TimeSpan.FromMilliseconds(500),
+			TimeSpan.FromMilliseconds(1000),
+		};
+
 		private readonly ushort[] packetCounter;
 		private readonly LinkedList<OutgoingPacket> sendQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
 		private readonly object sendLoopMonitor = new object();
 		private readonly Ts3Crypt ts3Crypt;
-		private readonly UdpClient udpClient;
+		public UdpClient udpClient;
 		private Thread resendThread;
 		private int resendThreadId;
 
+
 		public ushort ClientId { get; set; }
 		public IPEndPoint RemoteAddress { get; set; }
+		public MoveReason? ExitReason { get; private set; }
 
-		public PacketHandler(Ts3Crypt ts3Crypt, UdpClient udpClient)
+		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
 			sendQueue = new LinkedList<OutgoingPacket>();
 			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize);
@@ -38,16 +47,26 @@ namespace TS3Client.Full
 
 			packetCounter = new ushort[9];
 			this.ts3Crypt = ts3Crypt;
-			this.udpClient = udpClient;
 			resendThreadId = -1;
 		}
 
-		public void Start()
+		public void Start(UdpClient udpClient)
 		{
 			Stop();
+
 			resendThread = new Thread(ResendLoop) { Name = "PacketHandler" };
 			resendThreadId = resendThread.ManagedThreadId;
-			Reset();
+
+			ClientId = 0;
+			lock (sendLoopMonitor)
+			{
+				ExitReason = null;
+				this.udpClient = udpClient;
+				sendQueue.Clear();
+			}
+			receiveQueue.Clear();
+			Array.Clear(packetCounter, 0, packetCounter.Length);
+
 			resendThread.Start();
 		}
 
@@ -56,6 +75,8 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 			if (Monitor.TryEnter(sendLoopMonitor))
 			{
+				Console.WriteLine("Stopping");
+				udpClient?.Close();
 				Monitor.Pulse(sendLoopMonitor);
 				Monitor.Exit(sendLoopMonitor);
 			}
@@ -162,7 +183,9 @@ namespace TS3Client.Full
 		{
 			while (true)
 			{
-				if (!udpClient.Client.Connected)
+				if (ExitReason.HasValue)
+					return null;
+				if ((!udpClient?.Client?.Connected) ?? true)
 				{
 					Thread.Sleep(1);
 					continue;
@@ -384,17 +407,18 @@ namespace TS3Client.Full
 
 		#endregion
 
-		// TODO count based wait time: [100, 200, 500, 1000, 1000, ..]
-		// count since last acked package, not per package !
+		private TimeSpan GetTimeout(int step) => PacketTimeouts[Math.Min(PacketTimeouts.Length - 1, step)];
+
 		/// <summary>
 		/// ResendLoop will regularly check if a packet has be acknowleged and trys to send it again
 		/// if the timeout for a packet ran out.
 		/// </summary>
 		private void ResendLoop()
 		{
-			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
+			while (Thread.CurrentThread.ManagedThreadId == resendThreadId
+				&& udpClient?.Client != null)
 			{
-				TimeSpan sleepSpan = PacketTimeout;
+				TimeSpan sleepSpan = GetTimeout(PacketTimeouts.Length);
 
 				lock (sendLoopMonitor)
 				{
@@ -404,12 +428,19 @@ namespace TS3Client.Full
 						if (!sendQueue.Any())
 							continue;
 					}
-
+					
 					foreach (var outgoingPacket in sendQueue)
 					{
-						var nextTest = (outgoingPacket.LastSendTime - DateTime.UtcNow) + PacketTimeout;
+						var nextTest = (outgoingPacket.LastSendTime - DateTime.UtcNow) + GetTimeout(outgoingPacket.ResendCount);
 						if (nextTest < TimeSpan.Zero)
+						{
+							if (++outgoingPacket.ResendCount > RetryTimeout)
+							{
+								ExitReason = MoveReason.Timeout;
+								Stop();
+							}
 							SendRaw(outgoingPacket);
+						}
 						else if (nextTest < sleepSpan)
 							sleepSpan = nextTest;
 					}
@@ -423,15 +454,6 @@ namespace TS3Client.Full
 		{
 			packet.LastSendTime = DateTime.UtcNow;
 			udpClient.Send(packet.Raw, packet.Raw.Length);
-		}
-
-		public void Reset()
-		{
-			ClientId = 0;
-			lock (sendLoopMonitor)
-				sendQueue.Clear();
-			receiveQueue.Clear();
-			Array.Clear(packetCounter, 0, packetCounter.Length);
 		}
 	}
 }

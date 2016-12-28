@@ -71,7 +71,7 @@ namespace TS3Client.Query
 				var message = line.Trim();
 				ProcessCommand(message);
 			}
-			DisconnectDone();
+			DisconnectDone(MoveReason.LeftServer); // TODO ??
 		}
 
 		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType) // Synchronous

@@ -9,7 +9,7 @@ namespace TS3Client.Full
 
 	public sealed class Ts3FullClient : Ts3BaseClient
 	{
-		private readonly UdpClient udpClient;
+		private UdpClient udpClient;
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
 
@@ -21,9 +21,8 @@ namespace TS3Client.Full
 
 		public Ts3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
-			udpClient = new UdpClient();
 			ts3Crypt = new Ts3Crypt();
-			packetHandler = new PacketHandler(ts3Crypt, udpClient);
+			packetHandler = new PacketHandler(ts3Crypt);
 
 			wasExit = false;
 			returnCode = 0;
@@ -35,7 +34,8 @@ namespace TS3Client.Full
 			if (conDataFull == null) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 
-			packetHandler.Start();
+			udpClient = new UdpClient();
+			packetHandler.Start(udpClient);
 
 			try
 			{
@@ -74,7 +74,7 @@ namespace TS3Client.Full
 		{
 			wasExit = true;
 			packetHandler.Stop();
-			DisconnectDone();
+			DisconnectDone(packetHandler.ExitReason ?? MoveReason.LeftServer); // TODO ??
 		}
 
 		protected override void NetworkLoop()

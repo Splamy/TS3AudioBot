@@ -26,7 +26,7 @@ namespace TS3Client
 		public event NotifyEventHandler<ClientLeftView> OnClientLeftView;
 		public event EventHandler<CommandError> OnErrorEvent;
 		public event EventHandler OnConnected;
-		public event EventHandler OnDisconnected;
+		public event EventHandler<DisconnectEventArgs> OnDisconnected;
 
 
 		public abstract ClientType ClientType { get; }
@@ -98,7 +98,7 @@ namespace TS3Client
 		}
 		/// <summary>Locked call</summary>
 		protected abstract void DisconnectInternal();
-		protected void DisconnectDone()
+		protected void DisconnectDone(MoveReason exitReason)
 		{
 			lock (LockObj)
 			{
@@ -106,7 +106,7 @@ namespace TS3Client
 				IEventDispatcher evd = eventDispatcher;
 				eventDispatcher = null;
 				eventLoopRunning = false;
-				evd.Invoke(() => OnDisconnected?.Invoke(this, new EventArgs()));
+				evd.Invoke(() => OnDisconnected?.Invoke(this, new DisconnectEventArgs(exitReason)));
 				evd.Dispose();
 			}
 		}
