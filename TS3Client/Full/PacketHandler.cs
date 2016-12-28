@@ -16,7 +16,7 @@ namespace TS3Client.Full
 
 		private const int PacketBufferSize = 50;
 		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(1);
-
+		
 		private readonly ushort[] packetCounter;
 		private readonly LinkedList<OutgoingPacket> sendQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
@@ -109,7 +109,9 @@ namespace TS3Client.Full
 			if (!ts3Crypt.Encrypt(packet))
 				throw new Ts3Exception("Internal encryption error.");
 
-			if (packet.PacketType == PacketType.Command || packet.PacketType == PacketType.CommandLow)
+			if (packet.PacketType == PacketType.Command
+				|| packet.PacketType == PacketType.CommandLow
+				|| packet.PacketType == PacketType.Init1)
 				lock (sendLoopMonitor)
 					sendQueue.AddLast(packet);
 
@@ -160,6 +162,12 @@ namespace TS3Client.Full
 		{
 			while (true)
 			{
+				if (!udpClient.Client.Connected)
+				{
+					Thread.Sleep(1);
+					continue;
+				}
+
 				var dummy = new IPEndPoint(IPAddress.Any, 0);
 				byte[] buffer;
 				try { buffer = udpClient.Receive(ref dummy); }
@@ -182,7 +190,7 @@ namespace TS3Client.Full
 					case PacketType.Pong: break;
 					case PacketType.Ack: passToReturn = ReceiveAck(packet); break;
 					case PacketType.AckLow: break;
-					case PacketType.Init1: break;
+					case PacketType.Init1: ReceiveInitAck(); break;
 					default:
 						throw new ArgumentOutOfRangeException();
 				}
@@ -360,6 +368,20 @@ namespace TS3Client.Full
 			return true;
 		}
 
+		public void ReceiveInitAck()
+		{
+			// this method is a bit hacky since it removes ALL Init1 packets
+			// from the sendQueue instead of the one with the preceding
+			// init step id (see Ts3Crypt.ProcessInit1).
+			// But usually this should be no problem since the init order is linear
+			lock (sendLoopMonitor)
+				for (var n = sendQueue.First; n != null; n = n.Next)
+				{
+					if (n.Value.PacketType == PacketType.Init1)
+						sendQueue.Remove(n);
+				}
+		}
+
 		#endregion
 
 		// TODO count based wait time: [100, 200, 500, 1000, 1000, ..]
@@ -406,7 +428,8 @@ namespace TS3Client.Full
 		public void Reset()
 		{
 			ClientId = 0;
-			sendQueue.Clear();
+			lock (sendLoopMonitor)
+				sendQueue.Clear();
 			receiveQueue.Clear();
 			Array.Clear(packetCounter, 0, packetCounter.Length);
 		}

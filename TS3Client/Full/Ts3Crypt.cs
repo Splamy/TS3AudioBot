@@ -225,8 +225,6 @@ namespace TS3Client.Full
 				// Copy data
 				Array.Copy(data, initTypeLen, sendData, versionLen + initTypeLen, 232);
 				// Copy y
-				if(y.Length < 64)
-					Console.WriteLine();
 				Array.Copy(y, 0, sendData, versionLen + initTypeLen + 232 + (64 - y.Length), y.Length);
 				// Copy text
 				Array.Copy(textBytes, 0, sendData, versionLen + initTypeLen + 232 + 64, textBytes.Length);
@@ -238,7 +236,7 @@ namespace TS3Client.Full
 		}
 
 		/// <summary>This method calculates x ^ (2^level) % n = y which is the solution to the server RSA puzzle.</summary>
-		/// <param name="data">The data array, containing x=[0,64] and n=[64,128], each unsigned, as a BigInteger bytearray.</param>
+		/// <param name="data">The data array, containing x=[0,63] and n=[64,127], each unsigned, as a BigInteger bytearray.</param>
 		/// <param name="offset">The offset of x and n in the data array.</param>
 		/// <param name="level">The exponent to x.</param>
 		/// <returns>The y value, unsigned, as a BigInteger bytearray.</returns>
@@ -281,7 +279,7 @@ namespace TS3Client.Full
 			}
 			catch (Exception) { return false; }
 
-			// cryptOutArr consists of [Data..., Mac...]
+			// result consists of [Data..., Mac...]
 			// to build the final TS3/libtomcrypt we need to copy it into another order
 
 			// len is Data.Length + Mac.Length
@@ -300,11 +298,11 @@ namespace TS3Client.Full
 		{
 			packet.BuildHeader();
 			packet.Raw = new byte[packet.Data.Length + MacLen + OutHeaderLen];
-			// Copy the Mac from [Data..., Mac...] to [Mac..., Header..., Data...]
+			// Copy the Mac from [Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(mac, 0, packet.Raw, 0, MacLen);
-			// Copy the Header from this.Header to [Mac..., Header..., Data...]
+			// Copy the Header from packet.Header to [Mac..., Header..., Data...]
 			Array.Copy(packet.Header, 0, packet.Raw, MacLen, OutHeaderLen);
-			// Copy the Data from [Data..., Mac...] to [Mac..., Header..., Data...]
+			// Copy the Data from packet.Data to [Mac..., Header..., Data...]
 			Array.Copy(packet.Data, 0, packet.Raw, MacLen + OutHeaderLen, packet.Data.Length);
 			// Raw is now [Mac..., Header..., Data...]
 		}
@@ -349,10 +347,11 @@ namespace TS3Client.Full
 			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
 
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
-			eaxCipher.Init(false, ivAndKey);
-			byte[] result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
 			try
 			{
+				eaxCipher.Init(false, ivAndKey);
+				byte[] result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
+
 				byte[] comb = new byte[dataLen + MacLen];
 				Array.Copy(packet.Raw, MacLen + InHeaderLen, comb, 0, dataLen);
 				Array.Copy(packet.Raw, 0, comb, dataLen, MacLen);
@@ -363,9 +362,10 @@ namespace TS3Client.Full
 				int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
 				len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);
 				len += eaxCipher.DoFinal(result, len);
+
+				packet.Data = result;
 			}
 			catch (Exception) { return false; }
-			packet.Data = result;
 			return true;
 		}
 

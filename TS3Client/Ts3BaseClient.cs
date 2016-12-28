@@ -16,7 +16,7 @@ namespace TS3Client
 		private string cmdLineBuffer;
 		private EventDispatchType dispatcherType;
 		private IEventDispatcher eventDispatcher;
-		protected Ts3ClientStatus Status;
+		private Ts3ClientStatus Status;
 		internal readonly Queue<WaitBlock> RequestQueue;
 
 		public delegate void NotifyEventHandler<TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
@@ -41,23 +41,32 @@ namespace TS3Client
 			RequestQueue = new Queue<WaitBlock>();
 		}
 
+		/// <summary>Tries to connect with the given data and starts the event dispatcher.
+		/// Please keep in mind that this call might be blocking or non-blocking depending on the dispatch-method.
+		/// <see cref="EventDispatchType.CurrentThread"/> and <see cref="EventDispatchType.ExtraDispatchThread"/>
+		/// will enter a loop and block the calling thread.
+		/// Any other method will start special subroutines and return to the caller.</summary>
 		public void Connect(ConnectionData conData)
 		{
+			if (conData == null) throw new ArgumentNullException(nameof(conData));
 			if (string.IsNullOrWhiteSpace(conData.Hostname)) throw new ArgumentNullException(nameof(conData.Hostname));
 			if (conData.Port <= 0) throw new ArgumentOutOfRangeException(nameof(conData.Port));
 
-			if (IsConnected)
+			if (Status != Ts3ClientStatus.Disconnected)
+			{
 				Disconnect();
+			}
 
-			bool connectDone = false;
+			Reset();
+
 			lock (LockObj)
 			{
 				try
 				{
 					Status = Ts3ClientStatus.Connecting;
 					ConnectionData = conData;
-					connectDone = ConnectInternal(conData);
-					StartEventDispatcher();
+					InitEventDispatcher();
+					ConnectInternal(conData);
 				}
 				catch
 				{
@@ -66,16 +75,13 @@ namespace TS3Client
 				}
 			}
 
-			if (connectDone)
-				ConnectDone();
+			eventDispatcher.EnterEventLoop();
 		}
-		protected abstract bool ConnectInternal(ConnectionData conData);
+		/// <summary>Locked call</summary>
+		protected abstract void ConnectInternal(ConnectionData conData);
 		protected void ConnectDone()
 		{
-			lock (LockObj)
-			{
-				Status = Ts3ClientStatus.Connected;
-			}
+			Status = Ts3ClientStatus.Connected;
 			eventDispatcher.Invoke(() => OnConnected?.Invoke(this, new EventArgs()));
 		}
 
@@ -83,28 +89,29 @@ namespace TS3Client
 		{
 			lock (LockObj)
 			{
-				if (IsConnected)
+				if (Status != Ts3ClientStatus.Disconnected)
 				{
-					Status = Ts3ClientStatus.Quitting;
+					Status = Ts3ClientStatus.Disconnecting;
 					DisconnectInternal();
 				}
 			}
 		}
+		/// <summary>Locked call</summary>
 		protected abstract void DisconnectInternal();
 		protected void DisconnectDone()
 		{
 			lock (LockObj)
 			{
 				Status = Ts3ClientStatus.Disconnected;
+				IEventDispatcher evd = eventDispatcher;
+				eventDispatcher = null;
+				eventLoopRunning = false;
+				evd.Invoke(() => OnDisconnected?.Invoke(this, new EventArgs()));
+				evd.Dispose();
 			}
-			IEventDispatcher evd = eventDispatcher;
-			eventDispatcher = null;
-			eventLoopRunning = false;
-			evd.Invoke(() => OnDisconnected?.Invoke(this, new EventArgs()));
-			evd.Dispose();
 		}
 
-		private void StartEventDispatcher()
+		private void InitEventDispatcher()
 		{
 			switch (dispatcherType)
 			{
@@ -121,25 +128,8 @@ namespace TS3Client
 
 		#region NETWORK RECEIVE AND DESERIALIZE
 
-		/// <summary>Use this method to start the event dispatcher.
-		/// Please keep in mind that this call might be blocking or non-blocking depending on the dispatch-method.
-		/// <see cref="EventDispatchType.CurrentThread"/> and <see cref="EventDispatchType.ExtraDispatchThread"/>
-		/// will enter a loop and block the calling thread.
-		/// Any other method will start special subroutines and return to the caller.</summary>
-		public void EnterEventLoop()
-		{
-			if (!eventLoopRunning)
-			{
-				eventLoopRunning = true;
-				eventDispatcher.EnterEventLoop();
-			}
-			else throw new InvalidOperationException("EventLoop can only be run once until disposed.");
-		}
-
 		protected abstract void NetworkLoop();
 
-		/// <summary></summary>
-		/// <returns>True if the command was processed, false otherwise.</returns>
 		protected void ProcessCommand(string message)
 		{
 			if (message.StartsWith("notify", StringComparison.Ordinal))
@@ -328,9 +318,9 @@ namespace TS3Client
 		protected enum Ts3ClientStatus
 		{
 			Disconnected,
-			Connecting,
+			Disconnecting,
 			Connected,
-			Quitting,
+			Connecting,
 		}
 	}
 }

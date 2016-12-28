@@ -49,7 +49,7 @@ namespace TS3Client
 		private Thread readQueryThread;
 		private readonly ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
-		private bool run = true;
+		private volatile bool run = true;
 
 		public void Init(Action eventLoop)
 		{
@@ -81,6 +81,7 @@ namespace TS3Client
 		{
 			run = false;
 			eventBlock.Set();
+			eventBlock.Close();
 			eventBlock.Dispose();
 		}
 	}

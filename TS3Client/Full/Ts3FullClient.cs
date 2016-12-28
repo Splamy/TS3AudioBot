@@ -14,6 +14,7 @@ namespace TS3Client.Full
 		private readonly PacketHandler packetHandler;
 
 		private int returnCode;
+		private bool wasExit;
 
 		public override ClientType ClientType => ClientType.Full;
 		public ushort ClientId => packetHandler.ClientId;
@@ -24,20 +25,15 @@ namespace TS3Client.Full
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler(ts3Crypt, udpClient);
 
+			wasExit = false;
 			returnCode = 0;
 		}
 
-		protected override bool ConnectInternal(ConnectionData conData)
+		protected override void ConnectInternal(ConnectionData conData)
 		{
-			if (conData == null)
-				throw new ArgumentNullException(nameof(conData));
 			var conDataFull = conData as ConnectionDataFull;
-			if (conDataFull == null)
-				throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
-			if (conDataFull.Identity == null)
-				throw new ArgumentNullException(nameof(conDataFull.Identity));
-
-			Reset();
+			if (conDataFull == null) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
+			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 
 			packetHandler.Start();
 
@@ -52,9 +48,8 @@ namespace TS3Client.Full
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
 
 			ts3Crypt.Identity = conDataFull.Identity;
-			var initData = ts3Crypt.ProcessInit1(null);
-			packetHandler.AddOutgoingPacket(initData, PacketType.Init1);
-			return false;
+
+			packetHandler.AddOutgoingPacket(ts3Crypt.ProcessInit1(null), PacketType.Init1);
 		}
 
 		protected override void DisconnectInternal()
@@ -68,22 +63,29 @@ namespace TS3Client.Full
 			if (notifyType == NotificationType.ClientLeftView
 				&& notification.Cast<ClientLeftView>().Any(clv => clv.ClientId == packetHandler.ClientId))
 			{
-				packetHandler.Stop();
-				udpClient.Close();
-				DisconnectDone();
+				FullDisconnect();
 				return;
 			}
 
 			base.InvokeEvent(notification, notifyType);
 		}
 
+		private void FullDisconnect()
+		{
+			wasExit = true;
+			packetHandler.Stop();
+			DisconnectDone();
+		}
+
 		protected override void NetworkLoop()
 		{
 			while (true)
 			{
-				if (udpClient.Client == null) break;
+				if (wasExit)
+					break;
 				var packet = packetHandler.FetchPacket();
-				if (packet == null) break;
+				if (packet == null)
+					break;
 
 				switch (packet.PacketType)
 				{
@@ -137,8 +139,12 @@ namespace TS3Client.Full
 
 		protected override void ProcessInitServer(InitServer initServer)
 		{
-			packetHandler.ClientId = initServer.ClientId;
-			ConnectDone();
+			lock (LockObj)
+			{
+				packetHandler.ClientId = initServer.ClientId;
+				packetHandler.ReceiveInitAck();
+				ConnectDone();
+			}
 		}
 
 		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType)
@@ -175,6 +181,7 @@ namespace TS3Client.Full
 			packetHandler.Stop();
 
 			returnCode = 0;
+			wasExit = false;
 		}
 
 		#region FULLCLIENT SPECIFIC COMMANDS
