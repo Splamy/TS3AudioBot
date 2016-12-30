@@ -40,15 +40,15 @@ namespace TS3AudioBot.History
 
 		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, Func<AudioLogEntry, string> format)
 		{
-			//! entryLines[n] is the most recent entry
-			var entryLines = entries.Select(e =>
+			//! entryLinesRev[0] is the most recent entry
+			var entryLinesRev = entries.Select(e =>
 			{
 				string finStr = format(e);
 				return new Line { Value = finStr, TokenLength = Ts3String.TokenLength(finStr) };
 			});
 
-			//! entryLinesRev[0] is the most recent entry
-			var entryLinesRev = entryLines.Reverse();
+			//! entryLines[n] is the most recent entry
+			var entryLines = entryLinesRev.Reverse();
 
 			var queryTokenLen = entryLines.Sum(eL => eL.TokenLength + LineBreakLen);
 			StringBuilder strb;

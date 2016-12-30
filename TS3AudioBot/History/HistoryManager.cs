@@ -16,71 +16,194 @@
 
 namespace TS3AudioBot.History
 {
+	using Helper;
+	using LiteDB;
+	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
+	using System.IO;
 	using System.Linq;
-	using Helper;
-	using ResourceFactories;
 
 	public sealed class HistoryManager : IDisposable
 	{
-		private readonly object accessLock = new object();
-		private HistoryFile historyFile;
-		private IEnumerable<AudioLogEntry> lastResult;
+		const string audioLogEntriesTable = "audioLogEntries";
+		const string resourceTitleQueryColumn = nameof(AudioLogEntry.AudioResource) + "." + nameof(AudioResource.ResourceTitle);
+
+		private readonly FileInfo historyFile;
+		private readonly LiteDatabase database;
+		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
+		private readonly HistoryManagerData historyManagerData;
+		private readonly LinkedList<int> unusedIds;
+
 		public IHistoryFormatter Formatter { get; private set; }
-		public uint HighestId => historyFile.CurrentID - 1;
+		public uint HighestId => uint.MaxValue; // TODO
+
+		static HistoryManager()
+		{
+			BsonMapper.Global.Entity<AudioLogEntry>()
+				.Id(x => x.Id, true)
+				.Index(x => x.UserInvokeId)
+				.Index(x => x.Timestamp);
+		}
 
 		public HistoryManager(HistoryManagerData hmd)
 		{
 			Formatter = new SmartHistoryFormatter();
-			historyFile = new HistoryFile();
-			historyFile.ReuseUnusedIds = hmd.fillDeletedIds;
-			historyFile.OpenFile(hmd.historyFile);
+			historyManagerData = hmd;
+
+			#region CheckUpgrade
+			AudioLogEntry[] moveData = null;
+
+			var upgrader = new Deprecated.HistoryFile();
+			// check if the old history database system can open it
+			try
+			{
+				upgrader.OpenFile(historyManagerData.historyFile);
+				Log.Write(Log.Level.Info, "Found old history database vesion, upgrading now.");
+
+				moveData = upgrader
+					.GetAll()
+					.Select(x => new AudioLogEntry((int)x.Id, x.AudioResource)
+					{
+						PlayCount = x.PlayCount,
+						Timestamp = x.Timestamp,
+						UserInvokeId = x.UserInvokeId,
+					})
+					.ToArray();
+				// the old database allowed 0-id, while the new one kinda doesn't
+				var nullIdEntity = moveData.FirstOrDefault(x => x.Id == 0);
+				if (nullIdEntity != null)
+					nullIdEntity.Id = moveData.Select(x => x.Id).Max() + 1;
+
+				upgrader.CloseFile();
+				upgrader.BackupFile();
+				upgrader.historyFile.Delete();
+			}
+			// if not it is already the new one or corrupted
+			catch (FormatException)
+			{
+				upgrader.CloseFile();
+			}
+			#endregion
+
+			Util.Init(ref unusedIds);
+			historyFile = new FileInfo(hmd.historyFile);
+			database = new LiteDatabase(historyFile.FullName);
+
+			audioLogEntries = database.GetCollection<AudioLogEntry>(audioLogEntriesTable);
+			audioLogEntries.EnsureIndex(x => x.AudioResource.ResourceTitle);
+			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
+
+			RestoreFromFile();
+
+			#region CheckUpgrade
+			if (moveData != null)
+				audioLogEntries.Insert(moveData);
+			#endregion
+		}
+
+		private void RestoreFromFile()
+		{
+			// TODO load unused id list
 		}
 
 		public R<AudioLogEntry> LogAudioResource(HistorySaveData saveData)
 		{
-			lock (accessLock)
-			{
-				var entry = historyFile.Store(saveData);
-				if (entry != null) return entry;
-				else return "Entry could not be stored";
-			}
+			var entry = Store(saveData);
+			if (entry != null) return entry;
+			else return "Entry could not be stored";
 		}
 
-		public IEnumerable<AudioLogEntry> Search(SeachQuery query)
+		private AudioLogEntry Store(HistorySaveData saveData)
 		{
-			IEnumerable<AudioLogEntry> filteredHistory = null;
+			if (saveData == null)
+				throw new ArgumentNullException(nameof(saveData));
 
-			lock (accessLock)
+			AudioLogEntry ale;
+			using (var trans = database.BeginTrans())
 			{
-				if (!string.IsNullOrEmpty(query.TitlePart))
+				ale = FindByUniqueId(saveData.Resource.UniqueId);
+				if (ale == null)
 				{
-					filteredHistory = historyFile.SearchTitle(query.TitlePart);
-					if (query.UserId != null)
-						filteredHistory = filteredHistory.Where(ald => ald.UserInvokeId == query.UserId.Value);
-					if (query.LastInvokedAfter != null)
-						filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter.Value);
+					ale = CreateLogEntry(saveData);
+					if (ale == null)
+						Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
 				}
-				else if (query.UserId != null)
-				{
-					filteredHistory = historyFile.SeachByUser(query.UserId.Value);
-					if (query.LastInvokedAfter != null)
-						filteredHistory = filteredHistory.Where(ald => ald.Timestamp > query.LastInvokedAfter.Value);
-				}
-				else if (query.LastInvokedAfter != null)
-				{
-					filteredHistory = historyFile.SeachTillTime(query.LastInvokedAfter.Value);
-				}
-				else if (query.MaxResults >= 0)
-				{
-					lastResult = historyFile.GetLastXEntrys(query.MaxResults);
-					return lastResult;
-				}
-
-				lastResult = filteredHistory;
-				return filteredHistory.TakeLast(query.MaxResults);
+				else
+					LogEntryPlay(ale);
+				trans.Commit();
 			}
+			return ale;
+		}
+
+		/// <summary>Increases the playcount and updates the last playtime.</summary>
+		/// <param name="ale">The <see cref="AudioLogEntry"/> to update.</param>
+		private void LogEntryPlay(AudioLogEntry ale)
+		{
+			if (ale == null)
+				throw new ArgumentNullException(nameof(ale));
+
+			// update the playtime
+			ale.Timestamp = Util.GetNow();
+			// update the playcount
+			ale.PlayCount++;
+
+			audioLogEntries.Update(ale);
+		}
+
+		private AudioLogEntry CreateLogEntry(HistorySaveData saveData)
+		{
+			if (string.IsNullOrWhiteSpace(saveData.Resource.ResourceTitle))
+				return null;
+
+			int nextHid;
+			if (historyManagerData.fillDeletedIds && unusedIds.Any())
+			{
+				nextHid = unusedIds.First.Value;
+				unusedIds.RemoveFirst();
+			}
+			else
+			{
+				nextHid = 0;
+			}
+
+			var ale = new AudioLogEntry(nextHid, saveData.Resource)
+			{
+				UserInvokeId = (uint)saveData.OwnerDbId,
+				Timestamp = Util.GetNow(),
+				PlayCount = 1,
+			};
+
+			audioLogEntries.Insert(ale);
+			return ale;
+		}
+
+		private AudioLogEntry FindByUniqueId(string uniqueId) => audioLogEntries.FindOne(x => x.AudioResource.UniqueId == uniqueId);
+
+		/// <summary>Gets all Entries matching the search criteria.<\br>
+		/// The entries are sorted by last playtime descending.</summary>
+		/// <param name="search">All search criteria.</param>
+		/// <returns>A list of all found entries.</returns>
+		public IEnumerable<AudioLogEntry> Search(SeachQuery search)
+		{
+			if (search == null)
+				throw new ArgumentNullException(nameof(search));
+
+			if (search.MaxResults <= 0)
+				return Enumerable.Empty<AudioLogEntry>();
+
+			Query query = Query.All(nameof(AudioLogEntry.Timestamp), Query.Descending);
+
+			if (!string.IsNullOrEmpty(search.TitlePart))
+				query = Query.And(query, Query.Where(resourceTitleQueryColumn, val => val.AsString.ToLowerInvariant().Contains("fire")));
+
+			if (search.UserId.HasValue)
+				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserInvokeId), search.UserId.Value));
+
+			if (search.LastInvokedAfter.HasValue)
+				query = Query.And(query, Query.GTE(nameof(AudioLogEntry.Timestamp), search.LastInvokedAfter.Value));
+
+			return audioLogEntries.Find(query, 0, search.MaxResults);
 		}
 
 		public string SearchParsed(SeachQuery query)
@@ -89,55 +212,57 @@ namespace TS3AudioBot.History
 			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
 		}
 
-		public uint? FindEntryId(AudioResource resource)
+		public AudioLogEntry FindEntryByResource(AudioResource resource)
 		{
-			lock (accessLock)
-			{
-				return historyFile.Contains(resource);
-			}
+			if (resource == null)
+				throw new ArgumentNullException(nameof(resource));
+			return FindByUniqueId(resource.UniqueId);
 		}
 
+		/// <summary>Gets an <see cref="AudioLogEntry"/> by its history id or null if not exising.</summary>
+		/// <param name="id">The id of the AudioLogEntry</param>
 		public R<AudioLogEntry> GetEntryById(uint id)
 		{
-			lock (accessLock)
-			{
-				var entry = historyFile.GetEntryById(id);
-				if (entry != null) return entry;
-				else return "Could not find track with this id";
-			}
+			var entry = audioLogEntries.FindById(id);
+			if (entry != null) return entry;
+			else return "Could not find track with this id";
 		}
 
+		/// <summary>Removes the <see cref="AudioLogEntry"/> from the Database.</summary>
+		/// <param name="ale">The <see cref="AudioLogEntry"/> to delete.</param>
 		public void RemoveEntry(AudioLogEntry ale)
 		{
 			if (ale == null)
 				throw new ArgumentNullException(nameof(ale));
-			lock (accessLock)
-				historyFile.LogEntryRemove(ale);
+			audioLogEntries.Delete(ale.Id);
 		}
 
+		/// <summary>Sets the name of a <see cref="AudioLogEntry"/>.</summary>
+		/// <param name="ale">The id of the <see cref="AudioLogEntry"/> to rename.</param>
+		/// <param name="name">The new name for the <see cref="AudioLogEntry"/>.</param>
+		/// <exception cref="ArgumentNullException">When ale is null or the name is null, empty or only whitspaces</exception>
 		public void RenameEntry(AudioLogEntry ale, string newName)
 		{
 			if (ale == null)
 				throw new ArgumentNullException(nameof(ale));
 			if (string.IsNullOrWhiteSpace(newName))
 				throw new ArgumentNullException(nameof(newName));
-			lock (accessLock)
-				historyFile.LogEntryRename(ale, newName);
+			// update the name
+			ale.SetName(newName);
+			audioLogEntries.Update(ale);
 		}
 
 		public void CleanHistoryFile()
 		{
-			lock (accessLock)
-				historyFile.CleanFile();
+			database.Shrink();
 		}
 
 		public void RemoveBrokenLinks(UserSession session)
 		{
-			lock (accessLock)
+			using (var trans = database.BeginTrans())
 			{
 				const int iterations = 3;
-				historyFile.BackupFile();
-				var currentIter = historyFile.GetAll();
+				var currentIter = audioLogEntries.FindAll();
 
 				for (int i = 0; i < iterations; i++)
 				{
@@ -147,14 +272,23 @@ namespace TS3AudioBot.History
 
 				foreach (var entry in currentIter)
 				{
-					historyFile.LogEntryRemove(entry);
+					RemoveEntry(entry);
 					session.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
 					session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
 				}
+
+				trans.Commit();
 			}
 		}
 
-		private List<AudioLogEntry> FilterList(UserSession session, IList<AudioLogEntry> list)
+		/// <summary>
+		/// Goes through a list of <see cref="AudioLogEntry"/> and checks if the contained <see cref="AudioResource"/>
+		/// is playable/resolveable.
+		/// </summary>
+		/// <param name="session">Session object to inform the user about the current cleaning status.</param>
+		/// <param name="list">The list to iterate.</param>
+		/// <returns>A new list with all working items.</returns>
+		private static List<AudioLogEntry> FilterList(UserSession session, IEnumerable<AudioLogEntry> list)
 		{
 			int userNotityCnt = 0;
 			var nextIter = new List<AudioLogEntry>();
@@ -175,23 +309,13 @@ namespace TS3AudioBot.History
 
 		public void Dispose()
 		{
-			if (historyFile != null)
-			{
-				lock (accessLock)
-				{
-					if (historyFile != null)
-					{
-						historyFile.Dispose();
-						historyFile = null;
-					}
-				}
-			}
+			database.Dispose();
 		}
 	}
 
 	public class HistoryManagerData : ConfigData
 	{
-		[Info("the absolute or relative path to the history database file")]
+		[Info("the absolute or relative path to the history database file", "history.db")]
 		public string historyFile { get; set; }
 		[Info("wether or not deleted history ids should be filled up with new songs", "true")]
 		public bool fillDeletedIds { get; set; }

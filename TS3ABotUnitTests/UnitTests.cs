@@ -64,103 +64,102 @@ namespace TS3ABotUnitTests
 			var data3 = new HistorySaveData(ar3, 103);
 
 
-			HistoryFile hf = new HistoryFile();
-			hf.OpenFile(testFile);
+			HistoryManager hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
 
-			hf.Store(data1);
+			hf.LogAudioResource(data1);
 
 			var lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			var lastEntry = lastXEntries.First();
 			Assert.AreEqual(ar1, lastEntry.AudioResource);
 
-			hf.CloseFile();
+			hf.Dispose();
 
-			hf.OpenFile(testFile);
+			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
 			Assert.AreEqual(ar1, lastEntry.AudioResource);
 
-			hf.Store(data1);
-			hf.Store(data2);
+			hf.LogAudioResource(data1);
+			hf.LogAudioResource(data2);
 
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
 			Assert.AreEqual(ar2, lastEntry.AudioResource);
 
-			hf.CloseFile();
+			hf.Dispose();
 
 			// store and order check
-			hf.OpenFile(testFile);
+			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
-			Assert.AreEqual(2, lastXEntriesArray.Length);
-			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
-			Assert.AreEqual(ar2, lastXEntriesArray[1].AudioResource);
-
-			var ale1 = hf.GetEntryById(hf.Contains(ar1).Value);
-			hf.LogEntryRename(ale1, "sc_ar1X", false);
-			hf.LogEntryPlay(ale1);
-
-
-			hf.CloseFile();
-
-			// check entry renaming
-			hf.OpenFile(testFile);
-			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
 			Assert.AreEqual(ar1, lastXEntriesArray[1].AudioResource);
 
-			var ale2 = hf.GetEntryById(hf.Contains(ar2).Value);
-			hf.LogEntryRename(ale2, "me_ar2_loong1");
-			hf.LogEntryPlay(ale2);
+			var ale1 = hf.FindEntryByResource(ar1);
+			hf.RenameEntry(ale1, "sc_ar1X");
+			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, 42));
 
-			ale1 = hf.GetEntryById(hf.Contains(ar1).Value);
-			hf.LogEntryRename(ale1, "sc_ar1X_loong1");
-			hf.LogEntryPlay(ale1);
 
-			hf.LogEntryRename(ale2, "me_ar2_exxxxxtra_loong1");
-			hf.LogEntryPlay(ale2);
+			hf.Dispose();
 
-			hf.CloseFile();
-
-			// recheck order
-			hf.OpenFile(testFile);
+			// check entry renaming
+			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
 			Assert.AreEqual(ar2, lastXEntriesArray[1].AudioResource);
-			hf.CloseFile();
+
+			var ale2 = hf.FindEntryByResource(ar2);
+			hf.RenameEntry(ale2, "me_ar2_loong1");
+			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, 42));
+
+			ale1 = hf.FindEntryByResource(ar1);
+			hf.RenameEntry(ale1, "sc_ar1X_loong1");
+			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, 42));
+
+			hf.RenameEntry(ale2, "me_ar2_exxxxxtra_loong1");
+			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, 42));
+
+			hf.Dispose();
+
+			// recheck order
+			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
+			Assert.AreEqual(2, lastXEntriesArray.Length);
+			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
+			Assert.AreEqual(ar1, lastXEntriesArray[1].AudioResource);
+			hf.Dispose();
 
 			// delete entry 1
-			hf.OpenFile(testFile);
-			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar1).Value));
+			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			hf.RemoveEntry(hf.FindEntryByResource(ar1));
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(1, lastXEntriesArray.Length);
 
 			// .. store new entry to check correct stream position writes
-			hf.Store(data3);
+			hf.LogAudioResource(data3);
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
-			hf.CloseFile();
+			hf.Dispose();
 
 			// delete entry 2
-			hf.OpenFile(testFile);
+			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
 			// .. check integrity from previous store
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 
 			// .. delete and recheck
-			hf.LogEntryRemove(hf.GetEntryById(hf.Contains(ar2).Value));
+			hf.RemoveEntry(hf.FindEntryByResource(ar2));
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(1, lastXEntriesArray.Length);
 			Assert.AreEqual(ar3, lastXEntriesArray[0].AudioResource);
-			hf.CloseFile();
+			hf.Dispose();
 
 
 			File.Delete(testFile);
@@ -329,39 +328,6 @@ namespace TS3ABotUnitTests
 		}
 
 		[Test]
-		public void SimpleSubstringFinderTest()
-		{
-			var subf = new SimpleSubstringFinder<string>();
-			TestISubstringFinder(subf);
-		}
-
-		private static void TestISubstringFinder(ISubstringSearch<string> subf)
-		{
-			subf.Add("thisIsASongName", "1");
-			subf.Add("abcdefghijklmnopqrstuvwxyz", "2");
-			subf.Add("123456789song!@#$%^&*()_<>?|{}", "3");
-			subf.Add("SHOUTING SONG", "4");
-			subf.Add("not shouting song", "5");
-			subf.Add("http://test.song.123/text?var=val&format=mp3", "6");
-			subf.Add("...........a...........", "7");
-
-			var res = subf.GetValues("song");
-			Assert.True(HaveSameItems(res, new[] { "1", "3", "4", "5", "6" }));
-			res = subf.GetValues("shouting");
-			Assert.True(HaveSameItems(res, new[] { "4", "5" }));
-			res = subf.GetValues("this");
-			Assert.True(HaveSameItems(res, new[] { "1" }));
-			res = subf.GetValues("a");
-			Assert.True(HaveSameItems(res, new[] { "1", "2", "6", "7" }));
-			res = subf.GetValues(string.Empty);
-			Assert.True(HaveSameItems(res, new[] { "1", "2", "3", "4", "5", "6", "7" }));
-			res = subf.GetValues("zzzzzzzzzzzzzzzzz");
-			Assert.True(HaveSameItems(res, new string[0]));
-		}
-
-		private static bool HaveSameItems<T>(IEnumerable<T> self, IEnumerable<T> other) => !other.Except(self).Any() && !self.Except(other).Any();
-
-		[Test]
 		public void ListedShuffleTest()
 		{
 			TestShuffleAlgorithm(new ListedShuffle());
@@ -409,6 +375,14 @@ namespace TS3ABotUnitTests
 				// restoring links
 				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink("robqdGEhQWo"));
 			}
+		}
+	}
+
+	static class Extensions
+	{
+		public static IEnumerable<AudioLogEntry> GetLastXEntrys(this HistoryManager hf, int num)
+		{
+			return hf.Search(new SeachQuery { MaxResults = num });
 		}
 	}
 }

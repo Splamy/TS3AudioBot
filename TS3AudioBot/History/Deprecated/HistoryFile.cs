@@ -14,23 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot.History
+namespace TS3AudioBot.History.Deprecated
 {
+	using Helper;
+	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
-	using System.Globalization;
 	using System.IO;
 	using System.Linq;
 	using System.Text;
-	using Algorithm;
-	using Helper;
-	using ResourceFactories;
 
 	public sealed class HistoryFile : IDisposable
 	{
 		private IDictionary<string, uint> resIdToId;
 		private IDictionary<uint, AudioLogEntry> idFilter;
-		private ISubstringSearch<AudioLogEntry> titleFilter;
 		private IDictionary<uint, IList<AudioLogEntry>> userIdFilter;
 		private SortedList<DateTime, AudioLogEntry> timeFilter;
 		private LinkedList<uint> unusedIds;
@@ -42,7 +39,7 @@ namespace TS3AudioBot.History
 
 		private static readonly Encoding FileEncoding = Encoding.ASCII;
 		private static readonly byte[] NewLineArray = new byte[] { (byte)'\n' };
-		private FileInfo historyFile;
+		public FileInfo historyFile;
 		private FileStream fileStream;
 		private PositionedStreamReader fileReader;
 
@@ -54,7 +51,6 @@ namespace TS3AudioBot.History
 		{
 			resIdToId = new Dictionary<string, uint>();
 			idFilter = new SortedList<uint, AudioLogEntry>();
-			titleFilter = new SimpleSubstringFinder<AudioLogEntry>();
 			userIdFilter = new SortedList<uint, IList<AudioLogEntry>>();
 			timeFilter = new SortedList<DateTime, AudioLogEntry>();
 			unusedIds = new LinkedList<uint>();
@@ -228,15 +224,6 @@ namespace TS3AudioBot.History
 			if (idFilter.TryGetValue(id, out ale))
 				return ale;
 			return null;
-		}
-
-		/// <summary>Gets all Entrys containing the requested string.<\br>
-		/// Sort: Random</summary>
-		/// <param name="titlePart">Any part of the title</param>
-		/// <returns>A list of all found entries.</returns>
-		public IList<AudioLogEntry> SearchTitle(string titlePart)
-		{
-			return titleFilter.GetValues(titlePart.ToLower(CultureInfo.InvariantCulture));
 		}
 
 		/// <summary>Gets all Entrys last called from a user.<\br>
@@ -416,7 +403,6 @@ namespace TS3AudioBot.History
 		{
 			resIdToId.Add(logEntry.AudioResource.UniqueId, logEntry.Id);
 			idFilter.Add(logEntry.Id, logEntry);
-			titleFilter.Add(logEntry.AudioResource.ResourceTitle.ToLower(CultureInfo.InvariantCulture), logEntry);
 			AutoAdd(userIdFilter, logEntry);
 			timeFilter.Add(logEntry.Timestamp, logEntry);
 		}
@@ -441,7 +427,6 @@ namespace TS3AudioBot.History
 		{
 			resIdToId.Remove(logEntry.AudioResource.UniqueId);
 			idFilter.Remove(logEntry.Id);
-			titleFilter.RemoveValue(logEntry);
 			userIdFilter[logEntry.UserInvokeId].Remove(logEntry);
 			timeFilter.Remove(logEntry.Timestamp);
 			unusedIds.AddLast(logEntry.Id);
@@ -462,7 +447,6 @@ namespace TS3AudioBot.History
 		{
 			resIdToId.Clear();
 			idFilter.Clear();
-			titleFilter.Clear();
 			userIdFilter.Clear();
 			timeFilter.Clear();
 			unusedIds.Clear();
@@ -474,20 +458,6 @@ namespace TS3AudioBot.History
 		{
 			CloseFile();
 			Clear();
-		}
-	}
-
-	public class HistorySaveData
-	{
-		public AudioResource Resource { get; }
-		public ulong OwnerDbId { get; }
-
-		public HistorySaveData(AudioResource resource, ulong ownerDbId)
-		{
-			if (resource == null)
-				throw new ArgumentNullException(nameof(resource));
-			Resource = resource;
-			OwnerDbId = ownerDbId;
 		}
 	}
 }

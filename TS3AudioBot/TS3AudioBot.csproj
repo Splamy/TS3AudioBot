@@ -64,6 +64,10 @@
       <HintPath>..\packages\HtmlAgilityPack.1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="LiteDB, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiteDB.3.0.0-beta3\lib\net35\LiteDB.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="PropertyChanged, Version=1.52.1.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
       <HintPath>..\packages\PropertyChanged.Fody.1.52.1\Lib\netstandard10\PropertyChanged.dll</HintPath>
       <Private>False</Private>
@@ -109,6 +113,8 @@
     <Compile Include="DocGen.cs" />
     <Compile Include="ErrorLogger.cs" />
     <Compile Include="Helper\R.cs" />
+    <Compile Include="History\AudioLogEntry.cs" />
+    <Compile Include="History\HistorySaveData.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />
     <Compile Include="History\SmartHistoryFormatter.cs" />
     <Compile Include="Helper\InfoAttribute.cs" />
@@ -124,9 +130,7 @@
     <Compile Include="SessionManager.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
-    <Compile Include="Algorithm\ISubstringSearch.cs" />
     <Compile Include="Algorithm\ListedShuffle.cs" />
-    <Compile Include="Algorithm\SimpleSubstringFinder.cs" />
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\ConfigFile.cs" />
@@ -136,8 +140,8 @@
     <Compile Include="Helper\Util.cs" />
     <Compile Include="Helper\WaitEventBlock.cs" />
     <Compile Include="Helper\WebWrapper.cs" />
-    <Compile Include="History\AudioLogEntry.cs" />
-    <Compile Include="History\HistoryFile.cs" />
+    <Compile Include="History\Deprecated\AudioLogEntry.cs" />
+    <Compile Include="History\Deprecated\HistoryFile.cs" />
     <Compile Include="History\HistoryManager.cs" />
     <Compile Include="History\SearchQuery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -196,12 +200,12 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\Fody.1.29.2\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.2\build\dotnet\Fody.targets')" />
+  <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Fody.1.29.2\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.29.2\build\dotnet\Fody.targets'))" />
+    <Error Condition="!Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.29.4\build\dotnet\Fody.targets'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

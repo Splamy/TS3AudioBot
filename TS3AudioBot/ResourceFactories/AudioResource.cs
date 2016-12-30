@@ -35,13 +35,15 @@ namespace TS3AudioBot.ResourceFactories
 	public class AudioResource
 	{
 		/// <summary>The resource type.</summary>
-		public AudioType AudioType { get; }
+		public AudioType AudioType { get; set; }
 		/// <summary>An identifier to create the song. This id is uniqe among same <see cref="TS3AudioBot.AudioType"/> resources.</summary>
-		public string ResourceId { get; }
+		public string ResourceId { get; set;  }
 		/// <summary>The display title.</summary>
-		public string ResourceTitle { get; }
+		public string ResourceTitle { get; set; }
 		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and <see cref="TS3AudioBot.AudioType"/>.</summary>
 		public string UniqueId => ResourceId + AudioType.ToString();
+
+		public AudioResource() { }
 
 		public AudioResource(string resourceId, string resourceTitle, AudioType type)
 		{

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -14,16 +14,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot.Algorithm
+namespace TS3AudioBot.History
 {
-	using System.Collections.Generic;
+	using System;
+	using ResourceFactories;
 
-	public interface ISubstringSearch<T>
+	public class HistorySaveData
 	{
-		void Add(string key, T value);
-		void RemoveKey(string key);
-		void RemoveValue(T value);
-		IList<T> GetValues(string key);
-		void Clear();
+		public AudioResource Resource { get; }
+		public ulong OwnerDbId { get; }
+
+		public HistorySaveData(AudioResource resource, ulong ownerDbId)
+		{
+			if (resource == null)
+				throw new ArgumentNullException(nameof(resource));
+			Resource = resource;
+			OwnerDbId = ownerDbId;
+		}
 	}
 }
