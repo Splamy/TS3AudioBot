@@ -196,7 +196,8 @@ namespace TS3AudioBot
 
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
-			WebInterface.StartServerAsync();
+			if (mainBotData.startWebinterface)
+				WebInterface.StartServerAsync();
 
 			//Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
 			return true;
@@ -1141,7 +1142,7 @@ namespace TS3AudioBot
 		public string CommandSettings(ExecutionInformation info, string key, string value)
 		{
 			var configMap = ConfigManager.GetConfigMap();
-			if(string.IsNullOrEmpty(key))
+			if (string.IsNullOrEmpty(key))
 				return "Please specify a key like: \n  " + string.Join("\n  ", configMap.Take(3).Select(kvp => kvp.Key));
 
 			var filtered = XCommandSystem.FilterList(configMap, key);
@@ -1505,6 +1506,8 @@ namespace TS3AudioBot
 		public string logFile { get; set; }
 		[Info("group able to execute admin commands from the bot")]
 		public ulong adminGroupId { get; set; }
+		[Info("wether you want to start the webinterface server", "false")]
+		public bool startWebinterface { get; set; }
 	}
 #pragma warning restore CS0649
 }
