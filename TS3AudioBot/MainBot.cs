@@ -37,7 +37,7 @@ namespace TS3AudioBot
 
 	public sealed class MainBot : IDisposable
 	{
-		static void Main(string[] args)
+		internal static void Main(string[] args)
 		{
 			using (MainBot bot = new MainBot())
 			{
@@ -367,7 +367,7 @@ namespace TS3AudioBot
 
 		[Command(Admin, "getuser db", "Gets the User name by dbid.")]
 		[Usage("<dbid>", "Any user dbid which is known by the server")]
-		public string GetUser(ulong parameter)
+		public string CommandGetUserDb(ulong parameter)
 		{
 			var client = QueryConnection.GetNameByDbId(parameter);
 			if (client == null)
@@ -655,7 +655,8 @@ namespace TS3AudioBot
 				return FactoryManager.RestoreLink(PlayManager.CurrentPlayData.ResourceData);
 		}
 
-		[Command(Private, "list add")]
+		[Command(Private, "list add", "Adds a link to your private playlist.")]
+		[Usage("<link>", "Any link that is also recognized by !play")]
 		public string CommandListAdd(ExecutionInformation info, string link)
 		{
 			var plist = AutoGetPlaylist(info.Session);
@@ -666,7 +667,7 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "list add")]
+		[Command(Private, "list add", "<id> Adds a link to your private playlist from the history by <id>.")]
 		public string CommandListAdd(ExecutionInformation info, uint hid)
 		{
 			var plist = AutoGetPlaylist(info.Session);
@@ -678,14 +679,14 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "list clear")]
+		[Command(Private, "list clear", "Clears your private playlist.")]
 		public void CommandListClear(ExecutionInformation info)
 		{
 			var plist = AutoGetPlaylist(info.Session);
 			plist.Clear();
 		}
 
-		[Command(Private, "list delete")]
+		[Command(Private, "list delete", "<name> Deletes the playlist with the name <name>. You can only delete playlists which you also have created. Admins can delete every playlist.")]
 		public string CommandListDelete(ExecutionInformation info, string name)
 		{
 			var hresult = PlaylistManager.LoadPlaylist(name, true);
@@ -706,7 +707,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Private, "list get")]
+		[Command(Private, "list get", "<link> Imports a playlist form an other plattform like youtube etc.")]
 		public string CommandListGet(ExecutionInformation info, string link)
 		{
 			var result = info.Session.Bot.PlaylistManager.LoadPlaylistFrom(link);
@@ -719,7 +720,7 @@ namespace TS3AudioBot
 			return "Ok";
 		}
 
-		[Command(Private, "list item move")]
+		[Command(Private, "list item move", "<from> <to> Moves a item in a playlist <from> <to> position.")]
 		public string CommandListMove(ExecutionInformation info, int from, int to)
 		{
 			var plist = AutoGetPlaylist(info.Session);
@@ -737,7 +738,7 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "list item delete")]
+		[Command(Private, "list item delete", "<index> Removes the item at <index>.")]
 		public string CommandListRemove(ExecutionInformation info, int index)
 		{
 			var plist = AutoGetPlaylist(info.Session);
@@ -752,7 +753,8 @@ namespace TS3AudioBot
 
 		// add list item rename
 
-		[Command(Private, "list list")]
+		[Command(Private, "list list", "Displays all available playlists from all users.")]
+		[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
 		[RequiredParameters(0)]
 		public string CommandListList(ExecutionInformation info, string pattern)
 		{
@@ -778,7 +780,7 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
-		[Command(Private, "list load")]
+		[Command(Private, "list load", "Opens a playlist to be editable for you. This replaces your current worklist with the opened playlist.")]
 		public string CommandListLoad(ExecutionInformation info, string name)
 		{
 			Playlist loadList = AutoGetPlaylist(info.Session);
@@ -795,7 +797,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Private, "list merge")]
+		[Command(Private, "list merge", "Appends another playlist to yours.")]
 		public string CommandListMerge(ExecutionInformation info, string name)
 		{
 			var plist = AutoGetPlaylist(info.Session);
@@ -808,7 +810,8 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "list name")]
+		[Command(Private, "list name", "Displays the name of the playlist you are currently working on.")]
+		[Usage("<name>", "Changes the playlist name to <name>.")]
 		public string CommandListName(ExecutionInformation info, string name)
 		{
 			var plist = AutoGetPlaylist(info.Session);
@@ -824,7 +827,8 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command(Private, "list play")]
+		[Command(Private, "list play", "Replaces the current freelist with your workinglist and plays from the beginning.")]
+		[Usage("<index>", "Lets you specify the starting song index.")]
 		[RequiredParameters(0)]
 		public string CommandListPlay(ExecutionInformation info, int? index)
 		{
@@ -847,7 +851,8 @@ namespace TS3AudioBot
 			else return "Nothing to play...";
 		}
 
-		[Command(Private, "list save")]
+		[Command(Private, "list save", "Stores your current workinglist to disk.")]
+		[Usage("<name>", "Changes the playlist name to <name> before saving.")]
 		[RequiredParameters(0)]
 		public string CommandListSave(ExecutionInformation info, string optNewName)
 		{
@@ -867,11 +872,13 @@ namespace TS3AudioBot
 				return sresult.Message;
 		}
 
-		[Command(Private, "list show")]
+		[Command(Private, "list show", "Displays all songs currently in the playlists you are working on")]
+		[Usage("<index>", "Lets you specify the staring index from which songs should be listed.")]
 		[RequiredParameters(0)]
 		public string CommandListShow(ExecutionInformation info, int? offset) => CommandListShow(info, null, offset);
 
-		[Command(Private, "list show")]
+		[Command(Private, "list show", "<name> Displays all songs currently in the playlists with the name <name>")]
+		[Usage("name> <index>", "Lets you specify the starting index from which songs should be listed.")]
 		[RequiredParameters(0)]
 		public string CommandListShow(ExecutionInformation info, string name, int? offset)
 		{
@@ -944,13 +951,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command(Private, "pause", "Well, pauses the song. Undo with !play")]
+		[Command(Private, "pause", "Well, pauses the song. Undo with !play.")]
 		public void CommandPause()
 		{
 			AudioFramework.Pause = true;
 		}
 
-		[Command(Private, "play", "Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it")]
+		[Command(Private, "play", "Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it.")]
 		[Usage("<link>", "Youtube, Soundcloud, local path or file link")]
 		[RequiredParameters(0)]
 		public string CommandPlay(ExecutionInformation info, string parameter)
@@ -1414,14 +1421,14 @@ namespace TS3AudioBot
 
 		#endregion
 
-		public void SongUpdateEvent(object sender, PlayInfoEventArgs data)
+		private void SongUpdateEvent(object sender, PlayInfoEventArgs data)
 		{
 			if (!QuizMode)
 			{
 				QueryConnection.ChangeDescription(data.ResourceData.ResourceTitle);
 			}
 		}
-		public void SongStopEvent(object sender, EventArgs e)
+		private void SongStopEvent(object sender, EventArgs e)
 		{
 			QueryConnection.ChangeDescription("<Sleeping>");
 		}

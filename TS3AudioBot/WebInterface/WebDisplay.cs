@@ -1,19 +1,35 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading;
-using System.Web;
-using HtmlAgilityPack;
-using TS3AudioBot.Helper;
-using TS3AudioBot.History;
-using TS3Client.Messages;
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// Copyright (C) 2016  TS3AudioBot contributors
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+// 
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace TS3AudioBot.WebInterface
 {
+	using Helper;
+	using History;
+	using HtmlAgilityPack;
+	using System;
+	using System.Collections.Generic;
+	using System.Collections.Specialized;
+	using System.IO;
+	using System.Linq;
+	using System.Net;
+	using System.Text;
+	using System.Threading;
+	using System.Web;
+	using TS3Client.Messages;
+
 	public sealed class WebDisplay : IDisposable
 	{
 		private readonly Uri[] hostPaths;
@@ -534,29 +550,29 @@ namespace TS3AudioBot.WebInterface
 		{
 			switch (url.QueryParam["op"])
 			{
-			default:
-			case null: break;
-			case "volume":
-				var volumeStr = url.QueryParam["volume"];
-				int volume;
-				if (int.TryParse(volumeStr, out volume))
-					audio.Volume = volume;
-				break;
+				default:
+				case null: break;
+				case "volume":
+					var volumeStr = url.QueryParam["volume"];
+					int volume;
+					if (int.TryParse(volumeStr, out volume))
+						audio.Volume = volume;
+					break;
 
-			case "prev": playMgr.Previous(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
-			case "play": audio.Pause = !audio.Pause; break;
-			case "next": playMgr.Next(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
-			case "loop": audio.Repeat = !audio.Repeat; break;
-			case "seek":
-				var seekStr = url.QueryParam["pos"];
-				double seek;
-				if (double.TryParse(seekStr, out seek))
-				{
-					var pos = TimeSpan.FromSeconds(seek);
-					if (pos >= TimeSpan.Zero && pos <= audio.Length)
-						audio.Position = pos;
-				}
-				break;
+				case "prev": playMgr.Previous(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
+				case "play": audio.Pause = !audio.Pause; break;
+				case "next": playMgr.Next(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
+				case "loop": audio.Repeat = !audio.Repeat; break;
+				case "seek":
+					var seekStr = url.QueryParam["pos"];
+					double seek;
+					if (double.TryParse(seekStr, out seek))
+					{
+						var pos = TimeSpan.FromSeconds(seek);
+						if (pos >= TimeSpan.Zero && pos <= audio.Length)
+							audio.Position = pos;
+					}
+					break;
 			}
 			return new PreparedData(0, new byte[0]);
 		}
