@@ -13,6 +13,7 @@
 // Version: 1.5.0 final
 
 using System;
+using System.Diagnostics;
 
 #pragma warning disable CS0675
 static class QuickLZ
@@ -307,7 +308,14 @@ static class QuickLZ
 		int src = headerLen(source);
 		int dst = 0;
 		uint cword_val = 1;
-		byte[] destination = new byte[size];
+        //Sometimes it could happen that the size gets over 1gb and triggers a outofmemory exception, 
+        //preventing this from happening by capping over 10mb
+        if (size > 1024 * 1024)
+        {
+            Debug.WriteLine("DECOMP SIZE too big ({0})", size);
+            return new byte[1];
+        }
+        byte[] destination = new byte[size];
 		int[] hashtable = new int[4096];
 		byte[] hash_counter = new byte[4096];
 		int last_matchstart = size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1;
