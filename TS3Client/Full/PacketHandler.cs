@@ -30,7 +30,7 @@ namespace TS3Client.Full
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
 		private readonly object sendLoopMonitor = new object();
 		private readonly Ts3Crypt ts3Crypt;
-		public UdpClient udpClient;
+		private UdpClient udpClient;
 		private Thread resendThread;
 		private int resendThreadId;
 

@@ -316,17 +316,18 @@ namespace TS3AudioBot.ResourceFactories
 			string title = null;
 			string url = null;
 
+			Log.Write(Log.Level.Debug, "YT Ruined!");
+
 			var ytdlPath = DetectYoutubeDl(resource.ResourceId);
 			if (ytdlPath == null)
 				return "Youtube-Dl could not be found. The video cannot be played due to youtube restrictions";
 
-			Log.Write(Log.Level.Debug, "YT Ruined!");
 			try
 			{
 				using (Process tmproc = new Process())
 				{
-					tmproc.StartInfo.FileName = "python";
-					tmproc.StartInfo.Arguments = $"\"{ytdlPath}\" --get-title --get-url --id {resource.ResourceId}";
+					tmproc.StartInfo.FileName = ytdlPath.Item1;
+					tmproc.StartInfo.Arguments = ytdlPath.Item2;
 					tmproc.StartInfo.UseShellExecute = false;
 					tmproc.StartInfo.CreateNoWindow = true;
 					tmproc.StartInfo.RedirectStandardOutput = true;
@@ -354,27 +355,27 @@ namespace TS3AudioBot.ResourceFactories
 			return new PlayResource(url, resource.WithName(title));
 		}
 
-		private string DetectYoutubeDl(string id)
+		private Tuple<string, string> DetectYoutubeDl(string id)
 		{
 			// Default path youtube-dl is suggesting to install
 			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
 			if (File.Exists(defaultYtDlPath))
-				return defaultYtDlPath;
+				return new Tuple<string, string>(defaultYtDlPath, $"--get-title --get-url --id {id}");
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
 			string fullCustomPath = Path.GetFullPath(data.youtubedlpath);
-			if (File.Exists(fullCustomPath))
-				return fullCustomPath;
+			if (File.Exists(fullCustomPath) || File.Exists(fullCustomPath + ".exe"))
+				return new Tuple<string, string>(fullCustomPath, $"--get-title --get-url --id {id}");
 
 			// Example: /home/teamspeak where the binary 'youtube-dl' lies in ./teamspeak/
 			string fullCustomPathWithoutFile = Path.Combine(fullCustomPath, "youtube-dl");
-			if (File.Exists(fullCustomPathWithoutFile))
-				return fullCustomPathWithoutFile;
+			if (File.Exists(fullCustomPathWithoutFile) || File.Exists(fullCustomPathWithoutFile + ".exe"))
+				return new Tuple<string, string>(fullCustomPathWithoutFile, $"--get-title --get-url --id {id}");
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the github project folder
 			string fullCustomPathGhProject = Path.Combine(fullCustomPath, "youtube_dl", "__main__.py");
 			if (File.Exists(fullCustomPathGhProject))
-				return fullCustomPathGhProject;
+				return new Tuple<string, string>("python", $"\"{fullCustomPathGhProject}\" --get-title --get-url --id {id}");
 
 			return null;
 		}
