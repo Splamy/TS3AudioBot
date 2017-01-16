@@ -73,6 +73,7 @@ namespace TS3AudioBot
 				return result.Message;
 			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
+		// TODO xml doc doesnt match here
 		/// <summary>Playes the passed <see cref="PlayData.PlayResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
 		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
@@ -190,9 +191,14 @@ namespace TS3AudioBot
 		public void SongStoppedHook(object sender, SongEndEventArgs e)
 		{
 			BeforeResourceStopped?.Invoke(this, e);
-
-			if (e.SongEndedByCallback && CurrentPlayData != null && Next(CurrentPlayData.Invoker))
-				return;
+			
+			if (e.SongEndedByCallback && CurrentPlayData != null)
+			{
+				R result = Next(CurrentPlayData.Invoker);
+				if (result)
+					return;
+				Log.Write(Log.Level.Warning, nameof(SongStoppedHook) + " could not play Next: " + result.Message);
+			}
 
 			CurrentPlayData = null;
 			AfterResourceStopped?.Invoke(this, new EventArgs());

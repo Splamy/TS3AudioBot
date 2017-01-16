@@ -92,6 +92,7 @@
     <Compile Include="CommandSystem\ASTValue.cs" />
     <Compile Include="CommandSystem\BotCommand.cs" />
     <Compile Include="CommandSystem\CommandManager.cs" />
+    <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="AudioFramework.cs" />
     <Compile Include="BobController.cs" />

@@ -197,6 +197,15 @@ namespace TS3AudioBot.CommandSystem
 					if (result != null && !string.IsNullOrEmpty(result.ToString()))
 						return new StringCommandResult(result.ToString());
 					break;
+				case CommandResultType.Json:
+					if (!executed)
+					{
+						result = ExecuteFunction(parameters);
+						executed = true;
+					}
+					if (result != null && typeof(JsonObject).IsAssignableFrom(result.GetType()))
+						return new JsonCommandResult((JsonObject)result);
+					break;
 				}
 			}
 			// Try to return an empty string
@@ -212,7 +221,7 @@ namespace TS3AudioBot.CommandSystem
 			return type;
 		}
 
-		static object ConvertParam(string value, Type targetType)
+		private static object ConvertParam(string value, Type targetType)
 		{
 			if (targetType == typeof(string))
 				return value;

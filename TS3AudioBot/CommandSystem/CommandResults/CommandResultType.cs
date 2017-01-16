@@ -20,6 +20,7 @@ namespace TS3AudioBot.CommandSystem
 	{
 		Empty,
 		Command,
-		String
+		String,
+		Json,
 	}
 }

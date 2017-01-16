@@ -12,7 +12,7 @@ namespace TS3Client
 		public static List<CommandOption> NoOptions => new List<CommandOption>();
 
 		public bool ExpectResponse { get; set; }
-		public string Command { get; private set; }
+		public string Command { get; }
 		private List<CommandParameter> parameter;
 		private List<CommandOption> options;
 

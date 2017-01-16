@@ -268,13 +268,23 @@ namespace TS3AudioBot
 					try
 					{
 						var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
-							new[] { CommandResultType.String, CommandResultType.Empty });
+							new[] { CommandResultType.Json, CommandResultType.String, CommandResultType.Empty });
 						if (res.ResultType == CommandResultType.String)
 						{
 							var sRes = (StringCommandResult)res;
 							// Write result to user
 							if (!string.IsNullOrEmpty(sRes.Content))
 								session.Write(sRes.Content);
+						}
+						else if (res.ResultType == CommandResultType.Json)
+						{
+							var sRes = (JsonCommandResult)res;
+							// Write result to user
+							var src = new System.Web.Script.Serialization.JavaScriptSerializer();
+							if (sRes.JsonObject.Ok)
+								session.Write("JsonOk\n" + src.Serialize(sRes.JsonObject));
+							else
+								session.Write("JsonErr " + sRes.JsonObject.AsStringResult);
 						}
 					}
 					catch (CommandException ex)
@@ -290,7 +300,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void PrintAstError(UserSession session, ASTError asterror)
+		private static void PrintAstError(UserSession session, ASTError asterror)
 		{
 			StringBuilder strb = new StringBuilder();
 			strb.AppendLine();
@@ -561,11 +571,11 @@ namespace TS3AudioBot
 			DateTime tillTime;
 			switch (time.ToLower(CultureInfo.InvariantCulture))
 			{
-				case "hour": tillTime = DateTime.Now.AddHours(-1); break;
-				case "today": tillTime = DateTime.Today; break;
-				case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
-				case "week": tillTime = DateTime.Today.AddDays(-7); break;
-				default: return "Not recognized time desciption.";
+			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
+			case "today": tillTime = DateTime.Today; break;
+			case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
+			case "week": tillTime = DateTime.Today.AddDays(-7); break;
+			default: return "Not recognized time desciption.";
 			}
 			var query = new SeachQuery { LastInvokedAfter = tillTime };
 			return HistoryManager.SearchParsed(query);
@@ -593,13 +603,13 @@ namespace TS3AudioBot
 			Func<double, double, bool> comparer;
 			switch (cmp)
 			{
-				case "<": comparer = (a, b) => a < b; break;
-				case ">": comparer = (a, b) => a > b; break;
-				case "<=": comparer = (a, b) => a <= b; break;
-				case ">=": comparer = (a, b) => a >= b; break;
-				case "==": comparer = (a, b) => a == b; break;
-				case "!=": comparer = (a, b) => a != b; break;
-				default: throw new CommandException("Unknown comparison operator");
+			case "<": comparer = (a, b) => a < b; break;
+			case ">": comparer = (a, b) => a > b; break;
+			case "<=": comparer = (a, b) => a <= b; break;
+			case ">=": comparer = (a, b) => a >= b; break;
+			case "==": comparer = (a, b) => a == b; break;
+			case "!=": comparer = (a, b) => a != b; break;
+			default: throw new CommandException("Unknown comparison operator");
 			}
 
 			double d0, d1;
@@ -1013,16 +1023,16 @@ namespace TS3AudioBot
 		{
 			switch (param)
 			{
-				case "force":
-					QueryConnection.OnMessageReceived -= TextCallback;
-					info.Session.Write("Goodbye!");
-					Dispose();
-					Log.Write(Log.Level.Info, "Exiting...");
-					return null;
+			case "force":
+				QueryConnection.OnMessageReceived -= TextCallback;
+				info.Session.Write("Goodbye!");
+				Dispose();
+				Log.Write(Log.Level.Info, "Exiting...");
+				return null;
 
-				default:
-					info.Session.SetResponse(ResponseQuit, null);
-					return "Do you really want to quit? !(yes|no)";
+			default:
+				info.Session.SetResponse(ResponseQuit, null);
+				return "Do you really want to quit? !(yes|no)";
 			}
 		}
 
@@ -1260,17 +1270,29 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "test", "Only for debugging purposes")]
-		public string CommandTest(ExecutionInformation info)
+		public JsonObject CommandTest(ExecutionInformation info, string privet)
 		{
-			if (!info.Session.IsPrivate)
-				return "Please use as private, admins too!";
+			//  & !info.Session.IsPrivate
+			if (privet == "err")
+				return JsonObject.Error("Please use as private, admins too!");
 			else
 			{
-				info.Session.Write("Good boy!");
+				//info.Session.Write("Good boy!");
 				// stresstest
-				for (int i = 0; i < 10; i++)
-					info.Session.Write(i.ToString(CultureInfo.InvariantCulture));
-				return "Test end";
+				//for (int i = 0; i < 10; i++)
+				//	info.Session.Write(i.ToString(CultureInfo.InvariantCulture));
+				return new JsonTest("Please enable json in settings, wait what?");
+			}
+		}
+
+		public class JsonTest : JsonObject
+		{
+			public int Num { get; set; } = 42;
+			public string Awesome { get; set; } = "Nehmen Sie AWESOME!!!";
+
+			public JsonTest(string msgval) : base(msgval)
+			{
+
 			}
 		}
 
