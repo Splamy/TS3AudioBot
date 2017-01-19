@@ -157,16 +157,18 @@
     <Compile Include="Ts3Full.cs" />
     <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
-    <Compile Include="WebInterface\WebDisplay.cs" />
+    <Compile Include="Web\Api\WebApi.cs" />
+    <Compile Include="Web\Interface\WebDisplay.cs" />
+    <Compile Include="Web\UriExt.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WebInterface\index.html" />
-    <EmbeddedResource Include="WebInterface\styles.css" />
-    <EmbeddedResource Include="WebInterface\jquery.js" />
-    <EmbeddedResource Include="WebInterface\scripts.js" />
+    <EmbeddedResource Include="Web\Interface\index.html" />
+    <EmbeddedResource Include="Web\Interface\styles.css" />
+    <EmbeddedResource Include="Web\Interface\jquery.js" />
+    <EmbeddedResource Include="Web\Interface\scripts.js" />
     <EmbeddedResource Include="favicon.ico" />
-    <EmbeddedResource Include="WebInterface\favicon.ico" />
-    <EmbeddedResource Include="WebInterface\history.html" />
+    <EmbeddedResource Include="Web\Interface\favicon.ico" />
+    <EmbeddedResource Include="Web\Interface\history.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Audio\Opus\LICENSE" />
@@ -179,8 +181,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
-    <Content Include="WebInterface\main.html" />
-    <Content Include="WebInterface\playcontrols.html" />
+    <Content Include="Web\Interface\main.html" />
+    <Content Include="Web\Interface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TS3Client\TS3Client.csproj">
@@ -200,9 +202,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="WebApi\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

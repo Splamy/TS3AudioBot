@@ -28,7 +28,7 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using ResourceFactories;
-	using WebInterface;
+	using Web.Interface;
 
 	using TS3Client;
 	using TS3Client.Messages;
@@ -1535,7 +1535,7 @@ namespace TS3AudioBot
 		public string logFile { get; set; }
 		[Info("group able to execute admin commands from the bot")]
 		public ulong adminGroupId { get; set; }
-		[Info("wether you want to start the webinterface server", "false")]
+		[Info("if you want to start the webinterface server", "false")]
 		public bool startWebinterface { get; set; }
 	}
 #pragma warning restore CS0649

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot.WebInterface
+namespace TS3AudioBot.Web.Interface
 {
 	using Helper;
 	using History;
@@ -61,7 +61,7 @@ namespace TS3AudioBot.WebInterface
 			}
 			Util.Init(ref sites);
 
-			DirectoryInfo baseDir = new DirectoryInfo(Path.Combine("..", "..", "WebInterface"));
+			DirectoryInfo baseDir = new DirectoryInfo(Path.Combine("..", "..", "Web", "Interface"));
 			Func<DirectoryInfo, string, FileInfo> dirFile = (d, s) => d.GetFiles(s, SearchOption.TopDirectoryOnly).FirstOrDefault();
 
 			Index = new WebIndexFile("index.html", new FileProvider().Set(dirFile(baseDir, "index.html")), GetWebsite) { MimeType = "text/html" };
@@ -631,15 +631,5 @@ namespace TS3AudioBot.WebInterface
 		public SiteChangedEvent(string sitePath) : base(sitePath) { }
 
 		protected override string GetData() => "update";
-	}
-
-	// Helper
-
-	[Serializable]
-	public class UriExt : Uri
-	{
-		private NameValueCollection queryParam = null;
-		public NameValueCollection QueryParam => queryParam ?? (queryParam = HttpUtility.ParseQueryString(Query));
-		public UriExt(Uri copy) : base(copy.OriginalString) { }
 	}
 }
