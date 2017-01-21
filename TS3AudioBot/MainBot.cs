@@ -199,6 +199,10 @@ namespace TS3AudioBot
 			if (mainBotData.startWebinterface)
 				WebInterface.StartServerAsync();
 
+			var wa = new Web.Api.WebApi(this, new Web.Api.WebApiData() { Enabled = true, HostAddress = "127.0.0.1", Port = 8180 });
+			//wa.StartServerAsync();
+			wa.EnterWebLoop();
+
 			//Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
 			return true;
 		}
@@ -240,7 +244,8 @@ namespace TS3AudioBot
 			}
 
 			UserSession session = result.Value;
-			using (session.GetToken(textMessage.Target == MessageTarget.Private))
+			session.IsPrivate = textMessage.Target == MessageTarget.Private;
+			using (session.GetToken())
 			{
 				var execInfo = new ExecutionInformation(session, textMessage,
 					new Lazy<bool>(() => HasInvokerAdminRights(textMessage.InvokerId)));
@@ -280,11 +285,8 @@ namespace TS3AudioBot
 						{
 							var sRes = (JsonCommandResult)res;
 							// Write result to user
-							var src = new System.Web.Script.Serialization.JavaScriptSerializer();
-							if (sRes.JsonObject.Ok)
-								session.Write("JsonOk\n" + src.Serialize(sRes.JsonObject));
-							else
-								session.Write("JsonErr " + sRes.JsonObject.AsStringResult);
+							session.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult);
+							session.Write("Json val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
 						}
 					}
 					catch (CommandException ex)
@@ -327,6 +329,10 @@ namespace TS3AudioBot
 		// [text] = Option for fixed text
 		// (a|b) = either or switch
 
+		// API [WIP]
+		// A => reworked, not tested
+		// A+ => reworked, tested
+
 		[Command(Private, "add", "Adds a new song to the queue.")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
 		public string CommandAdd(ExecutionInformation info, string parameter)
@@ -347,7 +353,7 @@ namespace TS3AudioBot
 		{
 			// Evaluate the first argument on the rest of the arguments
 			if (!arguments.Any())
-				throw new CommandException("Need at least one argument to evaluate");
+				throw new CommandException("Need at least one argument to evaluate", CommandExceptionReason.MissingParameter);
 			var leftArguments = arguments.Skip(1);
 			var arg0 = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.Command, CommandResultType.String });
 			if (arg0.ResultType == CommandResultType.Command)
@@ -595,7 +601,7 @@ namespace TS3AudioBot
 		{
 			var argList = arguments.ToList();
 			if (argList.Count < 4)
-				throw new CommandException("Expected at least 4 arguments");
+				throw new CommandException("Expected at least 4 arguments", CommandExceptionReason.MissingParameter);
 			var arg0 = ((StringCommandResult)argList[0].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 			var cmp = ((StringCommandResult)argList[1].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 			var arg1 = ((StringCommandResult)argList[2].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
@@ -609,7 +615,7 @@ namespace TS3AudioBot
 			case ">=": comparer = (a, b) => a >= b; break;
 			case "==": comparer = (a, b) => a == b; break;
 			case "!=": comparer = (a, b) => a != b; break;
-			default: throw new CommandException("Unknown comparison operator");
+			default: throw new CommandException("Unknown comparison operator", CommandExceptionReason.CommandError);
 			}
 
 			double d0, d1;
@@ -631,7 +637,7 @@ namespace TS3AudioBot
 			// Try to return nothing
 			if (returnTypes.Contains(CommandResultType.Empty))
 				return new EmptyCommandResult();
-			throw new CommandException("If found nothing to return");
+			throw new CommandException("If found nothing to return", CommandExceptionReason.MissingParameter);
 		}
 
 		[Command(Private, "kickme", "Guess what?")]
@@ -1008,116 +1014,106 @@ namespace TS3AudioBot
 		}
 
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
-		public string CommandPrint(params string[] parameter)
+		public JsonObject CommandPrint(params string[] parameter)
 		{
 			// << Desing changes expected >>
 			var strb = new StringBuilder();
 			foreach (var param in parameter)
 				strb.Append(param);
-			return strb.ToString();
+			return new JsonSingleObj<string>(strb.ToString(), strb.ToString());
 		}
 
 		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
 		[RequiredParameters(0)]
-		public string CommandQuit(ExecutionInformation info, string param)
+		public string CommandQuit(ExecutionInformation info, string param) //A
 		{
-			switch (param)
+			if (info.ApiCall || param == "force")
 			{
-			case "force":
 				QueryConnection.OnMessageReceived -= TextCallback;
 				info.Session.Write("Goodbye!");
 				Dispose();
 				Log.Write(Log.Level.Info, "Exiting...");
 				return null;
-
-			default:
+			}
+			else
+			{
 				info.Session.SetResponse(ResponseQuit, null);
 				return "Do you really want to quit? !(yes|no)";
 			}
 		}
 
-		[Command(Public, "quiz", "Enable to hide the songnames and let your friends guess the title.")]
-		[Usage("[(on|off)]", "on or off")]
-		[RequiredParameters(0)]
-		public string CommandQuiz(ExecutionInformation info, string parameter)
+		[Command(Public, "quiz", "Shows the quizmode status.")]
+		public JsonObject CommandQuiz() => new JsonSingleObj<bool>("Quizmode is " + (QuizMode ? "on" : "off"), QuizMode); //A
+		[Command(Public, "quiz on", "Enable to hide the songnames and let your friends guess the title.")]
+		public void CommandQuizOn() // A
 		{
-			if (string.IsNullOrEmpty(parameter))
-				return "Quizmode is " + (QuizMode ? "on" : "off");
-			else if (parameter == "on")
-			{
-				QuizMode = true;
-				QueryConnection.ChangeDescription("<Quiztime!>");
-			}
-			else if (parameter == "off")
-			{
-				if (info.Session.IsPrivate)
-					return "No cheatig! Everybody has to see it!";
-				QuizMode = false;
-				QueryConnection.ChangeDescription(PlayManager.CurrentPlayData.ResourceData.ResourceTitle);
-			}
-			else
-				CommandHelp(info, "quiz");
-			return null;
+			QuizMode = true;
+			QueryConnection.ChangeDescription("<Quiztime!>");
+		}
+		[Command(Public, "quiz off", "Disable to show the songnames again.")]
+		public void CommandQuizOff(ExecutionInformation info) // A
+		{
+			if (info.Session.IsPrivate && !info.ApiCall)
+				throw new CommandException("No cheatig! Everybody has to see it!", CommandExceptionReason.CommandError);
+			QuizMode = false;
+			QueryConnection.ChangeDescription(PlayManager.CurrentPlayData.ResourceData.ResourceTitle);
 		}
 
 		[Command(Private, "random", "Gets whether or not to play playlists in random order.")]
-		public string CommandRandom() => "Random is " + (PlaylistManager.Random ? "on" : "off");
+		public JsonObject CommandRandom() => new JsonSingleObj<bool>("Random is " + (PlaylistManager.Random ? "on" : "off"), PlaylistManager.Random);
 		[Command(Private, "random on", "Enables random playlist playback")]
-		public void CommandRandomOn() => PlaylistManager.Random = true;
+		public void CommandRandomOn() => PlaylistManager.Random = true; // A
 		[Command(Private, "random off", "Disables random playlist playback")]
-		public void CommandRandomOff() => PlaylistManager.Random = false;
+		public void CommandRandomOff() => PlaylistManager.Random = false; // A
 		[Command(Private, "random seed", "Gets the unique seed for a certain playback order")]
-		public string CommandRandomSeed()
+		public JsonObject CommandRandomSeed() // A
 		{
 			string seed = Util.FromSeed(PlaylistManager.Seed);
-			return string.IsNullOrEmpty(seed) ? "<empty>" : seed;
+			string strseed = string.IsNullOrEmpty(seed) ? "<empty>" : seed;
+			return new JsonSingleObj<string>(strseed, strseed);
 		}
 		[Command(Private, "random seed", "Sets the unique seed for a certain playback order")]
-		public string CommandRandomSeed(string newSeed)
+		public void CommandRandomSeed(string newSeed) // A
 		{
 			if (newSeed.Any(c => !char.IsLetter(c)))
-				return "Only letter allowed";
+				throw new CommandException("Only letters allowed", CommandExceptionReason.CommandError);
 			PlaylistManager.Seed = Util.ToSeed(newSeed.ToLowerInvariant());
-			return null;
 		}
 		[Command(Private, "random seed", "Sets the unique seed for a certain playback order")]
-		public void CommandRandomSeed(int newSeed) => PlaylistManager.Seed = newSeed;
+		public void CommandRandomSeed(int newSeed) => PlaylistManager.Seed = newSeed; // A
 
 		[Command(Private, "repeat", "Gets or sets whether or not to loop a single song.")]
-		[Usage("[(on|off)]", "on or off")]
-		[RequiredParameters(0)]
-		public string CommandRepeat(ExecutionInformation info, string parameter)
-		{
-			if (string.IsNullOrEmpty(parameter))
-				return "Repeat is " + (AudioFramework.Repeat ? "on" : "off");
-			else if (parameter == "on")
-				AudioFramework.Repeat = true;
-			else if (parameter == "off")
-				AudioFramework.Repeat = false;
-			else
-				return CommandHelp(info, "repeat");
-			return null;
-		}
+		public JsonObject CommandRepeat() => new JsonSingleObj<bool>("Repeat is " + (AudioFramework.Repeat ? "on" : "off"), AudioFramework.Repeat); // A
+		[Command(Private, "repeat on", "Enables single song repeat.")]
+		public void CommandRepeatOn() => AudioFramework.Repeat = true; // A
+		[Command(Private, "repeat off", "Disables single song repeat.")]
+		public void CommandRepeatOff() => AudioFramework.Repeat = false; // A
 
 		[Command(AnyVisibility, "rng", "Gets a random number.")]
 		[Usage("", "Gets a number between 0 and 2147483647")]
 		[Usage("<max>", "Gets a number between 0 and <max>")]
 		[Usage("<min> <max>", "Gets a number between <min> and <max>")]
 		[RequiredParameters(0)]
-		public string CommandRng(int? first, int? second)
+		public JsonObject CommandRng(int? first, int? second) // A+
 		{
+			int num;
 			if (second.HasValue)
-				return Util.RngInstance.Next(first.Value, second.Value).ToString(CultureInfo.InvariantCulture);
+				num = Util.RngInstance.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
 			else if (first.HasValue)
-				return Util.RngInstance.Next(first.Value).ToString(CultureInfo.InvariantCulture);
+			{
+				if (second.Value < first.Value)
+					throw new CommandException("Value must be 0 or positive", CommandExceptionReason.CommandError);
+				num = Util.RngInstance.Next(first.Value);
+			}
 			else
-				return Util.RngInstance.Next().ToString(CultureInfo.InvariantCulture);
+				num = Util.RngInstance.Next();
+			return new JsonSingleObj<int>(num.ToString(CultureInfo.InvariantCulture), num);
 		}
 
 		[Command(Private, "seek", "Jumps to a timemark within the current song.")]
 		[Usage("<sec>", "Time in seconds")]
 		[Usage("<min:sec>", "Time in Minutes:Seconds")]
-		public string CommandSeek(ExecutionInformation info, string parameter)
+		public void CommandSeek(ExecutionInformation info, string parameter)  // A
 		{
 			TimeSpan span;
 			bool parsed = false;
@@ -1143,47 +1139,48 @@ namespace TS3AudioBot
 			}
 
 			if (!parsed)
-				return CommandHelp(info, "seek");
-
-			if (span < TimeSpan.Zero || span > AudioFramework.Length)
-				return "The point of time is not within the songlenth.";
+				throw new CommandException("The time was not in a correct format, see !help seek for more information.", CommandExceptionReason.CommandError);
+			else if (span < TimeSpan.Zero || span > AudioFramework.Length)
+				throw new CommandException("The point of time is not within the songlenth.", CommandExceptionReason.CommandError);
 			else
 				AudioFramework.Position = span;
-			return null;
 		}
 
 		[Command(Admin, "settings", "Changes values from the settigns. Not all changes can be applied immediately.")]
 		[Usage("<key>", "Get the value of a setting")]
 		[Usage("<key> <value>", "Set the value of a setting")]
 		[RequiredParameters(0)]
-		public string CommandSettings(ExecutionInformation info, string key, string value)
+		public JsonObject CommandSettings(ExecutionInformation info, string key, string value) // A
 		{
 			var configMap = ConfigManager.GetConfigMap();
 			if (string.IsNullOrEmpty(key))
-				return "Please specify a key like: \n  " + string.Join("\n  ", configMap.Take(3).Select(kvp => kvp.Key));
+				throw new CommandException("Please specify a key like: \n  " + string.Join("\n  ", configMap.Take(3).Select(kvp => kvp.Key)),
+					CommandExceptionReason.MissingParameter);
 
 			var filtered = XCommandSystem.FilterList(configMap, key);
 			var filteredArr = filtered.ToArray();
 
 			if (filteredArr.Length == 0)
 			{
-				return "No config key matching the pattern found";
+				throw new CommandException("No config key matching the pattern found", CommandExceptionReason.CommandError);
 			}
 			else if (filteredArr.Length == 1)
 			{
 				if (string.IsNullOrEmpty(value))
 				{
-					return filteredArr[0].Key + " = " + filteredArr[0].Value;
+					return new JsonSingleObj<KeyValuePair<string, string>>(filteredArr[0].Key + " = " + filteredArr[0].Value, filteredArr[0]);
 				}
 				else
 				{
 					var result = ConfigManager.SetSetting(filteredArr[0].Key, value);
-					return result ? null : result.Message;
+					if (result.Ok) return null;
+					else throw new CommandException(result.Message, CommandExceptionReason.CommandError);
 				}
 			}
 			else
 			{
-				return "Found more than one matching key: \n  " + string.Join("\n  ", filteredArr.Take(3).Select(kvp => kvp.Key));
+				throw new CommandException("Found more than one matching key: \n  " + string.Join("\n  ", filteredArr.Take(3).Select(kvp => kvp.Key)),
+					CommandExceptionReason.CommandError);
 			}
 		}
 
@@ -1216,16 +1213,16 @@ namespace TS3AudioBot
 			TargetManager.WhisperChannelSubscribe(info.Session.Client.ChannelId, true);
 		}
 
-		[Command(AnyVisibility, "take", "Take a substring from a string")]
+		[Command(AnyVisibility, "take", "Take a substring from a string.")]
 		[Usage("<count> <text>", "Take only <count> parts of the text")]
 		[Usage("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")]
 		[Usage("<count> <start> <delimiter> <text>", "Specify another delimiter for the parts than spaces")]
-		public ICommandResult CommandTake(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult CommandTake(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes) // A+
 		{
 			var argList = arguments.ToList();
 
 			if (argList.Count < 2)
-				throw new CommandException("Expected at least 2 parameters");
+				throw new CommandException("Expected at least 2 parameters", CommandExceptionReason.MissingParameter);
 
 			int start = 0;
 			int count = 0;
@@ -1234,14 +1231,14 @@ namespace TS3AudioBot
 			// Get count
 			var res = ((StringCommandResult)argList[0].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 			if (!int.TryParse(res, out count) || count < 0)
-				throw new CommandException("Count must be an integer >= 0");
+				throw new CommandException("Count must be an integer >= 0", CommandExceptionReason.CommandError);
 
 			if (argList.Count > 2)
 			{
 				// Get start
 				res = ((StringCommandResult)argList[1].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 				if (!int.TryParse(res, out start) || start < 0)
-					throw new CommandException("Start must be an integer >= 0");
+					throw new CommandException("Start must be an integer >= 0", CommandExceptionReason.CommandError);
 			}
 
 			if (argList.Count > 3)
@@ -1257,24 +1254,26 @@ namespace TS3AudioBot
 			else
 				splitted = text.Split(new[] { delimiter }, StringSplitOptions.None);
 			if (splitted.Count() < start + count)
-				throw new CommandException("Not enough arguments to take");
+				throw new CommandException("Not enough arguments to take", CommandExceptionReason.CommandError);
 			splitted = splitted.Skip(start).Take(count);
 
 			foreach (var returnType in returnTypes)
 			{
 				if (returnType == CommandResultType.String)
 					return new StringCommandResult(string.Join(delimiter ?? " ", splitted));
+				else if (returnType == CommandResultType.Json)
+					return new JsonCommandResult(new JsonSingleObj<string[]>(string.Join(delimiter ?? " ", splitted), splitted.ToArray()));
 			}
 
-			throw new CommandException("Can't find a fitting return type for take");
+			throw new CommandException("Can't find a fitting return type for take", CommandExceptionReason.NoReturnMatch);
 		}
 
-		[Command(Admin, "test", "Only for debugging purposes")]
-		public JsonObject CommandTest(ExecutionInformation info, string privet)
+		[Command(Admin, "test", "Only for debugging purposes.")]
+		public JsonObject CommandTest(ExecutionInformation info, string privet) // A+
 		{
 			//  & !info.Session.IsPrivate
 			if (privet == "err")
-				return JsonObject.Error("Please use as private, admins too!");
+				throw new CommandException("Please use as private, admins too!", CommandExceptionReason.CommandError);
 			else
 			{
 				//info.Session.Write("Good boy!");
@@ -1296,6 +1295,12 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command(AnyVisibility, "token", "Generates an api token.")]
+		public string CommandToken(ExecutionInformation info)
+		{
+			return "totallyrandomtoken";
+		}
+
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
 		public void CommandUnsubscribe(ExecutionInformation info)
 		{
@@ -1309,16 +1314,21 @@ namespace TS3AudioBot
 		}
 
 		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]
-		[Usage("<level>", "A new volume level between 0 and 100")]
-		public string CommandVolume(ExecutionInformation info, string parameter)
+		[Usage("<level>", "A new volume level between 0 and 100.")]
+		[Usage("+/-<level>", "Adds or subtracts a value form the current volume.")]
+		[RequiredParameters(0)]
+		public JsonObject CommandVolume(ExecutionInformation info, string parameter) // A+
 		{
+			if (string.IsNullOrEmpty(parameter))
+				return new JsonSingleObj<int>("Current volume: " + AudioFramework.Volume, AudioFramework.Volume);
+
 			bool relPos = parameter.StartsWith("+", StringComparison.Ordinal);
 			bool relNeg = parameter.StartsWith("-", StringComparison.Ordinal);
 			string numberString = (relPos || relNeg) ? parameter.Remove(0, 1) : parameter;
 
 			int volume;
 			if (!int.TryParse(numberString, out volume))
-				return CommandHelp(info, "volume");
+				throw new CommandException("The new volume could not be parsed", CommandExceptionReason.CommandError);
 
 			int newVolume;
 			if (relPos) newVolume = AudioFramework.Volume + volume;
@@ -1326,14 +1336,14 @@ namespace TS3AudioBot
 			else newVolume = volume;
 
 			if (newVolume < 0 || newVolume > AudioFramework.MaxVolume)
-				return "The volume level must be between 0 and " + AudioFramework.MaxVolume;
+				throw new CommandException("The volume level must be between 0 and " + AudioFramework.MaxVolume, CommandExceptionReason.CommandError);
 
-			if (newVolume <= AudioFramework.MaxUserVolume || newVolume < AudioFramework.Volume)
+			if (newVolume <= AudioFramework.MaxUserVolume || newVolume < AudioFramework.Volume || info.ApiCall)
 				AudioFramework.Volume = newVolume;
 			else if (newVolume <= AudioFramework.MaxVolume)
 			{
 				info.Session.SetResponse(ResponseVolume, newVolume);
-				return "Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)";
+				throw new CommandException("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)", CommandExceptionReason.CommandError);
 			}
 			return null;
 		}
@@ -1461,7 +1471,7 @@ namespace TS3AudioBot
 			if (result)
 				return result.Value;
 
-			var newPlist = new Playlist(session.Client.NickName, session.ClientCached.DatabaseId);
+			var newPlist = new Playlist(session.ClientCached.NickName, session.ClientCached.DatabaseId);
 			session.Set<PlaylistManager, Playlist>(newPlist);
 			return newPlist;
 		}

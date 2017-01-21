@@ -22,12 +22,33 @@ namespace TS3AudioBot.CommandSystem
 	[Serializable]
 	public class CommandException : Exception
 	{
-		public CommandException() { }
-		public CommandException(string message) : base(message) { }
-		public CommandException(string message, Exception inner) : base(message, inner) { }
+		public CommandExceptionReason Reason { get; }
+
+		protected CommandException() : this(CommandExceptionReason.Unknown) { }
+		public CommandException(CommandExceptionReason reason) { Reason = reason; }
+
+		protected CommandException(string message) : this(message, CommandExceptionReason.Unknown) { }
+		public CommandException(string message, CommandExceptionReason reason) : base(message) { Reason = reason; }
+
+		protected CommandException(string message, Exception inner) : this(message, inner, CommandExceptionReason.Unknown) { }
+		public CommandException(string message, Exception inner, CommandExceptionReason reason) : base(message, inner) { Reason = reason; }
+
 		protected CommandException(
 		  SerializationInfo info,
 		  StreamingContext context) : base(info, context)
 		{ }
+	}
+
+	public enum CommandExceptionReason
+	{
+		Unknown = 0,
+		InternalError,
+
+		CommandError = 10,
+		MissingRights,
+		AmbiguousCall,
+		MissingParameter,
+		NoReturnMatch,
+		FunctionNotFound,
 	}
 }

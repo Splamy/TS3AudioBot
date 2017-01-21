@@ -73,7 +73,7 @@ namespace TS3AudioBot.CommandSystem
 			switch (node.Type)
 			{
 			case ASTType.Error:
-				throw new CommandException("Found an unconvertable ASTNode of type Error");
+				throw new CommandException("Found an unconvertable ASTNode of type Error", CommandExceptionReason.InternalError);
 			case ASTType.Command:
 				var cmd = (ASTCommand)node;
 				var arguments = new List<ICommand>();
@@ -114,7 +114,7 @@ namespace TS3AudioBot.CommandSystem
 				return result.ToString();
 			if (result.ResultType == CommandResultType.Empty)
 				return null;
-			throw new CommandException("Expected a string or nothing as result");
+			throw new CommandException("Expected a string or nothing as result", CommandExceptionReason.NoReturnMatch);
 		}
 	}
 }

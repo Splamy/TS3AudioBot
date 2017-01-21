@@ -124,8 +124,8 @@ namespace TS3AudioBot.CommandSystem
 								args.SetValue(convResult, i);
 							}
 						}
-						catch (FormatException ex) { throw new CommandException("Could not convert to " + arg.Name, ex); }
-						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex); }
+						catch (FormatException ex) { throw new CommandException("Could not convert to " + arg.Name, ex, CommandExceptionReason.CommandError); }
+						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
 						parameters[p] = args;
 					}
@@ -133,8 +133,8 @@ namespace TS3AudioBot.CommandSystem
 					{
 						var argResult = ((StringCommandResult)argList.Value[availableArguments].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 						try { parameters[p] = ConvertParam(argResult, arg); }
-						catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex); }
-						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex); }
+						catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex, CommandExceptionReason.CommandError); }
+						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
 						availableArguments++;
 					}
@@ -145,7 +145,7 @@ namespace TS3AudioBot.CommandSystem
 
 			// Check if we were able to set enough arguments
 			if (availableArguments < Math.Min(parameters.Length, RequiredParameters) && !returnTypes.Contains(CommandResultType.Command))
-				throw new CommandException("Not enough arguments for function " + internCommand.Name);
+				throw new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
 
 			return parameters;
 		}
@@ -166,7 +166,7 @@ namespace TS3AudioBot.CommandSystem
 						return new CommandCommandResult(this);
 					return new CommandCommandResult(new AppliedCommand(this, arguments));
 				}
-				throw new CommandException("Not enough arguments for function " + internCommand.Name);
+				throw new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
 			}
 
 			if (CommandReturn == typeof(ICommandResult))
@@ -211,7 +211,7 @@ namespace TS3AudioBot.CommandSystem
 			// Try to return an empty string
 			if (returnTypes.Contains(CommandResultType.String) && executed)
 				return new StringCommandResult("");
-			throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name);
+			throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name, CommandExceptionReason.NoReturnMatch);
 		}
 
 		public static Type UnwrapType(Type type)

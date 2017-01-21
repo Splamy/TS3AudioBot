@@ -28,7 +28,6 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Web;
 	using Helper;
 
-
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
 	{
 		private static readonly Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);

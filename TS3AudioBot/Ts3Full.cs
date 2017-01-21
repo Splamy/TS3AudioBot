@@ -288,6 +288,13 @@ namespace TS3AudioBot
 		}
 
 		#endregion
+
+		public class SubscriptionData
+		{
+			public ulong Id { get; set; }
+			public bool Enabled { get; set; }
+			public bool Manual { get; set; }
+		}
 	}
 
 	public class Ts3FullClientData : ConfigData

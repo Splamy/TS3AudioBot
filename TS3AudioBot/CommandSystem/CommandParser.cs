@@ -23,7 +23,8 @@ namespace TS3AudioBot.CommandSystem
 
 	class CommandParser
 	{
-		const char CommandChar = '!';
+		const char DefaultCommandChar = '!';
+		const char DefaultDelimeterChar = ' ';
 
 		// This switch follows more or less a DEA to this EBNF
 		// COMMAND-EBNF := COMMAND
@@ -33,7 +34,7 @@ namespace TS3AudioBot.CommandSystem
 		// FREESTRING   := [^)]+
 		// QUOTESTRING  := "[<anything but ", \" is ok>]+"
 
-		public static ASTNode ParseCommandRequest(string request)
+		public static ASTNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimeterChar = DefaultDelimeterChar)
 		{
 			ASTCommand root = null;
 			var comAst = new Stack<ASTCommand>();
@@ -50,8 +51,8 @@ namespace TS3AudioBot.CommandSystem
 					// Got a command
 					buildCom = new ASTCommand();
 					// Consume CommandChar if left over
-					if (strPtr.Char == CommandChar)
-						strPtr.Next(CommandChar);
+					if (strPtr.Char == commandChar)
+						strPtr.Next(commandChar);
 
 					if (root == null) root = buildCom;
 					else comAst.Peek().Parameter.Add(buildCom);
@@ -60,7 +61,7 @@ namespace TS3AudioBot.CommandSystem
 					break;
 
 				case BuildStatus.SelectParam:
-					strPtr.SkipSpace();
+					strPtr.SkipChar(delimeterChar);
 
 					if (strPtr.End)
 						build = BuildStatus.End;
@@ -70,11 +71,12 @@ namespace TS3AudioBot.CommandSystem
 						{
 						case '"':
 							build = BuildStatus.ParseQuotedString;
+							//goto case BuildStatus.ParseQuotedString;
 							break;
 						case '(':
 							if (!strPtr.HasNext)
 								build = BuildStatus.ParseFreeString;
-							else if (strPtr.IsNext(CommandChar))
+							else if (strPtr.IsNext(commandChar))
 							{
 								strPtr.Next('(');
 								build = BuildStatus.ParseCommand;
@@ -108,9 +110,9 @@ namespace TS3AudioBot.CommandSystem
 					{
 						for (; !strPtr.End; strPtr.Next())
 						{
-							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext(CommandChar))
+							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext(commandChar))
 								|| strPtr.Char == ')'
-								|| char.IsWhiteSpace(strPtr.Char))
+								|| strPtr.Char == delimeterChar)
 								break;
 							strb.Append(strPtr.Char);
 						}
@@ -193,9 +195,9 @@ namespace TS3AudioBot.CommandSystem
 
 			public bool IsNext(char what) => text[index + 1] == what;
 
-			public void SkipSpace()
+			public void SkipChar(char c = ' ')
 			{
-				while (index < text.Length && char.IsWhiteSpace(text[index]))
+				while (index < text.Length && text[index] == c)
 					index++;
 			}
 

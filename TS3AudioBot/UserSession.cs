@@ -113,11 +113,10 @@ namespace TS3AudioBot
 				assocMap.Add(typeof(TAssoc), data);
 		}
 
-		public SessionToken GetToken(bool isPrivate)
+		public SessionToken GetToken()
 		{
 			var sessionToken = new SessionToken(this);
 			sessionToken.Take();
-			IsPrivate = isPrivate;
 			return sessionToken;
 		}
 

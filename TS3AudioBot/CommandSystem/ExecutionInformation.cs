@@ -25,6 +25,7 @@ namespace TS3AudioBot.CommandSystem
 		public TextMessage TextMessage { get; }
 		private Lazy<bool> lazyIsAdmin;
 		public bool IsAdmin => lazyIsAdmin.Value;
+		public bool ApiCall { get; private set; }
 
 		private ExecutionInformation() { Session = null; TextMessage = null; lazyIsAdmin = new Lazy<bool>(() => true); }
 		public ExecutionInformation(UserSession session, TextMessage textMessage, Lazy<bool> isAdmin)
@@ -33,6 +34,8 @@ namespace TS3AudioBot.CommandSystem
 			TextMessage = textMessage;
 			lazyIsAdmin = isAdmin;
 		}
+
+		public void SetApiCall() => ApiCall = true;
 
 		public static readonly ExecutionInformation Debug = new ExecutionInformation();
 	}

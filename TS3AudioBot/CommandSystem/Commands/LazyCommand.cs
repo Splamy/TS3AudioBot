@@ -41,7 +41,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 			// Check if we can return that type
 			if (!returnTypes.Contains(result.ResultType))
-				throw new CommandException("The cached result can't be returned");
+				throw new CommandException("The cached result can't be returned", CommandExceptionReason.NoReturnMatch);
 			return result;
 		}
 	}

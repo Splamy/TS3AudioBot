@@ -94,15 +94,15 @@ namespace TS3AudioBot.CommandSystem
 			{
 			case Admin:
 				if (!info.IsAdmin)
-					throw new CommandException("Command must be invoked by an admin!");
+					throw new CommandException("Command must be invoked by an admin!", CommandExceptionReason.MissingRights);
 				break;
 			case Public:
-				if (info.TextMessage.Target != MessageTarget.Server && !info.IsAdmin)
-					throw new CommandException("Command must be used in public mode!");
+				if (!info.ApiCall && info.TextMessage.Target != MessageTarget.Server && !info.IsAdmin) // TODO: Apicall special ??
+					throw new CommandException("Command must be used in public mode!", CommandExceptionReason.MissingRights);
 				break;
 			case Private:
-				if (info.TextMessage.Target != MessageTarget.Private && !info.IsAdmin)
-					throw new CommandException("Command must be used in a private session!");
+				if (!info.ApiCall && info.TextMessage.Target != MessageTarget.Private && !info.IsAdmin) // TODO: Apicall special ??
+					throw new CommandException("Command must be used in a private session!", CommandExceptionReason.MissingRights);
 				break;
 			}
 			return base.Execute(info, arguments, returnTypes);

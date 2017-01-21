@@ -116,7 +116,7 @@ namespace TS3AudioBot.CommandSystem
 					return f.Execute(info, arguments, returnTypes);
 				}
 			}
-			throw new CommandException("No matching function could be found");
+			throw new CommandException("No matching function could be found", CommandExceptionReason.FunctionNotFound);
 		}
 
 	}

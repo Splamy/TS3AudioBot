@@ -95,8 +95,7 @@
     <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="AudioFramework.cs" />
-    <Compile Include="BobController.cs" />
-    <Compile Include="BotSession.cs" />
+    <Compile Include="UserSession.cs" />
     <Compile Include="CommandSystem\CommandException.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandResultType.cs" />
@@ -157,6 +156,7 @@
     <Compile Include="Ts3Full.cs" />
     <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
+    <Compile Include="Web\Api\JsonError.cs" />
     <Compile Include="Web\Api\WebApi.cs" />
     <Compile Include="Web\Interface\WebDisplay.cs" />
     <Compile Include="Web\UriExt.cs" />

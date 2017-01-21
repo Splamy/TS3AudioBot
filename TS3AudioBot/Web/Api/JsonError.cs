@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -14,17 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.Web.Api
 {
-	using Helper;
+	using CommandSystem;
 
-	public interface IPlaylistFactory
+	class JsonError : JsonObject
 	{
-		string SubCommandName { get; }
-		AudioType FactoryFor { get; }
+		private CommandExceptionReason reason;
+		public int ErrorCode => (int)reason;
+		public string ErrorName => reason.ToString();
+		public string ErrorMessage { get; }
 
-		bool MatchLink(string uri);
-
-		R<Playlist> GetPlaylist(string url);
+		public JsonError(string msg, CommandExceptionReason reason) : base(msg)
+		{
+			ErrorMessage = msg;
+			this.reason = reason;
+		}
 	}
 }

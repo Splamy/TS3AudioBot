@@ -53,7 +53,7 @@ namespace TS3AudioBot.CommandSystem
 
 			var commandResults = XCommandSystem.FilterList(commands, result);
 			if (commandResults.Skip(1).Any())
-				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults.Select(g => g.Key)));
+				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults.Select(g => g.Key)), CommandExceptionReason.AmbiguousCall);
 
 			var argSubList = arguments.Skip(1).ToArray();
 			return commandResults.First().Value.Execute(info, argSubList, returnTypes);
