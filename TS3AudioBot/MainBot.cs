@@ -200,9 +200,8 @@ namespace TS3AudioBot
 			if (mainBotData.startWebinterface)
 				WebInterface.StartServerAsync();
 
-			var wa = new Web.Api.WebApi(this, new Web.Api.WebApiData() { Enabled = true, HostAddress = "127.0.0.1", Port = 8180 });
-			//wa.StartServerAsync();
-			wa.EnterWebLoop();
+			var wa = new WebApi(this, new WebApiData() { Enabled = true, HostAddress = "127.0.0.1", Port = 8180 });
+			wa.StartServerAsync();
 
 			//Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
 			return true;
@@ -1004,12 +1003,17 @@ namespace TS3AudioBot
 		[RequiredParameters(0)]
 		public string CommandQuit(ExecutionInformation info, string param) //A
 		{
-			if (info.ApiCall || param == "force")
+			if (info.ApiCall)
+			{
+				Dispose();
+				return null;
+			}
+
+			if (param == "force")
 			{
 				QueryConnection.OnMessageReceived -= TextCallback;
 				info.Session.Write("Goodbye!");
 				Dispose();
-				Log.Write(Log.Level.Info, "Exiting...");
 				return null;
 			}
 			else
@@ -1459,6 +1463,7 @@ namespace TS3AudioBot
 		{
 			if (!isDisposed) isDisposed = true;
 			else return;
+			Log.Write(Log.Level.Info, "Exiting...");
 
 			if (WebInterface != null) // before:
 			{
