@@ -70,9 +70,9 @@ namespace TS3AudioBot.Web.Interface
 			PrepareSite(new WebStaticSite("main", dirFile(baseDir, "main.html")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("styles.css", dirFile(baseDir, "styles.css")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("scripts.js", dirFile(baseDir, "scripts.js")) { MimeType = "application/javascript" });
-			PrepareSite(new WebStaticSite("jquery.js", "TS3AudioBot.WebInterface.jquery.js") { MimeType = "application/javascript" });
-			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
-			Site404 = new WebStaticSite("404", "TS3AudioBot.WebInterface.favicon.ico") { MimeType = "text/plain" };
+			PrepareSite(new WebStaticSite("jquery.js", "TS3AudioBot.Web.Interface.jquery.js") { MimeType = "application/javascript" });
+			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.Web.Interface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
+			Site404 = new WebStaticSite("404", "TS3AudioBot.Web.Interface.favicon.ico") { MimeType = "text/plain" };
 			PrepareSite(Site404);
 			PrepareSite(new WebHistorySearch("historysearch", mainBot) { MimeType = "text/plain" });
 			var historystatic = new WebHistorySearchList("historystatic", mainBot) { MimeType = "text/html" };
