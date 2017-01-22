@@ -1,5 +1,6 @@
 namespace TS3Client.Full
 {
+	using Commands;
 	using Messages;
 	using System;
 	using System.Collections.Generic;
@@ -89,22 +90,22 @@ namespace TS3Client.Full
 
 				switch (packet.PacketType)
 				{
-					case PacketType.Command:
-						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-						if (!SpecialCommandProcess(message))
-							ProcessCommand(message);
-						break;
+				case PacketType.Command:
+					string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
+					if (!SpecialCommandProcess(message))
+						ProcessCommand(message);
+					break;
 
-					case PacketType.Readable:
-					case PacketType.Voice:
-						// VOICE
+				case PacketType.Readable:
+				case PacketType.Voice:
+					// VOICE
 
-						break;
+					break;
 
-					case PacketType.Init1:
-						var forwardData = ts3Crypt.ProcessInit1(packet.Data);
-						packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
-						break;
+				case PacketType.Init1:
+					var forwardData = ts3Crypt.ProcessInit1(packet.Data);
+					packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
+					break;
 				}
 			}
 		}

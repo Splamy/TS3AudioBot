@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -14,23 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Client
+namespace TS3AudioBot.Web.Api
 {
-	public class CommandError
+	public class JsonSingleValue<T> : JsonObject
 	{
-		// id
-		public int Id { get; set; }
-		// msg
-		public string Message { get; set; }
-		// failed_permid
-		public int MissingPermissionId { get; set; } = -1;
+		public T Value { get; }
 
-		public string ReturnCode { get; set; } = string.Empty;
-
-		public bool Ok => Id == 0 && Message == "ok";
-
-		public string ErrorFormat() => $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";
-
-        public override string ToString() => ErrorFormat();
-    }
+		public JsonSingleValue(string msg, T value) : base(msg) { Value = value; }
+	}
 }

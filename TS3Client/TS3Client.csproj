@@ -60,7 +60,7 @@
     <Compile Include="Full\Ts3FullClient.cs" />
     <Compile Include="Full\VersionSign.cs" />
     <Compile Include="Messages\FullClientNotifications.cs" />
-    <Compile Include="Ts3Command.cs" />
+    <Compile Include="Commands\Ts3Command.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
@@ -74,14 +74,14 @@
     <Compile Include="Ts3SerializableAttribute.cs" />
     <Compile Include="Ts3BaseClient.cs" />
     <Compile Include="Query\Ts3QueryClient.cs" />
-    <Compile Include="CommandBinder.cs" />
-    <Compile Include="CommandError.cs" />
-    <Compile Include="CommandOption.cs" />
-    <Compile Include="CommandParameter.cs" />
-    <Compile Include="ParameterConverter.cs" />
+    <Compile Include="Commands\CommandBinder.cs" />
+    <Compile Include="Commands\CommandError.cs" />
+    <Compile Include="Commands\CommandOption.cs" />
+    <Compile Include="Commands\CommandParameter.cs" />
+    <Compile Include="Commands\ParameterConverter.cs" />
     <Compile Include="Ts3Exceptions.cs" />
-    <Compile Include="Ts3String.cs" />
-    <Compile Include="CommandDeserializer.cs" />
+    <Compile Include="Commands\Ts3String.cs" />
+    <Compile Include="Commands\CommandDeserializer.cs" />
     <Compile Include="WaitBlock.cs" />
   </ItemGroup>
   <ItemGroup>

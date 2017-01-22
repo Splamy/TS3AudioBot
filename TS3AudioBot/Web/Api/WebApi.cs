@@ -118,39 +118,45 @@ namespace TS3AudioBot.Web.Api
 
 			var command = mainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
 
-			var execInfo = new ExecutionInformation(new UserSession(mainBot, null), null, new Lazy<bool>(() => true));
+			var cd = Generator.ActivateResponse<ClientData>();
+			cd.NickName = "APITEST";
+			cd.DatabaseId = 42;
+			var execInfo = new ExecutionInformation(new UserSession(mainBot, cd), null, new Lazy<bool>(() => true));
 			execInfo.SetApiCall();
 
-			try
+			using (var token = execInfo.Session.GetToken())
 			{
-				var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
-					new[] { CommandResultType.Json, CommandResultType.Empty });
+				try
+				{
+					var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
+						new[] { CommandResultType.Json, CommandResultType.Empty });
 
-				if (res.ResultType == CommandResultType.Empty)
-				{
-					response.StatusCode = (int)HttpStatusCode.NoContent;
+					if (res.ResultType == CommandResultType.Empty)
+					{
+						response.StatusCode = (int)HttpStatusCode.NoContent;
+					}
+					else if (res.ResultType == CommandResultType.Json)
+					{
+						response.StatusCode = (int)HttpStatusCode.OK;
+						var sRes = (JsonCommandResult)res;
+						using (var responseStream = new StreamWriter(response.OutputStream))
+							responseStream.Write(sRes.JsonObject.Serialize());
+					}
 				}
-				else if (res.ResultType == CommandResultType.Json)
+				catch (CommandException ex)
 				{
-					response.StatusCode = (int)HttpStatusCode.OK;
-					var sRes = (JsonCommandResult)res;
+					ReturnError(ex, response);
+				}
+				catch (Exception ex)
+				{
+					if (ex is NotImplementedException)
+						response.StatusCode = (int)HttpStatusCode.NotImplemented;
+					else
+						response.StatusCode = (int)HttpStatusCode.InternalServerError;
+					Log.Write(Log.Level.Error, "WA Unexpected command error: {0}", ex);
 					using (var responseStream = new StreamWriter(response.OutputStream))
-						responseStream.Write(Util.Serializer.Serialize(sRes.JsonObject));
+						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
 				}
-			}
-			catch (CommandException ex)
-			{
-				ReturnError(ex, response);
-			}
-			catch (Exception ex)
-			{
-				if (ex is NotImplementedException)
-					response.StatusCode = (int)HttpStatusCode.NotImplemented;
-				else
-					response.StatusCode = (int)HttpStatusCode.InternalServerError;
-				Log.Write(Log.Level.Error, "WA Unexpected command error: {0}", ex);
-				using (var responseStream = new StreamWriter(response.OutputStream))
-					responseStream.Write(Util.Serializer.Serialize(new JsonError(ex.Message, CommandExceptionReason.Unknown)));
 			}
 		}
 
@@ -164,6 +170,7 @@ namespace TS3AudioBot.Web.Api
 				return;
 
 			case CommandExceptionReason.MissingRights:
+			case CommandExceptionReason.NotSupported:
 				response.StatusCode = (int)HttpStatusCode.Forbidden;
 				break;
 			case CommandExceptionReason.CommandError:
@@ -213,7 +220,5 @@ namespace TS3AudioBot.Web.Api
 
 		[Info("a comma seperated list of all urls the web api should be possible to be accessed with", "")]
 		public string HostAddress { get; set; }
-
-
 	}
 }

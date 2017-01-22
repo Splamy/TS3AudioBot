@@ -156,7 +156,12 @@
     <Compile Include="Ts3Full.cs" />
     <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
     <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
+    <Compile Include="Web\Api\JsonArray.cs" />
+    <Compile Include="Web\Api\JsonEmpty.cs" />
     <Compile Include="Web\Api\JsonError.cs" />
+    <Compile Include="Web\Api\JsonObject.cs" />
+    <Compile Include="Web\Api\JsonSingleValue.cs" />
+    <Compile Include="Web\Api\JsonSingleObject.cs" />
     <Compile Include="Web\Api\WebApi.cs" />
     <Compile Include="Web\Interface\WebDisplay.cs" />
     <Compile Include="Web\UriExt.cs" />

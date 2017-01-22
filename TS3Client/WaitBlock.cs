@@ -16,6 +16,7 @@
 
 namespace TS3Client
 {
+	using Commands;
 	using Messages;
 	using System;
 	using System.Collections.Generic;

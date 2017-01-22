@@ -1,4 +1,4 @@
-namespace TS3Client
+namespace TS3Client.Commands
 {
 	using System;
 	using System.Collections.Generic;

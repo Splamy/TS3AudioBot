@@ -16,7 +16,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
-	using System.Web.Script.Serialization;
+	using Web.Api;
 
 	public class JsonCommandResult : ICommandResult
 	{
@@ -27,29 +27,6 @@ namespace TS3AudioBot.CommandSystem
 		public JsonCommandResult(JsonObject jsonObj)
 		{
 			JsonObject = jsonObj;
-		}
-	}
-
-	public abstract class JsonObject
-	{
-		[ScriptIgnore]
-		public string AsStringResult { get; }
-
-		protected JsonObject(string stringResult)
-		{
-			AsStringResult = stringResult;
-		}
-
-		public override string ToString() => AsStringResult;
-	}
-
-	public class JsonSingleObj<T> : JsonObject
-	{
-		public T Value { get; }
-
-		public JsonSingleObj(string msg, T value) : base(msg)
-		{
-			Value = value;
 		}
 	}
 }

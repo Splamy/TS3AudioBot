@@ -20,7 +20,7 @@ namespace TS3AudioBot.History
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
-	using TS3Client;
+	using TS3Client.Commands;
 
 	public class SmartHistoryFormatter : IHistoryFormatter
 	{

@@ -14,24 +14,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Client
+namespace TS3Client.Commands
 {
-	using Commands;
-	using System;
-
-	[Serializable]
-	public class Ts3Exception : Exception
+	public sealed class CommandError
 	{
-		public Ts3Exception(string message) : base(message) { }
-		public Ts3Exception(string message, Exception innerException) : base(message, innerException) { }
-	}
+		// id
+		public int Id { get; set; }
+		// msg
+		public string Message { get; set; }
+		// failed_permid
+		public int MissingPermissionId { get; set; } = -1;
 
-	[Serializable]
-	public class Ts3CommandException : Ts3Exception
-	{
-		public CommandError ErrorStatus { get; private set; }
+		public string ReturnCode { get; set; } = string.Empty;
 
-		internal Ts3CommandException(CommandError message) : base(message.ErrorFormat()) { ErrorStatus = message; }
-		internal Ts3CommandException(CommandError message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
+		public bool Ok => Id == 0 && Message == "ok";
+
+		public string ErrorFormat() => $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";
+
+		public override string ToString() => ErrorFormat();
 	}
 }

@@ -1,5 +1,6 @@
 namespace TS3Client
 {
+	using Commands;
 	using Messages;
 	using System;
 	using System.Collections.Generic;
@@ -112,13 +113,13 @@ namespace TS3Client
 		{
 			switch (dispatcherType)
 			{
-				case EventDispatchType.None: eventDispatcher = new NoEventDispatcher(); break;
-				case EventDispatchType.CurrentThread: eventDispatcher = new CurrentThreadEventDisptcher(); break;
-				case EventDispatchType.ExtraDispatchThread: eventDispatcher = new ExtraThreadEventDispatcher(); break;
-				case EventDispatchType.DoubleThread: throw new NotSupportedException(); //break;
-				case EventDispatchType.AutoThreadPooled: eventDispatcher = new AutoThreadPooledEventDispatcher(); break;
-				case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
-				default: throw new NotSupportedException();
+			case EventDispatchType.None: eventDispatcher = new NoEventDispatcher(); break;
+			case EventDispatchType.CurrentThread: eventDispatcher = new CurrentThreadEventDisptcher(); break;
+			case EventDispatchType.ExtraDispatchThread: eventDispatcher = new ExtraThreadEventDispatcher(); break;
+			case EventDispatchType.DoubleThread: throw new NotSupportedException(); //break;
+			case EventDispatchType.AutoThreadPooled: eventDispatcher = new AutoThreadPooledEventDispatcher(); break;
+			case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
+			default: throw new NotSupportedException();
 			}
 			eventDispatcher.Init(NetworkLoop);
 		}
@@ -169,33 +170,33 @@ namespace TS3Client
 		{
 			switch (notifyType)
 			{
-				case NotificationType.ChannelCreated: break;
-				case NotificationType.ChannelDeleted: break;
-				case NotificationType.ChannelChanged: break;
-				case NotificationType.ChannelEdited: break;
-				case NotificationType.ChannelMoved: break;
-				case NotificationType.ChannelPasswordChanged: break;
-				case NotificationType.ClientEnterView: eventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>())); break;
-				case NotificationType.ClientLeftView: eventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>())); break;
-				case NotificationType.ClientMoved: break;
-				case NotificationType.ServerEdited: break;
-				case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>())); break;
-				case NotificationType.TokenUsed: break;
-				// full client events
-				case NotificationType.InitIvExpand: eventDispatcher.Invoke(() => ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault())); break;
-				case NotificationType.InitServer: eventDispatcher.Invoke(() => ProcessInitServer((InitServer)notification.FirstOrDefault())); break;
-				case NotificationType.ChannelList: break;
-				case NotificationType.ChannelListFinished: break;
-				case NotificationType.ClientNeededPermissions: break;
-				case NotificationType.ClientChannelGroupChanged: break;
-				case NotificationType.ClientServerGroupAdded: break;
-				case NotificationType.ConnectionInfoRequest: break;
-				case NotificationType.ChannelSubscribed: break;
-				case NotificationType.ChannelUnsubscribed: break;
-				case NotificationType.ClientChatComposing: break;
-				// special
-				case NotificationType.Unknown: Debug.WriteLine("Unknown notification passed!"); break;
-				default: throw new InvalidOperationException();
+			case NotificationType.ChannelCreated: break;
+			case NotificationType.ChannelDeleted: break;
+			case NotificationType.ChannelChanged: break;
+			case NotificationType.ChannelEdited: break;
+			case NotificationType.ChannelMoved: break;
+			case NotificationType.ChannelPasswordChanged: break;
+			case NotificationType.ClientEnterView: eventDispatcher.Invoke(() => OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>())); break;
+			case NotificationType.ClientLeftView: eventDispatcher.Invoke(() => OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>())); break;
+			case NotificationType.ClientMoved: break;
+			case NotificationType.ServerEdited: break;
+			case NotificationType.TextMessage: eventDispatcher.Invoke(() => OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>())); break;
+			case NotificationType.TokenUsed: break;
+			// full client events
+			case NotificationType.InitIvExpand: eventDispatcher.Invoke(() => ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault())); break;
+			case NotificationType.InitServer: eventDispatcher.Invoke(() => ProcessInitServer((InitServer)notification.FirstOrDefault())); break;
+			case NotificationType.ChannelList: break;
+			case NotificationType.ChannelListFinished: break;
+			case NotificationType.ClientNeededPermissions: break;
+			case NotificationType.ClientChannelGroupChanged: break;
+			case NotificationType.ClientServerGroupAdded: break;
+			case NotificationType.ConnectionInfoRequest: break;
+			case NotificationType.ChannelSubscribed: break;
+			case NotificationType.ChannelUnsubscribed: break;
+			case NotificationType.ClientChatComposing: break;
+			// special
+			case NotificationType.Unknown: Debug.WriteLine("Unknown notification passed!"); break;
+			default: throw new InvalidOperationException();
 			}
 		}
 

@@ -14,6 +14,7 @@ namespace TS3Client.Full
 	using System;
 	using System.Linq;
 	using System.Text;
+	using Commands;
 
 	public sealed class Ts3Crypt
 	{

@@ -23,6 +23,7 @@ namespace TS3AudioBot
 	using TS3Client.Full;
 	using TS3Client.Messages;
 	using TS3Client.Query;
+	using TS3Client.Commands;
 
 	public abstract class TeamspeakControl : IDisposable
 	{
@@ -89,7 +90,7 @@ namespace TS3AudioBot
 		{
 			me = GetSelf();
 		}
-		
+
 		public void SendMessage(string message, ushort clientId) => tsBaseClient.SendMessage(MessageTarget.Private, clientId, message);
 		public void SendGlobalMessage(string message) => tsBaseClient.SendMessage(MessageTarget.Server, 1, message);
 		public void KickClientFromServer(ushort clientId) => tsBaseClient.KickClientFromServer(new[] { clientId });

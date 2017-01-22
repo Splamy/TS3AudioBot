@@ -14,24 +14,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Client
+namespace TS3Client.Commands
 {
-	using Commands;
-	using System;
+	using System.Diagnostics;
 
-	[Serializable]
-	public class Ts3Exception : Exception
+	public class CommandParameter
 	{
-		public Ts3Exception(string message) : base(message) { }
-		public Ts3Exception(string message, Exception innerException) : base(message, innerException) { }
-	}
+		public string Key { get; }
+		public string Value { get; }
+		public virtual string QueryString => string.IsNullOrEmpty(Value) ? Key : string.Concat(Key, "=", Value);
 
-	[Serializable]
-	public class Ts3CommandException : Ts3Exception
-	{
-		public CommandError ErrorStatus { get; private set; }
+		protected CommandParameter() { }
 
-		internal Ts3CommandException(CommandError message) : base(message.ErrorFormat()) { ErrorStatus = message; }
-		internal Ts3CommandException(CommandError message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
+		[DebuggerStepThrough]
+		public CommandParameter(string name, IParameterConverter rawValue)
+		{
+			Key = name;
+			Value = rawValue.QueryValue;
+		}
+
+		[DebuggerStepThrough]
+		public CommandParameter(string name, PrimitiveParameter value) : this(name, (IParameterConverter)value) { }
+
+		public override string ToString() => QueryString;
 	}
 }

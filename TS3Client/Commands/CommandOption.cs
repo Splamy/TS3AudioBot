@@ -14,24 +14,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Client
+namespace TS3Client.Commands
 {
-	using Commands;
 	using System;
+	using System.Linq;
 
-	[Serializable]
-	public class Ts3Exception : Exception
+	public class CommandOption
 	{
-		public Ts3Exception(string message) : base(message) { }
-		public Ts3Exception(string message, Exception innerException) : base(message, innerException) { }
-	}
+		public string Value { get; }
 
-	[Serializable]
-	public class Ts3CommandException : Ts3Exception
-	{
-		public CommandError ErrorStatus { get; private set; }
+		public CommandOption(string name) { Value = string.Concat(" -", name); }
+		public CommandOption(Enum values) { Value = string.Join(" -", values.GetFlags().Select(enu => Enum.GetName(typeof(Enum), enu))); }
 
-		internal Ts3CommandException(CommandError message) : base(message.ErrorFormat()) { ErrorStatus = message; }
-		internal Ts3CommandException(CommandError message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
+		public static implicit operator CommandOption(string value) => new CommandOption(value);
+		public static implicit operator CommandOption(Enum value) => new CommandOption(value);
 	}
 }

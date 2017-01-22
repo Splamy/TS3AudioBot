@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -14,24 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3Client
+namespace TS3AudioBot.Web.Api
 {
-	using Commands;
-	using System;
-
-	[Serializable]
-	public class Ts3Exception : Exception
+	public class JsonArray<T> : JsonSingleObject<T[]>
 	{
-		public Ts3Exception(string message) : base(message) { }
-		public Ts3Exception(string message, Exception innerException) : base(message, innerException) { }
-	}
-
-	[Serializable]
-	public class Ts3CommandException : Ts3Exception
-	{
-		public CommandError ErrorStatus { get; private set; }
-
-		internal Ts3CommandException(CommandError message) : base(message.ErrorFormat()) { ErrorStatus = message; }
-		internal Ts3CommandException(CommandError message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
+		public JsonArray(string msg, T[] value) : base(msg, value) { }
 	}
 }

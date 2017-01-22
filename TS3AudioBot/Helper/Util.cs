@@ -31,6 +31,8 @@ namespace TS3AudioBot.Helper
 	[Serializable]
 	public static class Util
 	{
+		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
+
 		public static bool IsLinux
 		{
 			get
@@ -213,6 +215,18 @@ namespace TS3AudioBot.Helper
 			return unchecked((int)uval);
 		}
 
-		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
+		public static void UnwrapThrow(this R r)
+		{
+			if (!r.Ok)
+				throw new CommandSystem.CommandException(r.Message, CommandSystem.CommandExceptionReason.CommandError);
+		}
+
+		public static T UnwrapThrow<T>(this R<T> r)
+		{
+			if (r.Ok)
+				return r.Value;
+			else
+				throw new CommandSystem.CommandException(r.Message, CommandSystem.CommandExceptionReason.CommandError);
+		}
 	}
 }

@@ -21,6 +21,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Globalization;
 	using System.Linq;
 	using System.Reflection;
+	using Web.Api;
 
 	public class FunctionCommand : ICommand
 	{

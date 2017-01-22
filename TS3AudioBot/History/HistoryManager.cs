@@ -206,11 +206,12 @@ namespace TS3AudioBot.History
 			return audioLogEntries.Find(query, 0, search.MaxResults);
 		}
 
-		public string SearchParsed(SeachQuery query)
-		{
-			var aleList = Search(query);
-			return Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
-		}
+		public string SearchParsed(SeachQuery query) => Format(Search(query));
+
+		public string Format(AudioLogEntry ale)
+			=> Formatter.ProcessQuery(ale, SmartHistoryFormatter.DefaultAleFormat);
+		public string Format(IEnumerable<AudioLogEntry> aleList)
+			=> Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
 
 		public AudioLogEntry FindEntryByResource(AudioResource resource)
 		{
