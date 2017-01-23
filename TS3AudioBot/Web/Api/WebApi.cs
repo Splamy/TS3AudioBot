@@ -124,7 +124,7 @@ namespace TS3AudioBot.Web.Api
 			var execInfo = new ExecutionInformation(new UserSession(mainBot, cd), null, new Lazy<bool>(() => true));
 			execInfo.SetApiCall();
 
-			using (var token = execInfo.Session.GetToken())
+			using (var token = execInfo.Session.GetLock())
 			{
 				try
 				{

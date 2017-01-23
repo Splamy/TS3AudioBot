@@ -245,7 +245,7 @@ namespace TS3AudioBot
 
 			UserSession session = result.Value;
 			session.IsPrivate = textMessage.Target == MessageTarget.Private;
-			using (session.GetToken())
+			using (session.GetLock())
 			{
 				var execInfo = new ExecutionInformation(session, textMessage,
 					new Lazy<bool>(() => HasInvokerAdminRights(textMessage.InvokerId)));
@@ -1279,9 +1279,10 @@ namespace TS3AudioBot
 		}
 
 		[Command(AnyVisibility, "token", "Generates an api token.")]
-		public string CommandToken(ExecutionInformation info)
+		public JsonObject CommandToken(ExecutionInformation info)
 		{
-			return "totallyrandomtoken";
+			var token = SessionManager.GetToken(info.Session).UnwrapThrow();
+			return new JsonSingleValue<string>(token, token);
 		}
 
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]

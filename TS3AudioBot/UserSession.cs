@@ -27,7 +27,7 @@ namespace TS3AudioBot
 	public sealed class UserSession
 	{
 		private Dictionary<Type, object> assocMap = null;
-		private bool tokenToken = false;
+		private bool lockToken = false;
 
 		public Response ResponseProcessor { get; private set; }
 		public object ResponseData { get; private set; }
@@ -37,18 +37,24 @@ namespace TS3AudioBot
 		public ClientData Client => ClientCached = Bot.QueryConnection.GetClientById(ClientCached.ClientId);
 		public bool IsPrivate { get; internal set; }
 
+		public string ApiToken { get; internal set; }
+		public uint ApiTokenId { get; internal set; }
+		public DateTime ApiTokenTimeout { get; internal set; }
+		public bool ApiTokenActive => ApiToken != null && ApiTokenTimeout > Util.GetNow();
+
 		public UserSession(MainBot bot, ClientData client)
 		{
 			Bot = bot;
 			ClientCached = client;
 			ResponseProcessor = null;
 			ResponseData = null;
+			ApiToken = null;
+			ApiTokenTimeout = DateTime.MinValue;
 		}
 
 		public void Write(string message)
 		{
-			if (!tokenToken)
-				throw new InvalidOperationException("No token is currently active");
+			VerifyLock();
 
 			try
 			{
@@ -65,8 +71,7 @@ namespace TS3AudioBot
 
 		public void SetResponse(Response responseProcessor, object responseData)
 		{
-			if (!tokenToken)
-				throw new InvalidOperationException("No token is currently active");
+			VerifyLock();
 
 			ResponseProcessor = responseProcessor;
 			ResponseData = responseData;
@@ -74,8 +79,7 @@ namespace TS3AudioBot
 
 		public void ClearResponse()
 		{
-			if (!tokenToken)
-				throw new InvalidOperationException("No token is currently active");
+			VerifyLock();
 
 			ResponseProcessor = null;
 			ResponseData = null;
@@ -83,8 +87,7 @@ namespace TS3AudioBot
 
 		public R<TData> Get<TAssoc, TData>()
 		{
-			if (!tokenToken)
-				throw new InvalidOperationException("No token is currently active");
+			VerifyLock();
 
 			if (assocMap == null)
 				return "Value not set";
@@ -101,8 +104,7 @@ namespace TS3AudioBot
 
 		public void Set<TAssoc, TData>(TData data)
 		{
-			if (!tokenToken)
-				throw new InvalidOperationException("No token is currently active");
+			VerifyLock();
 
 			if (assocMap == null)
 				Util.Init(ref assocMap);
@@ -113,11 +115,17 @@ namespace TS3AudioBot
 				assocMap.Add(typeof(TAssoc), data);
 		}
 
-		public SessionToken GetToken()
+		public SessionToken GetLock()
 		{
 			var sessionToken = new SessionToken(this);
 			sessionToken.Take();
 			return sessionToken;
+		}
+
+		private void VerifyLock()
+		{
+			if (!lockToken)
+				throw new InvalidOperationException("No access lock is currently active");
 		}
 
 		public sealed class SessionToken : IDisposable
@@ -125,8 +133,8 @@ namespace TS3AudioBot
 			private UserSession session;
 			public SessionToken(UserSession session) { this.session = session; }
 
-			public void Take() { Monitor.Enter(session); session.tokenToken = true; }
-			public void Free() { Monitor.Exit(session); session.tokenToken = false; }
+			public void Take() { Monitor.Enter(session); session.lockToken = true; }
+			public void Free() { Monitor.Exit(session); session.lockToken = false; }
 			public void Dispose() => Free();
 		}
 	}

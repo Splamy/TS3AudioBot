@@ -24,6 +24,9 @@ namespace TS3AudioBot
 
 	public class SessionManager
 	{
+		private static readonly TimeSpan DefaultApiTimeout = TimeSpan.FromDays(1);
+		const string tokenFormat = "{0}${1}";
+
 		private readonly List<UserSession> openSessions = new List<UserSession>();
 
 		public SessionManager() { }
@@ -60,7 +63,41 @@ namespace TS3AudioBot
 
 		public void RemoveSession(ushort invokerId)
 		{
-			openSessions.RemoveAll((ps) => ps.ClientCached.ClientId == invokerId);
+			openSessions.RemoveAll((ps) => ps.ClientCached.ClientId == invokerId && !ps.ApiTokenActive);
+		}
+
+		public R<string> GetToken(UserSession session) => GetToken(session, DefaultApiTimeout);
+		public R<string> GetToken(UserSession session, TimeSpan timeout)
+		{
+			if (!openSessions.Contains(session))
+				return R<string>.Err("This session is not associated to the current manager.");
+
+			session.ApiToken = GenToken();
+			var newTimeout = Util.GetNow();
+			if (newTimeout > session.ApiTokenTimeout)
+				session.ApiTokenTimeout = newTimeout;
+
+			return R<string>.OkR(string.Format(tokenFormat, session.ApiTokenId, session.ApiToken));
+		}
+
+		public R<UserSession> GetSessionByTokenId(uint tokenId)
+		{
+			var session = openSessions.Where(s => s.ApiTokenId == tokenId).FirstOrDefault();
+			if (session == null || session.ApiTokenTimeout < Util.GetNow())
+				return "No session found";
+			else
+				return session;
+		}
+
+		private static string GenToken()
+		{
+			const int TokenLen = 64;
+			const string alph = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+			var arr = new char[TokenLen];
+			for (int i = 0; i < arr.Length; i++)
+				arr[i] = alph[Util.RngInstance.Next(0, alph.Length)];
+			return new string(arr);
 		}
 	}
 }
