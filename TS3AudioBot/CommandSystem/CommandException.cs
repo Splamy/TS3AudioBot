@@ -25,7 +25,7 @@ namespace TS3AudioBot.CommandSystem
 		public CommandExceptionReason Reason { get; }
 
 		protected CommandException() : this(CommandExceptionReason.Unknown) { }
-		public CommandException(CommandExceptionReason reason) { Reason = reason; }
+		protected CommandException(CommandExceptionReason reason) { Reason = reason; }
 
 		protected CommandException(string message) : this(message, CommandExceptionReason.Unknown) { }
 		public CommandException(string message, CommandExceptionReason reason) : base(message) { Reason = reason; }
