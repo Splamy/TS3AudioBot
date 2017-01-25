@@ -30,6 +30,7 @@ namespace TS3ABotUnitTests
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
 	using TS3Client.Messages;
+	using System.Text.RegularExpressions;
 
 	[TestFixture]
 	public class UnitTests
@@ -237,6 +238,19 @@ namespace TS3ABotUnitTests
 					Assert.AreEqual(val.TrimEnd(new[] { '\r', '\n' }), line);
 					Assert.AreEqual(pos, reader.ReadPosition);
 				}
+			}
+		}
+
+		[Test]
+		public void UtilSeedTest()
+		{
+			var lowCaseRegex = new Regex("^[a-z]*$", Util.DefaultRegexConfig);
+			for (int i = 0; i < 100000; i++)
+			{
+				var str = Util.FromSeed(i);
+				Assert.IsTrue(lowCaseRegex.IsMatch(str), "For seed: " + i);
+				var roundtrip = Util.ToSeed(str);
+				Assert.AreEqual(i, roundtrip);
 			}
 		}
 

@@ -185,15 +185,13 @@ namespace TS3AudioBot.Helper
 			uint plainseed = unchecked((uint)seed);
 			for (int i = 0; i < 7; i++)
 			{
-				if (plainseed > 26)
+				if (plainseed > 0)
 				{
-					seedstr[i] = (char)((plainseed % 26) + 'a' - 1);
-					plainseed /= 26;
-				}
-				else if (plainseed > 0)
-				{
-					seedstr[i] = (char)(plainseed + 'a' - 1);
-					plainseed = 0;
+					plainseed--;
+					var remainder = plainseed % 26;
+					char digit = (char)(remainder + 'a');
+					seedstr[i] = digit;
+					plainseed = (plainseed - remainder) / 26;
 				}
 				else
 					seedstr[i] = '\0';
