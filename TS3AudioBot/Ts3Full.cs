@@ -119,7 +119,10 @@ namespace TS3AudioBot
 				Tuple<byte[], int> encodedArr = null;
 				while ((encodedArr = encoder.GetPacket()) != null)
 				{
-					tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptions, clientSubscriptions);
+					if (!channelSubscriptions.Any() && !clientSubscriptions.Any())
+						tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
+					else
+						tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptions, clientSubscriptions);
 				}
 			}
 		}
@@ -170,49 +173,45 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
-		public R<TimeSpan> GetLength()
+		public TimeSpan Length
 		{
-			throw new NotImplementedException();
+			get { throw new NotImplementedException(); }
 		}
 
-		public R<TimeSpan> GetPosition()
+		public TimeSpan Position
 		{
-			throw new NotImplementedException();
-		}
-		public void SetPosition(TimeSpan value)
-		{
-			throw new NotImplementedException();
+			get { throw new NotImplementedException(); }
+			set { throw new NotImplementedException(); }
 		}
 
-		public R<int> GetVolume() => (int)Math.Round(volume * 100);
-		public void SetVolume(int value) => volume = value / 100f;
+		public int Volume
+		{
+			get { return (int)Math.Round(volume * 100); }
+			set { volume = value / 100f; }
+		}
 
 		public void Initialize() { }
 
-		public R<bool> IsPaused() => sendTick.Active;
-		public void SetPaused(bool value)
+		public bool Paused
 		{
-			if (sendTick.Active == value)
+			get { return sendTick.Active; }
+			set
 			{
-				sendTick.Active = !value;
-				if (value)
-					audioTimer.Stop();
-				else
-					audioTimer.Start();
+				if (sendTick.Active == value)
+				{
+					sendTick.Active = !value;
+					if (value)
+						audioTimer.Stop();
+					else
+						audioTimer.Start();
+				}
 			}
 		}
 
-		public R<bool> IsPlaying() => sendTick.Active;
+		public bool Playing => sendTick.Active;
 
-		public R<bool> IsRepeated()
-		{
-			//throw new NotImplementedException();
-			return false;
-		}
-		public void SetRepeated(bool value)
-		{
-			//throw new NotImplementedException();
-		}
+		public bool Repeated { get { return false; } set { } }
+
 
 		#endregion
 

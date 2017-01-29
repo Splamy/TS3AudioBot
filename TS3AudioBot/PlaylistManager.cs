@@ -476,7 +476,7 @@ namespace TS3AudioBot
 				if (!result)
 					return result;
 
-				result.Value.CreatorDbId = info.Session.ClientCached.DatabaseId;
+				result.Value.CreatorDbId = info.Session.Client.DatabaseId;
 				info.Session.Set<PlaylistManager, Playlist>(result.Value);
 				return "Ok";
 			}

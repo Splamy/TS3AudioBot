@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,8 +33,8 @@ namespace TS3AudioBot
 		public object ResponseData { get; private set; }
 
 		public MainBot Bot { get; }
-		public ClientData ClientCached { get; private set; }
-		public ClientData Client => ClientCached = Bot.QueryConnection.GetClientById(ClientCached.ClientId);
+		private readonly ushort clientId; // TODO better identification system
+		public ClientData Client { get; private set; }
 		public bool IsPrivate { get; internal set; }
 
 		public string ApiToken { get; internal set; }
@@ -45,7 +45,8 @@ namespace TS3AudioBot
 		public UserSession(MainBot bot, ClientData client)
 		{
 			Bot = bot;
-			ClientCached = client;
+			clientId = client.ClientId;
+			Client = client;
 			ResponseProcessor = null;
 			ResponseData = null;
 			ApiToken = null;
@@ -59,7 +60,7 @@ namespace TS3AudioBot
 			try
 			{
 				if (IsPrivate)
-					Bot.QueryConnection.SendMessage(message, ClientCached.ClientId);
+					Bot.QueryConnection.SendMessage(message, Client.ClientId);
 				else
 					Bot.QueryConnection.SendGlobalMessage(message);
 			}
@@ -126,6 +127,11 @@ namespace TS3AudioBot
 		{
 			if (!lockToken)
 				throw new InvalidOperationException("No access lock is currently active");
+		}
+
+		public void UpdateClient()
+		{
+			Client = Bot.QueryConnection.GetClientById(clientId);
 		}
 
 		public sealed class SessionToken : IDisposable

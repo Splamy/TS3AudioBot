@@ -241,6 +241,8 @@ namespace TS3AudioBot
 			}
 
 			UserSession session = result.Value;
+			session.UpdateClient();
+
 			session.IsPrivate = textMessage.Target == MessageTarget.Private;
 			using (session.GetLock())
 			{
@@ -693,7 +695,7 @@ namespace TS3AudioBot
 		{
 			var plist = AutoGetPlaylist(info.Session);
 			var playResource = FactoryManager.Load(link).UnwrapThrow();
-			plist.AddItem(new PlaylistItem(playResource.BaseData, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			plist.AddItem(new PlaylistItem(playResource.BaseData, new MetaData() { ResourceOwnerDbId = info.Session.Client.DatabaseId }));
 		}
 
 		[Command(Private, "list add", "<id> Adds a link to your private playlist from the history by <id>.")]
@@ -704,7 +706,7 @@ namespace TS3AudioBot
 			if (hid < 0 || !HistoryManager.GetEntryById(hid))
 				throw new CommandException("History entry not found", CommandExceptionReason.CommandError);
 
-			plist.AddItem(new PlaylistItem(hid, new MetaData() { ResourceOwnerDbId = info.Session.ClientCached.DatabaseId }));
+			plist.AddItem(new PlaylistItem(hid, new MetaData() { ResourceOwnerDbId = info.Session.Client.DatabaseId }));
 		}
 
 		[Command(Private, "list clear", "Clears your private playlist.")]
@@ -714,7 +716,7 @@ namespace TS3AudioBot
 		public void CommandListDelete(ExecutionInformation info, string name) // A
 		{
 			if (info.ApiCall)
-				PlaylistManager.DeletePlaylist(name, info.Session.ClientCached.DatabaseId, info.IsAdmin).UnwrapThrow();
+				PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.IsAdmin).UnwrapThrow();
 
 			var hresult = PlaylistManager.LoadPlaylist(name, true);
 			if (!hresult)
@@ -725,7 +727,7 @@ namespace TS3AudioBot
 			else
 			{
 				if (hresult.Value.CreatorDbId.HasValue
-					&& hresult.Value.CreatorDbId.Value != info.Session.ClientCached.DatabaseId
+					&& hresult.Value.CreatorDbId.Value != info.Session.Client.DatabaseId
 					&& !info.IsAdmin)
 					throw new CommandException("You are not allowed to delete others playlists", CommandExceptionReason.MissingRights);
 
@@ -739,7 +741,7 @@ namespace TS3AudioBot
 		{
 			var playlist = info.Session.Bot.PlaylistManager.LoadPlaylistFrom(link).UnwrapThrow();
 
-			playlist.CreatorDbId = info.Session.ClientCached.DatabaseId;
+			playlist.CreatorDbId = info.Session.Client.DatabaseId;
 			info.Session.Set<PlaylistManager, Playlist>(playlist);
 			return new JsonEmpty("Ok");
 		}
@@ -1426,7 +1428,7 @@ namespace TS3AudioBot
 			if (answer == Answer.Yes)
 			{
 				var name = info.Session.ResponseData as string;
-				var result = PlaylistManager.DeletePlaylist(name, info.Session.ClientCached.DatabaseId, info.IsAdmin);
+				var result = PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.IsAdmin);
 				if (!result) info.Session.Write(result.Message);
 				else info.Session.Write("Ok");
 			}
@@ -1453,7 +1455,7 @@ namespace TS3AudioBot
 			if (result)
 				return result.Value;
 
-			var newPlist = new Playlist(session.ClientCached.NickName, session.ClientCached.DatabaseId);
+			var newPlist = new Playlist(session.Client.NickName, session.Client.DatabaseId);
 			session.Set<PlaylistManager, Playlist>(newPlist);
 			return newPlist;
 		}
