@@ -48,6 +48,7 @@ namespace TS3AudioBot
 		public Ts3Full(Ts3FullClientData tfcd) : base(ClientType.Full)
 		{
 			ts3FullClientData = tfcd;
+			SuppressLoopback = tfcd.SuppressLoopback;
 			Util.Init(ref channelSubscriptionsSetup);
 			Util.Init(ref channelSubscriptions);
 			Util.Init(ref clientSubscriptions);
@@ -310,5 +311,7 @@ namespace TS3AudioBot
 		public ulong identityoffset { get; set; }
 		[Info("the relative or full path to ffmpeg", "ffmpeg")]
 		public string ffmpegpath { get; set; }
+		[Info("wether or not to show own received messages in the log", "true")]
+		public bool SuppressLoopback { get; set; }
 	}
 }
