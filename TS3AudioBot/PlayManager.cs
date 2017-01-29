@@ -1,25 +1,25 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace TS3AudioBot
 {
-	using System;
 	using Helper;
 	using History;
 	using ResourceFactories;
+	using System;
 	using TS3Client.Messages;
 
 	public class PlayManager
@@ -43,17 +43,17 @@ namespace TS3AudioBot
 			botParent = parent;
 		}
 
-		public R Enqueue(ClientData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
-		public R Enqueue(ClientData invoker, string message, AudioType? type = null)
+		public R Enqueue(InvokerData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
+		public R Enqueue(InvokerData invoker, string message, AudioType? type = null)
 		{
 			var result = resourceFactoryManager.Load(message, type);
 			if (!result)
 				return result.Message;
 			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
 		}
-		public R Enqueue(ClientData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId));
+		public R Enqueue(InvokerData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId));
 
-		private R EnqueueInternal(ClientData invoker, PlaylistItem pli)
+		private R EnqueueInternal(InvokerData invoker, PlaylistItem pli)
 		{
 			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
 			playlistManager.AddToFreelist(pli);
@@ -66,7 +66,7 @@ namespace TS3AudioBot
 		/// <param name="ar">The resource to load and play.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(ClientData invoker, AudioResource ar, MetaData meta = null)
+		public R Play(InvokerData invoker, AudioResource ar, MetaData meta = null)
 		{
 			var result = resourceFactoryManager.Load(ar);
 			if (!result)
@@ -80,14 +80,14 @@ namespace TS3AudioBot
 		/// <param name="link">The link to resolve, load and play.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(ClientData invoker, string link, AudioType? type = null, MetaData meta = null)
+		public R Play(InvokerData invoker, string link, AudioType? type = null, MetaData meta = null)
 		{
 			var result = resourceFactoryManager.Load(link, type);
 			if (!result)
 				return result.Message;
 			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
-		public R Play(ClientData invoker, uint historyId, MetaData meta = null)
+		public R Play(InvokerData invoker, uint historyId, MetaData meta = null)
 		{
 			var getresult = historyManager.GetEntryById(historyId);
 			if (!getresult)
@@ -99,13 +99,13 @@ namespace TS3AudioBot
 
 			return Play(invoker, loadresult.Value, meta ?? new MetaData());
 		}
-		public R Play(ClientData invoker, PlaylistItem item)
+		public R Play(InvokerData invoker, PlaylistItem item)
 		{
 			if (item == null)
 				throw new ArgumentNullException(nameof(item));
 
 			R lastResult = R.OkR;
-			ClientData realInvoker = CurrentPlayData?.Invoker ?? invoker;
+			InvokerData realInvoker = CurrentPlayData?.Invoker ?? invoker;
 
 			if (item.HistoryId.HasValue)
 			{
@@ -128,7 +128,7 @@ namespace TS3AudioBot
 			return $"Playlist item could not be played ({lastResult.Message})";
 		}
 
-		public R Play(ClientData invoker, PlayResource play, MetaData meta)
+		public R Play(InvokerData invoker, PlayResource play, MetaData meta)
 		{
 			if (!meta.FromPlaylist)
 				meta.ResourceOwnerDbId = invoker.DatabaseId;
@@ -148,7 +148,7 @@ namespace TS3AudioBot
 			}
 
 			// Log our resource in the history
-			ulong owner = meta.ResourceOwnerDbId ?? invoker.DatabaseId;
+			ulong? owner = meta.ResourceOwnerDbId ?? invoker.DatabaseId;
 			historyManager.LogAudioResource(new HistorySaveData(play.BaseData, owner));
 
 			CurrentPlayData = new PlayInfoEventArgs(invoker, play, meta); // TODO meta as readonly
@@ -157,7 +157,7 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
-		public R Next(ClientData invoker)
+		public R Next(InvokerData invoker)
 		{
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
@@ -172,7 +172,7 @@ namespace TS3AudioBot
 			else
 				return "A few songs failed to start, use !next to continue";
 		}
-		public R Previous(ClientData invoker)
+		public R Previous(InvokerData invoker)
 		{
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
@@ -191,7 +191,7 @@ namespace TS3AudioBot
 		public void SongStoppedHook(object sender, SongEndEventArgs e)
 		{
 			BeforeResourceStopped?.Invoke(this, e);
-			
+
 			if (e.SongEndedByCallback && CurrentPlayData != null)
 			{
 				R result = Next(CurrentPlayData.Invoker);
@@ -205,7 +205,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	public class MetaData
+	public sealed class MetaData
 	{
 		/// <summary>Defaults to: invoker.DbId - Can be set if the owner of a song differs from the invoker.</summary>
 		public ulong? ResourceOwnerDbId { get; set; } = null;
@@ -215,18 +215,42 @@ namespace TS3AudioBot
 		public bool FromPlaylist { get; set; } = false;
 	}
 
-	public class PlayInfoEventArgs : EventArgs
+	public sealed class PlayInfoEventArgs : EventArgs
 	{
-		public ClientData Invoker { get; }
+		public InvokerData Invoker { get; }
 		public PlayResource PlayResource { get; }
 		public AudioResource ResourceData => PlayResource.BaseData;
 		public MetaData MetaData { get; }
 
 		public PlayInfoEventArgs(ClientData invoker, PlayResource playResource, MetaData meta)
+			: this(new InvokerData(invoker), playResource, meta) { }
+
+		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta)
 		{
 			Invoker = invoker;
 			PlayResource = playResource;
 			MetaData = meta;
+		}
+	}
+
+	public sealed class InvokerData
+	{
+		public ulong? Channel { get; }
+		public ushort? ClientId { get; }
+		public ulong? DatabaseId { get; }
+
+		public InvokerData(ClientData invoker)
+		{
+			Channel = invoker.ChannelId;
+			ClientId = invoker.ClientId;
+			DatabaseId = invoker.DatabaseId;
+		}
+
+		public InvokerData(ulong? channel = null, ushort? clientId = null, ulong? databaseId = null)
+		{
+			Channel = channel;
+			ClientId = clientId;
+			DatabaseId = databaseId;
 		}
 	}
 }

@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -21,44 +21,21 @@ namespace TS3AudioBot.Web.Interface
 	using HtmlAgilityPack;
 	using System;
 	using System.Collections.Generic;
-	using System.Collections.Specialized;
 	using System.IO;
 	using System.Linq;
 	using System.Net;
 	using System.Text;
-	using System.Threading;
 	using System.Web;
-	using TS3Client.Messages;
 
-	public sealed class WebDisplay : IDisposable
+	public sealed class WebDisplay : WebComponent
 	{
-		private readonly Uri[] hostPaths;
-		private const ushort port = 8080;
 		private readonly Dictionary<string, WebSite> sites;
-		private readonly MainBot mainBot;
-		private static readonly Uri localhost = new Uri($"http://localhost:{port}/");
-		private HttpListener webListener;
-		private Thread serverThread;
 		// Special sites
 		public WebSite Index { get; private set; }
 		public WebSite Site404 { get; private set; }
 
-		public WebDisplay(MainBot bot)
+		public WebDisplay(MainBot bot) : base(bot)
 		{
-			mainBot = bot;
-
-			if (Util.IsAdmin || Util.IsLinux)
-			{
-				hostPaths = new[] {
-					new Uri($"http://splamy.de:{port}/"),
-					localhost,
-				};
-			}
-			else
-			{
-				Log.Write(Log.Level.Warning, "App launched without elevated rights. Only localhost will be availbale as webserver.");
-				hostPaths = new[] { localhost };
-			}
 			Util.Init(ref sites);
 
 			DirectoryInfo baseDir = new DirectoryInfo(Path.Combine("..", "..", "Web", "Interface"));
@@ -74,13 +51,13 @@ namespace TS3AudioBot.Web.Interface
 			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.Web.Interface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
 			Site404 = new WebStaticSite("404", "TS3AudioBot.Web.Interface.favicon.ico") { MimeType = "text/plain" };
 			PrepareSite(Site404);
-			PrepareSite(new WebHistorySearch("historysearch", mainBot) { MimeType = "text/plain" });
-			var historystatic = new WebHistorySearchList("historystatic", mainBot) { MimeType = "text/html" };
+			PrepareSite(new WebHistorySearch("historysearch", MainBot) { MimeType = "text/plain" });
+			var historystatic = new WebHistorySearchList("historystatic", MainBot) { MimeType = "text/html" };
 			PrepareSite(historystatic);
 			PrepareSite(new WebJSFillSite("history", new FileProvider().Set(dirFile(baseDir, "history.html")), historystatic) { MimeType = "text/html" });
 			PrepareSite(new WebStaticSite("playcontrols", dirFile(baseDir, "playcontrols.html")) { MimeType = "text/html" });
-			PrepareSite(new WebPlayControls("control", mainBot) { MimeType = "text/html" });
-			PrepareSite(new SongChangedEvent("playdata", mainBot));
+			PrepareSite(new WebPlayControls("control", MainBot) { MimeType = "text/html" });
+			PrepareSite(new SongChangedEvent("playdata", MainBot));
 			var devupdate = new SiteChangedEvent("devupdate");
 			PrepareSite(devupdate);
 			if (!Util.RegisterFolderEvents(baseDir, (s, e) =>
@@ -91,49 +68,20 @@ namespace TS3AudioBot.Web.Interface
 				Log.Write(Log.Level.Info, "Devupdate disabled");
 		}
 
-		public void StartServerAsync()
+		public override void DispatchCall(HttpListenerContext context)
 		{
-			serverThread = new Thread(EnterWebLoop);
-			serverThread.Name = "WebInterface";
-			serverThread.Start();
-		}
+			var site = GetWebsite(context.Request.Url); // is not null
 
-		public void EnterWebLoop()
-		{
-			using (webListener = new HttpListener())
-			{
-				foreach (var host in hostPaths)
-					webListener.Prefixes.Add(host.AbsoluteUri);
-
-				try { webListener.Start(); }
-				catch (HttpListenerException ex)
-				{
-					Log.Write(Log.Level.Info, "The webserver could not be started ({0})", ex.Message);
-					return;
-				} // TODO
-
-				while (webListener.IsListening)
-				{
-					HttpListenerContext context;
-					try { context = webListener.GetContext(); }
-					catch (HttpListenerException) { break; }
-					catch (InvalidOperationException) { break; }
-
-					Log.Write(Log.Level.Info, "Requested: {0}", context.Request.Url.PathAndQuery);
-					var site = GetWebsite(context.Request.Url); // is not null
-
-					var callData = site.PrepareSite(new UriExt(context.Request.Url));
-					site.PrepareHeader(context, callData);
-					site.GenerateSite(context, callData);
-					site.FinalizeResponse(context);
-				}
-			}
+			var callData = site.PrepareSite(new UriExt(context.Request.Url));
+			site.PrepareHeader(context, callData);
+			site.GenerateSite(context, callData);
+			site.FinalizeResponse(context);
 		}
 
 		public void PrepareSite(WebSite site) => PrepareSite(site, site.SitePath);
 		public void PrepareSite(WebSite site, string page)
 		{
-			var genUrl = new Uri(localhost, page);
+			var genUrl = new Uri(dummy, page);
 			sites.Add(genUrl.AbsolutePath, site);
 		}
 
@@ -141,23 +89,11 @@ namespace TS3AudioBot.Web.Interface
 		{
 			if (url == null) return Site404;
 
-			foreach (var host in hostPaths)
-			{
-				WebSite site;
-				if (!sites.TryGetValue(url.AbsolutePath, out site))
-					continue;
-
+			WebSite site;
+			if (sites.TryGetValue(url.AbsolutePath, out site))
 				return site;
-			}
-			return Site404;
-		}
 
-		public void Dispose()
-		{
-			webListener?.Stop();
-			webListener = null;
-			Util.WaitForThreadEnd(serverThread, TimeSpan.FromMilliseconds(100));
-			serverThread = null;
+			return Site404;
 		}
 	}
 
@@ -550,29 +486,29 @@ namespace TS3AudioBot.Web.Interface
 		{
 			switch (url.QueryParam["op"])
 			{
-				default:
-				case null: break;
-				case "volume":
-					var volumeStr = url.QueryParam["volume"];
-					int volume;
-					if (int.TryParse(volumeStr, out volume))
-						audio.Volume = volume;
-					break;
+			default:
+			case null: break;
+			case "volume":
+				var volumeStr = url.QueryParam["volume"];
+				int volume;
+				if (int.TryParse(volumeStr, out volume))
+					audio.Volume = volume;
+				break;
 
-				case "prev": playMgr.Previous(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
-				case "play": audio.Pause = !audio.Pause; break;
-				case "next": playMgr.Next(Generator.ActivateResponse<ClientData>()); break; // HACK: use token-system to determine user when its available
-				case "loop": audio.Repeat = !audio.Repeat; break;
-				case "seek":
-					var seekStr = url.QueryParam["pos"];
-					double seek;
-					if (double.TryParse(seekStr, out seek))
-					{
-						var pos = TimeSpan.FromSeconds(seek);
-						if (pos >= TimeSpan.Zero && pos <= audio.Length)
-							audio.Position = pos;
-					}
-					break;
+			case "prev": playMgr.Previous(new InvokerData()); break; // HACK: use token-system to determine user when its available
+			case "play": audio.Pause = !audio.Pause; break;
+			case "next": playMgr.Next(new InvokerData()); break; // HACK: use token-system to determine user when its available
+			case "loop": audio.Repeat = !audio.Repeat; break;
+			case "seek":
+				var seekStr = url.QueryParam["pos"];
+				double seek;
+				if (double.TryParse(seekStr, out seek))
+				{
+					var pos = TimeSpan.FromSeconds(seek);
+					if (pos >= TimeSpan.Zero && pos <= audio.Length)
+						audio.Position = pos;
+				}
+				break;
 			}
 			return new PreparedData(0, new byte[0]);
 		}

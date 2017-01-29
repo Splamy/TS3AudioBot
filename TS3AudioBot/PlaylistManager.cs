@@ -1,32 +1,32 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace TS3AudioBot
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text.RegularExpressions;
-	using System.IO;
-	using System.Text;
 	using Algorithm;
+	using CommandSystem;
 	using Helper;
 	using ResourceFactories;
-	using CommandSystem;
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
+	using System.Linq;
 	using System.Reflection;
+	using System.Text;
+	using System.Text.RegularExpressions;
 
 	public sealed class PlaylistManager : IDisposable
 	{
@@ -197,18 +197,18 @@ namespace TS3AudioBot
 
 					switch (key)
 					{
-						case "version": // skip, not yet needed
-							break;
+					case "version": // skip, not yet needed
+						break;
 
-						case "owner":
-							if (plist.CreatorDbId != null)
-								return "Invalid playlist file: duplicate userid";
-							ulong userid;
-							if (ulong.TryParse(value, out userid))
-								plist.CreatorDbId = userid;
-							else
-								return "Broken playlist header";
-							break;
+					case "owner":
+						if (plist.CreatorDbId != null)
+							return "Invalid playlist file: duplicate userid";
+						ulong userid;
+						if (ulong.TryParse(value, out userid))
+							plist.CreatorDbId = userid;
+						else
+							return "Broken playlist header";
+						break;
 					}
 				}
 
@@ -240,38 +240,38 @@ namespace TS3AudioBot
 					AudioType audioType;
 					switch (kind)
 					{
-						case "ln":
-							var lnSplit = content.Split(new[] { ',' }, 2);
-							if (lnSplit.Length < 2)
-								goto default;
+					case "ln":
+						var lnSplit = content.Split(new[] { ',' }, 2);
+						if (lnSplit.Length < 2)
+							goto default;
 #pragma warning disable CS0612
-							if (!string.IsNullOrWhiteSpace(lnSplit[0]) && Enum.TryParse(lnSplit[0], out audioType))
-								plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), audioType, meta));
-							else
-								plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), null, meta));
+						if (!string.IsNullOrWhiteSpace(lnSplit[0]) && Enum.TryParse(lnSplit[0], out audioType))
+							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), audioType, meta));
+						else
+							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), null, meta));
 #pragma warning restore CS0612
-							break;
+						break;
 
-						case "rs":
-							var rsSplit = content.Split(new[] { ',' }, 3);
-							if (rsSplit.Length < 3)
-								goto default;
-							if (!string.IsNullOrWhiteSpace(rsSplit[0]) && Enum.TryParse(rsSplit[0], out audioType))
-								plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), audioType), meta));
-							else
-								goto default;
-							break;
+					case "rs":
+						var rsSplit = content.Split(new[] { ',' }, 3);
+						if (rsSplit.Length < 3)
+							goto default;
+						if (!string.IsNullOrWhiteSpace(rsSplit[0]) && Enum.TryParse(rsSplit[0], out audioType))
+							plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), audioType), meta));
+						else
+							goto default;
+						break;
 
-						case "id":
-							uint hid;
-							if (!uint.TryParse(content, out hid))
-								goto default;
-							plist.AddItem(new PlaylistItem(hid, meta));
-							break;
+					case "id":
+						uint hid;
+						if (!uint.TryParse(content, out hid))
+							goto default;
+						plist.AddItem(new PlaylistItem(hid, meta));
+						break;
 
-						default:
-							Log.Write(Log.Level.Warning, "Erroneus playlist data block: {0}", line);
-							break;
+					default:
+						Log.Write(Log.Level.Warning, "Erroneus playlist data block: {0}", line);
+						break;
 					}
 				}
 				return plist;
@@ -435,9 +435,9 @@ namespace TS3AudioBot
 
 			switch (name)
 			{
-				case ".queue": return freeList;
-				case ".trash": return trashList;
-				default: return "Special list not found";
+			case ".queue": return freeList;
+			case ".trash": return trashList;
+			default: return "Special list not found";
 			}
 		}
 

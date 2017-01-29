@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -169,7 +169,7 @@ namespace TS3AudioBot.History
 
 			var ale = new AudioLogEntry(nextHid, saveData.Resource)
 			{
-				UserInvokeId = (uint)saveData.OwnerDbId,
+				UserInvokeId = (uint)(saveData.OwnerDbId ?? 0),
 				Timestamp = Util.GetNow(),
 				PlayCount = 1,
 			};
@@ -195,7 +195,7 @@ namespace TS3AudioBot.History
 			Query query = Query.All(nameof(AudioLogEntry.Timestamp), Query.Descending);
 
 			if (!string.IsNullOrEmpty(search.TitlePart))
-				query = Query.And(query, Query.Where(resourceTitleQueryColumn, val => val.AsString.ToLowerInvariant().Contains("fire")));
+				query = Query.And(query, Query.Where(resourceTitleQueryColumn, val => val.AsString.ToLowerInvariant().Contains(search.TitlePart)));
 
 			if (search.UserId.HasValue)
 				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserInvokeId), search.UserId.Value));

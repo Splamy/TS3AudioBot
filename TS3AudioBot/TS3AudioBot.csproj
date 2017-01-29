@@ -165,6 +165,8 @@
     <Compile Include="Web\Api\WebApi.cs" />
     <Compile Include="Web\Interface\WebDisplay.cs" />
     <Compile Include="Web\UriExt.cs" />
+    <Compile Include="Web\WebComponent.cs" />
+    <Compile Include="Web\WebManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Web\Interface\index.html" />

@@ -14,22 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot.History
+namespace TS3AudioBot.Web
 {
 	using System;
-	using ResourceFactories;
+	using System.Net;
 
-	public class HistorySaveData
+	public abstract class WebComponent
 	{
-		public AudioResource Resource { get; }
-		public ulong? OwnerDbId { get; }
+		protected static readonly Uri dummy = new Uri($"http://dummy/");
+		protected MainBot MainBot { get; }
 
-		public HistorySaveData(AudioResource resource, ulong? ownerDbId)
+		public WebComponent(MainBot mainBot)
 		{
-			if (resource == null)
-				throw new ArgumentNullException(nameof(resource));
-			Resource = resource;
-			OwnerDbId = ownerDbId;
+			MainBot = mainBot;
 		}
+
+		public abstract void DispatchCall(HttpListenerContext context);
 	}
 }
