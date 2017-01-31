@@ -1,3 +1,19 @@
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// Copyright (C) 2016  TS3AudioBot contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 namespace TS3Client.Full
 {
 	using System;
@@ -202,17 +218,17 @@ namespace TS3Client.Full
 				bool passToReturn = true;
 				switch (packet.PacketType)
 				{
-					case PacketType.Readable: break;
-					case PacketType.Voice: break;
-					case PacketType.Command: passToReturn = ReceiveCommand(packet); break;
-					case PacketType.CommandLow: passToReturn = ReceiveCommand(packet); break;
-					case PacketType.Ping: passToReturn = ReceivePing(packet); break;
-					case PacketType.Pong: break;
-					case PacketType.Ack: passToReturn = ReceiveAck(packet); break;
-					case PacketType.AckLow: break;
-					case PacketType.Init1: ReceiveInitAck(); break;
-					default:
-						throw new ArgumentOutOfRangeException();
+				case PacketType.Readable: break;
+				case PacketType.Voice: break;
+				case PacketType.Command: passToReturn = ReceiveCommand(packet); break;
+				case PacketType.CommandLow: passToReturn = ReceiveCommand(packet); break;
+				case PacketType.Ping: passToReturn = ReceivePing(packet); break;
+				case PacketType.Pong: break;
+				case PacketType.Ack: passToReturn = ReceiveAck(packet); break;
+				case PacketType.AckLow: break;
+				case PacketType.Init1: ReceiveInitAck(); break;
+				default:
+					throw new ArgumentOutOfRangeException();
 				}
 
 				if (passToReturn)
