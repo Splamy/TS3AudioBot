@@ -87,7 +87,7 @@ namespace TS3Client.Full
 				if (packetType == PacketType.Readable || packetType == PacketType.Voice)
 					return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
 
-				packet = QuickLZ.compress(packet, 3);
+				packet = QuickLZ.compress(packet, 1);
 				addFlags |= PacketFlags.Compressed;
 
 				if (NeedsSplitting(packet.Length))
@@ -425,7 +425,7 @@ namespace TS3Client.Full
 						if (!sendQueue.Any())
 							continue;
 					}
-					
+
 					foreach (var outgoingPacket in sendQueue)
 					{
 						var nextTest = (outgoingPacket.LastSendTime - DateTime.UtcNow) + GetTimeout(outgoingPacket.ResendCount);
