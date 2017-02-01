@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -18,8 +18,8 @@ namespace TS3AudioBot.Helper
 {
 	/// <summary>
 	/// The R result wrapper.
-	/// The functionality is quite similar to the optional-patter.
-	/// It either represents success or an error + message
+	/// The functionality is quite similar to the optional-pattern.
+	/// It either represents success or an error + message.
 	/// </summary>
 	public struct R
 	{
@@ -45,8 +45,9 @@ namespace TS3AudioBot.Helper
 
 	/// <summary>
 	/// The R&lt;T&gt; result wrapper.
-	/// The functionality is quite similar to the optional-patter.
-	/// It either represents success + value or an error + message
+	/// The functionality is quite similar to the optional-pattern.
+	/// It either represents success + value or an error + message.
+	/// The value is guaranteed to be non-null when successful.
 	/// </summary>
 	public struct R<T>
 	{

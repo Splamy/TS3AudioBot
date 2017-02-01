@@ -98,7 +98,15 @@ namespace TS3AudioBot
 		public void SendGlobalMessage(string message) => tsBaseClient.SendMessage(MessageTarget.Server, 1, message);
 		public void KickClientFromServer(ushort clientId) => tsBaseClient.KickClientFromServer(new[] { clientId });
 		public void KickClientFromChannel(ushort clientId) => tsBaseClient.KickClientFromChannel(new[] { clientId });
-		public void ChangeDescription(string description) => tsBaseClient.ChangeDescription(description, me);
+
+		public R ChangeDescription(string description)
+		{
+			if (me == null)
+				return "Internal error (me==null)";
+
+			try { tsBaseClient.ChangeDescription(description, me); return R.OkR; }
+			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
+		}
 
 		public R ChangeName(string name)
 		{

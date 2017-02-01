@@ -333,7 +333,7 @@ namespace TS3AudioBot
 		public void CommandAdd(ExecutionInformation info, string parameter)
 			=> PlayManager.Enqueue(new InvokerData(info.Session.Client), parameter).UnwrapThrow();
 
-		[Command(Private, "bot name", "Gives the bot a new name.")]
+		[Command(Admin, "bot name", "Gives the bot a new name.")]
 		public void CommandBotName(ExecutionInformation info, string name) => QueryConnection.ChangeName(name).UnwrapThrow();
 
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
@@ -650,6 +650,22 @@ namespace TS3AudioBot
 			if (returnTypes.Contains(CommandResultType.Empty))
 				return new EmptyCommandResult();
 			throw new CommandException("If found nothing to return", CommandExceptionReason.MissingParameter);
+		}
+
+		[Command(Private, "json merge", "Allows you to combine multiple JsonResults into one")]
+		public JsonObject CommandJsonMerge(ExecutionInformation info, IEnumerable<ICommand> arguments)
+		{
+			if (!arguments.Any())
+				return new JsonEmpty(string.Empty);
+
+			var jsonArr = arguments
+				.Select(arg => arg.Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.Json }))
+				.Where(arg => arg.ResultType == CommandResultType.Json)
+				.OfType<JsonCommandResult>()
+				.Select(arg => arg.JsonObject.GetSerializeObject())
+				.ToArray();
+
+			return new JsonArray<object>(string.Empty, jsonArr);
 		}
 
 		[Command(Private, "kickme", "Guess what?")]
@@ -987,7 +1003,6 @@ namespace TS3AudioBot
 		public void CommandPrevious(ExecutionInformation info)
 			=> PlayManager.Previous(new InvokerData(info.Session.Client)).UnwrapThrow();
 
-
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
 		public JsonObject CommandPrint(params string[] parameter)
 		{
@@ -1000,7 +1015,7 @@ namespace TS3AudioBot
 
 		[Command(Admin, "quit", "Closes the TS3AudioBot application.")]
 		[RequiredParameters(0)]
-		public string CommandQuit(ExecutionInformation info, string param) //A
+		public string CommandQuit(ExecutionInformation info, string param)
 		{
 			if (info.ApiCall)
 			{
@@ -1023,7 +1038,7 @@ namespace TS3AudioBot
 		}
 
 		[Command(Public, "quiz", "Shows the quizmode status.")]
-		public JsonObject CommandQuiz() => new JsonSingleValue<bool>("Quizmode is " + (QuizMode ? "on" : "off"), QuizMode); //A
+		public JsonObject CommandQuiz() => new JsonSingleValue<bool>("Quizmode is " + (QuizMode ? "on" : "off"), QuizMode);
 		[Command(Public, "quiz on", "Enable to hide the songnames and let your friends guess the title.")]
 		public void CommandQuizOn()
 		{
