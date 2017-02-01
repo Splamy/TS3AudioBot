@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -20,13 +20,14 @@ namespace TS3AudioBot.Helper
 	using System.Collections.Generic;
 	using System.ComponentModel;
 	using System.Diagnostics;
-	using System.Linq;
-	using System.Threading;
-	using System.Reflection;
 	using System.IO;
+	using System.Linq;
+	using System.Reflection;
 	using System.Security.Principal;
-	using System.Web.Script.Serialization;
+	using System.Text;
 	using System.Text.RegularExpressions;
+	using System.Threading;
+	using System.Web.Script.Serialization;
 
 	[Serializable]
 	public static class Util
@@ -225,6 +226,17 @@ namespace TS3AudioBot.Helper
 				return r.Value;
 			else
 				throw new CommandSystem.CommandException(r.Message, CommandSystem.CommandExceptionReason.CommandError);
+		}
+
+		public static string UnrollException(this Exception ex)
+		{
+			var strb = new StringBuilder();
+			while (ex != null)
+			{
+				strb.AppendFormat("MSG: {0}\nTYPE:{1}\nSTACK:{2}\n", ex.Message, ex.GetType().Name, ex.StackTrace);
+				ex = ex.InnerException;
+			}
+			return strb.ToString();
 		}
 	}
 }

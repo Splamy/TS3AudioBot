@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,7 +24,6 @@ namespace TS3AudioBot.History
 
 	public class SmartHistoryFormatter : IHistoryFormatter
 	{
-		private const int TS3MAXLENGTH = 1024;
 		// configurable constansts
 		private const string LineBreak = "\n";
 		private const int MinTokenLine = 40;
@@ -35,7 +34,7 @@ namespace TS3AudioBot.History
 
 		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)
 		{
-			return SubstringToken(format(entry), TS3MAXLENGTH);
+			return SubstringToken(format(entry), Ts3String.MaxMsgLength);
 		}
 
 		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, Func<AudioLogEntry, string> format)
@@ -54,7 +53,7 @@ namespace TS3AudioBot.History
 			StringBuilder strb;
 
 			// If the entire content fits within the ts3 limitation, we can concat and return it.
-			if (queryTokenLen <= TS3MAXLENGTH)
+			if (queryTokenLen <= Ts3String.MaxMsgLength)
 			{
 				if (queryTokenLen == 0) return "Nothing found!";
 				strb = new StringBuilder(queryTokenLen, queryTokenLen);
@@ -64,7 +63,7 @@ namespace TS3AudioBot.History
 				return strb.ToString();
 			}
 
-			int spareToken = TS3MAXLENGTH;
+			int spareToken = Ts3String.MaxMsgLength;
 			int listStart = 0;
 
 			// Otherwise we go iteratively through the list to test how many entries we can add with our token
@@ -123,7 +122,7 @@ namespace TS3AudioBot.History
 			}
 
 			// now we can just build our result and return
-			strb = new StringBuilder(TS3MAXLENGTH - spareToken, TS3MAXLENGTH);
+			strb = new StringBuilder(Ts3String.MaxMsgLength - spareToken, Ts3String.MaxMsgLength);
 			for (int i = useList.Count - 1; i >= 0; i--)
 			{
 				var eL = useList[i];

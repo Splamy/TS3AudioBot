@@ -94,8 +94,22 @@ namespace TS3AudioBot
 			me = GetSelf();
 		}
 
-		public void SendMessage(string message, ushort clientId) => tsBaseClient.SendMessage(MessageTarget.Private, clientId, message);
-		public void SendGlobalMessage(string message) => tsBaseClient.SendMessage(MessageTarget.Server, 1, message);
+		public R SendMessage(string message, ushort clientId)
+		{
+			if (Ts3String.TokenLength(message) > Ts3String.MaxMsgLength)
+				return "The message to send is longer than the maximum of " + Ts3String.MaxMsgLength + " characters";
+			try { tsBaseClient.SendMessage(MessageTarget.Private, clientId, message); return R.OkR; }
+			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
+		}
+
+		public R SendGlobalMessage(string message)
+		{
+			if (Ts3String.TokenLength(message) > Ts3String.MaxMsgLength)
+				return "The message to send is longer than the maximum of " + Ts3String.MaxMsgLength + " characters";
+			try { tsBaseClient.SendMessage(MessageTarget.Server, 1, message); return R.OkR; }
+			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
+		}
+
 		public void KickClientFromServer(ushort clientId) => tsBaseClient.KickClientFromServer(new[] { clientId });
 		public void KickClientFromChannel(ushort clientId) => tsBaseClient.KickClientFromChannel(new[] { clientId });
 

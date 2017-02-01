@@ -59,14 +59,18 @@ namespace TS3AudioBot
 
 			try
 			{
+				R result;
 				if (IsPrivate)
-					Bot.QueryConnection.SendMessage(message, Client.ClientId);
+					result = Bot.QueryConnection.SendMessage(message, Client.ClientId);
 				else
-					Bot.QueryConnection.SendGlobalMessage(message);
+					result = Bot.QueryConnection.SendGlobalMessage(message);
+
+				if (!result)
+					Log.Write(Log.Level.Error, "Could not write message (Err:{0}) (Msg:{1})", result.Message, message);
 			}
 			catch (Ts3CommandException ex)
 			{
-				Log.Write(Log.Level.Error, "Could not write public message ({0})", ex);
+				Log.Write(Log.Level.Error, "Could not write message (Ex:{0}) (Msg:{1})", ex.UnrollException(), message);
 			}
 		}
 

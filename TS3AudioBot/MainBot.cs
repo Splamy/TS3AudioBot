@@ -44,13 +44,7 @@ namespace TS3AudioBot
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 				{
-					Log.Write(Log.Level.Error, "Critical program failure! Logs will follow.");
-					Exception ex = e.ExceptionObject as Exception;
-					while (ex != null)
-					{
-						Log.Write(Log.Level.Error, "MSG: {0}\nTYPE:{1}\nSTACK:{2}", ex.Message, ex.GetType().Name, ex.StackTrace);
-						ex = ex.InnerException;
-					}
+					Log.Write(Log.Level.Error, "Critical program failure!. Exception:\n {0}", (e.ExceptionObject as Exception).UnrollException());
 					bot?.Dispose();
 				};
 
@@ -294,7 +288,7 @@ namespace TS3AudioBot
 					}
 					catch (Exception ex)
 					{
-						Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex);
+						Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex.UnrollException());
 						session.Write("An unexpected error occured: " + ex.Message);
 					}
 				}
@@ -807,7 +801,7 @@ namespace TS3AudioBot
 			foreach (var file in files)
 			{
 				int newTokenLen = tokenLen + TS3Client.Commands.Ts3String.TokenLength(file) + 3;
-				if (newTokenLen < 1024)
+				if (newTokenLen < TS3Client.Commands.Ts3String.MaxMsgLength)
 				{
 					strb.Append(file).Append(", ");
 					tokenLen = newTokenLen;

@@ -22,6 +22,8 @@ namespace TS3Client.Commands
 
 	public static class Ts3String
 	{
+		public const int MaxMsgLength = 1024;
+
 		public static string Escape(string stringToEscape)
 		{
 			StringBuilder strb = new StringBuilder(stringToEscape);
