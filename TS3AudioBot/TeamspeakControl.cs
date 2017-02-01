@@ -16,14 +16,15 @@
 
 namespace TS3AudioBot
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using TS3Client;
+	using TS3Client.Commands;
 	using TS3Client.Full;
 	using TS3Client.Messages;
 	using TS3Client.Query;
-	using TS3Client.Commands;
 
 	public abstract class TeamspeakControl : IDisposable
 	{
@@ -98,6 +99,22 @@ namespace TS3AudioBot
 		public void KickClientFromServer(ushort clientId) => tsBaseClient.KickClientFromServer(new[] { clientId });
 		public void KickClientFromChannel(ushort clientId) => tsBaseClient.KickClientFromChannel(new[] { clientId });
 		public void ChangeDescription(string description) => tsBaseClient.ChangeDescription(description, me);
+
+		public R ChangeName(string name)
+		{
+			try
+			{
+				tsBaseClient.ChangeName(name);
+				return R.OkR;
+			}
+			catch (Ts3CommandException ex)
+			{
+				if (ex.ErrorStatus.Id == 1541)
+					return "The new name is too long or invalid";
+				else
+					return ex.ErrorStatus.ErrorFormat();
+			}
+		}
 
 		public ClientData GetClientById(ushort id)
 		{
