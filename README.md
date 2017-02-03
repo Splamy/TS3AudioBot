@@ -16,8 +16,8 @@ The TS3AudioBot connects with at least 1 TeamSpeak3 Client instance wich allows 
   * tell him to stream to different Channels and/or Users simultaneously with TeamSpeak's whisper feature.
 
 We use a self written TeamSpeak3 Client which gives us very low memory and cpu usage.  
-About _35MB_ Ram with 1500+ songs in history indexed  
-And _3-7% CPU_ usage on a single shared vCore from a _Intel Xeon E5-1650 v2 @ 3.50GHz_  
+About _65MB_ Ram with 1700+ songs in history indexed  
+And _4-6% CPU_ usage on a single shared vCore from a _Intel Xeon E5-1650 v2 @ 3.50GHz_  
 
 ## Features & Plannings
 Done:
@@ -34,48 +34,19 @@ Done:
 * *broken* | Basic plugin support
 
 In progress:
-* Getting some really annoying bugs fixed :/
+* Web API
 
 In planning:
 * Create multiple client instances automatically for diffrent channels
 * (Improved) Rights system
 * Own web-interface
-* Inteface API
 
-## Existing commands
+## Bot Commands
 All in all, the bot is fully operable only via chat (and actually only via chat).  
 Commands are invoked with !command.  
 Some commands have restrictions, like they can only be used in a private chat, only in public chat, or need admin rights.
 
-* *add*: Adds a new song to the queue.
-* *clear*: Removes all songs from the current playlist.
-* *eval*: Executes a given command or string
-* *help*: Shows all commands or detailed help about a specific command.
-* *history*: Shows recently played songs.
-* *if*:  - no description yet -
-* *kickme*: Guess what?
-* *link*: Gets a link to the origin of the current song.
-* *loop*: Gets or sets whether or not to loop the entire playlist.
-* *next*: Plays the next song in the playlist.
-* *parse*: Displays the AST of the requested command.
-* *pause*: Well, pauses the song. Undo with !play
-* *play*: Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it
-* *pm*: Requests a private session with the ServerBot so you can invoke private commands.
-* *previous*: Plays the previous song in the playlist.
-* *print*: Lets you format multiple parameter to one.
-* *quit*: Closes the TS3AudioBot application.
-* *quiz*: Enable to hide the songnames and let your friends guess the title.
-* *random*: Gets whether or not to play playlists in random order.
-* *repeat*: Gets or sets whether or not to loop a single song.
-* *rng*: Gets a random number.
-* *seek*: Jumps to a timemark within the current song.
-* *song*: Tells you the name of the current song.
-* *stop*: Stops the current song.
-* *subscribe*: Lets you hear the music independent from the channel you are in.
-* *take*: Take a substring from a string
-* *test*: Only for debugging purposes
-* *unsubscribe*: Only lets you hear the music in active channels again.
-* *volume*: Sets the volume level of the music.
+For the full command list and tutorials see [here in the wiki](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
 
 If the bot can't play some youtube videos it might be due to some embedding restrictions, which are blocking this.  
 You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source folder and specify the path in the config to try to bypass this.
@@ -86,8 +57,9 @@ You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source 
  * (Linux only) A C Compiler for Opus
 
 ### Compilation
-Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.  
-_If you know what you are doing_ you can alternatively compile each depenency referenced here from source/git by yourself, but I won't add a tutorial for that.
+Before we start: _If you know what you are doing_ you can alternatively compile each depenency referenced here from source/git by yourself, but I won't add a tutorial for that.
+
+Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
 1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
