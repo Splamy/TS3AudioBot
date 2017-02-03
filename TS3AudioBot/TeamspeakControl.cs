@@ -178,13 +178,10 @@ namespace TS3AudioBot
 			}
 		}
 
-		public ulong[] GetClientServerGroups(ClientData client)
+		public ulong[] GetClientServerGroups(ulong dbId)
 		{
-			if (client == null)
-				throw new ArgumentNullException(nameof(client));
-
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			var response = tsBaseClient.ServerGroupsOfClientDbId(client);
+			var response = tsBaseClient.ServerGroupsOfClientDbId(dbId);
 			if (!response.Any())
 				return new ulong[0];
 			return response.Select(csg => csg.ServerGroupId).ToArray();
@@ -205,6 +202,8 @@ namespace TS3AudioBot
 			}
 			catch (Ts3CommandException) { return null; }
 		}
+
+		public ClientInfo GetClientInfoById(ushort id) => tsBaseClient.ClientInfo(id);
 
 		public void Dispose()
 		{

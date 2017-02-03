@@ -50,8 +50,8 @@ namespace TS3AudioBot.Web.Api
 			var cd = Generator.ActivateResponse<ClientData>();
 			cd.NickName = "APITEST";
 			cd.DatabaseId = 42;
-			var execInfo = new ExecutionInformation(new UserSession(MainBot, cd), null, new Lazy<bool>(() => true));
-			execInfo.SetApiCall();
+			var execInfo = new ExecutionInformation(new UserSession(MainBot, cd), null);
+			execInfo.ApiCall = true;
 
 			using (var token = execInfo.Session.GetLock())
 			{

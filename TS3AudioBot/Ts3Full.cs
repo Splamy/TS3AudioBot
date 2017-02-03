@@ -33,6 +33,11 @@ namespace TS3AudioBot
 		private const Codec SendCodec = Codec.OpusMusic;
 		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(5);
 		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
+		private static readonly string[] quitMessages = new[]
+		{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
+		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet...",
+		  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
+		  "Never gonna give you up", "Never gonna let you down" };
 
 		private TickWorker sendTick;
 		private float volume = 1;
@@ -80,6 +85,8 @@ namespace TS3AudioBot
 				Port = ts3FullClientData.port,
 				Identity = identity,
 			});
+
+			tsFullClient.QuitMessage = quitMessages[Util.RngInstance.Next(0, quitMessages.Length)];
 		}
 
 		public override ClientData GetSelf()
@@ -310,7 +317,7 @@ namespace TS3AudioBot
 		public ulong identityoffset { get; set; }
 		[Info("the relative or full path to ffmpeg", "ffmpeg")]
 		public string ffmpegpath { get; set; }
-		[Info("wether or not to show own received messages in the log", "true")]
+		[Info("whether or not to show own received messages in the log", "true")]
 		public bool SuppressLoopback { get; set; }
 	}
 }

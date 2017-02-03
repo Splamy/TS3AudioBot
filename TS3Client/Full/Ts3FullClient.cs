@@ -35,6 +35,7 @@ namespace TS3Client.Full
 
 		public override ClientType ClientType => ClientType.Full;
 		public ushort ClientId => packetHandler.ClientId;
+		public string QuitMessage { get; set; } = "Disconnected";
 
 		public Ts3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
@@ -71,7 +72,7 @@ namespace TS3Client.Full
 
 		protected override void DisconnectInternal()
 		{
-			ClientDisconnect(MoveReason.LeftServer, "Disconnected");
+			ClientDisconnect(MoveReason.LeftServer, QuitMessage);
 		}
 
 		protected override void InvokeEvent(IEnumerable<INotification> notification, NotificationType notifyType)

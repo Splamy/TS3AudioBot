@@ -22,7 +22,8 @@ namespace TS3AudioBot
 	using Helper;
 	using TS3Client;
 	using TS3Client.Messages;
-	using Response = System.Func<CommandSystem.ExecutionInformation, bool>;
+	using System.Linq;
+	using Response = System.Func<CommandSystem.ExecutionInformation, string>;
 
 	public sealed class UserSession
 	{
@@ -35,12 +36,7 @@ namespace TS3AudioBot
 		public MainBot Bot { get; }
 		private readonly ushort clientId; // TODO better identification system
 		public ClientData Client { get; private set; }
-		public bool IsPrivate { get; internal set; }
-
-		public string ApiToken { get; internal set; }
-		public uint ApiTokenId { get; internal set; }
-		public DateTime ApiTokenTimeout { get; internal set; }
-		public bool ApiTokenActive => ApiToken != null && ApiTokenTimeout > Util.GetNow();
+		internal UserToken Token { get; set; }
 
 		public UserSession(MainBot bot, ClientData client)
 		{
@@ -49,18 +45,17 @@ namespace TS3AudioBot
 			Client = client;
 			ResponseProcessor = null;
 			ResponseData = null;
-			ApiToken = null;
-			ApiTokenTimeout = DateTime.MinValue;
+			Token = null;
 		}
 
-		public void Write(string message)
+		public void Write(string message, bool isPrivate)
 		{
 			VerifyLock();
 
 			try
 			{
 				R result;
-				if (IsPrivate)
+				if (isPrivate)
 					result = Bot.QueryConnection.SendMessage(message, Client.ClientId);
 				else
 					result = Bot.QueryConnection.SendGlobalMessage(message);
@@ -136,6 +131,13 @@ namespace TS3AudioBot
 		public void UpdateClient()
 		{
 			Client = Bot.QueryConnection.GetClientById(clientId);
+		}
+
+		public bool HasAdminRights()
+		{
+			Log.Write(Log.Level.Debug, "AdminCheck called!");
+			var clientSgIds = Bot.QueryConnection.GetClientServerGroups(Client.DatabaseId);
+			return clientSgIds.Contains(Bot.mainBotData.adminGroupId);
 		}
 
 		public sealed class SessionToken : IDisposable

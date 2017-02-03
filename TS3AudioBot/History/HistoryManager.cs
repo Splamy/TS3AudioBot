@@ -36,7 +36,7 @@ namespace TS3AudioBot.History
 		private readonly LinkedList<int> unusedIds;
 
 		public IHistoryFormatter Formatter { get; private set; }
-		public uint HighestId => uint.MaxValue; // TODO
+		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
 
 		static HistoryManager()
 		{
@@ -267,7 +267,7 @@ namespace TS3AudioBot.History
 
 				for (int i = 0; i < iterations; i++)
 				{
-					session.Write("Filter iteration " + i);
+					session.Write("Filter iteration " + i, true);
 					currentIter = FilterList(session, currentIter);
 				}
 
@@ -275,7 +275,7 @@ namespace TS3AudioBot.History
 				{
 					RemoveEntry(entry);
 					session.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
-					session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
+					session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}", true);
 				}
 
 				trans.Commit();
@@ -298,12 +298,12 @@ namespace TS3AudioBot.History
 				var result = session.Bot.FactoryManager.Load(entry.AudioResource);
 				if (!result)
 				{
-					session.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}");
+					session.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}", true);
 					nextIter.Add(entry);
 				}
 
 				if (++userNotityCnt % 100 == 0)
-					session.Write("Working" + new string('.', userNotityCnt / 100));
+					session.Write("Working" + new string('.', userNotityCnt / 100), true);
 			}
 			return nextIter;
 		}
@@ -318,7 +318,7 @@ namespace TS3AudioBot.History
 	{
 		[Info("the absolute or relative path to the history database file", "history.db")]
 		public string historyFile { get; set; }
-		[Info("wether or not deleted history ids should be filled up with new songs", "true")]
+		[Info("whether or not deleted history ids should be filled up with new songs", "true")]
 		public bool fillDeletedIds { get; set; }
 	}
 }

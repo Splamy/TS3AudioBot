@@ -58,7 +58,7 @@ namespace TS3AudioBot
 		private bool consoleOutput;
 		private bool writeLog;
 		private bool writeLogStack;
-		private MainBotData mainBotData;
+		internal MainBotData mainBotData;
 
 		private StreamWriter logStream;
 
@@ -237,27 +237,26 @@ namespace TS3AudioBot
 			UserSession session = result.Value;
 			session.UpdateClient();
 
-			session.IsPrivate = textMessage.Target == MessageTarget.Private;
 			using (session.GetLock())
 			{
-				var execInfo = new ExecutionInformation(session, textMessage,
-					new Lazy<bool>(() => HasInvokerAdminRights(textMessage.InvokerId)));
+				var execInfo = new ExecutionInformation(session, textMessage);
+				execInfo.IsPrivate = textMessage.Target == MessageTarget.Private;
 
 				// check if the user has an open request
 				if (session.ResponseProcessor != null)
 				{
-					if (session.ResponseProcessor(execInfo))
-					{
-						session.ClearResponse();
-						return;
-					}
+					var msg = session.ResponseProcessor(execInfo);
+					session.ClearResponse();
+					if (!string.IsNullOrEmpty(msg))
+						WriteToSession(execInfo, msg);
+					return;
 				}
 
 				// parse (and execute) the command
 				ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
 				if (parsedAst.Type == ASTType.Error)
 				{
-					PrintAstError(session, (ASTError)parsedAst);
+					PrintAstError(execInfo, (ASTError)parsedAst);
 				}
 				else
 				{
@@ -272,45 +271,40 @@ namespace TS3AudioBot
 							var sRes = (StringCommandResult)res;
 							// Write result to user
 							if (!string.IsNullOrEmpty(sRes.Content))
-								session.Write(sRes.Content);
+								WriteToSession(execInfo, sRes.Content);
 						}
 						else if (res.ResultType == CommandResultType.Json)
 						{
 							var sRes = (JsonCommandResult)res;
 							// Write result to user
-							session.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult);
-							session.Write("\nJson val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
+							WriteToSession(execInfo, "\nJson str: \n" + sRes.JsonObject.AsStringResult);
+							WriteToSession(execInfo, "\nJson val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
 						}
 					}
 					catch (CommandException ex)
 					{
-						session.Write("Error: " + ex.Message);
+						WriteToSession(execInfo, "Error: " + ex.Message);
 					}
 					catch (Exception ex)
 					{
 						Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex.UnrollException());
-						session.Write("An unexpected error occured: " + ex.Message);
+						WriteToSession(execInfo, "An unexpected error occured: " + ex.Message);
 					}
 				}
 			}
 		}
 
-		private static void PrintAstError(UserSession session, ASTError asterror)
+		private static void PrintAstError(ExecutionInformation info, ASTError asterror)
 		{
 			StringBuilder strb = new StringBuilder();
 			strb.AppendLine();
 			asterror.Write(strb, 0);
-			session.Write(strb.ToString());
+			WriteToSession(info, strb.ToString());
 		}
 
-		private bool HasInvokerAdminRights(ushort clientId)
+		private static void WriteToSession(ExecutionInformation info, string message)
 		{
-			Log.Write(Log.Level.Debug, "AdminCheck called!");
-			ClientData client = QueryConnection.GetClientById(clientId);
-			if (client == null)
-				return false;
-			var clientSgIds = QueryConnection.GetClientServerGroups(client);
-			return clientSgIds.Contains(mainBotData.adminGroupId);
+			info.Session.Write(message, info.IsPrivate);
 		}
 
 		#endregion
@@ -673,9 +667,9 @@ namespace TS3AudioBot
 			try
 			{
 				if (string.IsNullOrEmpty(parameter) || parameter == "near")
-					QueryConnection.KickClientFromChannel(info.TextMessage.InvokerId);
+					QueryConnection.KickClientFromChannel(info.Session.Client.ClientId);
 				else if (parameter == "far")
-					QueryConnection.KickClientFromServer(info.TextMessage.InvokerId);
+					QueryConnection.KickClientFromServer(info.Session.Client.ClientId);
 			}
 			catch (Ts3CommandException ex)
 			{
@@ -689,7 +683,7 @@ namespace TS3AudioBot
 		{
 			if (PlayManager.CurrentPlayData == null)
 				return new JsonEmpty("There is nothing on right now...");
-			else if (QuizMode && PlayManager.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId && !info.ApiCall)
+			else if (QuizMode && PlayManager.CurrentPlayData.Invoker.ClientId != info.Session.Client.ClientId && !info.ApiCall)
 				return new JsonEmpty("Sorry, you have to guess!");
 			else
 			{
@@ -938,7 +932,7 @@ namespace TS3AudioBot
 		{
 			if (info.ApiCall)
 				throw new CommandException("This command is not available as API", CommandExceptionReason.NotSupported);
-			info.Session.IsPrivate = true;
+			info.IsPrivate = true;
 			return "Hi " + info.TextMessage.InvokerName;
 		}
 
@@ -1020,7 +1014,6 @@ namespace TS3AudioBot
 			if (param == "force")
 			{
 				QueryConnection.OnMessageReceived -= TextCallback;
-				info.Session.Write("Goodbye!");
 				Dispose();
 				return null;
 			}
@@ -1042,7 +1035,7 @@ namespace TS3AudioBot
 		[Command(Public, "quiz off", "Disable to show the songnames again.")]
 		public void CommandQuizOff(ExecutionInformation info)
 		{
-			if (info.Session.IsPrivate && !info.ApiCall)
+			if (info.IsPrivate && !info.ApiCall)
 				throw new CommandException("No cheatig! Everybody has to see it!", CommandExceptionReason.CommandError);
 			QuizMode = false;
 			QueryConnection.ChangeDescription(PlayManager.CurrentPlayData.ResourceData.ResourceTitle);
@@ -1178,7 +1171,7 @@ namespace TS3AudioBot
 		{
 			if (PlayManager.CurrentPlayData == null)
 				return new JsonEmpty("There is nothing on right now...");
-			else if (QuizMode && PlayManager.CurrentPlayData.Invoker.ClientId != info.TextMessage.InvokerId && !info.ApiCall)
+			else if (QuizMode && PlayManager.CurrentPlayData.Invoker.ClientId != info.Session.Client.ClientId && !info.ApiCall)
 				return new JsonEmpty("Sorry, you have to guess!");
 			else
 				return new JsonSingleValue<string>(
@@ -1195,7 +1188,7 @@ namespace TS3AudioBot
 		[Command(Private, "subscribe", "Lets you hear the music independent from the channel you are in.")]
 		public void CommandSubscribe(ExecutionInformation info)
 		{
-			TargetManager.WhisperClientSubscribe(info.TextMessage.InvokerId);
+			TargetManager.WhisperClientSubscribe(info.Session.Client.ClientId);
 		}
 
 		[Command(Admin, "subscribe channel", "Adds your current channel to the music playback.")]
@@ -1296,7 +1289,7 @@ namespace TS3AudioBot
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]
 		public void CommandUnsubscribe(ExecutionInformation info)
 		{
-			TargetManager.WhisperClientUnsubscribe(info.TextMessage.InvokerId);
+			TargetManager.WhisperClientUnsubscribe(info.Session.Client.ClientId);
 		}
 
 		[Command(Private, "unsubscribe channel", "Removes your current channel from the music playback.")]
@@ -1344,7 +1337,7 @@ namespace TS3AudioBot
 
 		#region RESPONSES
 
-		private bool ResponseVolume(ExecutionInformation info)
+		private string ResponseVolume(ExecutionInformation info)
 		{
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
@@ -1355,19 +1348,19 @@ namespace TS3AudioBot
 					if (!respInt.HasValue)
 					{
 						Log.Write(Log.Level.Error, "responseData is not an int.");
-						return true;
+						return "Internal error";
 					}
 					AudioFramework.Volume = respInt.Value;
 				}
 				else
 				{
-					info.Session.Write("Command can only be answered by an admin.");
+					return "Command can only be answered by an admin.";
 				}
 			}
-			return answer != Answer.Unknown;
+			return null;
 		}
 
-		private bool ResponseQuit(ExecutionInformation info)
+		private string ResponseQuit(ExecutionInformation info)
 		{
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
@@ -1375,12 +1368,12 @@ namespace TS3AudioBot
 				if (info.IsAdmin)
 					CommandQuit(info, "force");
 				else
-					info.Session.Write("Command can only be answered by an admin.");
+					return "Command can only be answered by an admin.";
 			}
-			return answer != Answer.Unknown;
+			return null;
 		}
 
-		private bool ResponseHistoryDelete(ExecutionInformation info)
+		private string ResponseHistoryDelete(ExecutionInformation info)
 		{
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
@@ -1391,19 +1384,19 @@ namespace TS3AudioBot
 					if (ale == null)
 					{
 						Log.Write(Log.Level.Error, "No entry provided.");
-						return true;
+						return "Internal error";
 					}
 					HistoryManager.RemoveEntry(ale);
 				}
 				else
 				{
-					info.Session.Write("Command can only be answered by an admin.");
+					return "Command can only be answered by an admin.";
 				}
 			}
-			return answer != Answer.Unknown;
+			return null;
 		}
 
-		private bool ResponseHistoryClean(ExecutionInformation info)
+		private string ResponseHistoryClean(ExecutionInformation info)
 		{
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
@@ -1414,33 +1407,33 @@ namespace TS3AudioBot
 					if (string.IsNullOrEmpty(param))
 					{
 						HistoryManager.CleanHistoryFile();
-						info.Session.Write("Cleanup done!");
+						return "Cleanup done!";
 					}
 					else if (param == "removedefective")
 					{
 						HistoryManager.RemoveBrokenLinks(info.Session);
-						info.Session.Write("Cleanup done!");
+						return "Cleanup done!";
 					}
 					else
-						info.Session.Write("Unknown parameter!");
+						return "Unknown parameter!";
 				}
 				else
-					info.Session.Write("Command can only be answered by an admin.");
+					return "Command can only be answered by an admin.";
 			}
-			return answer != Answer.Unknown;
+			return null;
 		}
 
-		private bool ResponseListDelete(ExecutionInformation info)
+		private string ResponseListDelete(ExecutionInformation info)
 		{
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
 				var name = info.Session.ResponseData as string;
 				var result = PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.IsAdmin);
-				if (!result) info.Session.Write(result.Message);
-				else info.Session.Write("Ok");
+				if (!result) return result.Message;
+				else return "Ok";
 			}
-			return answer != Answer.Unknown;
+			return null;
 		}
 
 		#endregion

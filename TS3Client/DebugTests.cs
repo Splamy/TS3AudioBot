@@ -33,9 +33,10 @@ namespace TS3Client
 
 			FindRareBug();
 			ReadLine();
-			return;
+		}
 
-
+		static void Test2()
+		{
 			Task.Run(() => fc.Connect(new ConnectionDataFull
 			{
 				Username = "HAAAX",

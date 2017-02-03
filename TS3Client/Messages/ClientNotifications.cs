@@ -155,10 +155,10 @@ namespace TS3Client.Messages
 		bool IsRecording { get; set; }
 
 		[QuerySerialized("client_channel_group_id")]
-		long ChannelGroupId { get; set; }
+		ulong ChannelGroupId { get; set; }
 
 		[QuerySerialized("client_servergroups")]
-		long[] ServerGroups { get; set; }
+		ulong[] ServerGroups { get; set; }
 
 		[QuerySerialized("client_away")]
 		bool IsAway { get; set; }
