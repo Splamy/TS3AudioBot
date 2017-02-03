@@ -35,7 +35,6 @@ namespace TS3AudioBot.Web.Api
 				var requestUrl = new UriExt(new Uri(dummy, context.Request.RawUrl));
 				ProcessApiV1Call(requestUrl, response);
 			}
-			// TODO process work here
 		}
 
 		private void ProcessApiV1Call(UriExt uri, HttpListenerResponse response)

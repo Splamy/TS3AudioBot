@@ -30,10 +30,12 @@ namespace TS3AudioBot.CommandSystem
 
 		private ExecutionInformation() { Session = null; TextMessage = null; lazyIsAdmin = new Lazy<bool>(() => true); }
 		public ExecutionInformation(UserSession session, TextMessage textMessage)
+			: this(session, textMessage, new Lazy<bool>(session.HasAdminRights)) { }
+		public ExecutionInformation(UserSession session, TextMessage textMessage, Lazy<bool> isAdmin)
 		{
 			Session = session;
 			TextMessage = textMessage;
-			lazyIsAdmin = new Lazy<bool>(session.HasAdminRights);
+			lazyIsAdmin = isAdmin;
 		}
 
 		public static readonly ExecutionInformation Debug = new ExecutionInformation();

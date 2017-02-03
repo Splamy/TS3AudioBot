@@ -34,7 +34,7 @@ namespace TS3AudioBot
 		public object ResponseData { get; private set; }
 
 		public MainBot Bot { get; }
-		private readonly ushort clientId; // TODO better identification system
+		private readonly ushort clientId;
 		public ClientData Client { get; private set; }
 		internal UserToken Token { get; set; }
 

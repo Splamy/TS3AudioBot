@@ -31,7 +31,7 @@ namespace TS3AudioBot
 		private static readonly MD5 Md5Hash = MD5.Create();
 
 		// Map: Id => UserToken
-		private readonly Dictionary<ushort, UserSession> openSessions;
+		private readonly Dictionary<ulong, UserSession> openSessions;
 		// Map: Uid => UserToken
 		private readonly Dictionary<string, UserSession> userTokens;
 
@@ -41,7 +41,7 @@ namespace TS3AudioBot
 			Util.Init(ref userTokens);
 		}
 
-		public R<UserSession> CreateSession(MainBot bot, ushort invokerId)
+		public R<UserSession> CreateSession(MainBot bot, ClientData client)
 		{
 			if (bot == null)
 				throw new ArgumentNullException(nameof(bot));
@@ -49,47 +49,43 @@ namespace TS3AudioBot
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(invokerId, out session))
+				if (openSessions.TryGetValue(client.DatabaseId, out session))
 					return session;
-
-				ClientData client = bot.QueryConnection.GetClientById(invokerId);
-				if (client == null)
-					return "Could not find the requested client.";
 
 				Log.Write(Log.Level.Debug, "SM User {0} created session with the bot", client.NickName);
 				session = new UserSession(bot, client);
-				openSessions.Add(invokerId, session);
+				openSessions.Add(client.DatabaseId, session);
 				return session;
 			}
 		}
 
-		public bool ExistsSession(ushort invokerId)
+		public bool ExistsSession(ulong dbId)
 		{
 			lock (openSessions)
-				return openSessions.ContainsKey(invokerId);
+				return openSessions.ContainsKey(dbId);
 		}
 
-		public R<UserSession> GetSession(ushort invokerId)
+		public R<UserSession> GetSession(ulong dbId)
 		{
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(invokerId, out session))
+				if (openSessions.TryGetValue(dbId, out session))
 					return session;
 				else
 					return "Session not found";
 			}
 		}
 
-		public void RemoveSession(ushort invokerId)
+		public void RemoveSession(ulong dbId)
 		{
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(invokerId, out session))
+				if (openSessions.TryGetValue(dbId, out session))
 				{
 					if (session.Token == null || !session.Token.ApiTokenActive)
-						openSessions.Remove(invokerId);
+						openSessions.Remove(dbId);
 				}
 			}
 		}

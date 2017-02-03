@@ -183,8 +183,8 @@ namespace TS3AudioBot
 			PlayManager.AfterResourceStarted += TargetManager.OnResourceStarted;
 			PlayManager.AfterResourceStopped += TargetManager.OnResourceStopped;
 			// In own favor update the own status text to the current song title
-			PlayManager.AfterResourceStarted += SongUpdateEvent;
-			PlayManager.AfterResourceStopped += SongStopEvent;
+			PlayManager.AfterResourceStarted += (s, e) => UpdateBotStatus();
+			PlayManager.AfterResourceStopped += (s, e) => UpdateBotStatus();
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
@@ -226,7 +226,13 @@ namespace TS3AudioBot
 			var result = SessionManager.GetSession(textMessage.InvokerId);
 			if (!result)
 			{
-				result = SessionManager.CreateSession(this, textMessage.InvokerId);
+				ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
+				if (client == null)
+				{
+					Log.Write(Log.Level.Error, "Could not find the requested client.");
+					return;
+				}
+				result = SessionManager.CreateSession(this, client);
 				if (!result)
 				{
 					Log.Write(Log.Level.Error, result.Message);
@@ -266,17 +272,16 @@ namespace TS3AudioBot
 					{
 						var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
 							new[] { CommandResultType.String, CommandResultType.Empty });
+						// Write result to user
 						if (res.ResultType == CommandResultType.String)
 						{
 							var sRes = (StringCommandResult)res;
-							// Write result to user
 							if (!string.IsNullOrEmpty(sRes.Content))
 								WriteToSession(execInfo, sRes.Content);
 						}
 						else if (res.ResultType == CommandResultType.Json)
 						{
 							var sRes = (JsonCommandResult)res;
-							// Write result to user
 							WriteToSession(execInfo, "\nJson str: \n" + sRes.JsonObject.AsStringResult);
 							WriteToSession(execInfo, "\nJson val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
 						}
@@ -1030,7 +1035,7 @@ namespace TS3AudioBot
 		public void CommandQuizOn()
 		{
 			QuizMode = true;
-			QueryConnection.ChangeDescription("<Quiztime!>");
+			UpdateBotStatus();
 		}
 		[Command(Public, "quiz off", "Disable to show the songnames again.")]
 		public void CommandQuizOff(ExecutionInformation info)
@@ -1038,7 +1043,7 @@ namespace TS3AudioBot
 			if (info.IsPrivate && !info.ApiCall)
 				throw new CommandException("No cheatig! Everybody has to see it!", CommandExceptionReason.CommandError);
 			QuizMode = false;
-			QueryConnection.ChangeDescription(PlayManager.CurrentPlayData.ResourceData.ResourceTitle);
+			UpdateBotStatus();
 		}
 
 		[Command(Private, "random", "Gets whether or not to play playlists in random order.")]
@@ -1438,16 +1443,25 @@ namespace TS3AudioBot
 
 		#endregion
 
-		private void SongUpdateEvent(object sender, PlayInfoEventArgs data)
+		private void UpdateBotStatus(string overrideStr = null)
 		{
-			if (!QuizMode)
+			string setString;
+			if (overrideStr != null)
 			{
-				QueryConnection.ChangeDescription(data.ResourceData.ResourceTitle);
+				setString = overrideStr;
 			}
-		}
-		private void SongStopEvent(object sender, EventArgs e)
-		{
-			QueryConnection.ChangeDescription("<Sleeping>");
+			else if (PlayManager.IsPlaying)
+			{
+				if (QuizMode)
+					setString = "<Quiztime!>";
+				else
+					setString = PlayManager.CurrentPlayData.ResourceData.ResourceTitle;
+			}
+			else
+			{
+				setString = "<Sleeping>";
+			}
+			QueryConnection.ChangeDescription(setString).UnwrapThrow();
 		}
 
 		private Playlist AutoGetPlaylist(UserSession session)
