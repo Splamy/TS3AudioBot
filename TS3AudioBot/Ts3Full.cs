@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -35,9 +35,10 @@ namespace TS3AudioBot
 		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
 		private static readonly string[] quitMessages = new[]
 		{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
-		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet...",
+		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
 		  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
-		  "Never gonna give you up", "Never gonna let you down" };
+		  "Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
+		  "?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here"};
 
 		private TickWorker sendTick;
 		private float volume = 1;
@@ -45,9 +46,12 @@ namespace TS3AudioBot
 		private AudioEncoder encoder;
 		private PreciseAudioTimer audioTimer;
 		private byte[] audioBuffer;
-		private Dictionary<ulong, SubscriptionData> channelSubscriptionsSetup;
-		private List<ulong> channelSubscriptions;
-		private List<ushort> clientSubscriptions;
+		private Dictionary<ulong, bool> channelSubscriptionsSetup;
+		private List<ushort> clientSubscriptionsSetup;
+		private ulong[] channelSubscriptionsCache;
+		private ushort[] clientSubscriptionsCache;
+		private bool subscriptionSetupChanged;
+		private readonly object subscriptionLockObj = new object();
 		private Ts3FullClientData ts3FullClientData;
 
 		public Ts3Full(Ts3FullClientData tfcd) : base(ClientType.Full)
@@ -55,8 +59,8 @@ namespace TS3AudioBot
 			ts3FullClientData = tfcd;
 			SuppressLoopback = tfcd.SuppressLoopback;
 			Util.Init(ref channelSubscriptionsSetup);
-			Util.Init(ref channelSubscriptions);
-			Util.Init(ref clientSubscriptions);
+			Util.Init(ref clientSubscriptionsSetup);
+			subscriptionSetupChanged = true;
 			tsFullClient = (Ts3FullClient)tsBaseClient;
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
@@ -77,6 +81,7 @@ namespace TS3AudioBot
 				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
 			}
 
+			tsFullClient.QuitMessage = quitMessages[Util.RngInstance.Next(0, quitMessages.Length)];
 			tsFullClient.OnErrorEvent += (s, e) => { Log.Write(Log.Level.Debug, e.ErrorFormat()); };
 			tsFullClient.Connect(new ConnectionDataFull
 			{
@@ -86,7 +91,6 @@ namespace TS3AudioBot
 				Identity = identity,
 			});
 
-			tsFullClient.QuitMessage = quitMessages[Util.RngInstance.Next(0, quitMessages.Length)];
 		}
 
 		public override ClientData GetSelf()
@@ -109,6 +113,8 @@ namespace TS3AudioBot
 			if ((audioBuffer?.Length ?? 0) < encoder.OptimalPacketSize)
 				audioBuffer = new byte[encoder.OptimalPacketSize];
 
+			UpdatedSubscriptionCache();
+
 			while (audioTimer.BufferLength < audioBufferLength)
 			{
 				int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
@@ -126,10 +132,10 @@ namespace TS3AudioBot
 				Tuple<byte[], int> encodedArr = null;
 				while ((encodedArr = encoder.GetPacket()) != null)
 				{
-					if (!channelSubscriptions.Any() && !clientSubscriptions.Any())
+					if (channelSubscriptionsCache.Length == 0 && clientSubscriptionsCache.Length == 0)
 						tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
 					else
-						tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptions, clientSubscriptions);
+						tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
 				}
 			}
 		}
@@ -239,44 +245,56 @@ namespace TS3AudioBot
 		{
 			// TODO move to requested channel
 			// TODO spawn new client
-			SubscriptionData subscriptionData;
-			if (!channelSubscriptionsSetup.TryGetValue(channel, out subscriptionData))
+			lock (subscriptionLockObj)
 			{
-				subscriptionData = new SubscriptionData { Id = channel, Manual = manual };
-				channelSubscriptionsSetup.Add(channel, subscriptionData);
+				bool subscriptionManual;
+				if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionManual))
+					channelSubscriptionsSetup[channel] = subscriptionManual || manual;
+				else
+				{
+					channelSubscriptionsSetup[channel] = manual;
+					subscriptionSetupChanged = true;
+				}
 			}
-			subscriptionData.Enabled = true;
-			subscriptionData.Manual = subscriptionData.Manual || manual;
 		}
 
 		public void WhisperChannelUnsubscribe(ulong channel, bool manual)
 		{
-			SubscriptionData subscriptionData;
-			if (!channelSubscriptionsSetup.TryGetValue(channel, out subscriptionData))
+			lock (subscriptionLockObj)
 			{
-				subscriptionData = new SubscriptionData { Id = channel, Manual = false };
-				channelSubscriptionsSetup.Add(channel, subscriptionData);
-			}
-			if (manual)
-			{
-				subscriptionData.Manual = true;
-				subscriptionData.Enabled = false;
-			}
-			else if (!subscriptionData.Manual)
-			{
-				subscriptionData.Enabled = false;
+				if (manual)
+				{
+					subscriptionSetupChanged |= channelSubscriptionsSetup.Remove(channel);
+				}
+				else
+				{
+					bool subscriptionManual;
+					if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionManual) && !subscriptionManual)
+					{
+						channelSubscriptionsSetup.Remove(channel);
+						subscriptionSetupChanged = true;
+					}
+				}
 			}
 		}
 
 		public void WhisperClientSubscribe(ushort userId)
 		{
-			if (!clientSubscriptions.Contains(userId))
-				clientSubscriptions.Add(userId);
+			lock (subscriptionLockObj)
+			{
+				if (!clientSubscriptionsSetup.Contains(userId))
+					clientSubscriptionsSetup.Add(userId);
+				subscriptionSetupChanged = true;
+			}
 		}
 
 		public void WhisperClientUnsubscribe(ushort userId)
 		{
-			clientSubscriptions.Remove(userId);
+			lock (subscriptionLockObj)
+			{
+				clientSubscriptionsSetup.Remove(userId);
+				subscriptionSetupChanged = true;
+			}
 		}
 
 		private void RestoreSubscriptions(ulong channelId)
@@ -284,15 +302,24 @@ namespace TS3AudioBot
 			WhisperChannelSubscribe(channelId, false);
 			foreach (var data in channelSubscriptionsSetup)
 			{
-				if (data.Value.Enabled)
+				if (data.Value)
+					WhisperChannelSubscribe(data.Key, false);
+				else if (!data.Value && channelId != data.Key)
+					WhisperChannelUnsubscribe(data.Key, false);
+			}
+		}
+
+		private void UpdatedSubscriptionCache()
+		{
+			if (subscriptionSetupChanged)
+			{
+				lock (subscriptionLockObj)
 				{
-					if (data.Value.Manual)
-						WhisperChannelSubscribe(data.Value.Id, false);
-					else if (!data.Value.Manual && channelId != data.Value.Id)
-						WhisperChannelUnsubscribe(data.Value.Id, false);
+					channelSubscriptionsCache = channelSubscriptionsSetup.Keys.ToArray();
+					clientSubscriptionsCache = clientSubscriptionsSetup.ToArray();
+					subscriptionSetupChanged = false;
 				}
 			}
-			channelSubscriptions = channelSubscriptionsSetup.Values.Select(v => v.Id).ToList();
 		}
 
 		#endregion
