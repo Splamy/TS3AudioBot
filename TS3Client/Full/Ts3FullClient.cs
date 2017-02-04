@@ -26,6 +26,8 @@ namespace TS3Client.Full
 
 	public sealed class Ts3FullClient : Ts3BaseClient
 	{
+		private static readonly string[] plattforms = new[] { "Windows", "Linux" };
+
 		private UdpClient udpClient;
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
@@ -36,6 +38,8 @@ namespace TS3Client.Full
 		public override ClientType ClientType => ClientType.Full;
 		public ushort ClientId => packetHandler.ClientId;
 		public string QuitMessage { get; set; } = "Disconnected";
+		public VersionSign VersionSign { get; set; } = VersionSign.VER_WIN_3_0_19_03;
+		public ClientPlattform Plattform { get; set; } = ClientPlattform.Linux;
 
 		public Ts3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
@@ -147,12 +151,12 @@ namespace TS3Client.Full
 			packetHandler.CryptoInitDone();
 			ClientInit(
 				ConnectionData.Username,
-				"Windows",
+				plattforms[(int)Plattform],
 				true, true,
 				string.Empty, string.Empty,
 				ConnectionData.Password,
 				string.Empty, string.Empty, string.Empty, "123,456",
-				VersionSign.VER_3_0_19_03);
+				VersionSign);
 		}
 
 		protected override void ProcessInitServer(InitServer initServer)
@@ -269,5 +273,11 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(buffer, PacketType.Voice);
 		}
 		#endregion
+
+		public enum ClientPlattform
+		{
+			Windows = 0,
+			Linux,
+		}
 	}
 }
