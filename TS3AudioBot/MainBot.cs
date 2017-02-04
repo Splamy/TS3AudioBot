@@ -121,6 +121,7 @@ namespace TS3AudioBot
 			if (consoleOutput)
 			{
 				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
+				Log.RegisterLogger("[%T]%L: %M\n%S", "", Console.WriteLine, Log.Level.Error);
 			}
 
 			if (writeLog && !string.IsNullOrEmpty(mainBotData.logFile))
