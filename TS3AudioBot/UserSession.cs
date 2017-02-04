@@ -34,14 +34,12 @@ namespace TS3AudioBot
 		public object ResponseData { get; private set; }
 
 		public MainBot Bot { get; }
-		private readonly ushort clientId;
 		public ClientData Client { get; private set; }
 		internal UserToken Token { get; set; }
 
 		public UserSession(MainBot bot, ClientData client)
 		{
 			Bot = bot;
-			clientId = client.ClientId;
 			Client = client;
 			ResponseProcessor = null;
 			ResponseData = null;
@@ -128,9 +126,15 @@ namespace TS3AudioBot
 				throw new InvalidOperationException("No access lock is currently active");
 		}
 
-		public void UpdateClient()
+		public R UpdateClient()
 		{
-			Client = Bot.QueryConnection.GetClientById(clientId);
+			var result = Bot.QueryConnection.GetClientById(Client.ClientId);
+			if (result.Ok)
+			{
+				Client = result.Value;
+				return R.OkR;
+			}
+			return result.Message;
 		}
 
 		public bool HasAdminRights()

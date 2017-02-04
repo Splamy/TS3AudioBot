@@ -224,24 +224,30 @@ namespace TS3AudioBot
 
 			// get the current session
 			var result = SessionManager.GetSession(textMessage.InvokerId);
-			if (!result)
+			if (!result.Ok)
 			{
-				ClientData client = QueryConnection.GetClientById(textMessage.InvokerId);
-				if (client == null)
+				var clientResult = QueryConnection.GetClientById(textMessage.InvokerId);
+				if (!clientResult.Ok)
 				{
-					Log.Write(Log.Level.Error, "Could not find the requested client.");
+					Log.Write(Log.Level.Error, clientResult.Message);
 					return;
 				}
-				result = SessionManager.CreateSession(this, client);
-				if (!result)
+				result = SessionManager.CreateSession(this, clientResult.Value);
+				if (!result.Ok)
 				{
 					Log.Write(Log.Level.Error, result.Message);
 					return;
 				}
 			}
 
+			// Update session
 			UserSession session = result.Value;
-			session.UpdateClient();
+			var updateResult = session.UpdateClient();
+			if (!updateResult.Ok)
+			{
+				Log.Write(Log.Level.Error, "MB Failed to get user: {0}", updateResult.Message);
+				return;
+			}
 
 			using (session.GetLock())
 			{
@@ -262,49 +268,43 @@ namespace TS3AudioBot
 				ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
 				if (parsedAst.Type == ASTType.Error)
 				{
-					PrintAstError(execInfo, (ASTError)parsedAst);
+					var errorAst = (ASTError)parsedAst;
+					StringBuilder strb = new StringBuilder();
+					strb.AppendLine();
+					errorAst.Write(strb, 0);
+					WriteToSession(execInfo, strb.ToString());
+					return;
 				}
-				else
-				{
-					var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
 
-					try
+				var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
+				try
+				{
+					var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
+						new[] { CommandResultType.String, CommandResultType.Empty });
+					// Write result to user
+					if (res.ResultType == CommandResultType.String)
 					{
-						var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
-							new[] { CommandResultType.String, CommandResultType.Empty });
-						// Write result to user
-						if (res.ResultType == CommandResultType.String)
-						{
-							var sRes = (StringCommandResult)res;
-							if (!string.IsNullOrEmpty(sRes.Content))
-								WriteToSession(execInfo, sRes.Content);
-						}
-						else if (res.ResultType == CommandResultType.Json)
-						{
-							var sRes = (JsonCommandResult)res;
-							WriteToSession(execInfo, "\nJson str: \n" + sRes.JsonObject.AsStringResult);
-							WriteToSession(execInfo, "\nJson val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
-						}
+						var sRes = (StringCommandResult)res;
+						if (!string.IsNullOrEmpty(sRes.Content))
+							WriteToSession(execInfo, sRes.Content);
 					}
-					catch (CommandException ex)
+					else if (res.ResultType == CommandResultType.Json)
 					{
-						WriteToSession(execInfo, "Error: " + ex.Message);
+						var sRes = (JsonCommandResult)res;
+						WriteToSession(execInfo, "\nJson str: \n" + sRes.JsonObject.AsStringResult);
+						WriteToSession(execInfo, "\nJson val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
 					}
-					catch (Exception ex)
-					{
-						Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex.UnrollException());
-						WriteToSession(execInfo, "An unexpected error occured: " + ex.Message);
-					}
+				}
+				catch (CommandException ex)
+				{
+					WriteToSession(execInfo, "Error: " + ex.Message);
+				}
+				catch (Exception ex)
+				{
+					Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex.UnrollException());
+					WriteToSession(execInfo, "An unexpected error occured: " + ex.Message);
 				}
 			}
-		}
-
-		private static void PrintAstError(ExecutionInformation info, ASTError asterror)
-		{
-			StringBuilder strb = new StringBuilder();
-			strb.AppendLine();
-			asterror.Write(strb, 0);
-			WriteToSession(info, strb.ToString());
 		}
 
 		private static void WriteToSession(ExecutionInformation info, string message)

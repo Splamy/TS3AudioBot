@@ -300,12 +300,17 @@ namespace TS3AudioBot
 		private void RestoreSubscriptions(ulong channelId)
 		{
 			WhisperChannelSubscribe(channelId, false);
-			foreach (var data in channelSubscriptionsSetup)
+			lock (subscriptionLockObj)
 			{
-				if (data.Value)
-					WhisperChannelSubscribe(data.Key, false);
-				else if (!data.Value && channelId != data.Key)
-					WhisperChannelUnsubscribe(data.Key, false);
+				ulong[] removeList = channelSubscriptionsSetup
+					.Where(kvp => !kvp.Value && kvp.Key != channelId)
+					.Select(kvp => kvp.Key)
+					.ToArray();
+				foreach (var chan in removeList)
+				{
+					channelSubscriptionsSetup.Remove(chan);
+					subscriptionSetupChanged = true;
+				}
 			}
 		}
 
