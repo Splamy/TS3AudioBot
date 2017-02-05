@@ -49,7 +49,7 @@ namespace TS3Client.Full
 
 		public IdentityData Identity { get; set; }
 
-		public bool CryptoInitComplete { get; private set; }
+		internal bool CryptoInitComplete { get; private set; }
 		private readonly byte[] ivStruct = new byte[20];
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly Tuple<byte[], byte[]>[] cachedKeyNonces = new Tuple<byte[], byte[]>[PacketTypeKinds * 2];
@@ -401,7 +401,7 @@ namespace TS3Client.Full
 		/// <param name="packetId">The id of the packet, host order.</param>
 		/// <param name="generationId">Seriously no idea, just pass 0 and it should be fine.</param>
 		/// <param name="packetType">The packetType.</param>
-		/// <returns></returns>
+		/// <returns>A tuple of (key, nonce)</returns>
 		private Tuple<byte[], byte[]> GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
 		{
 			if (!CryptoInitComplete)
@@ -478,6 +478,15 @@ namespace TS3Client.Full
 			return result;
 		}
 
+		public static string HashPassword(string password)
+		{
+			if (string.IsNullOrEmpty(password))
+				return string.Empty;
+			var bytes = Util.Encoder.GetBytes(password);
+			var hashed = Hash1It(bytes);
+			return Convert.ToBase64String(hashed);
+		}
+
 		#endregion
 
 		#region IDENTITY & SECURITY LEVEL
@@ -509,7 +518,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		/// <summary>Creates a new TeamSpeak3 identity</summary>
+		/// <summary>Creates a new TeamSpeak3 identity.</summary>
 		/// <param name="securityLevel">Minimum security level this identity will have.</param>
 		/// <returns>The identity information.</returns>
 		public static IdentityData GenerateNewIdentity(int securityLevel = 8)

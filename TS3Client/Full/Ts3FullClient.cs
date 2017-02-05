@@ -154,7 +154,7 @@ namespace TS3Client.Full
 				plattforms[(int)Plattform],
 				true, true,
 				string.Empty, string.Empty,
-				ConnectionData.Password,
+				Ts3Crypt.HashPassword(ConnectionData.Password),
 				string.Empty, string.Empty, string.Empty, "123,456",
 				VersionSign);
 		}

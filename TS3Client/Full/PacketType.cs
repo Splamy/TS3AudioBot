@@ -18,7 +18,7 @@ namespace TS3Client.Full
 {
 	using System;
 
-	public enum PacketType : byte
+	internal enum PacketType : byte
 	{
 		Readable = 0x0,
 		Voice = 0x1,
@@ -32,7 +32,7 @@ namespace TS3Client.Full
 	}
 
 	[Flags]
-	public enum PacketFlags : byte
+	internal enum PacketFlags : byte
 	{
 		None = 0x0,
 		Fragmented = 0x10,
