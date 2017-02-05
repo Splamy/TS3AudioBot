@@ -86,8 +86,9 @@ namespace TS3Client.Messages
 		ClientType ClientType { get; set; }
 	}
 
-	public interface ClientData : IResponse, IClientId, IChannelId, IClientBaseData { }
+	public interface ClientData : IResponse, IClientId, IClientUidLong, IChannelId, IClientBaseData { }
 
+	[QuerySubInterface]
 	public interface IClientDbDataBase
 	{
 		[QuerySerialized("client_created")]
@@ -157,6 +158,9 @@ namespace TS3Client.Messages
 		[QuerySerialized("client_channel_group_id")]
 		ulong ChannelGroupId { get; set; }
 
+		[QuerySerialized("client_channel_group_inherited_channel_id")]
+		ulong InheritedChannelGroupFromChannelId { get; set; }
+
 		[QuerySerialized("client_servergroups")]
 		ulong[] ServerGroups { get; set; }
 
@@ -195,9 +199,6 @@ namespace TS3Client.Messages
 
 		[QuerySerialized("client_country")]
 		string CountryCode { get; set; }
-
-		[QuerySerialized("client_channel_group_inherited_channel_id")]
-		long InheritedChannelGroupFromChannelId { get; set; }
 
 		[QuerySerialized("client_badges")]
 		string Badges { get; set; }

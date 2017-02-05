@@ -153,12 +153,15 @@ namespace TS3AudioBot
 			return "No client found";
 		}
 
-		public ClientData GetClientByName(string name)
+		public R<ClientData> GetClientByName(string name)
 		{
 			RefreshClientBuffer(false);
-			return CommandSystem.XCommandSystem.FilterList(
-				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.NickName, cb)), name)
-				.FirstOrDefault().Value;
+			var clients = CommandSystem.XCommandSystem.FilterList(
+				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.NickName, cb)), name).ToArray();
+			if (clients.Length > 0)
+				return R<ClientData>.OkR(clients[0].Value);
+			else
+				return "No Client found";
 		}
 
 		private ClientData ClientBufferRequest(Func<ClientData, bool> pred)
@@ -173,7 +176,7 @@ namespace TS3AudioBot
 		{
 			if (clientbufferOutdated || force)
 			{
-				clientbuffer = tsBaseClient.ClientList().ToList();
+				clientbuffer = tsBaseClient.ClientList(ClientListOptions.uid).ToList();
 				clientbufferOutdated = false;
 			}
 		}

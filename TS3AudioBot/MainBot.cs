@@ -121,7 +121,7 @@ namespace TS3AudioBot
 			if (consoleOutput)
 			{
 				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
-				Log.RegisterLogger("[%T]%L: %M\n%S", "", Console.WriteLine, Log.Level.Error);
+				Log.RegisterLogger("Error call Stack:\n%S", "", Console.WriteLine, Log.Level.Error);
 			}
 
 			if (writeLog && !string.IsNullOrEmpty(mainBotData.logFile))
@@ -189,7 +189,7 @@ namespace TS3AudioBot
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
-			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerId);
+			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerUid);
 
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
@@ -224,7 +224,7 @@ namespace TS3AudioBot
 			QueryConnection.RefreshClientBuffer(true);
 
 			// get the current session
-			var result = SessionManager.GetSession(textMessage.InvokerId);
+			var result = SessionManager.GetSession(textMessage.InvokerUid);
 			if (!result.Ok)
 			{
 				var clientResult = QueryConnection.GetClientById(textMessage.InvokerId);
@@ -243,7 +243,7 @@ namespace TS3AudioBot
 
 			// Update session
 			UserSession session = result.Value;
-			var updateResult = session.UpdateClient();
+			var updateResult = session.UpdateClient(textMessage.InvokerId);
 			if (!updateResult.Ok)
 			{
 				Log.Write(Log.Level.Error, "MB Failed to get user: {0}", updateResult.Message);
@@ -362,13 +362,16 @@ namespace TS3AudioBot
 
 		[Command(Admin, "getuser id", "Gets the unique Id of a user.")]
 		[Usage("<username>", "A user which is currently logged in to the server")]
-		public JsonObject CommandGetUserByName(string parameter)
+		public JsonObject CommandGetUserByName(string username)
 		{
-			ClientData client = QueryConnection.GetClientByName(parameter);
-			if (client == null)
-				return new JsonEmpty("No user found...");
-			else
+			var result = QueryConnection.GetClientByName(username);
+			if (result.Ok)
+			{
+				var client = result.Value;
 				return new JsonSingleObject<ClientData>($"Client: UID:{client.ClientId} DBID:{client.DatabaseId} ChanID:{client.ChannelId}", client);
+			}
+			else
+				return new JsonEmpty("No user found...");
 		}
 
 		[Command(Admin, "getuser db", "Gets the User name by dbid.")]

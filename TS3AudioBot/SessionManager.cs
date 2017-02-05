@@ -30,15 +30,12 @@ namespace TS3AudioBot
 		const string tokenFormat = "{0}:" + apiRealm + ":{1}";
 		private static readonly MD5 Md5Hash = MD5.Create();
 
-		// Map: Id => UserToken
-		private readonly Dictionary<ulong, UserSession> openSessions;
 		// Map: Uid => UserToken
-		private readonly Dictionary<string, UserSession> userTokens;
+		private readonly Dictionary<string, UserSession> openSessions;
 
 		public SessionManager()
 		{
 			Util.Init(ref openSessions);
-			Util.Init(ref userTokens);
 		}
 
 		public R<UserSession> CreateSession(MainBot bot, ClientData client)
@@ -49,43 +46,43 @@ namespace TS3AudioBot
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(client.DatabaseId, out session))
+				if (openSessions.TryGetValue(client.Uid, out session))
 					return session;
 
 				Log.Write(Log.Level.Debug, "SM User {0} created session with the bot", client.NickName);
 				session = new UserSession(bot, client);
-				openSessions.Add(client.DatabaseId, session);
+				openSessions.Add(client.Uid, session);
 				return session;
 			}
 		}
 
-		public bool ExistsSession(ulong dbId)
+		public bool ExistsSession(string uid)
 		{
 			lock (openSessions)
-				return openSessions.ContainsKey(dbId);
+				return openSessions.ContainsKey(uid);
 		}
 
-		public R<UserSession> GetSession(ulong dbId)
+		public R<UserSession> GetSession(string uid)
 		{
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(dbId, out session))
+				if (openSessions.TryGetValue(uid, out session))
 					return session;
 				else
 					return "Session not found";
 			}
 		}
 
-		public void RemoveSession(ulong dbId)
+		public void RemoveSession(string uid)
 		{
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(dbId, out session))
+				if (openSessions.TryGetValue(uid, out session))
 				{
 					if (session.Token == null || !session.Token.ApiTokenActive)
-						openSessions.Remove(dbId);
+						openSessions.Remove(uid);
 				}
 			}
 		}
@@ -98,13 +95,16 @@ namespace TS3AudioBot
 			{
 				var clientInfo = session.Bot.QueryConnection.GetClientInfoById(session.Client.ClientId);
 
-				UserSession getSession;
-				if (userTokens.TryGetValue(clientInfo.Uid, out getSession))
-					session.Token = getSession.Token;
-				else
+				lock (openSessions)
 				{
-					session.Token = new UserToken() { UserUid = clientInfo.Uid };
-					userTokens.Add(clientInfo.Uid, session);
+					UserSession getSession;
+					if (openSessions.TryGetValue(clientInfo.Uid, out getSession))
+						session.Token = getSession.Token;
+					else
+					{
+						session.Token = new UserToken() { UserUid = clientInfo.Uid };
+						openSessions.Add(clientInfo.Uid, session);
+					}
 				}
 			}
 
@@ -119,11 +119,13 @@ namespace TS3AudioBot
 		public R<UserSession> GetSessionByUid(string uid)
 		{
 			UserSession session;
-			if (userTokens.TryGetValue(uid, out session) && (session.Token?.ApiTokenActive ?? false))
-				return session;
-			else
-				return "No session found";
-
+			lock (openSessions)
+			{
+				if (openSessions.TryGetValue(uid, out session) && (session.Token?.ApiTokenActive ?? false))
+					return session;
+				else
+					return "No session found";
+			}
 		}
 
 		private static string GenToken()

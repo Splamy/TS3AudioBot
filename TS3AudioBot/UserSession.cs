@@ -34,6 +34,7 @@ namespace TS3AudioBot
 		public object ResponseData { get; private set; }
 
 		public MainBot Bot { get; }
+		public ushort ActiveClientId { get; set; }
 		public ClientData Client { get; private set; }
 		internal UserToken Token { get; set; }
 
@@ -126,11 +127,13 @@ namespace TS3AudioBot
 				throw new InvalidOperationException("No access lock is currently active");
 		}
 
-		public R UpdateClient()
+		public R UpdateClient(ushort newId)
 		{
-			var result = Bot.QueryConnection.GetClientById(Client.ClientId);
+			var result = Bot.QueryConnection.GetClientById(newId);
 			if (result.Ok)
 			{
+				if (result.Value.Uid != Client.Uid)
+					return "Uid does not match";
 				Client = result.Value;
 				return R.OkR;
 			}
