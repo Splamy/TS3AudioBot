@@ -189,7 +189,7 @@ namespace TS3AudioBot
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
-			QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerUid);
+			//QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerUid);
 
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
@@ -221,7 +221,12 @@ namespace TS3AudioBot
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
 
-			QueryConnection.RefreshClientBuffer(true);
+			var refreshResult = QueryConnection.RefreshClientBuffer(true);
+			if (!refreshResult.Ok)
+			{
+				Log.Write(Log.Level.Error, "Bot is not correctly set up: {0}", refreshResult.Message);
+				return;
+			}
 
 			// get the current session
 			var result = SessionManager.GetSession(textMessage.InvokerUid);

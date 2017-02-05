@@ -172,13 +172,15 @@ namespace TS3AudioBot
 
 		public abstract ClientData GetSelf();
 
-		public void RefreshClientBuffer(bool force)
+		public R RefreshClientBuffer(bool force)
 		{
 			if (clientbufferOutdated || force)
 			{
-				clientbuffer = tsBaseClient.ClientList(ClientListOptions.uid).ToList();
+				try { clientbuffer = tsBaseClient.ClientList(ClientListOptions.uid).ToList(); }
+				catch (Ts3CommandException ex) { return "Clientlist failed: " + ex.Message; }
 				clientbufferOutdated = false;
 			}
+			return R.OkR;
 		}
 
 		public ulong[] GetClientServerGroups(ulong dbId)

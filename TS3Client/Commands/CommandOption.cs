@@ -17,6 +17,7 @@
 namespace TS3Client.Commands
 {
 	using System;
+	using System.Text;
 	using System.Linq;
 
 	public class CommandOption
@@ -24,7 +25,13 @@ namespace TS3Client.Commands
 		public string Value { get; }
 
 		public CommandOption(string name) { Value = string.Concat(" -", name); }
-		public CommandOption(Enum values) { Value = string.Join(" -", values.GetFlags().Select(enu => Enum.GetName(typeof(Enum), enu))); }
+		public CommandOption(Enum values)
+		{
+			var strb = new StringBuilder();
+			foreach (var enu in values.GetFlags().Select(enu => enu.ToString()))
+				strb.Append(" -").Append(enu);
+			Value = strb.ToString();
+		}
 
 		public static implicit operator CommandOption(string value) => new CommandOption(value);
 		public static implicit operator CommandOption(Enum value) => new CommandOption(value);

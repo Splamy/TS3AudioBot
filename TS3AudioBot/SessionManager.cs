@@ -79,6 +79,11 @@ namespace TS3AudioBot
 			lock (openSessions)
 			{
 				UserSession session;
+				if(uid == null)
+				{
+					Log.Write(Log.Level.Warning, "Null remove session");
+					return;
+				}
 				if (openSessions.TryGetValue(uid, out session))
 				{
 					if (session.Token == null || !session.Token.ApiTokenActive)
@@ -114,18 +119,6 @@ namespace TS3AudioBot
 				session.Token.ApiTokenTimeout = newTimeout;
 
 			return R<string>.OkR(string.Format(tokenFormat, session.Token.ApiTokenId, session.Token.ApiToken));
-		}
-
-		public R<UserSession> GetSessionByUid(string uid)
-		{
-			UserSession session;
-			lock (openSessions)
-			{
-				if (openSessions.TryGetValue(uid, out session) && (session.Token?.ApiTokenActive ?? false))
-					return session;
-				else
-					return "No session found";
-			}
 		}
 
 		private static string GenToken()
