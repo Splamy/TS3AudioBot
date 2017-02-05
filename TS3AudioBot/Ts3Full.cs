@@ -33,6 +33,8 @@ namespace TS3AudioBot
 		private const Codec SendCodec = Codec.OpusMusic;
 		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(5);
 		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
+		private const uint stallCountInterval = 50;
+		private const uint stallNoErrorCountMax = 2;
 		private static readonly string[] quitMessages = new[]
 		{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
 		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
@@ -40,31 +42,41 @@ namespace TS3AudioBot
 		  "Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
 		  "?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here"};
 
-		private TickWorker sendTick;
+		private Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
+
+		private TickWorker sendTick;
 		private Process ffmpegProcess;
 		private AudioEncoder encoder;
 		private PreciseAudioTimer audioTimer;
 		private byte[] audioBuffer;
+		private bool isStall;
+		private uint stallCount;
+		private uint stallNoErrorCount;
+
 		private Dictionary<ulong, bool> channelSubscriptionsSetup;
 		private List<ushort> clientSubscriptionsSetup;
 		private ulong[] channelSubscriptionsCache;
 		private ushort[] clientSubscriptionsCache;
 		private bool subscriptionSetupChanged;
 		private readonly object subscriptionLockObj = new object();
-		private Ts3FullClientData ts3FullClientData;
 
 		public Ts3Full(Ts3FullClientData tfcd) : base(ClientType.Full)
 		{
+			tsFullClient = (Ts3FullClient)tsBaseClient;
+
 			ts3FullClientData = tfcd;
 			SuppressLoopback = tfcd.SuppressLoopback;
-			Util.Init(ref channelSubscriptionsSetup);
-			Util.Init(ref clientSubscriptionsSetup);
-			subscriptionSetupChanged = true;
-			tsFullClient = (Ts3FullClient)tsBaseClient;
+
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
 			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channels);
+			isStall = false;
+			stallCount = 0;
+
+			Util.Init(ref channelSubscriptionsSetup);
+			Util.Init(ref clientSubscriptionsSetup);
+			subscriptionSetupChanged = true;
 		}
 
 		public override void Connect()
@@ -82,7 +94,7 @@ namespace TS3AudioBot
 			}
 
 			tsFullClient.QuitMessage = quitMessages[Util.RngInstance.Next(0, quitMessages.Length)];
-			tsFullClient.OnErrorEvent += (s, e) => { Log.Write(Log.Level.Debug, e.ErrorFormat()); };
+			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = "AudioBot",
@@ -91,6 +103,19 @@ namespace TS3AudioBot
 				Identity = identity,
 			});
 
+		}
+
+		private void TsFullClient_OnErrorEvent(object sender, TS3Client.Commands.CommandError e)
+		{
+			const int whisper_no_targets = 0x070c;
+
+			if (e.Id == whisper_no_targets)
+			{
+				stallNoErrorCount = 0;
+				isStall = true;
+			}
+			else
+				Log.Write(Log.Level.Debug, e.ErrorFormat());
 		}
 
 		public override ClientData GetSelf()
@@ -128,9 +153,24 @@ namespace TS3AudioBot
 					return;
 				}
 
+				audioTimer.PushBytes(read);
+				if (isStall)
+				{
+					stallCount++;
+					if (stallCount % stallCountInterval == 0)
+					{
+						stallNoErrorCount++;
+					}
+					if (stallNoErrorCount > stallNoErrorCountMax)
+					{
+						stallCount = 0;
+						isStall = false;
+						break;
+					}
+				}
+
 				AudioModifier.AdjustVolume(audioBuffer, read, volume);
 				encoder.PushPCMAudio(audioBuffer, read);
-				audioTimer.PushBytes(read);
 
 				Tuple<byte[], int> encodedArr = null;
 				while ((encodedArr = encoder.GetPacket()) != null)
