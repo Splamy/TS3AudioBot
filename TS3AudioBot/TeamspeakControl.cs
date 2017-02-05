@@ -140,10 +140,10 @@ namespace TS3AudioBot
 
 		public R<ClientData> GetClientById(ushort id)
 		{
-			var cd = ClientBufferRequest(client => client.ClientId == id);
-			if (cd != null) return R<ClientData>.OkR(cd);
+			var result = ClientBufferRequest(client => client.ClientId == id);
+			if (result.Ok) return result;
 			Log.Write(Log.Level.Debug, "Slow double request, due to missing or wrong permission confinguration!");
-			cd = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault();
+			var cd = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault();
 			if (cd != null)
 			{
 				cd.ClientId = id;
@@ -155,7 +155,9 @@ namespace TS3AudioBot
 
 		public R<ClientData> GetClientByName(string name)
 		{
-			RefreshClientBuffer(false);
+			var refreshResult = RefreshClientBuffer(false);
+			if (!refreshResult)
+				return refreshResult.Message;
 			var clients = CommandSystem.XCommandSystem.FilterList(
 				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.NickName, cb)), name).ToArray();
 			if (clients.Length > 0)
@@ -164,10 +166,14 @@ namespace TS3AudioBot
 				return "No Client found";
 		}
 
-		private ClientData ClientBufferRequest(Func<ClientData, bool> pred)
+		private R<ClientData> ClientBufferRequest(Func<ClientData, bool> pred)
 		{
-			RefreshClientBuffer(false);
-			return clientbuffer.FirstOrDefault(pred);
+			var refreshResult = RefreshClientBuffer(false);
+			if (!refreshResult)
+				return refreshResult.Message;
+			if (!clientbuffer.Any())
+				return "No client found";
+			return R<ClientData>.OkR(clientbuffer.First(pred));
 		}
 
 		public abstract ClientData GetSelf();
