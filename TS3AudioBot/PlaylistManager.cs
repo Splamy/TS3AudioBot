@@ -39,7 +39,7 @@ namespace TS3AudioBot
 		// https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId=...&key=...
 
 		private PlaylistManagerData data;
-		private static readonly Encoding FileEncoding = Encoding.ASCII;
+		private static readonly Encoding FileEncoding = Util.Utf8Encoder;
 		private readonly Playlist freeList;
 		private readonly Playlist trashList;
 
@@ -90,7 +90,7 @@ namespace TS3AudioBot
 		{
 			data = pmd;
 			shuffle = new LinearFeedbackShiftRegister();
-			shuffle.Seed = Util.RngInstance.Next();
+			shuffle.Seed = Util.Random.Next();
 			freeList = new Playlist(string.Empty);
 			trashList = new Playlist(string.Empty);
 

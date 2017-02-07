@@ -181,7 +181,7 @@ namespace TS3AudioBot.Helper
 				}
 				open = true;
 
-				var strLines = File.ReadAllLines(path, new UTF8Encoding(false));
+				var strLines = File.ReadAllLines(path, Util.Utf8Encoder);
 				fileLines.Clear();
 				for (int i = 0; i < strLines.Length; i++)
 				{

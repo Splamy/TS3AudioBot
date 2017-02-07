@@ -108,9 +108,11 @@ namespace TS3AudioBot.Helper
 
 		public static void Init<T>(ref T obj) where T : new() => obj = new T();
 
-		public static Random RngInstance { get; } = new Random();
+		public static Random Random { get; } = new Random();
 
 		public static JavaScriptSerializer Serializer { get; } = new JavaScriptSerializer();
+
+		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
 
 		public static byte[] GetResource(string file)
 		{

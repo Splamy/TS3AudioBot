@@ -14,23 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot
+namespace TS3AudioBot.Sessions
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
-	using Helper;
-	using TS3Client.Messages;
 	using System.Security.Cryptography;
+	using TS3Client.Messages;
 
 	public class SessionManager
 	{
 		private static readonly TimeSpan DefaultApiTimeout = TimeSpan.FromDays(1);
-		const string apiRealm = "TS3ABAPI";
-		const string tokenFormat = "{0}:" + apiRealm + ":{1}";
+		const string tokenFormat = "{0}:{1}";
 		private static readonly MD5 Md5Hash = MD5.Create();
 
-		// Map: Uid => UserToken
+		// Map: Uid => UserSession
 		private readonly Dictionary<string, UserSession> openSessions;
 
 		public SessionManager()
@@ -56,12 +54,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		public bool ExistsSession(string uid)
-		{
-			lock (openSessions)
-				return openSessions.ContainsKey(uid);
-		}
-
 		public R<UserSession> GetSession(string uid)
 		{
 			lock (openSessions)
@@ -79,14 +71,14 @@ namespace TS3AudioBot
 			lock (openSessions)
 			{
 				UserSession session;
-				if(uid == null)
+				if (uid == null)
 				{
 					Log.Write(Log.Level.Warning, "Null remove session");
 					return;
 				}
 				if (openSessions.TryGetValue(uid, out session))
 				{
-					if (session.Token == null || !session.Token.ApiTokenActive)
+					if (session.HasActiveToken)
 						openSessions.Remove(uid);
 				}
 			}
@@ -95,73 +87,25 @@ namespace TS3AudioBot
 		public R<string> GetToken(UserSession session) => GetToken(session, DefaultApiTimeout);
 		public R<string> GetToken(UserSession session, TimeSpan timeout)
 		{
-			// Check if this is another user with the same unique Id
 			if (session.Token == null)
-			{
-				var clientInfo = session.Bot.QueryConnection.GetClientInfoById(session.Client.ClientId);
-
-				lock (openSessions)
-				{
-					UserSession getSession;
-					if (openSessions.TryGetValue(clientInfo.Uid, out getSession))
-						session.Token = getSession.Token;
-					else
-					{
-						session.Token = new UserToken() { UserUid = clientInfo.Uid };
-						openSessions.Add(clientInfo.Uid, session);
-					}
-				}
-			}
+				session.Token = new UserToken() { UserUid = session.Client.Uid };
 
 			session.Token.ApiToken = GenToken();
-			var newTimeout = Util.GetNow();
+			var newTimeout = Util.GetNow() + timeout;
 			if (newTimeout > session.Token.ApiTokenTimeout)
 				session.Token.ApiTokenTimeout = newTimeout;
 
-			return R<string>.OkR(string.Format(tokenFormat, session.Token.ApiTokenId, session.Token.ApiToken));
+			return R<string>.OkR(string.Format(tokenFormat, session.Client.Uid, session.Token.ApiToken));
 		}
 
-		private static string GenToken()
+		private static string GenToken(int len = 32)
 		{
-			const int TokenLen = 32;
 			const string alph = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-			var arr = new char[TokenLen];
+			var arr = new char[len];
 			for (int i = 0; i < arr.Length; i++)
-				arr[i] = alph[Util.RngInstance.Next(0, alph.Length)];
+				arr[i] = alph[Util.Random.Next(0, alph.Length)];
 			return new string(arr);
 		}
-	}
-
-	class UserToken
-	{
-		public string ApiToken { get; set; }
-		public uint ApiTokenId { get; set; }
-		public DateTime ApiTokenTimeout { get; set; }
-		public bool ApiTokenActive => ApiToken != null && ApiTokenTimeout > Util.GetNow();
-		public readonly Dictionary<string, TokenNonce> NonceList;
-		public string UserUid { get; set; }
-
-		public UserToken()
-		{
-			ApiToken = null;
-			ApiTokenTimeout = DateTime.MinValue;
-			Util.Init(ref NonceList);
-		}
-	}
-
-	class TokenNonce
-	{
-		public string Nonce { get; }
-		public DateTime UseTime { get; }
-
-		public TokenNonce(string nonce, DateTime useTime)
-		{
-			Nonce = nonce;
-			UseTime = useTime;
-		}
-
-		public override bool Equals(object obj) => Nonce.Equals((obj as TokenNonce)?.Nonce);
-		public override int GetHashCode() => Nonce.GetHashCode();
 	}
 }

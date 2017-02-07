@@ -93,7 +93,7 @@ namespace TS3AudioBot
 				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
 			}
 
-			tsFullClient.QuitMessage = quitMessages[Util.RngInstance.Next(0, quitMessages.Length)];
+			tsFullClient.QuitMessage = quitMessages[Util.Random.Next(0, quitMessages.Length)];
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			tsFullClient.Connect(new ConnectionDataFull
 			{

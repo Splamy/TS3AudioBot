@@ -18,11 +18,12 @@ namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
 	using Helper;
+	using Sessions;
 	using System;
 	using System.IO;
 	using System.Linq;
 	using System.Net;
-	using TS3Client.Messages;
+	using System.Security.Principal;
 
 	public sealed class WebApi : WebComponent
 	{
@@ -32,12 +33,20 @@ namespace TS3AudioBot.Web.Api
 		{
 			using (var response = context.Response)
 			{
+				var session = Authenticate(context);
+				if (session == null)
+				{
+					Log.Write(Log.Level.Debug, "Not authorized!");
+					ReturnError(CommandExceptionReason.Unauthorized, "", context.Response);
+					return;
+				}
+
 				var requestUrl = new UriExt(new Uri(dummy, context.Request.RawUrl));
-				ProcessApiV1Call(requestUrl, response);
+				ProcessApiV1Call(requestUrl, context.Response, session);
 			}
 		}
 
-		private void ProcessApiV1Call(UriExt uri, HttpListenerResponse response)
+		private void ProcessApiV1Call(UriExt uri, HttpListenerResponse response, UserSession session)
 		{
 			string apirequest = uri.AbsolutePath.Substring("/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
@@ -46,10 +55,7 @@ namespace TS3AudioBot.Web.Api
 
 			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
 
-			var cd = Generator.ActivateResponse<ClientData>();
-			cd.NickName = "APITEST";
-			cd.DatabaseId = 42;
-			var execInfo = new ExecutionInformation(new UserSession(MainBot, cd), null);
+			var execInfo = new ExecutionInformation(session, null);
 			execInfo.ApiCall = true;
 
 			using (var token = execInfo.Session.GetLock())
@@ -88,38 +94,47 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private static void ReturnError(CommandException ex, HttpListenerResponse response)
+		private static void ReturnError(CommandException ex, HttpListenerResponse response) => ReturnError(ex.Reason, ex.Message, response);
+
+		private static void ReturnError(CommandExceptionReason reason, string message, HttpListenerResponse response)
 		{
-			switch (ex.Reason)
+			switch (reason)
 			{
 			case CommandExceptionReason.Unknown:
 			case CommandExceptionReason.InternalError:
 				response.StatusCode = (int)HttpStatusCode.InternalServerError;
 				return;
 
+			case CommandExceptionReason.Unauthorized:
+				response.StatusCode = (int)HttpStatusCode.Unauthorized;
+				break;
+
 			case CommandExceptionReason.MissingRights:
 			case CommandExceptionReason.NotSupported:
 				response.StatusCode = (int)HttpStatusCode.Forbidden;
 				break;
+
 			case CommandExceptionReason.CommandError:
 			case CommandExceptionReason.AmbiguousCall:
 			case CommandExceptionReason.MissingParameter:
 			case CommandExceptionReason.NoReturnMatch:
 				response.StatusCode = 422; // Unprocessable Entity
 				break;
+
 			case CommandExceptionReason.FunctionNotFound:
 				response.StatusCode = (int)HttpStatusCode.NotFound;
 				break;
+
 			default:
 				Log.Write(Log.Level.Debug, "WA Missing Web Error Type");
 				break;
 			}
 
 			using (var responseStream = new StreamWriter(response.OutputStream))
-				responseStream.Write(Util.Serializer.Serialize(new JsonError(ex.Message, ex.Reason)));
+				responseStream.Write(Util.Serializer.Serialize(new JsonError(message, reason)));
 		}
 
-		private void UnescapeAstTree(ASTNode node)
+		private static void UnescapeAstTree(ASTNode node)
 		{
 			switch (node.Type)
 			{
@@ -134,6 +149,36 @@ namespace TS3AudioBot.Web.Api
 				break;
 			case ASTType.Error: break;
 			default: break;
+			}
+		}
+
+		private UserSession Authenticate(HttpListenerContext context)
+		{
+			IIdentity identity = context?.User.Identity;
+			if (identity == null)
+				return null;
+
+			switch (identity.AuthenticationType)
+			{
+			case "Basic":
+				HttpListenerBasicIdentity identityBasic = (HttpListenerBasicIdentity)identity;
+
+				var result = MainBot.SessionManager.GetSession(identityBasic.Name);
+				if (!result.Ok)
+					return null;
+
+				var session = result.Value;
+				if (!session.HasActiveToken)
+					return null;
+
+				if (session.Token.ApiToken != identityBasic.Password)
+					return null;
+
+				return session;
+			case "Digest":
+				return null;
+			default:
+				return null;
 			}
 		}
 	}

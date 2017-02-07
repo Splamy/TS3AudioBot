@@ -28,6 +28,7 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using ResourceFactories;
+	using Sessions;
 	using Web.Api;
 	using Web;
 
@@ -126,8 +127,7 @@ namespace TS3AudioBot
 
 			if (writeLog && !string.IsNullOrEmpty(mainBotData.logFile))
 			{
-				var encoding = new UTF8Encoding(false);
-				logStream = new StreamWriter(File.Open(mainBotData.logFile, FileMode.Append, FileAccess.Write, FileShare.Read), encoding);
+				logStream = new StreamWriter(File.Open(mainBotData.logFile, FileMode.Append, FileAccess.Write, FileShare.Read), Util.Utf8Encoder);
 				Log.RegisterLogger("[%T]%L: %M\n" + (writeLogStack ? "%S\n" : ""), "", (msg) =>
 				{
 					if (logStream != null)
@@ -730,7 +730,7 @@ namespace TS3AudioBot
 		public void CommandListClear(ExecutionInformation info) => AutoGetPlaylist(info.Session).Clear();
 
 		[Command(Private, "list delete", "<name> Deletes the playlist with the name <name>. You can only delete playlists which you also have created. Admins can delete every playlist.")]
-		public void CommandListDelete(ExecutionInformation info, string name)
+		public JsonObject CommandListDelete(ExecutionInformation info, string name)
 		{
 			if (info.ApiCall)
 				PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.IsAdmin).UnwrapThrow();
@@ -739,7 +739,7 @@ namespace TS3AudioBot
 			if (!hresult)
 			{
 				info.Session.SetResponse(ResponseListDelete, name);
-				throw new CommandException($"Do you really want to delete the playlist \"{name}\" (error:{hresult.Message})", CommandExceptionReason.CommandError);
+				return new JsonEmpty($"Do you really want to delete the playlist \"{name}\" (error:{hresult.Message})");
 			}
 			else
 			{
@@ -749,7 +749,7 @@ namespace TS3AudioBot
 					throw new CommandException("You are not allowed to delete others playlists", CommandExceptionReason.MissingRights);
 
 				info.Session.SetResponse(ResponseListDelete, name);
-				throw new CommandException($"Do you really want to delete the playlist \"{name}\"", CommandExceptionReason.CommandError);
+				return new JsonEmpty($"Do you really want to delete the playlist \"{name}\"");
 			}
 		}
 
@@ -1094,15 +1094,15 @@ namespace TS3AudioBot
 		{
 			int num;
 			if (second.HasValue)
-				num = Util.RngInstance.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
+				num = Util.Random.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
 			else if (first.HasValue)
 			{
 				if (second.Value < first.Value)
 					throw new CommandException("Value must be 0 or positive", CommandExceptionReason.CommandError);
-				num = Util.RngInstance.Next(first.Value);
+				num = Util.Random.Next(first.Value);
 			}
 			else
-				num = Util.RngInstance.Next();
+				num = Util.Random.Next();
 			return new JsonSingleValue<int>(num.ToString(CultureInfo.InvariantCulture), num);
 		}
 
@@ -1342,7 +1342,7 @@ namespace TS3AudioBot
 			else if (newVolume <= AudioFramework.MaxVolume)
 			{
 				info.Session.SetResponse(ResponseVolume, newVolume);
-				throw new CommandException("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)", CommandExceptionReason.CommandError);
+				return new JsonEmpty("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
 			}
 			return null;
 		}

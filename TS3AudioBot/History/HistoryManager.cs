@@ -19,6 +19,7 @@ namespace TS3AudioBot.History
 	using Helper;
 	using LiteDB;
 	using ResourceFactories;
+	using Sessions;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;

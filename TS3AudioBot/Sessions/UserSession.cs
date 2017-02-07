@@ -14,15 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot
+namespace TS3AudioBot.Sessions
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using System.Threading;
-	using Helper;
 	using TS3Client;
 	using TS3Client.Messages;
-	using System.Linq;
 	using Response = System.Func<CommandSystem.ExecutionInformation, string>;
 
 	public sealed class UserSession
@@ -36,7 +36,9 @@ namespace TS3AudioBot
 		public MainBot Bot { get; }
 		public ushort ActiveClientId { get; set; }
 		public ClientData Client { get; private set; }
+
 		internal UserToken Token { get; set; }
+		internal bool HasActiveToken => Token != null && Token.ApiTokenActive;
 
 		public UserSession(MainBot bot, ClientData client)
 		{

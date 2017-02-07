@@ -16,6 +16,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using Sessions;
 	using System;
 	using TS3Client.Messages;
 

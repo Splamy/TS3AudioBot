@@ -64,8 +64,8 @@
       <HintPath>..\packages\HtmlAgilityPack.1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="LiteDB, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiteDB.3.0.0-beta3\lib\net35\LiteDB.dll</HintPath>
+    <Reference Include="LiteDB, Version=3.0.0.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiteDB.3.0.0\lib\net35\LiteDB.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PropertyChanged, Version=1.52.1.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
@@ -95,7 +95,8 @@
     <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="AudioFramework.cs" />
-    <Compile Include="UserSession.cs" />
+    <Compile Include="Sessions\TokenNonce.cs" />
+    <Compile Include="Sessions\UserSession.cs" />
     <Compile Include="CommandSystem\CommandException.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandResultType.cs" />
@@ -120,6 +121,7 @@
     <Compile Include="Helper\InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="ITargetManager.cs" />
+    <Compile Include="Sessions\UserToken.cs" />
     <Compile Include="TeamspeakControl.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
@@ -127,7 +129,7 @@
     <Compile Include="PluginManager.cs" />
     <Compile Include="Ts3Query.cs" />
     <Compile Include="ResourceFactories\IPlaylistFactory.cs" />
-    <Compile Include="SessionManager.cs" />
+    <Compile Include="Sessions\SessionManager.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />
     <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
     <Compile Include="Algorithm\ListedShuffle.cs" />
@@ -208,6 +210,9 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />

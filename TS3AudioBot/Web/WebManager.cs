@@ -24,6 +24,8 @@ namespace TS3AudioBot.Web
 
 	public class WebManager : IDisposable
 	{
+		const string webRealm = "ts3ab";
+
 		private Uri localhost;
 		private Uri[] hostPaths;
 
@@ -38,7 +40,11 @@ namespace TS3AudioBot.Web
 		public WebManager(MainBot mainBot, WebData webd)
 		{
 			webData = webd;
-			webListener = new HttpListener();
+			webListener = new HttpListener
+			{
+				AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic | AuthenticationSchemes.Digest,
+				Realm = webRealm,
+			};
 
 			ReloadHostPaths();
 			InitializeSubcomponents(mainBot);

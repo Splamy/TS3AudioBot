@@ -26,8 +26,6 @@ namespace TS3Client.Full
 
 	public sealed class Ts3FullClient : Ts3BaseClient
 	{
-		private static readonly string[] plattforms = new[] { "Windows", "Linux" };
-
 		private UdpClient udpClient;
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
@@ -38,8 +36,7 @@ namespace TS3Client.Full
 		public override ClientType ClientType => ClientType.Full;
 		public ushort ClientId => packetHandler.ClientId;
 		public string QuitMessage { get; set; } = "Disconnected";
-		public VersionSign VersionSign { get; set; } = VersionSign.VER_WIN_3_0_19_03;
-		public ClientPlattform Plattform { get; set; } = ClientPlattform.Linux;
+		public VersionSign VersionSign { get; set; } = VersionSign.VER_LIN_3_0_19_4;
 
 		public Ts3FullClient(EventDispatchType dispatcher) : base(dispatcher)
 		{
@@ -151,7 +148,6 @@ namespace TS3Client.Full
 			packetHandler.CryptoInitDone();
 			ClientInit(
 				ConnectionData.Username,
-				plattforms[(int)Plattform],
 				true, true,
 				string.Empty, string.Empty,
 				Ts3Crypt.HashPassword(ConnectionData.Password),
@@ -208,14 +204,14 @@ namespace TS3Client.Full
 
 		#region FULLCLIENT SPECIFIC COMMANDS
 
-		public void ClientInit(string nickname, string plattform, bool inputHardware, bool outputHardware,
+		public void ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> SendNoResponsed(
 				new Ts3Command("clientinit", new List<CommandParameter>() {
 					new CommandParameter("client_nickname", nickname),
 					new CommandParameter("client_version", versionSign.Name),
-					new CommandParameter("client_platform", plattform),
+					new CommandParameter("client_platform", versionSign.PlattformName),
 					new CommandParameter("client_input_hardware", inputHardware),
 					new CommandParameter("client_output_hardware", outputHardware),
 					new CommandParameter("client_default_channel", defaultChannel),
@@ -273,11 +269,5 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(buffer, PacketType.Voice);
 		}
 		#endregion
-
-		public enum ClientPlattform
-		{
-			Windows = 0,
-			Linux,
-		}
 	}
 }
