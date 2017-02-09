@@ -146,7 +146,7 @@ namespace TS3AudioBot.Sessions
 		{
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
 			var clientSgIds = Bot.QueryConnection.GetClientServerGroups(Client.DatabaseId);
-			return clientSgIds.Contains(Bot.mainBotData.adminGroupId);
+			return clientSgIds.Contains(Bot.mainBotData.AdminGroupId);
 		}
 
 		public sealed class SessionToken : IDisposable

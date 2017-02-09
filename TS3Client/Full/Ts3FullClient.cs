@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -126,6 +126,8 @@ namespace TS3Client.Full
 					break;
 				}
 			}
+
+			FullDisconnect();
 		}
 
 		private bool SpecialCommandProcess(string message)
@@ -170,7 +172,7 @@ namespace TS3Client.Full
 			if (com.ExpectResponse)
 				com.AppendParameter(new CommandParameter("return_code", returnCode));
 
-			using (WaitBlock wb = new WaitBlock(targetType))
+			using (var wb = new WaitBlock(targetType))
 			{
 				lock (LockObj)
 				{

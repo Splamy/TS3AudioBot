@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@ namespace TS3Client.Full
 		/// <summary>Greatest allowed packet size, including the complete heder.</summary>
 		private const int MaxPacketSize = 500;
 		private const int HeaderSize = 13;
+		private const int MaxDecompressedSize = 40000;
 
 		private const int PacketBufferSize = 50;
 		private const int RetryTimeout = 5;
@@ -103,7 +104,7 @@ namespace TS3Client.Full
 				if (packetType == PacketType.Readable || packetType == PacketType.Voice)
 					return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
 
-				packet = QuickLZ.compress(packet, 1);
+				packet = QuickLZ.Compress(packet, 1);
 				addFlags |= PacketFlags.Compressed;
 
 				if (NeedsSplitting(packet.Length))
@@ -208,6 +209,7 @@ namespace TS3Client.Full
 				byte[] buffer;
 				try { buffer = udpClient.Receive(ref dummy); }
 				catch (IOException) { return null; }
+				catch (SocketException) { return null; }
 				if (dummy.Address.Equals(RemoteAddress.Address) && dummy.Port != RemoteAddress.Port)
 					continue;
 
@@ -287,6 +289,7 @@ namespace TS3Client.Full
 					else
 						break;
 				}
+
 				if (hasStart && hasEnd)
 				{
 					IncomingPacket preFinalPacket = null;
@@ -294,10 +297,14 @@ namespace TS3Client.Full
 					{
 						// GET & (MERGE, skip with only 1)
 						if (!packetQueue.TryDequeue(out preFinalPacket))
-							throw new InvalidOperationException();
+							throw new InvalidOperationException("Packet in queue got missing (?)");
 						// DECOMPRESS
 						if (preFinalPacket.CompressedFlag)
-							packet.Data = QuickLZ.decompress(preFinalPacket.Data);
+						{
+							if (QuickLZ.SizeDecompressed(preFinalPacket.Data) > MaxDecompressedSize)
+								throw new InvalidOperationException("Compressed packet is too large");
+							packet.Data = QuickLZ.Decompress(preFinalPacket.Data);
+						}
 						return true;
 					}
 					else // take > 1
@@ -310,7 +317,7 @@ namespace TS3Client.Full
 						for (int i = 0; i < take; i++)
 						{
 							if (!packetQueue.TryDequeue(out preFinalPacket))
-								throw new InvalidOperationException();
+								throw new InvalidOperationException("Packet in queue got missing (?)");
 							if (!firstSet)
 							{
 								isCompressed = preFinalPacket.CompressedFlag;
@@ -321,15 +328,23 @@ namespace TS3Client.Full
 						}
 						// DECOMPRESS
 						if (isCompressed)
-							packet.Data = QuickLZ.decompress(preFinalArray);
+						{
+							if (QuickLZ.SizeDecompressed(preFinalArray) > MaxDecompressedSize)
+								throw new InvalidOperationException("Compressed packet is too large");
+							packet.Data = QuickLZ.Decompress(preFinalArray);
+						}
 						else
+						{
 							packet.Data = preFinalArray;
+						}
 					}
 
 					return true;
 				}
 				else
+				{
 					return false;
+				}
 			}
 #if DEBUG
 			else
@@ -451,6 +466,7 @@ namespace TS3Client.Full
 							{
 								ExitReason = MoveReason.Timeout;
 								Stop();
+								return;
 							}
 							SendRaw(outgoingPacket);
 						}

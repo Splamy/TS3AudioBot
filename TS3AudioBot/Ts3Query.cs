@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,6 @@ namespace TS3AudioBot
 		{
 			tsQueryClient = (Ts3QueryClient)tsBaseClient;
 			connectionData = qcd;
-			SuppressLoopback = qcd.suppressLoopback;
 		}
 
 		public override void Connect()
@@ -81,7 +80,5 @@ namespace TS3AudioBot
 		public string user;
 		[Info("the password for the TeamSpeak3 Query")]
 		public string passwd;
-		[Info("whether or not to show own received messages in the log", "true")]
-		public bool suppressLoopback;
 	}
 }

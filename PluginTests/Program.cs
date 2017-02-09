@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
@@ -59,7 +59,7 @@ namespace PluginTests
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Possible plugin failed to load: ", ex);
+				Console.WriteLine("Possible plugin failed to load: {0}", ex);
 				return PluginResponse.Crash;
 			}
 		}

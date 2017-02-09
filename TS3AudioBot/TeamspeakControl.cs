@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ namespace TS3AudioBot
 			if (OnMessageReceived == null) return;
 			foreach (var evData in eventArgs)
 			{
-				if (SuppressLoopback && evData.InvokerId == me.ClientId)
+				if (evData.InvokerId == me.ClientId)
 					continue;
 				OnMessageReceived?.Invoke(sender, evData);
 			}
@@ -64,8 +64,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		protected bool SuppressLoopback { get; set; }
-
 		private List<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
 		private IDictionary<ulong, string> clientDbNames;
@@ -86,12 +84,18 @@ namespace TS3AudioBot
 			tsBaseClient.OnClientEnterView += ExtendedClientEnterView;
 			tsBaseClient.OnTextMessageReceived += ExtendedTextMessage;
 			tsBaseClient.OnConnected += OnConnected;
+			tsBaseClient.OnDisconnected += OnDisconnected;
 		}
 
 		public abstract void Connect();
 		protected virtual void OnConnected(object sender, EventArgs e)
 		{
 			me = GetSelf();
+		}
+
+		private void OnDisconnected(object sender, DisconnectEventArgs e)
+		{
+			Log.Write(Log.Level.Debug, "Bot disconnected. Reason: {0}", e.ExitReason);
 		}
 
 		public R SendMessage(string message, ushort clientId)

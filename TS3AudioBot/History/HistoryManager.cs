@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -59,7 +59,7 @@ namespace TS3AudioBot.History
 			// check if the old history database system can open it
 			try
 			{
-				upgrader.OpenFile(historyManagerData.historyFile);
+				upgrader.OpenFile(historyManagerData.HistoryFile);
 				Log.Write(Log.Level.Info, "Found old history database vesion, upgrading now.");
 
 				moveData = upgrader
@@ -88,7 +88,7 @@ namespace TS3AudioBot.History
 			#endregion
 
 			Util.Init(ref unusedIds);
-			historyFile = new FileInfo(hmd.historyFile);
+			historyFile = new FileInfo(hmd.HistoryFile);
 			database = new LiteDatabase(historyFile.FullName);
 
 			audioLogEntries = database.GetCollection<AudioLogEntry>(audioLogEntriesTable);
@@ -158,7 +158,7 @@ namespace TS3AudioBot.History
 				return null;
 
 			int nextHid;
-			if (historyManagerData.fillDeletedIds && unusedIds.Any())
+			if (historyManagerData.FillDeletedIds && unusedIds.Any())
 			{
 				nextHid = unusedIds.First.Value;
 				unusedIds.RemoveFirst();
@@ -317,9 +317,9 @@ namespace TS3AudioBot.History
 
 	public class HistoryManagerData : ConfigData
 	{
-		[Info("the absolute or relative path to the history database file", "history.db")]
-		public string historyFile { get; set; }
-		[Info("whether or not deleted history ids should be filled up with new songs", "true")]
-		public bool fillDeletedIds { get; set; }
+		[Info("The Path to the history database file", "history.db")]
+		public string HistoryFile { get; set; }
+		[Info("Whether or not deleted history ids should be filled up with new songs", "true")]
+		public bool FillDeletedIds { get; set; }
 	}
 }

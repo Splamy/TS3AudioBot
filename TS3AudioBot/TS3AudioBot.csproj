@@ -48,6 +48,8 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DocumentationFile>
     </DocumentationFile>
+    <LangVersion>6</LangVersion>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\Release\</OutputPath>
@@ -140,7 +142,6 @@
     <Compile Include="Helper\TextUtil.cs" />
     <Compile Include="Helper\TickPool.cs" />
     <Compile Include="Helper\Util.cs" />
-    <Compile Include="Helper\WaitEventBlock.cs" />
     <Compile Include="Helper\WebWrapper.cs" />
     <Compile Include="History\Deprecated\AudioLogEntry.cs" />
     <Compile Include="History\Deprecated\HistoryFile.cs" />

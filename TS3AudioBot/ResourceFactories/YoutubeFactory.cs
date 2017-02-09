@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -86,10 +86,12 @@ namespace TS3AudioBot.ResourceFactories
 					if (vQuality == null)
 						continue;
 
-					var vt = new VideoData();
-					vt.Link = vLink;
-					vt.Codec = GetCodec(vType);
-					vt.Qualitydesciption = vQuality;
+					var vt = new VideoData()
+					{
+						Link = vLink,
+						Codec = GetCodec(vType),
+						Qualitydesciption = vQuality
+					};
 					videoTypes.Add(vt);
 				}
 			}
@@ -117,10 +119,12 @@ namespace TS3AudioBot.ResourceFactories
 					if (vLink == null)
 						continue;
 
-					var vt = new VideoData();
-					vt.Codec = GetCodec(vType);
-					vt.Qualitydesciption = vType;
-					vt.Link = vLink;
+					var vt = new VideoData()
+					{
+						Codec = GetCodec(vType),
+						Qualitydesciption = vType,
+						Link = vLink
+					};
 					if (audioOnly)
 						vt.AudioOnly = true;
 					else
@@ -141,7 +145,7 @@ namespace TS3AudioBot.ResourceFactories
 			var result = ValidateMedia(videoTypes[codec]);
 			if (!result)
 			{
-				if (string.IsNullOrWhiteSpace(data.youtubedlpath))
+				if (string.IsNullOrWhiteSpace(data.YoutubedlPath))
 					return result.Message;
 
 				return YoutubeDlWrapped(resource);
@@ -155,7 +159,7 @@ namespace TS3AudioBot.ResourceFactories
 		private int SelectStream(List<VideoData> list)
 		{
 #if DEBUG
-			StringBuilder dbg = new StringBuilder("YT avail codecs: ");
+			var dbg = new StringBuilder("YT avail codecs: ");
 			foreach (var yd in list)
 				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
 			Log.Write(Log.Level.Debug, dbg.ToString());
@@ -238,7 +242,7 @@ namespace TS3AudioBot.ResourceFactories
 							+ "&playlistId=" + id
 							+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
 							+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
-							+ "&key=" + data.apiKey);
+							+ "&key=" + data.ApiKey);
 
 				string response;
 				if (!WebWrapper.DownloadString(out response, queryString))
@@ -323,7 +327,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			try
 			{
-				using (Process tmproc = new Process())
+				using (var tmproc = new Process())
 				{
 					tmproc.StartInfo.FileName = ytdlPath.Item1;
 					tmproc.StartInfo.Arguments = ytdlPath.Item2;
@@ -365,7 +369,7 @@ namespace TS3AudioBot.ResourceFactories
 				return new Tuple<string, string>(defaultYtDlPath, $"--get-title --get-url --id {id}");
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
-			string fullCustomPath = Path.GetFullPath(data.youtubedlpath);
+			string fullCustomPath = Path.GetFullPath(data.YoutubedlPath);
 			if (File.Exists(fullCustomPath) || File.Exists(fullCustomPath + ".exe"))
 				return new Tuple<string, string>(fullCustomPath, $"--get-title --get-url --id {id}");
 
@@ -412,10 +416,10 @@ namespace TS3AudioBot.ResourceFactories
 #pragma warning disable CS0649
 	public class YoutubeFactoryData : ConfigData
 	{
-		[Info("a youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
-		public string apiKey { get; set; }
-		[Info("absolute or relative path to the youtube-dl binary or repository", "")]
-		public string youtubedlpath { get; set; }
+		[Info("A youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
+		public string ApiKey { get; set; }
+		[Info("Path to the youtube-dl binary or local git repository", "")]
+		public string YoutubedlPath { get; set; }
 	}
 #pragma warning restore CS0649
 

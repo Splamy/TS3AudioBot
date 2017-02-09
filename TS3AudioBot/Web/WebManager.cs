@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ namespace TS3AudioBot.Web
 	using System.Net;
 	using System.Threading;
 
-	public class WebManager : IDisposable
+	public sealed class WebManager : IDisposable
 	{
 		const string webRealm = "ts3ab";
 
@@ -45,6 +45,7 @@ namespace TS3AudioBot.Web
 				AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic | AuthenticationSchemes.Digest,
 				Realm = webRealm,
 			};
+			webListener.AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector;
 
 			ReloadHostPaths();
 			InitializeSubcomponents(mainBot);
@@ -77,8 +78,7 @@ namespace TS3AudioBot.Web
 
 				for (int i = 0; i < addrs.Length; i++)
 				{
-					var uriBuilder = new UriBuilder(addrs[i]);
-					uriBuilder.Port = webData.Port;
+					var uriBuilder = new UriBuilder(addrs[i]) { Port = webData.Port };
 					hostPaths[i + 1] = uriBuilder.Uri;
 				}
 			}
@@ -93,13 +93,31 @@ namespace TS3AudioBot.Web
 				webListener.Prefixes.Add(host.AbsoluteUri);
 		}
 
+		public AuthenticationSchemes AuthenticationSchemeSelector(HttpListenerRequest httpRequest)
+		{
+			var headerVal = httpRequest.Headers["Authorization"];
+			if (string.IsNullOrEmpty(headerVal))
+				return AuthenticationSchemes.Anonymous;
+
+			var authParts = headerVal.SplitNoEmpty(' ');
+			if (authParts.Length < 2)
+				return AuthenticationSchemes.Anonymous;
+
+			var authType = authParts[0].ToUpper();
+			if (authType == "BASIC")
+				return AuthenticationSchemes.Basic;
+			else if (authType == "DIGEST")
+				return AuthenticationSchemes.Digest;
+
+			return AuthenticationSchemes.Anonymous;
+		}
+
 		public void StartServerAsync()
 		{
 			if (!startWebServer)
 				return;
 
-			serverThread = new Thread(EnterWebLoop);
-			serverThread.Name = "WebInterface";
+			serverThread = new Thread(EnterWebLoop) { Name = "WebInterface" };
 			serverThread.Start();
 		}
 
@@ -141,16 +159,16 @@ namespace TS3AudioBot.Web
 
 	public class WebData : ConfigData
 	{
-		[Info("a space seperated list of all urls the web api should be possible to be accessed with", "")]
+		[Info("A space seperated list of all urls the web api should be possible to be accessed with", "")]
 		public string HostAddress { get; set; }
 
-		[Info("the port for the api server", "8180")]
+		[Info("The port for the api server", "8180")]
 		public ushort Port { get; set; }
 
-		[Info("if you want to start the web api server.", "false")]
+		[Info("If you want to start the web api server.", "false")]
 		public bool EnableApi { get; set; }
 
-		[Info("if you want to start the webinterface server", "false")]
+		[Info("If you want to start the webinterface server", "false")]
 		public bool EnableWebinterface { get; set; }
 	}
 }

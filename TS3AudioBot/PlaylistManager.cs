@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -308,7 +308,7 @@ namespace TS3AudioBot
 			if (!IsNameValid(plist.Name))
 				return "Invalid playlist name.";
 
-			var di = new DirectoryInfo(data.playlistPath);
+			var di = new DirectoryInfo(data.PlaylistPath);
 			if (!di.Exists)
 				return "No playlist directory has been set up.";
 
@@ -378,7 +378,7 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
-		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(data.playlistPath, name ?? string.Empty));
+		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(data.PlaylistPath, name ?? string.Empty));
 
 		public R DeletePlaylist(string name, ulong requestingClientDbId, bool force = false)
 		{
@@ -415,7 +415,7 @@ namespace TS3AudioBot
 		public IEnumerable<string> GetAvailablePlaylists() => GetAvailablePlaylists(null);
 		public IEnumerable<string> GetAvailablePlaylists(string pattern)
 		{
-			var di = new DirectoryInfo(data.playlistPath);
+			var di = new DirectoryInfo(data.PlaylistPath);
 			if (!di.Exists)
 				return Enumerable.Empty<string>();
 
@@ -575,8 +575,8 @@ namespace TS3AudioBot
 #pragma warning disable CS0649
 	public class PlaylistManagerData : ConfigData
 	{
-		[Info("absolute or relative path the playlist folder", "Playlists")]
-		public string playlistPath { get; set; }
+		[Info("Path the playlist folder", "Playlists")]
+		public string PlaylistPath { get; set; }
 	}
 #pragma warning restore CS0649
 }

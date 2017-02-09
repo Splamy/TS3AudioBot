@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -65,7 +65,7 @@ namespace TS3ABotUnitTests
 			var data3 = new HistorySaveData(ar3, 103);
 
 
-			HistoryManager hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			var hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
 
 			hf.LogAudioResource(data1);
 
@@ -76,7 +76,7 @@ namespace TS3ABotUnitTests
 
 			hf.Dispose();
 
-			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
@@ -93,7 +93,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// store and order check
-			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -107,7 +107,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// check entry renaming
-			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
@@ -127,7 +127,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// recheck order
-			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -135,7 +135,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// delete entry 1
-			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
 			hf.RemoveEntry(hf.FindEntryByResource(ar1));
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
@@ -149,7 +149,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// delete entry 2
-			hf = new HistoryManager(new HistoryManagerData() { historyFile = testFile, fillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
 			// .. check integrity from previous store
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -259,11 +259,13 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void XCommandSystemFilterTest()
 		{
-			var filterList = new Dictionary<string, object>();
-			filterList.Add("help", null);
-			filterList.Add("quit", null);
-			filterList.Add("play", null);
-			filterList.Add("ply", null);
+			var filterList = new Dictionary<string, object>
+			{
+				{ "help", null },
+				{ "quit", null },
+				{ "play", null },
+				{ "ply", null }
+			};
 
 			// Exact match
 			var result = XCommandSystem.FilterList(filterList, "help");
@@ -357,7 +359,7 @@ namespace TS3ABotUnitTests
 		{
 			for (int i = 1; i < 1000; i++)
 			{
-				BitArray checkNumbers = new BitArray(i, false);
+				var checkNumbers = new BitArray(i, false);
 
 				algo.Length = i;
 				algo.Seed = i;

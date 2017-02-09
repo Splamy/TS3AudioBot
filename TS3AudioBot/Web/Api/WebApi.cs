@@ -154,7 +154,7 @@ namespace TS3AudioBot.Web.Api
 
 		private UserSession Authenticate(HttpListenerContext context)
 		{
-			IIdentity identity = context?.User.Identity;
+			IIdentity identity = context.User?.Identity;
 			if (identity == null)
 				return null;
 

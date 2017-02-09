@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System;
 	using System.Runtime.Serialization;
-
+	
 	[Serializable]
 	public class CommandException : Exception
 	{

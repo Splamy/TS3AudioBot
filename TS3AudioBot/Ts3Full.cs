@@ -66,7 +66,6 @@ namespace TS3AudioBot
 			tsFullClient = (Ts3FullClient)tsBaseClient;
 
 			ts3FullClientData = tfcd;
-			SuppressLoopback = tfcd.SuppressLoopback;
 
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
@@ -82,15 +81,15 @@ namespace TS3AudioBot
 		public override void Connect()
 		{
 			IdentityData identity;
-			if (string.IsNullOrEmpty(ts3FullClientData.identity))
+			if (string.IsNullOrEmpty(ts3FullClientData.Identity))
 			{
 				identity = Ts3Crypt.GenerateNewIdentity();
-				ts3FullClientData.identity = identity.PrivateKeyString;
-				ts3FullClientData.identityoffset = identity.ValidKeyOffset;
+				ts3FullClientData.Identity = identity.PrivateKeyString;
+				ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
 			}
 			else
 			{
-				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.identity, ts3FullClientData.identityoffset);
+				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.Identity, ts3FullClientData.IdentityOffset);
 			}
 
 			tsFullClient.QuitMessage = quitMessages[Util.Random.Next(0, quitMessages.Length)];
@@ -98,8 +97,8 @@ namespace TS3AudioBot
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = "AudioBot",
-				Hostname = ts3FullClientData.host,
-				Port = ts3FullClientData.port,
+				Hostname = ts3FullClientData.Host,
+				Port = ts3FullClientData.Port,
 				Identity = identity,
 			});
 
@@ -195,7 +194,7 @@ namespace TS3AudioBot
 				{
 					StartInfo = new ProcessStartInfo()
 					{
-						FileName = ts3FullClientData.ffmpegpath,
+						FileName = ts3FullClientData.FfmpegPath,
 						Arguments = $"-hide_banner -nostats -loglevel panic -i \"{ url }\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1",
 						RedirectStandardOutput = true,
 						RedirectStandardInput = true,
@@ -382,17 +381,15 @@ namespace TS3AudioBot
 
 	public class Ts3FullClientData : ConfigData
 	{
-		[Info("the address of the TeamSpeak3 server")]
-		public string host { get; set; }
-		[Info("the port of the TeamSpeak3 server", "9987")]
-		public ushort port { get; set; }
-		[Info("the client identity", "")]
-		public string identity { get; set; }
-		[Info("the client identity security offset", "0")]
-		public ulong identityoffset { get; set; }
-		[Info("the relative or full path to ffmpeg", "ffmpeg")]
-		public string ffmpegpath { get; set; }
-		[Info("whether or not to show own received messages in the log", "true")]
-		public bool SuppressLoopback { get; set; }
+		[Info("The address of the TeamSpeak3 server")]
+		public string Host { get; set; }
+		[Info("The port of the TeamSpeak3 server", "9987")]
+		public ushort Port { get; set; }
+		[Info("| DO NOT MAKE THIS KEY PUBLIC | The client identity", "")]
+		public string Identity { get; set; }
+		[Info("The client identity security offset", "0")]
+		public ulong IdentityOffset { get; set; }
+		[Info("The path to ffmpeg", "ffmpeg")]
+		public string FfmpegPath { get; set; }
 	}
 }

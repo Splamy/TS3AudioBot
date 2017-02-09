@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ namespace TS3AudioBot
 
 	public sealed class AudioFramework : IDisposable
 	{
-		public int MaxUserVolume => audioFrameworkData.maxUserVolume;
+		public int MaxUserVolume => audioFrameworkData.MaxUserVolume;
 		public const int MaxVolume = 100;
 
 		private AudioFrameworkData audioFrameworkData;
@@ -116,7 +116,7 @@ namespace TS3AudioBot
 				return $"Internal player error ({result.Message})";
 			}
 
-			Volume = config.Volume ?? audioFrameworkData.defaultVolume;
+			Volume = config.Volume ?? audioFrameworkData.DefaultVolume;
 			Log.Write(Log.Level.Debug, "AF set volume: {0}", Volume);
 
 			return R.OkR;
@@ -156,10 +156,10 @@ namespace TS3AudioBot
 
 	public class AudioFrameworkData : ConfigData
 	{
-		[Info("the default volume a song should start with")]
-		public int defaultVolume { get; set; }
-		[Info("the maximum volume a normal user can request")]
-		public int maxUserVolume { get; set; }
+		[Info("The default volume a song should start with", "10")]
+		public int DefaultVolume { get; set; }
+		[Info("The maximum volume a normal user can request", "30")]
+		public int MaxUserVolume { get; set; }
 	}
 
 	public enum AudioType

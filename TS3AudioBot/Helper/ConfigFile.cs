@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -23,12 +23,14 @@ namespace TS3AudioBot.Helper
 	using System.Globalization;
 	using System.IO;
 	using System.Reflection;
-	using System.Text;
 	using System.Linq;
 
 	public abstract class ConfigFile
 	{
-		private static readonly char[] splitChar = new[] { '=' };
+		private static char splitChar = '=';
+		private static readonly char[] splitCharArr = new[] { splitChar };
+		private static string commentSeq = "#";
+		private static readonly string[] commentSeqArr = new[] { commentSeq, ";", "//" };
 		private const string nameSeperator = "::";
 		private bool changed;
 		private List<ConfigData> confObjects;
@@ -40,7 +42,7 @@ namespace TS3AudioBot.Helper
 
 		public static ConfigFile OpenOrCreate(string path)
 		{
-			NormalConfigFile cfgFile = new NormalConfigFile(path);
+			var cfgFile = new NormalConfigFile(path);
 			return cfgFile.Open() ? cfgFile : null;
 		}
 
@@ -63,7 +65,7 @@ namespace TS3AudioBot.Helper
 			if (string.IsNullOrEmpty(associatedClass))
 				throw new ArgumentNullException(nameof(associatedClass));
 
-			T dataStruct = new T();
+			var dataStruct = new T();
 			var fields = typeof(T).GetProperties();
 			foreach (var field in fields)
 			{
@@ -71,14 +73,18 @@ namespace TS3AudioBot.Helper
 				string entryName = associatedClass + nameSeperator + field.Name;
 				string rawValue = string.Empty;
 				object parsedValue = null;
+				bool newKey = false;
 
 				// determine the raw data string, whether from Console or File
 				if (!ReadKey(entryName, out rawValue))
 				{
+					newKey = true;
 					changed = true;
 					// Check if we can use the default value
 					if (iAtt != null && defaultIfPossible && iAtt.HasDefault)
+					{
 						rawValue = iAtt.DefaultValue;
+					}
 					else
 					{
 						Console.Write("Please enter {0}: ", iAtt != null ? iAtt.Description : entryName);
@@ -97,6 +103,8 @@ namespace TS3AudioBot.Helper
 					continue;
 				}
 
+				if (newKey && iAtt != null)
+					WriteComment(iAtt.Description);
 				WriteValueToConfig(entryName, parsedValue);
 
 				// finally set the value to our object
@@ -149,11 +157,15 @@ namespace TS3AudioBot.Helper
 		protected void WriteValueToConfig(string entryName, object value)
 			=> WriteKey(entryName, Convert.ToString(value, CultureInfo.InvariantCulture));
 
+		protected abstract void WriteComment(string text);
 		protected abstract void WriteKey(string key, string value);
 		protected abstract bool ReadKey(string key, out string value);
 		public abstract void Close();
 
 		public abstract IEnumerable<KeyValuePair<string, string>> GetConfigMap();
+
+		protected static bool IsComment(string text) =>
+			commentSeqArr.Any(seq => text.StartsWith(seq, StringComparison.Ordinal)) || string.IsNullOrWhiteSpace(text);
 
 		private class NormalConfigFile : ConfigFile
 		{
@@ -186,21 +198,30 @@ namespace TS3AudioBot.Helper
 				for (int i = 0; i < strLines.Length; i++)
 				{
 					var s = strLines[i];
-					if (s.StartsWith(";", StringComparison.Ordinal)
-						|| s.StartsWith("//", StringComparison.Ordinal)
-						|| s.StartsWith("#", StringComparison.Ordinal)
-						|| string.IsNullOrWhiteSpace(s))
+					if (IsComment(s))
 					{
 						fileLines.Add(new LineData(s));
 					}
 					else
 					{
-						string[] kvp = s.Split(splitChar, 2);
-						if (kvp.Length < 2) { Console.WriteLine("Invalid log entry: \"{0}\"", s); continue; }
+						string[] kvp = s.Split(splitCharArr, 2);
+						if (kvp.Length < 2)
+						{
+							Console.WriteLine("Invalid log entry: \"{0}\"", s);
+							continue;
+						}
 						WriteKey(kvp[0], kvp[1]);
 					}
 				}
 				return true;
+			}
+
+			protected override void WriteComment(string text)
+			{
+				if (!open)
+					changed = true;
+
+				fileLines.Add(new LineData(commentSeq + " " + text));
 			}
 
 			protected override void WriteKey(string key, string value)
@@ -208,8 +229,10 @@ namespace TS3AudioBot.Helper
 				if (!open)
 					changed = true;
 
+				string lowerKey = key.ToLower();
+
 				int line;
-				if (data.TryGetValue(key, out line))
+				if (data.TryGetValue(lowerKey, out line))
 				{
 					fileLines[line].Value = value;
 				}
@@ -217,7 +240,7 @@ namespace TS3AudioBot.Helper
 				{
 					line = fileLines.Count;
 					fileLines.Add(new LineData(key, value));
-					data.Add(key, line);
+					data.Add(lowerKey, line);
 				}
 				FlushToFile();
 			}
@@ -225,7 +248,7 @@ namespace TS3AudioBot.Helper
 			protected override bool ReadKey(string key, out string value)
 			{
 				int line;
-				if (data.TryGetValue(key, out line))
+				if (data.TryGetValue(key.ToLower(), out line))
 				{
 					value = fileLines[line].Value;
 					return true;
@@ -245,7 +268,7 @@ namespace TS3AudioBot.Helper
 
 			private void ConfigDataPropertyChanged(object sender, PropertyChangedEventArgs e)
 			{
-				ConfigData cd = sender as ConfigData;
+				var cd = sender as ConfigData;
 				if (cd == null)
 					return;
 
@@ -269,7 +292,7 @@ namespace TS3AudioBot.Helper
 				{
 					try
 					{
-						using (StreamWriter output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
+						using (var output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
 						{
 							foreach (var line in fileLines)
 							{
@@ -280,7 +303,7 @@ namespace TS3AudioBot.Helper
 								else
 								{
 									output.Write(line.Key);
-									output.Write('=');
+									output.Write(splitChar);
 									output.WriteLine(line.Value);
 								}
 							}
@@ -302,12 +325,20 @@ namespace TS3AudioBot.Helper
 			private class LineData
 			{
 				public bool Comment { get; }
-				public string Key { get; set; }
+				public string Key { get; }
 				public string Value { get; set; }
 
 				public LineData(string comment) { Value = comment; Comment = true; }
-				public LineData(string key, string value) { Key = key; Value = value; Comment = false; }
-				public override string ToString() => Comment ? "#" + Value : Key + " = " + Value;
+				public LineData(string key, string value)
+				{
+					Key = key;
+					Value = value;
+					Comment = IsComment(key);
+
+					if (!Comment && value == null)
+						throw new ArgumentNullException(nameof(value));
+				}
+				public override string ToString() => Comment ? Value : Key + splitChar + Value;
 			}
 		}
 
@@ -320,8 +351,9 @@ namespace TS3AudioBot.Helper
 				data = new Dictionary<string, string>();
 			}
 
-			protected override bool ReadKey(string key, out string value) => data.TryGetValue(key, out value);
-			protected override void WriteKey(string key, string value) => data[key] = value;
+			protected override void WriteComment(string text) { }
+			protected override bool ReadKey(string key, out string value) => data.TryGetValue(key.ToLower(), out value);
+			protected override void WriteKey(string key, string value) => data[key.ToLower()] = value;
 			public override void Close() { }
 
 			public override IEnumerable<KeyValuePair<string, string>> GetConfigMap() => data;

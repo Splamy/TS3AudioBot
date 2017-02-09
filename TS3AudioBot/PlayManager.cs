@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -25,10 +25,10 @@ namespace TS3AudioBot
 	public class PlayManager
 	{
 		private MainBot botParent;
-		private AudioFramework audioFramework => botParent.AudioFramework;
-		private PlaylistManager playlistManager => botParent.PlaylistManager;
-		private ResourceFactoryManager resourceFactoryManager => botParent.FactoryManager;
-		private HistoryManager historyManager => botParent.HistoryManager;
+		private AudioFramework AudioFramework => botParent.AudioFramework;
+		private PlaylistManager PlaylistManager => botParent.PlaylistManager;
+		private ResourceFactoryManager ResourceFactoryManager => botParent.FactoryManager;
+		private HistoryManager HistoryManager => botParent.HistoryManager;
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
@@ -46,7 +46,7 @@ namespace TS3AudioBot
 		public R Enqueue(InvokerData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
 		public R Enqueue(InvokerData invoker, string message, AudioType? type = null)
 		{
-			var result = resourceFactoryManager.Load(message, type);
+			var result = ResourceFactoryManager.Load(message, type);
 			if (!result)
 				return result.Message;
 			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
@@ -56,7 +56,7 @@ namespace TS3AudioBot
 		private R EnqueueInternal(InvokerData invoker, PlaylistItem pli)
 		{
 			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
-			playlistManager.AddToFreelist(pli);
+			PlaylistManager.AddToFreelist(pli);
 
 			return R.OkR;
 		}
@@ -68,7 +68,7 @@ namespace TS3AudioBot
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R Play(InvokerData invoker, AudioResource ar, MetaData meta = null)
 		{
-			var result = resourceFactoryManager.Load(ar);
+			var result = ResourceFactoryManager.Load(ar);
 			if (!result)
 				return result.Message;
 			return Play(invoker, result.Value, meta ?? new MetaData());
@@ -82,18 +82,18 @@ namespace TS3AudioBot
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R Play(InvokerData invoker, string link, AudioType? type = null, MetaData meta = null)
 		{
-			var result = resourceFactoryManager.Load(link, type);
+			var result = ResourceFactoryManager.Load(link, type);
 			if (!result)
 				return result.Message;
 			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
 		public R Play(InvokerData invoker, uint historyId, MetaData meta = null)
 		{
-			var getresult = historyManager.GetEntryById(historyId);
+			var getresult = HistoryManager.GetEntryById(historyId);
 			if (!getresult)
 				return getresult.Message;
 
-			var loadresult = resourceFactoryManager.Load(getresult.Value.AudioResource);
+			var loadresult = ResourceFactoryManager.Load(getresult.Value.AudioResource);
 			if (!loadresult)
 				return loadresult.Message;
 
@@ -137,19 +137,19 @@ namespace TS3AudioBot
 			BeforeResourceStarted?.Invoke(this, new EventArgs());
 
 			// pass the song to the AF to start it
-			var result = audioFramework.StartResource(play, meta);
+			var result = AudioFramework.StartResource(play, meta);
 			if (!result) return result;
 
 			// add it to our freelist for comfort
 			if (!meta.FromPlaylist)
 			{
-				int index = playlistManager.InsertToFreelist(new PlaylistItem(play.BaseData, meta));
-				playlistManager.Index = index;
+				int index = PlaylistManager.InsertToFreelist(new PlaylistItem(play.BaseData, meta));
+				PlaylistManager.Index = index;
 			}
 
 			// Log our resource in the history
 			ulong? owner = meta.ResourceOwnerDbId ?? invoker.DatabaseId;
-			historyManager.LogAudioResource(new HistorySaveData(play.BaseData, owner));
+			HistoryManager.LogAudioResource(new HistorySaveData(play.BaseData, owner));
 
 			CurrentPlayData = new PlayInfoEventArgs(invoker, play, meta); // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, CurrentPlayData);
@@ -162,7 +162,7 @@ namespace TS3AudioBot
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = playlistManager.Next()) == null) break;
+				if ((pli = PlaylistManager.Next()) == null) break;
 				if (Play(invoker, pli))
 					return R.OkR;
 				// optional message here that playlist entry has been skipped
@@ -177,7 +177,7 @@ namespace TS3AudioBot
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = playlistManager.Previous()) == null) break;
+				if ((pli = PlaylistManager.Previous()) == null) break;
 				if (Play(invoker, pli))
 					return R.OkR;
 				// optional message here that playlist entry has been skipped

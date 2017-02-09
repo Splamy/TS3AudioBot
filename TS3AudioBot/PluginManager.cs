@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -208,12 +208,12 @@ namespace TS3AudioBot
 					strb.Append("#").Append(plugin.Id.ToString("D" + digits, CultureInfo.InvariantCulture)).Append('|');
 					switch (plugin.status)
 					{
-						case PluginStatus.Off: strb.Append("OFF"); break;
-						case PluginStatus.Ready: strb.Append("RDY"); break;
-						case PluginStatus.Active: strb.Append("+ON"); break;
-						case PluginStatus.Disabled: strb.Append("UNL"); break;
-						case PluginStatus.Error: strb.Append("ERR"); break;
-						default: throw new InvalidProgramException();
+					case PluginStatus.Off: strb.Append("OFF"); break;
+					case PluginStatus.Ready: strb.Append("RDY"); break;
+					case PluginStatus.Active: strb.Append("+ON"); break;
+					case PluginStatus.Disabled: strb.Append("UNL"); break;
+					case PluginStatus.Error: strb.Append("ERR"); break;
+					default: throw new InvalidProgramException();
 					}
 					strb.Append('|').AppendLine(plugin.proxy?.Name ?? "<not loaded>");
 				}
@@ -454,8 +454,7 @@ namespace TS3AudioBot
 
 		private static Type CreateDelegateType(Type ret, Type[] param)
 		{
-			var tArgs = new List<Type>(param);
-			tArgs.Add(ret);
+			var tArgs = new List<Type>(param) { ret };
 			return Expression.GetDelegateType(tArgs.ToArray());
 		}
 
@@ -516,7 +515,7 @@ namespace TS3AudioBot
 
 	public class PluginManagerData : ConfigData
 	{
-		[Info("The relative path to the pugins", "Plugins")]
+		[Info("The path to the pugins", "Plugins")]
 		public string PluginPath { get; set; }
 	}
 }

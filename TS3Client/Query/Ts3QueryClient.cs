@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -77,7 +77,7 @@ namespace TS3Client.Query
 
 		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType) // Synchronous
 		{
-			using (WaitBlock wb = new WaitBlock(targetType))
+			using (var wb = new WaitBlock(targetType))
 			{
 				lock (LockObj)
 				{
@@ -118,7 +118,7 @@ namespace TS3Client.Query
 
 		#endregion
 
-		public override void Dispose()
+		public sealed override void Dispose()
 		{
 			base.Dispose();
 

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -16,12 +16,9 @@
 
 namespace TS3AudioBot.Helper
 {
+	using CommandSystem;
 	using System;
-	using System.Collections.Generic;
-	using System.ComponentModel;
-	using System.Diagnostics;
 	using System.IO;
-	using System.Linq;
 	using System.Reflection;
 	using System.Security.Principal;
 	using System.Text;
@@ -41,45 +38,6 @@ namespace TS3AudioBot.Helper
 				int p = (int)Environment.OSVersion.Platform;
 				return (p == 4) || (p == 6) || (p == 128);
 			}
-		}
-
-		public static bool Execute(string path)
-		{
-			try
-			{
-				using (Process tmproc = new Process())
-				{
-					ProcessStartInfo psi = new ProcessStartInfo() { FileName = path, };
-					tmproc.StartInfo = psi;
-					tmproc.Start();
-					// Test if it was started successfully
-					// True if the process runs for more than 10 ms or the exit code is 0
-					return !tmproc.WaitForExit(10) || tmproc.ExitCode == 0;
-				}
-			}
-			catch (Win32Exception ex)
-			{
-				Log.Write(Log.Level.Error, "\"{0}\" couldn't be run/found ({1})", path, ex);
-				return false;
-			}
-		}
-
-		public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int amount)
-		{
-			// if the array has fixed length like a list or array we can cast it to IList<T> und use skip + count efficiently
-			var list = source as IList<T>;
-			if (list != null)
-				return list.Skip(Math.Max(0, list.Count - amount));
-
-			// otherwise we need to evaluate the entire array
-			var temp = new LinkedList<T>();
-			foreach (var value in source)
-			{
-				temp.AddLast(value);
-				if (temp.Count > amount)
-					temp.RemoveFirst();
-			}
-			return temp;
 		}
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
@@ -120,7 +78,7 @@ namespace TS3AudioBot.Helper
 			{
 				if (stream == null)
 					throw new InvalidOperationException("Resource not found");
-				using (MemoryStream ms = new MemoryStream())
+				using (var ms = new MemoryStream())
 				{
 					stream.CopyTo(ms);
 					return ms.ToArray();
@@ -134,9 +92,9 @@ namespace TS3AudioBot.Helper
 			{
 				try
 				{
-					using (WindowsIdentity user = WindowsIdentity.GetCurrent())
+					using (var user = WindowsIdentity.GetCurrent())
 					{
-						WindowsPrincipal principal = new WindowsPrincipal(user);
+						var principal = new WindowsPrincipal(user);
 						return principal.IsInRole(WindowsBuiltInRole.Administrator);
 					}
 				}
@@ -219,7 +177,7 @@ namespace TS3AudioBot.Helper
 		public static void UnwrapThrow(this R r)
 		{
 			if (!r.Ok)
-				throw new CommandSystem.CommandException(r.Message, CommandSystem.CommandExceptionReason.CommandError);
+				throw new CommandException(r.Message, CommandExceptionReason.CommandError);
 		}
 
 		public static T UnwrapThrow<T>(this R<T> r)
@@ -227,7 +185,7 @@ namespace TS3AudioBot.Helper
 			if (r.Ok)
 				return r.Value;
 			else
-				throw new CommandSystem.CommandException(r.Message, CommandSystem.CommandExceptionReason.CommandError);
+				throw new CommandException(r.Message, CommandExceptionReason.CommandError);
 		}
 
 		public static string UnrollException(this Exception ex)

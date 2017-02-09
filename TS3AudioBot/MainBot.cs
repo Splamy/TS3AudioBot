@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -41,7 +41,7 @@ namespace TS3AudioBot
 	{
 		internal static void Main(string[] args)
 		{
-			using (MainBot bot = new MainBot())
+			using (var bot = new MainBot())
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 				{
@@ -87,7 +87,7 @@ namespace TS3AudioBot
 
 		private bool ReadParameter(string[] args)
 		{
-			HashSet<string> launchParameter = new HashSet<string>();
+			var launchParameter = new HashSet<string>();
 			foreach (string parameter in args)
 				launchParameter.Add(parameter);
 			if (launchParameter.Contains("--help") || launchParameter.Contains("-h"))
@@ -125,9 +125,9 @@ namespace TS3AudioBot
 				Log.RegisterLogger("Error call Stack:\n%S", "", Console.WriteLine, Log.Level.Error);
 			}
 
-			if (writeLog && !string.IsNullOrEmpty(mainBotData.logFile))
+			if (writeLog && !string.IsNullOrEmpty(mainBotData.LogFile))
 			{
-				logStream = new StreamWriter(File.Open(mainBotData.logFile, FileMode.Append, FileAccess.Write, FileShare.Read), Util.Utf8Encoder);
+				logStream = new StreamWriter(File.Open(mainBotData.LogFile, FileMode.Append, FileAccess.Write, FileShare.Read), Util.Utf8Encoder);
 				Log.RegisterLogger("[%T]%L: %M\n" + (writeLogStack ? "%S\n" : ""), "", (msg) =>
 				{
 					if (logStream != null)
@@ -184,8 +184,8 @@ namespace TS3AudioBot
 			PlayManager.AfterResourceStarted += TargetManager.OnResourceStarted;
 			PlayManager.AfterResourceStopped += TargetManager.OnResourceStopped;
 			// In own favor update the own status text to the current song title
-			PlayManager.AfterResourceStarted += (s, e) => UpdateBotStatus();
-			PlayManager.AfterResourceStopped += (s, e) => UpdateBotStatus();
+			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
+			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
@@ -257,8 +257,10 @@ namespace TS3AudioBot
 
 			using (session.GetLock())
 			{
-				var execInfo = new ExecutionInformation(session, textMessage);
-				execInfo.IsPrivate = textMessage.Target == MessageTarget.Private;
+				var execInfo = new ExecutionInformation(session, textMessage)
+				{
+					IsPrivate = textMessage.Target == MessageTarget.Private
+				};
 
 				// check if the user has an open request
 				if (session.ResponseProcessor != null)
@@ -275,7 +277,7 @@ namespace TS3AudioBot
 				if (parsedAst.Type == ASTType.Error)
 				{
 					var errorAst = (ASTError)parsedAst;
-					StringBuilder strb = new StringBuilder();
+					var strb = new StringBuilder();
 					strb.AppendLine();
 					errorAst.Write(strb, 0);
 					WriteToSession(execInfo, strb.ToString());
@@ -507,9 +509,7 @@ namespace TS3AudioBot
 		[RequiredParameters(1)]
 		public JsonObject CommandHistoryFrom(uint userDbId, int? amount)
 		{
-			SeachQuery query = new SeachQuery();
-			query.UserId = userDbId;
-
+			var query = new SeachQuery { UserId = userDbId };
 			if (amount.HasValue)
 				query.MaxResults = amount.Value;
 
@@ -959,7 +959,7 @@ namespace TS3AudioBot
 			try
 			{
 				var node = CommandParser.ParseCommandRequest(parameter);
-				StringBuilder strb = new StringBuilder();
+				var strb = new StringBuilder();
 				strb.AppendLine();
 				node.Write(strb, 0);
 				return new JsonSingleObject<ASTNode>(strb.ToString(), node);
@@ -1044,7 +1044,7 @@ namespace TS3AudioBot
 		public void CommandQuizOn()
 		{
 			QuizMode = true;
-			UpdateBotStatus();
+			UpdateBotStatus().UnwrapThrow();
 		}
 		[Command(Public, "quiz off", "Disable to show the songnames again.")]
 		public void CommandQuizOff(ExecutionInformation info)
@@ -1052,7 +1052,7 @@ namespace TS3AudioBot
 			if (info.IsPrivate && !info.ApiCall)
 				throw new CommandException("No cheatig! Everybody has to see it!", CommandExceptionReason.CommandError);
 			QuizMode = false;
-			UpdateBotStatus();
+			UpdateBotStatus().UnwrapThrow();
 		}
 
 		[Command(Private, "random", "Gets whether or not to play playlists in random order.")]
@@ -1452,7 +1452,14 @@ namespace TS3AudioBot
 
 		#endregion
 
-		private void UpdateBotStatus(string overrideStr = null)
+		private void LoggedUpdateBotStatus(object sender, EventArgs e)
+		{
+			var result = UpdateBotStatus();
+			if (!result)
+				Log.Write(Log.Level.Warning, result.Message);
+		}
+
+		private R UpdateBotStatus(string overrideStr = null)
 		{
 			string setString;
 			if (overrideStr != null)
@@ -1470,7 +1477,7 @@ namespace TS3AudioBot
 			{
 				setString = "<Sleeping>";
 			}
-			QueryConnection.ChangeDescription(setString).UnwrapThrow();
+			return QueryConnection.ChangeDescription(setString);
 		}
 
 		private Playlist AutoGetPlaylist(UserSession session)
@@ -1526,10 +1533,10 @@ namespace TS3AudioBot
 #pragma warning disable CS0649
 	class MainBotData : ConfigData
 	{
-		[Info("path to the logfile", "log_ts3audiobot")]
-		public string logFile { get; set; }
-		[Info("group able to execute admin commands from the bot")]
-		public ulong adminGroupId { get; set; }
+		[Info("Path to the logfile", "log_ts3audiobot")]
+		public string LogFile { get; set; }
+		[Info("Teamspeak group id authorized to execute admin commands")]
+		public ulong AdminGroupId { get; set; }
 	}
 #pragma warning restore CS0649
 }
