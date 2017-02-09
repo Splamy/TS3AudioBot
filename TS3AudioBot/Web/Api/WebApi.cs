@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -23,12 +23,15 @@ namespace TS3AudioBot.Web.Api
 	using System.IO;
 	using System.Linq;
 	using System.Net;
+	using System.Security.Cryptography;
 	using System.Security.Principal;
 	using System.Text.RegularExpressions;
+	using System.Text;
 
 	public sealed class WebApi : WebComponent
 	{
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
+		private static readonly MD5 Md5Hash = MD5.Create();
 
 		public WebApi(MainBot bot) : base(bot) { }
 
@@ -58,9 +61,7 @@ namespace TS3AudioBot.Web.Api
 
 			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
 
-			var execInfo = new ExecutionInformation(session, null);
-			execInfo.ApiCall = true;
-
+			var execInfo = new ExecutionInformation(session, null) { ApiCall = true };
 			using (var token = execInfo.Session.GetLock())
 			{
 				try
@@ -172,14 +173,14 @@ namespace TS3AudioBot.Web.Api
 			switch (identity.AuthenticationType)
 			{
 			case "Basic":
-				HttpListenerBasicIdentity identityBasic = (HttpListenerBasicIdentity)identity;
+				var identityBasic = (HttpListenerBasicIdentity)identity;
 
-				if (session.Token.ApiToken != identityBasic.Password)
+				if (session.Token.Value != identityBasic.Password)
 					return null;
 
 				return session;
 			case "Digest":
-				HttpListenerDigestIdentity identityDigest = (HttpListenerDigestIdentity)identity;
+				var identityDigest = (HttpListenerDigestIdentity)identity;
 
 				if (identityDigest.Realm != WebManager.WebRealm)
 					return null;
@@ -187,14 +188,22 @@ namespace TS3AudioBot.Web.Api
 				if (identityDigest.Uri != context.Request.Url.AbsolutePath)
 					return null;
 
-				TokenNonce nextNonce = session.Token.UseToken(identityDigest.Nonce);
+				//HA1=MD5(username:realm:password)
+				//HA2=MD5(method:digestURI)
+				//response=MD5(HA1:nonce:HA2)
+				var HA1 = HashString($"{identity.Name}:{identityDigest.Realm}:{session.Token.Value}");
+				var HA2 = HashString($"{context.Request.HttpMethod}:{identityDigest.Uri}");
+				var response = HashString($"{HA1}:{identityDigest.Nonce}:{HA2}");
+
+				if (identityDigest.Hash != response)
+					return null;
+
+				ApiNonce nextNonce = session.Token.UseToken(identityDigest.Nonce);
 				if (nextNonce == null)
 					return null;
-				context.Response.Headers["NextNonce"] = nextNonce.Nonce;
+				context.Response.Headers["NextNonce"] = nextNonce.Value;
 
-				//identityDigest.Hash
-
-				return null;
+				return session;
 			default:
 				return null;
 			}
@@ -242,6 +251,17 @@ namespace TS3AudioBot.Web.Api
 			}
 
 			return null;
+		}
+
+		private static string HashString(string input)
+		{
+			var bytes = Encoding.ASCII.GetBytes(input);
+			var hash = Md5Hash.ComputeHash(bytes);
+
+			var result = new StringBuilder(hash.Length * 2);
+			for (int i = 0; i < hash.Length; i++)
+				result.Append(hash[i].ToString("x2"));
+			return result.ToString();
 		}
 	}
 }

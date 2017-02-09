@@ -106,8 +106,6 @@ namespace TS3AudioBot.Web
 			var authType = authParts[0].ToUpper();
 			if (authType == "BASIC")
 				return AuthenticationSchemes.Basic;
-			else if (authType == "DIGEST")
-				return AuthenticationSchemes.Anonymous;
 
 			return AuthenticationSchemes.Anonymous;
 		}

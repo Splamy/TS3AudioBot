@@ -97,7 +97,7 @@
     <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="AudioFramework.cs" />
-    <Compile Include="Sessions\TokenNonce.cs" />
+    <Compile Include="Sessions\ApiNonce.cs" />
     <Compile Include="Sessions\UserSession.cs" />
     <Compile Include="CommandSystem\CommandException.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
@@ -123,7 +123,7 @@
     <Compile Include="Helper\InfoAttribute.cs" />
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="ITargetManager.cs" />
-    <Compile Include="Sessions\UserToken.cs" />
+    <Compile Include="Sessions\ApiToken.cs" />
     <Compile Include="TeamspeakControl.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />

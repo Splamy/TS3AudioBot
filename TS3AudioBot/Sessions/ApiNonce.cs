@@ -18,18 +18,18 @@ namespace TS3AudioBot.Sessions
 {
 	using System;
 
-	internal class TokenNonce
+	internal class ApiNonce
 	{
-		public string Nonce { get; }
-		public DateTime UseTime { get; }
+		public string Value { get; }
+		public DateTime Timeout { get; }
 
-		public TokenNonce(string nonce, DateTime useTime)
+		public ApiNonce(string nonce, DateTime useTime)
 		{
-			Nonce = nonce;
-			UseTime = useTime;
+			Value = nonce;
+			Timeout = useTime;
 		}
 
-		public override bool Equals(object obj) => Nonce.Equals((obj as TokenNonce)?.Nonce);
-		public override int GetHashCode() => Nonce.GetHashCode();
+		public override bool Equals(object obj) => Value.Equals((obj as ApiNonce)?.Value);
+		public override int GetHashCode() => Value.GetHashCode();
 	}
 }

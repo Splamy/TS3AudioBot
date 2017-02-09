@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -19,14 +19,10 @@ namespace TS3AudioBot.Sessions
 	using Helper;
 	using System;
 	using System.Collections.Generic;
-	using System.Security.Cryptography;
 	using TS3Client.Messages;
 
 	public class SessionManager
 	{
-		const string tokenFormat = "{0}:{1}";
-		private static readonly MD5 Md5Hash = MD5.Create();
-
 		// Map: Uid => UserSession
 		private readonly Dictionary<string, UserSession> openSessions;
 
@@ -81,20 +77,6 @@ namespace TS3AudioBot.Sessions
 						openSessions.Remove(uid);
 				}
 			}
-		}
-
-		public R<string> GetToken(UserSession session) => GetToken(session, UserToken.DefaultTokenTimeout);
-		public R<string> GetToken(UserSession session, TimeSpan timeout)
-		{
-			if (session.Token == null)
-				session.Token = new UserToken() { UserUid = session.Client.Uid };
-
-			session.Token.ApiToken = TextUtil.GenToken(UserToken.TokenLen);
-			var newTimeout = Util.GetNow() + timeout;
-			if (newTimeout > session.Token.ApiTokenTimeout)
-				session.Token.ApiTokenTimeout = newTimeout;
-
-			return R<string>.OkR(string.Format(tokenFormat, session.Client.Uid, session.Token.ApiToken));
 		}
 	}
 }

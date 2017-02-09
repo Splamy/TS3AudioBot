@@ -20,32 +20,30 @@ namespace TS3AudioBot.Sessions
 	using System;
 	using System.Collections.Generic;
 
-	internal class UserToken
+	internal class ApiToken
 	{
 		public const int TokenLen = 32;
 		public const int NonceLen = 32;
 		public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.FromDays(1);
 		public static readonly TimeSpan DefaultNonceTimeout = TimeSpan.FromHours(1);
 
-		public string ApiToken { get; set; }
-		public uint ApiTokenId { get; set; }
-		public DateTime ApiTokenTimeout { get; set; }
-		public bool ApiTokenActive => ApiToken != null && ApiTokenTimeout > Util.GetNow();
-		private readonly Dictionary<string, TokenNonce> nonceList;
-		public string UserUid { get; set; }
+		public string Value { get; set; }
+		public DateTime Timeout { get; set; }
+		public bool ApiTokenActive => Value != null && Timeout > Util.GetNow();
+		private readonly Dictionary<string, ApiNonce> nonceList;
 
-		public UserToken()
+		public ApiToken()
 		{
-			ApiToken = null;
-			ApiTokenTimeout = DateTime.MinValue;
+			Value = null;
+			Timeout = DateTime.MinValue;
 			Util.Init(ref nonceList);
 		}
 
-		public TokenNonce UseToken(string token)
+		public ApiNonce UseToken(string token)
 		{
 			lock (nonceList)
 			{
-				TokenNonce nonce;
+				ApiNonce nonce;
 				if (!nonceList.TryGetValue(token, out nonce))
 					return null;
 
@@ -55,28 +53,28 @@ namespace TS3AudioBot.Sessions
 			}
 		}
 
-		private TokenNonce CreateTokenInternal()
+		private ApiNonce CreateTokenInternal()
 		{
 			// Clean up old
 			var vals = nonceList.Values;
 			foreach (var val in vals)
 			{
-				if (val.UseTime < Util.GetNow())
+				if (val.Timeout < Util.GetNow())
 				{
-					nonceList.Remove(val.Nonce);
+					nonceList.Remove(val.Value);
 				}
 			}
 
 			// Create new
 			string nextNonce;
 			do { nextNonce = TextUtil.GenToken(NonceLen); } while (nonceList.ContainsKey(nextNonce));
-			var newNonce = new TokenNonce(nextNonce, Util.GetNow() + DefaultNonceTimeout);
-			nonceList.Add(newNonce.Nonce, newNonce);
+			var newNonce = new ApiNonce(nextNonce, Util.GetNow() + DefaultNonceTimeout);
+			nonceList.Add(newNonce.Value, newNonce);
 
 			return newNonce;
 		}
 
-		public TokenNonce CreateToken()
+		public ApiNonce CreateToken()
 		{
 			lock (nonceList)
 			{

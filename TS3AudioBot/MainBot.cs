@@ -334,6 +334,23 @@ namespace TS3AudioBot
 		public void CommandAdd(ExecutionInformation info, string parameter)
 			=> PlayManager.Enqueue(new InvokerData(info.Session.Client), parameter).UnwrapThrow();
 
+		[Command(AnyVisibility, "api token", "Generates an api token.")]
+		public JsonObject CommandApiToken(ExecutionInformation info)
+		{
+			var token = info.Session.GenerateToken().UnwrapThrow();
+			return new JsonSingleValue<string>(token, token);
+		}
+
+		[Command(AnyVisibility, "api nonce", "Generates an api nonce.")]
+		public JsonObject CommandApiNonce(ExecutionInformation info)
+		{
+			if (!info.Session.HasActiveToken)
+				throw new CommandException("No active token found.", CommandExceptionReason.CommandError);
+
+			var nonce = info.Session.Token.CreateToken();
+			return new JsonSingleValue<string>(nonce.Value, nonce.Value);
+		}
+
 		[Command(Admin, "bot name", "Gives the bot a new name.")]
 		public void CommandBotName(ExecutionInformation info, string name) => QueryConnection.ChangeName(name).UnwrapThrow();
 
@@ -1291,13 +1308,6 @@ namespace TS3AudioBot
 			{
 
 			}
-		}
-
-		[Command(AnyVisibility, "token", "Generates an api token.")]
-		public JsonObject CommandToken(ExecutionInformation info)
-		{
-			var token = SessionManager.GetToken(info.Session).UnwrapThrow();
-			return new JsonSingleValue<string>(token, token);
 		}
 
 		[Command(Private, "unsubscribe", "Only lets you hear the music in active channels again.")]

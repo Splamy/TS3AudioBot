@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -27,6 +27,8 @@ namespace TS3AudioBot.Sessions
 
 	public sealed class UserSession
 	{
+		const string tokenFormat = "{0}:{1}";
+
 		private Dictionary<Type, object> assocMap = null;
 		private bool lockToken = false;
 
@@ -37,7 +39,7 @@ namespace TS3AudioBot.Sessions
 		public ushort ActiveClientId { get; set; }
 		public ClientData Client { get; private set; }
 
-		internal UserToken Token { get; set; }
+		internal ApiToken Token { get; set; }
 		internal bool HasActiveToken => Token != null && Token.ApiTokenActive;
 
 		public UserSession(MainBot bot, ClientData client)
@@ -147,6 +149,20 @@ namespace TS3AudioBot.Sessions
 			Log.Write(Log.Level.Debug, "AdminCheck called!");
 			var clientSgIds = Bot.QueryConnection.GetClientServerGroups(Client.DatabaseId);
 			return clientSgIds.Contains(Bot.mainBotData.AdminGroupId);
+		}
+
+		public R<string> GenerateToken() => GenerateToken(ApiToken.DefaultTokenTimeout);
+		public R<string> GenerateToken(TimeSpan timeout)
+		{
+			if (Token == null)
+				Token = new ApiToken();
+
+			Token.Value = TextUtil.GenToken(ApiToken.TokenLen);
+			var newTimeout = Util.GetNow() + timeout;
+			if (newTimeout > Token.Timeout)
+				Token.Timeout = newTimeout;
+
+			return R<string>.OkR(string.Format(tokenFormat, Client.Uid, Token.Value));
 		}
 
 		public sealed class SessionToken : IDisposable
