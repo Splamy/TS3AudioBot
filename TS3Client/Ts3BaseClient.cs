@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -122,6 +122,8 @@ namespace TS3Client
 				eventDispatcher = null;
 				evd.Invoke(() => OnDisconnected?.Invoke(this, new DisconnectEventArgs(exitReason)));
 				evd.Dispose();
+				while (RequestQueue.Any())
+					RequestQueue.Dequeue().SetAnswer(new CommandError { Id = -1, Message = "Connection Closed" });
 			}
 		}
 

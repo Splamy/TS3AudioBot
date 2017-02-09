@@ -42,9 +42,6 @@ namespace TS3Client.Full
 		{
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler(ts3Crypt);
-
-			wasExit = false;
-			returnCode = 0;
 		}
 
 		protected override void ConnectInternal(ConnectionData conData)
@@ -79,11 +76,15 @@ namespace TS3Client.Full
 		protected override void InvokeEvent(IEnumerable<INotification> notification, NotificationType notifyType)
 		{
 			// we need to check for clientleftview to know when we disconnect from the server
-			if (notifyType == NotificationType.ClientLeftView
-				&& notification.Cast<ClientLeftView>().Any(clv => clv.ClientId == packetHandler.ClientId))
+			if (notifyType == NotificationType.ClientLeftView)
 			{
-				FullDisconnect();
-				return;
+				var leftViewEvent = notification.Cast<ClientLeftView>().Where(clv => clv.ClientId == packetHandler.ClientId).FirstOrDefault();
+				if (leftViewEvent != null)
+				{
+					packetHandler.ExitReason = leftViewEvent.Reason;
+					FullDisconnect();
+					return;
+				}
 			}
 
 			base.InvokeEvent(notification, notifyType);
@@ -91,9 +92,12 @@ namespace TS3Client.Full
 
 		private void FullDisconnect()
 		{
-			wasExit = true;
-			packetHandler.Stop();
-			DisconnectDone(packetHandler.ExitReason ?? MoveReason.LeftServer); // TODO ??
+			if (!wasExit)
+			{
+				wasExit = true;
+				packetHandler.Stop();
+				DisconnectDone(packetHandler.ExitReason ?? MoveReason.LeftServer); // TODO ??
+			}
 		}
 
 		protected override void NetworkLoop()
@@ -169,6 +173,9 @@ namespace TS3Client.Full
 
 		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType)
 		{
+			if (wasExit)
+				throw new Ts3CommandException(new CommandError { Id = -1, Message = "Connection closed" });
+
 			if (com.ExpectResponse)
 				com.AppendParameter(new CommandParameter("return_code", returnCode));
 
@@ -270,6 +277,7 @@ namespace TS3Client.Full
 
 			packetHandler.AddOutgoingPacket(buffer, PacketType.Voice);
 		}
+
 		#endregion
 	}
 }

@@ -54,7 +54,8 @@ namespace TS3Client.Full
 
 		public ushort ClientId { get; set; }
 		public IPEndPoint RemoteAddress { get; set; }
-		public MoveReason? ExitReason { get; private set; }
+		public MoveReason? ExitReason { get; set; }
+		private bool Closed => ExitReason != null;
 
 		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
@@ -98,6 +99,9 @@ namespace TS3Client.Full
 
 		public void AddOutgoingPacket(byte[] packet, PacketType packetType)
 		{
+			if (Closed)
+				return;
+
 			var addFlags = PacketFlags.None;
 			if (NeedsSplitting(packet.Length))
 			{
