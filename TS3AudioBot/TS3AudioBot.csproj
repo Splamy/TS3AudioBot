@@ -166,6 +166,7 @@
     <Compile Include="Web\Api\JsonSingleValue.cs" />
     <Compile Include="Web\Api\JsonSingleObject.cs" />
     <Compile Include="Web\Api\WebApi.cs" />
+    <Compile Include="Web\HttpListenerDigestIdentity.cs" />
     <Compile Include="Web\Interface\WebDisplay.cs" />
     <Compile Include="Web\UriExt.cs" />
     <Compile Include="Web\WebComponent.cs" />

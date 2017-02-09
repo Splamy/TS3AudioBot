@@ -24,9 +24,12 @@ namespace TS3AudioBot.Web.Api
 	using System.Linq;
 	using System.Net;
 	using System.Security.Principal;
+	using System.Text.RegularExpressions;
 
 	public sealed class WebApi : WebComponent
 	{
+		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
+
 		public WebApi(MainBot bot) : base(bot) { }
 
 		public override void DispatchCall(HttpListenerContext context)
@@ -154,8 +157,16 @@ namespace TS3AudioBot.Web.Api
 
 		private UserSession Authenticate(HttpListenerContext context)
 		{
-			IIdentity identity = context.User?.Identity;
+			IIdentity identity = GetIdentity(context);
 			if (identity == null)
+				return null;
+
+			var result = MainBot.SessionManager.GetSession(identity.Name);
+			if (!result.Ok)
+				return null;
+
+			var session = result.Value;
+			if (!session.HasActiveToken)
 				return null;
 
 			switch (identity.AuthenticationType)
@@ -163,23 +174,74 @@ namespace TS3AudioBot.Web.Api
 			case "Basic":
 				HttpListenerBasicIdentity identityBasic = (HttpListenerBasicIdentity)identity;
 
-				var result = MainBot.SessionManager.GetSession(identityBasic.Name);
-				if (!result.Ok)
-					return null;
-
-				var session = result.Value;
-				if (!session.HasActiveToken)
-					return null;
-
 				if (session.Token.ApiToken != identityBasic.Password)
 					return null;
 
 				return session;
 			case "Digest":
+				HttpListenerDigestIdentity identityDigest = (HttpListenerDigestIdentity)identity;
+
+				if (identityDigest.Realm != WebManager.WebRealm)
+					return null;
+
+				if (identityDigest.Uri != context.Request.Url.AbsolutePath)
+					return null;
+
+				TokenNonce nextNonce = session.Token.UseToken(identityDigest.Nonce);
+				if (nextNonce == null)
+					return null;
+				context.Response.Headers["NextNonce"] = nextNonce.Nonce;
+
+				//identityDigest.Hash
+
 				return null;
 			default:
 				return null;
 			}
+		}
+
+		private static IIdentity GetIdentity(HttpListenerContext context)
+		{
+			IIdentity identity = context.User?.Identity;
+			if (identity != null)
+				return identity;
+
+			var headerVal = context.Request.Headers["Authorization"];
+			if (string.IsNullOrEmpty(headerVal))
+				return null;
+
+			var authParts = headerVal.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+			if (authParts.Length < 2)
+				return null;
+
+			if (string.Equals(authParts[0], "DIGEST", StringComparison.OrdinalIgnoreCase))
+			{
+				string name = null;
+				string hash = null;
+				string nonce = null;
+				string realm = null;
+				string uri = null;
+
+				for (var match = DigestMatch.Match(authParts[1]); match.Success; match = match.NextMatch())
+				{
+					var value = match.Groups[2].Value;
+					switch (match.Groups[1].Value.ToUpper())
+					{
+					case "USERNAME": name = value; break;
+					case "REALM": realm = value; break;
+					case "NONCE": nonce = value; break;
+					case "RESPONSE": hash = value; break;
+					case "URI": uri = value; break;
+					}
+				}
+
+				if (name == null || hash == null || nonce == null || realm == null || uri == null)
+					return null;
+
+				return new HttpListenerDigestIdentity(name, nonce, hash, realm, uri);
+			}
+
+			return null;
 		}
 	}
 }

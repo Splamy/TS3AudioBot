@@ -22,18 +22,66 @@ namespace TS3AudioBot.Sessions
 
 	internal class UserToken
 	{
+		public const int TokenLen = 32;
+		public const int NonceLen = 32;
+		public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.FromDays(1);
+		public static readonly TimeSpan DefaultNonceTimeout = TimeSpan.FromHours(1);
+
 		public string ApiToken { get; set; }
 		public uint ApiTokenId { get; set; }
 		public DateTime ApiTokenTimeout { get; set; }
 		public bool ApiTokenActive => ApiToken != null && ApiTokenTimeout > Util.GetNow();
-		public readonly Dictionary<string, TokenNonce> NonceList;
+		private readonly Dictionary<string, TokenNonce> nonceList;
 		public string UserUid { get; set; }
 
 		public UserToken()
 		{
 			ApiToken = null;
 			ApiTokenTimeout = DateTime.MinValue;
-			Util.Init(ref NonceList);
+			Util.Init(ref nonceList);
+		}
+
+		public TokenNonce UseToken(string token)
+		{
+			lock (nonceList)
+			{
+				TokenNonce nonce;
+				if (!nonceList.TryGetValue(token, out nonce))
+					return null;
+
+				nonceList.Remove(token);
+
+				return CreateTokenInternal();
+			}
+		}
+
+		private TokenNonce CreateTokenInternal()
+		{
+			// Clean up old
+			var vals = nonceList.Values;
+			foreach (var val in vals)
+			{
+				if (val.UseTime < Util.GetNow())
+				{
+					nonceList.Remove(val.Nonce);
+				}
+			}
+
+			// Create new
+			string nextNonce;
+			do { nextNonce = TextUtil.GenToken(NonceLen); } while (nonceList.ContainsKey(nextNonce));
+			var newNonce = new TokenNonce(nextNonce, Util.GetNow() + DefaultNonceTimeout);
+			nonceList.Add(newNonce.Nonce, newNonce);
+
+			return newNonce;
+		}
+
+		public TokenNonce CreateToken()
+		{
+			lock (nonceList)
+			{
+				return CreateTokenInternal();
+			}
 		}
 	}
 }

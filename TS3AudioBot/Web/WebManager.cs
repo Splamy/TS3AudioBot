@@ -24,7 +24,7 @@ namespace TS3AudioBot.Web
 
 	public sealed class WebManager : IDisposable
 	{
-		const string webRealm = "ts3ab";
+		public const string WebRealm = "ts3ab";
 
 		private Uri localhost;
 		private Uri[] hostPaths;
@@ -42,8 +42,8 @@ namespace TS3AudioBot.Web
 			webData = webd;
 			webListener = new HttpListener
 			{
-				AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic | AuthenticationSchemes.Digest,
-				Realm = webRealm,
+				AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic,
+				Realm = WebRealm,
 			};
 			webListener.AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector;
 
@@ -107,7 +107,7 @@ namespace TS3AudioBot.Web
 			if (authType == "BASIC")
 				return AuthenticationSchemes.Basic;
 			else if (authType == "DIGEST")
-				return AuthenticationSchemes.Digest;
+				return AuthenticationSchemes.Anonymous;
 
 			return AuthenticationSchemes.Anonymous;
 		}
@@ -138,7 +138,7 @@ namespace TS3AudioBot.Web
 				try
 				{
 					HttpListenerContext context = webListener.GetContext();
-
+					
 					Log.Write(Log.Level.Info, "{0} Requested: {1}", context.Request.RemoteEndPoint.Address, context.Request.Url.PathAndQuery);
 					if (context.Request.Url.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
 						Api?.DispatchCall(context);

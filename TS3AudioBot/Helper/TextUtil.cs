@@ -61,6 +61,16 @@ namespace TS3AudioBot.Helper
 
 			return quotedString.Substring(1, quotedString.Length - 2);
 		}
+
+		public static string GenToken(int len)
+		{
+			const string alph = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+			var arr = new char[len];
+			for (int i = 0; i < arr.Length; i++)
+				arr[i] = alph[Util.Random.Next(0, alph.Length)];
+			return new string(arr);
+		}
 	}
 
 	public enum Answer

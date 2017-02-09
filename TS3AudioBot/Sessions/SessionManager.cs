@@ -24,7 +24,6 @@ namespace TS3AudioBot.Sessions
 
 	public class SessionManager
 	{
-		private static readonly TimeSpan DefaultApiTimeout = TimeSpan.FromDays(1);
 		const string tokenFormat = "{0}:{1}";
 		private static readonly MD5 Md5Hash = MD5.Create();
 
@@ -84,28 +83,18 @@ namespace TS3AudioBot.Sessions
 			}
 		}
 
-		public R<string> GetToken(UserSession session) => GetToken(session, DefaultApiTimeout);
+		public R<string> GetToken(UserSession session) => GetToken(session, UserToken.DefaultTokenTimeout);
 		public R<string> GetToken(UserSession session, TimeSpan timeout)
 		{
 			if (session.Token == null)
 				session.Token = new UserToken() { UserUid = session.Client.Uid };
 
-			session.Token.ApiToken = GenToken();
+			session.Token.ApiToken = TextUtil.GenToken(UserToken.TokenLen);
 			var newTimeout = Util.GetNow() + timeout;
 			if (newTimeout > session.Token.ApiTokenTimeout)
 				session.Token.ApiTokenTimeout = newTimeout;
 
 			return R<string>.OkR(string.Format(tokenFormat, session.Client.Uid, session.Token.ApiToken));
-		}
-
-		private static string GenToken(int len = 32)
-		{
-			const string alph = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-			var arr = new char[len];
-			for (int i = 0; i < arr.Length; i++)
-				arr[i] = alph[Util.Random.Next(0, alph.Length)];
-			return new string(arr);
 		}
 	}
 }
