@@ -16,6 +16,7 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
@@ -23,10 +24,10 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Diagnostics;
 	using System.Globalization;
 	using System.IO;
+	using System.Linq;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
-	using Helper;
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
 	{
@@ -349,7 +350,26 @@ namespace TS3AudioBot.ResourceFactories
 					}
 
 					title = tmproc.StandardOutput.ReadLine();
-					url = tmproc.StandardOutput.ReadLine();
+
+					var urlOptions = new List<string>();
+					string line;
+					while ((line = tmproc.StandardOutput.ReadLine()) != null)
+						urlOptions.Add(line);
+
+					if (urlOptions.Count == 1)
+					{
+						url = urlOptions[0];
+					}
+					else if (urlOptions.Count >= 1)
+					{
+						Uri[] uriList = urlOptions.Select(s => new Uri(s)).ToArray();
+						Uri bestMatch = uriList
+							.Where(u => HttpUtility.ParseQueryString(u.Query)
+								.GetValues("mime")
+								.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)))
+							.FirstOrDefault();
+						url = (bestMatch ?? uriList[0]).OriginalString;
+					}
 				}
 			}
 			catch (Win32Exception) { return "Failed to run youtube-dl"; }
