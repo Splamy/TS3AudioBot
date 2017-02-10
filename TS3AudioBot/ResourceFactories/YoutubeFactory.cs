@@ -383,25 +383,27 @@ namespace TS3AudioBot.ResourceFactories
 
 		private Tuple<string, string> DetectYoutubeDl(string id)
 		{
+			string param = $"--no-warnings --get-title --get-url --id {id}";
+
 			// Default path youtube-dl is suggesting to install
 			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
 			if (File.Exists(defaultYtDlPath))
-				return new Tuple<string, string>(defaultYtDlPath, $"--get-title --get-url --id {id}");
+				return new Tuple<string, string>(defaultYtDlPath, param);
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
 			string fullCustomPath = Path.GetFullPath(data.YoutubedlPath);
 			if (File.Exists(fullCustomPath) || File.Exists(fullCustomPath + ".exe"))
-				return new Tuple<string, string>(fullCustomPath, $"--get-title --get-url --id {id}");
+				return new Tuple<string, string>(fullCustomPath, param);
 
 			// Example: /home/teamspeak where the binary 'youtube-dl' lies in ./teamspeak/
 			string fullCustomPathWithoutFile = Path.Combine(fullCustomPath, "youtube-dl");
 			if (File.Exists(fullCustomPathWithoutFile) || File.Exists(fullCustomPathWithoutFile + ".exe"))
-				return new Tuple<string, string>(fullCustomPathWithoutFile, $"--get-title --get-url --id {id}");
+				return new Tuple<string, string>(fullCustomPathWithoutFile, param);
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the github project folder
 			string fullCustomPathGhProject = Path.Combine(fullCustomPath, "youtube_dl", "__main__.py");
 			if (File.Exists(fullCustomPathGhProject))
-				return new Tuple<string, string>("python", $"\"{fullCustomPathGhProject}\" --get-title --get-url --id {id}");
+				return new Tuple<string, string>("python", $"\"{fullCustomPathGhProject}\" {param}");
 
 			return null;
 		}
