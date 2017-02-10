@@ -198,7 +198,7 @@ namespace TS3AudioBot.Web.Api
 				if (identityDigest.Hash != response)
 					return null;
 
-				ApiNonce nextNonce = session.Token.UseToken(identityDigest.Nonce);
+				ApiNonce nextNonce = session.Token.UseNonce(identityDigest.Nonce);
 				if (nextNonce == null)
 					return null;
 				context.Response.Headers["NextNonce"] = nextNonce.Value;
@@ -255,7 +255,7 @@ namespace TS3AudioBot.Web.Api
 
 		private static string HashString(string input)
 		{
-			var bytes = Encoding.ASCII.GetBytes(input);
+			var bytes = Util.Utf8Encoder.GetBytes(input);
 			var hash = Md5Hash.ComputeHash(bytes);
 
 			var result = new StringBuilder(hash.Length * 2);

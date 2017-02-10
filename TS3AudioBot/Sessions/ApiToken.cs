@@ -39,7 +39,7 @@ namespace TS3AudioBot.Sessions
 			Util.Init(ref nonceList);
 		}
 
-		public ApiNonce UseToken(string token)
+		public ApiNonce UseNonce(string token)
 		{
 			lock (nonceList)
 			{
@@ -49,11 +49,11 @@ namespace TS3AudioBot.Sessions
 
 				nonceList.Remove(token);
 
-				return CreateTokenInternal();
+				return CreateNonceInternal();
 			}
 		}
 
-		private ApiNonce CreateTokenInternal()
+		private ApiNonce CreateNonceInternal()
 		{
 			// Clean up old
 			var vals = nonceList.Values;
@@ -74,11 +74,11 @@ namespace TS3AudioBot.Sessions
 			return newNonce;
 		}
 
-		public ApiNonce CreateToken()
+		public ApiNonce CreateNonce()
 		{
 			lock (nonceList)
 			{
-				return CreateTokenInternal();
+				return CreateNonceInternal();
 			}
 		}
 	}

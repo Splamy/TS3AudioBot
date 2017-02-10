@@ -347,7 +347,7 @@ namespace TS3AudioBot
 			if (!info.Session.HasActiveToken)
 				throw new CommandException("No active token found.", CommandExceptionReason.CommandError);
 
-			var nonce = info.Session.Token.CreateToken();
+			var nonce = info.Session.Token.CreateNonce();
 			return new JsonSingleValue<string>(nonce.Value, nonce.Value);
 		}
 
