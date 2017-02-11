@@ -182,6 +182,13 @@ namespace TS3AudioBot.Web.Api
 			case "Digest":
 				var identityDigest = (HttpListenerDigestIdentity)identity;
 
+				if (!identityDigest.IsAuthenticated)
+				{
+					var newNonce = session.Token.CreateNonce();
+					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{newNonce.Value}\"");
+					return null;
+				}
+
 				if (identityDigest.Realm != WebManager.WebRealm)
 					return null;
 
@@ -201,7 +208,7 @@ namespace TS3AudioBot.Web.Api
 				ApiNonce nextNonce = session.Token.UseNonce(identityDigest.Nonce);
 				if (nextNonce == null)
 					return null;
-				context.Response.Headers["NextNonce"] = nextNonce.Value;
+				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 
 				return session;
 			default:
@@ -243,9 +250,6 @@ namespace TS3AudioBot.Web.Api
 					case "URI": uri = value; break;
 					}
 				}
-
-				if (name == null || hash == null || nonce == null || realm == null || uri == null)
-					return null;
 
 				return new HttpListenerDigestIdentity(name, nonce, hash, realm, uri);
 			}

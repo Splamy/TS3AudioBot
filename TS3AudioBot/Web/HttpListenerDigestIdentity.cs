@@ -21,7 +21,7 @@ namespace TS3AudioBot.Web
 	class HttpListenerDigestIdentity : IIdentity
 	{
 		public string AuthenticationType => "Digest";
-		public bool IsAuthenticated => false;
+		public bool IsAuthenticated { get; }
 
 		public string Name { get; }
 		public string Nonce { get; }
@@ -36,6 +36,8 @@ namespace TS3AudioBot.Web
 			Hash = hash;
 			Realm = realm;
 			Uri = uri;
+
+			IsAuthenticated = name != null && hash != null && nonce != null && realm != null && uri != null;
 		}
 	}
 }

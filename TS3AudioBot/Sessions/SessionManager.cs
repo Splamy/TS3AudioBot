@@ -51,6 +51,9 @@ namespace TS3AudioBot.Sessions
 
 		public R<UserSession> GetSession(string uid)
 		{
+			if (uid == null)
+				return "Session not found";
+
 			lock (openSessions)
 			{
 				UserSession session;

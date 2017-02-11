@@ -24,6 +24,7 @@ namespace TS3AudioBot.Sessions
 	{
 		public const int TokenLen = 32;
 		public const int NonceLen = 32;
+		public const int MaxNonceCount = 100;
 		public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.FromDays(1);
 		public static readonly TimeSpan DefaultNonceTimeout = TimeSpan.FromHours(1);
 
@@ -55,20 +56,26 @@ namespace TS3AudioBot.Sessions
 
 		private ApiNonce CreateNonceInternal()
 		{
+			DateTime now = Util.GetNow();
+
 			// Clean up old
+			var oldestNonce = new ApiNonce(string.Empty, DateTime.MaxValue);
+
 			var vals = nonceList.Values;
 			foreach (var val in vals)
 			{
-				if (val.Timeout < Util.GetNow())
-				{
+				if (val.Timeout < now)
 					nonceList.Remove(val.Value);
-				}
+				else if (oldestNonce.Timeout < val.Timeout)
+					oldestNonce = val;
 			}
+			if (nonceList.Count >= MaxNonceCount && oldestNonce.Value != string.Empty)
+				nonceList.Remove(oldestNonce.Value);
 
 			// Create new
 			string nextNonce;
 			do { nextNonce = TextUtil.GenToken(NonceLen); } while (nonceList.ContainsKey(nextNonce));
-			var newNonce = new ApiNonce(nextNonce, Util.GetNow() + DefaultNonceTimeout);
+			var newNonce = new ApiNonce(nextNonce, now + DefaultNonceTimeout);
 			nonceList.Add(newNonce.Value, newNonce);
 
 			return newNonce;
