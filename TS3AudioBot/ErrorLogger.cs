@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -61,7 +61,7 @@ namespace TS3AudioBot
 				if (earr[i].Length > longestelem)
 					longestelem = earr[i].Length;
 			spaceup = new string[earr.Length];
-			StringBuilder strb = new StringBuilder(longestelem + 1);
+			var strb = new StringBuilder(longestelem + 1);
 			for (int i = 0; i < earr.Length; i++)
 			{
 				strb.Append(' ', longestelem - earr[i].Length);
@@ -135,7 +135,7 @@ namespace TS3AudioBot
 		private static void RegisterLoggerUnsafe(List<ParseToken> tokenList, string linebreakIndent, CallbackActionDelegate callback, Level logLevel)
 		{
 			bool usesLLS = false, usesETF = false, usesDF = false, usesSTF = false;
-			StringBuilder formatString = new StringBuilder();
+			var formatString = new StringBuilder();
 			foreach (var part in tokenList)
 			{
 				switch (part.TokenType)
