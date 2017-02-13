@@ -57,7 +57,6 @@ namespace TS3AudioBot.Web.Api
 			string apirequest = uri.AbsolutePath.Substring("/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
-			Log.Write(Log.Level.Debug, "API Request Tree:\n{0}", ast.ToString());
 
 			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
 

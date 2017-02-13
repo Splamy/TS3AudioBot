@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -22,11 +22,7 @@ namespace TS3Client.Full
 	internal static class NetUtil
 	{
 		// Common Network to Host and Host to Network swaps
-		public static ushort H2N(ushort value) => unchecked((ushort)IPAddress.HostToNetworkOrder((short)value));
-		public static ushort N2H(ushort value) => unchecked((ushort)IPAddress.NetworkToHostOrder((short)value));
 		public static uint H2N(uint value) => unchecked((uint)IPAddress.HostToNetworkOrder((int)value));
-		public static uint N2H(uint value) => unchecked((uint)IPAddress.NetworkToHostOrder((int)value));
-
 
 		public static ushort N2Hushort(byte[] intArr, int inOff)
 		{
@@ -34,7 +30,7 @@ namespace TS3Client.Full
 			{
 				return (ushort)(intArr[inOff] | (intArr[inOff + 1] << 8));
 			}
-			else // IsBigEndian
+			else
 			{
 				return (ushort)((intArr[inOff] << 8) | intArr[inOff + 1]);
 			}
@@ -46,7 +42,7 @@ namespace TS3Client.Full
 				outArr[outOff] = (byte)(value & 0xFF);
 				outArr[outOff + 1] = (byte)((value >> 8) & 0xFF);
 			}
-			else // IsBigEndian
+			else
 			{
 				outArr[outOff] = (byte)((value >> 8) & 0xFF);
 				outArr[outOff + 1] = (byte)(value & 0xFF);
@@ -66,7 +62,7 @@ namespace TS3Client.Full
 				outArr[outOff + 6] = (byte)((value >> 48) & 0xFF);
 				outArr[outOff + 7] = (byte)((value >> 56) & 0xFF);
 			}
-			else // IsBigEndian
+			else
 			{
 				outArr[outOff + 0] = (byte)((value >> 56) & 0xFF);
 				outArr[outOff + 1] = (byte)((value >> 48) & 0xFF);
@@ -85,7 +81,7 @@ namespace TS3Client.Full
 			{
 				return intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24);
 			}
-			else // IsBigEndian
+			else
 			{
 				return (intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3];
 			}

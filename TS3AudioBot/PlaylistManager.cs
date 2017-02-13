@@ -89,8 +89,7 @@ namespace TS3AudioBot
 		public PlaylistManager(PlaylistManagerData pmd)
 		{
 			data = pmd;
-			shuffle = new LinearFeedbackShiftRegister();
-			shuffle.Seed = Util.Random.Next();
+			shuffle = new LinearFeedbackShiftRegister { Seed = Util.Random.Next() };
 			freeList = new Playlist(string.Empty);
 			trashList = new Playlist(string.Empty);
 
@@ -175,7 +174,7 @@ namespace TS3AudioBot
 
 			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
 			{
-				Playlist plist = new Playlist(name);
+				var plist = new Playlist(name);
 
 				// Info: version:<num>
 				// Info: owner:<dbid>

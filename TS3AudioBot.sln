@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26206.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3AudioBot", "TS3AudioBot\TS3AudioBot.csproj", "{0ECC38F3-DE6E-4D7F-81EB-58B15F584635}"
 EndProject
@@ -9,6 +9,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginTests", "PluginTests\PluginTests.csproj", "{DDBB1943-929D-43F6-A7E1-01903DD05D64}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3Client", "TS3Client\TS3Client.csproj", "{0EB99E9D-87E5-4534-A100-55D231C2B6A6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{ADAA5A65-0CE1-45FA-91F4-3D8D39073AB0}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

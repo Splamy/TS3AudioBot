@@ -27,7 +27,7 @@ namespace TS3AudioBot.Sessions
 
 	public sealed class UserSession
 	{
-		const string tokenFormat = "{0}:{1}";
+		const string tokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
 
 		private Dictionary<Type, object> assocMap = null;
 		private bool lockToken = false;

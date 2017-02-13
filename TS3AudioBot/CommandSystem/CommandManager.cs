@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -248,7 +248,7 @@ namespace TS3AudioBot.CommandSystem
 					return "An empty named function under a group cannot be overloaded.";
 			}
 
-			FunctionCommand funcCom = com as FunctionCommand;
+			var funcCom = com as FunctionCommand;
 			if (funcCom == null)
 				return $"The command cannot be inserted into a complex node ({name}).";
 
@@ -290,7 +290,7 @@ namespace TS3AudioBot.CommandSystem
 
 			var comPath = com.InvokeName.Split(' ');
 
-			CommandUnloadNode node = new CommandUnloadNode
+			var node = new CommandUnloadNode
 			{
 				parentNode = null,
 				self = CommandSystem.RootCommand,

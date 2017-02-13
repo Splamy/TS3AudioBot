@@ -51,19 +51,14 @@ namespace TS3Client
 
 	public enum MessageTarget
 	{
-		[Ts3Serializable("textprivate")]
 		Private = 1,
-		[Ts3Serializable("textchannel")]
 		Channel,
-		[Ts3Serializable("textserver")]
 		Server,
 	}
 
 	public enum RequestTarget
 	{
-		[Ts3Serializable("channel")]
 		Channel = 4,
-		[Ts3Serializable("server")]
 		Server,
 	}
 

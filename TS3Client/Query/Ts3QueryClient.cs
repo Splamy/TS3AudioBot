@@ -97,8 +97,10 @@ namespace TS3Client.Query
 
 		#region QUERY SPECIFIC COMMANDS
 
-		public void RegisterNotification(MessageTarget target, int channel) => RegisterNotification(target.GetQueryString(), channel);
-		public void RegisterNotification(RequestTarget target, int channel) => RegisterNotification(target.GetQueryString(), channel);
+		private static readonly string[] targetTypeString = new[] { "textprivate", "textchannel", "textserver", "channel", "server" };
+
+		public void RegisterNotification(MessageTarget target, int channel) => RegisterNotification(targetTypeString[(int)target], channel);
+		public void RegisterNotification(RequestTarget target, int channel) => RegisterNotification(targetTypeString[(int)target], channel);
 		private void RegisterNotification(string target, int channel)
 		{
 			var ev = new CommandParameter("event", target.ToLowerInvariant());

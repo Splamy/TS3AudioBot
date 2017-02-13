@@ -16,8 +16,6 @@
 
 namespace TS3Client.Messages
 {
-	using System;
-
 	public interface IQueryMessage
 	{
 		void SetField(string name, string value);
@@ -31,15 +29,5 @@ namespace TS3Client.Messages
 	public interface IResponse : IQueryMessage
 	{
 		string ReturnCode { get; set; }
-	}
-
-	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-	sealed class QuerySerializedAttribute : Attribute
-	{
-		public string Name { get; private set; }
-		public QuerySerializedAttribute(string name)
-		{
-			Name = string.IsNullOrWhiteSpace(name) ? null : name;
-		}
 	}
 }

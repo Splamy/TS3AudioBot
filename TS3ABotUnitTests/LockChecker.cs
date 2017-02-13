@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -67,7 +67,7 @@ namespace LockCheck
 
 		private static IReadOnlyList<LockCriticalWarning> DoCheck(Type type, bool entireModule, bool print)
 		{
-			LockChecker lc = new LockChecker();
+			var lc = new LockChecker();
 			if (entireModule)
 			{
 				lc.CheckAllInternal(type);
@@ -98,7 +98,7 @@ namespace LockCheck
 
 				while (callHierarchy.Count > 0)
 				{
-					MethodDefinition currentMethod = callHierarchy.Peek() as MethodDefinition;
+					var currentMethod = callHierarchy.Peek() as MethodDefinition;
 					if (currentMethod != null && !currentMethod.HasBody)
 						continue;
 					bool foundNewCall = false;
@@ -108,7 +108,7 @@ namespace LockCheck
 							continue;
 
 						// Check if instruction is a call
-						MethodDefinition callMethod = instruction.Operand as MethodDefinition;
+						var callMethod = instruction.Operand as MethodDefinition;
 						if (callMethod == null) continue;
 
 						// Check if we already checked the method
@@ -146,7 +146,7 @@ namespace LockCheck
 			var intersections = methodCalling.lockObjects.Intersect(methodCalled.lockObjects).ToList();
 			foreach (MemberReference intersection in intersections)
 			{
-				StringBuilder strb = new StringBuilder();
+				var strb = new StringBuilder();
 				foreach (var mi in callHierarchy.Reverse().ToList())
 					strb.AppendLine(FormatMethod(mi));
 				warningList.Add(new LockCriticalWarning(intersection.Name, strb.ToString()));
@@ -155,7 +155,7 @@ namespace LockCheck
 
 		private string FormatMethod(MethodReference mi)
 		{
-			StringBuilder strb = new StringBuilder();
+			var strb = new StringBuilder();
 			var parameters = mi.Parameters.Select(p => p.ParameterType.FullName + " " + p.Name).ToArray();
 			strb.Append(mi.DeclaringType.FullName);
 			strb.Append('.');
@@ -188,7 +188,7 @@ namespace LockCheck
 						continue;
 
 					// see if we can resolve the call
-					MethodReference metDefCalled = instruction.Operand as MethodReference;
+					var metDefCalled = instruction.Operand as MethodReference;
 					if (metDefCalled == null)
 						continue;
 
