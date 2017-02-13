@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -19,13 +19,15 @@ namespace TS3Client
 	using System;
 
 	/*
-	 * Most important Id datatypes:
-	 *
-	 * ClientUid: ulong
-	 * ClientId: ushort
-	 * ChannelId: ulong
-	 * ServerGroupId: ulong
-	 * ChannelGroupId: ulong
+		* Most important Id datatypes:
+		*
+		* ClientUid: string
+		* ClientDbId: ulong
+		* ClientId: ushort
+		* ChannelId: ulong
+		* ServerGroupId: ulong
+		* ChannelGroupId: ulong
+		* PermissionIdT: int ???
 	*/
 
 	public enum ClientType
@@ -69,53 +71,30 @@ namespace TS3Client
 	{
 		Unknown,
 		// Official notifies, used by client and query
-		[Ts3Serializable("notifychannelcreated")]
 		ChannelCreated,
-		[Ts3Serializable("notifychanneldeleted")]
 		ChannelDeleted,
-		[Ts3Serializable("notifychannelchanged")]
 		ChannelChanged,
-		[Ts3Serializable("notifychanneledited")]
 		ChannelEdited,
-		[Ts3Serializable("notifychannelmoved")]
 		ChannelMoved,
-		[Ts3Serializable("notifychannelpasswordchanged")]
 		ChannelPasswordChanged,
-		[Ts3Serializable("notifycliententerview")]
 		ClientEnterView,
-		[Ts3Serializable("notifyclientleftview")]
 		ClientLeftView,
-		[Ts3Serializable("notifyclientmoved")]
 		ClientMoved,
-		[Ts3Serializable("notifyserveredited")]
 		ServerEdited,
-		[Ts3Serializable("notifytextmessage")]
 		TextMessage,
-		[Ts3Serializable("notifytokenused")]
 		TokenUsed,
 
 		// Internal notifies, used by client
-		[Ts3Serializable("initivexpand")]
 		InitIvExpand,
-		[Ts3Serializable("initserver")]
 		InitServer,
-		[Ts3Serializable("channellist")]
 		ChannelList,
-		[Ts3Serializable("channellistfinished")]
 		ChannelListFinished,
-		[Ts3Serializable("notifyclientneededpermissions")]
 		ClientNeededPermissions,
-		[Ts3Serializable("notifyclientchannelgroupchanged")]
 		ClientChannelGroupChanged,
-		[Ts3Serializable("notifyservergroupclientadded")]
 		ClientServerGroupAdded,
-		[Ts3Serializable("notifyconnectioninforequest")]
 		ConnectionInfoRequest,
-		[Ts3Serializable("notifychannelsubscribed")]
 		ChannelSubscribed,
-		[Ts3Serializable("notifychannelunsubscribed")]
 		ChannelUnsubscribed,
-		[Ts3Serializable("notifyclientchatcomposing")]
 		ClientChatComposing,
 		// TODO: notifyservergroupsbyclientid
 		// TODO: notifyclientchatclosed

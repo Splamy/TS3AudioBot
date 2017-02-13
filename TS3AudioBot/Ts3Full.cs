@@ -119,13 +119,15 @@ namespace TS3AudioBot
 
 		public override ClientData GetSelf()
 		{
-			var cd = Generator.ActivateResponse<ClientData>();
 			var data = tsBaseClient.ClientInfo(tsFullClient.ClientId);
-			cd.ChannelId = data.ChannelId;
-			cd.DatabaseId = data.DatabaseId;
-			cd.ClientId = tsFullClient.ClientId;
-			cd.NickName = data.NickName;
-			cd.ClientType = tsBaseClient.ClientType;
+			var cd = new ClientData
+			{
+				ChannelId = data.ChannelId,
+				DatabaseId = data.DatabaseId,
+				ClientId = tsFullClient.ClientId,
+				NickName = data.NickName,
+				ClientType = tsBaseClient.ClientType
+			};
 			return cd;
 		}
 

@@ -39,12 +39,14 @@ namespace TS3ABotUnitTests
 
 		TextMessage CreateTextMessage()
 		{
-			var msg = Generator.ActivateNotification<TextMessage>();
-			msg.InvokerId = 0;
-			msg.InvokerName = "Invoker";
-			msg.InvokerUid = "InvokerUid";
-			msg.Message = "";
-			msg.Target = MessageTarget.Private;
+			var msg = new TextMessage
+			{
+				InvokerId = 0,
+				InvokerName = "Invoker",
+				InvokerUid = "InvokerUid",
+				Message = "",
+				Target = MessageTarget.Private
+			};
 			return msg;
 		}
 

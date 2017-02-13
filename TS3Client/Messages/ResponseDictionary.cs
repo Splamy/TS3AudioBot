@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -44,14 +44,11 @@ namespace TS3Client.Messages
 		public bool TryGetValue(KeyType key, out ValueType value) => data.TryGetValue(key, out value);
 		IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
 
+		public void SetField(string name, string value) => data[name] = value;
 		public string ReturnCode
 		{
 			get { return data.ContainsKey("return_code") ? data["return_code"] : string.Empty; }
-			set
-			{
-				if (data.ContainsKey("return_code")) data["return_code"] = value;
-				else data.Add("return_code", value);
-			}
+			set { data["return_code"] = value; }
 		}
 	}
 }

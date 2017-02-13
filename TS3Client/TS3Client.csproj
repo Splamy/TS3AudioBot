@@ -63,15 +63,16 @@
     <Compile Include="Full\Ts3Crypt.cs" />
     <Compile Include="Full\Ts3FullClient.cs" />
     <Compile Include="Full\VersionSign.cs" />
-    <Compile Include="Messages\FullClientNotifications.cs" />
+    <Compile Include="Commands\CommandDeserializer.cs" />
     <Compile Include="Commands\Ts3Command.cs" />
+    <Compile Include="Messages\MessageTemplates.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MessageTemplates.tt</DependentUpon>
+    </Compile>
     <Compile Include="Util.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
-    <Compile Include="Messages\ChannelNotifications.cs" />
-    <Compile Include="Messages\ClientNotifications.cs" />
-    <Compile Include="Messages\Generator.cs" />
-    <Compile Include="Messages\OtherNotifications.cs" />
     <Compile Include="Messages\ResponseDictionary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EventDispatcher.cs" />
@@ -85,11 +86,20 @@
     <Compile Include="Commands\ParameterConverter.cs" />
     <Compile Include="Ts3Exceptions.cs" />
     <Compile Include="Commands\Ts3String.cs" />
-    <Compile Include="Commands\CommandDeserializer.cs" />
     <Compile Include="WaitBlock.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Messages\MessageDeclarations.txt" />
+    <Content Include="Messages\MessageTemplates.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MessageTemplates.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

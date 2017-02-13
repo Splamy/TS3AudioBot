@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,10 @@ namespace TS3Client.Messages
 {
 	using System;
 
-	public interface IQueryMessage { }
+	public interface IQueryMessage
+	{
+		void SetField(string name, string value);
+	}
 
 	public interface INotification : IQueryMessage
 	{
@@ -27,24 +30,7 @@ namespace TS3Client.Messages
 
 	public interface IResponse : IQueryMessage
 	{
-		[QuerySerialized("return_code")]
 		string ReturnCode { get; set; }
-	}
-
-	[AttributeUsage(AttributeTargets.Interface, Inherited = true, AllowMultiple = false)]
-	sealed class QuerySubInterfaceAttribute : Attribute { }
-
-	[AttributeUsage(AttributeTargets.Interface, Inherited = false, AllowMultiple = false)]
-	sealed class QueryNotificationAttribute : Attribute
-	{
-		public NotificationType NotificationType { get; }
-		public string Name { get; }
-
-		public QueryNotificationAttribute(NotificationType type)
-		{
-			NotificationType = type;
-			Name = type.GetQueryString();
-		}
 	}
 
 	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
