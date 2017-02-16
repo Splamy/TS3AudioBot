@@ -135,9 +135,12 @@ namespace TS3AudioBot.Web
 			{
 				try
 				{
-					HttpListenerContext context = webListener.GetContext();
-					
-					Log.Write(Log.Level.Info, "{0} Requested: {1}", context.Request.RemoteEndPoint.Address, context.Request.Url.PathAndQuery);
+					var context = webListener.GetContext();
+					IPAddress remoteAddress;
+					try { remoteAddress = context.Request.RemoteEndPoint.Address; }
+					catch (NullReferenceException) { return; }
+
+					Log.Write(Log.Level.Info, "{0} Requested: {1}", remoteAddress, context.Request.Url.PathAndQuery);
 					if (context.Request.Url.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
 						Api?.DispatchCall(context);
 					else
