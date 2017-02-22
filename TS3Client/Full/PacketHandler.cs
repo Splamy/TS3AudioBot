@@ -209,6 +209,12 @@ namespace TS3Client.Full
 					continue;
 				}
 
+				IncomingPacket packet = null;
+				if (TryFetchPacket(receiveQueue, out packet))
+					return packet;
+				if (TryFetchPacket(receiveQueueLow, out packet))
+					return packet;
+
 				var dummy = new IPEndPoint(IPAddress.Any, 0);
 				byte[] buffer;
 				try { buffer = udpClient.Receive(ref dummy); }
@@ -217,27 +223,26 @@ namespace TS3Client.Full
 				if (dummy.Address.Equals(RemoteAddress.Address) && dummy.Port != RemoteAddress.Port)
 					continue;
 
-				var packet = ts3Crypt.Decrypt(buffer);
+				packet = ts3Crypt.Decrypt(buffer);
 				if (packet == null)
 					continue;
 
-				bool passToReturn = true;
 				switch (packet.PacketType)
 				{
 				case PacketType.Readable: break;
 				case PacketType.Voice: break;
-				case PacketType.Command: passToReturn = ReceiveCommand(packet); break;
-				case PacketType.CommandLow: passToReturn = ReceiveCommand(packet); break;
-				case PacketType.Ping: passToReturn = ReceivePing(packet); break;
+				case PacketType.Command: packet = ReceiveCommand(packet); break;
+				case PacketType.CommandLow: packet = ReceiveCommand(packet); break;
+				case PacketType.Ping: ReceivePing(packet); break;
 				case PacketType.Pong: break;
-				case PacketType.Ack: passToReturn = ReceiveAck(packet); break;
+				case PacketType.Ack: packet = ReceiveAck(packet); break;
 				case PacketType.AckLow: break;
 				case PacketType.Init1: ReceiveInitAck(); break;
 				default:
 					throw new ArgumentOutOfRangeException();
 				}
 
-				if (passToReturn)
+				if (packet != null)
 					return packet;
 			}
 		}
@@ -250,7 +255,7 @@ namespace TS3Client.Full
 		Dictionary<ushort, int> multiGetPackCount = new Dictionary<ushort, int>();
 #endif
 
-		private bool ReceiveCommand(IncomingPacket packet)
+		private IncomingPacket ReceiveCommand(IncomingPacket packet)
 		{
 			RingQueue<IncomingPacket> packetQueue;
 			if (packet.PacketType == PacketType.Command)
@@ -266,93 +271,9 @@ namespace TS3Client.Full
 			else
 				throw new InvalidOperationException("The packet is not a command");
 
-			if (!packetQueue.IsSet(packet.PacketId))
+			if (packetQueue.IsSet(packet.PacketId))
 			{
-				packetQueue.Set(packet, packet.PacketId);
-				int take = 0;
-				int takeLen = 0;
-				bool hasStart = false;
-				bool hasEnd = false;
-				for (int i = 0; i < packetQueue.Count; i++)
-				{
-					IncomingPacket peekPacket;
-					if (packetQueue.TryPeek(packetQueue.StartIndex + i, out peekPacket))
-					{
-						take++;
-						takeLen += peekPacket.Size;
-						if (peekPacket.FragmentedFlag)
-						{
-							if (!hasStart) { hasStart = true; }
-							else if (!hasEnd) { hasEnd = true; break; }
-						}
-						else
-						{
-							if (!hasStart) { hasStart = true; hasEnd = true; break; }
-						}
-					}
-					else
-						break;
-				}
-
-				if (hasStart && hasEnd)
-				{
-					IncomingPacket preFinalPacket = null;
-					if (take == 1)
-					{
-						// GET & (MERGE, skip with only 1)
-						if (!packetQueue.TryDequeue(out preFinalPacket))
-							throw new InvalidOperationException("Packet in queue got missing (?)");
-						// DECOMPRESS
-						if (preFinalPacket.CompressedFlag)
-						{
-							if (QuickLZ.SizeDecompressed(preFinalPacket.Data) > MaxDecompressedSize)
-								throw new InvalidOperationException("Compressed packet is too large");
-							packet.Data = QuickLZ.Decompress(preFinalPacket.Data);
-						}
-						return true;
-					}
-					else // take > 1
-					{
-						// GET & MERGE
-						var preFinalArray = new byte[takeLen];
-						int curCopyPos = 0;
-						bool firstSet = false;
-						bool isCompressed = false;
-						for (int i = 0; i < take; i++)
-						{
-							if (!packetQueue.TryDequeue(out preFinalPacket))
-								throw new InvalidOperationException("Packet in queue got missing (?)");
-							if (!firstSet)
-							{
-								isCompressed = preFinalPacket.CompressedFlag;
-								firstSet = true;
-							}
-							Array.Copy(preFinalPacket.Data, 0, preFinalArray, curCopyPos, preFinalPacket.Size);
-							curCopyPos += preFinalPacket.Size;
-						}
-						// DECOMPRESS
-						if (isCompressed)
-						{
-							if (QuickLZ.SizeDecompressed(preFinalArray) > MaxDecompressedSize)
-								throw new InvalidOperationException("Compressed packet is too large");
-							packet.Data = QuickLZ.Decompress(preFinalArray);
-						}
-						else
-						{
-							packet.Data = preFinalArray;
-						}
-					}
-
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}
 #if DEBUG
-			else
-			{
 				if (!multiGetPackCount.ContainsKey(packet.PacketId))
 					multiGetPackCount.Add(packet.PacketId, 0);
 				var cnt = ++multiGetPackCount[packet.PacketId];
@@ -360,9 +281,80 @@ namespace TS3Client.Full
 				{
 					Console.WriteLine("Non-get-able packet id {0} DATA: {1}", packet.PacketId, string.Join(" ", packet.Raw.Select(x => x.ToString("X2"))));
 				}
-			}
 #endif
-			return false;
+				return null;
+			}
+			packetQueue.Set(packet, packet.PacketId);
+
+			IncomingPacket retPacket;
+			return TryFetchPacket(packetQueue, out retPacket) ? retPacket : null;
+		}
+
+		private static bool TryFetchPacket(RingQueue<IncomingPacket> packetQueue, out IncomingPacket packet)
+		{
+			if (packetQueue.Count <= 0) { packet = null; return false; }
+
+			int take = 0;
+			int takeLen = 0;
+			bool hasStart = false;
+			bool hasEnd = false;
+			for (int i = 0; i < packetQueue.Count; i++)
+			{
+				IncomingPacket peekPacket;
+				if (packetQueue.TryPeek(packetQueue.StartIndex + i, out peekPacket))
+				{
+					take++;
+					takeLen += peekPacket.Size;
+					if (peekPacket.FragmentedFlag)
+					{
+						if (!hasStart) { hasStart = true; }
+						else if (!hasEnd) { hasEnd = true; break; }
+					}
+					else
+					{
+						if (!hasStart) { hasStart = true; hasEnd = true; break; }
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			if (!hasStart || !hasEnd) { packet = null; return false; }
+
+			// GET
+			if (!packetQueue.TryDequeue(out packet))
+				throw new InvalidOperationException("Packet in queue got missing (?)");
+
+			if (take > 1) // MERGE
+			{
+				var preFinalArray = new byte[takeLen];
+
+				// for loop at 0th element
+				int curCopyPos = packet.Size;
+				Array.Copy(packet.Data, 0, preFinalArray, 0, packet.Size);
+
+				for (int i = 1; i < take; i++)
+				{
+					IncomingPacket nextPacket = null;
+					if (!packetQueue.TryDequeue(out nextPacket))
+						throw new InvalidOperationException("Packet in queue got missing (?)");
+
+					Array.Copy(nextPacket.Data, 0, preFinalArray, curCopyPos, nextPacket.Size);
+					curCopyPos += nextPacket.Size;
+				}
+				packet.Data = preFinalArray;
+			}
+
+			// DECOMPRESS
+			if (packet.CompressedFlag)
+			{
+				if (QuickLZ.SizeDecompressed(packet.Data) > MaxDecompressedSize)
+					throw new InvalidOperationException("Compressed packet is too large");
+				packet.Data = QuickLZ.Decompress(packet.Data);
+			}
+			return true;
 		}
 
 		private void SendAck(ushort ackId, PacketType ackType)
@@ -379,10 +371,10 @@ namespace TS3Client.Full
 		Dictionary<ushort, int> multiGetAckCount = new Dictionary<ushort, int>();
 #endif
 
-		private bool ReceiveAck(IncomingPacket packet)
+		private IncomingPacket ReceiveAck(IncomingPacket packet)
 		{
 			if (packet.Data.Length < 2)
-				return false;
+				return null;
 			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
 
 #if DEBUG
@@ -412,15 +404,14 @@ namespace TS3Client.Full
 					if (node.Value.PacketId == packetId)
 						sendQueue.Remove(node);
 #endif
-			return true;
+			return packet;
 		}
 
-		private bool ReceivePing(IncomingPacket packet)
+		private void ReceivePing(IncomingPacket packet)
 		{
 			byte[] pongData = new byte[2];
 			NetUtil.H2N(packet.PacketId, pongData, 0);
 			AddOutgoingPacket(pongData, PacketType.Pong);
-			return true;
 		}
 
 		public void ReceiveInitAck()

@@ -55,9 +55,13 @@ namespace TS3Client.Full
 
 			try
 			{
-				var hostEntry = Dns.GetHostEntry(conData.Hostname);
-				var ipAddr = hostEntry.AddressList.FirstOrDefault();
-				if (ipAddr == null) throw new Ts3Exception("Could not resove DNS.");
+				IPAddress ipAddr;
+				if (!IPAddress.TryParse(conData.Hostname, out ipAddr))
+				{
+					var hostEntry = Dns.GetHostEntry(conData.Hostname);
+					ipAddr = hostEntry.AddressList.FirstOrDefault();
+					if (ipAddr == null) throw new Ts3Exception("Could not resove DNS.");
+				}
 				packetHandler.RemoteAddress = new IPEndPoint(ipAddr, conData.Port);
 				udpClient.Connect(packetHandler.RemoteAddress);
 			}
