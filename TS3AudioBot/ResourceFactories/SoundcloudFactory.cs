@@ -17,12 +17,13 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using System;
+	using System.Linq;
 	using System.Collections.Generic;
 	using System.Globalization;
 	using System.Text.RegularExpressions;
 	using Helper;
 
-	public sealed class SoundcloudFactory : IResourceFactory
+	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory
 	{
 		public string SubCommandName => "soundcloud";
 		public AudioType FactoryFor => AudioType.Soundcloud;
@@ -40,16 +41,24 @@ namespace TS3AudioBot.ResourceFactories
 			string jsonResponse;
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={soundcloudClientId}");
 			if (!WebWrapper.DownloadString(out jsonResponse, uri))
-				return RResultCode.ScInvalidLink.ToString();
+			{
+				if (!MatchLink(link))
+					return "Not a valid soundcloud link. Please pass the full link";
+				return YoutubeDlWrapped(link);
+			}
 			var parsedDict = ParseJson(jsonResponse);
-			int id = (int)parsedDict["id"];
-			string title = (string)parsedDict["title"];
-			return GetResourceById(new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud), false);
+			var resource = ParseDictToResource(parsedDict);
+			if (resource == null)
+				return "Empty or missing response parts (parsedDict)";
+			return GetResourceById(resource, false);
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource) => GetResourceById(resource, true);
 		private R<PlayResource> GetResourceById(AudioResource resource, bool allowNullName)
 		{
+			if (MatchLink(resource.ResourceId))
+				return GetResource(resource.ResourceId);
+
 			if (resource.ResourceTitle == null)
 			{
 				if (!allowNullName) return "Could not restore null title.";
@@ -64,15 +73,78 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(string id)
 		{
+			if (MatchLink(id))
+				return id;
+
 			string jsonResponse;
 			var uri = new Uri($"https://api.soundcloud.com/tracks/{id}?client_id={soundcloudClientId}");
 			if (!WebWrapper.DownloadString(out jsonResponse, uri))
 				return null;
 			var parsedDict = ParseJson(jsonResponse);
-			return (string)parsedDict["permalink_url"];
+			return parsedDict?["permalink_url"] as string;
 		}
 
-		private Dictionary<string, object> ParseJson(string jsonResponse) => (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
+		private static Dictionary<string, object> ParseJson(string jsonResponse)
+			=> (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
+
+		private static AudioResource ParseDictToResource(Dictionary<string, object> dict)
+		{
+			if (dict == null) return null;
+			var id = dict["id"] as int?;
+			if (!id.HasValue) return null;
+			var title = dict["title"] as string;
+			if (title == null) return null;
+			return new AudioResource(id.Value.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud);
+		}
+
+		private static R<PlayResource> YoutubeDlWrapped(string link)
+		{
+			Log.Write(Log.Level.Debug, "SC Ruined!");
+
+			var result = YoutubeDlHelper.FindAndRunYoutubeDl(link);
+			if (!result.Ok)
+				return result.Message;
+
+			var response = result.Value;
+			string title = response.Item1;
+			string url = response.Item2.FirstOrDefault();
+			if (response.Item2.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+				return "No youtube-dl response";
+
+			Log.Write(Log.Level.Debug, "SC Saved!");
+
+			return new PlayResource(url, new AudioResource(link, title, AudioType.Soundcloud));
+		}
+
+		public R<Playlist> GetPlaylist(string url)
+		{
+			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={soundcloudClientId}");
+			string jsonResponse;
+			if (!WebWrapper.DownloadString(out jsonResponse, uri))
+				return RResultCode.ScInvalidLink.ToString();
+
+			var parsedDict = ParseJson(jsonResponse);
+			if (parsedDict == null)
+				return "Empty or missing response parts (parsedDict)";
+
+			string name = PlaylistManager.CleanseName(parsedDict["title"] as string);
+			var plist = new Playlist(name);
+
+			var tracks = parsedDict["tracks"] as object[];
+			if (tracks == null)
+				return "Empty or missing response parts (tracks)";
+
+			foreach (var track in tracks.OfType<Dictionary<string, object>>())
+			{
+				var resource = ParseDictToResource(track);
+				if (resource == null)
+					continue;
+
+				plist.AddItem(new PlaylistItem(resource));
+			}
+
+			return plist;
+		}
 
 		public void Dispose() { }
 	}

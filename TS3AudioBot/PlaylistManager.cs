@@ -31,6 +31,7 @@ namespace TS3AudioBot
 	public sealed class PlaylistManager : IDisposable
 	{
 		private static readonly Regex validPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
+		private static readonly Regex cleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
 
 		// get video info
 		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
@@ -277,14 +278,19 @@ namespace TS3AudioBot
 			}
 		}
 
-		public R<Playlist> LoadPlaylistFrom(string url, AudioType? type = null)
+		public R<Playlist> LoadPlaylistFrom(string message, AudioType? type = null)
 		{
+			if (string.IsNullOrWhiteSpace(message))
+				throw new ArgumentNullException(nameof(message));
+			
+			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
+
 			if (type.HasValue)
 			{
 				foreach (var factory in factories)
 				{
 					if (factory.FactoryFor == type.Value)
-						return factory.GetPlaylist(url);
+						return factory.GetPlaylist(netlinkurl);
 				}
 				return "There is not factory registered for this type";
 			}
@@ -292,8 +298,8 @@ namespace TS3AudioBot
 			{
 				foreach (var factory in factories)
 				{
-					if (factory.MatchLink(url))
-						return factory.GetPlaylist(url);
+					if (factory.MatchLink(netlinkurl))
+						return factory.GetPlaylist(netlinkurl);
 				}
 				return "Unknown playlist type. Please use '!list from <type> <url>' to specify your playlist type.";
 			}
@@ -404,11 +410,25 @@ namespace TS3AudioBot
 
 		public static R IsNameValid(string name)
 		{
+			if (string.IsNullOrEmpty(name))
+				return "An empty playlist name is not valid";
 			if (name.Length >= 64)
 				return "Length must be <64";
 			if (!validPlistName.IsMatch(name))
 				return "The new name is invalid please only use [a-zA-Z0-9_-]";
 			return R.OkR;
+		}
+
+		public static string CleanseName(string name)
+		{
+			if (string.IsNullOrEmpty(name))
+				return "playlist";
+			if (name.Length >= 64)
+				name = name.Substring(0, 63);
+			name = cleansePlaylistName.Replace(name, "");
+			if (!IsNameValid(name))
+				name = "playlist";
+			return name;
 		}
 
 		public IEnumerable<string> GetAvailablePlaylists() => GetAvailablePlaylists(null);

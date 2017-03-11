@@ -164,18 +164,21 @@ namespace TS3AudioBot
 			TargetManager = teamspeakClient;
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
+			YoutubeDlHelper.DataObj = yfd;
 			FactoryManager = new ResourceFactoryManager();
 			var mediaFactory = new MediaFactory();
 			FactoryManager.AddFactory(mediaFactory);
 			var youtubeFactory = new YoutubeFactory(yfd);
 			FactoryManager.AddFactory(youtubeFactory);
-			FactoryManager.AddFactory(new SoundcloudFactory());
+			var soundcloudFactory = new SoundcloudFactory();
+			FactoryManager.AddFactory(soundcloudFactory);
 			FactoryManager.AddFactory(new TwitchFactory());
 			FactoryManager.DefaultFactorty = mediaFactory;
 			CommandManager.RegisterCommand(FactoryManager.CommandNode, "from");
 
 			PlaylistManager.AddFactory(youtubeFactory);
 			PlaylistManager.AddFactory(mediaFactory);
+			PlaylistManager.AddFactory(soundcloudFactory);
 			CommandManager.RegisterCommand(PlaylistManager.CommandNode, "list from");
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");

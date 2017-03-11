@@ -322,89 +322,33 @@ namespace TS3AudioBot.ResourceFactories
 
 			Log.Write(Log.Level.Debug, "YT Ruined!");
 
-			var ytdlPath = DetectYoutubeDl(resource.ResourceId);
-			if (ytdlPath == null)
-				return "Youtube-Dl could not be found. The video cannot be played due to youtube restrictions";
+			var result = YoutubeDlHelper.FindAndRunYoutubeDl(resource.ResourceId);
+			if (!result.Ok)
+				return result.Message;
 
-			try
+			var response = result.Value;
+			title = response.Item1;
+			var urlOptions = response.Item2;
+
+			if (urlOptions.Count == 1)
 			{
-				using (var tmproc = new Process())
-				{
-					tmproc.StartInfo.FileName = ytdlPath.Item1;
-					tmproc.StartInfo.Arguments = ytdlPath.Item2;
-					tmproc.StartInfo.UseShellExecute = false;
-					tmproc.StartInfo.CreateNoWindow = true;
-					tmproc.StartInfo.RedirectStandardOutput = true;
-					tmproc.StartInfo.RedirectStandardError = true;
-					tmproc.Start();
-					tmproc.WaitForExit(10000);
-
-					using (var reader = tmproc.StandardError)
-					{
-						string result = reader.ReadToEnd();
-						if (!string.IsNullOrEmpty(result))
-						{
-							Log.Write(Log.Level.Error, "youtube-dl failed to load the resource:\n{0}", result);
-							return "youtube-dl failed to load the resource";
-						}
-					}
-
-					title = tmproc.StandardOutput.ReadLine();
-
-					var urlOptions = new List<string>();
-					string line;
-					while ((line = tmproc.StandardOutput.ReadLine()) != null)
-						urlOptions.Add(line);
-
-					if (urlOptions.Count == 1)
-					{
-						url = urlOptions[0];
-					}
-					else if (urlOptions.Count >= 1)
-					{
-						Uri[] uriList = urlOptions.Select(s => new Uri(s)).ToArray();
-						Uri bestMatch = uriList
-							.FirstOrDefault(u => HttpUtility.ParseQueryString(u.Query)
-								.GetValues("mime")
-								.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)));
-						url = (bestMatch ?? uriList[0]).OriginalString;
-					}
-				}
+				url = urlOptions[0];
 			}
-			catch (Win32Exception) { return "Failed to run youtube-dl"; }
+			else if (urlOptions.Count >= 1)
+			{
+				Uri[] uriList = urlOptions.Select(s => new Uri(s)).ToArray();
+				Uri bestMatch = uriList
+					.FirstOrDefault(u => HttpUtility.ParseQueryString(u.Query)
+						.GetValues("mime")
+						.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)));
+				url = (bestMatch ?? uriList[0]).OriginalString;
+			}
 
 			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
 				return "No youtube-dl response";
 
 			Log.Write(Log.Level.Debug, "YT Saved!");
 			return new PlayResource(url, resource.WithName(title));
-		}
-
-		private Tuple<string, string> DetectYoutubeDl(string id)
-		{
-			string param = $"--no-warnings --get-title --get-url --id {id}";
-
-			// Default path youtube-dl is suggesting to install
-			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
-			if (File.Exists(defaultYtDlPath))
-				return new Tuple<string, string>(defaultYtDlPath, param);
-
-			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
-			string fullCustomPath = Path.GetFullPath(data.YoutubedlPath);
-			if (File.Exists(fullCustomPath) || File.Exists(fullCustomPath + ".exe"))
-				return new Tuple<string, string>(fullCustomPath, param);
-
-			// Example: /home/teamspeak where the binary 'youtube-dl' lies in ./teamspeak/
-			string fullCustomPathWithoutFile = Path.Combine(fullCustomPath, "youtube-dl");
-			if (File.Exists(fullCustomPathWithoutFile) || File.Exists(fullCustomPathWithoutFile + ".exe"))
-				return new Tuple<string, string>(fullCustomPathWithoutFile, param);
-
-			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the github project folder
-			string fullCustomPathGhProject = Path.Combine(fullCustomPath, "youtube_dl", "__main__.py");
-			if (File.Exists(fullCustomPathGhProject))
-				return new Tuple<string, string>("python", $"\"{fullCustomPathGhProject}\" {param}");
-
-			return null;
 		}
 
 		public void Dispose() { }
