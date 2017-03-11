@@ -451,7 +451,7 @@ namespace TS3AudioBot
 
 		public void Dispose() { }
 
-		sealed class PlayCommand
+		private sealed class PlayCommand
 		{
 			public BotCommand Command { get; }
 			private AudioType audioType;
@@ -488,12 +488,12 @@ namespace TS3AudioBot
 		//one of these:
 		// playdata holds all needed information for playing + first possiblity
 		// > can be a resource
-		public AudioResource Resource { get; } = null;
+		public AudioResource Resource { get; }
 		// > can be a history entry (will need to fall back to resource-load if entry is deleted in meanwhile)
-		public uint? HistoryId { get; } = null;
+		public uint? HistoryId { get; }
 		// > can be a link to be resolved normally (+ optional audio type)
-		public string Link { get; } = null;
-		public AudioType? AudioType { get; } = null;
+		public string Link { get; }
+		public AudioType? AudioType { get; }
 
 		public string DisplayString
 		{
@@ -528,8 +528,7 @@ namespace TS3AudioBot
 		public int Count => resources.Count;
 		private List<PlaylistItem> resources;
 
-		public Playlist(string name) : this(name, null) { }
-		public Playlist(string name, ulong? creatorDbId)
+		public Playlist(string name, ulong? creatorDbId = null)
 		{
 			Util.Init(ref resources);
 			CreatorDbId = creatorDbId;
@@ -564,7 +563,7 @@ namespace TS3AudioBot
 		public PlaylistItem GetResource(int index) => resources[index];
 	}
 
-	class YoutubePlaylistItem : PlaylistItem
+	internal class YoutubePlaylistItem : PlaylistItem
 	{
 		public TimeSpan Length { get; set; }
 

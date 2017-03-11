@@ -18,7 +18,7 @@ namespace TS3AudioBot.Web
 {
 	using System.Security.Principal;
 
-	class HttpListenerDigestIdentity : IIdentity
+	internal class HttpListenerDigestIdentity : IIdentity
 	{
 		public string AuthenticationType => "Digest";
 		public bool IsAuthenticated { get; }

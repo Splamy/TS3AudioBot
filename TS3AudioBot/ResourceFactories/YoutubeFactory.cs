@@ -31,9 +31,9 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
 	{
-		private static readonly Regex idMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);
-		private static readonly Regex linkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
-		private static readonly Regex listMatch = new Regex(@"(&|\?)list=([\w-]+)", Util.DefaultRegexConfig);
+		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);
+		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
+		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w-]+)", Util.DefaultRegexConfig);
 
 		public string SubCommandName => "youtube";
 		public AudioType FactoryFor => AudioType.Youtube;
@@ -45,13 +45,13 @@ namespace TS3AudioBot.ResourceFactories
 			data = yfd;
 		}
 
-		public bool MatchLink(string link) => linkMatch.IsMatch(link) || listMatch.IsMatch(link);
-		bool IResourceFactory.MatchLink(string link) => linkMatch.IsMatch(link);
-		bool IPlaylistFactory.MatchLink(string link) => listMatch.IsMatch(link);
+		public bool MatchLink(string link) => LinkMatch.IsMatch(link) || ListMatch.IsMatch(link);
+		bool IResourceFactory.MatchLink(string link) => LinkMatch.IsMatch(link);
+		bool IPlaylistFactory.MatchLink(string link) => ListMatch.IsMatch(link);
 
 		public R<PlayResource> GetResource(string ytLink)
 		{
-			Match matchYtId = idMatch.Match(ytLink);
+			Match matchYtId = IdMatch.Match(ytLink);
 			if (!matchYtId.Success)
 				return RResultCode.YtIdNotFound.ToString();
 			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, AudioType.Youtube));
@@ -226,7 +226,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Playlist> GetPlaylist(string url)
 		{
-			Match matchYtId = listMatch.Match(url);
+			Match matchYtId = ListMatch.Match(url);
 			if (!matchYtId.Success)
 				return "Could not extract a playlist id";
 
@@ -315,7 +315,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static object GetDictVal(object dict, string field) => (dict as Dictionary<string, object>)?[field];
 
-		public R<PlayResource> YoutubeDlWrapped(AudioResource resource)
+		private R<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
 			string title = null;
 			string url = null;
@@ -339,7 +339,7 @@ namespace TS3AudioBot.ResourceFactories
 					tmproc.Start();
 					tmproc.WaitForExit(10000);
 
-					using (StreamReader reader = tmproc.StandardError)
+					using (var reader = tmproc.StandardError)
 					{
 						string result = reader.ReadToEnd();
 						if (!string.IsNullOrEmpty(result))
@@ -364,10 +364,9 @@ namespace TS3AudioBot.ResourceFactories
 					{
 						Uri[] uriList = urlOptions.Select(s => new Uri(s)).ToArray();
 						Uri bestMatch = uriList
-							.Where(u => HttpUtility.ParseQueryString(u.Query)
+							.FirstOrDefault(u => HttpUtility.ParseQueryString(u.Query)
 								.GetValues("mime")
-								.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)))
-							.FirstOrDefault();
+								.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)));
 						url = (bestMatch ?? uriList[0]).OriginalString;
 					}
 				}
@@ -411,7 +410,7 @@ namespace TS3AudioBot.ResourceFactories
 		public void Dispose() { }
 
 #pragma warning disable CS0649
-		class JSON_PlaylistItems
+		private class JSON_PlaylistItems
 		{
 			public string nextPageToken;
 			public Item[] items;

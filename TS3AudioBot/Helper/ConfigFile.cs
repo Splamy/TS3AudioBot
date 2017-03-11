@@ -27,15 +27,15 @@ namespace TS3AudioBot.Helper
 
 	public abstract class ConfigFile
 	{
-		private static char splitChar = '=';
-		private static readonly char[] splitCharArr = new[] { splitChar };
-		private static string commentSeq = "#";
-		private static readonly string[] commentSeqArr = new[] { commentSeq, ";", "//" };
-		private const string nameSeperator = "::";
+		private const char SplitChar = '=';
+		private static readonly char[] SplitCharArr = { SplitChar };
+		private const string CommentSeq = "#";
+		private static readonly string[] CommentSeqArr = { CommentSeq, ";", "//" };
+		private const string NameSeperator = "::";
 		private bool changed;
 		private List<ConfigData> confObjects;
 
-		public ConfigFile()
+		protected ConfigFile()
 		{
 			confObjects = new List<ConfigData>();
 		}
@@ -70,8 +70,8 @@ namespace TS3AudioBot.Helper
 			foreach (var field in fields)
 			{
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
-				string entryName = associatedClass + nameSeperator + field.Name;
-				string rawValue = string.Empty;
+				string entryName = associatedClass + NameSeperator + field.Name;
+				string rawValue;
 				object parsedValue = null;
 				bool newKey = false;
 
@@ -127,7 +127,7 @@ namespace TS3AudioBot.Helper
 			if (string.IsNullOrEmpty(value))
 				throw new ArgumentNullException(nameof(value));
 
-			string[] keyParam = key.Split(new[] { nameSeperator }, StringSplitOptions.None);
+			string[] keyParam = key.Split(new[] { NameSeperator }, StringSplitOptions.None);
 			var filteredObjects = confObjects.Where(co => co.AssociatedClass == keyParam[0]);
 			if (!filteredObjects.Any())
 				return "No active entries found for this key";
@@ -165,14 +165,13 @@ namespace TS3AudioBot.Helper
 		public abstract IEnumerable<KeyValuePair<string, string>> GetConfigMap();
 
 		protected static bool IsComment(string text) =>
-			commentSeqArr.Any(seq => text.StartsWith(seq, StringComparison.Ordinal)) || string.IsNullOrWhiteSpace(text);
+			CommentSeqArr.Any(seq => text.StartsWith(seq, StringComparison.Ordinal)) || string.IsNullOrWhiteSpace(text);
 
 		private class NormalConfigFile : ConfigFile
 		{
 			private string path;
 			private List<LineData> fileLines;
 			private readonly Dictionary<string, int> data;
-			private List<object> registeredObjects = new List<object>();
 			private bool open;
 			private readonly object writeLock = new object();
 
@@ -204,7 +203,7 @@ namespace TS3AudioBot.Helper
 					}
 					else
 					{
-						string[] kvp = s.Split(splitCharArr, 2);
+						string[] kvp = s.Split(SplitCharArr, 2);
 						if (kvp.Length < 2)
 						{
 							Console.WriteLine("Invalid log entry: \"{0}\"", s);
@@ -221,7 +220,7 @@ namespace TS3AudioBot.Helper
 				if (!open)
 					changed = true;
 
-				fileLines.Add(new LineData(commentSeq + " " + text));
+				fileLines.Add(new LineData(CommentSeq + " " + text));
 			}
 
 			protected override void WriteKey(string key, string value)
@@ -272,7 +271,7 @@ namespace TS3AudioBot.Helper
 				if (cd == null)
 					return;
 
-				string key = cd.AssociatedClass + nameSeperator + e.PropertyName;
+				string key = cd.AssociatedClass + NameSeperator + e.PropertyName;
 				var property = cd.GetType().GetProperty(e.PropertyName);
 				WriteValueToConfig(key, property.GetValue(cd));
 			}
@@ -303,7 +302,7 @@ namespace TS3AudioBot.Helper
 								else
 								{
 									output.Write(line.Key);
-									output.Write(splitChar);
+									output.Write(SplitChar);
 									output.WriteLine(line.Value);
 								}
 							}
@@ -338,7 +337,7 @@ namespace TS3AudioBot.Helper
 					if (!Comment && value == null)
 						throw new ArgumentNullException(nameof(value));
 				}
-				public override string ToString() => Comment ? Value : Key + splitChar + Value;
+				public override string ToString() => Comment ? Value : Key + SplitChar + Value;
 			}
 		}
 

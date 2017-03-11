@@ -27,10 +27,9 @@ namespace TS3AudioBot.History
 
 	public sealed class HistoryManager : IDisposable
 	{
-		const string audioLogEntriesTable = "audioLogEntries";
-		const string resourceTitleQueryColumn = nameof(AudioLogEntry.AudioResource) + "." + nameof(AudioResource.ResourceTitle);
+		private const string AudioLogEntriesTable = "audioLogEntries";
+		private const string ResourceTitleQueryColumn = nameof(AudioLogEntry.AudioResource) + "." + nameof(AudioResource.ResourceTitle);
 
-		private readonly FileInfo historyFile;
 		private readonly LiteDatabase database;
 		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly HistoryManagerData historyManagerData;
@@ -81,17 +80,18 @@ namespace TS3AudioBot.History
 				upgrader.historyFile.Delete();
 			}
 			// if not it is already the new one or corrupted
-			catch (FormatException)
+			catch (FormatException) { }
+			finally
 			{
-				upgrader.CloseFile();
+				upgrader.Dispose();
 			}
 			#endregion
 
 			Util.Init(ref unusedIds);
-			historyFile = new FileInfo(hmd.HistoryFile);
+			var historyFile = new FileInfo(hmd.HistoryFile);
 			database = new LiteDatabase(historyFile.FullName);
 
-			audioLogEntries = database.GetCollection<AudioLogEntry>(audioLogEntriesTable);
+			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.ResourceTitle);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
 
@@ -181,7 +181,7 @@ namespace TS3AudioBot.History
 
 		private AudioLogEntry FindByUniqueId(string uniqueId) => audioLogEntries.FindOne(x => x.AudioResource.UniqueId == uniqueId);
 
-		/// <summary>Gets all Entries matching the search criteria.<\br>
+		/// <summary>Gets all Entries matching the search criteria.
 		/// The entries are sorted by last playtime descending.</summary>
 		/// <param name="search">All search criteria.</param>
 		/// <returns>A list of all found entries.</returns>
@@ -193,10 +193,10 @@ namespace TS3AudioBot.History
 			if (search.MaxResults <= 0)
 				return Enumerable.Empty<AudioLogEntry>();
 
-			Query query = Query.All(nameof(AudioLogEntry.Timestamp), Query.Descending);
+			var query = Query.All(nameof(AudioLogEntry.Timestamp), Query.Descending);
 
 			if (!string.IsNullOrEmpty(search.TitlePart))
-				query = Query.And(query, Query.Where(resourceTitleQueryColumn, val => val.AsString.ToLowerInvariant().Contains(search.TitlePart)));
+				query = Query.And(query, Query.Where(ResourceTitleQueryColumn, val => val.AsString.ToLowerInvariant().Contains(search.TitlePart)));
 
 			if (search.UserId.HasValue)
 				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserInvokeId), search.UserId.Value));
@@ -241,7 +241,7 @@ namespace TS3AudioBot.History
 
 		/// <summary>Sets the name of a <see cref="AudioLogEntry"/>.</summary>
 		/// <param name="ale">The id of the <see cref="AudioLogEntry"/> to rename.</param>
-		/// <param name="name">The new name for the <see cref="AudioLogEntry"/>.</param>
+		/// <param name="newName">The new name for the <see cref="AudioLogEntry"/>.</param>
 		/// <exception cref="ArgumentNullException">When ale is null or the name is null, empty or only whitspaces</exception>
 		public void RenameEntry(AudioLogEntry ale, string newName)
 		{

@@ -71,7 +71,7 @@ namespace TS3AudioBot
 		protected Ts3BaseClient tsBaseClient;
 		protected ClientData me;
 
-		public TeamspeakControl(ClientType connectionType)
+		protected TeamspeakControl(ClientType connectionType)
 		{
 			clientDbNames = new Dictionary<ulong, string>();
 
@@ -180,7 +180,7 @@ namespace TS3AudioBot
 			return R<ClientData>.OkR(clientbuffer.First(pred));
 		}
 
-		public abstract ClientData GetSelf();
+		protected abstract ClientData GetSelf();
 
 		public R RefreshClientBuffer(bool force)
 		{
@@ -196,10 +196,7 @@ namespace TS3AudioBot
 		public ulong[] GetClientServerGroups(ulong dbId)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			var response = tsBaseClient.ServerGroupsOfClientDbId(dbId);
-			if (!response.Any())
-				return new ulong[0];
-			return response.Select(csg => csg.ServerGroupId).ToArray();
+			return tsBaseClient.ServerGroupsOfClientDbId(dbId).Select(csg => csg.ServerGroupId).ToArray();
 		}
 
 		public string GetNameByDbId(ulong clientDbId)

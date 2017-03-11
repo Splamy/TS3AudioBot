@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,21 +24,21 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class TwitchFactory : IResourceFactory
 	{
-		private Regex twitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
-		private Regex m3u8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
+		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
+		private static readonly Regex M3U8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
 
 		public string SubCommandName => "twitch";
 		public AudioType FactoryFor => AudioType.Twitch;
-		public string TwitchClientID { get; private set; }
+		private readonly string twitchClientId;
 
 		public TwitchFactory()
 		{
-			TwitchClientID = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
+			twitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
 		}
 
 		public R<PlayResource> GetResource(string url)
 		{
-			var match = twitchMatch.Match(url);
+			var match = TwitchMatch.Match(url);
 			if (!match.Success)
 				return RResultCode.TwitchInvalidUrl.ToString();
 			return GetResourceById(new AudioResource(match.Groups[3].Value, null, AudioType.Twitch));
@@ -50,7 +50,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			// request api token
 			string jsonResponse;
-			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", TwitchClientID)))
+			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", twitchClientId)))
 				return RResultCode.NoConnection.ToString();
 
 			var jsonDict = (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
@@ -78,7 +78,7 @@ namespace TS3AudioBot.ResourceFactories
 					if (string.IsNullOrEmpty(blockInfo))
 						break;
 
-					var match = m3u8ExtMatch.Match(blockInfo);
+					var match = M3U8ExtMatch.Match(blockInfo);
 					if (!match.Success)
 						continue;
 
@@ -89,7 +89,7 @@ namespace TS3AudioBot.ResourceFactories
 							string streamInfo = reader.ReadLine();
 							Match infoMatch;
 							if (string.IsNullOrEmpty(streamInfo) ||
-								 !(infoMatch = m3u8ExtMatch.Match(streamInfo)).Success ||
+								 !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success ||
 								 infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
 								return RResultCode.TwitchMalformedM3u8File.ToString();
 
@@ -134,7 +134,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new PlayResource(dataList[codec].Url, resource.ResourceTitle != null ? resource : resource.WithName($"Twitch channel: {channel}"));
 		}
 
-		public bool MatchLink(string uri) => twitchMatch.IsMatch(uri);
+		public bool MatchLink(string uri) => TwitchMatch.IsMatch(uri);
 
 		private int SelectStream(List<StreamData> list)
 		{

@@ -36,10 +36,10 @@ namespace TS3AudioBot
 
 		private static string[] spaceup;
 
-		private const string placeLogLevelSpaced = "{0}";
-		private const string placeErrorTextFormatted = "{1}";
-		private const string placeDateFormatted = "{2}";
-		private const string placeStackTraceFormatted = "{3}";
+		private const string PlaceLogLevelSpaced = "{0}";
+		private const string PlaceErrorTextFormatted = "{1}";
+		private const string PlaceDateFormatted = "{2}";
+		private const string PlaceStackTraceFormatted = "{3}";
 
 		static Log()
 		{
@@ -144,19 +144,19 @@ namespace TS3AudioBot
 					formatString.Append(part.Value);
 					break;
 				case MethodBuildToken.LogLevelSpaced:
-					formatString.Append(placeLogLevelSpaced);
+					formatString.Append(PlaceLogLevelSpaced);
 					usesLLS = true;
 					break;
 				case MethodBuildToken.ErrorTextFormatted:
-					formatString.Append(placeErrorTextFormatted);
+					formatString.Append(PlaceErrorTextFormatted);
 					usesETF = true;
 					break;
 				case MethodBuildToken.DateFormatted:
-					formatString.Append(placeDateFormatted);
+					formatString.Append(PlaceDateFormatted);
 					usesDF = true;
 					break;
 				case MethodBuildToken.StackFormatted:
-					formatString.Append(placeStackTraceFormatted);
+					formatString.Append(PlaceStackTraceFormatted);
 					usesSTF = true;
 					break;
 				default:

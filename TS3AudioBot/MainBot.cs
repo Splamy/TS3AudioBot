@@ -737,7 +737,7 @@ namespace TS3AudioBot
 		{
 			var plist = AutoGetPlaylist(info.Session);
 
-			if (hid < 0 || !HistoryManager.GetEntryById(hid))
+			if (!HistoryManager.GetEntryById(hid))
 				throw new CommandException("History entry not found", CommandExceptionReason.CommandError);
 
 			plist.AddItem(new PlaylistItem(hid, new MetaData() { ResourceOwnerDbId = info.Session.Client.DatabaseId }));
@@ -887,8 +887,7 @@ namespace TS3AudioBot
 		{
 			var plist = AutoGetPlaylist(info.Session);
 
-			if (!index.HasValue
-				|| (index.HasValue && index.Value >= 0 && index.Value < plist.Count))
+			if (!index.HasValue || (index.Value >= 0 && index.Value < plist.Count))
 			{
 				PlaylistManager.PlayFreelist(plist);
 				PlaylistManager.Index = index ?? 0;

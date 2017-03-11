@@ -34,8 +34,7 @@ namespace TS3AudioBot.Helper
 		{
 			run = false;
 			workList = new List<TickWorker>();
-			tickThread = new Thread(Tick);
-			tickThread.Name = "TickPool";
+			tickThread = new Thread(Tick) {Name = "TickPool"};
 		}
 
 		public static void RegisterTickOnce(Action method)

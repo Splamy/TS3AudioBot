@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -19,7 +19,7 @@ namespace TS3AudioBot.Audio
 	using System;
 	using System.Diagnostics;
 
-	class PreciseAudioTimer
+	internal class PreciseAudioTimer
 	{
 		public int SampleRate { get; }
 		public int Channel { get; }
@@ -27,7 +27,7 @@ namespace TS3AudioBot.Audio
 		public int BytesPerSecond { get; }
 
 		private long byteCnt;
-		private Stopwatch stopwatch;
+		private readonly Stopwatch stopwatch;
 		public TimeSpan BufferLength => CalcTime();
 
 		public PreciseAudioTimer(int sampleRate, int bits, int channel)

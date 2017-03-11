@@ -18,7 +18,7 @@ namespace TS3AudioBot.Audio
 {
 	using System;
 
-	static class AudioModifier
+	internal static class AudioModifier
 	{
 		public static void AdjustVolume(byte[] audioSamples, int length, float volume)
 		{

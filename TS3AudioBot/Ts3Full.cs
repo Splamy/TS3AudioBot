@@ -26,16 +26,16 @@ namespace TS3AudioBot
 	using TS3Client.Full;
 	using TS3Client.Messages;
 
-	class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
+	internal class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
 	{
-		protected Ts3FullClient tsFullClient;
+		private readonly Ts3FullClient tsFullClient;
 
 		private const Codec SendCodec = Codec.OpusMusic;
 		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(5);
 		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
-		private const uint stallCountInterval = 50;
-		private const uint stallNoErrorCountMax = 2;
-		private static readonly string[] quitMessages = new[]
+		private const uint StallCountInterval = 50;
+		private const uint StallNoErrorCountMax = 2;
+		private static readonly string[] QuitMessages =
 		{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
 		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
 		  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
@@ -80,6 +80,7 @@ namespace TS3AudioBot
 
 		public override void Connect()
 		{
+			// get or compute identity
 			IdentityData identity;
 			if (string.IsNullOrEmpty(ts3FullClientData.Identity))
 			{
@@ -92,16 +93,26 @@ namespace TS3AudioBot
 				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.Identity, ts3FullClientData.IdentityOffset);
 			}
 
-			tsFullClient.QuitMessage = quitMessages[Util.Random.Next(0, quitMessages.Length)];
+			// get or compute password
+			if (!string.IsNullOrEmpty(ts3FullClientData.ServerPassword)
+				&& ts3FullClientData.ServerPasswordAutoHash
+				&& !ts3FullClientData.ServerPasswordIsHashed)
+			{
+				ts3FullClientData.ServerPassword = Ts3Crypt.HashPassword(ts3FullClientData.ServerPassword);
+				ts3FullClientData.ServerPasswordIsHashed = true;
+			}
+
+			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = "AudioBot",
+				Password = ts3FullClientData.ServerPassword,
 				Hostname = ts3FullClientData.Host,
 				Port = ts3FullClientData.Port,
 				Identity = identity,
+				IsPasswordHashed = ts3FullClientData.ServerPasswordIsHashed,
 			});
-
 		}
 
 		private void TsFullClient_OnErrorEvent(object sender, TS3Client.Commands.CommandError e)
@@ -117,7 +128,7 @@ namespace TS3AudioBot
 				Log.Write(Log.Level.Debug, e.ErrorFormat());
 		}
 
-		public override ClientData GetSelf()
+		protected override ClientData GetSelf()
 		{
 			var data = tsBaseClient.ClientInfo(tsFullClient.ClientId);
 			var cd = new ClientData
@@ -158,11 +169,11 @@ namespace TS3AudioBot
 				if (isStall)
 				{
 					stallCount++;
-					if (stallCount % stallCountInterval == 0)
+					if (stallCount % StallCountInterval == 0)
 					{
 						stallNoErrorCount++;
 					}
-					if (stallNoErrorCount > stallNoErrorCountMax)
+					if (stallNoErrorCount > StallNoErrorCountMax)
 					{
 						stallCount = 0;
 						isStall = false;
@@ -173,7 +184,7 @@ namespace TS3AudioBot
 				AudioModifier.AdjustVolume(audioBuffer, read, volume);
 				encoder.PushPCMAudio(audioBuffer, read);
 
-				Tuple<byte[], int> encodedArr = null;
+				Tuple<byte[], int> encodedArr;
 				while ((encodedArr = encoder.GetPacket()) != null)
 				{
 					if (channelSubscriptionsCache.Length == 0 && clientSubscriptionsCache.Length == 0)
@@ -391,6 +402,12 @@ namespace TS3AudioBot
 		public string Identity { get; set; }
 		[Info("The client identity security offset", "0")]
 		public ulong IdentityOffset { get; set; }
+		[Info("The server password. Leave empty for none.", "")]
+		public string ServerPassword { get; set; }
+		[Info("Set this to true, if the server password is hashed.", "false")]
+		public bool ServerPasswordIsHashed { get; set; }
+		[Info("Enable this to automatically hash and store unhashed passwords.\n# (Be careful since this will overwrite the 'ServerPassword' field with the hashed value once computed)", "false")]
+		public bool ServerPasswordAutoHash { get; set; }
 		[Info("The path to ffmpeg", "ffmpeg")]
 		public string FfmpegPath { get; set; }
 	}

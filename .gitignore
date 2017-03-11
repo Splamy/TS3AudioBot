@@ -10,6 +10,7 @@
 .buildvars.py
 .sconsign.dblite
 .vs/config/*
+.idea/
 
 # Build results
 [Dd]ebug/

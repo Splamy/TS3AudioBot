@@ -24,7 +24,7 @@ namespace TS3AudioBot
 
 	public class Ts3Query : TeamspeakControl
 	{
-		private Ts3QueryClient tsQueryClient;
+		private readonly Ts3QueryClient tsQueryClient;
 		private QueryConnectionData connectionData;
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(60);
 
@@ -57,7 +57,7 @@ namespace TS3AudioBot
 			TickPool.RegisterTick(() => tsBaseClient.WhoAmI(), PingInterval, true);
 		}
 
-		public override ClientData GetSelf()
+		protected override ClientData GetSelf()
 		{
 			var data = tsBaseClient.WhoAmI();
 			var cd = new ClientData

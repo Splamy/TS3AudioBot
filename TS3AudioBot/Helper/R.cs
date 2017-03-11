@@ -26,7 +26,7 @@ namespace TS3AudioBot.Helper
 		public static readonly R OkR = new R();
 
 		// using default false bool so Ok is true on default
-		private bool isError;
+		private readonly bool isError;
 		public bool Ok => !isError;
 		public string Message { get; }
 
@@ -51,7 +51,7 @@ namespace TS3AudioBot.Helper
 	/// </summary>
 	public struct R<T>
 	{
-		private bool isError;
+		private readonly bool isError;
 		public bool Ok => !isError;
 		public string Message { get; }
 		public T Value { get; }

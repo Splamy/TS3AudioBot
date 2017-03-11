@@ -154,13 +154,17 @@ namespace TS3Client.Full
 
 		protected override void ProcessInitIvExpand(InitIvExpand initIvExpand)
 		{
+			var fullConnectionData = (ConnectionDataFull)ConnectionData;
+			var password = fullConnectionData.IsPasswordHashed
+				? fullConnectionData.Password
+				: Ts3Crypt.HashPassword(ConnectionData.Password);
+
 			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			packetHandler.CryptoInitDone();
 			ClientInit(
 				ConnectionData.Username,
 				true, true,
-				string.Empty, string.Empty,
-				Ts3Crypt.HashPassword(ConnectionData.Password),
+				string.Empty, string.Empty, password,
 				string.Empty, string.Empty, string.Empty, "123,456",
 				VersionSign);
 		}

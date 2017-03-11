@@ -18,7 +18,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System;
 	using System.Runtime.Serialization;
-	
+
 	[Serializable]
 	public class CommandException : Exception
 	{
@@ -27,11 +27,11 @@ namespace TS3AudioBot.CommandSystem
 		protected CommandException() : this(CommandExceptionReason.Unknown) { }
 		protected CommandException(CommandExceptionReason reason) { Reason = reason; }
 
-		protected CommandException(string message) : this(message, CommandExceptionReason.Unknown) { }
-		public CommandException(string message, CommandExceptionReason reason) : base(message) { Reason = reason; }
+		public CommandException(string message, CommandExceptionReason reason = CommandExceptionReason.Unknown)
+			: base(message) { Reason = reason; }
 
-		protected CommandException(string message, Exception inner) : this(message, inner, CommandExceptionReason.Unknown) { }
-		public CommandException(string message, Exception inner, CommandExceptionReason reason) : base(message, inner) { Reason = reason; }
+		public CommandException(string message, Exception inner, CommandExceptionReason reason = CommandExceptionReason.Unknown)
+			: base(message, inner) { Reason = reason; }
 
 		protected CommandException(
 		  SerializationInfo info,

@@ -35,7 +35,7 @@ namespace TS3Client
 		private Ts3ClientStatus Status;
 		internal readonly Queue<WaitBlock> RequestQueue;
 
-		public delegate void NotifyEventHandler<TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
+		public delegate void NotifyEventHandler<in TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
 		// EVENTS
 		public event NotifyEventHandler<TextMessage> OnTextMessageReceived;
 		public event NotifyEventHandler<ClientEnterView> OnClientEnterView;

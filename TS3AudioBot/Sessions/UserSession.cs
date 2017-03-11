@@ -27,7 +27,7 @@ namespace TS3AudioBot.Sessions
 
 	public sealed class UserSession
 	{
-		const string tokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
+		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
 
 		private Dictionary<Type, object> assocMap = null;
 		private bool lockToken = false;
@@ -162,7 +162,7 @@ namespace TS3AudioBot.Sessions
 			if (newTimeout > Token.Timeout)
 				Token.Timeout = newTimeout;
 
-			return R<string>.OkR(string.Format(tokenFormat, Client.Uid, Token.Value));
+			return R<string>.OkR(string.Format(TokenFormat, Client.Uid, Token.Value));
 		}
 
 		public sealed class SessionToken : IDisposable

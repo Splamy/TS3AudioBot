@@ -23,23 +23,22 @@ namespace TS3AudioBot.Audio
 	using System.Linq;
 	using TS3Client;
 
-	class AudioEncoder : IDisposable
+	internal class AudioEncoder : IDisposable
 	{
 		public Codec Codec { get; }
 		public int SampleRate { get; }
 		public int Channels { get; }
 		public int BitsPerSample { get; }
 
-		public int OptimalPacketSize => bytesPerSegment;
+		public int OptimalPacketSize { get; }
 
 		public bool HasPacket => opusQueue.Any();
 
 		// opus
 		OpusEncoder opusEncoder;
 
-		private const int segmentFrames = 960;
-		private int bytesPerSegment;
-		private byte[] _notEncodedBuffer = new byte[0];
+		private const int SegmentFrames = 960;
+		private byte[] notEncodedBuffer = new byte[0];
 		private Queue<Tuple<byte[], int>> opusQueue;
 
 		public AudioEncoder(Codec codec)
@@ -77,21 +76,21 @@ namespace TS3AudioBot.Audio
 			}
 
 			BitsPerSample = 16;
-			bytesPerSegment = opusEncoder.FrameByteCount(segmentFrames);
+			OptimalPacketSize = opusEncoder.FrameByteCount(SegmentFrames);
 		}
 
 		public void PushPCMAudio(byte[] buffer, int bufferlen)
 		{
-			byte[] soundBuffer = new byte[bufferlen + _notEncodedBuffer.Length];
-			Array.Copy(_notEncodedBuffer, 0, soundBuffer, 0, _notEncodedBuffer.Length);
-			Array.Copy(buffer, 0, soundBuffer, _notEncodedBuffer.Length, bufferlen);
+			byte[] soundBuffer = new byte[bufferlen + notEncodedBuffer.Length];
+			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBuffer.Length);
+			Array.Copy(buffer, 0, soundBuffer, notEncodedBuffer.Length, bufferlen);
 
-			int byteCap = bytesPerSegment;
+			int byteCap = OptimalPacketSize;
 			int segmentCount = (int)Math.Floor((decimal)soundBuffer.Length / byteCap);
 			int segmentsEnd = segmentCount * byteCap;
 			int notEncodedCount = soundBuffer.Length - segmentsEnd;
-			_notEncodedBuffer = new byte[notEncodedCount];
-			Array.Copy(soundBuffer, segmentsEnd, _notEncodedBuffer, 0, notEncodedCount);
+			notEncodedBuffer = new byte[notEncodedCount];
+			Array.Copy(soundBuffer, segmentsEnd, notEncodedBuffer, 0, notEncodedCount);
 
 			for (int i = 0; i < segmentCount; i++)
 			{

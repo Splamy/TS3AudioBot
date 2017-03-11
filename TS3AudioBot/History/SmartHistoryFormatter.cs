@@ -27,7 +27,7 @@ namespace TS3AudioBot.History
 		// configurable constansts
 		private const string LineBreak = "\n";
 		private const int MinTokenLine = 40;
-		private bool fairDistribute = true;
+		private readonly bool fairDistribute = true;
 		// resulting constansts from configuration
 		private static readonly int LineBreakLen = Ts3String.TokenLength(LineBreak);
 		private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;
@@ -154,11 +154,11 @@ namespace TS3AudioBot.History
 			return value;
 		}
 
-		class Line
+		private class Line
 		{
-			public string Value { get; set; } = null;
-			public int TokenLength { get; set; } = 0;
-			public int BonusToken { get; set; } = 0;
+			public string Value { get; set; }
+			public int TokenLength { get; set; }
+			public int BonusToken { get; set; }
 
 			public override string ToString() => $"[{TokenLength:0000}+{BonusToken:0000}] {Value}";
 		}

@@ -21,7 +21,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Linq;
 	using System.Text;
 
-	class CommandParser
+	internal static class CommandParser
 	{
 		public const char DefaultCommandChar = '!';
 		public const char DefaultDelimeterChar = ' ';
@@ -162,7 +162,7 @@ namespace TS3AudioBot.CommandSystem
 			return root;
 		}
 
-		class StringPtr
+		private class StringPtr
 		{
 			string text;
 			int index;
@@ -218,7 +218,7 @@ namespace TS3AudioBot.CommandSystem
 				return (curTrack = new NodeTracker(this));
 			}
 
-			void UntrackNode()
+			private void UntrackNode()
 			{
 				curTrack = null;
 				astnode = null;

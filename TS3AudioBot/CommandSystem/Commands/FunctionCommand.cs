@@ -1,16 +1,16 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -32,13 +32,13 @@ namespace TS3AudioBot.CommandSystem
 		public static readonly Type[] SpecialTypes = { typeof(ExecutionInformation), typeof(IEnumerable<ICommand>), typeof(IEnumerable<CommandResultType>) };
 
 		// Needed for non-static member methods
-		readonly object callee;
+		private readonly object callee;
 		/// <summary>The amount of non-special parameter.</summary>
 		public int NormalParameters { get; }
 		/// <summary>
 		/// The method that will be called internally by this command.
 		/// </summary>
-		MethodInfo internCommand;
+		private MethodInfo internCommand;
 		/// <summary>All parameter types, including special types.</summary>
 		public Type[] CommandParameter { get; }
 		public Type CommandReturn { get; }
@@ -94,8 +94,8 @@ namespace TS3AudioBot.CommandSystem
 		/// <param name="availableArguments">How many arguments could be set.</param>
 		public object[] FitArguments(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes, out int availableArguments)
 		{
-			object[] parameters = new object[CommandParameter.Length];
-			var argList = new Lazy<List<ICommand>>(() => arguments.ToList());
+			var parameters = new object[CommandParameter.Length];
+			var argList = new Lazy<List<ICommand>>(arguments.ToList);
 
 			// availableArguments: Iterate through arguments
 			// p: Iterate through parameters
@@ -195,7 +195,7 @@ namespace TS3AudioBot.CommandSystem
 						result = ExecuteFunction(parameters);
 						executed = true;
 					}
-					if (result != null && !string.IsNullOrEmpty(result.ToString()))
+					if (!string.IsNullOrEmpty(result?.ToString()))
 						return new StringCommandResult(result.ToString());
 					break;
 				case CommandResultType.Json:

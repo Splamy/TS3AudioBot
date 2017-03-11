@@ -24,7 +24,7 @@ namespace TS3AudioBot.CommandSystem
 	{
 		public UserSession Session { get; }
 		public TextMessage TextMessage { get; }
-		private Lazy<bool> lazyIsAdmin;
+		private readonly Lazy<bool> lazyIsAdmin;
 		public bool IsAdmin => lazyIsAdmin.Value;
 		public bool ApiCall { get; set; }
 		public bool IsPrivate { get; internal set; }
