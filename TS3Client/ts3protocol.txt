@@ -1,0 +1,68 @@
+
+
+[==============================================================================]
+                               TS3 PROTOCOL PAPER
+[==============================================================================]
+
+1. The (Low-Level) Initiation/Handshake
+
+    A connection is started from the client by sending the first handshake
+    packet. The handshake process consists of 5 different init packets. This
+    includes the so called RSA puzzle to prevent DOS attacks.
+
+Packet 0 (Client -> Server)
+    04 bytes : Version of the Teamspeak client as timestamp
+               Example: { 0x06, 0x3b, 0xec, 0xe9 }
+    01 bytes : Init-packet step number
+               Fixed: 0x00
+    08 bytes : Zeros, reserverd.
+    04 bytes : Current timespamp in unix format
+    04 bytes : Random bytes := [A0]
+
+Packet 1 (Client <- Server)
+    01 bytes : Init-packet step number
+               Fixed: 0x01
+    16 bytes : Server stuff := [A1]
+    04 bytes : The bytes from [A0] in reversed order
+
+Packet 2 (Client -> Server)
+    04 bytes : Version of the Teamspeak client as timestamp
+    01 bytes : Init-packet step number
+               Fixed: 0x02
+    16 bytes : The bytes from [A1]
+    04 bytes : The bytes from [A0] in reversed order
+
+Packet 3 (Client <- Server)
+    01 bytes : Init-packet step number
+               Fixed: 0x03
+    64 bytes : 'x', an unsigned biginteger
+    64 bytes : 'n', an unsigned biginteger
+    04 bytes : 'level' an int4 parsed with network to host endianness
+   100 bytes : Server stuff := [A2]
+
+Packet 4 (Client -> Server)
+    01 bytes : Init-packet step number
+               Fixed: 0x03
+    64 bytes : the received 'x'
+    64 bytes : the received 'n'
+    04 bytes : the recoived 'level'
+   100 bytes : The bytes from [A2]
+    64 bytes : 'y' which is the result of x ^ (2 ^ level) % n as an unsigned
+               biginteger. Padded from the lower side with '0x00' when shorter
+               than 64 bytes.
+               Example: { 0x00, 0x00, data ... data}
+   var bytes : The clientinitiv command as explained in (* TODO *)
+
+2. The (High-Level) Initiation/Handshake
+
+    In this phase the client and server exchange basic information and
+    agree/calculate the symmetric AES encryption key with the ECDH
+    public/private key exchange technique.
+
+    Both the client and the server will need a EC public/private key. This key
+    is also the identity which the server uses to recognize a user again.
+    The curve used is 'prime256v1'.
+
+3. Low-Level Commands
+
+4. High-Level Commands

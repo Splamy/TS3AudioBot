@@ -68,7 +68,7 @@ namespace TS3AudioBot
 		private bool clientbufferOutdated = true;
 		private IDictionary<ulong, string> clientDbNames;
 
-		protected Ts3BaseClient tsBaseClient;
+		protected Ts3BaseFunctions tsBaseClient;
 		protected ClientData me;
 
 		protected TeamspeakControl(ClientType connectionType)
@@ -135,7 +135,7 @@ namespace TS3AudioBot
 			}
 			catch (Ts3CommandException ex)
 			{
-				if (ex.ErrorStatus.Id == 1541)
+				if (ex.ErrorStatus.Id == Ts3ErrorCode.parameter_invalid_size)
 					return "The new name is too long or invalid";
 				else
 					return ex.ErrorStatus.ErrorFormat();

@@ -19,25 +19,38 @@ namespace TS3Client.Query
 	using Commands;
 	using Messages;
 	using System;
+	using System.Linq;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Net.Sockets;
 
-	public sealed class Ts3QueryClient : Ts3BaseClient
+	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
+		private readonly object SendQueueLock = new object();
 		private readonly TcpClient tcpClient;
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
 		private StreamWriter tcpWriter;
+		private readonly MessageProcessor msgProc;
+		private readonly IEventDispatcher dispatcher;
 
 		public override ClientType ClientType => ClientType.Query;
+		public override bool Connected => tcpClient.Connected;
 
-		public Ts3QueryClient(EventDispatchType dispatcher) : base(dispatcher)
+		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
+		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
+		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
+		public override event EventHandler<EventArgs> OnConnected;
+		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
+
+		public Ts3QueryClient(EventDispatchType dispatcherType)
 		{
 			tcpClient = new TcpClient();
+			msgProc = new MessageProcessor(true);
+			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 		}
 
-		protected override void ConnectInternal(ConnectionData conData)
+		public override void Connect(ConnectionData conData)
 		{
 			try { tcpClient.Connect(conData.Hostname, conData.Port); }
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
@@ -49,17 +62,21 @@ namespace TS3Client.Query
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
 
-			ConnectDone();
+			dispatcher.Init(NetworkLoop, InvokeEvent);
+			OnConnected?.Invoke(this, new EventArgs());
 		}
 
-		protected override void DisconnectInternal()
+		public override void Disconnect()
 		{
-			tcpWriter?.WriteLine("quit");
-			tcpWriter?.Flush();
-			tcpClient.Close();
+			lock (SendQueueLock)
+			{
+				SendRaw("quit");
+				if (tcpClient.Connected)
+					tcpClient.Close();
+			}
 		}
 
-		protected override void NetworkLoop()
+		private void NetworkLoop()
 		{
 			while (true)
 			{
@@ -70,27 +87,53 @@ namespace TS3Client.Query
 				if (string.IsNullOrWhiteSpace(line)) continue;
 
 				var message = line.Trim();
-				ProcessCommand(message);
+				msgProc.PushMessage(message);
 			}
-			DisconnectDone(MoveReason.LeftServer); // TODO ??
+			OnDisconnected?.Invoke(this, new DisconnectEventArgs(MoveReason.LeftServer)); // TODO ??
 		}
 
-		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType) // Synchronous
+		private void InvokeEvent(LazyNotification lazyNotification)
 		{
-			using (var wb = new WaitBlock(targetType))
+			var notification = lazyNotification.Notifications;
+			switch (lazyNotification.NotifyType)
 			{
-				lock (LockObj)
+			case NotificationType.ChannelCreated: break;
+			case NotificationType.ChannelDeleted: break;
+			case NotificationType.ChannelChanged: break;
+			case NotificationType.ChannelEdited: break;
+			case NotificationType.ChannelMoved: break;
+			case NotificationType.ChannelPasswordChanged: break;
+			case NotificationType.ClientEnterView: OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>()); break;
+			case NotificationType.ClientLeftView: OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>()); break;
+			case NotificationType.ClientMoved: break;
+			case NotificationType.ServerEdited: break;
+			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
+			case NotificationType.TokenUsed: break;
+			// special
+			case NotificationType.Error: break;
+			case NotificationType.Unknown:
+			default: throw new InvalidOperationException();
+			}
+		}
+
+		protected override IEnumerable<T> SendCommand<T>(Ts3Command com) // Synchronous
+		{
+			using (var wb = new WaitBlock())
+			{
+				lock (SendQueueLock)
 				{
-					RequestQueue.Enqueue(wb);
+					msgProc.EnqueueRequest(wb);
 					SendRaw(com.ToString());
 				}
 
-				return wb.WaitForMessage();
+				return wb.WaitForMessage<T>();
 			}
 		}
 
 		private void SendRaw(string data)
 		{
+			if (!tcpClient.Connected)
+				return;
 			tcpWriter.WriteLine(data);
 			tcpWriter.Flush();
 		}
@@ -120,17 +163,18 @@ namespace TS3Client.Query
 
 		#endregion
 
-		public sealed override void Dispose()
+		public override void Dispose()
 		{
-			base.Dispose();
-
-			lock (LockObj)
+			lock (SendQueueLock)
 			{
 				tcpWriter?.Dispose();
 				tcpWriter = null;
 
 				tcpReader?.Dispose();
 				tcpReader = null;
+
+				msgProc.DropQueue();
+				dispatcher.Dispose();
 			}
 		}
 	}

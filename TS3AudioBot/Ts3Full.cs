@@ -53,6 +53,8 @@ namespace TS3AudioBot
 		private bool isStall;
 		private uint stallCount;
 		private uint stallNoErrorCount;
+		private IdentityData identity;
+		private bool autoReconnectOnce;
 
 		private Dictionary<ulong, bool> channelSubscriptionsSetup;
 		private List<ushort> clientSubscriptionsSetup;
@@ -72,6 +74,8 @@ namespace TS3AudioBot
 			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channels);
 			isStall = false;
 			stallCount = 0;
+			identity = null;
+			autoReconnectOnce = false;
 
 			Util.Init(ref channelSubscriptionsSetup);
 			Util.Init(ref clientSubscriptionsSetup);
@@ -81,7 +85,6 @@ namespace TS3AudioBot
 		public override void Connect()
 		{
 			// get or compute identity
-			IdentityData identity;
 			if (string.IsNullOrEmpty(ts3FullClientData.Identity))
 			{
 				identity = Ts3Crypt.GenerateNewIdentity();
@@ -104,6 +107,21 @@ namespace TS3AudioBot
 
 			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
+			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
+			ConnectClient();
+		}
+
+		private void TsFullClient_OnDisconnected(object sender, DisconnectEventArgs e)
+		{
+			if (autoReconnectOnce)
+			{
+				autoReconnectOnce = false;
+				ConnectClient();
+			}
+		}
+
+		private void ConnectClient()
+		{
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = "AudioBot",
@@ -115,17 +133,29 @@ namespace TS3AudioBot
 			});
 		}
 
-		private void TsFullClient_OnErrorEvent(object sender, TS3Client.Commands.CommandError e)
+		private void TsFullClient_OnErrorEvent(object sender, CommandError e)
 		{
-			const int whisper_no_targets = 0x070c;
-
-			if (e.Id == whisper_no_targets)
+			switch (e.Id)
 			{
+			case Ts3ErrorCode.whisper_no_targets:
 				stallNoErrorCount = 0;
 				isStall = true;
-			}
-			else
+				break;
+
+			case Ts3ErrorCode.client_could_not_validate_identity:
+				autoReconnectOnce = true;
+				int targetSecLevel = int.Parse(e.ExtraMessage);
+				Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetSecLevel);
+				Ts3Crypt.ImproveSecurity(identity, targetSecLevel);
+				ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+
+				tsFullClient.Disconnect();
+				break;
+
+			default:
 				Log.Write(Log.Level.Debug, e.ErrorFormat());
+				break;
+			}
 		}
 
 		protected override ClientData GetSelf()
@@ -147,7 +177,7 @@ namespace TS3AudioBot
 			if (ffmpegProcess == null)
 				return;
 
-			if ((audioBuffer?.Length ?? 0) < encoder.OptimalPacketSize)
+			if (audioBuffer == null || audioBuffer.Length < encoder.OptimalPacketSize)
 				audioBuffer = new byte[encoder.OptimalPacketSize];
 
 			UpdatedSubscriptionCache();
@@ -371,14 +401,15 @@ namespace TS3AudioBot
 
 		private void UpdatedSubscriptionCache()
 		{
-			if (subscriptionSetupChanged)
+			if (!subscriptionSetupChanged)
+				return;
+			lock (subscriptionLockObj)
 			{
-				lock (subscriptionLockObj)
-				{
-					channelSubscriptionsCache = channelSubscriptionsSetup.Keys.ToArray();
-					clientSubscriptionsCache = clientSubscriptionsSetup.ToArray();
-					subscriptionSetupChanged = false;
-				}
+				if (!subscriptionSetupChanged)
+					return;
+				channelSubscriptionsCache = channelSubscriptionsSetup.Keys.ToArray();
+				clientSubscriptionsCache = clientSubscriptionsSetup.ToArray();
+				subscriptionSetupChanged = false;
 			}
 		}
 

@@ -211,6 +211,7 @@ namespace TS3AudioBot
 			catch (Ts3Exception qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
+				return;
 			}
 		}
 
@@ -340,6 +341,7 @@ namespace TS3AudioBot
 		[Command(AnyVisibility, "api token", "Generates an api token.")]
 		public JsonObject CommandApiToken(ExecutionInformation info)
 		{
+			// TODO: enforce private session
 			var token = info.Session.GenerateToken().UnwrapThrow();
 			return new JsonSingleValue<string>(token, token);
 		}
@@ -347,6 +349,7 @@ namespace TS3AudioBot
 		[Command(AnyVisibility, "api nonce", "Generates an api nonce.")]
 		public JsonObject CommandApiNonce(ExecutionInformation info)
 		{
+			// TODO: enforce private session
 			if (!info.Session.HasActiveToken)
 				throw new CommandException("No active token found.", CommandExceptionReason.CommandError);
 

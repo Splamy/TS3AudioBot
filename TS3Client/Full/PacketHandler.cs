@@ -42,10 +42,11 @@ namespace TS3Client.Full
 		};
 
 		private readonly ushort[] packetCounter;
-		private readonly LinkedList<OutgoingPacket> sendQueue;
+		private readonly Dictionary<ushort, OutgoingPacket> packetAckManager;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
-		private readonly object sendLoopMonitor = new object();
+		private readonly object sendLoopLock = new object();
+		private readonly AutoResetEvent sendLoopPulse = new AutoResetEvent(false);
 		private readonly Ts3Crypt ts3Crypt;
 		private UdpClient udpClient;
 		private Thread resendThread;
@@ -53,13 +54,13 @@ namespace TS3Client.Full
 
 
 		public ushort ClientId { get; set; }
-		public IPEndPoint RemoteAddress { get; set; }
+		private IPEndPoint remoteAddress;
 		public MoveReason? ExitReason { get; set; }
 		private bool Closed => ExitReason != null;
 
 		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
-			sendQueue = new LinkedList<OutgoingPacket>();
+			packetAckManager = new Dictionary<ushort, OutgoingPacket>();
 			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize);
 			receiveQueueLow = new RingQueue<IncomingPacket>(PacketBufferSize);
 
@@ -68,57 +69,88 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 		}
 
-		public void Start(UdpClient udpClient)
+		public void Connect(string host, ushort port)
 		{
 			resendThread = new Thread(ResendLoop) { Name = "PacketHandler" };
 			resendThreadId = resendThread.ManagedThreadId;
 
-			ClientId = 0;
-			lock (sendLoopMonitor)
+			lock (sendLoopLock)
 			{
+				ClientId = 0;
 				ExitReason = null;
-				this.udpClient = udpClient;
-				sendQueue.Clear();
+
+				ConnectUdpClient(host, port);
+
+				packetAckManager.Clear();
+				receiveQueue.Clear();
+				receiveQueueLow.Clear();
+				Array.Clear(packetCounter, 0, packetCounter.Length);
 			}
-			receiveQueue.Clear();
-			Array.Clear(packetCounter, 0, packetCounter.Length);
 
 			resendThread.Start();
+
+			AddOutgoingPacket(ts3Crypt.ProcessInit1(null), PacketType.Init1);
 		}
 
-		public void Stop()
+		private void ConnectUdpClient(string host, ushort port)
+		{
+			udpClient?.Close();
+
+			try
+			{
+				IPAddress ipAddr;
+				if (!IPAddress.TryParse(host, out ipAddr))
+				{
+					var hostEntry = Dns.GetHostEntry(host);
+					ipAddr = hostEntry.AddressList.FirstOrDefault();
+					if (ipAddr == null) throw new Ts3Exception("Could not resove DNS.");
+				}
+
+				remoteAddress = new IPEndPoint(ipAddr, port);
+
+				udpClient = new UdpClient();
+				udpClient.Connect(remoteAddress);
+			}
+			catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
+		}
+
+		public void Stop(MoveReason closeReason = MoveReason.LeftServer)
 		{
 			resendThreadId = -1;
-			if (Monitor.TryEnter(sendLoopMonitor))
+			lock (sendLoopLock)
 			{
 				udpClient?.Close();
-				Monitor.Pulse(sendLoopMonitor);
-				Monitor.Exit(sendLoopMonitor);
+				if (!ExitReason.HasValue)
+					ExitReason = closeReason;
+				sendLoopPulse.Set();
 			}
 		}
 
 		public void AddOutgoingPacket(byte[] packet, PacketType packetType)
 		{
-			if (Closed)
-				return;
-
-			var addFlags = PacketFlags.None;
-			if (NeedsSplitting(packet.Length))
+			lock (sendLoopLock)
 			{
-				if (packetType == PacketType.Readable || packetType == PacketType.Voice)
-					return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
+				if (Closed)
+					return;
 
-				packet = QuickLZ.Compress(packet, 1);
-				addFlags |= PacketFlags.Compressed;
-
+				var addFlags = PacketFlags.None;
 				if (NeedsSplitting(packet.Length))
 				{
-					foreach (var splitPacket in BuildSplitList(packet, packetType))
-						AddOutgoingPacket(splitPacket, addFlags);
-					return;
+					if (packetType == PacketType.Voice || packetType == PacketType.VoiceEncrypted)
+						return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
+
+					packet = QuickLZ.Compress(packet, 1);
+					addFlags |= PacketFlags.Compressed;
+
+					if (NeedsSplitting(packet.Length))
+					{
+						foreach (var splitPacket in BuildSplitList(packet, packetType))
+							AddOutgoingPacket(splitPacket, addFlags);
+						return;
+					}
 				}
+				AddOutgoingPacket(new OutgoingPacket(packet, packetType), addFlags);
 			}
-			AddOutgoingPacket(new OutgoingPacket(packet, packetType), addFlags);
 		}
 
 		private void AddOutgoingPacket(OutgoingPacket packet, PacketFlags flags = PacketFlags.None)
@@ -131,28 +163,28 @@ namespace TS3Client.Full
 			}
 			else
 			{
-				if (packet.PacketType == PacketType.Pong || packet.PacketType == PacketType.Readable || packet.PacketType == PacketType.Voice)
+				if (packet.PacketType == PacketType.Pong || packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceEncrypted)
 					packet.PacketFlags |= flags | PacketFlags.Unencrypted;
 				else if (packet.PacketType == PacketType.Ack)
 					packet.PacketFlags |= flags;
 				else
 					packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 				packet.PacketId = GetPacketCounter(packet.PacketType);
-				if (packet.PacketType == PacketType.Readable || packet.PacketType == PacketType.Voice)
+				if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceEncrypted)
 					NetUtil.H2N(packet.PacketId, packet.Data, 0);
 				if (ts3Crypt.CryptoInitComplete)
 					IncPacketCounter(packet.PacketType);
 				packet.ClientId = ClientId;
 			}
 
-			if (!ts3Crypt.Encrypt(packet))
-				throw new Ts3Exception("Internal encryption error.");
+			ts3Crypt.Encrypt(packet);
+				
 
 			if (packet.PacketType == PacketType.Command
 				|| packet.PacketType == PacketType.CommandLow
 				|| packet.PacketType == PacketType.Init1)
-				lock (sendLoopMonitor)
-					sendQueue.AddLast(packet);
+				lock (sendLoopLock)
+					packetAckManager.Add(packet.PacketId, packet);
 
 			SendRaw(packet);
 		}
@@ -201,13 +233,8 @@ namespace TS3Client.Full
 		{
 			while (true)
 			{
-				if (ExitReason.HasValue)
+				if (Closed)
 					return null;
-				if ((!udpClient?.Client?.Connected) ?? true)
-				{
-					Thread.Sleep(1);
-					continue;
-				}
 
 				IncomingPacket packet = null;
 				if (TryFetchPacket(receiveQueue, out packet))
@@ -217,10 +244,11 @@ namespace TS3Client.Full
 
 				var dummy = new IPEndPoint(IPAddress.Any, 0);
 				byte[] buffer;
+
 				try { buffer = udpClient.Receive(ref dummy); }
 				catch (IOException) { return null; }
 				catch (SocketException) { return null; }
-				if (dummy.Address.Equals(RemoteAddress.Address) && dummy.Port != RemoteAddress.Port)
+				if (dummy.Address.Equals(remoteAddress.Address) && dummy.Port != remoteAddress.Port)
 					continue;
 
 				packet = ts3Crypt.Decrypt(buffer);
@@ -229,8 +257,8 @@ namespace TS3Client.Full
 
 				switch (packet.PacketType)
 				{
-				case PacketType.Readable: break;
 				case PacketType.Voice: break;
+				case PacketType.VoiceEncrypted: break;
 				case PacketType.Command: packet = ReceiveCommand(packet); break;
 				case PacketType.CommandLow: packet = ReceiveCommand(packet); break;
 				case PacketType.Ping: ReceivePing(packet); break;
@@ -251,10 +279,6 @@ namespace TS3Client.Full
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-#if DEBUG
-		Dictionary<ushort, int> multiGetPackCount = new Dictionary<ushort, int>();
-#endif
-
 		private IncomingPacket ReceiveCommand(IncomingPacket packet)
 		{
 			RingQueue<IncomingPacket> packetQueue;
@@ -272,18 +296,7 @@ namespace TS3Client.Full
 				throw new InvalidOperationException("The packet is not a command");
 
 			if (packetQueue.IsSet(packet.PacketId))
-			{
-#if DEBUG
-				if (!multiGetPackCount.ContainsKey(packet.PacketId))
-					multiGetPackCount.Add(packet.PacketId, 0);
-				var cnt = ++multiGetPackCount[packet.PacketId];
-				if (cnt > 3)
-				{
-					Console.WriteLine("Non-get-able packet id {0} DATA: {1}", packet.PacketId, string.Join(" ", packet.Raw.Select(x => x.ToString("X2"))));
-				}
-#endif
 				return null;
-			}
 			packetQueue.Set(packet, packet.PacketId);
 
 			IncomingPacket retPacket;
@@ -367,43 +380,14 @@ namespace TS3Client.Full
 				throw new InvalidOperationException("Packet type is not an Ack-type");
 		}
 
-#if DEBUG
-		Dictionary<ushort, int> multiGetAckCount = new Dictionary<ushort, int>();
-#endif
-
 		private IncomingPacket ReceiveAck(IncomingPacket packet)
 		{
 			if (packet.Data.Length < 2)
 				return null;
 			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
 
-#if DEBUG
-			lock (sendLoopMonitor)
-			{
-				bool hasRemoved = false;
-				for (var node = sendQueue.First; node != null; node = node.Next)
-					if (node.Value.PacketId == packetId)
-					{
-						sendQueue.Remove(node);
-						hasRemoved = true;
-					}
-				if (!hasRemoved)
-				{
-					if (!multiGetAckCount.ContainsKey(packetId))
-						multiGetAckCount.Add(packetId, 0);
-					var cnt = ++multiGetAckCount[packetId];
-					if (cnt > 3)
-					{
-						Console.WriteLine("Non-ack-able packet id {0} DATA: {1}", packetId, string.Join(" ", sendQueue.First(x => x.PacketId == packetId).Raw.Select(x => x.ToString("X2"))));
-					}
-				}
-			}
-#else
-			lock (sendLoopMonitor)
-				for (var node = sendQueue.First; node != null; node = node.Next)
-					if (node.Value.PacketId == packetId)
-						sendQueue.Remove(node);
-#endif
+			lock (sendLoopLock)
+				packetAckManager.Remove(packetId);
 			return packet;
 		}
 
@@ -420,12 +404,12 @@ namespace TS3Client.Full
 			// from the sendQueue instead of the one with the preceding
 			// init step id (see Ts3Crypt.ProcessInit1).
 			// But usually this should be no problem since the init order is linear
-			lock (sendLoopMonitor)
-				for (var n = sendQueue.First; n != null; n = n.Next)
-				{
-					if (n.Value.PacketType == PacketType.Init1)
-						sendQueue.Remove(n);
-				}
+			lock (sendLoopLock)
+			{
+				var remPacket = packetAckManager.Values.Where(x => x.PacketType == PacketType.Init1).ToArray();
+				foreach (var packet in remPacket)
+					packetAckManager.Remove(packet.PacketId);
+			}
 		}
 
 		#endregion
@@ -438,39 +422,35 @@ namespace TS3Client.Full
 		/// </summary>
 		private void ResendLoop()
 		{
-			while (Thread.CurrentThread.ManagedThreadId == resendThreadId
-				&& udpClient?.Client != null)
+			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
 			{
 				TimeSpan sleepSpan = GetTimeout(PacketTimeouts.Length);
 
-				lock (sendLoopMonitor)
+				lock (sendLoopLock)
 				{
-					if (!sendQueue.Any())
-					{
-						Monitor.Wait(sendLoopMonitor, sleepSpan);
-						if (!sendQueue.Any())
-							continue;
-					}
+					if (Closed)
+						break;
 
-					foreach (var outgoingPacket in sendQueue)
+					if (packetAckManager.Any())
 					{
-						var nextTest = (outgoingPacket.LastSendTime - DateTime.UtcNow) + GetTimeout(outgoingPacket.ResendCount);
-						if (nextTest < TimeSpan.Zero)
+						foreach (var outgoingPacket in packetAckManager.Values)
 						{
-							if (++outgoingPacket.ResendCount > RetryTimeout)
+							var nextTest = (outgoingPacket.LastSendTime - DateTime.UtcNow) + GetTimeout(outgoingPacket.ResendCount);
+							if (nextTest < TimeSpan.Zero)
 							{
-								ExitReason = MoveReason.Timeout;
-								Stop();
-								return;
+								if (++outgoingPacket.ResendCount > RetryTimeout)
+								{
+									Stop(MoveReason.Timeout);
+									return;
+								}
+								SendRaw(outgoingPacket);
 							}
-							SendRaw(outgoingPacket);
+							else if (nextTest < sleepSpan)
+								sleepSpan = nextTest;
 						}
-						else if (nextTest < sleepSpan)
-							sleepSpan = nextTest;
 					}
-
-					Monitor.Wait(sendLoopMonitor, sleepSpan);
 				}
+				sendLoopPulse.WaitOne(sleepSpan);
 			}
 		}
 

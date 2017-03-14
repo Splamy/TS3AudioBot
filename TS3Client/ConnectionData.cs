@@ -46,6 +46,13 @@ namespace TS3Client
 		/// This can be set to true, when the password is already hashed.
 		/// The hash works like this: base64(sha1(password))
 		/// </summary>
-		public bool IsPasswordHashed { get; set; }
+		public bool IsPasswordHashed { get; set; } = false;
+		/// <summary>
+		/// Set this to the TeamSpeak 3 Version this client should appear as.
+		/// You can find predefined version data in the <see cref="Full.VersionSign"/>
+		/// class. Please keep in mind that the version data has to have valid sign
+		/// to be accepted by an official TeamSpeak 3 Server.
+		/// </summary>
+		public VersionSign VersionSign { get; set; } = VersionSign.VER_LIN_3_0_19_4;
 	}
 }

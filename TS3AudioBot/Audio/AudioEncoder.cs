@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@ namespace TS3AudioBot.Audio
 		public int BitsPerSample { get; }
 
 		public int OptimalPacketSize { get; }
+		public int Bitrate { get { return opusEncoder.Bitrate; } set { opusEncoder.Bitrate = value; } }
 
 		public bool HasPacket => opusQueue.Any();
 
@@ -48,31 +49,31 @@ namespace TS3AudioBot.Audio
 
 			switch (codec)
 			{
-				case Codec.SpeexNarrowband:
-					throw new NotSupportedException();
-				case Codec.SpeexWideband:
-					throw new NotSupportedException();
-				case Codec.SpeexUltraWideband:
-					throw new NotSupportedException();
-				case Codec.CeltMono:
-					throw new NotSupportedException();
+			case Codec.SpeexNarrowband:
+				throw new NotSupportedException();
+			case Codec.SpeexWideband:
+				throw new NotSupportedException();
+			case Codec.SpeexUltraWideband:
+				throw new NotSupportedException();
+			case Codec.CeltMono:
+				throw new NotSupportedException();
 
-				case Codec.OpusVoice:
-					SampleRate = 48000;
-					Channels = 1;
-					opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Voip);
-					opusEncoder.Bitrate = 8192 * 2;
-					break;
+			case Codec.OpusVoice:
+				SampleRate = 48000;
+				Channels = 1;
+				opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Voip);
+				Bitrate = 8192 * 2;
+				break;
 
-				case Codec.OpusMusic:
-					SampleRate = 48000;
-					Channels = 2;
-					opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Audio);
-					opusEncoder.Bitrate = 8192 * 4;
-					break;
+			case Codec.OpusMusic:
+				SampleRate = 48000;
+				Channels = 2;
+				opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Audio);
+				Bitrate = 8192 * 4;
+				break;
 
-				default:
-					throw new ArgumentOutOfRangeException(nameof(codec));
+			default:
+				throw new ArgumentOutOfRangeException(nameof(codec));
 			}
 
 			BitsPerSample = 16;
@@ -81,7 +82,7 @@ namespace TS3AudioBot.Audio
 
 		public void PushPCMAudio(byte[] buffer, int bufferlen)
 		{
-			byte[] soundBuffer = new byte[bufferlen + notEncodedBuffer.Length];
+			byte[] soundBuffer = new byte[bufferlen + notEncodedBuffer.Length]; // TODO optimize not encoded buffer
 			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBuffer.Length);
 			Array.Copy(buffer, 0, soundBuffer, notEncodedBuffer.Length, bufferlen);
 
@@ -94,7 +95,7 @@ namespace TS3AudioBot.Audio
 
 			for (int i = 0; i < segmentCount; i++)
 			{
-				byte[] segment = new byte[byteCap];
+				byte[] segment = new byte[byteCap];  // TODO optimize segment buffer
 				for (int j = 0; j < segment.Length; j++)
 					segment[j] = soundBuffer[(i * byteCap) + j];
 				int len;

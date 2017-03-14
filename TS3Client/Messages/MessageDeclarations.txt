@@ -21,6 +21,8 @@ Conv: HostBannerMode     , CommandDeserializer.DeserializeEnum<HostBannerMode>(v
 Conv: MoveReason         , CommandDeserializer.DeserializeEnum<MoveReason>(value);
 Conv: ClientType         , CommandDeserializer.DeserializeEnum<ClientType>(value);
 Conv: MessageTarget      , CommandDeserializer.DeserializeEnum<MessageTarget>(value);
+Conv: Ts3ErrorCode       , (Ts3ErrorCode)CommandDeserializer.DeserializeUInt16(value);
+Conv: PermissionId       , (PermissionId)CommandDeserializer.DeserializeInt32(value);
 : Custom Id Names
 Conv: ClientUidT      , CommandDeserializer.DeserializeString(value);
 Conv: ClientDbIdT     , CommandDeserializer.DeserializeUInt64(value);
@@ -33,8 +35,6 @@ Conv: ServerGroupIdT[], CommandDeserializer.DeserializeArray(value, CommandDeser
 
 
 : <Mapping name>, <Teamspeak param name>, <Field name>, <Field type>
-: \[QuerySerialized\("(\w+)"\)\]\r?\n\s*(\w+)\s+(\w+).*\n
-: Field: $1, $1, $3, $2
 Field: aclid, aclid, ClientId, ClientIdT
 Field: acn, acn, ClientName, string
 Field: alpha, alpha, Alpha, string
@@ -192,6 +192,11 @@ Field: virtualserver_unique_identifier, virtualserver_unique_identifier, Virtual
 Field: virtualserver_uptime, virtualserver_uptime, Uptime, TimeSpan
 Field: virtualserver_version, virtualserver_version, ServerVersion, string
 Field: virtualserver_welcomemessage, virtualserver_welcomemessage, WelcomeMessage, string
+: Error stuff
+Field: error_id, id, Id, Ts3ErrorCode
+Field: failed_permid, failed_permid, MissingPermissionId, PermissionId
+Field: return_code, return_code, ReturnCode, string
+Field: extra_msg, extra_msg, ExtraMessage, string
 
 
 : <Teamspeak notification name>, <Enum name>
@@ -207,6 +212,7 @@ Notify: notifyclientmoved, ClientMoved
 Notify: notifyserveredited, ServerEdited
 Notify: notifytextmessage, TextMessage
 Notify: notifytokenused, TokenUsed
+Notify: error, Error
 
 Notify: channellist, ChannelList
 Notify: channellistfinished, ChannelListFinished
@@ -246,6 +252,7 @@ Msg: InitServer, initserver, virtualserver_welcomemessage, virtualserver_platfor
 Msg: ServerEdited, notifyserveredited, invokerid, invokername, invokeruid, reasonid, virtualserver_name, virtualserver_codec_encryption_mode, virtualserver_default_server_group, virtualserver_default_channel_group, virtualserver_hostbanner_url, virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_interval, virtualserver_priority_speaker_dimm_modificator, virtualserver_hostbutton_tooltip, virtualserver_hostbutton_url, virtualserver_hostbutton_gfx_url, virtualserver_name_phonetic, virtualserver_icon_id, virtualserver_hostbanner_mode, virtualserver_channel_temp_delete_delay_default
 Msg: TextMessage, notifytextmessage, targetmode, msg, target, invokerid, invokername, invokeruid
 Msg: TokenUsed, notifytokenused, token, tokencustomset, token1, token2, clid, cldbid, cluid
+Msg: CommandError, error, error_id, msg, failed_permid, return_code, extra_msg
 :Responses
 Msg: ChannelData,, id, pid, seconds_empty, total_clients_family, total_clients, channel_needed_subscribe_power, channel_order, channel_name, channel_topic, channel_flag_default, channel_flag_password, channel_flag_permanent, channel_flag_semi_permanent, channel_codec, channel_codec_quality, channel_needed_talk_power, channel_icon_id, channel_maxclients, channel_maxfamilyclients
 Msg: ClientData,, clid, client_unique_identifier, cid, client_database_id, client_nickname, client_type

@@ -99,8 +99,8 @@ namespace LockCheck
 				while (callHierarchy.Count > 0)
 				{
 					var currentMethod = callHierarchy.Peek() as MethodDefinition;
-					if (currentMethod != null && !currentMethod.HasBody)
-						continue;
+					if (currentMethod == null || !currentMethod.HasBody)
+						break;
 					bool foundNewCall = false;
 					foreach (var instruction in currentMethod.Body.Instructions)
 					{

@@ -242,7 +242,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void UtilSeedTest()
 		{
-			var lowCaseRegex = new Regex("^[a-z]*$", Util.DefaultRegexConfig);
+			var lowCaseRegex = new Regex("^[a-z]*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 			for (int i = 0; i < 100000; i++)
 			{
 				var str = Util.FromSeed(i);

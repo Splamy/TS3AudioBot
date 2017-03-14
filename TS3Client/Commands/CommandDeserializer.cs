@@ -19,83 +19,57 @@ namespace TS3Client.Commands
 	using Messages;
 	using System;
 	using System.Collections.Generic;
-	using System.Diagnostics;
 	using System.Globalization;
 	using System.Linq;
 	using KVEnu = System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>;
 
-	static class CommandDeserializer
+	internal static class CommandDeserializer
 	{
-		// data to error
-		public static CommandError GenerateErrorStatus(string line)
+		// data to notification
+		public static IEnumerable<INotification> GenerateNotification(string lineDataPart, NotificationType ntfyType)
 		{
-			var kvpList = ParseKeyValueLine(line, true);
-			var errorStatus = new CommandError();
-			foreach (var responseParam in kvpList)
-			{
-				switch (responseParam.Key.ToUpperInvariant())
-				{
-				case "ID": errorStatus.Id = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
-				case "MSG": errorStatus.Message = Ts3String.Unescape(responseParam.Value); break;
-				case "FAILED_PERMID": errorStatus.MissingPermissionId = int.Parse(responseParam.Value, CultureInfo.InvariantCulture); break;
-				case "RETURN_CODE": errorStatus.ReturnCode = Ts3String.Unescape(responseParam.Value); break;
-				}
-			}
-			return errorStatus;
+			if (ntfyType == NotificationType.Unknown)
+				throw new ArgumentException("The NotificationType must not be unknown", nameof(lineDataPart));
+
+			if (lineDataPart == null)
+				throw new ArgumentNullException(nameof(lineDataPart));
+
+			return lineDataPart.TrimStart().Split('|').Select(msg => GenerateSingleNotification(msg, ntfyType));
 		}
 
-		// data to notification
-		public static Tuple<IEnumerable<INotification>, NotificationType> GenerateNotification(string line)
+		public static INotification GenerateSingleNotification(string lineDataPart, NotificationType ntfyType)
 		{
-			string notifyname;
-			int splitindex = line.IndexOf(' ');
-			if (splitindex < 0)
-				notifyname = line.TrimEnd();
-			else
-				notifyname = line.Substring(0, splitindex);
+			if (ntfyType == NotificationType.Unknown)
+				throw new ArgumentException("The NotificationType must not be unknown", nameof(lineDataPart));
 
-			var ntfyType = MessageHelper.GetNotificationType(notifyname);
-			if (ntfyType != NotificationType.Unknown)
-			{
-				string[] messageList;
-				if (splitindex < 0)
-					messageList = new string[0];
-				else
-					messageList = line.Substring(splitindex).TrimStart().Split('|');
-				return new Tuple<IEnumerable<INotification>, NotificationType>(messageList.Select(msg =>
-				{
-					var incomingData = ParseKeyValueLine(msg, false);
-					var notification = MessageHelper.GenerateNotificationType(ntfyType);
-					FillQueryMessage(notification, incomingData);
-					return notification;
-				}), ntfyType);
-			}
-			else
-			{
-				Debug.WriteLine($"No matching notification derivative ({line})");
-				return new Tuple<IEnumerable<INotification>, NotificationType>(Enumerable.Empty<INotification>(), NotificationType.Unknown);
-			}
+			if (lineDataPart == null)
+				return null;
+
+			var incomingData = ParseKeyValueLine(lineDataPart, false);
+			var notification = MessageHelper.GenerateNotificationType(ntfyType);
+			FillQueryMessage(notification, incomingData);
+			return notification;
 		}
 
 		// data to response
-		public static IEnumerable<IResponse> GenerateResponse(string line, Type answerType)
+		public static IEnumerable<T> GenerateResponse<T>(string line) where T : IResponse, new()
 		{
-			if (answerType == null)
+			if (typeof(T) == typeof(ResponseDictionary))
 			{
 				if (string.IsNullOrWhiteSpace(line))
-					return Enumerable.Empty<ResponseDictionary>();
+					return Enumerable.Empty<T>();
 				var messageList = line.Split('|');
-				return messageList.Select(msg => new ResponseDictionary(ParseKeyValueLineDict(msg, false)));
+				return (IEnumerable<T>)messageList.Select(msg => new ResponseDictionary(ParseKeyValueLineDict(msg, false)));
 			}
 			else
 			{
 				if (string.IsNullOrWhiteSpace(line))
-					return Enumerable.Empty<IResponse>();
+					return Enumerable.Empty<T>();
 				var messageList = line.Split('|');
 				return messageList.Select(msg =>
 				{
 					var incomingData = ParseKeyValueLine(msg, false);
-					var response = (IResponse)Activator.CreateInstance(answerType);
+					var response = new T();
 					FillQueryMessage(response, incomingData);
 					return response;
 				});
@@ -142,7 +116,7 @@ namespace TS3Client.Commands
 		public static double DeserializeDouble(string v) => double.Parse(v, CultureInfo.InvariantCulture);
 		public static string DeserializeString(string v) => Ts3String.Unescape(v);
 		public static TimeSpan DeserializeTimeSpan(string v) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture));
-		public static DateTime DeserializeDateTime(string v) => PrimitiveParameter.UnixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture));
+		public static DateTime DeserializeDateTime(string v) => Util.UnixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture));
 		public static T DeserializeEnum<T>(string v) where T : struct
 		{
 			T val;

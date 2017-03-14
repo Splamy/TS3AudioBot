@@ -153,6 +153,9 @@ namespace TS3AudioBot.Web
 
 		public void Dispose()
 		{
+			Display?.Dispose();
+			Display = null;
+
 			webListener?.Stop();
 			webListener = null;
 		}

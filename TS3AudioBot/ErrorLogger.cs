@@ -228,7 +228,7 @@ namespace TS3AudioBot
 				if (endOfIl)
 					strb.Append("$internal");
 				else
-					strb.Append(method.ToString()).Append('@').Append(frames.GetFileLineNumber());
+					strb.Append(method.ToString()).Append('@').Append(frames.GetFileLineNumber()); // TODO Add classname
 				strb.Append('\n');
 				if (endOfIl) break;
 			}

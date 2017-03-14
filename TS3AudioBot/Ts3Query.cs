@@ -36,7 +36,7 @@ namespace TS3AudioBot
 
 		public override void Connect()
 		{
-			if (!tsBaseClient.IsConnected)
+			if (!tsBaseClient.Connected)
 			{
 				tsQueryClient.Connect(new ConnectionData() { Hostname = connectionData.host, Port = connectionData.port });
 				tsQueryClient.Login(connectionData.user, connectionData.passwd);

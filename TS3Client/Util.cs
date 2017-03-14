@@ -20,6 +20,7 @@ namespace TS3Client
 	using System.Linq;
 	using System.Text;
 	using System;
+	using Messages;
 
 	internal static class Util
 	{
@@ -31,5 +32,22 @@ namespace TS3Client
 		public static void Init<T>(ref T fld) where T : new() => fld = new T();
 
 		public static Encoding Encoder { get; } = new UTF8Encoding(false);
+
+		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+		public static uint UnixNow => (uint)(DateTime.UtcNow - UnixTimeStart).TotalSeconds;
+
+		public static Random Random { get; } = new Random();
+	}
+
+	public static class Extensions
+	{
+		public static string ErrorFormat(this CommandError error)
+		{
+			if (error.MissingPermissionId > PermissionId.unknown)
+				return $"{error.Id}: the command failed to execute: {error.Message} (missing permission:{error.MissingPermissionId})";
+			else
+				return $"{error.Id}: the command failed to execute: {error.Message}";
+		}
 	}
 }

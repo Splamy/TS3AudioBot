@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -20,8 +20,8 @@ namespace TS3Client.Full
 
 	internal enum PacketType : byte
 	{
-		Readable = 0x0,
-		Voice = 0x1,
+		Voice = 0x0,
+		VoiceEncrypted = 0x1,
 		Command = 0x2,
 		CommandLow = 0x3,
 		Ping = 0x4,

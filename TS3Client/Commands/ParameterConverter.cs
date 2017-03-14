@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -19,44 +19,38 @@ namespace TS3Client.Commands
 	using System;
 	using System.Globalization;
 
-	public interface IParameterConverter
-	{
-		string QueryValue { get; }
-	}
-
-	public class PrimitiveParameter : IParameterConverter
+	public struct ParameterConverter
 	{
 		public string QueryValue { get; }
-		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
-		public PrimitiveParameter(bool value) { QueryValue = (value ? "1" : "0"); }
-		public PrimitiveParameter(sbyte value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(byte value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(short value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(ushort value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(int value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(uint value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(long value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(ulong value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(float value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(double value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(string value) { QueryValue = Ts3String.Escape(value); }
-		public PrimitiveParameter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
-		public PrimitiveParameter(DateTime value) { QueryValue = (value - UnixTimeStart).TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
+		public ParameterConverter(bool value) { QueryValue = (value ? "1" : "0"); }
+		public ParameterConverter(sbyte value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(byte value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(short value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(ushort value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(int value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(uint value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(long value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(ulong value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(float value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(double value) { QueryValue = value.ToString(CultureInfo.InvariantCulture); }
+		public ParameterConverter(string value) { QueryValue = Ts3String.Escape(value); }
+		public ParameterConverter(TimeSpan value) { QueryValue = value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
+		public ParameterConverter(DateTime value) { QueryValue = (value - Util.UnixTimeStart).TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
 
-		public static implicit operator PrimitiveParameter(bool value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(sbyte value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(byte value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(short value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(ushort value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(int value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(uint value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(long value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(ulong value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(float value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(double value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(string value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(TimeSpan value) => new PrimitiveParameter(value);
-		public static implicit operator PrimitiveParameter(DateTime value) => new PrimitiveParameter(value);
+		public static implicit operator ParameterConverter(bool value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(sbyte value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(byte value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(short value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(ushort value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(int value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(uint value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(long value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(ulong value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(float value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(double value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(string value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(TimeSpan value) => new ParameterConverter(value);
+		public static implicit operator ParameterConverter(DateTime value) => new ParameterConverter(value);
 	}
 }

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -20,88 +20,141 @@ namespace TS3Client
 	using System.Collections.Concurrent;
 	using System.Threading;
 
-	public interface IEventDispatcher : IDisposable
+	internal static class EventDispatcherHelper
 	{
-		void Init(Action eventLoop);
-		/// <summary>Do NOT call this method manually (Unless you know what you do).
-		/// Invokes an Action, when the EventLoop receives a new packet.</summary>
-		/// <param name="eventAction"></param>
-		void Invoke(Action eventAction);
-		void EnterEventLoop();
+		public static IEventDispatcher Create(EventDispatchType dispatcherType)
+		{
+			IEventDispatcher dispatcher;
+			switch (dispatcherType)
+			{
+			case EventDispatchType.None: dispatcher = new NoEventDispatcher(); break;
+			case EventDispatchType.CurrentThread: dispatcher = new CurrentThreadEventDisptcher(); break;
+			case EventDispatchType.ExtraDispatchThread: dispatcher = new ExtraThreadEventDispatcher(); break;
+			case EventDispatchType.DoubleThread: throw new NotSupportedException(); //break;
+			case EventDispatchType.AutoThreadPooled: dispatcher = new AutoThreadPooledEventDispatcher(); break;
+			case EventDispatchType.NewThreadEach: throw new NotSupportedException(); //break;
+			default: throw new NotSupportedException();
+			}
+			return dispatcher;
+		}
 	}
 
-	internal class CurrentThreadEventDisptcher : IEventDispatcher
+	/// <summary> Provides a function to run a receiving loop and asynchronously
+	/// dispatch notifications.
+	/// </summary>
+	internal interface IEventDispatcher : IDisposable
+	{
+		/// <summary>Initializes the dispatcher.</summary>
+		/// <param name="eventLoop">The main loop which will be receiving packets.</param>
+		/// <param name="dispatcher">The method to call asynchronously when a new
+		/// notification comes in.</param>
+		void Init(Action eventLoop, Action<LazyNotification> dispatcher);
+		/// <summary>Dispatches the notification.</summary>
+		/// <param name="lazyNotification"></param>
+		void Invoke(LazyNotification lazyNotification);
+		/// <summary>Starts the eventLoop synchronously or asynchronous,
+		/// depending on the dispatcher type.
+		/// </summary>
+		void EnterEventLoop();
+		void DoWork();
+	}
+
+	internal sealed class CurrentThreadEventDisptcher : IEventDispatcher
 	{
 		private Action eventLoop;
+		private Action<LazyNotification> dispatcher;
 
-		public void Init(Action eventLoop) => this.eventLoop = eventLoop;
+		public void Init(Action eventLoop, Action<LazyNotification> dispatcher)
+		{
+			this.eventLoop = eventLoop;
+			this.dispatcher = dispatcher;
+		}
 		public void EnterEventLoop() => eventLoop();
-		public void Invoke(Action eventAction) => eventAction();
+		public void Invoke(LazyNotification lazyNotification) => dispatcher.Invoke(lazyNotification);
+		public void DoWork() { }
 		public void Dispose() { }
 	}
 
-	internal class ExtraThreadEventDispatcher : IEventDispatcher
+	internal sealed class ExtraThreadEventDispatcher : IEventDispatcher
 	{
+		private Action eventLoop;
+		private Action<LazyNotification> dispatcher;
 		private Thread readQueryThread;
-		private readonly ConcurrentQueue<Action> eventQueue = new ConcurrentQueue<Action>();
+		private readonly ConcurrentQueue<LazyNotification> eventQueue = new ConcurrentQueue<LazyNotification>();
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
-		private volatile bool run = true;
+		private volatile bool run;
 
-		public void Init(Action eventLoop)
+		public void Init(Action eventLoop, Action<LazyNotification> dispatcher)
 		{
-			readQueryThread = new Thread(eventLoop.Invoke) { Name = "TS3Query MessageLoop" };
+			run = true;
+			this.eventLoop = eventLoop;
+			this.dispatcher = dispatcher;
+			readQueryThread = new Thread(DispatchLoop) { Name = "TS3Query MessageLoop" };
 			readQueryThread.Start();
 		}
 
-		public void Invoke(Action eventAction)
+		public void Invoke(LazyNotification lazyNotification)
 		{
-			eventQueue.Enqueue(eventAction);
+			eventQueue.Enqueue(lazyNotification);
 			eventBlock.Set();
 		}
 
-		public void EnterEventLoop()
+		public void EnterEventLoop() => eventLoop();
+
+		private void DispatchLoop()
 		{
 			while (run)
 			{
 				eventBlock.WaitOne();
 				while (!eventQueue.IsEmpty)
 				{
-					Action callData;
-					if (eventQueue.TryDequeue(out callData))
-						callData.Invoke();
+					LazyNotification lazyNotification;
+					if (eventQueue.TryDequeue(out lazyNotification))
+						dispatcher.Invoke(lazyNotification);
 				}
 			}
+		}
+
+		public void DoWork()
+		{
+			if (Thread.CurrentThread.ManagedThreadId != readQueryThread.ManagedThreadId)
+				return;
+			LazyNotification lazyNotification;
+			if (eventQueue.TryDequeue(out lazyNotification))
+				dispatcher.Invoke(lazyNotification);
 		}
 
 		public void Dispose()
 		{
 			run = false;
 			eventBlock.Set();
-			eventBlock.Close();
-			eventBlock.Dispose();
 		}
 	}
 
-	internal class NoEventDispatcher : IEventDispatcher
+	internal sealed class NoEventDispatcher : IEventDispatcher
 	{
-		public void Init(Action eventLoop) { }
+		public void Init(Action eventLoop, Action<LazyNotification> dispatcher) { }
 		public void EnterEventLoop() { }
-		public void Invoke(Action eventAction) { }
+		public void Invoke(LazyNotification lazyNotification) { }
+		public void DoWork() { }
 		public void Dispose() { }
 	}
 
-	internal class AutoThreadPooledEventDispatcher : IEventDispatcher
+	internal sealed class AutoThreadPooledEventDispatcher : IEventDispatcher
 	{
 		private Thread readQueryThread;
+		private Action<LazyNotification> dispatcher;
 
-		public void Init(Action eventLoop)
+		public void Init(Action eventLoop, Action<LazyNotification> dispatcher)
 		{
+			this.dispatcher = dispatcher;
 			readQueryThread = new Thread(eventLoop.Invoke) { Name = "TS3Query MessageLoop" };
 			readQueryThread.Start();
 		}
 		public void EnterEventLoop() { }
-		public void Invoke(Action eventAction) => ThreadPool.QueueUserWorkItem(Call, eventAction);
-		private static void Call(object obj) => ((Action)obj)();
+		public void Invoke(LazyNotification lazyNotification) => ThreadPool.QueueUserWorkItem(Call, lazyNotification);
+		private void Call(object obj) => dispatcher.Invoke((LazyNotification)obj);
+		public void DoWork() { }
 		public void Dispose() { }
 	}
 
@@ -113,13 +166,13 @@ namespace TS3Client
 		/// </summary>
 		None,
 		/// <summary>
-		/// Will use the same thread that entered the <see cref="Ts3BaseClient.EnterEventLoop"/>
+		/// Will use the same thread that entered the <see cref="Ts3BaseClientOld.EnterEventLoop"/>
 		/// for receiving and invoking all events. This method is not recommended since it mostly
 		/// only produces deadlocks. (Usually only for debugging)
 		/// </summary>
 		CurrentThread,
 		/// <summary>
-		/// Will use the thread that entered the <see cref="Ts3BaseClient.EnterEventLoop"/> for
+		/// Will use the thread that entered the <see cref="Ts3BaseClientOld.EnterEventLoop"/> for
 		/// receiving and starts a second thread for invoking all events. This is the best method for
 		/// lightweight dipatching with no parallelization.
 		/// </summary>

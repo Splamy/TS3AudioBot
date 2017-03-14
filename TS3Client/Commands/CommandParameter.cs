@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -27,14 +27,11 @@ namespace TS3Client.Commands
 		protected CommandParameter() { }
 
 		[DebuggerStepThrough]
-		public CommandParameter(string name, IParameterConverter rawValue)
+		public CommandParameter(string name, ParameterConverter rawValue)
 		{
 			Key = name;
 			Value = rawValue.QueryValue;
 		}
-
-		[DebuggerStepThrough]
-		public CommandParameter(string name, PrimitiveParameter value) : this(name, (IParameterConverter)value) { }
 
 		public override string ToString() => QueryString;
 	}

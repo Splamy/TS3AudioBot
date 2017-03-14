@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -54,7 +54,7 @@ namespace TS3Client.Commands
 			if (!CommandMatch.IsMatch(command))
 				throw new ArgumentException("Invalid command characters", nameof(command));
 
-			StringBuilder strb = new StringBuilder(Ts3String.Escape(command));
+			var strb = new StringBuilder(Ts3String.Escape(command));
 
 			foreach (var param in parameter)
 				strb.Append(' ').Append(param.QueryString);

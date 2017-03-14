@@ -27,8 +27,9 @@ namespace TS3AudioBot.Web.Interface
 	using System.Text;
 	using System.Web;
 
-	public sealed class WebDisplay : WebComponent
+	public sealed class WebDisplay : WebComponent, IDisposable
 	{
+		private FileSystemWatcher folderWatcher;
 		private readonly Dictionary<string, WebSite> sites;
 		// Special sites
 		public WebSite Index { get; private set; }
@@ -38,7 +39,7 @@ namespace TS3AudioBot.Web.Interface
 		{
 			Util.Init(ref sites);
 
-			DirectoryInfo baseDir = new DirectoryInfo(Path.Combine("..", "..", "Web", "Interface"));
+			var baseDir = new DirectoryInfo(Path.Combine("..", "..", "Web", "Interface"));
 			Func<DirectoryInfo, string, FileInfo> dirFile = (d, s) => d.GetFiles(s, SearchOption.TopDirectoryOnly).FirstOrDefault();
 
 			Index = new WebIndexFile("index.html", new FileProvider().Set(dirFile(baseDir, "index.html")), GetWebsite) { MimeType = "text/html" };
@@ -59,11 +60,12 @@ namespace TS3AudioBot.Web.Interface
 			PrepareSite(new SongChangedEvent("playdata", MainBot));
 			var devupdate = new SiteChangedEvent("devupdate");
 			PrepareSite(devupdate);
-			if (!Util.RegisterFolderEvents(baseDir, (s, e) =>
+			folderWatcher = Util.RegisterFolderEvents(baseDir, (s, e) =>
 			{
 				if (e.ChangeType == WatcherChangeTypes.Changed && !e.Name.EndsWith("~", StringComparison.Ordinal))
 					devupdate.InvokeEvent();
-			}))
+			});
+			if (folderWatcher == null)
 				Log.Write(Log.Level.Info, "Devupdate disabled");
 		}
 
@@ -93,6 +95,12 @@ namespace TS3AudioBot.Web.Interface
 				return site;
 
 			return Site404;
+		}
+
+		public void Dispose()
+		{
+			folderWatcher?.Dispose();
+			folderWatcher = null;
 		}
 	}
 

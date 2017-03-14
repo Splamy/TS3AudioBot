@@ -42,12 +42,14 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
 			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
 			
 			}
+
 		}
 	}
 
@@ -83,6 +85,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -113,6 +116,7 @@ namespace TS3Client.Messages
 			case "cpid": ChannelParentId = CommandDeserializer.DeserializeUInt64(value); break;
 			
 			}
+
 		}
 	}
 
@@ -127,6 +131,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -136,6 +141,7 @@ namespace TS3Client.Messages
 			case "invokeruid": InvokerUid = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
 		}
 	}
 
@@ -171,6 +177,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -201,6 +208,7 @@ namespace TS3Client.Messages
 			case "reasonid": Reason = CommandDeserializer.DeserializeEnum<MoveReason>(value); break;
 			
 			}
+
 		}
 	}
 
@@ -235,6 +243,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -264,6 +273,7 @@ namespace TS3Client.Messages
 			case "channel_flag_private": IsPrivate = CommandDeserializer.DeserializeBool(value); break;
 			
 			}
+
 		}
 	}
 
@@ -274,11 +284,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
-			switch(name)
-			{
 
-			
-			}
 		}
 	}
 
@@ -296,6 +302,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -308,6 +315,7 @@ namespace TS3Client.Messages
 			case "cpid": ChannelParentId = CommandDeserializer.DeserializeUInt64(value); break;
 			
 			}
+
 		}
 	}
 
@@ -319,12 +327,14 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
 			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
 			
 			}
+
 		}
 	}
 
@@ -336,12 +346,14 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
 			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
 			
 			}
+
 		}
 	}
 
@@ -353,12 +365,14 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
 			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
 			
 			}
+
 		}
 	}
 
@@ -375,6 +389,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -386,6 +401,7 @@ namespace TS3Client.Messages
 			case "clid": ClientId = CommandDeserializer.DeserializeUInt16(value); break;
 			
 			}
+
 		}
 	}
 
@@ -398,6 +414,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -405,6 +422,7 @@ namespace TS3Client.Messages
 			case "cluid": ClientUid = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
 		}
 	}
 
@@ -452,6 +470,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -494,6 +513,7 @@ namespace TS3Client.Messages
 			case "client_badges": Badges = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
 		}
 	}
 
@@ -513,6 +533,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -527,6 +548,7 @@ namespace TS3Client.Messages
 			case "cfid": SourceChannelId = CommandDeserializer.DeserializeUInt64(value); break;
 			
 			}
+
 		}
 	}
 
@@ -543,6 +565,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -554,6 +577,7 @@ namespace TS3Client.Messages
 			case "invokeruid": InvokerUid = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
 		}
 	}
 
@@ -566,6 +590,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -573,6 +598,7 @@ namespace TS3Client.Messages
 			case "permvalue": PermissionValue = CommandDeserializer.DeserializeInt32(value); break;
 			
 			}
+
 		}
 	}
 
@@ -590,6 +616,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -602,6 +629,7 @@ namespace TS3Client.Messages
 			case "cluid": ClientUid = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
 		}
 	}
 
@@ -612,11 +640,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
-			switch(name)
-			{
 
-			
-			}
 		}
 	}
 
@@ -630,6 +654,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -638,6 +663,7 @@ namespace TS3Client.Messages
 			case "omega": Omega = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
 		}
 	}
 
@@ -679,6 +705,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -715,6 +742,7 @@ namespace TS3Client.Messages
 			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = CommandDeserializer.DeserializeTimeSpan(value); break;
 			
 			}
+
 		}
 	}
 
@@ -744,6 +772,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -768,6 +797,7 @@ namespace TS3Client.Messages
 			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = CommandDeserializer.DeserializeTimeSpan(value); break;
 			
 			}
+
 		}
 	}
 
@@ -784,6 +814,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -795,6 +826,7 @@ namespace TS3Client.Messages
 			case "invokeruid": InvokerUid = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
 		}
 	}
 
@@ -812,6 +844,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -824,6 +857,34 @@ namespace TS3Client.Messages
 			case "cluid": ClientUid = CommandDeserializer.DeserializeString(value); break;
 			
 			}
+
+		}
+	}
+
+	public sealed class CommandError : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.Error;
+
+		public Ts3ErrorCode Id { get; set; }
+		public string Message { get; set; }
+		public PermissionId MissingPermissionId { get; set; }
+		public string ReturnCode { get; set; }
+		public string ExtraMessage { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "id": Id = (Ts3ErrorCode)CommandDeserializer.DeserializeUInt16(value); break;
+			case "msg": Message = CommandDeserializer.DeserializeString(value); break;
+			case "failed_permid": MissingPermissionId = (PermissionId)CommandDeserializer.DeserializeInt32(value); break;
+			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
+			case "extra_msg": ExtraMessage = CommandDeserializer.DeserializeString(value); break;
+			
+			}
+
 		}
 	}
 
@@ -853,6 +914,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -877,6 +939,7 @@ namespace TS3Client.Messages
 			case "channel_maxfamilyclients": MaxFamilyClients = CommandDeserializer.DeserializeInt32(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
+
 		}
 	}
 
@@ -893,6 +956,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -904,6 +968,7 @@ namespace TS3Client.Messages
 			case "client_type": ClientType = CommandDeserializer.DeserializeEnum<ClientType>(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
+
 		}
 	}
 
@@ -932,6 +997,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -955,6 +1021,7 @@ namespace TS3Client.Messages
 			case "client_base64HashClientUID": Base64HashClientUID = CommandDeserializer.DeserializeString(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
+
 		}
 	}
 
@@ -1024,6 +1091,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -1088,6 +1156,7 @@ namespace TS3Client.Messages
 			case "client_icon_id": IconId = CommandDeserializer.DeserializeInt64(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
+
 		}
 	}
 
@@ -1101,6 +1170,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -1109,6 +1179,7 @@ namespace TS3Client.Messages
 			case "cldbid": ClientDbId = CommandDeserializer.DeserializeUInt64(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
+
 		}
 	}
 
@@ -1130,6 +1201,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -1146,6 +1218,7 @@ namespace TS3Client.Messages
 			case "virtualserver_status": VirtualServerStatus = CommandDeserializer.DeserializeString(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
+
 		}
 	}
 
@@ -1167,6 +1240,7 @@ namespace TS3Client.Messages
 
 		public void SetField(string name, string value)
 		{
+
 			switch(name)
 			{
 
@@ -1183,6 +1257,7 @@ namespace TS3Client.Messages
 			case "client_unique_identifier": Uid = CommandDeserializer.DeserializeString(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
+
 		}
 	}
 
@@ -1205,6 +1280,7 @@ namespace TS3Client.Messages
 			case "notifyserveredited": return NotificationType.ServerEdited;
 			case "notifytextmessage": return NotificationType.TextMessage;
 			case "notifytokenused": return NotificationType.TokenUsed;
+			case "error": return NotificationType.Error;
 			case "channellist": return NotificationType.ChannelList;
 			case "channellistfinished": return NotificationType.ChannelListFinished;
 			case "initivexpand": return NotificationType.InitIvExpand;
@@ -1237,6 +1313,7 @@ namespace TS3Client.Messages
 			case NotificationType.ServerEdited: return new ServerEdited();
 			case NotificationType.TextMessage: return new TextMessage();
 			case NotificationType.TokenUsed: return new TokenUsed();
+			case NotificationType.Error: return new CommandError();
 			case NotificationType.ChannelList: return new ChannelList();
 			case NotificationType.ChannelListFinished: return new ChannelListFinished();
 			case NotificationType.InitIvExpand: return new InitIvExpand();
@@ -1248,7 +1325,8 @@ namespace TS3Client.Messages
 			case NotificationType.ClientNeededPermissions: return new ClientNeededPermissions();
 			case NotificationType.ConnectionInfoRequest: return new ConnectionInfoRequest();
 			case NotificationType.ClientServerGroupAdded: return new ClientServerGroupAdded();
-			default: return null;
+			case NotificationType.Unknown:
+			default: throw new ArgumentOutOfRangeException(nameof(name));
 			}
 		}
 	}

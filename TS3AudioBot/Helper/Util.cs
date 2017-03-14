@@ -107,13 +107,13 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static bool RegisterFolderEvents(DirectoryInfo dir, FileSystemEventHandler callback)
+		public static FileSystemWatcher RegisterFolderEvents(DirectoryInfo dir, FileSystemEventHandler callback)
 		{
 			if (!IsAdmin)
-				return false;
+				return null;
 
 			if (!dir.Exists)
-				return false;
+				return null;
 
 			var watcher = new FileSystemWatcher
 			{
@@ -122,7 +122,7 @@ namespace TS3AudioBot.Helper
 			};
 			watcher.Changed += callback;
 			watcher.EnableRaisingEvents = true;
-			return true;
+			return watcher;
 		}
 
 		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;

@@ -25,6 +25,8 @@ namespace TS3Client.Messages
 	public class ResponseDictionary : IDictionary<KeyType, ValueType>, IResponse
 	{
 		private readonly IDictionary<KeyType, ValueType> data;
+
+		public ResponseDictionary() { data = new Dictionary<KeyType, ValueType>(); }
 		public ResponseDictionary(IDictionary<KeyType, ValueType> dataDict) { data = dataDict; }
 
 		public ValueType this[KeyType key] { get { return data[key]; } set { throw new NotSupportedException(); } }
@@ -50,5 +52,11 @@ namespace TS3Client.Messages
 			get { return data.ContainsKey("return_code") ? data["return_code"] : string.Empty; }
 			set { data["return_code"] = value; }
 		}
+	}
+
+	public sealed class ResponseVoid : IResponse
+	{
+		public string ReturnCode { get; set; }
+		public void SetField(string name, string value) { }
 	}
 }

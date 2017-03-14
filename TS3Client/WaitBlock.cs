@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -25,34 +25,26 @@ namespace TS3Client
 	internal class WaitBlock : IDisposable
 	{
 		private AutoResetEvent waiter = new AutoResetEvent(false);
-		private IEnumerable<IResponse> answer = null;
-		private CommandError errorStatus = null;
-		public Type AnswerType { get; }
+		private CommandError commandError = null;
+		private string commandLine = null;
 
-		public WaitBlock(Type answerType)
-		{
-			AnswerType = answerType;
-		}
+		public WaitBlock() { }
 
-		public IEnumerable<IResponse> WaitForMessage()
+		public IEnumerable<T> WaitForMessage<T>() where T : IResponse, new()
 		{
 			waiter.WaitOne();
-			if (!errorStatus.Ok)
-				throw new Ts3CommandException(errorStatus);
-			return answer;
+			if (commandError.Id != Ts3ErrorCode.ok)
+				throw new Ts3CommandException(commandError);
+
+			return CommandDeserializer.GenerateResponse<T>(commandLine);
 		}
 
-		public void SetAnswer(CommandError error, IEnumerable<IResponse> answer)
+		public void SetAnswer(CommandError commandError, string commandLine = null)
 		{
-			this.answer = answer;
-			SetAnswer(error);
-		}
-
-		public void SetAnswer(CommandError error)
-		{
-			if (error == null)
-				throw new ArgumentNullException(nameof(error));
-			errorStatus = error;
+			if (commandError == null)
+				throw new ArgumentNullException(nameof(commandError));
+			this.commandError = commandError;
+			this.commandLine = commandLine;
 			waiter.Set();
 		}
 

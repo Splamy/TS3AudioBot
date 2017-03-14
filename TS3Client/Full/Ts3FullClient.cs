@@ -21,90 +21,168 @@ namespace TS3Client.Full
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using System.Net;
-	using System.Net.Sockets;
+	using System.Threading;
 
-	public sealed class Ts3FullClient : Ts3BaseClient
+	public sealed class Ts3FullClient : Ts3BaseFunctions
 	{
-		private UdpClient udpClient;
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
+		private readonly MessageProcessor msgProc;
+
+		private readonly object CommmandQueueLock = new object();
+		private readonly object StatusLock = new object();
 
 		private int returnCode;
 		private bool wasExit;
 
+		private IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
 		public ushort ClientId => packetHandler.ClientId;
 		public string QuitMessage { get; set; } = "Disconnected";
-		public VersionSign VersionSign { get; set; } = VersionSign.VER_LIN_3_0_19_4;
+		public VersionSign VersionSign { get; private set; }
+		private Ts3ClientStatus Status;
+		public override bool Connected => Status == Ts3ClientStatus.Connected;
+		private ConnectionDataFull connectionDataFull;
 
-		public Ts3FullClient(EventDispatchType dispatcher) : base(dispatcher)
+		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
+		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
+		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
+		public override event EventHandler<EventArgs> OnConnected;
+		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
+		public event EventHandler<CommandError> OnErrorEvent;
+
+		public Ts3FullClient(EventDispatchType dispatcherType)
 		{
+			Status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler(ts3Crypt);
+			msgProc = new MessageProcessor(false);
+			dispatcher = EventDispatcherHelper.Create(dispatcherType);
+			wasExit = true;
 		}
 
-		protected override void ConnectInternal(ConnectionData conData)
+		public override void Connect(ConnectionData conData)
 		{
 			var conDataFull = conData as ConnectionDataFull;
 			if (conDataFull == null) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
+			if (conDataFull.VersionSign == null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
+			connectionDataFull = conDataFull;
 
-			udpClient = new UdpClient();
-			packetHandler.Start(udpClient);
+			Disconnect();
 
-			try
+			lock (StatusLock)
 			{
-				IPAddress ipAddr;
-				if (!IPAddress.TryParse(conData.Hostname, out ipAddr))
-				{
-					var hostEntry = Dns.GetHostEntry(conData.Hostname);
-					ipAddr = hostEntry.AddressList.FirstOrDefault();
-					if (ipAddr == null) throw new Ts3Exception("Could not resove DNS.");
-				}
-				packetHandler.RemoteAddress = new IPEndPoint(ipAddr, conData.Port);
-				udpClient.Connect(packetHandler.RemoteAddress);
+				returnCode = 0;
+				wasExit = false;
+
+				VersionSign = conDataFull.VersionSign;
+				ts3Crypt.Identity = conDataFull.Identity;
+
+				packetHandler.Connect(conData.Hostname, conData.Port);
+				dispatcher.Init(NetworkLoop, InvokeEvent);
 			}
-			catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
-
-			ts3Crypt.Identity = conDataFull.Identity;
-
-			packetHandler.AddOutgoingPacket(ts3Crypt.ProcessInit1(null), PacketType.Init1);
+			dispatcher.EnterEventLoop();
 		}
 
-		protected override void DisconnectInternal()
+		public override void Disconnect()
 		{
-			ClientDisconnect(MoveReason.LeftServer, QuitMessage);
-		}
-
-		protected override void InvokeEvent(IEnumerable<INotification> notification, NotificationType notifyType)
-		{
-			// we need to check for clientleftview to know when we disconnect from the server
-			if (notifyType == NotificationType.ClientLeftView)
+			DisconnectInternal();
+			while (true)
 			{
-				var leftViewEvent = notification.Cast<ClientLeftView>().Where(clv => clv.ClientId == packetHandler.ClientId).FirstOrDefault();
+				if (wasExit)
+					break;
+				dispatcher.DoWork();
+				if (!wasExit)
+					Thread.Sleep(1);
+			}
+		}
+
+		private void DisconnectInternal(Ts3ClientStatus? setStatus = null)
+		{
+			if (wasExit)
+				return;
+
+			lock (StatusLock)
+			{
+				if (setStatus.HasValue)
+				{
+					Status = setStatus.Value;
+				}
+
+				switch (Status)
+				{
+				case Ts3ClientStatus.Disconnected:
+					if (!wasExit)
+					{
+						wasExit = true;
+						packetHandler.Stop();
+						msgProc.DropQueue();
+						dispatcher.Dispose();
+						OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
+					}
+					break;
+				case Ts3ClientStatus.Disconnecting:
+					break;
+				case Ts3ClientStatus.Connected:
+				case Ts3ClientStatus.Connecting:
+					ClientDisconnect(MoveReason.LeftServer, QuitMessage);
+					Status = Ts3ClientStatus.Disconnecting;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+
+		private void InvokeEvent(LazyNotification lazyNotification)
+		{
+			var notification = lazyNotification.Notifications;
+			switch (lazyNotification.NotifyType)
+			{
+			case NotificationType.ChannelCreated: break;
+			case NotificationType.ChannelDeleted: break;
+			case NotificationType.ChannelChanged: break;
+			case NotificationType.ChannelEdited: break;
+			case NotificationType.ChannelMoved: break;
+			case NotificationType.ChannelPasswordChanged: break;
+			case NotificationType.ClientEnterView: OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>()); break;
+			case NotificationType.ClientLeftView:
+				var clientLeftArr = notification.Cast<ClientLeftView>().ToArray();
+				var leftViewEvent = clientLeftArr.Where(clv => clv.ClientId == packetHandler.ClientId).FirstOrDefault();
 				if (leftViewEvent != null)
 				{
 					packetHandler.ExitReason = leftViewEvent.Reason;
-					FullDisconnect();
-					return;
+					DisconnectInternal(Ts3ClientStatus.Disconnected);
+					break;
 				}
-			}
+				OnClientLeftView?.Invoke(this, clientLeftArr);
+				break;
 
-			base.InvokeEvent(notification, notifyType);
+			case NotificationType.ClientMoved: break;
+			case NotificationType.ServerEdited: break;
+			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
+			case NotificationType.TokenUsed: break;
+			// full client events
+			case NotificationType.InitIvExpand: ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault()); break;
+			case NotificationType.InitServer: ProcessInitServer((InitServer)notification.FirstOrDefault()); break;
+			case NotificationType.ChannelList: break;
+			case NotificationType.ChannelListFinished: break;
+			case NotificationType.ClientNeededPermissions: break;
+			case NotificationType.ClientChannelGroupChanged: break;
+			case NotificationType.ClientServerGroupAdded: break;
+			case NotificationType.ConnectionInfoRequest: break;
+			case NotificationType.ChannelSubscribed: break;
+			case NotificationType.ChannelUnsubscribed: break;
+			case NotificationType.ClientChatComposing: break;
+			// special
+			case NotificationType.Error: OnErrorEvent?.Invoke(this, (CommandError)notification.First()); break;
+			case NotificationType.Unknown:
+			default: throw new InvalidOperationException();
+			}
 		}
 
-		private void FullDisconnect()
-		{
-			if (!wasExit)
-			{
-				wasExit = true;
-				packetHandler.Stop();
-				DisconnectDone(packetHandler.ExitReason ?? MoveReason.LeftServer); // TODO ??
-			}
-		}
-
-		protected override void NetworkLoop()
+		private void NetworkLoop()
 		{
 			while (true)
 			{
@@ -118,105 +196,93 @@ namespace TS3Client.Full
 				{
 				case PacketType.Command:
 					string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-					if (!SpecialCommandProcess(message))
-						ProcessCommand(message);
+					var result = msgProc.PushMessage(message);
+					if (result.HasValue)
+						dispatcher.Invoke(result.Value);
 					break;
 
-				case PacketType.Readable:
 				case PacketType.Voice:
+				case PacketType.VoiceEncrypted:
 					// VOICE
 
 					break;
 
 				case PacketType.Init1:
 					var forwardData = ts3Crypt.ProcessInit1(packet.Data);
+					if (forwardData == null)
+						break;
+					Console.WriteLine("Init: " + packet.Data[0]);
 					packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
 					break;
 				}
 			}
 
-			FullDisconnect();
+			DisconnectInternal(Ts3ClientStatus.Disconnected);
 		}
 
-		private bool SpecialCommandProcess(string message)
+		private void ProcessInitIvExpand(InitIvExpand initIvExpand)
 		{
-			if (message.StartsWith("initivexpand ", StringComparison.Ordinal)
-				|| message.StartsWith("initserver ", StringComparison.Ordinal)
-				|| message.StartsWith("channellist ", StringComparison.Ordinal)
-				|| message.StartsWith("channellistfinished ", StringComparison.Ordinal))
-			{
-				var notification = CommandDeserializer.GenerateNotification(message);
-				InvokeEvent(notification.Item1, notification.Item2);
-				return true;
-			}
-			return false;
-		}
-
-		protected override void ProcessInitIvExpand(InitIvExpand initIvExpand)
-		{
-			var fullConnectionData = (ConnectionDataFull)ConnectionData;
-			var password = fullConnectionData.IsPasswordHashed
-				? fullConnectionData.Password
-				: Ts3Crypt.HashPassword(ConnectionData.Password);
+			var password = connectionDataFull.IsPasswordHashed
+				? connectionDataFull.Password
+				: Ts3Crypt.HashPassword(connectionDataFull.Password);
 
 			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			packetHandler.CryptoInitDone();
 			ClientInit(
-				ConnectionData.Username,
+				connectionDataFull.Username,
 				true, true,
 				string.Empty, string.Empty, password,
 				string.Empty, string.Empty, string.Empty, "123,456",
 				VersionSign);
 		}
 
-		protected override void ProcessInitServer(InitServer initServer)
+		private void ProcessInitServer(InitServer initServer)
 		{
-			lock (LockObj)
-			{
-				packetHandler.ClientId = initServer.ClientId;
-				packetHandler.ReceiveInitAck();
-				ConnectDone();
-			}
+			packetHandler.ClientId = initServer.ClientId;
+			packetHandler.ReceiveInitAck();
+
+			// CP
+			Status = Ts3ClientStatus.Connected;
+			OnConnected?.Invoke(this, new EventArgs());
+			// CP
 		}
 
-		protected override IEnumerable<IResponse> SendCommand(Ts3Command com, Type targetType)
+		protected override IEnumerable<T> SendCommand<T>(Ts3Command com)
 		{
-			if (wasExit)
-				throw new Ts3CommandException(new CommandError { Id = -1, Message = "Connection closed" });
-
+			var retCode = new CommandParameter("return_code", returnCode);
 			if (com.ExpectResponse)
-				com.AppendParameter(new CommandParameter("return_code", returnCode));
+				com.AppendParameter(retCode);
 
-			using (var wb = new WaitBlock(targetType))
+			using (var wb = new WaitBlock())
 			{
-				lock (LockObj)
+				lock (CommmandQueueLock)
 				{
 					if (com.ExpectResponse)
 					{
-						RequestQueue.Enqueue(wb);
+						msgProc.EnqueueRequest(retCode.Value, wb);
 						returnCode++;
 					}
 
 					byte[] data = Util.Encoder.GetBytes(com.ToString());
-					packetHandler.AddOutgoingPacket(data, PacketType.Command);
+					lock (StatusLock)
+					{
+						if (wasExit)
+							throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });
+						packetHandler.AddOutgoingPacket(data, PacketType.Command);
+					}
 				}
 
 				if (com.ExpectResponse)
-					return wb.WaitForMessage();
+					return wb.WaitForMessage<T>();
 				else
 					return null;
 			}
 		}
 
-		protected override void Reset()
+		public override void Dispose()
 		{
-			base.Reset();
-
-			ts3Crypt.Reset();
-			packetHandler.Stop();
-
-			returnCode = 0;
-			wasExit = false;
+			Disconnect();
+			dispatcher?.Dispose();
 		}
 
 		#region FULLCLIENT SPECIFIC COMMANDS
@@ -258,7 +324,7 @@ namespace TS3Client.Full
 			Array.Copy(buffer, 0, tmpBuffer, 3, length);
 			buffer = tmpBuffer;
 
-			packetHandler.AddOutgoingPacket(buffer, PacketType.Readable);
+			packetHandler.AddOutgoingPacket(buffer, PacketType.Voice);
 		}
 
 		public void SendAudioWhisper(byte[] buffer, int length, Codec codec, IList<ulong> channelIds, IList<ushort> clientIds)
@@ -283,9 +349,17 @@ namespace TS3Client.Full
 			Array.Copy(buffer, 0, tmpBuffer, offset, length);
 			buffer = tmpBuffer;
 
-			packetHandler.AddOutgoingPacket(buffer, PacketType.Voice);
+			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceEncrypted);
 		}
 
 		#endregion
+
+		private enum Ts3ClientStatus
+		{
+			Disconnected,
+			Disconnecting,
+			Connected,
+			Connecting,
+		}
 	}
 }

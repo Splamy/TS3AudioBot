@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ namespace TS3Client.Commands
 			ConstructorInfo ci;
 			if (!ConstrBuffer.TryGetValue(t, out ci))
 			{
-				var ctor = typeof(PrimitiveParameter).GetConstructors().Where(c => c.GetParameters().First().ParameterType == t).FirstOrDefault();
+				var ctor = typeof(ParameterConverter).GetConstructors().Where(c => c.GetParameters().First().ParameterType == t).FirstOrDefault();
 				if (ctor == null)
 					throw new InvalidCastException();
 				ci = ctor;
@@ -40,13 +40,11 @@ namespace TS3Client.Commands
 		private readonly List<string> buildList = new List<string>();
 		public override string QueryString => string.Join(" ", buildList);
 
-		protected CommandBinder() { }
-
 		public static CommandBinder NewBind<T>(string key, IEnumerable<T> parameter) => new CommandBinder().Bind(key, parameter);
 		public CommandBinder Bind<T>(string key, IEnumerable<T> parameter)
 		{
 			var ctor = GetValueCtor(typeof(T));
-			var values = parameter.Select(val => (PrimitiveParameter)ctor.Invoke(new object[] { val }));
+			var values = parameter.Select(val => (ParameterConverter)ctor.Invoke(new object[] { val }));
 			var result = string.Join("|", values.Select(v => new CommandParameter(key, v).QueryString));
 			buildList.Add(result);
 			return this;

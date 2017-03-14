@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -90,7 +90,7 @@ namespace TS3Client.Full
 				PublicKey = pubPrivKey.Item1,
 				PrivateKey = pubPrivKey.Item2,
 				PublicKeyString = ExportPublicKey(pubPrivKey.Item1),
-				PrivateKeyString = ExportPrivateKey(pubPrivKey),
+				PrivateKeyString = ExportPublicAndPrivateKey(pubPrivKey),
 				ValidKeyOffset = keyOffset,
 				LastCheckedKeyOffset = lastCheckedKeyOffset < keyOffset ? keyOffset : lastCheckedKeyOffset,
 			};
@@ -129,7 +129,9 @@ namespace TS3Client.Full
 			return Convert.ToBase64String(dataArray);
 		}
 
-		private static string ExportPrivateKey(Tuple<ECPoint, BigInteger> pubPrivKey)
+		// TODO Private only key + rework of identitydata public members
+
+		private static string ExportPublicAndPrivateKey(Tuple<ECPoint, BigInteger> pubPrivKey)
 		{
 			var dataArray = new DerSequence(
 					new DerBitString(new byte[] { 128 }, 7),
@@ -205,7 +207,8 @@ namespace TS3Client.Full
 				var sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
 				sendData[versionLen] = 0x00; // initType
-				for (int i = 0; i < 8; i++) sendData[i + versionLen + initTypeLen] = 0x42; // should be 4byte timestamp + 4byte random
+				NetUtil.H2N(Util.UnixNow, sendData, versionLen + initTypeLen); // 4byte timestamp
+				for (int i = 0; i < 4; i++) sendData[i + versionLen + initTypeLen + 4] = (byte)Util.Random.Next(0, 256); // 4byte random
 				return sendData;
 			}
 
@@ -221,9 +224,12 @@ namespace TS3Client.Full
 			}
 			else if (type == 3)
 			{
+				byte[] alphaBytes = new byte[10];
+				Util.Random.NextBytes(alphaBytes);
+				var alpha = Convert.ToBase64String(alphaBytes);
 				string initAdd = Ts3Command.BuildToString("clientinitiv",
 					new[] {
-						new CommandParameter("alpha", "AAAAAAAAAAAAAA=="),
+						new CommandParameter("alpha", alpha),
 						new CommandParameter("omega", Identity.PublicKeyString),
 						new CommandParameter("ip", string.Empty) },
 					Ts3Command.NoOptions);
@@ -269,32 +275,36 @@ namespace TS3Client.Full
 
 		#region ENCRYPTION/DECRYPTION
 
-		internal bool Encrypt(OutgoingPacket packet)
+		internal void Encrypt(OutgoingPacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
 			{
 				FakeEncrypt(packet, TS3InitMac);
-				return true;
+				return;
 			}
 			if (packet.UnencryptedFlag)
 			{
 				FakeEncrypt(packet, fakeSignature);
-				return true;
+				return;
 			}
 
 			var keyNonce = GetKeyNonce(false, packet.PacketId, 0, packet.PacketType);
 			packet.BuildHeader();
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
 
-			eaxCipher.Init(true, ivAndKey);
-			byte[] result = new byte[eaxCipher.GetOutputSize(packet.Size)];
+			byte[] result;
 			int len;
-			try
+			lock (eaxCipher)
 			{
-				len = eaxCipher.ProcessBytes(packet.Data, 0, packet.Size, result, 0);
-				len += eaxCipher.DoFinal(result, len);
+				eaxCipher.Init(true, ivAndKey);
+				result = new byte[eaxCipher.GetOutputSize(packet.Size)];
+				try
+				{
+					len = eaxCipher.ProcessBytes(packet.Data, 0, packet.Size, result, 0);
+					len += eaxCipher.DoFinal(result, len);
+				}
+				catch (Exception ex) { throw new Ts3Exception("Internal encryption error.", ex); }
 			}
-			catch (Exception) { return false; }
 
 			// result consists of [Data..., Mac...]
 			// to build the final TS3/libtomcrypt we need to copy it into another order
@@ -308,7 +318,6 @@ namespace TS3Client.Full
 			// Copy the Data from [Data..., Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(result, 0, packet.Raw, MacLen + OutHeaderLen, len - MacLen);
 			// Raw is now [Mac..., Header..., Data...]
-			return true;
 		}
 
 		private void FakeEncrypt(OutgoingPacket packet, byte[] mac)
@@ -366,19 +375,23 @@ namespace TS3Client.Full
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
 			try
 			{
-				eaxCipher.Init(false, ivAndKey);
-				byte[] result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
+				byte[] result;
+				lock (eaxCipher)
+				{
+					eaxCipher.Init(false, ivAndKey);
+					result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
 
-				byte[] comb = new byte[dataLen + MacLen];
-				Array.Copy(packet.Raw, MacLen + InHeaderLen, comb, 0, dataLen);
-				Array.Copy(packet.Raw, 0, comb, dataLen, MacLen);
+					byte[] comb = new byte[dataLen + MacLen];
+					Array.Copy(packet.Raw, MacLen + InHeaderLen, comb, 0, dataLen);
+					Array.Copy(packet.Raw, 0, comb, dataLen, MacLen);
 
-				int len2 = eaxCipher.ProcessBytes(comb, 0, comb.Length, result, 0);
-				len2 += eaxCipher.DoFinal(result, len2);
+					int len2 = eaxCipher.ProcessBytes(comb, 0, comb.Length, result, 0);
+					len2 += eaxCipher.DoFinal(result, len2);
 
-				int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
-				len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);
-				len += eaxCipher.DoFinal(result, len);
+					int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
+					len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);
+					len += eaxCipher.DoFinal(result, len);
+				}
 
 				packet.Data = result;
 			}
@@ -554,9 +567,10 @@ namespace TS3Client.Full
 			for (i = 0; i < data.Length; i++)
 				if (data[i] == 0) curr += 8;
 				else break;
-			for (int bit = 7; bit >= 0; bit--)
-				if ((data[i] & (1 << bit)) == 0) curr++;
-				else break;
+			if (i < data.Length)
+				for (int bit = 7; bit >= 0; bit--)
+					if ((data[i] & (1 << bit)) == 0) curr++;
+					else break;
 			return curr;
 		}
 

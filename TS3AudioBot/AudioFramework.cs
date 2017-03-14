@@ -137,11 +137,10 @@ namespace TS3AudioBot
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing Mediaplayer...");
-
-			Stop(false);
-
+			
 			if (playerConnection != null)
 			{
+				Stop(false);
 				playerConnection.Dispose();
 				playerConnection = null;
 			}

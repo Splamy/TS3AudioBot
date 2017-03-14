@@ -51,6 +51,7 @@
     <Compile Include="DocumentedEnums.cs" />
     <Compile Include="Full\BasePacket.cs" />
     <Compile Include="Full\IdentityData.cs" />
+    <Compile Include="Full\NetworkStats.cs" />
     <Compile Include="Full\PacketHandler.cs" />
     <Compile Include="Full\IncomingPacket.cs" />
     <Compile Include="Full\NetUtil.cs" />
@@ -63,21 +64,22 @@
     <Compile Include="Full\VersionSign.cs" />
     <Compile Include="Commands\CommandDeserializer.cs" />
     <Compile Include="Commands\Ts3Command.cs" />
+    <Compile Include="LazyNotification.cs" />
+    <Compile Include="MessageProcessor.cs" />
     <Compile Include="Messages\MessageTemplates.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>MessageTemplates.tt</DependentUpon>
     </Compile>
+    <Compile Include="Ts3BaseClient.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
     <Compile Include="Messages\ResponseDictionary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EventDispatcher.cs" />
-    <Compile Include="Ts3BaseClient.cs" />
     <Compile Include="Query\Ts3QueryClient.cs" />
     <Compile Include="Commands\CommandBinder.cs" />
-    <Compile Include="Commands\CommandError.cs" />
     <Compile Include="Commands\CommandOption.cs" />
     <Compile Include="Commands\CommandParameter.cs" />
     <Compile Include="Commands\ParameterConverter.cs" />
