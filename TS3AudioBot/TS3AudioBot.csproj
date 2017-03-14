@@ -177,7 +177,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Web\Interface\index.html" />
     <EmbeddedResource Include="Web\Interface\styles.css" />
-    <EmbeddedResource Include="Web\Interface\jquery.js" />
     <EmbeddedResource Include="Web\Interface\scripts.js" />
     <EmbeddedResource Include="favicon.ico" />
     <EmbeddedResource Include="Web\Interface\favicon.ico" />

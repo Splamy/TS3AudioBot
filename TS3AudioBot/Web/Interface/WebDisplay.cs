@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -47,7 +47,6 @@ namespace TS3AudioBot.Web.Interface
 			PrepareSite(new WebStaticSite("main", dirFile(baseDir, "main.html")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("styles.css", dirFile(baseDir, "styles.css")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("scripts.js", dirFile(baseDir, "scripts.js")) { MimeType = "application/javascript" });
-			PrepareSite(new WebStaticSite("jquery.js", "TS3AudioBot.Web.Interface.jquery.js") { MimeType = "application/javascript" });
 			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.Web.Interface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });
 			Site404 = new WebStaticSite("404", "TS3AudioBot.Web.Interface.favicon.ico") { MimeType = "text/plain" };
 			PrepareSite(Site404);

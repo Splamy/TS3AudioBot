@@ -1,5 +1,11 @@
-/// <reference path="jquery_dev.js" />
-$(document).ready(main);
+// in case the document is already rendered
+if (document.readyState!='loading') main();
+// modern browsers
+else if (document.addEventListener) document.addEventListener('DOMContentLoaded', main);
+// IE <= 8
+else document.attachEvent('onreadystatechange', function(){
+    if (document.readyState=='complete') main();
+});
 
 //+ main page div/section
 var content = null;
@@ -15,15 +21,15 @@ var lastreq = null;
 // MAIN FUNCTIONS
 
 function main() {
-    content = $("#content");
-    $("nav a").click(navbar_click);
+    content = document.querySelector("#content");
+    addEventAll(document.querySelectorAll("nav a"), "click", navbar_click);
     content_loaded();
 
     if (ev_devupdate !== null) {
         ev_devupdate.close();
         ev_devupdate = null;
     }
-    if ($("#devupdate").length !== 0) {
+    if (document.querySelector("#devupdate") !== null) {
         ev_devupdate = new EventSource("devupdate");
         ev_devupdate.onmessage = update_site;
     }
@@ -31,8 +37,8 @@ function main() {
 
 function navbar_click(event) {
     event.preventDefault();
-    $(this).blur();
-    var newSite = $(this).attr("href");
+    //$(this).blur();
+    var newSite = this.getAttribute("href");
     var query = get_query(newSite.substr(newSite.indexOf('?') + 1));
     load("/" + query["page"]);
     window.history.pushState('mainpage', '', newSite);
@@ -40,17 +46,22 @@ function navbar_click(event) {
 
 function load(page) {
     lastreq = page;
-    content.load(page, content_loaded);
+    getAjax(page, function(text) { content.innerHTML = text; content_loaded(); });
 }
 
 // SPECIAL EVENT HANDLER
 
 function content_loaded() {
     // History handler
-    $("button[form='searchquery']").remove();
-    $("#searchquery :input").each(function () {
-        $(this).bind('keyup change click', history_search);
-    });
+    var searchElem = document.querySelector("button[form='searchquery']");
+    if(searchElem !== null) {
+        searchElem.parentNode.removeChild(searchElem);
+    }
+
+    var inputFields = document.querySelectorAll("#searchquery input");
+    addEventAll(inputFields, "click", history_search);
+    addEventAll(inputFields, "change", history_search);
+    addEventAll(inputFields, "keyup", history_search);
 
     // PlayControls
     if (ev_playdata !== null) {
@@ -62,18 +73,19 @@ function content_loaded() {
         playticker = null;
     }
 
-    var handler = $("#playhandler");
-    if (handler.length !== 0) {
-        handler.load("/playcontrols", function () {
+    var handler = document.querySelector("#playhandler");
+    if (handler !== null) {
+            getAjax("/playcontrols", function(text) {
+            handler.innerHTML = text;
             // gather all controls
             playcontrols = {};
-            playcontrols.mute = handler.find("#playctrlmute");
-            playcontrols.volume = handler.find("input[name='volume']");
-            playcontrols.prev = handler.find("#playctrlprev");
-            playcontrols.play = handler.find("#playctrlplay");
-            playcontrols.next = handler.find("#playctrlnext");
-            playcontrols.loop = handler.find("#playctrlloop");
-            playcontrols.position = handler.find("input[name='position']");
+            playcontrols.mute =     handler.querySelector("#playctrlmute");
+            playcontrols.volume =   handler.querySelector("input[name='volume']");
+            playcontrols.prev =     handler.querySelector("#playctrlprev");
+            playcontrols.play =     handler.querySelector("#playctrlplay");
+            playcontrols.next =     handler.querySelector("#playctrlnext");
+            playcontrols.loop =     handler.querySelector("#playctrlloop");
+            playcontrols.position = handler.querySelector("input[name='position']");
 
             // register sse
             ev_playdata = new EventSource("playdata");
@@ -81,19 +93,19 @@ function content_loaded() {
             playticker = setInterval(song_position_tick, 1000);
 
             // register events
-            playcontrols.mute.click(function () { $.get("/control?op=volume&volume=0"); }); // todo on/off
-            playcontrols.volume.on("input", function () { $.get("/control?op=volume&volume=" + value_to_logarithmic(this.value).toFixed(0)); });
-            playcontrols.prev.click(function () { $.get("/control?op=prev"); });
-            playcontrols.play.click(function () { $.get("/control?op=play"); });
-            playcontrols.next.click(function () { $.get("/control?op=next"); });
-            playcontrols.loop.click(function () { $.get("/control?op=loop"); }); // todo on/off
-            playcontrols.position.on("change", function () { $.get("/control?op=seek&pos=" + this.value); });
+            addEvent(playcontrols.mute,     "click",  function () { getAjax("/control?op=volume&volume=0", null); }); // todo on/off
+            addEvent(playcontrols.volume,   "input",  function () { getAjax("/control?op=volume&volume=" + value_to_logarithmic(this.value).toFixed(0), null); });
+            addEvent(playcontrols.prev,     "click",  function () { getAjax("/control?op=prev", null); });
+            addEvent(playcontrols.play,     "click",  function () { getAjax("/control?op=play", null); });
+            addEvent(playcontrols.next,     "click",  function () { getAjax("/control?op=next", null); });
+            addEvent(playcontrols.loop,     "click",  function () { getAjax("/control?op=loop", null); }); // todo on/off
+            addEvent(playcontrols.position, "change", function () { getAjax("/control?op=seek&pos=" + this.value, null); });
         });
     }
 }
 
 function update_site(event) {
-    if (event.data === "update") {
+    if (event.data === "update" && lastreq !== null) {
         load(lastreq);
     }
 }
@@ -130,13 +142,17 @@ function get_query(url) {
 // PLAYCONTROLS
 
 function update_song(event) {
-    playdata = jQuery.parseJSON(event.data);
-    var jsSlider = playcontrols.position.get(0);
+    playdata = JSON.parse(event.data);
+    var jsSlider = playcontrols.position;
 
     if (playdata.hassong === true) {
-        playcontrols.volume.get(0).value = parseInt(logarithmic_to_value(playdata.volume));
-        jsSlider.max = parseInt(playdata.length.TotalSeconds);
-        jsSlider.value = playdata.position.TotalSeconds;
+        playcontrols.volume.value = parseInt(logarithmic_to_value(playdata.volume));
+        if(playdata.hasOwnProperty("length")) {
+            jsSlider.max = parseInt(playdata.length.TotalSeconds);
+        }
+        if(playdata.hasOwnProperty("position")) {
+            jsSlider.value = playdata.position.TotalSeconds;
+        }
     } else {
         jsSlider.max = 0;
         jsSlider.value = 0;
@@ -145,7 +161,7 @@ function update_song(event) {
 
 function song_position_tick() {
     if (playdata.paused === false && playdata.hassong === true) {
-        var jsSlider = playcontrols.position.get(0);
+        var jsSlider = playcontrols.position;
         if (parseInt(jsSlider.value) < playdata.length.TotalSeconds) {
             jsSlider.value = parseInt(jsSlider.value) + 1;
         }
@@ -155,35 +171,59 @@ function song_position_tick() {
 // HISTORY FUNCTIONS
 
 function history_search() {
-    var builder = {};
-    $("#searchquery :input").each(function () {
-        var inp = $(this);
-        builder[inp.attr("name")] = inp.val();
-    });
+    var builder = "/historysearch?";
+    var elArr = document.querySelectorAll("#searchquery input");
+    for (var i = 0; i < elArr.length; i++) {
+        var element = elArr[i];
+        builder += element.getAttribute("name") + "=" + element.value + "&";
+    }
 
-    var requestQuery = jQuery.param(builder);
-
-    $.get("/historysearch?" + requestQuery, fill_history);
+    getAjax(builder.slice(0, -1), fill_history);
 }
 
 function fill_history(rawdata) {
-    var data = jQuery.parseJSON(rawdata);
-    hresult = $("#historylist tbody");
-    hresult.empty();
-    hresult.append(
+    var data = JSON.parse(rawdata);
+    hresult = document.querySelector("#historylist tbody");
+    hresult.innerHTML =
         "<tr>" +
             "<th>Id</th>" +
             "<th>UserId</th>" +
             "<th class=\"fillwrap\">Title</th>" +
             "<th>Options</th>" +
-       "</tr>");
+       "</tr>";
 
     for (var i = 0; i < data.length; i++) {
         var elem = data[i];
-        hresult.append(
+        hresult.innerHTML +=
             "<tr><td>" + elem["id"] +
             "</td><td>" + elem["userid"] +
             "</td><td class=\"fillwrap\">" + elem["title"] +
-            "</td><td>Options</td></tr>");
+            "</td><td>Options</td></tr>";
     }
+}
+
+// JS HELPER
+
+function addEventAll(elArr, type, handler) {
+    var len = elArr.length;
+    for (var i=0; i<len; i++) {
+        addEvent(elArr[i], type, handler);
+    }
+}
+
+function addEvent(el, type, handler) {
+    if (el.attachEvent) el.attachEvent('on'+type, handler); else el.addEventListener(type, handler);
+}
+
+function getAjax(url, success) {
+    var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
+    xhr.open('GET', url);
+    if(success !== null) {
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState>3 && xhr.status==200) success(xhr.responseText);
+        };
+    }
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.send();
+    return xhr;
 }
