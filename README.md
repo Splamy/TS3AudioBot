@@ -65,7 +65,7 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
 1. Go into the directory of the repository with `cd TS3AudioBot`
 1. Execute `nuget restore` or `mono ../Nuget.exe restore` to download all dependencies
-1. Execute `xbuild /p:Configuration=Release xbuild /p:Platform=x86 TS3AudioBot.sln` to build the C# AudioBot
+1. Execute `xbuild /p:Configuration=Release /p:Platform=x86 TS3AudioBot.sln` to build the C# AudioBot
 1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
 1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-32bit-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-64bit-static.tar.xz) binary.
 1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-XXbit-static.tar.xz`
