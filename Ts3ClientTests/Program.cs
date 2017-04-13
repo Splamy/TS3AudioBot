@@ -16,16 +16,13 @@ namespace Ts3ClientTests
 
 		static void Main()
 		{
-			for (int i = 0; i < 31; i++)
-			{
-				var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
-				client.OnConnected += Client_OnConnected;
-				client.OnErrorEvent += Client_OnErrorEvent;
-				client.OnTextMessageReceived += Client_OnTextMessageReceived;
-				var data = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEAqNonGuL0w/8kLlgLbl4UkH8DQQJ7fEu1tLt+mx1E+XkCIQDgQoIGcBVvAvNoiDT37iWbPQb2kYe0+VKLg67OH2eQQwIgTyijCKx7QB/xQSnIW5uIkVmcm3UU5P2YnobR9IEEYPg=", 64, 0);
-				con = new ConnectionDataFull() { Hostname = "127.0.0.1", Port = 9987, Username = "Splamy", Identity = data, Password = "qwer" };
-				client.Connect(con);
-			}
+			var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
+			client.OnConnected += Client_OnConnected;
+			client.OnErrorEvent += Client_OnErrorEvent;
+			client.OnTextMessageReceived += Client_OnTextMessageReceived;
+			var data = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEAqNonGuL0w/8kLlgLbl4UkH8DQQJ7fEu1tLt+mx1E+XkCIQDgQoIGcBVvAvNoiDT37iWbPQb2kYe0+VKLg67OH2eQQwIgTyijCKx7QB/xQSnIW5uIkVmcm3UU5P2YnobR9IEEYPg=", 64, 0);
+			con = new ConnectionDataFull() { Hostname = "127.0.0.1", Port = 9987, Username = "Splamy", Identity = data, Password = "qwer" };
+			client.Connect(con);
 			Console.WriteLine("End");
 			Console.ReadLine();
 		}

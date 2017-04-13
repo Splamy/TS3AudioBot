@@ -38,6 +38,10 @@ namespace TS3Client
 		public static uint UnixNow => (uint)(DateTime.UtcNow - UnixTimeStart).TotalSeconds;
 
 		public static Random Random { get; } = new Random();
+
+		public static DateTime Now => DateTime.UtcNow;
+
+		public static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 	}
 
 	public static class Extensions

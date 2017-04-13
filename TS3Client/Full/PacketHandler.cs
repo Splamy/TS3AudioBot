@@ -40,9 +40,12 @@ namespace TS3Client.Full
 			TimeSpan.FromMilliseconds(500),
 			TimeSpan.FromMilliseconds(1000),
 		};
+		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
+		private static readonly TimeSpan MaxLastPingDistance = TimeSpan.FromSeconds(3);
 
 		private readonly ushort[] packetCounter;
 		private readonly Dictionary<ushort, OutgoingPacket> packetAckManager;
+		private readonly Dictionary<ushort, OutgoingPacket> packetPingManager;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
 		private readonly object sendLoopLock = new object();
@@ -52,6 +55,7 @@ namespace TS3Client.Full
 		private Thread resendThread;
 		private int resendThreadId;
 
+		public NetworkStats NetworkStats { get; }
 
 		public ushort ClientId { get; set; }
 		private IPEndPoint remoteAddress;
@@ -61,8 +65,10 @@ namespace TS3Client.Full
 		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
 			packetAckManager = new Dictionary<ushort, OutgoingPacket>();
+			packetPingManager = new Dictionary<ushort, OutgoingPacket>();
 			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize);
 			receiveQueueLow = new RingQueue<IncomingPacket>(PacketBufferSize);
+			NetworkStats = new NetworkStats();
 
 			packetCounter = new ushort[9];
 			this.ts3Crypt = ts3Crypt;
@@ -163,7 +169,10 @@ namespace TS3Client.Full
 			}
 			else
 			{
-				if (packet.PacketType == PacketType.Pong || packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceEncrypted)
+				if (packet.PacketType == PacketType.Ping
+					|| packet.PacketType == PacketType.Pong
+					|| packet.PacketType == PacketType.Voice
+					|| packet.PacketType == PacketType.VoiceEncrypted)
 					packet.PacketFlags |= flags | PacketFlags.Unencrypted;
 				else if (packet.PacketType == PacketType.Ack)
 					packet.PacketFlags |= flags;
@@ -178,13 +187,16 @@ namespace TS3Client.Full
 			}
 
 			ts3Crypt.Encrypt(packet);
-				
+
 
 			if (packet.PacketType == PacketType.Command
 				|| packet.PacketType == PacketType.CommandLow
 				|| packet.PacketType == PacketType.Init1)
 				lock (sendLoopLock)
 					packetAckManager.Add(packet.PacketId, packet);
+			else if (packet.PacketType == PacketType.Ping)
+				lock (sendLoopLock)
+					packetPingManager.Add(packet.PacketId, packet);
 
 			SendRaw(packet);
 		}
@@ -255,6 +267,8 @@ namespace TS3Client.Full
 				if (packet == null)
 					continue;
 
+				NetworkStats.LogInPacket(packet);
+
 				switch (packet.PacketType)
 				{
 				case PacketType.Voice: break;
@@ -262,7 +276,7 @@ namespace TS3Client.Full
 				case PacketType.Command: packet = ReceiveCommand(packet); break;
 				case PacketType.CommandLow: packet = ReceiveCommand(packet); break;
 				case PacketType.Ping: ReceivePing(packet); break;
-				case PacketType.Pong: break;
+				case PacketType.Pong: ReceivePong(packet); break;
 				case PacketType.Ack: packet = ReceiveAck(packet); break;
 				case PacketType.AckLow: break;
 				case PacketType.Init1: ReceiveInitAck(); break;
@@ -391,11 +405,29 @@ namespace TS3Client.Full
 			return packet;
 		}
 
+		private void SendPing()
+		{
+			AddOutgoingPacket(new byte[0], PacketType.Ping);
+		}
+
 		private void ReceivePing(IncomingPacket packet)
 		{
 			byte[] pongData = new byte[2];
 			NetUtil.H2N(packet.PacketId, pongData, 0);
 			AddOutgoingPacket(pongData, PacketType.Pong);
+		}
+
+		private void ReceivePong(IncomingPacket packet)
+		{
+			ushort answerId = NetUtil.N2Hushort(packet.Data, 0);
+			OutgoingPacket sendPing;
+			lock (sendLoopLock)
+			{
+				if (!packetPingManager.TryGetValue(answerId, out sendPing))
+					return;
+				packetPingManager.Remove(answerId);
+			}
+			NetworkStats.AddPing(Util.Now - sendPing.LastSendTime);
 		}
 
 		public void ReceiveInitAck()
@@ -414,7 +446,7 @@ namespace TS3Client.Full
 
 		#endregion
 
-		private TimeSpan GetTimeout(int step) => PacketTimeouts[Math.Min(PacketTimeouts.Length - 1, step)];
+		private static TimeSpan GetTimeout(int step) => PacketTimeouts[Math.Min(PacketTimeouts.Length - 1, step)];
 
 		/// <summary>
 		/// ResendLoop will regularly check if a packet has be acknowleged and trys to send it again
@@ -422,6 +454,8 @@ namespace TS3Client.Full
 		/// </summary>
 		private void ResendLoop()
 		{
+			DateTime pingCheck = Util.Now;
+
 			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
 			{
 				TimeSpan sleepSpan = GetTimeout(PacketTimeouts.Length);
@@ -431,32 +465,53 @@ namespace TS3Client.Full
 					if (Closed)
 						break;
 
-					if (packetAckManager.Any())
+					if ((packetAckManager.Any() && ResendPackages(packetAckManager.Values, ref sleepSpan))
+						|| (packetPingManager.Any() && ResendPackages(packetPingManager.Values, ref sleepSpan)))
 					{
-						foreach (var outgoingPacket in packetAckManager.Values)
-						{
-							var nextTest = (outgoingPacket.LastSendTime - DateTime.UtcNow) + GetTimeout(outgoingPacket.ResendCount);
-							if (nextTest < TimeSpan.Zero)
-							{
-								if (++outgoingPacket.ResendCount > RetryTimeout)
-								{
-									Stop(MoveReason.Timeout);
-									return;
-								}
-								SendRaw(outgoingPacket);
-							}
-							else if (nextTest < sleepSpan)
-								sleepSpan = nextTest;
-						}
+						Stop(MoveReason.Timeout);
+						return;
 					}
 				}
-				sendLoopPulse.WaitOne(sleepSpan);
+
+				var now = Util.Now;
+				var nextTest = pingCheck - now + PingInterval;
+				if (nextTest < TimeSpan.Zero)
+				{
+					if (nextTest < -MaxLastPingDistance)
+						pingCheck = now;
+					else
+						pingCheck += PingInterval;
+					SendPing();
+				}
+				sleepSpan = Util.Min(sleepSpan, nextTest);
+
+				if (sleepSpan > TimeSpan.Zero)
+					sendLoopPulse.WaitOne(sleepSpan);
 			}
+		}
+
+		private bool ResendPackages(IEnumerable<OutgoingPacket> packetList, ref TimeSpan sleepSpan)
+		{
+			TimeSpan maxTimeout = GetTimeout(PacketTimeouts.Length);
+			foreach (var outgoingPacket in packetAckManager.Values)
+			{
+				var nextTest = (outgoingPacket.LastSendTime - Util.Now) + GetTimeout(outgoingPacket.ResendCount);
+				if (nextTest < TimeSpan.Zero)
+				{
+					if (++outgoingPacket.ResendCount > RetryTimeout)
+						return true;
+					SendRaw(outgoingPacket);
+				}
+				else
+					sleepSpan = Util.Min(sleepSpan, nextTest);
+			}
+			return false;
 		}
 
 		private void SendRaw(OutgoingPacket packet)
 		{
-			packet.LastSendTime = DateTime.UtcNow;
+			packet.LastSendTime = Util.Now;
+			NetworkStats.LogOutPacket(packet);
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}
 	}

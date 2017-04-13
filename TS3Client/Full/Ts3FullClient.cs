@@ -171,7 +171,7 @@ namespace TS3Client.Full
 			case NotificationType.ClientNeededPermissions: break;
 			case NotificationType.ClientChannelGroupChanged: break;
 			case NotificationType.ClientServerGroupAdded: break;
-			case NotificationType.ConnectionInfoRequest: break;
+			case NotificationType.ConnectionInfoRequest: ProcessConnectionInfoRequest((ConnectionInfoRequest)notification.FirstOrDefault()); break;
 			case NotificationType.ChannelSubscribed: break;
 			case NotificationType.ChannelUnsubscribed: break;
 			case NotificationType.ClientChatComposing: break;
@@ -195,6 +195,7 @@ namespace TS3Client.Full
 				switch (packet.PacketType)
 				{
 				case PacketType.Command:
+				case PacketType.CommandLow:
 					string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
 					var result = msgProc.PushMessage(message);
 					if (result.HasValue)
@@ -211,7 +212,6 @@ namespace TS3Client.Full
 					var forwardData = ts3Crypt.ProcessInit1(packet.Data);
 					if (forwardData == null)
 						break;
-					Console.WriteLine("Init: " + packet.Data[0]);
 					packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
 					break;
 				}
@@ -245,6 +245,11 @@ namespace TS3Client.Full
 			Status = Ts3ClientStatus.Connected;
 			OnConnected?.Invoke(this, new EventArgs());
 			// CP
+		}
+
+		private void ProcessConnectionInfoRequest(ConnectionInfoRequest conInfoRequest)
+		{
+			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
 		}
 
 		protected override IEnumerable<T> SendCommand<T>(Ts3Command com)
