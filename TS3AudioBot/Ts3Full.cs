@@ -68,9 +68,11 @@ namespace TS3AudioBot
 			tsFullClient = (Ts3FullClient)tsBaseClient;
 
 			ts3FullClientData = tfcd;
+			tfcd.PropertyChanged += Tfcd_PropertyChanged;
 
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
 			encoder = new AudioEncoder(SendCodec);
+			encoder.Bitrate = ts3FullClientData.AudioBitrate * 1000;
 			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channels);
 			isStall = false;
 			stallCount = 0;
@@ -80,6 +82,17 @@ namespace TS3AudioBot
 			Util.Init(ref channelSubscriptionsSetup);
 			Util.Init(ref clientSubscriptionsSetup);
 			subscriptionSetupChanged = true;
+		}
+
+		private void Tfcd_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == nameof(Ts3FullClientData.AudioBitrate))
+			{
+				var value = (int)typeof(Ts3FullClientData).GetProperty(e.PropertyName).GetValue(sender);
+				if (value <= 0 || value >= 256)
+					return;
+				encoder.Bitrate = value * 1000;
+			}
 		}
 
 		public override void Connect()
@@ -437,9 +450,14 @@ namespace TS3AudioBot
 		public string ServerPassword { get; set; }
 		[Info("Set this to true, if the server password is hashed.", "false")]
 		public bool ServerPasswordIsHashed { get; set; }
-		[Info("Enable this to automatically hash and store unhashed passwords.\n# (Be careful since this will overwrite the 'ServerPassword' field with the hashed value once computed)", "false")]
+		[Info("Enable this to automatically hash and store unhashed passwords.\n" +
+			"# (Be careful since this will overwrite the 'ServerPassword' field with the hashed value once computed)", "false")]
 		public bool ServerPasswordAutoHash { get; set; }
 		[Info("The path to ffmpeg", "ffmpeg")]
 		public string FfmpegPath { get; set; }
+		[Info("Specifies the bitrate (in kbps) for sending audio.\n" +
+			"# Values between 2 and 98 are supported, more or less can work but without guarantees.\n" +
+			"# Reference values: 32 - ok (~5KiB/s), 48 - good (~7KiB/s), 64 - very good (~9KiB/s), 92 - superb (~13KiB/s)", "48")]
+		public int AudioBitrate { get; set; }
 	}
 }

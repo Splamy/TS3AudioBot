@@ -161,42 +161,43 @@ namespace TS3Client.Full
 
 		private void AddOutgoingPacket(OutgoingPacket packet, PacketFlags flags = PacketFlags.None)
 		{
-			if (packet.PacketType == PacketType.Init1)
+			lock (sendLoopLock) // TODO CHECK MULTI LOCK THERADRACE
 			{
-				packet.PacketFlags |= flags | PacketFlags.Unencrypted;
-				packet.PacketId = 101;
-				packet.ClientId = 0;
-			}
-			else
-			{
-				if (packet.PacketType == PacketType.Ping
-					|| packet.PacketType == PacketType.Pong
-					|| packet.PacketType == PacketType.Voice
-					|| packet.PacketType == PacketType.VoiceEncrypted)
+				if (packet.PacketType == PacketType.Init1)
+				{
 					packet.PacketFlags |= flags | PacketFlags.Unencrypted;
-				else if (packet.PacketType == PacketType.Ack)
-					packet.PacketFlags |= flags;
+					packet.PacketId = 101;
+					packet.ClientId = 0;
+				}
 				else
-					packet.PacketFlags |= flags | PacketFlags.Newprotocol;
-				packet.PacketId = GetPacketCounter(packet.PacketType);
-				if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceEncrypted)
-					NetUtil.H2N(packet.PacketId, packet.Data, 0);
-				if (ts3Crypt.CryptoInitComplete)
-					IncPacketCounter(packet.PacketType);
-				packet.ClientId = ClientId;
-			}
+				{
+					if (packet.PacketType == PacketType.Ping
+						|| packet.PacketType == PacketType.Pong
+						|| packet.PacketType == PacketType.Voice
+						|| packet.PacketType == PacketType.VoiceEncrypted)
+						packet.PacketFlags |= flags | PacketFlags.Unencrypted;
+					else if (packet.PacketType == PacketType.Ack)
+						packet.PacketFlags |= flags;
+					else
+						packet.PacketFlags |= flags | PacketFlags.Newprotocol;
+					packet.PacketId = GetPacketCounter(packet.PacketType);
+					if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceEncrypted)
+						NetUtil.H2N(packet.PacketId, packet.Data, 0);
+					if (ts3Crypt.CryptoInitComplete)
+						IncPacketCounter(packet.PacketType);
+					packet.ClientId = ClientId;
+				}
 
-			ts3Crypt.Encrypt(packet);
+				ts3Crypt.Encrypt(packet);
 
 
-			if (packet.PacketType == PacketType.Command
-				|| packet.PacketType == PacketType.CommandLow
-				|| packet.PacketType == PacketType.Init1)
-				lock (sendLoopLock)
+				if (packet.PacketType == PacketType.Command
+					|| packet.PacketType == PacketType.CommandLow
+					|| packet.PacketType == PacketType.Init1)
 					packetAckManager.Add(packet.PacketId, packet);
-			else if (packet.PacketType == PacketType.Ping)
-				lock (sendLoopLock)
+				else if (packet.PacketType == PacketType.Ping)
 					packetPingManager.Add(packet.PacketId, packet);
+			}
 
 			SendRaw(packet);
 		}
