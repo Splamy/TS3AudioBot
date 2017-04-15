@@ -73,7 +73,7 @@ namespace TS3Client.Full
 			switch (type)
 			{
 			case PacketType.Voice:
-			case PacketType.VoiceEncrypted:
+			case PacketType.VoiceWhisper:
 				return PacketKind.Speech;
 			case PacketType.Command:
 			case PacketType.CommandLow:

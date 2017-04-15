@@ -21,7 +21,9 @@ namespace TS3AudioBot
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Globalization;
 	using System.Linq;
+	using System.Text.RegularExpressions;
 	using TS3Client;
 	using TS3Client.Full;
 	using TS3Client.Messages;
@@ -41,6 +43,13 @@ namespace TS3AudioBot
 		  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
 		  "Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
 		  "?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here"};
+
+		private const string PreLinkConf = "-hide_banner -nostats -i \"";
+		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
+		private string lastLink = null;
+		private static readonly Regex findDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
+		private TimeSpan? parsedSongLength = null;
+		private readonly object ffmpegLock = new object();
 
 		private Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
@@ -71,8 +80,7 @@ namespace TS3AudioBot
 			tfcd.PropertyChanged += Tfcd_PropertyChanged;
 
 			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
-			encoder = new AudioEncoder(SendCodec);
-			encoder.Bitrate = ts3FullClientData.AudioBitrate * 1000;
+			encoder = new AudioEncoder(SendCodec) { Bitrate = ts3FullClientData.AudioBitrate * 1000 };
 			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channels);
 			isStall = false;
 			stallCount = 0;
@@ -187,53 +195,58 @@ namespace TS3AudioBot
 
 		private void AudioSend()
 		{
-			if (ffmpegProcess == null)
-				return;
-
-			if (audioBuffer == null || audioBuffer.Length < encoder.OptimalPacketSize)
-				audioBuffer = new byte[encoder.OptimalPacketSize];
-
-			UpdatedSubscriptionCache();
-
-			while (audioTimer.BufferLength < audioBufferLength)
+			lock (ffmpegLock)
 			{
-				int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
-				if (read == 0)
-				{
-					if (audioTimer.BufferLength < TimeSpan.Zero && !encoder.HasPacket)
-					{
-						AudioStop();
-						OnSongEnd?.Invoke(this, new EventArgs());
-					}
+				if (ffmpegProcess == null)
 					return;
-				}
 
-				audioTimer.PushBytes(read);
-				if (isStall)
+				if (audioBuffer == null || audioBuffer.Length < encoder.OptimalPacketSize)
+					audioBuffer = new byte[encoder.OptimalPacketSize];
+
+				UpdatedSubscriptionCache();
+
+				while (audioTimer.BufferLength < audioBufferLength)
 				{
-					stallCount++;
-					if (stallCount % StallCountInterval == 0)
+					int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
+					if (read == 0)
 					{
-						stallNoErrorCount++;
+						if (!ffmpegProcess.HasExited)
+							return;
+						if (audioTimer.BufferLength < TimeSpan.Zero && !encoder.HasPacket)
+						{
+							AudioStop();
+							OnSongEnd?.Invoke(this, new EventArgs());
+						}
+						return;
 					}
-					if (stallNoErrorCount > StallNoErrorCountMax)
+
+					audioTimer.PushBytes(read);
+					if (isStall)
 					{
-						stallCount = 0;
-						isStall = false;
-						break;
+						stallCount++;
+						if (stallCount % StallCountInterval == 0)
+						{
+							stallNoErrorCount++;
+						}
+						if (stallNoErrorCount > StallNoErrorCountMax)
+						{
+							stallCount = 0;
+							isStall = false;
+							break;
+						}
 					}
-				}
 
-				AudioModifier.AdjustVolume(audioBuffer, read, volume);
-				encoder.PushPCMAudio(audioBuffer, read);
+					AudioModifier.AdjustVolume(audioBuffer, read, volume);
+					encoder.PushPCMAudio(audioBuffer, read);
 
-				Tuple<byte[], int> encodedArr;
-				while ((encodedArr = encoder.GetPacket()) != null)
-				{
-					if (channelSubscriptionsCache.Length == 0 && clientSubscriptionsCache.Length == 0)
-						tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
-					else
-						tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
+					Tuple<byte[], int> encodedArr;
+					while ((encodedArr = encoder.GetPacket()) != null)
+					{
+						if (channelSubscriptionsCache.Length == 0 && clientSubscriptionsCache.Length == 0)
+							tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
+						else
+							tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
+					}
 				}
 			}
 		}
@@ -242,57 +255,37 @@ namespace TS3AudioBot
 
 		public event EventHandler OnSongEnd;
 
-		public R AudioStart(string url)
-		{
-			try
-			{
-				ffmpegProcess = new Process()
-				{
-					StartInfo = new ProcessStartInfo()
-					{
-						FileName = ts3FullClientData.FfmpegPath,
-						Arguments = $"-hide_banner -nostats -loglevel panic -i \"{ url }\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1",
-						RedirectStandardOutput = true,
-						RedirectStandardInput = true,
-						RedirectStandardError = true,
-						UseShellExecute = false,
-						CreateNoWindow = true,
-					}
-				};
-				ffmpegProcess.Start();
-
-				audioTimer.Start();
-				sendTick.Active = true;
-				return R.OkR;
-			}
-			catch (Exception ex) { return $"Unable to create stream ({ex.Message})"; }
-		}
+		public R AudioStart(string url) => StartFfmpegProcess(url);
 
 		public R AudioStop()
 		{
 			sendTick.Active = false;
 			audioTimer.Stop();
-			try
+			lock (ffmpegLock)
 			{
-				if (!ffmpegProcess?.HasExited ?? false)
-					ffmpegProcess?.Kill();
-				else
-					ffmpegProcess?.Close();
+				try
+				{
+					if (!ffmpegProcess?.HasExited ?? false)
+						ffmpegProcess?.Kill();
+					else
+						ffmpegProcess?.Close();
+				}
+				catch (InvalidOperationException) { }
+				ffmpegProcess = null;
 			}
-			catch (InvalidOperationException) { }
-			ffmpegProcess = null;
 			return R.OkR;
 		}
 
-		public TimeSpan Length
-		{
-			get { throw new NotImplementedException(); }
-		}
+		public TimeSpan Length => GetCurrentSongLength();
 
 		public TimeSpan Position
 		{
 			get { throw new NotImplementedException(); }
-			set { throw new NotImplementedException(); }
+			set
+			{
+				AudioStop();
+				StartFfmpegProcess(lastLink, $"-ss {value.ToString(@"hh\:mm\:ss")} ");
+			}
 		}
 
 		public int Volume
@@ -323,6 +316,67 @@ namespace TS3AudioBot
 
 		public bool Repeated { get { return false; } set { } }
 
+		private R StartFfmpegProcess(string url, string extraPreParam = null, string extraPostParam = null)
+		{
+			try
+			{
+				lock (ffmpegLock)
+				{
+					ffmpegProcess = new Process()
+					{
+						StartInfo = new ProcessStartInfo()
+						{
+							FileName = ts3FullClientData.FfmpegPath,
+							Arguments = extraPreParam + PreLinkConf + url + PostLinkConf + extraPostParam,
+							RedirectStandardOutput = true,
+							RedirectStandardInput = true,
+							RedirectStandardError = true,
+							UseShellExecute = false,
+							CreateNoWindow = true,
+						}
+					};
+					ffmpegProcess.Start();
+
+					lastLink = url;
+					parsedSongLength = null;
+
+					audioTimer.Start();
+					sendTick.Active = true;
+					return R.OkR;
+				}
+			}
+			catch (Exception ex) { return $"Unable to create stream ({ex.Message})"; }
+		}
+
+		private TimeSpan GetCurrentSongLength()
+		{
+			lock (ffmpegLock)
+			{
+				if (ffmpegProcess == null)
+					return TimeSpan.Zero;
+
+				if (parsedSongLength.HasValue)
+					return parsedSongLength.Value;
+
+				Match match = null;
+				while (ffmpegProcess.StandardError.Peek() > -1)
+				{
+					var infoLine = ffmpegProcess.StandardError.ReadLine();
+					match = findDurationMatch.Match(infoLine);
+					if (match.Success)
+						break;
+				}
+				if (match == null || !match.Success)
+					return TimeSpan.Zero;
+
+				int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+				int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+				int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
+				int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
+				parsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
+				return parsedSongLength.Value;
+			}
+		}
 
 		#endregion
 

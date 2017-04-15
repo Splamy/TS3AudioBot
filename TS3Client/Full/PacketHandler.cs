@@ -24,7 +24,7 @@ namespace TS3Client.Full
 	using System.Net.Sockets;
 	using System.Threading;
 
-	internal class PacketHandler
+	internal sealed class PacketHandler
 	{
 		/// <summary>Greatest allowed packet size, including the complete heder.</summary>
 		private const int MaxPacketSize = 500;
@@ -100,7 +100,7 @@ namespace TS3Client.Full
 
 		private void ConnectUdpClient(string host, ushort port)
 		{
-			udpClient?.Close();
+			((IDisposable)udpClient)?.Dispose();
 
 			try
 			{
@@ -125,7 +125,7 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 			lock (sendLoopLock)
 			{
-				udpClient?.Close();
+				((IDisposable)udpClient)?.Dispose();
 				if (!ExitReason.HasValue)
 					ExitReason = closeReason;
 				sendLoopPulse.Set();
@@ -142,7 +142,7 @@ namespace TS3Client.Full
 				var addFlags = PacketFlags.None;
 				if (NeedsSplitting(packet.Length))
 				{
-					if (packetType == PacketType.Voice || packetType == PacketType.VoiceEncrypted)
+					if (packetType == PacketType.Voice || packetType == PacketType.VoiceWhisper)
 						return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
 
 					packet = QuickLZ.Compress(packet, 1);
@@ -174,14 +174,14 @@ namespace TS3Client.Full
 					if (packet.PacketType == PacketType.Ping
 						|| packet.PacketType == PacketType.Pong
 						|| packet.PacketType == PacketType.Voice
-						|| packet.PacketType == PacketType.VoiceEncrypted)
+						|| packet.PacketType == PacketType.VoiceWhisper)
 						packet.PacketFlags |= flags | PacketFlags.Unencrypted;
 					else if (packet.PacketType == PacketType.Ack)
 						packet.PacketFlags |= flags;
 					else
 						packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 					packet.PacketId = GetPacketCounter(packet.PacketType);
-					if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceEncrypted)
+					if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceWhisper)
 						NetUtil.H2N(packet.PacketId, packet.Data, 0);
 					if (ts3Crypt.CryptoInitComplete)
 						IncPacketCounter(packet.PacketType);
@@ -273,7 +273,7 @@ namespace TS3Client.Full
 				switch (packet.PacketType)
 				{
 				case PacketType.Voice: break;
-				case PacketType.VoiceEncrypted: break;
+				case PacketType.VoiceWhisper: break;
 				case PacketType.Command: packet = ReceiveCommand(packet); break;
 				case PacketType.CommandLow: packet = ReceiveCommand(packet); break;
 				case PacketType.Ping: ReceivePing(packet); break;

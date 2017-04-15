@@ -98,18 +98,16 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void DisconnectInternal(Ts3ClientStatus? setStatus = null)
+		private void DisconnectInternal(bool manualLock = false, bool triggerEvent = true)
 		{
 			if (wasExit)
 				return;
 
-			lock (StatusLock)
-			{
-				if (setStatus.HasValue)
-				{
-					Status = setStatus.Value;
-				}
+			if (!manualLock)
+				Monitor.Enter(StatusLock);
 
+			try
+			{
 				switch (Status)
 				{
 				case Ts3ClientStatus.Disconnected:
@@ -119,19 +117,26 @@ namespace TS3Client.Full
 						packetHandler.Stop();
 						msgProc.DropQueue();
 						dispatcher.Dispose();
-						OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
+						if (triggerEvent)
+							OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
 					}
 					break;
 				case Ts3ClientStatus.Disconnecting:
 					break;
 				case Ts3ClientStatus.Connected:
-				case Ts3ClientStatus.Connecting:
 					ClientDisconnect(MoveReason.LeftServer, QuitMessage);
 					Status = Ts3ClientStatus.Disconnecting;
+					break;
+				case Ts3ClientStatus.Connecting:
 					break;
 				default:
 					break;
 				}
+			}
+			finally
+			{
+				if (!manualLock)
+					Monitor.Exit(StatusLock);
 			}
 		}
 
@@ -149,11 +154,15 @@ namespace TS3Client.Full
 			case NotificationType.ClientEnterView: OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>()); break;
 			case NotificationType.ClientLeftView:
 				var clientLeftArr = notification.Cast<ClientLeftView>().ToArray();
-				var leftViewEvent = clientLeftArr.Where(clv => clv.ClientId == packetHandler.ClientId).FirstOrDefault();
+				var leftViewEvent = clientLeftArr.FirstOrDefault(clv => clv.ClientId == packetHandler.ClientId);
 				if (leftViewEvent != null)
 				{
 					packetHandler.ExitReason = leftViewEvent.Reason;
-					DisconnectInternal(Ts3ClientStatus.Disconnected);
+					lock (StatusLock)
+					{
+						Status = Ts3ClientStatus.Disconnected;
+						DisconnectInternal(true);
+					}
 					break;
 				}
 				OnClientLeftView?.Invoke(this, clientLeftArr);
@@ -176,7 +185,18 @@ namespace TS3Client.Full
 			case NotificationType.ChannelUnsubscribed: break;
 			case NotificationType.ClientChatComposing: break;
 			// special
-			case NotificationType.Error: OnErrorEvent?.Invoke(this, (CommandError)notification.First()); break;
+			case NotificationType.Error:
+				lock (StatusLock)
+				{
+					if (Status == Ts3ClientStatus.Connecting)
+					{
+						Status = Ts3ClientStatus.Disconnected;
+						DisconnectInternal(true, false);
+					}
+				}
+
+				OnErrorEvent?.Invoke(this, (CommandError)notification.First());
+				break;
 			case NotificationType.Unknown:
 			default: throw new InvalidOperationException();
 			}
@@ -186,9 +206,15 @@ namespace TS3Client.Full
 		{
 			while (true)
 			{
+				lock (StatusLock)
+				{
+					if (wasExit)
+						break;
+				}
 				if (wasExit)
 					break;
-				var packet = packetHandler.FetchPacket();
+
+				IncomingPacket packet = packetHandler.FetchPacket();
 				if (packet == null)
 					break;
 
@@ -203,7 +229,7 @@ namespace TS3Client.Full
 					break;
 
 				case PacketType.Voice:
-				case PacketType.VoiceEncrypted:
+				case PacketType.VoiceWhisper:
 					// VOICE
 
 					break;
@@ -217,7 +243,11 @@ namespace TS3Client.Full
 				}
 			}
 
-			DisconnectInternal(Ts3ClientStatus.Disconnected);
+			lock (StatusLock)
+			{
+				Status = Ts3ClientStatus.Disconnected;
+				DisconnectInternal(true);
+			}
 		}
 
 		private void ProcessInitIvExpand(InitIvExpand initIvExpand)
@@ -354,7 +384,7 @@ namespace TS3Client.Full
 			Array.Copy(buffer, 0, tmpBuffer, offset, length);
 			buffer = tmpBuffer;
 
-			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceEncrypted);
+			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper);
 		}
 
 		#endregion

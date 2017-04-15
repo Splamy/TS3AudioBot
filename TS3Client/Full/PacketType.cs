@@ -21,7 +21,7 @@ namespace TS3Client.Full
 	internal enum PacketType : byte
 	{
 		Voice = 0x0,
-		VoiceEncrypted = 0x1,
+		VoiceWhisper = 0x1,
 		Command = 0x2,
 		CommandLow = 0x3,
 		Ping = 0x4,

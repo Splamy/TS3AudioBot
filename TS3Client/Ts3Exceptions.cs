@@ -18,15 +18,13 @@ namespace TS3Client
 {
 	using Messages;
 	using System;
-
-	[Serializable]
+	
 	public class Ts3Exception : Exception
 	{
 		public Ts3Exception(string message) : base(message) { }
 		public Ts3Exception(string message, Exception innerException) : base(message, innerException) { }
 	}
-
-	[Serializable]
+	
 	public class Ts3CommandException : Ts3Exception
 	{
 		public CommandError ErrorStatus { get; private set; }

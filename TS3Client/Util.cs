@@ -54,4 +54,9 @@ namespace TS3Client
 				return $"{error.Id}: the command failed to execute: {error.Message}";
 		}
 	}
+
+	internal static class DebugUtil
+	{
+		public static string DebugToHex(byte[] data) => string.Join(" ", data.Select(x => x.ToString("X2")));
+	}
 }
