@@ -87,16 +87,16 @@ namespace TS3AudioBot.Audio
 
 		public void PushPCMAudio(byte[] buffer, int bufferlen)
 		{
-			int newSoundBufferLength = bufferlen + notEncodedBuffer.Length;
+			int newSoundBufferLength = bufferlen + notEncodedBufferLength;
 			if (newSoundBufferLength > soundBuffer.Length)
 				soundBuffer = new byte[newSoundBufferLength]; // TODO optimize not encoded buffer
 			soundBufferLength = newSoundBufferLength;
 
-			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBuffer.Length);
-			Array.Copy(buffer, 0, soundBuffer, notEncodedBuffer.Length, bufferlen);
+			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBufferLength);
+			Array.Copy(buffer, 0, soundBuffer, notEncodedBufferLength, bufferlen);
 
 			int byteCap = OptimalPacketSize;
-			int segmentCount = (int)Math.Floor((decimal)soundBuffer.Length / byteCap);
+			int segmentCount = (int)Math.Floor((float)soundBufferLength / byteCap);
 			int segmentsEnd = segmentCount * byteCap;
 			int newNotEncodedBufferLength = soundBufferLength - segmentsEnd;
 			if (newNotEncodedBufferLength > notEncodedBuffer.Length)
