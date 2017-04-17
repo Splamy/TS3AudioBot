@@ -157,8 +157,7 @@ namespace TS3Client
 		public void DoWork() { }
 		public void Dispose() { }
 	}
-
-	// TODO change used method when mving evdisp start to connect
+	
 	public enum EventDispatchType
 	{
 		/// <summary>

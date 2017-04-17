@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -24,12 +24,26 @@ namespace TS3AudioBot.Audio
 		{
 			if (volume.IsAbout(1))
 				return;
-			for (int i = 0; i < length; i += 2)
+
+			if (BitConverter.IsLittleEndian)
 			{
-				var res = (short)(BitConverter.ToInt16(audioSamples, i) * volume);
-				var bt = BitConverter.GetBytes(res);
-				audioSamples[i] = bt[0];
-				audioSamples[i + 1] = bt[1];
+				for (int i = 0; i < length; i += 2)
+				{
+					short value = (short)((audioSamples[i + 1]) << 8 | audioSamples[i]);
+					var tmpshort = (short)(value * volume);
+					audioSamples[i + 0] = (byte)((tmpshort & 0x00FF) >> 0);
+					audioSamples[i + 1] = (byte)((tmpshort & 0xFF00) >> 8);
+				}
+			}
+			else
+			{
+				for (int i = 0; i < length; i += 2)
+				{
+					short value = (short)((audioSamples[i + 1]) | (audioSamples[i] << 8));
+					var tmpshort = (short)(value * volume);
+					audioSamples[i + 0] = (byte)((tmpshort & 0xFF00) >> 8);
+					audioSamples[i + 1] = (byte)((tmpshort & 0x00FF) >> 0);
+				}
 			}
 		}
 

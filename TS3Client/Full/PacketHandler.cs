@@ -161,7 +161,7 @@ namespace TS3Client.Full
 
 		private void AddOutgoingPacket(OutgoingPacket packet, PacketFlags flags = PacketFlags.None)
 		{
-			lock (sendLoopLock) // TODO CHECK MULTI LOCK THERADRACE
+			lock (sendLoopLock)
 			{
 				if (packet.PacketType == PacketType.Init1)
 				{
@@ -197,9 +197,9 @@ namespace TS3Client.Full
 					packetAckManager.Add(packet.PacketId, packet);
 				else if (packet.PacketType == PacketType.Ping)
 					packetPingManager.Add(packet.PacketId, packet);
-			}
 
-			SendRaw(packet);
+				SendRaw(packet);
+			}
 		}
 
 		private ushort GetPacketCounter(PacketType packetType) => packetCounter[(int)packetType];

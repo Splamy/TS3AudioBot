@@ -39,7 +39,11 @@ namespace TS3AudioBot.Audio
 		OpusEncoder opusEncoder;
 
 		private const int SegmentFrames = 960;
+		private byte[] soundBuffer = new byte[0];
+		private int soundBufferLength = 0;
 		private byte[] notEncodedBuffer = new byte[0];
+		private int notEncodedBufferLength = 0;
+		private byte[] segment = null;
 		private Queue<Tuple<byte[], int>> opusQueue;
 
 		public AudioEncoder(Codec codec)
@@ -78,24 +82,30 @@ namespace TS3AudioBot.Audio
 
 			BitsPerSample = 16;
 			OptimalPacketSize = opusEncoder.FrameByteCount(SegmentFrames);
+			segment = new byte[OptimalPacketSize];
 		}
 
 		public void PushPCMAudio(byte[] buffer, int bufferlen)
 		{
-			byte[] soundBuffer = new byte[bufferlen + notEncodedBuffer.Length]; // TODO optimize not encoded buffer
+			int newSoundBufferLength = bufferlen + notEncodedBuffer.Length;
+			if (newSoundBufferLength > soundBuffer.Length)
+				soundBuffer = new byte[newSoundBufferLength]; // TODO optimize not encoded buffer
+			soundBufferLength = newSoundBufferLength;
+
 			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBuffer.Length);
 			Array.Copy(buffer, 0, soundBuffer, notEncodedBuffer.Length, bufferlen);
 
 			int byteCap = OptimalPacketSize;
 			int segmentCount = (int)Math.Floor((decimal)soundBuffer.Length / byteCap);
 			int segmentsEnd = segmentCount * byteCap;
-			int notEncodedCount = soundBuffer.Length - segmentsEnd;
-			notEncodedBuffer = new byte[notEncodedCount];
-			Array.Copy(soundBuffer, segmentsEnd, notEncodedBuffer, 0, notEncodedCount);
+			int newNotEncodedBufferLength = soundBufferLength - segmentsEnd;
+			if (newNotEncodedBufferLength > notEncodedBuffer.Length)
+				notEncodedBuffer = new byte[newNotEncodedBufferLength];
+			notEncodedBufferLength = newNotEncodedBufferLength;
+			Array.Copy(soundBuffer, segmentsEnd, notEncodedBuffer, 0, notEncodedBufferLength);
 
 			for (int i = 0; i < segmentCount; i++)
 			{
-				byte[] segment = new byte[byteCap];  // TODO optimize segment buffer
 				for (int j = 0; j < segment.Length; j++)
 					segment[j] = soundBuffer[(i * byteCap) + j];
 				int len;

@@ -341,7 +341,8 @@ namespace TS3AudioBot
 		[Command(AnyVisibility, "api token", "Generates an api token.")]
 		public JsonObject CommandApiToken(ExecutionInformation info)
 		{
-			// TODO: enforce private session
+			if (!info.IsPrivate)
+				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
 			var token = info.Session.GenerateToken().UnwrapThrow();
 			return new JsonSingleValue<string>(token, token);
 		}
@@ -349,7 +350,8 @@ namespace TS3AudioBot
 		[Command(AnyVisibility, "api nonce", "Generates an api nonce.")]
 		public JsonObject CommandApiNonce(ExecutionInformation info)
 		{
-			// TODO: enforce private session
+			if (!info.IsPrivate)
+				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
 			if (!info.Session.HasActiveToken)
 				throw new CommandException("No active token found.", CommandExceptionReason.CommandError);
 
