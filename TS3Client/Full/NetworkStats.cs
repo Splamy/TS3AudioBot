@@ -21,6 +21,8 @@ namespace TS3Client.Full
 	using System.Collections.Generic;
 	using System.Linq;
 
+	// TODO include udp/ip header size to get correct values
+
 	internal class NetworkStats
 	{
 		private long[] outPackets = new long[3];
@@ -135,10 +137,10 @@ namespace TS3Client.Full
 				}
 			}
 
-			return new Ts3Command("setconnectioninfo", new List<CommandParameter>()
+			return new Ts3Command("setconnectioninfo", new List<ICommandPart>()
 			{
 				new CommandParameter("connection_ping", lastPing),
-				new CommandParameter("connection_ping_deviation", Math.Abs(lastPing - avgPing)),
+				new CommandParameter("connection_ping_deviation", Math.Abs(lastPing - avgPing)), // TODO use standard deviation
 				new CommandParameter("connection_packets_sent_speech", outPackets[(int)PacketKind.Speech]),
 				new CommandParameter("connection_packets_sent_keepalive", outPackets[(int)PacketKind.Keepalive]),
 				new CommandParameter("connection_packets_sent_control", outPackets[(int)PacketKind.Control]),

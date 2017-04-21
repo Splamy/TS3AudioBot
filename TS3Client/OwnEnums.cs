@@ -49,17 +49,14 @@ namespace TS3Client
 		country = 1 << 7,
 	}
 
-	public enum MessageTarget
+	public enum GroupNamingMode
 	{
-		Private = 1,
-		Channel,
-		Server,
-	}
-
-	public enum RequestTarget
-	{
-		Channel = 4,
-		Server,
+		/// <summary>No group name is displayed.</summary>
+		None = 0,
+		/// <summary>The group is displayed before the client name.</summary>
+		Before,
+		/// <summary>The group is displayed after the client name.</summary>
+		After
 	}
 
 	public enum NotificationType
@@ -92,7 +89,8 @@ namespace TS3Client
 		ChannelSubscribed,
 		ChannelUnsubscribed,
 		ClientChatComposing,
-		// TODO: notifyservergroupsbyclientid
+		ServerGroupList,
+		ServerGroupsByClientId,
 		// TODO: notifyclientchatclosed
 		// TODO: notifyclientpoke
 		// TODO: notifyclientupdated

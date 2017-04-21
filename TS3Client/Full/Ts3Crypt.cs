@@ -228,11 +228,10 @@ namespace TS3Client.Full
 				Util.Random.NextBytes(alphaBytes);
 				var alpha = Convert.ToBase64String(alphaBytes);
 				string initAdd = Ts3Command.BuildToString("clientinitiv",
-					new[] {
+					new ICommandPart[] {
 						new CommandParameter("alpha", alpha),
 						new CommandParameter("omega", Identity.PublicKeyString),
-						new CommandParameter("ip", string.Empty) },
-					Ts3Command.NoOptions);
+						new CommandParameter("ip", string.Empty) });
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
 				// Prepare solution

@@ -31,7 +31,6 @@ namespace TS3Client.Messages
 	using ChannelIdT = System.UInt64;
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
-	using PermissionIdT = System.Int32;
 
 <#
 	string declFilePath = Host.ResolvePath("MessageDeclarations.txt");

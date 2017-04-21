@@ -27,6 +27,7 @@ namespace TS3Client
 		private readonly Dictionary<string, WaitBlock> requestDict;
 		private readonly Queue<WaitBlock> requestQueue;
 		private readonly bool synchronQueue;
+		private readonly List<WaitBlock>[] dependingBlocks;
 
 		private string cmdLineBuffer;
 
@@ -34,9 +35,14 @@ namespace TS3Client
 		{
 			this.synchronQueue = synchronQueue;
 			if (synchronQueue)
+			{
 				requestQueue = new Queue<WaitBlock>();
+			}
 			else
+			{
 				requestDict = new Dictionary<string, WaitBlock>();
+				dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
+			}
 		}
 
 		public LazyNotification? PushMessage(string message)
@@ -62,6 +68,16 @@ namespace TS3Client
 			{
 				var notification = CommandDeserializer.GenerateNotification(lineDataPart, ntfyType);
 				var lazyNotification = new LazyNotification(notification, ntfyType);
+				if (dependingBlocks[(int)ntfyType] != null)
+				{
+					foreach (var item in dependingBlocks[(int)ntfyType])
+					{
+						if (!item.Closed)
+							item.SetNotification(lazyNotification);
+					}
+					dependingBlocks[(int)ntfyType].Clear();
+				}
+
 				return lazyNotification;
 			}
 
@@ -105,6 +121,12 @@ namespace TS3Client
 			if (synchronQueue)
 				throw new InvalidOperationException();
 			requestDict.Add(returnCode, waitBlock);
+			if (waitBlock.DependsOn != NotificationType.Unknown)
+			{
+				if (dependingBlocks[(int)waitBlock.DependsOn] == null)
+					dependingBlocks[(int)waitBlock.DependsOn] = new List<WaitBlock>();
+				dependingBlocks[(int)waitBlock.DependsOn].Add(waitBlock);
+			}
 		}
 
 		public void EnqueueRequest(WaitBlock waitBlock)
@@ -126,6 +148,8 @@ namespace TS3Client
 			{
 				var arr = requestDict.ToArray();
 				requestDict.Clear();
+				foreach (var block in dependingBlocks)
+					block?.Clear();
 				foreach (var val in arr)
 					val.Value.SetAnswer(
 						new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection Closed" });

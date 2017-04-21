@@ -23,6 +23,13 @@ namespace TS3Client.Full
 	using System.Linq;
 	using System.Threading;
 
+	using ClientUidT = System.String;
+	using ClientDbIdT = System.UInt64;
+	using ClientIdT = System.UInt16;
+	using ChannelIdT = System.UInt64;
+	using ServerGroupIdT = System.UInt64;
+	using ChannelGroupIdT = System.UInt64;
+
 	public sealed class Ts3FullClient : Ts3BaseFunctions
 	{
 		private readonly Ts3Crypt ts3Crypt;
@@ -184,6 +191,8 @@ namespace TS3Client.Full
 			case NotificationType.ChannelSubscribed: break;
 			case NotificationType.ChannelUnsubscribed: break;
 			case NotificationType.ClientChatComposing: break;
+			case NotificationType.ServerGroupList: break;
+			case NotificationType.ServerGroupsByClientId: break;
 			// special
 			case NotificationType.Error:
 				lock (StatusLock)
@@ -282,35 +291,49 @@ namespace TS3Client.Full
 			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
 		}
 
-		protected override IEnumerable<T> SendCommand<T>(Ts3Command com)
+		public override IEnumerable<T> SendCommand<T>(Ts3Command com)
 		{
-			var retCode = new CommandParameter("return_code", returnCode);
-			if (com.ExpectResponse)
-				com.AppendParameter(retCode);
-
 			using (var wb = new WaitBlock())
 			{
-				lock (CommmandQueueLock)
-				{
-					if (com.ExpectResponse)
-					{
-						msgProc.EnqueueRequest(retCode.Value, wb);
-						returnCode++;
-					}
-
-					byte[] data = Util.Encoder.GetBytes(com.ToString());
-					lock (StatusLock)
-					{
-						if (wasExit)
-							throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });
-						packetHandler.AddOutgoingPacket(data, PacketType.Command);
-					}
-				}
-
+				SendCommandBase(wb, com);
 				if (com.ExpectResponse)
 					return wb.WaitForMessage<T>();
 				else
 					return null;
+			}
+		}
+
+		private LazyNotification SendSpecialCommand(Ts3Command com, NotificationType dependsOn)
+		{
+			if (!com.ExpectResponse)
+				throw new ArgumentException("A special command must take a response");
+
+			using (var wb = new WaitBlock(dependsOn))
+			{
+				SendCommandBase(wb, com);
+				return wb.WaitForNotification();
+			}
+		}
+
+		private void SendCommandBase(WaitBlock wb, Ts3Command com)
+		{
+			lock (CommmandQueueLock)
+			{
+				if (com.ExpectResponse)
+				{
+					var retCode = new CommandParameter("return_code", returnCode);
+					com.AppendParameter(retCode);
+					msgProc.EnqueueRequest(retCode.Value, wb);
+					returnCode++;
+				}
+
+				byte[] data = Util.Encoder.GetBytes(com.ToString());
+				lock (StatusLock)
+				{
+					if (wasExit)
+						throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });
+					packetHandler.AddOutgoingPacket(data, PacketType.Command);
+				}
 			}
 		}
 
@@ -326,7 +349,7 @@ namespace TS3Client.Full
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> SendNoResponsed(
-				new Ts3Command("clientinit", new List<CommandParameter>() {
+				new Ts3Command("clientinit", new List<ICommandPart>() {
 					new CommandParameter("client_nickname", nickname),
 					new CommandParameter("client_version", versionSign.Name),
 					new CommandParameter("client_platform", versionSign.PlattformName),
@@ -344,7 +367,7 @@ namespace TS3Client.Full
 
 		public void ClientDisconnect(MoveReason reason, string reasonMsg)
 			=> SendNoResponsed(
-				new Ts3Command("clientdisconnect", new List<CommandParameter>() {
+				new Ts3Command("clientdisconnect", new List<ICommandPart>() {
 					new CommandParameter("reasonid", (int)reason),
 					new CommandParameter("reasonmsg", reasonMsg) }));
 
@@ -362,7 +385,7 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(buffer, PacketType.Voice);
 		}
 
-		public void SendAudioWhisper(byte[] buffer, int length, Codec codec, IList<ulong> channelIds, IList<ushort> clientIds)
+		public void SendAudioWhisper(byte[] buffer, int length, Codec codec, IList<ChannelIdT> channelIds, IList<ClientIdT> clientIds)
 		{
 			// [X,X,Y,N,M,(U,U,U,U,U,U,U,U)*,(T,T)*,DATA]
 			// > X is a ushort in H2N order of a own audio packet counter
@@ -385,6 +408,40 @@ namespace TS3Client.Full
 			buffer = tmpBuffer;
 
 			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper);
+		}
+
+		// Splitted base commands
+
+		public override ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
+		{
+			var cmd = new Ts3Command("servergroupadd", new List<ICommandPart> { new CommandParameter("name", name) });
+			if (type.HasValue)
+				cmd.AppendParameter(new CommandParameter("type", (int)type.Value));
+			var answer = SendSpecialCommand(cmd, NotificationType.ServerGroupList).Notifications
+				.Cast<ServerGroupList>()
+				.Where(x => x.Name == name)
+				.FirstOrDefault();
+			if (answer == null)
+				throw new Ts3CommandException(new CommandError() { Id = Ts3ErrorCode.custom_error, Message = "Missing answer" });
+			else
+				return new ServerGroupAddResponse() { ServerGroupId = answer.ServerGroupId };
+		}
+
+		public override IEnumerable<ClientServerGroup> ServerGroupsByClientDbId(ClientDbIdT clDbId)
+		{
+			return SendSpecialCommand(
+				new Ts3Command("servergroupsbyclientid",
+					new List<ICommandPart> { new CommandParameter("cldbid", clDbId) }),
+				NotificationType.ServerGroupsByClientId)
+				.Notifications
+				.Cast<ServerGroupsByClientId>()
+				.Where(x => x.ClientDbId == clDbId)
+				.Select(x => new ClientServerGroup()
+				{
+					ClientDbId = x.ClientDbId,
+					Name = x.Name,
+					ServerGroupId = x.ServerGroupId,
+				});
 		}
 
 		#endregion

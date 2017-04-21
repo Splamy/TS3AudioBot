@@ -116,7 +116,7 @@ namespace TS3Client.Query
 			}
 		}
 
-		protected override IEnumerable<T> SendCommand<T>(Ts3Command com) // Synchronous
+		public override IEnumerable<T> SendCommand<T>(Ts3Command com) // Synchronous
 		{
 			using (var wb = new WaitBlock())
 			{
@@ -142,9 +142,13 @@ namespace TS3Client.Query
 
 		private static readonly string[] targetTypeString = new[] { "textprivate", "textchannel", "textserver", "channel", "server" };
 
-		public void RegisterNotification(MessageTarget target, int channel) => RegisterNotification(targetTypeString[(int)target], channel);
-		public void RegisterNotification(RequestTarget target, int channel) => RegisterNotification(targetTypeString[(int)target], channel);
-		private void RegisterNotification(string target, int channel)
+		public void RegisterNotification(TextMessageTargetMode target, ulong channel) 
+			=> RegisterNotification(targetTypeString[(int)target], channel);
+
+		public void RegisterNotification(ReasonIdentifier target, ulong channel) 
+			=> RegisterNotification(targetTypeString[(int)target], channel);
+
+		private void RegisterNotification(string target, ulong channel)
 		{
 			var ev = new CommandParameter("event", target.ToLowerInvariant());
 			if (target == "channel")
@@ -157,9 +161,22 @@ namespace TS3Client.Query
 			=> Send("login",
 			new CommandParameter("client_login_name", username),
 			new CommandParameter("client_login_password", password));
-		public void UseServer(int svrId)
+
+		public void UseServer(int serverId)
 			=> Send("use",
-			new CommandParameter("sid", svrId));
+			new CommandParameter("sid", serverId));
+
+		// Splitted base commands
+
+		public override ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
+			=> Send<ServerGroupAddResponse>("servergroupadd",
+				type.HasValue
+				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }
+				: new List<ICommandPart> { new CommandParameter("name", name) }).FirstOrDefault();
+
+		public override IEnumerable<ClientServerGroup> ServerGroupsByClientDbId(ulong clDbId)
+			=> Send<ClientServerGroup>("servergroupsbyclientid",
+			new CommandParameter("cldbid", clDbId));
 
 		#endregion
 

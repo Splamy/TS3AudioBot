@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -67,6 +67,16 @@ namespace TS3Client
 		Enabled
 	}
 
+	public enum TextMessageTargetMode
+	{
+		/// <summary>Target is a client.</summary>
+		Private = 1,
+		/// <summary>Target is a channel.</summary>
+		Channel,
+		/// <summary>Target is a virtual server.</summary>
+		Server,
+	}
+
 	public enum LogLevel
 	{
 		///<summary>Everything that is really bad.</summary>
@@ -77,6 +87,14 @@ namespace TS3Client
 		Debug,
 		///<summary>Informational output.</summary>
 		Info
+	}
+
+	public enum ReasonIdentifier
+	{
+		///<summary>Kick client from channel.</summary>
+		Channel = 4,
+		///<summary>Kick client from server.</summary>
+		Server,
 	}
 
 	public enum PermissionGroupDatabaseType

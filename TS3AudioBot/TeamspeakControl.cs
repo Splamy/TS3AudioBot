@@ -102,7 +102,7 @@ namespace TS3AudioBot
 		{
 			if (Ts3String.TokenLength(message) > Ts3String.MaxMsgLength)
 				return "The message to send is longer than the maximum of " + Ts3String.MaxMsgLength + " characters";
-			try { tsBaseClient.SendMessage(MessageTarget.Private, clientId, message); return R.OkR; }
+			try { tsBaseClient.SendMessage(TextMessageTargetMode.Private, clientId, message); return R.OkR; }
 			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
 		}
 
@@ -110,7 +110,7 @@ namespace TS3AudioBot
 		{
 			if (Ts3String.TokenLength(message) > Ts3String.MaxMsgLength)
 				return "The message to send is longer than the maximum of " + Ts3String.MaxMsgLength + " characters";
-			try { tsBaseClient.SendMessage(MessageTarget.Server, 1, message); return R.OkR; }
+			try { tsBaseClient.SendMessage(TextMessageTargetMode.Server, 1, message); return R.OkR; }
 			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
 		}
 
@@ -175,9 +175,10 @@ namespace TS3AudioBot
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
 				return refreshResult.Message;
-			if (!clientbuffer.Any())
+			var clientData = clientbuffer.FirstOrDefault(pred);
+			if (clientData == null)
 				return "No client found";
-			return R<ClientData>.OkR(clientbuffer.First(pred));
+			return clientData;
 		}
 
 		protected abstract ClientData GetSelf();
@@ -196,7 +197,7 @@ namespace TS3AudioBot
 		public ulong[] GetClientServerGroups(ulong dbId)
 		{
 			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			return tsBaseClient.ServerGroupsOfClientDbId(dbId).Select(csg => csg.ServerGroupId).ToArray();
+			return tsBaseClient.ServerGroupsByClientDbId(dbId).Select(csg => csg.ServerGroupId).ToArray();
 		}
 
 		public string GetNameByDbId(ulong clientDbId)
@@ -216,6 +217,105 @@ namespace TS3AudioBot
 		}
 
 		public ClientInfo GetClientInfoById(ushort id) => tsBaseClient.ClientInfo(id);
+
+		internal R SetupRights(string key, MainBotData mainBotData)
+		{
+			try
+			{
+				// Check all own server groups
+				var groups = GetClientServerGroups(me.DatabaseId);
+
+				// Add self to master group (via token)
+				if (!string.IsNullOrEmpty(key))
+					tsBaseClient.PrivilegeKeyUse(key);
+
+				// Remember new group (or check if in new group at all)
+				var groupsNew = GetClientServerGroups(me.DatabaseId);
+				var groupDiff = groupsNew.Except(groups).ToArray();
+
+				if (mainBotData.BotGroupId == 0)
+				{
+					// Create new Bot group
+					var botGroup = tsBaseClient.ServerGroupAdd("ServerBot");
+					mainBotData.BotGroupId = botGroup.ServerGroupId;
+
+					// Add self to new group
+					tsBaseClient.ServerGroupAddClient(botGroup.ServerGroupId, me.DatabaseId);
+				}
+
+				const int max = 75;
+				// Add various rights to the bot group
+				tsBaseClient.ServerGroupAddPerm(mainBotData.BotGroupId,
+					new[] {
+						PermissionId.i_client_whisper_power, // + Required for whisper channel playing
+						PermissionId.i_client_private_textmessage_power, // + Communication
+						PermissionId.b_client_server_textmessage_send, // + Communication
+						PermissionId.b_client_channel_textmessage_send, // (+) Communication, could be used but not yet
+
+						PermissionId.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
+						PermissionId.b_client_modify_description, // + Used to change the description of our bot
+						PermissionId.b_client_info_view, // (+) only used as fallback usually
+						PermissionId.b_virtualserver_client_list, // ? Dont know but seems also required for the next one
+
+						PermissionId.i_channel_subscribe_power, // + Required to find user to communicate
+						PermissionId.b_virtualserver_client_dbinfo, // + Required to get basic user information for history, api, etc...
+						PermissionId.i_client_talk_power, // + Required for normal channel playing
+						PermissionId.b_client_modify_own_description, // ? not sure if this makes b_client_modify_description superfluous
+
+						PermissionId.b_group_is_permanent, // + Group should stay even if bot disconnects
+						PermissionId.i_client_kick_from_channel_power, // + Optional for kicking
+						PermissionId.i_client_kick_from_server_power, // + Optional for kicking
+						PermissionId.i_client_max_clones_uid, // + In case that bot times out and tries to join again
+
+						PermissionId.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
+						PermissionId.b_channel_join_ignore_password, // + The noble bot will not abuse this power
+						PermissionId.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
+						PermissionId.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
+
+						PermissionId.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
+						PermissionId.b_channel_join_ignore_maxclients, // + Allow joining full channels
+						PermissionId.i_channel_join_power, // + Allow joining to all channel even on strict servers
+					},
+					new[] {
+						max, max,   1,   1,
+						  1,   1,   1,   1,
+						max,   1, max,   1,
+						  1, max, max,   4,
+						  1,   1,   1,   1,
+						  1,   1, max,
+					},
+					new[] {
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false,
+					},
+					new[] {
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false, false,
+						false, false, false,
+					});
+
+				// Leave master group again
+				if (groupDiff.Length > 0)
+				{
+					foreach (var grp in groupDiff)
+						tsBaseClient.ServerGroupDelClient(grp, me.DatabaseId);
+				}
+
+				return R.OkR;
+			}
+			catch (Ts3CommandException cex)
+			{
+				Log.Write(Log.Level.Warning, cex.ErrorStatus.ErrorFormat());
+				return "Auto setup failed! (See logs for more details)";
+			}
+		}
 
 		public void Dispose()
 		{

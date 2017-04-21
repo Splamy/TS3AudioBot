@@ -18,36 +18,44 @@ namespace TS3Client.Commands
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Text;
 	using System.Text.RegularExpressions;
 
 	public class Ts3Command
 	{
 		private static readonly Regex CommandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
-		public static List<CommandParameter> NoParameter => new List<CommandParameter>();
-		public static List<CommandOption> NoOptions => new List<CommandOption>();
+		public static List<ICommandPart> NoParameter => new List<ICommandPart>();
 
-		public bool ExpectResponse { get; set; }
+		internal bool ExpectResponse { get; set; }
 		public string Command { get; }
-		private List<CommandParameter> parameter;
-		private List<CommandOption> options;
+		private List<ICommandPart> parameter;
 
+		[DebuggerStepThrough]
 		public Ts3Command(string command) : this(command, NoParameter) { }
-		public Ts3Command(string command, List<CommandParameter> parameter) : this(command, parameter, NoOptions) { }
-		public Ts3Command(string command, List<CommandParameter> parameter, List<CommandOption> options)
+		[DebuggerStepThrough]
+		public Ts3Command(string command, List<ICommandPart> parameter)
 		{
 			ExpectResponse = true;
 			this.Command = command;
 			this.parameter = parameter;
-			this.options = options;
 		}
 
-		public void AppendParameter(CommandParameter addParameter) => parameter.Add(addParameter);
-		public void AppendOption(CommandOption addOption) => options.Add(addOption);
+		public Ts3Command AppendParameter(ICommandPart addParameter)
+		{
+			parameter.Add(addParameter);
+			return this;
+		}
 
-		public override string ToString() => BuildToString(Command, parameter, options);
+		internal Ts3Command ExpectsResponse(bool expects)
+		{
+			ExpectResponse = expects;
+			return this;
+		}
 
-		public static string BuildToString(string command, IEnumerable<CommandParameter> parameter, IEnumerable<CommandOption> options)
+		public override string ToString() => BuildToString(Command, parameter);
+
+		public static string BuildToString(string command, IEnumerable<ICommandPart> parameter)
 		{
 			if (string.IsNullOrWhiteSpace(command))
 				throw new ArgumentNullException(nameof(command));
@@ -55,12 +63,57 @@ namespace TS3Client.Commands
 				throw new ArgumentException("Invalid command characters", nameof(command));
 
 			var strb = new StringBuilder(Ts3String.Escape(command));
+			List<CommandMultiParameter> multiParamList = null;
+			List<CommandOption> optionList = null;
 
 			foreach (var param in parameter)
-				strb.Append(' ').Append(param.QueryString);
+			{
+				switch (param.Type)
+				{
+				case CommandPartType.SingleParameter:
+					var singleParam = (CommandParameter)param;
+					strb.Append(' ').Append(singleParam.Key).Append('=').Append(singleParam.Value);
+					break;
+				case CommandPartType.MultiParameter:
+					if (multiParamList == null)
+						multiParamList = new List<CommandMultiParameter>();
+					multiParamList.Add((CommandMultiParameter)param);
+					break;
+				case CommandPartType.Option:
+					if (optionList == null)
+						optionList = new List<CommandOption>();
+					optionList.Add((CommandOption)param);
+					break;
+				default:
+					throw new InvalidOperationException();
+				}
+			}
 
-			foreach (var option in options)
-				strb.Append(option.Value);
+			if (multiParamList != null)
+			{
+				// Safety check
+				int matrixLength = multiParamList[0].Values.Length;
+				foreach (var param in multiParamList)
+					if (param.Values.Length != matrixLength)
+						throw new ArgumentOutOfRangeException("All multiparam key-value pairs must have the same length");
+				
+				for (int i = 0; i < matrixLength; i++)
+				{
+					foreach (var param in multiParamList)
+					{
+						strb.Append(' ').Append(param.Key).Append('=').Append(param.Values[i]);
+					}
+					strb.Append('|');
+				}
+
+				strb.Length--;
+			}
+
+			if (optionList != null)
+			{
+				foreach (var option in optionList)
+					strb.Append(option.Value);
+			}
 
 			return strb.ToString();
 		}

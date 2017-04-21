@@ -31,7 +31,6 @@ namespace TS3Client.Messages
 	using ChannelIdT = System.UInt64;
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
-	using PermissionIdT = System.Int32;
 
 
 	public sealed class ChannelChanged : INotification
@@ -585,7 +584,7 @@ namespace TS3Client.Messages
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientNeededPermissions;
 
-		public PermissionIdT PermissionId { get; set; }
+		public PermissionId PermissionId { get; set; }
 		public int PermissionValue { get; set; }
 
 		public void SetField(string name, string value)
@@ -594,7 +593,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "permid": PermissionId = CommandDeserializer.DeserializeInt32(value); break;
+			case "permid": PermissionId = (PermissionId)CommandDeserializer.DeserializeInt32(value); break;
 			case "permvalue": PermissionValue = CommandDeserializer.DeserializeInt32(value); break;
 			
 			}
@@ -801,11 +800,71 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ServerGroupList : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupList;
+
+		public ServerGroupIdT ServerGroupId { get; set; }
+		public string Name { get; set; }
+		public PermissionGroupDatabaseType GroupType { get; set; }
+		public int IconId { get; set; }
+		public bool GroupIsPermanent { get; set; }
+		public int SortId { get; set; }
+		public GroupNamingMode NamingMode { get; set; }
+		public int NeededModifyPower { get; set; }
+		public int NeededMemberAddPower { get; set; }
+		public int NeededMemberRemovePower { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "sgid": ServerGroupId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "name": Name = CommandDeserializer.DeserializeString(value); break;
+			case "type": GroupType = CommandDeserializer.DeserializeEnum<PermissionGroupDatabaseType>(value); break;
+			case "iconid": IconId = CommandDeserializer.DeserializeInt32(value); break;
+			case "savedb": GroupIsPermanent = CommandDeserializer.DeserializeBool(value); break;
+			case "sortid": SortId = CommandDeserializer.DeserializeInt32(value); break;
+			case "namemode": NamingMode = CommandDeserializer.DeserializeEnum<GroupNamingMode>(value); break;
+			case "n_modifyp": NeededModifyPower = CommandDeserializer.DeserializeInt32(value); break;
+			case "n_member_addp": NeededMemberAddPower = CommandDeserializer.DeserializeInt32(value); break;
+			case "n_member_remove_p": NeededMemberRemovePower = CommandDeserializer.DeserializeInt32(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupsByClientId : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientId;
+
+		public string Name { get; set; }
+		public ServerGroupIdT ServerGroupId { get; set; }
+		public ClientDbIdT ClientDbId { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "name": Name = CommandDeserializer.DeserializeString(value); break;
+			case "sgid": ServerGroupId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "cldbid": ClientDbId = CommandDeserializer.DeserializeUInt64(value); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class TextMessage : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TextMessage;
 
-		public MessageTarget Target { get; set; }
+		public TextMessageTargetMode Target { get; set; }
 		public string Message { get; set; }
 		public ClientIdT TargetClientId { get; set; }
 		public ClientIdT InvokerId { get; set; }
@@ -818,7 +877,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "targetmode": Target = CommandDeserializer.DeserializeEnum<MessageTarget>(value); break;
+			case "targetmode": Target = CommandDeserializer.DeserializeEnum<TextMessageTargetMode>(value); break;
 			case "msg": Message = CommandDeserializer.DeserializeString(value); break;
 			case "target": TargetClientId = CommandDeserializer.DeserializeUInt16(value); break;
 			case "invokerid": InvokerId = CommandDeserializer.DeserializeUInt16(value); break;
@@ -1261,6 +1320,25 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ServerGroupAddResponse : IResponse
+	{
+		public string ReturnCode { get; set; }
+
+		public ServerGroupIdT ServerGroupId { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "sgid": ServerGroupId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
+			}
+
+		}
+	}
+
 	public static class MessageHelper
 	{
 		public static NotificationType GetNotificationType(string name)
@@ -1292,6 +1370,8 @@ namespace TS3Client.Messages
 			case "notifyclientneededpermissions": return NotificationType.ClientNeededPermissions;
 			case "notifyconnectioninforequest": return NotificationType.ConnectionInfoRequest;
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
+			case "notifyservergrouplist": return NotificationType.ServerGroupList;
+			case "notifyservergroupsbyclientid": return NotificationType.ServerGroupsByClientId;
 			default: return NotificationType.Unknown;
 			}
 		}
@@ -1325,6 +1405,8 @@ namespace TS3Client.Messages
 			case NotificationType.ClientNeededPermissions: return new ClientNeededPermissions();
 			case NotificationType.ConnectionInfoRequest: return new ConnectionInfoRequest();
 			case NotificationType.ClientServerGroupAdded: return new ClientServerGroupAdded();
+			case NotificationType.ServerGroupList: return new ServerGroupList();
+			case NotificationType.ServerGroupsByClientId: return new ServerGroupsByClientId();
 			case NotificationType.Unknown:
 			default: throw new ArgumentOutOfRangeException(nameof(name));
 			}

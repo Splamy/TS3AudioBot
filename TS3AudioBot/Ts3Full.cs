@@ -510,7 +510,7 @@ namespace TS3AudioBot
 		[Info("The path to ffmpeg", "ffmpeg")]
 		public string FfmpegPath { get; set; }
 		[Info("Specifies the bitrate (in kbps) for sending audio.\n" +
-			"# Values between 2 and 98 are supported, more or less can work but without guarantees.\n" +
+			"# Values between 8 and 98 are supported, more or less can work but without guarantees.\n" +
 			"# Reference values: 32 - ok (~5KiB/s), 48 - good (~7KiB/s), 64 - very good (~9KiB/s), 92 - superb (~13KiB/s)", "48")]
 		public int AudioBitrate { get; set; }
 	}

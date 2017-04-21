@@ -24,19 +24,42 @@ namespace TS3Client
 
 	internal class WaitBlock : IDisposable
 	{
-		private AutoResetEvent waiter = new AutoResetEvent(false);
+		private readonly ManualResetEvent answerWaiter;
+		private readonly ManualResetEvent notificationWaiter;
 		private CommandError commandError = null;
 		private string commandLine = null;
+		public NotificationType DependsOn { get; }
+		private LazyNotification notification;
+		public bool Closed { get; private set; }
 
-		public WaitBlock() { }
+		public WaitBlock(NotificationType dependsOn = NotificationType.Unknown)
+		{
+			Closed = false;
+			answerWaiter = new ManualResetEvent(false);
+			DependsOn = dependsOn;
+			if (DependsOn != NotificationType.Unknown)
+				notificationWaiter = new ManualResetEvent(false);
+		}
 
 		public IEnumerable<T> WaitForMessage<T>() where T : IResponse, new()
 		{
-			waiter.WaitOne();
+			answerWaiter.WaitOne();
 			if (commandError.Id != Ts3ErrorCode.ok)
 				throw new Ts3CommandException(commandError);
 
 			return CommandDeserializer.GenerateResponse<T>(commandLine);
+		}
+
+		public LazyNotification WaitForNotification()
+		{
+			if (DependsOn == NotificationType.Unknown)
+				throw new InvalidOperationException("This waitblock has no dependent Notification");
+			answerWaiter.WaitOne();
+			if (commandError.Id != Ts3ErrorCode.ok)
+				throw new Ts3CommandException(commandError);
+			notificationWaiter.WaitOne();
+
+			return notification;
 		}
 
 		public void SetAnswer(CommandError commandError, string commandLine = null)
@@ -45,16 +68,28 @@ namespace TS3Client
 				throw new ArgumentNullException(nameof(commandError));
 			this.commandError = commandError;
 			this.commandLine = commandLine;
-			waiter.Set();
+			answerWaiter.Set();
+		}
+
+		public void SetNotification(LazyNotification notification)
+		{
+			if (notification.NotifyType != DependsOn)
+				throw new ArgumentException();
+			this.notification = notification;
+			notificationWaiter.Set();
 		}
 
 		public void Dispose()
 		{
-			if (waiter != null)
+			Closed = true;
+
+			answerWaiter.Set();
+			answerWaiter.Dispose();
+
+			if (notificationWaiter != null)
 			{
-				waiter.Set();
-				waiter.Dispose();
-				waiter = null;
+				notificationWaiter.Set();
+				notificationWaiter.Dispose();
 			}
 		}
 	}

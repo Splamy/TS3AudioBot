@@ -500,7 +500,12 @@ namespace TS3Client.Full
 				if (nextTest < TimeSpan.Zero)
 				{
 					if (++outgoingPacket.ResendCount > RetryTimeout)
+					{
+#if DEBUG
+						Console.WriteLine("TIMEOUT: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
+#endif
 						return true;
+					}
 					SendRaw(outgoingPacket);
 				}
 				else

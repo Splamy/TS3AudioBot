@@ -46,6 +46,8 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\CommandMultiParameter.cs" />
+    <Compile Include="Commands\ICommandPart.cs" />
     <Compile Include="ConnectionData.cs" />
     <Compile Include="DisconnectEventArgs.cs" />
     <Compile Include="DocumentedEnums.cs" />
@@ -79,10 +81,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EventDispatcher.cs" />
     <Compile Include="Query\Ts3QueryClient.cs" />
-    <Compile Include="Commands\CommandBinder.cs" />
     <Compile Include="Commands\CommandOption.cs" />
     <Compile Include="Commands\CommandParameter.cs" />
-    <Compile Include="Commands\ParameterConverter.cs" />
     <Compile Include="Ts3Exceptions.cs" />
     <Compile Include="Commands\Ts3String.cs" />
     <Compile Include="WaitBlock.cs" />
@@ -96,6 +96,7 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessageTemplates.cs</LastGenOutput>
     </Content>
+    <None Include="ts3protocol.txt" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />

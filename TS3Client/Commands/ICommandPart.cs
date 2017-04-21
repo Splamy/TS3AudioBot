@@ -16,22 +16,15 @@
 
 namespace TS3Client.Commands
 {
-	using System;
-	using System.Linq;
-	using System.Text;
-
-	public class CommandOption : ICommandPart
+	public interface ICommandPart
 	{
-		public string Value { get; }
-		public CommandPartType Type => CommandPartType.Option;
+		CommandPartType Type { get; }
+	}
 
-		public CommandOption(string name) { Value = string.Concat(" -", name); }
-		public CommandOption(Enum values)
-		{
-			var strb = new StringBuilder();
-			foreach (var enu in values.GetFlags().Select(enu => enu.ToString()))
-				strb.Append(" -").Append(enu);
-			Value = strb.ToString();
-		}
+	public enum CommandPartType
+	{
+		SingleParameter,
+		MultiParameter,
+		Option,
 	}
 }

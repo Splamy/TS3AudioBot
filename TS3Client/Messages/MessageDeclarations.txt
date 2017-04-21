@@ -14,15 +14,17 @@ Conv: string  , CommandDeserializer.DeserializeString  (value);
 Conv: TimeSpan, CommandDeserializer.DeserializeTimeSpan(value);
 Conv: DateTime, CommandDeserializer.DeserializeDateTime(value);
 : Enums
-Conv: Codec              , CommandDeserializer.DeserializeEnum<Codec>(value);
-Conv: HostMessageMode    , CommandDeserializer.DeserializeEnum<HostMessageMode>(value);
-Conv: CodecEncryptionMode, CommandDeserializer.DeserializeEnum<CodecEncryptionMode>(value);
-Conv: HostBannerMode     , CommandDeserializer.DeserializeEnum<HostBannerMode>(value);
-Conv: MoveReason         , CommandDeserializer.DeserializeEnum<MoveReason>(value);
-Conv: ClientType         , CommandDeserializer.DeserializeEnum<ClientType>(value);
-Conv: MessageTarget      , CommandDeserializer.DeserializeEnum<MessageTarget>(value);
-Conv: Ts3ErrorCode       , (Ts3ErrorCode)CommandDeserializer.DeserializeUInt16(value);
-Conv: PermissionId       , (PermissionId)CommandDeserializer.DeserializeInt32(value);
+Conv: Codec                      , CommandDeserializer.DeserializeEnum<Codec>(value);
+Conv: HostMessageMode            , CommandDeserializer.DeserializeEnum<HostMessageMode>(value);
+Conv: CodecEncryptionMode        , CommandDeserializer.DeserializeEnum<CodecEncryptionMode>(value);
+Conv: HostBannerMode             , CommandDeserializer.DeserializeEnum<HostBannerMode>(value);
+Conv: MoveReason                 , CommandDeserializer.DeserializeEnum<MoveReason>(value);
+Conv: ClientType                 , CommandDeserializer.DeserializeEnum<ClientType>(value);
+Conv: TextMessageTargetMode      , CommandDeserializer.DeserializeEnum<TextMessageTargetMode>(value);
+Conv: PermissionGroupDatabaseType, CommandDeserializer.DeserializeEnum<PermissionGroupDatabaseType>(value);
+Conv: GroupNamingMode            , CommandDeserializer.DeserializeEnum<GroupNamingMode>(value);
+Conv: Ts3ErrorCode               , (Ts3ErrorCode)CommandDeserializer.DeserializeUInt16(value);
+Conv: PermissionId               , (PermissionId)CommandDeserializer.DeserializeInt32(value);
 : Custom Id Names
 Conv: ClientUidT      , CommandDeserializer.DeserializeString(value);
 Conv: ClientDbIdT     , CommandDeserializer.DeserializeUInt64(value);
@@ -30,7 +32,6 @@ Conv: ClientIdT       , CommandDeserializer.DeserializeUInt16(value);
 Conv: ChannelIdT      , CommandDeserializer.DeserializeUInt64(value);
 Conv: ServerGroupIdT  , CommandDeserializer.DeserializeUInt64(value);
 Conv: ChannelGroupIdT , CommandDeserializer.DeserializeUInt64(value);
-Conv: PermissionIdT   , CommandDeserializer.DeserializeInt32(value);
 Conv: ServerGroupIdT[], CommandDeserializer.DeserializeArray(value, CommandDeserializer.DeserializeUInt64);
 
 
@@ -134,31 +135,39 @@ Field: connection_packets_received_total, connection_packets_received_total, Con
 Field: connection_packets_sent_total, connection_packets_sent_total, ConnectionPacketsSent, long
 Field: cpid, cpid, ChannelParentId, ChannelIdT
 Field: ctid, ctid, TargetChannelId, ChannelIdT
+Field: iconid, iconid, IconId, int
 Field: id, id, Id, ChannelIdT
 Field: invokerid, invokerid, InvokerId, ClientIdT
 Field: invokername, invokername, InvokerName, string
 Field: invokeruid, invokeruid, InvokerUid, ClientUidT
 Field: lt, lt, Lt, int
 Field: msg, msg, Message, string
+Field: n_modifyp, n_modifyp, NeededModifyPower, int
+Field: n_member_addp, n_member_addp, NeededMemberAddPower, int
+Field: n_member_remove_p, n_member_remove_p, NeededMemberRemovePower, int
 Field: name, name, Name, string
+Field: namemode, namemode, NamingMode, GroupNamingMode
 Field: omega, omega, Omega, string
 Field: order, order, Order, int
-Field: permid, permid, PermissionId, PermissionIdT
+Field: permid, permid, PermissionId, PermissionId
 Field: permvalue, permvalue, PermissionValue, int
 Field: pid, pid, ParentChannelId, ChannelIdT
 Field: pv, pv, Pv, int
 Field: reasonid, reasonid, Reason, MoveReason
 Field: reasonmsg, reasonmsg, ReasonMessage, string
+Field: savedb, savedb, GroupIsPermanent, bool
 Field: seconds_empty, seconds_empty, DurationEmpty, TimeSpan
 Field: sgid, sgid, ServerGroupId, ServerGroupIdT
+Field: sortid, sortid, SortId, int
 Field: target, target, TargetClientId, ClientIdT
-Field: targetmode, targetmode, Target, MessageTarget
+Field: targetmode, targetmode, Target, TextMessageTargetMode
 Field: token, token, UsedToken, string
 Field: token1, token1, Token1, string
 Field: token2, token2, Token2, string
 Field: tokencustomset, tokencustomset, TokenCustomSet, string
 Field: total_clients, total_clients, TotalClients, int
 Field: total_clients_family, total_clients_family, TotalFamilyClients, int
+Field: type, type, GroupType, PermissionGroupDatabaseType
 Field: virtualserver_ask_for_privilegekey, virtualserver_ask_for_privilegekey, AskForPrivilege, bool
 Field: virtualserver_autostart, virtualserver_autostart, Autostart, bool
 Field: virtualserver_channel_temp_delete_delay_default, virtualserver_channel_temp_delete_delay_default, DefaultTempChannelDeleteDelay, TimeSpan
@@ -225,6 +234,8 @@ Notify: notifyclientchatcomposing, ClientChatComposing
 Notify: notifyclientneededpermissions, ClientNeededPermissions
 Notify: notifyconnectioninforequest, ConnectionInfoRequest
 Notify: notifyservergroupclientadded, ClientServerGroupAdded
+Notify: notifyservergrouplist, ServerGroupList
+Notify: notifyservergroupsbyclientid, ServerGroupsByClientId
 
 
 : <Class name>, <Teamspeak notification name | Empty = Response>, <Field param mappings>*
@@ -250,6 +261,8 @@ Msg: ConnectionInfoRequest, notifyconnectioninforequest
 Msg: InitIvExpand, initivexpand, alpha, beta, omega
 Msg: InitServer, initserver, virtualserver_welcomemessage, virtualserver_platform, virtualserver_version, virtualserver_maxclients, virtualserver_created, virtualserver_hostmessage, virtualserver_hostmessage_mode, virtualserver_id, virtualserver_ip, virtualserver_ask_for_privilegekey, acn, aclid, pv, lt, client_talk_power, client_needed_serverquery_view_power, virtualserver_name, virtualserver_codec_encryption_mode, virtualserver_default_server_group, virtualserver_default_channel_group, virtualserver_hostbanner_url, virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_interval, virtualserver_priority_speaker_dimm_modificator, virtualserver_hostbutton_tooltip, virtualserver_hostbutton_url, virtualserver_hostbutton_gfx_url, virtualserver_name_phonetic, virtualserver_icon_id, virtualserver_hostbanner_mode, virtualserver_channel_temp_delete_delay_default
 Msg: ServerEdited, notifyserveredited, invokerid, invokername, invokeruid, reasonid, virtualserver_name, virtualserver_codec_encryption_mode, virtualserver_default_server_group, virtualserver_default_channel_group, virtualserver_hostbanner_url, virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_interval, virtualserver_priority_speaker_dimm_modificator, virtualserver_hostbutton_tooltip, virtualserver_hostbutton_url, virtualserver_hostbutton_gfx_url, virtualserver_name_phonetic, virtualserver_icon_id, virtualserver_hostbanner_mode, virtualserver_channel_temp_delete_delay_default
+Msg: ServerGroupList, notifyservergrouplist, sgid, name, type, iconid, savedb, sortid, namemode, n_modifyp, n_member_addp, n_member_remove_p
+Msg: ServerGroupsByClientId, notifyservergroupsbyclientid, name, sgid, cldbid
 Msg: TextMessage, notifytextmessage, targetmode, msg, target, invokerid, invokername, invokeruid
 Msg: TokenUsed, notifytokenused, token, tokencustomset, token1, token2, clid, cldbid, cluid
 Msg: CommandError, error, error_id, msg, failed_permid, return_code, extra_msg
@@ -261,3 +274,4 @@ Msg: ClientInfo,, client_idle_time, client_version, client_version_sign, client_
 Msg: ClientServerGroup,, name, sgid, cldbid
 Msg: ServerData,, virtualserver_clientsonline, virtualserver_queryclientsonline, virtualserver_maxclients, virtualserver_uptime, virtualserver_autostart, virtualserver_machine_id, virtualserver_name, virtualserver_id, virtualserver_unique_identifier, virtualserver_port, virtualserver_status
 Msg: WhoAmI,, client_id, client_channel_id, client_nickname, client_database_id, client_login_name, client_origin_server_id, virtualserver_id, virtualserver_unique_identifier, virtualserver_port, virtualserver_status, client_unique_identifier
+Msg: ServerGroupAddResponse,, sgid

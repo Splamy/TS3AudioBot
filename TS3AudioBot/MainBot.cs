@@ -263,7 +263,7 @@ namespace TS3AudioBot
 			{
 				var execInfo = new ExecutionInformation(session, textMessage)
 				{
-					IsPrivate = textMessage.Target == MessageTarget.Private
+					IsPrivate = textMessage.Target == TextMessageTargetMode.Private
 				};
 
 				// check if the user has an open request
@@ -361,6 +361,13 @@ namespace TS3AudioBot
 
 		[Command(Admin, "bot name", "Gives the bot a new name.")]
 		public void CommandBotName(ExecutionInformation info, string name) => QueryConnection.ChangeName(name).UnwrapThrow();
+
+		[Command(Admin, "bot setup", "Gives the bot a new name.")]
+		[RequiredParameters(0)]
+		public void CommandBotSetup(ExecutionInformation info, string adminToken)
+		{
+			QueryConnection.SetupRights(adminToken, mainBotData).UnwrapThrow();
+		}
 
 		[Command(Private, "clear", "Removes all songs from the current playlist.")]
 		public void CommandClear()
@@ -1030,6 +1037,7 @@ namespace TS3AudioBot
 			=> PlayManager.Previous(new InvokerData(info.Session.Client)).UnwrapThrow();
 
 		[Command(AnyVisibility, "print", "Lets you format multiple parameter to one.")]
+		[RequiredParameters(0)]
 		public JsonObject CommandPrint(params string[] parameter)
 		{
 			// << Desing changes expected >>
@@ -1554,6 +1562,8 @@ namespace TS3AudioBot
 		public string LogFile { get; set; }
 		[Info("Teamspeak group id authorized to execute admin commands")]
 		public ulong AdminGroupId { get; set; }
+		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
+		public ulong BotGroupId { get; set; }
 	}
 #pragma warning restore CS0649
 }

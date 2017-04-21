@@ -50,9 +50,9 @@ namespace TS3AudioBot
 		{
 			base.OnConnected(sender, e);
 
-			tsQueryClient.RegisterNotification(MessageTarget.Server, -1);
-			tsQueryClient.RegisterNotification(MessageTarget.Private, -1);
-			tsQueryClient.RegisterNotification(RequestTarget.Server, -1);
+			tsQueryClient.RegisterNotification(TextMessageTargetMode.Server, 0);
+			tsQueryClient.RegisterNotification(TextMessageTargetMode.Private, 0);
+			tsQueryClient.RegisterNotification(ReasonIdentifier.Server, 0);
 
 			TickPool.RegisterTick(() => tsBaseClient.WhoAmI(), PingInterval, true);
 		}

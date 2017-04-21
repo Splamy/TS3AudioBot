@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -26,22 +26,29 @@ namespace TS3Client.Commands
 
 		public static string Escape(string stringToEscape)
 		{
-			StringBuilder strb = new StringBuilder(stringToEscape);
-			strb = strb.Replace("\\", "\\\\"); // Backslash
-			strb = strb.Replace("/", "\\/");   // Slash
-			strb = strb.Replace(" ", "\\s");   // Whitespace
-			strb = strb.Replace("|", "\\p");   // Pipe
-			strb = strb.Replace("\f", "\\f");  // Formfeed
-			strb = strb.Replace("\n", "\\n");  // Newline
-			strb = strb.Replace("\r", "\\r");  // Carriage Return
-			strb = strb.Replace("\t", "\\t");  // Horizontal Tab
-			strb = strb.Replace("\v", "\\v");  // Vertical Tab
+			var strb = new StringBuilder(stringToEscape.Length);
+			for (int i = 0; i < stringToEscape.Length; i++)
+			{
+				switch (stringToEscape[i])
+				{
+				case '\\': strb.Append("\\\\"); break; // Backslash
+				case '/': strb.Append("\\/"); break;   // Slash
+				case ' ': strb.Append("\\s"); break;   // Whitespace
+				case '|': strb.Append("\\p"); break;   // Pipe
+				case '\f': strb.Append("\\f"); break;  // Formfeed
+				case '\n': strb.Append("\\n"); break;  // Newline
+				case '\r': strb.Append("\\r"); break;  // Carriage Return
+				case '\t': strb.Append("\\t"); break;  // Horizontal Tab
+				case '\v': strb.Append("\\v"); break;  // Vertical Tab
+				default: strb.Append(stringToEscape[i]); break;
+				}
+			}
 			return strb.ToString();
 		}
 
 		public static string Unescape(string stringToUnescape)
 		{
-			StringBuilder strb = new StringBuilder(stringToUnescape.Length);
+			var strb = new StringBuilder(stringToUnescape.Length);
 			for (int i = 0; i < stringToUnescape.Length; i++)
 			{
 				char c = stringToUnescape[i];

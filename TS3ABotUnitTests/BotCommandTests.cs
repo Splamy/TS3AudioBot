@@ -45,7 +45,7 @@ namespace TS3ABotUnitTests
 				InvokerName = "Invoker",
 				InvokerUid = "InvokerUid",
 				Message = "",
-				Target = MessageTarget.Private
+				Target = TextMessageTargetMode.Private
 			};
 			return msg;
 		}
