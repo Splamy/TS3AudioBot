@@ -143,6 +143,14 @@ namespace TS3AudioBot
 
 		private void ConnectClient()
 		{
+			VersionSign verionSign = VersionSign.VER_LIN_3_0_19_4;
+			if (!string.IsNullOrEmpty(ts3FullClientData.ClientVersion))
+			{
+				var splitData = ts3FullClientData.ClientVersion.Split('|').Select(x => x.Trim()).ToArray();
+				var plattform = (ClientPlattform)Enum.Parse(typeof(ClientPlattform), splitData[1], true);
+				verionSign = new VersionSign(splitData[0], plattform, splitData[2]);
+			}
+
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = "AudioBot",
@@ -151,6 +159,7 @@ namespace TS3AudioBot
 				Port = ts3FullClientData.Port,
 				Identity = identity,
 				IsPasswordHashed = ts3FullClientData.ServerPasswordIsHashed,
+				VersionSign = verionSign,
 			});
 		}
 
@@ -513,5 +522,8 @@ namespace TS3AudioBot
 			"# Values between 8 and 98 are supported, more or less can work but without guarantees.\n" +
 			"# Reference values: 32 - ok (~5KiB/s), 48 - good (~7KiB/s), 64 - very good (~9KiB/s), 92 - superb (~13KiB/s)", "48")]
 		public int AudioBitrate { get; set; }
+		[Info("Version for the client in the form of <version build>|<plattform>|<version sign>\n" +
+			"# Leave empty for default.", "")]
+		public string ClientVersion { get; set; }
 	}
 }
