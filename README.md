@@ -1,4 +1,4 @@
-# TS3AudioBot
+﻿# TS3AudioBot
 |master|develop|
 |:--:|:--:|
 |[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|
@@ -79,19 +79,15 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static\bin\ffmpeg.exe` to `TS3AudioBot\bin\Release\`
 
 ### Installation
-1. Create 2 groups on the TeamSpeak server:
-  * one for the ServerBot with enough rights so he can
-    * join as a serverquery
-    * view all server/channel/clients
-    * write in all/private chat
-    * optionally kick clients form channel/server
-    * See [here](https://github.com/Splamy/TS3AudioBot/issues/29#issuecomment-233582408) for a more detailed list until I update the readme...
-  * one for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).  
+1. Create a group for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).  
+1. Create a privilige key for the ServerAdmin group (or a group which has equivalent rights).
 1. The first time you'll need to run the TS3Audiobot.exe without parameter and
-it will ask you a few questions. You can get ServerGroupIds in the rights window.
+it will ask you a few questions. (You can get ServerGroupIds in the rights window.)
+1. Send the bot in a private message `!bot setup <key>` where `<key>` is the privilege key from a previous step.
 1. Now you can move the process to the backgroud or close the bot with `!quit` in teamspeak and run it in the background.  
 The recommended start from now on is `TS3AudioBot.exe -q` to disable writing to stdout since the bot logs everything to a log file anyway.
-1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).
+1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).  
+For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
 
 ### Testing and Fuzzying
 1. Run the *TS3ABotUnitTests* project in Visual Studio or Monodevelop.
