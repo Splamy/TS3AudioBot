@@ -291,7 +291,7 @@ namespace TS3AudioBot
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Warning, "Possible plugin failed to load: ", ex);
+				Log.Write(Log.Level.Warning, "Possible plugin failed to load: {0}", ex);
 				return PluginResponse.Crash;
 			}
 		}

@@ -29,7 +29,7 @@ namespace TS3AudioBot
 
 		private IPlayerConnection playerConnection;
 
-		internal event EventHandler<SongEndEventArgs> OnResourceStopped;
+		internal event EventHandler<SongEndEventArgs> OnPlaybackStopped;
 
 		// Playerproperties
 
@@ -87,7 +87,7 @@ namespace TS3AudioBot
 			playerConnection.Initialize();
 		}
 
-		private void OnResourceEnd(bool val) => OnResourceStopped?.Invoke(this, new SongEndEventArgs(val));
+		private void OnResourceEnd(bool restart) => OnPlaybackStopped?.Invoke(this, new SongEndEventArgs(restart));
 
 		/// <summary>
 		/// <para>Do NOT call this method directly! Use the <see cref="PlayManager"/> instead.</para>
