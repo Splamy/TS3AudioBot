@@ -227,10 +227,7 @@ namespace TS3AudioBot
 
 			var refreshResult = QueryConnection.RefreshClientBuffer(true);
 			if (!refreshResult.Ok)
-			{
-				Log.Write(Log.Level.Error, "Bot is not correctly set up: {0}", refreshResult.Message);
-				return;
-			}
+				Log.Write(Log.Level.Warning, "Bot is not correctly set up. Some requests might fail or are slower. ({0})", refreshResult.Message);
 
 			// get the current session
 			var result = SessionManager.GetSession(textMessage.InvokerUid);

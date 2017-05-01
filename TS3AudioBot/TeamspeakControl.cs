@@ -66,14 +66,15 @@ namespace TS3AudioBot
 
 		private List<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
-		private IDictionary<ulong, string> clientDbNames;
+		private Dictionary<ulong, string> clientDbNames;
 
 		protected Ts3BaseFunctions tsBaseClient;
 		protected ClientData me;
 
 		protected TeamspeakControl(ClientType connectionType)
 		{
-			clientDbNames = new Dictionary<ulong, string>();
+			Util.Init(ref clientDbNames);
+			Util.Init(ref clientbuffer);
 
 			if (connectionType == ClientType.Full)
 				tsBaseClient = new Ts3FullClient(EventDispatchType.ExtraDispatchThread);
