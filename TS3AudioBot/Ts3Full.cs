@@ -42,7 +42,8 @@ namespace TS3AudioBot
 		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
 		  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
 		  "Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
-		  "?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here"};
+		  "?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
+		  "connection lost", "disconnected", "Requested by API." };
 
 		private const string PreLinkConf = "-hide_banner -nostats -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
@@ -153,7 +154,7 @@ namespace TS3AudioBot
 
 			tsFullClient.Connect(new ConnectionDataFull
 			{
-				Username = "AudioBot",
+				Username = ts3FullClientData.DefaultNickname,
 				Password = ts3FullClientData.ServerPassword,
 				Hostname = ts3FullClientData.Host,
 				Port = ts3FullClientData.Port,
@@ -525,5 +526,8 @@ namespace TS3AudioBot
 		[Info("Version for the client in the form of <version build>|<plattform>|<version sign>\n" +
 			"# Leave empty for default.", "")]
 		public string ClientVersion { get; set; }
+		[Info("Default Nickname when connecting\n" +
+			"# Leave empty for default.", "AudioBot")]
+		public string DefaultNickname { get; set; }
 	}
 }
