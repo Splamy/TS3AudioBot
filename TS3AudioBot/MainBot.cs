@@ -1542,7 +1542,7 @@ namespace TS3AudioBot
 			FactoryManager.Dispose(); // before:
 			FactoryManager = null;
 
-			logStream.Dispose();  // before:
+			logStream?.Dispose();  // before:
 			logStream = null;
 		}
 	}

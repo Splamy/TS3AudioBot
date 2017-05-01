@@ -526,8 +526,7 @@ namespace TS3AudioBot
 		[Info("Version for the client in the form of <version build>|<plattform>|<version sign>\n" +
 			"# Leave empty for default.", "")]
 		public string ClientVersion { get; set; }
-		[Info("Default Nickname when connecting\n" +
-			"# Leave empty for default.", "AudioBot")]
+		[Info("Default Nickname when connecting", "AudioBot")]
 		public string DefaultNickname { get; set; }
 	}
 }

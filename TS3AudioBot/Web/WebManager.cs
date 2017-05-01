@@ -47,7 +47,6 @@ namespace TS3AudioBot.Web
 			};
 			webListener.AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector;
 
-			ReloadHostPaths();
 			InitializeSubcomponents(mainBot);
 		}
 
@@ -123,6 +122,8 @@ namespace TS3AudioBot.Web
 		{
 			if (!startWebServer)
 				return;
+
+			ReloadHostPaths();
 
 			try { webListener.Start(); }
 			catch (HttpListenerException ex)
