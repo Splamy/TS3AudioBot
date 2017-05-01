@@ -45,7 +45,7 @@ namespace TS3AudioBot
 			{
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 				{
-					Log.Write(Log.Level.Error, "Critical program failure!. Exception:\n {0}", (e.ExceptionObject as Exception).UnrollException());
+					Log.Write(Log.Level.Error, "Critical program failure!. Exception:\n{0}", (e.ExceptionObject as Exception).UnrollException());
 					bot?.Dispose();
 				};
 
@@ -182,7 +182,7 @@ namespace TS3AudioBot
 			CommandManager.RegisterCommand(PlaylistManager.CommandNode, "list from");
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
-			AudioFramework.OnResourceStopped += PlayManager.SongStoppedHook;
+			AudioFramework.OnPlaybackStopped += PlayManager.SongStoppedHook;
 			// Inform the BobClient on start/stop
 			PlayManager.AfterResourceStarted += TargetManager.OnResourceStarted;
 			PlayManager.AfterResourceStopped += TargetManager.OnResourceStopped;
@@ -360,11 +360,11 @@ namespace TS3AudioBot
 		}
 
 		[Command(Admin, "bot name", "Gives the bot a new name.")]
-		public void CommandBotName(ExecutionInformation info, string name) => QueryConnection.ChangeName(name).UnwrapThrow();
+		public void CommandBotName(string name) => QueryConnection.ChangeName(name).UnwrapThrow();
 
 		[Command(Admin, "bot setup", "Gives the bot a new name.")]
 		[RequiredParameters(0)]
-		public void CommandBotSetup(ExecutionInformation info, string adminToken)
+		public void CommandBotSetup(string adminToken)
 		{
 			QueryConnection.SetupRights(adminToken, mainBotData).UnwrapThrow();
 		}

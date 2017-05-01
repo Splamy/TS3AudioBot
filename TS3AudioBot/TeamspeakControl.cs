@@ -147,7 +147,9 @@ namespace TS3AudioBot
 			var result = ClientBufferRequest(client => client.ClientId == id);
 			if (result.Ok) return result;
 			Log.Write(Log.Level.Debug, "Slow double request, due to missing or wrong permission confinguration!");
-			var cd = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault();
+			ClientData cd;
+			try { cd = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault(); }
+			catch (Ts3CommandException) { cd = null; }
 			if (cd != null)
 			{
 				cd.ClientId = id;
