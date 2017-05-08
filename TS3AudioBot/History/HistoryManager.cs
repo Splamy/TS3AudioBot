@@ -199,7 +199,7 @@ namespace TS3AudioBot.History
 				query = Query.And(query, Query.Where(ResourceTitleQueryColumn, val => val.AsString.ToLowerInvariant().Contains(search.TitlePart)));
 
 			if (search.UserId.HasValue)
-				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserInvokeId), search.UserId.Value));
+				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserInvokeId), (long)search.UserId.Value));
 
 			if (search.LastInvokedAfter.HasValue)
 				query = Query.And(query, Query.GTE(nameof(AudioLogEntry.Timestamp), search.LastInvokedAfter.Value));
@@ -225,7 +225,7 @@ namespace TS3AudioBot.History
 		/// <param name="id">The id of the AudioLogEntry</param>
 		public R<AudioLogEntry> GetEntryById(uint id)
 		{
-			var entry = audioLogEntries.FindById(id);
+			var entry = audioLogEntries.FindById((long)id);
 			if (entry != null) return entry;
 			else return "Could not find track with this id";
 		}

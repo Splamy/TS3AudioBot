@@ -51,6 +51,8 @@ namespace TS3AudioBot
 		private static readonly Regex findDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
 		private TimeSpan? parsedSongLength = null;
 		private readonly object ffmpegLock = new object();
+		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
+		private bool hasTriedToReconnectAudio = false;
 
 		private Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
@@ -152,6 +154,13 @@ namespace TS3AudioBot
 				verionSign = new VersionSign(splitData[0], plattform, splitData[2]);
 			}
 
+			if (Uri.CheckHostName(ts3FullClientData.Host) == UriHostNameType.Unknown)
+			{
+				Log.Write(Log.Level.Warning, "Your hostname seems to be invalid, consider checking it if you can't connect.");
+				if (ts3FullClientData.Host.Contains(":"))
+					Log.Write(Log.Level.Warning, "You may have included the port in the hostname field. Please notice that there is an extra field for that.");
+			}
+
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = ts3FullClientData.DefaultNickname,
@@ -215,14 +224,31 @@ namespace TS3AudioBot
 
 				UpdatedSubscriptionCache();
 
-				while (audioTimer.BufferLength < audioBufferLength)
+				while (audioTimer.RemainingBufferDuration < audioBufferLength)
 				{
 					int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
 					if (read == 0)
 					{
-						if (!ffmpegProcess.HasExited)
-							return;
-						if (audioTimer.BufferLength < TimeSpan.Zero && !encoder.HasPacket)
+						// check for premature connection drop
+						if (ffmpegProcess.HasExited && !hasTriedToReconnectAudio)
+						{
+							var expectedStopLength = GetCurrentSongLength();
+							if (expectedStopLength != TimeSpan.Zero)
+							{
+								var actualStopPosition = audioTimer.SongPosition;
+								if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
+								{
+									Log.Write(Log.Level.Debug, "Connection to song lost, retrying at {0}", actualStopPosition);
+									hasTriedToReconnectAudio = true;
+									Position = actualStopPosition;
+									return;
+								}
+							}
+						}
+
+						if (ffmpegProcess.HasExited
+							&& audioTimer.RemainingBufferDuration < TimeSpan.Zero
+							&& !encoder.HasPacket)
 						{
 							AudioStop();
 							OnSongEnd?.Invoke(this, new EventArgs());
@@ -230,6 +256,7 @@ namespace TS3AudioBot
 						return;
 					}
 
+					hasTriedToReconnectAudio = false;
 					audioTimer.PushBytes(read);
 					if (isStall)
 					{
@@ -290,11 +317,12 @@ namespace TS3AudioBot
 
 		public TimeSpan Position
 		{
-			get { throw new NotImplementedException(); }
+			get { return audioTimer.SongPosition; }
 			set
 			{
 				AudioStop();
-				StartFfmpegProcess(lastLink, $"-ss {value.ToString(@"hh\:mm\:ss")} ");
+				StartFfmpegProcess(lastLink, $"-ss {value.ToString(@"hh\:mm\:ss")}", $"-ss {value.ToString(@"hh\:mm\:ss")}");
+				audioTimer.SongPositionOffset = value;
 			}
 		}
 
@@ -315,7 +343,10 @@ namespace TS3AudioBot
 				{
 					sendTick.Active = !value;
 					if (value)
+					{
+						audioTimer.SongPositionOffset = audioTimer.SongPosition;
 						audioTimer.Stop();
+					}
 					else
 						audioTimer.Start();
 				}
@@ -337,7 +368,7 @@ namespace TS3AudioBot
 						StartInfo = new ProcessStartInfo()
 						{
 							FileName = ts3FullClientData.FfmpegPath,
-							Arguments = extraPreParam + PreLinkConf + url + PostLinkConf + extraPostParam,
+							Arguments = string.Concat(extraPreParam, " ", PreLinkConf, url, PostLinkConf, " ", extraPostParam),
 							RedirectStandardOutput = true,
 							RedirectStandardInput = true,
 							RedirectStandardError = true,
@@ -350,6 +381,7 @@ namespace TS3AudioBot
 					lastLink = url;
 					parsedSongLength = null;
 
+					audioTimer.SongPositionOffset = TimeSpan.Zero;
 					audioTimer.Start();
 					sendTick.Active = true;
 					return R.OkR;

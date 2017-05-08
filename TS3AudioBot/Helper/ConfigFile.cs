@@ -138,7 +138,7 @@ namespace TS3AudioBot.Helper
 			{
 				if (prop == null)
 				{
-					prop = co.GetType().GetProperty(keyParam[1]);
+					prop = co.GetType().GetProperty(keyParam[1], BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
 					try
 					{
 						convertedValue = Convert.ChangeType(value, prop.PropertyType, CultureInfo.InvariantCulture);

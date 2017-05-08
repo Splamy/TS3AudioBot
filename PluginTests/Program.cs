@@ -12,7 +12,14 @@ namespace PluginTests
 		static void Main(string[] args)
 		{
 			var mc = new MainClass();
-			mc.LoadPlugin(new FileInfo("PluginA.cs"));
+			var load = mc.LoadPlugin(new FileInfo("PluginA.cs"));
+			if(load.response == PluginResponse.Ok)
+				Console.WriteLine("OK!");
+			else
+				Console.WriteLine("ERROR! : " + load.response);
+
+			Console.WriteLine("End");
+			Console.ReadLine();
 		}
 	}
 
@@ -26,12 +33,14 @@ namespace PluginTests
 		private static readonly FileInfo ts3File = new FileInfo(typeof(IPlugin).Assembly.Location);
 		public AppDomain domain;
 
-		public PluginResponse LoadPlugin(FileInfo file)
+		private IFactory factHolder;
+
+		public PluginHolder LoadPlugin(FileInfo file)
 		{
 			try
 			{
 				if (file.Extension != ".cs" && file.Extension != ".dll" && file.Extension != ".exe")
-					return PluginResponse.UnsupportedFile;
+					return new PluginHolder(PluginResponse.UnsupportedFile);
 
 				domain = AppDomain.CreateDomain(
 					"Plugin_" + file.Name,
@@ -42,7 +51,7 @@ namespace PluginTests
 						ShadowCopyDirectories = ts3File.Directory.FullName,
 						ApplicationBase = ts3File.Directory.FullName,
 						PrivateBinPath = "Plugin/..;Plugin",
-						PrivateBinPathProbe = ""
+						PrivateBinPathProbe = "",
 					});
 				domain.UnhandledException += (s, e) => { Console.WriteLine("Plugin unex: {0}", e.ExceptionObject); };
 
@@ -53,14 +62,38 @@ namespace PluginTests
 					result = PrepareSource(file);
 				else if (file.Extension == ".dll" || file.Extension == ".exe")
 					result = PrepareBinary(file);
-				else throw new InvalidProgramException();
-				
-				return PluginResponse.Ok;
+				else
+					throw new InvalidProgramException();
+
+				if (result == null)
+					return new PluginHolder(PluginResponse.CompileError);
+
+				var plugins = result.ExportedTypes.Where(t => typeof(IPlugin).IsAssignableFrom(t)).ToArray();
+				var facts = result.ExportedTypes.Where(t => typeof(IFactory).IsAssignableFrom(t)).ToArray();
+
+				if (plugins.Length <= 0 && facts.Length <= 0)
+					return new PluginHolder(PluginResponse.NoTypeMatch);
+
+				if (plugins.Length > 1)
+					return new PluginHolder(PluginResponse.TooManyPlugins);
+
+				var plugin = (IPlugin)Activator.CreateInstance(plugins[0]);
+
+				factHolder = (IFactory)Activator.CreateInstance(facts[0]);
+
+				plugin.Initialize(this);
+				factHolder.Process(this);
+
+				AppDomain.Unload(domain);
+
+				factHolder.Process(this);
+
+				return new PluginHolder(PluginResponse.Ok, plugin);
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Possible plugin failed to load: {0}", ex);
-				return PluginResponse.Crash;
+				return new PluginHolder(PluginResponse.Crash);
 			}
 		}
 
@@ -116,9 +149,32 @@ namespace PluginTests
 		}
 	}
 
+	public class PluginHolder
+	{
+		public IPlugin plugin;
+		public PluginResponse response;
+
+		public PluginHolder(PluginResponse resp)
+		{
+			response = resp;
+			plugin = null;
+		}
+
+		public PluginHolder(PluginResponse resp, IPlugin plug)
+		{
+			response = resp;
+			plugin = plug;
+		}
+	}
+
 	public interface IPlugin
 	{
 		void Initialize(MainClass mc);
+	}
+
+	public interface IFactory
+	{
+		void Process(object stuff);
 	}
 
 	public enum PluginResponse

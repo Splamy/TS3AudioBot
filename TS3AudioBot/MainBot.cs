@@ -359,7 +359,7 @@ namespace TS3AudioBot
 		[Command(Admin, "bot name", "Gives the bot a new name.")]
 		public void CommandBotName(string name) => QueryConnection.ChangeName(name).UnwrapThrow();
 
-		[Command(Admin, "bot setup", "Gives the bot a new name.")]
+		[Command(Admin, "bot setup", "Sets all teamspeak rights for the bot to be fully functional.")]
 		[RequiredParameters(0)]
 		public void CommandBotSetup(string adminToken)
 		{

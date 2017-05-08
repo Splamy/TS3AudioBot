@@ -24,6 +24,11 @@ namespace TS3AudioBot.Audio
 		{
 			if (volume.IsAbout(1))
 				return;
+			else if (volume.IsAbout(0))
+			{
+				Array.Clear(audioSamples, 0, length);
+				return;
+			}
 
 			if (BitConverter.IsLittleEndian)
 			{
