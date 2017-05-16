@@ -978,7 +978,7 @@ namespace TS3AudioBot
 			return "Hi " + info.TextMessage.InvokerName;
 		}
 
-		[Command(Admin, "parse", "Displays the AST of the requested command.")]
+		[Command(Admin, "parse command", "Displays the AST of the requested command.")]
 		[Usage("<command>", "The comand to be parsed")]
 		public JsonObject CommandParse(string parameter)
 		{
@@ -991,6 +991,24 @@ namespace TS3AudioBot
 				strb.AppendLine();
 				node.Write(strb, 0);
 				return new JsonSingleObject<ASTNode>(strb.ToString(), node);
+			}
+			catch (Exception ex)
+			{
+				throw new CommandException("GJ - You crashed it!!!", ex, CommandExceptionReason.CommandError);
+			}
+		}
+
+		[Command(Admin, "parse rights", "Validates a rights file.")]
+		[Usage("<command>", "The comand to be parsed")]
+		public JsonObject CommandParseRights(string parameter)
+		{
+			try
+			{
+				var result = Algorithm.EbnfParser.Parser.Tokenize(parameter, Rights.RightsLanguage.RuleSyntax);
+				if (result.Ok)
+					return new JsonEmpty("OK");
+				else
+					return new JsonEmpty("\n" + result.Message);
 			}
 			catch (Exception ex)
 			{

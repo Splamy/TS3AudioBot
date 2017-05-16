@@ -16,21 +16,22 @@
 
 namespace TS3ABotUnitTests
 {
+	using LockCheck;
+	using NUnit.Framework;
 	using System;
 	using System.Collections;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using LockCheck;
-	using NUnit.Framework;
+	using System.Text.RegularExpressions;
 	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
+	using TS3AudioBot.Rights;
 	using TS3Client.Messages;
-	using System.Text.RegularExpressions;
 
 	[TestFixture]
 	public class UnitTests
@@ -250,6 +251,59 @@ namespace TS3ABotUnitTests
 				var roundtrip = Util.ToSeed(str);
 				Assert.AreEqual(i, roundtrip);
 			}
+		}
+
+		[Test]
+		public void RightsFileTest()
+		{
+			Assert.False(Parser.Tokenize("$a::+!play *\ng(0)::+$a").Ok);
+			Assert.False(Parser.Tokenize("+!play { +!try this *, +!play* } ").Ok);
+			Assert.False(Parser.Tokenize("$play { +!try this *, +!play* }").Ok);
+			Assert.True(Parser.Tokenize(",$play{+$play}").Ok);
+			Assert.False(Parser.Tokenize(",$play::+$play}").Ok);
+			Assert.True(Parser.Tokenize(",$play::+$play").Ok);
+			Assert.False(Parser.Tokenize(",$play ::+$play").Ok);
+			Assert.False(Parser.Tokenize(",$play::+$play -").Ok);
+			Assert.False(Parser.Tokenize(",$play::+$play #").Ok);
+			Assert.False(Parser.Tokenize("group(43000000000){}").Ok);
+			Assert.False(Parser.Tokenize("{}").Ok);
+			Assert.False(Parser.Tokenize("+!").Ok);
+			Assert.True(Parser.Tokenize("+!*").Ok);
+			Assert.False(Parser.Tokenize("host([]){}").Ok);
+			Assert.True(Parser.Tokenize("host([1]){}").Ok);
+			Assert.False(Parser.Tokenize("host([1]::){}").Ok);
+			Assert.False(Parser.Tokenize("host([1]:){}").Ok);
+			Assert.False(Parser.Tokenize("$").Ok);
+			Assert.False(Parser.Tokenize("$a").Ok);
+			Assert.False(Parser.Tokenize("$a+").Ok);
+			Assert.False(Parser.Tokenize("$a::").Ok);
+			Assert.False(Parser.Tokenize("$a::+").Ok);
+			Assert.False(Parser.Tokenize("$a::+a").Ok);
+			Assert.False(Parser.Tokenize("$a::+$").Ok);
+			Assert.True(Parser.Tokenize(@"+!play
+$all { +!play },
+$admin { +!help *, +!*, +$all }
+user(gMVR34YE7I/r37+mgmYORV=) { +!help *, +!* }
+group(30) { +!pm, -!settings }
++!play,
+$all { },
+$admin { },
+$admix { } $admib { }
+$admiy { }
+$admiz { }
++!play
+host(127.0.0.1)::group(50)::+!help,
+host(127.0.0.1)::group(50) { +!help },
+host(127.0.0.1) { group(50)::+!help },
+host(127.0.0.1) { group(50) { +!help } }
+host(splamy.de) {
+    group(50) { +!help, +!play },
+    user(gMVR34YE7I/r37+mgmYORV=)::+$proto
+}
+host(127.0.0.1) {}
+host(127.0.0.1:9899) {}
+host(::1) {}
+host([::1]:9899) {}").Ok);
 		}
 
 		/* ====================== Algorithm Tests =========================*/
