@@ -30,7 +30,7 @@ namespace TS3ABotUnitTests
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
-	using TS3AudioBot.Rights;
+	using TS3AudioBot.Algorithm.EbnfParser;
 	using TS3Client.Messages;
 
 	[TestFixture]
@@ -256,30 +256,31 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void RightsFileTest()
 		{
-			Assert.False(Parser.Tokenize("$a::+!play *\ng(0)::+$a").Ok);
-			Assert.False(Parser.Tokenize("+!play { +!try this *, +!play* } ").Ok);
-			Assert.False(Parser.Tokenize("$play { +!try this *, +!play* }").Ok);
-			Assert.True(Parser.Tokenize(",$play{+$play}").Ok);
-			Assert.False(Parser.Tokenize(",$play::+$play}").Ok);
-			Assert.True(Parser.Tokenize(",$play::+$play").Ok);
-			Assert.False(Parser.Tokenize(",$play ::+$play").Ok);
-			Assert.False(Parser.Tokenize(",$play::+$play -").Ok);
-			Assert.False(Parser.Tokenize(",$play::+$play #").Ok);
-			Assert.False(Parser.Tokenize("group(43000000000){}").Ok);
-			Assert.False(Parser.Tokenize("{}").Ok);
-			Assert.False(Parser.Tokenize("+!").Ok);
-			Assert.True(Parser.Tokenize("+!*").Ok);
-			Assert.False(Parser.Tokenize("host([]){}").Ok);
-			Assert.True(Parser.Tokenize("host([1]){}").Ok);
-			Assert.False(Parser.Tokenize("host([1]::){}").Ok);
-			Assert.False(Parser.Tokenize("host([1]:){}").Ok);
-			Assert.False(Parser.Tokenize("$").Ok);
-			Assert.False(Parser.Tokenize("$a").Ok);
-			Assert.False(Parser.Tokenize("$a+").Ok);
-			Assert.False(Parser.Tokenize("$a::").Ok);
-			Assert.False(Parser.Tokenize("$a::+").Ok);
-			Assert.False(Parser.Tokenize("$a::+a").Ok);
-			Assert.False(Parser.Tokenize("$a::+$").Ok);
+			Func<Context, IList<Token>> func = TS3AudioBot.Rights.RightsLanguage.RuleSyntax;
+			Assert.False(Parser.Tokenize("$a::+!play *\ng(0)::+$a", func).Ok);
+			Assert.False(Parser.Tokenize("+!play { +!try this *, +!play* } ", func).Ok);
+			Assert.False(Parser.Tokenize("$play { +!try this *, +!play* }", func).Ok);
+			Assert.True(Parser.Tokenize(",$play{+$play}", func).Ok);
+			Assert.False(Parser.Tokenize(",$play::+$play}", func).Ok);
+			Assert.True(Parser.Tokenize(",$play::+$play", func).Ok);
+			Assert.False(Parser.Tokenize(",$play ::+$play", func).Ok);
+			Assert.False(Parser.Tokenize(",$play::+$play -", func).Ok);
+			Assert.False(Parser.Tokenize(",$play::+$play #", func).Ok);
+			Assert.True(Parser.Tokenize("group(43000000000){}", func).Ok);
+			Assert.False(Parser.Tokenize("{}", func).Ok);
+			Assert.False(Parser.Tokenize("+!", func).Ok);
+			Assert.True(Parser.Tokenize("+!*", func).Ok);
+			Assert.False(Parser.Tokenize("host([]){}", func).Ok);
+			Assert.True(Parser.Tokenize("host([1]){}", func).Ok);
+			Assert.False(Parser.Tokenize("host([1]::){}", func).Ok);
+			Assert.False(Parser.Tokenize("host([1]:){}", func).Ok);
+			Assert.False(Parser.Tokenize("$", func).Ok);
+			Assert.False(Parser.Tokenize("$a", func).Ok);
+			Assert.False(Parser.Tokenize("$a+", func).Ok);
+			Assert.False(Parser.Tokenize("$a::", func).Ok);
+			Assert.False(Parser.Tokenize("$a::+", func).Ok);
+			Assert.False(Parser.Tokenize("$a::+a", func).Ok);
+			Assert.False(Parser.Tokenize("$a::+$", func).Ok);
 			Assert.True(Parser.Tokenize(@"+!play
 $all { +!play },
 $admin { +!help *, +!*, +$all }
@@ -303,7 +304,7 @@ host(splamy.de) {
 host(127.0.0.1) {}
 host(127.0.0.1:9899) {}
 host(::1) {}
-host([::1]:9899) {}").Ok);
+host([::1]:9899) {}", func).Ok);
 		}
 
 		/* ====================== Algorithm Tests =========================*/
