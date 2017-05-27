@@ -17,7 +17,7 @@ install:
   - nuget install NUnit.Runners -OutputDirectory nunit
 
 script:
-  - xbuild /p:Configuration=Release /p:Platform=x86 TS3AudioBot.sln
+  - msbuild /p:Configuration=Release /p:Platform=x86 TS3AudioBot.sln
   - mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/TS3ABotUnitTests.dll
 
 after_script:

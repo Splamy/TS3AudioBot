@@ -361,7 +361,6 @@ namespace TS3AudioBot.Helper
 
 	// diable 'event is never used' since fody generates the usage for us
 #pragma warning disable CS0067
-	[ImplementPropertyChanged]
 	public class ConfigData : INotifyPropertyChanged
 	{
 		[DoNotNotify]
