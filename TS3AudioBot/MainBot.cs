@@ -1004,7 +1004,7 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				var result = Algorithm.EbnfParser.Parser.Tokenize(parameter, Rights.RightsLanguage.RuleSyntax);
+				var result = R.OkR; // TODO
 				if (result.Ok)
 					return new JsonEmpty("OK");
 				else

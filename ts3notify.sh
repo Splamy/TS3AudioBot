@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 
 function EscTS() {
   escTS=$1
@@ -12,6 +12,34 @@ function EscTS() {
   escTS=${escTS//$'\t'/$'\\t'}
   escTS=${escTS//$'\v'/$'\\v'}
 }
+
+if [ -z "$TRAVIS_TEST_RESULT" ]; then
+  EscTS "I like to execute scripts :)"
+  nc -q 2 splamy.de 10011 <<EOF
+use 1
+clientupdate client_nickname=Scriptie
+sendtextmessage targetmode=3 target=1 msg=$escTS
+quit
+EOF
+  trap '' INT
+  echo -e "Ok, ok, so you like to execute random scripts you don't even know what they are doing."
+  sleep 4
+  echo -e "Like I don't even mention this file \033[5;7manywhere\033[0m in the entire setup tutorial."
+  sleep 4
+  echo -e "What makes you think this is a good idea???"
+  sleep 4
+  echo -e "As a punishment you have to watch the entire Star Wars IV movie in ASCII!"
+  sleep 4
+  telnet "towel.blinkenlights.nl"
+  ex=$?
+  if [ $ex -eq 0 ]; then
+    echo -e "Hope you learned your lesson :P"
+  else
+	echo -e "...lucky you, seems like you don't have telnet. Ugh, have a nice day anyway."
+  fi
+  sleep 4
+  exit
+fi
 
 # check the the build result
 if [ $TRAVIS_TEST_RESULT -eq 0 ]; then

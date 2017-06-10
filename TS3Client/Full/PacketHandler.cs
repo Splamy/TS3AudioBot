@@ -24,9 +24,9 @@ namespace TS3Client.Full
 	using System.Net.Sockets;
 	using System.Threading;
 
-	internal sealed class PacketHandler
+	public sealed class PacketHandler
 	{
-		/// <summary>Greatest allowed packet size, including the complete heder.</summary>
+		/// <summary>Greatest allowed packet size, including the complete header.</summary>
 		private const int MaxPacketSize = 500;
 		private const int HeaderSize = 13;
 		private const int MaxDecompressedSize = 40000;
@@ -44,6 +44,7 @@ namespace TS3Client.Full
 		private static readonly TimeSpan MaxLastPingDistance = TimeSpan.FromSeconds(3);
 
 		private readonly ushort[] packetCounter;
+		private readonly uint[] generationCounter;
 		private readonly Dictionary<ushort, OutgoingPacket> packetAckManager;
 		private readonly Dictionary<ushort, OutgoingPacket> packetPingManager;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
@@ -66,11 +67,12 @@ namespace TS3Client.Full
 		{
 			packetAckManager = new Dictionary<ushort, OutgoingPacket>();
 			packetPingManager = new Dictionary<ushort, OutgoingPacket>();
-			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize);
-			receiveQueueLow = new RingQueue<IncomingPacket>(PacketBufferSize);
+			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize, ushort.MaxValue + 1);
+			receiveQueueLow = new RingQueue<IncomingPacket>(PacketBufferSize, ushort.MaxValue + 1);
 			NetworkStats = new NetworkStats();
 
 			packetCounter = new ushort[9];
+			generationCounter = new uint[9];
 			this.ts3Crypt = ts3Crypt;
 			resendThreadId = -1;
 		}
@@ -91,6 +93,7 @@ namespace TS3Client.Full
 				receiveQueue.Clear();
 				receiveQueueLow.Clear();
 				Array.Clear(packetCounter, 0, packetCounter.Length);
+				Array.Clear(generationCounter, 0, generationCounter.Length);
 			}
 
 			resendThread.Start();
@@ -180,7 +183,9 @@ namespace TS3Client.Full
 						packet.PacketFlags |= flags;
 					else
 						packet.PacketFlags |= flags | PacketFlags.Newprotocol;
-					packet.PacketId = GetPacketCounter(packet.PacketType);
+					var ids = GetPacketCounter(packet.PacketType);
+					packet.PacketId = ids.Item1;
+					packet.GenerationId = ids.Item2;
 					if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceWhisper)
 						NetUtil.H2N(packet.PacketId, packet.Data, 0);
 					if (ts3Crypt.CryptoInitComplete)
@@ -189,7 +194,6 @@ namespace TS3Client.Full
 				}
 
 				ts3Crypt.Encrypt(packet);
-
 
 				if (packet.PacketType == PacketType.Command
 					|| packet.PacketType == PacketType.CommandLow
@@ -202,8 +206,14 @@ namespace TS3Client.Full
 			}
 		}
 
-		private ushort GetPacketCounter(PacketType packetType) => packetCounter[(int)packetType];
-		private void IncPacketCounter(PacketType packetType) => packetCounter[(int)packetType]++;
+		private Tuple<ushort, uint> GetPacketCounter(PacketType packetType)
+			=> new Tuple<ushort, uint>(packetCounter[(int)packetType], generationCounter[(int)packetType]);
+		private void IncPacketCounter(PacketType packetType)
+		{
+			packetCounter[(int)packetType]++;
+			if (packetCounter[(int)packetType] == 0)
+				generationCounter[(int)packetType]++;
+		}
 
 		public void CryptoInitDone()
 		{
@@ -264,8 +274,11 @@ namespace TS3Client.Full
 				if (dummy.Address.Equals(remoteAddress.Address) && dummy.Port != remoteAddress.Port)
 					continue;
 
-				packet = ts3Crypt.Decrypt(buffer);
-				if (packet == null)
+				packet = Ts3Crypt.GetIncommingPacket(buffer);
+				if (IsCommandPacketSet(packet))
+					continue;
+				
+				if (!ts3Crypt.Decrypt(packet))
 					continue;
 
 				NetworkStats.LogInPacket(packet);
@@ -294,7 +307,7 @@ namespace TS3Client.Full
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-		private IncomingPacket ReceiveCommand(IncomingPacket packet)
+		private bool IsCommandPacketSet(IncomingPacket packet)
 		{
 			RingQueue<IncomingPacket> packetQueue;
 			if (packet.PacketType == PacketType.Command)
@@ -308,11 +321,25 @@ namespace TS3Client.Full
 				packetQueue = receiveQueueLow;
 			}
 			else
+			{
+				return false;
+			}
+
+			packet.GenerationId = packetQueue.GetGeneration(packet.PacketId);
+			return packetQueue.IsSet(packet.PacketId);
+		}
+
+		private IncomingPacket ReceiveCommand(IncomingPacket packet)
+		{
+			RingQueue<IncomingPacket> packetQueue;
+			if (packet.PacketType == PacketType.Command)
+				packetQueue = receiveQueue;
+			else if (packet.PacketType == PacketType.CommandLow)
+				packetQueue = receiveQueueLow;
+			else
 				throw new InvalidOperationException("The packet is not a command");
 
-			if (packetQueue.IsSet(packet.PacketId))
-				return null;
-			packetQueue.Set(packet, packet.PacketId);
+			packetQueue.Set(packet.PacketId, packet);
 
 			IncomingPacket retPacket;
 			return TryFetchPacket(packetQueue, out retPacket) ? retPacket : null;
@@ -329,7 +356,7 @@ namespace TS3Client.Full
 			for (int i = 0; i < packetQueue.Count; i++)
 			{
 				IncomingPacket peekPacket;
-				if (packetQueue.TryPeek(packetQueue.StartIndex + i, out peekPacket))
+				if (packetQueue.TryPeekStart(i, out peekPacket))
 				{
 					take++;
 					takeLen += peekPacket.Size;
@@ -494,7 +521,7 @@ namespace TS3Client.Full
 		private bool ResendPackages(IEnumerable<OutgoingPacket> packetList, ref TimeSpan sleepSpan)
 		{
 			TimeSpan maxTimeout = GetTimeout(PacketTimeouts.Length);
-			foreach (var outgoingPacket in packetAckManager.Values)
+			foreach (var outgoingPacket in packetList)
 			{
 				var nextTest = (outgoingPacket.LastSendTime - Util.Now) + GetTimeout(outgoingPacket.ResendCount);
 				if (nextTest < TimeSpan.Zero)

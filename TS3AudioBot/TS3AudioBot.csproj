@@ -80,9 +80,6 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Algorithm\EbnfParser\Context.cs" />
-    <Compile Include="Algorithm\EbnfParser\LanguageBase.cs" />
-    <Compile Include="Algorithm\EbnfParser\Token.cs" />
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\AudioEncoder.cs" />
     <Compile Include="Audio\AudioModifier.cs" />
@@ -101,8 +98,6 @@
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="AudioFramework.cs" />
     <Compile Include="ResourceFactories\YoutubeDlHelper.cs" />
-    <Compile Include="Algorithm\EbnfParser\Parser.cs" />
-    <Compile Include="Rights\RightsLanguage.cs" />
     <Compile Include="Sessions\ApiNonce.cs" />
     <Compile Include="Sessions\UserSession.cs" />
     <Compile Include="CommandSystem\CommandException.cs" />

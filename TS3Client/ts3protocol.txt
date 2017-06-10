@@ -45,7 +45,7 @@ Packet 4 (Client -> Server)
                Const: 0x04
     64 bytes : the received 'x'
     64 bytes : the received 'n'
-    04 bytes : the recoived 'level'
+    04 bytes : the received 'level'
    100 bytes : The bytes from [A2]
     64 bytes : 'y' which is the result of x ^ (2 ^ level) % n as an unsigned
                biginteger. Padded from the lower side with '0x00' when shorter

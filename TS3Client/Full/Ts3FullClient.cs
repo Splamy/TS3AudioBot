@@ -375,7 +375,7 @@ namespace TS3Client.Full
 		{
 			// [X,X,Y,DATA]
 			// > X is a ushort in H2N order of a own audio packet counter
-			//     it seem it can be the same as the packet counter so we will let the packethandler do it.
+			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
 			byte[] tmpBuffer = new byte[length + 3];
 			tmpBuffer[2] = (byte)codec;
@@ -393,8 +393,8 @@ namespace TS3Client.Full
 			// > Y is the codec byte (see Enum)
 			// > N is a byte, the count of ChannelIds to send to
 			// > M is a byte, the count of ClientIds to send to
-			// > U is a ulong in H2N order of each targeted channelId, U is repeated N times
-			// > T is a ushort in H2N order of each targeted clientId, T is repeated M times
+			// > U is a ulong in H2N order of each targeted channelId, (U...U) is repeated N times
+			// > T is a ushort in H2N order of each targeted clientId, (T...T) is repeated M times
 			int offset = 2 + 1 + 2 + channelIds.Count * 8 + clientIds.Count * 2;
 			byte[] tmpBuffer = new byte[length + offset];
 			tmpBuffer[2] = (byte)codec;

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -18,71 +18,152 @@ namespace TS3Client.Full
 {
 	using System;
 
-	internal class RingQueue<T>
+	public class RingQueue<T>
 	{
 		private int currentStart;
+		private int currentLength;
 		private T[] ringBuffer;
-		private bool[] ringDoneState;
+		private bool[] ringBufferSet;
 
-		public int StartIndex { get; private set; }
-		public int EndIndex => StartIndex + Count;
-		public int Count { get; private set; }
+		private int mappedBaseOffset;
+		private readonly int mappedMod;
+		private uint generation;
 
-		public RingQueue(int bufferSize)
+		public int Count => currentLength;
+
+		public RingQueue(int bufferSize, int mod)
 		{
+			if (bufferSize >= mod)
+				throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be smaller than buffer size");
 			ringBuffer = new T[bufferSize];
-			ringDoneState = new bool[bufferSize];
+			ringBufferSet = new bool[bufferSize];
+			mappedMod = mod;
 			Clear();
 		}
 
-		public bool Fits(int index) => index < StartIndex + ringBuffer.Length;
+		#region mapping ring array to flat [0 - size] array
 
-		public void Set(T data, int index)
+		private void BufferSet(int index, T value)
 		{
-			if (!Fits(index))
-				throw new ArgumentOutOfRangeException(nameof(index), "Buffer is not large enough for this object.");
-			if (IsSet(index))
-				throw new ArgumentOutOfRangeException(nameof(index), "Object already set.");
-
-			int localIndex = IndexToLocal(index);
-			ringBuffer[localIndex] = data;
-			ringDoneState[localIndex] = true;
-			Count++;
+			if (index > ringBuffer.Length)
+				throw new ArgumentOutOfRangeException(nameof(index));
+			int local = IndexToLocal(index);
+			int newLength = local - currentStart + 1 + (local >= currentStart ? 0 : ringBuffer.Length);
+			currentLength = Math.Max(currentLength, newLength);
+			ringBuffer[local] = value;
+			ringBufferSet[local] = true;
 		}
 
-		public bool TryDequeue(out T obj)
+		private T BufferGet(int index)
 		{
-			if (!TryPeek(StartIndex, out obj)) return false;
+			if (index > ringBuffer.Length)
+				throw new ArgumentOutOfRangeException(nameof(index));
+			int local = IndexToLocal(index);
+			return ringBuffer[local];
+		}
 
-			ringDoneState[currentStart] = false;
+		private bool StateGet(int index)
+		{
+			if (index > ringBuffer.Length)
+				throw new ArgumentOutOfRangeException(nameof(index));
+			int local = IndexToLocal(index);
+			return ringBufferSet[local];
+		}
 
-			StartIndex++;
-			Count--;
+		private void BufferPop()
+		{
+			ringBufferSet[currentStart] = false;
+			// clear data to allow them to be collected by gc
+			// when in debug it might be nice to see what was there
+#if !DEBUG
+			ringBuffer[currentStart] = default(T);
+#endif
 			currentStart = (currentStart + 1) % ringBuffer.Length;
+			currentLength--;
+		}
+
+		private int IndexToLocal(int index) => (currentStart + index) % ringBuffer.Length;
+
+		#endregion
+
+		public void Set(int mappedValue, T value)
+		{
+			int index = MappedToIndex(mappedValue);
+			if (index > ringBuffer.Length)
+				throw new ArgumentOutOfRangeException(nameof(mappedValue), "Buffer is not large enough for this object.");
+			if (IsSet(mappedValue))
+				throw new ArgumentOutOfRangeException(nameof(mappedValue), "Object already set.");
+
+			BufferSet(index, value);
+		}
+
+		private int MappedToIndex(int mappedValue)
+		{
+			if (mappedValue >= mappedMod)
+				throw new ArgumentOutOfRangeException(nameof(mappedValue));
+
+			if (IsNextGen(mappedValue))
+			{
+				// | XX             X>    | <= The part from BaseOffset to MappedMod is small enough to consider packets with wrapped numbers again
+				//   /\ NewValue    /\ BaseOffset
+				return (mappedValue + mappedMod) - mappedBaseOffset;
+			}
+			else
+			{
+				// |  X>             XX   |
+				//    /\ BaseOffset  /\ NewValue    // normal case
+				return mappedValue - mappedBaseOffset;
+			}
+		}
+
+		public bool IsSet(int mappedValue)
+		{
+			int index = MappedToIndex(mappedValue);
+			if (index < 0)
+				return true;
+			if (index > currentLength)
+				return false;
+			return StateGet(index);
+		}
+
+		public bool IsNextGen(int mappedValue) => mappedBaseOffset > mappedMod - ringBuffer.Length && mappedValue < ringBuffer.Length;
+
+		public uint GetGeneration(int mappedValue) => (uint)(generation + (IsNextGen(mappedValue) ? 1 : 0));
+
+		public bool TryDequeue(out T value)
+		{
+			if (!TryPeekStart(0, out value)) return false;
+			BufferPop();
+			mappedBaseOffset = (mappedBaseOffset + 1) % mappedMod;
+			if (mappedBaseOffset == 0)
+				generation++;
 			return true;
 		}
 
-		public bool TryPeek(int index, out T obj)
+		public bool TryPeekStart(int index, out T value)
 		{
-			int localIndex = IndexToLocal(index);
-			if (ringDoneState[localIndex] != true) { obj = default(T); return false; }
-			else { obj = ringBuffer[localIndex]; return true; }
-		}
+			if (index < 0)
+				throw new ArgumentOutOfRangeException(nameof(index));
 
-		public bool IsSet(int index)
-		{
-			if (index < StartIndex) return true;
-			if (index >= EndIndex) return false;
-			return ringDoneState[IndexToLocal(index)];
+			if (index >= Count || currentLength <= 0 || !StateGet(index))
+			{
+				value = default(T);
+				return false;
+			}
+			else
+			{
+				value = BufferGet(index);
+				return true;
+			}
 		}
-
-		private int IndexToLocal(int index) => (currentStart + index - StartIndex) % ringBuffer.Length;
 
 		public void Clear()
 		{
 			currentStart = 0;
-			StartIndex = 0;
-			Count = 0;
+			currentLength = 0;
+			Array.Clear(ringBufferSet, 0, ringBufferSet.Length);
+			mappedBaseOffset = 0;
+			generation = 0;
 		}
 	}
 }

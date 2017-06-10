@@ -23,7 +23,7 @@ namespace TS3Client.Full
 
 	// TODO include udp/ip header size to get correct values
 
-	internal class NetworkStats
+	public sealed class NetworkStats
 	{
 		private long[] outPackets = new long[3];
 		private long[] inPackets = new long[3];

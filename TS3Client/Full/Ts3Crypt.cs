@@ -52,9 +52,9 @@ namespace TS3Client.Full
 		internal bool CryptoInitComplete { get; private set; }
 		private readonly byte[] ivStruct = new byte[20];
 		private readonly byte[] fakeSignature = new byte[MacLen];
-		private readonly Tuple<byte[], byte[]>[] cachedKeyNonces = new Tuple<byte[], byte[]>[PacketTypeKinds * 2];
+		private readonly Tuple<byte[], byte[], uint>[] cachedKeyNonces = new Tuple<byte[], byte[], uint>[PacketTypeKinds * 2];
 
-		internal Ts3Crypt()
+		public Ts3Crypt()
 		{
 			Reset();
 		}
@@ -287,7 +287,7 @@ namespace TS3Client.Full
 				return;
 			}
 
-			var keyNonce = GetKeyNonce(false, packet.PacketId, 0, packet.PacketType);
+			var keyNonce = GetKeyNonce(false, packet.PacketId, packet.GenerationId, packet.PacketType);
 			packet.BuildHeader();
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
 
@@ -332,43 +332,41 @@ namespace TS3Client.Full
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		internal IncomingPacket Decrypt(byte[] data)
+		internal static IncomingPacket GetIncommingPacket(byte[] data)
 		{
 			if (data.Length < InHeaderLen + MacLen)
 				return null;
 
-			var packet = new IncomingPacket(data)
+			return new IncomingPacket(data)
 			{
 				PacketTypeFlagged = data[MacLen + 2],
 				PacketId = NetUtil.N2Hushort(data, MacLen),
 			};
+		}
 
+		internal bool Decrypt(IncomingPacket packet)
+		{
 			if (packet.PacketType == PacketType.Init1)
 			{
-				if (!FakeDecrypt(packet, TS3InitMac))
-					return null;
+				return FakeDecrypt(packet, TS3InitMac);
 			}
 			else
 			{
 				if (packet.UnencryptedFlag)
 				{
-					if (!FakeDecrypt(packet, fakeSignature))
-						return null;
+					return FakeDecrypt(packet, fakeSignature);
 				}
 				else
 				{
-					if (!Decrypt(packet))
-						return null;
+					return DecryptData(packet);
 				}
 			}
-
-			return packet;
 		}
 
-		private bool Decrypt(IncomingPacket packet)
+		private bool DecryptData(IncomingPacket packet)
 		{
 			Array.Copy(packet.Raw, MacLen, packet.Header, 0, InHeaderLen);
-			var keyNonce = GetKeyNonce(true, packet.PacketId, 0, packet.PacketType);
+			var keyNonce = GetKeyNonce(true, packet.PacketId, packet.GenerationId, packet.PacketType);
 			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
 
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
@@ -411,7 +409,7 @@ namespace TS3Client.Full
 		/// <summary>TS3 uses a new key and nonce for each packet sent and received. This method generates and caches these.</summary>
 		/// <param name="fromServer">True if the packet is from server to client, false for client to server.</param>
 		/// <param name="packetId">The id of the packet, host order.</param>
-		/// <param name="generationId">Seriously no idea, just pass 0 and it should be fine.</param>
+		/// <param name="generationId">Each time the packetId reaches 65535 the next packet will go on with 0 and the generationId will be increased by 1.</param>
 		/// <param name="packetType">The packetType.</param>
 		/// <returns>A tuple of (key, nonce)</returns>
 		private Tuple<byte[], byte[]> GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
@@ -423,7 +421,7 @@ namespace TS3Client.Full
 			byte packetTypeRaw = (byte)packetType;
 
 			int cacheIndex = packetTypeRaw * (fromServer ? 1 : 2);
-			if (cachedKeyNonces[cacheIndex] == null)
+			if (cachedKeyNonces[cacheIndex] == null || cachedKeyNonces[cacheIndex].Item3 != generationId)
 			{
 				// this part of the key/nonce is fixed by the message direction and packetType
 				byte[] tmpToHash = new byte[26];
@@ -440,7 +438,7 @@ namespace TS3Client.Full
 
 				var result = Hash256It(tmpToHash);
 
-				cachedKeyNonces[cacheIndex] = new Tuple<byte[], byte[]>(result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray());
+				cachedKeyNonces[cacheIndex] = new Tuple<byte[], byte[], uint>(result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
 			}
 
 			byte[] key = new byte[16];

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 
 namespace TS3Client.Full
 {
-	class BasePacket
+	public class BasePacket
 	{
 		public PacketType PacketType
 		{
@@ -30,6 +30,7 @@ namespace TS3Client.Full
 		}
 		public byte PacketTypeFlagged { get; set; }
 		public ushort PacketId { get; set; }
+		public uint GenerationId { get; set; }
 		public int Size => Data.Length;
 
 		public byte[] Raw { get; set; }
@@ -39,7 +40,6 @@ namespace TS3Client.Full
 		public BasePacket()
 		{
 		}
-
 
 		public bool FragmentedFlag
 		{
@@ -76,6 +76,16 @@ namespace TS3Client.Full
 				if (value) PacketTypeFlagged |= (byte)PacketFlags.Unencrypted;
 				else PacketTypeFlagged &= (byte)~PacketFlags.Unencrypted;
 			}
+		}
+
+		public override string ToString()
+		{
+			return $"Type: {PacketType}\tFlags: [ " +
+				$"{(FragmentedFlag ? "X" : "_")} {(NewProtocolFlag ? "X" : "_")} " +
+				$"{(CompressedFlag ? "X" : "_")} {(UnencryptedFlag ? "X" : "_")} ]\t" +
+				$"Id: {PacketId}\n" +
+				$"  Data: { DebugUtil.DebugToHex(Data) }\n" +
+				$"  ASCI: { Util.Encoder.GetString(Data) }";
 		}
 	}
 }

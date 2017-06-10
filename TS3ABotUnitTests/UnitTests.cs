@@ -30,8 +30,8 @@ namespace TS3ABotUnitTests
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
-	using TS3AudioBot.Algorithm.EbnfParser;
 	using TS3Client.Messages;
+	using TS3Client.Full;
 
 	[TestFixture]
 	public class UnitTests
@@ -253,60 +253,6 @@ namespace TS3ABotUnitTests
 			}
 		}
 
-		[Test]
-		public void RightsFileTest()
-		{
-			Func<Context, IList<Token>> func = TS3AudioBot.Rights.RightsLanguage.RuleSyntax;
-			Assert.False(Parser.Tokenize("$a::+!play *\ng(0)::+$a", func).Ok);
-			Assert.False(Parser.Tokenize("+!play { +!try this *, +!play* } ", func).Ok);
-			Assert.False(Parser.Tokenize("$play { +!try this *, +!play* }", func).Ok);
-			Assert.True(Parser.Tokenize(",$play{+$play}", func).Ok);
-			Assert.False(Parser.Tokenize(",$play::+$play}", func).Ok);
-			Assert.True(Parser.Tokenize(",$play::+$play", func).Ok);
-			Assert.False(Parser.Tokenize(",$play ::+$play", func).Ok);
-			Assert.False(Parser.Tokenize(",$play::+$play -", func).Ok);
-			Assert.False(Parser.Tokenize(",$play::+$play #", func).Ok);
-			Assert.True(Parser.Tokenize("group(43000000000){}", func).Ok);
-			Assert.False(Parser.Tokenize("{}", func).Ok);
-			Assert.False(Parser.Tokenize("+!", func).Ok);
-			Assert.True(Parser.Tokenize("+!*", func).Ok);
-			Assert.False(Parser.Tokenize("host([]){}", func).Ok);
-			Assert.True(Parser.Tokenize("host([1]){}", func).Ok);
-			Assert.False(Parser.Tokenize("host([1]::){}", func).Ok);
-			Assert.False(Parser.Tokenize("host([1]:){}", func).Ok);
-			Assert.False(Parser.Tokenize("$", func).Ok);
-			Assert.False(Parser.Tokenize("$a", func).Ok);
-			Assert.False(Parser.Tokenize("$a+", func).Ok);
-			Assert.False(Parser.Tokenize("$a::", func).Ok);
-			Assert.False(Parser.Tokenize("$a::+", func).Ok);
-			Assert.False(Parser.Tokenize("$a::+a", func).Ok);
-			Assert.False(Parser.Tokenize("$a::+$", func).Ok);
-			Assert.True(Parser.Tokenize(@"+!play
-$all { +!play },
-$admin { +!help *, +!*, +$all }
-user(gMVR34YE7I/r37+mgmYORV=) { +!help *, +!* }
-group(30) { +!pm, -!settings }
-+!play,
-$all { },
-$admin { },
-$admix { } $admib { }
-$admiy { }
-$admiz { }
-+!play
-host(127.0.0.1)::group(50)::+!help,
-host(127.0.0.1)::group(50) { +!help },
-host(127.0.0.1) { group(50)::+!help },
-host(127.0.0.1) { group(50) { +!help } }
-host(splamy.de) {
-    group(50) { +!help, +!play },
-    user(gMVR34YE7I/r37+mgmYORV=)::+$proto
-}
-host(127.0.0.1) {}
-host(127.0.0.1:9899) {}
-host(::1) {}
-host([::1]:9899) {}", func).Ok);
-		}
-
 		/* ====================== Algorithm Tests =========================*/
 
 		[Test]
@@ -428,7 +374,7 @@ host([::1]:9899) {}", func).Ok);
 			}
 		}
 
-		/* =================== ResourceFactories Tests =====================*/
+		/* =================== ResourceFactories Tests ====================*/
 
 		[Test]
 		public void Factory_YoutubeFactoryTest()
@@ -443,6 +389,93 @@ host([::1]:9899) {}", func).Ok);
 
 				// restoring links
 				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink("robqdGEhQWo"));
+			}
+		}
+
+		/* ======================= TS3Client Tests ========================*/
+
+		[Test]
+		public void Ts3Client_RingQueueTest()
+		{
+			int ov;
+			var q = new RingQueue<int>(3, 5);
+
+			q.Set(0, 42);
+
+			Assert.True(q.TryPeekStart(0, out ov));
+			Assert.AreEqual(ov, 42);
+
+			q.Set(1, 43);
+
+			// already set
+			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(1, 99));
+
+			Assert.True(q.TryPeekStart(0, out ov));
+			Assert.AreEqual(ov, 42);
+			Assert.True(q.TryPeekStart(1, out ov));
+			Assert.AreEqual(ov, 43);
+
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 42);
+
+			Assert.True(q.TryPeekStart(0, out ov));
+			Assert.AreEqual(ov, 43);
+			Assert.False(q.TryPeekStart(1, out ov));
+
+			q.Set(3, 45);
+			q.Set(2, 44);
+
+			// buffer overfull
+			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(4, 99));
+
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 43);
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 44);
+
+			q.Set(4, 46);
+
+			// out of mod range
+			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(5, 99));
+
+			q.Set(0, 47);
+
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 45);
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 46);
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 47);
+
+			q.Set(2, 49);
+
+			Assert.False(q.TryDequeue(out ov));
+
+			q.Set(1, 48);
+
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 48);
+			Assert.True(q.TryDequeue(out ov));
+			Assert.AreEqual(ov, 49);
+		}
+
+		[Test]
+		public void Ts3Client_RingQueueTest2()
+		{
+			int ov;
+			var q = new RingQueue<int>(50, ushort.MaxValue + 1);
+
+			for (int i = 0; i < ushort.MaxValue - 10; i++)
+			{
+				q.Set(i, 42);
+				q.TryDequeue(out ov);
+			}
+
+			Assert.True(q.IsSet(ushort.MaxValue - 20));
+
+			for (int i = ushort.MaxValue - 10; i < ushort.MaxValue + 10; i++)
+			{
+				q.Set(i % (ushort.MaxValue + 1), 42);
 			}
 		}
 	}
