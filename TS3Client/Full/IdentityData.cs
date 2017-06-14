@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -27,5 +27,8 @@ namespace TS3Client.Full
 		public BigInteger PrivateKey { get; set; }
 		public ulong ValidKeyOffset { get; set; }
 		public ulong LastCheckedKeyOffset { get; set; }
+
+		private string clientUid = null;
+		public string ClientUid => clientUid ?? (clientUid = Ts3Crypt.GetUidFromPublicKey(PublicKeyString));
 	}
 }

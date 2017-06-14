@@ -140,7 +140,7 @@ Field: id, id, Id, ChannelIdT
 Field: invokerid, invokerid, InvokerId, ClientIdT
 Field: invokername, invokername, InvokerName, string
 Field: invokeruid, invokeruid, InvokerUid, ClientUidT
-Field: lt, lt, Lt, int
+Field: lt, lt, LicenseType, ushort
 Field: msg, msg, Message, string
 Field: n_modifyp, n_modifyp, NeededModifyPower, int
 Field: n_member_addp, n_member_addp, NeededMemberAddPower, int
@@ -152,7 +152,7 @@ Field: order, order, Order, int
 Field: permid, permid, PermissionId, PermissionId
 Field: permvalue, permvalue, PermissionValue, int
 Field: pid, pid, ParentChannelId, ChannelIdT
-Field: pv, pv, Pv, int
+Field: pv, pv, Pv, uint
 Field: reasonid, reasonid, Reason, MoveReason
 Field: reasonmsg, reasonmsg, ReasonMessage, string
 Field: savedb, savedb, GroupIsPermanent, bool

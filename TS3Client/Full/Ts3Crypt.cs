@@ -142,6 +142,13 @@ namespace TS3Client.Full
 			return Convert.ToBase64String(dataArray);
 		}
 
+		internal static string GetUidFromPublicKey(string publicKey)
+		{
+			var publicKeyBytes = Encoding.ASCII.GetBytes(publicKey);
+			var hashBytes = Ts3Crypt.Hash1It(publicKeyBytes);
+			return Convert.ToBase64String(hashBytes);
+		}
+
 		#endregion
 
 		#region TS3INIT1 / CRYPTO INIT
