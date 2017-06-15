@@ -31,6 +31,7 @@ namespace TS3AudioBot
 	using Sessions;
 	using Web.Api;
 	using Web;
+	using Rights;
 
 	using TS3Client;
 	using TS3Client.Messages;
@@ -75,6 +76,7 @@ namespace TS3AudioBot
 		public PlayManager PlayManager { get; private set; }
 		public ITargetManager TargetManager { get; private set; }
 		public ConfigFile ConfigManager { get; private set; }
+		public RightsManager RightsManager { get; private set; }
 
 		public bool QuizMode { get; set; }
 
@@ -116,6 +118,7 @@ namespace TS3AudioBot
 			var pld = ConfigManager.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
 			var yfd = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
 			var webd = ConfigManager.GetDataStruct<WebData>("WebData", true);
+			var rmd = ConfigManager.GetDataStruct<RightsManagerData>("RightsManager", true);
 			mainBotData = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
 			ConfigManager.Close();
 
@@ -161,6 +164,7 @@ namespace TS3AudioBot
 			PluginManager = new PluginManager(this, pmd);
 			PlayManager = new PlayManager(this);
 			WebManager = new WebManager(this, webd);
+			RightsManager = new RightsManager(rmd);
 			TargetManager = teamspeakClient;
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
@@ -193,7 +197,6 @@ namespace TS3AudioBot
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
 			//QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerUid);
-
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
 			WebManager.StartServerAsync();
