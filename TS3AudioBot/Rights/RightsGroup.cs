@@ -25,13 +25,13 @@ namespace TS3AudioBot.Rights
 			Name = name;
 		}
 
-		public override RightsGroup ResolveGroup(string groupName)
+		public override RightsGroup ResolveGroup(string groupName, ParseContext ctx)
 		{
 			if (Name == groupName)
 				return this;
 			if (Parent == null)
 				return null;
-			return Parent.ResolveGroup(groupName);
+			return Parent.ResolveGroup(groupName, ctx);
 		}
 	}
 }

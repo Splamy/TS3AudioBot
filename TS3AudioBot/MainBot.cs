@@ -1003,15 +1003,17 @@ namespace TS3AudioBot
 
 		[Command(Admin, "parse rights", "Validates a rights file.")]
 		[Usage("<command>", "The comand to be parsed")]
-		public JsonObject CommandParseRights(string parameter)
+		public JsonObject CommandParseRights(ExecutionInformation info)
 		{
 			try
 			{
-				var result = R.OkR; // TODO
+				var callText = info.TextMessage.Message;
+				var rawData = callText.Split(new char[] { ' ', '\n', '\r' }, 3, StringSplitOptions.RemoveEmptyEntries);
+				var result = RightsManager.ReadText(rawData[2]);
 				if (result.Ok)
-					return new JsonEmpty("OK");
+					return new JsonEmpty(result.Value);
 				else
-					return new JsonEmpty("\n" + result.Message);
+					return new JsonEmpty(result.Message);
 			}
 			catch (Exception ex)
 			{

@@ -16,11 +16,12 @@
 
 namespace TS3AudioBot.Rights
 {
+	using Helper;
 	using Nett;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using TS3AudioBot.Helper;
+	using System.Text;
 
 	public class RightsManager
 	{
@@ -31,9 +32,7 @@ namespace TS3AudioBot.Rights
 
 		public RightsManager(RightsManagerData rmd)
 		{
-			Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
 			rightsManagerData = rmd;
-			RecalculateRights();
 		}
 
 		public bool HasRight(InvokerData inv)
@@ -43,60 +42,93 @@ namespace TS3AudioBot.Rights
 
 		// Loading and Parsing
 
-		private TomlTable ReadFile()
+		public bool ReadFile()
 		{
 			try
 			{
-				return Toml.ReadFile(rightsManagerData.RightsFile);
+				var table = Toml.ReadFile(rightsManagerData.RightsFile);
+				var ctx = new ParseContext();
+				RecalculateRights(table, ctx);
+				foreach (var err in ctx.Errors)
+					Log.Write(Log.Level.Error, err);
+				foreach (var warn in ctx.Warnings)
+					Log.Write(Log.Level.Warning, warn);
+				return ctx.Errors.Count == 0;
 			}
 			catch (Exception ex)
 			{
 				Log.Write(Log.Level.Error, "The rights file could not be parsed: {0}", ex);
-				return null;
+				return false;
 			}
 		}
 
-		private bool RecalculateRights()
+		public R<string> ReadText(string text)
+		{
+			try
+			{
+				var table = Toml.ReadString(text);
+				var ctx = new ParseContext();
+				RecalculateRights(table, ctx);
+				var strb = new StringBuilder();
+				foreach (var warn in ctx.Warnings)
+					strb.Append("WRN: ").AppendLine(warn);
+				if (ctx.Errors.Count == 0)
+				{
+					strb.Append(string.Join("\n", Rules.Select(x => x.ToString())));
+					if (strb.Length > 900)
+						strb.Length = 900;
+					return R<string>.OkR(strb.ToString());
+				}
+				else
+				{
+					foreach (var err in ctx.Errors)
+						strb.Append("ERR: ").AppendLine(err);
+					if (strb.Length > 900)
+						strb.Length = 900;
+					return R<string>.Err(strb.ToString());
+				}
+			}
+			catch (Exception ex)
+			{
+				return R<string>.Err("The rights file could not be parsed: " + ex.Message);
+			}
+		}
+
+		private void RecalculateRights(TomlTable table, ParseContext parseCtx)
 		{
 			Rules = new RightsRule[0];
 
-			var table = ReadFile();
-			if (table == null)
-				return false;
-
-			var declarations = new List<RightsDecl>();
 			var rootRule = new RightsRule();
-			rootRule.ParseChilden(table, declarations);
+			if (!rootRule.ParseChilden(table, parseCtx))
+				return;
 
-			var rightGroups = declarations.OfType<RightsGroup>().ToArray();
-			var rightRules = declarations.OfType<RightsRule>().ToArray();
+			parseCtx.SplitDeclarations();
 
-			if (!ValidateUniqueGroupNames(rightGroups))
-				return false;
+			if (!ValidateUniqueGroupNames(parseCtx))
+				return;
 
-			if (!ResolveIncludes(declarations))
-				return false;
+			if (!ResolveIncludes(parseCtx))
+				return;
 
-			if (!CheckCyclicGroupDependencies(rightGroups))
-				return false;
+			if (!CheckCyclicGroupDependencies(parseCtx))
+				return;
 
 			BuildLevel(rootRule);
 
-			LintDeclarations(declarations);
+			LintDeclarations(parseCtx);
 
-			FlattenGroups(rightGroups);
+			FlattenGroups(parseCtx);
 
 			FlattenRules(rootRule);
 
-			Rules = rightRules;
-			return true;
+			Rules = parseCtx.Rules;
 		}
 
-		private static bool ValidateUniqueGroupNames(RightsGroup[] groups)
+		private static bool ValidateUniqueGroupNames(ParseContext ctx)
 		{
 			bool hasErrors = false;
 
-			foreach (var checkGroup in groups)
+			foreach (var checkGroup in ctx.Groups)
 			{
 				// check that the name is unique
 				var parent = checkGroup.Parent;
@@ -108,7 +140,7 @@ namespace TS3AudioBot.Rights
 							&& cmpGroup is RightsGroup
 							&& ((RightsGroup)cmpGroup).Name == checkGroup.Name)
 						{
-							Log.Write(Log.Level.Error, "Ambiguous group name: {0}", checkGroup.Name);
+							ctx.Errors.Add($"Ambiguous group name: {checkGroup.Name}");
 							hasErrors = true;
 						}
 					}
@@ -119,21 +151,21 @@ namespace TS3AudioBot.Rights
 			return !hasErrors;
 		}
 
-		private static bool ResolveIncludes(List<RightsDecl> declarations)
+		private static bool ResolveIncludes(ParseContext ctx)
 		{
 			bool hasErrors = false;
 
-			foreach (var decl in declarations)
-				hasErrors |= !decl.ResolveIncludes();
+			foreach (var decl in ctx.Declarations)
+				hasErrors |= !decl.ResolveIncludes(ctx);
 
 			return !hasErrors;
 		}
 
-		private static bool CheckCyclicGroupDependencies(RightsGroup[] groups)
+		private static bool CheckCyclicGroupDependencies(ParseContext ctx)
 		{
 			bool hasErrors = false;
 
-			foreach (var checkGroup in groups)
+			foreach (var checkGroup in ctx.Groups)
 			{
 				var included = new HashSet<RightsGroup>();
 				var remainingIncludes = new Queue<RightsGroup>();
@@ -148,7 +180,7 @@ namespace TS3AudioBot.Rights
 						if (newInclude == checkGroup)
 						{
 							hasErrors = true;
-							Log.Write(Log.Level.Error, "Group \"{0}\" has a cyclic include hierachy.", checkGroup.Name);
+							ctx.Errors.Add($"Group \"{checkGroup.Name}\" has a cyclic include hierachy.");
 							break;
 						}
 						if (!included.Contains(newInclude))
@@ -168,19 +200,49 @@ namespace TS3AudioBot.Rights
 					BuildLevel(child, level + RuleLevelSize);
 		}
 
-		private static void LintDeclarations(List<RightsDecl> declarations)
+		private static void LintDeclarations(ParseContext ctx)
 		{
-			// TODO
-
 			// check if <+> contains <-> decl
+			foreach (var decl in ctx.Declarations)
+			{
+				var uselessAdd = decl.DeclAdd.Intersect(decl.DeclDeny).ToArray();
+				foreach (var uAdd in uselessAdd)
+					ctx.Warnings.Add($"Rule has declaration \"{uAdd}\" in \"+\" and \"-\"");
+			}
 
 			// top level <-> declaration is useless
+			foreach (var decl in ctx.Declarations)
+			{
+				if (decl.Includes.Length == 0 && decl.DeclDeny.Length > 0)
+					ctx.Warnings.Add($"Rule with \"-\" declaration but no include to override");
+			}
 
 			// check if rule has no matcher
+			foreach (var rule in ctx.Rules)
+			{
+				if (rule.MatchClientGroupId.Length == 0
+					&& rule.MatchClientUid.Length == 0
+					&& rule.MatchHost.Length == 0
+					&& rule.MatchPermission.Length == 0
+					&& rule.Parent != null)
+					ctx.Warnings.Add($"Rule has no matcher");
+			}
 
 			// check for impossible combinations uid + uid, server + server, perm + perm ?
+			// TODO
 
 			// check for unused group
+			var unusedGroups = new HashSet<RightsGroup>(ctx.Groups);
+			foreach (var decl in ctx.Declarations)
+			{
+				foreach (var include in decl.Includes)
+				{
+					if (unusedGroups.Contains(include))
+						unusedGroups.Remove(include);
+				}
+			}
+			foreach (var uGroup in unusedGroups)
+				ctx.Warnings.Add($"Group \"{uGroup.Name}\" is nerver included in a rule");
 		}
 
 		private static void MergeGroups(RightsDecl main, params RightsDecl[] merge)
@@ -191,10 +253,10 @@ namespace TS3AudioBot.Rights
 				main.DeclAdd = include.DeclAdd.Except(main.DeclDeny).Concat(main.DeclAdd).Distinct().ToArray();
 		}
 
-		private static void FlattenGroups(RightsGroup[] groups)
+		private static void FlattenGroups(ParseContext ctx)
 		{
-			var notReachable = new Queue<RightsGroup>(groups);
-			var currentlyReached = new HashSet<RightsGroup>(groups.Where(x => x.Includes.Length == 0));
+			var notReachable = new Queue<RightsGroup>(ctx.Groups);
+			var currentlyReached = new HashSet<RightsGroup>(ctx.Groups.Where(x => x.Includes.Length == 0));
 
 			while (notReachable.Count > 0)
 			{
@@ -224,7 +286,28 @@ namespace TS3AudioBot.Rights
 				if (child is RightsRule)
 					FlattenRules((RightsRule)child);
 		}
+	}
 
+	internal class ParseContext
+	{
+		public List<RightsDecl> Declarations { get; }
+		public RightsGroup[] Groups { get; private set; }
+		public RightsRule[] Rules { get; private set; }
+		public List<string> Errors { get; }
+		public List<string> Warnings { get; }
+
+		public ParseContext()
+		{
+			Declarations = new List<RightsDecl>();
+			Errors = new List<string>();
+			Warnings = new List<string>();
+		}
+
+		public void SplitDeclarations()
+		{
+			Groups = Declarations.OfType<RightsGroup>().ToArray();
+			Rules = Declarations.OfType<RightsRule>().ToArray();
+		}
 	}
 
 	struct DeclLevel

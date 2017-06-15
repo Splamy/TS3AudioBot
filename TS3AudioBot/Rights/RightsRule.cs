@@ -44,33 +44,29 @@ namespace TS3AudioBot.Rights
 			if (MatchPermission == null) MatchPermission = new string[0];
 		}
 
-		public override bool ParseKey(string key, TomlObject tomlObj, List<RightsDecl> rules)
+		public override bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)
 		{
-			if (base.ParseKey(key, tomlObj, rules))
+			if (base.ParseKey(key, tomlObj, ctx))
 				return true;
 
 			switch (key)
 			{
 			case "host":
 				MatchHost = TomlTools.GetValues<string>(tomlObj);
-				if (MatchHost == null)
-					Log.Write(Log.Level.Error, "<host> Field has invalid data.");
-				break;
+				if (MatchHost == null) ctx.Errors.Add("<host> Field has invalid data.");
+				return true;
 			case "groupid":
 				MatchClientGroupId = TomlTools.GetValues<ulong>(tomlObj);
-				if (MatchClientGroupId == null)
-					Log.Write(Log.Level.Error, "<groupid> Field has invalid data.");
-				break;
+				if (MatchClientGroupId == null) ctx.Errors.Add("<groupid> Field has invalid data.");
+				return true;
 			case "useruid":
 				MatchClientUid = TomlTools.GetValues<string>(tomlObj);
-				if (MatchClientUid == null)
-					Log.Write(Log.Level.Error, "<useruid> Field has invalid data.");
-				break;
+				if (MatchClientUid == null) ctx.Errors.Add("<useruid> Field has invalid data.");
+				return true;
 			case "perm":
 				MatchPermission = TomlTools.GetValues<string>(tomlObj);
-				if (MatchPermission == null)
-					Log.Write(Log.Level.Error, "<perm> Field has invalid data.");
-				break;
+				if (MatchPermission == null) ctx.Errors.Add("<perm> Field has invalid data.");
+				return true;
 			case "rule":
 				if (tomlObj.TomlType == TomlObjectType.ArrayOfTables)
 				{
@@ -80,14 +76,15 @@ namespace TS3AudioBot.Rights
 						var rule = new RightsRule();
 						Children.Add(rule);
 						rule.Parent = this;
-						rule.ParseChilden(childTable, rules);
+						rule.ParseChilden(childTable, ctx);
 					}
+					return true;
 				}
 				else
 				{
-					Log.Write(Log.Level.Error, "Misused key with reserved name \"rule\".");
+					ctx.Errors.Add("Misused key with reserved name \"rule\".");
+					return false;
 				}
-				break;
 			default:
 				// group
 				if (key.StartsWith("$"))
@@ -98,21 +95,19 @@ namespace TS3AudioBot.Rights
 						var group = new RightsGroup(key);
 						Children.Add(group);
 						group.Parent = this;
-						group.ParseChilden(childTable, rules);
+						group.ParseChilden(childTable, ctx);
 						return true;
 					}
 					else
 					{
-						Log.Write(Log.Level.Error, "Misused key for group declaration: {0}.", key);
+						ctx.Errors.Add($"Misused key for group declaration: {key}.");
 					}
 				}
 				return false;
 			}
-
-			return true;
 		}
 
-		public override RightsGroup ResolveGroup(string groupName)
+		public override RightsGroup ResolveGroup(string groupName, ParseContext ctx)
 		{
 			foreach (var child in Children)
 			{
@@ -121,7 +116,12 @@ namespace TS3AudioBot.Rights
 			}
 			if (Parent == null)
 				return null;
-			return Parent.ResolveGroup(groupName);
+			return Parent.ResolveGroup(groupName, ctx);
+		}
+
+		public override string ToString()
+		{
+			return $"[+:{string.Join(",", DeclAdd)} | -:{string.Join(",", DeclDeny)}]";
 		}
 	}
 }

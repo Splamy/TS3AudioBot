@@ -41,57 +41,57 @@ namespace TS3AudioBot.Rights
 			if (DeclDeny == null) DeclDeny = new string[0];
 		}
 
-		public virtual bool ParseKey(string key, TomlObject tomlObj, List<RightsDecl> rules)
+		public virtual bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)
 		{
 			switch (key)
 			{
 			case "+":
 				DeclAdd = TomlTools.GetValues<string>(tomlObj);
-				if (DeclAdd == null)
-					Log.Write(Log.Level.Error, "<+> Field has invalid data.");
-				break;
+				if (DeclAdd == null) ctx.Errors.Add("<+> Field has invalid data.");
+				return true;
 			case "-":
 				DeclDeny = TomlTools.GetValues<string>(tomlObj);
-				if (DeclDeny == null)
-					Log.Write(Log.Level.Error, "<-> Field has invalid data.");
-				break;
+				if (DeclDeny == null) ctx.Errors.Add("<-> Field has invalid data.");
+				return true;
 			case "include":
 				includeNames = TomlTools.GetValues<string>(tomlObj);
-				if (includeNames == null)
-					Log.Write(Log.Level.Error, "<include> Field has invalid data.");
-				break;
-			default: return false;
+				if (includeNames == null) ctx.Errors.Add("<include> Field has invalid data.");
+				return true;
+			default:
+				return false;
 			}
-			return true;
 		}
 
-		public void ParseChilden(TomlTable tomlObj, List<RightsDecl> rules)
+		public bool ParseChilden(TomlTable tomlObj, ParseContext ctx)
 		{
-			Id = rules.Count;
-			rules.Add(this);
+			Id = ctx.Declarations.Count;
+			ctx.Declarations.Add(this);
+			bool hasErrors = false;
 
 			foreach (var item in tomlObj)
 			{
-				if (!ParseKey(item.Key, item.Value, rules))
+				if (!ParseKey(item.Key, item.Value, ctx))
 				{
-					Log.Write(Log.Level.Error, "Unrecognized key <{0}>.", item.Key);
+					ctx.Errors.Add($"Unrecognized key <{item.Key}>.");
+					hasErrors = true;
 				}
 			}
 			FillNull();
+			return !hasErrors;
 		}
 
-		public abstract RightsGroup ResolveGroup(string groupName);
+		public abstract RightsGroup ResolveGroup(string groupName, ParseContext ctx);
 
-		public bool ResolveIncludes()
+		public bool ResolveIncludes(ParseContext ctx)
 		{
 			bool hasErrors = false;
 			if (includeNames != null)
 			{
-				Includes = includeNames.Select(ResolveGroup).ToArray();
+				Includes = includeNames.Select(x => ResolveGroup(x, ctx)).ToArray();
 				for (int i = 0; i < includeNames.Length; i++)
 					if (Includes[i] == null)
 					{
-						Log.Write(Log.Level.Error, "Could not find group \"{0}\" to include.", includeNames[i]);
+						ctx.Errors.Add($"Could not find group \"{includeNames[i]}\" to include.");
 						hasErrors = true;
 					}
 				includeNames = null;
