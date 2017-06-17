@@ -28,6 +28,7 @@ namespace TS3AudioBot.Rights
 		private const int RuleLevelSize = 2;
 
 		private RightsManagerData rightsManagerData;
+		private RightsRule RootRule;
 		private RightsRule[] Rules;
 
 		public RightsManager(RightsManagerData rmd)
@@ -35,9 +36,10 @@ namespace TS3AudioBot.Rights
 			rightsManagerData = rmd;
 		}
 
-		public bool HasRight(InvokerData inv)
+		public string[] HasRight(InvokerData inv, params string[] requestedRights)
 		{
-			return true;
+
+			throw new InvalidOperationException();
 		}
 
 		// Loading and Parsing
@@ -98,8 +100,8 @@ namespace TS3AudioBot.Rights
 		{
 			Rules = new RightsRule[0];
 
-			var rootRule = new RightsRule();
-			if (!rootRule.ParseChilden(table, parseCtx))
+			RootRule = new RightsRule();
+			if (!RootRule.ParseChilden(table, parseCtx))
 				return;
 
 			parseCtx.SplitDeclarations();
@@ -113,17 +115,33 @@ namespace TS3AudioBot.Rights
 			if (!CheckCyclicGroupDependencies(parseCtx))
 				return;
 
-			BuildLevel(rootRule);
+			BuildLevel(RootRule);
 
 			LintDeclarations(parseCtx);
 
+			SanitizeRules(parseCtx);
+
 			FlattenGroups(parseCtx);
 
-			FlattenRules(rootRule);
+			FlattenRules(RootRule);
 
 			Rules = parseCtx.Rules;
 		}
 
+		/// <summary>
+		/// Removes rights which are in the Add and Deny category.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
+		private static void SanitizeRules(ParseContext ctx)
+		{
+			foreach (var rule in ctx.Rules)
+				rule.DeclAdd = rule.DeclAdd.Except(rule.DeclDeny).ToArray();
+		}
+
+		/// <summary>
+		/// Checks that each group name can be uniquely identified when resolving.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static bool ValidateUniqueGroupNames(ParseContext ctx)
 		{
 			bool hasErrors = false;
@@ -151,6 +169,10 @@ namespace TS3AudioBot.Rights
 			return !hasErrors;
 		}
 
+		/// <summary>
+		/// Resolves all include strings to their representative object each.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static bool ResolveIncludes(ParseContext ctx)
 		{
 			bool hasErrors = false;
@@ -161,6 +183,10 @@ namespace TS3AudioBot.Rights
 			return !hasErrors;
 		}
 
+		/// <summary>
+		/// Checks if group includes form a cyclic dependency.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static bool CheckCyclicGroupDependencies(ParseContext ctx)
 		{
 			bool hasErrors = false;
@@ -192,14 +218,26 @@ namespace TS3AudioBot.Rights
 			return !hasErrors;
 		}
 
-		private static void BuildLevel(RightsDecl decl, int level = 0)
+		/// <summary>
+		/// Generates hierachial values for the <see cref="RightsDecl.Level"/> field
+		/// for all rules. This value represents which rule is more specified when
+		/// merging two rule in order to prioritize rights.
+		/// </summary>
+		/// <param name="root">The root element of the hierachy tree.</param>
+		/// <param name="level">The base level for the root element.</param>
+		private static void BuildLevel(RightsDecl root, int level = 0)
 		{
-			decl.Level = level;
-			if (decl is RightsRule)
-				foreach (var child in ((RightsRule)decl).Children)
+			root.Level = level;
+			if (root is RightsRule)
+				foreach (var child in ((RightsRule)root).Children)
 					BuildLevel(child, level + RuleLevelSize);
 		}
 
+		/// <summary>
+		/// Checks groups and rules for common mistakes and unusual declarations.
+		/// Found stuff will be added as warnings.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static void LintDeclarations(ParseContext ctx)
 		{
 			// check if <+> contains <-> decl
@@ -211,20 +249,19 @@ namespace TS3AudioBot.Rights
 			}
 
 			// top level <-> declaration is useless
-			foreach (var decl in ctx.Declarations)
+			foreach (var decl in ctx.Groups)
 			{
 				if (decl.Includes.Length == 0 && decl.DeclDeny.Length > 0)
 					ctx.Warnings.Add($"Rule with \"-\" declaration but no include to override");
 			}
+			var root = ctx.Rules.First(x => x.Parent == null);
+			if (root.Includes.Length == 0 && root.DeclDeny.Length > 0)
+				ctx.Warnings.Add($"Root rule \"-\" declaration has no effect");
 
 			// check if rule has no matcher
 			foreach (var rule in ctx.Rules)
 			{
-				if (rule.MatchClientGroupId.Length == 0
-					&& rule.MatchClientUid.Length == 0
-					&& rule.MatchHost.Length == 0
-					&& rule.MatchPermission.Length == 0
-					&& rule.Parent != null)
+				if (!rule.HasMatcher() && rule.Parent != null)
 					ctx.Warnings.Add($"Rule has no matcher");
 			}
 
@@ -245,14 +282,11 @@ namespace TS3AudioBot.Rights
 				ctx.Warnings.Add($"Group \"{uGroup.Name}\" is nerver included in a rule");
 		}
 
-		private static void MergeGroups(RightsDecl main, params RightsDecl[] merge)
-		{
-			// main.+ = (include+ - main-) + main+
-			// main.- = main-
-			foreach (var include in merge)
-				main.DeclAdd = include.DeclAdd.Except(main.DeclDeny).Concat(main.DeclAdd).Distinct().ToArray();
-		}
-
+		/// <summary>
+		/// Summs up all includes for each group and includes them directly into the
+		/// <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static void FlattenGroups(ParseContext ctx)
 		{
 			var notReachable = new Queue<RightsGroup>(ctx.Groups);
@@ -265,7 +299,7 @@ namespace TS3AudioBot.Rights
 				{
 					currentlyReached.Add(item);
 
-					MergeGroups(item, item.Includes);
+					item.MergeGroups(item.Includes);
 					item.Includes = null;
 				}
 				else
@@ -275,11 +309,16 @@ namespace TS3AudioBot.Rights
 			}
 		}
 
+		/// <summary>
+		/// Summs up all includes and parent rule delcarations for each rule and includes them
+		/// directly into the <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
+		/// </summary>
+		/// <param name="root">The root element of the hierachy tree.</param>
 		private static void FlattenRules(RightsRule root)
 		{
 			if (root.Parent != null)
-				MergeGroups(root, root.Parent);
-			MergeGroups(root, root.Includes);
+				root.MergeGroups(root.Parent);
+			root.MergeGroups(root.Includes);
 			root.Includes = null;
 
 			foreach (var child in root.Children)
@@ -308,12 +347,6 @@ namespace TS3AudioBot.Rights
 			Groups = Declarations.OfType<RightsGroup>().ToArray();
 			Rules = Declarations.OfType<RightsRule>().ToArray();
 		}
-	}
-
-	struct DeclLevel
-	{
-		public int Level;
-		public bool Add;
 	}
 
 	public class RightsManagerData : ConfigData

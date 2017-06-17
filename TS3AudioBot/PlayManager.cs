@@ -238,12 +238,14 @@ namespace TS3AudioBot
 		public ulong? Channel { get; }
 		public ushort? ClientId { get; }
 		public ulong? DatabaseId { get; }
+		public string ClientUid { get; }
 
 		public InvokerData(ClientData invoker)
 		{
 			Channel = invoker.ChannelId == 0 ? (ulong?)null : invoker.ChannelId;
 			ClientId = invoker.ClientId == 0 ? (ushort?)null : invoker.ClientId;
 			DatabaseId = invoker.DatabaseId == 0 ? (ulong?)null : invoker.DatabaseId;
+			ClientUid = invoker.Uid;
 		}
 
 		public InvokerData(ulong? channel = null, ushort? clientId = null, ulong? databaseId = null)

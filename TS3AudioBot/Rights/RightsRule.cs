@@ -22,7 +22,6 @@ namespace TS3AudioBot.Rights
 	internal class RightsRule : RightsDecl
 	{
 		public List<RightsDecl> Children { get; set; }
-		public Dictionary<string, DeclLevel> DeclMap { get; }
 
 		public string[] MatchHost { get; set; }
 		public string[] MatchClientUid { get; set; }
@@ -32,7 +31,14 @@ namespace TS3AudioBot.Rights
 		public RightsRule()
 		{
 			Children = new List<RightsDecl>();
-			DeclMap = new Dictionary<string, DeclLevel>();
+		}
+
+		public bool HasMatcher()
+		{
+			return MatchClientGroupId.Length != 0
+			|| MatchClientUid.Length != 0
+			|| MatchHost.Length != 0
+			|| MatchPermission.Length != 0;
 		}
 
 		public override void FillNull()

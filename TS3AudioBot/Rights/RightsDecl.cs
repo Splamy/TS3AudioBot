@@ -82,6 +82,10 @@ namespace TS3AudioBot.Rights
 
 		public abstract RightsGroup ResolveGroup(string groupName, ParseContext ctx);
 
+		/// <summary>
+		/// Resolves all include strings to their representative object each.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
 		public bool ResolveIncludes(ParseContext ctx)
 		{
 			bool hasErrors = false;
@@ -97,6 +101,14 @@ namespace TS3AudioBot.Rights
 				includeNames = null;
 			}
 			return !hasErrors;
+		}
+
+		public void MergeGroups(params RightsDecl[] merge)
+		{
+			// this.+ = (include+ - this-) + this+
+			// this.- = this-
+			foreach (var include in merge)
+				DeclAdd = include.DeclAdd.Except(DeclDeny).Concat(DeclAdd).Distinct().ToArray();
 		}
 	}
 }
