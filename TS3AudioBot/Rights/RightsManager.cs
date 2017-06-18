@@ -46,20 +46,38 @@ namespace TS3AudioBot.Rights
 			registeredRights = new HashSet<string>();
 		}
 
-		public void RegisterRights(params string[] rights)
+		public void RegisterRights(params string[] rights) => RegisterRights((IEnumerable<string>)rights);
+		public void RegisterRights(IEnumerable<string> rights)
 		{
+			// TODO validate right names
 			registeredRights.UnionWith(rights);
 			needsRecalculation = true;
 		}
 
 		public void UnregisterRights(params string[] rights)
 		{
+			// TODO validate right names
+			// optionally expand
 			registeredRights.ExceptWith(rights);
 			needsRecalculation = true;
 		}
 
 		// TODO: b_client_permissionoverview_view
-		public string[] HasRight(InvokerData inv, params string[] requestedRights)
+		public bool HasAllRights(InvokerData inv, params string[] requestedRights)
+		{
+			var ctx = GetRightsContext(inv);
+			var normalizedRequest = ExpandRights(requestedRights);
+			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
+		}
+
+		public string[] GetRightsSubset(InvokerData inv, params string[] requestedRights)
+		{
+			var ctx = GetRightsContext(inv);
+			var normalizedRequest = ExpandRights(requestedRights);
+			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
+		}
+
+		private ExecuteContext GetRightsContext(InvokerData inv)
 		{
 			if (needsRecalculation)
 			{
@@ -85,7 +103,7 @@ namespace TS3AudioBot.Rights
 				ProcessNode(RootRule, execCtx);
 
 				if (execCtx.MatchingRules.Count == 0)
-					return new string[0];
+					return execCtx;
 
 				foreach (var rule in execCtx.MatchingRules)
 					execCtx.DeclAdd.UnionWith(rule.DeclAdd);
@@ -93,7 +111,7 @@ namespace TS3AudioBot.Rights
 				cachedRights.Store(inv, execCtx);
 			}
 
-			return execCtx.DeclAdd.Intersect(requestedRights).ToArray();
+			return execCtx;
 		}
 
 		private bool ProcessNode(RightsRule rule, ExecuteContext ctx)
@@ -202,7 +220,8 @@ namespace TS3AudioBot.Rights
 
 			LintDeclarations(parseCtx);
 
-			NormalizeRule(parseCtx);
+			if (!NormalizeRule(parseCtx))
+				return;
 
 			FlattenGroups(parseCtx);
 
@@ -248,8 +267,10 @@ namespace TS3AudioBot.Rights
 		/// Expands wildcard delclataions to all explicit declarations.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private void NormalizeRule(ParseContext ctx)
+		private bool NormalizeRule(ParseContext ctx)
 		{
+			bool hasErrors = false;
+
 			foreach (var rule in ctx.Rules)
 			{
 				var denyNormalized = ExpandRights(rule.DeclDeny);
@@ -257,7 +278,17 @@ namespace TS3AudioBot.Rights
 				var addNormalized = ExpandRights(rule.DeclAdd);
 				addNormalized.ExceptWith(rule.DeclDeny);
 				rule.DeclAdd = addNormalized.ToArray();
+
+				var undeclared = rule.DeclAdd.Except(registeredRights)
+					.Concat(rule.DeclDeny.Except(registeredRights));
+				foreach(var right in undeclared)
+				{
+					ctx.Errors.Add($"Right \"{right}\" is not registered.");
+					hasErrors = true;
+				}
 			}
+
+			return !hasErrors;
 		}
 
 		/// <summary>

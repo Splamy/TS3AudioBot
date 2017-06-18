@@ -46,6 +46,7 @@ namespace TS3AudioBot.CommandSystem
 				// todo alias
 			}
 		}
+		public IEnumerable<string> AllRights => AllCommands.Select(x => x.RequiredRight);
 
 		private static readonly Regex CommandNamespaceValidator = new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
@@ -328,7 +329,7 @@ namespace TS3AudioBot.CommandSystem
 			{
 				var insertGroup = (CommandGroup)subGroup;
 				// since we check precisely that only one command and only a simple FunctionCommand
-				// can be added with an empty string, wen can delte it safely this way
+				// can be added with an empty string, wen can delete it safely this way
 				insertGroup.RemoveCommand(string.Empty);
 				// add the node for cleanup
 				node = new CommandUnloadNode

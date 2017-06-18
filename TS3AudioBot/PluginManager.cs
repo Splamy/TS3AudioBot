@@ -137,6 +137,7 @@ namespace TS3AudioBot
 				{
 					plugin.proxy.Run(mainBot);
 					mainBot.CommandManager.RegisterPlugin(plugin);
+					// Todo register rights
 					plugin.status = PluginStatus.Active;
 					return R.OkR;
 				}

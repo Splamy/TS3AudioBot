@@ -21,7 +21,6 @@ namespace TS3AudioBot.CommandSystem
 	using System.Reflection;
 	using System.Text;
 	using TS3Client;
-	using static CommandRights;
 
 	public class BotCommand : FunctionCommand
 	{
@@ -31,13 +30,14 @@ namespace TS3AudioBot.CommandSystem
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.method, buildInfo.parent, buildInfo.reqiredParameters?.Count)
 		{
 			InvokeName = buildInfo.commandData.CommandNameSpace;
-			CommandRights = buildInfo.commandData.RequiredRights;
+			requiredRights = new string[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			Description = buildInfo.commandData.CommandHelp;
 			UsageList = buildInfo.usageList;
 		}
 
 		public string InvokeName { get; }
-		public CommandRights CommandRights { get; }
+		private string[] requiredRights;
+		public string RequiredRight => requiredRights[0];
 		public string Description { get; private set; }
 		public IEnumerable<UsageAttribute> UsageList { get; }
 		public string FullQualifiedName
@@ -81,7 +81,6 @@ namespace TS3AudioBot.CommandSystem
 		{
 			var strb = new StringBuilder();
 			strb.Append('!').Append(InvokeName);
-			strb.Append(" - ").Append(CommandRights);
 			strb.Append(" : ");
 			foreach (var param in UsageList)
 				strb.Append(param.UsageSyntax).Append('/');
@@ -90,21 +89,9 @@ namespace TS3AudioBot.CommandSystem
 
 		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
 		{
-			switch (CommandRights)
-			{
-			case Admin:
-				if (!info.IsAdmin)
-					throw new CommandException("Command must be invoked by an admin!", CommandExceptionReason.MissingRights);
-				break;
-			case Public:
-				if (!info.ApiCall && info.TextMessage.Target != TextMessageTargetMode.Server && !info.IsAdmin) // TODO: Apicall special ??
-					throw new CommandException("Command must be used in public mode!", CommandExceptionReason.MissingRights);
-				break;
-			case Private:
-				if (!info.ApiCall && info.TextMessage.Target != TextMessageTargetMode.Private && !info.IsAdmin) // TODO: Apicall special ??
-					throw new CommandException("Command must be used in a private session!", CommandExceptionReason.MissingRights);
-				break;
-			}
+			if (!info.Session.HasRights(requiredRights))
+				throw new CommandException($"You cannot execute \"{InvokeName}\". You are missing the \"{RequiredRight}\" right.!",
+					CommandExceptionReason.MissingRights);
 			return base.Execute(info, arguments, returnTypes);
 		}
 	}

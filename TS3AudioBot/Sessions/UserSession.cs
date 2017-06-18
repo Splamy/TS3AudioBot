@@ -144,11 +144,9 @@ namespace TS3AudioBot.Sessions
 			return result.Message;
 		}
 
-		public bool HasAdminRights()
+		public bool HasRights(params string[] rights)
 		{
-			Log.Write(Log.Level.Debug, "AdminCheck called!");
-			var clientSgIds = Bot.QueryConnection.GetClientServerGroups(Client.DatabaseId);
-			return clientSgIds.Contains(Bot.mainBotData.AdminGroupId);
+			return Bot.RightsManager.HasAllRights(new InvokerData(Client), rights);
 		}
 
 		public R<string> GenerateToken() => GenerateToken(ApiToken.DefaultTokenTimeout);

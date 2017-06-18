@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -21,20 +21,14 @@ namespace TS3AudioBot.CommandSystem
 	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
 	public sealed class CommandAttribute : Attribute
 	{
-		public CommandAttribute(CommandRights requiredRights, string commandNameSpace)
-			: this(requiredRights, commandNameSpace, null)
-		{ }
-
-		public CommandAttribute(CommandRights requiredRights, string commandNameSpace, string help)
+		public CommandAttribute(string commandNameSpace, string help = null)
 		{
 			CommandNameSpace = commandNameSpace;
 			CommandHelp = help;
-			RequiredRights = requiredRights;
 		}
 
 		public string CommandNameSpace { get; }
 		public string CommandHelp { get; }
-		public CommandRights RequiredRights { get; }
 	}
 
 	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]

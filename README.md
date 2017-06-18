@@ -82,7 +82,11 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 1. Create a group for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).
 1. Create a privilige key for the ServerAdmin group (or a group which has equivalent rights).
 1. The first time you'll need to run `mono TS3Audiobot.exe` without parameter and
-it will ask you a few questions. (You can get ServerGroupIds in the rights window.)
+it will ask you a few questions.
+1. Close the bot again and configure your `rights.toml` in `TS3AudioBot\bin\Release\` to your desires.
+You can use the template rules and assign your admin as suggested in the automatically generated file,
+or dive into the Rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
+1. Start the bot again.
 1. Send the bot in a private message `!bot setup <key>` where `<key>` is the privilege key from a previous step.
 1. Now you can move the process to the backgroud or close the bot with `!quit` in teamspeak and run it in the background.  
 The recommended start from now on is `mono TS3AudioBot.exe -q` to disable writing to stdout since the bot logs everything to a log file anyway.

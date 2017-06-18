@@ -483,7 +483,7 @@ namespace TS3AudioBot
 				var builder = new CommandBuildInfo(
 					this,
 					playMethod,
-					new CommandAttribute(CommandRights.Private, string.Empty),
+					new CommandAttribute(string.Empty), // TODO ???
 					null);
 				Command = new BotCommand(builder);
 			}
