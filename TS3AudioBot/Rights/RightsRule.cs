@@ -17,16 +17,19 @@
 namespace TS3AudioBot.Rights
 {
 	using Nett;
+	using System.Linq;
 	using System.Collections.Generic;
 
 	internal class RightsRule : RightsDecl
 	{
 		public List<RightsDecl> Children { get; set; }
+		public IEnumerable<RightsRule> ChildrenRules => Children.OfType<RightsRule>();
+		public IEnumerable<RightsGroup> ChildrenGroups => Children.OfType<RightsGroup>();
 
-		public string[] MatchHost { get; set; }
-		public string[] MatchClientUid { get; set; }
-		public ulong[] MatchClientGroupId { get; set; }
-		public string[] MatchPermission { get; set; }
+		public HashSet<string> MatchHost { get; set; }
+		public HashSet<string> MatchClientUid { get; set; }
+		public HashSet<ulong> MatchClientGroupId { get; set; }
+		public HashSet<string> MatchPermission { get; set; }
 
 		public RightsRule()
 		{
@@ -35,19 +38,19 @@ namespace TS3AudioBot.Rights
 
 		public bool HasMatcher()
 		{
-			return MatchClientGroupId.Length != 0
-			|| MatchClientUid.Length != 0
-			|| MatchHost.Length != 0
-			|| MatchPermission.Length != 0;
+			return MatchClientGroupId.Count != 0
+			|| MatchClientUid.Count != 0
+			|| MatchHost.Count != 0
+			|| MatchPermission.Count != 0;
 		}
 
 		public override void FillNull()
 		{
 			base.FillNull();
-			if (MatchHost == null) MatchHost = new string[0];
-			if (MatchClientUid == null) MatchClientUid = new string[0];
-			if (MatchClientGroupId == null) MatchClientGroupId = new ulong[0];
-			if (MatchPermission == null) MatchPermission = new string[0];
+			if (MatchHost == null) MatchHost = new HashSet<string>();
+			if (MatchClientUid == null) MatchClientUid = new HashSet<string>();
+			if (MatchClientGroupId == null) MatchClientGroupId = new HashSet<ulong>();
+			if (MatchPermission == null) MatchPermission = new HashSet<string>();
 		}
 
 		public override bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)
@@ -58,20 +61,24 @@ namespace TS3AudioBot.Rights
 			switch (key)
 			{
 			case "host":
-				MatchHost = TomlTools.GetValues<string>(tomlObj);
-				if (MatchHost == null) ctx.Errors.Add("<host> Field has invalid data.");
+				var host = TomlTools.GetValues<string>(tomlObj);
+				if (host == null) ctx.Errors.Add("<host> Field has invalid data.");
+				else MatchHost = new HashSet<string>(host);
 				return true;
 			case "groupid":
-				MatchClientGroupId = TomlTools.GetValues<ulong>(tomlObj);
-				if (MatchClientGroupId == null) ctx.Errors.Add("<groupid> Field has invalid data.");
+				var groupid = TomlTools.GetValues<ulong>(tomlObj);
+				if (groupid == null) ctx.Errors.Add("<groupid> Field has invalid data.");
+				else MatchClientGroupId = new HashSet<ulong>(groupid);
 				return true;
 			case "useruid":
-				MatchClientUid = TomlTools.GetValues<string>(tomlObj);
-				if (MatchClientUid == null) ctx.Errors.Add("<useruid> Field has invalid data.");
+				var useruid = TomlTools.GetValues<string>(tomlObj);
+				if (useruid == null) ctx.Errors.Add("<useruid> Field has invalid data.");
+				else MatchClientUid = new HashSet<string>(useruid);
 				return true;
 			case "perm":
-				MatchPermission = TomlTools.GetValues<string>(tomlObj);
-				if (MatchPermission == null) ctx.Errors.Add("<perm> Field has invalid data.");
+				var perm = TomlTools.GetValues<string>(tomlObj);
+				if (perm == null) ctx.Errors.Add("<perm> Field has invalid data.");
+				else MatchPermission = new HashSet<string>(perm);
 				return true;
 			case "rule":
 				if (tomlObj.TomlType == TomlObjectType.ArrayOfTables)
@@ -115,10 +122,10 @@ namespace TS3AudioBot.Rights
 
 		public override RightsGroup ResolveGroup(string groupName, ParseContext ctx)
 		{
-			foreach (var child in Children)
+			foreach (var child in ChildrenGroups)
 			{
-				if (child is RightsGroup && ((RightsGroup)child).Name == groupName)
-					return (RightsGroup)child;
+				if (child.Name == groupName)
+					return child;
 			}
 			if (Parent == null)
 				return null;

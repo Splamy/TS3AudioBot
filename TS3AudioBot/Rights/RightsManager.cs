@@ -22,24 +22,99 @@ namespace TS3AudioBot.Rights
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using TS3Client;
+	using System.IO;
 
 	public class RightsManager
 	{
 		private const int RuleLevelSize = 2;
 
+		private MainBot botParent;
+
+		private bool needsRecalculation;
+		private Cache<InvokerData, ExecuteContext> cachedRights;
 		private RightsManagerData rightsManagerData;
 		private RightsRule RootRule;
 		private RightsRule[] Rules;
+		private HashSet<string> registeredRights;
 
-		public RightsManager(RightsManagerData rmd)
+		public RightsManager(MainBot bot, RightsManagerData rmd)
 		{
+			botParent = bot;
 			rightsManagerData = rmd;
+			cachedRights = new Cache<InvokerData, ExecuteContext>();
+			registeredRights = new HashSet<string>();
 		}
 
+		public void RegisterRights(params string[] rights)
+		{
+			registeredRights.UnionWith(rights);
+			needsRecalculation = true;
+		}
+
+		public void UnregisterRights(params string[] rights)
+		{
+			registeredRights.ExceptWith(rights);
+			needsRecalculation = true;
+		}
+
+		// TODO: b_client_permissionoverview_view
 		public string[] HasRight(InvokerData inv, params string[] requestedRights)
 		{
+			if (needsRecalculation)
+			{
+				cachedRights.Invalidate();
+				needsRecalculation = false;
+				ReadFile();
+			}
 
-			throw new InvalidOperationException();
+			ExecuteContext execCtx;
+			if (!cachedRights.TryGetValue(inv, out execCtx))
+			{
+				execCtx = new ExecuteContext();
+
+				// Required Matcher Data
+				bool needsAvailableGroups = true;
+
+				// Get Required Matcher Data
+				// host = ?
+				if (needsAvailableGroups && inv.DatabaseId.HasValue)
+					execCtx.AvailableGroups = botParent.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value);
+				execCtx.ClientUid = inv.ClientUid;
+
+				ProcessNode(RootRule, execCtx);
+
+				if (execCtx.MatchingRules.Count == 0)
+					return new string[0];
+
+				foreach (var rule in execCtx.MatchingRules)
+					execCtx.DeclAdd.UnionWith(rule.DeclAdd);
+
+				cachedRights.Store(inv, execCtx);
+			}
+
+			return execCtx.DeclAdd.Intersect(requestedRights).ToArray();
+		}
+
+		private bool ProcessNode(RightsRule rule, ExecuteContext ctx)
+		{
+			// check if node matches
+			if (!rule.HasMatcher()
+				|| (ctx.Host != null && rule.MatchHost.Contains(ctx.Host))
+				|| (ctx.ClientUid != null && rule.MatchClientUid.Contains(ctx.ClientUid))
+				|| (ctx.AvailableGroups.Length > 0 && rule.MatchClientGroupId.Overlaps(ctx.AvailableGroups)))
+			{
+				bool hasMatchingChild = false;
+				foreach (var child in rule.ChildrenRules)
+				{
+					hasMatchingChild |= ProcessNode(child, ctx);
+				}
+
+				if (!hasMatchingChild)
+					ctx.MatchingRules.Add(rule);
+				return hasMatchingChild;
+			}
+			return false;
 		}
 
 		// Loading and Parsing
@@ -48,6 +123,14 @@ namespace TS3AudioBot.Rights
 		{
 			try
 			{
+				if (!File.Exists(rightsManagerData.RightsFile))
+				{
+					Log.Write(Log.Level.Info, "No rights file found. Creating default.");
+					using (var fs = File.OpenWrite(rightsManagerData.RightsFile))
+					using (var data = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
+						data.CopyTo(fs);
+				}
+
 				var table = Toml.ReadFile(rightsManagerData.RightsFile);
 				var ctx = new ParseContext();
 				RecalculateRights(table, ctx);
@@ -119,7 +202,7 @@ namespace TS3AudioBot.Rights
 
 			LintDeclarations(parseCtx);
 
-			SanitizeRules(parseCtx);
+			NormalizeRule(parseCtx);
 
 			FlattenGroups(parseCtx);
 
@@ -128,14 +211,53 @@ namespace TS3AudioBot.Rights
 			Rules = parseCtx.Rules;
 		}
 
+		private HashSet<string> ExpandRights(IEnumerable<string> rights)
+		{
+			var rightsExpanded = new HashSet<string>();
+			foreach (var right in rights)
+			{
+				int index = right.IndexOf('*');
+				if (index < 0)
+				{
+					// Rule does not contain any wildcards
+					rightsExpanded.Add(right);
+				}
+				else if (index != 0 && right[index - 1] != '.')
+				{
+					// Do not permit misused wildcards
+					throw new ArgumentException($"The right \"{right}\" has a misused wildcard.");
+				}
+				else if (index == 0)
+				{
+					// We are done here when including every possible right
+					rightsExpanded.UnionWith(registeredRights);
+					break;
+				}
+				else
+				{
+					// Add all rights wich expand from that wildcard
+					string subMatch = right.Substring(0, index - 1);
+					rightsExpanded.UnionWith(registeredRights.Where(x => x.StartsWith(subMatch)));
+				}
+			}
+			return rightsExpanded;
+		}
+
 		/// <summary>
 		/// Removes rights which are in the Add and Deny category.
+		/// Expands wildcard delclataions to all explicit declarations.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static void SanitizeRules(ParseContext ctx)
+		private void NormalizeRule(ParseContext ctx)
 		{
 			foreach (var rule in ctx.Rules)
-				rule.DeclAdd = rule.DeclAdd.Except(rule.DeclDeny).ToArray();
+			{
+				var denyNormalized = ExpandRights(rule.DeclDeny);
+				rule.DeclDeny = denyNormalized.ToArray();
+				var addNormalized = ExpandRights(rule.DeclAdd);
+				addNormalized.ExceptWith(rule.DeclDeny);
+				rule.DeclAdd = addNormalized.ToArray();
+			}
 		}
 
 		/// <summary>
@@ -152,11 +274,10 @@ namespace TS3AudioBot.Rights
 				var parent = checkGroup.Parent;
 				while (parent != null)
 				{
-					foreach (var cmpGroup in parent.Children)
+					foreach (var cmpGroup in parent.ChildrenGroups)
 					{
 						if (cmpGroup != checkGroup
-							&& cmpGroup is RightsGroup
-							&& ((RightsGroup)cmpGroup).Name == checkGroup.Name)
+							&& cmpGroup.Name == checkGroup.Name)
 						{
 							ctx.Errors.Add($"Ambiguous group name: {checkGroup.Name}");
 							hasErrors = true;
@@ -321,10 +442,22 @@ namespace TS3AudioBot.Rights
 			root.MergeGroups(root.Includes);
 			root.Includes = null;
 
-			foreach (var child in root.Children)
-				if (child is RightsRule)
-					FlattenRules((RightsRule)child);
+			foreach (var child in root.ChildrenRules)
+				FlattenRules(child);
 		}
+	}
+
+	internal class ExecuteContext
+	{
+		public string Host { get; set; } = null;
+		public ulong[] AvailableGroups { get; set; } = null;
+		public string ClientUid { get; set; } = null;
+		public bool IsApi { get; set; }
+		public TextMessageTargetMode? TargetMode { get; set; } = null;
+
+		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
+
+		public HashSet<string> DeclAdd { get; } = new HashSet<string>();
 	}
 
 	internal class ParseContext

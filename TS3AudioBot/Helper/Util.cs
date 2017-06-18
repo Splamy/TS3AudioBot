@@ -199,6 +199,12 @@ namespace TS3AudioBot.Helper
 			return strb.ToString();
 		}
 
+		public static Stream GetEmbeddedFile(string name)
+		{
+			var assembly = Assembly.GetExecutingAssembly();
+			return assembly.GetManifestResourceStream(name);
+		}
+
 		private static BuildData buildData;
 		public static BuildData GetAssemblyData()
 		{

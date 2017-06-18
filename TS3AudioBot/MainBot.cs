@@ -162,7 +162,7 @@ namespace TS3AudioBot
 			PluginManager = new PluginManager(this, pmd);
 			PlayManager = new PlayManager(this);
 			WebManager = new WebManager(this, webd);
-			RightsManager = new RightsManager(rmd);
+			RightsManager = new RightsManager(this, rmd);
 			TargetManager = teamspeakClient;
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
@@ -197,6 +197,8 @@ namespace TS3AudioBot
 			//QueryConnection.OnClientDisconnect += (s, e) => SessionManager.RemoveSession(e.InvokerUid);
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
+			if (!RightsManager.ReadFile())
+				return false;
 			WebManager.StartServerAsync();
 
 			Log.Write(Log.Level.Info, "[==================== Done ====================]");
@@ -970,7 +972,7 @@ namespace TS3AudioBot
 			PlayManager.Next(new InvokerData(info.Session.Client)).UnwrapThrow();
 		}
 
-		[Command(Public, "pm", "Requests a private session with the ServerBot so you can invoke private commands.")]
+		[Command(Public, "pm", "Requests a private session with the ServerBot so you can be intimate.")]
 		public string CommandPM(ExecutionInformation info)
 		{
 			if (info.ApiCall)
@@ -1009,7 +1011,7 @@ namespace TS3AudioBot
 				var rawData = callText.Split(new char[] { ' ', '\n', '\r' }, 3, StringSplitOptions.RemoveEmptyEntries);
 				var result = RightsManager.ReadText(rawData[2]);
 				if (result.Ok)
-					return new JsonEmpty(result.Value);
+					return new JsonSingleValue<string>(result.Value, result.Value);
 				else
 					return new JsonEmpty(result.Message);
 			}
@@ -1017,6 +1019,18 @@ namespace TS3AudioBot
 			{
 				throw new CommandException("GJ - You crashed it!!!", ex, CommandExceptionReason.CommandError);
 			}
+		}
+
+		// TODO remove
+		[Command(Admin, "can", "Validates a rights file.")]
+		[Usage("<command>", "The comand to be parsed")]
+		public JsonObject CommandCan(ExecutionInformation info, params string[] rights)
+		{
+			var result = RightsManager.HasRight(new InvokerData(info.Session.Client), rights);
+			if (result.Length > 0)
+				return new JsonArray<string>(string.Join(", ", result), result);
+			else
+				return new JsonEmpty("No");
 		}
 
 		[Command(Private, "pause", "Well, pauses the song. Undo with !play.")]

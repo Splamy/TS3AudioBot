@@ -248,11 +248,32 @@ namespace TS3AudioBot
 			ClientUid = invoker.Uid;
 		}
 
-		public InvokerData(ulong? channel = null, ushort? clientId = null, ulong? databaseId = null)
+		public InvokerData(ulong? channel = null, ushort? clientId = null, ulong? databaseId = null, string clientUid = null)
 		{
 			Channel = channel;
 			ClientId = clientId;
 			DatabaseId = databaseId;
+			ClientUid = clientUid;
+		}
+
+		public override int GetHashCode()
+		{
+			return (ClientId ?? 0)
+				^ 101 * (int)(Channel ?? 0)
+				^ 101 * (int)(DatabaseId ?? 0)
+				^ 101 * (ClientUid?.GetHashCode() ?? 0);
+		}
+
+		public override bool Equals(object obj)
+		{
+			var other = obj as InvokerData;
+			if (other == null)
+				return false;
+
+			return ClientId == other.ClientId
+				&& DatabaseId == other.DatabaseId
+				&& ClientUid == other.ClientUid
+				&& Channel == other.Channel;
 		}
 	}
 }
