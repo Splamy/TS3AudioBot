@@ -144,13 +144,8 @@ namespace TS3AudioBot
 			}
 
 			Log.Write(Log.Level.Info, "[============ TS3AudioBot started =============]");
-			string dateStr = DateTime.Now.ToLongDateString();
-			Log.Write(Log.Level.Info, "[=== Date: {0}{1} ===]", new string(' ', Math.Max(0, 32 - dateStr.Length)), dateStr);
-			string timeStr = DateTime.Now.ToLongTimeString();
-			Log.Write(Log.Level.Info, "[=== Time: {0}{1} ===]", new string(' ', Math.Max(0, 32 - timeStr.Length)), timeStr);
-			var result = Util.GetAssemblyData();
-			string dataStr = result.Ok ? result.Value.ToString() : result.Message;
-			Log.Write(Log.Level.Info, "[=== Version: {0}{1} ===]", new string(' ', Math.Max(0, 29 - dataStr.Length)), dataStr);
+			Log.Write(Log.Level.Info, "[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
+			Log.Write(Log.Level.Info, "[=== Version: {0}", Util.GetAssemblyData().ToString());
 			Log.Write(Log.Level.Info, "[==============================================]");
 
 			Log.Write(Log.Level.Info, "[============ Initializing Commands ===========]");
@@ -204,7 +199,7 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
 			WebManager.StartServerAsync();
 
-			Log.Write(Log.Level.Info, "[============== Connected & Done ==============]");
+			Log.Write(Log.Level.Info, "[==================== Done ====================]");
 			return true;
 		}
 
@@ -1360,14 +1355,11 @@ namespace TS3AudioBot
 			TargetManager.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
 		}
 
-		[Command(Private, "version", "Gets the current build version.")]
+		[Command(Admin, "version", "Gets the current build version.")]
 		public JsonObject CommandVersion(ExecutionInformation info)
 		{
-			var result = Util.GetAssemblyData();
-			if (result.Ok)
-				return new JsonSingleValue<Util.BuildData>(result.Value.ToString(), result.Value);
-			else
-				return new JsonError(result.Message, CommandExceptionReason.CommandError);
+			var data = Util.GetAssemblyData();
+			return new JsonSingleValue<Util.BuildData>(data.ToLongString(), data);
 		}
 
 		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]

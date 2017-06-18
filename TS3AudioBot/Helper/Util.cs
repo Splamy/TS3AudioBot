@@ -199,21 +199,13 @@ namespace TS3AudioBot.Helper
 			return strb.ToString();
 		}
 
-		public static R<BuildData> GetAssemblyData()
+		public static BuildData GetAssemblyData()
 		{
-			var infoAttr = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-			var fileAttr = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>();
-
-			if (infoAttr == null || fileAttr == null)
-				return "<no information>";
-			var infoSplit = infoAttr.InformationalVersion.Split(' ');
-			if (infoSplit.Length < 2)
-				return "<invalid data>";
 			return new BuildData
 			{
-				Version = fileAttr.Version,
-				Branch = infoSplit[0],
-				CommitSha = infoSplit[1],
+				Version = GitVersionInformation.SemVer,
+				Branch = GitVersionInformation.BranchName,
+				CommitSha = GitVersionInformation.Sha,
 			};
 		}
 
@@ -223,7 +215,8 @@ namespace TS3AudioBot.Helper
 			public string Branch;
 			public string CommitSha;
 
-			public override string ToString() => $"{Version}/{Branch}/{CommitSha}";
+			public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
+			public override string ToString() => $"{Version}/{Branch}/{CommitSha.Substring(0, 8)}";
 		}
 	}
 }
