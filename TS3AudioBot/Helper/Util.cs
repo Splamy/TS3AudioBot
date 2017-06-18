@@ -198,5 +198,32 @@ namespace TS3AudioBot.Helper
 			}
 			return strb.ToString();
 		}
+
+		public static R<BuildData> GetAssemblyData()
+		{
+			var infoAttr = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+			var fileAttr = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>();
+
+			if (infoAttr == null || fileAttr == null)
+				return "<no information>";
+			var infoSplit = infoAttr.InformationalVersion.Split(' ');
+			if (infoSplit.Length < 2)
+				return "<invalid data>";
+			return new BuildData
+			{
+				Version = fileAttr.Version,
+				Branch = infoSplit[0],
+				CommitSha = infoSplit[1],
+			};
+		}
+
+		public class BuildData
+		{
+			public string Version;
+			public string Branch;
+			public string CommitSha;
+
+			public override string ToString() => $"{Version}/{Branch}/{CommitSha}";
+		}
 	}
 }

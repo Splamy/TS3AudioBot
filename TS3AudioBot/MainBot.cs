@@ -148,6 +148,9 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[=== Date: {0}{1} ===]", new string(' ', Math.Max(0, 32 - dateStr.Length)), dateStr);
 			string timeStr = DateTime.Now.ToLongTimeString();
 			Log.Write(Log.Level.Info, "[=== Time: {0}{1} ===]", new string(' ', Math.Max(0, 32 - timeStr.Length)), timeStr);
+			var result = Util.GetAssemblyData();
+			string dataStr = result.Ok ? result.Value.ToString() : result.Message;
+			Log.Write(Log.Level.Info, "[=== Version: {0}{1} ===]", new string(' ', Math.Max(0, 29 - dataStr.Length)), dataStr);
 			Log.Write(Log.Level.Info, "[==============================================]");
 
 			Log.Write(Log.Level.Info, "[============ Initializing Commands ===========]");
@@ -1355,6 +1358,16 @@ namespace TS3AudioBot
 		public void CommandUnsubscribeChannel(ExecutionInformation info)
 		{
 			TargetManager.WhisperChannelUnsubscribe(info.Session.Client.ChannelId, true);
+		}
+
+		[Command(Private, "version", "Gets the current build version.")]
+		public JsonObject CommandVersion(ExecutionInformation info)
+		{
+			var result = Util.GetAssemblyData();
+			if (result.Ok)
+				return new JsonSingleValue<Util.BuildData>(result.Value.ToString(), result.Value);
+			else
+				return new JsonError(result.Message, CommandExceptionReason.CommandError);
 		}
 
 		[Command(AnyVisibility, "volume", "Sets the volume level of the music.")]

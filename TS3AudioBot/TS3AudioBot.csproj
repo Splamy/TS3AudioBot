@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Version;Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -25,8 +25,6 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
@@ -157,6 +155,7 @@
     <Compile Include="History\HistoryManager.cs" />
     <Compile Include="History\SearchQuery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\AssemblyInfoGen.cs" />
     <Compile Include="ResourceFactories\AudioResource.cs" />
     <Compile Include="ResourceFactories\IResourceFactory.cs" />
     <Compile Include="ResourceFactories\MediaFactory.cs" />
@@ -188,20 +187,20 @@
     <EmbeddedResource Include="favicon.ico" />
     <EmbeddedResource Include="Web\Interface\favicon.ico" />
     <EmbeddedResource Include="Web\Interface\history.html" />
+    <EmbeddedResource Include="Web\Interface\main.html" />
+    <EmbeddedResource Include="Web\Interface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Audio\Opus\LICENSE" />
     <None Include="Audio\Opus\OPUS_LICENSE" />
     <None Include="Audio\Opus\README" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
     <None Include="TS3AudioBot.ruleset" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="FodyWeavers.xml" />
-    <Content Include="Web\Interface\main.html" />
-    <Content Include="Web\Interface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TS3Client\TS3Client.csproj">
@@ -232,7 +231,21 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Fody.2.1.0\build\netstandard1.0\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.2.1.0\build\netstandard1.0\Fody.targets'))" />
+    <Error Condition="!Exists('..\packages\MSBuildTasks.1.5.0.235\build\MSBuildTasks.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MSBuildTasks.1.5.0.235\build\MSBuildTasks.targets'))" />
   </Target>
+  <Target Name="Version">
+    <GitVersion LocalPath="$(MSBuildProjectDirectory)">
+      <Output TaskParameter="CommitHash" PropertyName="GitHash" />
+    </GitVersion>
+    <GitBranch LocalPath="$(MSBuildProjectDirectory)">
+      <Output TaskParameter="Branch" PropertyName="GitBranch" />
+    </GitBranch>
+    <AssemblyInfo
+      CodeLanguage="CS"
+      OutputFile="Properties\AssemblyInfoGen.cs"
+      AssemblyInformationalVersion="$(GitBranch) $(GitHash)"/>
+  </Target>
+  <Import Project="..\packages\MSBuildTasks.1.5.0.235\build\MSBuildTasks.targets" Condition="Exists('..\packages\MSBuildTasks.1.5.0.235\build\MSBuildTasks.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
