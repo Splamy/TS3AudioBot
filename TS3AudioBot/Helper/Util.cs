@@ -199,21 +199,34 @@ namespace TS3AudioBot.Helper
 			return strb.ToString();
 		}
 
+		private static BuildData buildData;
 		public static BuildData GetAssemblyData()
 		{
-			return new BuildData
+			if (buildData == null)
 			{
-				Version = GitVersionInformation.SemVer,
-				Branch = GitVersionInformation.BranchName,
-				CommitSha = GitVersionInformation.Sha,
-			};
+				var gitInfoType = Assembly.GetExecutingAssembly().GetType("TS3AudioBot.GitVersionInformation");
+				if (gitInfoType == null)
+				{
+					buildData = new BuildData();
+				}
+				else
+				{
+					buildData = new BuildData
+					{
+						Version = (string)gitInfoType.GetField("SemVer", BindingFlags.Static | BindingFlags.Public).GetValue(null),
+						Branch = (string)gitInfoType.GetField("BranchName", BindingFlags.Static | BindingFlags.Public).GetValue(null),
+						CommitSha = (string)gitInfoType.GetField("Sha", BindingFlags.Static | BindingFlags.Public).GetValue(null),
+					};
+				}
+			}
+			return buildData;
 		}
 
 		public class BuildData
 		{
-			public string Version;
-			public string Branch;
-			public string CommitSha;
+			public string Version = "<?>";
+			public string Branch = "<?>";
+			public string CommitSha = "<?>";
 
 			public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
 			public override string ToString() => $"{Version}/{Branch}/{CommitSha.Substring(0, 8)}";
