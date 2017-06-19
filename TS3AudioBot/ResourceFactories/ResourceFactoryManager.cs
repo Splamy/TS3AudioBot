@@ -24,6 +24,8 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
+		private const string cmdPrepath = "from ";
+
 		public CommandGroup CommandNode { get; } = new CommandGroup();
 		public IResourceFactory DefaultFactorty { get; internal set; }
 		private List<IResourceFactory> factories;
@@ -96,13 +98,13 @@ namespace TS3AudioBot.ResourceFactories
 			return DefaultFactorty;
 		}
 
-		public void AddFactory(IResourceFactory factory)
+		public void AddFactory(IResourceFactory factory, CommandManager cmdMgr)
 		{
 			factories.Add(factory);
 
 			// register factory command node
-			var playCommand = new PlayCommand(factory.FactoryFor);
-			CommandNode.AddCommand(factory.SubCommandName, playCommand.Command);
+			var playCommand = new PlayCommand(factory.FactoryFor, cmdPrepath + factory.SubCommandName);
+			cmdMgr.RegisterCommand(playCommand.Command);
 		}
 
 		public string RestoreLink(AudioResource res)
@@ -123,13 +125,13 @@ namespace TS3AudioBot.ResourceFactories
 			private AudioType audioType;
 			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
 
-			public PlayCommand(AudioType audioType)
+			public PlayCommand(AudioType audioType, string cmdPath)
 			{
 				this.audioType = audioType;
 				var builder = new CommandBuildInfo(
 					this,
 					playMethod,
-					new CommandAttribute(string.Empty), // TODO ???
+					new CommandAttribute(cmdPath),
 					null);
 				Command = new BotCommand(builder);
 			}

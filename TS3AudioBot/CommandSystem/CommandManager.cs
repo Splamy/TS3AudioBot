@@ -79,12 +79,6 @@ namespace TS3AudioBot.CommandSystem
 			dynamicCommands.Add(command);
 		}
 
-		internal void RegisterCommand(ICommand command, string path)
-		{
-			LoadICommand(command, path);
-			// TODO: add BotCommand (tree-)scan
-		}
-
 		public void RegisterPlugin(Plugin plugin)
 		{
 			if (PluginCommands.ContainsKey(plugin))

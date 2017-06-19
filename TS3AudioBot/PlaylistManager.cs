@@ -30,6 +30,8 @@ namespace TS3AudioBot
 
 	public sealed class PlaylistManager : IDisposable
 	{
+		private const string cmdPrepath = "list from ";
+
 		private static readonly Regex validPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
 		private static readonly Regex cleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
 
@@ -282,7 +284,7 @@ namespace TS3AudioBot
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
-			
+
 			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
 
 			if (type.HasValue)
@@ -460,13 +462,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void AddFactory(IPlaylistFactory factory)
+		public void AddFactory(IPlaylistFactory factory, CommandManager cmdMgr)
 		{
 			factories.Add(factory);
 
 			// register factory command node
-			var playCommand = new PlayCommand(factory.FactoryFor);
-			CommandNode.AddCommand(factory.SubCommandName, playCommand.Command);
+			var playCommand = new PlayCommand(factory.FactoryFor, cmdPrepath + factory.SubCommandName);
+			cmdMgr.RegisterCommand(playCommand.Command);
 		}
 
 		public void Dispose() { }
@@ -477,13 +479,13 @@ namespace TS3AudioBot
 			private AudioType audioType;
 			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiateLoad));
 
-			public PlayCommand(AudioType audioType)
+			public PlayCommand(AudioType audioType, string cmdPath)
 			{
 				this.audioType = audioType;
 				var builder = new CommandBuildInfo(
 					this,
 					playMethod,
-					new CommandAttribute(string.Empty), // TODO ???
+					new CommandAttribute(cmdPath),
 					null);
 				Command = new BotCommand(builder);
 			}

@@ -32,7 +32,7 @@ namespace TS3AudioBot.CommandSystem
 			InvokeName = buildInfo.commandData.CommandNameSpace;
 			requiredRights = new string[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			Description = buildInfo.commandData.CommandHelp;
-			UsageList = buildInfo.usageList;
+			UsageList = buildInfo.usageList ?? Enumerable.Empty<UsageAttribute>();
 		}
 
 		public string InvokeName { get; }
