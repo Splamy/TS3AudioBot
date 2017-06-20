@@ -235,7 +235,7 @@ namespace TS3AudioBot.Helper
 			public string CommitSha = "<?>";
 
 			public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
-			public override string ToString() => $"{Version}/{Branch}/{CommitSha.Substring(0, 8)}";
+			public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
 		}
 	}
 }
