@@ -31,6 +31,7 @@ namespace TS3Client.Full
 	using System;
 	using System.Linq;
 	using System.Text;
+	using System.Security.Cryptography;
 
 	public sealed class Ts3Crypt
 	{
@@ -478,10 +479,17 @@ namespace TS3Client.Full
 				outBuf[i] = (byte)(a[i] ^ b[i]);
 		}
 
-		private static readonly Sha1Digest Sha1Hash = new Sha1Digest();
+		private static readonly SHA1Managed Sha1HashInternal = new SHA1Managed();
 		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
-		private static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha1Hash, data, offset, len);
+		private static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
 		private static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
+		private static byte[] HashItInternal(HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
+		{
+			lock (hashAlgo)
+			{
+				return hashAlgo.ComputeHash(data, offset, len == 0 ? data.Length - offset : len);
+			}
+		}
 		private static byte[] HashIt(GeneralDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			byte[] result;
@@ -508,6 +516,9 @@ namespace TS3Client.Full
 
 		#region IDENTITY & SECURITY LEVEL
 
+		/// <summary>Equals ulong.MaxValue.ToString().Length</summary>
+		private const int MaxUlongStringLen = 20;
+
 		/// <summary><para>Tries to improve the security level of the provided identity to the new level.</para>
 		/// <para>The algorithm takes approximately 2^toLevel milliseconds to calculate; so be careful!</para>
 		/// This method can be canceled anytime since progress which is not enough for the next level
@@ -516,10 +527,11 @@ namespace TS3Client.Full
 		/// <param name="toLevel">The targeted level.</param>
 		public static void ImproveSecurity(IdentityData identity, int toLevel)
 		{
-			byte[] hashBuffer = new byte[identity.PublicKeyString.Length + ulong.MaxValue.ToString().Length];
+			byte[] hashBuffer = new byte[identity.PublicKeyString.Length + MaxUlongStringLen];
 			byte[] pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
 			Array.Copy(pubKeyBytes, 0, hashBuffer, 0, pubKeyBytes.Length);
 
+			identity.LastCheckedKeyOffset = Math.Max(identity.ValidKeyOffset, identity.LastCheckedKeyOffset);
 			int best = GetSecurityLevel(hashBuffer, pubKeyBytes.Length, identity.ValidKeyOffset);
 			while (true)
 			{
@@ -556,11 +568,20 @@ namespace TS3Client.Full
 			return identity;
 		}
 
-		private static int GetSecurityLevel(byte[] hashBuffer, int pubKeyLen, ulong level)
+		private static int GetSecurityLevel(byte[] hashBuffer, int pubKeyLen, ulong offset)
 		{
-			var numberBytes = Encoding.ASCII.GetBytes(level.ToString());
-			Array.Copy(numberBytes, 0, hashBuffer, pubKeyLen, numberBytes.Length);
-			byte[] outHash = Hash1It(hashBuffer, 0, pubKeyLen + numberBytes.Length);
+			var numBuffer = new byte[MaxUlongStringLen];
+			int numLen = 0;
+			do
+			{
+				numBuffer[numLen] = (byte)('0' + (offset % 10));
+				offset /= 10;
+				numLen++;
+			} while (offset > 0);
+			for (int i = 0; i < numLen; i++)
+				hashBuffer[pubKeyLen + i] = numBuffer[numLen - (i + 1)];
+			byte[] outHash = Hash1It(hashBuffer, 0, pubKeyLen + numLen);
+
 			return GetLeadingZeroBits(outHash);
 		}
 
@@ -572,10 +593,40 @@ namespace TS3Client.Full
 				if (data[i] == 0) curr += 8;
 				else break;
 			if (i < data.Length)
-				for (int bit = 7; bit >= 0; bit--)
+				for (int bit = 0; bit < 8; bit++)
 					if ((data[i] & (1 << bit)) == 0) curr++;
 					else break;
 			return curr;
+		}
+
+		/// <summary>
+		/// This is the reference function from the TS3 Server for checking if a hashcash offset
+		/// is sufficient for the reqired level.
+		/// </summary>
+		/// <param name="data">The sha1 result from the current offset calculation</param>
+		/// <param name="reqLevel">The required level to reach.</param>
+		/// <returns>True if the hash meets the requirement, false otherwise.</returns>
+		private static bool ValidateHash(byte[] data, int reqLevel)
+		{
+			var levelMask = 1 << (reqLevel % 8) - 1;
+
+			if (reqLevel < 8)
+			{
+				return (data[0] & levelMask) == 0;
+			}
+			else
+			{
+				var v9 = reqLevel / 8;
+				var v10 = 0;
+				while (data[v10] == 0)
+				{
+					if (++v10 >= v9)
+					{
+						return (data[v9] & levelMask) == 0;
+					}
+				}
+				return false;
+			}
 		}
 
 		#endregion

@@ -90,6 +90,7 @@ namespace TS3Client.Full
 				ConnectUdpClient(host, port);
 
 				packetAckManager.Clear();
+				packetPingManager.Clear();
 				receiveQueue.Clear();
 				receiveQueueLow.Clear();
 				Array.Clear(packetCounter, 0, packetCounter.Length);

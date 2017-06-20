@@ -119,6 +119,9 @@ namespace TS3AudioBot
 			{
 				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.Identity, ts3FullClientData.IdentityOffset);
 			}
+			// check required security level
+			Ts3Crypt.ImproveSecurity(identity, ts3FullClientData.IdentityLevel);
+			ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
 
 			// get or compute password
 			if (!string.IsNullOrEmpty(ts3FullClientData.ServerPassword)
@@ -542,7 +545,9 @@ namespace TS3AudioBot
 		public string Identity { get; set; }
 		[Info("The client identity security offset", "0")]
 		public ulong IdentityOffset { get; set; }
-		[Info("The server password. Leave empty for none.", "")]
+		[Info("The client identity security level which should be reached.", "8")]
+		public int IdentityLevel { get; set; }
+		[Info("The server password. Leave empty for none.")]
 		public string ServerPassword { get; set; }
 		[Info("Set this to true, if the server password is hashed.", "false")]
 		public bool ServerPasswordIsHashed { get; set; }
