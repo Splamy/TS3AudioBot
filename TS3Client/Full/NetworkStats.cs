@@ -119,7 +119,7 @@ namespace TS3Client.Full
 			long[] lastMinuteIn;
 			long[] lastMinuteOut;
 			double lastPing;
-			double avgPing;
+			double deviationPing;
 			lock (queueLock)
 			{
 				lastSecondIn = GetWithin(inBytesTime, TimeSecond);
@@ -128,19 +128,19 @@ namespace TS3Client.Full
 				lastMinuteOut = GetWithin(outBytesTime, TimeMinute);
 				if (pingTimes.Any())
 				{
-					lastPing = pingTimes.Last().Milliseconds;
-					avgPing = pingTimes.Average(ts => ts.Milliseconds);
+					lastPing = pingTimes.Last().TotalMilliseconds;
+					deviationPing = StdDev(pingTimes.Select(ts => ts.TotalMilliseconds));
 				}
 				else
 				{
-					lastPing = avgPing = 0;
+					lastPing = deviationPing = 0;
 				}
 			}
 
 			return new Ts3Command("setconnectioninfo", new List<ICommandPart>()
 			{
-				new CommandParameter("connection_ping", lastPing),
-				new CommandParameter("connection_ping_deviation", Math.Abs(lastPing - avgPing)), // TODO use standard deviation
+				new CommandParameter("connection_ping", Math.Round(lastPing, 0)),
+				new CommandParameter("connection_ping_deviation", deviationPing),
 				new CommandParameter("connection_packets_sent_speech", outPackets[(int)PacketKind.Speech]),
 				new CommandParameter("connection_packets_sent_keepalive", outPackets[(int)PacketKind.Keepalive]),
 				new CommandParameter("connection_packets_sent_control", outPackets[(int)PacketKind.Control]),
@@ -170,6 +170,27 @@ namespace TS3Client.Full
 				new CommandParameter("connection_bandwidth_received_last_minute_keepalive", lastMinuteIn[(int)PacketKind.Keepalive]),
 				new CommandParameter("connection_bandwidth_received_last_minute_control", lastMinuteIn[(int)PacketKind.Control]),
 			});
+		}
+
+		// https://stackoverflow.com/a/2878000/2444047
+		private static double StdDev(IEnumerable<double> values)
+		{
+			// ref: http://warrenseen.com/blog/2006/03/13/how-to-calculate-standard-deviation/
+			double mean = 0.0;
+			double sum = 0.0;
+			double stdDev = 0.0;
+			int n = 0;
+			foreach (double val in values)
+			{
+				n++;
+				double delta = val - mean;
+				mean += delta / n;
+				sum += delta * (val - mean);
+			}
+			if (1 < n)
+				stdDev = Math.Sqrt(sum / (n - 1));
+
+			return stdDev;
 		}
 
 		public void Reset()
