@@ -23,8 +23,9 @@ namespace TS3AudioBot.CommandSystem
 	{
 		public UserSession Session { get; }
 		public TextMessage TextMessage { get; }
-		public bool ApiCall { get; set; }
+		public bool ApiCall { get; internal set; }
 		public bool IsPrivate { get; internal set; }
+		public bool SkipRightsChecks { get; set; }
 
 		private ExecutionInformation() { Session = null; TextMessage = null; }
 		public ExecutionInformation(UserSession session, TextMessage textMessage)
@@ -33,6 +34,14 @@ namespace TS3AudioBot.CommandSystem
 			TextMessage = textMessage;
 		}
 
-		public static readonly ExecutionInformation Debug = new ExecutionInformation();
+		public bool HasRights(params string[] rights)
+		{
+			if (SkipRightsChecks)
+				return true;
+			// TODO move invokerdata to execution information (more stateless)
+			return Session.Bot.RightsManager.HasAllRights(new InvokerData(Session.Client), rights);
+		}
+
+		public static readonly ExecutionInformation Debug = new ExecutionInformation { SkipRightsChecks = true };
 	}
 }

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -20,6 +20,8 @@ namespace TS3AudioBot
 
 	public interface ITargetManager
 	{
+		bool SendDirectVoice { get; set; }
+
 		/// <summary>Adds a channel to the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
 		/// <param name="manual">Should be true if the command was invoked by a user,

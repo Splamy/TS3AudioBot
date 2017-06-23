@@ -35,15 +35,16 @@ namespace TS3AudioBot
 		private const Codec SendCodec = Codec.OpusMusic;
 		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(5);
 		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
-		private const uint StallCountInterval = 50;
-		private const uint StallNoErrorCountMax = 2;
+		private const uint StallCountInterval = 10;
+		private const uint StallNoErrorCountMax = 5;
 		private static readonly string[] QuitMessages =
 		{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
 		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
 		  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
 		  "Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
 		  "?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
-		  "connection lost", "disconnected", "Requested by API." };
+		  "connection lost", "disconnected", "Requested by API.",
+		  "Robert'); DROP TABLE students;--" };
 
 		private const string PreLinkConf = "-hide_banner -nostats -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
@@ -56,6 +57,7 @@ namespace TS3AudioBot
 
 		private Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
+		public bool SendDirectVoice { get; set; } = false;
 
 		private TickWorker sendTick;
 		private Process ffmpegProcess;
@@ -261,20 +263,29 @@ namespace TS3AudioBot
 
 					hasTriedToReconnectAudio = false;
 					audioTimer.PushBytes(read);
+
+					bool sendWhisper = true;
 					if (isStall)
 					{
-						stallCount++;
-						if (stallCount % StallCountInterval == 0)
+						if (++stallCount % StallCountInterval == 0)
 						{
 							stallNoErrorCount++;
+							if (stallNoErrorCount > StallNoErrorCountMax)
+							{
+								stallCount = 0;
+								isStall = false;
+							}
 						}
-						if (stallNoErrorCount > StallNoErrorCountMax)
+						else
 						{
-							stallCount = 0;
-							isStall = false;
-							break;
+							sendWhisper = false;
 						}
 					}
+
+					sendWhisper &= channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
+					// Save cpu when we know there is noone to send to
+					if (!sendWhisper && !SendDirectVoice)
+						break;
 
 					AudioModifier.AdjustVolume(audioBuffer, read, volume);
 					encoder.PushPCMAudio(audioBuffer, read);
@@ -282,10 +293,10 @@ namespace TS3AudioBot
 					Tuple<byte[], int> encodedArr;
 					while ((encodedArr = encoder.GetPacket()) != null)
 					{
-						if (channelSubscriptionsCache.Length == 0 && clientSubscriptionsCache.Length == 0)
-							tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
-						else
+						if (sendWhisper)
 							tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
+						if (SendDirectVoice)
+							tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
 					}
 				}
 			}

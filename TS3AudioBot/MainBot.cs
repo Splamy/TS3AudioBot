@@ -274,23 +274,10 @@ namespace TS3AudioBot
 					return;
 				}
 
-				// parse (and execute) the command
-				ASTNode parsedAst = CommandParser.ParseCommandRequest(textMessage.Message);
-				if (parsedAst.Type == ASTType.Error)
-				{
-					var errorAst = (ASTError)parsedAst;
-					var strb = new StringBuilder();
-					strb.AppendLine();
-					errorAst.Write(strb, 0);
-					WriteToSession(execInfo, strb.ToString());
-					return;
-				}
-
-				var command = CommandManager.CommandSystem.AstToCommandResult(parsedAst);
 				try
 				{
-					var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
-						new[] { CommandResultType.String, CommandResultType.Empty });
+					// parse (and execute) the command
+					var res = CommandManager.CommandSystem.Execute(execInfo, textMessage.Message);
 					// Write result to user
 					if (res.ResultType == CommandResultType.String)
 					{
@@ -369,6 +356,13 @@ namespace TS3AudioBot
 		{
 			QueryConnection.SetupRights(adminToken, mainBotData).UnwrapThrow();
 		}
+
+		[Command("channel", "Gets whether the bot plays music via normal voice mode to his own chanell.")]
+		public JsonObject CommandChannel() => new JsonSingleValue<bool>("Normal voice mode is " + (TargetManager.SendDirectVoice ? "on" : "off"), TargetManager.SendDirectVoice);
+		[Command("channel on", "Enables normal voice mode.")]
+		public void CommandChannelOn() => TargetManager.SendDirectVoice = true;
+		[Command("channel off", "Disables normal voice mode.")]
+		public void CommandChannelOff() => TargetManager.SendDirectVoice = false;
 
 		[Command("clear", "Removes all songs from the current playlist.")]
 		public void CommandClear()
@@ -767,7 +761,7 @@ namespace TS3AudioBot
 		public JsonObject CommandListDelete(ExecutionInformation info, string name)
 		{
 			if (info.ApiCall)
-				PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.Session.HasRights(rightDeleteAllPlaylists)).UnwrapThrow();
+				PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.HasRights(rightDeleteAllPlaylists)).UnwrapThrow();
 
 			var hresult = PlaylistManager.LoadPlaylist(name, true);
 			if (!hresult)
@@ -779,7 +773,7 @@ namespace TS3AudioBot
 			{
 				if (hresult.Value.CreatorDbId.HasValue
 					&& hresult.Value.CreatorDbId.Value != info.Session.Client.DatabaseId
-					&& !info.Session.HasRights(rightDeleteAllPlaylists))
+					&& !info.HasRights(rightDeleteAllPlaylists))
 					throw new CommandException("You are not allowed to delete others playlists", CommandExceptionReason.MissingRights);
 
 				info.Session.SetResponse(ResponseListDelete, name);
@@ -961,11 +955,11 @@ namespace TS3AudioBot
 			return new JsonArray<PlaylistItem>(strb.ToString(), items);
 		}
 
-		[Command("loop", "Gets or sets whether or not to loop the entire playlist.")]
+		[Command("loop", "Gets whether or not to loop the entire playlist.")]
 		public JsonObject CommandLoop() => new JsonSingleValue<bool>("Loop is " + (PlaylistManager.Loop ? "on" : "off"), PlaylistManager.Loop);
-		[Command("loop on", "Gets or sets whether or not to loop the entire playlist.")]
+		[Command("loop on", "Enables looping the entire playlist.")]
 		public void CommandLoopOn() => PlaylistManager.Loop = true;
-		[Command("loop off", "Gets or sets whether or not to loop the entire playlist.")]
+		[Command("loop off", "Disables looping the entire playlist.")]
 		public void CommandLoopOff() => PlaylistManager.Loop = false;
 
 		[Command("next", "Plays the next song in the playlist.")]
@@ -1112,7 +1106,7 @@ namespace TS3AudioBot
 		[Command("random seed", "Sets the unique seed for a certain playback order")]
 		public void CommandRandomSeed(int newSeed) => PlaylistManager.Seed = newSeed;
 
-		[Command("repeat", "Gets or sets whether or not to loop a single song.")]
+		[Command("repeat", "Gets whether or not to loop a single song.")]
 		public JsonObject CommandRepeat() => new JsonSingleValue<bool>("Repeat is " + (AudioFramework.Repeat ? "on" : "off"), AudioFramework.Repeat);
 		[Command("repeat on", "Enables single song repeat.")]
 		public void CommandRepeatOn() => AudioFramework.Repeat = true;
@@ -1410,7 +1404,7 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.Session.HasRights(rightHighVolume))
+				if (info.HasRights(rightHighVolume))
 				{
 					var respInt = info.Session.ResponseData as int?;
 					if (!respInt.HasValue)
@@ -1433,7 +1427,7 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.Session.HasRights("cmd.quit"))
+				if (info.HasRights("cmd.quit"))
 					CommandQuit(info, "force");
 				else
 					return "Command can only be answered by an admin.";
@@ -1446,7 +1440,7 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.Session.HasRights("cmd.history.delete"))
+				if (info.HasRights("cmd.history.delete"))
 				{
 					var ale = info.Session.ResponseData as AudioLogEntry;
 					if (ale == null)
@@ -1469,7 +1463,7 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage.Message);
 			if (answer == Answer.Yes)
 			{
-				if (info.Session.HasRights("cmd.history.clean"))
+				if (info.HasRights("cmd.history.clean"))
 				{
 					string param = info.Session.ResponseData as string;
 					if (string.IsNullOrEmpty(param))
@@ -1497,7 +1491,7 @@ namespace TS3AudioBot
 			if (answer == Answer.Yes)
 			{
 				var name = info.Session.ResponseData as string;
-				var result = PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.Session.HasRights(rightDeleteAllPlaylists));
+				var result = PlaylistManager.DeletePlaylist(name, info.Session.Client.DatabaseId, info.HasRights(rightDeleteAllPlaylists));
 				if (!result) return result.Message;
 				else return "Ok";
 			}

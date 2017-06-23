@@ -52,7 +52,7 @@ namespace TS3ABotUnitTests
 
 		string CallCommand(string command)
 		{
-			var info = new ExecutionInformation(null, CreateTextMessage());
+			var info = new ExecutionInformation(null, CreateTextMessage()) { SkipRightsChecks = true };
 			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
 		}
 

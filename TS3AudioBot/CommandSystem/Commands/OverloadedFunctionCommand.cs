@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -60,13 +60,13 @@ namespace TS3AudioBot.CommandSystem
 
 				// Sort out special arguments
 				// and remove the nullable wrapper
-				List<Type> params1 = (from p in f1.CommandParameter
-									  where !FunctionCommand.SpecialTypes.Contains(p)
-									  select FunctionCommand.UnwrapType(p)).ToList();
+				var params1 = (from p in f1.CommandParameter
+							   where !FunctionCommand.SpecialTypes.Contains(p)
+							   select FunctionCommand.UnwrapType(p)).ToList();
 
-				List<Type> params2 = (from p in f2.CommandParameter
-									  where !FunctionCommand.SpecialTypes.Contains(p)
-									  select FunctionCommand.UnwrapType(p)).ToList();
+				var params2 = (from p in f2.CommandParameter
+							   where !FunctionCommand.SpecialTypes.Contains(p)
+							   select FunctionCommand.UnwrapType(p)).ToList();
 
 				for (int i = 0; i < params1.Count; i++)
 				{

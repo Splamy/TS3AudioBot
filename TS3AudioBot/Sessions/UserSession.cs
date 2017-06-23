@@ -36,7 +36,6 @@ namespace TS3AudioBot.Sessions
 		public object ResponseData { get; private set; }
 
 		public MainBot Bot { get; }
-		public ushort ActiveClientId { get; set; }
 		public ClientData Client { get; private set; }
 
 		internal ApiToken Token { get; set; }
@@ -142,11 +141,6 @@ namespace TS3AudioBot.Sessions
 				return R.OkR;
 			}
 			return result.Message;
-		}
-
-		public bool HasRights(params string[] rights)
-		{
-			return Bot.RightsManager.HasAllRights(new InvokerData(Client), rights);
 		}
 
 		public R<string> GenerateToken() => GenerateToken(ApiToken.DefaultTokenTimeout);
