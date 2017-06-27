@@ -332,7 +332,7 @@ namespace TS3AudioBot
 			if (!info.IsPrivate)
 				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
 			var token = info.Session.GenerateToken().UnwrapThrow();
-			return new JsonSingleValue<string>(token, token);
+			return new JsonSingleValue<string>(token);
 		}
 
 		[Command("api nonce", "Generates an api nonce.")]
@@ -344,7 +344,7 @@ namespace TS3AudioBot
 				throw new CommandException("No active token found.", CommandExceptionReason.CommandError);
 
 			var nonce = info.Session.Token.CreateNonce();
-			return new JsonSingleValue<string>(nonce.Value, nonce.Value);
+			return new JsonSingleValue<string>(nonce.Value);
 		}
 
 		[Command("bot name", "Gives the bot a new name.")]
@@ -394,30 +394,47 @@ namespace TS3AudioBot
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
-		[Command("getuser id", "Gets the unique Id of a user.")]
-		[Usage("<username>", "A user which is currently logged in to the server")]
-		public JsonObject CommandGetUserByName(string username)
+		[Command("getuser uid", "Gets the unique Id of a user.")]
+		public JsonObject CommandGetUid(ExecutionInformation info) => new JsonSingleValue<string>(info.Session.Client.Uid);
+		[Command("getuser name", "Gets the Nickname of a user.")]
+		public JsonObject CommandGetName(ExecutionInformation info) => new JsonSingleValue<string>(info.Session.Client.NickName);
+		[Command("getuser dbid", "Gets the DatabaseId of a user.")]
+		public JsonObject CommandGetDbId(ExecutionInformation info) => new JsonSingleValue<ulong>(info.Session.Client.DatabaseId);
+		[Command("getuser channel", "Gets the ChannelId a user is currently in.")]
+		public JsonObject CommandGetChannel(ExecutionInformation info) => new JsonSingleValue<ulong>(info.Session.Client.ChannelId);
+		[Command("getuser all", "Gets the unique Id of a user.")]
+		public JsonObject CommandGetUser(ExecutionInformation info)
 		{
-			var result = QueryConnection.GetClientByName(username);
-			if (result.Ok)
-			{
-				var client = result.Value;
-				return new JsonSingleObject<ClientData>($"Client: UID:{client.ClientId} DBID:{client.DatabaseId} ChanID:{client.ChannelId}", client);
-			}
-			else
-				return new JsonEmpty("No user found...");
+			var client = info.Session.Client;
+			return new JsonSingleObject<ClientData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}", client);
 		}
 
-		[Command("getuser db", "Gets the User name by dbid.")]
-		[Usage("<dbid>", "Any user dbid which is known by the server")]
-		public JsonObject CommandGetUserByDb(ulong parameter)
+		[Command("getuser uid byid", "Gets the unique Id of a user.")]
+		public JsonObject CommandGetUidById(ushort id) => new JsonSingleValue<string>(QueryConnection.GetClientById(id).UnwrapThrow().Uid);
+		[Command("getuser name byid", "Gets the Nickname of a user.")]
+		public JsonObject CommandGetNameById(ushort id) => new JsonSingleValue<string>(QueryConnection.GetClientById(id).UnwrapThrow().NickName);
+		[Command("getuser dbid byid", "Gets the DatabaseId of a user.")]
+		public JsonObject CommandGetDbIdById(ushort id) => new JsonSingleValue<ulong>(QueryConnection.GetClientById(id).UnwrapThrow().DatabaseId);
+		[Command("getuser channel byid", "Gets the ChannelId a user is currently in.")]
+		public JsonObject CommandGetChannelById(ushort id) => new JsonSingleValue<ulong>(QueryConnection.GetClientById(id).UnwrapThrow().ChannelId);
+		[Command("getuser all byid", "Gets the unique Id of a user.")]
+		public JsonObject CommandGetUserById(ushort id)
 		{
-			var client = QueryConnection.GetNameByDbId(parameter);
-			if (client == null)
-				return new JsonEmpty("No user found...");
-			else
-				return new JsonSingleValue<string>("Clientname: " + client, client);
+			var client = QueryConnection.GetClientById(id).UnwrapThrow();
+			return new JsonSingleObject<ClientData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}", client);
 		}
+		[Command("getuser id byname", "Gets the Id of a user.")]
+		public JsonObject CommandGetIdByName(string username) => new JsonSingleValue<ushort>(QueryConnection.GetClientByName(username).UnwrapThrow().ClientId);
+		[Command("getuser all byname", "Gets the unique Id of a user.")]
+		public JsonObject CommandGetUserByName(string username)
+		{
+			var client = QueryConnection.GetClientByName(username).UnwrapThrow();
+			return new JsonSingleObject<ClientData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}", client);
+		}
+		[Command("getuser name bydbid", "Gets the User name by dbid.")]
+		public JsonObject CommandGetNameByDbId(ulong dbId) => new JsonSingleValue<string>(QueryConnection.GetDbClientByDbId(dbId).UnwrapThrow().NickName ?? string.Empty);
+		[Command("getuser uid bydbid", "Gets the unique Id of a user.")]
+		public JsonObject CommandGetUidByDbId(ulong dbId) => new JsonSingleValue<string>(QueryConnection.GetDbClientByDbId(dbId).UnwrapThrow().Uid);
 
 		[Command("help", "Shows all commands or detailed help about a specific command.")]
 		[Usage("[<command>]", "Any currently accepted command")]
@@ -463,7 +480,7 @@ namespace TS3AudioBot
 
 				var targetB = target as BotCommand;
 				if (targetB != null)
-					return new JsonSingleValue<string>(targetB.GetHelp(), targetB.GetHelp());
+					return new JsonSingleValue<string>(targetB.GetHelp());
 
 				var targetCG = target as CommandGroup;
 				if (targetCG != null)
@@ -478,7 +495,7 @@ namespace TS3AudioBot
 					var strb = new StringBuilder();
 					foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
 						strb.Append(botCom.GetHelp());
-					return new JsonSingleValue<string>(strb.ToString(), strb.ToString());
+					return new JsonSingleValue<string>(strb.ToString());
 				}
 
 				throw new CommandException("Seems like something went wrong. No help can be shown for this command path.", CommandExceptionReason.CommandError);
@@ -730,7 +747,7 @@ namespace TS3AudioBot
 			else
 			{
 				var link = FactoryManager.RestoreLink(PlayManager.CurrentPlayData.ResourceData);
-				return new JsonSingleValue<string>(link, link);
+				return new JsonSingleValue<string>(link);
 			}
 		}
 
@@ -883,7 +900,7 @@ namespace TS3AudioBot
 			var plist = AutoGetPlaylist(info.Session);
 
 			if (string.IsNullOrEmpty(name))
-				return new JsonSingleValue<string>(plist.Name, plist.Name);
+				return new JsonSingleValue<string>(plist.Name);
 
 			PlaylistManager.IsNameValid(name).UnwrapThrow();
 
@@ -1021,7 +1038,7 @@ namespace TS3AudioBot
 		public JsonObject CommandPluginUnload(string identifier)
 		{
 			string ret = PluginManager.UnloadPlugin(identifier).ToString();
-			return new JsonSingleValue<string>(ret, ret);
+			return new JsonSingleValue<string>(ret);
 		}
 
 		[Command("plugin load", "Unloads a plugin.")]
@@ -1040,7 +1057,7 @@ namespace TS3AudioBot
 			var strb = new StringBuilder();
 			foreach (var param in parameter)
 				strb.Append(param);
-			return new JsonSingleValue<string>(strb.ToString(), strb.ToString());
+			return new JsonSingleValue<string>(strb.ToString());
 		}
 
 		[Command("quit", "Closes the TS3AudioBot application.")]
@@ -1094,7 +1111,7 @@ namespace TS3AudioBot
 		{
 			string seed = Util.FromSeed(PlaylistManager.Seed);
 			string strseed = string.IsNullOrEmpty(seed) ? "<empty>" : seed;
-			return new JsonSingleValue<string>(strseed, strseed);
+			return new JsonSingleValue<string>(strseed);
 		}
 		[Command("random seed", "Sets the unique seed for a certain playback order")]
 		public void CommandRandomSeed(string newSeed)
@@ -1151,7 +1168,7 @@ namespace TS3AudioBot
 			}
 			else
 				num = Util.Random.Next();
-			return new JsonSingleValue<int>(num.ToString(CultureInfo.InvariantCulture), num);
+			return new JsonSingleValue<int>(num);
 		}
 
 		[Command("seek", "Jumps to a timemark within the current song.")]

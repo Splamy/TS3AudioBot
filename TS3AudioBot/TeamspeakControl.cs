@@ -66,7 +66,7 @@ namespace TS3AudioBot
 
 		private List<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
-		private Dictionary<ulong, string> clientDbNames;
+		private Cache<ulong, ClientDbData> clientDbNames;
 
 		protected Ts3BaseFunctions tsBaseClient;
 		protected ClientData me;
@@ -170,7 +170,7 @@ namespace TS3AudioBot
 			if (clients.Length > 0)
 				return R<ClientData>.OkR(clients[0].Value);
 			else
-				return "No Client found";
+				return "No client found";
 		}
 
 		private R<ClientData> ClientBufferRequest(Func<ClientData, bool> pred)
@@ -203,20 +203,19 @@ namespace TS3AudioBot
 			return tsBaseClient.ServerGroupsByClientDbId(dbId).Select(csg => csg.ServerGroupId).ToArray();
 		}
 
-		public string GetNameByDbId(ulong clientDbId)
+		public R<ClientDbData> GetDbClientByDbId(ulong clientDbId)
 		{
-			string name;
-			if (clientDbNames.TryGetValue(clientDbId, out name))
-				return name;
+			ClientDbData clientData;
+			if (clientDbNames.TryGetValue(clientDbId, out clientData))
+				return clientData;
 
 			try
 			{
-				var response = tsBaseClient.ClientDbInfo(clientDbId);
-				name = response?.NickName ?? string.Empty;
-				clientDbNames.Add(clientDbId, name);
-				return name;
+				clientData = tsBaseClient.ClientDbInfo(clientDbId);
+				clientDbNames.Store(clientDbId, clientData);
+				return clientData;
 			}
-			catch (Ts3CommandException) { return null; }
+			catch (Ts3CommandException) { return "No client found."; }
 		}
 
 		public ClientInfo GetClientInfoById(ushort id) => tsBaseClient.ClientInfo(id);
