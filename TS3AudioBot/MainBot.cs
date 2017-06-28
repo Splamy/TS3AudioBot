@@ -64,7 +64,6 @@ namespace TS3AudioBot
 
 		internal PluginManager PluginManager { get; private set; }
 		public CommandManager CommandManager { get; private set; }
-		public AudioFramework AudioFramework { get; private set; }
 		public PlaylistManager PlaylistManager { get; private set; }
 		public TeamspeakControl QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
@@ -73,6 +72,7 @@ namespace TS3AudioBot
 		public WebManager WebManager { get; private set; }
 		public PlayManager PlayManager { get; private set; }
 		public ITargetManager TargetManager { get; private set; }
+		public IPlayerConnection PlayerConnection { get; private set; }
 		public ConfigFile ConfigManager { get; private set; }
 		public RightsManager RightsManager { get; private set; }
 
@@ -151,10 +151,11 @@ namespace TS3AudioBot
 			CommandManager.RegisterMain(this);
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
+			AudioValues.audioFrameworkData = afd;
 			var teamspeakClient = new Ts3Full(tfcd);
 			QueryConnection = teamspeakClient;
+			PlayerConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
-			AudioFramework = new AudioFramework(afd, teamspeakClient);
 			SessionManager = new SessionManager();
 			HistoryManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
@@ -180,7 +181,7 @@ namespace TS3AudioBot
 			PlaylistManager.AddFactory(soundcloudFactory, CommandManager);
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
-			AudioFramework.OnPlaybackStopped += PlayManager.SongStoppedHook;
+			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
 			// Inform the BobClient on start/stop
 			PlayManager.AfterResourceStarted += TargetManager.OnResourceStarted;
 			PlayManager.AfterResourceStopped += TargetManager.OnResourceStopped;
@@ -1015,7 +1016,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("pause", "Well, pauses the song. Undo with !play.")]
-		public void CommandPause() => AudioFramework.Pause = true;
+		public void CommandPause() => PlayerConnection.Paused = true;
 
 		[Command("play", "Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it.")]
 		[Usage("<link>", "Youtube, Soundcloud, local path or file link")]
@@ -1023,7 +1024,7 @@ namespace TS3AudioBot
 		public void CommandPlay(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
-				AudioFramework.Pause = false;
+				PlayerConnection.Paused = false;
 			else
 				PlayManager.Play(new InvokerData(info.Session.Client), parameter).UnwrapThrow();
 		}
@@ -1124,11 +1125,11 @@ namespace TS3AudioBot
 		public void CommandRandomSeed(int newSeed) => PlaylistManager.Seed = newSeed;
 
 		[Command("repeat", "Gets whether or not to loop a single song.")]
-		public JsonObject CommandRepeat() => new JsonSingleValue<bool>("Repeat is " + (AudioFramework.Repeat ? "on" : "off"), AudioFramework.Repeat);
+		public JsonObject CommandRepeat() => new JsonSingleValue<bool>("Repeat is " + (PlayerConnection.Repeated ? "on" : "off"), PlayerConnection.Repeated);
 		[Command("repeat on", "Enables single song repeat.")]
-		public void CommandRepeatOn() => AudioFramework.Repeat = true;
+		public void CommandRepeatOn() => PlayerConnection.Repeated = true;
 		[Command("repeat off", "Disables single song repeat.")]
-		public void CommandRepeatOff() => AudioFramework.Repeat = false;
+		public void CommandRepeatOff() => PlayerConnection.Repeated = false;
 
 		[Command("rights can", "Returns the subset of allowed commands the caller (you) can execute.")]
 		public JsonObject CommandRightsCan(ExecutionInformation info, params string[] rights)
@@ -1201,10 +1202,10 @@ namespace TS3AudioBot
 
 			if (!parsed)
 				throw new CommandException("The time was not in a correct format, see !help seek for more information.", CommandExceptionReason.CommandError);
-			else if (span < TimeSpan.Zero || span > AudioFramework.Length)
+			else if (span < TimeSpan.Zero || span > PlayerConnection.Length)
 				throw new CommandException("The point of time is not within the songlenth.", CommandExceptionReason.CommandError);
 			else
-				AudioFramework.Position = span;
+				PlayerConnection.Position = span;
 		}
 
 		[Command("settings", "Changes values from the settigns. Not all changes can be applied immediately.")]
@@ -1261,7 +1262,7 @@ namespace TS3AudioBot
 		[Command("stop", "Stops the current song.")]
 		public void CommandStop()
 		{
-			AudioFramework.Stop();
+			PlayManager.Stop();
 		}
 
 		[Command("subscribe", "Lets you hear the music independent from the channel you are in.")]
@@ -1384,7 +1385,7 @@ namespace TS3AudioBot
 		public JsonObject CommandVolume(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
-				return new JsonSingleValue<int>("Current volume: " + AudioFramework.Volume, AudioFramework.Volume);
+				return new JsonSingleValue<int>("Current volume: " + PlayerConnection.Volume, PlayerConnection.Volume);
 
 			bool relPos = parameter.StartsWith("+", StringComparison.Ordinal);
 			bool relNeg = parameter.StartsWith("-", StringComparison.Ordinal);
@@ -1395,16 +1396,16 @@ namespace TS3AudioBot
 				throw new CommandException("The new volume could not be parsed", CommandExceptionReason.CommandError);
 
 			int newVolume;
-			if (relPos) newVolume = AudioFramework.Volume + volume;
-			else if (relNeg) newVolume = AudioFramework.Volume - volume;
+			if (relPos) newVolume = PlayerConnection.Volume + volume;
+			else if (relNeg) newVolume = PlayerConnection.Volume - volume;
 			else newVolume = volume;
 
-			if (newVolume < 0 || newVolume > AudioFramework.MaxVolume)
-				throw new CommandException("The volume level must be between 0 and " + AudioFramework.MaxVolume, CommandExceptionReason.CommandError);
+			if (newVolume < 0 || newVolume > AudioValues.MaxVolume)
+				throw new CommandException("The volume level must be between 0 and " + AudioValues.MaxVolume, CommandExceptionReason.CommandError);
 
-			if (newVolume <= AudioFramework.MaxUserVolume || newVolume < AudioFramework.Volume || info.ApiCall)
-				AudioFramework.Volume = newVolume;
-			else if (newVolume <= AudioFramework.MaxVolume)
+			if (newVolume <= AudioValues.MaxUserVolume || newVolume < PlayerConnection.Volume || info.ApiCall)
+				PlayerConnection.Volume = newVolume;
+			else if (newVolume <= AudioValues.MaxVolume)
 			{
 				info.Session.SetResponse(ResponseVolume, newVolume);
 				return new JsonEmpty("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
@@ -1429,7 +1430,7 @@ namespace TS3AudioBot
 						Log.Write(Log.Level.Error, "responseData is not an int.");
 						return "Internal error";
 					}
-					AudioFramework.Volume = respInt.Value;
+					PlayerConnection.Volume = respInt.Value;
 				}
 				else
 				{
@@ -1545,7 +1546,7 @@ namespace TS3AudioBot
 			return QueryConnection.ChangeDescription(setString);
 		}
 
-		private Playlist AutoGetPlaylist(UserSession session)
+		private static Playlist AutoGetPlaylist(UserSession session)
 		{
 			var result = session.Get<PlaylistManager, Playlist>();
 			if (result)
@@ -1568,8 +1569,8 @@ namespace TS3AudioBot
 			PluginManager?.Dispose(); // before: SessionManager, logStream,
 			PluginManager = null;
 
-			AudioFramework.Dispose(); // before: logStream,
-			AudioFramework = null;
+			PlayerConnection.Dispose(); // before: logStream,
+			PlayerConnection = null;
 
 			QueryConnection.Dispose(); // before: logStream,
 			QueryConnection = null;

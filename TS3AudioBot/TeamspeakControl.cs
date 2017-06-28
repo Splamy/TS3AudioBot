@@ -218,7 +218,11 @@ namespace TS3AudioBot
 			catch (Ts3CommandException) { return "No client found."; }
 		}
 
-		public ClientInfo GetClientInfoById(ushort id) => tsBaseClient.ClientInfo(id);
+		public R<ClientInfo> GetClientInfoById(ushort id)
+		{
+			try { return tsBaseClient.ClientInfo(id); }
+			catch (Ts3CommandException) { return "No client found."; }
+		}
 
 		internal R SetupRights(string key, MainBotData mainBotData)
 		{

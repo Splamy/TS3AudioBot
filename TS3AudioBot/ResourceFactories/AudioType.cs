@@ -14,23 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace TS3AudioBot
+namespace TS3AudioBot.ResourceFactories
 {
-	using System;
-	using Helper;
-
-	public interface IPlayerConnection : IDisposable
+	public enum AudioType
 	{
-		event EventHandler OnSongEnd;
-
-		int Volume { get; set; }
-		TimeSpan Position { get; set; }
-		bool Repeated { get; set; }
-		bool Paused { get; set; }
-		TimeSpan Length { get; }
-		bool Playing { get; }
-
-		R AudioStart(string url);
-		R AudioStop();
+		MediaLink,
+		Youtube,
+		Soundcloud,
+		Twitch,
 	}
 }

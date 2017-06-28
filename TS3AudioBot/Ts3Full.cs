@@ -54,7 +54,7 @@ namespace TS3AudioBot
 		private readonly object ffmpegLock = new object();
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 		private bool hasTriedToReconnectAudio = false;
-
+		
 		private Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
 		public bool SendDirectVoice { get; set; } = false;
@@ -140,15 +140,6 @@ namespace TS3AudioBot
 			ConnectClient();
 		}
 
-		private void TsFullClient_OnDisconnected(object sender, DisconnectEventArgs e)
-		{
-			if (autoReconnectOnce)
-			{
-				autoReconnectOnce = false;
-				ConnectClient();
-			}
-		}
-
 		private void ConnectClient()
 		{
 			VersionSign verionSign = VersionSign.VER_LIN_3_0_19_4;
@@ -176,6 +167,15 @@ namespace TS3AudioBot
 				IsPasswordHashed = ts3FullClientData.ServerPasswordIsHashed,
 				VersionSign = verionSign,
 			});
+		}
+
+		private void TsFullClient_OnDisconnected(object sender, DisconnectEventArgs e)
+		{
+			if (autoReconnectOnce)
+			{
+				autoReconnectOnce = false;
+				ConnectClient();
+			}
 		}
 
 		private void TsFullClient_OnErrorEvent(object sender, CommandError e)
@@ -334,19 +334,24 @@ namespace TS3AudioBot
 			get { return audioTimer.SongPosition; }
 			set
 			{
+				if (value < TimeSpan.Zero || value > Length)
+					throw new ArgumentOutOfRangeException(nameof(value));
 				AudioStop();
 				StartFfmpegProcess(lastLink, $"-ss {value.ToString(@"hh\:mm\:ss")}", $"-ss {value.ToString(@"hh\:mm\:ss")}");
 				audioTimer.SongPositionOffset = value;
 			}
 		}
-
+		
 		public int Volume
 		{
-			get { return (int)Math.Round(volume * 100); }
-			set { volume = value / 100f; }
+			get { return (int)Math.Round(volume * AudioValues.MaxVolume); }
+			set
+			{
+				if (value < 0 || value > AudioValues.MaxVolume)
+					throw new ArgumentOutOfRangeException(nameof(value));
+				volume = value / (float)AudioValues.MaxVolume;
+			}
 		}
-
-		public void Initialize() { }
 
 		public bool Paused
 		{
@@ -537,13 +542,6 @@ namespace TS3AudioBot
 		}
 
 		#endregion
-
-		public class SubscriptionData
-		{
-			public ulong Id { get; set; }
-			public bool Enabled { get; set; }
-			public bool Manual { get; set; }
-		}
 	}
 
 	public class Ts3FullClientData : ConfigData

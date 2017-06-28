@@ -25,7 +25,7 @@ namespace TS3AudioBot
 	public class PlayManager
 	{
 		private MainBot botParent;
-		private AudioFramework AudioFramework => botParent.AudioFramework;
+		private IPlayerConnection PlayerConnection => botParent.PlayerConnection;
 		private PlaylistManager PlaylistManager => botParent.PlaylistManager;
 		private ResourceFactoryManager ResourceFactoryManager => botParent.FactoryManager;
 		private HistoryManager HistoryManager => botParent.HistoryManager;
@@ -137,7 +137,7 @@ namespace TS3AudioBot
 			BeforeResourceStarted?.Invoke(this, new EventArgs());
 
 			// pass the song to the AF to start it
-			var result = AudioFramework.StartResource(play, meta);
+			var result = StartResource(play, meta);
 			if (!result) return result;
 
 			// add it to our freelist for comfort
@@ -153,6 +153,26 @@ namespace TS3AudioBot
 
 			CurrentPlayData = new PlayInfoEventArgs(invoker, play, meta); // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, CurrentPlayData);
+
+			return R.OkR;
+		}
+
+		private R StartResource(PlayResource playResource, MetaData config)
+		{
+			//PlayerConnection.AudioStop();
+
+			if (string.IsNullOrWhiteSpace(playResource.PlayUri))
+				return "Internal resource error: link is empty";
+
+			Log.Write(Log.Level.Debug, "PM ar start: {0}", playResource);
+			var result = PlayerConnection.AudioStart(playResource.PlayUri);
+			if (!result)
+			{
+				Log.Write(Log.Level.Error, "Error return from player: {0}", result.Message);
+				return $"Internal player error ({result.Message})";
+			}
+
+			PlayerConnection.Volume = config.Volume ?? AudioValues.DefaultVolume;
 
 			return R.OkR;
 		}
@@ -188,16 +208,24 @@ namespace TS3AudioBot
 				return "A few songs failed to start, use !previous to continue";
 		}
 
-		public void SongStoppedHook(object sender, SongEndEventArgs e)
-		{
-			BeforeResourceStopped?.Invoke(this, e);
+		public void SongStoppedHook(object sender, EventArgs e) => Stop(true);
 
-			if (e.SongEndedByCallback && CurrentPlayData != null)
+		public void Stop() => Stop(false);
+
+		private void Stop(bool songEndedByCallback = false)
+		{
+			BeforeResourceStopped?.Invoke(this, new SongEndEventArgs(songEndedByCallback));
+
+			if (songEndedByCallback && CurrentPlayData != null)
 			{
 				R result = Next(CurrentPlayData.Invoker);
 				if (result)
 					return;
 				Log.Write(Log.Level.Warning, nameof(SongStoppedHook) + " could not play Next: " + result.Message);
+			}
+			else
+			{
+				PlayerConnection.AudioStop();
 			}
 
 			CurrentPlayData = null;
@@ -213,6 +241,12 @@ namespace TS3AudioBot
 		public int? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
 		public bool FromPlaylist { get; set; } = false;
+	}
+
+	public class SongEndEventArgs : EventArgs
+	{
+		public bool SongEndedByCallback { get; }
+		public SongEndEventArgs(bool songEndedByCallback) { SongEndedByCallback = songEndedByCallback; }
 	}
 
 	public sealed class PlayInfoEventArgs : EventArgs
@@ -275,5 +309,23 @@ namespace TS3AudioBot
 				&& ClientUid == other.ClientUid
 				&& Channel == other.Channel;
 		}
+	}
+
+	public static class AudioValues
+	{
+		public const int MaxVolume = 100;
+
+		internal static AudioFrameworkData audioFrameworkData;
+
+		public static int MaxUserVolume => audioFrameworkData.MaxUserVolume;
+		public static int DefaultVolume => audioFrameworkData.DefaultVolume;
+	}
+
+	public class AudioFrameworkData : ConfigData
+	{
+		[Info("The default volume a song should start with", "10")]
+		public int DefaultVolume { get; set; }
+		[Info("The maximum volume a normal user can request", "30")]
+		public int MaxUserVolume { get; set; }
 	}
 }

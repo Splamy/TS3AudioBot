@@ -482,10 +482,10 @@ namespace TS3AudioBot.Web.Interface
 	class WebPlayControls : WebSite
 	{
 		PlayManager playMgr;
-		AudioFramework audio;
+		IPlayerConnection audio;
 		public WebPlayControls(string sitePath, MainBot bot) : base(sitePath)
 		{
-			audio = bot.AudioFramework;
+			audio = bot.PlayerConnection;
 			playMgr = bot.PlayManager;
 		}
 
@@ -503,9 +503,9 @@ namespace TS3AudioBot.Web.Interface
 				break;
 
 			case "prev": playMgr.Previous(new InvokerData()); break; // HACK: use token-system to determine user when its available
-			case "play": audio.Pause = !audio.Pause; break;
+			case "play": audio.Paused = !audio.Paused; break;
 			case "next": playMgr.Next(new InvokerData()); break; // HACK: use token-system to determine user when its available
-			case "loop": audio.Repeat = !audio.Repeat; break;
+			case "loop": audio.Repeated = !audio.Repeated; break;
 			case "seek":
 				var seekStr = url.QueryParam["pos"];
 				double seek;
@@ -523,14 +523,14 @@ namespace TS3AudioBot.Web.Interface
 
 	class SongChangedEvent : WebEvent
 	{
-		AudioFramework audio;
+		IPlayerConnection audio;
 		PlayManager playMgr;
 		PlaylistManager playListMgr;
 		//TickWorker pushUpdate;
 		public SongChangedEvent(string sitePath, MainBot bot) : base(sitePath)
 		{
 			playMgr = bot.PlayManager;
-			audio = bot.AudioFramework;
+			audio = bot.PlayerConnection;
 			playListMgr = bot.PlaylistManager;
 			playMgr.AfterResourceStarted += Audio_OnResourceStarted;
 			//pushUpdate = TickPool.RegisterTick(InvokeEvent, TimeSpan.FromSeconds(5), true);
@@ -554,8 +554,8 @@ namespace TS3AudioBot.Web.Interface
 					titel = playMgr.CurrentPlayData.ResourceData.ResourceTitle,
 					//length = audio.Length,
 					//position = audio.Position,
-					paused = audio.Pause,
-					repeat = audio.Repeat,
+					paused = audio.Paused,
+					repeat = audio.Repeated,
 					loop = playListMgr.Loop,
 					volume = audio.Volume,
 				};
