@@ -54,7 +54,7 @@ namespace TS3AudioBot
 		private readonly object ffmpegLock = new object();
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 		private bool hasTriedToReconnectAudio = false;
-		
+
 		private Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
 		public bool SendDirectVoice { get; set; } = false;
@@ -341,7 +341,7 @@ namespace TS3AudioBot
 				audioTimer.SongPositionOffset = value;
 			}
 		}
-		
+
 		public int Volume
 		{
 			get { return (int)Math.Round(volume * AudioValues.MaxVolume); }
@@ -443,46 +443,35 @@ namespace TS3AudioBot
 
 		#region ITargetManager
 
-		public void OnResourceStarted(object sender, PlayInfoEventArgs playData)
-		{
-			if (playData.Invoker.Channel.HasValue)
-				RestoreSubscriptions(playData.Invoker.Channel.Value);
-		}
-
-		public void OnResourceStopped(object sender, EventArgs e)
-		{
-			// TODO despawn or go back
-		}
-
-		public void WhisperChannelSubscribe(ulong channel, bool manual)
+		public void WhisperChannelSubscribe(ulong channel, bool temp)
 		{
 			// TODO move to requested channel
 			// TODO spawn new client
 			lock (subscriptionLockObj)
 			{
-				bool subscriptionManual;
-				if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionManual))
-					channelSubscriptionsSetup[channel] = subscriptionManual || manual;
+				bool subscriptionTemp;
+				if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionTemp))
+					channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
 				else
 				{
-					channelSubscriptionsSetup[channel] = manual;
+					channelSubscriptionsSetup[channel] = !temp;
 					subscriptionSetupChanged = true;
 				}
 			}
 		}
 
-		public void WhisperChannelUnsubscribe(ulong channel, bool manual)
+		public void WhisperChannelUnsubscribe(ulong channel, bool temp)
 		{
 			lock (subscriptionLockObj)
 			{
-				if (manual)
+				if (!temp)
 				{
 					subscriptionSetupChanged |= channelSubscriptionsSetup.Remove(channel);
 				}
 				else
 				{
-					bool subscriptionManual;
-					if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionManual) && !subscriptionManual)
+					bool subscriptionTemp;
+					if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionTemp) && subscriptionTemp)
 					{
 						channelSubscriptionsSetup.Remove(channel);
 						subscriptionSetupChanged = true;
@@ -510,13 +499,12 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void RestoreSubscriptions(ulong channelId)
+		public void ClearTemporary()
 		{
-			WhisperChannelSubscribe(channelId, false);
 			lock (subscriptionLockObj)
 			{
 				ulong[] removeList = channelSubscriptionsSetup
-					.Where(kvp => !kvp.Value && kvp.Key != channelId)
+					.Where(kvp => kvp.Value)
 					.Select(kvp => kvp.Key)
 					.ToArray();
 				foreach (var chan in removeList)

@@ -33,11 +33,11 @@ namespace TS3AudioBot.Helper
 		private static readonly string[] CommentSeqArr = { CommentSeq, ";", "//" };
 		private const string NameSeperator = "::";
 		private bool changed;
-		private List<ConfigData> confObjects;
+		private Dictionary<string, ConfigData> confObjects;
 
 		protected ConfigFile()
 		{
-			confObjects = new List<ConfigData>();
+			Util.Init(ref confObjects);
 		}
 
 		public static ConfigFile OpenOrCreate(string path)
@@ -119,7 +119,7 @@ namespace TS3AudioBot.Helper
 
 		protected virtual void RegisterConfigObj(ConfigData obj)
 		{
-			confObjects.Add(obj);
+			confObjects.Add(obj.AssociatedClass, obj);
 		}
 
 		public R SetSetting(string key, string value)
@@ -128,28 +128,21 @@ namespace TS3AudioBot.Helper
 				throw new ArgumentNullException(nameof(value));
 
 			string[] keyParam = key.Split(new[] { NameSeperator }, StringSplitOptions.None);
-			var filteredObjects = confObjects.Where(co => co.AssociatedClass == keyParam[0]);
-			if (!filteredObjects.Any())
+			ConfigData co;
+			if (!confObjects.TryGetValue(keyParam[0], out co))
 				return "No active entries found for this key";
 
-			PropertyInfo prop = null;
 			object convertedValue = null;
-			foreach (var co in filteredObjects)
+			PropertyInfo prop = co.GetType().GetProperty(keyParam[1], BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
+			try
 			{
-				if (prop == null)
-				{
-					prop = co.GetType().GetProperty(keyParam[1], BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
-					try
-					{
-						convertedValue = Convert.ChangeType(value, prop.PropertyType, CultureInfo.InvariantCulture);
-					}
-					catch (Exception ex) when (ex is FormatException || ex is OverflowException)
-					{
-						return "The value could not be parsed";
-					}
-				}
-				prop.SetValue(co, convertedValue);
+				convertedValue = Convert.ChangeType(value, prop.PropertyType, CultureInfo.InvariantCulture);
 			}
+			catch (Exception ex) when (ex is FormatException || ex is OverflowException)
+			{
+				return "The value could not be parsed";
+			}
+			prop.SetValue(co, convertedValue);
 			WriteValueToConfig(key, convertedValue);
 			return R.OkR;
 		}

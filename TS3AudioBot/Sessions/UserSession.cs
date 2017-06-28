@@ -19,7 +19,6 @@ namespace TS3AudioBot.Sessions
 	using Helper;
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
 	using System.Threading;
 	using TS3Client;
 	using TS3Client.Messages;
@@ -142,6 +141,8 @@ namespace TS3AudioBot.Sessions
 			}
 			return result.Message;
 		}
+
+		public InvokerData ToInvokerData() => new InvokerData(Client);
 
 		public R<string> GenerateToken() => GenerateToken(ApiToken.DefaultTokenTimeout);
 		public R<string> GenerateToken(TimeSpan timeout)

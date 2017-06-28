@@ -16,14 +16,10 @@
 
 namespace TS3ABotUnitTests
 {
-	using System;
 	using NUnit.Framework;
-
-	using TS3Client.Messages;
 
 	using TS3AudioBot;
 	using TS3AudioBot.CommandSystem;
-	using TS3Client;
 
 	[TestFixture]
 	public class BotCommandTests
@@ -37,22 +33,14 @@ namespace TS3ABotUnitTests
 			bot.CommandManager.RegisterMain(bot);
 		}
 
-		TextMessage CreateTextMessage()
+		InvokerData CreateInvoker()
 		{
-			var msg = new TextMessage
-			{
-				InvokerId = 0,
-				InvokerName = "Invoker",
-				InvokerUid = "InvokerUid",
-				Message = "",
-				Target = TextMessageTargetMode.Private
-			};
-			return msg;
+			return new InvokerData(0, 0, 0, "InvokerUid");
 		}
 
 		string CallCommand(string command)
 		{
-			var info = new ExecutionInformation(null, CreateTextMessage()) { SkipRightsChecks = true };
+			var info = new ExecutionInformation(null, CreateInvoker(), null) { SkipRightsChecks = true };
 			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
 		}
 

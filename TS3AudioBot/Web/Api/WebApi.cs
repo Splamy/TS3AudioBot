@@ -60,7 +60,7 @@ namespace TS3AudioBot.Web.Api
 
 			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
 
-			var execInfo = new ExecutionInformation(session, null) { ApiCall = true };
+			var execInfo = new ExecutionInformation(MainBot, session.ToInvokerData(), null, session) { ApiCall = true };
 			using (var token = execInfo.Session.GetLock())
 			{
 				try

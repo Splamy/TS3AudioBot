@@ -33,7 +33,7 @@ namespace TS3AudioBot
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
 
-		public event EventHandler BeforeResourceStarted;
+		public event EventHandler<PlayInfoEventArgs> BeforeResourceStarted;
 		public event EventHandler<PlayInfoEventArgs> AfterResourceStarted;
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
@@ -133,8 +133,8 @@ namespace TS3AudioBot
 			if (!meta.FromPlaylist)
 				meta.ResourceOwnerDbId = invoker.DatabaseId;
 
-			// add optional beforestart here. maybe for blocking/interrupting etc.
-			BeforeResourceStarted?.Invoke(this, new EventArgs());
+			var playInfo = new PlayInfoEventArgs(invoker, play, meta);
+			BeforeResourceStarted?.Invoke(this, playInfo);
 
 			// pass the song to the AF to start it
 			var result = StartResource(play, meta);
@@ -151,7 +151,7 @@ namespace TS3AudioBot
 			ulong? owner = meta.ResourceOwnerDbId ?? invoker.DatabaseId;
 			HistoryManager.LogAudioResource(new HistorySaveData(play.BaseData, owner));
 
-			CurrentPlayData = new PlayInfoEventArgs(invoker, play, meta); // TODO meta as readonly
+			CurrentPlayData = playInfo; // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, CurrentPlayData);
 
 			return R.OkR;
@@ -327,5 +327,7 @@ namespace TS3AudioBot
 		public int DefaultVolume { get; set; }
 		[Info("The maximum volume a normal user can request", "30")]
 		public int MaxUserVolume { get; set; }
+		[Info("How the bot should play music. Options are: whisper, voice, (!...)", "whisper")]
+		public string AudioMode { get; set; }
 	}
 }

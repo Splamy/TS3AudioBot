@@ -68,8 +68,8 @@
     <Reference Include="LiteDB, Version=3.1.0.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
       <HintPath>..\packages\LiteDB.3.1.1\lib\net35\LiteDB.dll</HintPath>
     </Reference>
-    <Reference Include="Nett, Version=0.6.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nett.0.6.3\lib\Net40\Nett.dll</HintPath>
+    <Reference Include="Nett, Version=0.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nett.0.7.0\lib\Net40\Nett.dll</HintPath>
     </Reference>
     <Reference Include="PropertyChanged, Version=2.1.2.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
       <HintPath>..\packages\PropertyChanged.Fody.2.1.2\lib\netstandard1.0\PropertyChanged.dll</HintPath>
@@ -132,6 +132,7 @@
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="ITargetManager.cs" />
     <Compile Include="Sessions\ApiToken.cs" />
+    <Compile Include="TargetScript.cs" />
     <Compile Include="TeamspeakControl.cs" />
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />

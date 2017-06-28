@@ -3,7 +3,8 @@
 # https://github.com/Splamy/TS3AudioBot/wiki/Rights
 
 "+" = [
-	"cmd.help", # Basic stuff
+	# Basic stuff
+	"cmd.help",
 	"cmd.pm",
 	"cmd.subscribe",
 	"cmd.unsubscribe",
@@ -39,7 +40,8 @@
 	# Or remove groupid and useruid to allow for everyone
 
 	"+" = [
-		"cmd.play", # Play controls
+		# Play controls
+		"cmd.play",
 		"cmd.pause",
 		"cmd.stop",
 		"cmd.seek",
@@ -51,7 +53,9 @@
 		"cmd.clear",
 		"cmd.previous",
 		"cmd.next",
-		"cmd.random",
+		"cmd.random.*",
+		"cmd.repeat.*",
+		"cmd.loop.*",
 
 		# History features
 		"cmd.history.add",
@@ -64,6 +68,4 @@
 	]
 
 	# Remove this if you want to allow users to save playlist locally
-	"-" = [
-		"cmd.list.save",
-	]
+	"-" = [ "cmd.list.save" ]

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -30,6 +30,8 @@ namespace TS3AudioBot.Helper
 
 		public static Answer GetAnswer(string answer)
 		{
+			if (string.IsNullOrEmpty(answer))
+				return Answer.Unknown;
 			string lowAnswer = answer.ToLower(CultureInfo.InvariantCulture);
 			if (lowAnswer.StartsWith("!y", StringComparison.Ordinal))
 				return Answer.Yes;

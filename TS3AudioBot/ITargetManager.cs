@@ -16,26 +16,22 @@
 
 namespace TS3AudioBot
 {
-	using System;
-
 	public interface ITargetManager
 	{
 		bool SendDirectVoice { get; set; }
 
 		/// <summary>Adds a channel to the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
-		/// <param name="manual">Should be true if the command was invoked by a user,
-		/// or false if the channel is added automatically by a play command.</param>
-		void WhisperChannelSubscribe(ulong channel, bool manual);
+		/// <param name="temp">When set to true this channel will be cleared with
+		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
+		void WhisperChannelSubscribe(ulong channel, bool temp);
 		/// <summary>Removes a channel from the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
-		/// <param name="manual">Should be true if the command was invoked by a user,
-		/// or false if the channel was removed automatically by an internal stop.</param>
-		void WhisperChannelUnsubscribe(ulong channel, bool manual);
+		/// <param name="temp">When set to true this channel will be cleared with
+		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
+		void WhisperChannelUnsubscribe(ulong channel, bool temp);
+		void ClearTemporary();
 		void WhisperClientSubscribe(ushort userId);
 		void WhisperClientUnsubscribe(ushort userId);
-
-		void OnResourceStarted(object sender, PlayInfoEventArgs playData);
-		void OnResourceStopped(object sender, EventArgs e);
 	}
 }

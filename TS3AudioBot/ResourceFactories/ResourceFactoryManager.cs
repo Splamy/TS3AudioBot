@@ -138,7 +138,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			public string PropagiatePlay(ExecutionInformation info, string parameter)
 			{
-				return info.Session.Bot.PlayManager.Play(new InvokerData(info.Session.Client), parameter, audioType);
+				return info.Session.Bot.PlayManager.Play(info.InvokerData, parameter, audioType);
 			}
 		}
 	}

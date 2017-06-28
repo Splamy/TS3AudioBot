@@ -17,21 +17,39 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using Sessions;
-	using TS3Client.Messages;
 
 	public class ExecutionInformation
 	{
-		public UserSession Session { get; }
-		public TextMessage TextMessage { get; }
+		public MainBot Bot { get; }
+		private UserSession session = null;
+		public UserSession Session
+		{
+			get
+			{
+				if (session == null)
+				{
+					var result = Bot.SessionManager.GetSession(InvokerData.ClientUid);
+					if (!result.Ok)
+						throw new CommandException(result.Message, CommandExceptionReason.InternalError);
+
+					session = result.Value;
+				}
+				return session;
+			}
+		}
+		public InvokerData InvokerData { get; internal set; }
+		public string TextMessage { get; }
 		public bool ApiCall { get; internal set; }
 		public bool IsPrivate { get; internal set; }
 		public bool SkipRightsChecks { get; set; }
 
-		private ExecutionInformation() { Session = null; TextMessage = null; }
-		public ExecutionInformation(UserSession session, TextMessage textMessage)
+		private ExecutionInformation() : this(null, null, null) { }
+		public ExecutionInformation(MainBot bot, InvokerData invoker, string textMessage, UserSession userSession = null)
 		{
-			Session = session;
+			Bot = bot;
 			TextMessage = textMessage;
+			InvokerData = invoker;
+			session = userSession;
 		}
 
 		public bool HasRights(params string[] rights)
@@ -39,7 +57,7 @@ namespace TS3AudioBot.CommandSystem
 			if (SkipRightsChecks)
 				return true;
 			// TODO move invokerdata to execution information (more stateless)
-			return Session.Bot.RightsManager.HasAllRights(new InvokerData(Session.Client), rights);
+			return Bot.RightsManager.HasAllRights(InvokerData, rights);
 		}
 
 		public static readonly ExecutionInformation Debug = new ExecutionInformation { SkipRightsChecks = true };
