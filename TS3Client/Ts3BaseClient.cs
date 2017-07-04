@@ -77,19 +77,23 @@
 			=> Send<WhoAmI>("whoami").FirstOrDefault();
 
 		public void SendMessage(string message, ClientData client)
-			=> SendMessage(TextMessageTargetMode.Private, client.ClientId, message);
+			=> SendPrivateMessage(message, client.ClientId);
+		public void SendPrivateMessage(string message, ushort clientId)
+			=> SendMessage(message, TextMessageTargetMode.Private, clientId);
 
-		public void SendMessage(string message, ChannelData channel)
-			=> SendMessage(TextMessageTargetMode.Channel, channel.Id, message);
+		public void SendChannelMessage(string message)
+			=> SendMessage(message, TextMessageTargetMode.Channel, 0);
 
 		public void SendMessage(string message, ServerData server)
-			=> SendMessage(TextMessageTargetMode.Server, server.VirtualServerId, message);
+			=> SendServerMessage(message, server.VirtualServerId);
+		public void SendServerMessage(string message, ulong serverId)
+			=> SendMessage(message, TextMessageTargetMode.Server, serverId);
 
 		/// <summary>Sends a text message to a specified target.
 		/// If targetmode is set to <see cref="TextMessageTargetMode.Private"/>, a message is sent to the client with the ID specified by target.
 		/// If targetmode is set to <see cref="TextMessageTargetMode.Channel"/> or <see cref="TextMessageTargetMode.Server"/>,
 		/// the target parameter will be ignored and a message is sent to the current channel or server respectively.</summary>
-		public void SendMessage(TextMessageTargetMode target, ulong id, string message)
+		public void SendMessage(string message, TextMessageTargetMode target, ulong id)
 			=> Send("sendtextmessage",
 			new CommandParameter("targetmode", (int)target),
 			new CommandParameter("target", id),

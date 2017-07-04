@@ -256,9 +256,6 @@ namespace TS3AudioBot
 		public AudioResource ResourceData => PlayResource.BaseData;
 		public MetaData MetaData { get; }
 
-		public PlayInfoEventArgs(ClientData invoker, PlayResource playResource, MetaData meta)
-			: this(new InvokerData(invoker), playResource, meta) { }
-
 		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta)
 		{
 			Invoker = invoker;
@@ -274,13 +271,9 @@ namespace TS3AudioBot
 		public ulong? DatabaseId { get; }
 		public string ClientUid { get; }
 
-		public InvokerData(ClientData invoker)
-		{
-			Channel = invoker.ChannelId == 0 ? (ulong?)null : invoker.ChannelId;
-			ClientId = invoker.ClientId == 0 ? (ushort?)null : invoker.ClientId;
-			DatabaseId = invoker.DatabaseId == 0 ? (ulong?)null : invoker.DatabaseId;
-			ClientUid = invoker.Uid;
-		}
+		public bool IsApi { get; internal set; }
+		public string Token { get; internal set; }
+		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
 
 		public InvokerData(ulong? channel = null, ushort? clientId = null, ulong? databaseId = null, string clientUid = null)
 		{
@@ -288,6 +281,9 @@ namespace TS3AudioBot
 			ClientId = clientId;
 			DatabaseId = databaseId;
 			ClientUid = clientUid;
+			IsApi = false;
+			Token = null;
+			Visibiliy = null;
 		}
 
 		public override int GetHashCode()

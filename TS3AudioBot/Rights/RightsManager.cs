@@ -20,10 +20,10 @@ namespace TS3AudioBot.Rights
 	using Nett;
 	using System;
 	using System.Collections.Generic;
+	using System.IO;
 	using System.Linq;
 	using System.Text;
 	using TS3Client;
-	using System.IO;
 
 	public class RightsManager
 	{
@@ -281,7 +281,7 @@ namespace TS3AudioBot.Rights
 
 				var undeclared = rule.DeclAdd.Except(registeredRights)
 					.Concat(rule.DeclDeny.Except(registeredRights));
-				foreach(var right in undeclared)
+				foreach (var right in undeclared)
 				{
 					ctx.Errors.Add($"Right \"{right}\" is not registered.");
 					hasErrors = true;

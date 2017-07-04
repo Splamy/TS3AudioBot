@@ -259,7 +259,7 @@ namespace TS3AudioBot.History
 			database.Shrink();
 		}
 
-		public void RemoveBrokenLinks(UserSession session)
+		public void RemoveBrokenLinks(CommandSystem.ExecutionInformation info)
 		{
 			using (var trans = database.BeginTrans())
 			{
@@ -268,15 +268,15 @@ namespace TS3AudioBot.History
 
 				for (int i = 0; i < iterations; i++)
 				{
-					session.Write("Filter iteration " + i, true);
-					currentIter = FilterList(session, currentIter);
+					info.Write("Filter iteration " + i);
+					currentIter = FilterList(info, currentIter);
 				}
 
 				foreach (var entry in currentIter)
 				{
 					RemoveEntry(entry);
-					session.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
-					session.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}", true);
+					info.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
+					info.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
 				}
 
 				trans.Commit();
@@ -290,21 +290,21 @@ namespace TS3AudioBot.History
 		/// <param name="session">Session object to inform the user about the current cleaning status.</param>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private static List<AudioLogEntry> FilterList(UserSession session, IEnumerable<AudioLogEntry> list)
+		private static List<AudioLogEntry> FilterList(CommandSystem.ExecutionInformation info, IEnumerable<AudioLogEntry> list)
 		{
 			int userNotityCnt = 0;
 			var nextIter = new List<AudioLogEntry>();
 			foreach (var entry in list)
 			{
-				var result = session.Bot.FactoryManager.Load(entry.AudioResource);
+				var result = info.Bot.FactoryManager.Load(entry.AudioResource);
 				if (!result)
 				{
-					session.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}", true);
+					info.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}");
 					nextIter.Add(entry);
 				}
 
 				if (++userNotityCnt % 100 == 0)
-					session.Write("Working" + new string('.', userNotityCnt / 100), true);
+					info.Write("Working" + new string('.', userNotityCnt / 100));
 			}
 			return nextIter;
 		}

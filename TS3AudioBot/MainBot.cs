@@ -217,8 +217,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		#region COMMAND EXECUTING & CHAINING
-
 		private void TextCallback(object sender, TextMessage textMessage)
 		{
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
@@ -260,11 +258,12 @@ namespace TS3AudioBot
 
 			using (session.GetLock())
 			{
-				var invoker = new InvokerData(session.Client.ChannelId, textMessage.InvokerId, session.Client.DatabaseId, textMessage.InvokerUid);
-				var execInfo = new ExecutionInformation(this, invoker, textMessage.Message, session)
+				var invoker = new InvokerData(session.Client.ChannelId, textMessage.InvokerId, session.Client.DatabaseId, textMessage.InvokerUid)
 				{
-					IsPrivate = textMessage.Target == TextMessageTargetMode.Private
+					IsApi = false,
+					Visibiliy = textMessage.Target,
 				};
+				var execInfo = new ExecutionInformation(this, invoker, textMessage.Message, session);
 
 				// check if the user has an open request
 				if (session.ResponseProcessor != null)
@@ -272,7 +271,7 @@ namespace TS3AudioBot
 					var msg = session.ResponseProcessor(execInfo);
 					session.ClearResponse();
 					if (!string.IsNullOrEmpty(msg))
-						WriteToSession(execInfo, msg);
+						execInfo.Write(msg);
 					return;
 				}
 
@@ -285,33 +284,26 @@ namespace TS3AudioBot
 					{
 						var sRes = (StringCommandResult)res;
 						if (!string.IsNullOrEmpty(sRes.Content))
-							WriteToSession(execInfo, sRes.Content);
+							execInfo.Write(sRes.Content);
 					}
 					else if (res.ResultType == CommandResultType.Json)
 					{
 						var sRes = (JsonCommandResult)res;
-						WriteToSession(execInfo, "\nJson str: \n" + sRes.JsonObject.AsStringResult);
-						WriteToSession(execInfo, "\nJson val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
+						execInfo.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult);
+						execInfo.Write("\nJson val: \n" + Util.Serializer.Serialize(sRes.JsonObject));
 					}
 				}
 				catch (CommandException ex)
 				{
-					WriteToSession(execInfo, "Error: " + ex.Message);
+					execInfo.Write("Error: " + ex.Message);
 				}
 				catch (Exception ex)
 				{
 					Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex.UnrollException());
-					WriteToSession(execInfo, "An unexpected error occured: " + ex.Message);
+					execInfo.Write("An unexpected error occured: " + ex.Message);
 				}
 			}
 		}
-
-		private static void WriteToSession(ExecutionInformation info, string message)
-		{
-			info.Session.Write(message, info.IsPrivate);
-		}
-
-		#endregion
 
 		#region COMMANDS
 
@@ -331,7 +323,7 @@ namespace TS3AudioBot
 		[Command("api token", "Generates an api token.")]
 		public JsonObject CommandApiToken(ExecutionInformation info)
 		{
-			if (!info.IsPrivate)
+			if (info.InvokerData.Visibiliy.HasValue && info.InvokerData.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
 			var token = info.Session.GenerateToken().UnwrapThrow();
 			return new JsonSingleValue<string>(token);
@@ -340,7 +332,7 @@ namespace TS3AudioBot
 		[Command("api nonce", "Generates an api nonce.")]
 		public JsonObject CommandApiNonce(ExecutionInformation info)
 		{
-			if (!info.IsPrivate)
+			if (info.InvokerData.Visibiliy.HasValue && info.InvokerData.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
 			if (!info.Session.HasActiveToken)
 				throw new CommandException("No active token found.", CommandExceptionReason.CommandError);
@@ -537,7 +529,7 @@ namespace TS3AudioBot
 		{
 			if (info.ApiCall)
 			{
-				HistoryManager.RemoveBrokenLinks(info.Session);
+				HistoryManager.RemoveBrokenLinks(info);
 				return null;
 			}
 			info.Session.SetResponse(ResponseHistoryClean, "removedefective");
@@ -1004,7 +996,7 @@ namespace TS3AudioBot
 		{
 			if (info.ApiCall)
 				throw new CommandException("This command is not available as API", CommandExceptionReason.NotSupported);
-			info.IsPrivate = true;
+			info.InvokerData.Visibiliy = TextMessageTargetMode.Private;
 			return "Hi " + info.Session.Client.NickName;
 		}
 
@@ -1108,7 +1100,7 @@ namespace TS3AudioBot
 		[Command("quiz off", "Disable to show the songnames again.")]
 		public void CommandQuizOff(ExecutionInformation info)
 		{
-			if (info.IsPrivate && !info.ApiCall)
+			if (!info.ApiCall && info.InvokerData.Visibiliy.HasValue && info.InvokerData.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException("No cheatig! Everybody has to see it!", CommandExceptionReason.CommandError);
 			QuizMode = false;
 			UpdateBotStatus().UnwrapThrow();
@@ -1536,7 +1528,7 @@ namespace TS3AudioBot
 					}
 					else if (param == "removedefective")
 					{
-						HistoryManager.RemoveBrokenLinks(info.Session);
+						HistoryManager.RemoveBrokenLinks(info);
 						return "Cleanup done!";
 					}
 					else

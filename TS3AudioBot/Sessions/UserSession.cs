@@ -49,17 +49,27 @@ namespace TS3AudioBot.Sessions
 			Token = null;
 		}
 
-		public void Write(string message, bool isPrivate)
+		public void Write(string message, TextMessageTargetMode targetMode)
 		{
 			VerifyLock();
 
 			try
 			{
 				R result;
-				if (isPrivate)
+				switch (targetMode)
+				{
+				case TextMessageTargetMode.Private:
 					result = Bot.QueryConnection.SendMessage(message, Client.ClientId);
-				else
-					result = Bot.QueryConnection.SendGlobalMessage(message);
+					break;
+				case TextMessageTargetMode.Channel:
+					result = Bot.QueryConnection.SendChannelMessage(message);
+					break;
+				case TextMessageTargetMode.Server:
+					result = Bot.QueryConnection.SendServerMessage(message);
+					break;
+				default:
+					throw new InvalidOperationException();
+				}
 
 				if (!result)
 					Log.Write(Log.Level.Error, "Could not write message (Err:{0}) (Msg:{1})", result.Message, message);
@@ -142,7 +152,8 @@ namespace TS3AudioBot.Sessions
 			return result.Message;
 		}
 
-		public InvokerData ToInvokerData() => new InvokerData(Client);
+		public InvokerData ToInvokerData()
+			=> new InvokerData(Client.ChannelId, Client.ClientId, Client.DatabaseId, Client.Uid);
 
 		public R<string> GenerateToken() => GenerateToken(ApiToken.DefaultTokenTimeout);
 		public R<string> GenerateToken(TimeSpan timeout)

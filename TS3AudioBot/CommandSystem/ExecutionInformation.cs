@@ -17,11 +17,13 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using Sessions;
+	using Helper;
 
 	public class ExecutionInformation
 	{
 		public MainBot Bot { get; }
 		private UserSession session = null;
+		// TODO session as R ?
 		public UserSession Session
 		{
 			get
@@ -39,8 +41,7 @@ namespace TS3AudioBot.CommandSystem
 		}
 		public InvokerData InvokerData { get; internal set; }
 		public string TextMessage { get; }
-		public bool ApiCall { get; internal set; }
-		public bool IsPrivate { get; internal set; }
+		public bool ApiCall => InvokerData.IsApi;
 		public bool SkipRightsChecks { get; set; }
 
 		private ExecutionInformation() : this(null, null, null) { }
@@ -56,8 +57,18 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (SkipRightsChecks)
 				return true;
-			// TODO move invokerdata to execution information (more stateless)
 			return Bot.RightsManager.HasAllRights(InvokerData, rights);
+		}
+
+		public R Write(string message)
+		{
+			if (InvokerData.Visibiliy.HasValue)
+			{
+				Session.Write(message, InvokerData.Visibiliy.Value);
+				return R.OkR;
+			}
+			else
+				return "User has no visibility";
 		}
 
 		public static readonly ExecutionInformation Debug = new ExecutionInformation { SkipRightsChecks = true };
