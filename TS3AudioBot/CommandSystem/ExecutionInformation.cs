@@ -22,23 +22,8 @@ namespace TS3AudioBot.CommandSystem
 	public class ExecutionInformation
 	{
 		public MainBot Bot { get; }
-		private UserSession session = null;
 		// TODO session as R ?
-		public UserSession Session
-		{
-			get
-			{
-				if (session == null)
-				{
-					var result = Bot.SessionManager.GetSession(InvokerData.ClientUid);
-					if (!result.Ok)
-						throw new CommandException(result.Message, CommandExceptionReason.InternalError);
-
-					session = result.Value;
-				}
-				return session;
-			}
-		}
+		public UserSession Session { get; internal set; }
 		public InvokerData InvokerData { get; internal set; }
 		public string TextMessage { get; }
 		public bool ApiCall => InvokerData.IsApi;
@@ -50,7 +35,7 @@ namespace TS3AudioBot.CommandSystem
 			Bot = bot;
 			TextMessage = textMessage;
 			InvokerData = invoker;
-			session = userSession;
+			Session = userSession;
 		}
 
 		public bool HasRights(params string[] rights)

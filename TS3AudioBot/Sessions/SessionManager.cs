@@ -23,15 +23,22 @@ namespace TS3AudioBot.Sessions
 
 	public class SessionManager
 	{
-		// Map: Uid => UserSession
-		private readonly Dictionary<string, UserSession> openSessions;
+		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
+
+		// Map: Id => UserSession
+		private readonly Dictionary<ushort, UserSession> openSessions;
+
+		// Map: Uid => InvokerData
+		// TODO move to database
+		private readonly Dictionary<string, ApiToken> tokenList;
 
 		public SessionManager()
 		{
 			Util.Init(ref openSessions);
+			Util.Init(ref tokenList);
 		}
 
-		public R<UserSession> CreateSession(MainBot bot, ClientData client)
+		public UserSession CreateSession(MainBot bot, ClientData client)
 		{
 			if (bot == null)
 				throw new ArgumentNullException(nameof(bot));
@@ -39,47 +46,60 @@ namespace TS3AudioBot.Sessions
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(client.Uid, out session))
+				if (openSessions.TryGetValue(client.ClientId, out session))
 					return session;
 
 				Log.Write(Log.Level.Debug, "SM User {0} created session with the bot", client.NickName);
 				session = new UserSession(bot, client);
-				openSessions.Add(client.Uid, session);
+				openSessions.Add(client.ClientId, session);
 				return session;
 			}
 		}
 
-		public R<UserSession> GetSession(string uid)
+		public R<UserSession> GetSession(ushort id)
 		{
-			if (uid == null)
-				return "Session not found";
-
 			lock (openSessions)
 			{
 				UserSession session;
-				if (openSessions.TryGetValue(uid, out session))
+				if (openSessions.TryGetValue(id, out session))
 					return session;
 				else
 					return "Session not found";
 			}
 		}
 
-		public void RemoveSession(string uid)
+		public void RemoveSession(ushort id)
 		{
 			lock (openSessions)
 			{
-				UserSession session;
-				if (uid == null)
-				{
-					Log.Write(Log.Level.Warning, "Null remove session");
-					return;
-				}
-				if (openSessions.TryGetValue(uid, out session))
-				{
-					if (session.HasActiveToken)
-						openSessions.Remove(uid);
-				}
+				openSessions.Remove(id);
 			}
+		}
+
+		public R<string> GenerateToken(string uid) => GenerateToken(uid, ApiToken.DefaultTokenTimeout);
+		public R<string> GenerateToken(string uid, TimeSpan timeout)
+		{
+			if (string.IsNullOrEmpty(uid))
+				throw new ArgumentNullException(nameof(uid));
+
+			ApiToken token;
+			if (!tokenList.TryGetValue(uid, out token))
+				token = new ApiToken();
+
+			token.Value = TextUtil.GenToken(ApiToken.TokenLen);
+			var newTimeout = Util.GetNow() + timeout;
+			if (newTimeout > token.Timeout)
+				token.Timeout = newTimeout;
+
+			return R<string>.OkR(string.Format(TokenFormat, uid, token.Value));
+		}
+
+		internal R<ApiToken> GetToken(string uid)
+		{
+			ApiToken token;
+			if (tokenList.TryGetValue(uid, out token))
+				return token;
+			return "No active Token";
 		}
 	}
 }

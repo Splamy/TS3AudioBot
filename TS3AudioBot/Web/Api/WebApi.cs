@@ -39,8 +39,8 @@ namespace TS3AudioBot.Web.Api
 		{
 			using (var response = context.Response)
 			{
-				var session = Authenticate(context);
-				if (session == null)
+				var invoker = Authenticate(context);
+				if (invoker == null)
 				{
 					Log.Write(Log.Level.Debug, "Not authorized!");
 					ReturnError(CommandExceptionReason.Unauthorized, "", context.Response);
@@ -48,21 +48,20 @@ namespace TS3AudioBot.Web.Api
 				}
 
 				var requestUrl = new UriExt(new Uri(dummy, context.Request.RawUrl));
-				ProcessApiV1Call(requestUrl, context.Response, session);
+				ProcessApiV1Call(requestUrl, context.Response, invoker);
 			}
 		}
 
-		private void ProcessApiV1Call(UriExt uri, HttpListenerResponse response, UserSession session)
+		private void ProcessApiV1Call(UriExt uri, HttpListenerResponse response, InvokerData invoker)
 		{
 			string apirequest = uri.AbsolutePath.Substring("/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
 
 			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
-
-			var invoker = session.ToInvokerData();
+			
 			invoker.IsApi = true;
-			var execInfo = new ExecutionInformation(MainBot, invoker, null, session);
+			var execInfo = new ExecutionInformation(MainBot, invoker, null);
 			using (var token = execInfo.Session.GetLock())
 			{
 				try
@@ -157,35 +156,38 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private UserSession Authenticate(HttpListenerContext context)
+		private InvokerData Authenticate(HttpListenerContext context)
 		{
 			IIdentity identity = GetIdentity(context);
 			if (identity == null)
 				return null;
 
-			var result = MainBot.SessionManager.GetSession(identity.Name);
+			var result = MainBot.SessionManager.GetToken(identity.Name);
 			if (!result.Ok)
 				return null;
 
-			var session = result.Value;
-			if (!session.HasActiveToken)
-				return null;
+			var token = result.Value;
+			var invoker = new InvokerData(identity.Name)
+			{
+				IsApi = true,
+				Token = token.Value,
+			};
 
 			switch (identity.AuthenticationType)
 			{
 			case "Basic":
 				var identityBasic = (HttpListenerBasicIdentity)identity;
 
-				if (session.Token.Value != identityBasic.Password)
+				if (token.Value != identityBasic.Password)
 					return null;
 
-				return session;
+				return invoker;
 			case "Digest":
 				var identityDigest = (HttpListenerDigestIdentity)identity;
 
 				if (!identityDigest.IsAuthenticated)
 				{
-					var newNonce = session.Token.CreateNonce();
+					var newNonce = token.CreateNonce();
 					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{newNonce.Value}\"");
 					return null;
 				}
@@ -199,19 +201,19 @@ namespace TS3AudioBot.Web.Api
 				//HA1=MD5(username:realm:password)
 				//HA2=MD5(method:digestURI)
 				//response=MD5(HA1:nonce:HA2)
-				var HA1 = HashString($"{identity.Name}:{identityDigest.Realm}:{session.Token.Value}");
+				var HA1 = HashString($"{identity.Name}:{identityDigest.Realm}:{token.Value}");
 				var HA2 = HashString($"{context.Request.HttpMethod}:{identityDigest.Uri}");
 				var response = HashString($"{HA1}:{identityDigest.Nonce}:{HA2}");
 
 				if (identityDigest.Hash != response)
 					return null;
 
-				ApiNonce nextNonce = session.Token.UseNonce(identityDigest.Nonce);
+				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
 				if (nextNonce == null)
 					return null;
 				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 
-				return session;
+				return invoker;
 			default:
 				return null;
 			}

@@ -26,27 +26,21 @@ namespace TS3AudioBot.Sessions
 
 	public sealed class UserSession
 	{
-		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
-
 		private Dictionary<Type, object> assocMap = null;
 		private bool lockToken = false;
+		private ClientData client;
 
 		public Response ResponseProcessor { get; private set; }
 		public object ResponseData { get; private set; }
 
 		public MainBot Bot { get; }
-		public ClientData Client { get; private set; }
-
-		internal ApiToken Token { get; set; }
-		internal bool HasActiveToken => Token != null && Token.ApiTokenActive;
 
 		public UserSession(MainBot bot, ClientData client)
 		{
+			this.client = client;
 			Bot = bot;
-			Client = client;
 			ResponseProcessor = null;
 			ResponseData = null;
-			Token = null;
 		}
 
 		public void Write(string message, TextMessageTargetMode targetMode)
@@ -59,7 +53,7 @@ namespace TS3AudioBot.Sessions
 				switch (targetMode)
 				{
 				case TextMessageTargetMode.Private:
-					result = Bot.QueryConnection.SendMessage(message, Client.ClientId);
+					result = Bot.QueryConnection.SendMessage(message, client.ClientId);
 					break;
 				case TextMessageTargetMode.Channel:
 					result = Bot.QueryConnection.SendChannelMessage(message);
@@ -137,36 +131,6 @@ namespace TS3AudioBot.Sessions
 		{
 			if (!lockToken)
 				throw new InvalidOperationException("No access lock is currently active");
-		}
-
-		public R UpdateClient(ushort newId)
-		{
-			var result = Bot.QueryConnection.GetClientById(newId);
-			if (result.Ok)
-			{
-				if (result.Value.Uid != Client.Uid)
-					return "Uid does not match";
-				Client = result.Value;
-				return R.OkR;
-			}
-			return result.Message;
-		}
-
-		public InvokerData ToInvokerData()
-			=> new InvokerData(Client.ChannelId, Client.ClientId, Client.DatabaseId, Client.Uid);
-
-		public R<string> GenerateToken() => GenerateToken(ApiToken.DefaultTokenTimeout);
-		public R<string> GenerateToken(TimeSpan timeout)
-		{
-			if (Token == null)
-				Token = new ApiToken();
-
-			Token.Value = TextUtil.GenToken(ApiToken.TokenLen);
-			var newTimeout = Util.GetNow() + timeout;
-			if (newTimeout > Token.Timeout)
-				Token.Timeout = newTimeout;
-
-			return R<string>.OkR(string.Format(TokenFormat, Client.Uid, Token.Value));
 		}
 
 		public sealed class SessionToken : IDisposable

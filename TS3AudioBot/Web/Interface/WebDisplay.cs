@@ -502,9 +502,9 @@ namespace TS3AudioBot.Web.Interface
 					audio.Volume = volume;
 				break;
 
-			case "prev": playMgr.Previous(new InvokerData()); break; // HACK: use token-system to determine user when its available
+			case "prev": playMgr.Previous(new InvokerData(null)); break; // HACK: use token-system to determine user when its available
 			case "play": audio.Paused = !audio.Paused; break;
-			case "next": playMgr.Next(new InvokerData()); break; // HACK: use token-system to determine user when its available
+			case "next": playMgr.Next(new InvokerData(null)); break; // HACK: use token-system to determine user when its available
 			case "loop": audio.Repeated = !audio.Repeated; break;
 			case "seek":
 				var seekStr = url.QueryParam["pos"];

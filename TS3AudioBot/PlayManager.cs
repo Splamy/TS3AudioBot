@@ -266,21 +266,21 @@ namespace TS3AudioBot
 
 	public sealed class InvokerData
 	{
-		public ulong? Channel { get; }
-		public ushort? ClientId { get; }
-		public ulong? DatabaseId { get; }
-		public string ClientUid { get; }
-
+		public string ClientUid { get; internal set; }
+		public ulong? DatabaseId { get; internal set; }
+		public ulong? ChannelId { get; internal set; }
+		public ushort? ClientId { get; internal set; }
+		public string NickName { get; internal set; }
 		public bool IsApi { get; internal set; }
 		public string Token { get; internal set; }
 		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
 
-		public InvokerData(ulong? channel = null, ushort? clientId = null, ulong? databaseId = null, string clientUid = null)
+		public InvokerData(string clientUid)
 		{
-			Channel = channel;
-			ClientId = clientId;
-			DatabaseId = databaseId;
 			ClientUid = clientUid;
+			ChannelId = null;
+			ClientId = null;
+			DatabaseId = null;
 			IsApi = false;
 			Token = null;
 			Visibiliy = null;
@@ -288,22 +288,18 @@ namespace TS3AudioBot
 
 		public override int GetHashCode()
 		{
-			return (ClientId ?? 0)
-				^ 101 * (int)(Channel ?? 0)
-				^ 101 * (int)(DatabaseId ?? 0)
-				^ 101 * (ClientUid?.GetHashCode() ?? 0);
+			return ClientUid?.GetHashCode() ?? 0;
 		}
 
 		public override bool Equals(object obj)
 		{
+			if (ClientUid == null)
+				return false;
 			var other = obj as InvokerData;
-			if (other == null)
+			if (other == null || other.ClientUid == null)
 				return false;
 
-			return ClientId == other.ClientId
-				&& DatabaseId == other.DatabaseId
-				&& ClientUid == other.ClientUid
-				&& Channel == other.Channel;
+			return ClientUid == other.ClientUid;
 		}
 	}
 

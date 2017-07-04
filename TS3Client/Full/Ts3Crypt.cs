@@ -80,7 +80,7 @@ namespace TS3Client.Full
 			// Note: libtomcrypt stores the private AND public key when exporting a private key
 			// This makes importing very convenient :)
 			byte[] asnByteArray = Convert.FromBase64String(key);
-			var pubPrivKey = ImportPrivateKey(asnByteArray);
+			var pubPrivKey = ImportPublicAndPrivateKey(asnByteArray);
 			return LoadIdentity(pubPrivKey, keyOffset, lastCheckedKeyOffset);
 		}
 
@@ -109,7 +109,7 @@ namespace TS3Client.Full
 			return ecPoint;
 		}
 
-		private static Tuple<ECPoint, BigInteger> ImportPrivateKey(byte[] asnByteArray)
+		private static Tuple<ECPoint, BigInteger> ImportPublicAndPrivateKey(byte[] asnByteArray)
 		{
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
 			var x = (asnKeyData[2] as DerInteger).Value;
@@ -120,13 +120,13 @@ namespace TS3Client.Full
 			return new Tuple<ECPoint, BigInteger>(ecPoint, bigi);
 		}
 
-		private static string ExportPublicKey(ECPoint publicKeyPoint)
+		private static string ExportPublicKey(ECPoint publicKey)
 		{
 			var dataArray = new DerSequence(
 					new DerBitString(new byte[] { 0 }, 7),
 					new DerInteger(32),
-					new DerInteger(publicKeyPoint.AffineXCoord.ToBigInteger()),
-					new DerInteger(publicKeyPoint.AffineYCoord.ToBigInteger())).GetDerEncoded();
+					new DerInteger(publicKey.AffineXCoord.ToBigInteger()),
+					new DerInteger(publicKey.AffineYCoord.ToBigInteger())).GetDerEncoded();
 			return Convert.ToBase64String(dataArray);
 		}
 
@@ -146,8 +146,14 @@ namespace TS3Client.Full
 		internal static string GetUidFromPublicKey(string publicKey)
 		{
 			var publicKeyBytes = Encoding.ASCII.GetBytes(publicKey);
-			var hashBytes = Ts3Crypt.Hash1It(publicKeyBytes);
+			var hashBytes = Hash1It(publicKeyBytes);
 			return Convert.ToBase64String(hashBytes);
+		}
+
+		private static ECPoint RestorePublicFromPrivateKey(BigInteger privateKey)
+		{
+			var curve = ECNamedCurveTable.GetByOid(X9ObjectIdentifiers.Prime256v1);
+			return curve.G.Multiply(privateKey).Normalize();
 		}
 
 		#endregion

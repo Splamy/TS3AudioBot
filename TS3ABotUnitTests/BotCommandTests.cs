@@ -33,14 +33,9 @@ namespace TS3ABotUnitTests
 			bot.CommandManager.RegisterMain(bot);
 		}
 
-		InvokerData CreateInvoker()
-		{
-			return new InvokerData(0, 0, 0, "InvokerUid");
-		}
-
 		string CallCommand(string command)
 		{
-			var info = new ExecutionInformation(null, CreateInvoker(), null) { SkipRightsChecks = true };
+			var info = new ExecutionInformation(null, new InvokerData("InvokerUid"), null) { SkipRightsChecks = true };
 			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
 		}
 
