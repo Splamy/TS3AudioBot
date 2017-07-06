@@ -59,42 +59,39 @@ namespace TS3AudioBot.Web.Api
 			UnescapeAstTree(ast);
 
 			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
-			
+
 			invoker.IsApi = true;
 			var execInfo = new ExecutionInformation(MainBot, invoker, null);
-			using (var token = execInfo.Session.GetLock())
+			try
 			{
-				try
-				{
-					var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
-						new[] { CommandResultType.Json, CommandResultType.Empty });
+				var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
+					new[] { CommandResultType.Json, CommandResultType.Empty });
 
-					if (res.ResultType == CommandResultType.Empty)
-					{
-						response.StatusCode = (int)HttpStatusCode.NoContent;
-					}
-					else if (res.ResultType == CommandResultType.Json)
-					{
-						response.StatusCode = (int)HttpStatusCode.OK;
-						var sRes = (JsonCommandResult)res;
-						using (var responseStream = new StreamWriter(response.OutputStream))
-							responseStream.Write(sRes.JsonObject.Serialize());
-					}
-				}
-				catch (CommandException ex)
+				if (res.ResultType == CommandResultType.Empty)
 				{
-					ReturnError(ex, response);
+					response.StatusCode = (int)HttpStatusCode.NoContent;
 				}
-				catch (Exception ex)
+				else if (res.ResultType == CommandResultType.Json)
 				{
-					if (ex is NotImplementedException)
-						response.StatusCode = (int)HttpStatusCode.NotImplemented;
-					else
-						response.StatusCode = (int)HttpStatusCode.InternalServerError;
-					Log.Write(Log.Level.Error, "WA Unexpected command error: {0}", ex);
+					response.StatusCode = (int)HttpStatusCode.OK;
+					var sRes = (JsonCommandResult)res;
 					using (var responseStream = new StreamWriter(response.OutputStream))
-						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
+						responseStream.Write(sRes.JsonObject.Serialize());
 				}
+			}
+			catch (CommandException ex)
+			{
+				ReturnError(ex, response);
+			}
+			catch (Exception ex)
+			{
+				if (ex is NotImplementedException)
+					response.StatusCode = (int)HttpStatusCode.NotImplemented;
+				else
+					response.StatusCode = (int)HttpStatusCode.InternalServerError;
+				Log.Write(Log.Level.Error, "WA Unexpected command error: {0}", ex);
+				using (var responseStream = new StreamWriter(response.OutputStream))
+					responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
 			}
 		}
 

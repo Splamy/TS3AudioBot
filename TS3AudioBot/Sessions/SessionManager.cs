@@ -84,7 +84,10 @@ namespace TS3AudioBot.Sessions
 
 			ApiToken token;
 			if (!tokenList.TryGetValue(uid, out token))
+			{
 				token = new ApiToken();
+				tokenList.Add(uid, token);
+			}
 
 			token.Value = TextUtil.GenToken(ApiToken.TokenLen);
 			var newTimeout = Util.GetNow() + timeout;

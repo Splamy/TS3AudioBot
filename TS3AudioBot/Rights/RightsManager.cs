@@ -98,6 +98,8 @@ namespace TS3AudioBot.Rights
 				// host = ?
 				if (needsAvailableGroups && inv.DatabaseId.HasValue)
 					execCtx.AvailableGroups = botParent.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value);
+				else
+					execCtx.AvailableGroups = new ulong[0];
 				execCtx.ClientUid = inv.ClientUid;
 
 				ProcessNode(RootRule, execCtx);
