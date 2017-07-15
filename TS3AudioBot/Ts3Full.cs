@@ -289,14 +289,15 @@ namespace TS3AudioBot
 
 					AudioModifier.AdjustVolume(audioBuffer, read, volume);
 					encoder.PushPCMAudio(audioBuffer, read);
-
-					Tuple<byte[], int> encodedArr;
-					while ((encodedArr = encoder.GetPacket()) != null)
+					
+					while (encoder.HasPacket)
 					{
+						var packet = encoder.GetPacket();
 						if (sendWhisper)
-							tsFullClient.SendAudioWhisper(encodedArr.Item1, encodedArr.Item2, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
+							tsFullClient.SendAudioWhisper(packet.Array, packet.Length, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
 						if (SendDirectVoice)
-							tsFullClient.SendAudio(encodedArr.Item1, encodedArr.Item2, encoder.Codec);
+							tsFullClient.SendAudio(packet.Array, packet.Length, encoder.Codec);
+						encoder.ReturnPacket(packet.Array);
 					}
 				}
 			}

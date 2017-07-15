@@ -42,7 +42,7 @@ namespace TS3AudioBot.CommandSystem
 										let pos = p.name.ToLowerInvariant().IndexOf(c, p.index)
 										where pos != -1
 										select new FilterItem<T>(p.name, p.value, pos + 1)).ToList();
-				if (newPossibilities.Any())
+				if (newPossibilities.Count > 0)
 					possibilities = newPossibilities;
 			}
 			// Take command with lowest index

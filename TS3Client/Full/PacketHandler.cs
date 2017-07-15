@@ -494,8 +494,8 @@ namespace TS3Client.Full
 					if (Closed)
 						break;
 
-					if ((packetAckManager.Any() && ResendPackages(packetAckManager.Values, ref sleepSpan))
-						|| (packetPingManager.Any() && ResendPackages(packetPingManager.Values, ref sleepSpan)))
+					if ((packetAckManager.Count > 0 && ResendPackages(packetAckManager.Values, ref sleepSpan))
+						|| (packetPingManager.Count > 0 && ResendPackages(packetPingManager.Values, ref sleepSpan)))
 					{
 						Stop(MoveReason.Timeout);
 						return;

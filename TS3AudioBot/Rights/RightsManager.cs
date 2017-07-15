@@ -381,7 +381,7 @@ namespace TS3AudioBot.Rights
 				var remainingIncludes = new Queue<RightsGroup>();
 				remainingIncludes.Enqueue(checkGroup);
 
-				while (remainingIncludes.Any())
+				while (remainingIncludes.Count > 0)
 				{
 					var include = remainingIncludes.Dequeue();
 					included.Add(include);

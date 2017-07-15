@@ -73,23 +73,18 @@ namespace TS3AudioBot.Audio.Opus
 		/// <param name="sampleLength">How many bytes to encode.</param>
 		/// <param name="encodedLength">Set to length of encoded audio.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
-		public byte[] Encode(byte[] inputPcmSamples, int sampleLength, out int encodedLength)
+		public void Encode(byte[] inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer, out int encodedLength)
 		{
 			if (disposed)
 				throw new ObjectDisposedException("OpusEncoder");
+			if (outputEncodedBuffer.Length < MaxDataBytes)
+				throw new ArgumentException("Array must be at least MaxDataBytes long", nameof(outputEncodedBuffer));
 
 			int frames = FrameCount(inputPcmSamples);
-			byte[] encoded = new byte[MaxDataBytes];
-			int length = 0;
-
-			IntPtr encodedPtr = Marshal.UnsafeAddrOfPinnedArrayElement(encoded, 0);
-			length = NativeMethods.opus_encode(_encoder, inputPcmSamples, frames, encodedPtr, sampleLength);
-
-			encodedLength = length;
-			if (length < 0)
-				throw new Exception("Encoding failed - " + ((Errors)length).ToString());
-
-			return encoded;
+			encodedLength = NativeMethods.opus_encode(_encoder, inputPcmSamples, frames, outputEncodedBuffer, sampleLength);
+			
+			if (encodedLength < 0)
+				throw new Exception("Encoding failed - " + ((Errors)encodedLength).ToString());
 		}
 
 		/// <summary>

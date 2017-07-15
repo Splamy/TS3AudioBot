@@ -108,7 +108,7 @@ namespace TS3Client.Full
 		private static void DropOver(Queue<PacketData> queue, TimeSpan time)
 		{
 			var now = Util.Now;
-			while (queue.Any() && now - queue.Peek().SendPoint > time)
+			while (queue.Count > 0 && now - queue.Peek().SendPoint > time)
 				queue.Dequeue();
 		}
 
@@ -126,7 +126,7 @@ namespace TS3Client.Full
 				lastSecondOut = GetWithin(outBytesTime, TimeSecond);
 				lastMinuteIn = GetWithin(inBytesTime, TimeMinute);
 				lastMinuteOut = GetWithin(outBytesTime, TimeMinute);
-				if (pingTimes.Any())
+				if (pingTimes.Count > 0)
 				{
 					lastPing = pingTimes.Last().TotalMilliseconds;
 					deviationPing = StdDev(pingTimes.Select(ts => ts.TotalMilliseconds));

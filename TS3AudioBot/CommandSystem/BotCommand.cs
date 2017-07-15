@@ -32,14 +32,14 @@ namespace TS3AudioBot.CommandSystem
 			InvokeName = buildInfo.commandData.CommandNameSpace;
 			requiredRights = new string[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			Description = buildInfo.commandData.CommandHelp;
-			UsageList = buildInfo.usageList ?? Enumerable.Empty<UsageAttribute>();
+			UsageList = buildInfo.usageList?.ToArray() ?? new UsageAttribute[0];
 		}
 
 		public string InvokeName { get; }
 		private string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
 		public string Description { get; private set; }
-		public IEnumerable<UsageAttribute> UsageList { get; }
+		public UsageAttribute[] UsageList { get; }
 		public string FullQualifiedName
 		{
 			get
@@ -65,7 +65,7 @@ namespace TS3AudioBot.CommandSystem
 				if (!string.IsNullOrEmpty(Description))
 					strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description);
 
-				if (UsageList.Any())
+				if (UsageList.Length > 0)
 				{
 					int longest = UsageList.Max(p => p.UsageSyntax.Length) + 1;
 					foreach (var para in UsageList)
@@ -102,7 +102,7 @@ namespace TS3AudioBot.CommandSystem
 		public MethodInfo method;
 		public CommandAttribute commandData;
 		public RequiredParametersAttribute reqiredParameters;
-		public IEnumerable<UsageAttribute> usageList;
+		public UsageAttribute[] usageList;
 
 		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt, RequiredParametersAttribute reqAtt)
 		{

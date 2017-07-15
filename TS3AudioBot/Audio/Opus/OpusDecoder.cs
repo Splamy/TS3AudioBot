@@ -79,12 +79,11 @@ namespace TS3AudioBot.Audio.Opus
 			byte[] decoded = new byte[MaxDataBytes];
 			int frameCount = FrameCount(MaxDataBytes);
 			int length = 0;
-
-			IntPtr decodedPtr = Marshal.UnsafeAddrOfPinnedArrayElement(decoded, 0);
+			
 			if (inputOpusData != null)
-				length = NativeMethods.opus_decode(_decoder, inputOpusData, dataLength, decodedPtr, frameCount, 0);
+				length = NativeMethods.opus_decode(_decoder, inputOpusData, dataLength, decoded, frameCount, 0);
 			else
-				length = NativeMethods.opus_decode(_decoder, null, 0, decodedPtr, frameCount, (ForwardErrorCorrection) ? 1 : 0);
+				length = NativeMethods.opus_decode(_decoder, null, 0, decoded, frameCount, (ForwardErrorCorrection) ? 1 : 0);
 
 			decodedLength = length * 2;
 			if (length < 0)

@@ -85,7 +85,7 @@ namespace TS3Client
 
 			if (synchronQueue)
 			{
-				if (requestQueue.Any())
+				if (requestQueue.Count > 0)
 				{
 					var waitBlock = requestQueue.Dequeue();
 					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
@@ -140,7 +140,7 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 			{
-				while (requestQueue.Any())
+				while (requestQueue.Count > 0)
 					requestQueue.Dequeue().SetAnswer(
 						new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection Closed" });
 			}

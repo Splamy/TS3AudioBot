@@ -119,7 +119,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			foreach (var botData in methods)
 			{
-				botData.usageList = botData.method.GetCustomAttributes<UsageAttribute>();
+				botData.usageList = botData.method.GetCustomAttributes<UsageAttribute>().ToArray();
 				yield return new BotCommand(botData);
 			}
 		}

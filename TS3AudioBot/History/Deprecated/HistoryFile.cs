@@ -337,7 +337,7 @@ namespace TS3AudioBot.History.Deprecated
 				return null;
 
 			uint nextHid;
-			if (ReuseUnusedIds && unusedIds.Any())
+			if (ReuseUnusedIds && unusedIds.Count > 0)
 			{
 				nextHid = unusedIds.First.Value;
 				unusedIds.RemoveFirst();

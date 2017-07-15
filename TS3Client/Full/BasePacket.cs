@@ -43,7 +43,7 @@ namespace TS3Client.Full
 
 		public bool FragmentedFlag
 		{
-			get { return (PacketFlags.HasFlag(PacketFlags.Fragmented)); }
+			get { return ((PacketFlags & PacketFlags.Fragmented) != 0); }
 			set
 			{
 				if (value) PacketTypeFlagged |= (byte)PacketFlags.Fragmented;
@@ -52,7 +52,7 @@ namespace TS3Client.Full
 		}
 		public bool NewProtocolFlag
 		{
-			get { return (PacketFlags.HasFlag(PacketFlags.Newprotocol)); }
+			get { return ((PacketFlags & PacketFlags.Newprotocol) != 0); }
 			set
 			{
 				if (value) PacketTypeFlagged |= (byte)PacketFlags.Newprotocol;
@@ -61,7 +61,7 @@ namespace TS3Client.Full
 		}
 		public bool CompressedFlag
 		{
-			get { return (PacketFlags.HasFlag(PacketFlags.Compressed)); }
+			get { return ((PacketFlags & PacketFlags.Compressed) != 0); }
 			set
 			{
 				if (value) PacketTypeFlagged |= (byte)PacketFlags.Compressed;
@@ -70,7 +70,7 @@ namespace TS3Client.Full
 		}
 		public bool UnencryptedFlag
 		{
-			get { return (PacketFlags.HasFlag(PacketFlags.Unencrypted)); }
+			get { return ((PacketFlags & PacketFlags.Unencrypted) != 0); }
 			set
 			{
 				if (value) PacketTypeFlagged |= (byte)PacketFlags.Unencrypted;

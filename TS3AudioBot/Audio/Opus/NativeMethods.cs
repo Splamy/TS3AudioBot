@@ -1,4 +1,4 @@
-// Copyright 2012 John Carruthers
+﻿// Copyright 2012 John Carruthers
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -36,7 +36,7 @@ namespace TS3AudioBot.Audio.Opus
 		internal static extern void opus_encoder_destroy(IntPtr encoder);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_encode(IntPtr st, byte[] pcm, int frame_size, IntPtr data, int max_data_bytes);
+		internal static extern int opus_encode(IntPtr st, byte[] pcm, int frame_size, byte[] data, int max_data_bytes);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern IntPtr opus_decoder_create(int Fs, int channels, out IntPtr error);
@@ -45,7 +45,7 @@ namespace TS3AudioBot.Audio.Opus
 		internal static extern void opus_decoder_destroy(IntPtr decoder);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_decode(IntPtr st, byte[] data, int len, IntPtr pcm, int frame_size, int decode_fec);
+		internal static extern int opus_decode(IntPtr st, byte[] data, int len, byte[] pcm, int frame_size, int decode_fec);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, int value);

@@ -158,7 +158,7 @@ namespace TS3AudioBot.History
 				return null;
 
 			int nextHid;
-			if (historyManagerData.FillDeletedIds && unusedIds.Any())
+			if (historyManagerData.FillDeletedIds && unusedIds.Count > 0)
 			{
 				nextHid = unusedIds.First.Value;
 				unusedIds.RemoveFirst();

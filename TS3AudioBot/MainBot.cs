@@ -860,7 +860,7 @@ namespace TS3AudioBot
 		public JsonObject CommandListList(ExecutionInformation info, string pattern)
 		{
 			var files = PlaylistManager.GetAvailablePlaylists(pattern).ToArray();
-			if (!files.Any())
+			if (files.Length <= 0)
 				return new JsonArray<string>("No playlists found", files);
 
 			var strb = new StringBuilder();

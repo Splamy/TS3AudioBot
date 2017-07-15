@@ -23,6 +23,7 @@ namespace TS3AudioBot.Audio
 	using System.Linq;
 	using TS3Client;
 
+	// NOT Thread-Safe
 	internal class AudioEncoder : IDisposable
 	{
 		public Codec Codec { get; }
@@ -31,12 +32,12 @@ namespace TS3AudioBot.Audio
 		public int BitsPerSample { get; }
 
 		public int OptimalPacketSize { get; }
-		public int Bitrate { get { return opusEncoder.Bitrate; } set { opusEncoder.Bitrate = value; } }
+		public int Bitrate { get => opusEncoder.Bitrate; set => opusEncoder.Bitrate = value; }
 
-		public bool HasPacket => opusQueue.Any();
+		public bool HasPacket => opusQueue.Count > 0;
 
 		// opus
-		OpusEncoder opusEncoder;
+		private OpusEncoder opusEncoder;
 
 		private const int SegmentFrames = 960;
 		private byte[] soundBuffer = new byte[0];
@@ -44,11 +45,13 @@ namespace TS3AudioBot.Audio
 		private byte[] notEncodedBuffer = new byte[0];
 		private int notEncodedBufferLength = 0;
 		private byte[] segment = null;
-		private Queue<Tuple<byte[], int>> opusQueue;
+		private Queue<PartialArray> opusQueue;
+		private Queue<byte[]> freeArrays;
 
 		public AudioEncoder(Codec codec)
 		{
 			Util.Init(ref opusQueue);
+			Util.Init(ref freeArrays);
 			Codec = codec;
 
 			switch (codec)
@@ -85,11 +88,19 @@ namespace TS3AudioBot.Audio
 			segment = new byte[OptimalPacketSize];
 		}
 
+		private byte[] GetFreeArray()
+		{
+			if (freeArrays.Count > 0)
+				return freeArrays.Dequeue();
+			else
+				return new byte[opusEncoder.MaxDataBytes];
+		}
+
 		public void PushPCMAudio(byte[] buffer, int bufferlen)
 		{
 			int newSoundBufferLength = bufferlen + notEncodedBufferLength;
 			if (newSoundBufferLength > soundBuffer.Length)
-				soundBuffer = new byte[newSoundBufferLength]; // TODO optimize not encoded buffer
+				soundBuffer = new byte[newSoundBufferLength];
 			soundBufferLength = newSoundBufferLength;
 
 			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBufferLength);
@@ -108,17 +119,22 @@ namespace TS3AudioBot.Audio
 			{
 				for (int j = 0; j < segment.Length; j++)
 					segment[j] = soundBuffer[(i * byteCap) + j];
-				byte[] buff = opusEncoder.Encode(segment, segment.Length, out int len);
-				opusQueue.Enqueue(new Tuple<byte[], int>(buff, len));
+				byte[] encodedBuffer = GetFreeArray();
+				opusEncoder.Encode(segment, segment.Length, encodedBuffer, out int len);
+				opusQueue.Enqueue(new PartialArray { Array = encodedBuffer, Length = len });
 			}
 		}
 
-		public Tuple<byte[], int> GetPacket()
+		public PartialArray GetPacket()
 		{
-			if (opusQueue.Any())
-				return opusQueue.Dequeue();
-			else
-				return null;
+			if (!HasPacket)
+				throw new InvalidOperationException();
+			return opusQueue.Dequeue();
+		}
+
+		public void ReturnPacket(byte[] packet)
+		{
+			freeArrays.Enqueue(packet);
 		}
 
 		public TimeSpan GetPlayLength(int bytes)
@@ -135,5 +151,11 @@ namespace TS3AudioBot.Audio
 		{
 			opusEncoder?.Dispose();
 		}
+	}
+
+	internal struct PartialArray
+	{
+		public byte[] Array;
+		public int Length;
 	}
 }

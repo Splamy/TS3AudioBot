@@ -439,7 +439,7 @@ namespace TS3AudioBot
 			{
 				pluginMethodList.Add(comData.method);
 				int index = pluginMethodList.Count - 1;
-				comData.usageList = comData.method.GetCustomAttributes<UsageAttribute>();
+				comData.usageList = comData.method.GetCustomAttributes<UsageAttribute>().ToArray();
 				wrappedList.Add(new WrappedCommand(index, this, comData));
 			}
 			pluginMethods = pluginMethodList.ToArray();
