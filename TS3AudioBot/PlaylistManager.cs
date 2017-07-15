@@ -231,10 +231,9 @@ namespace TS3AudioBot
 					string content = kvp[2];
 
 					var meta = new MetaData();
-					ulong userid;
 					if (string.IsNullOrWhiteSpace(optOwner))
 						meta.ResourceOwnerDbId = null;
-					else if (ulong.TryParse(optOwner, out userid))
+					else if (ulong.TryParse(optOwner, out ulong userid))
 						meta.ResourceOwnerDbId = userid;
 					else
 						Log.Write(Log.Level.Warning, "Erroneus playlist meta data: {0}", line);

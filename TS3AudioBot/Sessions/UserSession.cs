@@ -97,8 +97,7 @@ namespace TS3AudioBot.Sessions
 			if (assocMap == null)
 				return "Value not set";
 
-			object value;
-			if (!assocMap.TryGetValue(typeof(TAssoc), out value))
+			if (!assocMap.TryGetValue(typeof(TAssoc), out object value))
 				return "Value not set";
 
 			if (value?.GetType() != typeof(TData))

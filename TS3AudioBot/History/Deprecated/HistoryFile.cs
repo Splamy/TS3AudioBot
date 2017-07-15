@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -210,8 +210,7 @@ namespace TS3AudioBot.History.Deprecated
 			if (resource == null)
 				throw new ArgumentNullException(nameof(resource));
 
-			uint rId;
-			if (resIdToId.TryGetValue(resource.UniqueId, out rId))
+			if (resIdToId.TryGetValue(resource.UniqueId, out uint rId))
 				return rId;
 			return null;
 		}
@@ -220,8 +219,7 @@ namespace TS3AudioBot.History.Deprecated
 		/// <param name="id">The id of the AudioLogEntry</param>
 		public AudioLogEntry GetEntryById(uint id)
 		{
-			AudioLogEntry ale;
-			if (idFilter.TryGetValue(id, out ale))
+			if (idFilter.TryGetValue(id, out var ale))
 				return ale;
 			return null;
 		}
@@ -232,8 +230,7 @@ namespace TS3AudioBot.History.Deprecated
 		/// <returns>A list of all found entries.</returns>
 		public IList<AudioLogEntry> SeachByUser(uint userId)
 		{
-			IList<AudioLogEntry> result;
-			if (userIdFilter.TryGetValue(userId, out result))
+			if (userIdFilter.TryGetValue(userId, out var result))
 				return result;
 			else
 				return noResult;
@@ -434,8 +431,7 @@ namespace TS3AudioBot.History.Deprecated
 
 		private static void AutoAdd(IDictionary<uint, IList<AudioLogEntry>> dict, AudioLogEntry value)
 		{
-			IList<AudioLogEntry> uidList;
-			if (!dict.TryGetValue(value.UserInvokeId, out uidList))
+			if (!dict.TryGetValue(value.UserInvokeId, out var uidList))
 			{
 				uidList = new List<AudioLogEntry>();
 				dict.Add(value.UserInvokeId, uidList);

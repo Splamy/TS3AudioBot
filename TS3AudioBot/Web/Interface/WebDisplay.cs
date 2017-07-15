@@ -89,9 +89,8 @@ namespace TS3AudioBot.Web.Interface
 		private WebSite GetWebsite(Uri url)
 		{
 			if (url == null) return Site404;
-
-			WebSite site;
-			if (sites.TryGetValue(url.AbsolutePath, out site))
+			
+			if (sites.TryGetValue(url.AbsolutePath, out var site))
 				return site;
 
 			return Site404;
@@ -128,17 +127,13 @@ namespace TS3AudioBot.Web.Interface
 
 		public FileProvider Set(FileInfo file)
 		{
-			if (file == null)
-				throw new ArgumentNullException(nameof(file));
-			WebFile = file;
+			WebFile = file ?? throw new ArgumentNullException(nameof(file));
 			return this;
 		}
 
 		public FileProvider Set(string resourceName)
 		{
-			if (resourceName == null)
-				throw new ArgumentNullException(nameof(resourceName));
-			ResourceName = resourceName;
+			ResourceName = resourceName ?? throw new ArgumentNullException(nameof(resourceName));
 			return this;
 		}
 
@@ -211,7 +206,7 @@ namespace TS3AudioBot.Web.Interface
 
 		public virtual void GenerateSite(HttpListenerContext context, PreparedData callData)
 		{
-			byte[] prepData = (byte[])callData.Context;
+			var prepData = (byte[])callData.Context;
 			context.Response.OutputStream.Write(prepData, 0, prepData.Length);
 		}
 
@@ -297,7 +292,7 @@ namespace TS3AudioBot.Web.Interface
 
 		public override void GenerateSite(HttpListenerContext context, PreparedData callData)
 		{
-			ContentSite contentData = (ContentSite)callData.Context;
+			var contentData = (ContentSite)callData.Context;
 			// write first part
 			context.Response.OutputStream.Write(contentData.OwnContent, 0, lengthA);
 			// write the inner data
@@ -435,16 +430,13 @@ namespace TS3AudioBot.Web.Interface
 			string tmpValue;
 			var search = new SeachQuery();
 
-			DateTime lastinvoked;
-			if ((tmpValue = query["lastinvoked"]) != null && DateTime.TryParse(tmpValue, out lastinvoked))
+			if ((tmpValue = query["lastinvoked"]) != null && DateTime.TryParse(tmpValue, out DateTime lastinvoked))
 				search.LastInvokedAfter = lastinvoked;
 
-			uint userId;
-			if ((tmpValue = query["userid"]) != null && uint.TryParse(tmpValue, out userId))
+			if ((tmpValue = query["userid"]) != null && uint.TryParse(tmpValue, out uint userId))
 				search.UserId = userId;
 
-			int max;
-			if ((tmpValue = query["max"]) != null && int.TryParse(tmpValue, out max))
+			if ((tmpValue = query["max"]) != null && int.TryParse(tmpValue, out int max))
 				search.MaxResults = max;
 
 			search.TitlePart = query["title"];

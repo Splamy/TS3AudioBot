@@ -37,10 +37,7 @@ namespace TS3AudioBot
 
 		public PluginManager(MainBot bot, PluginManagerData pmd)
 		{
-			if (bot == null)
-				throw new ArgumentNullException(nameof(bot));
-
-			mainBot = bot;
+			mainBot = bot ?? throw new ArgumentNullException(nameof(bot));
 			pluginManagerData = pmd;
 			Util.Init(ref plugins);
 			Util.Init(ref usedIds);
@@ -61,8 +58,7 @@ namespace TS3AudioBot
 
 			foreach (var file in dir.EnumerateFiles())
 			{
-				Plugin plugin;
-				if (plugins.TryGetValue(file.Name, out plugin))
+				if (plugins.TryGetValue(file.Name, out Plugin plugin))
 				{
 					if (plugin.status == PluginStatus.Disabled || plugin.status == PluginStatus.Active)
 						continue;
@@ -103,10 +99,9 @@ namespace TS3AudioBot
 		{
 			CheckLocalPlugins();
 
-			int num;
 			Plugin plugin;
 
-			if (int.TryParse(identifier, out num))
+			if (int.TryParse(identifier, out int num))
 			{
 				plugin = plugins.Select(kvp => kvp.Value).FirstOrDefault(p => p.Id == num);
 				return LoadPlugin(plugin);
@@ -163,10 +158,9 @@ namespace TS3AudioBot
 
 		public PluginResponse UnloadPlugin(string identifier)
 		{
-			int num;
 			Plugin plugin;
 
-			if (int.TryParse(identifier, out num))
+			if (int.TryParse(identifier, out int num))
 			{
 				plugin = plugins.Select(kvp => kvp.Value).FirstOrDefault(p => p.Id == num);
 				return UnloadPlugin(plugin, true);

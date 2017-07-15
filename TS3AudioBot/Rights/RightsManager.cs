@@ -38,6 +38,14 @@ namespace TS3AudioBot.Rights
 		private RightsRule[] Rules;
 		private HashSet<string> registeredRights;
 
+		// Required Matcher Data:
+		// This variables save whether the current rights setup has at least one rule that
+		// need a certain additional information.
+		// This will save us from making unnecessary query calls.
+		// TODO:
+		private bool needsAvailableGroups = true;
+		private bool needsAvailableChanGroups = true;
+
 		public RightsManager(MainBot bot, RightsManagerData rmd)
 		{
 			botParent = bot;
@@ -86,21 +94,41 @@ namespace TS3AudioBot.Rights
 				ReadFile();
 			}
 
-			ExecuteContext execCtx;
-			if (!cachedRights.TryGetValue(inv, out execCtx))
+			if (!cachedRights.TryGetValue(inv, out ExecuteContext execCtx))
 			{
 				execCtx = new ExecuteContext();
 
-				// Required Matcher Data
-				bool needsAvailableGroups = true;
+				// Get Required Matcher Data:
+				// In this region we will iteratively go through different possobilitys to obtain
+				// as much data as we can about our invoker.
+				// For this step we will prefer query calls which can give us more than one information
+				// at once and lazily fall back to other calls as long as needed.
 
-				// Get Required Matcher Data
-				// host = ?
-				if (needsAvailableGroups && inv.DatabaseId.HasValue)
-					execCtx.AvailableGroups = botParent.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value);
-				else
+				if (inv.ClientId.HasValue &&
+					((needsAvailableGroups && execCtx.AvailableGroups == null)
+					|| (needsAvailableChanGroups && !execCtx.ChannelGroupId.HasValue)))
+				{
+					var result = botParent.QueryConnection.GetClientInfoById(inv.ClientId.Value);
+					if (result.Ok)
+					{
+						if (execCtx.AvailableGroups == null)
+							execCtx.AvailableGroups = result.Value.ServerGroups;
+						if(!execCtx.ChannelGroupId.HasValue)
+							execCtx.ChannelGroupId = result.Value.ChannelGroupId;
+					}
+				}
+
+				if (needsAvailableGroups && inv.DatabaseId.HasValue && execCtx.AvailableGroups == null)
+				{
+					var result = botParent.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value);
+					if (result.Ok)
+						execCtx.AvailableGroups = result.Value;
+				}
+
+				if (execCtx.AvailableGroups == null)
 					execCtx.AvailableGroups = new ulong[0];
 				execCtx.ClientUid = inv.ClientUid;
+				execCtx.Visibiliy = inv.Visibiliy;
 
 				ProcessNode(RootRule, execCtx);
 
@@ -122,7 +150,9 @@ namespace TS3AudioBot.Rights
 			if (!rule.HasMatcher()
 				|| (ctx.Host != null && rule.MatchHost.Contains(ctx.Host))
 				|| (ctx.ClientUid != null && rule.MatchClientUid.Contains(ctx.ClientUid))
-				|| (ctx.AvailableGroups.Length > 0 && rule.MatchClientGroupId.Overlaps(ctx.AvailableGroups)))
+				|| (ctx.AvailableGroups.Length > 0 && rule.MatchClientGroupId.Overlaps(ctx.AvailableGroups))
+				|| (ctx.ChannelGroupId.HasValue && rule.MatchChannelGroupId.Contains(ctx.ChannelGroupId.Value))
+				|| (ctx.Visibiliy.HasValue && rule.MatchVisibility.Contains(ctx.Visibiliy.Value)))
 			{
 				bool hasMatchingChild = false;
 				foreach (var child in rule.ChildrenRules)
@@ -266,7 +296,7 @@ namespace TS3AudioBot.Rights
 
 		/// <summary>
 		/// Removes rights which are in the Add and Deny category.
-		/// Expands wildcard delclataions to all explicit declarations.
+		/// Expands wildcard delclarations to all explicit declarations.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private bool NormalizeRule(ParseContext ctx)
@@ -484,9 +514,10 @@ namespace TS3AudioBot.Rights
 	{
 		public string Host { get; set; } = null;
 		public ulong[] AvailableGroups { get; set; } = null;
+		public ulong? ChannelGroupId { get; set; } = null;
 		public string ClientUid { get; set; } = null;
 		public bool IsApi { get; set; }
-		public TextMessageTargetMode? TargetMode { get; set; } = null;
+		public TextMessageTargetMode? Visibiliy { get; set; } = null;
 
 		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
 

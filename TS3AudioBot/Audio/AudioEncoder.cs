@@ -108,8 +108,7 @@ namespace TS3AudioBot.Audio
 			{
 				for (int j = 0; j < segment.Length; j++)
 					segment[j] = soundBuffer[(i * byteCap) + j];
-				int len;
-				byte[] buff = opusEncoder.Encode(segment, segment.Length, out len);
+				byte[] buff = opusEncoder.Encode(segment, segment.Length, out int len);
 				opusQueue.Enqueue(new Tuple<byte[], int>(buff, len));
 			}
 		}

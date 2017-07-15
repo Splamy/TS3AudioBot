@@ -449,8 +449,7 @@ namespace TS3AudioBot
 			// TODO spawn new client
 			lock (subscriptionLockObj)
 			{
-				bool subscriptionTemp;
-				if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionTemp))
+				if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp))
 					channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
 				else
 				{
@@ -470,8 +469,7 @@ namespace TS3AudioBot
 				}
 				else
 				{
-					bool subscriptionTemp;
-					if (channelSubscriptionsSetup.TryGetValue(channel, out subscriptionTemp) && subscriptionTemp)
+					if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp) && subscriptionTemp)
 					{
 						channelSubscriptionsSetup.Remove(channel);
 						subscriptionSetupChanged = true;

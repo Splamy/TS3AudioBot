@@ -44,8 +44,7 @@ namespace TS3AudioBot.Sessions
 		{
 			lock (nonceList)
 			{
-				ApiNonce nonce;
-				if (!nonceList.TryGetValue(token, out nonce))
+				if (!nonceList.TryGetValue(token, out var nonce))
 					return null;
 
 				nonceList.Remove(token);

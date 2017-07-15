@@ -682,8 +682,8 @@ namespace TS3Client.Messages
 		public bool AskForPrivilege { get; set; }
 		public string ClientName { get; set; }
 		public ClientIdT ClientId { get; set; }
-		public int Pv { get; set; }
-		public int Lt { get; set; }
+		public uint Pv { get; set; }
+		public ushort LicenseType { get; set; }
 		public int TalkPower { get; set; }
 		public int NeededServerQueryViewPower { get; set; }
 		public string ServerName { get; set; }
@@ -720,8 +720,8 @@ namespace TS3Client.Messages
 			case "virtualserver_ask_for_privilegekey": AskForPrivilege = CommandDeserializer.DeserializeBool(value); break;
 			case "acn": ClientName = CommandDeserializer.DeserializeString(value); break;
 			case "aclid": ClientId = CommandDeserializer.DeserializeUInt16(value); break;
-			case "pv": Pv = CommandDeserializer.DeserializeInt32(value); break;
-			case "lt": Lt = CommandDeserializer.DeserializeInt32(value); break;
+			case "pv": Pv = CommandDeserializer.DeserializeUInt32(value); break;
+			case "lt": LicenseType = CommandDeserializer.DeserializeUInt16(value); break;
 			case "client_talk_power": TalkPower = CommandDeserializer.DeserializeInt32(value); break;
 			case "client_needed_serverquery_view_power": NeededServerQueryViewPower = CommandDeserializer.DeserializeInt32(value); break;
 			case "virtualserver_name": ServerName = CommandDeserializer.DeserializeString(value); break;
@@ -1254,7 +1254,7 @@ namespace TS3Client.Messages
 		public string MachineId { get; set; }
 		public string ServerName { get; set; }
 		public ulong VirtualServerId { get; set; }
-		public string VirtualServerUid { get; set; }
+		public ClientUidT VirtualServerUid { get; set; }
 		public ushort VirtualServerPort { get; set; }
 		public string VirtualServerStatus { get; set; }
 
@@ -1292,7 +1292,7 @@ namespace TS3Client.Messages
 		public string LoginName { get; set; }
 		public ulong OriginServerId { get; set; }
 		public ulong VirtualServerId { get; set; }
-		public string VirtualServerUid { get; set; }
+		public ClientUidT VirtualServerUid { get; set; }
 		public ushort VirtualServerPort { get; set; }
 		public string VirtualServerStatus { get; set; }
 		public ClientUidT Uid { get; set; }

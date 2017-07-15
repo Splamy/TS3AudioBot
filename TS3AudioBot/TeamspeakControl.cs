@@ -205,16 +205,15 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
-		public ulong[] GetClientServerGroups(ulong dbId)
+		public R<ulong[]> GetClientServerGroups(ulong dbId)
 		{
-			Log.Write(Log.Level.Debug, "QC GetClientServerGroups called");
-			return tsBaseClient.ServerGroupsByClientDbId(dbId).Select(csg => csg.ServerGroupId).ToArray();
+			try { return tsBaseClient.ServerGroupsByClientDbId(dbId).Select(csg => csg.ServerGroupId).ToArray(); }
+			catch (Ts3CommandException) { return "No client found."; }
 		}
 
 		public R<ClientDbData> GetDbClientByDbId(ulong clientDbId)
 		{
-			ClientDbData clientData;
-			if (clientDbNames.TryGetValue(clientDbId, out clientData))
+			if (clientDbNames.TryGetValue(clientDbId, out ClientDbData clientData))
 				return clientData;
 
 			try
@@ -237,14 +236,17 @@ namespace TS3AudioBot
 			try
 			{
 				// Check all own server groups
-				var groups = GetClientServerGroups(me.DatabaseId);
+				var result = GetClientServerGroups(me.DatabaseId);
+				var groups = result.Ok ? result.Value : new ulong[0];
 
 				// Add self to master group (via token)
 				if (!string.IsNullOrEmpty(key))
 					tsBaseClient.PrivilegeKeyUse(key);
 
 				// Remember new group (or check if in new group at all)
-				var groupsNew = GetClientServerGroups(me.DatabaseId);
+				if (result.Ok)
+					result = GetClientServerGroups(me.DatabaseId);
+				var groupsNew = result.Ok ? result.Value : new ulong[0];
 				var groupDiff = groupsNew.Except(groups).ToArray();
 
 				if (mainBotData.BotGroupId == 0)
@@ -264,7 +266,7 @@ namespace TS3AudioBot
 						PermissionId.i_client_whisper_power, // + Required for whisper channel playing
 						PermissionId.i_client_private_textmessage_power, // + Communication
 						PermissionId.b_client_server_textmessage_send, // + Communication
-						PermissionId.b_client_channel_textmessage_send, // (+) Communication, could be used but not yet
+						PermissionId.b_client_channel_textmessage_send, // + Communication, could be used but not yet
 
 						PermissionId.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
 						PermissionId.b_client_modify_description, // + Used to change the description of our bot
@@ -289,6 +291,7 @@ namespace TS3AudioBot
 						PermissionId.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
 						PermissionId.b_channel_join_ignore_maxclients, // + Allow joining full channels
 						PermissionId.i_channel_join_power, // + Allow joining to all channel even on strict servers
+						PermissionId.b_client_permissionoverview_view, // + Scanning though given perms for rights system
 					},
 					new[] {
 						max, max,   1,   1,
@@ -296,7 +299,7 @@ namespace TS3AudioBot
 						max,   1, max,   1,
 						  1, max, max,   4,
 						  1,   1,   1,   1,
-						  1,   1, max,
+						  1,   1, max,   1,
 					},
 					new[] {
 						false, false, false, false,
@@ -304,7 +307,7 @@ namespace TS3AudioBot
 						false, false, false, false,
 						false, false, false, false,
 						false, false, false, false,
-						false, false, false,
+						false, false, false, false,
 					},
 					new[] {
 						false, false, false, false,
@@ -312,7 +315,7 @@ namespace TS3AudioBot
 						false, false, false, false,
 						false, false, false, false,
 						false, false, false, false,
-						false, false, false,
+						false, false, false, false,
 					});
 
 				// Leave master group again

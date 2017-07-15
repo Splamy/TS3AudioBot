@@ -36,8 +36,7 @@ namespace TS3AudioBot.Helper
 
 		public bool TryGetValue(K key, out V value)
 		{
-			TimedData data;
-			if (!cachedData.TryGetValue(key, out data)
+			if (!cachedData.TryGetValue(key, out var data)
 				|| Util.GetNow() - Timeout > data.Timestamp)
 			{
 				CleanCache();
@@ -63,8 +62,7 @@ namespace TS3AudioBot.Helper
 			var now = Util.GetNow() - Timeout;
 			foreach (var item in cachedData.Where(kvp => now > kvp.Value.Timestamp).ToList())
 			{
-				TimedData data;
-				cachedData.TryRemove(item.Key, out data);
+				cachedData.TryRemove(item.Key, out var data);
 			}
 		}
 

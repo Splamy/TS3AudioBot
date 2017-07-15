@@ -494,19 +494,16 @@ namespace TS3AudioBot
 					}
 				}
 
-				var targetB = target as BotCommand;
-				if (targetB != null)
+				if (target is BotCommand targetB)
 					return new JsonSingleValue<string>(targetB.GetHelp());
 
-				var targetCG = target as CommandGroup;
-				if (targetCG != null)
+				if (target is CommandGroup targetCG)
 				{
 					var subList = targetCG.Commands.Select(g => g.Key).ToArray();
 					return new JsonArray<string>("The command contains the following subfunctions: " + string.Join(", ", subList), subList);
 				}
 
-				var targetOfc = target as OverloadedFunctionCommand;
-				if (targetOfc != null)
+				if (target is OverloadedFunctionCommand targetOfc)
 				{
 					var strb = new StringBuilder();
 					foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
@@ -693,11 +690,10 @@ namespace TS3AudioBot
 			default: throw new CommandException("Unknown comparison operator", CommandExceptionReason.CommandError);
 			}
 
-			double d0, d1;
 			bool cmpResult;
 			// Try to parse arguments into doubles
-			if (double.TryParse(arg0, NumberStyles.Number, CultureInfo.InvariantCulture, out d0)
-				&& double.TryParse(arg1, NumberStyles.Number, CultureInfo.InvariantCulture, out d1))
+			if (double.TryParse(arg0, NumberStyles.Number, CultureInfo.InvariantCulture, out var d0)
+				&& double.TryParse(arg1, NumberStyles.Number, CultureInfo.InvariantCulture, out var d1))
 				cmpResult = comparer(d0, d1);
 			else
 				cmpResult = comparer(string.CompareOrdinal(arg0, arg1), 0);
@@ -1199,21 +1195,19 @@ namespace TS3AudioBot
 			if (parameter.Contains(":"))
 			{
 				string[] splittime = parameter.Split(':');
-				if (splittime.Length == 2)
+
+				if (splittime.Length == 2
+					&& int.TryParse(splittime[0], out int minutes)
+					&& int.TryParse(splittime[1], out int seconds))
 				{
-					int seconds = -1, minutes;
-					parsed = int.TryParse(splittime[0], out minutes) && int.TryParse(splittime[1], out seconds);
-					if (parsed)
-						span = TimeSpan.FromSeconds(seconds) + TimeSpan.FromMinutes(minutes);
-					else
-						span = TimeSpan.MinValue;
+					parsed = true;
+					span = TimeSpan.FromSeconds(seconds) + TimeSpan.FromMinutes(minutes);
 				}
 				else span = TimeSpan.MinValue;
 			}
 			else
 			{
-				int seconds;
-				parsed = int.TryParse(parameter, out seconds);
+				parsed = int.TryParse(parameter, out int seconds);
 				span = TimeSpan.FromSeconds(seconds);
 			}
 
@@ -1319,12 +1313,11 @@ namespace TS3AudioBot
 				throw new CommandException("Expected at least 2 parameters", CommandExceptionReason.MissingParameter);
 
 			int start = 0;
-			int count = 0;
 			string delimiter = null;
 
 			// Get count
 			var res = ((StringCommandResult)argList[0].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
-			if (!int.TryParse(res, out count) || count < 0)
+			if (!int.TryParse(res, out int count) || count < 0)
 				throw new CommandException("Count must be an integer >= 0", CommandExceptionReason.CommandError);
 
 			if (argList.Count > 2)
@@ -1432,8 +1425,7 @@ namespace TS3AudioBot
 			bool relNeg = parameter.StartsWith("-", StringComparison.Ordinal);
 			string numberString = (relPos || relNeg) ? parameter.Remove(0, 1) : parameter;
 
-			int volume;
-			if (!int.TryParse(numberString, out volume))
+			if (!int.TryParse(numberString, out int volume))
 				throw new CommandException("The new volume could not be parsed", CommandExceptionReason.CommandError);
 
 			int newVolume;

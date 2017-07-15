@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -155,8 +155,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c));
-			int availableArguments;
-			object[] parameters = FitArguments(info, arguments, returnTypes, out availableArguments);
+			object[] parameters = FitArguments(info, arguments, returnTypes, out int availableArguments);
 
 			// Check if we were able to set enough arguments
 			if (availableArguments < Math.Min(parameters.Length, RequiredParameters))

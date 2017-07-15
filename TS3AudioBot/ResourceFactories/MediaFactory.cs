@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -62,8 +62,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R<ResData> ValidateUri(string uri)
 		{
-			Uri uriResult;
-			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out uriResult))
+			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out Uri uriResult))
 				return R<ResData>.Err(RResultCode.MediaInvalidUri.ToString());
 
 			string fullUri = uri;

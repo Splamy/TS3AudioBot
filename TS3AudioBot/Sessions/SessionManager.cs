@@ -45,8 +45,7 @@ namespace TS3AudioBot.Sessions
 
 			lock (openSessions)
 			{
-				UserSession session;
-				if (openSessions.TryGetValue(client.ClientId, out session))
+				if (openSessions.TryGetValue(client.ClientId, out var session))
 					return session;
 
 				Log.Write(Log.Level.Debug, "SM User {0} created session with the bot", client.NickName);
@@ -60,8 +59,7 @@ namespace TS3AudioBot.Sessions
 		{
 			lock (openSessions)
 			{
-				UserSession session;
-				if (openSessions.TryGetValue(id, out session))
+				if (openSessions.TryGetValue(id, out var session))
 					return session;
 				else
 					return "Session not found";
@@ -82,8 +80,7 @@ namespace TS3AudioBot.Sessions
 			if (string.IsNullOrEmpty(uid))
 				throw new ArgumentNullException(nameof(uid));
 
-			ApiToken token;
-			if (!tokenList.TryGetValue(uid, out token))
+			if (!tokenList.TryGetValue(uid, out var token))
 			{
 				token = new ApiToken();
 				tokenList.Add(uid, token);
@@ -99,8 +96,7 @@ namespace TS3AudioBot.Sessions
 
 		internal R<ApiToken> GetToken(string uid)
 		{
-			ApiToken token;
-			if (tokenList.TryGetValue(uid, out token))
+			if (tokenList.TryGetValue(uid, out var token))
 				return token;
 			return "No active Token";
 		}

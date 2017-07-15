@@ -71,12 +71,11 @@ namespace TS3AudioBot.Helper
 			{
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
 				string entryName = associatedClass + NameSeperator + field.Name;
-				string rawValue;
 				object parsedValue = null;
 				bool newKey = false;
 
 				// determine the raw data string, whether from Console or File
-				if (!ReadKey(entryName, out rawValue))
+				if (!ReadKey(entryName, out string rawValue))
 				{
 					newKey = true;
 					changed = true;
@@ -128,8 +127,7 @@ namespace TS3AudioBot.Helper
 				throw new ArgumentNullException(nameof(value));
 
 			string[] keyParam = key.Split(new[] { NameSeperator }, StringSplitOptions.None);
-			ConfigData co;
-			if (!confObjects.TryGetValue(keyParam[0], out co))
+			if (!confObjects.TryGetValue(keyParam[0], out var co))
 				return "No active entries found for this key";
 
 			object convertedValue = null;
@@ -223,8 +221,7 @@ namespace TS3AudioBot.Helper
 
 				string lowerKey = key.ToLower();
 
-				int line;
-				if (data.TryGetValue(lowerKey, out line))
+				if (data.TryGetValue(lowerKey, out int line))
 				{
 					fileLines[line].Value = value;
 				}
@@ -239,8 +236,7 @@ namespace TS3AudioBot.Helper
 
 			protected override bool ReadKey(string key, out string value)
 			{
-				int line;
-				if (data.TryGetValue(key.ToLower(), out line))
+				if (data.TryGetValue(key.ToLower(), out int line))
 				{
 					value = fileLines[line].Value;
 					return true;

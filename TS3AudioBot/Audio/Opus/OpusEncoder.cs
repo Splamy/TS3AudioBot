@@ -1,4 +1,4 @@
-// Copyright 2012 John Carruthers
+﻿// Copyright 2012 John Carruthers
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -47,8 +47,7 @@ namespace TS3AudioBot.Audio.Opus
 			if (inputChannels != 1 && inputChannels != 2)
 				throw new ArgumentOutOfRangeException("inputChannels");
 
-			IntPtr error;
-			IntPtr encoder = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, (int)application, out error);
+			IntPtr encoder = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, (int)application, out IntPtr error);
 			if ((Errors)error != Errors.OK)
 			{
 				throw new Exception("Exception occured while creating encoder");
@@ -148,8 +147,7 @@ namespace TS3AudioBot.Audio.Opus
 			{
 				if (disposed)
 					throw new ObjectDisposedException("OpusEncoder");
-				int bitrate;
-				var ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.GetBitrateRequest, out bitrate);
+				var ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.GetBitrateRequest, out int bitrate);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
 				return bitrate;
@@ -174,8 +172,7 @@ namespace TS3AudioBot.Audio.Opus
 				if (_encoder == IntPtr.Zero)
 					throw new ObjectDisposedException("OpusEncoder");
 
-				int fec;
-				int ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.GetInbandFECRequest, out fec);
+				int ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.GetInbandFECRequest, out int fec);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
 

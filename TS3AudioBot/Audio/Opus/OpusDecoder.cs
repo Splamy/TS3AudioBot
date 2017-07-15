@@ -1,4 +1,4 @@
-// Copyright 2012 John Carruthers
+﻿// Copyright 2012 John Carruthers
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -46,8 +46,7 @@ namespace TS3AudioBot.Audio.Opus
 			if (outputChannels != 1 && outputChannels != 2)
 				throw new ArgumentOutOfRangeException("inputChannels");
 
-			IntPtr error;
-			IntPtr decoder = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out error);
+			IntPtr decoder = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out IntPtr error);
 			if ((Errors)error != Errors.OK)
 			{
 				throw new Exception("Exception occured while creating decoder");

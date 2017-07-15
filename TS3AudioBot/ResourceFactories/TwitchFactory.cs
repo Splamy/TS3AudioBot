@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -49,8 +49,7 @@ namespace TS3AudioBot.ResourceFactories
 			var channel = resource.ResourceId;
 
 			// request api token
-			string jsonResponse;
-			if (!WebWrapper.DownloadString(out jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", twitchClientId)))
+			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", twitchClientId)))
 				return RResultCode.NoConnection.ToString();
 
 			var jsonDict = (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
@@ -60,8 +59,7 @@ namespace TS3AudioBot.ResourceFactories
 			var sig = jsonDict["sig"];
 			// guaranteed to be random, chosen by fair dice roll.
 			var random = 4;
-			string m3u8;
-			if (!WebWrapper.DownloadString(out m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))
+			if (!WebWrapper.DownloadString(out string m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))
 				return RResultCode.NoConnection.ToString();
 
 			// parse m3u8 file

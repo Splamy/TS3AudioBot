@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -28,11 +28,7 @@ namespace TS3AudioBot.CommandSystem
 		// TODO: test if command does not exist
 		public void RemoveCommand(ICommand command) => commands.Remove(commands.FirstOrDefault(kvp => kvp.Value == command).Key);
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
-		public ICommand GetCommand(string name)
-		{
-			ICommand com;
-			return commands.TryGetValue(name, out com) ? com : null;
-		}
+		public ICommand GetCommand(string name) => commands.TryGetValue(name, out ICommand com) ? com : null;
 		public bool IsEmpty => !commands.Any();
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 

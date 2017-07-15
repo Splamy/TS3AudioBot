@@ -19,6 +19,14 @@ namespace TS3AudioBot.Rights
 	using Nett;
 	using System.Linq;
 	using System.Collections.Generic;
+	using TS3Client;
+
+	// Adding a new Matcher:
+	// 1) Add public MatchHashSet
+	// 2) Add To Has Matches condition when empty
+	// 3) Add To FillNull when not declared
+	// 4) Add new case to ParseKey switch
+	// 5) Add match condition to RightManager.ProcessNode
 
 	internal class RightsRule : RightsDecl
 	{
@@ -29,7 +37,9 @@ namespace TS3AudioBot.Rights
 		public HashSet<string> MatchHost { get; set; }
 		public HashSet<string> MatchClientUid { get; set; }
 		public HashSet<ulong> MatchClientGroupId { get; set; }
+		public HashSet<ulong> MatchChannelGroupId { get; set; }
 		public HashSet<string> MatchPermission { get; set; }
+		public TextMessageTargetMode[] MatchVisibility { get; set; }
 
 		public RightsRule()
 		{
@@ -38,10 +48,12 @@ namespace TS3AudioBot.Rights
 
 		public bool HasMatcher()
 		{
-			return MatchClientGroupId.Count != 0
-			|| MatchClientUid.Count != 0
-			|| MatchHost.Count != 0
-			|| MatchPermission.Count != 0;
+			return MatchClientGroupId.Count > 0
+			|| MatchClientUid.Count > 0
+			|| MatchHost.Count > 0
+			|| MatchPermission.Count > 0
+			|| MatchChannelGroupId.Count > 0
+			|| MatchVisibility.Length > 0;
 		}
 
 		public override void FillNull()
@@ -50,7 +62,9 @@ namespace TS3AudioBot.Rights
 			if (MatchHost == null) MatchHost = new HashSet<string>();
 			if (MatchClientUid == null) MatchClientUid = new HashSet<string>();
 			if (MatchClientGroupId == null) MatchClientGroupId = new HashSet<ulong>();
+			if (MatchChannelGroupId == null) MatchChannelGroupId = new HashSet<ulong>();
 			if (MatchPermission == null) MatchPermission = new HashSet<string>();
+			if (MatchVisibility == null) MatchVisibility = new TextMessageTargetMode[0];
 		}
 
 		public override bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)
@@ -70,6 +84,11 @@ namespace TS3AudioBot.Rights
 				if (groupid == null) ctx.Errors.Add("<groupid> Field has invalid data.");
 				else MatchClientGroupId = new HashSet<ulong>(groupid);
 				return true;
+			case "channelgroupid":
+				var cgroupid = TomlTools.GetValues<ulong>(tomlObj);
+				if (cgroupid == null) ctx.Errors.Add("<channelgroupid> Field has invalid data.");
+				else MatchChannelGroupId = new HashSet<ulong>(cgroupid);
+				return true;
 			case "useruid":
 				var useruid = TomlTools.GetValues<string>(tomlObj);
 				if (useruid == null) ctx.Errors.Add("<useruid> Field has invalid data.");
@@ -79,6 +98,11 @@ namespace TS3AudioBot.Rights
 				var perm = TomlTools.GetValues<string>(tomlObj);
 				if (perm == null) ctx.Errors.Add("<perm> Field has invalid data.");
 				else MatchPermission = new HashSet<string>(perm);
+				return true;
+			case "visibility":
+				var visibility = TomlTools.GetValues<TS3Client.TextMessageTargetMode>(tomlObj);
+				if (visibility == null) ctx.Errors.Add("<visibility> Field has invalid data.");
+				else MatchVisibility = visibility;
 				return true;
 			case "rule":
 				if (tomlObj.TomlType == TomlObjectType.ArrayOfTables)

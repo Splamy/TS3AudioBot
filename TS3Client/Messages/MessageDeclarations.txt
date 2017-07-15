@@ -197,7 +197,7 @@ Field: virtualserver_port, virtualserver_port, VirtualServerPort, ushort
 Field: virtualserver_priority_speaker_dimm_modificator, virtualserver_priority_speaker_dimm_modificator, PrioritySpeakerDimmModificator, float
 Field: virtualserver_queryclientsonline, virtualserver_queryclientsonline, QueriesOnline, int
 Field: virtualserver_status, virtualserver_status, VirtualServerStatus, string
-Field: virtualserver_unique_identifier, virtualserver_unique_identifier, VirtualServerUid, string
+Field: virtualserver_unique_identifier, virtualserver_unique_identifier, VirtualServerUid, ClientUidT
 Field: virtualserver_uptime, virtualserver_uptime, Uptime, TimeSpan
 Field: virtualserver_version, virtualserver_version, ServerVersion, string
 Field: virtualserver_welcomemessage, virtualserver_welcomemessage, WelcomeMessage, string

@@ -106,8 +106,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public void UnregisterPlugin(Plugin plugin)
 		{
-			IList<BotCommand> commands;
-			if (PluginCommands.TryGetValue(plugin, out commands))
+			if (PluginCommands.TryGetValue(plugin, out IList<BotCommand> commands))
 			{
 				foreach (var com in commands)
 				{
@@ -226,41 +225,37 @@ namespace TS3AudioBot.CommandSystem
 			}
 			// to add a command to CommandGroup will have to treat it as a subcommand
 			// with an empty string as a name
-			else if (subCommand is CommandGroup)
+			else if (subCommand is CommandGroup insertCommand)
 			{
-				var insertCommand = (CommandGroup)subCommand;
 				var noparamCommand = insertCommand.GetCommand(string.Empty);
 
 				if (noparamCommand == null)
 				{
 					insertCommand.AddCommand(string.Empty, com);
-					var botCom = com as BotCommand;
-					if (botCom != null && botCom.NormalParameters > 0)
+					if (com is BotCommand botCom && botCom.NormalParameters > 0)
 						Log.Write(Log.Level.Warning, $"\"{botCom.FullQualifiedName}\" has at least one parameter and won't be reachable due to an overloading function.");
 					return R.OkR;
 				}
 				else
 					return "An empty named function under a group cannot be overloaded.";
 			}
-
-			var funcCom = com as FunctionCommand;
-			if (funcCom == null)
+			
+			if (!(com is FunctionCommand funcCom))
 				return $"The command cannot be inserted into a complex node ({name}).";
 
 			// if we have is a simple function, we need to create a overlaoder
 			// and then add both functions to it
-			if (subCommand is FunctionCommand)
+			if (subCommand is FunctionCommand subFuncCommand)
 			{
 				group.RemoveCommand(name);
 				var overloader = new OverloadedFunctionCommand();
-				overloader.AddCommand((FunctionCommand)subCommand);
+				overloader.AddCommand(subFuncCommand);
 				overloader.AddCommand(funcCom);
 				group.AddCommand(name, overloader);
 			}
 			// if we have a overloaded function, we can simply add it
-			else if (subCommand is OverloadedFunctionCommand)
+			else if (subCommand is OverloadedFunctionCommand insertCommand)
 			{
-				var insertCommand = (OverloadedFunctionCommand)subCommand;
 				insertCommand.AddCommand(funcCom);
 			}
 			else
@@ -294,8 +289,7 @@ namespace TS3AudioBot.CommandSystem
 			// build up the list to our desired node
 			for (int i = 0; i < comPath.Length - 1; i++)
 			{
-				var nextGroup = node.self.GetCommand(comPath[i]) as CommandGroup;
-				if (nextGroup == null)
+				if(!(node.self.GetCommand(comPath[i]) is CommandGroup nextGroup))
 					break;
 
 				node = new CommandUnloadNode
@@ -314,14 +308,13 @@ namespace TS3AudioBot.CommandSystem
 				node.self.RemoveCommand(com);
 			}
 			// here we can delete our command from the overloader
-			else if (subGroup is OverloadedFunctionCommand)
+			else if (subGroup is OverloadedFunctionCommand subOverloadGroup)
 			{
-				((OverloadedFunctionCommand)subGroup).RemoveCommand(com);
+				subOverloadGroup.RemoveCommand(com);
 			}
 			// now to the special case when a command gets inserted with an empty string
-			else if (subGroup is CommandGroup)
+			else if (subGroup is CommandGroup insertGroup)
 			{
-				var insertGroup = (CommandGroup)subGroup;
 				// since we check precisely that only one command and only a simple FunctionCommand
 				// can be added with an empty string, wen can delete it safely this way
 				insertGroup.RemoveCommand(string.Empty);

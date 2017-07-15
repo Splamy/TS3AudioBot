@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -53,7 +53,7 @@ namespace TS3AudioBot.History.Deprecated
 
 		public string ToFileString()
 		{
-			StringBuilder strb = new StringBuilder();
+			var strb = new StringBuilder();
 			// HEX STRINGS
 			strb.Append(AsHex(Id));
 			strb.Append(",");
@@ -85,9 +85,8 @@ namespace TS3AudioBot.History.Deprecated
 			uint userInvId = uint.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 			uint playCount = uint.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 			long dtStamp = long.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-			DateTime dateTime = DateTime.FromFileTime(dtStamp);
-			AudioType audioType;
-			if (!Enum.TryParse(strParts[index++], out audioType))
+			var dateTime = DateTime.FromFileTime(dtStamp);
+			if (!Enum.TryParse(strParts[index++], out AudioType audioType))
 				return null;
 			string resId = Uri.UnescapeDataString(strParts[index++]);
 			string title = Uri.UnescapeDataString(strParts[index++]);

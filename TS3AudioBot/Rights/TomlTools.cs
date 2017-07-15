@@ -25,8 +25,7 @@ namespace TS3AudioBot.Rights
 	{
 		public static T[] GetValues<T>(TomlObject tomlObj)
 		{
-			T retSingleVal;
-			if (TryGetValue(tomlObj, out retSingleVal))
+			if (TryGetValue(tomlObj, out T retSingleVal))
 				return new T[] { retSingleVal };
 			else if (tomlObj.TomlType == TomlObjectType.Array)
 			{
@@ -63,15 +62,33 @@ namespace TS3AudioBot.Rights
 					catch (OverflowException) { }
 				}
 				break;
+
 			case TomlObjectType.Bool:
 			case TomlObjectType.Float:
-			case TomlObjectType.String:
 			case TomlObjectType.DateTime:
 			case TomlObjectType.TimeSpan:
-				var tomlValue = tomlObj as TomlValue<T>;
-				if (tomlValue != null && typeof(T) == tomlValue.Value.GetType())
+				if (tomlObj is TomlValue<T> tomlValue && typeof(T) == tomlValue.Value.GetType())
 				{
 					value = tomlValue.Value;
+					return true;
+				}
+				break;
+
+			case TomlObjectType.String:
+				if (typeof(T).IsEnum)
+				{
+					try
+					{
+						value = (T)Enum.Parse(typeof(T), ((TomlString)tomlObj).Value, true);
+						return true;
+					}
+					catch (ArgumentException) { }
+					catch (OverflowException) { }
+				}
+				else if (typeof(T) == typeof(string))
+				{
+
+					value = ((TomlValue<T>)tomlObj).Value;
 					return true;
 				}
 				break;

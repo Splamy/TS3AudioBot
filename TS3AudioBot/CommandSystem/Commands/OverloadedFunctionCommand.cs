@@ -102,8 +102,7 @@ namespace TS3AudioBot.CommandSystem
 				try
 				{
 					// Find out if this overload works
-					int i;
-					f.FitArguments(info, arguments, returnTypes, out i);
+					f.FitArguments(info, arguments, returnTypes, out var i);
 					fits = true;
 				}
 				catch (CommandException)
