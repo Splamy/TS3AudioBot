@@ -91,6 +91,12 @@ namespace TS3Client
 		ClientChatComposing,
 		ServerGroupList,
 		ServerGroupsByClientId,
+		StartUpload,
+		StartDownload,
+		FileTransfer,
+		FileList,
+		FileListFinished,
+		FileInfo,
 		// TODO: notifyclientchatclosed
 		// TODO: notifyclientpoke
 		// TODO: notifyclientupdated

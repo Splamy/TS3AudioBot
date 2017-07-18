@@ -24,16 +24,6 @@ namespace TS3Client
 		public string Hostname { get; set; }
 		/// <summary>Teamspeak serer port. Usually 9987.</summary>
 		public ushort Port { get; set; }
-		/// <summary>
-		/// <para>As Full Client: The display username.</para>
-		/// <para>As Query Client: The query login name.</para>
-		/// </summary>
-		public string Username { get; set; }
-		/// <summary>
-		/// <para>As Full Client: The server password.</para>
-		/// <para>As Query Client: The query login password.</para>
-		/// </summary>
-		public string Password { get; set; }
 	}
 
 	public class ConnectionDataFull : ConnectionData
@@ -54,5 +44,13 @@ namespace TS3Client
 		/// to be accepted by an official TeamSpeak 3 Server.
 		/// </summary>
 		public VersionSign VersionSign { get; set; } = VersionSign.VER_LIN_3_0_19_4;
+		/// <summary>
+		/// <para>The display username.</para>
+		/// </summary>
+		public string Username { get; set; }
+		/// <summary>
+		/// <para>The server password. Leave null if none.</para>
+		/// </summary>
+		public string Password { get; set; }
 	}
 }

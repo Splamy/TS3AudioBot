@@ -1584,7 +1584,31 @@ namespace TS3AudioBot
 			{
 				setString = "<Sleeping>";
 			}
+
+			if (mainBotData.GenerateStatusAvatar)
+				GenerateStatusImage(setString);
 			return QueryConnection.ChangeDescription(setString);
+		}
+
+		private void GenerateStatusImage(string overrideStr)
+		{
+			using (var bmp = new System.Drawing.Bitmap(300, 200))
+			{
+				using (var graphics = System.Drawing.Graphics.FromImage(bmp))
+				{
+					graphics.DrawString("Now playing: " + overrideStr,
+						System.Drawing.SystemFonts.DefaultFont,
+						System.Drawing.Brushes.Black,
+						new System.Drawing.RectangleF(0, 0, 300, 200));
+				}
+				using (var mem = new MemoryStream())
+				{
+					bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Png);
+					var result = QueryConnection.UploadAvatar(mem);
+					if (!result.Ok)
+						Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Message);
+				}
+			}
 		}
 
 		private static Playlist AutoGetPlaylist(ExecutionInformation info)
@@ -1638,6 +1662,8 @@ namespace TS3AudioBot
 		public string LogFile { get; set; }
 		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
 		public ulong BotGroupId { get; set; }
+		[Info("Generate fancy status images as avatar", "false")]
+		public bool GenerateStatusAvatar { get; set; }
 	}
 #pragma warning restore CS0649
 }

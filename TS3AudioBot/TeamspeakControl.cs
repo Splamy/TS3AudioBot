@@ -334,6 +334,12 @@ namespace TS3AudioBot
 			}
 		}
 
+		public R UploadAvatar(System.IO.Stream stream)
+		{
+			try { tsBaseClient.UploadAvatar(stream); return R.OkR; }
+			catch (Ts3CommandException ts3ex) { return ts3ex.ErrorStatus.ErrorFormat(); }
+		}
+
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing QueryConnection...");

@@ -31,11 +31,14 @@ namespace TS3Client.Messages
 	using ChannelIdT = System.UInt64;
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
+	using TimeSpanSecondsT = System.TimeSpan;
+	using TimeSpanMillisecT = System.TimeSpan;
 
 
-	public sealed class ChannelChanged : INotification
+	public sealed class ChannelChanged : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelChanged;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 
@@ -52,9 +55,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelCreated : INotification
+	public sealed class ChannelCreated : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreated;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 		public ClientIdT InvokerId { get; set; }
@@ -75,7 +79,7 @@ namespace TS3Client.Messages
 		public int MaxFamilyClients { get; set; }
 		public int CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
-		public TimeSpan DeleteDelay { get; set; }
+		public TimeSpanSecondsT DeleteDelay { get; set; }
 		public bool IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsInherited { get; set; }
@@ -107,7 +111,7 @@ namespace TS3Client.Messages
 			case "channel_maxfamilyclients": MaxFamilyClients = CommandDeserializer.DeserializeInt32(value); break;
 			case "channel_codec_latency_factor": CodecLatencyFactor = CommandDeserializer.DeserializeInt32(value); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = CommandDeserializer.DeserializeBool(value); break;
-			case "channel_delete_delay": DeleteDelay = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "channel_delete_delay": DeleteDelay = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = CommandDeserializer.DeserializeBool(value); break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = CommandDeserializer.DeserializeBool(value); break;
 			case "channel_flag_maxfamilyclients_inherited": IsMaxFamilyClientsInherited = CommandDeserializer.DeserializeBool(value); break;
@@ -119,9 +123,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelDeleted : INotification
+	public sealed class ChannelDeleted : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDeleted;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 		public ClientIdT InvokerId { get; set; }
@@ -144,9 +149,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelEdited : INotification
+	public sealed class ChannelEdited : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelEdited;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 		public ClientIdT InvokerId { get; set; }
@@ -167,7 +173,7 @@ namespace TS3Client.Messages
 		public int MaxFamilyClients { get; set; }
 		public int CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
-		public TimeSpan DeleteDelay { get; set; }
+		public TimeSpanSecondsT DeleteDelay { get; set; }
 		public bool IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsInherited { get; set; }
@@ -199,7 +205,7 @@ namespace TS3Client.Messages
 			case "channel_maxfamilyclients": MaxFamilyClients = CommandDeserializer.DeserializeInt32(value); break;
 			case "channel_codec_latency_factor": CodecLatencyFactor = CommandDeserializer.DeserializeInt32(value); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = CommandDeserializer.DeserializeBool(value); break;
-			case "channel_delete_delay": DeleteDelay = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "channel_delete_delay": DeleteDelay = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = CommandDeserializer.DeserializeBool(value); break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = CommandDeserializer.DeserializeBool(value); break;
 			case "channel_flag_maxfamilyclients_inherited": IsMaxFamilyClientsInherited = CommandDeserializer.DeserializeBool(value); break;
@@ -211,9 +217,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelList : INotification
+	public sealed class ChannelList : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelList;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 		public ChannelIdT ChannelParentId { get; set; }
@@ -230,7 +237,7 @@ namespace TS3Client.Messages
 		public bool HasPassword { get; set; }
 		public int CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
-		public TimeSpan DeleteDelay { get; set; }
+		public TimeSpanSecondsT DeleteDelay { get; set; }
 		public bool IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsInherited { get; set; }
@@ -261,7 +268,7 @@ namespace TS3Client.Messages
 			case "channel_flag_password": HasPassword = CommandDeserializer.DeserializeBool(value); break;
 			case "channel_codec_latency_factor": CodecLatencyFactor = CommandDeserializer.DeserializeInt32(value); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = CommandDeserializer.DeserializeBool(value); break;
-			case "channel_delete_delay": DeleteDelay = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "channel_delete_delay": DeleteDelay = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = CommandDeserializer.DeserializeBool(value); break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = CommandDeserializer.DeserializeBool(value); break;
 			case "channel_flag_maxfamilyclients_inherited": IsMaxFamilyClientsInherited = CommandDeserializer.DeserializeBool(value); break;
@@ -276,9 +283,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelListFinished : INotification
+	public sealed class ChannelListFinished : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelListFinished;
+		
 
 
 		public void SetField(string name, string value)
@@ -287,9 +295,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelMoved : INotification
+	public sealed class ChannelMoved : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMoved;
+		
 
 		public int Order { get; set; }
 		public ChannelIdT ChannelId { get; set; }
@@ -318,9 +327,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelPasswordChanged : INotification
+	public sealed class ChannelPasswordChanged : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPasswordChanged;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 
@@ -337,9 +347,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelSubscribed : INotification
+	public sealed class ChannelSubscribed : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribed;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 
@@ -356,9 +367,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelUnsubscribed : INotification
+	public sealed class ChannelUnsubscribed : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribed;
+		
 
 		public ChannelIdT ChannelId { get; set; }
 
@@ -375,9 +387,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientChannelGroupChanged : INotification
+	public sealed class ClientChannelGroupChanged : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChannelGroupChanged;
+		
 
 		public ClientIdT InvokerId { get; set; }
 		public string InvokerName { get; set; }
@@ -404,9 +417,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientChatComposing : INotification
+	public sealed class ClientChatComposing : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatComposing;
+		
 
 		public ClientIdT ClientId { get; set; }
 		public ClientUidT ClientUid { get; set; }
@@ -425,9 +439,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientEnterView : INotification
+	public sealed class ClientEnterView : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientEnterView;
+		
 
 		public MoveReason Reason { get; set; }
 		public ChannelIdT TargetChannelId { get; set; }
@@ -516,12 +531,13 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientLeftView : INotification
+	public sealed class ClientLeftView : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientLeftView;
+		
 
 		public string ReasonMessage { get; set; }
-		public TimeSpan BanTime { get; set; }
+		public TimeSpanSecondsT BanTime { get; set; }
 		public MoveReason Reason { get; set; }
 		public ChannelIdT TargetChannelId { get; set; }
 		public ClientIdT InvokerId { get; set; }
@@ -537,7 +553,7 @@ namespace TS3Client.Messages
 			{
 
 			case "reasonmsg": ReasonMessage = CommandDeserializer.DeserializeString(value); break;
-			case "bantime": BanTime = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "bantime": BanTime = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "reasonid": Reason = CommandDeserializer.DeserializeEnum<MoveReason>(value); break;
 			case "ctid": TargetChannelId = CommandDeserializer.DeserializeUInt64(value); break;
 			case "invokerid": InvokerId = CommandDeserializer.DeserializeUInt16(value); break;
@@ -551,9 +567,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientMoved : INotification
+	public sealed class ClientMoved : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientMoved;
+		
 
 		public ClientIdT ClientId { get; set; }
 		public MoveReason Reason { get; set; }
@@ -580,9 +597,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientNeededPermissions : INotification
+	public sealed class ClientNeededPermissions : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientNeededPermissions;
+		
 
 		public PermissionId PermissionId { get; set; }
 		public int PermissionValue { get; set; }
@@ -601,9 +619,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientServerGroupAdded : INotification
+	public sealed class ClientServerGroupAdded : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroupAdded;
+		
 
 		public string Name { get; set; }
 		public ServerGroupIdT ServerGroupId { get; set; }
@@ -632,9 +651,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ConnectionInfoRequest : INotification
+	public sealed class ConnectionInfoRequest : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ConnectionInfoRequest;
+		
 
 
 		public void SetField(string name, string value)
@@ -643,9 +663,32 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class InitIvExpand : INotification
+	public sealed class FileListFinished : INotification  
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FileListFinished;
+		
+
+		public ChannelIdT ChannelId { get; set; }
+		public string Path { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "path": Path = CommandDeserializer.DeserializeString(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class InitIvExpand : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand;
+		
 
 		public string Alpha { get; set; }
 		public string Beta { get; set; }
@@ -666,9 +709,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class InitServer : INotification
+	public sealed class InitServer : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InitServer;
+		
 
 		public string WelcomeMessage { get; set; }
 		public string ServerPlatform { get; set; }
@@ -692,7 +736,7 @@ namespace TS3Client.Messages
 		public ChannelGroupIdT DefaultChannelGroup { get; set; }
 		public string HostbannerUrl { get; set; }
 		public string HostbannerGfxUrl { get; set; }
-		public TimeSpan HostbannerGfxInterval { get; set; }
+		public TimeSpanSecondsT HostbannerGfxInterval { get; set; }
 		public float PrioritySpeakerDimmModificator { get; set; }
 		public string HostbuttonTooltip { get; set; }
 		public string HostbuttonUrl { get; set; }
@@ -700,7 +744,7 @@ namespace TS3Client.Messages
 		public string PhoneticName { get; set; }
 		public ulong IconId { get; set; }
 		public HostBannerMode HostbannerMode { get; set; }
-		public TimeSpan DefaultTempChannelDeleteDelay { get; set; }
+		public TimeSpanSecondsT DefaultTempChannelDeleteDelay { get; set; }
 
 		public void SetField(string name, string value)
 		{
@@ -730,7 +774,7 @@ namespace TS3Client.Messages
 			case "virtualserver_default_channel_group": DefaultChannelGroup = CommandDeserializer.DeserializeUInt64(value); break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = CommandDeserializer.DeserializeString(value); break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = CommandDeserializer.DeserializeString(value); break;
-			case "virtualserver_hostbanner_gfx_interval": HostbannerGfxInterval = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "virtualserver_hostbanner_gfx_interval": HostbannerGfxInterval = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "virtualserver_priority_speaker_dimm_modificator": PrioritySpeakerDimmModificator = CommandDeserializer.DeserializeSingle(value); break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = CommandDeserializer.DeserializeString(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = CommandDeserializer.DeserializeString(value); break;
@@ -738,16 +782,17 @@ namespace TS3Client.Messages
 			case "virtualserver_name_phonetic": PhoneticName = CommandDeserializer.DeserializeString(value); break;
 			case "virtualserver_icon_id": IconId = CommandDeserializer.DeserializeUInt64(value); break;
 			case "virtualserver_hostbanner_mode": HostbannerMode = CommandDeserializer.DeserializeEnum<HostBannerMode>(value); break;
-			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			
 			}
 
 		}
 	}
 
-	public sealed class ServerEdited : INotification
+	public sealed class ServerEdited : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerEdited;
+		
 
 		public ClientIdT InvokerId { get; set; }
 		public string InvokerName { get; set; }
@@ -759,7 +804,7 @@ namespace TS3Client.Messages
 		public ChannelGroupIdT DefaultChannelGroup { get; set; }
 		public string HostbannerUrl { get; set; }
 		public string HostbannerGfxUrl { get; set; }
-		public TimeSpan HostbannerGfxInterval { get; set; }
+		public TimeSpanSecondsT HostbannerGfxInterval { get; set; }
 		public float PrioritySpeakerDimmModificator { get; set; }
 		public string HostbuttonTooltip { get; set; }
 		public string HostbuttonUrl { get; set; }
@@ -767,7 +812,7 @@ namespace TS3Client.Messages
 		public string PhoneticName { get; set; }
 		public ulong IconId { get; set; }
 		public HostBannerMode HostbannerMode { get; set; }
-		public TimeSpan DefaultTempChannelDeleteDelay { get; set; }
+		public TimeSpanSecondsT DefaultTempChannelDeleteDelay { get; set; }
 
 		public void SetField(string name, string value)
 		{
@@ -785,7 +830,7 @@ namespace TS3Client.Messages
 			case "virtualserver_default_channel_group": DefaultChannelGroup = CommandDeserializer.DeserializeUInt64(value); break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = CommandDeserializer.DeserializeString(value); break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = CommandDeserializer.DeserializeString(value); break;
-			case "virtualserver_hostbanner_gfx_interval": HostbannerGfxInterval = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "virtualserver_hostbanner_gfx_interval": HostbannerGfxInterval = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "virtualserver_priority_speaker_dimm_modificator": PrioritySpeakerDimmModificator = CommandDeserializer.DeserializeSingle(value); break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = CommandDeserializer.DeserializeString(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = CommandDeserializer.DeserializeString(value); break;
@@ -793,16 +838,17 @@ namespace TS3Client.Messages
 			case "virtualserver_name_phonetic": PhoneticName = CommandDeserializer.DeserializeString(value); break;
 			case "virtualserver_icon_id": IconId = CommandDeserializer.DeserializeUInt64(value); break;
 			case "virtualserver_hostbanner_mode": HostbannerMode = CommandDeserializer.DeserializeEnum<HostBannerMode>(value); break;
-			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			
 			}
 
 		}
 	}
 
-	public sealed class ServerGroupList : INotification
+	public sealed class ServerGroupList : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupList;
+		
 
 		public ServerGroupIdT ServerGroupId { get; set; }
 		public string Name { get; set; }
@@ -837,32 +883,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupsByClientId : INotification
-	{
-		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientId;
-
-		public string Name { get; set; }
-		public ServerGroupIdT ServerGroupId { get; set; }
-		public ClientDbIdT ClientDbId { get; set; }
-
-		public void SetField(string name, string value)
-		{
-
-			switch(name)
-			{
-
-			case "name": Name = CommandDeserializer.DeserializeString(value); break;
-			case "sgid": ServerGroupId = CommandDeserializer.DeserializeUInt64(value); break;
-			case "cldbid": ClientDbId = CommandDeserializer.DeserializeUInt64(value); break;
-			
-			}
-
-		}
-	}
-
-	public sealed class TextMessage : INotification
+	public sealed class TextMessage : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TextMessage;
+		
 
 		public TextMessageTargetMode Target { get; set; }
 		public string Message { get; set; }
@@ -889,9 +913,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenUsed : INotification
+	public sealed class TokenUsed : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenUsed;
+		
 
 		public string UsedToken { get; set; }
 		public string TokenCustomSet { get; set; }
@@ -920,9 +945,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class CommandError : INotification
+	public sealed class CommandError : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.Error;
+		
 
 		public Ts3ErrorCode Id { get; set; }
 		public string Message { get; set; }
@@ -947,13 +973,14 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelData : IResponse
+	public sealed class ChannelData :   IResponse
 	{
+		
 		public string ReturnCode { get; set; }
 
 		public ChannelIdT Id { get; set; }
 		public ChannelIdT ParentChannelId { get; set; }
-		public TimeSpan DurationEmpty { get; set; }
+		public TimeSpanSecondsT DurationEmpty { get; set; }
 		public int TotalFamilyClients { get; set; }
 		public int TotalClients { get; set; }
 		public int NeededSubscribePower { get; set; }
@@ -979,7 +1006,7 @@ namespace TS3Client.Messages
 
 			case "id": Id = CommandDeserializer.DeserializeUInt64(value); break;
 			case "pid": ParentChannelId = CommandDeserializer.DeserializeUInt64(value); break;
-			case "seconds_empty": DurationEmpty = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "seconds_empty": DurationEmpty = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "total_clients_family": TotalFamilyClients = CommandDeserializer.DeserializeInt32(value); break;
 			case "total_clients": TotalClients = CommandDeserializer.DeserializeInt32(value); break;
 			case "channel_needed_subscribe_power": NeededSubscribePower = CommandDeserializer.DeserializeInt32(value); break;
@@ -1002,8 +1029,9 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientData : IResponse
+	public sealed class ClientData :   IResponse
 	{
+		
 		public string ReturnCode { get; set; }
 
 		public ClientIdT ClientId { get; set; }
@@ -1031,8 +1059,9 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbData : IResponse
+	public sealed class ClientDbData :   IResponse
 	{
+		
 		public string ReturnCode { get; set; }
 
 		public string LastIp { get; set; }
@@ -1084,11 +1113,12 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientInfo : IResponse
+	public sealed class ClientInfo :   IResponse
 	{
+		
 		public string ReturnCode { get; set; }
 
-		public long ClientIdleTimeMs { get; set; }
+		public TimeSpanMillisecT ClientIdleTime { get; set; }
 		public string ClientVersion { get; set; }
 		public string ClientVersionSign { get; set; }
 		public string ClientPlattform { get; set; }
@@ -1106,7 +1136,7 @@ namespace TS3Client.Messages
 		public long ConnectionBandwidtReceivedLastSecond { get; set; }
 		public long ConnectionBandwidtSentLastMinute { get; set; }
 		public long ConnectionBandwidtReceivedLastMinute { get; set; }
-		public long ConnectionTimeMs { get; set; }
+		public TimeSpanMillisecT ConnectionTime { get; set; }
 		public string Ip { get; set; }
 		public ChannelIdT ChannelId { get; set; }
 		public ClientUidT Uid { get; set; }
@@ -1154,7 +1184,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_idle_time": ClientIdleTimeMs = CommandDeserializer.DeserializeInt64(value); break;
+			case "client_idle_time": ClientIdleTime = CommandDeserializer.DeserializeTimeSpanMillisec(value); break;
 			case "client_version": ClientVersion = CommandDeserializer.DeserializeString(value); break;
 			case "client_version_sign": ClientVersionSign = CommandDeserializer.DeserializeString(value); break;
 			case "client_platform": ClientPlattform = CommandDeserializer.DeserializeString(value); break;
@@ -1172,7 +1202,7 @@ namespace TS3Client.Messages
 			case "connection_bandwidth_received_last_second_total": ConnectionBandwidtReceivedLastSecond = CommandDeserializer.DeserializeInt64(value); break;
 			case "connection_bandwidth_sent_last_minute_total": ConnectionBandwidtSentLastMinute = CommandDeserializer.DeserializeInt64(value); break;
 			case "connection_bandwidth_received_last_minute_total": ConnectionBandwidtReceivedLastMinute = CommandDeserializer.DeserializeInt64(value); break;
-			case "connection_connected_time": ConnectionTimeMs = CommandDeserializer.DeserializeInt64(value); break;
+			case "connection_connected_time": ConnectionTime = CommandDeserializer.DeserializeTimeSpanMillisec(value); break;
 			case "connection_client_ip": Ip = CommandDeserializer.DeserializeString(value); break;
 			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
 			case "client_unique_identifier": Uid = CommandDeserializer.DeserializeString(value); break;
@@ -1219,37 +1249,15 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientServerGroup : IResponse
+	public sealed class ServerData :   IResponse
 	{
-		public string ReturnCode { get; set; }
-
-		public string Name { get; set; }
-		public ServerGroupIdT ServerGroupId { get; set; }
-		public ClientDbIdT ClientDbId { get; set; }
-
-		public void SetField(string name, string value)
-		{
-
-			switch(name)
-			{
-
-			case "name": Name = CommandDeserializer.DeserializeString(value); break;
-			case "sgid": ServerGroupId = CommandDeserializer.DeserializeUInt64(value); break;
-			case "cldbid": ClientDbId = CommandDeserializer.DeserializeUInt64(value); break;
-			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
-			}
-
-		}
-	}
-
-	public sealed class ServerData : IResponse
-	{
+		
 		public string ReturnCode { get; set; }
 
 		public int ClientsOnline { get; set; }
 		public int QueriesOnline { get; set; }
 		public ClientIdT MaxClients { get; set; }
-		public TimeSpan Uptime { get; set; }
+		public TimeSpanSecondsT Uptime { get; set; }
 		public bool Autostart { get; set; }
 		public string MachineId { get; set; }
 		public string ServerName { get; set; }
@@ -1267,7 +1275,7 @@ namespace TS3Client.Messages
 			case "virtualserver_clientsonline": ClientsOnline = CommandDeserializer.DeserializeInt32(value); break;
 			case "virtualserver_queryclientsonline": QueriesOnline = CommandDeserializer.DeserializeInt32(value); break;
 			case "virtualserver_maxclients": MaxClients = CommandDeserializer.DeserializeUInt16(value); break;
-			case "virtualserver_uptime": Uptime = CommandDeserializer.DeserializeTimeSpan(value); break;
+			case "virtualserver_uptime": Uptime = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			case "virtualserver_autostart": Autostart = CommandDeserializer.DeserializeBool(value); break;
 			case "virtualserver_machine_id": MachineId = CommandDeserializer.DeserializeString(value); break;
 			case "virtualserver_name": ServerName = CommandDeserializer.DeserializeString(value); break;
@@ -1281,8 +1289,29 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class WhoAmI : IResponse
+	public sealed class ServerGroupAddResponse :   IResponse
 	{
+		
+		public string ReturnCode { get; set; }
+
+		public ServerGroupIdT ServerGroupId { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "sgid": ServerGroupId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
+			}
+
+		}
+	}
+
+	public sealed class WhoAmI :   IResponse
+	{
+		
 		public string ReturnCode { get; set; }
 
 		public ClientIdT ClientId { get; set; }
@@ -1320,11 +1349,14 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupAddResponse : IResponse
+	public sealed class ClientServerGroup : INotification , IResponse
 	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientId;
 		public string ReturnCode { get; set; }
 
+		public string Name { get; set; }
 		public ServerGroupIdT ServerGroupId { get; set; }
+		public ClientDbIdT ClientDbId { get; set; }
 
 		public void SetField(string name, string value)
 		{
@@ -1332,8 +1364,170 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
+			case "name": Name = CommandDeserializer.DeserializeString(value); break;
 			case "sgid": ServerGroupId = CommandDeserializer.DeserializeUInt64(value); break;
-			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
+			case "cldbid": ClientDbId = CommandDeserializer.DeserializeUInt64(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class FileDownload : INotification , IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.StartDownload;
+		public string ReturnCode { get; set; }
+
+		public ushort ClientFileTransferId { get; set; }
+		public ushort ServerFileTransferId { get; set; }
+		public string FileTransferKey { get; set; }
+		public ushort Port { get; set; }
+		public long Size { get; set; }
+		public string Message { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "clientftfid": ClientFileTransferId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "serverftfid": ServerFileTransferId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "ftkey": FileTransferKey = CommandDeserializer.DeserializeString(value); break;
+			case "port": Port = CommandDeserializer.DeserializeUInt16(value); break;
+			case "size": Size = CommandDeserializer.DeserializeInt64(value); break;
+			case "msg": Message = CommandDeserializer.DeserializeString(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class FileUpload : INotification , IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.StartUpload;
+		public string ReturnCode { get; set; }
+
+		public ushort ClientFileTransferId { get; set; }
+		public ushort ServerFileTransferId { get; set; }
+		public string FileTransferKey { get; set; }
+		public ushort Port { get; set; }
+		public long SeekPosistion { get; set; }
+		public string Message { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "clientftfid": ClientFileTransferId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "serverftfid": ServerFileTransferId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "ftkey": FileTransferKey = CommandDeserializer.DeserializeString(value); break;
+			case "port": Port = CommandDeserializer.DeserializeUInt16(value); break;
+			case "seekpos": SeekPosistion = CommandDeserializer.DeserializeInt64(value); break;
+			case "msg": Message = CommandDeserializer.DeserializeString(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class FileTransfer : INotification , IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FileTransfer;
+		public string ReturnCode { get; set; }
+
+		public ClientIdT ClientId { get; set; }
+		public string Path { get; set; }
+		public string Name { get; set; }
+		public long Size { get; set; }
+		public long SizeDone { get; set; }
+		public ushort ClientFileTransferId { get; set; }
+		public ushort ServerFileTransferId { get; set; }
+		public ulong Sender { get; set; }
+		public int Status { get; set; }
+		public float CurrentSpeed { get; set; }
+		public float AverageSpeed { get; set; }
+		public TimeSpanSecondsT Runtime { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "clid": ClientId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "path": Path = CommandDeserializer.DeserializeString(value); break;
+			case "name": Name = CommandDeserializer.DeserializeString(value); break;
+			case "size": Size = CommandDeserializer.DeserializeInt64(value); break;
+			case "sizedone": SizeDone = CommandDeserializer.DeserializeInt64(value); break;
+			case "clientftfid": ClientFileTransferId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "serverftfid": ServerFileTransferId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "sender": Sender = CommandDeserializer.DeserializeUInt64(value); break;
+			case "status": Status = CommandDeserializer.DeserializeInt32(value); break;
+			case "current_speed": CurrentSpeed = CommandDeserializer.DeserializeSingle(value); break;
+			case "average_speed": AverageSpeed = CommandDeserializer.DeserializeSingle(value); break;
+			case "runtime": Runtime = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class FileList : INotification , IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FileList;
+		public string ReturnCode { get; set; }
+
+		public ChannelIdT ChannelId { get; set; }
+		public string Path { get; set; }
+		public string Name { get; set; }
+		public long Size { get; set; }
+		public DateTime DateTime { get; set; }
+		public bool IsFile { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "path": Path = CommandDeserializer.DeserializeString(value); break;
+			case "name": Name = CommandDeserializer.DeserializeString(value); break;
+			case "size": Size = CommandDeserializer.DeserializeInt64(value); break;
+			case "datetime": DateTime = CommandDeserializer.DeserializeDateTime(value); break;
+			case "type": IsFile = CommandDeserializer.DeserializeBool(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class FileInfoTs : INotification , IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FileInfo;
+		public string ReturnCode { get; set; }
+
+		public ChannelIdT ChannelId { get; set; }
+		public string Path { get; set; }
+		public string Name { get; set; }
+		public long Size { get; set; }
+		public DateTime DateTime { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "path": Path = CommandDeserializer.DeserializeString(value); break;
+			case "name": Name = CommandDeserializer.DeserializeString(value); break;
+			case "size": Size = CommandDeserializer.DeserializeInt64(value); break;
+			case "datetime": DateTime = CommandDeserializer.DeserializeDateTime(value); break;
+			
 			}
 
 		}
@@ -1372,6 +1566,12 @@ namespace TS3Client.Messages
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
 			case "notifyservergrouplist": return NotificationType.ServerGroupList;
 			case "notifyservergroupsbyclientid": return NotificationType.ServerGroupsByClientId;
+			case "notifystartupload": return NotificationType.StartUpload;
+			case "notifystartdownload": return NotificationType.StartDownload;
+			case "notifyfiletransferlist": return NotificationType.FileTransfer;
+			case "notifyfilelist": return NotificationType.FileList;
+			case "notifyfilelistfinished": return NotificationType.FileListFinished;
+			case "notifyfileinfo": return NotificationType.FileInfo;
 			default: return NotificationType.Unknown;
 			}
 		}
@@ -1406,7 +1606,13 @@ namespace TS3Client.Messages
 			case NotificationType.ConnectionInfoRequest: return new ConnectionInfoRequest();
 			case NotificationType.ClientServerGroupAdded: return new ClientServerGroupAdded();
 			case NotificationType.ServerGroupList: return new ServerGroupList();
-			case NotificationType.ServerGroupsByClientId: return new ServerGroupsByClientId();
+			case NotificationType.ServerGroupsByClientId: return new ClientServerGroup();
+			case NotificationType.StartUpload: return new FileUpload();
+			case NotificationType.StartDownload: return new FileDownload();
+			case NotificationType.FileTransfer: return new FileTransfer();
+			case NotificationType.FileList: return new FileList();
+			case NotificationType.FileListFinished: return new FileListFinished();
+			case NotificationType.FileInfo: return new FileInfoTs();
 			case NotificationType.Unknown:
 			default: throw new ArgumentOutOfRangeException(nameof(name));
 			}

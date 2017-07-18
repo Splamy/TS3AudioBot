@@ -75,6 +75,7 @@ namespace TS3Client.Full
 			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 			if (conDataFull.VersionSign == null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
 			connectionDataFull = conDataFull;
+			ConnectionData = conData;
 
 			Disconnect();
 
@@ -193,6 +194,12 @@ namespace TS3Client.Full
 			case NotificationType.ClientChatComposing: break;
 			case NotificationType.ServerGroupList: break;
 			case NotificationType.ServerGroupsByClientId: break;
+			case NotificationType.StartUpload: break;
+			case NotificationType.StartDownload: break;
+			case NotificationType.FileTransfer: break;
+			case NotificationType.FileList: break;
+			case NotificationType.FileListFinished: break;
+			case NotificationType.FileInfo: break;
 			// special
 			case NotificationType.Error:
 				lock (StatusLock)
@@ -419,8 +426,7 @@ namespace TS3Client.Full
 				cmd.AppendParameter(new CommandParameter("type", (int)type.Value));
 			var answer = SendSpecialCommand(cmd, NotificationType.ServerGroupList).Notifications
 				.Cast<ServerGroupList>()
-				.Where(x => x.Name == name)
-				.FirstOrDefault();
+				.FirstOrDefault(x => x.Name == name);
 			if (answer == null)
 				throw new Ts3CommandException(new CommandError() { Id = Ts3ErrorCode.custom_error, Message = "Missing answer" });
 			else
@@ -434,15 +440,55 @@ namespace TS3Client.Full
 					new List<ICommandPart> { new CommandParameter("cldbid", clDbId) }),
 				NotificationType.ServerGroupsByClientId)
 				.Notifications
-				.Cast<ServerGroupsByClientId>()
-				.Where(x => x.ClientDbId == clDbId)
-				.Select(x => new ClientServerGroup()
-				{
-					ClientDbId = x.ClientDbId,
-					Name = x.Name,
-					ServerGroupId = x.ServerGroupId,
-				});
+				.Cast<ClientServerGroup>()
+				.Where(x => x.ClientDbId == clDbId);
 		}
+
+		public override FileUpload FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
+			long fileSize, bool overwrite, bool resume)
+			=> SendSpecialCommand(new Ts3Command("ftinitupload", new List<ICommandPart>() {
+			new CommandParameter("cid", channelId),
+			new CommandParameter("name", path),
+			new CommandParameter("cpw", channelPassword),
+			new CommandParameter("clientftfid", clientTransferId),
+			new CommandParameter("size", fileSize),
+			new CommandParameter("overwrite", overwrite),
+			new CommandParameter("resume", resume) }), NotificationType.StartUpload)
+			.Notifications
+			.Cast<FileUpload>()
+			.First();
+
+		public override FileDownload FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
+			long seek)
+			=> SendSpecialCommand(new Ts3Command("ftinitdownload", new List<ICommandPart>() {
+			new CommandParameter("cid", channelId),
+			new CommandParameter("name", path),
+			new CommandParameter("cpw", channelPassword),
+			new CommandParameter("clientftfid", clientTransferId),
+			new CommandParameter("seekpos", seek) }), NotificationType.StartDownload)
+			.Notifications
+			.Cast<FileDownload>()
+			.First();
+
+		public override IEnumerable<FileTransfer> FileTransferList()
+			=> SendSpecialCommand(new Ts3Command("ftlist"), NotificationType.FileTransfer)
+			.Notifications.Cast<FileTransfer>();
+
+		public override IEnumerable<FileList> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+			=> SendSpecialCommand(new Ts3Command("ftgetfilelist", new List<ICommandPart>() {
+			new CommandParameter("cid", channelId),
+			new CommandParameter("path", path),
+			new CommandParameter("cpw", channelPassword) }), NotificationType.FileList)
+			.Notifications
+			.Cast<FileList>();
+
+		public override IEnumerable<FileInfoTs> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+			=> SendSpecialCommand(new Ts3Command("ftgetfileinfo", new List<ICommandPart>() {
+			new CommandParameter("cid", channelId),
+			new CommandParameter("cpw", channelPassword),
+			new CommandMultiParameter("name", path) }), NotificationType.FileInfo)
+			.Notifications
+			.Cast<FileInfoTs>();
 
 		#endregion
 

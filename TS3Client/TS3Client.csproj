@@ -51,6 +51,7 @@
     <Compile Include="ConnectionData.cs" />
     <Compile Include="DisconnectEventArgs.cs" />
     <Compile Include="DocumentedEnums.cs" />
+    <Compile Include="FileTransferManager.cs" />
     <Compile Include="Full\BasePacket.cs" />
     <Compile Include="Full\IdentityData.cs" />
     <Compile Include="Full\NetworkStats.cs" />

@@ -11,7 +11,6 @@ Conv: ulong   , CommandDeserializer.DeserializeUInt64  (value);
 Conv: float   , CommandDeserializer.DeserializeSingle  (value);
 Conv: double  , CommandDeserializer.DeserializeDouble  (value);
 Conv: string  , CommandDeserializer.DeserializeString  (value);
-Conv: TimeSpan, CommandDeserializer.DeserializeTimeSpan(value);
 Conv: DateTime, CommandDeserializer.DeserializeDateTime(value);
 : Enums
 Conv: Codec                      , CommandDeserializer.DeserializeEnum<Codec>(value);
@@ -26,20 +25,23 @@ Conv: GroupNamingMode            , CommandDeserializer.DeserializeEnum<GroupNami
 Conv: Ts3ErrorCode               , (Ts3ErrorCode)CommandDeserializer.DeserializeUInt16(value);
 Conv: PermissionId               , (PermissionId)CommandDeserializer.DeserializeInt32(value);
 : Custom Id Names
-Conv: ClientUidT      , CommandDeserializer.DeserializeString(value);
-Conv: ClientDbIdT     , CommandDeserializer.DeserializeUInt64(value);
-Conv: ClientIdT       , CommandDeserializer.DeserializeUInt16(value);
-Conv: ChannelIdT      , CommandDeserializer.DeserializeUInt64(value);
-Conv: ServerGroupIdT  , CommandDeserializer.DeserializeUInt64(value);
-Conv: ChannelGroupIdT , CommandDeserializer.DeserializeUInt64(value);
-Conv: ServerGroupIdT[], CommandDeserializer.DeserializeArray(value, CommandDeserializer.DeserializeUInt64);
+Conv: ClientUidT       , CommandDeserializer.DeserializeString(value);
+Conv: ClientDbIdT      , CommandDeserializer.DeserializeUInt64(value);
+Conv: ClientIdT        , CommandDeserializer.DeserializeUInt16(value);
+Conv: ChannelIdT       , CommandDeserializer.DeserializeUInt64(value);
+Conv: ServerGroupIdT   , CommandDeserializer.DeserializeUInt64(value);
+Conv: ChannelGroupIdT  , CommandDeserializer.DeserializeUInt64(value);
+Conv: ServerGroupIdT[] , CommandDeserializer.DeserializeArray(value, CommandDeserializer.DeserializeUInt64);
+Conv: TimeSpanSecondsT , CommandDeserializer.DeserializeTimeSpanSeconds(value);
+Conv: TimeSpanMillisecT, CommandDeserializer.DeserializeTimeSpanMillisec(value);
 
 
 : <Mapping name>, <Teamspeak param name>, <Field name>, <Field type>
 Field: aclid, aclid, ClientId, ClientIdT
 Field: acn, acn, ClientName, string
 Field: alpha, alpha, Alpha, string
-Field: bantime, bantime, BanTime, TimeSpan
+Field: average_speed, average_speed, AverageSpeed, float
+Field: bantime, bantime, BanTime, TimeSpanSecondsT
 Field: beta, beta, Beta, string
 Field: cfid, cfid, SourceChannelId, ChannelIdT
 Field: cgi, cgi, ChannelGroupIndex, ChannelGroupIdT
@@ -48,7 +50,7 @@ Field: channel_codec, channel_codec, Codec, Codec
 Field: channel_codec_is_unencrypted, channel_codec_is_unencrypted, IsUnencrypted, bool
 Field: channel_codec_latency_factor, channel_codec_latency_factor, CodecLatencyFactor, int
 Field: channel_codec_quality, channel_codec_quality, CodecQuality, int
-Field: channel_delete_delay, channel_delete_delay, DeleteDelay, TimeSpan
+Field: channel_delete_delay, channel_delete_delay, DeleteDelay, TimeSpanSecondsT
 Field: channel_flag_default, channel_flag_default, IsDefaultChannel, bool
 Field: channel_flag_maxclients_unlimited, channel_flag_maxclients_unlimited, IsMaxClientsUnlimited, bool
 Field: channel_flag_maxfamilyclients_inherited, channel_flag_maxfamilyclients_inherited, IsMaxFamilyClientsInherited, bool
@@ -86,7 +88,7 @@ Field: client_description, client_description, Description, string
 Field: client_flag_avatar, client_flag_avatar, AvatarFlag, string, ?? string ??
 Field: client_icon_id, client_icon_id, IconId, long
 Field: client_id, client_id, ClientId, ClientIdT
-Field: client_idle_time, client_idle_time, ClientIdleTimeMs, long
+Field: client_idle_time, client_idle_time, ClientIdleTime, TimeSpanMillisecT
 Field: client_input_hardware, client_input_hardware, IsInputHardware, bool
 Field: client_input_muted, client_input_muted, IsInputMuted, bool
 Field: client_is_channel_commander, client_is_channel_commander, IsChannelCommander, bool
@@ -120,6 +122,7 @@ Field: client_unique_identifier, client_unique_identifier, Uid, ClientUidT
 Field: client_unread_messages, client_unread_messages, UnreadMessages, int
 Field: client_version, client_version, ClientVersion, string
 Field: client_version_sign, client_version_sign, ClientVersionSign, string
+Field: clientftfid, clientftfid, ClientFileTransferId, ushort
 Field: cluid, cluid, ClientUid, ClientUidT
 Field: connection_bandwidth_received_last_minute_total, connection_bandwidth_received_last_minute_total, ConnectionBandwidtReceivedLastMinute, long
 Field: connection_bandwidth_received_last_second_total, connection_bandwidth_received_last_second_total, ConnectionBandwidtReceivedLastSecond, long
@@ -128,13 +131,17 @@ Field: connection_bandwidth_sent_last_second_total, connection_bandwidth_sent_la
 Field: connection_bytes_received_total, connection_bytes_received_total, ConnectionBytesReceived, long
 Field: connection_bytes_sent_total, connection_bytes_sent_total, ConnectionBytesSent, long
 Field: connection_client_ip, connection_client_ip, Ip, string
-Field: connection_connected_time, connection_connected_time, ConnectionTimeMs, long
+Field: connection_connected_time, connection_connected_time, ConnectionTime, TimeSpanMillisecT
 Field: connection_filetransfer_bandwidth_received, connection_filetransfer_bandwidth_received, ConnectionFiletransferReceived, long
 Field: connection_filetransfer_bandwidth_sent, connection_filetransfer_bandwidth_sent, ConnectionFiletransferSent, long
 Field: connection_packets_received_total, connection_packets_received_total, ConnectionPacketsReceived, long
 Field: connection_packets_sent_total, connection_packets_sent_total, ConnectionPacketsSent, long
 Field: cpid, cpid, ChannelParentId, ChannelIdT
 Field: ctid, ctid, TargetChannelId, ChannelIdT
+Field: current_speed, current_speed, CurrentSpeed, float
+Field: datetime, datetime, DateTime, DateTime
+Field: ft_type, type, IsFile, bool
+Field: ftkey, ftkey, FileTransferKey, string
 Field: iconid, iconid, IconId, int
 Field: id, id, Id, ChannelIdT
 Field: invokerid, invokerid, InvokerId, ClientIdT
@@ -149,16 +156,28 @@ Field: name, name, Name, string
 Field: namemode, namemode, NamingMode, GroupNamingMode
 Field: omega, omega, Omega, string
 Field: order, order, Order, int
+Field: path, path, Path, string
 Field: permid, permid, PermissionId, PermissionId
 Field: permvalue, permvalue, PermissionValue, int
 Field: pid, pid, ParentChannelId, ChannelIdT
+Field: port, port, Port, ushort
 Field: pv, pv, Pv, uint
 Field: reasonid, reasonid, Reason, MoveReason
 Field: reasonmsg, reasonmsg, ReasonMessage, string
+: ?? type
+Field: runtime, runtime, Runtime, TimeSpanSecondsT
 Field: savedb, savedb, GroupIsPermanent, bool
-Field: seconds_empty, seconds_empty, DurationEmpty, TimeSpan
+Field: seconds_empty, seconds_empty, DurationEmpty, TimeSpanSecondsT
+Field: seekpos, seekpos, SeekPosistion, long
+: ?? datatype
+Field: sender, sender, Sender, ulong
+Field: serverftfid, serverftfid, ServerFileTransferId, ushort
 Field: sgid, sgid, ServerGroupId, ServerGroupIdT
+Field: size, size, Size, long
+Field: sizedone, sizedone, SizeDone, long
 Field: sortid, sortid, SortId, int
+:: ?? datatype/enum
+Field: status, status, Status, int
 Field: target, target, TargetClientId, ClientIdT
 Field: targetmode, targetmode, Target, TextMessageTargetMode
 Field: token, token, UsedToken, string
@@ -170,13 +189,13 @@ Field: total_clients_family, total_clients_family, TotalFamilyClients, int
 Field: type, type, GroupType, PermissionGroupDatabaseType
 Field: virtualserver_ask_for_privilegekey, virtualserver_ask_for_privilegekey, AskForPrivilege, bool
 Field: virtualserver_autostart, virtualserver_autostart, Autostart, bool
-Field: virtualserver_channel_temp_delete_delay_default, virtualserver_channel_temp_delete_delay_default, DefaultTempChannelDeleteDelay, TimeSpan
+Field: virtualserver_channel_temp_delete_delay_default, virtualserver_channel_temp_delete_delay_default, DefaultTempChannelDeleteDelay, TimeSpanSecondsT
 Field: virtualserver_clientsonline, virtualserver_clientsonline, ClientsOnline, int
 Field: virtualserver_codec_encryption_mode, virtualserver_codec_encryption_mode, CodecEncryptionMode, CodecEncryptionMode
 Field: virtualserver_created, virtualserver_created, ServerCreated, long
 Field: virtualserver_default_channel_group, virtualserver_default_channel_group, DefaultChannelGroup, ChannelGroupIdT
 Field: virtualserver_default_server_group, virtualserver_default_server_group, DefaultServerGroup, ServerGroupIdT
-Field: virtualserver_hostbanner_gfx_interval, virtualserver_hostbanner_gfx_interval, HostbannerGfxInterval, TimeSpan
+Field: virtualserver_hostbanner_gfx_interval, virtualserver_hostbanner_gfx_interval, HostbannerGfxInterval, TimeSpanSecondsT
 Field: virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_url, HostbannerGfxUrl, string
 Field: virtualserver_hostbanner_mode, virtualserver_hostbanner_mode, HostbannerMode, HostBannerMode
 Field: virtualserver_hostbanner_url, virtualserver_hostbanner_url, HostbannerUrl, string
@@ -198,7 +217,7 @@ Field: virtualserver_priority_speaker_dimm_modificator, virtualserver_priority_s
 Field: virtualserver_queryclientsonline, virtualserver_queryclientsonline, QueriesOnline, int
 Field: virtualserver_status, virtualserver_status, VirtualServerStatus, string
 Field: virtualserver_unique_identifier, virtualserver_unique_identifier, VirtualServerUid, ClientUidT
-Field: virtualserver_uptime, virtualserver_uptime, Uptime, TimeSpan
+Field: virtualserver_uptime, virtualserver_uptime, Uptime, TimeSpanSecondsT
 Field: virtualserver_version, virtualserver_version, ServerVersion, string
 Field: virtualserver_welcomemessage, virtualserver_welcomemessage, WelcomeMessage, string
 : Error stuff
@@ -236,6 +255,12 @@ Notify: notifyconnectioninforequest, ConnectionInfoRequest
 Notify: notifyservergroupclientadded, ClientServerGroupAdded
 Notify: notifyservergrouplist, ServerGroupList
 Notify: notifyservergroupsbyclientid, ServerGroupsByClientId
+Notify: notifystartupload, StartUpload
+Notify: notifystartdownload, StartDownload
+Notify: notifyfiletransferlist, FileTransfer
+Notify: notifyfilelist, FileList
+Notify: notifyfilelistfinished, FileListFinished
+Notify: notifyfileinfo, FileInfo
 
 
 : <Class name>, <Teamspeak notification name | Empty = Response>, <Field param mappings>*
@@ -258,11 +283,11 @@ Msg: ClientMoved, notifyclientmoved, clid, reasonid, ctid, invokerid, invokernam
 Msg: ClientNeededPermissions, notifyclientneededpermissions, permid, permvalue
 Msg: ClientServerGroupAdded, notifyservergroupclientadded, name, sgid, invokerid, invokername, invokeruid, clid, cluid
 Msg: ConnectionInfoRequest, notifyconnectioninforequest
+Msg: FileListFinished, notifyfilelistfinished, cid, path
 Msg: InitIvExpand, initivexpand, alpha, beta, omega
 Msg: InitServer, initserver, virtualserver_welcomemessage, virtualserver_platform, virtualserver_version, virtualserver_maxclients, virtualserver_created, virtualserver_hostmessage, virtualserver_hostmessage_mode, virtualserver_id, virtualserver_ip, virtualserver_ask_for_privilegekey, acn, aclid, pv, lt, client_talk_power, client_needed_serverquery_view_power, virtualserver_name, virtualserver_codec_encryption_mode, virtualserver_default_server_group, virtualserver_default_channel_group, virtualserver_hostbanner_url, virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_interval, virtualserver_priority_speaker_dimm_modificator, virtualserver_hostbutton_tooltip, virtualserver_hostbutton_url, virtualserver_hostbutton_gfx_url, virtualserver_name_phonetic, virtualserver_icon_id, virtualserver_hostbanner_mode, virtualserver_channel_temp_delete_delay_default
 Msg: ServerEdited, notifyserveredited, invokerid, invokername, invokeruid, reasonid, virtualserver_name, virtualserver_codec_encryption_mode, virtualserver_default_server_group, virtualserver_default_channel_group, virtualserver_hostbanner_url, virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_interval, virtualserver_priority_speaker_dimm_modificator, virtualserver_hostbutton_tooltip, virtualserver_hostbutton_url, virtualserver_hostbutton_gfx_url, virtualserver_name_phonetic, virtualserver_icon_id, virtualserver_hostbanner_mode, virtualserver_channel_temp_delete_delay_default
 Msg: ServerGroupList, notifyservergrouplist, sgid, name, type, iconid, savedb, sortid, namemode, n_modifyp, n_member_addp, n_member_remove_p
-Msg: ServerGroupsByClientId, notifyservergroupsbyclientid, name, sgid, cldbid
 Msg: TextMessage, notifytextmessage, targetmode, msg, target, invokerid, invokername, invokeruid
 Msg: TokenUsed, notifytokenused, token, tokencustomset, token1, token2, clid, cldbid, cluid
 Msg: CommandError, error, error_id, msg, failed_permid, return_code, extra_msg
@@ -271,7 +296,13 @@ Msg: ChannelData,, id, pid, seconds_empty, total_clients_family, total_clients, 
 Msg: ClientData,, clid, client_unique_identifier, cid, client_database_id, client_nickname, client_type
 Msg: ClientDbData,, client_lastip, clid, client_unique_identifier, cid, client_database_id, client_nickname, client_type, client_flag_avatar, client_description, client_icon_id, client_created, client_lastconnected, client_totalconnections, client_month_bytes_uploaded, client_month_bytes_downloaded, client_total_bytes_uploaded, client_total_bytes_downloaded, client_base64HashClientUID
 Msg: ClientInfo,, client_idle_time, client_version, client_version_sign, client_platform, client_default_channel, client_security_hash, client_login_name, client_default_token, connection_filetransfer_bandwidth_sent, connection_filetransfer_bandwidth_received, connection_packets_sent_total, connection_packets_received_total, connection_bytes_sent_total, connection_bytes_received_total, connection_bandwidth_sent_last_second_total, connection_bandwidth_received_last_second_total, connection_bandwidth_sent_last_minute_total, connection_bandwidth_received_last_minute_total, connection_connected_time, connection_client_ip, cid, client_unique_identifier, client_database_id, client_nickname, client_type, client_input_muted, client_output_muted, client_outputonly_muted, client_input_hardware, client_output_hardware, client_meta_data, client_is_recording, client_channel_group_id, client_channel_group_inherited_channel_id, client_servergroups, client_away, client_away_message, client_talk_power, client_talk_request, client_talk_request_msg, client_is_talker, client_is_priority_speaker, client_unread_messages, client_nickname_phonetic, client_needed_serverquery_view_power, client_is_channel_commander, client_country, client_badges, client_created, client_lastconnected, client_totalconnections, client_month_bytes_uploaded, client_month_bytes_downloaded, client_total_bytes_uploaded, client_total_bytes_downloaded, client_base64HashClientUID, client_flag_avatar, client_description, client_icon_id
-Msg: ClientServerGroup,, name, sgid, cldbid
 Msg: ServerData,, virtualserver_clientsonline, virtualserver_queryclientsonline, virtualserver_maxclients, virtualserver_uptime, virtualserver_autostart, virtualserver_machine_id, virtualserver_name, virtualserver_id, virtualserver_unique_identifier, virtualserver_port, virtualserver_status
-Msg: WhoAmI,, client_id, client_channel_id, client_nickname, client_database_id, client_login_name, client_origin_server_id, virtualserver_id, virtualserver_unique_identifier, virtualserver_port, virtualserver_status, client_unique_identifier
 Msg: ServerGroupAddResponse,, sgid
+Msg: WhoAmI,, client_id, client_channel_id, client_nickname, client_database_id, client_login_name, client_origin_server_id, virtualserver_id, virtualserver_unique_identifier, virtualserver_port, virtualserver_status, client_unique_identifier
+:Hybrid
+Msg: ClientServerGroup, +notifyservergroupsbyclientid, name, sgid, cldbid
+Msg: FileDownload, +notifystartdownload, clientftfid, serverftfid, ftkey, port, size, msg
+Msg: FileUpload, +notifystartupload, clientftfid, serverftfid, ftkey, port, seekpos, msg
+Msg: FileTransfer, +notifyfiletransferlist, clid, path, name, size, sizedone, clientftfid, serverftfid, sender, status, current_speed, average_speed, runtime
+Msg: FileList, +notifyfilelist, cid, path, name, size, datetime, ft_type
+Msg: FileInfoTs, +notifyfileinfo, cid, path, name, size, datetime

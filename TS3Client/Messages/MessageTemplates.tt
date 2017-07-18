@@ -31,6 +31,8 @@ namespace TS3Client.Messages
 	using ChannelIdT = System.UInt64;
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
+	using TimeSpanSecondsT = System.TimeSpan;
+	using TimeSpanMillisecT = System.TimeSpan;
 
 <#
 	string declFilePath = Host.ResolvePath("MessageDeclarations.txt");
@@ -58,16 +60,18 @@ namespace TS3Client.Messages
 			msgDict.Add(param[0], new GenMsg { className=param[0], ntfyName=param[1] } );
 
 			bool isNotify = !string.IsNullOrEmpty(param[1]);
+			bool isResponse = string.IsNullOrEmpty(param[1]) || param[1].StartsWith("+");
 			GenNotify genNotify = null;
 			if(isNotify)
 			{
-				genNotify = ntfyDict[param[1]];
+				genNotify = ntfyDict[param[1].TrimStart('+')];
 				genNotify.assocMsg = msgDict[param[0]];
 			}
 #>
-	public sealed class <#= param[0] #> : <#= isNotify ? "INotification" : "IResponse" #>
+	public sealed class <#= param[0] #> : <#= isNotify ? "INotification" : "" #> <#= (isNotify && isResponse) ? "," : "" #> <#= isResponse ? "IResponse" : "" #>
 	{
-		public <#= isNotify ? "NotificationType NotifyType { get; } = NotificationType." + genNotify.enumName + ";" : "string ReturnCode { get; set; }" #>
+		<#= isNotify ? "public NotificationType NotifyType { get; } = NotificationType." + genNotify.enumName + ";" : "" #>
+		<#= isResponse ? "public string ReturnCode { get; set; }" : "" #>
 <#
 			for(int i = 2; i < param.Length; i++)
 			{

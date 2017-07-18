@@ -26,6 +26,9 @@
 
 		public abstract bool Connected { get; }
 		public abstract ClientType ClientType { get; }
+		public ConnectionData ConnectionData { get; protected set; }
+		private FileTransferManager ftm;
+		public FileTransferManager FileTransferManager => ftm ?? (ftm = new FileTransferManager(this));
 
 		public abstract void Connect(ConnectionData conData);
 		public abstract void Disconnect();
@@ -176,6 +179,52 @@
 			new CommandParameter("sgid", serverGroupId),
 			new CommandParameter("cldbid", clientDbId));
 
+		public void FileTransferStop(ushort serverTransferId, bool delete)
+			=> Send("ftstop",
+			new CommandParameter("serverftfid", serverTransferId),
+			new CommandParameter("delete", delete));
+
+		public void FileTransferDeleteFile(ChannelIdT channelId, string[] path, string channelPassword = "")
+			=> Send("ftdeletefile",
+			new CommandParameter("cid", channelId),
+			new CommandParameter("cpw", channelPassword),
+			new CommandMultiParameter("name", path));
+
+		public void FileTransferCreateDirectory(ChannelIdT channelId, string path, string channelPassword = "")
+			=> Send("ftcreatedir",
+			new CommandParameter("cid", channelId),
+			new CommandParameter("dirname", path),
+			new CommandParameter("cpw", channelPassword));
+
+		public void FileTransferRenameFile(ChannelIdT channelId, string oldName, string channelPassword, string newName,
+			ChannelIdT? targetChannel = null, string targetChannelPassword = "")
+		{
+			var cmd = new Ts3Command("ftrenamefile", new List<ICommandPart> {
+				new CommandParameter("cid", channelId),
+				new CommandParameter("oldname", oldName),
+				new CommandParameter("newname", newName),
+				new CommandParameter("cpw", channelPassword) });
+			if (targetChannel.HasValue)
+			{
+				cmd.AppendParameter(new CommandParameter("tcid", targetChannel.Value));
+				cmd.AppendParameter(new CommandParameter("tcpw", targetChannelPassword));
+			}
+			SendCommand<ResponseVoid>(cmd);
+		}
+
+		public void UploadAvatar(System.IO.Stream image)
+		{
+			var token = FileTransferManager.UploadFile(image, 0, "/avatar", true);
+			FileTransferManager.Wait(token);
+			image.Seek(0, System.IO.SeekOrigin.Begin);
+			using (var md5dig = System.Security.Cryptography.MD5.Create())
+			{
+				var md5bytes = md5dig.ComputeHash(image);
+				var md5 = string.Join("", md5bytes.Select(x => x.ToString("x2")));
+				Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
+			}
+		}
+
 		// Base Stuff for splitted up commands
 		// Some commands behave differently on query and full client
 
@@ -185,6 +234,18 @@
 
 		/// <summary>Displays all server groups the client specified with <paramref name="clDbId"/> is currently residing in.</summary>
 		public abstract IEnumerable<ClientServerGroup> ServerGroupsByClientDbId(ClientDbIdT clDbId);
+
+		public abstract FileUpload FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
+			ushort clientTransferId, long fileSize, bool overwrite, bool resume);
+
+		public abstract FileDownload FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
+			ushort clientTransferId, long seek);
+
+		public abstract IEnumerable<FileTransfer> FileTransferList();
+
+		public abstract IEnumerable<FileList> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "");
+
+		public abstract IEnumerable<FileInfoTs> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
 
 		#endregion
 	}

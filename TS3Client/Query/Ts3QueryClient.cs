@@ -24,6 +24,13 @@ namespace TS3Client.Query
 	using System.IO;
 	using System.Net.Sockets;
 
+	using ClientUidT = System.String;
+	using ClientDbIdT = System.UInt64;
+	using ClientIdT = System.UInt16;
+	using ChannelIdT = System.UInt64;
+	using ServerGroupIdT = System.UInt64;
+	using ChannelGroupIdT = System.UInt64;
+
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
 		private readonly object SendQueueLock = new object();
@@ -54,6 +61,7 @@ namespace TS3Client.Query
 		{
 			try { tcpClient.Connect(conData.Hostname, conData.Port); }
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
+			ConnectionData = conData;
 
 			tcpStream = tcpClient.GetStream();
 			tcpReader = new StreamReader(tcpStream, Util.Encoder);
@@ -64,6 +72,7 @@ namespace TS3Client.Query
 
 			dispatcher.Init(NetworkLoop, InvokeEvent);
 			OnConnected?.Invoke(this, new EventArgs());
+			dispatcher.EnterEventLoop();
 		}
 
 		public override void Disconnect()
@@ -142,13 +151,13 @@ namespace TS3Client.Query
 
 		private static readonly string[] targetTypeString = new[] { "textprivate", "textchannel", "textserver", "channel", "server" };
 
-		public void RegisterNotification(TextMessageTargetMode target, ulong channel) 
+		public void RegisterNotification(TextMessageTargetMode target, ChannelIdT channel)
 			=> RegisterNotification(targetTypeString[(int)target], channel);
 
-		public void RegisterNotification(ReasonIdentifier target, ulong channel) 
+		public void RegisterNotification(ReasonIdentifier target, ChannelIdT channel)
 			=> RegisterNotification(targetTypeString[(int)target], channel);
 
-		private void RegisterNotification(string target, ulong channel)
+		private void RegisterNotification(string target, ChannelIdT channel)
 		{
 			var ev = new CommandParameter("event", target.ToLowerInvariant());
 			if (target == "channel")
@@ -177,6 +186,41 @@ namespace TS3Client.Query
 		public override IEnumerable<ClientServerGroup> ServerGroupsByClientDbId(ulong clDbId)
 			=> Send<ClientServerGroup>("servergroupsbyclientid",
 			new CommandParameter("cldbid", clDbId));
+
+		public override FileUpload FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
+			ushort clientTransferId, long fileSize, bool overwrite, bool resume)
+			=> Send<FileUpload>("ftinitupload",
+			new CommandParameter("cid", channelId),
+			new CommandParameter("name", path),
+			new CommandParameter("cpw", channelPassword),
+			new CommandParameter("clientftfid", clientTransferId),
+			new CommandParameter("size", fileSize),
+			new CommandParameter("overwrite", overwrite),
+			new CommandParameter("resume", resume)).First();
+
+		public override FileDownload FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
+			ushort clientTransferId, long seek)
+			=> Send<FileDownload>("ftinitdownload",
+			new CommandParameter("cid", channelId),
+			new CommandParameter("name", path),
+			new CommandParameter("cpw", channelPassword),
+			new CommandParameter("clientftfid", clientTransferId),
+			new CommandParameter("seekpos", seek)).First();
+
+		public override IEnumerable<FileTransfer> FileTransferList()
+			=> Send<FileTransfer>("ftlist");
+
+		public override IEnumerable<FileList> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+			=> Send<FileList>("ftgetfilelist",
+			new CommandParameter("cid", channelId),
+			new CommandParameter("path", path),
+			new CommandParameter("cpw", channelPassword));
+
+		public override IEnumerable<FileInfoTs> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+			=> Send<FileInfoTs>("ftgetfileinfo",
+			new CommandParameter("cid", channelId),
+			new CommandParameter("cpw", channelPassword),
+			new CommandMultiParameter("name", path));
 
 		#endregion
 

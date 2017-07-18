@@ -115,7 +115,8 @@ namespace TS3Client.Commands
 		public static float DeserializeSingle(string v) => float.Parse(v, CultureInfo.InvariantCulture);
 		public static double DeserializeDouble(string v) => double.Parse(v, CultureInfo.InvariantCulture);
 		public static string DeserializeString(string v) => Ts3String.Unescape(v);
-		public static TimeSpan DeserializeTimeSpan(string v) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture));
+		public static TimeSpan DeserializeTimeSpanSeconds(string v) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture));
+		public static TimeSpan DeserializeTimeSpanMillisec(string v) => TimeSpan.FromMilliseconds(double.Parse(v, CultureInfo.InvariantCulture));
 		public static DateTime DeserializeDateTime(string v) => Util.UnixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture));
 		public static T DeserializeEnum<T>(string v) where T : struct
 		{
