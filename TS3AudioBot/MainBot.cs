@@ -1607,9 +1607,8 @@ namespace TS3AudioBot
 				using (var bmp = thumresult.Value)
 				{
 					using (var graphics = Graphics.FromImage(bmp))
+					using (var gp = new System.Drawing.Drawing2D.GraphicsPath())
 					{
-						var gp = new System.Drawing.Drawing2D.GraphicsPath();
-
 						gp.AddString("Now playing: " + startEvent.ResourceData.ResourceTitle,
 							FontFamily.GenericSansSerif, 0, 15,
 							new RectangleF(0, 0, bmp.Width, bmp.Height), avatarTextFormat);
@@ -1618,7 +1617,7 @@ namespace TS3AudioBot
 						graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
 						graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 						graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-						
+
 						graphics.DrawPath(avatarTextOutline, gp);
 						graphics.FillPath(Brushes.White, gp);
 					}
