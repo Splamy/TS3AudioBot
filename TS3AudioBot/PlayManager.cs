@@ -146,11 +146,7 @@ namespace TS3AudioBot
 				int index = PlaylistManager.InsertToFreelist(new PlaylistItem(play.BaseData, meta));
 				PlaylistManager.Index = index;
 			}
-
-			// Log our resource in the history
-			ulong? owner = meta.ResourceOwnerDbId ?? invoker.DatabaseId;
-			HistoryManager.LogAudioResource(new HistorySaveData(play.BaseData, owner));
-
+			
 			CurrentPlayData = playInfo; // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, CurrentPlayData);
 
@@ -255,6 +251,7 @@ namespace TS3AudioBot
 		public PlayResource PlayResource { get; }
 		public AudioResource ResourceData => PlayResource.BaseData;
 		public MetaData MetaData { get; }
+		public ulong? Owner => MetaData.ResourceOwnerDbId ?? Invoker.DatabaseId;
 
 		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta)
 		{

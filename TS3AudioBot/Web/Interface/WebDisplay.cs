@@ -89,7 +89,7 @@ namespace TS3AudioBot.Web.Interface
 		private WebSite GetWebsite(Uri url)
 		{
 			if (url == null) return Site404;
-			
+
 			if (sites.TryGetValue(url.AbsolutePath, out var site))
 				return site;
 
@@ -397,30 +397,35 @@ namespace TS3AudioBot.Web.Interface
 
 	class WebHistorySearch : WebSite
 	{
-		private readonly HistoryManager history;
+		private readonly MainBot bot;
+		private HistoryManager History => bot.HistoryManager;
 
-		public WebHistorySearch(string sitePath, MainBot bot) : base(sitePath)
-		{
-			history = bot.HistoryManager;
-		}
+		public WebHistorySearch(string sitePath, MainBot bot) : base(sitePath) { this.bot = bot; }
 
 		public override PreparedData PrepareSite(UriExt url)
 		{
 			var search = ParseSearchQuery(url);
-			var result = history.Search(search).Select(e => new
+			try
 			{
-				id = e.Id,
-				atype = e.AudioResource.AudioType,
-				playcnt = e.PlayCount,
-				title = HttpUtility.HtmlEncode(e.AudioResource.ResourceTitle),
-				time = e.Timestamp,
-				userid = e.UserInvokeId
-			});
+				var result = History.Search(search).Select(e => new
+				{
+					id = e.Id,
+					atype = e.AudioResource.AudioType,
+					playcnt = e.PlayCount,
+					title = HttpUtility.HtmlEncode(e.AudioResource.ResourceTitle),
+					time = e.Timestamp,
+					userid = e.UserInvokeId
+				});
 
-			string serialized = Util.Serializer.Serialize(result);
-			var dataArray = Encoding.GetBytes(serialized);
+				string serialized = Util.Serializer.Serialize(result);
+				var dataArray = Encoding.GetBytes(serialized);
 
-			return new PreparedData(dataArray.Length, dataArray);
+				return new PreparedData(dataArray.Length, dataArray);
+			}
+			catch (CommandSystem.CommandException)
+			{
+				return new PreparedData(0, new byte[0]);
+			}
 		}
 
 		public static SeachQuery ParseSearchQuery(UriExt url)
@@ -447,27 +452,35 @@ namespace TS3AudioBot.Web.Interface
 
 	class WebHistorySearchList : WebSite
 	{
-		private readonly HistoryManager history;
+		private readonly MainBot bot;
+		private HistoryManager History => bot.HistoryManager;
 
-		public WebHistorySearchList(string sitePath, MainBot bot) : base(sitePath) { history = bot.HistoryManager; }
+		public WebHistorySearchList(string sitePath, MainBot bot) : base(sitePath) { this.bot = bot; }
 
 		public override PreparedData PrepareSite(UriExt url)
 		{
-			var search = WebHistorySearch.ParseSearchQuery(url);
-			var result = history.Search(search);
-
-			var strb = new StringBuilder();
-			foreach (var entry in result)
+			try
 			{
-				strb.Append("<tr><td>").Append(entry.Id)
-					.Append("</td><td>").Append(entry.UserInvokeId)
-					.Append("</td><td class=\"fillwrap\">").Append(HttpUtility.HtmlEncode(entry.AudioResource.ResourceTitle))
-					.Append("</td><td>Options</td></tr>");
-			}
-			string finString = strb.ToString();
-			byte[] finBlock = Encoding.GetBytes(finString);
+				var search = WebHistorySearch.ParseSearchQuery(url);
+				var result = History.Search(search);
 
-			return new PreparedData(finString.Length, finBlock);
+				var strb = new StringBuilder();
+				foreach (var entry in result)
+				{
+					strb.Append("<tr><td>").Append(entry.Id)
+						.Append("</td><td>").Append(entry.UserInvokeId)
+						.Append("</td><td class=\"fillwrap\">").Append(HttpUtility.HtmlEncode(entry.AudioResource.ResourceTitle))
+						.Append("</td><td>Options</td></tr>");
+				}
+				string finString = strb.ToString();
+				byte[] finBlock = Encoding.GetBytes(finString);
+
+				return new PreparedData(finBlock.Length, finBlock);
+			}
+			catch (CommandSystem.CommandException)
+			{
+				return new PreparedData(0, new byte[0]);
+			}
 		}
 	}
 

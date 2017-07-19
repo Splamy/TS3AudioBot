@@ -68,7 +68,8 @@ namespace TS3AudioBot
 		public PlaylistManager PlaylistManager { get; private set; }
 		public TeamspeakControl QueryConnection { get; private set; }
 		public SessionManager SessionManager { get; private set; }
-		public HistoryManager HistoryManager { get; private set; }
+		private HistoryManager historyManager = null;
+		public HistoryManager HistoryManager => historyManager ?? throw new CommandException("History has not been enabled", CommandExceptionReason.NotSupported);
 		public ResourceFactoryManager FactoryManager { get; private set; }
 		public WebManager WebManager { get; private set; }
 		public PlayManager PlayManager { get; private set; }
@@ -158,7 +159,8 @@ namespace TS3AudioBot
 			PlayerConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
 			SessionManager = new SessionManager();
-			HistoryManager = new HistoryManager(hmd);
+			if (hmd.EnableHistory)
+				historyManager = new HistoryManager(hmd);
 			PluginManager = new PluginManager(this, pmd);
 			PlayManager = new PlayManager(this);
 			WebManager = new WebManager(this, webd);
@@ -188,6 +190,9 @@ namespace TS3AudioBot
 			// In own favor update the own status text to the current song title
 			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
 			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
+			// Log our resource in the history
+			if (hmd.EnableHistory)
+				PlayManager.AfterResourceStarted += (s, e) => HistoryManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Owner));
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
@@ -1636,18 +1641,18 @@ namespace TS3AudioBot
 
 			PlayManager.Stop();
 
-			PlayerConnection.Dispose(); // before: logStream,
+			PlayerConnection?.Dispose(); // before: logStream,
 			PlayerConnection = null;
 
-			QueryConnection.Dispose(); // before: logStream,
+			QueryConnection?.Dispose(); // before: logStream,
 			QueryConnection = null;
 
-			HistoryManager.Dispose(); // before: logStream,
-			HistoryManager = null;
+			historyManager?.Dispose(); // before: logStream,
+			historyManager = null;
 
 			TickPool.Close(); // before:
 
-			FactoryManager.Dispose(); // before:
+			FactoryManager?.Dispose(); // before:
 			FactoryManager = null;
 
 			logStream?.Dispose();  // before:

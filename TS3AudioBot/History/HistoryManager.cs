@@ -317,6 +317,8 @@ namespace TS3AudioBot.History
 
 	public class HistoryManagerData : ConfigData
 	{
+		[Info("Allows to enable or disable history features completely to save resources.", "true")]
+		public bool EnableHistory { get; set; }
 		[Info("The Path to the history database file", "history.db")]
 		public string HistoryFile { get; set; }
 		[Info("Whether or not deleted history ids should be filled up with new songs", "true")]
