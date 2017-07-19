@@ -17,13 +17,10 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Helper;
+	using System.Drawing;
 
-	public interface IPlaylistFactory : IFactory
+	public interface IThumbnailFactory : IFactory
 	{
-		string SubCommandName { get; }
-
-		bool MatchLink(string uri);
-
-		R<Playlist> GetPlaylist(string url);
+		R<Image> GetThumbnail(PlayResource playResource);
 	}
 }

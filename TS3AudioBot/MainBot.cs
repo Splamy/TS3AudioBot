@@ -18,6 +18,7 @@ namespace TS3AudioBot
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Drawing;
 	using System.Globalization;
 	using System.IO;
 	using System.Linq;
@@ -79,6 +80,8 @@ namespace TS3AudioBot
 		public RightsManager RightsManager { get; private set; }
 
 		public bool QuizMode { get; set; }
+		private StringFormat avatarTextFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near };
+		private Pen avatarTextOutline = new Pen(Color.Black, 4) { LineJoin = System.Drawing.Drawing2D.LineJoin.Round };
 
 		public MainBot()
 		{
@@ -173,16 +176,10 @@ namespace TS3AudioBot
 			FactoryManager = new ResourceFactoryManager();
 			var mediaFactory = new MediaFactory();
 			FactoryManager.AddFactory(mediaFactory, CommandManager);
-			var youtubeFactory = new YoutubeFactory(yfd);
-			FactoryManager.AddFactory(youtubeFactory, CommandManager);
-			var soundcloudFactory = new SoundcloudFactory();
-			FactoryManager.AddFactory(soundcloudFactory, CommandManager);
+			FactoryManager.AddFactory(new YoutubeFactory(yfd), CommandManager);
+			FactoryManager.AddFactory(new SoundcloudFactory(), CommandManager);
 			FactoryManager.AddFactory(new TwitchFactory(), CommandManager);
 			FactoryManager.DefaultFactorty = mediaFactory;
-
-			PlaylistManager.AddFactory(youtubeFactory, CommandManager);
-			PlaylistManager.AddFactory(mediaFactory, CommandManager);
-			PlaylistManager.AddFactory(soundcloudFactory, CommandManager);
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
@@ -193,6 +190,9 @@ namespace TS3AudioBot
 			// Log our resource in the history
 			if (hmd.EnableHistory)
 				PlayManager.AfterResourceStarted += (s, e) => HistoryManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Owner));
+			// Update our thumbnail
+			PlayManager.AfterResourceStarted += GenerateStatusImage;
+			PlayManager.AfterResourceStopped += GenerateStatusImage;
 			// Register callback for all messages happening
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
@@ -820,7 +820,7 @@ namespace TS3AudioBot
 		[Command("list get", "<link> Imports a playlist form an other plattform like youtube etc.")]
 		public JsonObject CommandListGet(ExecutionInformation info, string link)
 		{
-			var playlist = info.Session.Bot.PlaylistManager.LoadPlaylistFrom(link).UnwrapThrow();
+			var playlist = info.Session.Bot.FactoryManager.LoadPlaylistFrom(link).UnwrapThrow();
 
 			playlist.CreatorDbId = info.InvokerData.DatabaseId;
 			info.Session.Set<PlaylistManager, Playlist>(playlist);
@@ -1590,26 +1590,52 @@ namespace TS3AudioBot
 				setString = "<Sleeping>";
 			}
 
-			if (mainBotData.GenerateStatusAvatar)
-				GenerateStatusImage(setString);
 			return QueryConnection.ChangeDescription(setString);
 		}
 
-		private void GenerateStatusImage(string overrideStr)
+		private void GenerateStatusImage(object sender, EventArgs e)
 		{
-			using (var bmp = new System.Drawing.Bitmap(300, 200))
+			if (!mainBotData.GenerateStatusAvatar)
+				return;
+
+			if (e is PlayInfoEventArgs startEvent)
 			{
-				using (var graphics = System.Drawing.Graphics.FromImage(bmp))
+				var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
+				if (!thumresult.Ok)
+					return;
+
+				using (var bmp = thumresult.Value)
 				{
-					graphics.DrawString("Now playing: " + overrideStr,
-						System.Drawing.SystemFonts.DefaultFont,
-						System.Drawing.Brushes.Black,
-						new System.Drawing.RectangleF(0, 0, 300, 200));
+					using (var graphics = Graphics.FromImage(bmp))
+					{
+						var gp = new System.Drawing.Drawing2D.GraphicsPath();
+
+						gp.AddString("Now playing: " + startEvent.ResourceData.ResourceTitle,
+							FontFamily.GenericSansSerif, 0, 15,
+							new RectangleF(0, 0, bmp.Width, bmp.Height), avatarTextFormat);
+
+						graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
+						graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+						graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+						graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+						
+						graphics.DrawPath(avatarTextOutline, gp);
+						graphics.FillPath(Brushes.White, gp);
+					}
+					using (var mem = new MemoryStream())
+					{
+						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Png);
+						var result = QueryConnection.UploadAvatar(mem);
+						if (!result.Ok)
+							Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Message);
+					}
 				}
-				using (var mem = new MemoryStream())
+			}
+			else
+			{
+				using (var sleepPic = Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png"))
 				{
-					bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Png);
-					var result = QueryConnection.UploadAvatar(mem);
+					var result = QueryConnection.UploadAvatar(sleepPic);
 					if (!result.Ok)
 						Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Message);
 				}
@@ -1632,6 +1658,8 @@ namespace TS3AudioBot
 			if (!isDisposed) isDisposed = true;
 			else return;
 			Log.Write(Log.Level.Info, "Exiting...");
+
+			avatarTextOutline.Dispose();
 
 			WebManager?.Dispose(); // before: logStream,
 			WebManager = null;
@@ -1667,7 +1695,7 @@ namespace TS3AudioBot
 		public string LogFile { get; set; }
 		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
 		public ulong BotGroupId { get; set; }
-		[Info("Generate fancy status images as avatar", "false")]
+		[Info("Generate fancy status images as avatar", "true")]
 		public bool GenerateStatusAvatar { get; set; }
 	}
 #pragma warning restore CS0649

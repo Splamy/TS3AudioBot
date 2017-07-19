@@ -16,14 +16,10 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
+	using System;
 
-	public interface IPlaylistFactory : IFactory
+	public interface IFactory : IDisposable
 	{
-		string SubCommandName { get; }
-
-		bool MatchLink(string uri);
-
-		R<Playlist> GetPlaylist(string url);
+		AudioType FactoryFor { get; }
 	}
 }

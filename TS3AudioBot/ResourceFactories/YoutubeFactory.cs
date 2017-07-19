@@ -25,8 +25,9 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
+	using System.Drawing;
 
-	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory
+	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
 		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
@@ -56,8 +57,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
-			string resulthtml;
-			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
+			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
 				return RResultCode.NoConnection.ToString();
 
 			var videoTypes = new List<VideoData>();
@@ -242,8 +242,7 @@ namespace TS3AudioBot.ResourceFactories
 							+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
 							+ "&key=" + data.ApiKey);
 
-				string response;
-				if (!WebWrapper.DownloadString(out response, queryString))
+				if (!WebWrapper.DownloadString(out string response, queryString))
 					return "Web response error";
 				var parsed = Util.Serializer.Deserialize<JSON_PlaylistItems>(response);
 				var videoItems = parsed.items;
@@ -276,8 +275,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public static string LoadAlternative(string id)
 		{
-			string resulthtml;
-			if (!WebWrapper.DownloadString(out resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
+			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
 				return "No con";
 
 			int indexof = resulthtml.IndexOf("ytplayer.config =");
@@ -348,27 +346,65 @@ namespace TS3AudioBot.ResourceFactories
 			return new PlayResource(url, resource.WithName(title));
 		}
 
+		public R<Image> GetThumbnail(PlayResource playResource)
+		{
+			if (!WebWrapper.DownloadString(out string response,
+				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={data.ApiKey}")))
+				return "No connection";
+			var parsed = Util.Serializer.Deserialize<JSON_PlaylistItems>(response);
+
+			var imgurl = new Uri(parsed.items[0].snippet.thumbnails.medium.url);
+			Image img = null;
+			var resresult = WebWrapper.GetResponse(imgurl, (webresp) =>
+			{
+				using (var stream = webresp.GetResponseStream())
+				{
+					img = Image.FromStream(stream);
+				}
+			});
+			if (resresult != ValidateCode.Ok)
+				return "Error while reading image";
+			return img;
+		}
+
 		public void Dispose() { }
 
 #pragma warning disable CS0649
 		private class JSON_PlaylistItems
 		{
 			public string nextPageToken;
-			public Item[] items;
+			public JSON_Item[] items;
 
-			public class Item
+			public class JSON_Item
 			{
-				public ContentDetails contentDetails;
-				public Snippet snippet;
+				public JSON_ContentDetails contentDetails;
+				public JSON_Snippet snippet;
 
-				public class ContentDetails
+				public class JSON_ContentDetails
 				{
 					public string videoId;
 				}
 
-				public class Snippet
+				public class JSON_Snippet
 				{
 					public string title;
+					public JSON_ThumbnailList thumbnails;
+
+					public class JSON_ThumbnailList
+					{
+						public JSON_Thumbnail @default;
+						public JSON_Thumbnail medium;
+						public JSON_Thumbnail high;
+						public JSON_Thumbnail standard;
+						public JSON_Thumbnail maxres;
+
+						public class JSON_Thumbnail
+						{
+							public string url;
+							public int heigth;
+							public int width;
+						}
+					}
 				}
 			}
 		}
@@ -394,6 +430,13 @@ namespace TS3AudioBot.ResourceFactories
 		public bool VideoOnly { get; set; } = false;
 
 		public override string ToString() => $"{Qualitydesciption} @ {Codec} - {Link}";
+	}
+
+	internal class YoutubePlaylistItem : PlaylistItem
+	{
+		public TimeSpan Length { get; set; }
+
+		public YoutubePlaylistItem(AudioResource resource) : base(resource) { }
 	}
 
 	public enum VideoCodec

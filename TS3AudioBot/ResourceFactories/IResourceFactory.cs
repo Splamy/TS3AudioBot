@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -16,14 +16,11 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using System;
 	using Helper;
 
-	public interface IResourceFactory : IDisposable
+	public interface IResourceFactory : IFactory
 	{
 		string SubCommandName { get; }
-		AudioType FactoryFor { get; }
-
 		/// <summary>Check method to ask if a factory can load the given link.</summary>
 		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
 		/// <returns>True if the factory thinks it can parse it, false otherwise.</returns>

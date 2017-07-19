@@ -19,20 +19,27 @@ namespace TS3AudioBot.ResourceFactories
 	using CommandSystem;
 	using Helper;
 	using System;
+	using System.Drawing;
 	using System.Collections.Generic;
 	using System.Reflection;
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
-		private const string cmdPrepath = "from ";
+		private const string cmdResPrepath = "from ";
+		private const string cmdListPrepath = "list from ";
 
-		public CommandGroup CommandNode { get; } = new CommandGroup();
+		public CommandGroup CommandResNode { get; } = new CommandGroup();
+		public CommandGroup CommandListNode { get; } = new CommandGroup();
 		public IResourceFactory DefaultFactorty { get; internal set; }
-		private List<IResourceFactory> factories;
+		private Dictionary<AudioType, IFactory> allFacories;
+		private List<IResourceFactory> resFactories;
+		private List<IPlaylistFactory> listFactories;
 
 		public ResourceFactoryManager()
 		{
-			Util.Init(ref factories);
+			Util.Init(ref allFacories);
+			Util.Init(ref resFactories);
+			Util.Init(ref listFactories);
 		}
 
 		// Load lookup stages
@@ -87,23 +94,68 @@ namespace TS3AudioBot.ResourceFactories
 
 		private IResourceFactory GetFactoryFor(AudioType audioType)
 		{
-			foreach (var fac in factories)
-				if (fac != DefaultFactorty && fac.FactoryFor == audioType) return fac;
+			if (allFacories.TryGetValue(audioType, out var factory) && factory is IResourceFactory resFactory)
+				return resFactory;
 			return DefaultFactorty;
 		}
 		private IResourceFactory GetFactoryFor(string uri)
 		{
-			foreach (var fac in factories)
+			foreach (var fac in resFactories)
 				if (fac != DefaultFactorty && fac.MatchLink(uri)) return fac;
 			return DefaultFactorty;
 		}
 
-		public void AddFactory(IResourceFactory factory, CommandManager cmdMgr)
+		public R<Playlist> LoadPlaylistFrom(string message, AudioType? type = null)
 		{
-			factories.Add(factory);
+			if (string.IsNullOrWhiteSpace(message))
+				throw new ArgumentNullException(nameof(message));
+
+			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
+
+			if (type.HasValue)
+			{
+				foreach (var factory in listFactories)
+				{
+					if (factory.FactoryFor == type.Value)
+						return factory.GetPlaylist(netlinkurl);
+				}
+				return "There is not factory registered for this type";
+			}
+			else
+			{
+				foreach (var factory in listFactories)
+				{
+					if (factory.MatchLink(netlinkurl))
+						return factory.GetPlaylist(netlinkurl);
+				}
+				return "Unknown playlist type. Please use '!list from <type> <url>' to specify your playlist type.";
+			}
+		}
+
+		public void AddFactory(IFactory factory, CommandManager cmdMgr)
+		{
+			allFacories.Add(factory.FactoryFor, factory);
+			if (factory is IResourceFactory resFactory)
+				AddResFactory(resFactory, cmdMgr);
+			if (factory is IPlaylistFactory listFactory)
+				AddListFactory(listFactory, cmdMgr);
+		}
+
+		public void AddResFactory(IResourceFactory factory, CommandManager cmdMgr)
+		{
+			resFactories.Add(factory);
 
 			// register factory command node
-			var playCommand = new PlayCommand(factory.FactoryFor, cmdPrepath + factory.SubCommandName);
+			var playCommand = new PlayCommand(factory.FactoryFor, cmdResPrepath + factory.SubCommandName);
+			cmdMgr.RegisterCommand(playCommand.Command);
+		}
+
+		public void AddListFactory(IPlaylistFactory factory, CommandManager cmdMgr)
+		{
+			listFactories.Add(factory);
+
+			// register factory command node
+			var playCommand = new PlayCommand(factory.FactoryFor, cmdListPrepath + factory.SubCommandName);
 			cmdMgr.RegisterCommand(playCommand.Command);
 		}
 
@@ -113,13 +165,22 @@ namespace TS3AudioBot.ResourceFactories
 			return factory.RestoreLink(res.ResourceId);
 		}
 
-		public void Dispose()
+		public R<Image> GetThumbnail(PlayResource playResource)
 		{
-			foreach (var fac in factories)
-				fac.Dispose();
+			if (allFacories.TryGetValue(playResource.BaseData.AudioType, out var factory)
+				&& factory is IThumbnailFactory thumbFactory)
+				return thumbFactory.GetThumbnail(playResource);
+			return "No matching thumbnail factory found";
 		}
 
-		sealed class PlayCommand
+		public void Dispose()
+		{
+			foreach (var fac in allFacories.Values)
+				fac.Dispose();
+			allFacories.Clear();
+		}
+
+		private sealed class PlayCommand
 		{
 			public BotCommand Command { get; }
 			private AudioType audioType;
@@ -139,6 +200,36 @@ namespace TS3AudioBot.ResourceFactories
 			public string PropagiatePlay(ExecutionInformation info, string parameter)
 			{
 				return info.Session.Bot.PlayManager.Play(info.InvokerData, parameter, audioType);
+			}
+		}
+
+		private sealed class PlayListCommand
+		{
+			public BotCommand Command { get; }
+			private AudioType audioType;
+			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiateLoad));
+
+			public PlayListCommand(AudioType audioType, string cmdPath)
+			{
+				this.audioType = audioType;
+				var builder = new CommandBuildInfo(
+					this,
+					playMethod,
+					new CommandAttribute(cmdPath),
+					null);
+				Command = new BotCommand(builder);
+			}
+
+			public string PropagiateLoad(ExecutionInformation info, string parameter)
+			{
+				var result = info.Session.Bot.FactoryManager.LoadPlaylistFrom(parameter, audioType);
+
+				if (!result)
+					return result;
+
+				result.Value.CreatorDbId = info.InvokerData.DatabaseId;
+				info.Session.Set<PlaylistManager, Playlist>(result.Value);
+				return "Ok";
 			}
 		}
 	}

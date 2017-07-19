@@ -30,8 +30,6 @@ namespace TS3AudioBot
 
 	public sealed class PlaylistManager : IDisposable
 	{
-		private const string cmdPrepath = "list from ";
-
 		private static readonly Regex validPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
 		private static readonly Regex cleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
 
@@ -86,8 +84,6 @@ namespace TS3AudioBot
 		public bool Loop { get; set; }
 
 		// Playlistfactory related stuff
-		public CommandGroup CommandNode { get; } = new CommandGroup();
-		private List<IPlaylistFactory> factories;
 
 		public PlaylistManager(PlaylistManagerData pmd)
 		{
@@ -95,8 +91,6 @@ namespace TS3AudioBot
 			shuffle = new LinearFeedbackShiftRegister { Seed = Util.Random.Next() };
 			freeList = new Playlist(string.Empty);
 			trashList = new Playlist(string.Empty);
-
-			Util.Init(ref factories);
 		}
 
 		public PlaylistItem Current() => NPMove(0);
@@ -279,33 +273,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		public R<Playlist> LoadPlaylistFrom(string message, AudioType? type = null)
-		{
-			if (string.IsNullOrWhiteSpace(message))
-				throw new ArgumentNullException(nameof(message));
-
-			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
-
-			if (type.HasValue)
-			{
-				foreach (var factory in factories)
-				{
-					if (factory.FactoryFor == type.Value)
-						return factory.GetPlaylist(netlinkurl);
-				}
-				return "There is not factory registered for this type";
-			}
-			else
-			{
-				foreach (var factory in factories)
-				{
-					if (factory.MatchLink(netlinkurl))
-						return factory.GetPlaylist(netlinkurl);
-				}
-				return "Unknown playlist type. Please use '!list from <type> <url>' to specify your playlist type.";
-			}
-		}
-
 		public R SavePlaylist(Playlist plist)
 		{
 			if (plist == null)
@@ -461,46 +428,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void AddFactory(IPlaylistFactory factory, CommandManager cmdMgr)
-		{
-			factories.Add(factory);
-
-			// register factory command node
-			var playCommand = new PlayCommand(factory.FactoryFor, cmdPrepath + factory.SubCommandName);
-			cmdMgr.RegisterCommand(playCommand.Command);
-		}
-
 		public void Dispose() { }
-
-		private sealed class PlayCommand
-		{
-			public BotCommand Command { get; }
-			private AudioType audioType;
-			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiateLoad));
-
-			public PlayCommand(AudioType audioType, string cmdPath)
-			{
-				this.audioType = audioType;
-				var builder = new CommandBuildInfo(
-					this,
-					playMethod,
-					new CommandAttribute(cmdPath),
-					null);
-				Command = new BotCommand(builder);
-			}
-
-			public string PropagiateLoad(ExecutionInformation info, string parameter)
-			{
-				var result = info.Session.Bot.PlaylistManager.LoadPlaylistFrom(parameter, audioType);
-
-				if (!result)
-					return result;
-
-				result.Value.CreatorDbId = info.InvokerData.DatabaseId;
-				info.Session.Set<PlaylistManager, Playlist>(result.Value);
-				return "Ok";
-			}
-		}
 	}
 
 	public class PlaylistItem
@@ -582,13 +510,6 @@ namespace TS3AudioBot
 		public IEnumerable<PlaylistItem> AsEnumerable() => resources;
 
 		public PlaylistItem GetResource(int index) => resources[index];
-	}
-
-	internal class YoutubePlaylistItem : PlaylistItem
-	{
-		public TimeSpan Length { get; set; }
-
-		public YoutubePlaylistItem(AudioResource resource) : base(resource) { }
 	}
 
 #pragma warning disable CS0649
