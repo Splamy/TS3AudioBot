@@ -98,6 +98,7 @@
     <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="Helper\Cache.cs" />
+    <Compile Include="Helper\ImageUtil.cs" />
     <Compile Include="ResourceFactories\AudioType.cs" />
     <Compile Include="ResourceFactories\IFactory.cs" />
     <Compile Include="ResourceFactories\IThumbnailFactory.cs" />

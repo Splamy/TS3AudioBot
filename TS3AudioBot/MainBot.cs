@@ -80,8 +80,6 @@ namespace TS3AudioBot
 		public RightsManager RightsManager { get; private set; }
 
 		public bool QuizMode { get; set; }
-		private StringFormat avatarTextFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near };
-		private Pen avatarTextOutline = new Pen(Color.Black, 4) { LineJoin = System.Drawing.Drawing2D.LineJoin.Round };
 
 		public MainBot()
 		{
@@ -1606,21 +1604,10 @@ namespace TS3AudioBot
 
 				using (var bmp = thumresult.Value)
 				{
-					using (var graphics = Graphics.FromImage(bmp))
-					using (var gp = new System.Drawing.Drawing2D.GraphicsPath())
-					{
-						gp.AddString("Now playing: " + startEvent.ResourceData.ResourceTitle,
-							FontFamily.GenericSansSerif, 0, 15,
-							new RectangleF(0, 0, bmp.Width, bmp.Height), avatarTextFormat);
-
-						graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
-						graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-						graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-						graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-
-						graphics.DrawPath(avatarTextOutline, gp);
-						graphics.FillPath(Brushes.White, gp);
-					}
+					ImageUtil.BuildStringImage(
+						"Now playing: " + startEvent.ResourceData.ResourceTitle,
+						bmp,
+						new RectangleF(0, 0, bmp.Width, bmp.Height));
 					using (var mem = new MemoryStream())
 					{
 						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Png);
@@ -1657,9 +1644,7 @@ namespace TS3AudioBot
 			if (!isDisposed) isDisposed = true;
 			else return;
 			Log.Write(Log.Level.Info, "Exiting...");
-
-			avatarTextOutline.Dispose();
-
+			
 			WebManager?.Dispose(); // before: logStream,
 			WebManager = null;
 
