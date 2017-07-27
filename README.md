@@ -53,8 +53,8 @@ You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source 
 
 ## How to set up the bot
 ### Dependencies
- * Any C# Compiler (`Visual Studio` or `mono 5.0.0+` and `msbuild`)
- * (Linux only) A C Compiler for Opus
+* Any C# Compiler (`Visual Studio` or `mono 5.0.0+` and `msbuild`)
+* (Linux only) A C Compiler for Opus
 
 ### Compilation
 Before we start: _If you know what you are doing_ you can alternatively compile each depenency referenced here from source/git by yourself, but I won't add a tutorial for that.
@@ -66,10 +66,16 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 1. Go into the directory of the repository with `cd TS3AudioBot`
 1. Execute `nuget restore` or `mono ../Nuget.exe restore` to download all dependencies
 1. Execute `msbuild /p:Configuration=Release /p:Platform=x86 TS3AudioBot.sln` to build the C# AudioBot
-1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
-1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-32bit-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-64bit-static.tar.xz) binary.
-1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-XXbit-static.tar.xz`
-1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-64bit-static\ffmpeg` and copy it to `TS3AudioBot/bin/Release/`
+1. Getting the dependencies
+    * on **Ubuntu**:  
+    Run `sudo apt-get install libopus-dev ffmpeg`
+    * on **Arch Linux**:  
+    Run `sudo pacman -S opus ffmpeg`
+    * **manually**:
+        1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
+        1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-32bit-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-64bit-static.tar.xz) binary.
+        1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-XXbit-static.tar.xz`
+        1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-64bit-static\ffmpeg` and copy it to `TS3AudioBot/bin/Release/`
 
 #### Windows
 1. Build the C# AudioBot with Visual Studio.

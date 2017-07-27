@@ -59,6 +59,7 @@ namespace TS3AudioBot
 		private bool consoleOutput;
 		private bool writeLog;
 		private bool writeLogStack;
+		private string configFilePath;
 		internal MainBotData mainBotData;
 
 		private StreamWriter logStream;
@@ -83,34 +84,64 @@ namespace TS3AudioBot
 
 		public MainBot()
 		{
+			// setting defaults
 			isDisposed = false;
 			consoleOutput = false;
 			writeLog = false;
+			configFilePath = "configTS3AudioBot.cfg";
 		}
 
 		private bool ReadParameter(string[] args)
 		{
-			var launchParameter = new HashSet<string>();
-			foreach (string parameter in args)
-				launchParameter.Add(parameter);
-			if (launchParameter.Contains("--help") || launchParameter.Contains("-h"))
+			for (int i = 0; i < args.Length; i++)
 			{
-				Console.WriteLine(" --Quiet -q       Deactivates all output to stdout.");
-				Console.WriteLine(" --NoLog -L       Deactivates writing to the logfile.");
-				Console.WriteLine(" --Stack -s       Adds the stacktrace to all log writes.");
-				Console.WriteLine(" --help -h        Prints this help....");
-				return false;
+				switch (args[i])
+				{
+					case "-h":
+					case "--help":
+						Console.WriteLine(" --Quiet  -q         Deactivates all output to stdout.");
+						Console.WriteLine(" --NoLog  -L         Deactivates writing to the logfile.");
+						Console.WriteLine(" --Stack  -s         Adds the stacktrace to all log writes.");
+						Console.WriteLine(" --Config -c <file>  Specifies the path to the config file.");
+						Console.WriteLine(" --help   -h         Prints this help....");
+						return false;
+
+					case "-q":
+					case "--Quiet":
+						consoleOutput = false;
+						break;
+
+					case "-L":
+					case "--NoLog":
+						writeLog = false;
+						break;
+
+					case "-s":
+					case "--Stack":
+						writeLogStack = true;
+						break;
+
+					case "-c":
+					case "--Config":
+						if (i >= args.Length - 1)
+						{
+							Console.WriteLine("No config file specified after \"{0}\"", args[i]);
+							return false;
+						}
+						configFilePath = args[++i];
+						break;
+
+					default:
+						Console.WriteLine("Unrecognized parameter: {0}", args[i]);
+						return false;
+				}
 			}
-			consoleOutput = !(launchParameter.Contains("--Quiet") || launchParameter.Contains("-q"));
-			writeLog = !(launchParameter.Contains("--NoLog") || launchParameter.Contains("-L"));
-			writeLogStack = (launchParameter.Contains("--Stack") || launchParameter.Contains("-s"));
 			return true;
 		}
 
 		private bool InitializeBot()
 		{
 			// Read Config File
-			const string configFilePath = "configTS3AudioBot.cfg";
 			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
 			var afd = ConfigManager.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
 			var tfcd = ConfigManager.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
@@ -1644,7 +1675,7 @@ namespace TS3AudioBot
 			if (!isDisposed) isDisposed = true;
 			else return;
 			Log.Write(Log.Level.Info, "Exiting...");
-			
+
 			WebManager?.Dispose(); // before: logStream,
 			WebManager = null;
 
