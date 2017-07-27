@@ -86,8 +86,9 @@ namespace TS3AudioBot
 		{
 			// setting defaults
 			isDisposed = false;
-			consoleOutput = false;
-			writeLog = false;
+			consoleOutput = true;
+			writeLog = true;
+			writeLogStack = false;
 			configFilePath = "configTS3AudioBot.cfg";
 		}
 
