@@ -205,7 +205,7 @@ namespace TS3AudioBot
 
 		protected override ClientData GetSelf()
 		{
-			var data = tsBaseClient.ClientInfo(tsFullClient.ClientId);
+			var data = tsBaseClient.WhoAmI();
 			var cd = new ClientData
 			{
 				ChannelId = data.ChannelId,
