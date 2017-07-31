@@ -45,7 +45,10 @@ namespace TS3AudioBot.Web.Interface
 			Index = new WebIndexFile("index.html", new FileProvider().Set(dirFile(baseDir, "index.html")), GetWebsite) { MimeType = "text/html" };
 			PrepareSite(Index);
 			PrepareSite(Index, string.Empty);
-			PrepareSite(new WebStaticSite("main", dirFile(baseDir, "main.html")) { MimeType = "text/css" });
+			PrepareSite(new WebStaticSite("main", dirFile(baseDir, "main.html")) { MimeType = "text/html" });
+			PrepareSite(new WebStaticSite("test.html", dirFile(baseDir, "test.html")) { MimeType = "text/html" });
+			PrepareSite(new WebStaticSite("test.js", dirFile(baseDir, "test.js")) { MimeType = "application/javascript" });
+			PrepareSite(new WebStaticSite("md5.js", dirFile(baseDir, "md5.js")) { MimeType = "application/javascript" });
 			PrepareSite(new WebStaticSite("styles.css", dirFile(baseDir, "styles.css")) { MimeType = "text/css" });
 			PrepareSite(new WebStaticSite("scripts.js", dirFile(baseDir, "scripts.js")) { MimeType = "application/javascript" });
 			PrepareSite(new WebStaticSite("favicon.ico", "TS3AudioBot.Web.Interface.favicon.ico") { MimeType = "image/x-icon", Encoding = Encoding.ASCII });

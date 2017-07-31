@@ -75,7 +75,7 @@ function content_loaded() {
 
     var handler = document.querySelector("#playhandler");
     if (handler !== null) {
-            getAjax("/playcontrols", function(text) {
+            getAjax("/playcontrols.html", function(text) {
             handler.innerHTML = text;
             // gather all controls
             playcontrols = {};

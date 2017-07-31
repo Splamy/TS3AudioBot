@@ -1,0 +1,30 @@
+// main: styles.less
+
+.button {
+    background-color: @foregroundcolor1;
+    border: none;
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    font-size: 16px;
+    border-radius: 8px;
+    -moz-box-shadow: @shadow;
+    -webkit-box-shadow: @shadow;
+    box-shadow: @shadow;
+    padding: 10px 0px;
+    width: 90%;
+    display: inline-block;
+    margin: 0px 5% 0.4em;
+    cursor: pointer;
+}
+
+    .button:active {
+        -moz-box-shadow: 0px 0px 2px 0px #050505;
+        -webkit-box-shadow: 0px 0px 2px 0px #050505;
+        box-shadow: 0px 0px 2px 0px #050505;
+    }
+
+    .button:hover {
+        background-color: lighten(@foregroundcolor1, 20%);
+        color: black;
+    }

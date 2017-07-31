@@ -1,0 +1,1 @@
+declare function md5(param: string): string;

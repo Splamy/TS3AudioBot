@@ -1,0 +1,64 @@
+// main: styles.less
+
+.splitleft, .splitright {
+	width: 48%;
+	position: relative;
+	margin: 0em 1%;
+}
+
+.splitleft {
+	float: left;
+}
+
+.splitright {
+	float: right;
+}
+
+.filledform {
+	display: inline-block;
+	width: 55%;
+	position: relative;
+	border: 2px 2.5%;
+	margin: 3px 0px;
+}
+
+fieldset {
+	border-radius: 8px;
+	border: 2px @foregroundcolor1;
+	border-style: solid none solid none;
+	cursor: default;
+}
+
+legend {
+	border: 1px solid @foregroundcolor1;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px @foregroundcolor1;
+	position: relative;
+	display: block;
+	overflow: auto;
+}
+
+th, td {
+	border-bottom: 1px solid #ddd;
+	padding: 0.1em;
+}
+
+	th:not(:last-child):not(:first-child),
+	td:not(:last-child):not(:first-child) {
+		border-left: 1px solid @foregroundcolor1;
+		border-right: 1px solid @foregroundcolor1;
+	}
+
+.fillwrap {
+	width: 100%;
+	word-wrap: break-word;
+	word-break: break-all;
+}
+
+#historylist > tbody > tr > td:nth-child(2) {
+	text-align: right;
+}

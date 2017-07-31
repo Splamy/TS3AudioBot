@@ -1,0 +1,101 @@
+﻿/* <pre> */
+
+@import "styles_button";
+@import "styles_playcontrols";
+@import "styles_slider";
+@import "styles_history";
+
+@backgroundcolor1: #050505;
+@backgroundcolor2: #202020;
+@foregroundcolor1: #B0171F;
+@foregroundcolor2: #FF6103;
+@top-off: 80px;
+@left-off: 150px;
+@bot-off: 25px;
+@shadow: 3px 3px 3px 0px @backgroundcolor1;
+
+/*Unpad stuff here*/
+html, body, header, nav, footer, section, label, .filledform {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+html, body {
+	background-color: @backgroundcolor1;
+	color: @foregroundcolor2;
+}
+
+h2 {
+	text-align: center;
+}
+
+header {
+	color: white;
+	text-align: center;
+	position: fixed;
+	width: 100%;
+	height: @top-off;
+	z-index: 15;
+	cursor: default;
+}
+
+nav {
+	top: 0;
+	bottom: 0;
+	width: @left-off;
+	padding-top: @top-off;
+	position: fixed;
+	line-height: 2em;
+	background-color: @backgroundcolor1;
+	float: left;
+	z-index: 10;
+	font-family: Verdana;
+}
+
+section {
+	top: @top-off;
+	left: 0;
+	bottom: @bot-off;
+	right: 0;
+	margin-left: @left-off;
+	position: absolute;
+	background-color: @backgroundcolor2;
+	overflow-y: auto;
+	overflow-x: auto;
+	display: inline-block;
+	z-index: 5;
+}
+
+footer {
+	bottom: 0;
+	height: @bot-off;
+	width: 100%;
+	color: white;
+	clear: both;
+	text-align: center;
+	position: fixed;
+	z-index: 10;
+	cursor: default;
+}
+
+/* Common button apereance */
+
+label {
+	display: inline-block;
+	clear: left;
+	width: 40%;
+	position: relative;
+	text-align: right;
+}
+
+.unselectable, nav > a {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+/* </pre> */

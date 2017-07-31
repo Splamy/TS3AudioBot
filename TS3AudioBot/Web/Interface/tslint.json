@@ -1,0 +1,48 @@
+// tslint.json
+{
+    "extends": "tslint:recommended",
+    "rules": {
+        "no-console": [ false ],
+        "curly": false,
+        "new-parens": true,
+        "arrow-return-shorthand": true,
+        "no-unnecessary-callback-wrapper": true,
+        "no-unnecessary-initializer": true,
+        "no-boolean-literal-compare": true,
+        "no-angle-bracket-type-assertion": true,
+        "no-trailing-whitespace": true,
+        "no-arg": true,
+        "no-bitwise": true,
+        "no-conditional-assignment": true,
+        "no-construct": true,
+        "no-duplicate-super": true,
+        "no-for-in-array": true, // TI
+        "no-floating-promises": true, // TI
+        "no-invalid-this": [ true, "check-function-in-method" ],
+        "no-misused-new": true,
+        "no-null-keyword": true,
+        "no-reference": false,
+        "no-object-literal-type-assertion": true,
+        "object-literal-sort-keys": true,
+        "no-shadowed-variable": true,
+        "no-sparse-arrays": true,
+        "no-string-literal": true,
+        "no-string-throw": true,
+        "no-switch-case-fall-through": true,
+        "no-unbound-method": [true, "ignore-static"], // TI
+        "no-unsafe-finally": true,
+        "no-unused-expression": true,
+        "no-unused-variable": true, // TI
+        "no-use-before-declare": true, // TI
+        "no-var-keyword": true,
+        "no-void-expression": true, // TI
+        "restrict-plus-operands": true, // TI
+        "strict-boolean-expressions": true, // TI
+        "strict-type-predicates": true, // TI
+        "array-type": [ true, "array" ],
+        "unified-signatures": true,
+        "prefer-switch": true,
+        "prefer-function-over-method": true,
+        "member-ordering": [ false ]
+    }
+}

@@ -198,6 +198,14 @@
     <None Include="Audio\Opus\LICENSE" />
     <None Include="Audio\Opus\OPUS_LICENSE" />
     <None Include="Audio\Opus\README" />
+    <None Include="Web\Interface\script.js.map" />
+    <None Include="Web\Interface\styles.less" />
+    <None Include="Web\Interface\styles_button.less" />
+    <None Include="Web\Interface\styles_history.less" />
+    <None Include="Web\Interface\styles_playcontrols.less" />
+    <None Include="Web\Interface\styles_slider.less" />
+    <None Include="Web\Interface\tsconfig.json" />
+    <None Include="Web\Interface\tslint.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
@@ -228,12 +236,28 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <TypeScriptCompile Include="Web\Interface\tssrc\ApiAuth.ts" />
+    <TypeScriptCompile Include="Web\Interface\tssrc\Get.ts" />
+    <TypeScriptCompile Include="Web\Interface\tssrc\Main.ts" />
+    <TypeScriptCompile Include="Web\Interface\tssrc\Md5.d.ts" />
+    <TypeScriptCompile Include="Web\Interface\tssrc\Util.ts" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="Media\SleepingKitty.svg" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Media\SleepingKitty.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Web\Interface\md5.js" />
+    <Content Include="Web\Interface\media\ghicon.png" />
+    <Content Include="Web\Interface\script.js" />
+    <Content Include="Web\Interface\styles.min.css">
+      <DependentUpon>styles.css</DependentUpon>
+    </Content>
+    <Content Include="Web\Interface\test.html" />
+    <Content Include="Web\Interface\test.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.2.1.0\build\netstandard1.0\Fody.targets" Condition="Exists('..\packages\Fody.2.1.0\build\netstandard1.0\Fody.targets')" />

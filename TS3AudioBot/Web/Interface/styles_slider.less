@@ -1,0 +1,48 @@
+// main: styles.less
+
+input[type=range] {
+	-webkit-appearance: none;
+	background: transparent;
+}
+
+	input[type=range]:focus {
+		outline: none;
+	}
+
+	input[type=range]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		border: none;
+		height: 16px;
+		width: 16px;
+		margin-top: -4px;
+		border-radius: 50%;
+		background: white;
+		box-shadow: @shadow;
+		cursor: pointer;
+	}
+
+	input[type=range]::-webkit-slider-runnable-track {
+		width: 100%;
+		height: 6px;
+		margin-bottom: 4px;
+		border-radius: 3px;
+		box-shadow: @shadow;
+		background: @foregroundcolor1;
+	}
+
+	input[type=range]::-moz-range-thumb {
+		border: none;
+		height: 16px;
+		width: 16px;
+		border-radius: 50%;
+		box-shadow: @shadow;
+		cursor: pointer;
+	}
+
+	input[type=range]::-moz-range-track {
+		width: 100%;
+		height: 6px;
+		border-radius: 3px;
+		box-shadow: @shadow;
+		background: @foregroundcolor1;
+	}
