@@ -14,16 +14,11 @@
 @bot-off: 25px;
 @shadow: 3px 3px 3px 0px @backgroundcolor1;
 
-/*Unpad stuff here*/
-html, body, header, nav, footer, section, label, .filledform {
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
-
 html, body {
 	background-color: @backgroundcolor1;
 	color: @foregroundcolor2;
+	margin: 0;
+	font-family: Verdana;
 }
 
 h2 {
@@ -36,35 +31,27 @@ header {
 	position: fixed;
 	width: 100%;
 	height: @top-off;
-	z-index: 15;
-	cursor: default;
 }
 
 nav {
-	top: 0;
+	top: @top-off;
 	bottom: 0;
 	width: @left-off;
-	padding-top: @top-off;
 	position: fixed;
 	line-height: 2em;
 	background-color: @backgroundcolor1;
 	float: left;
-	z-index: 10;
-	font-family: Verdana;
 }
 
 section {
 	top: @top-off;
-	left: 0;
+	left: @left-off;
 	bottom: @bot-off;
 	right: 0;
-	margin-left: @left-off;
-	position: absolute;
+	position: fixed;
 	background-color: @backgroundcolor2;
 	overflow-y: auto;
 	overflow-x: auto;
-	display: inline-block;
-	z-index: 5;
 }
 
 footer {
@@ -72,21 +59,8 @@ footer {
 	height: @bot-off;
 	width: 100%;
 	color: white;
-	clear: both;
 	text-align: center;
 	position: fixed;
-	z-index: 10;
-	cursor: default;
-}
-
-/* Common button apereance */
-
-label {
-	display: inline-block;
-	clear: left;
-	width: 40%;
-	position: relative;
-	text-align: right;
 }
 
 .unselectable, nav > a {
@@ -96,6 +70,7 @@ label {
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+	cursor: default;
 }
 
 /* </pre> */

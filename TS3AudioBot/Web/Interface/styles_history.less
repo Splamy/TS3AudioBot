@@ -14,12 +14,26 @@
 	float: right;
 }
 
-.filledform {
-	display: inline-block;
-	width: 55%;
-	position: relative;
-	border: 2px 2.5%;
-	margin: 3px 0px;
+.searchform {
+	legend {
+		border: 1px solid @foregroundcolor1;
+	}
+
+	label {
+		display: inline-block;
+		clear: left;
+		width: 40%;
+		position: relative;
+		text-align: right;
+	}
+
+	input {
+		display: inline-block;
+		width: 55%;
+		position: relative;
+		border: 2px 2.5%;
+		margin: 3px 0px;
+	}
 }
 
 fieldset {
@@ -27,10 +41,6 @@ fieldset {
 	border: 2px @foregroundcolor1;
 	border-style: solid none solid none;
 	cursor: default;
-}
-
-legend {
-	border: 1px solid @foregroundcolor1;
 }
 
 table {

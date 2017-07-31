@@ -1,4 +1,4 @@
-﻿/* <pre> */
+/* <pre> */
 .button {
   background-color: #B0171F;
   border: none;
@@ -122,7 +122,17 @@ input[type=range]::-moz-range-track {
 .splitright {
   float: right;
 }
-.filledform {
+.searchform legend {
+  border: 1px solid #B0171F;
+}
+.searchform label {
+  display: inline-block;
+  clear: left;
+  width: 40%;
+  position: relative;
+  text-align: right;
+}
+.searchform input {
   display: inline-block;
   width: 55%;
   position: relative;
@@ -134,9 +144,6 @@ fieldset {
   border: 2px #B0171F;
   border-style: solid none solid none;
   cursor: default;
-}
-legend {
-  border: 1px solid #B0171F;
 }
 table {
   width: 100%;
@@ -164,23 +171,12 @@ td:not(:last-child):not(:first-child) {
 #historylist > tbody > tr > td:nth-child(2) {
   text-align: right;
 }
-/*Unpad stuff here*/
-html,
-body,
-header,
-nav,
-footer,
-section,
-label,
-.filledform {
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
 html,
 body {
   background-color: #050505;
   color: #FF6103;
+  margin: 0;
+  font-family: Verdana;
 }
 h2 {
   text-align: center;
@@ -191,52 +187,33 @@ header {
   position: fixed;
   width: 100%;
   height: 80px;
-  z-index: 15;
-  cursor: default;
 }
 nav {
-  top: 0;
+  top: 80px;
   bottom: 0;
   width: 150px;
-  padding-top: 80px;
   position: fixed;
   line-height: 2em;
   background-color: #050505;
   float: left;
-  z-index: 10;
-  font-family: Verdana;
 }
 section {
   top: 80px;
-  left: 0;
+  left: 150px;
   bottom: 25px;
   right: 0;
-  margin-left: 150px;
-  position: absolute;
+  position: fixed;
   background-color: #202020;
   overflow-y: auto;
   overflow-x: auto;
-  display: inline-block;
-  z-index: 5;
 }
 footer {
   bottom: 0;
   height: 25px;
   width: 100%;
   color: white;
-  clear: both;
   text-align: center;
   position: fixed;
-  z-index: 10;
-  cursor: default;
-}
-/* Common button apereance */
-label {
-  display: inline-block;
-  clear: left;
-  width: 40%;
-  position: relative;
-  text-align: right;
 }
 .unselectable,
 nav > a {
@@ -246,5 +223,6 @@ nav > a {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  cursor: default;
 }
 /* </pre> */
