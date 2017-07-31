@@ -39,6 +39,8 @@ namespace TS3AudioBot.Web.Api
 		{
 			using (var response = context.Response)
 			{
+				response.AddHeader("Access-Control-Allow-Origin", "*");
+
 				var invoker = Authenticate(context);
 				if (invoker == null)
 				{

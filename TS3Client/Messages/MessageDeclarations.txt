@@ -140,6 +140,7 @@ Field: cpid, cpid, ChannelParentId, ChannelIdT
 Field: ctid, ctid, TargetChannelId, ChannelIdT
 Field: current_speed, current_speed, CurrentSpeed, float
 Field: datetime, datetime, DateTime, DateTime
+Field: ft_status, status, Status, int
 Field: ft_type, type, IsFile, bool
 Field: ftkey, ftkey, FileTransferKey, string
 Field: iconid, iconid, IconId, int
@@ -177,7 +178,7 @@ Field: size, size, Size, long
 Field: sizedone, sizedone, SizeDone, long
 Field: sortid, sortid, SortId, int
 :: ?? datatype/enum
-Field: status, status, Status, int
+Field: status, status, Status, Ts3ErrorCode
 Field: target, target, TargetClientId, ClientIdT
 Field: targetmode, targetmode, Target, TextMessageTargetMode
 Field: token, token, UsedToken, string
@@ -261,6 +262,7 @@ Notify: notifyfiletransferlist, FileTransfer
 Notify: notifyfilelist, FileList
 Notify: notifyfilelistfinished, FileListFinished
 Notify: notifyfileinfo, FileInfo
+Notify: notifystatusfiletransfer, FileTransferStatus
 
 
 : <Class name>, <Teamspeak notification name | Empty = Response>, <Field param mappings>*
@@ -284,6 +286,7 @@ Msg: ClientNeededPermissions, notifyclientneededpermissions, permid, permvalue
 Msg: ClientServerGroupAdded, notifyservergroupclientadded, name, sgid, invokerid, invokername, invokeruid, clid, cluid
 Msg: ConnectionInfoRequest, notifyconnectioninforequest
 Msg: FileListFinished, notifyfilelistfinished, cid, path
+Msg: FileTransferStatus, notifystatusfiletransfer, clientftfid, status, msg, size
 Msg: InitIvExpand, initivexpand, alpha, beta, omega
 Msg: InitServer, initserver, virtualserver_welcomemessage, virtualserver_platform, virtualserver_version, virtualserver_maxclients, virtualserver_created, virtualserver_hostmessage, virtualserver_hostmessage_mode, virtualserver_id, virtualserver_ip, virtualserver_ask_for_privilegekey, acn, aclid, pv, lt, client_talk_power, client_needed_serverquery_view_power, virtualserver_name, virtualserver_codec_encryption_mode, virtualserver_default_server_group, virtualserver_default_channel_group, virtualserver_hostbanner_url, virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_interval, virtualserver_priority_speaker_dimm_modificator, virtualserver_hostbutton_tooltip, virtualserver_hostbutton_url, virtualserver_hostbutton_gfx_url, virtualserver_name_phonetic, virtualserver_icon_id, virtualserver_hostbanner_mode, virtualserver_channel_temp_delete_delay_default
 Msg: ServerEdited, notifyserveredited, invokerid, invokername, invokeruid, reasonid, virtualserver_name, virtualserver_codec_encryption_mode, virtualserver_default_server_group, virtualserver_default_channel_group, virtualserver_hostbanner_url, virtualserver_hostbanner_gfx_url, virtualserver_hostbanner_gfx_interval, virtualserver_priority_speaker_dimm_modificator, virtualserver_hostbutton_tooltip, virtualserver_hostbutton_url, virtualserver_hostbutton_gfx_url, virtualserver_name_phonetic, virtualserver_icon_id, virtualserver_hostbanner_mode, virtualserver_channel_temp_delete_delay_default
@@ -303,6 +306,6 @@ Msg: WhoAmI,, client_id, client_channel_id, client_nickname, client_database_id,
 Msg: ClientServerGroup, +notifyservergroupsbyclientid, name, sgid, cldbid
 Msg: FileDownload, +notifystartdownload, clientftfid, serverftfid, ftkey, port, size, msg
 Msg: FileUpload, +notifystartupload, clientftfid, serverftfid, ftkey, port, seekpos, msg
-Msg: FileTransfer, +notifyfiletransferlist, clid, path, name, size, sizedone, clientftfid, serverftfid, sender, status, current_speed, average_speed, runtime
+Msg: FileTransfer, +notifyfiletransferlist, clid, path, name, size, sizedone, clientftfid, serverftfid, sender, ft_status, current_speed, average_speed, runtime
 Msg: FileList, +notifyfilelist, cid, path, name, size, datetime, ft_type
 Msg: FileInfoTs, +notifyfileinfo, cid, path, name, size, datetime

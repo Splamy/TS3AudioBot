@@ -28,17 +28,21 @@ namespace TS3Client
 		private readonly ManualResetEvent notificationWaiter;
 		private CommandError commandError = null;
 		private string commandLine = null;
-		public NotificationType DependsOn { get; }
+		public NotificationType[] DependsOn { get; }
 		private LazyNotification notification;
 		public bool Closed { get; private set; }
 
-		public WaitBlock(NotificationType dependsOn = NotificationType.Unknown)
+		public WaitBlock(NotificationType[] dependsOn = null)
 		{
 			Closed = false;
 			answerWaiter = new ManualResetEvent(false);
 			DependsOn = dependsOn;
-			if (DependsOn != NotificationType.Unknown)
+			if (DependsOn != null)
+			{
+				if (DependsOn.Length == 0)
+					throw new InvalidOperationException("Depending notification array must not be empty");
 				notificationWaiter = new ManualResetEvent(false);
+			}
 		}
 
 		public IEnumerable<T> WaitForMessage<T>() where T : IResponse, new()
@@ -52,7 +56,7 @@ namespace TS3Client
 
 		public LazyNotification WaitForNotification()
 		{
-			if (DependsOn == NotificationType.Unknown)
+			if (DependsOn == null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			answerWaiter.WaitOne();
 			if (commandError.Id != Ts3ErrorCode.ok)
@@ -73,8 +77,8 @@ namespace TS3Client
 
 		public void SetNotification(LazyNotification notification)
 		{
-			if (notification.NotifyType != DependsOn)
-				throw new ArgumentException();
+			if (DependsOn != null && Array.IndexOf(DependsOn, notification.NotifyType) < 0)
+				throw new ArgumentException("The notification does not match this waitblock");
 			this.notification = notification;
 			notificationWaiter.Set();
 		}

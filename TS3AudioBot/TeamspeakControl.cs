@@ -260,6 +260,8 @@ namespace TS3AudioBot
 				}
 
 				const int max = 75;
+				const int ava = 200000; // max size in bytes for the avatar
+
 				// Add various rights to the bot group
 				tsBaseClient.ServerGroupAddPerm(mainBotData.BotGroupId,
 					new[] {
@@ -292,6 +294,8 @@ namespace TS3AudioBot
 						PermissionId.b_channel_join_ignore_maxclients, // + Allow joining full channels
 						PermissionId.i_channel_join_power, // + Allow joining to all channel even on strict servers
 						PermissionId.b_client_permissionoverview_view, // + Scanning though given perms for rights system
+
+						PermissionId.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
 					},
 					new[] {
 						max, max,   1,   1,
@@ -300,6 +304,7 @@ namespace TS3AudioBot
 						  1, max, max,   4,
 						  1,   1,   1,   1,
 						  1,   1, max,   1,
+						ava,
 					},
 					new[] {
 						false, false, false, false,
@@ -308,6 +313,7 @@ namespace TS3AudioBot
 						false, false, false, false,
 						false, false, false, false,
 						false, false, false, false,
+						false,
 					},
 					new[] {
 						false, false, false, false,
@@ -316,6 +322,7 @@ namespace TS3AudioBot
 						false, false, false, false,
 						false, false, false, false,
 						false, false, false, false,
+						false,
 					});
 
 				// Leave master group again

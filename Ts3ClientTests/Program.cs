@@ -7,6 +7,7 @@ using TS3Client;
 using TS3Client.Messages;
 using TS3Client.Commands;
 using TS3Client.Full;
+using System.IO;
 
 namespace Ts3ClientTests
 {
@@ -57,17 +58,24 @@ namespace Ts3ClientTests
 					client.Disconnect();
 					Console.WriteLine("Exited... {0}", id);
 				}
+				else if (msg.Message == "upl")
+				{
+					var client = (Ts3FullClient)sender;
+
+					var tok = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", true);
+					client.FileTransferManager.Wait(tok);
+				}
 			}
 		}
 
 		private static void Client_OnErrorEvent(object sender, CommandError e)
 		{
-			var client = (Ts3FullClient)sender;
-			Console.WriteLine(e.ErrorFormat());
-			if (!client.Connected)
-			{
-				client.Connect(con);
-			}
+			//var client = (Ts3FullClient)sender;
+			//Console.WriteLine(e.ErrorFormat());
+			//if (!client.Connected)
+			//{
+			//	client.Connect(con);
+			//}
 		}
 	}
 }

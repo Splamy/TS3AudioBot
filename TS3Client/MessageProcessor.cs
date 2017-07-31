@@ -16,16 +16,16 @@
 
 namespace TS3Client
 {
-	using Messages;
 	using Commands;
+	using Messages;
 	using System;
-	using System.Linq;
+	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 
 	internal class MessageProcessor
 	{
-		private readonly Dictionary<string, WaitBlock> requestDict;
-		private readonly Queue<WaitBlock> requestQueue;
+		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
+		private readonly ConcurrentQueue<WaitBlock> requestQueue;
 		private readonly bool synchronQueue;
 		private readonly List<WaitBlock>[] dependingBlocks;
 
@@ -36,11 +36,11 @@ namespace TS3Client
 			this.synchronQueue = synchronQueue;
 			if (synchronQueue)
 			{
-				requestQueue = new Queue<WaitBlock>();
+				requestQueue = new ConcurrentQueue<WaitBlock>();
 			}
 			else
 			{
-				requestDict = new Dictionary<string, WaitBlock>();
+				requestDict = new ConcurrentDictionary<string, WaitBlock>();
 				dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
 			}
 		}
@@ -68,14 +68,29 @@ namespace TS3Client
 			{
 				var notification = CommandDeserializer.GenerateNotification(lineDataPart, ntfyType);
 				var lazyNotification = new LazyNotification(notification, ntfyType);
-				if (dependingBlocks[(int)ntfyType] != null)
+				var dependantList = dependingBlocks[(int)ntfyType];
+				if (dependantList != null)
 				{
-					foreach (var item in dependingBlocks[(int)ntfyType])
+					lock (dependantList)
 					{
-						if (!item.Closed)
-							item.SetNotification(lazyNotification);
+						foreach (var item in dependantList)
+						{
+							if (!item.Closed)
+								item.SetNotification(lazyNotification);
+							if (item.DependsOn != null)
+							{
+								foreach (var otherDepType in item.DependsOn)
+								{
+									if (otherDepType == ntfyType)
+										continue;
+									var otherDependantsList = dependingBlocks[(int)otherDepType];
+									lock (otherDependantsList)
+										otherDependantsList.Remove(item);
+								}
+							}
+						}
+						dependantList.Clear();
 					}
-					dependingBlocks[(int)ntfyType].Clear();
 				}
 
 				return lazyNotification;
@@ -85,9 +100,9 @@ namespace TS3Client
 
 			if (synchronQueue)
 			{
-				if (requestQueue.Count > 0)
+				WaitBlock waitBlock;
+				if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out waitBlock))
 				{
-					var waitBlock = requestQueue.Dequeue();
 					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
 					cmdLineBuffer = null;
 				}
@@ -104,9 +119,8 @@ namespace TS3Client
 
 				// otherwise it is the result status code to a request
 				WaitBlock waitBlock;
-				if (requestDict.TryGetValue(errorStatus.ReturnCode, out waitBlock))
+				if (requestDict.TryRemove(errorStatus.ReturnCode, out waitBlock))
 				{
-					requestDict.Remove(errorStatus.ReturnCode);
 					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
 					cmdLineBuffer = null;
 				}
@@ -120,12 +134,20 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 				throw new InvalidOperationException();
-			requestDict.Add(returnCode, waitBlock);
-			if (waitBlock.DependsOn != NotificationType.Unknown)
+			if (!requestDict.TryAdd(returnCode, waitBlock))
+				throw new InvalidOperationException("Trying to add alreading existing WaitBlock returnCode");
+			if (waitBlock.DependsOn != null)
 			{
-				if (dependingBlocks[(int)waitBlock.DependsOn] == null)
-					dependingBlocks[(int)waitBlock.DependsOn] = new List<WaitBlock>();
-				dependingBlocks[(int)waitBlock.DependsOn].Add(waitBlock);
+				foreach (var dependantOpt in waitBlock.DependsOn)
+				{
+					var depentantList = dependingBlocks[(int)dependantOpt];
+					if (depentantList == null)
+						dependingBlocks[(int)dependantOpt] = depentantList = new List<WaitBlock>();
+					lock (depentantList)
+					{
+						depentantList.Add(waitBlock);
+					}
+				}
 			}
 		}
 
@@ -140,8 +162,9 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 			{
-				while (requestQueue.Count > 0)
-					requestQueue.Dequeue().SetAnswer(
+				WaitBlock waitBlock;
+				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out waitBlock))
+					waitBlock.SetAnswer(
 						new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection Closed" });
 			}
 			else

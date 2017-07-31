@@ -94,6 +94,7 @@ namespace TS3Client
 		StartUpload,
 		StartDownload,
 		FileTransfer,
+		FileTransferStatus,
 		FileList,
 		FileListFinished,
 		FileInfo,

@@ -106,15 +106,12 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void DisconnectInternal(bool manualLock = false, bool triggerEvent = true)
+		private void DisconnectInternal(bool triggerEvent = true)
 		{
 			if (wasExit)
 				return;
 
-			if (!manualLock)
-				Monitor.Enter(StatusLock);
-
-			try
+			lock (StatusLock)
 			{
 				switch (Status)
 				{
@@ -141,11 +138,6 @@ namespace TS3Client.Full
 					break;
 				}
 			}
-			finally
-			{
-				if (!manualLock)
-					Monitor.Exit(StatusLock);
-			}
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -169,7 +161,7 @@ namespace TS3Client.Full
 					lock (StatusLock)
 					{
 						Status = Ts3ClientStatus.Disconnected;
-						DisconnectInternal(true);
+						DisconnectInternal();
 					}
 					break;
 				}
@@ -197,6 +189,7 @@ namespace TS3Client.Full
 			case NotificationType.StartUpload: break;
 			case NotificationType.StartDownload: break;
 			case NotificationType.FileTransfer: break;
+			case NotificationType.FileTransferStatus: break;
 			case NotificationType.FileList: break;
 			case NotificationType.FileListFinished: break;
 			case NotificationType.FileInfo: break;
@@ -207,7 +200,7 @@ namespace TS3Client.Full
 					if (Status == Ts3ClientStatus.Connecting)
 					{
 						Status = Ts3ClientStatus.Disconnected;
-						DisconnectInternal(true, false);
+						DisconnectInternal(false);
 					}
 				}
 
@@ -262,7 +255,7 @@ namespace TS3Client.Full
 			lock (StatusLock)
 			{
 				Status = Ts3ClientStatus.Disconnected;
-				DisconnectInternal(true);
+				DisconnectInternal();
 			}
 		}
 
@@ -310,7 +303,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private LazyNotification SendSpecialCommand(Ts3Command com, NotificationType dependsOn)
+		private LazyNotification SendSpecialCommand(Ts3Command com, params NotificationType[] dependsOn)
 		{
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
@@ -446,29 +439,41 @@ namespace TS3Client.Full
 
 		public override FileUpload FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
-			=> SendSpecialCommand(new Ts3Command("ftinitupload", new List<ICommandPart>() {
+		{
+			var lazyNot = SendSpecialCommand(new Ts3Command("ftinitupload", new List<ICommandPart>() {
 			new CommandParameter("cid", channelId),
 			new CommandParameter("name", path),
 			new CommandParameter("cpw", channelPassword),
 			new CommandParameter("clientftfid", clientTransferId),
 			new CommandParameter("size", fileSize),
 			new CommandParameter("overwrite", overwrite),
-			new CommandParameter("resume", resume) }), NotificationType.StartUpload)
-			.Notifications
-			.Cast<FileUpload>()
-			.First();
+			new CommandParameter("resume", resume) }), NotificationType.StartUpload, NotificationType.FileTransferStatus);
+			if (lazyNot.NotifyType == NotificationType.StartUpload)
+				return lazyNot.Notifications.Cast<FileUpload>().First();
+			else
+			{
+				var ft = lazyNot.Notifications.Cast<FileTransferStatus>().First();
+				throw new Ts3CommandException(new CommandError() { Id = ft.Status, Message = ft.Message });
+			}
+		}
 
 		public override FileDownload FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long seek)
-			=> SendSpecialCommand(new Ts3Command("ftinitdownload", new List<ICommandPart>() {
+		{
+			var lazyNot = SendSpecialCommand(new Ts3Command("ftinitdownload", new List<ICommandPart>() {
 			new CommandParameter("cid", channelId),
 			new CommandParameter("name", path),
 			new CommandParameter("cpw", channelPassword),
 			new CommandParameter("clientftfid", clientTransferId),
-			new CommandParameter("seekpos", seek) }), NotificationType.StartDownload)
-			.Notifications
-			.Cast<FileDownload>()
-			.First();
+			new CommandParameter("seekpos", seek) }), NotificationType.StartDownload, NotificationType.FileTransferStatus);
+			if (lazyNot.NotifyType == NotificationType.StartDownload)
+				return lazyNot.Notifications.Cast<FileDownload>().First();
+			else
+			{
+				var ft = lazyNot.Notifications.Cast<FileTransferStatus>().First();
+				throw new Ts3CommandException(new CommandError() { Id = ft.Status, Message = ft.Message });
+			}
+		}
 
 		public override IEnumerable<FileTransfer> FileTransferList()
 			=> SendSpecialCommand(new Ts3Command("ftlist"), NotificationType.FileTransfer)

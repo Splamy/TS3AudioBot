@@ -685,6 +685,32 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class FileTransferStatus : INotification  
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FileTransferStatus;
+		
+
+		public ushort ClientFileTransferId { get; set; }
+		public Ts3ErrorCode Status { get; set; }
+		public string Message { get; set; }
+		public long Size { get; set; }
+
+		public void SetField(string name, string value)
+		{
+
+			switch(name)
+			{
+
+			case "clientftfid": ClientFileTransferId = CommandDeserializer.DeserializeUInt16(value); break;
+			case "status": Status = (Ts3ErrorCode)CommandDeserializer.DeserializeUInt16(value); break;
+			case "msg": Message = CommandDeserializer.DeserializeString(value); break;
+			case "size": Size = CommandDeserializer.DeserializeInt64(value); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class InitIvExpand : INotification  
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand;
@@ -1572,6 +1598,7 @@ namespace TS3Client.Messages
 			case "notifyfilelist": return NotificationType.FileList;
 			case "notifyfilelistfinished": return NotificationType.FileListFinished;
 			case "notifyfileinfo": return NotificationType.FileInfo;
+			case "notifystatusfiletransfer": return NotificationType.FileTransferStatus;
 			default: return NotificationType.Unknown;
 			}
 		}
@@ -1613,6 +1640,7 @@ namespace TS3Client.Messages
 			case NotificationType.FileList: return new FileList();
 			case NotificationType.FileListFinished: return new FileListFinished();
 			case NotificationType.FileInfo: return new FileInfoTs();
+			case NotificationType.FileTransferStatus: return new FileTransferStatus();
 			case NotificationType.Unknown:
 			default: throw new ArgumentOutOfRangeException(nameof(name));
 			}

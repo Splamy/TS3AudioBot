@@ -44,27 +44,28 @@ namespace TS3Client
 		public FileTransferManager(Ts3BaseFunctions ts3connection)
 		{
 			parent = ts3connection;
+			//ts3connection.OnFileTransferStatus += FileStatusNotification;
 			Util.Init(ref transferQueue);
 		}
 
-		public FileTransferToken UploadFile(System.IO.FileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
+		public FileTransferToken UploadFile(FileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
 			=> UploadFile(file.Open(FileMode.Open, FileAccess.Read), channel, path, overwrite, channelPassword);
 
-		public FileTransferToken UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
+		public FileTransferToken UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = false)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
 			if (!string.IsNullOrEmpty(request.Message))
 				throw new Ts3Exception(request.Message);
-			var token = new FileTransferToken(stream, request, channel, path, channelPassword, stream.Length);
+			var token = new FileTransferToken(stream, request, channel, path, channelPassword, stream.Length) { CloseStreamWhenDone = closeStream };
 			StartWorker(token);
 			return token;
 		}
 
-		public FileTransferToken DownloadFile(System.IO.FileInfo file, ChannelIdT channel, string path, string channelPassword = "")
-			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, true, channelPassword);
+		public FileTransferToken DownloadFile(FileInfo file, ChannelIdT channel, string path, string channelPassword = "")
+			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, channelPassword, true);
 
-		public FileTransferToken DownloadFile(Stream stream, ChannelIdT channel, string path, bool closeStream, string channelPassword = "")
+		public FileTransferToken DownloadFile(Stream stream, ChannelIdT channel, string path, string channelPassword = "", bool closeStream = false)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
