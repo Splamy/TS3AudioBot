@@ -1,0 +1,71 @@
+// main: styles.less
+
+.authbox {
+	cursor: pointer;
+
+	> input {
+		display: none;
+	}
+
+	.authboxform {
+		top: @top-off;
+		right: 5px;
+		display: none;
+		position: absolute;
+		min-width: 480px;
+		min-height: 1em;
+		box-shadow: -2px 2px 8px 0px @contrastcolor1;
+		padding: 8px 12px;
+		z-index: 1;
+		pointer-events: none;
+
+		* {
+			pointer-events: all;
+		}
+
+		input {
+			width: 100%;
+		}
+	}
+
+	input:checked ~ .authboxform {
+		display: flex;
+	}
+
+	.closestate() {
+		background-color: @backgroundcolor1;
+		border-radius: 0;
+	}
+
+	.openstate() {
+		background-color: yellow;
+		border-radius: @top-off / 4;
+	}
+
+	.animation() {
+		animation-duration: 0.3s;
+		animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+	}
+
+	@keyframes openauth {
+		from { .closestate() }
+		to { .openstate(); }
+	}
+
+	@keyframes closeauth {
+		from { .openstate(); }
+		to { .closestate(); }
+	}
+
+	input:not(:checked) ~ img {
+		.animation();
+		.closestate();
+		animation-name: closeauth;
+	}
+
+	input:checked ~ img {
+		.animation();
+		.openstate();
+		animation-name: openauth;
+	}
+}

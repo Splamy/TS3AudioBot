@@ -4,12 +4,14 @@
 @import "styles_playcontrols";
 @import "styles_slider";
 @import "styles_history";
+@import "styles_authbox";
 
 @backgroundcolor1: #050505;
 @backgroundcolor2: #202020;
 @foregroundcolor1: #B0171F;
 @foregroundcolor2: #FF6103;
-@top-off: 80px;
+@contrastcolor1: #B2B2B2;
+@top-off: 40px;
 @left-off: 150px;
 @bot-off: 25px;
 @shadow: 3px 3px 3px 0px @backgroundcolor1;
@@ -21,13 +23,17 @@ html, body {
 	font-family: Verdana;
 }
 
+h1 {
+	text-align: center;
+	margin: 0;
+}
+
 h2 {
 	text-align: center;
 }
 
 header {
 	color: white;
-	text-align: center;
 	position: fixed;
 	width: 100%;
 	height: @top-off;
@@ -35,12 +41,11 @@ header {
 
 nav {
 	top: @top-off;
-	bottom: 0;
+	bottom: @bot-off; 
 	width: @left-off;
 	position: fixed;
 	line-height: 2em;
 	background-color: @backgroundcolor1;
-	float: left;
 }
 
 section {
@@ -52,6 +57,7 @@ section {
 	background-color: @backgroundcolor2;
 	overflow-y: auto;
 	overflow-x: auto;
+	z-index: -1;
 }
 
 footer {
@@ -61,6 +67,33 @@ footer {
 	color: white;
 	text-align: center;
 	position: fixed;
+}
+
+.maxheight {
+	height: 100%;
+}
+
+.split3 {
+	display: flex;
+}
+
+.split3bit {
+	width: 33.3%;
+	min-width: 0%;
+}
+
+.split3max {
+	width: 100.0%;
+	min-width: 0%;
+}
+
+.flowright {
+	display: flex;
+	justify-content: flex-end;
+
+	> * {
+		margin-right: 0.5em;
+	}
 }
 
 .unselectable, nav > a {

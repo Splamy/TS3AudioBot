@@ -10,24 +10,37 @@
 </head>
 
 <body>
-    <header class="unselectable">
-        <h1>TS3AudioBot</h1>
+    <header class="split3 unselectable">
+        <div class="split3bit"></div>
+        <h1 class="split3max">TS3AudioBot</h1>
+        <div class="split3bit flowright maxheight">
+            <label class="authbox" style="width:40px; height:40px">
+                <input type="checkbox" />
+                <span class="authboxform">
+                    <label>AuthString:</label> <input type="text" />
+                </span>
+                <img class="maxheight" src="media/key.png" alt="Auth token" />
+            </label>
+        </div>
     </header>
     <nav>
         <a class="button" href="index.html?page=main.html">Menu</a>
         <a class="button" href="index.html?page=styles.css">Commands</a>
-        <a class="button" href="index.html?page=html-link.htm">Audio</a>
-        <a class="button" href="index.html?page=playcontrols.html">Playlist</a>
+        <a class="button" href="index.html?page=playcontrols.html">Audio</a>
+        <a class="button" href="index.html?page=playlist.html">Playlist</a>
         <a class="button" href="index.html?page=history.html">History</a>
     </nav>
     <div id="devupdate"> </div>
     <section id="content">
         <div data-jqload> </div>
     </section>
-    <footer class="unselectable">
-        Written by Flakebi &amp; Splamy
-        <div style="float:right">
-            <img src="media/ghicon.png" alt="Github Icon" style="width:20px;height:20px;">
+    <footer class="split3 unselectable">
+        <div class="split3bit"></div>
+        <div class="split3max">Written by Flakebi &amp; Splamy</div>
+        <div class="split3bit flowright maxheight">
+            <a class="maxheight" href="https://github.com/Splamy/TS3AudioBot" target="_blank">
+                <img class="maxheight" src="media/ghicon.png" alt="Github Project Page">
+            </a>
         </div>
     </footer>
 </body>

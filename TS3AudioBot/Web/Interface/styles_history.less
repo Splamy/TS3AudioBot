@@ -1,17 +1,13 @@
 // main: styles.less
 
-.splitleft, .splitright {
-	width: 48%;
-	position: relative;
-	margin: 0em 1%;
-}
+.splitbox {
+	display: flex;
+	flex-wrap: wrap;
 
-.splitleft {
-	float: left;
-}
-
-.splitright {
-	float: right;
+	> * {
+		width: 50%;
+		@media(max-width: 800px) { width: 100%; }
+	}
 }
 
 .searchform {
@@ -21,17 +17,14 @@
 
 	label {
 		display: inline-block;
-		clear: left;
 		width: 40%;
-		position: relative;
 		text-align: right;
 	}
 
 	input {
 		display: inline-block;
 		width: 55%;
-		position: relative;
-		border: 2px 2.5%;
+		border: none;
 		margin: 3px 0px;
 	}
 }
@@ -44,11 +37,8 @@ fieldset {
 }
 
 table {
-	width: 100%;
 	border-collapse: collapse;
 	border: 1px @foregroundcolor1;
-	position: relative;
-	display: block;
 	overflow: auto;
 }
 
@@ -67,6 +57,10 @@ th, td {
 	width: 100%;
 	word-wrap: break-word;
 	word-break: break-all;
+}
+
+#historylist {
+	display: table;
 }
 
 #historylist > tbody > tr > td:nth-child(2) {

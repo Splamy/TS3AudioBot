@@ -1,5 +1,5 @@
 <h2>History</h2>
-<div class="splitleft">
+<div class="splitbox">
     <form id="searchquery" action="/?page=history" onsubmit="history_search_click(event);" method="get">
         <fieldset class="unselectable searchform">
             <legend>Search for Entries</legend>
@@ -10,8 +10,6 @@
             <button class="button" type="submit" form="searchquery" value="Search">Search</button>
         </fieldset>
     </form>
-</div>
-<div class="splitright">
     <table id="historylist">
         <caption>Query results</caption>
         <tbody>
@@ -19,9 +17,8 @@
             <th>Id</th>
             <th>UserId</th>
             <th>Title</th>
-            <th >Options</th>
+            <th>Options</th>
         </tr>
-        <div data-jqload />
         </tbody>
     </table>
 </div>

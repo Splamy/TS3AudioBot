@@ -2,6 +2,7 @@
 
 class Main {
     private static contentDiv: HTMLElement;
+    public static siteLoadHook: { [id: string]: () => void; } = {};
 
     public static init(): void {
         Main.contentDiv = document.getElementById("content")!;
