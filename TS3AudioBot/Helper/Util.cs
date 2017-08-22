@@ -107,24 +107,6 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static FileSystemWatcher RegisterFolderEvents(DirectoryInfo dir, FileSystemEventHandler callback)
-		{
-			if (!IsAdmin)
-				return null;
-
-			if (!dir.Exists)
-				return null;
-
-			var watcher = new FileSystemWatcher
-			{
-				Path = dir.FullName,
-				NotifyFilter = NotifyFilters.LastWrite,
-			};
-			watcher.Changed += callback;
-			watcher.EnableRaisingEvents = true;
-			return watcher;
-		}
-
 		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
 
 		private static long Pow(long b, int pow)

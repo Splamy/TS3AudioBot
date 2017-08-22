@@ -179,6 +179,10 @@
     <Compile Include="Web\Api\JsonSingleObject.cs" />
     <Compile Include="Web\Api\WebApi.cs" />
     <Compile Include="Web\HttpListenerDigestIdentity.cs" />
+    <Compile Include="Web\Interface\FileProvider.cs" />
+    <Compile Include="Web\Interface\FolderProvider.cs" />
+    <Compile Include="Web\Interface\IProvider.cs" />
+    <Compile Include="Web\Interface\SiteMapper.cs" />
     <Compile Include="Web\Interface\WebDisplay.cs" />
     <Compile Include="Web\UriExt.cs" />
     <Compile Include="Web\WebComponent.cs" />
@@ -187,7 +191,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Web\Interface\index.html" />
     <EmbeddedResource Include="Web\Interface\styles.css" />
-    <EmbeddedResource Include="Web\Interface\scripts.js" />
     <EmbeddedResource Include="Media\favicon.ico" />
     <EmbeddedResource Include="Web\Interface\favicon.ico" />
     <EmbeddedResource Include="Web\Interface\history.html" />
@@ -198,12 +201,12 @@
     <None Include="Audio\Opus\LICENSE" />
     <None Include="Audio\Opus\OPUS_LICENSE" />
     <None Include="Audio\Opus\README" />
-    <None Include="Web\Interface\script.js.map" />
-    <None Include="Web\Interface\styles.less" />
-    <None Include="Web\Interface\styles_button.less" />
-    <None Include="Web\Interface\styles_history.less" />
-    <None Include="Web\Interface\styles_playcontrols.less" />
-    <None Include="Web\Interface\styles_slider.less" />
+    <None Include="Web\Interface\less\styles.less" />
+    <None Include="Web\Interface\less\styles_authbox.less" />
+    <None Include="Web\Interface\less\styles_button.less" />
+    <None Include="Web\Interface\less\styles_history.less" />
+    <None Include="Web\Interface\less\styles_playcontrols.less" />
+    <None Include="Web\Interface\less\styles_slider.less" />
     <None Include="Web\Interface\tsconfig.json" />
     <None Include="Web\Interface\tslint.json" />
   </ItemGroup>
@@ -250,12 +253,12 @@
     <EmbeddedResource Include="Media\SleepingKitty.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Web\Interface\404.html" />
     <Content Include="Web\Interface\md5.js" />
     <Content Include="Web\Interface\media\ghicon.png" />
+    <Content Include="Web\Interface\media\key.png" />
+    <Content Include="Web\Interface\playlist.html" />
     <Content Include="Web\Interface\script.js" />
-    <Content Include="Web\Interface\styles.min.css">
-      <DependentUpon>styles.css</DependentUpon>
-    </Content>
     <Content Include="Web\Interface\test.html" />
     <Content Include="Web\Interface\test.js" />
   </ItemGroup>

@@ -19,13 +19,39 @@ class Get {
         if (login === undefined)
             throw new Error("Anonymous api call not supported yet");
 
-        if (!login.hasValidNonce) {
+        if (status === AuthStatus.Failed)
+            throw new Error("Auth failed");
+
+        if (!login.hasValidNonce() && status === AuthStatus.None) {
             Get.getNonce(login, (ok) => {
                 if (ok)
                     Get.api(site, callback, login, AuthStatus.FirstTry);
                 else if (callback !== undefined)
                     callback(undefined);
             });
+        } else if (status === AuthStatus.None || status === AuthStatus.FirstTry) {
+            const xhr = new XMLHttpRequest();
+            const apiSite = "/api/" + site;
+            xhr.open("GET", apiSite, true);
+            if (callback !== undefined) {
+                xhr.onload = (ev) => {
+                    const ret = Get.extractNonce(xhr);
+                    login.CachedNonce = ret.nonce;
+                    login.CachedRealm = ret.realm;
+                    callback(xhr.responseText);
+                };
+                xhr.onerror = (ev) => callback(undefined);
+            }
+
+            const response = login.generateResponse(apiSite);
+            xhr.setRequestHeader("Authorization",
+                "Digest username=\"" + login.UserUid +
+                "\", realm=\"" + login.CachedRealm +
+                "\", nonce=\"" + login.CachedNonce +
+                "\", uri=\"" + apiSite +
+                "\", response=\"" + response + "\"");
+            login.CachedNonce = undefined;
+            xhr.send();
         }
     }
 
@@ -54,11 +80,11 @@ class Get {
         let realm: string | undefined;
         let nonce: string | undefined;
         for (const param of digData) {
-            const split = param.split(/=/);
-            if (split[0] === "nonce")
-                nonce = split[1];
-            else if (param === "realm=")
-                realm = split[1];
+            const split = param.match(/([^=]*)=\"([^\"]*)\"/)!;
+            if (split[1] === "nonce")
+                nonce = split[2];
+            else if (split[1] === "realm")
+                realm = split[2];
         }
         if (realm === undefined || nonce === undefined)
             throw new Error("Invalid auth data");

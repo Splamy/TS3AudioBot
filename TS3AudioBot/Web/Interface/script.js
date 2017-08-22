@@ -8,12 +8,15 @@ var ApiAuth = (function () {
         return this.CachedNonce !== undefined;
     };
     ApiAuth.prototype.generateResponse = function (url, realm) {
+        if (realm === void 0) { realm = this.CachedRealm; }
+        if (!this.hasValidNonce())
+            throw new Error("Cannot generate response without nonce");
         if (this.ha1 === undefined || this.CachedRealm !== realm) {
             this.CachedRealm = realm;
             this.ha1 = md5(this.UserUid + ":" + realm + ":" + this.Token);
         }
         var ha2 = md5("GET" + ":" + url);
-        return md5(this.ha1 + ":" + this.CachedRealm + ":" + ha2);
+        return md5(this.ha1 + ":" + this.CachedNonce + ":" + ha2);
     };
     return ApiAuth;
 }());
@@ -40,13 +43,37 @@ var Get = (function () {
         if (status === void 0) { status = AuthStatus.None; }
         if (login === undefined)
             throw new Error("Anonymous api call not supported yet");
-        if (!login.hasValidNonce) {
+        if (status === AuthStatus.Failed)
+            throw new Error("Auth failed");
+        if (!login.hasValidNonce() && status === AuthStatus.None) {
             Get.getNonce(login, function (ok) {
                 if (ok)
                     Get.api(site, callback, login, AuthStatus.FirstTry);
                 else if (callback !== undefined)
                     callback(undefined);
             });
+        }
+        else if (status === AuthStatus.None || status === AuthStatus.FirstTry) {
+            var xhr_1 = new XMLHttpRequest();
+            var apiSite = "/api/" + site;
+            xhr_1.open("GET", apiSite, true);
+            if (callback !== undefined) {
+                xhr_1.onload = function (ev) {
+                    var ret = Get.extractNonce(xhr_1);
+                    login.CachedNonce = ret.nonce;
+                    login.CachedRealm = ret.realm;
+                    callback(xhr_1.responseText);
+                };
+                xhr_1.onerror = function (ev) { return callback(undefined); };
+            }
+            var response = login.generateResponse(apiSite);
+            xhr_1.setRequestHeader("Authorization", "Digest username=\"" + login.UserUid +
+                "\", realm=\"" + login.CachedRealm +
+                "\", nonce=\"" + login.CachedNonce +
+                "\", uri=\"" + apiSite +
+                "\", response=\"" + response + "\"");
+            login.CachedNonce = undefined;
+            xhr_1.send();
         }
     };
     Get.getNonce = function (login, callback) {
@@ -74,11 +101,11 @@ var Get = (function () {
         var nonce;
         for (var _i = 0, digData_1 = digData; _i < digData_1.length; _i++) {
             var param = digData_1[_i];
-            var split = param.split(/=/);
-            if (split[0] === "nonce")
-                nonce = split[1];
-            else if (param === "realm=")
-                realm = split[1];
+            var split = param.match(/([^=]*)=\"([^\"]*)\"/);
+            if (split[1] === "nonce")
+                nonce = split[2];
+            else if (split[1] === "realm")
+                realm = split[2];
         }
         if (realm === undefined || nonce === undefined)
             throw new Error("Invalid auth data");
@@ -92,6 +119,7 @@ var Main = (function () {
     Main.init = function () {
         Main.contentDiv = document.getElementById("content");
         Main.initEvents();
+        Main.registerHooks();
         var currentSite = window.location.href;
         var query = Util.parseQuery(currentSite.substr(currentSite.indexOf("?") + 1));
         var page = query.page;
@@ -116,6 +144,20 @@ var Main = (function () {
     };
     Main.setContent = function (content) {
         Main.contentDiv.innerHTML = content;
+        Main.registerHooks();
+    };
+    Main.registerHooks = function () {
+        var authElem = document.getElementById("authtoken");
+        if (authElem !== null) {
+            authElem.oninput = Main.authChanged;
+        }
+    };
+    Main.authChanged = function (ev) {
+        var thisinput = this;
+        var parts = thisinput.value.split(/:/g, 3);
+        if (parts.length !== 3)
+            return;
+        Main.authData = new ApiAuth(parts[0], parts[2]);
     };
     return Main;
 }());

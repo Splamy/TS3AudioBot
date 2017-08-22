@@ -171,6 +171,7 @@ td:not(:last-child):not(:first-child) {
   display: none;
 }
 .authbox .authboxform {
+  background-color: #202020;
   top: 40px;
   right: 5px;
   display: none;

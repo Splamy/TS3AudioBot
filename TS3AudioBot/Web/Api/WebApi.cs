@@ -194,7 +194,7 @@ namespace TS3AudioBot.Web.Api
 				if (identityDigest.Realm != WebManager.WebRealm)
 					return null;
 
-				if (identityDigest.Uri != context.Request.Url.AbsolutePath)
+				if (identityDigest.Uri != context.Request.RawUrl)
 					return null;
 
 				//HA1=MD5(username:realm:password)
