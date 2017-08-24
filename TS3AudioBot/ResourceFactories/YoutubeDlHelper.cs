@@ -39,7 +39,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public static Tuple<string, string> FindYoutubeDl(string id)
 		{
-			string param = $"--no-warnings --get-title --get-url --format bestaudio/best --id {id}";
+			string param = $"--no-warnings --get-title --get-url --format bestaudio/best --id -- {id}";
 
 			// Default path youtube-dl is suggesting to install
 			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";

@@ -38,9 +38,8 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<PlayResource> GetResource(string link)
 		{
-			string jsonResponse;
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={soundcloudClientId}");
-			if (!WebWrapper.DownloadString(out jsonResponse, uri))
+			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 			{
 				if (!MatchLink(link))
 					return "Not a valid soundcloud link. Please pass the full link";

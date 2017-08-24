@@ -347,6 +347,16 @@ namespace TS3AudioBot
 			catch (Ts3CommandException ts3ex) { return ts3ex.ErrorStatus.ErrorFormat(); }
 		}
 
+		public R MoveTo(ulong channelId)
+		{
+			try
+			{
+				tsBaseClient.ClientMove(me.ClientId, channelId);
+				return R.OkR;
+			}
+			catch (Ts3CommandException) { return "Cannot move there."; }
+		}
+
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "Closing QueryConnection...");

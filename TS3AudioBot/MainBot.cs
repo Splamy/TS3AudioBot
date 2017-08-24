@@ -98,43 +98,43 @@ namespace TS3AudioBot
 			{
 				switch (args[i])
 				{
-					case "-h":
-					case "--help":
-						Console.WriteLine(" --Quiet  -q         Deactivates all output to stdout.");
-						Console.WriteLine(" --NoLog  -L         Deactivates writing to the logfile.");
-						Console.WriteLine(" --Stack  -s         Adds the stacktrace to all log writes.");
-						Console.WriteLine(" --Config -c <file>  Specifies the path to the config file.");
-						Console.WriteLine(" --help   -h         Prints this help....");
+				case "-h":
+				case "--help":
+					Console.WriteLine(" --Quiet  -q         Deactivates all output to stdout.");
+					Console.WriteLine(" --NoLog  -L         Deactivates writing to the logfile.");
+					Console.WriteLine(" --Stack  -s         Adds the stacktrace to all log writes.");
+					Console.WriteLine(" --Config -c <file>  Specifies the path to the config file.");
+					Console.WriteLine(" --help   -h         Prints this help....");
+					return false;
+
+				case "-q":
+				case "--Quiet":
+					consoleOutput = false;
+					break;
+
+				case "-L":
+				case "--NoLog":
+					writeLog = false;
+					break;
+
+				case "-s":
+				case "--Stack":
+					writeLogStack = true;
+					break;
+
+				case "-c":
+				case "--Config":
+					if (i >= args.Length - 1)
+					{
+						Console.WriteLine("No config file specified after \"{0}\"", args[i]);
 						return false;
+					}
+					configFilePath = args[++i];
+					break;
 
-					case "-q":
-					case "--Quiet":
-						consoleOutput = false;
-						break;
-
-					case "-L":
-					case "--NoLog":
-						writeLog = false;
-						break;
-
-					case "-s":
-					case "--Stack":
-						writeLogStack = true;
-						break;
-
-					case "-c":
-					case "--Config":
-						if (i >= args.Length - 1)
-						{
-							Console.WriteLine("No config file specified after \"{0}\"", args[i]);
-							return false;
-						}
-						configFilePath = args[++i];
-						break;
-
-					default:
-						Console.WriteLine("Unrecognized parameter: {0}", args[i]);
-						return false;
+				default:
+					Console.WriteLine("Unrecognized parameter: {0}", args[i]);
+					return false;
 				}
 			}
 			return true;
@@ -394,6 +394,17 @@ namespace TS3AudioBot
 		public void CommandBotSetup(string adminToken)
 		{
 			QueryConnection.SetupRights(adminToken, mainBotData).UnwrapThrow();
+		}
+
+		[Command("bot move", "Moves the bot to you or a specified channel.")]
+		[RequiredParameters(0)]
+		public void CommandBotMove(ExecutionInformation info, ulong? channel)
+		{
+			if (!channel.HasValue)
+				channel = (CommandGetChannel(info) as JsonSingleValue<ulong>)?.Value;
+			if (!channel.HasValue)
+				throw new CommandException("No target channel found");
+			QueryConnection.MoveTo(channel.Value).UnwrapThrow();
 		}
 
 		[Command("channel", "Gets whether the bot plays music via normal voice mode to his own channel.")]

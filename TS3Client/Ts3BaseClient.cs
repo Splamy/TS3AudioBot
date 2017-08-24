@@ -225,6 +225,16 @@
 			}
 		}
 
+		public void ClientMove(ClientIdT clientId, ChannelIdT channelId, string channelPassword = null)
+		{
+			var cmd = new Ts3Command("clientmove", new List<ICommandPart> {
+				new CommandParameter("clid", clientId),
+				new CommandParameter("cid", channelId) });
+			if (channelPassword != null)
+				cmd.AppendParameter(new CommandParameter("cpw", channelPassword));
+			SendCommand<ResponseVoid>(cmd);
+		}
+
 		// Base Stuff for splitted up commands
 		// Some commands behave differently on query and full client
 
