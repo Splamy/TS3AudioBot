@@ -187,7 +187,12 @@ namespace TS3Client
 
 					using (var client = new TcpClient())
 					{
-						client.Connect(parent.ConnectionData.Hostname, token.Port);
+						try { client.Connect(parent.ConnectionData.Hostname, token.Port); }
+						catch (SocketException)
+						{
+							token.Status = TransferStatus.Failed;
+							continue;
+						}
 						using (var stream = client.GetStream())
 						{
 							byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
