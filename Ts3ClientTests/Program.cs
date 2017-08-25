@@ -19,7 +19,7 @@ namespace Ts3ClientTests
 		{
 			var clients = new List<Ts3FullClient>();
 
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < 50; i++)
 			{
 				var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
 				client.OnConnected += Client_OnConnected;

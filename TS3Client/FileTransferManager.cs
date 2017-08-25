@@ -84,6 +84,7 @@ namespace TS3Client
 
 				if (threadEnd || workerThread == null || !workerThread.IsAlive)
 				{
+					threadEnd = false;
 					workerThread = new Thread(TransferLoop);
 					workerThread.Start();
 				}
@@ -229,7 +230,6 @@ namespace TS3Client
 					}
 				}
 			}
-			threadEnd = true;
 		}
 	}
 

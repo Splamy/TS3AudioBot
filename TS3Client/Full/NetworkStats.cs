@@ -193,8 +193,12 @@ namespace TS3Client.Full
 			Array.Clear(inPackets, 0, inPackets.Length);
 			Array.Clear(outBytes, 0, outBytes.Length);
 			Array.Clear(inBytes, 0, inBytes.Length);
-			outBytesTime.Clear();
-			inBytesTime.Clear();
+			lock (queueLock)
+			{
+				outBytesTime.Clear();
+				inBytesTime.Clear();
+				pingTimes.Clear();
+			}
 		}
 
 		private enum PacketKind

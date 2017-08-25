@@ -615,7 +615,7 @@ namespace TS3Client.Full
 		private static bool ValidateHash(byte[] data, int reqLevel)
 		{
 			var levelMask = 1 << (reqLevel % 8) - 1;
-
+			
 			if (reqLevel < 8)
 			{
 				return (data[0] & levelMask) == 0;

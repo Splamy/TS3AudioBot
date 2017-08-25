@@ -276,6 +276,11 @@ namespace TS3Client.Full
 					continue;
 
 				packet = Ts3Crypt.GetIncommingPacket(buffer);
+				// Invalid packet, ignore
+				if (packet == null)
+					continue;
+
+				// check if we already have this packet and only need to ack it.
 				if (IsCommandPacketSet(packet))
 					continue;
 				
@@ -504,7 +509,7 @@ namespace TS3Client.Full
 
 				var now = Util.Now;
 				var nextTest = pingCheck - now + PingInterval;
-				if (nextTest < TimeSpan.Zero)
+				if (nextTest < TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
 				{
 					if (nextTest < -MaxLastPingDistance)
 						pingCheck = now;

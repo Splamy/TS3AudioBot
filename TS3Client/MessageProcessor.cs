@@ -27,6 +27,7 @@ namespace TS3Client
 		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
 		private readonly ConcurrentQueue<WaitBlock> requestQueue;
 		private readonly bool synchronQueue;
+		private readonly object dependantBlockLock = new object();
 		private readonly List<WaitBlock>[] dependingBlocks;
 
 		private string cmdLineBuffer;
@@ -71,7 +72,7 @@ namespace TS3Client
 				var dependantList = dependingBlocks[(int)ntfyType];
 				if (dependantList != null)
 				{
-					lock (dependantList)
+					lock (dependantBlockLock)
 					{
 						foreach (var item in dependantList)
 						{
@@ -83,9 +84,7 @@ namespace TS3Client
 								{
 									if (otherDepType == ntfyType)
 										continue;
-									var otherDependantsList = dependingBlocks[(int)otherDepType];
-									lock (otherDependantsList)
-										otherDependantsList.Remove(item);
+									dependingBlocks[(int)otherDepType]?.Remove(item);
 								}
 							}
 						}
@@ -138,13 +137,14 @@ namespace TS3Client
 				throw new InvalidOperationException("Trying to add alreading existing WaitBlock returnCode");
 			if (waitBlock.DependsOn != null)
 			{
-				foreach (var dependantOpt in waitBlock.DependsOn)
+				lock (dependantBlockLock)
 				{
-					var depentantList = dependingBlocks[(int)dependantOpt];
-					if (depentantList == null)
-						dependingBlocks[(int)dependantOpt] = depentantList = new List<WaitBlock>();
-					lock (depentantList)
+					foreach (var dependantType in waitBlock.DependsOn)
 					{
+						var depentantList = dependingBlocks[(int)dependantType];
+						if (depentantList == null)
+							dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
+
 						depentantList.Add(waitBlock);
 					}
 				}

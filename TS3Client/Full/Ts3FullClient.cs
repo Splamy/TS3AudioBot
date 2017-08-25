@@ -36,7 +36,6 @@ namespace TS3Client.Full
 		private readonly PacketHandler packetHandler;
 		private readonly MessageProcessor msgProc;
 
-		private readonly object CommmandQueueLock = new object();
 		private readonly object StatusLock = new object();
 
 		private int returnCode;
@@ -48,7 +47,7 @@ namespace TS3Client.Full
 		public string QuitMessage { get; set; } = "Disconnected";
 		public VersionSign VersionSign { get; private set; }
 		private Ts3ClientStatus Status;
-		public override bool Connected => Status == Ts3ClientStatus.Connected;
+		public override bool Connected { get { lock (StatusLock) return Status == Ts3ClientStatus.Connected; } }
 		private ConnectionDataFull connectionDataFull;
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
@@ -108,23 +107,20 @@ namespace TS3Client.Full
 
 		private void DisconnectInternal(bool triggerEvent = true)
 		{
-			if (wasExit)
-				return;
-
 			lock (StatusLock)
 			{
+				if (wasExit)
+					return;
+
 				switch (Status)
 				{
 				case Ts3ClientStatus.Disconnected:
-					if (!wasExit)
-					{
-						wasExit = true;
-						packetHandler.Stop();
-						msgProc.DropQueue();
-						dispatcher.Dispose();
-						if (triggerEvent)
-							OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
-					}
+					wasExit = true;
+					packetHandler.Stop();
+					msgProc.DropQueue();
+					dispatcher.Dispose();
+					if (triggerEvent)
+						OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
 					break;
 				case Ts3ClientStatus.Disconnecting:
 					break;
@@ -280,10 +276,9 @@ namespace TS3Client.Full
 			packetHandler.ClientId = initServer.ClientId;
 			packetHandler.ReceiveInitAck();
 
-			// CP
-			Status = Ts3ClientStatus.Connected;
+			lock (StatusLock)
+				Status = Ts3ClientStatus.Connected;
 			OnConnected?.Invoke(this, new EventArgs());
-			// CP
 		}
 
 		private void ProcessConnectionInfoRequest(ConnectionInfoRequest conInfoRequest)
@@ -317,23 +312,20 @@ namespace TS3Client.Full
 
 		private void SendCommandBase(WaitBlock wb, Ts3Command com)
 		{
-			lock (CommmandQueueLock)
+			if (com.ExpectResponse)
 			{
-				if (com.ExpectResponse)
-				{
-					var retCode = new CommandParameter("return_code", returnCode);
-					com.AppendParameter(retCode);
-					msgProc.EnqueueRequest(retCode.Value, wb);
-					returnCode++;
-				}
+				var responseNumber = Interlocked.Increment(ref returnCode);
+				var retCodeParameter = new CommandParameter("return_code", responseNumber);
+				com.AppendParameter(retCodeParameter);
+				msgProc.EnqueueRequest(retCodeParameter.Value, wb);
+			}
 
-				byte[] data = Util.Encoder.GetBytes(com.ToString());
-				lock (StatusLock)
-				{
-					if (wasExit)
-						throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });
-					packetHandler.AddOutgoingPacket(data, PacketType.Command);
-				}
+			byte[] data = Util.Encoder.GetBytes(com.ToString());
+			lock (StatusLock)
+			{
+				if (wasExit)
+					throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });
+				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
 		}
 
