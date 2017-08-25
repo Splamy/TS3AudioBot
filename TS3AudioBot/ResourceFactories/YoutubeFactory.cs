@@ -293,6 +293,8 @@ namespace TS3AudioBot.ResourceFactories
 			var jsonobj = Util.Serializer.DeserializeObject(resulthtml.Substring(start, ptr - start + 1));
 			var args = GetDictVal(jsonobj, "args");
 			var url_encoded_fmt_stream_map = GetDictVal(args, "url_encoded_fmt_stream_map");
+			if (url_encoded_fmt_stream_map == null)
+				return "No Data";
 
 			string[] enco_split = ((string)url_encoded_fmt_stream_map).Split(',');
 			foreach (var single_enco in enco_split)

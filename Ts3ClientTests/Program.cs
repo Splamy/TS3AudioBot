@@ -17,14 +17,21 @@ namespace Ts3ClientTests
 
 		static void Main()
 		{
-			var client = new Ts3FullClient(EventDispatchType.ExtraDispatchThread);
-			client.OnConnected += Client_OnConnected;
-			client.OnDisconnected += Client_OnDisconnected;
-			client.OnErrorEvent += Client_OnErrorEvent;
-			client.OnTextMessageReceived += Client_OnTextMessageReceived;
-			var data = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEAqNonGuL0w/8kLlgLbl4UkH8DQQJ7fEu1tLt+mx1E+XkCIQDgQoIGcBVvAvNoiDT37iWbPQb2kYe0+VKLg67OH2eQQwIgTyijCKx7QB/xQSnIW5uIkVmcm3UU5P2YnobR9IEEYPg=", 64, 0);
-			con = new ConnectionDataFull() { Hostname = "127.0.0.1", Port = 9987, Username = "TestClient", Identity = data, Password = "qwer" };
-			client.Connect(con);
+			var clients = new List<Ts3FullClient>();
+
+			for (int i = 0; i < 10; i++)
+			{
+				var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
+				client.OnConnected += Client_OnConnected;
+				client.OnDisconnected += Client_OnDisconnected;
+				client.OnErrorEvent += Client_OnErrorEvent;
+				client.OnTextMessageReceived += Client_OnTextMessageReceived;
+				var data = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEAqNonGuL0w/8kLlgLbl4UkH8DQQJ7fEu1tLt+mx1E+XkCIQDgQoIGcBVvAvNoiDT37iWbPQb2kYe0+VKLg67OH2eQQwIgTyijCKx7QB/xQSnIW5uIkVmcm3UU5P2YnobR9IEEYPg=", 64, 0);
+				con = new ConnectionDataFull() { Hostname = "127.0.0.1", Port = 9987, Username = "TestClient", Identity = data, Password = "qwer" };
+				client.Connect(con);
+				clients.Add(client);
+			}
+
 			Console.WriteLine("End");
 			Console.ReadLine();
 		}

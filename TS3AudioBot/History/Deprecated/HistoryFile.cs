@@ -200,6 +200,8 @@ namespace TS3AudioBot.History.Deprecated
 			else
 			{
 				ale = GetEntryById(index.Value);
+				if (ale == null)
+					throw new InvalidOperationException("Entry removed while read");
 				LogEntryPlay(ale);
 			}
 			return ale;

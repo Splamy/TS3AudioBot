@@ -1218,11 +1218,11 @@ namespace TS3AudioBot
 		public JsonObject CommandRng(int? first, int? second)
 		{
 			int num;
-			if (second.HasValue)
+			if (first.HasValue && second.HasValue)
 				num = Util.Random.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
 			else if (first.HasValue)
 			{
-				if (second.Value < first.Value)
+				if (first.Value <= 0)
 					throw new CommandException("Value must be 0 or positive", CommandExceptionReason.CommandError);
 				num = Util.Random.Next(first.Value);
 			}
