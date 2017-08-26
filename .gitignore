@@ -14,7 +14,7 @@
 *.userprefs
 .buildvars.py
 .sconsign.dblite
-.vs/config/*
+.vs/
 .vscode/
 .idea/
 

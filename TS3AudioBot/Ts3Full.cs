@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -166,6 +166,7 @@ namespace TS3AudioBot
 				Identity = identity,
 				IsPasswordHashed = ts3FullClientData.ServerPasswordIsHashed,
 				VersionSign = verionSign,
+				DefaultChannel = ts3FullClientData.DefaultChannel,
 			});
 		}
 
@@ -561,5 +562,8 @@ namespace TS3AudioBot
 		public string ClientVersion { get; set; }
 		[Info("Default Nickname when connecting", "AudioBot")]
 		public string DefaultNickname { get; set; }
+		[Info("Default Channel when connectiong\n" +
+			"# Use a channel path or '/<id>', examples: 'Home/Lobby', '/5', 'Home/Afk \\/ Not Here'", "")]
+		public string DefaultChannel { get; set; }
 	}
 }

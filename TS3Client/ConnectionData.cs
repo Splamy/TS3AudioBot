@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -52,5 +52,11 @@ namespace TS3Client
 		/// <para>The server password. Leave null if none.</para>
 		/// </summary>
 		public string Password { get; set; }
+		/// <summary>
+		/// <para>The default channel this client should try to join when connecting.</para>
+		/// <para>The channel can be specified with either the channel name path, example: "Lobby/Home".
+		/// Or with the channel id in the following format: /&lt;id&gt;, example: "/5"</para>
+		/// </summary>
+		public string DefaultChannel { get; set; }
 	}
 }
