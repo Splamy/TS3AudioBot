@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -22,8 +22,8 @@ namespace TS3Client.Full
 	{
 		public ushort ClientId { get; set; }
 
-		public DateTime LastSendTime { get; set; } = DateTime.MaxValue;
-		public int ResendCount { get; set; } = 0;
+		public DateTime FirstSendTime { get; set; }
+		public DateTime LastSendTime { get; set; }
 
 		public OutgoingPacket(byte[] data, PacketType type)
 		{

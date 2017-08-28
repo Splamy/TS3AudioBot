@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -42,6 +42,7 @@ namespace TS3Client
 		public static DateTime Now => DateTime.UtcNow;
 
 		public static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
+		public static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
 	}
 
 	public static class Extensions

@@ -57,6 +57,6 @@ namespace TS3Client
 		/// <para>The channel can be specified with either the channel name path, example: "Lobby/Home".
 		/// Or with the channel id in the following format: /&lt;id&gt;, example: "/5"</para>
 		/// </summary>
-		public string DefaultChannel { get; set; }
+		public string DefaultChannel { get; set; } = string.Empty;
 	}
 }
