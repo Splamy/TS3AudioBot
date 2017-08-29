@@ -17,7 +17,7 @@ install:
   - nuget install NUnit.Runners -OutputDirectory nunit
 
 script:
-  - cfg="/p:Configuration=Release /p:Platform=x86 TS3AudioBot.sln"
+  - cfg="/p:Configuration=Release TS3AudioBot.sln"
   - if command -v msbuild; then
       msbuild $cfg;
     elif command -v xbuild; then

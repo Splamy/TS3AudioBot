@@ -1,4 +1,4 @@
-﻿# TS3AudioBot
+# TS3AudioBot
 |master|develop|
 |:--:|:--:|
 |[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|
@@ -57,7 +57,7 @@ You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source 
 * (Linux only) A C Compiler for Opus
 
 ### Compilation
-Before we start: _If you know what you are doing_ you can alternatively compile each depenency referenced here from source/git by yourself, but I won't add a tutorial for that.
+Before we start: _If you know what you are doing_ you can alternatively compile each dependency referenced here from source/git by yourself, but I won't add a tutorial for that.
 
 Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
 
@@ -65,7 +65,7 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
 1. Go into the directory of the repository with `cd TS3AudioBot`
 1. Execute `nuget restore` or `mono ../Nuget.exe restore` to download all dependencies
-1. Execute `msbuild /p:Configuration=Release /p:Platform=x86 TS3AudioBot.sln` to build the C# AudioBot
+1. Execute `msbuild /p:Configuration=Release /p:Platform=AnyCPU TS3AudioBot.sln` to build the C# AudioBot
 1. Getting the dependencies
     * on **Ubuntu**:  
     Run `sudo apt-get install libopus-dev ffmpeg`
@@ -79,8 +79,6 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 
 #### Windows
 1. Build the C# AudioBot with Visual Studio.
-1. Download the latest libopus file from [here](https://archive.mozilla.org/pub/opus/win32/opusfile-0.7-win32.zip)
-1. Open the archive and copy the file from `opusfile-0.7-win32\libopus-0.dll`, move **and rename** it to `TS3AudioBot\bin\Release\libopus.dll`
 1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
 1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static\bin\ffmpeg.exe` to `TS3AudioBot\bin\Release\`
 

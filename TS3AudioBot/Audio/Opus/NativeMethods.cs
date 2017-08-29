@@ -1,4 +1,4 @@
-﻿// Copyright 2012 John Carruthers
+// Copyright 2012 John Carruthers
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -21,14 +21,25 @@
 
 namespace TS3AudioBot.Audio.Opus
 {
+	using Helper;
 	using System;
 	using System.Runtime.InteropServices;
 
 	/// <summary>
 	/// Wraps the Opus API.
 	/// </summary>
-	internal class NativeMethods
+	internal static class NativeMethods
 	{
+		static NativeMethods()
+		{
+			NativeWinDllLoader.DirectLoadLibrary("libopus");
+			var verStrPtr = opus_get_version_string();
+			var verString = Marshal.PtrToStringAnsi(verStrPtr);
+			Log.Write(Log.Level.Info, "Using opus version: {0} ({1})", verString, NativeWinDllLoader.ArchFolder);
+		}
+
+// ignore wrong spelling
+#pragma warning disable IDE1006
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern IntPtr opus_encoder_create(int Fs, int channels, int application, out IntPtr error);
 
@@ -52,6 +63,10 @@ namespace TS3AudioBot.Audio.Opus
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, out int value);
+
+		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+		internal static extern IntPtr opus_get_version_string();
+#pragma warning restore IDE1006
 	}
 
 	public enum Ctl : int
