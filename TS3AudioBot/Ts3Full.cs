@@ -209,12 +209,19 @@ namespace TS3AudioBot
 			var data = tsBaseClient.WhoAmI();
 			var cd = new ClientData
 			{
+				Uid = identity.ClientUid,
 				ChannelId = data.ChannelId,
-				DatabaseId = data.DatabaseId,
 				ClientId = tsFullClient.ClientId,
 				NickName = data.NickName,
 				ClientType = tsBaseClient.ClientType
 			};
+			try
+			{
+				var response = tsBaseClient.Send("clientgetdbidfromuid", new TS3Client.Commands.CommandParameter("cluid", identity.ClientUid)).FirstOrDefault();
+				if (response != null && ulong.TryParse(response["cldbid"], out var dbId))
+					cd.DatabaseId = dbId;
+			}
+			catch (Ts3CommandException) { }
 			return cd;
 		}
 
@@ -290,7 +297,7 @@ namespace TS3AudioBot
 
 					AudioModifier.AdjustVolume(audioBuffer, read, volume);
 					encoder.PushPCMAudio(audioBuffer, read);
-					
+
 					while (encoder.HasPacket)
 					{
 						var packet = encoder.GetPacket();

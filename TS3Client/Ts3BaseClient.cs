@@ -1,4 +1,4 @@
-﻿namespace TS3Client
+namespace TS3Client
 {
 	using Commands;
 	using Messages;
@@ -70,9 +70,9 @@
 			=> Send("clientupdate",
 			new CommandParameter("client_nickname", newName));
 
-		public void ChangeDescription(string newDescription, ClientData client)
-			=> Send("clientdbedit",
-			new CommandParameter("cldbid", client.DatabaseId),
+		public void ChangeDescription(string newDescription, ClientIdT clientId)
+			=> Send("clientedit",
+			new CommandParameter("clid", clientId),
 			new CommandParameter("client_description", newDescription));
 
 		/// <summary>Displays information about your current ServerQuery connection including your loginname, etc.</summary>

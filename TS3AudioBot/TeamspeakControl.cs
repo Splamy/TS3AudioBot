@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -131,7 +131,7 @@ namespace TS3AudioBot
 			if (me == null)
 				return "Internal error (me==null)";
 
-			try { tsBaseClient.ChangeDescription(description, me); return R.OkR; }
+			try { tsBaseClient.ChangeDescription(description, me.ClientId); return R.OkR; }
 			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
 		}
 
@@ -296,6 +296,7 @@ namespace TS3AudioBot
 						PermissionId.b_client_permissionoverview_view, // + Scanning though given perms for rights system
 
 						PermissionId.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
+						PermissionId.b_client_use_channel_commander, // + Enable channel commander
 					},
 					new[] {
 						max, max,   1,   1,
@@ -304,7 +305,7 @@ namespace TS3AudioBot
 						  1, max, max,   4,
 						  1,   1,   1,   1,
 						  1,   1, max,   1,
-						ava,
+						ava,   1,
 					},
 					new[] {
 						false, false, false, false,
@@ -313,7 +314,7 @@ namespace TS3AudioBot
 						false, false, false, false,
 						false, false, false, false,
 						false, false, false, false,
-						false,
+						false, false,
 					},
 					new[] {
 						false, false, false, false,
@@ -322,7 +323,7 @@ namespace TS3AudioBot
 						false, false, false, false,
 						false, false, false, false,
 						false, false, false, false,
-						false,
+						false, false,
 					});
 
 				// Leave master group again
@@ -355,6 +356,25 @@ namespace TS3AudioBot
 				return R.OkR;
 			}
 			catch (Ts3CommandException) { return "Cannot move there."; }
+		}
+
+		public R SetChannelCommander(bool isCommander)
+		{
+			if (!(tsBaseClient is Ts3FullClient tsFullClient))
+				return "Commander mode not available";
+			try
+			{
+				tsFullClient.ChangeIsChannelCommander(isCommander);
+				return R.OkR;
+			}
+			catch (Ts3CommandException) { return "Cannot set commander mode"; }
+		}
+		public R<bool> IsChannelCommander()
+		{
+			var getInfoResult = GetClientInfoById(me.ClientId);
+			if (!getInfoResult.Ok)
+				return getInfoResult.Message;
+			return getInfoResult.Value.IsChannelCommander;
 		}
 
 		public void Dispose()

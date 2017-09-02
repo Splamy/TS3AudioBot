@@ -337,6 +337,10 @@ namespace TS3Client.Full
 
 		#region FULLCLIENT SPECIFIC COMMANDS
 
+		public void ChangeIsChannelCommander(bool isChannelCommander)
+			=> Send("clientupdate",
+			new CommandParameter("client_is_channel_commander", isChannelCommander));
+
 		public void ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
