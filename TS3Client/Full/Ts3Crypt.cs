@@ -385,13 +385,6 @@ namespace TS3Client.Full
 					eaxCipher.Init(false, ivAndKey);
 					result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
 
-					byte[] comb = new byte[dataLen + MacLen];
-					Array.Copy(packet.Raw, MacLen + InHeaderLen, comb, 0, dataLen);
-					Array.Copy(packet.Raw, 0, comb, dataLen, MacLen);
-
-					int len2 = eaxCipher.ProcessBytes(comb, 0, comb.Length, result, 0);
-					len2 += eaxCipher.DoFinal(result, len2);
-
 					int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
 					len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);
 					len += eaxCipher.DoFinal(result, len);
