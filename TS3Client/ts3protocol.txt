@@ -41,6 +41,7 @@ Packet 3 (Client <- Server)
    100 bytes : Server stuff := [A2]
 
 Packet 4 (Client -> Server)
+    04 bytes : Version of the Teamspeak client as timestamp
     01 bytes : Init-packet step number
                Const: 0x04
     64 bytes : the received 'x'
