@@ -6,11 +6,11 @@
 ## About
 This is our open-source TeamSpeak 3 audiobot project since
 we haven't found any other open-source one so far.  
-The bot has come a long way is pretty stable by now, though somtimes he hangs up or needs some other maintenance.  
-For now I'd only recomment this bot on small servers since it doesn't cover any more complex right systems and relies on discipline.  
+The bot has come a long way is pretty stable by now, though sometimes he hangs up or needs some other maintenance.  
+For now I'd only recommend this bot on small servers since it doesn't cover any more complex right systems and relies on discipline.  
 
 ## How our Bot works
-The TS3AudioBot connects with at least 1 TeamSpeak3 Client instance wich allows you to:
+The TS3AudioBot connects with at least 1 TeamSpeak3 Client instance which allows you to:
   * issue commands to that instance.
   * play music for your channel.
   * tell him to stream to different Channels and/or Users simultaneously with TeamSpeak's whisper feature.
@@ -37,7 +37,7 @@ In progress:
 * Web API
 
 In planning:
-* Create multiple client instances automatically for diffrent channels
+* Create multiple client instances automatically for different channels
 * (Improved) Rights system
 * Own web-interface
 
@@ -84,7 +84,7 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 
 ### Installation
 1. Create a group for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).
-1. Create a privilige key for the ServerAdmin group (or a group which has equivalent rights).
+1. Create a privilege key for the ServerAdmin group (or a group which has equivalent rights).
 1. The first time you'll need to run `mono TS3Audiobot.exe` without parameter and
 it will ask you a few questions.
 1. Close the bot again and configure your `rights.toml` in `TS3AudioBot\bin\Release\` to your desires.
@@ -92,10 +92,18 @@ You can use the template rules and assign your admin as suggested in the automat
 or dive into the Rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
 1. Start the bot again.
 1. Send the bot in a private message `!bot setup <key>` where `<key>` is the privilege key from a previous step.
-1. Now you can move the process to the backgroud or close the bot with `!quit` in teamspeak and run it in the background.  
+1. Now you can move the process to the background or close the bot with `!quit` in teamspeak and run it in the background.  
 The recommended start from now on is `mono TS3AudioBot.exe -q` to disable writing to stdout since the bot logs everything to a log file anyway.
 1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).  
 For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
 
 ### Testing and Fuzzying
 1. Run the *TS3ABotUnitTests* project in Visual Studio or Monodevelop.
+
+# License
+This project is licensed under OSL-3.0.
+
+Why OSL-3.0:
+- OSL allows you to link to our libraries without needing to disclose your own project, which might be useful if you want to use the TS3Client as a library.
+- If you create plugins you do not have to make them public like in GPL. (Although we would be happier if you shared them :)
+- With OSL we want to allow you providing the TS3AB as a service (even commercially). We do not want the software to be sold but the service. We want this software to be free for everyone.
