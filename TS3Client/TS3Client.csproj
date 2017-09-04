@@ -92,6 +92,7 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="ts3protocol.md" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Messages\MessageDeclarations.txt" />
@@ -99,7 +100,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessageTemplates.cs</LastGenOutput>
     </Content>
-    <None Include="ts3protocol.txt" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
