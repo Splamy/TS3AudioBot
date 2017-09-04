@@ -4,8 +4,10 @@
 # 0. Naming Conventions
 - `(Client -> Server)` denotes packets from client to server.
 - `(Client <- Server)` denotes packets from server to client.
-
-todo u16, datatypes etc
+- All datatypes are sent in network order (Big Endian) unless othwise specified.
+- Datatypes are declared with a prefixing `u` or `i` for unsigend and signed
+and a number for the bitlength.  
+For example `u8` would be be the C equivalent of `uint8` or `unsigned char`
 
 # 1. The (Low-Level) Initiation/Handshake
 
@@ -13,7 +15,7 @@ A connection is started from the client by sending the first handshake
 packet. The handshake process consists of 5 different init packets. This
 includes the so called RSA puzzle to prevent DOS attacks.
 
-## Packet 0 (Client -> Server)
+## 1.1 Packet 0 (Client -> Server)
     04 bytes : Version of the Teamspeak client as timestamp
                Example: { 0x06, 0x3b, 0xec, 0xe9 }
     01 bytes : Init-packet step number
@@ -22,28 +24,28 @@ includes the so called RSA puzzle to prevent DOS attacks.
     04 bytes : Current timestamp in unix format
     04 bytes : Random bytes := [A0]
 
-## Packet 1 (Client <- Server)
+## 1.2 Packet 1 (Client <- Server)
     01 bytes : Init-packet step number
                Const: 0x01
     16 bytes : Server stuff := [A1]
     04 bytes : The bytes from [A0] in reversed order
 
-## Packet 2 (Client -> Server)
+## 1.3 Packet 2 (Client -> Server)
     04 bytes : Version of the Teamspeak client as timestamp
     01 bytes : Init-packet step number
                Const: 0x02
     16 bytes : The bytes from [A1]
     04 bytes : The bytes from [A0] in reversed order
 
-## Packet 3 (Client <- Server)
+## 1.4 Packet 3 (Client <- Server)
      01 bytes : Init-packet step number
                 Const: 0x03
      64 bytes : 'x', an unsigned biginteger
      64 bytes : 'n', an unsigned biginteger
-     04 bytes : 'level' an int4 parsed with network to host endianness
+     04 bytes : 'level' a u32
     100 bytes : Server stuff := [A2]
 
-## Packet 4 (Client -> Server)
+## 1.5 Packet 4 (Client -> Server)
      04 bytes : Version of the Teamspeak client as timestamp
      01 bytes : Init-packet step number
                 Const: 0x04
@@ -55,21 +57,21 @@ includes the so called RSA puzzle to prevent DOS attacks.
                 biginteger. Padded from the lower side with '0x00' when shorter
                 than 64 bytes.
                 Example: { 0x00, 0x00, data ... data}
-    var bytes : The clientinitiv command as explained in (* TODO *)
+    var bytes : The clientinitiv command as explained in (see XXX)
 
 # 2. Low-Level Packets
 
 ## 2.1 Packet structure
-- All packets are build in a fixed scheme,
-though differently depending in which direction.
+- The packets are build in a fixed scheme,
+though have differences depending in which direction.
 - Every column here represents 1 byte.
-- All datatypes are sent in network order (Big Endian).
 - The entire packet size must be at max 500 bytes.
 
 ### 2.1.1 (Client -> Server)
     +--+--+--+--+--+--+--+--+--+--+--+--+--+---------//----------+
     |          MAC          | PId | CId |PT|        Data         |
     +--+--+--+--+--+--+--+--+--+--+--+--+--+---------//----------+
+                            \    Header    /
 
 | Name | Size        | Datatype | Explanation                     |
 |------|-------------|----------|---------------------------------|
@@ -83,6 +85,7 @@ though differently depending in which direction.
     +--+--+--+--+--+--+--+--+--+--+--+------------//-------------+
     |          MAC          | PId |PT|           Data            |
     +--+--+--+--+--+--+--+--+--+--+--+------------//-------------+
+                            \ Header /
 
 | Name | Size        | Datatype | Explanation                     |
 |------|-------------|----------|---------------------------------|
@@ -135,7 +138,113 @@ the last packet. Other flags, if set, are only set on the first packet.
 The data can additionally be compressed before splitting.
 
 ## 2.6 Packet Encrypting
+When a packet is not encrypted the `Unencrypted` flag is set. For encrypted
+packets the flag gets cleared.
+Packtes get encrypted with EAX mode (AES-CTR with OMAC).
+The en/decryption parameters get generated for each packet as follows
 
+### 2.6.1 Inputs
+
+| Name | Type     | Explanation                   |
+|------|----------|-------------------------------|
+| PT   | u8       | Packet Type                   |
+| PId  | u16      | Packet Id                     |
+| PGId | u32      | Packet GenerationId (see XXX) |
+| PD   | bool     | Packet Direction              |
+| SIV  | [u8; 20] | Shared IV (see XXX)           |
+
+### 2.6.2 Generation pseudocode
+
+    let temporary: [u8; 26]
+    temporary[0]    = 0x30 if (Client <- Server)
+                      0x31 if (Client -> Server)
+    temporary[1]    = PT
+    temporary[2-6]  = (PGId in network order)[0-4]
+    temporary[6-26] = SIV[0-20]
+
+    let keynonce: [u8; 32]
+    keynonce        = SHA256(temporary)
+
+    key: [u8; 16]   = keynonce[0-16]
+    nonce: [u8; 16] = keynonce[16-32]
+    key[0-2]        = key[0-2] xor (PId in network order)[0-2]
+
+### 2.6.3 Encryption
+
+The data can now be encrypted with the `key` and `nonce` from 2.6.2 as the EAX
+key and nonce and the packet `Header` as defined in 2.1 as the EAX header
+(sometimes called "Associated Text"). The resulting EAX mac
+(sometimes called "Tag") will be stored in the `MAC` field as defined in 2.1.
+
+## 2.7 Packet Stack Wrapup
+
+This stack is a reference for the execution order of the set data operations.
+For incomming packets the stack is executed bot to top, for outgoing packets
+top to bot.
+
+    +-----------+
+    |   Data    |
+    +-----------+
+    | Compress  |
+    +-----------+
+    |   Split   |
+    +-----------+
+    |  Encrypt  |
+    +-----------+
+
+## 2.8 Packet Types Data Structures
+
+The following chapter descibes the data structure for different packet types.
+
+### 2.8.1 Voice
+    +--+--+--+---------//---------+
+    | VId |C |        Data        |
+    +--+--+--+---------//---------+
+
+| Name | Type | Explanation     |
+|------|------|-----------------|
+| VId  | u16  | Voice Packet Id |
+| C    | u8   | Codec Type      |
+| Data | var  | Voice Data      |
+
+### 2.8.2 VoiceWhisper
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
+    | VId |C |N |M |           U*          |  T* |        Data        |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
+
+| Name | Type  | Explanation                           |
+|------|-------|---------------------------------------|
+| VId  | u16   | Voice Packet Id                       |
+| C    | u8    | Codec Type                            |
+| N    | u8    | Count of ChannelIds to send to        |
+| M    | u8    | Count of ClientIds to send to         |
+| U    | [u64] | Targeted ChannelIds, repeated N times |
+| T    | [u16] | Targeted ClientIds, repeated M times  |
+| Data | var   | Voice Data                            |
+
+### 2.8.3-4 Command and CommandLow
+The TeamSpeak3 Query like command string encoded in UTF-8
+
+### 2.8.5 Ping
+Empty.
+
+### 2.8.6-8 Pong, Ack and AckLow
+    +--+--+
+    | PId |
+    +--+--+
+
+| Name | Type | Explanation                        |
+|------|------|------------------------------------|
+| PId  | u16  | The packet id that is acknowledged |
+
+- In case of `Pong` a matching ping packet id is acknowledged.
+- In case of `Ack` or `AckLow` a matching Command or CommandLow packet id
+respectively is acknowledged.
+
+### 2.8.9 Init1
+See 1.1-1.5
+
+## 2.9 Packet Loss
 
 # 3. The (High-Level) Initiation/Handshake
 
@@ -147,5 +256,36 @@ Both the client and the server will need a EC public/private key. This key
 is also the identity which the server uses to recognize a user again.
 The curve used is 'prime256v1'.
 
+## 3.1 clientinitiv
+alpha, omega, ip
+
+## 3.1 initivexpand
+alpha, beta, omega
+
+## 3.1 clientinit
+
+## 3.1 initserver
+
+## 3.1 Further notifications
+ - channellist
+ - notifycliententerview
+ - channellistfinished
+ - notifychannelgrouplist
+ - notifyservergrouplist 
+ - notifyclientneededpermissions 
 
 # 4. High-Level Commands
+
+4.? Selective Repeat pack loss
+
+4.? Ping/Pong
+
+4.? Voice
+
+4.? Uid
+
+4.? Full client only concepts
+- notifyconnectioninforequest
+- => setconnectioninfo
+
+4.? Differences between Query and Full CLient
