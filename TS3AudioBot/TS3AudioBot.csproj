@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0ECC38F3-DE6E-4D7F-81EB-58B15F584635}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -13,9 +13,6 @@
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
@@ -36,28 +33,25 @@
   <PropertyGroup>
     <StartupObject>TS3AudioBot.MainBot</StartupObject>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <DocumentationFile>
-    </DocumentationFile>
-    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="LiteDB, Version=3.1.4.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
@@ -95,6 +89,7 @@
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="Helper\Cache.cs" />
     <Compile Include="Helper\ImageUtil.cs" />
+    <Compile Include="Helper\NativeWinDllLoader.cs" />
     <Compile Include="ResourceFactories\AudioType.cs" />
     <Compile Include="ResourceFactories\IFactory.cs" />
     <Compile Include="ResourceFactories\IThumbnailFactory.cs" />
@@ -249,6 +244,8 @@
     <EmbeddedResource Include="Media\SleepingKitty.png" />
   </ItemGroup>
   <ItemGroup>
+    <CopyLibs32 Include="lib\x86\*.*" />
+    <CopyLibs64 Include="lib\x64\*.*" />
     <Content Include="Web\Interface\404.html" />
     <Content Include="Web\Interface\md5.js" />
     <Content Include="Web\Interface\media\ghicon.png" />
@@ -271,8 +268,10 @@
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
+  </Target> 
   -->
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="@(CopyLibs32)" DestinationFolder="$(OutputPath)\x86\" />
+    <Copy SourceFiles="@(CopyLibs64)" DestinationFolder="$(OutputPath)\x64\" />
+  </Target>
 </Project>

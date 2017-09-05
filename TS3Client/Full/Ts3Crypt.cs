@@ -1,18 +1,11 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
-// Copyright (C) 2016  TS3AudioBot contributors
+// TS3Client - A free TeamSpeak3 client implementation
+// Copyright (C) 2017  TS3Client contributors
 //
 // This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
+// it under the terms of the Open Software License v. 3.0
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 namespace TS3Client.Full
 {
@@ -391,13 +384,6 @@ namespace TS3Client.Full
 				{
 					eaxCipher.Init(false, ivAndKey);
 					result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
-
-					byte[] comb = new byte[dataLen + MacLen];
-					Array.Copy(packet.Raw, MacLen + InHeaderLen, comb, 0, dataLen);
-					Array.Copy(packet.Raw, 0, comb, dataLen, MacLen);
-
-					int len2 = eaxCipher.ProcessBytes(comb, 0, comb.Length, result, 0);
-					len2 += eaxCipher.DoFinal(result, len2);
 
 					int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
 					len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);

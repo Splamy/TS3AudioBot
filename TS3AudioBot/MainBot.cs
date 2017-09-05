@@ -1,18 +1,11 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
-// Copyright (C) 2016  TS3AudioBot contributors
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// Copyright (C) 2017  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
+// it under the terms of the Open Software License v. 3.0
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 namespace TS3AudioBot
 {
@@ -386,15 +379,16 @@ namespace TS3AudioBot
 			return new JsonSingleValue<string>(nonce.Value);
 		}
 
-		[Command("bot name", "Gives the bot a new name.")]
-		public void CommandBotName(string name) => QueryConnection.ChangeName(name).UnwrapThrow();
-
-		[Command("bot setup", "Sets all teamspeak rights for the bot to be fully functional.")]
-		[RequiredParameters(0)]
-		public void CommandBotSetup(string adminToken)
+		[Command("bot commander", "Gets the status of the channel commander mode.")]
+		public JsonObject CommandBotCommander()
 		{
-			QueryConnection.SetupRights(adminToken, mainBotData).UnwrapThrow();
+			var value = QueryConnection.IsChannelCommander().UnwrapThrow();
+			return new JsonSingleValue<bool>("Channel commander is " + (value ? "on" : "off"), value);
 		}
+		[Command("bot commander on", "Enables channel commander.")]
+		public void CommandBotCommanderOn() => QueryConnection.SetChannelCommander(true);
+		[Command("bot commander off", "Disables channel commander.")]
+		public void CommandBotCommanderOff() => QueryConnection.SetChannelCommander(false);
 
 		[Command("bot move", "Moves the bot to you or a specified channel.")]
 		[RequiredParameters(0)]
@@ -405,6 +399,16 @@ namespace TS3AudioBot
 			if (!channel.HasValue)
 				throw new CommandException("No target channel found");
 			QueryConnection.MoveTo(channel.Value).UnwrapThrow();
+		}
+
+		[Command("bot name", "Gives the bot a new name.")]
+		public void CommandBotName(string name) => QueryConnection.ChangeName(name).UnwrapThrow();
+
+		[Command("bot setup", "Sets all teamspeak rights for the bot to be fully functional.")]
+		[RequiredParameters(0)]
+		public void CommandBotSetup(string adminToken)
+		{
+			QueryConnection.SetupRights(adminToken, mainBotData).UnwrapThrow();
 		}
 
 		[Command("channel", "Gets whether the bot plays music via normal voice mode to his own channel.")]

@@ -1,18 +1,13 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
-// Copyright (C) 2016  TS3AudioBot contributors
+// TS3Client - A free TeamSpeak3 client implementation
+// Copyright (C) 2017  TS3Client contributors
 //
 // This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
+// it under the terms of the Open Software License v. 3.0
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+
+//#define DIAGNOSTICS
 
 namespace TS3Client.Full
 {
@@ -29,17 +24,26 @@ namespace TS3Client.Full
 		/// <summary>Greatest allowed packet size, including the complete header.</summary>
 		private const int MaxPacketSize = 500;
 		private const int HeaderSize = 13;
-		private const int MaxDecompressedSize = 40000;
-
+		private const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
 		private const int PacketBufferSize = 50;
-		private const int RetryTimeout = 5;
-		private static readonly TimeSpan[] PacketTimeouts = new[]
-		{
-			TimeSpan.FromMilliseconds(200),
-			TimeSpan.FromMilliseconds(200),
-			TimeSpan.FromMilliseconds(500),
-			TimeSpan.FromMilliseconds(1000),
-		};
+
+		// Timout calculations
+		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
+		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
+		/// it takes for a packet to get ack'd.</summary>
+		private TimeSpan SmoothedRtt;
+		/// <summary>Holds the smoothed rtt variation.</summary>
+		private TimeSpan SmoothedRttVar;
+		/// <summary>Holds the current RetransmissionTimeOut, which determines .</summary>
+		private TimeSpan CurrentRto;
+		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
+		private const float alphaSmooth = 0.125f;
+		/// <summary>Smoothing factor for the SmoothedRttDev.</summary>
+		private const float betaSmooth = 0.25f;
+		/// <summary>The maximum wait time to retransmit a packet.</summary>
+		private static readonly TimeSpan MaxRetryInterval = TimeSpan.FromMilliseconds(1000);
+		/// <summary>The timeout check loop interval.</summary>
+		private static readonly TimeSpan ClockResolution = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
 		private static readonly TimeSpan MaxLastPingDistance = TimeSpan.FromSeconds(3);
 
@@ -86,8 +90,9 @@ namespace TS3Client.Full
 			{
 				ClientId = 0;
 				ExitReason = null;
-
-				ConnectUdpClient(host, port);
+				SmoothedRtt = MaxRetryInterval;
+				SmoothedRttVar = TimeSpan.Zero;
+				CurrentRto = MaxRetryInterval;
 
 				packetAckManager.Clear();
 				packetPingManager.Clear();
@@ -95,6 +100,8 @@ namespace TS3Client.Full
 				receiveQueueLow.Clear();
 				Array.Clear(packetCounter, 0, packetCounter.Length);
 				Array.Clear(generationCounter, 0, generationCounter.Length);
+
+				ConnectUdpClient(host, port);
 			}
 
 			resendThread.Start();
@@ -283,7 +290,7 @@ namespace TS3Client.Full
 				// check if we already have this packet and only need to ack it.
 				if (IsCommandPacketSet(packet))
 					continue;
-				
+
 				if (!ts3Crypt.Decrypt(packet))
 					continue;
 
@@ -435,7 +442,14 @@ namespace TS3Client.Full
 			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
 
 			lock (sendLoopLock)
-				packetAckManager.Remove(packetId);
+			{
+				OutgoingPacket ackPacket;
+				if (packetAckManager.TryGetValue(packetId, out ackPacket))
+				{
+					UpdateRto(Util.Now - ackPacket.LastSendTime);
+					packetAckManager.Remove(packetId);
+				}
+			}
 			return packet;
 		}
 
@@ -461,7 +475,9 @@ namespace TS3Client.Full
 					return;
 				packetPingManager.Remove(answerId);
 			}
-			NetworkStats.AddPing(Util.Now - sendPing.LastSendTime);
+			var rtt = Util.Now - sendPing.LastSendTime;
+			UpdateRto(rtt);
+			NetworkStats.AddPing(rtt);
 		}
 
 		public void ReceiveInitAck()
@@ -480,7 +496,22 @@ namespace TS3Client.Full
 
 		#endregion
 
-		private static TimeSpan GetTimeout(int step) => PacketTimeouts[Math.Min(PacketTimeouts.Length - 1, step)];
+		private void UpdateRto(TimeSpan sampleRtt)
+		{
+			// Timeout calculation (see: https://tools.ietf.org/html/rfc6298)
+			// SRTT_{i+1}    = (1-a) * SRTT_i   + a * RTT
+			// DevRTT_{i+1}  = (1-b) * DevRTT_i + b * | RTT - SRTT_{i+1} |
+			// Timeout_{i+1} = SRTT_{i+1} + max(ClockRes, 4 * DevRTT_{i+1})
+			if (SmoothedRtt < TimeSpan.Zero)
+				SmoothedRtt = sampleRtt;
+			else
+				SmoothedRtt = TimeSpan.FromTicks((long)((1 - alphaSmooth) * SmoothedRtt.Ticks + alphaSmooth * sampleRtt.Ticks));
+			SmoothedRttVar = TimeSpan.FromTicks((long)((1 - betaSmooth) * SmoothedRttVar.Ticks + betaSmooth * Math.Abs(sampleRtt.Ticks - SmoothedRtt.Ticks)));
+			CurrentRto = SmoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * SmoothedRttVar.Ticks));
+#if DIAGNOSTICS
+			Console.WriteLine("SRTT:{0} RTTVAR:{1} RTO: {2}", SmoothedRtt, SmoothedRttVar, CurrentRto);
+#endif
+		}
 
 		/// <summary>
 		/// ResendLoop will regularly check if a packet has be acknowleged and trys to send it again
@@ -492,15 +523,13 @@ namespace TS3Client.Full
 
 			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
 			{
-				TimeSpan sleepSpan = GetTimeout(PacketTimeouts.Length);
-
 				lock (sendLoopLock)
 				{
 					if (Closed)
 						break;
 
-					if ((packetAckManager.Count > 0 && ResendPackages(packetAckManager.Values, ref sleepSpan))
-						|| (packetPingManager.Count > 0 && ResendPackages(packetPingManager.Values, ref sleepSpan)))
+					if ((packetAckManager.Count > 0 && ResendPackages(packetAckManager.Values))
+						|| (packetPingManager.Count > 0 && ResendPackages(packetPingManager.Values)))
 					{
 						Stop(MoveReason.Timeout);
 						return;
@@ -509,6 +538,7 @@ namespace TS3Client.Full
 
 				var now = Util.Now;
 				var nextTest = pingCheck - now + PingInterval;
+				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
 				if (nextTest < TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
 				{
 					if (nextTest < -MaxLastPingDistance)
@@ -517,39 +547,44 @@ namespace TS3Client.Full
 						pingCheck += PingInterval;
 					SendPing();
 				}
-				sleepSpan = Util.Min(sleepSpan, nextTest);
+				var sleepSpan = Util.Min(ClockResolution, nextTest);
 
-				if (sleepSpan > TimeSpan.Zero)
-					sendLoopPulse.WaitOne(sleepSpan);
+				sendLoopPulse.WaitOne(ClockResolution);
 			}
 		}
 
-		private bool ResendPackages(IEnumerable<OutgoingPacket> packetList, ref TimeSpan sleepSpan)
+		private bool ResendPackages(IEnumerable<OutgoingPacket> packetList)
 		{
-			TimeSpan maxTimeout = GetTimeout(PacketTimeouts.Length);
+			var now = Util.Now;
 			foreach (var outgoingPacket in packetList)
 			{
-				var nextTest = (outgoingPacket.LastSendTime - Util.Now) + GetTimeout(outgoingPacket.ResendCount);
-				if (nextTest < TimeSpan.Zero)
+				// Check if the packet timed out completely
+				if (outgoingPacket.FirstSendTime < now - PacketTimeout)
 				{
-					if (++outgoingPacket.ResendCount > RetryTimeout)
-					{
-#if DEBUG
-						Console.WriteLine("TIMEOUT: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
+#if DIAGNOSTICS
+					Console.WriteLine("TIMEOUT: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
 #endif
-						return true;
-					}
+					return true;
+				}
+
+				// Check if we should retransmit a packet because it probably got lost
+				if (outgoingPacket.LastSendTime < now - CurrentRto)
+				{
+#if DIAGNOSTICS
+					Console.WriteLine("RESEND PACKET: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
+#endif
+					CurrentRto = CurrentRto + CurrentRto;
+					if (CurrentRto > MaxRetryInterval)
+						CurrentRto = MaxRetryInterval;
 					SendRaw(outgoingPacket);
 				}
-				else
-					sleepSpan = Util.Min(sleepSpan, nextTest);
 			}
 			return false;
 		}
 
 		private void SendRaw(OutgoingPacket packet)
 		{
-			packet.LastSendTime = Util.Now;
+			packet.FirstSendTime = packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}
