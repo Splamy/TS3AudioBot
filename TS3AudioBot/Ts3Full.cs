@@ -50,7 +50,10 @@ namespace TS3AudioBot
 
 		private Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
-		public bool SendDirectVoice { get; set; } = false;
+		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
+		public ulong GroupWhisperTargetId { get; set; }
+		public GroupWhisperType GroupWhisperType { get; set; }
+		public GroupWhisperTarget GroupWhisperTarget { get; set; }
 
 		private TickWorker sendTick;
 		private Process ffmpegProcess;
@@ -265,27 +268,42 @@ namespace TS3AudioBot
 					hasTriedToReconnectAudio = false;
 					audioTimer.PushBytes(read);
 
-					bool sendWhisper = true;
-					if (isStall)
+					bool doSend = true;
+
+					switch (SendMode)
 					{
-						if (++stallCount % StallCountInterval == 0)
+					case TargetSendMode.None:
+						doSend = false;
+						break;
+					case TargetSendMode.Voice:
+						break;
+					case TargetSendMode.Whisper:
+					case TargetSendMode.WhisperGroup:
+						if (isStall)
 						{
-							stallNoErrorCount++;
-							if (stallNoErrorCount > StallNoErrorCountMax)
+							if (++stallCount % StallCountInterval == 0)
 							{
-								stallCount = 0;
-								isStall = false;
+								stallNoErrorCount++;
+								if (stallNoErrorCount > StallNoErrorCountMax)
+								{
+									stallCount = 0;
+									isStall = false;
+								}
+							}
+							else
+							{
+								doSend = false;
 							}
 						}
-						else
-						{
-							sendWhisper = false;
-						}
+						if (SendMode == TargetSendMode.Whisper)
+							doSend &= channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
+						break;
+					default:
+						throw new InvalidOperationException();
 					}
 
-					sendWhisper &= channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
 					// Save cpu when we know there is noone to send to
-					if (!sendWhisper && !SendDirectVoice)
+					if (!doSend)
 						break;
 
 					AudioModifier.AdjustVolume(audioBuffer, read, volume);
@@ -294,10 +312,18 @@ namespace TS3AudioBot
 					while (encoder.HasPacket)
 					{
 						var packet = encoder.GetPacket();
-						if (sendWhisper)
-							tsFullClient.SendAudioWhisper(packet.Array, packet.Length, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
-						if (SendDirectVoice)
+						switch (SendMode)
+						{
+						case TargetSendMode.Voice:
 							tsFullClient.SendAudio(packet.Array, packet.Length, encoder.Codec);
+							break;
+						case TargetSendMode.Whisper:
+							tsFullClient.SendAudioWhisper(packet.Array, packet.Length, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
+							break;
+						case TargetSendMode.WhisperGroup:
+							tsFullClient.SendAudioGroupWhisper(packet.Array, packet.Length, encoder.Codec, GroupWhisperType, GroupWhisperTarget);
+							break;
+						}
 						encoder.ReturnPacket(packet.Array);
 					}
 				}
@@ -307,6 +333,13 @@ namespace TS3AudioBot
 		#region IPlayerConnection
 
 		public event EventHandler OnSongEnd;
+
+		public void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+		{
+			GroupWhisperType = type;
+			GroupWhisperTarget = target;
+			GroupWhisperTargetId = targetId;
+		}
 
 		public R AudioStart(string url) => StartFfmpegProcess(url);
 

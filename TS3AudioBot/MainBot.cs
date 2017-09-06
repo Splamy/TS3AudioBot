@@ -411,13 +411,6 @@ namespace TS3AudioBot
 			QueryConnection.SetupRights(adminToken, mainBotData).UnwrapThrow();
 		}
 
-		[Command("channel", "Gets whether the bot plays music via normal voice mode to his own channel.")]
-		public JsonObject CommandChannel() => new JsonSingleValue<bool>("Normal voice mode is " + (TargetManager.SendDirectVoice ? "on" : "off"), TargetManager.SendDirectVoice);
-		[Command("channel on", "Enables normal voice mode.")]
-		public void CommandChannelOn() => TargetManager.SendDirectVoice = true;
-		[Command("channel off", "Disables normal voice mode.")]
-		public void CommandChannelOff() => TargetManager.SendDirectVoice = false;
-
 		[Command("clear", "Removes all songs from the current playlist.")]
 		public void CommandClear()
 		{
@@ -1494,6 +1487,35 @@ namespace TS3AudioBot
 				return new JsonEmpty("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)");
 			}
 			return null;
+		}
+
+		[Command("whisper off", "Enables normal voice mode.")]
+		public void CommandWhisperOff() => TargetManager.SendMode = TargetSendMode.Voice;
+
+		[Command("whisper subscription", "Enables default whisper subsciption mode.")]
+		public void CommandWhisperSubsription() => TargetManager.SendMode = TargetSendMode.Whisper;
+
+		[Command("whisper all", "Set how to send music.")]
+		public void CommandWhisperAll() => CommandWhisperGroup(GroupWhisperType.AllClients, GroupWhisperTarget.AllChannels);
+
+		[Command("whisper group", "Set a specific teamspeak whisper group.")]
+		[RequiredParameters(2)]
+		public void CommandWhisperGroup(GroupWhisperType type, GroupWhisperTarget target, ulong? targetId = null)
+		{
+			if (type == GroupWhisperType.ServerGroup || type == GroupWhisperType.ChannelGroup)
+			{
+				if (!targetId.HasValue)
+					throw new CommandException("This type required an additional target", CommandExceptionReason.CommandError);
+				TargetManager.SetGroupWhisper(type, target, targetId.Value);
+				TargetManager.SendMode = TargetSendMode.WhisperGroup;
+			}
+			else
+			{
+				if (targetId.HasValue)
+					throw new CommandException("This type does not take an additional target", CommandExceptionReason.CommandError);
+				TargetManager.SetGroupWhisper(type, target, 0);
+				TargetManager.SendMode = TargetSendMode.WhisperGroup;
+			}
 		}
 
 		[Command("xecute", "Evaluates all parameter.")]

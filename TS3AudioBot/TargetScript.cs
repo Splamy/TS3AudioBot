@@ -14,8 +14,8 @@ namespace TS3AudioBot
 
 	class TargetScript
 	{
-		private const string defaultVoiceScript = "!channel on";
-		private const string defaultWhisperScript = "!xecute (!unsubscribe temporary) (!subscribe channeltemp (!getuser channel))";
+		private const string defaultVoiceScript = "!whisper off";
+		private const string defaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getuser channel))";
 
 		private MainBot parent;
 		private CommandManager CommandManager => parent.CommandManager;

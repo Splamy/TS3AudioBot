@@ -399,6 +399,26 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper);
 		}
 
+		public void SendAudioGroupWhisper(byte[] buffer, int length, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+		{
+			// [X,X,Y,N,M,U,U,U,U,U,U,U,U,DATA]
+			// > X is a ushort in H2N order of a own audio packet counter
+			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
+			// > Y is the codec byte (see Enum)
+			// > N is a byte, specifying the GroupWhisperType
+			// > M is a byte, specifying the GroupWhisperTarget
+			// > U is a ulong in H2N order for the targeted channelId or groupId (0 if not applicable)
+			byte[] tmpBuffer = new byte[length + 13];
+			tmpBuffer[2] = (byte)codec;
+			tmpBuffer[3] = (byte)type;
+			tmpBuffer[4] = (byte)target;
+			NetUtil.H2N(targetId, tmpBuffer, 5);
+			Array.Copy(buffer, 0, tmpBuffer, 13, length);
+			buffer = tmpBuffer;
+
+			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
+		}
+
 		// Splitted base commands
 
 		public override ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)

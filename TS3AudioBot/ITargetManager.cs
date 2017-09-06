@@ -9,9 +9,12 @@
 
 namespace TS3AudioBot
 {
+	using TS3Client;
+
 	public interface ITargetManager
 	{
-		bool SendDirectVoice { get; set; }
+		TargetSendMode SendMode { get; set; }
+		void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId);
 
 		/// <summary>Adds a channel to the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
@@ -26,5 +29,13 @@ namespace TS3AudioBot
 		void ClearTemporary();
 		void WhisperClientSubscribe(ushort userId);
 		void WhisperClientUnsubscribe(ushort userId);
+	}
+
+	public enum TargetSendMode
+	{
+		None,
+		Voice,
+		Whisper,
+		WhisperGroup,
 	}
 }

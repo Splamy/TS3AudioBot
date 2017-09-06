@@ -115,6 +115,27 @@ namespace TS3Client
 		ServerShutdown,
 	}
 
+	public enum GroupWhisperType : byte
+	{
+		/// <summary>Requires servergroup targetId</summary>
+		ServerGroup = 0,
+		/// <summary>Requires channelgroup targetId</summary>
+		ChannelGroup,
+		ChannelCommander,
+		AllClients,
+	}
+
+	public enum GroupWhisperTarget : byte
+	{
+		AllChannels = 0,
+		CurrentChannel,
+		ParentChannel,
+		AllParentChannel,
+		ChannelFamily,
+		CompleteChannelFamily,
+		Subchannels,
+	}
+
 	// Source: http://forum.teamspeak.com/threads/102276-Server-query-error-id-list
 	public enum Ts3ErrorCode : ushort
 	{

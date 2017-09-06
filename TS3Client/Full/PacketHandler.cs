@@ -143,14 +143,13 @@ namespace TS3Client.Full
 			}
 		}
 
-		public void AddOutgoingPacket(byte[] packet, PacketType packetType)
+		public void AddOutgoingPacket(byte[] packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
 			lock (sendLoopLock)
 			{
 				if (Closed)
 					return;
-
-				var addFlags = PacketFlags.None;
+				
 				if (NeedsSplitting(packet.Length))
 				{
 					if (packetType == PacketType.Voice || packetType == PacketType.VoiceWhisper)

@@ -218,6 +218,14 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (targetType == typeof(string))
 				return value;
+			if (targetType.IsEnum)
+			{
+				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
+				var result = XCommandSystem.FilterList(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), value).Select(x => x.Value).FirstOrDefault();
+				if(result == null)
+					throw new CommandException($"Invalid parameter \"{value}\"", CommandExceptionReason.MissingParameter);
+				return result;
+			}
 			if (targetType.IsConstructedGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
 				targetType = targetType.GenericTypeArguments[0];
 
