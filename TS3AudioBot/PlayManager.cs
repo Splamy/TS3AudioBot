@@ -13,7 +13,6 @@ namespace TS3AudioBot
 	using History;
 	using ResourceFactories;
 	using System;
-	using TS3Client.Messages;
 
 	public class PlayManager
 	{

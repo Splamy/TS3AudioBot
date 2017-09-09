@@ -46,6 +46,7 @@ namespace TS3Client.Full
 		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
 		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
+		public event NotifyEventHandler<ClientMoved> OnClientMoved;
 		public override event EventHandler<EventArgs> OnConnected;
 		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
 		public event EventHandler<CommandError> OnErrorEvent;
@@ -157,7 +158,7 @@ namespace TS3Client.Full
 				OnClientLeftView?.Invoke(this, clientLeftArr);
 				break;
 
-			case NotificationType.ClientMoved: break;
+			case NotificationType.ClientMoved: OnClientMoved?.Invoke(this, notification.Cast<ClientMoved>()); break;
 			case NotificationType.ServerEdited: break;
 			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
 			case NotificationType.TokenUsed: break;
@@ -165,7 +166,7 @@ namespace TS3Client.Full
 			case NotificationType.InitIvExpand: ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault()); break;
 			case NotificationType.InitServer: ProcessInitServer((InitServer)notification.FirstOrDefault()); break;
 			case NotificationType.ChannelList: break;
-			case NotificationType.ChannelListFinished: break;
+			case NotificationType.ChannelListFinished: ChannelSubscribeAll(); break;
 			case NotificationType.ClientNeededPermissions: break;
 			case NotificationType.ClientChannelGroupChanged: break;
 			case NotificationType.ClientServerGroupAdded: break;
@@ -359,6 +360,12 @@ namespace TS3Client.Full
 				new Ts3Command("clientdisconnect", new List<ICommandPart>() {
 					new CommandParameter("reasonid", (int)reason),
 					new CommandParameter("reasonmsg", reasonMsg) }));
+
+		public void ChannelSubscribeAll()
+			=> Send("channelsubscribeall");
+
+		public void ChannelUnsubscribeAll()
+			=> Send("channelunsubscribeall");
 
 		public void SendAudio(byte[] buffer, int length, Codec codec)
 		{

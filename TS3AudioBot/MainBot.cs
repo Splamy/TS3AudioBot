@@ -93,30 +93,31 @@ namespace TS3AudioBot
 				{
 				case "-h":
 				case "--help":
-					Console.WriteLine(" --Quiet  -q         Deactivates all output to stdout.");
-					Console.WriteLine(" --NoLog  -L         Deactivates writing to the logfile.");
-					Console.WriteLine(" --Stack  -s         Adds the stacktrace to all log writes.");
-					Console.WriteLine(" --Config -c <file>  Specifies the path to the config file.");
-					Console.WriteLine(" --help   -h         Prints this help....");
+					Console.WriteLine(" --quiet -q          Deactivates all output to stdout.");
+					Console.WriteLine(" --no-log -L         Deactivates writing to the logfile.");
+					Console.WriteLine(" --stack -s          Adds the stacktrace to all log writes.");
+					Console.WriteLine(" --config -c <file>  Specifies the path to the config file.");
+					Console.WriteLine(" --version -V        Gets the bot version.");
+					Console.WriteLine(" --help -h           Prints this help....");
 					return false;
 
 				case "-q":
-				case "--Quiet":
+				case "--quiet":
 					consoleOutput = false;
 					break;
 
 				case "-L":
-				case "--NoLog":
+				case "--no-log":
 					writeLog = false;
 					break;
 
 				case "-s":
-				case "--Stack":
+				case "--stack":
 					writeLogStack = true;
 					break;
 
 				case "-c":
-				case "--Config":
+				case "--config":
 					if (i >= args.Length - 1)
 					{
 						Console.WriteLine("No config file specified after \"{0}\"", args[i]);
@@ -124,6 +125,11 @@ namespace TS3AudioBot
 					}
 					configFilePath = args[++i];
 					break;
+
+				case "-V":
+				case "--version":
+					Console.WriteLine(Util.GetAssemblyData().ToLongString());
+					return false;
 
 				default:
 					Console.WriteLine("Unrecognized parameter: {0}", args[i]);
@@ -1398,6 +1404,7 @@ namespace TS3AudioBot
 			throw new CommandException("Can't find a fitting return type for take", CommandExceptionReason.NoReturnMatch);
 		}
 
+#if DEBUG
 		[Command("test", "Only for debugging purposes.")]
 		public JsonObject CommandTest(ExecutionInformation info, string privet)
 		{
@@ -1424,6 +1431,7 @@ namespace TS3AudioBot
 
 			}
 		}
+#endif
 
 		[Command("unsubscribe", "Only lets you hear the music in active channels again.")]
 		public void CommandUnsubscribe(ExecutionInformation info)
@@ -1720,7 +1728,7 @@ namespace TS3AudioBot
 			PluginManager?.Dispose(); // before: SessionManager, logStream,
 			PluginManager = null;
 
-			PlayManager.Stop();
+			PlayManager?.Stop();
 
 			PlayerConnection?.Dispose(); // before: logStream,
 			PlayerConnection = null;

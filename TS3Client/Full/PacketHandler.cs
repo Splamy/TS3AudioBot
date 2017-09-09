@@ -125,7 +125,7 @@ namespace TS3Client.Full
 
 				remoteAddress = new IPEndPoint(ipAddr, port);
 
-				udpClient = new UdpClient();
+				udpClient = new UdpClient(remoteAddress.AddressFamily);
 				udpClient.Connect(remoteAddress);
 			}
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
@@ -149,7 +149,7 @@ namespace TS3Client.Full
 			{
 				if (Closed)
 					return;
-				
+
 				if (NeedsSplitting(packet.Length))
 				{
 					if (packetType == PacketType.Voice || packetType == PacketType.VoiceWhisper)
@@ -191,8 +191,8 @@ namespace TS3Client.Full
 					else
 						packet.PacketFlags |= flags | PacketFlags.Newprotocol;
 					var ids = GetPacketCounter(packet.PacketType);
-					packet.PacketId = ids.Item1;
-					packet.GenerationId = ids.Item2;
+					packet.PacketId = ids.Id;
+					packet.GenerationId = ids.Generation;
 					if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceWhisper)
 						NetUtil.H2N(packet.PacketId, packet.Data, 0);
 					if (ts3Crypt.CryptoInitComplete)
@@ -213,8 +213,8 @@ namespace TS3Client.Full
 			}
 		}
 
-		private Tuple<ushort, uint> GetPacketCounter(PacketType packetType)
-			=> new Tuple<ushort, uint>(packetCounter[(int)packetType], generationCounter[(int)packetType]);
+		private IdTuple GetPacketCounter(PacketType packetType)
+			=> new IdTuple(packetCounter[(int)packetType], generationCounter[(int)packetType]);
 		private void IncPacketCounter(PacketType packetType)
 		{
 			packetCounter[(int)packetType]++;
@@ -587,5 +587,13 @@ namespace TS3Client.Full
 			NetworkStats.LogOutPacket(packet);
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}
+	}
+
+	struct IdTuple
+	{
+		public ushort Id { get; set; }
+		public uint Generation { get; set; }
+
+		public IdTuple(ushort id, uint generation) { Id = id; Generation = generation; }
 	}
 }

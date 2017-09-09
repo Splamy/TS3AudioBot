@@ -267,7 +267,7 @@ The packet header values are set as following for all packets here:
 | nonce     | N/A                                                    |
 | Type      | Init1                                                  |
 | Encrypted | ✘                                                      |
-| Flags     | Newprotocol                                            |
+| Flags     | Newprotocol, Unencrypted                               |
 | Packet Id | u16: 101                                               |
 | Client Id | u16: 0                                                 |
 

@@ -65,7 +65,7 @@ Download the git repository with `git clone https://github.com/Splamy/TS3AudioBo
 1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
 1. Go into the directory of the repository with `cd TS3AudioBot`
 1. Execute `nuget restore` or `mono ../Nuget.exe restore` to download all dependencies
-1. Execute `msbuild /p:Configuration=Release /p:Platform=AnyCPU TS3AudioBot.sln` to build the C# AudioBot
+1. Execute `msbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot
 1. Getting the dependencies
     * on **Ubuntu**:  
     Run `sudo apt-get install libopus-dev ffmpeg`
