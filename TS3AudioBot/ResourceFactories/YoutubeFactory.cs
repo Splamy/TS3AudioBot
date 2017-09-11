@@ -348,6 +348,9 @@ namespace TS3AudioBot.ResourceFactories
 				return "No connection";
 			var parsed = Util.Serializer.Deserialize<JSON_PlaylistItems>(response);
 
+			// default: 120px/ 90px
+			// medium : 320px/180px
+			// high   : 480px/360px
 			var imgurl = new Uri(parsed.items[0].snippet.thumbnails.medium.url);
 			Image img = null;
 			var resresult = WebWrapper.GetResponse(imgurl, (webresp) =>

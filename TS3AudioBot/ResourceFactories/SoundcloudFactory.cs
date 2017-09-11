@@ -15,8 +15,9 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Globalization;
 	using System.Text.RegularExpressions;
 	using Helper;
+	using System.Drawing;
 
-	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory
+	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
 		public string SubCommandName => "soundcloud";
 		public AudioType FactoryFor => AudioType.Soundcloud;
@@ -68,9 +69,8 @@ namespace TS3AudioBot.ResourceFactories
 			if (MatchLink(id))
 				return id;
 
-			string jsonResponse;
 			var uri = new Uri($"https://api.soundcloud.com/tracks/{id}?client_id={soundcloudClientId}");
-			if (!WebWrapper.DownloadString(out jsonResponse, uri))
+			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return null;
 			var parsedDict = ParseJson(jsonResponse);
 			return parsedDict?["permalink_url"] as string;
@@ -111,8 +111,7 @@ namespace TS3AudioBot.ResourceFactories
 		public R<Playlist> GetPlaylist(string url)
 		{
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={soundcloudClientId}");
-			string jsonResponse;
-			if (!WebWrapper.DownloadString(out jsonResponse, uri))
+			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return RResultCode.ScInvalidLink.ToString();
 
 			var parsedDict = ParseJson(jsonResponse);
@@ -136,6 +135,40 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			return plist;
+		}
+
+		public R<Image> GetThumbnail(PlayResource playResource)
+		{
+			var uri = new Uri($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={soundcloudClientId}");
+			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
+				return "Error or no response by soundcould";
+
+			var parsedDict = ParseJson(jsonResponse);
+			if (parsedDict == null)
+				return "Empty or missing response parts (parsedDict)";
+
+			var imgUrl = parsedDict["artwork_url"] as string;
+			if (imgUrl == null)
+				return "Empty or missing response parts (artwork_url)";
+
+			// t500x500: 500px×500px
+			// crop    : 400px×400px
+			// t300x300: 300px×300px
+			// large   : 100px×100px 
+			imgUrl = imgUrl.Replace("-large", "-t300x300");
+
+			var imgurl = new Uri(imgUrl);
+			Image img = null;
+			var resresult = WebWrapper.GetResponse(imgurl, (webresp) =>
+			{
+				using (var stream = webresp.GetResponseStream())
+				{
+					img = Image.FromStream(stream);
+				}
+			});
+			if (resresult != ValidateCode.Ok)
+				return "Error while reading image";
+			return img;
 		}
 
 		public void Dispose() { }

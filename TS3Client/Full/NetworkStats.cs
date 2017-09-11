@@ -53,6 +53,11 @@ namespace TS3Client.Full
 			}
 		}
 
+		public void LogLostPings(int count)
+		{
+			// TODO
+		}
+
 		public void AddPing(TimeSpan ping)
 		{
 			lock (queueLock)

@@ -225,33 +225,31 @@ Note that the new generation id immediately applies to the 'overflowing' packet.
 
 The generation id counter is solely used for encryption (see 1.6).
 
-## 1.10 Packet Acknowledgement
+## 1.10 Packet Acknowledgement / Packet Loss
 In order to reliably send packets over UPD some packet types must get
-acknowledged when received. The following table show which packets get
-acknowledged and must be resent when lost:
+acknowledged when received (see 1.11).
 
-| Type         | Acknowledged (by)         |
-|--------------|---------------------------|
-| Voice        | ✗                         |
-| VoiceWhisper | ✗                         |
-| Command      | ✓ (Ack)                   |
-| CommandLow   | ✓ (AckLow)                |
-| Ping         | ✓ (Pong)                  |
-| Pong         | ✗                         |
-| Ack          | ✗                         |
-| AckLow       | ✗                         |
-| Init1        | ✓ (the next Init1 packet) |
-
-## 1.11 Packet Loss
 The protocol uses selective repeat for lost packets. This means each packet has
 its own timeout. Already acknowledged later packets must not be resent.
 When a packet times out, the exact same packet should be resent until properly
 acknowledged by the server.
 If after 30 seconds no resent packet gets acknowledged the connection should be
 closed.
-Packet timeouts should be calculated with an exponential backoff to prevent
-network congestion.
+Packet resend timeouts should be calculated with an exponential backoff to
+prevent network congestion.
 
+## 1.11 Wrap-up
+| Type         | Acknowledged (by) | Resend | Encrypted |
+|--------------|-------------------|--------|-----------|
+| Voice        | ✗                | ✗     | Optional  |
+| VoiceWhisper | ✗                | ✗     | Optional  |
+| Command      | ✓ (Ack)          | ✓     | ✓        |
+| CommandLow   | ✓ (AckLow)       | ✓     | ✓        |
+| Ping         | ✓ (Pong)         | ✗     | ✗        |
+| Pong         | ✗                | ✗     | ✗        |
+| Ack          | ✗                | ✓     | ✓        |
+| AckLow       | ✗                | ✓     | ✓        |
+| Init1        | ✓ (next Init1)   | ✓     | ✗        |
 
 # 2. The (Low-Level) Initiation/Handshake
 A connection is started from the client by sending the first handshake
@@ -266,8 +264,7 @@ The packet header values are set as following for all packets here:
 | key       | N/A                                                    |
 | nonce     | N/A                                                    |
 | Type      | Init1                                                  |
-| Encrypted | ✘                                                      |
-| Flags     | Newprotocol, Unencrypted                               |
+| Encrypted | ✘                                                     |
 | Packet Id | u16: 101                                               |
 | Client Id | u16: 0                                                 |
 

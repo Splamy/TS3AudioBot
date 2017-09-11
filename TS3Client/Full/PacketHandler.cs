@@ -12,6 +12,7 @@
 namespace TS3Client.Full
 {
 	using System;
+	using System.Diagnostics;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
@@ -25,7 +26,7 @@ namespace TS3Client.Full
 		private const int MaxPacketSize = 500;
 		private const int HeaderSize = 13;
 		private const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
-		private const int PacketBufferSize = 50;
+		private const int ReceivePacketWindowSize = 50;
 
 		// Timout calculations
 		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
@@ -34,7 +35,8 @@ namespace TS3Client.Full
 		private TimeSpan SmoothedRtt;
 		/// <summary>Holds the smoothed rtt variation.</summary>
 		private TimeSpan SmoothedRttVar;
-		/// <summary>Holds the current RetransmissionTimeOut, which determines .</summary>
+		/// <summary>Holds the current RetransmissionTimeOut, which determines the timespan until
+		/// a packet is considered to be lost.</summary>
 		private TimeSpan CurrentRto;
 		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
 		private const float alphaSmooth = 0.125f;
@@ -45,12 +47,13 @@ namespace TS3Client.Full
 		/// <summary>The timeout check loop interval.</summary>
 		private static readonly TimeSpan ClockResolution = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
-		private static readonly TimeSpan MaxLastPingDistance = TimeSpan.FromSeconds(3);
+		private readonly Stopwatch PingTimer = new Stopwatch();
+		private ushort LastSentPingId;
+		private ushort LastReceivedPingId;
 
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
 		private readonly Dictionary<ushort, OutgoingPacket> packetAckManager;
-		private readonly Dictionary<ushort, OutgoingPacket> packetPingManager;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
 		private readonly object sendLoopLock = new object();
@@ -70,9 +73,8 @@ namespace TS3Client.Full
 		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
 			packetAckManager = new Dictionary<ushort, OutgoingPacket>();
-			packetPingManager = new Dictionary<ushort, OutgoingPacket>();
-			receiveQueue = new RingQueue<IncomingPacket>(PacketBufferSize, ushort.MaxValue + 1);
-			receiveQueueLow = new RingQueue<IncomingPacket>(PacketBufferSize, ushort.MaxValue + 1);
+			receiveQueue = new RingQueue<IncomingPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveQueueLow = new RingQueue<IncomingPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			NetworkStats = new NetworkStats();
 
 			packetCounter = new ushort[9];
@@ -93,9 +95,10 @@ namespace TS3Client.Full
 				SmoothedRtt = MaxRetryInterval;
 				SmoothedRttVar = TimeSpan.Zero;
 				CurrentRto = MaxRetryInterval;
+				LastSentPingId = 0;
+				LastReceivedPingId = 0;
 
 				packetAckManager.Clear();
-				packetPingManager.Clear();
 				receiveQueue.Clear();
 				receiveQueueLow.Clear();
 				Array.Clear(packetCounter, 0, packetCounter.Length);
@@ -150,9 +153,10 @@ namespace TS3Client.Full
 				if (Closed)
 					return;
 
-				if (NeedsSplitting(packet.Length))
+				if (NeedsSplitting(packet.Length) && packetType != PacketType.VoiceWhisper)
 				{
-					if (packetType == PacketType.Voice || packetType == PacketType.VoiceWhisper)
+					// VoiceWhisper packets are for some reason excluded
+					if (packetType == PacketType.Voice)
 						return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
 
 					packet = QuickLZ.Compress(packet, 1);
@@ -173,48 +177,60 @@ namespace TS3Client.Full
 		{
 			lock (sendLoopLock)
 			{
-				if (packet.PacketType == PacketType.Init1)
+				var ids = GetPacketCounter(packet.PacketType);
+				if (ts3Crypt.CryptoInitComplete)
+					IncPacketCounter(packet.PacketType);
+
+				packet.PacketId = ids.Id;
+				packet.GenerationId = ids.Generation;
+				packet.ClientId = ClientId;
+				packet.PacketFlags |= flags;
+
+				switch (packet.PacketType)
 				{
-					packet.PacketFlags |= flags | PacketFlags.Unencrypted;
-					packet.PacketId = 101;
-					packet.ClientId = 0;
-				}
-				else
-				{
-					if (packet.PacketType == PacketType.Ping
-						|| packet.PacketType == PacketType.Pong
-						|| packet.PacketType == PacketType.Voice
-						|| packet.PacketType == PacketType.VoiceWhisper)
-						packet.PacketFlags |= flags | PacketFlags.Unencrypted;
-					else if (packet.PacketType == PacketType.Ack)
-						packet.PacketFlags |= flags;
-					else
-						packet.PacketFlags |= flags | PacketFlags.Newprotocol;
-					var ids = GetPacketCounter(packet.PacketType);
-					packet.PacketId = ids.Id;
-					packet.GenerationId = ids.Generation;
-					if (packet.PacketType == PacketType.Voice || packet.PacketType == PacketType.VoiceWhisper)
-						NetUtil.H2N(packet.PacketId, packet.Data, 0);
-					if (ts3Crypt.CryptoInitComplete)
-						IncPacketCounter(packet.PacketType);
-					packet.ClientId = ClientId;
+				case PacketType.Voice:
+				case PacketType.VoiceWhisper:
+					packet.PacketFlags |= PacketFlags.Unencrypted;
+					NetUtil.H2N(packet.PacketId, packet.Data, 0);
+					break;
+
+				case PacketType.Command:
+				case PacketType.CommandLow:
+					packet.PacketFlags |= PacketFlags.Newprotocol;
+					packetAckManager.Add(packet.PacketId, packet);
+					break;
+
+				case PacketType.Ping:
+					LastSentPingId = packet.PacketId;
+					packet.PacketFlags |= PacketFlags.Unencrypted;
+
+					break;
+				case PacketType.Pong:
+					packet.PacketFlags |= PacketFlags.Unencrypted;
+					break;
+
+				case PacketType.Ack:
+				case PacketType.AckLow:
+					break; // Nothing to do
+
+				case PacketType.Init1:
+					packetAckManager.Add(packet.PacketId, packet);
+					break;
+
+				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
 
 				ts3Crypt.Encrypt(packet);
-
-				if (packet.PacketType == PacketType.Command
-					|| packet.PacketType == PacketType.CommandLow
-					|| packet.PacketType == PacketType.Init1)
-					packetAckManager.Add(packet.PacketId, packet);
-				else if (packet.PacketType == PacketType.Ping)
-					packetPingManager.Add(packet.PacketId, packet);
 
 				SendRaw(packet);
 			}
 		}
 
 		private IdTuple GetPacketCounter(PacketType packetType)
-			=> new IdTuple(packetCounter[(int)packetType], generationCounter[(int)packetType]);
+			=> (packetType != PacketType.Init1)
+				? new IdTuple(packetCounter[(int)packetType], generationCounter[(int)packetType])
+				: new IdTuple(101, 0);
+
 		private void IncPacketCounter(PacketType packetType)
 		{
 			packetCounter[(int)packetType]++;
@@ -455,10 +471,16 @@ namespace TS3Client.Full
 		private void SendPing()
 		{
 			AddOutgoingPacket(new byte[0], PacketType.Ping);
+			PingTimer.Restart();
 		}
 
 		private void ReceivePing(IncomingPacket packet)
 		{
+			var idDiff = packet.PacketId - LastReceivedPingId;
+			if (idDiff > 1 && idDiff < ReceivePacketWindowSize)
+				NetworkStats.LogLostPings(idDiff - 1);
+			if (idDiff > 0 || idDiff < -ReceivePacketWindowSize)
+				LastReceivedPingId = packet.PacketId;
 			byte[] pongData = new byte[2];
 			NetUtil.H2N(packet.PacketId, pongData, 0);
 			AddOutgoingPacket(pongData, PacketType.Pong);
@@ -467,16 +489,13 @@ namespace TS3Client.Full
 		private void ReceivePong(IncomingPacket packet)
 		{
 			ushort answerId = NetUtil.N2Hushort(packet.Data, 0);
-			OutgoingPacket sendPing;
-			lock (sendLoopLock)
+
+			if (LastSentPingId == answerId)
 			{
-				if (!packetPingManager.TryGetValue(answerId, out sendPing))
-					return;
-				packetPingManager.Remove(answerId);
+				var rtt = PingTimer.Elapsed;
+				UpdateRto(rtt);
+				NetworkStats.AddPing(rtt);
 			}
-			var rtt = Util.Now - sendPing.LastSendTime;
-			UpdateRto(rtt);
-			NetworkStats.AddPing(rtt);
 		}
 
 		public void ReceiveInitAck()
@@ -527,8 +546,7 @@ namespace TS3Client.Full
 					if (Closed)
 						break;
 
-					if ((packetAckManager.Count > 0 && ResendPackages(packetAckManager.Values))
-						|| (packetPingManager.Count > 0 && ResendPackages(packetPingManager.Values)))
+					if (packetAckManager.Count > 0 && ResendPackages(packetAckManager.Values))
 					{
 						Stop(MoveReason.Timeout);
 						return;
@@ -540,13 +558,9 @@ namespace TS3Client.Full
 				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
 				if (nextTest < TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
 				{
-					if (nextTest < -MaxLastPingDistance)
-						pingCheck = now;
-					else
-						pingCheck += PingInterval;
+					pingCheck += PingInterval;
 					SendPing();
 				}
-				var sleepSpan = Util.Min(ClockResolution, nextTest);
 
 				sendLoopPulse.WaitOne(ClockResolution);
 			}

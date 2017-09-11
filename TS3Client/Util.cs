@@ -36,6 +36,14 @@ namespace TS3Client
 
 		public static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 		public static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
+
+		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString()); }
+	}
+
+	public class MissingEnumCaseException : Exception
+	{
+		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
+		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 
 	public static class Extensions

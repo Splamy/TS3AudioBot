@@ -253,7 +253,7 @@ namespace TS3AudioBot
 				}
 
 				const int max = 75;
-				const int ava = 200000; // max size in bytes for the avatar
+				const int ava = 500000; // max size in bytes for the avatar
 
 				// Add various rights to the bot group
 				tsBaseClient.ServerGroupAddPerm(mainBotData.BotGroupId,
