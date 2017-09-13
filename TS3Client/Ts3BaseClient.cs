@@ -6,6 +6,7 @@ namespace TS3Client
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Linq;
+	using System.Net;
 
 	using ClientUidT = System.String;
 	using ClientDbIdT = System.UInt64;
@@ -27,6 +28,7 @@ namespace TS3Client
 		public abstract bool Connected { get; }
 		public abstract ClientType ClientType { get; }
 		public ConnectionData ConnectionData { get; protected set; }
+		internal IPEndPoint remoteAddress;
 		private FileTransferManager ftm;
 		public FileTransferManager FileTransferManager => ftm ?? (ftm = new FileTransferManager(this));
 

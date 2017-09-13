@@ -52,7 +52,10 @@ namespace TS3Client.Query
 
 		public override void Connect(ConnectionData conData)
 		{
-			try { tcpClient.Connect(conData.Hostname, conData.Port); }
+			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
+				throw new Ts3Exception("Could not read or resolve address.");
+
+			try { tcpClient.Connect(remoteAddress); }
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
 			ConnectionData = conData;
 

@@ -72,6 +72,9 @@ namespace TS3Client.Full
 
 			Disconnect();
 
+			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
+				throw new Ts3Exception("Could not read or resolve address.");
+
 			lock (StatusLock)
 			{
 				returnCode = 0;
@@ -80,7 +83,7 @@ namespace TS3Client.Full
 				VersionSign = conDataFull.VersionSign;
 				ts3Crypt.Identity = conDataFull.Identity;
 
-				packetHandler.Connect(conData.Hostname, conData.Port);
+				packetHandler.Connect(remoteAddress);
 				dispatcher.Init(NetworkLoop, InvokeEvent);
 			}
 			dispatcher.EnterEventLoop();

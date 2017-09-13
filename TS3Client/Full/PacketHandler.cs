@@ -8,6 +8,10 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 //#define DIAGNOSTICS
+//#define DIAG_RAWPKG
+//#define DIAG_TIMEOUT
+//#define DIAG_RTT
+
 
 namespace TS3Client.Full
 {
@@ -83,7 +87,7 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 		}
 
-		public void Connect(string host, ushort port)
+		public void Connect(IPEndPoint address)
 		{
 			resendThread = new Thread(ResendLoop) { Name = "PacketHandler" };
 			resendThreadId = resendThread.ManagedThreadId;
@@ -104,7 +108,7 @@ namespace TS3Client.Full
 				Array.Clear(packetCounter, 0, packetCounter.Length);
 				Array.Clear(generationCounter, 0, generationCounter.Length);
 
-				ConnectUdpClient(host, port);
+				ConnectUdpClient(address);
 			}
 
 			resendThread.Start();
@@ -112,22 +116,13 @@ namespace TS3Client.Full
 			AddOutgoingPacket(ts3Crypt.ProcessInit1(null), PacketType.Init1);
 		}
 
-		private void ConnectUdpClient(string host, ushort port)
+		private void ConnectUdpClient(IPEndPoint address)
 		{
 			((IDisposable)udpClient)?.Dispose();
 
 			try
 			{
-				IPAddress ipAddr;
-				if (!IPAddress.TryParse(host, out ipAddr))
-				{
-					var hostEntry = Dns.GetHostEntry(host);
-					ipAddr = hostEntry.AddressList.FirstOrDefault();
-					if (ipAddr == null) throw new Ts3Exception("Could not resove DNS.");
-				}
-
-				remoteAddress = new IPEndPoint(ipAddr, port);
-
+				remoteAddress = address;
 				udpClient = new UdpClient(remoteAddress.AddressFamily);
 				udpClient.Connect(remoteAddress);
 			}
@@ -214,11 +209,16 @@ namespace TS3Client.Full
 					break; // Nothing to do
 
 				case PacketType.Init1:
+					packet.PacketFlags |= PacketFlags.Unencrypted;
 					packetAckManager.Add(packet.PacketId, packet);
 					break;
 
 				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
+
+#if DIAGNOSTICS && DIAG_RAWPKG
+				Console.WriteLine($"[OT] {packet}");
+#endif
 
 				ts3Crypt.Encrypt(packet);
 
@@ -282,8 +282,7 @@ namespace TS3Client.Full
 				if (Closed)
 					return null;
 
-				IncomingPacket packet = null;
-				if (TryFetchPacket(receiveQueue, out packet))
+				if (TryFetchPacket(receiveQueue, out IncomingPacket packet))
 					return packet;
 				if (TryFetchPacket(receiveQueueLow, out packet))
 					return packet;
@@ -310,6 +309,10 @@ namespace TS3Client.Full
 					continue;
 
 				NetworkStats.LogInPacket(packet);
+
+#if DIAGNOSTICS && DIAG_RAWPKG
+				Console.WriteLine($"[IN] {packet}");
+#endif
 
 				switch (packet.PacketType)
 				{
@@ -369,8 +372,7 @@ namespace TS3Client.Full
 
 			packetQueue.Set(packet.PacketId, packet);
 
-			IncomingPacket retPacket;
-			return TryFetchPacket(packetQueue, out retPacket) ? retPacket : null;
+			return TryFetchPacket(packetQueue, out IncomingPacket retPacket) ? retPacket : null;
 		}
 
 		private static bool TryFetchPacket(RingQueue<IncomingPacket> packetQueue, out IncomingPacket packet)
@@ -383,8 +385,7 @@ namespace TS3Client.Full
 			bool hasEnd = false;
 			for (int i = 0; i < packetQueue.Count; i++)
 			{
-				IncomingPacket peekPacket;
-				if (packetQueue.TryPeekStart(i, out peekPacket))
+				if (packetQueue.TryPeekStart(i, out IncomingPacket peekPacket))
 				{
 					take++;
 					takeLen += peekPacket.Size;
@@ -420,8 +421,7 @@ namespace TS3Client.Full
 
 				for (int i = 1; i < take; i++)
 				{
-					IncomingPacket nextPacket = null;
-					if (!packetQueue.TryDequeue(out nextPacket))
+					if (!packetQueue.TryDequeue(out IncomingPacket nextPacket))
 						throw new InvalidOperationException("Packet in queue got missing (?)");
 
 					Array.Copy(nextPacket.Data, 0, preFinalArray, curCopyPos, nextPacket.Size);
@@ -458,8 +458,7 @@ namespace TS3Client.Full
 
 			lock (sendLoopLock)
 			{
-				OutgoingPacket ackPacket;
-				if (packetAckManager.TryGetValue(packetId, out ackPacket))
+				if (packetAckManager.TryGetValue(packetId, out OutgoingPacket ackPacket))
 				{
 					UpdateRto(Util.Now - ackPacket.LastSendTime);
 					packetAckManager.Remove(packetId);
@@ -526,7 +525,7 @@ namespace TS3Client.Full
 				SmoothedRtt = TimeSpan.FromTicks((long)((1 - alphaSmooth) * SmoothedRtt.Ticks + alphaSmooth * sampleRtt.Ticks));
 			SmoothedRttVar = TimeSpan.FromTicks((long)((1 - betaSmooth) * SmoothedRttVar.Ticks + betaSmooth * Math.Abs(sampleRtt.Ticks - SmoothedRtt.Ticks)));
 			CurrentRto = SmoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * SmoothedRttVar.Ticks));
-#if DIAGNOSTICS
+#if DIAGNOSTICS && DIAG_RTT
 			Console.WriteLine("SRTT:{0} RTTVAR:{1} RTO: {2}", SmoothedRtt, SmoothedRttVar, CurrentRto);
 #endif
 		}
@@ -574,7 +573,7 @@ namespace TS3Client.Full
 				// Check if the packet timed out completely
 				if (outgoingPacket.FirstSendTime < now - PacketTimeout)
 				{
-#if DIAGNOSTICS
+#if DIAGNOSTICS && DIAG_TIMEOUT
 					Console.WriteLine("TIMEOUT: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
 #endif
 					return true;
@@ -583,7 +582,7 @@ namespace TS3Client.Full
 				// Check if we should retransmit a packet because it probably got lost
 				if (outgoingPacket.LastSendTime < now - CurrentRto)
 				{
-#if DIAGNOSTICS
+#if DIAGNOSTICS && DIAG_TIMEOUT
 					Console.WriteLine("RESEND PACKET: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
 #endif
 					CurrentRto = CurrentRto + CurrentRto;

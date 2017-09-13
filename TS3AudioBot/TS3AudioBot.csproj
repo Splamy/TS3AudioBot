@@ -132,7 +132,6 @@
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PlayManager.cs" />
     <Compile Include="PluginManager.cs" />
-    <Compile Include="Ts3Query.cs" />
     <Compile Include="ResourceFactories\IPlaylistFactory.cs" />
     <Compile Include="Sessions\SessionManager.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />

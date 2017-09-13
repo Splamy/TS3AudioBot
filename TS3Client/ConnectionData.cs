@@ -13,10 +13,9 @@ namespace TS3Client
 
 	public class ConnectionData
 	{
-		/// <summary>Hostname or Ip-Address of the server.</summary>
-		public string Hostname { get; set; }
-		/// <summary>Teamspeak serer port. Usually 9987.</summary>
-		public ushort Port { get; set; }
+		/// <summary>Hostname or Ip-Address including the port. This address can point to the
+		/// server or the tsdns service.</summary>
+		public string Address { get; set; }
 	}
 
 	public class ConnectionDataFull : ConnectionData

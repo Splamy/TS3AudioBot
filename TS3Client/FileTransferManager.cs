@@ -178,9 +178,10 @@ namespace TS3Client
 						token.Status = TransferStatus.Trasfering;
 					}
 
-					using (var client = new TcpClient())
+					using (var client = new TcpClient(AddressFamily.InterNetworkV6))
 					{
-						try { client.Connect(parent.ConnectionData.Hostname, token.Port); }
+						client.Client.DualMode = true;
+						try { client.Connect(parent.remoteAddress.Address, token.Port); }
 						catch (SocketException)
 						{
 							token.Status = TransferStatus.Failed;

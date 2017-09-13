@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,7 +27,7 @@ namespace Ts3ClientTests
 				client.OnErrorEvent += Client_OnErrorEvent;
 				client.OnTextMessageReceived += Client_OnTextMessageReceived;
 				var data = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEAqNonGuL0w/8kLlgLbl4UkH8DQQJ7fEu1tLt+mx1E+XkCIQDgQoIGcBVvAvNoiDT37iWbPQb2kYe0+VKLg67OH2eQQwIgTyijCKx7QB/xQSnIW5uIkVmcm3UU5P2YnobR9IEEYPg=", 64, 0);
-				con = new ConnectionDataFull() { Hostname = "127.0.0.1", Port = 9987, Username = "TestClient", Identity = data, Password = "qwer" };
+				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, Password = "qwer" };
 				client.Connect(con);
 				clients.Add(client);
 			}

@@ -146,19 +146,11 @@ namespace TS3AudioBot
 				verionSign = new VersionSign(splitData[0], plattform, splitData[2]);
 			}
 
-			if (Uri.CheckHostName(ts3FullClientData.Host) == UriHostNameType.Unknown)
-			{
-				Log.Write(Log.Level.Warning, "Your hostname seems to be invalid, consider checking it if you can't connect.");
-				if (ts3FullClientData.Host.Contains(":"))
-					Log.Write(Log.Level.Warning, "You may have included the port in the hostname field. Please notice that there is an extra field for that.");
-			}
-
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = ts3FullClientData.DefaultNickname,
 				Password = ts3FullClientData.ServerPassword,
-				Hostname = ts3FullClientData.Host,
-				Port = ts3FullClientData.Port,
+				Address = ts3FullClientData.Address,
 				Identity = identity,
 				IsPasswordHashed = ts3FullClientData.ServerPasswordIsHashed,
 				VersionSign = verionSign,
@@ -567,10 +559,8 @@ namespace TS3AudioBot
 
 	public class Ts3FullClientData : ConfigData
 	{
-		[Info("The address of the TeamSpeak3 server")]
-		public string Host { get; set; }
-		[Info("The port of the TeamSpeak3 server", "9987")]
-		public ushort Port { get; set; }
+		[Info("The address (and port, default: 9987) of the TeamSpeak3 server")]
+		public string Address { get; set; }
 		[Info("| DO NOT MAKE THIS KEY PUBLIC | The client identity", "")]
 		public string Identity { get; set; }
 		[Info("The client identity security offset", "0")]
