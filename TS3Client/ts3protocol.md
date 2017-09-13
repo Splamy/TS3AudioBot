@@ -153,7 +153,7 @@ top to bot.
 ## 1.8 Packet Types Data Structures
 The following chapter describes the data structure for different packet types.
 
-### 1.8.1 Voice
+### 1.8.1.1 Voice (Client -> Server)
     +--+--+--+---------//---------+
     | VId |C |        Data        |
     +--+--+--+---------//---------+
@@ -164,7 +164,19 @@ The following chapter describes the data structure for different packet types.
 | C    | u8   | Codec Type      |
 | Data | var  | Voice Data      |
 
-### 1.8.2 VoiceWhisper
+### 1.8.1.2 Voice (Client <- Server)
+    +--+--+--+--+--+---------//---------+
+    | VId | CId |C |        Data        |
+    +--+--+--+--+--+---------//---------+
+
+| Name | Type | Explanation     |
+|------|------|-----------------|
+| VId  | u16  | Voice Packet Id |
+| CId  | u16  | Talking Client  |
+| C    | u8   | Codec Type      |
+| Data | var  | Voice Data      |
+
+### 1.8.2.1 VoiceWhisper
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
     | VId |C |N |M |           U*          |  T* |        Data        |
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
@@ -178,6 +190,18 @@ The following chapter describes the data structure for different packet types.
 | U    | [u64] | Targeted ChannelIds, repeated N times |
 | T    | [u16] | Targeted ClientIds, repeated M times  |
 | Data | var   | Voice Data                            |
+
+### 1.8.2.2 VoiceWhisper (Client <- Server)
+    +--+--+--+--+--+---------//---------+
+    | VId | CId |C |        Data        |
+    +--+--+--+--+--+---------//---------+
+
+| Name | Type | Explanation     |
+|------|------|-----------------|
+| VId  | u16  | Voice Packet Id |
+| CId  | u16  | Talking Client  |
+| C    | u8   | Codec Type      |
+| Data | var  | Voice Data      |
 
 ### 1.8.3-4 Command and CommandLow
 The TeamSpeak3 Query like command string encoded in UTF-8
@@ -338,6 +362,9 @@ The packet header values for (see 3.1) and (see 3.2) are as following:
 | Packet Id | u16: 0                                                                                               |
 | Client Id | u16: 0                                                                                               |
 
+The acknowledgement packets use the same parameters as the commands, except with
+the Type `Ack`.
+
 _(Maybe add a #3.0 Prelude for required cryptographic values, if yes move the
 omega ASN.1 encoding here)_
 
@@ -428,6 +455,8 @@ channel encryption or server wide encryption flag is set.
   - Sign: `a1OYzvM18mrmfUQBUgxYBxYz2DUU6y5k3/mEL6FurzU0y97Bd1FL7+PRpcHyPkg4R+kKAFZ1nhyzbgkGphDWDg==`
 - The `hwid` is usually around 30 characters long, but strings as short as only 
   few characters like `123,456` are accepted
+- Parameters which are empty or not used must be declared but left without
+  value and the `=` character
 
 ## 3.4 initserver (Client <- Server)
     initserver virtualserver_welcomemessage virtualserver_platform virtualserver_version virtualserver_maxclients virtualserver_created virtualserver_hostmessage virtualserver_hostmessage_mode virtualserver_id virtualserver_ip virtualserver_ask_for_privilegekey acn aclid pv lt client_talk_power client_needed_serverquery_view_power virtualserver_name virtualserver_codec_encryption_mode virtualserver_default_server_group virtualserver_default_channel_group virtualserver_hostbanner_url virtualserver_hostbanner_gfx_url virtualserver_hostbanner_gfx_interval virtualserver_priority_speaker_dimm_modificator virtualserver_hostbutton_tooltip virtualserver_hostbutton_url virtualserver_hostbutton_gfx_url virtualserver_name_phonetic virtualserver_icon_id virtualserver_hostbanner_mode virtualserver_channel_temp_delete_delay_default

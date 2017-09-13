@@ -43,6 +43,7 @@ namespace TS3Client
 				TimeOut = 1000,
 				UseCache = true,
 				DnsServer = "8.8.8.8",
+				TransportType = Heijden.DNS.TransportType.Udp,
 			};
 
 			// Try resolve tcp prefix
@@ -84,7 +85,6 @@ namespace TS3Client
 		{
 			if (Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
 			{
-				resolver.TransportType = Heijden.DNS.TransportType.Udp;
 				var response = resolver.Query(uri.Host, QType.SRV, QClass.IN);
 
 				if (response.RecordsSRV.Length > 0)
