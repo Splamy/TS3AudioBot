@@ -125,7 +125,7 @@ namespace TS3Client.Full
 
 				remoteAddress = new IPEndPoint(ipAddr, port);
 
-				udpClient = new UdpClient();
+				udpClient = new UdpClient(remoteAddress.AddressFamily);
 				udpClient.Connect(remoteAddress);
 			}
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
