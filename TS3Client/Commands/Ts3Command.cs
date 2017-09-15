@@ -22,7 +22,7 @@ namespace TS3Client.Commands
 
 		internal bool ExpectResponse { get; set; }
 		public string Command { get; }
-		private List<ICommandPart> parameter;
+		private readonly List<ICommandPart> parameter;
 
 		[DebuggerStepThrough]
 		public Ts3Command(string command) : this(command, NoParameter) { }
@@ -78,7 +78,7 @@ namespace TS3Client.Commands
 					optionList.Add((CommandOption)param);
 					break;
 				default:
-					throw new InvalidOperationException();
+					throw Util.UnhandledDefault(param.Type);
 				}
 			}
 
@@ -88,8 +88,8 @@ namespace TS3Client.Commands
 				int matrixLength = multiParamList[0].Values.Length;
 				foreach (var param in multiParamList)
 					if (param.Values.Length != matrixLength)
-						throw new ArgumentOutOfRangeException("All multiparam key-value pairs must have the same length");
-				
+						throw new ArgumentOutOfRangeException(nameof(parameter), "All multiparam key-value pairs must have the same length");
+
 				for (int i = 0; i < matrixLength; i++)
 				{
 					foreach (var param in multiParamList)

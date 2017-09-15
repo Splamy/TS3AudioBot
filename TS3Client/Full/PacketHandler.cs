@@ -30,7 +30,7 @@ namespace TS3Client.Full
 		private const int MaxPacketSize = 500;
 		private const int HeaderSize = 13;
 		private const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
-		private const int ReceivePacketWindowSize = 50;
+		private const int ReceivePacketWindowSize = 100;
 
 		// Timout calculations
 		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
@@ -43,9 +43,9 @@ namespace TS3Client.Full
 		/// a packet is considered to be lost.</summary>
 		private TimeSpan CurrentRto;
 		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
-		private const float alphaSmooth = 0.125f;
+		private const float AlphaSmooth = 0.125f;
 		/// <summary>Smoothing factor for the SmoothedRttDev.</summary>
-		private const float betaSmooth = 0.25f;
+		private const float BetaSmooth = 0.25f;
 		/// <summary>The maximum wait time to retransmit a packet.</summary>
 		private static readonly TimeSpan MaxRetryInterval = TimeSpan.FromMilliseconds(1000);
 		/// <summary>The timeout check loop interval.</summary>
@@ -301,10 +301,7 @@ namespace TS3Client.Full
 				if (packet == null)
 					continue;
 
-				// check if we already have this packet and only need to ack it.
-				if (IsCommandPacketSet(packet))
-					continue;
-
+				GenerateGenerationId(packet);
 				if (!ts3Crypt.Decrypt(packet))
 					continue;
 
@@ -318,15 +315,14 @@ namespace TS3Client.Full
 				{
 				case PacketType.Voice: break;
 				case PacketType.VoiceWhisper: break;
-				case PacketType.Command: packet = ReceiveCommand(packet); break;
-				case PacketType.CommandLow: packet = ReceiveCommand(packet); break;
+				case PacketType.Command: packet = ReceiveCommand(packet, receiveQueue, PacketType.Ack); break;
+				case PacketType.CommandLow: packet = ReceiveCommand(packet, receiveQueueLow, PacketType.AckLow); break;
 				case PacketType.Ping: ReceivePing(packet); break;
 				case PacketType.Pong: ReceivePong(packet); break;
 				case PacketType.Ack: packet = ReceiveAck(packet); break;
 				case PacketType.AckLow: break;
 				case PacketType.Init1: ReceiveInitAck(); break;
-				default:
-					throw new ArgumentOutOfRangeException();
+				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
 
 				if (packet != null)
@@ -338,40 +334,36 @@ namespace TS3Client.Full
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-		private bool IsCommandPacketSet(IncomingPacket packet)
+		private void GenerateGenerationId(IncomingPacket packet)
 		{
+			// TODO rework this for all packet types
 			RingQueue<IncomingPacket> packetQueue;
-			if (packet.PacketType == PacketType.Command)
+			switch (packet.PacketType)
 			{
-				SendAck(packet.PacketId, PacketType.Ack);
-				packetQueue = receiveQueue;
-			}
-			else if (packet.PacketType == PacketType.CommandLow)
-			{
-				SendAck(packet.PacketId, PacketType.AckLow);
-				packetQueue = receiveQueueLow;
-			}
-			else
-			{
-				return false;
+			case PacketType.Command: packetQueue = receiveQueue; break;
+			case PacketType.CommandLow: packetQueue = receiveQueueLow; break;
+			default: return;
 			}
 
 			packet.GenerationId = packetQueue.GetGeneration(packet.PacketId);
-			return packetQueue.IsSet(packet.PacketId);
 		}
 
-		private IncomingPacket ReceiveCommand(IncomingPacket packet)
+		private IncomingPacket ReceiveCommand(IncomingPacket packet, RingQueue<IncomingPacket> packetQueue, PacketType ackType)
 		{
-			RingQueue<IncomingPacket> packetQueue;
-			if (packet.PacketType == PacketType.Command)
-				packetQueue = receiveQueue;
-			else if (packet.PacketType == PacketType.CommandLow)
-				packetQueue = receiveQueueLow;
-			else
-				throw new InvalidOperationException("The packet is not a command");
+			var setStatus = packetQueue.IsSet(packet.PacketId);
+
+			// Check if we cannot accept this packet since it doesn't fit into the receive window
+			if (setStatus == ItemSetStatus.OutOfWindowNotSet)
+				return null;
+
+			packet.GenerationId = packetQueue.GetGeneration(packet.PacketId);
+			SendAck(packet.PacketId, ackType);
+
+			// Check if we already have this packet and only need to ack it.
+			if (setStatus == ItemSetStatus.InWindowSet || setStatus == ItemSetStatus.OutOfWindowSet)
+				return null;
 
 			packetQueue.Set(packet.PacketId, packet);
-
 			return TryFetchPacket(packetQueue, out IncomingPacket retPacket) ? retPacket : null;
 		}
 
@@ -522,8 +514,8 @@ namespace TS3Client.Full
 			if (SmoothedRtt < TimeSpan.Zero)
 				SmoothedRtt = sampleRtt;
 			else
-				SmoothedRtt = TimeSpan.FromTicks((long)((1 - alphaSmooth) * SmoothedRtt.Ticks + alphaSmooth * sampleRtt.Ticks));
-			SmoothedRttVar = TimeSpan.FromTicks((long)((1 - betaSmooth) * SmoothedRttVar.Ticks + betaSmooth * Math.Abs(sampleRtt.Ticks - SmoothedRtt.Ticks)));
+				SmoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * SmoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
+			SmoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * SmoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - SmoothedRtt.Ticks)));
 			CurrentRto = SmoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * SmoothedRttVar.Ticks));
 #if DIAGNOSTICS && DIAG_RTT
 			Console.WriteLine("SRTT:{0} RTTVAR:{1} RTO: {2}", SmoothedRtt, SmoothedRttVar, CurrentRto);

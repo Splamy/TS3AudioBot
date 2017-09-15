@@ -127,8 +127,6 @@ namespace TS3Client.Full
 					break;
 				case Ts3ClientStatus.Connecting:
 					break;
-				default:
-					break;
 				}
 			}
 		}
@@ -200,7 +198,7 @@ namespace TS3Client.Full
 				OnErrorEvent?.Invoke(this, (CommandError)notification.First());
 				break;
 			case NotificationType.Unknown:
-			default: throw new InvalidOperationException();
+			default: throw Util.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
 

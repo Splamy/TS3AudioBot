@@ -543,21 +543,18 @@ namespace TS3AudioBot
 					}
 				}
 
-				if (target is BotCommand targetB)
-					return new JsonSingleValue<string>(targetB.GetHelp());
-
-				if (target is CommandGroup targetCG)
+				switch (target)
 				{
-					var subList = targetCG.Commands.Select(g => g.Key).ToArray();
-					return new JsonArray<string>("The command contains the following subfunctions: " + string.Join(", ", subList), subList);
-				}
-
-				if (target is OverloadedFunctionCommand targetOfc)
-				{
-					var strb = new StringBuilder();
-					foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
-						strb.Append(botCom.GetHelp());
-					return new JsonSingleValue<string>(strb.ToString());
+					case BotCommand targetB:
+						return new JsonSingleValue<string>(targetB.GetHelp());
+					case CommandGroup targetCg:
+						var subList = targetCg.Commands.Select(g => g.Key).ToArray();
+						return new JsonArray<string>("The command contains the following subfunctions: " + string.Join(", ", subList), subList);
+					case OverloadedFunctionCommand targetOfc:
+						var strb = new StringBuilder();
+						foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
+							strb.Append(botCom.GetHelp());
+						return new JsonSingleValue<string>(strb.ToString());
 				}
 
 				throw new CommandException("Seems like something went wrong. No help can be shown for this command path.", CommandExceptionReason.CommandError);
@@ -577,7 +574,7 @@ namespace TS3AudioBot
 				return null;
 			}
 			info.Session.SetResponse(ResponseHistoryClean, null);
-			return $"Do want to clean the history file now? " +
+			return "Do want to clean the history file now? " +
 					"This might take a while and make the bot unresponsive in meanwhile. !(yes|no)";
 		}
 
@@ -591,7 +588,7 @@ namespace TS3AudioBot
 				return null;
 			}
 			info.Session.SetResponse(ResponseHistoryClean, "removedefective");
-			return $"Do want to remove all defective links file now? " +
+			return "Do want to remove all defective links file now? " +
 					"This might(will!) take a while and make the bot unresponsive in meanwhile. !(yes|no)";
 		}
 

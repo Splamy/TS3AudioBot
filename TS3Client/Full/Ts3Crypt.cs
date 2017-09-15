@@ -32,7 +32,7 @@ namespace TS3Client.Full
 		private static readonly byte[] DummyKey = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(0, 16));
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly Tuple<byte[], byte[]> DummyKeyAndNonceTuple = new Tuple<byte[], byte[]>(DummyKey, DummyIv);
-		private static readonly byte[] TS3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
+		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
 		private static readonly byte[] Initversion = { 0x06, 0x3b, 0xec, 0xe9 };
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 
@@ -180,8 +180,13 @@ namespace TS3Client.Full
 		{
 			ECPoint p = publicKeyPoint.Multiply(Identity.PrivateKey).Normalize();
 			byte[] keyArr = p.AffineXCoord.ToBigInteger().ToByteArray();
+			if (keyArr.Length == 32)
+				return keyArr;
 			var sharedData = new byte[32];
-			Array.Copy(keyArr, keyArr.Length - 32, sharedData, 0, 32);
+			if (keyArr.Length > 32)
+				Array.Copy(keyArr, keyArr.Length - 32, sharedData, 0, 32);
+			else // keyArr.Length < 32
+				Array.Copy(keyArr, 0, sharedData, 32 - keyArr.Length, keyArr.Length);
 			return sharedData;
 		}
 
@@ -285,7 +290,7 @@ namespace TS3Client.Full
 		{
 			if (packet.PacketType == PacketType.Init1)
 			{
-				FakeEncrypt(packet, TS3InitMac);
+				FakeEncrypt(packet, Ts3InitMac);
 				return;
 			}
 			if (packet.UnencryptedFlag)
@@ -326,7 +331,7 @@ namespace TS3Client.Full
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		private void FakeEncrypt(OutgoingPacket packet, byte[] mac)
+		private static void FakeEncrypt(OutgoingPacket packet, byte[] mac)
 		{
 			packet.BuildHeader();
 			packet.Raw = new byte[packet.Data.Length + MacLen + OutHeaderLen];
@@ -354,20 +359,12 @@ namespace TS3Client.Full
 		internal bool Decrypt(IncomingPacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
-			{
-				return FakeDecrypt(packet, TS3InitMac);
-			}
-			else
-			{
-				if (packet.UnencryptedFlag)
-				{
-					return FakeDecrypt(packet, fakeSignature);
-				}
-				else
-				{
-					return DecryptData(packet);
-				}
-			}
+				return FakeDecrypt(packet, Ts3InitMac);
+
+			if (packet.UnencryptedFlag)
+				return FakeDecrypt(packet, fakeSignature);
+
+			return DecryptData(packet);
 		}
 
 		private bool DecryptData(IncomingPacket packet)
@@ -424,6 +421,7 @@ namespace TS3Client.Full
 			if (cachedKeyNonces[cacheIndex] == null || cachedKeyNonces[cacheIndex].Item3 != generationId)
 			{
 				// this part of the key/nonce is fixed by the message direction and packetType
+
 				byte[] tmpToHash = new byte[26];
 
 				if (fromServer)
@@ -601,7 +599,7 @@ namespace TS3Client.Full
 		private static bool ValidateHash(byte[] data, int reqLevel)
 		{
 			var levelMask = 1 << (reqLevel % 8) - 1;
-			
+
 			if (reqLevel < 8)
 			{
 				return (data[0] & levelMask) == 0;

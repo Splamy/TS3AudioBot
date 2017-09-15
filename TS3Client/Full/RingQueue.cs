@@ -13,6 +13,8 @@ namespace TS3Client.Full
 
 	public class RingQueue<T>
 	{
+		private const int InitialBufferSize = 16;
+
 		private int currentStart;
 		private int currentLength;
 		private T[] ringBuffer;
@@ -22,14 +24,24 @@ namespace TS3Client.Full
 		private readonly int mappedMod;
 		private uint generation;
 
+		public int MaxBufferSize { get; }
 		public int Count => currentLength;
 
-		public RingQueue(int bufferSize, int mod)
+		public RingQueue(int maxBufferSize, int mod)
 		{
-			if (bufferSize >= mod)
-				throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be smaller than buffer size");
-			ringBuffer = new T[bufferSize];
-			ringBufferSet = new bool[bufferSize];
+			if (maxBufferSize == -1)
+			{
+				MaxBufferSize = (mod / 2) - 1;
+			}
+			else
+			{
+				if (maxBufferSize >= mod)
+					throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be bigger than buffer size");
+				MaxBufferSize = maxBufferSize;
+			}
+			var setBufferSize = Math.Min(InitialBufferSize, maxBufferSize);
+			ringBuffer = new T[setBufferSize];
+			ringBufferSet = new bool[setBufferSize];
 			mappedMod = mod;
 			Clear();
 		}
@@ -38,8 +50,7 @@ namespace TS3Client.Full
 
 		private void BufferSet(int index, T value)
 		{
-			if (index > ringBuffer.Length)
-				throw new ArgumentOutOfRangeException(nameof(index));
+			BufferExtend(index);
 			int local = IndexToLocal(index);
 			int newLength = local - currentStart + 1 + (local >= currentStart ? 0 : ringBuffer.Length);
 			currentLength = Math.Max(currentLength, newLength);
@@ -49,16 +60,14 @@ namespace TS3Client.Full
 
 		private T BufferGet(int index)
 		{
-			if (index > ringBuffer.Length)
-				throw new ArgumentOutOfRangeException(nameof(index));
+			BufferExtend(index);
 			int local = IndexToLocal(index);
 			return ringBuffer[local];
 		}
 
 		private bool StateGet(int index)
 		{
-			if (index > ringBuffer.Length)
-				throw new ArgumentOutOfRangeException(nameof(index));
+			BufferExtend(index);
 			int local = IndexToLocal(index);
 			return ringBufferSet[local];
 		}
@@ -75,6 +84,26 @@ namespace TS3Client.Full
 			currentLength--;
 		}
 
+		private void BufferExtend(int index)
+		{
+			if (index < ringBuffer.Length)
+				return;
+			if (index >= MaxBufferSize)
+				throw new ArgumentOutOfRangeException(nameof(index), "The index does not fit into the maximal buffer size");
+			int extendTo = index < ringBuffer.Length * 2
+				? Math.Min(ringBuffer.Length * 2, MaxBufferSize)
+				: Math.Min(index + ringBuffer.Length, MaxBufferSize);
+			var extRingBuffer = new T[extendTo];
+			var extRingBufferSet = new bool[extendTo];
+			Array.Copy(ringBuffer, currentStart, extRingBuffer, 0, ringBuffer.Length - currentStart);
+			Array.Copy(ringBufferSet, currentStart, extRingBufferSet, 0, ringBufferSet.Length - currentStart);
+			Array.Copy(ringBuffer, 0, extRingBuffer, currentStart, currentStart);
+			Array.Copy(ringBufferSet, 0, extRingBufferSet, currentStart, currentStart);
+			currentStart = 0;
+			ringBuffer = extRingBuffer;
+			ringBufferSet = extRingBufferSet;
+		}
+
 		private int IndexToLocal(int index) => (currentStart + index) % ringBuffer.Length;
 
 		#endregion
@@ -82,10 +111,8 @@ namespace TS3Client.Full
 		public void Set(int mappedValue, T value)
 		{
 			int index = MappedToIndex(mappedValue);
-			if (index > ringBuffer.Length)
-				throw new ArgumentOutOfRangeException(nameof(mappedValue), "Buffer is not large enough for this object.");
-			if (IsSet(mappedValue))
-				throw new ArgumentOutOfRangeException(nameof(mappedValue), "Object already set.");
+			if (IsSetIndex(index) != ItemSetStatus.InWindowNotSet)
+				throw new ArgumentOutOfRangeException(nameof(mappedValue), "Object cannot be set.");
 
 			BufferSet(index, value);
 		}
@@ -109,17 +136,24 @@ namespace TS3Client.Full
 			}
 		}
 
-		public bool IsSet(int mappedValue)
+		public ItemSetStatus IsSet(int mappedValue)
 		{
 			int index = MappedToIndex(mappedValue);
-			if (index < 0)
-				return true;
-			if (index > currentLength)
-				return false;
-			return StateGet(index);
+			return IsSetIndex(index);
 		}
 
-		public bool IsNextGen(int mappedValue) => mappedBaseOffset > mappedMod - ringBuffer.Length && mappedValue < ringBuffer.Length;
+		private ItemSetStatus IsSetIndex(int index)
+		{
+			if (index < 0)
+				return ItemSetStatus.OutOfWindowSet;
+			if (index > currentLength && index < MaxBufferSize)
+				return ItemSetStatus.InWindowNotSet;
+			if (index >= MaxBufferSize)
+				return ItemSetStatus.OutOfWindowNotSet;
+			return StateGet(index) ? ItemSetStatus.InWindowSet : ItemSetStatus.InWindowNotSet;
+		}
+
+		public bool IsNextGen(int mappedValue) => mappedBaseOffset > mappedMod - MaxBufferSize && mappedValue < MaxBufferSize;
 
 		public uint GetGeneration(int mappedValue) => (uint)(generation + (IsNextGen(mappedValue) ? 1 : 0));
 
@@ -158,5 +192,26 @@ namespace TS3Client.Full
 			mappedBaseOffset = 0;
 			generation = 0;
 		}
+	}
+
+	//  X   |OXXOOOOOO|  X
+	//  |     |   |      |
+	//  |     |   |      OutOfWindowNotSet
+	//  |     |   InWindowNotSet
+	//  |     InWindowSet
+	//  OutOfWindowSet
+
+	[Flags]
+	public enum ItemSetStatus
+	{
+		NotSet = 0b00,
+		Set = 0b01,
+		OutOfWindow = 0b00,
+		InWindow = 0b10,
+
+		OutOfWindowNotSet = OutOfWindow | NotSet,
+		OutOfWindowSet = OutOfWindow | Set,
+		InWindowNotSet = InWindow | NotSet,
+		InWindowSet = InWindow | Set,
 	}
 }

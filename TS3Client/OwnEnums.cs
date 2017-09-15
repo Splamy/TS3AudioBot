@@ -1041,7 +1041,7 @@ namespace TS3Client
 			case PermissionId.i_ft_needed_directory_create_power: return "Needed create directory power";
 			case PermissionId.i_ft_quota_mb_download_per_client: return "Download quota per client in MByte";
 			case PermissionId.i_ft_quota_mb_upload_per_client: return "Upload quota per client in MByte";
-			default: throw new ArgumentException(nameof(permid));
+			default: throw Util.UnhandledDefault(permid);
 			}
 		}
 	}

@@ -123,7 +123,8 @@ The en/decryption parameters get generated for each packet as follows
 
     key: [u8; 16]   = keynonce[0-16]
     nonce: [u8; 16] = keynonce[16-32]
-    key[0-2]        = key[0-2] xor (PId in network order)[0-2]
+    key[0]          = key[0] xor ((PId & 0xFF00) >> 8)
+    key[1]          = key[1] xor ((PId & 0x00FF) >> 0)
 
 ### 1.6.3 Encryption
 The data can now be encrypted with the `key` and `nonce` from (see 1.6.2) as the
@@ -263,17 +264,17 @@ Packet resend timeouts should be calculated with an exponential backoff to
 prevent network congestion.
 
 ## 1.11 Wrap-up
-| Type         | Acknowledged (by) | Resend | Encrypted |
-|--------------|-------------------|--------|-----------|
-| Voice        | ✗                | ✗     | Optional  |
-| VoiceWhisper | ✗                | ✗     | Optional  |
-| Command      | ✓ (Ack)          | ✓     | ✓        |
-| CommandLow   | ✓ (AckLow)       | ✓     | ✓        |
-| Ping         | ✓ (Pong)         | ✗     | ✗        |
-| Pong         | ✗                | ✗     | ✗        |
-| Ack          | ✗                | ✓     | ✓        |
-| AckLow       | ✗                | ✓     | ✓        |
-| Init1        | ✓ (next Init1)   | ✓     | ✗        |
+| Type         | Acknowledged (by) | Resend | Encrypted | Splittable | Compressable |
+|--------------|-------------------|--------|-----------|------------|--------------|
+| Voice        | ✗                 | ✗      | Optional  | ✗          | ✗            |
+| VoiceWhisper | ✗                 | ✗      | Optional  | ✗          | ✗            |
+| Command      | ✓ (Ack)           | ✓      | ✓         | ✓          | ✓            |
+| CommandLow   | ✓ (AckLow)        | ✓      | ✓         | ✓          | ✓            |
+| Ping         | ✓ (Pong)          | ✗      | ✗         | ✗          | ✗            |
+| Pong         | ✗                 | ✗      | ✗         | ✗          | ✗            |
+| Ack          | ✗                 | ✓      | ✓         | ✗          | ✗            |
+| AckLow       | ✗                 | ✓      | ✓         | ✗          | ✗            |
+| Init1        | ✓ (next Init1)    | ✓      | ✗         | ✗          | ✗            |
 
 # 2. The (Low-Level) Initiation/Handshake
 A connection is started from the client by sending the first handshake
@@ -288,7 +289,7 @@ The packet header values are set as following for all packets here:
 | key       | N/A                                                    |
 | nonce     | N/A                                                    |
 | Type      | Init1                                                  |
-| Encrypted | ✘                                                     |
+| Encrypted | ✗                                                      |
 | Packet Id | u16: 101                                               |
 | Client Id | u16: 0                                                 |
 
@@ -403,17 +404,25 @@ The server responds with this command.
 With this information the client now must calculate the shared secret.
 
     let sharedSecret: ECPoint
+    let x: [u8]
     let sharedData: [u8; 32]
     let SharedIV: [u8; 20]
     let SharedMac: [u8; 8]
     let ECDH(A, B)    := (A * B).Normalize
 
-    sharedSecret       = ECDH(serverPublicKey, ownPrivateKey)
-    sharedData[0-32]   = sharedSecret.x.AsByteArray()[(length-32)-length]
-    SharedIV           = SHA1(sharedData)
-    SharedIV[0-10]     = SharedIV[0-10] xor alpha.decode64()
-    SharedIV[10-20]    = SharedIV[10-20] xor beta.decode64()
-    SharedMac[0-8]     = SHA1(SharedIV)[0-8]
+    sharedSecret         = ECDH(serverPublicKey, ownPrivateKey)
+    x                    = sharedSecret.x.AsByteArray()
+    if x.length < 32
+        sharedData[0-(32-x.length)]  = [0..0]
+        sharedData[(32-x.length)-32] = x[0-x.length]
+    if x.length == 32
+        sharedData[0-32] = x[0-32]
+    if x.length > 32
+        sharedData[0-32] = x[(x.length-32)-x.length]
+    SharedIV             = SHA1(sharedData)
+    SharedIV[0-10]       = SharedIV[0-10] xor alpha.decode64()
+    SharedIV[10-20]      = SharedIV[10-20] xor beta.decode64()
+    SharedMac[0-8]       = SHA1(SharedIV)[0-8]
 
 **Notes**:
 - Only `SharedIV` and `SharedMac` are needed. The other values can be discarded.

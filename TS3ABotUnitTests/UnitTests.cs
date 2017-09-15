@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -471,7 +471,8 @@ namespace TS3ABotUnitTests
 				q.TryDequeue(out ov);
 			}
 
-			Assert.True(q.IsSet(ushort.MaxValue - 20));
+			var setStatus = q.IsSet(ushort.MaxValue - 20);
+			Assert.True(setStatus.HasFlag(ItemSetStatus.Set));
 
 			for (int i = ushort.MaxValue - 10; i < ushort.MaxValue + 10; i++)
 			{

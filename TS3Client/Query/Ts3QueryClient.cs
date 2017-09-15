@@ -117,7 +117,7 @@ namespace TS3Client.Query
 			// special
 			case NotificationType.Error: break;
 			case NotificationType.Unknown:
-			default: throw new InvalidOperationException();
+			default: throw Util.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
 
@@ -145,7 +145,7 @@ namespace TS3Client.Query
 
 		#region QUERY SPECIFIC COMMANDS
 
-		private static readonly string[] targetTypeString = new[] { "textprivate", "textchannel", "textserver", "channel", "server" };
+		private static readonly string[] targetTypeString = { "textprivate", "textchannel", "textserver", "channel", "server" };
 
 		public void RegisterNotification(TextMessageTargetMode target, ChannelIdT channel)
 			=> RegisterNotification(targetTypeString[(int)target], channel);
