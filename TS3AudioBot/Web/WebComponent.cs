@@ -14,10 +14,10 @@ namespace TS3AudioBot.Web
 
 	public abstract class WebComponent
 	{
-		protected static readonly Uri dummy = new Uri($"http://dummy/");
+		protected static readonly Uri Dummy = new Uri("http://dummy/");
 		protected MainBot MainBot { get; }
 
-		public WebComponent(MainBot mainBot)
+		protected WebComponent(MainBot mainBot)
 		{
 			MainBot = mainBot;
 		}

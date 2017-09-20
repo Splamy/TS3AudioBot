@@ -1,4 +1,4 @@
-﻿// QuickLZ data compression library
+// QuickLZ data compression library
 // Copyright (C) 2006-2011 Lasse Mikkel Reinhold
 // lar@quicklz.com
 //
@@ -105,7 +105,7 @@ static class QuickLZ
 				{
 					d2 = new byte[source.Length + DEFAULT_HEADERLEN];
 					WriteHeader(d2, level, false, source.Length, source.Length + DEFAULT_HEADERLEN);
-					System.Array.Copy(source, 0, d2, DEFAULT_HEADERLEN, source.Length);
+					Array.Copy(source, 0, d2, DEFAULT_HEADERLEN, source.Length);
 					return d2;
 				}
 
@@ -187,7 +187,7 @@ static class QuickLZ
 				fetch = source[src] | (source[src + 1] << 8) | (source[src + 2] << 16);
 
 				int o, offset2;
-				int matchlen, k, m, best_k = 0;
+				int matchlen, k, m;
 				byte c;
 				int remaining = ((source.Length - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (source.Length - UNCOMPRESSED_END - src + 1 - 1));
 				int hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
@@ -207,7 +207,6 @@ static class QuickLZ
 						{
 							offset2 = o;
 							matchlen = m;
-							best_k = k;
 						}
 					}
 				}
@@ -289,7 +288,7 @@ static class QuickLZ
 		FastWrite(destination, cword_ptr, (int)((cword_val >> 1) | 0x80000000), CWORD_LEN);
 		WriteHeader(destination, level, true, source.Length, dst);
 		d2 = new byte[dst];
-		System.Array.Copy(destination, d2, dst);
+		Array.Copy(destination, d2, dst);
 		return d2;
 	}
 
@@ -323,7 +322,7 @@ static class QuickLZ
 		if ((source[0] & 1) != 1)
 		{
 			byte[] d2 = new byte[size];
-			System.Array.Copy(source, HeaderLen(source), d2, 0, size);
+			Array.Copy(source, HeaderLen(source), d2, 0, size);
 			return d2;
 		}
 

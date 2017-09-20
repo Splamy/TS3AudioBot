@@ -11,11 +11,11 @@ namespace TS3Client.Full
 {
 	public class VersionSign
 	{
-		private static readonly string[] plattforms = new[] { "Windows", "Linux", "OS X", "Android" };
+		private static readonly string[] Plattforms = { "Windows", "Linux", "OS X", "Android" };
 
 		public string Sign { get; }
 		public string Name { get; }
-		ClientPlattform Plattform { get; }
+		public ClientPlattform Plattform { get; }
 		public string PlattformName { get; }
 
 		public VersionSign(string name, ClientPlattform plattform, string sign)
@@ -23,7 +23,7 @@ namespace TS3Client.Full
 			Name = name;
 			Sign = sign;
 			Plattform = plattform;
-			PlattformName = plattforms[(int)plattform];
+			PlattformName = Plattforms[(int)plattform];
 		}
 
 		// Many ids implemented from here: https://r4p3.net/threads/client-builds.499/

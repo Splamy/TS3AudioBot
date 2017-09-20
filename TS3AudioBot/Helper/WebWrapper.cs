@@ -15,7 +15,7 @@ namespace TS3AudioBot.Helper
 
 	internal static class WebWrapper
 	{
-		private static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(1);
+		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
 
 		public static bool DownloadString(out string site, Uri link, params Tuple<string, string>[] optionalHeaders)
 		{
@@ -27,6 +27,11 @@ namespace TS3AudioBot.Helper
 				using (var response = request.GetResponse())
 				{
 					var stream = response.GetResponseStream();
+					if (stream == null)
+					{
+						site = null;
+						return false;
+					}
 					using (var reader = new StreamReader(stream))
 					{
 						site = reader.ReadToEnd();

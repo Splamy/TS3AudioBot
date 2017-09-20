@@ -61,19 +61,19 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		internal ICommand AstToCommandResult(ASTNode node)
+		internal ICommand AstToCommandResult(AstNode node)
 		{
 			switch (node.Type)
 			{
-			case ASTType.Error:
+			case AstType.Error:
 				throw new CommandException("Found an unconvertable ASTNode of type Error", CommandExceptionReason.InternalError);
-			case ASTType.Command:
-				var cmd = (ASTCommand)node;
+			case AstType.Command:
+				var cmd = (AstCommand)node;
 				var arguments = new List<ICommand>();
 				arguments.AddRange(cmd.Parameter.Select(AstToCommandResult));
 				return new AppliedCommand(RootCommand, arguments);
-			case ASTType.Value:
-				return new StringCommand(((ASTValue)node).Value);
+			case AstType.Value:
+				return new StringCommand(((AstValue)node).Value);
 			}
 			throw new NotSupportedException("Seems like there's a new NodeType, this code should not be reached");
 		}

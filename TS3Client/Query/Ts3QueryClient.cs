@@ -26,7 +26,7 @@ namespace TS3Client.Query
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
-		private readonly object SendQueueLock = new object();
+		private readonly object sendQueueLock = new object();
 		private readonly TcpClient tcpClient;
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
@@ -73,7 +73,7 @@ namespace TS3Client.Query
 
 		public override void Disconnect()
 		{
-			lock (SendQueueLock)
+			lock (sendQueueLock)
 			{
 				SendRaw("quit");
 				if (tcpClient.Connected)
@@ -125,7 +125,7 @@ namespace TS3Client.Query
 		{
 			using (var wb = new WaitBlock())
 			{
-				lock (SendQueueLock)
+				lock (sendQueueLock)
 				{
 					msgProc.EnqueueRequest(wb);
 					SendRaw(com.ToString());
@@ -145,13 +145,13 @@ namespace TS3Client.Query
 
 		#region QUERY SPECIFIC COMMANDS
 
-		private static readonly string[] targetTypeString = { "textprivate", "textchannel", "textserver", "channel", "server" };
+		private static readonly string[] TargetTypeString = { "textprivate", "textchannel", "textserver", "channel", "server" };
 
 		public void RegisterNotification(TextMessageTargetMode target, ChannelIdT channel)
-			=> RegisterNotification(targetTypeString[(int)target], channel);
+			=> RegisterNotification(TargetTypeString[(int)target], channel);
 
 		public void RegisterNotification(ReasonIdentifier target, ChannelIdT channel)
-			=> RegisterNotification(targetTypeString[(int)target], channel);
+			=> RegisterNotification(TargetTypeString[(int)target], channel);
 
 		private void RegisterNotification(string target, ChannelIdT channel)
 		{
@@ -222,7 +222,7 @@ namespace TS3Client.Query
 
 		public override void Dispose()
 		{
-			lock (SendQueueLock)
+			lock (sendQueueLock)
 			{
 				tcpWriter?.Dispose();
 				tcpWriter = null;

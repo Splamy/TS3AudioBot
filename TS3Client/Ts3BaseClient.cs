@@ -217,12 +217,12 @@ namespace TS3Client
 		public void UploadAvatar(System.IO.Stream image)
 		{
 			var token = FileTransferManager.UploadFile(image, 0, "/avatar", true);
-			FileTransferManager.Wait(token);
+			token.Wait();
 			image.Seek(0, System.IO.SeekOrigin.Begin);
-			using (var md5dig = System.Security.Cryptography.MD5.Create())
+			using (var md5Dig = System.Security.Cryptography.MD5.Create())
 			{
-				var md5bytes = md5dig.ComputeHash(image);
-				var md5 = string.Join("", md5bytes.Select(x => x.ToString("x2")));
+				var md5Bytes = md5Dig.ComputeHash(image);
+				var md5 = string.Join("", md5Bytes.Select(x => x.ToString("x2")));
 				Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
 			}
 		}

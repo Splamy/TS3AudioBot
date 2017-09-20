@@ -7,6 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using TS3AudioBot.Helper;
+
 namespace TS3AudioBot
 {
 	using System;
@@ -24,8 +26,8 @@ namespace TS3AudioBot
 		public static bool Active { get; set; }
 		public static int StackLevel { get; set; }
 
-		private static readonly object writeLock;
-		private static List<LogAction> loggerFormats;
+		private static readonly object WriteLock;
+		private static readonly List<LogAction> LoggerFormats;
 
 		private static string[] spaceup;
 
@@ -36,8 +38,8 @@ namespace TS3AudioBot
 
 		static Log()
 		{
-			writeLock = new object();
-			loggerFormats = new List<LogAction>();
+			WriteLock = new object();
+			LoggerFormats = new List<LogAction>();
 
 			StackLevel = 10;
 			Active = true;
@@ -127,7 +129,7 @@ namespace TS3AudioBot
 
 		private static void RegisterLoggerUnsafe(List<ParseToken> tokenList, string linebreakIndent, CallbackActionDelegate callback, Level logLevel)
 		{
-			bool usesLLS = false, usesETF = false, usesDF = false, usesSTF = false;
+			bool usesLls = false, usesEtf = false, usesDf = false, usesStf = false;
 			var formatString = new StringBuilder();
 			foreach (var part in tokenList)
 			{
@@ -138,32 +140,32 @@ namespace TS3AudioBot
 					break;
 				case MethodBuildToken.LogLevelSpaced:
 					formatString.Append(PlaceLogLevelSpaced);
-					usesLLS = true;
+					usesLls = true;
 					break;
 				case MethodBuildToken.ErrorTextFormatted:
 					formatString.Append(PlaceErrorTextFormatted);
-					usesETF = true;
+					usesEtf = true;
 					break;
 				case MethodBuildToken.DateFormatted:
 					formatString.Append(PlaceDateFormatted);
-					usesDF = true;
+					usesDf = true;
 					break;
 				case MethodBuildToken.StackFormatted:
 					formatString.Append(PlaceStackTraceFormatted);
-					usesSTF = true;
+					usesStf = true;
 					break;
 				default:
-					throw new InvalidProgramException("Undefined MethodBuildToken occoured");
+					throw Util.UnhandledDefault(part.TokenType);
 				}
 			}
 
-			lock (writeLock)
+			lock (WriteLock)
 			{
-				loggerFormats.Add(new LogAction(
+				LoggerFormats.Add(new LogAction(
 						formatString.ToString(),
 						callback,
 						logLevel,
-						usesLLS, usesETF, usesDF, usesSTF));
+						usesLls, usesEtf, usesDf, usesStf));
 			}
 		}
 
@@ -173,14 +175,14 @@ namespace TS3AudioBot
 				return;
 
 			var stack = new StackTrace(1);
-			lock (writeLock)
+			lock (WriteLock)
 			{
 				string logLevelSpaced = null;
 				string errorTextFormatted = null;
 				string dateFormatted = null;
 				string stackTraceFormatted = null;
 
-				foreach (var callbackProc in loggerFormats)
+				foreach (var callbackProc in LoggerFormats)
 				{
 					if (lvl < callbackProc.LogLevel)
 						continue;
@@ -221,7 +223,7 @@ namespace TS3AudioBot
 				if (endOfIl)
 					strb.Append("$internal");
 				else
-					strb.Append(method.ToString()).Append('@').Append(frames.GetFileLineNumber()); // TODO Add classname
+					strb.Append(method).Append('@').Append(frames.GetFileLineNumber()); // TODO Add classname
 				strb.Append('\n');
 				if (endOfIl) break;
 			}
@@ -290,16 +292,16 @@ namespace TS3AudioBot
 			public bool UsesStackTraceFormatted { get; }
 
 			public LogAction(string formatString, CallbackActionDelegate callback, Level logLevel,
-				bool usesLLS, bool usesETF, bool usesDF, bool usesSTF)
+				bool usesLls, bool usesEtf, bool usesDf, bool usesStf)
 			{
 				FormatString = formatString;
 				Callback = callback;
 				LogLevel = logLevel;
 
-				UsesLogLevelSpaced = usesLLS;
-				UsesErrorTextFormatted = usesETF;
-				UsesDateFormatted = usesDF;
-				UsesStackTraceFormatted = usesSTF;
+				UsesLogLevelSpaced = usesLls;
+				UsesErrorTextFormatted = usesEtf;
+				UsesDateFormatted = usesDf;
+				UsesStackTraceFormatted = usesStf;
 			}
 		}
 	}

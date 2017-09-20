@@ -27,11 +27,11 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		/// <summary>The resource type.</summary>
 		public AudioType AudioType { get; set; }
-		/// <summary>An identifier to create the song. This id is uniqe among same <see cref="TS3AudioBot.AudioType"/> resources.</summary>
-		public string ResourceId { get; set;  }
+		/// <summary>An identifier to create the song. This id is uniqe among same <see cref="ResourceFactories.AudioType"/> resources.</summary>
+		public string ResourceId { get; set; }
 		/// <summary>The display title.</summary>
 		public string ResourceTitle { get; set; }
-		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and <see cref="TS3AudioBot.AudioType"/>.</summary>
+		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and <see cref="ResourceFactories.AudioType"/>.</summary>
 		public string UniqueId => ResourceId + AudioType.ToString();
 
 		public AudioResource() { }
@@ -54,8 +54,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public override bool Equals(object obj)
 		{
-			var other = obj as AudioResource;
-			if (other == null)
+			if (!(obj is AudioResource other))
 				return false;
 
 			return AudioType == other.AudioType

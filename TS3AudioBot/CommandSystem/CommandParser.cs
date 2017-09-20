@@ -11,7 +11,6 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
 	using System.Text;
 
 	internal static class CommandParser
@@ -27,22 +26,22 @@ namespace TS3AudioBot.CommandSystem
 		// FREESTRING   := [^)]+
 		// QUOTESTRING  := "[<anything but ", \" is ok>]+"
 
-		public static ASTNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimeterChar = DefaultDelimeterChar)
+		public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimeterChar = DefaultDelimeterChar)
 		{
-			ASTCommand root = null;
-			var comAst = new Stack<ASTCommand>();
-			BuildStatus build = BuildStatus.ParseCommand;
+			AstCommand root = null;
+			var comAst = new Stack<AstCommand>();
+			var build = BuildStatus.ParseCommand;
 			var strb = new StringBuilder();
 			var strPtr = new StringPtr(request);
 
 			while (!strPtr.End)
 			{
-				ASTCommand buildCom;
+				AstCommand buildCom;
 				switch (build)
 				{
 				case BuildStatus.ParseCommand:
 					// Got a command
-					buildCom = new ASTCommand();
+					buildCom = new AstCommand();
 					// Consume CommandChar if left over
 					if (strPtr.Char == commandChar)
 						strPtr.Next(commandChar);
@@ -98,7 +97,7 @@ namespace TS3AudioBot.CommandSystem
 				case BuildStatus.ParseFreeString:
 					strb.Clear();
 
-					var valFreeAst = new ASTValue();
+					var valFreeAst = new AstValue();
 					using (strPtr.TrackNode(valFreeAst))
 					{
 						for (; !strPtr.End; strPtr.Next())
@@ -121,7 +120,7 @@ namespace TS3AudioBot.CommandSystem
 
 					strPtr.Next('"');
 
-					var valQuoAst = new ASTValue();
+					var valQuoAst = new AstValue();
 					using (strPtr.TrackNode(valQuoAst))
 					{
 						bool escaped = false;
@@ -157,10 +156,10 @@ namespace TS3AudioBot.CommandSystem
 
 		private class StringPtr
 		{
-			string text;
-			int index;
-			ASTNode astnode;
-			NodeTracker curTrack;
+			private readonly string text;
+			private int index;
+			private AstNode astnode;
+			private NodeTracker curTrack;
 
 			public char Char => text[index];
 			public bool End => index >= text.Length;
@@ -196,7 +195,7 @@ namespace TS3AudioBot.CommandSystem
 
 			public void JumpToEnd() => index = text.Length + 1;
 
-			public NodeTracker TrackNode(ASTNode node)
+			public NodeTracker TrackNode(AstNode node)
 			{
 				if (curTrack != null)
 					throw new InvalidOperationException("Previous tracker must be freed");
@@ -219,13 +218,13 @@ namespace TS3AudioBot.CommandSystem
 
 			public class NodeTracker : IDisposable
 			{
-				readonly StringPtr parent;
+				private readonly StringPtr parent;
 				public NodeTracker(StringPtr p) { parent = p; }
 				public void Dispose() => parent.UntrackNode();
 			}
 		}
 
-		enum BuildStatus
+		private enum BuildStatus
 		{
 			ParseCommand,
 			SelectParam,

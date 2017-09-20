@@ -22,14 +22,14 @@ namespace TS3AudioBot.Rights
 	{
 		private const int RuleLevelSize = 2;
 
-		private MainBot botParent;
+		private readonly MainBot botParent;
 
 		private bool needsRecalculation;
-		private Cache<InvokerData, ExecuteContext> cachedRights;
-		private RightsManagerData rightsManagerData;
-		private RightsRule RootRule;
-		private RightsRule[] Rules;
-		private HashSet<string> registeredRights;
+		private readonly Cache<InvokerData, ExecuteContext> cachedRights;
+		private readonly RightsManagerData rightsManagerData;
+		private RightsRule rootRule;
+		private RightsRule[] rules;
+		private readonly HashSet<string> registeredRights;
 
 		// Required Matcher Data:
 		// This variables save whether the current rights setup has at least one rule that
@@ -123,7 +123,7 @@ namespace TS3AudioBot.Rights
 				execCtx.ClientUid = inv.ClientUid;
 				execCtx.Visibiliy = inv.Visibiliy;
 
-				ProcessNode(RootRule, execCtx);
+				ProcessNode(rootRule, execCtx);
 
 				if (execCtx.MatchingRules.Count == 0)
 					return execCtx;
@@ -137,7 +137,7 @@ namespace TS3AudioBot.Rights
 			return execCtx;
 		}
 
-		private bool ProcessNode(RightsRule rule, ExecuteContext ctx)
+		private static bool ProcessNode(RightsRule rule, ExecuteContext ctx)
 		{
 			// check if node matches
 			if (!rule.HasMatcher()
@@ -149,9 +149,7 @@ namespace TS3AudioBot.Rights
 			{
 				bool hasMatchingChild = false;
 				foreach (var child in rule.ChildrenRules)
-				{
 					hasMatchingChild |= ProcessNode(child, ctx);
-				}
 
 				if (!hasMatchingChild)
 					ctx.MatchingRules.Add(rule);
@@ -202,7 +200,7 @@ namespace TS3AudioBot.Rights
 					strb.Append("WRN: ").AppendLine(warn);
 				if (ctx.Errors.Count == 0)
 				{
-					strb.Append(string.Join("\n", Rules.Select(x => x.ToString())));
+					strb.Append(string.Join("\n", rules.Select(x => x.ToString())));
 					if (strb.Length > 900)
 						strb.Length = 900;
 					return R<string>.OkR(strb.ToString());
@@ -224,10 +222,10 @@ namespace TS3AudioBot.Rights
 
 		private void RecalculateRights(TomlTable table, ParseContext parseCtx)
 		{
-			Rules = new RightsRule[0];
+			rules = new RightsRule[0];
 
-			RootRule = new RightsRule();
-			if (!RootRule.ParseChilden(table, parseCtx))
+			rootRule = new RightsRule();
+			if (!rootRule.ParseChilden(table, parseCtx))
 				return;
 
 			parseCtx.SplitDeclarations();
@@ -241,7 +239,7 @@ namespace TS3AudioBot.Rights
 			if (!CheckCyclicGroupDependencies(parseCtx))
 				return;
 
-			BuildLevel(RootRule);
+			BuildLevel(rootRule);
 
 			LintDeclarations(parseCtx);
 
@@ -250,9 +248,9 @@ namespace TS3AudioBot.Rights
 
 			FlattenGroups(parseCtx);
 
-			FlattenRules(RootRule);
+			FlattenRules(rootRule);
 
-			Rules = parseCtx.Rules;
+			rules = parseCtx.Rules;
 		}
 
 		private HashSet<string> ExpandRights(IEnumerable<string> rights)
@@ -405,8 +403,8 @@ namespace TS3AudioBot.Rights
 		private static void BuildLevel(RightsDecl root, int level = 0)
 		{
 			root.Level = level;
-			if (root is RightsRule)
-				foreach (var child in ((RightsRule)root).Children)
+			if (root is RightsRule rootRule)
+				foreach (var child in rootRule.Children)
 					BuildLevel(child, level + RuleLevelSize);
 		}
 
@@ -429,17 +427,17 @@ namespace TS3AudioBot.Rights
 			foreach (var decl in ctx.Groups)
 			{
 				if (decl.Includes.Length == 0 && decl.DeclDeny.Length > 0)
-					ctx.Warnings.Add($"Rule with \"-\" declaration but no include to override");
+					ctx.Warnings.Add("Rule with \"-\" declaration but no include to override");
 			}
 			var root = ctx.Rules.First(x => x.Parent == null);
 			if (root.Includes.Length == 0 && root.DeclDeny.Length > 0)
-				ctx.Warnings.Add($"Root rule \"-\" declaration has no effect");
+				ctx.Warnings.Add("Root rule \"-\" declaration has no effect");
 
 			// check if rule has no matcher
 			foreach (var rule in ctx.Rules)
 			{
 				if (!rule.HasMatcher() && rule.Parent != null)
-					ctx.Warnings.Add($"Rule has no matcher");
+					ctx.Warnings.Add("Rule has no matcher");
 			}
 
 			// check for impossible combinations uid + uid, server + server, perm + perm ?
@@ -505,12 +503,12 @@ namespace TS3AudioBot.Rights
 
 	internal class ExecuteContext
 	{
-		public string Host { get; set; } = null;
-		public ulong[] AvailableGroups { get; set; } = null;
-		public ulong? ChannelGroupId { get; set; } = null;
-		public string ClientUid { get; set; } = null;
+		public string Host { get; set; }
+		public ulong[] AvailableGroups { get; set; }
+		public ulong? ChannelGroupId { get; set; }
+		public string ClientUid { get; set; }
 		public bool IsApi { get; set; }
-		public TextMessageTargetMode? Visibiliy { get; set; } = null;
+		public TextMessageTargetMode? Visibiliy { get; set; }
 
 		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
 

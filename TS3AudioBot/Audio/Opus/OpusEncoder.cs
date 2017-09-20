@@ -1,4 +1,4 @@
-﻿// Copyright 2012 John Carruthers
+// Copyright 2012 John Carruthers
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -22,7 +22,6 @@
 namespace TS3AudioBot.Audio.Opus
 {
 	using System;
-	using System.Runtime.InteropServices;
 
 	/// <summary>
 	/// Opus codec wrapper.
@@ -43,23 +42,23 @@ namespace TS3AudioBot.Audio.Opus
 				inputSamplingRate != 16000 &&
 				inputSamplingRate != 24000 &&
 				inputSamplingRate != 48000)
-				throw new ArgumentOutOfRangeException("inputSamplingRate");
+				throw new ArgumentOutOfRangeException(nameof(inputSamplingRate));
 			if (inputChannels != 1 && inputChannels != 2)
-				throw new ArgumentOutOfRangeException("inputChannels");
+				throw new ArgumentOutOfRangeException(nameof(inputChannels));
 
 			IntPtr encoder = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, (int)application, out IntPtr error);
-			if ((Errors)error != Errors.OK)
+			if ((Errors)error != Errors.Ok)
 			{
 				throw new Exception("Exception occured while creating encoder");
 			}
 			return new OpusEncoder(encoder, inputSamplingRate, inputChannels, application);
 		}
 
-		private IntPtr _encoder;
+		private IntPtr encoder;
 
 		private OpusEncoder(IntPtr encoder, int inputSamplingRate, int inputChannels, Application application)
 		{
-			_encoder = encoder;
+			this.encoder = encoder;
 			InputSamplingRate = inputSamplingRate;
 			InputChannels = inputChannels;
 			Application = application;
@@ -71,6 +70,7 @@ namespace TS3AudioBot.Audio.Opus
 		/// </summary>
 		/// <param name="inputPcmSamples">PCM samples to encode.</param>
 		/// <param name="sampleLength">How many bytes to encode.</param>
+		/// <param name="outputEncodedBuffer">The encoded data is written to this buffer.</param>
 		/// <param name="encodedLength">Set to length of encoded audio.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
 		public void Encode(byte[] inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer, out int encodedLength)
@@ -81,10 +81,10 @@ namespace TS3AudioBot.Audio.Opus
 				throw new ArgumentException("Array must be at least MaxDataBytes long", nameof(outputEncodedBuffer));
 
 			int frames = FrameCount(inputPcmSamples);
-			encodedLength = NativeMethods.opus_encode(_encoder, inputPcmSamples, frames, outputEncodedBuffer, sampleLength);
+			encodedLength = NativeMethods.opus_encode(encoder, inputPcmSamples, frames, outputEncodedBuffer, sampleLength);
 			
 			if (encodedLength < 0)
-				throw new Exception("Encoding failed - " + ((Errors)encodedLength).ToString());
+				throw new Exception("Encoding failed - " + (Errors)encodedLength);
 		}
 
 		/// <summary>
@@ -95,7 +95,7 @@ namespace TS3AudioBot.Audio.Opus
 		public int FrameCount(byte[] pcmSamples)
 		{
 			//  seems like bitrate should be required
-			int bitrate = 16;
+			const int bitrate = 16;
 			int bytesPerSample = (bitrate / 8) * InputChannels;
 			return pcmSamples.Length / bytesPerSample;
 		}
@@ -107,7 +107,7 @@ namespace TS3AudioBot.Audio.Opus
 		/// <returns></returns>
 		public int FrameByteCount(int frameCount)
 		{
-			int bitrate = 16;
+			const int bitrate = 16;
 			int bytesPerSample = (bitrate / 8) * InputChannels;
 			return frameCount * bytesPerSample;
 		}
@@ -142,7 +142,7 @@ namespace TS3AudioBot.Audio.Opus
 			{
 				if (disposed)
 					throw new ObjectDisposedException("OpusEncoder");
-				var ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.GetBitrateRequest, out int bitrate);
+				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.GetBitrateRequest, out int bitrate);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
 				return bitrate;
@@ -151,7 +151,7 @@ namespace TS3AudioBot.Audio.Opus
 			{
 				if (disposed)
 					throw new ObjectDisposedException("OpusEncoder");
-				var ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.SetBitrateRequest, value);
+				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.SetBitrateRequest, value);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
 			}
@@ -164,10 +164,10 @@ namespace TS3AudioBot.Audio.Opus
 		{
 			get
 			{
-				if (_encoder == IntPtr.Zero)
+				if (encoder == IntPtr.Zero)
 					throw new ObjectDisposedException("OpusEncoder");
 
-				int ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.GetInbandFECRequest, out int fec);
+				int ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.GetInbandFecRequest, out int fec);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
 
@@ -176,10 +176,10 @@ namespace TS3AudioBot.Audio.Opus
 
 			set
 			{
-				if (_encoder == IntPtr.Zero)
+				if (encoder == IntPtr.Zero)
 					throw new ObjectDisposedException("OpusEncoder");
 
-				var ret = NativeMethods.opus_encoder_ctl(_encoder, Ctl.SetInbandFECRequest, value ? 1 : 0);
+				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.SetInbandFecRequest, value ? 1 : 0);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
 			}
@@ -198,10 +198,10 @@ namespace TS3AudioBot.Audio.Opus
 
 			GC.SuppressFinalize(this);
 
-			if (_encoder != IntPtr.Zero)
+			if (encoder != IntPtr.Zero)
 			{
-				NativeMethods.opus_encoder_destroy(_encoder);
-				_encoder = IntPtr.Zero;
+				NativeMethods.opus_encoder_destroy(encoder);
+				encoder = IntPtr.Zero;
 			}
 
 			disposed = true;

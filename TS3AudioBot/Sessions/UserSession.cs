@@ -19,9 +19,9 @@ namespace TS3AudioBot.Sessions
 
 	public sealed class UserSession
 	{
-		private Dictionary<Type, object> assocMap = null;
-		private bool lockToken = false;
-		private ClientData client;
+		private Dictionary<Type, object> assocMap;
+		private bool lockToken;
+		private readonly ClientData client;
 
 		public Response ResponseProcessor { get; private set; }
 		public object ResponseData { get; private set; }
@@ -127,7 +127,7 @@ namespace TS3AudioBot.Sessions
 
 		public sealed class SessionToken : IDisposable
 		{
-			private UserSession session;
+			private readonly UserSession session;
 			public SessionToken(UserSession session) { this.session = session; }
 
 			public void Take() { Monitor.Enter(session); session.lockToken = true; }

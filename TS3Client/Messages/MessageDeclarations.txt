@@ -1,4 +1,4 @@
-﻿: <TypeName>, <Deserialize Method>
+: <TypeName>, <Deserialize Method>
 Conv: bool    , CommandDeserializer.DeserializeBool    (value);
 Conv: sbyte   , CommandDeserializer.DeserializeInt8    (value);
 Conv: byte    , CommandDeserializer.DeserializeUInt8   (value);
@@ -75,7 +75,7 @@ Field: clid, clid, ClientId, ClientIdT
 Field: client_away, client_away, IsAway, bool
 Field: client_away_message, client_away_message, AwayMessage, string
 Field: client_badges, client_badges, Badges, string
-Field: client_base64HashClientUID, client_base64HashClientUID, Base64HashClientUID, string
+Field: client_base64HashClientUID, client_base64HashClientUID, Base64HashClientUid, string
 Field: client_channel_group_id, client_channel_group_id, ChannelGroupId, ChannelGroupIdT
 Field: client_channel_group_inherited_channel_id, client_channel_group_inherited_channel_id, InheritedChannelGroupFromChannelId, ChannelGroupIdT
 Field: client_channel_id, client_channel_id, ChannelId, ChannelIdT

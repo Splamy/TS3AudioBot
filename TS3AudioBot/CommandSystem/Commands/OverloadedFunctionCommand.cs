@@ -18,7 +18,7 @@ namespace TS3AudioBot.CommandSystem
 		/// <summary>
 		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
 		/// </summary>
-		private static Type[] typeOrder = {
+		private static readonly Type[] TypeOrder = {
 			typeof(bool),
 			typeof(sbyte), typeof(byte),
 			typeof(short), typeof(ushort),
@@ -66,12 +66,12 @@ namespace TS3AudioBot.CommandSystem
 					// Prefer functions with higher parameter count
 					if (i >= params2.Count)
 						return -1;
-					int i1 = Array.IndexOf(typeOrder, params1[i]);
+					int i1 = Array.IndexOf(TypeOrder, params1[i]);
 					if (i1 == -1)
-						i1 = typeOrder.Length;
-					int i2 = Array.IndexOf(typeOrder, params2[i]);
+						i1 = TypeOrder.Length;
+					int i2 = Array.IndexOf(TypeOrder, params2[i]);
 					if (i2 == -1)
-						i2 = typeOrder.Length;
+						i2 = TypeOrder.Length;
 					// Prefer lower argument
 					if (i1 < i2)
 						return -1;
@@ -89,7 +89,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c));
-			foreach (FunctionCommand f in Functions)
+			foreach (var f in Functions)
 			{
 				bool fits = false;
 				try

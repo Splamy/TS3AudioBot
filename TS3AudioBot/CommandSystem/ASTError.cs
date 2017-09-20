@@ -11,13 +11,13 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System.Text;
 
-	internal class ASTError : ASTNode
+	internal class AstError : AstNode
 	{
-		public override ASTType Type => ASTType.Error;
+		public override AstType Type => AstType.Error;
 
 		public string Description { get; }
 
-		public ASTError(ASTNode referenceNode, string description)
+		public AstError(AstNode referenceNode, string description)
 		{
 			FullRequest = referenceNode.FullRequest;
 			Position = referenceNode.Position;
@@ -25,7 +25,7 @@ namespace TS3AudioBot.CommandSystem
 			Description = description;
 		}
 
-		public ASTError(string request, int pos, int len, string description)
+		public AstError(string request, int pos, int len, string description)
 		{
 			FullRequest = request;
 			Position = pos;

@@ -11,9 +11,9 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System.Text;
 
-	internal abstract class ASTNode
+	internal abstract class AstNode
 	{
-		public abstract ASTType Type { get; }
+		public abstract AstType Type { get; }
 
 		public string FullRequest { get; set; }
 		public int Position { get; set; }
@@ -28,7 +28,7 @@ namespace TS3AudioBot.CommandSystem
 		}
 	}
 
-	internal static class ASTNodeExtensions
+	internal static class AstNodeExtensions
 	{
 		public const int SpacePerTab = 2;
 		public static StringBuilder Space(this StringBuilder strb, int depth) => strb.Append(' ', depth * SpacePerTab);

@@ -18,15 +18,15 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
-		private const string cmdResPrepath = "from ";
-		private const string cmdListPrepath = "list from ";
+		private const string CmdResPrepath = "from ";
+		private const string CmdListPrepath = "list from ";
 
 		public CommandGroup CommandResNode { get; } = new CommandGroup();
 		public CommandGroup CommandListNode { get; } = new CommandGroup();
 		public IResourceFactory DefaultFactorty { get; internal set; }
-		private Dictionary<AudioType, IFactory> allFacories;
-		private List<IResourceFactory> resFactories;
-		private List<IPlaylistFactory> listFactories;
+		private readonly Dictionary<AudioType, IFactory> allFacories;
+		private readonly List<IResourceFactory> resFactories;
+		private readonly List<IPlaylistFactory> listFactories;
 
 		public ResourceFactoryManager()
 		{
@@ -71,13 +71,11 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
 
-			IResourceFactory factory;
-			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
+			string netlinkurl = TextUtil.ExtractUrlFromBb(message);
 
-			if (audioType.HasValue)
-				factory = GetFactoryFor(audioType.Value);
-			else
-				factory = GetFactoryFor(netlinkurl);
+			var factory = audioType.HasValue
+				? GetFactoryFor(audioType.Value)
+				: GetFactoryFor(netlinkurl);
 
 			var result = factory.GetResource(netlinkurl);
 			if (!result)
@@ -103,7 +101,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
 
-			string netlinkurl = TextUtil.ExtractUrlFromBB(message);
+			string netlinkurl = TextUtil.ExtractUrlFromBb(message);
 
 			if (type.HasValue)
 			{
@@ -139,7 +137,7 @@ namespace TS3AudioBot.ResourceFactories
 			resFactories.Add(factory);
 
 			// register factory command node
-			var playCommand = new PlayCommand(factory.FactoryFor, cmdResPrepath + factory.SubCommandName);
+			var playCommand = new PlayCommand(factory.FactoryFor, CmdResPrepath + factory.SubCommandName);
 			cmdMgr.RegisterCommand(playCommand.Command);
 		}
 
@@ -148,13 +146,13 @@ namespace TS3AudioBot.ResourceFactories
 			listFactories.Add(factory);
 
 			// register factory command node
-			var playCommand = new PlayCommand(factory.FactoryFor, cmdListPrepath + factory.SubCommandName);
+			var playCommand = new PlayListCommand(factory.FactoryFor, CmdListPrepath + factory.SubCommandName);
 			cmdMgr.RegisterCommand(playCommand.Command);
 		}
 
 		public string RestoreLink(AudioResource res)
 		{
-			IResourceFactory factory = GetFactoryFor(res.AudioType);
+			var factory = GetFactoryFor(res.AudioType);
 			return factory.RestoreLink(res.ResourceId);
 		}
 
@@ -176,15 +174,15 @@ namespace TS3AudioBot.ResourceFactories
 		private sealed class PlayCommand
 		{
 			public BotCommand Command { get; }
-			private AudioType audioType;
-			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
+			private readonly AudioType audioType;
+			private static readonly MethodInfo PlayMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
 
 			public PlayCommand(AudioType audioType, string cmdPath)
 			{
 				this.audioType = audioType;
 				var builder = new CommandBuildInfo(
 					this,
-					playMethod,
+					PlayMethod,
 					new CommandAttribute(cmdPath),
 					null);
 				Command = new BotCommand(builder);
@@ -199,15 +197,15 @@ namespace TS3AudioBot.ResourceFactories
 		private sealed class PlayListCommand
 		{
 			public BotCommand Command { get; }
-			private AudioType audioType;
-			private static readonly MethodInfo playMethod = typeof(PlayCommand).GetMethod(nameof(PropagiateLoad));
+			private readonly AudioType audioType;
+			private static readonly MethodInfo PlayMethod = typeof(PlayListCommand).GetMethod(nameof(PropagiateLoad));
 
 			public PlayListCommand(AudioType audioType, string cmdPath)
 			{
 				this.audioType = audioType;
 				var builder = new CommandBuildInfo(
 					this,
-					playMethod,
+					PlayMethod,
 					new CommandAttribute(cmdPath),
 					null);
 				Command = new BotCommand(builder);

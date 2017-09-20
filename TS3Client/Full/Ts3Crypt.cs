@@ -95,8 +95,8 @@ namespace TS3Client.Full
 		private static ECPoint ImportPublicKey(byte[] asnByteArray)
 		{
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
-			var x = (asnKeyData[2] as DerInteger).Value;
-			var y = (asnKeyData[3] as DerInteger).Value;
+			var x = ((DerInteger)asnKeyData[2]).Value;
+			var y = ((DerInteger)asnKeyData[3]).Value;
 
 			var ecPoint = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
 			return ecPoint;
@@ -105,9 +105,9 @@ namespace TS3Client.Full
 		private static Tuple<ECPoint, BigInteger> ImportPublicAndPrivateKey(byte[] asnByteArray)
 		{
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
-			var x = (asnKeyData[2] as DerInteger).Value;
-			var y = (asnKeyData[3] as DerInteger).Value;
-			var bigi = (asnKeyData[4] as DerInteger).Value;
+			var x = ((DerInteger)asnKeyData[2]).Value;
+			var y = ((DerInteger)asnKeyData[3]).Value;
+			var bigi = ((DerInteger)asnKeyData[4]).Value;
 
 			var ecPoint = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
 			return new Tuple<ECPoint, BigInteger>(ecPoint, bigi);

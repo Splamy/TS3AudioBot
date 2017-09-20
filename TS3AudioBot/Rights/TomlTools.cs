@@ -19,7 +19,7 @@ namespace TS3AudioBot.Rights
 		public static T[] GetValues<T>(TomlObject tomlObj)
 		{
 			if (TryGetValue(tomlObj, out T retSingleVal))
-				return new T[] { retSingleVal };
+				return new[] { retSingleVal };
 			else if (tomlObj.TomlType == TomlObjectType.Array)
 			{
 				var tomlArray = (TomlArray)tomlObj;
@@ -96,30 +96,25 @@ namespace TS3AudioBot.Rights
 			//strb.Append(" : ");
 			switch (obj.TomlType)
 			{
-			case TomlObjectType.Bool: strb.Append((obj as TomlBool).Value); break;
-			case TomlObjectType.Int: strb.Append((obj as TomlInt).Value); break;
-			case TomlObjectType.Float: strb.Append((obj as TomlFloat).Value); break;
-			case TomlObjectType.String: strb.Append((obj as TomlString).Value); break;
-			case TomlObjectType.DateTime: strb.Append((obj as TomlDateTime).Value); break;
-			case TomlObjectType.TimeSpan: strb.Append((obj as TomlTimeSpan).Value); break;
+			case TomlObjectType.Bool: strb.Append(((TomlBool) obj).Value); break;
+			case TomlObjectType.Int: strb.Append(((TomlInt) obj).Value); break;
+			case TomlObjectType.Float: strb.Append(((TomlFloat) obj).Value); break;
+			case TomlObjectType.String: strb.Append(((TomlString) obj).Value); break;
+			case TomlObjectType.DateTime: strb.Append(((TomlDateTime) obj).Value); break;
+			case TomlObjectType.TimeSpan: strb.Append(((TomlTimeSpan) obj).Value); break;
 			case TomlObjectType.Array:
 				strb.Append("[ ")
-					.Append(string.Join(", ", (obj as TomlArray).Items.Select(x => ToString(x))))
+					.Append(string.Join(", ", ((TomlArray)obj).Items.Select(ToString)))
 					.Append(" ]");
 				break;
 			case TomlObjectType.Table:
-				var table = (obj as TomlTable);
-				foreach (var kvp in table)
-				{
+				foreach (var kvp in (TomlTable)obj)
 					strb.Append(kvp.Key).Append(" : { ").Append(ToString(kvp.Value)).AppendLine(" }");
-				}
 				break;
 			case TomlObjectType.ArrayOfTables:
 				strb.Append("[ ")
-					.Append(string.Join(", ", (obj as TomlTableArray).Items.Select(x => ToString(x))))
+					.Append(string.Join(", ", ((TomlTableArray)obj).Items.Select(ToString)))
 					.Append(" ]");
-				break;
-			default:
 				break;
 			}
 			return strb.ToString();

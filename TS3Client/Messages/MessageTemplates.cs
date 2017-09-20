@@ -1100,7 +1100,7 @@ namespace TS3Client.Messages
 		public long MonthlyDownloadQuota { get; set; }
 		public long TotalUploadQuota { get; set; }
 		public long TotalDownloadQuota { get; set; }
-		public string Base64HashClientUID { get; set; }
+		public string Base64HashClientUid { get; set; }
 
 		public void SetField(string name, string value)
 		{
@@ -1125,7 +1125,7 @@ namespace TS3Client.Messages
 			case "client_month_bytes_downloaded": MonthlyDownloadQuota = CommandDeserializer.DeserializeInt64(value); break;
 			case "client_total_bytes_uploaded": TotalUploadQuota = CommandDeserializer.DeserializeInt64(value); break;
 			case "client_total_bytes_downloaded": TotalDownloadQuota = CommandDeserializer.DeserializeInt64(value); break;
-			case "client_base64HashClientUID": Base64HashClientUID = CommandDeserializer.DeserializeString(value); break;
+			case "client_base64HashClientUID": Base64HashClientUid = CommandDeserializer.DeserializeString(value); break;
 			case "return_code": ReturnCode = CommandDeserializer.DeserializeString(value); break;
 			}
 
@@ -1192,7 +1192,7 @@ namespace TS3Client.Messages
 		public long MonthlyDownloadQuota { get; set; }
 		public long TotalUploadQuota { get; set; }
 		public long TotalDownloadQuota { get; set; }
-		public string Base64HashClientUID { get; set; }
+		public string Base64HashClientUid { get; set; }
 		public string AvatarFlag { get; set; }
 		public string Description { get; set; }
 		public long IconId { get; set; }
@@ -1258,7 +1258,7 @@ namespace TS3Client.Messages
 			case "client_month_bytes_downloaded": MonthlyDownloadQuota = CommandDeserializer.DeserializeInt64(value); break;
 			case "client_total_bytes_uploaded": TotalUploadQuota = CommandDeserializer.DeserializeInt64(value); break;
 			case "client_total_bytes_downloaded": TotalDownloadQuota = CommandDeserializer.DeserializeInt64(value); break;
-			case "client_base64HashClientUID": Base64HashClientUID = CommandDeserializer.DeserializeString(value); break;
+			case "client_base64HashClientUID": Base64HashClientUid = CommandDeserializer.DeserializeString(value); break;
 			case "client_flag_avatar": AvatarFlag = CommandDeserializer.DeserializeString(value); break;
 			case "client_description": Description = CommandDeserializer.DeserializeString(value); break;
 			case "client_icon_id": IconId = CommandDeserializer.DeserializeInt64(value); break;

@@ -92,8 +92,7 @@ namespace TS3Client
 
 			if (synchronQueue)
 			{
-				WaitBlock waitBlock;
-				if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out waitBlock))
+				if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
 				{
 					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
 					cmdLineBuffer = null;
@@ -110,8 +109,7 @@ namespace TS3Client
 				}
 
 				// otherwise it is the result status code to a request
-				WaitBlock waitBlock;
-				if (requestDict.TryRemove(errorStatus.ReturnCode, out waitBlock))
+				if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
 				{
 					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
 					cmdLineBuffer = null;
@@ -155,8 +153,7 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 			{
-				WaitBlock waitBlock;
-				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out waitBlock))
+				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out WaitBlock waitBlock))
 					waitBlock.SetAnswer(
 						new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection Closed" });
 			}

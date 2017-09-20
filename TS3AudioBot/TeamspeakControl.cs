@@ -59,7 +59,7 @@ namespace TS3AudioBot
 
 		private List<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
-		private Cache<ulong, ClientDbData> clientDbNames;
+		private readonly Cache<ulong, ClientDbData> clientDbNames;
 
 		protected Ts3BaseFunctions tsBaseClient;
 		protected ClientData me;
@@ -152,13 +152,11 @@ namespace TS3AudioBot
 			ClientData cd;
 			try { cd = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault(); }
 			catch (Ts3CommandException) { cd = null; }
-			if (cd != null)
-			{
-				cd.ClientId = id;
-				clientbuffer.Add(cd);
-				return R<ClientData>.OkR(cd);
-			}
-			return "No client found";
+			if (cd == null)
+				return "No client found";
+			cd.ClientId = id;
+			clientbuffer.Add(cd);
+			return R<ClientData>.OkR(cd);
 		}
 
 		public R<ClientData> GetClientByName(string name)
@@ -168,10 +166,9 @@ namespace TS3AudioBot
 				return refreshResult.Message;
 			var clients = CommandSystem.XCommandSystem.FilterList(
 				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.NickName, cb)), name).ToArray();
-			if (clients.Length > 0)
-				return R<ClientData>.OkR(clients[0].Value);
-			else
+			if (clients.Length <= 0)
 				return "No client found";
+			return R<ClientData>.OkR(clients[0].Value);
 		}
 
 		private R<ClientData> ClientBufferRequest(Func<ClientData, bool> pred)
@@ -206,7 +203,7 @@ namespace TS3AudioBot
 
 		public R<ClientDbData> GetDbClientByDbId(ulong clientDbId)
 		{
-			if (clientDbNames.TryGetValue(clientDbId, out ClientDbData clientData))
+			if (clientDbNames.TryGetValue(clientDbId, out var clientData))
 				return clientData;
 
 			try

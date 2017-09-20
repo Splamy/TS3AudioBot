@@ -1,4 +1,4 @@
-﻿// Copyright 2012 John Carruthers
+// Copyright 2012 John Carruthers
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -22,7 +22,6 @@
 namespace TS3AudioBot.Audio.Opus
 {
 	using System;
-	using System.Runtime.InteropServices;
 
 	/// <summary>
 	/// Opus audio decoder.
@@ -42,23 +41,23 @@ namespace TS3AudioBot.Audio.Opus
 				outputSampleRate != 16000 &&
 				outputSampleRate != 24000 &&
 				outputSampleRate != 48000)
-				throw new ArgumentOutOfRangeException("inputSamplingRate");
+				throw new ArgumentOutOfRangeException(nameof(outputSampleRate));
 			if (outputChannels != 1 && outputChannels != 2)
-				throw new ArgumentOutOfRangeException("inputChannels");
+				throw new ArgumentOutOfRangeException(nameof(outputChannels));
 
 			IntPtr decoder = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out IntPtr error);
-			if ((Errors)error != Errors.OK)
+			if ((Errors)error != Errors.Ok)
 			{
 				throw new Exception("Exception occured while creating decoder");
 			}
 			return new OpusDecoder(decoder, outputSampleRate, outputChannels);
 		}
 
-		private IntPtr _decoder;
+		private IntPtr decoder;
 
 		private OpusDecoder(IntPtr decoder, int outputSamplingRate, int outputChannels)
 		{
-			_decoder = decoder;
+			this.decoder = decoder;
 			OutputSamplingRate = outputSamplingRate;
 			OutputChannels = outputChannels;
 			MaxDataBytes = 4000;
@@ -78,16 +77,16 @@ namespace TS3AudioBot.Audio.Opus
 
 			byte[] decoded = new byte[MaxDataBytes];
 			int frameCount = FrameCount(MaxDataBytes);
-			int length = 0;
+			int length;
 			
 			if (inputOpusData != null)
-				length = NativeMethods.opus_decode(_decoder, inputOpusData, dataLength, decoded, frameCount, 0);
+				length = NativeMethods.opus_decode(decoder, inputOpusData, dataLength, decoded, frameCount, 0);
 			else
-				length = NativeMethods.opus_decode(_decoder, null, 0, decoded, frameCount, (ForwardErrorCorrection) ? 1 : 0);
+				length = NativeMethods.opus_decode(decoder, null, 0, decoded, frameCount, (ForwardErrorCorrection) ? 1 : 0);
 
 			decodedLength = length * 2;
 			if (length < 0)
-				throw new Exception("Decoding failed - " + ((Errors)length).ToString());
+				throw new Exception("Decoding failed - " + (Errors)length);
 
 			return decoded;
 		}
@@ -100,7 +99,7 @@ namespace TS3AudioBot.Audio.Opus
 		public int FrameCount(int bufferSize)
 		{
 			//  seems like bitrate should be required
-			int bitrate = 16;
+			const int bitrate = 16;
 			int bytesPerSample = (bitrate / 8) * OutputChannels;
 			return bufferSize / bytesPerSample;
 		}
@@ -138,10 +137,10 @@ namespace TS3AudioBot.Audio.Opus
 
 			GC.SuppressFinalize(this);
 
-			if (_decoder != IntPtr.Zero)
+			if (decoder != IntPtr.Zero)
 			{
-				NativeMethods.opus_decoder_destroy(_decoder);
-				_decoder = IntPtr.Zero;
+				NativeMethods.opus_decoder_destroy(decoder);
+				decoder = IntPtr.Zero;
 			}
 
 			disposed = true;

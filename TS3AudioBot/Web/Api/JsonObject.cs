@@ -17,7 +17,7 @@ namespace TS3AudioBot.Web.Api
 		[ScriptIgnore]
 		public string AsStringResult { get; }
 
-		public JsonObject(string stringResult)
+		protected JsonObject(string stringResult)
 		{
 			AsStringResult = stringResult;
 		}

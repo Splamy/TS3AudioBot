@@ -15,7 +15,7 @@ namespace TS3AudioBot.Web.Interface
 
 	internal class SiteMapper
 	{
-		private MapNode RootNode = new MapNode("", "");
+		private readonly MapNode RootNode = new MapNode("", "");
 
 		public void Map(string target, IProvider provider)
 		{
@@ -46,20 +46,17 @@ namespace TS3AudioBot.Web.Interface
 		{
 			var currentNode = RootNode;
 			var parts = path.AbsolutePath.Split('/');
-			int slashIndex = 0;
 
 			for (int i = 0; i < parts.Length; i++)
 			{
 				var part = parts[i];
-
-				var slashSubPart = path.AbsolutePath.Substring(slashIndex);
+				
 				var site = currentNode.TryGetSite(path.AbsolutePath);
 				if (site != null)
 					return site;
 
 				if (!currentNode.childNodes.TryGetValue(part, out currentNode))
 					return null;
-				slashIndex += part.Length + 1;
 			}
 
 			return null;
@@ -67,9 +64,9 @@ namespace TS3AudioBot.Web.Interface
 
 		private class MapNode
 		{
-			public List<IFolderProvider> childFolder;
-			public Dictionary<string, ISiteProvider> fileMap;
-			public Dictionary<string, MapNode> childNodes;
+			public readonly List<IFolderProvider> childFolder;
+			public readonly Dictionary<string, ISiteProvider> fileMap;
+			public readonly Dictionary<string, MapNode> childNodes;
 			public string Name { get; }
 			public string FullPath { get; }
 

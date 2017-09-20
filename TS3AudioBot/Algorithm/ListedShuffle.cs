@@ -18,18 +18,18 @@ namespace TS3AudioBot.Algorithm
 		private int[] permutation;
 
 		private bool needsRecalc = true;
-		private int index = 0;
-		private int seed = 0;
-		private int length = 0;
+		private int index;
+		private int seed;
+		private int length;
 
 		public int Seed
 		{
-			get { return seed; }
+			get => seed;
 			set { needsRecalc = true; seed = value; }
 		}
 		public int Length
 		{
-			get { return length; }
+			get => length;
 			set { needsRecalc = true; length = value; }
 		}
 		public int Index

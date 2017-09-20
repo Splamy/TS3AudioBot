@@ -21,7 +21,7 @@ namespace TS3Client.Full
 		public ulong ValidKeyOffset { get; set; }
 		public ulong LastCheckedKeyOffset { get; set; }
 
-		private string clientUid = null;
+		private string clientUid;
 		public string ClientUid => clientUid ?? (clientUid = Ts3Crypt.GetUidFromPublicKey(PublicKeyString));
 	}
 }

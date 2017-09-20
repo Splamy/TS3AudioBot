@@ -42,12 +42,12 @@ namespace TS3AudioBot.Web.Api
 					return;
 				}
 
-				var requestUrl = new UriExt(new Uri(dummy, context.Request.RawUrl));
+				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
 				ProcessApiV1Call(requestUrl, context.Response, invoker);
 			}
 		}
 
-		private void ProcessApiV1Call(UriExt uri, HttpListenerResponse response, InvokerData invoker)
+		private void ProcessApiV1Call(Uri uri, HttpListenerResponse response, InvokerData invoker)
 		{
 			string apirequest = uri.AbsolutePath.Substring("/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
@@ -122,29 +122,29 @@ namespace TS3AudioBot.Web.Api
 				break;
 
 			default:
-				Log.Write(Log.Level.Debug, "WA Missing Web Error Type");
-				break;
+				throw Util.UnhandledDefault(reason);
 			}
 
 			using (var responseStream = new StreamWriter(response.OutputStream))
 				responseStream.Write(Util.Serializer.Serialize(new JsonError(message, reason)));
 		}
 
-		private static void UnescapeAstTree(ASTNode node)
+		private static void UnescapeAstTree(AstNode node)
 		{
 			switch (node.Type)
 			{
-			case ASTType.Command:
-				var astCom = (ASTCommand)node;
+			case AstType.Command:
+				var astCom = (AstCommand)node;
 				foreach (var child in astCom.Parameter)
 					UnescapeAstTree(child);
 				break;
-			case ASTType.Value:
-				var astVal = (ASTValue)node;
+			case AstType.Value:
+				var astVal = (AstValue)node;
 				astVal.Value = Uri.UnescapeDataString(astVal.Value);
 				break;
-			case ASTType.Error: break;
-			default: break;
+			case AstType.Error: break;
+			default:
+				throw Util.UnhandledDefault(node.Type);
 			}
 		}
 
@@ -193,9 +193,9 @@ namespace TS3AudioBot.Web.Api
 				//HA1=MD5(username:realm:password)
 				//HA2=MD5(method:digestURI)
 				//response=MD5(HA1:nonce:HA2)
-				var HA1 = HashString($"{identity.Name}:{identityDigest.Realm}:{token.Value}");
-				var HA2 = HashString($"{context.Request.HttpMethod}:{identityDigest.Uri}");
-				var response = HashString($"{HA1}:{identityDigest.Nonce}:{HA2}");
+				var ha1 = HashString($"{identity.Name}:{identityDigest.Realm}:{token.Value}");
+				var ha2 = HashString($"{context.Request.HttpMethod}:{identityDigest.Uri}");
+				var response = HashString($"{ha1}:{identityDigest.Nonce}:{ha2}");
 
 				if (identityDigest.Hash != response)
 					return null;

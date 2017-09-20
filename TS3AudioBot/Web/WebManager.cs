@@ -24,7 +24,7 @@ namespace TS3AudioBot.Web
 
 		private HttpListener webListener;
 		private Thread serverThread;
-		private WebData webData;
+		private readonly WebData webData;
 		private bool startWebServer;
 
 		public Api.WebApi Api { get; private set; }
@@ -37,8 +37,8 @@ namespace TS3AudioBot.Web
 			{
 				AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic,
 				Realm = WebRealm,
+				AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector,
 			};
-			webListener.AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector;
 
 			InitializeSubcomponents(mainBot);
 		}
@@ -85,7 +85,7 @@ namespace TS3AudioBot.Web
 				webListener.Prefixes.Add(host.AbsoluteUri);
 		}
 
-		public AuthenticationSchemes AuthenticationSchemeSelector(HttpListenerRequest httpRequest)
+		private static AuthenticationSchemes AuthenticationSchemeSelector(HttpListenerRequest httpRequest)
 		{
 			var headerVal = httpRequest.Headers["Authorization"];
 			if (string.IsNullOrEmpty(headerVal))
@@ -131,7 +131,12 @@ namespace TS3AudioBot.Web
 				{
 					var context = webListener.GetContext();
 					IPAddress remoteAddress;
-					try { remoteAddress = context.Request.RemoteEndPoint.Address; }
+					try
+					{
+						remoteAddress = context.Request.RemoteEndPoint?.Address;
+						if (remoteAddress == null)
+							return;
+					}
 					catch (NullReferenceException) { return; }
 
 					Log.Write(Log.Level.Info, "{0} Requested: {1}", remoteAddress, context.Request.Url.PathAndQuery);

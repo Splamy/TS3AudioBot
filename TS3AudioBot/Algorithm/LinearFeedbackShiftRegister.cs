@@ -15,13 +15,13 @@ namespace TS3AudioBot.Algorithm
 	public class LinearFeedbackShiftRegister : IShuffleAlgorithm
 	{
 		private int register = 1; // aka index
-		private int mask = 0;
+		private int mask;
 		private int seed;
 		private int length;
 		private bool needsRefresh = true;
 
-		public int Seed { get { return seed; } set { needsRefresh = true; seed = value; } }
-		public int Length { get { return length; } set { needsRefresh = true; length = value; } }
+		public int Seed { get => seed; set { needsRefresh = true; seed = value; } }
+		public int Length { get => length; set { needsRefresh = true; length = value; } }
 		public int Index
 		{
 			get { if (Length <= 0) return -1; return Util.MathMod(register + Seed, Length); }
@@ -87,13 +87,13 @@ namespace TS3AudioBot.Algorithm
 				int checkMask = Util.MathMod(i + seedOffset, diff) + start;
 				if (NumberOfSetBits(checkMask) % 2 != 0) continue;
 
-				if (TestLFSR(checkMask, end))
+				if (TestLfsr(checkMask, end))
 					return checkMask;
 			}
 			throw new InvalidOperationException();
 		}
 
-		private static bool TestLFSR(int mask, int max)
+		private static bool TestLfsr(int mask, int max)
 		{
 			const int start = 1;
 			int field = start;

@@ -13,7 +13,6 @@ namespace TS3AudioBot.Audio
 	using Opus;
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
 	using TS3Client;
 
 	// NOT Thread-Safe
@@ -30,16 +29,16 @@ namespace TS3AudioBot.Audio
 		public bool HasPacket => opusQueue.Count > 0;
 
 		// opus
-		private OpusEncoder opusEncoder;
+		private readonly OpusEncoder opusEncoder;
 
 		private const int SegmentFrames = 960;
 		private byte[] soundBuffer = new byte[0];
-		private int soundBufferLength = 0;
+		private int soundBufferLength;
 		private byte[] notEncodedBuffer = new byte[0];
-		private int notEncodedBufferLength = 0;
-		private byte[] segment = null;
-		private Queue<PartialArray> opusQueue;
-		private Queue<byte[]> freeArrays;
+		private int notEncodedBufferLength;
+		private readonly byte[] segment;
+		private readonly Queue<PartialArray> opusQueue;
+		private readonly Queue<byte[]> freeArrays;
 
 		public AudioEncoder(Codec codec)
 		{
@@ -89,7 +88,7 @@ namespace TS3AudioBot.Audio
 				return new byte[opusEncoder.MaxDataBytes];
 		}
 
-		public void PushPCMAudio(byte[] buffer, int bufferlen)
+		public void PushPcmAudio(byte[] buffer, int bufferlen)
 		{
 			int newSoundBufferLength = bufferlen + notEncodedBufferLength;
 			if (newSoundBufferLength > soundBuffer.Length)

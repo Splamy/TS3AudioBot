@@ -196,11 +196,11 @@ namespace TS3AudioBot
 				return "A few songs failed to start, use !previous to continue";
 		}
 
-		public void SongStoppedHook(object sender, EventArgs e) => Stop(true);
+		public void SongStoppedHook(object sender, EventArgs e) => StopInternal(true);
 
-		public void Stop() => Stop(false);
+		public void Stop() => StopInternal(false);
 
-		private void Stop(bool songEndedByCallback = false)
+		private void StopInternal(bool songEndedByCallback)
 		{
 			BeforeResourceStopped?.Invoke(this, new SongEndEventArgs(songEndedByCallback));
 
@@ -224,11 +224,11 @@ namespace TS3AudioBot
 	public sealed class MetaData
 	{
 		/// <summary>Defaults to: invoker.DbId - Can be set if the owner of a song differs from the invoker.</summary>
-		public ulong? ResourceOwnerDbId { get; set; } = null;
+		public ulong? ResourceOwnerDbId { get; set; }
 		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
 		public int? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
-		public bool FromPlaylist { get; set; } = false;
+		public bool FromPlaylist { get; set; }
 	}
 
 	public class SongEndEventArgs : EventArgs
@@ -255,7 +255,7 @@ namespace TS3AudioBot
 
 	public sealed class InvokerData
 	{
-		public string ClientUid { get; internal set; }
+		public string ClientUid { get; }
 		public ulong? DatabaseId { get; internal set; }
 		public ulong? ChannelId { get; internal set; }
 		public ushort? ClientId { get; internal set; }
@@ -284,8 +284,7 @@ namespace TS3AudioBot
 		{
 			if (ClientUid == null)
 				return false;
-			var other = obj as InvokerData;
-			if (other == null || other.ClientUid == null)
+			if (!(obj is InvokerData other) || other.ClientUid == null)
 				return false;
 
 			return ClientUid == other.ClientUid;

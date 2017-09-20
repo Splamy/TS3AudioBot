@@ -19,12 +19,11 @@ namespace TS3AudioBot.ResourceFactories
 		/// <returns>True if the factory thinks it can parse it, false otherwise.</returns>
 		bool MatchLink(string uri);
 		/// <summary>The factory will try to parse the uri and create a playable resource from it.</summary>
-		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
+		/// <param name="url">Any link or something similar a user can obtain to pass it here.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise</returns>
 		R<PlayResource> GetResource(string url);
 		/// <summary>The factory will try to parse the unique identifier of its scope of responsibility and create a playable resource from it.</summary>
-		/// <param name="id">The unique id for a song this factory is responsible for.</param>
-		/// <param name="name">A custom dislay name for the song. Can be null to tell the factory to restore the original one.</param>
+		/// <param name="resource">A resource containing the unique id for a song this factory is responsible for.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise</returns>
 		R<PlayResource> GetResourceById(AudioResource resource);
 		/// <summary>Gets a link to the original site/location. This may differ from the link the resource was orininally created.</summary>

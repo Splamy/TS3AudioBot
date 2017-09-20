@@ -62,7 +62,7 @@ namespace TS3AudioBot.Helper
 					baseStreamPosition = stream.Position;
 					baseStreamLength = stream.Length;
 					if (bytelen == 0)
-						return FinalizeEOF();
+						return FinalizeEof();
 					charlen = decoder.GetChars(byteBuffer, 0, bytelen, charBuffer, 0, false);
 					bufferpos = 0;
 				}
@@ -115,16 +115,13 @@ namespace TS3AudioBot.Helper
 				}
 
 				if (charReadLen == 0)
-					return FinalizeEOF();
-				else
-				{
-					if (bytelen == charlen)
-						readPosition += charReadLen;
-					else
-						readPosition += encoding.GetByteCount(charBuffer, bufferpos, charReadLen);
-				}
+					return FinalizeEof();
 
-				string retStr;
+				if (bytelen == charlen)
+					readPosition += charReadLen;
+				else
+					readPosition += encoding.GetByteCount(charBuffer, bufferpos, charReadLen);
+
 				int readcnt;
 				switch (endlStatus)
 				{
@@ -141,6 +138,7 @@ namespace TS3AudioBot.Helper
 				case Endl.Lf:
 				case Endl.CrLf:
 					readcnt = charReadLen - (endlStatus == Endl.CrLf ? 2 : 1);
+					string retStr;
 					if (strb == null)
 					{
 						if (readcnt > 0)
@@ -157,7 +155,6 @@ namespace TS3AudioBot.Helper
 					}
 					bufferpos += charReadLen;
 					return retStr;
-				default: break;
 				}
 			}
 		}
@@ -168,7 +165,7 @@ namespace TS3AudioBot.Helper
 			baseStreamLength = -1;
 		}
 
-		private string FinalizeEOF()
+		private string FinalizeEof()
 		{
 			if (strb != null)
 			{

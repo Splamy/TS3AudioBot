@@ -13,23 +13,22 @@ namespace TS3AudioBot.CommandSystem
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
-	using TS3Client;
 
 	public class BotCommand : FunctionCommand
 	{
-		private string cachedHelp = null;
-		private string cachedFullQualifiedName = null;
+		private string cachedHelp;
+		private string cachedFullQualifiedName;
 
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.method, buildInfo.parent, buildInfo.reqiredParameters?.Count)
 		{
 			InvokeName = buildInfo.commandData.CommandNameSpace;
-			requiredRights = new string[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
+			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			Description = buildInfo.commandData.CommandHelp;
 			UsageList = buildInfo.usageList?.ToArray() ?? new UsageAttribute[0];
 		}
 
 		public string InvokeName { get; }
-		private string[] requiredRights;
+		private readonly string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
 		public string Description { get; private set; }
 		public UsageAttribute[] UsageList { get; }
@@ -91,10 +90,10 @@ namespace TS3AudioBot.CommandSystem
 
 	public class CommandBuildInfo
 	{
-		public object parent;
-		public MethodInfo method;
-		public CommandAttribute commandData;
-		public RequiredParametersAttribute reqiredParameters;
+		public readonly object parent;
+		public readonly MethodInfo method;
+		public readonly CommandAttribute commandData;
+		public readonly RequiredParametersAttribute reqiredParameters;
 		public UsageAttribute[] usageList;
 
 		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt, RequiredParametersAttribute reqAtt)

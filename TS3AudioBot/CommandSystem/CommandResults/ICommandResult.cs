@@ -9,7 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
-	using System;
+	using Helper;
 
 	public abstract class ICommandResult
 	{
@@ -17,11 +17,18 @@ namespace TS3AudioBot.CommandSystem
 
 		public override string ToString()
 		{
-			if (ResultType == CommandResultType.String)
+			switch (ResultType)
+			{
+			case CommandResultType.String:
 				return ((StringCommandResult)this).Content;
-			if (ResultType == CommandResultType.Empty)
+			case CommandResultType.Empty:
 				return string.Empty;
-			return "CommandResult can't be converted into a string";
+			case CommandResultType.Command:
+			case CommandResultType.Json:
+				return "CommandResult can't be converted into a string";
+			default:
+				throw Util.UnhandledDefault(ResultType);
+			}
 		}
 	}
 }

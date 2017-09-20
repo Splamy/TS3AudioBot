@@ -14,27 +14,27 @@ namespace TS3AudioBot.Helper.AudioTags
 	using System.IO;
 	using System.Text;
 
-	static class AudioTagReader
+	internal static class AudioTagReader
 	{
-		private static Dictionary<string, Tag> tagDict;
+		private static readonly Dictionary<string, Tag> TagDict;
 
 		static AudioTagReader()
 		{
-			tagDict = new Dictionary<string, Tag>();
+			TagDict = new Dictionary<string, Tag>();
 			Register(new Id3_1());
 			Register(new Id3_2());
 		}
 
 		private static void Register(Tag tagHeader)
 		{
-			tagDict.Add(tagHeader.TagID, tagHeader);
+			TagDict.Add(tagHeader.TagId, tagHeader);
 		}
 
 		public static string GetTitle(Stream fileStream)
 		{
 			var sr = new BinaryReader(fileStream);
 			string tag = Encoding.ASCII.GetString(sr.ReadBytes(3));
-			if (tagDict.TryGetValue(tag, out var tagHeader))
+			if (TagDict.TryGetValue(tag, out var tagHeader))
 			{
 				try { return tagHeader.GetTitle(sr).TrimEnd('\0'); }
 				catch (IOException) { }
@@ -44,22 +44,21 @@ namespace TS3AudioBot.Helper.AudioTags
 			return null;
 		}
 
-		abstract class Tag
+		private abstract class Tag
 		{
-			public abstract string TagID { get; }
+			public abstract string TagId { get; }
 			public abstract string GetTitle(BinaryReader fileStream);
 		}
 
-		class Id3_1 : Tag
+		private class Id3_1 : Tag
 		{
-			public override string TagID { get { return "TAG"; } }
+			private const int TitleLength = 30;
+			public override string TagId => "TAG";
 
 			public override string GetTitle(BinaryReader fileStream)
 			{
-				const int TITLE_LENGTH = 30;
-
 				// 3 bytes skipped for TagID
-				string title = Encoding.ASCII.GetString(fileStream.ReadBytes(TITLE_LENGTH));
+				string title = Encoding.ASCII.GetString(fileStream.ReadBytes(TitleLength));
 
 				// ignore other blocks
 
@@ -67,12 +66,12 @@ namespace TS3AudioBot.Helper.AudioTags
 			}
 		}
 
-		class Id3_2 : Tag
+		private class Id3_2 : Tag
 		{
 			private readonly int v2_TT2 = FrameIdV2("TT2"); // Title
 			private readonly uint v3_TIT2 = FrameIdV3("TIT2"); // Title
 
-			public override string TagID { get { return "ID3"; } }
+			public override string TagId => "ID3";
 
 			public override string GetTitle(BinaryReader fileStream)
 			{

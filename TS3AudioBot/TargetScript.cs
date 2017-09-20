@@ -14,10 +14,10 @@ namespace TS3AudioBot
 
 	class TargetScript
 	{
-		private const string defaultVoiceScript = "!whisper off";
-		private const string defaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getuser channel))";
+		private const string DefaultVoiceScript = "!whisper off";
+		private const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getuser channel))";
 
-		private MainBot parent;
+		private readonly MainBot parent;
 		private CommandManager CommandManager => parent.CommandManager;
 
 		public TargetScript(MainBot bot)
@@ -32,9 +32,9 @@ namespace TS3AudioBot
 			if (mode.StartsWith("!", StringComparison.Ordinal))
 				script = mode;
 			else if (mode.Equals("voice", StringComparison.OrdinalIgnoreCase))
-				script = defaultVoiceScript;
+				script = DefaultVoiceScript;
 			else if (mode.Equals("whisper", StringComparison.OrdinalIgnoreCase))
-				script = defaultWhisperScript;
+				script = DefaultWhisperScript;
 			else
 			{
 				Log.Write(Log.Level.Error, "Invalid voice mode");

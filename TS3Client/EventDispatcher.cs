@@ -101,8 +101,7 @@ namespace TS3Client
 				eventBlock.WaitOne();
 				while (!eventQueue.IsEmpty)
 				{
-					LazyNotification lazyNotification;
-					if (eventQueue.TryDequeue(out lazyNotification))
+					if (eventQueue.TryDequeue(out var lazyNotification))
 						dispatcher.Invoke(lazyNotification);
 				}
 			}
@@ -112,8 +111,7 @@ namespace TS3Client
 		{
 			if (Thread.CurrentThread.ManagedThreadId != readQueryThread.ManagedThreadId)
 				return;
-			LazyNotification lazyNotification;
-			if (eventQueue.TryDequeue(out lazyNotification))
+			if (eventQueue.TryDequeue(out var lazyNotification))
 				dispatcher.Invoke(lazyNotification);
 		}
 
@@ -158,13 +156,13 @@ namespace TS3Client
 		/// </summary>
 		None,
 		/// <summary>
-		/// Will use the same thread that entered the <see cref="Ts3BaseClientOld.EnterEventLoop"/>
+		/// Will use the same thread that entered the <see cref="Ts3BaseFunctions.Connect"/>
 		/// for receiving and invoking all events. This method is not recommended since it mostly
 		/// only produces deadlocks. (Usually only for debugging)
 		/// </summary>
 		CurrentThread,
 		/// <summary>
-		/// Will use the thread that entered the <see cref="Ts3BaseClientOld.EnterEventLoop"/> for
+		/// Will use the thread that entered the <see cref="Ts3BaseFunctions.Connect"/> for
 		/// receiving and starts a second thread for invoking all events. This is the best method for
 		/// lightweight dipatching with no parallelization.
 		/// </summary>

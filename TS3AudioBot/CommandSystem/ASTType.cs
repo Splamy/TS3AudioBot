@@ -9,7 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
-	internal enum ASTType
+	internal enum AstType
 	{
 		Command,
 		Value,

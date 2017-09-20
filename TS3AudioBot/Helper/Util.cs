@@ -65,20 +65,6 @@ namespace TS3AudioBot.Helper
 
 		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
 
-		public static byte[] GetResource(string file)
-		{
-			using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(file))
-			{
-				if (stream == null)
-					throw new InvalidOperationException("Resource not found");
-				using (var ms = new MemoryStream())
-				{
-					stream.CopyTo(ms);
-					return ms.ToArray();
-				}
-			}
-		}
-
 		public static bool IsAdmin
 		{
 			get
@@ -174,6 +160,8 @@ namespace TS3AudioBot.Helper
 			return strb.ToString();
 		}
 
+		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString()); }
+
 		public static Stream GetEmbeddedFile(string name)
 		{
 			var assembly = Assembly.GetExecutingAssembly();
@@ -212,5 +200,11 @@ namespace TS3AudioBot.Helper
 			public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
 			public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
 		}
+	}
+
+	public class MissingEnumCaseException : Exception
+	{
+	public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
+	public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 }

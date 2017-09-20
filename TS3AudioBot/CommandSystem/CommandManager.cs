@@ -18,11 +18,11 @@ namespace TS3AudioBot.CommandSystem
 
 	public class CommandManager
 	{
-		private HashSet<string> CommandPaths;
+		private readonly HashSet<string> commandPaths;
 		public XCommandSystem CommandSystem { get; }
 
 		public IList<BotCommand> BaseCommands { get; private set; }
-		private List<BotCommand> dynamicCommands;
+		private readonly List<BotCommand> dynamicCommands;
 		public IDictionary<Plugin, IList<BotCommand>> PluginCommands { get; }
 
 		public IEnumerable<BotCommand> AllCommands
@@ -48,7 +48,7 @@ namespace TS3AudioBot.CommandSystem
 			CommandSystem = new XCommandSystem();
 			PluginCommands = new Dictionary<Plugin, IList<BotCommand>>();
 			Util.Init(ref dynamicCommands);
-			Util.Init(ref CommandPaths);
+			Util.Init(ref commandPaths);
 		}
 
 		public void RegisterMain(MainBot main)
@@ -99,7 +99,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public void UnregisterPlugin(Plugin plugin)
 		{
-			if (PluginCommands.TryGetValue(plugin, out IList<BotCommand> commands))
+			if (PluginCommands.TryGetValue(plugin, out var commands))
 			{
 				foreach (var com in commands)
 				{
@@ -129,7 +129,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		private void CheckDistinct(IList<BotCommand> list) // TODO test
+		private static void CheckDistinct(IList<BotCommand> list) // TODO test
 		{
 			if (list.Select(c => c.InvokeName).Distinct().Count() < list.Count)
 			{
@@ -146,9 +146,9 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (!CommandNamespaceValidator.IsMatch(com.InvokeName))
 				throw new InvalidOperationException("BotCommand has an invalid invoke name: " + com.InvokeName);
-			if (CommandPaths.Contains(com.FullQualifiedName))
+			if (commandPaths.Contains(com.FullQualifiedName))
 				throw new InvalidOperationException("Command already exists: " + com.InvokeName);
-			CommandPaths.Add(com.FullQualifiedName);
+			commandPaths.Add(com.FullQualifiedName);
 
 			LoadICommand(com, com.InvokeName);
 		}
@@ -267,9 +267,9 @@ namespace TS3AudioBot.CommandSystem
 
 		private void UnloadCommand(BotCommand com)
 		{
-			if (!CommandPaths.Contains(com.FullQualifiedName))
+			if (!commandPaths.Contains(com.FullQualifiedName))
 				return;
-			CommandPaths.Remove(com.FullQualifiedName);
+			commandPaths.Remove(com.FullQualifiedName);
 
 			var comPath = com.InvokeName.Split(' ');
 

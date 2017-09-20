@@ -9,8 +9,6 @@
 
 namespace TS3AudioBot.Web.Api
 {
-	using Helper;
-
 	public class JsonSingleObject<T> : JsonObject
 	{
 		public T Value { get; }

@@ -19,8 +19,8 @@ namespace TS3Client
 	{
 		private readonly ManualResetEvent answerWaiter;
 		private readonly ManualResetEvent notificationWaiter;
-		private CommandError commandError = null;
-		private string commandLine = null;
+		private CommandError commandError;
+		private string commandLine;
 		public NotificationType[] DependsOn { get; }
 		private LazyNotification notification;
 		public bool Closed { get; private set; }
@@ -61,9 +61,7 @@ namespace TS3Client
 
 		public void SetAnswer(CommandError commandError, string commandLine = null)
 		{
-			if (commandError == null)
-				throw new ArgumentNullException(nameof(commandError));
-			this.commandError = commandError;
+			this.commandError = commandError ?? throw new ArgumentNullException(nameof(commandError));
 			this.commandLine = commandLine;
 			answerWaiter.Set();
 		}

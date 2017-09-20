@@ -10,37 +10,36 @@
 namespace TS3AudioBot.Helper
 {
 	using System;
-	using System.Collections.Generic;
 	using System.Collections.Concurrent;
 	using System.Linq;
 
-	class Cache<K, V>
+	public class Cache<TK, TV>
 	{
-		public TimeSpan Timeout { get; set; }
-		private ConcurrentDictionary<K, TimedData> cachedData;
+		public TimeSpan Timeout { get; }
+		private readonly ConcurrentDictionary<TK, TimedData> cachedData;
 
 		public Cache() : this(TimeSpan.FromSeconds(3)) { }
 
 		public Cache(TimeSpan timeout)
 		{
 			Timeout = timeout;
-			cachedData = new ConcurrentDictionary<K, TimedData>();
+			cachedData = new ConcurrentDictionary<TK, TimedData>();
 		}
 
-		public bool TryGetValue(K key, out V value)
+		public bool TryGetValue(TK key, out TV value)
 		{
 			if (!cachedData.TryGetValue(key, out var data)
 				|| Util.GetNow() - Timeout > data.Timestamp)
 			{
 				CleanCache();
-				value = default(V);
+				value = default(TV);
 				return false;
 			}
 			value = data.Data;
 			return true;
 		}
 
-		public void Store(K key, V value)
+		public void Store(TK key, TV value)
 		{
 			cachedData[key] = new TimedData { Data = value, Timestamp = Util.GetNow() };
 		}
@@ -55,13 +54,13 @@ namespace TS3AudioBot.Helper
 			var now = Util.GetNow() - Timeout;
 			foreach (var item in cachedData.Where(kvp => now > kvp.Value.Timestamp).ToList())
 			{
-				cachedData.TryRemove(item.Key, out var data);
+				cachedData.TryRemove(item.Key, out var _);
 			}
 		}
 
 		private struct TimedData
 		{
-			public V Data;
+			public TV Data;
 			public DateTime Timestamp;
 		}
 	}

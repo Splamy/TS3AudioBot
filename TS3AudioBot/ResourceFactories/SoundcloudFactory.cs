@@ -82,11 +82,9 @@ namespace TS3AudioBot.ResourceFactories
 		private static AudioResource ParseDictToResource(Dictionary<string, object> dict)
 		{
 			if (dict == null) return null;
-			var id = dict["id"] as int?;
-			if (!id.HasValue) return null;
-			var title = dict["title"] as string;
-			if (title == null) return null;
-			return new AudioResource(id.Value.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud);
+			if (!(dict["id"] is int id)) return null;
+			if (!(dict["title"] is string title)) return null;
+			return new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud);
 		}
 
 		private static R<PlayResource> YoutubeDlWrapped(string link)
@@ -121,8 +119,7 @@ namespace TS3AudioBot.ResourceFactories
 			string name = PlaylistManager.CleanseName(parsedDict["title"] as string);
 			var plist = new Playlist(name);
 
-			var tracks = parsedDict["tracks"] as object[];
-			if (tracks == null)
+			if (!(parsedDict["tracks"] is object[] tracks))
 				return "Empty or missing response parts (tracks)";
 
 			foreach (var track in tracks.OfType<Dictionary<string, object>>())
@@ -147,8 +144,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (parsedDict == null)
 				return "Empty or missing response parts (parsedDict)";
 
-			var imgUrl = parsedDict["artwork_url"] as string;
-			if (imgUrl == null)
+			if (!(parsedDict["artwork_url"] is string imgUrl))
 				return "Empty or missing response parts (artwork_url)";
 
 			// t500x500: 500px×500px
@@ -163,7 +159,8 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				using (var stream = webresp.GetResponseStream())
 				{
-					img = Image.FromStream(stream);
+					if (stream != null)
+						img = Image.FromStream(stream);
 				}
 			});
 			if (resresult != ValidateCode.Ok)

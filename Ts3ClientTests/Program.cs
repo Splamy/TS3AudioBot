@@ -70,7 +70,7 @@ namespace Ts3ClientTests
 					var client = (Ts3FullClient)sender;
 
 					var tok = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", true);
-					client.FileTransferManager.Wait(tok);
+					tok.Wait();
 				}
 			}
 		}

@@ -41,14 +41,14 @@ namespace TS3AudioBot
 
 		private const string PreLinkConf = "-hide_banner -nostats -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
-		private string lastLink = null;
-		private static readonly Regex findDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
-		private TimeSpan? parsedSongLength = null;
+		private string lastLink;
+		private static readonly Regex FindDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
+		private TimeSpan? parsedSongLength;
 		private readonly object ffmpegLock = new object();
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
-		private bool hasTriedToReconnectAudio = false;
+		private bool hasTriedToReconnectAudio;
 
-		private Ts3FullClientData ts3FullClientData;
+		private readonly Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
 		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
 		public ulong GroupWhisperTargetId { get; set; }
@@ -58,7 +58,7 @@ namespace TS3AudioBot
 		private TickWorker sendTick;
 		private Process ffmpegProcess;
 		private AudioEncoder encoder;
-		private PreciseAudioTimer audioTimer;
+		private readonly PreciseAudioTimer audioTimer;
 		private byte[] audioBuffer;
 		private bool isStall;
 		private uint stallCount;
@@ -66,8 +66,8 @@ namespace TS3AudioBot
 		private IdentityData identity;
 		private bool autoReconnectOnce;
 
-		private Dictionary<ulong, bool> channelSubscriptionsSetup;
-		private List<ushort> clientSubscriptionsSetup;
+		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup;
+		private readonly List<ushort> clientSubscriptionsSetup;
 		private ulong[] channelSubscriptionsCache;
 		private ushort[] clientSubscriptionsCache;
 		private bool subscriptionSetupChanged;
@@ -138,13 +138,17 @@ namespace TS3AudioBot
 
 		private void ConnectClient()
 		{
-			VersionSign verionSign = VersionSign.VER_LIN_3_0_19_4;
+			VersionSign verionSign;
 			if (!string.IsNullOrEmpty(ts3FullClientData.ClientVersion))
 			{
 				var splitData = ts3FullClientData.ClientVersion.Split('|').Select(x => x.Trim()).ToArray();
 				var plattform = (ClientPlattform)Enum.Parse(typeof(ClientPlattform), splitData[1], true);
 				verionSign = new VersionSign(splitData[0], plattform, splitData[2]);
 			}
+			else if (Util.IsLinux)
+				verionSign = VersionSign.VER_LIN_3_0_19_4;
+			else
+				verionSign = VersionSign.VER_WIN_3_0_19_4;
 
 			tsFullClient.Connect(new ConnectionDataFull
 			{
@@ -299,7 +303,7 @@ namespace TS3AudioBot
 						break;
 
 					AudioModifier.AdjustVolume(audioBuffer, read, volume);
-					encoder.PushPCMAudio(audioBuffer, read);
+					encoder.PushPcmAudio(audioBuffer, read);
 
 					while (encoder.HasPacket)
 					{
@@ -358,20 +362,22 @@ namespace TS3AudioBot
 
 		public TimeSpan Position
 		{
-			get { return audioTimer.SongPosition; }
+			get => audioTimer.SongPosition;
 			set
 			{
 				if (value < TimeSpan.Zero || value > Length)
 					throw new ArgumentOutOfRangeException(nameof(value));
 				AudioStop();
-				StartFfmpegProcess(lastLink, $"-ss {value.ToString(@"hh\:mm\:ss")}", $"-ss {value.ToString(@"hh\:mm\:ss")}");
+				StartFfmpegProcess(lastLink,
+					$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}",
+					$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}");
 				audioTimer.SongPositionOffset = value;
 			}
 		}
 
 		public int Volume
 		{
-			get { return (int)Math.Round(volume * AudioValues.MaxVolume); }
+			get => (int)Math.Round(volume * AudioValues.MaxVolume);
 			set
 			{
 				if (value < 0 || value > AudioValues.MaxVolume)
@@ -382,7 +388,7 @@ namespace TS3AudioBot
 
 		public bool Paused
 		{
-			get { return sendTick.Active; }
+			get => sendTick.Active;
 			set
 			{
 				if (sendTick.Active == value)
@@ -409,9 +415,9 @@ namespace TS3AudioBot
 			{
 				lock (ffmpegLock)
 				{
-					ffmpegProcess = new Process()
+					ffmpegProcess = new Process
 					{
-						StartInfo = new ProcessStartInfo()
+						StartInfo = new ProcessStartInfo
 						{
 							FileName = ts3FullClientData.FfmpegPath,
 							Arguments = string.Concat(extraPreParam, " ", PreLinkConf, url, PostLinkConf, " ", extraPostParam),
@@ -450,7 +456,9 @@ namespace TS3AudioBot
 				while (ffmpegProcess.StandardError.Peek() > -1)
 				{
 					var infoLine = ffmpegProcess.StandardError.ReadLine();
-					match = findDurationMatch.Match(infoLine);
+					if (string.IsNullOrEmpty(infoLine))
+						continue;
+					match = FindDurationMatch.Match(infoLine);
 					if (match.Success)
 						break;
 				}
@@ -476,7 +484,7 @@ namespace TS3AudioBot
 			// TODO spawn new client
 			lock (subscriptionLockObj)
 			{
-				if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp))
+				if (channelSubscriptionsSetup.TryGetValue(channel, out var subscriptionTemp))
 					channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
 				else
 				{

@@ -26,7 +26,7 @@ namespace TS3AudioBot.Helper
 		private static readonly string[] CommentSeqArr = { CommentSeq, ";", "//" };
 		private const string NameSeperator = "::";
 		private bool changed;
-		private Dictionary<string, ConfigData> confObjects;
+		private readonly Dictionary<string, ConfigData> confObjects;
 
 		protected ConfigFile()
 		{
@@ -64,11 +64,11 @@ namespace TS3AudioBot.Helper
 			{
 				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
 				string entryName = associatedClass + NameSeperator + field.Name;
-				object parsedValue = null;
+				object parsedValue;
 				bool newKey = false;
 
 				// determine the raw data string, whether from Console or File
-				if (!ReadKey(entryName, out string rawValue))
+				if (!ReadKey(entryName, out var rawValue))
 				{
 					newKey = true;
 					changed = true;
@@ -123,7 +123,7 @@ namespace TS3AudioBot.Helper
 			if (!confObjects.TryGetValue(keyParam[0], out var co))
 				return "No active entries found for this key";
 
-			object convertedValue = null;
+			object convertedValue;
 			PropertyInfo prop = co.GetType().GetProperty(keyParam[1], BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
 			try
 			{
@@ -153,8 +153,8 @@ namespace TS3AudioBot.Helper
 
 		private class NormalConfigFile : ConfigFile
 		{
-			private string path;
-			private List<LineData> fileLines;
+			private readonly string path;
+			private readonly List<LineData> fileLines;
 			private readonly Dictionary<string, int> data;
 			private bool open;
 			private readonly object writeLock = new object();

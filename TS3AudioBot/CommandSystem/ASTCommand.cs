@@ -12,16 +12,11 @@ namespace TS3AudioBot.CommandSystem
 	using System.Collections.Generic;
 	using System.Text;
 
-	internal class ASTCommand : ASTNode
+	internal class AstCommand : AstNode
 	{
-		public override ASTType Type => ASTType.Command;
+		public override AstType Type => AstType.Command;
 
-		public List<ASTNode> Parameter { get; set; }
-
-		public ASTCommand()
-		{
-			Parameter = new List<ASTNode>();
-		}
+		public List<AstNode> Parameter { get; } = new List<AstNode>();
 
 		public override void Write(StringBuilder strb, int depth)
 		{
@@ -32,11 +27,10 @@ namespace TS3AudioBot.CommandSystem
 			}
 			else
 			{
-				ASTValue comName = Parameter[0] as ASTValue;
-				if (comName == null)
-					strb.Append("<Invalid command name>");
-				else
+				if (Parameter[0] is AstValue comName)
 					strb.Append("!").Append(comName.Value);
+				else
+					strb.Append("<Invalid command name>");
 
 				for (int i = 1; i < Parameter.Count; i++)
 				{

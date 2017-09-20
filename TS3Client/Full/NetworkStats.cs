@@ -18,13 +18,13 @@ namespace TS3Client.Full
 
 	public sealed class NetworkStats
 	{
-		private long[] outPackets = new long[3];
-		private long[] inPackets = new long[3];
-		private long[] outBytes = new long[3];
-		private long[] inBytes = new long[3];
-		private Queue<PacketData> outBytesTime = new Queue<PacketData>();
-		private Queue<PacketData> inBytesTime = new Queue<PacketData>();
-		private Queue<TimeSpan> pingTimes = new Queue<TimeSpan>(60);
+		private readonly long[] outPackets = new long[3];
+		private readonly long[] inPackets = new long[3];
+		private readonly long[] outBytes = new long[3];
+		private readonly long[] inBytes = new long[3];
+		private readonly Queue<PacketData> outBytesTime = new Queue<PacketData>();
+		private readonly Queue<PacketData> inBytesTime = new Queue<PacketData>();
+		private readonly Queue<TimeSpan> pingTimes = new Queue<TimeSpan>(60);
 		private static readonly TimeSpan TimeSecond = TimeSpan.FromSeconds(1);
 		private static readonly TimeSpan TimeMinute = TimeSpan.FromMinutes(1);
 		private readonly object queueLock = new object();

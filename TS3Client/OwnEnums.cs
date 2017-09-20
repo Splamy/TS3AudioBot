@@ -795,6 +795,8 @@ namespace TS3Client
 		{
 			switch (permid)
 			{
+			case PermissionId.undefined: return "Undefined permission";
+			case PermissionId.unknown: return "Unknown permission";
 			case PermissionId.b_serverinstance_help_view: return "Retrieve information about ServerQuery commands";
 			case PermissionId.b_serverinstance_version_view: return "Retrieve global server version (including platform and build number)";
 			case PermissionId.b_serverinstance_info_view: return "Retrieve global server information";

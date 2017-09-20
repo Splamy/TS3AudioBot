@@ -34,17 +34,17 @@ namespace TS3AudioBot.Helper
 				return Answer.Unknown;
 		}
 
-		private static readonly Regex bbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", Util.DefaultRegexConfig);
-		public static string ExtractUrlFromBB(string ts3link)
+		private static readonly Regex BbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", Util.DefaultRegexConfig);
+		public static string ExtractUrlFromBb(string ts3Link)
 		{
-			if (ts3link.Contains("[URL]"))
+			if (ts3Link.Contains("[URL]"))
 			{
-				var match = bbMatch.Match(ts3link);
+				var match = BbMatch.Match(ts3Link);
 				if (match.Success)
 					return match.Groups[1].Value;
 			}
 
-			return ts3link;
+			return ts3Link;
 		}
 
 		public static string StripQuotes(string quotedString)

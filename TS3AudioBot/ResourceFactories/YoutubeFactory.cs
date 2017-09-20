@@ -202,13 +202,13 @@ namespace TS3AudioBot.ResourceFactories
 			case "mp4":
 				if (audioOnly)
 					return VideoCodec.M4A;
-				return VideoCodec.MP4;
+				return VideoCodec.Mp4;
 			case "x-flv":
-				return VideoCodec.FLV;
+				return VideoCodec.Flv;
 			case "3gpp":
-				return VideoCodec.ThreeGP;
+				return VideoCodec.ThreeGp;
 			case "webm":
-				return VideoCodec.WEBM;
+				return VideoCodec.Webm;
 			default:
 				return VideoCodec.Unknown;
 			}
@@ -271,7 +271,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
 				return "No con";
 
-			int indexof = resulthtml.IndexOf("ytplayer.config =");
+			int indexof = resulthtml.IndexOf("ytplayer.config =", StringComparison.OrdinalIgnoreCase);
 			int ptr = indexof;
 			while (resulthtml[ptr] != '{') ptr++;
 			int start = ptr;
@@ -285,14 +285,14 @@ namespace TS3AudioBot.ResourceFactories
 
 			var jsonobj = Util.Serializer.DeserializeObject(resulthtml.Substring(start, ptr - start + 1));
 			var args = GetDictVal(jsonobj, "args");
-			var url_encoded_fmt_stream_map = GetDictVal(args, "url_encoded_fmt_stream_map");
-			if (url_encoded_fmt_stream_map == null)
+			var urlEncodedFmtStreamMap = GetDictVal(args, "url_encoded_fmt_stream_map");
+			if (urlEncodedFmtStreamMap == null)
 				return "No Data";
 
-			string[] enco_split = ((string)url_encoded_fmt_stream_map).Split(',');
-			foreach (var single_enco in enco_split)
+			string[] encoSplit = ((string)urlEncodedFmtStreamMap).Split(',');
+			foreach (var singleEnco in encoSplit)
 			{
-				var lis = HttpUtility.ParseQueryString(single_enco);
+				var lis = HttpUtility.ParseQueryString(singleEnco);
 
 				var signature = lis["s"];
 				var url = lis["url"];
@@ -305,10 +305,8 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static object GetDictVal(object dict, string field) => (dict as Dictionary<string, object>)?[field];
 
-		private R<PlayResource> YoutubeDlWrapped(AudioResource resource)
+		private static R<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
-			string title = null;
-			string url = null;
 
 			Log.Write(Log.Level.Debug, "YT Ruined!");
 
@@ -317,9 +315,10 @@ namespace TS3AudioBot.ResourceFactories
 				return result.Message;
 
 			var response = result.Value;
-			title = response.Item1;
+			var title = response.Item1;
 			var urlOptions = response.Item2;
 
+			string url = null;
 			if (urlOptions.Count == 1)
 			{
 				url = urlOptions[0];
@@ -357,7 +356,8 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				using (var stream = webresp.GetResponseStream())
 				{
-					img = Image.FromStream(stream);
+					if (stream != null)
+						img = Image.FromStream(stream);
 				}
 			});
 			if (resresult != ValidateCode.Ok)
@@ -424,8 +424,8 @@ namespace TS3AudioBot.ResourceFactories
 		public string Link { get; set; }
 		public string Qualitydesciption { get; set; }
 		public VideoCodec Codec { get; set; }
-		public bool AudioOnly { get; set; } = false;
-		public bool VideoOnly { get; set; } = false;
+		public bool AudioOnly { get; set; }
+		public bool VideoOnly { get; set; }
 
 		public override string ToString() => $"{Qualitydesciption} @ {Codec} - {Link}";
 	}
@@ -440,10 +440,10 @@ namespace TS3AudioBot.ResourceFactories
 	public enum VideoCodec
 	{
 		Unknown,
-		MP4,
+		Mp4,
 		M4A,
-		WEBM,
-		FLV,
-		ThreeGP,
+		Webm,
+		Flv,
+		ThreeGp,
 	}
 }

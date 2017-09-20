@@ -31,7 +31,7 @@ namespace TS3AudioBot.CommandSystem
 		/// <summary>
 		/// The method that will be called internally by this command.
 		/// </summary>
-		private MethodInfo internCommand;
+		private readonly MethodInfo internCommand;
 		/// <summary>All parameter types, including special types.</summary>
 		public Type[] CommandParameter { get; }
 		public Type CommandReturn { get; }
@@ -155,9 +155,9 @@ namespace TS3AudioBot.CommandSystem
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 				{
-					if (!arguments.Any())
-						return new CommandCommandResult(this);
-					return new CommandCommandResult(new AppliedCommand(this, arguments));
+					return arguments.Any()
+						? new CommandCommandResult(new AppliedCommand(this, arguments))
+						: new CommandCommandResult(this);
 				}
 				throw new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
 			}
@@ -196,8 +196,8 @@ namespace TS3AudioBot.CommandSystem
 						result = ExecuteFunction(parameters);
 						executed = true;
 					}
-					if (result != null && typeof(JsonObject).IsAssignableFrom(result.GetType()))
-						return new JsonCommandResult((JsonObject)result);
+					if (result is JsonObject jsonResult)
+						return new JsonCommandResult(jsonResult);
 					break;
 				}
 			}
@@ -232,7 +232,7 @@ namespace TS3AudioBot.CommandSystem
 			return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
 		}
 
-		public static object GetDefault(Type type)
+		private static object GetDefault(Type type)
 		{
 			if (type.IsArray)
 			{

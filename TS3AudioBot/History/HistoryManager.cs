@@ -12,7 +12,6 @@ namespace TS3AudioBot.History
 	using Helper;
 	using LiteDB;
 	using ResourceFactories;
-	using Sessions;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
@@ -34,7 +33,7 @@ namespace TS3AudioBot.History
 		static HistoryManager()
 		{
 			BsonMapper.Global.Entity<AudioLogEntry>()
-				.Id(x => x.Id, true)
+				.Id(x => x.Id)
 				.Index(x => x.UserInvokeId)
 				.Index(x => x.Timestamp);
 		}
@@ -280,7 +279,7 @@ namespace TS3AudioBot.History
 		/// Goes through a list of <see cref="AudioLogEntry"/> and checks if the contained <see cref="AudioResource"/>
 		/// is playable/resolveable.
 		/// </summary>
-		/// <param name="session">Session object to inform the user about the current cleaning status.</param>
+		/// <param name="info">Session object to inform the user about the current cleaning status.</param>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
 		private static List<AudioLogEntry> FilterList(CommandSystem.ExecutionInformation info, IEnumerable<AudioLogEntry> list)

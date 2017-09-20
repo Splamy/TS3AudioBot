@@ -7,10 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Generic;
+
 namespace TS3AudioBot.Rights
 {
 	using Nett;
-	using System.Collections.Generic;
 	using System.Linq;
 
 	internal abstract class RightsDecl
@@ -24,8 +25,6 @@ namespace TS3AudioBot.Rights
 
 		public string[] DeclAdd { get; set; }
 		public string[] DeclDeny { get; set; }
-
-		public RightsDecl() { }
 
 		public virtual void FillNull()
 		{
@@ -96,12 +95,17 @@ namespace TS3AudioBot.Rights
 			return !hasErrors;
 		}
 
-		public void MergeGroups(params RightsDecl[] merge)
+		public void MergeGroups(IEnumerable<RightsDecl> merge)
 		{
 			// this.+ = (include+ - this-) + this+
 			// this.- = this-
 			foreach (var include in merge)
-				DeclAdd = include.DeclAdd.Except(DeclDeny).Concat(DeclAdd).Distinct().ToArray();
+				MergeGroups(include);
+		}
+
+		public void MergeGroups(RightsDecl include)
+		{
+			DeclAdd = include.DeclAdd.Except(DeclDeny).Concat(DeclAdd).Distinct().ToArray();
 		}
 	}
 }

@@ -12,7 +12,7 @@ namespace TS3AudioBot.Helper.AudioTags
 	using System.IO;
 	using System.Runtime.InteropServices;
 
-	static class BinaryReaderBigEndianExtensions
+	internal static class BinaryReaderBigEndianExtensions
 	{
 		public static short ReadInt16BE(this BinaryReader br)
 		{
@@ -45,78 +45,78 @@ namespace TS3AudioBot.Helper.AudioTags
 		}
 	}
 
-	class BitConverterBigEndian
+	internal class BitConverterBigEndian
 	{
-		private const int BITS_IN_BYTE = 8;
+		private const int BitsInByte = 8;
 
 		private BitConverterBigEndian() { }
 
 		public static short ToInt16(byte[] bytes)
 		{
 			return (short)(
-				(bytes[0] << 1 * BITS_IN_BYTE) |
-				(bytes[1] << 0 * BITS_IN_BYTE));
+				(bytes[0] << 1 * BitsInByte) |
+				(bytes[1] << 0 * BitsInByte));
 		}
 		public static int ToInt24(byte[] bytes)
 		{
 			return (int)(
-				(bytes[0] << 2 * BITS_IN_BYTE) |
-				(bytes[1] << 1 * BITS_IN_BYTE) |
-				(bytes[2] << 0 * BITS_IN_BYTE));
+				(bytes[0] << 2 * BitsInByte) |
+				(bytes[1] << 1 * BitsInByte) |
+				(bytes[2] << 0 * BitsInByte));
 		}
 		public static int ToInt32(byte[] bytes)
 		{
 			return (int)(
-				(bytes[0] << 3 * BITS_IN_BYTE) |
-				(bytes[1] << 2 * BITS_IN_BYTE) |
-				(bytes[2] << 1 * BITS_IN_BYTE) |
-				(bytes[3] << 0 * BITS_IN_BYTE));
+				(bytes[0] << 3 * BitsInByte) |
+				(bytes[1] << 2 * BitsInByte) |
+				(bytes[2] << 1 * BitsInByte) |
+				(bytes[3] << 0 * BitsInByte));
 		}
 		public static long ToInt64(byte[] bytes)
 		{
 			ReinterpretInt ri;
 			ri.value = 0;
 			ri.HDW = // High double word
-				(bytes[0] << 3 * BITS_IN_BYTE) |
-				(bytes[1] << 2 * BITS_IN_BYTE) |
-				(bytes[2] << 1 * BITS_IN_BYTE) |
-				(bytes[3] << 0 * BITS_IN_BYTE);
+				(bytes[0] << 3 * BitsInByte) |
+				(bytes[1] << 2 * BitsInByte) |
+				(bytes[2] << 1 * BitsInByte) |
+				(bytes[3] << 0 * BitsInByte);
 			ri.LDW = // Low double word
-				(bytes[4] << 3 * BITS_IN_BYTE) |
-				(bytes[5] << 2 * BITS_IN_BYTE) |
-				(bytes[6] << 1 * BITS_IN_BYTE) |
-				(bytes[7] << 0 * BITS_IN_BYTE);
+				(bytes[4] << 3 * BitsInByte) |
+				(bytes[5] << 2 * BitsInByte) |
+				(bytes[6] << 1 * BitsInByte) |
+				(bytes[7] << 0 * BitsInByte);
 			return (long)ri.value;
 		}
 
 		public static ushort ToUInt16(byte[] bytes)
 		{
 			return (ushort)(
-				(bytes[0] << 1 * BITS_IN_BYTE) |
-				(bytes[1] << 0 * BITS_IN_BYTE));
+				(bytes[0] << 1 * BitsInByte) |
+				(bytes[1] << 0 * BitsInByte));
 		}
 		public static uint ToUInt32(byte[] bytes)
 		{
 			return (uint)(
-				(bytes[0] << 3 * BITS_IN_BYTE) |
-				(bytes[1] << 2 * BITS_IN_BYTE) |
-				(bytes[2] << 1 * BITS_IN_BYTE) |
-				(bytes[3] << 0 * BITS_IN_BYTE));
+				(bytes[0] << 3 * BitsInByte) |
+				(bytes[1] << 2 * BitsInByte) |
+				(bytes[2] << 1 * BitsInByte) |
+				(bytes[3] << 0 * BitsInByte));
 		}
 		public static ulong ToUInt64(byte[] bytes)
 		{
 			ReinterpretInt ri;
 			ri.value = 0;
 			ri.HDW = // High double word
-				(bytes[0] << 3 * BITS_IN_BYTE) |
-				(bytes[1] << 2 * BITS_IN_BYTE) |
-				(bytes[2] << 1 * BITS_IN_BYTE) |
-				(bytes[3] << 0 * BITS_IN_BYTE);
+				(bytes[0] << 3 * BitsInByte) |
+				(bytes[1] << 2 * BitsInByte) |
+				(bytes[2] << 1 * BitsInByte) |
+				(bytes[3] << 0 * BitsInByte);
 			ri.LDW = // Low double word
-				(bytes[4] << 3 * BITS_IN_BYTE) |
-				(bytes[5] << 2 * BITS_IN_BYTE) |
-				(bytes[6] << 1 * BITS_IN_BYTE) |
-				(bytes[7] << 0 * BITS_IN_BYTE);
+				(bytes[4] << 3 * BitsInByte) |
+				(bytes[5] << 2 * BitsInByte) |
+				(bytes[6] << 1 * BitsInByte) |
+				(bytes[7] << 0 * BitsInByte);
 			return (ulong)ri.value;
 		}
 

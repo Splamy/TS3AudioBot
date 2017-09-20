@@ -29,18 +29,18 @@ namespace TS3Client.Full
 		private readonly PacketHandler packetHandler;
 		private readonly MessageProcessor msgProc;
 
-		private readonly object StatusLock = new object();
+		private readonly object statusLock = new object();
 
 		private int returnCode;
 		private bool wasExit;
 
-		private IEventDispatcher dispatcher;
+		private readonly IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
 		public ushort ClientId => packetHandler.ClientId;
 		public string QuitMessage { get; set; } = "Disconnected";
 		public VersionSign VersionSign { get; private set; }
-		private Ts3ClientStatus Status;
-		public override bool Connected { get { lock (StatusLock) return Status == Ts3ClientStatus.Connected; } }
+		private Ts3ClientStatus status;
+		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
 		private ConnectionDataFull connectionDataFull;
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
@@ -53,7 +53,7 @@ namespace TS3Client.Full
 
 		public Ts3FullClient(EventDispatchType dispatcherType)
 		{
-			Status = Ts3ClientStatus.Disconnected;
+			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler(ts3Crypt);
 			msgProc = new MessageProcessor(false);
@@ -63,8 +63,7 @@ namespace TS3Client.Full
 
 		public override void Connect(ConnectionData conData)
 		{
-			var conDataFull = conData as ConnectionDataFull;
-			if (conDataFull == null) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
+			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 			if (conDataFull.VersionSign == null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
 			connectionDataFull = conDataFull;
@@ -75,7 +74,7 @@ namespace TS3Client.Full
 			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
 				throw new Ts3Exception("Could not read or resolve address.");
 
-			lock (StatusLock)
+			lock (statusLock)
 			{
 				returnCode = 0;
 				wasExit = false;
@@ -104,12 +103,12 @@ namespace TS3Client.Full
 
 		private void DisconnectInternal(bool triggerEvent = true)
 		{
-			lock (StatusLock)
+			lock (statusLock)
 			{
 				if (wasExit)
 					return;
 
-				switch (Status)
+				switch (status)
 				{
 				case Ts3ClientStatus.Disconnected:
 					wasExit = true;
@@ -123,10 +122,12 @@ namespace TS3Client.Full
 					break;
 				case Ts3ClientStatus.Connected:
 					ClientDisconnect(MoveReason.LeftServer, QuitMessage);
-					Status = Ts3ClientStatus.Disconnecting;
+					status = Ts3ClientStatus.Disconnecting;
 					break;
 				case Ts3ClientStatus.Connecting:
 					break;
+				default:
+					throw Util.UnhandledDefault(status);
 				}
 			}
 		}
@@ -149,9 +150,9 @@ namespace TS3Client.Full
 				if (leftViewEvent != null)
 				{
 					packetHandler.ExitReason = leftViewEvent.Reason;
-					lock (StatusLock)
+					lock (statusLock)
 					{
-						Status = Ts3ClientStatus.Disconnected;
+						status = Ts3ClientStatus.Disconnected;
 						DisconnectInternal();
 					}
 					break;
@@ -171,7 +172,7 @@ namespace TS3Client.Full
 			case NotificationType.ClientNeededPermissions: break;
 			case NotificationType.ClientChannelGroupChanged: break;
 			case NotificationType.ClientServerGroupAdded: break;
-			case NotificationType.ConnectionInfoRequest: ProcessConnectionInfoRequest((ConnectionInfoRequest)notification.FirstOrDefault()); break;
+			case NotificationType.ConnectionInfoRequest: ProcessConnectionInfoRequest(); break;
 			case NotificationType.ChannelSubscribed: break;
 			case NotificationType.ChannelUnsubscribed: break;
 			case NotificationType.ClientChatComposing: break;
@@ -186,11 +187,11 @@ namespace TS3Client.Full
 			case NotificationType.FileInfo: break;
 			// special
 			case NotificationType.Error:
-				lock (StatusLock)
+				lock (statusLock)
 				{
-					if (Status == Ts3ClientStatus.Connecting)
+					if (status == Ts3ClientStatus.Connecting)
 					{
-						Status = Ts3ClientStatus.Disconnected;
+						status = Ts3ClientStatus.Disconnected;
 						DisconnectInternal(false);
 					}
 				}
@@ -206,7 +207,7 @@ namespace TS3Client.Full
 		{
 			while (true)
 			{
-				lock (StatusLock)
+				lock (statusLock)
 				{
 					if (wasExit)
 						break;
@@ -243,9 +244,9 @@ namespace TS3Client.Full
 				}
 			}
 
-			lock (StatusLock)
+			lock (statusLock)
 			{
-				Status = Ts3ClientStatus.Disconnected;
+				status = Ts3ClientStatus.Disconnected;
 				DisconnectInternal();
 			}
 		}
@@ -271,12 +272,12 @@ namespace TS3Client.Full
 			packetHandler.ClientId = initServer.ClientId;
 			packetHandler.ReceiveInitAck();
 
-			lock (StatusLock)
-				Status = Ts3ClientStatus.Connected;
+			lock (statusLock)
+				status = Ts3ClientStatus.Connected;
 			OnConnected?.Invoke(this, new EventArgs());
 		}
 
-		private void ProcessConnectionInfoRequest(ConnectionInfoRequest conInfoRequest)
+		private void ProcessConnectionInfoRequest()
 		{
 			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
 		}
@@ -316,7 +317,7 @@ namespace TS3Client.Full
 			}
 
 			byte[] data = Util.Encoder.GetBytes(com.ToString());
-			lock (StatusLock)
+			lock (statusLock)
 			{
 				if (wasExit)
 					throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });

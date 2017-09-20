@@ -39,7 +39,7 @@ namespace TS3AudioBot
 				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 				{
 					Log.Write(Log.Level.Error, "Critical program failure!. Exception:\n{0}", (e.ExceptionObject as Exception).UnrollException());
-					bot?.Dispose();
+					bot.Dispose();
 				};
 
 				if (!bot.ReadParameter(args)) return;
@@ -229,7 +229,7 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
 			RightsManager.RegisterRights(CommandManager.AllRights);
-			RightsManager.RegisterRights(rightHighVolume, rightDeleteAllPlaylists);
+			RightsManager.RegisterRights(RightHighVolume, RightDeleteAllPlaylists);
 			if (!RightsManager.ReadFile())
 				return false;
 			WebManager.StartServerAsync();
@@ -247,7 +247,6 @@ namespace TS3AudioBot
 			catch (Ts3Exception qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
-				return;
 			}
 		}
 
@@ -255,7 +254,7 @@ namespace TS3AudioBot
 		{
 			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
-			textMessage.Message = textMessage.Message.TrimStart(new[] { ' ' });
+			textMessage.Message = textMessage.Message.TrimStart(' ');
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
 
@@ -346,8 +345,8 @@ namespace TS3AudioBot
 
 		#region COMMANDS
 
-		const string rightHighVolume = "ts3ab.admin.volume";
-		const string rightDeleteAllPlaylists = "ts3ab.admin.list";
+		private const string RightHighVolume = "ts3ab.admin.volume";
+		private const string RightDeleteAllPlaylists = "ts3ab.admin.list";
 
 		// [...] = Optional
 		// <name> = Placeholder for a text
@@ -839,7 +838,7 @@ namespace TS3AudioBot
 		public JsonObject CommandListDelete(ExecutionInformation info, string name)
 		{
 			if (info.ApiCall)
-				PlaylistManager.DeletePlaylist(name, info.InvokerData.DatabaseId ?? 0, info.HasRights(rightDeleteAllPlaylists)).UnwrapThrow();
+				PlaylistManager.DeletePlaylist(name, info.InvokerData.DatabaseId ?? 0, info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
 
 			var hresult = PlaylistManager.LoadPlaylist(name, true);
 			if (!hresult)
@@ -850,7 +849,7 @@ namespace TS3AudioBot
 			else
 			{
 				if (hresult.Value.CreatorDbId != info.InvokerData.DatabaseId
-					&& !info.HasRights(rightDeleteAllPlaylists))
+					&& !info.HasRights(RightDeleteAllPlaylists))
 					throw new CommandException("You are not allowed to delete others playlists", CommandExceptionReason.MissingRights);
 
 				info.Session.SetResponse(ResponseListDelete, name);
@@ -1066,7 +1065,7 @@ namespace TS3AudioBot
 				var strb = new StringBuilder();
 				strb.AppendLine();
 				node.Write(strb, 0);
-				return new JsonSingleObject<ASTNode>(strb.ToString(), node);
+				return new JsonSingleObject<AstNode>(strb.ToString(), node);
 			}
 			catch (Exception ex)
 			{
@@ -1526,7 +1525,7 @@ namespace TS3AudioBot
 		[Command("xecute", "Evaluates all parameter.")]
 		public void CommandXecute(ExecutionInformation info, IEnumerable<ICommand> arguments)
 		{
-			var retType = new CommandResultType[] { CommandResultType.Empty, CommandResultType.String, CommandResultType.Json };
+			var retType = new[] { CommandResultType.Empty, CommandResultType.String, CommandResultType.Json };
 			foreach (var arg in arguments)
 				arg.Execute(info, Enumerable.Empty<ICommand>(), retType);
 		}
@@ -1540,15 +1539,17 @@ namespace TS3AudioBot
 			Answer answer = TextUtil.GetAnswer(info.TextMessage);
 			if (answer == Answer.Yes)
 			{
-				if (info.HasRights(rightHighVolume))
+				if (info.HasRights(RightHighVolume))
 				{
-					var respInt = info.Session.ResponseData as int?;
-					if (!respInt.HasValue)
+					if (info.Session.ResponseData is int respInt)
+					{
+						PlayerConnection.Volume = respInt;
+					}
+					else
 					{
 						Log.Write(Log.Level.Error, "responseData is not an int.");
 						return "Internal error";
 					}
-					PlayerConnection.Volume = respInt.Value;
 				}
 				else
 				{
@@ -1578,13 +1579,15 @@ namespace TS3AudioBot
 			{
 				if (info.HasRights("cmd.history.delete"))
 				{
-					var ale = info.Session.ResponseData as AudioLogEntry;
-					if (ale == null)
+					if (info.Session.ResponseData is AudioLogEntry ale)
+					{
+						HistoryManager.RemoveEntry(ale);
+					}
+					else
 					{
 						Log.Write(Log.Level.Error, "No entry provided.");
 						return "Internal error";
 					}
-					HistoryManager.RemoveEntry(ale);
 				}
 				else
 				{
@@ -1627,7 +1630,7 @@ namespace TS3AudioBot
 			if (answer == Answer.Yes)
 			{
 				var name = info.Session.ResponseData as string;
-				var result = PlaylistManager.DeletePlaylist(name, info.InvokerData.DatabaseId ?? 0, info.HasRights(rightDeleteAllPlaylists));
+				var result = PlaylistManager.DeletePlaylist(name, info.InvokerData.DatabaseId ?? 0, info.HasRights(RightDeleteAllPlaylists));
 				if (!result) return result.Message;
 				else return "Ok";
 			}
@@ -1652,10 +1655,9 @@ namespace TS3AudioBot
 			}
 			else if (PlayManager.IsPlaying)
 			{
-				if (QuizMode)
-					setString = "<Quiztime!>";
-				else
-					setString = PlayManager.CurrentPlayData.ResourceData.ResourceTitle;
+				setString = QuizMode
+					? "<Quiztime!>"
+					: PlayManager.CurrentPlayData.ResourceData.ResourceTitle;
 			}
 			else
 			{
@@ -1747,7 +1749,7 @@ namespace TS3AudioBot
 	}
 
 #pragma warning disable CS0649
-	class MainBotData : ConfigData
+	internal class MainBotData : ConfigData
 	{
 		[Info("Path to the logfile", "log_ts3audiobot")]
 		public string LogFile { get; set; }

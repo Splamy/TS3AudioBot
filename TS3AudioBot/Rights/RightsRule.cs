@@ -93,7 +93,7 @@ namespace TS3AudioBot.Rights
 				else MatchPermission = new HashSet<string>(perm);
 				return true;
 			case "visibility":
-				var visibility = TomlTools.GetValues<TS3Client.TextMessageTargetMode>(tomlObj);
+				var visibility = TomlTools.GetValues<TextMessageTargetMode>(tomlObj);
 				if (visibility == null) ctx.Errors.Add("<visibility> Field has invalid data.");
 				else MatchVisibility = visibility;
 				return true;

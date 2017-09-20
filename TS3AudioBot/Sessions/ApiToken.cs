@@ -33,14 +33,12 @@ namespace TS3AudioBot.Sessions
 			Util.Init(ref nonceList);
 		}
 
-		public ApiNonce UseNonce(string token)
+		public ApiNonce UseNonce(string nonce)
 		{
 			lock (nonceList)
 			{
-				if (!nonceList.TryGetValue(token, out var nonce))
+				if (!nonceList.Remove(nonce))
 					return null;
-
-				nonceList.Remove(token);
 
 				return CreateNonceInternal();
 			}

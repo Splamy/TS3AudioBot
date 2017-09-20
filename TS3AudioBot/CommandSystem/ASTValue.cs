@@ -11,9 +11,9 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System.Text;
 
-	internal class ASTValue : ASTNode
+	internal class AstValue : AstNode
 	{
-		public override ASTType Type => ASTType.Value;
+		public override AstType Type => AstType.Value;
 		public string Value { get; set; }
 
 		public override void Write(StringBuilder strb, int depth) => strb.Space(depth).Append(Value);

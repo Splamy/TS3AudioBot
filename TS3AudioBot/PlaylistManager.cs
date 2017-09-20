@@ -10,21 +10,19 @@
 namespace TS3AudioBot
 {
 	using Algorithm;
-	using CommandSystem;
 	using Helper;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using System.Reflection;
 	using System.Text;
 	using System.Text.RegularExpressions;
 
 	public sealed class PlaylistManager : IDisposable
 	{
-		private static readonly Regex validPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
-		private static readonly Regex cleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
+		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
+		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
 
 		// get video info
 		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
@@ -32,7 +30,7 @@ namespace TS3AudioBot
 		// get playlist videos
 		// https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId=...&key=...
 
-		private PlaylistManagerData data;
+		private readonly PlaylistManagerData data;
 		private static readonly Encoding FileEncoding = Util.Utf8Encoder;
 		private readonly Playlist freeList;
 		private readonly Playlist trashList;
@@ -43,7 +41,7 @@ namespace TS3AudioBot
 
 		public int Index
 		{
-			get { return Random ? shuffle.Index : indexCount; }
+			get => Random ? shuffle.Index : indexCount;
 			set
 			{
 				if (Random)
@@ -60,7 +58,7 @@ namespace TS3AudioBot
 		private bool random;
 		public bool Random
 		{
-			get { return random; }
+			get => random;
 			set
 			{
 				random = value;
@@ -68,11 +66,7 @@ namespace TS3AudioBot
 				else indexCount = shuffle.Index;
 			}
 		}
-		public int Seed
-		{
-			get { return shuffle.Seed; }
-			set { shuffle.Seed = value; }
-		}
+		public int Seed { get => shuffle.Seed; set => shuffle.Seed = value; }
 		/// <summary>Loop state for the entire playlist.</summary>
 		public bool Loop { get; set; }
 
@@ -86,13 +80,13 @@ namespace TS3AudioBot
 			trashList = new Playlist(string.Empty);
 		}
 
-		public PlaylistItem Current() => NPMove(0);
+		public PlaylistItem Current() => NpMove(0);
 
-		public PlaylistItem Next() => NPMove(+1);
+		public PlaylistItem Next() => NpMove(+1);
 
-		public PlaylistItem Previous() => NPMove(-1);
+		public PlaylistItem Previous() => NpMove(-1);
 
-		private PlaylistItem NPMove(sbyte off)
+		private PlaylistItem NpMove(sbyte off)
 		{
 			if (freeList.Count == 0) return null;
 			indexCount += Math.Sign(off);
@@ -192,8 +186,7 @@ namespace TS3AudioBot
 					case "owner":
 						if (plist.CreatorDbId != null)
 							return "Invalid playlist file: duplicate userid";
-						ulong userid;
-						if (ulong.TryParse(value, out userid))
+						if (ulong.TryParse(value, out var userid))
 							plist.CreatorDbId = userid;
 						else
 							return "Broken playlist header";
@@ -220,7 +213,7 @@ namespace TS3AudioBot
 					var meta = new MetaData();
 					if (string.IsNullOrWhiteSpace(optOwner))
 						meta.ResourceOwnerDbId = null;
-					else if (ulong.TryParse(optOwner, out ulong userid))
+					else if (ulong.TryParse(optOwner, out var userid))
 						meta.ResourceOwnerDbId = userid;
 					else
 						Log.Write(Log.Level.Warning, "Erroneus playlist meta data: {0}", line);
@@ -251,8 +244,7 @@ namespace TS3AudioBot
 						break;
 
 					case "id":
-						uint hid;
-						if (!uint.TryParse(content, out hid))
+						if (!uint.TryParse(content, out var hid))
 							goto default;
 						plist.AddItem(new PlaylistItem(hid, meta));
 						break;
@@ -375,7 +367,7 @@ namespace TS3AudioBot
 				return "An empty playlist name is not valid";
 			if (name.Length >= 64)
 				return "Length must be <64";
-			if (!validPlistName.IsMatch(name))
+			if (!ValidPlistName.IsMatch(name))
 				return "The new name is invalid please only use [a-zA-Z0-9_-]";
 			return R.OkR;
 		}
@@ -386,7 +378,7 @@ namespace TS3AudioBot
 				return "playlist";
 			if (name.Length >= 64)
 				name = name.Substring(0, 63);
-			name = cleansePlaylistName.Replace(name, "");
+			name = CleansePlaylistName.Replace(name, "");
 			if (!IsNameValid(name))
 				name = "playlist";
 			return name;
@@ -468,7 +460,7 @@ namespace TS3AudioBot
 		public bool FilePersistent { get; set; }
 		// playlist data
 		public int Count => resources.Count;
-		private List<PlaylistItem> resources;
+		private readonly List<PlaylistItem> resources;
 
 		public Playlist(string name, ulong? creatorDbId = null)
 		{

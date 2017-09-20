@@ -73,8 +73,8 @@ namespace TS3AudioBot.Audio.Opus
 	{
 		SetBitrateRequest = 4002,
 		GetBitrateRequest = 4003,
-		SetInbandFECRequest = 4012,
-		GetInbandFECRequest = 4013
+		SetInbandFecRequest = 4012,
+		GetInbandFecRequest = 4013
 	}
 
 	/// <summary>
@@ -93,7 +93,7 @@ namespace TS3AudioBot.Audio.Opus
 		/// <summary>
 		/// Only use when lowest-achievable latency is what matters most. Voice-optimized modes cannot be used.
 		/// </summary>
-		Restricted_LowLatency = 2051
+		RestrictedLowLatency = 2051
 	}
 
 	public enum Errors
@@ -101,7 +101,7 @@ namespace TS3AudioBot.Audio.Opus
 		/// <summary>
 		/// No error.
 		/// </summary>
-		OK = 0,
+		Ok = 0,
 		/// <summary>
 		/// One or more invalid/out of range arguments.
 		/// </summary>

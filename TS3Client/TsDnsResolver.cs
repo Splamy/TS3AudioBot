@@ -121,7 +121,7 @@ namespace TS3Client
 
 		private static string ResolveNickname(string nickname)
 		{
-			string result = null;
+			string result;
 			using (var webClient = new WebClient())
 			{
 				try { result = webClient.DownloadString(NicknameLookup + Uri.EscapeDataString(nickname)); }

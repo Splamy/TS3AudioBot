@@ -36,12 +36,12 @@ namespace TS3Client.Full
 		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
 		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
 		/// it takes for a packet to get ack'd.</summary>
-		private TimeSpan SmoothedRtt;
+		private TimeSpan smoothedRtt;
 		/// <summary>Holds the smoothed rtt variation.</summary>
-		private TimeSpan SmoothedRttVar;
+		private TimeSpan smoothedRttVar;
 		/// <summary>Holds the current RetransmissionTimeOut, which determines the timespan until
 		/// a packet is considered to be lost.</summary>
-		private TimeSpan CurrentRto;
+		private TimeSpan currentRto;
 		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
 		private const float AlphaSmooth = 0.125f;
 		/// <summary>Smoothing factor for the SmoothedRttDev.</summary>
@@ -51,9 +51,9 @@ namespace TS3Client.Full
 		/// <summary>The timeout check loop interval.</summary>
 		private static readonly TimeSpan ClockResolution = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
-		private readonly Stopwatch PingTimer = new Stopwatch();
-		private ushort LastSentPingId;
-		private ushort LastReceivedPingId;
+		private readonly Stopwatch pingTimer = new Stopwatch();
+		private ushort lastSentPingId;
+		private ushort lastReceivedPingId;
 
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
@@ -96,17 +96,18 @@ namespace TS3Client.Full
 			{
 				ClientId = 0;
 				ExitReason = null;
-				SmoothedRtt = MaxRetryInterval;
-				SmoothedRttVar = TimeSpan.Zero;
-				CurrentRto = MaxRetryInterval;
-				LastSentPingId = 0;
-				LastReceivedPingId = 0;
+				smoothedRtt = MaxRetryInterval;
+				smoothedRttVar = TimeSpan.Zero;
+				currentRto = MaxRetryInterval;
+				lastSentPingId = 0;
+				lastReceivedPingId = 0;
 
 				packetAckManager.Clear();
 				receiveQueue.Clear();
 				receiveQueueLow.Clear();
 				Array.Clear(packetCounter, 0, packetCounter.Length);
 				Array.Clear(generationCounter, 0, generationCounter.Length);
+				NetworkStats.Reset();
 
 				ConnectUdpClient(address);
 			}
@@ -196,7 +197,7 @@ namespace TS3Client.Full
 					break;
 
 				case PacketType.Ping:
-					LastSentPingId = packet.PacketId;
+					lastSentPingId = packet.PacketId;
 					packet.PacketFlags |= PacketFlags.Unencrypted;
 
 					break;
@@ -282,7 +283,7 @@ namespace TS3Client.Full
 				if (Closed)
 					return null;
 
-				if (TryFetchPacket(receiveQueue, out IncomingPacket packet))
+				if (TryFetchPacket(receiveQueue, out var packet))
 					return packet;
 				if (TryFetchPacket(receiveQueueLow, out packet))
 					return packet;
@@ -364,7 +365,7 @@ namespace TS3Client.Full
 				return null;
 
 			packetQueue.Set(packet.PacketId, packet);
-			return TryFetchPacket(packetQueue, out IncomingPacket retPacket) ? retPacket : null;
+			return TryFetchPacket(packetQueue, out var retPacket) ? retPacket : null;
 		}
 
 		private static bool TryFetchPacket(RingQueue<IncomingPacket> packetQueue, out IncomingPacket packet)
@@ -377,14 +378,14 @@ namespace TS3Client.Full
 			bool hasEnd = false;
 			for (int i = 0; i < packetQueue.Count; i++)
 			{
-				if (packetQueue.TryPeekStart(i, out IncomingPacket peekPacket))
+				if (packetQueue.TryPeekStart(i, out var peekPacket))
 				{
 					take++;
 					takeLen += peekPacket.Size;
 					if (peekPacket.FragmentedFlag)
 					{
 						if (!hasStart) { hasStart = true; }
-						else if (!hasEnd) { hasEnd = true; break; }
+						else { hasEnd = true; break; }
 					}
 					else
 					{
@@ -403,7 +404,8 @@ namespace TS3Client.Full
 			if (!packetQueue.TryDequeue(out packet))
 				throw new InvalidOperationException("Packet in queue got missing (?)");
 
-			if (take > 1) // MERGE
+			// MERGE
+			if (take > 1)
 			{
 				var preFinalArray = new byte[takeLen];
 
@@ -450,7 +452,7 @@ namespace TS3Client.Full
 
 			lock (sendLoopLock)
 			{
-				if (packetAckManager.TryGetValue(packetId, out OutgoingPacket ackPacket))
+				if (packetAckManager.TryGetValue(packetId, out var ackPacket))
 				{
 					UpdateRto(Util.Now - ackPacket.LastSendTime);
 					packetAckManager.Remove(packetId);
@@ -462,16 +464,16 @@ namespace TS3Client.Full
 		private void SendPing()
 		{
 			AddOutgoingPacket(new byte[0], PacketType.Ping);
-			PingTimer.Restart();
+			pingTimer.Restart();
 		}
 
 		private void ReceivePing(IncomingPacket packet)
 		{
-			var idDiff = packet.PacketId - LastReceivedPingId;
+			var idDiff = packet.PacketId - lastReceivedPingId;
 			if (idDiff > 1 && idDiff < ReceivePacketWindowSize)
 				NetworkStats.LogLostPings(idDiff - 1);
 			if (idDiff > 0 || idDiff < -ReceivePacketWindowSize)
-				LastReceivedPingId = packet.PacketId;
+				lastReceivedPingId = packet.PacketId;
 			byte[] pongData = new byte[2];
 			NetUtil.H2N(packet.PacketId, pongData, 0);
 			AddOutgoingPacket(pongData, PacketType.Pong);
@@ -481,9 +483,9 @@ namespace TS3Client.Full
 		{
 			ushort answerId = NetUtil.N2Hushort(packet.Data, 0);
 
-			if (LastSentPingId == answerId)
+			if (lastSentPingId == answerId)
 			{
-				var rtt = PingTimer.Elapsed;
+				var rtt = pingTimer.Elapsed;
 				UpdateRto(rtt);
 				NetworkStats.AddPing(rtt);
 			}
@@ -511,12 +513,12 @@ namespace TS3Client.Full
 			// SRTT_{i+1}    = (1-a) * SRTT_i   + a * RTT
 			// DevRTT_{i+1}  = (1-b) * DevRTT_i + b * | RTT - SRTT_{i+1} |
 			// Timeout_{i+1} = SRTT_{i+1} + max(ClockRes, 4 * DevRTT_{i+1})
-			if (SmoothedRtt < TimeSpan.Zero)
-				SmoothedRtt = sampleRtt;
+			if (smoothedRtt < TimeSpan.Zero)
+				smoothedRtt = sampleRtt;
 			else
-				SmoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * SmoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
-			SmoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * SmoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - SmoothedRtt.Ticks)));
-			CurrentRto = SmoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * SmoothedRttVar.Ticks));
+				smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
+			smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
+			currentRto = smoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
 #if DIAGNOSTICS && DIAG_RTT
 			Console.WriteLine("SRTT:{0} RTTVAR:{1} RTO: {2}", SmoothedRtt, SmoothedRttVar, CurrentRto);
 #endif
@@ -572,14 +574,14 @@ namespace TS3Client.Full
 				}
 
 				// Check if we should retransmit a packet because it probably got lost
-				if (outgoingPacket.LastSendTime < now - CurrentRto)
+				if (outgoingPacket.LastSendTime < now - currentRto)
 				{
 #if DIAGNOSTICS && DIAG_TIMEOUT
 					Console.WriteLine("RESEND PACKET: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
 #endif
-					CurrentRto = CurrentRto + CurrentRto;
-					if (CurrentRto > MaxRetryInterval)
-						CurrentRto = MaxRetryInterval;
+					currentRto = currentRto + currentRto;
+					if (currentRto > MaxRetryInterval)
+						currentRto = MaxRetryInterval;
 					SendRaw(outgoingPacket);
 				}
 			}
@@ -594,10 +596,10 @@ namespace TS3Client.Full
 		}
 	}
 
-	struct IdTuple
+	internal struct IdTuple
 	{
-		public ushort Id { get; set; }
-		public uint Generation { get; set; }
+		public ushort Id { get; }
+		public uint Generation { get; }
 
 		public IdTuple(ushort id, uint generation) { Id = id; Generation = generation; }
 	}

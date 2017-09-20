@@ -11,22 +11,21 @@ namespace TS3AudioBot.Helper
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
 	using System.Diagnostics;
+	using System.Threading;
 
 	[Serializable]
 	public static class TickPool
 	{
 		private static Thread tickThread;
-		private static readonly TimeSpan minTick = TimeSpan.FromMilliseconds(1000);
-		private static List<TickWorker> workList;
+		private static readonly TimeSpan MinTick = TimeSpan.FromMilliseconds(1000);
+		private static readonly List<TickWorker> workList;
 		private static bool run;
 
 		static TickPool()
 		{
 			run = false;
-			workList = new List<TickWorker>();
+			Util.Init(ref workList);
 			tickThread = new Thread(Tick) {Name = "TickPool"};
 		}
 
@@ -74,7 +73,7 @@ namespace TS3AudioBot.Helper
 		{
 			while (run)
 			{
-				var curSleep = minTick;
+				var curSleep = MinTick;
 
 				lock (workList)
 				{

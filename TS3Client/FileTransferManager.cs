@@ -27,16 +27,15 @@ namespace TS3Client
 
 	public class FileTransferManager
 	{
-		internal Ts3BaseFunctions parent;
-		private Queue<FileTransferToken> transferQueue;
-		private static Random Random = new Random();
+		private readonly Ts3BaseFunctions parent;
+		private readonly Queue<FileTransferToken> transferQueue;
 		private Thread workerThread;
-		private bool threadEnd = false;
+		private bool threadEnd;
 		private ushort transferIdCnt;
 
-		public FileTransferManager(Ts3BaseFunctions ts3connection)
+		public FileTransferManager(Ts3BaseFunctions ts3Connection)
 		{
-			parent = ts3connection;
+			parent = ts3Connection;
 			//ts3connection.OnFileTransferStatus += FileStatusNotification;
 			Util.Init(ref transferQueue);
 		}
@@ -134,12 +133,6 @@ namespace TS3Client
 					token.LocalStream.Close();
 				}
 			}
-		}
-
-		public void Wait(FileTransferToken token)
-		{
-			while (token.Status == TransferStatus.Waiting || token.Status == TransferStatus.Trasfering)
-				Thread.Sleep(10);
 		}
 
 		public FileTransfer GetStats(FileTransferToken token)
@@ -278,6 +271,12 @@ namespace TS3Client
 			SeekPosition = seekPos;
 			TransferKey = transferKey;
 			Size = size;
+		}
+
+		public void Wait()
+		{
+			while (Status == TransferStatus.Waiting || Status == TransferStatus.Trasfering)
+				Thread.Sleep(10);
 		}
 	}
 

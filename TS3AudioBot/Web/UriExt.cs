@@ -16,7 +16,7 @@ namespace TS3AudioBot.Web
 	[Serializable]
 	public class UriExt : Uri
 	{
-		private NameValueCollection queryParam = null;
+		private NameValueCollection queryParam;
 		public NameValueCollection QueryParam => queryParam ?? (queryParam = HttpUtility.ParseQueryString(Query));
 		public UriExt(Uri copy) : base(copy.OriginalString) { }
 		public UriExt(string uri) : base(uri) { }
