@@ -16,7 +16,7 @@ namespace TS3AudioBot
 
 	public class PlayManager
 	{
-		private MainBot botParent;
+		private readonly MainBot botParent;
 		private IPlayerConnection PlayerConnection => botParent.PlayerConnection;
 		private PlaylistManager PlaylistManager => botParent.PlaylistManager;
 		private ResourceFactoryManager ResourceFactoryManager => botParent.FactoryManager;
@@ -36,9 +36,9 @@ namespace TS3AudioBot
 		}
 
 		public R Enqueue(InvokerData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
-		public R Enqueue(InvokerData invoker, string message, AudioType? type = null)
+		public R Enqueue(InvokerData invoker, string message, string audioType = null)
 		{
-			var result = ResourceFactoryManager.Load(message, type);
+			var result = ResourceFactoryManager.Load(message, audioType);
 			if (!result)
 				return result.Message;
 			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
@@ -53,7 +53,7 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
-		/// <summary>Playes the passed <see cref="AudioResource"/></summary>
+		/// <summary>Tries to play the passed <see cref="AudioResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
 		/// <param name="ar">The resource to load and play.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
@@ -65,16 +65,15 @@ namespace TS3AudioBot
 				return result.Message;
 			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
-		// TODO xml doc doesnt match here
-		/// <summary>Playes the passed <see cref="PlayData.PlayResource"/></summary>
+		/// <summary>Tries to play the passed link.</summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
-		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.</param>
 		/// <param name="link">The link to resolve, load and play.</param>
+		/// <param name="audioType">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(InvokerData invoker, string link, AudioType? type = null, MetaData meta = null)
+		public R Play(InvokerData invoker, string link, string audioType = null, MetaData meta = null)
 		{
-			var result = ResourceFactoryManager.Load(link, type);
+			var result = ResourceFactoryManager.Load(link, audioType);
 			if (!result)
 				return result.Message;
 			return Play(invoker, result.Value, meta ?? new MetaData());
@@ -119,7 +118,11 @@ namespace TS3AudioBot
 			}
 			return $"Playlist item could not be played ({lastResult.Message})";
 		}
-
+		/// <summary>Plays the passed <see cref="PlayResource"/></summary>
+		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
+		/// <param name="play">The associated resource type string to a factory.</param>
+		/// <param name="meta">Allows overriding certain settings for the resource.</param>
+		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R Play(InvokerData invoker, PlayResource play, MetaData meta)
 		{
 			if (!meta.FromPlaylist)

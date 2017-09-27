@@ -26,26 +26,30 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w-]+)", Util.DefaultRegexConfig);
 
-		public string SubCommandName => "youtube";
-		public AudioType FactoryFor => AudioType.Youtube;
-
-		private YoutubeFactoryData data;
+		private readonly YoutubeFactoryData data;
 
 		public YoutubeFactory(YoutubeFactoryData yfd)
 		{
 			data = yfd;
 		}
 
-		public bool MatchLink(string link) => LinkMatch.IsMatch(link) || ListMatch.IsMatch(link);
-		bool IResourceFactory.MatchLink(string link) => LinkMatch.IsMatch(link);
-		bool IPlaylistFactory.MatchLink(string link) => ListMatch.IsMatch(link);
+		public string FactoryFor => "youtube";
+
+		MatchCertainty IResourceFactory.MatchResource(string link) =>
+			LinkMatch.IsMatch(link)
+				? MatchCertainty.Always
+				: IdMatch.IsMatch(link)
+					? MatchCertainty.Probably
+					: MatchCertainty.Never;
+
+		MatchCertainty IPlaylistFactory.MatchPlaylist(string link) => ListMatch.IsMatch(link) ? MatchCertainty.Probably : MatchCertainty.Never;
 
 		public R<PlayResource> GetResource(string ytLink)
 		{
 			Match matchYtId = IdMatch.Match(ytLink);
 			if (!matchYtId.Success)
 				return RResultCode.YtIdNotFound.ToString();
-			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, AudioType.Youtube));
+			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, FactoryFor));
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource)
@@ -243,9 +247,9 @@ namespace TS3AudioBot.ResourceFactories
 				for (int i = 0; i < videoItems.Length; i++)
 				{
 					itemBuffer[i] = new YoutubePlaylistItem(new AudioResource(
-							videoItems[i].contentDetails.videoId,
-							videoItems[i].snippet.title,
-							AudioType.Youtube));
+						videoItems[i].contentDetails.videoId,
+						videoItems[i].snippet.title,
+						FactoryFor));
 				}
 
 #if getlength
@@ -307,7 +311,6 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
-
 			Log.Write(Log.Level.Debug, "YT Ruined!");
 
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(resource.ResourceId);

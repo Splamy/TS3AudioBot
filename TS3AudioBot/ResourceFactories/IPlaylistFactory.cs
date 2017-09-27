@@ -13,9 +13,7 @@ namespace TS3AudioBot.ResourceFactories
 
 	public interface IPlaylistFactory : IFactory
 	{
-		string SubCommandName { get; }
-
-		bool MatchLink(string uri);
+		MatchCertainty MatchPlaylist(string uri);
 
 		R<Playlist> GetPlaylist(string url);
 	}

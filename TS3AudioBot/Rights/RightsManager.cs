@@ -55,7 +55,8 @@ namespace TS3AudioBot.Rights
 			needsRecalculation = true;
 		}
 
-		public void UnregisterRights(params string[] rights)
+		public void UnregisterRights(params string[] rights) => UnregisterRights((IEnumerable<string>)rights);
+		public void UnregisterRights(IEnumerable<string> rights)
 		{
 			// TODO validate right names
 			// optionally expand

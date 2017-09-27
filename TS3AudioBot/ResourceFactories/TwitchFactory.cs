@@ -19,22 +19,18 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
 		private static readonly Regex M3U8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
+		private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
 
-		public string SubCommandName => "twitch";
-		public AudioType FactoryFor => AudioType.Twitch;
-		private readonly string twitchClientId;
+		public string FactoryFor => "twitch";
 
-		public TwitchFactory()
-		{
-			twitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
-		}
+		public MatchCertainty MatchResource(string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
 
 		public R<PlayResource> GetResource(string url)
 		{
 			var match = TwitchMatch.Match(url);
 			if (!match.Success)
 				return RResultCode.TwitchInvalidUrl.ToString();
-			return GetResourceById(new AudioResource(match.Groups[3].Value, null, AudioType.Twitch));
+			return GetResourceById(new AudioResource(match.Groups[3].Value, null, FactoryFor));
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource)
@@ -42,7 +38,7 @@ namespace TS3AudioBot.ResourceFactories
 			var channel = resource.ResourceId;
 
 			// request api token
-			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", twitchClientId)))
+			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", TwitchClientId)))
 				return RResultCode.NoConnection.ToString();
 
 			var jsonDict = (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
@@ -120,8 +116,6 @@ namespace TS3AudioBot.ResourceFactories
 
 			return new PlayResource(dataList[codec].Url, resource.ResourceTitle != null ? resource : resource.WithName($"Twitch channel: {channel}"));
 		}
-
-		public bool MatchLink(string uri) => TwitchMatch.IsMatch(uri);
 
 		private static int SelectStream(List<StreamData> list) => list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
 

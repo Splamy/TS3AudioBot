@@ -7,6 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Linq;
+
 namespace TS3AudioBot.ResourceFactories
 {
 	using CommandSystem;
@@ -21,15 +23,14 @@ namespace TS3AudioBot.ResourceFactories
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
-		public CommandGroup CommandResNode { get; } = new CommandGroup();
-		public CommandGroup CommandListNode { get; } = new CommandGroup();
-		public IResourceFactory DefaultFactorty { get; internal set; }
-		private readonly Dictionary<AudioType, IFactory> allFacories;
-		private readonly List<IResourceFactory> resFactories;
+		private readonly MainBot mainBot;
+		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
+		private readonly List<IResourceFactory> resFactories;
 
-		public ResourceFactoryManager()
+		public ResourceFactoryManager(MainBot bot)
 		{
+			mainBot = bot;
 			Util.Init(ref allFacories);
 			Util.Init(ref resFactories);
 			Util.Init(ref listFactories);
@@ -41,6 +42,27 @@ namespace TS3AudioBot.ResourceFactories
 		// TextMessage != null     => call RF.GetResoruce
 		// else                    => ret Error
 
+		private T GetFactoryByType<T>(string audioType) where T : class, IFactory =>
+			// ToLower for lecacy resons
+			allFacories.TryGetValue(audioType.ToLowerInvariant(), out var factoryInfo) && factoryInfo.Factory is T factory
+				? factory
+				: null;
+
+		private IEnumerable<IResourceFactory> GetResFactoryByLink(string uri) =>
+			from fac in resFactories
+			let facCertain = fac.MatchResource(uri)
+			where facCertain != MatchCertainty.Never
+			orderby facCertain descending
+			select fac;
+
+		private IEnumerable<IPlaylistFactory> GetListFactoryByLink(string uri) =>
+			from fac in listFactories
+			let facCertain = fac.MatchPlaylist(uri)
+			where facCertain != MatchCertainty.Never
+			orderby facCertain descending
+			select fac;
+
+
 		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.</summary>
 		/// <param name="resource">An <see cref="AudioResource"/> with at least
 		/// <see cref="AudioResource.AudioType"/> and<see cref="AudioResource.ResourceId"/> set.</param>
@@ -50,7 +72,9 @@ namespace TS3AudioBot.ResourceFactories
 			if (resource == null)
 				throw new ArgumentNullException(nameof(resource));
 
-			IResourceFactory factory = GetFactoryFor(resource.AudioType);
+			var factory = GetFactoryByType<IResourceFactory>(resource.AudioType);
+			if (factory == null)
+				return $"Could not load (No registered factory for \"{resource.AudioType}\" found)";
 
 			var result = factory.GetResourceById(resource);
 			if (!result)
@@ -63,121 +87,154 @@ namespace TS3AudioBot.ResourceFactories
 		/// <see cref="IResourceFactory"/> identifier to optionally select a factory.
 		/// </summary>
 		/// <param name="message">The link/uri to resolve for the resource.</param>
-		/// <param name="audioType">The associated <see cref="AudioType"/> to a factory.
+		/// <param name="audioType">The associated resource type string to a factory.
 		/// Leave null to let it detect automatically.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource> Load(string message, AudioType? audioType = null)
+		public R<PlayResource> Load(string message, string audioType = null)
+		{
+			if (string.IsNullOrWhiteSpace(message))
+				throw new ArgumentNullException(nameof(message));
+
+			var netlinkurl = TextUtil.ExtractUrlFromBb(message);
+
+			if (audioType != null)
+			{
+				var factory = GetFactoryByType<IResourceFactory>(audioType);
+				if (factory == null)
+					return $"Could not load (No registered factory for \"{audioType}\" found)";
+
+				var result = factory.GetResource(netlinkurl);
+				if (!result)
+					return $"Could not load ({result.Message})";
+				return result;
+			}
+
+			var factories = GetResFactoryByLink(netlinkurl);
+			foreach (var factory in factories)
+			{
+				var result = factory.GetResource(netlinkurl);
+				if (result)
+					return result;
+			}
+
+			return "Could not load (No factory wanted to take it or could load it)";
+		}
+
+		public R<Playlist> LoadPlaylistFrom(string message) => LoadPlaylistFrom(message, null);
+
+		private R<Playlist> LoadPlaylistFrom(string message, IPlaylistFactory listFactory)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
 
 			string netlinkurl = TextUtil.ExtractUrlFromBb(message);
 
-			var factory = audioType.HasValue
-				? GetFactoryFor(audioType.Value)
-				: GetFactoryFor(netlinkurl);
+			if (listFactory != null)
+				return listFactory.GetPlaylist(netlinkurl);
 
-			var result = factory.GetResource(netlinkurl);
-			if (!result)
-				return $"Could not load ({result.Message})";
-			return result;
-		}
-
-		private IResourceFactory GetFactoryFor(AudioType audioType)
-		{
-			if (allFacories.TryGetValue(audioType, out var factory) && factory is IResourceFactory resFactory)
-				return resFactory;
-			return DefaultFactorty;
-		}
-		private IResourceFactory GetFactoryFor(string uri)
-		{
-			foreach (var fac in resFactories)
-				if (fac != DefaultFactorty && fac.MatchLink(uri)) return fac;
-			return DefaultFactorty;
-		}
-
-		public R<Playlist> LoadPlaylistFrom(string message, AudioType? type = null)
-		{
-			if (string.IsNullOrWhiteSpace(message))
-				throw new ArgumentNullException(nameof(message));
-
-			string netlinkurl = TextUtil.ExtractUrlFromBb(message);
-
-			if (type.HasValue)
+			var factories = GetListFactoryByLink(netlinkurl);
+			foreach (var factory in factories)
 			{
-				foreach (var factory in listFactories)
-				{
-					if (factory.FactoryFor == type.Value)
-						return factory.GetPlaylist(netlinkurl);
-				}
-				return "There is not factory registered for this type";
+				var result = factory.GetPlaylist(netlinkurl);
+				if (result)
+					return result;
 			}
-			else
-			{
-				foreach (var factory in listFactories)
-				{
-					if (factory.MatchLink(netlinkurl))
-						return factory.GetPlaylist(netlinkurl);
-				}
-				return "Unknown playlist type. Please use '!list from <type> <url>' to specify your playlist type.";
-			}
-		}
 
-		public void AddFactory(IFactory factory, CommandManager cmdMgr)
-		{
-			allFacories.Add(factory.FactoryFor, factory);
-			if (factory is IResourceFactory resFactory)
-				AddResFactory(resFactory, cmdMgr);
-			if (factory is IPlaylistFactory listFactory)
-				AddListFactory(listFactory, cmdMgr);
-		}
-
-		public void AddResFactory(IResourceFactory factory, CommandManager cmdMgr)
-		{
-			resFactories.Add(factory);
-
-			// register factory command node
-			var playCommand = new PlayCommand(factory.FactoryFor, CmdResPrepath + factory.SubCommandName);
-			cmdMgr.RegisterCommand(playCommand.Command);
-		}
-
-		public void AddListFactory(IPlaylistFactory factory, CommandManager cmdMgr)
-		{
-			listFactories.Add(factory);
-
-			// register factory command node
-			var playCommand = new PlayListCommand(factory.FactoryFor, CmdListPrepath + factory.SubCommandName);
-			cmdMgr.RegisterCommand(playCommand.Command);
+			return "Could not load (No factory wanted to take it or could load it)";
 		}
 
 		public string RestoreLink(AudioResource res)
 		{
-			var factory = GetFactoryFor(res.AudioType);
+			var factory = GetFactoryByType<IResourceFactory>(res.AudioType);
 			return factory.RestoreLink(res.ResourceId);
 		}
 
 		public R<Image> GetThumbnail(PlayResource playResource)
 		{
-			if (allFacories.TryGetValue(playResource.BaseData.AudioType, out var factory)
-				&& factory is IThumbnailFactory thumbFactory)
-				return thumbFactory.GetThumbnail(playResource);
-			return "No matching thumbnail factory found";
+			var factory = GetFactoryByType<IThumbnailFactory>(playResource.BaseData.AudioType);
+			if (factory == null)
+				return "No thumbnail factory found";
+
+			return factory.GetThumbnail(playResource);
 		}
+
+
+		public void AddFactory(IFactory factory)
+		{
+			if (factory.FactoryFor.ToLowerInvariant() != factory.FactoryFor)
+				throw new ArgumentException($"The factory audio type \"{nameof(IFactory.FactoryFor)}\" must be in lower case.", nameof(factory));
+			if (allFacories.ContainsKey(factory.FactoryFor))
+				throw new ArgumentException("A factory for this type already has been registered.", nameof(factory));
+
+			var commands = new List<FactoryCommand>();
+			if (factory is IResourceFactory resFactory)
+			{
+				commands.Add(new PlayCommand(factory.FactoryFor, CmdResPrepath + resFactory.FactoryFor));
+				resFactories.Add(resFactory);
+			}
+			if (factory is IPlaylistFactory listFactory)
+			{
+				commands.Add(new PlayListCommand(listFactory, CmdListPrepath + listFactory.FactoryFor));
+				listFactories.Add(listFactory);
+			}
+
+			var factoryInfo = new FactoryData(factory, commands.ToArray());
+			allFacories.Add(factory.FactoryFor, factoryInfo);
+			mainBot.CommandManager.RegisterCollection(factoryInfo);
+			mainBot.RightsManager.RegisterRights(factoryInfo.ExposedRights);
+		}
+
+		public void RemoveFactory(IFactory factory)
+		{
+			if (!allFacories.TryGetValue(factory.FactoryFor, out var factoryInfo))
+				return;
+
+			allFacories.Remove(factory.FactoryFor);
+
+			if (factory is IResourceFactory resFactory)
+				resFactories.Remove(resFactory);
+			if (factory is IPlaylistFactory listFactory)
+				listFactories.Remove(listFactory);
+
+			mainBot.CommandManager.UnregisterCollection(factoryInfo);
+			mainBot.RightsManager.UnregisterRights(factoryInfo.ExposedRights);
+		}
+
 
 		public void Dispose()
 		{
-			foreach (var fac in allFacories.Values)
-				fac.Dispose();
+			foreach (var factoryInfo in allFacories.Values)
+				factoryInfo.Factory.Dispose();
 			allFacories.Clear();
 		}
 
-		private sealed class PlayCommand
-		{
-			public BotCommand Command { get; }
-			private readonly AudioType audioType;
-			private static readonly MethodInfo PlayMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
 
-			public PlayCommand(AudioType audioType, string cmdPath)
+		private sealed class FactoryData : ICommandBag
+		{
+			private readonly FactoryCommand[] registeredCommands;
+
+			public FactoryData(IFactory factory, FactoryCommand[] commands)
+			{
+				Factory = factory;
+				registeredCommands = commands;
+			}
+
+			public IFactory Factory { get; }
+			public IEnumerable<BotCommand> ExposedCommands => registeredCommands.Select(x => x.Command);
+			public IEnumerable<string> ExposedRights => ExposedCommands.Select(x => x.RequiredRight);
+		}
+
+		private abstract class FactoryCommand
+		{
+			public BotCommand Command { get; protected set; }
+		}
+
+		private sealed class PlayCommand : FactoryCommand
+		{
+			private static readonly MethodInfo PlayMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
+			private readonly string audioType;
+
+			public PlayCommand(string audioType, string cmdPath)
 			{
 				this.audioType = audioType;
 				var builder = new CommandBuildInfo(
@@ -194,15 +251,14 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private sealed class PlayListCommand
+		private sealed class PlayListCommand : FactoryCommand
 		{
-			public BotCommand Command { get; }
-			private readonly AudioType audioType;
 			private static readonly MethodInfo PlayMethod = typeof(PlayListCommand).GetMethod(nameof(PropagiateLoad));
+			private readonly IPlaylistFactory factory;
 
-			public PlayListCommand(AudioType audioType, string cmdPath)
+			public PlayListCommand(IPlaylistFactory factory, string cmdPath)
 			{
-				this.audioType = audioType;
+				this.factory = factory;
 				var builder = new CommandBuildInfo(
 					this,
 					PlayMethod,
@@ -213,7 +269,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			public string PropagiateLoad(ExecutionInformation info, string parameter)
 			{
-				var result = info.Session.Bot.FactoryManager.LoadPlaylistFrom(parameter, audioType);
+				var result = info.Session.Bot.FactoryManager.LoadPlaylistFrom(parameter, factory);
 
 				if (!result)
 					return result;

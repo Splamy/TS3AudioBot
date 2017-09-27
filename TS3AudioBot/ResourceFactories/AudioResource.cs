@@ -7,6 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+
 namespace TS3AudioBot.ResourceFactories
 {
 	public sealed class PlayResource
@@ -26,28 +28,21 @@ namespace TS3AudioBot.ResourceFactories
 	public class AudioResource
 	{
 		/// <summary>The resource type.</summary>
-		public AudioType AudioType { get; set; }
-		/// <summary>An identifier to create the song. This id is uniqe among same <see cref="ResourceFactories.AudioType"/> resources.</summary>
+		public string AudioType { get; set; }
+		/// <summary>An identifier to create the song. This id is uniqe among all resources with the same resource type string of a factory.</summary>
 		public string ResourceId { get; set; }
 		/// <summary>The display title.</summary>
 		public string ResourceTitle { get; set; }
-		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and <see cref="ResourceFactories.AudioType"/>.</summary>
-		public string UniqueId => ResourceId + AudioType.ToString();
+		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and resource type string of a factory.</summary>
+		public string UniqueId => ResourceId + AudioType;
 
 		public AudioResource() { }
 
-		public AudioResource(string resourceId, string resourceTitle, AudioType type)
+		public AudioResource(string resourceId, string resourceTitle, string audioType)
 		{
 			ResourceId = resourceId;
 			ResourceTitle = resourceTitle;
-			AudioType = type;
-		}
-
-		public AudioResource(AudioResource copyResource)
-		{
-			ResourceId = copyResource.ResourceId;
-			ResourceTitle = copyResource.ResourceTitle;
-			AudioType = copyResource.AudioType;
+			AudioType = audioType;
 		}
 
 		public AudioResource WithName(string newName) => new AudioResource(ResourceId, newName, AudioType);
@@ -63,7 +58,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public override int GetHashCode()
 		{
-			int hash = 0x7FFFF + (int)AudioType;
+			int hash = 0x7FFFF + AudioType.GetHashCode();
 			hash = (hash * 0x1FFFF) + ResourceId.GetHashCode();
 			return hash;
 		}

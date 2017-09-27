@@ -17,16 +17,15 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory
 	{
-		string IResourceFactory.SubCommandName => "link";
-		string IPlaylistFactory.SubCommandName => "folder";
-		public AudioType FactoryFor => AudioType.MediaLink;
+		public string FactoryFor => "media";
 
-		bool IResourceFactory.MatchLink(string uri) => true;
-		bool IPlaylistFactory.MatchLink(string uri) => Directory.Exists(uri);
+		public MatchCertainty MatchResource(string uri) => MatchCertainty.OnlyIfLast;
+
+		public MatchCertainty MatchPlaylist(string uri) => Directory.Exists(uri) ? MatchCertainty.Probably : MatchCertainty.Never;
 
 		public R<PlayResource> GetResource(string uri)
 		{
-			return GetResourceById(new AudioResource(uri, null, AudioType.MediaLink));
+			return GetResourceById(new AudioResource(uri, null, FactoryFor));
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource)
@@ -136,7 +135,7 @@ namespace TS3AudioBot.ResourceFactories
 								select ValidateFile(file.FullName) into result
 								where result.Ok
 								select result.Value into val
-								select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, AudioType.MediaLink) into res
+								select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, FactoryFor) into res
 								select new PlaylistItem(res);
 				plist.AddRange(resources);
 
@@ -148,10 +147,11 @@ namespace TS3AudioBot.ResourceFactories
 		}
 	}
 
-	class ResData
+	internal class ResData
 	{
-		public string FullUri { get; set; }
-		public string Title { get; set; }
+		public string FullUri { get; }
+		public string Title { get; }
+
 		public ResData(string fullUri, string title)
 		{
 			FullUri = fullUri;

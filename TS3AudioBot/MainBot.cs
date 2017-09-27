@@ -201,13 +201,11 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			YoutubeDlHelper.DataObj = yfd;
-			FactoryManager = new ResourceFactoryManager();
-			var mediaFactory = new MediaFactory();
-			FactoryManager.AddFactory(mediaFactory, CommandManager);
-			FactoryManager.AddFactory(new YoutubeFactory(yfd), CommandManager);
-			FactoryManager.AddFactory(new SoundcloudFactory(), CommandManager);
-			FactoryManager.AddFactory(new TwitchFactory(), CommandManager);
-			FactoryManager.DefaultFactorty = mediaFactory;
+			FactoryManager = new ResourceFactoryManager(this);
+			FactoryManager.AddFactory(new MediaFactory());
+			FactoryManager.AddFactory(new YoutubeFactory(yfd));
+			FactoryManager.AddFactory(new SoundcloudFactory());
+			FactoryManager.AddFactory(new TwitchFactory());
 
 			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
@@ -227,10 +225,13 @@ namespace TS3AudioBot
 			QueryConnection.OnClientDisconnect += OnClientDisconnect;
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
+			PluginManager.RestorePlugins();
+
 			RightsManager.RegisterRights(CommandManager.AllRights);
 			RightsManager.RegisterRights(RightHighVolume, RightDeleteAllPlaylists);
 			if (!RightsManager.ReadFile())
 				return false;
+
 			WebManager.StartServerAsync();
 
 			Log.Write(Log.Level.Info, "[==================== Done ====================]");
@@ -543,16 +544,16 @@ namespace TS3AudioBot
 
 			switch (target)
 			{
-				case BotCommand targetB:
-					return new JsonSingleValue<string>(targetB.GetHelp());
-				case CommandGroup targetCg:
-					var subList = targetCg.Commands.Select(g => g.Key).ToArray();
-					return new JsonArray<string>("The command contains the following subfunctions: " + string.Join(", ", subList), subList);
-				case OverloadedFunctionCommand targetOfc:
-					var strb = new StringBuilder();
-					foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
-						strb.Append(botCom.GetHelp());
-					return new JsonSingleValue<string>(strb.ToString());
+			case BotCommand targetB:
+				return new JsonSingleValue<string>(targetB.GetHelp());
+			case CommandGroup targetCg:
+				var subList = targetCg.Commands.Select(g => g.Key).ToArray();
+				return new JsonArray<string>("The command contains the following subfunctions: " + string.Join(", ", subList), subList);
+			case OverloadedFunctionCommand targetOfc:
+				var strb = new StringBuilder();
+				foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
+					strb.Append(botCom.GetHelp());
+				return new JsonSingleValue<string>(strb.ToString());
 			}
 
 			throw new CommandException("Seems like something went wrong. No help can be shown for this command path.", CommandExceptionReason.CommandError);

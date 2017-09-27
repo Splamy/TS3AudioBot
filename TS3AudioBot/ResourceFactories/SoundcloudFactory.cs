@@ -19,23 +19,21 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
-		public string SubCommandName => "soundcloud";
-		public AudioType FactoryFor => AudioType.Soundcloud;
-		private readonly string soundcloudClientId;
+		private static readonly Regex SoundcloudLink = new Regex(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
+		private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
 
-		public SoundcloudFactory()
-		{
-			soundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
-		}
+		public string FactoryFor => "soundcloud";
 
-		public bool MatchLink(string link) => Regex.IsMatch(link, @"^https?\:\/\/(www\.)?soundcloud\.");
+		public MatchCertainty MatchResource(string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
+
+		public MatchCertainty MatchPlaylist(string uri) => MatchResource(uri);
 
 		public R<PlayResource> GetResource(string link)
 		{
-			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={soundcloudClientId}");
+			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 			{
-				if (!MatchLink(link))
+				if (!SoundcloudLink.IsMatch(link))
 					return "Not a valid soundcloud link. Please pass the full link";
 				return YoutubeDlWrapped(link);
 			}
@@ -47,9 +45,10 @@ namespace TS3AudioBot.ResourceFactories
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource) => GetResourceById(resource, true);
+
 		private R<PlayResource> GetResourceById(AudioResource resource, bool allowNullName)
 		{
-			if (MatchLink(resource.ResourceId))
+			if (SoundcloudLink.IsMatch(resource.ResourceId))
 				return GetResource(resource.ResourceId);
 
 			if (resource.ResourceTitle == null)
@@ -60,16 +59,16 @@ namespace TS3AudioBot.ResourceFactories
 				return GetResource(link);
 			}
 
-			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={soundcloudClientId}";
+			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientId}";
 			return new PlayResource(finalRequest, resource);
 		}
 
 		public string RestoreLink(string id)
 		{
-			if (MatchLink(id))
+			if (SoundcloudLink.IsMatch(id))
 				return id;
 
-			var uri = new Uri($"https://api.soundcloud.com/tracks/{id}?client_id={soundcloudClientId}");
+			var uri = new Uri($"https://api.soundcloud.com/tracks/{id}?client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return null;
 			var parsedDict = ParseJson(jsonResponse);
@@ -79,15 +78,15 @@ namespace TS3AudioBot.ResourceFactories
 		private static Dictionary<string, object> ParseJson(string jsonResponse)
 			=> (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
 
-		private static AudioResource ParseDictToResource(Dictionary<string, object> dict)
+		private AudioResource ParseDictToResource(Dictionary<string, object> dict)
 		{
 			if (dict == null) return null;
 			if (!(dict["id"] is int id)) return null;
 			if (!(dict["title"] is string title)) return null;
-			return new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, AudioType.Soundcloud);
+			return new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, FactoryFor);
 		}
 
-		private static R<PlayResource> YoutubeDlWrapped(string link)
+		private R<PlayResource> YoutubeDlWrapped(string link)
 		{
 			Log.Write(Log.Level.Debug, "SC Ruined!");
 
@@ -103,12 +102,12 @@ namespace TS3AudioBot.ResourceFactories
 
 			Log.Write(Log.Level.Debug, "SC Saved!");
 
-			return new PlayResource(url, new AudioResource(link, title, AudioType.Soundcloud));
+			return new PlayResource(url, new AudioResource(link, title, FactoryFor));
 		}
 
 		public R<Playlist> GetPlaylist(string url)
 		{
-			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={soundcloudClientId}");
+			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return RResultCode.ScInvalidLink.ToString();
 
@@ -136,7 +135,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Image> GetThumbnail(PlayResource playResource)
 		{
-			var uri = new Uri($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={soundcloudClientId}");
+			var uri = new Uri($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return "Error or no response by soundcould";
 

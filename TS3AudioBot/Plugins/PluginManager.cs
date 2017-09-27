@@ -109,6 +109,16 @@ namespace TS3AudioBot.Plugins
 				RemovePlugin(misFile.Value);
 		}
 
+		public void RestorePlugins()
+		{
+			CheckAndClearPlugins();
+
+			foreach (var plugin in plugins.Values)
+			{
+				if (plugin.PersistentEnabled)
+					StartPlugin(plugin);
+			}
+		}
 
 		public static bool IgnoreFile(FileInfo file) =>
 			(file.Extension != ".cs" && file.Extension != ".dll" && file.Extension != ".exe")
@@ -141,10 +151,13 @@ namespace TS3AudioBot.Plugins
 			return StartPlugin(TryGetPlugin(identifier));
 		}
 
-		private static PluginResponse StartPlugin(Plugin plugin)
+		private PluginResponse StartPlugin(Plugin plugin)
 		{
 			if (plugin == null)
 				return PluginResponse.PluginNotFound;
+
+			if (pluginManagerData.WriteStatusFiles)
+				plugin.PersistentEnabled = true;
 
 			switch (plugin.Status)
 			{
@@ -184,10 +197,13 @@ namespace TS3AudioBot.Plugins
 
 		public PluginResponse StopPlugin(string identifier) => StopPlugin(TryGetPlugin(identifier));
 
-		private static PluginResponse StopPlugin(Plugin plugin)
+		private PluginResponse StopPlugin(Plugin plugin)
 		{
 			if (plugin == null)
 				return PluginResponse.PluginNotFound;
+
+			if (pluginManagerData.WriteStatusFiles)
+				plugin.PersistentEnabled = false;
 
 			plugin.Stop();
 
@@ -263,5 +279,8 @@ namespace TS3AudioBot.Plugins
 	{
 		[Info("The absolute or relative path to the plugins folder", "Plugins")]
 		public string PluginPath { get; set; }
+
+		[Info("Write to .status files to store a plugin enable status persistently and restart them on launch.", "false")]
+		public bool WriteStatusFiles { get; set; }
 	}
 }

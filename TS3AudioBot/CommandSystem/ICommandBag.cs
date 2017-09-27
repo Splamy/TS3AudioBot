@@ -7,12 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.CommandSystem
 {
-	using System;
+	using System.Collections.Generic;
 
-	public interface IFactory : IDisposable
+	internal interface ICommandBag
 	{
-		string FactoryFor { get; }
+		IEnumerable<BotCommand> ExposedCommands { get; }
+		IEnumerable<string> ExposedRights { get; }
 	}
 }

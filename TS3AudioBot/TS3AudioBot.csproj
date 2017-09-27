@@ -87,6 +87,7 @@
     <Compile Include="CommandSystem\CommandManager.cs" />
     <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
+    <Compile Include="CommandSystem\ICommandBag.cs" />
     <Compile Include="Helper\Cache.cs" />
     <Compile Include="Helper\ImageUtil.cs" />
     <Compile Include="Helper\NativeWinDllLoader.cs" />
@@ -94,9 +95,9 @@
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginResponse.cs" />
     <Compile Include="Plugins\PluginStatus.cs" />
-    <Compile Include="ResourceFactories\AudioType.cs" />
     <Compile Include="ResourceFactories\IFactory.cs" />
     <Compile Include="ResourceFactories\IThumbnailFactory.cs" />
+    <Compile Include="ResourceFactories\MatchCertainty.cs" />
     <Compile Include="ResourceFactories\YoutubeDlHelper.cs" />
     <Compile Include="Rights\RightsDecl.cs" />
     <Compile Include="Rights\RightsGroup.cs" />

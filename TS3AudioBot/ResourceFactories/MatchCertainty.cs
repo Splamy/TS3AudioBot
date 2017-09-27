@@ -9,11 +9,17 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public enum AudioType
+	public enum MatchCertainty
 	{
-		MediaLink,
-		Youtube,
-		Soundcloud,
-		Twitch,
+		Never = 0,
+		OnlyIfLast,
+		Maybe,
+		Probably,
+		Always,
+	}
+
+	public static class MatchCertaintyExtensions
+	{
+		public static MatchCertainty ToMatchCertainty(this bool val) => val ? MatchCertainty.Always : MatchCertainty.Never;
 	}
 }

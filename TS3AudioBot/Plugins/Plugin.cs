@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Plugins
 {
 	using CommandSystem;
+	using Helper;
 	using ResourceFactories;
 	using System;
 	using System.CodeDom.Compiler;
@@ -19,14 +20,16 @@ namespace TS3AudioBot.Plugins
 	using System.Reflection;
 	using System.Security.Cryptography;
 
-	internal class Plugin
+	internal class Plugin : ICommandBag
 	{
 		private readonly MainBot mainBot;
 
 		private Assembly assembly;
 		private byte[] md5CacheSum;
 		private ITabPlugin pluginObject;
-		private Type pluginType;
+		private IFactory factoryObject;
+		private Type coreType;
+		private PluginType corePluginType;
 
 		public Plugin(FileInfo pluginFile, MainBot parent, int id)
 		{
@@ -34,16 +37,50 @@ namespace TS3AudioBot.Plugins
 			PluginFile = pluginFile;
 			Id = id;
 			Status = PluginStatus.Off;
+			corePluginType = PluginType.None;
 		}
 
 		public int Id { get; }
 		public FileInfo PluginFile { get; }
 		public PluginStatus Status { get; private set; }
 
-		public string Name => pluginType?.Name;
+		public string Name
+		{
+			get
+			{
+				switch (corePluginType)
+				{
+				case PluginType.Factory:
+					return "Factory: " + (factoryObject?.FactoryFor ?? coreType?.Name ?? "<unknown>");
+				case PluginType.Plugin:
+					return "Plugin: " + (coreType?.Name ?? "<unknown>");
+				case PluginType.None:
+					return "Unknown";
+				default:
+					throw Util.UnhandledDefault(corePluginType);
+				}
+			}
+		}
 
-		public IReadOnlyCollection<BotCommand> ExposedCommands { get; private set; }
-		private string[] ExposedRights => ExposedCommands.Select(x => x.RequiredRight).ToArray();
+		public bool PersistentEnabled
+		{
+			get
+			{
+				if (!File.Exists(PluginFile.FullName + ".status"))
+					return false;
+				return File.ReadAllText(PluginFile.FullName + ".status") != "0";
+			}
+			set
+			{
+				if (!File.Exists(PluginFile.FullName + ".status"))
+					return;
+				File.WriteAllText(PluginFile.FullName + ".status", value ? "1" : "0");
+			}
+		}
+
+		public IEnumerable<BotCommand> ExposedCommands { get; private set; }
+		public IEnumerable<string> ExposedRights => ExposedCommands.Select(x => x.RequiredRight);
+
 
 		public PluginResponse Load()
 		{
@@ -167,30 +204,36 @@ namespace TS3AudioBot.Plugins
 				this.assembly = assembly;
 				var allTypes = assembly.GetExportedTypes();
 				var pluginTypes = allTypes.Where(t => typeof(ITabPlugin).IsAssignableFrom(t)).ToArray();
+				var factoryTypes = allTypes.Where(t => typeof(IFactory).IsAssignableFrom(t)).ToArray();
 
-				if (pluginTypes.Length > 1)
+				if (pluginTypes.Length + factoryTypes.Length > 1)
 				{
-					Log.Write(Log.Level.Warning, "Any source or binary plugin file may contain one plugin at most.");
+					Log.Write(Log.Level.Warning, "Any source or binary plugin file may contain one plugin or factory at most.");
 					return PluginResponse.TooManyPlugins;
 				}
+				if (pluginTypes.Length + factoryTypes.Length == 0)
+				{
+					Log.Write(Log.Level.Warning, "Any source or binary plugin file must contain at least one plugin or factory.");
+					return PluginResponse.NoTypeMatch;
+				}
 
-				bool loadedAnything = false;
 				if (pluginTypes.Length == 1)
 				{
-					pluginType = pluginTypes[0];
-					loadedAnything = true;
+					coreType = pluginTypes[0];
+					corePluginType = PluginType.Plugin;
 				}
-
-				var factoryTypes = allTypes.Where(t => typeof(IFactory).IsAssignableFrom(t)).ToArray();
-				if (factoryTypes.Length > 0)
+				else if (factoryTypes.Length == 1)
 				{
-					// TODO
-					loadedAnything = true;
+					coreType = factoryTypes[0];
+					corePluginType = PluginType.Factory;
+				}
+				else
+				{
+					corePluginType = PluginType.None;
+					throw new InvalidOperationException();
 				}
 
-				return loadedAnything
-					? PluginResponse.Ok
-					: PluginResponse.NoTypeMatch;
+				return PluginResponse.Ok;
 			}
 			catch (TypeLoadException tlex)
 			{
@@ -215,24 +258,34 @@ namespace TS3AudioBot.Plugins
 			if (Status != PluginStatus.Ready)
 				throw new InvalidOperationException("This plugin has not yet been prepared");
 
-			// Todo register rights
-
 			try
 			{
-				pluginObject = (ITabPlugin)Activator.CreateInstance(pluginType);
+				switch (corePluginType)
+				{
+				case PluginType.None:
+					break;
 
-				var comBuilds = CommandManager.GetCommandMethods(pluginObject);
-				ExposedCommands = CommandManager.GetBotCommands(comBuilds).ToList();
+				case PluginType.Plugin:
+					pluginObject = (ITabPlugin)Activator.CreateInstance(coreType);
+					var comBuilds = CommandManager.GetCommandMethods(pluginObject);
+					ExposedCommands = CommandManager.GetBotCommands(comBuilds).ToList();
+					mainBot.RightsManager.RegisterRights(ExposedRights);
+					mainBot.CommandManager.RegisterCollection(this);
+					pluginObject.Initialize(mainBot);
+					break;
 
-				mainBot.CommandManager.RegisterPlugin(this);
+				case PluginType.Factory:
+					factoryObject = (IFactory)Activator.CreateInstance(coreType);
+					mainBot.FactoryManager.AddFactory(factoryObject);
+					break;
 
-				mainBot.RightsManager.RegisterRights(ExposedRights);
-
-				pluginObject.Initialize(mainBot);
+				default:
+					throw Util.UnhandledDefault(corePluginType);
+				}
 			}
 			catch (MissingMethodException mmex)
 			{
-				Log.Write(Log.Level.Error, "The plugin needs a parameterless constructor ({0}).", mmex.Message);
+				Log.Write(Log.Level.Error, "Plugins and Factories needs a parameterless constructor ({0}).", mmex.Message);
 				Status = PluginStatus.Error;
 				return;
 			}
@@ -246,19 +299,28 @@ namespace TS3AudioBot.Plugins
 		/// </summary>
 		public void Stop()
 		{
-			// todo unload everything
-
 			if (Status != PluginStatus.Active)
 				return;
 
-			mainBot.CommandManager.UnregisterPlugin(this);
-
-			mainBot.RightsManager.UnregisterRights(ExposedRights);
-
-			if (pluginObject != null)
+			switch (corePluginType)
 			{
+			case PluginType.None:
+				break;
+
+			case PluginType.Plugin:
+				mainBot.CommandManager.UnregisterCollection(this);
+				mainBot.RightsManager.UnregisterRights(ExposedRights);
+				ExposedCommands = null;
 				pluginObject.Dispose();
 				pluginObject = null;
+				break;
+
+			case PluginType.Factory:
+				mainBot.FactoryManager.RemoveFactory(factoryObject);
+				break;
+
+			default:
+				throw Util.UnhandledDefault(corePluginType);
 			}
 
 			Status = PluginStatus.Ready;
@@ -269,10 +331,19 @@ namespace TS3AudioBot.Plugins
 			Stop();
 
 			assembly = null;
-			pluginType = null;
+			coreType = null;
 
 			if (Status == PluginStatus.Ready)
 				Status = PluginStatus.Off;
+		}
+
+		public override string ToString() => Name;
+
+		private enum PluginType
+		{
+			None,
+			Plugin,
+			Factory,
 		}
 	}
 }

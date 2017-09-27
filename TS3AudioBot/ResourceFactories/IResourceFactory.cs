@@ -13,11 +13,10 @@ namespace TS3AudioBot.ResourceFactories
 
 	public interface IResourceFactory : IFactory
 	{
-		string SubCommandName { get; }
 		/// <summary>Check method to ask if a factory can load the given link.</summary>
 		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
 		/// <returns>True if the factory thinks it can parse it, false otherwise.</returns>
-		bool MatchLink(string uri);
+		MatchCertainty MatchResource(string uri);
 		/// <summary>The factory will try to parse the uri and create a playable resource from it.</summary>
 		/// <param name="url">Any link or something similar a user can obtain to pass it here.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise</returns>

@@ -55,9 +55,9 @@ namespace TS3ABotUnitTests
 			var inv1 = new ClientData { ClientId = 10, DatabaseId = 101, NickName = "Invoker1" };
 			var inv2 = new ClientData { ClientId = 20, DatabaseId = 102, NickName = "Invoker2" };
 
-			var ar1 = new AudioResource("asdf", "sc_ar1", AudioType.Soundcloud);
-			var ar2 = new AudioResource("./File.mp3", "me_ar2", AudioType.MediaLink);
-			var ar3 = new AudioResource("kitty", "tw_ar3", AudioType.Twitch);
+			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
+			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
+			var ar3 = new AudioResource("kitty", "tw_ar3", "twitch");
 
 			var data1 = new HistorySaveData(ar1, inv1.DatabaseId);
 			var data2 = new HistorySaveData(ar2, inv2.DatabaseId);
@@ -382,10 +382,10 @@ namespace TS3ABotUnitTests
 			using (IResourceFactory rfac = new YoutubeFactory(new YoutubeFactoryData()))
 			{
 				// matching links
-				Assert.True(rfac.MatchLink(@"https://www.youtube.com/watch?v=robqdGEhQWo"));
-				Assert.True(rfac.MatchLink(@"https://youtu.be/robqdGEhQWo"));
-				Assert.False(rfac.MatchLink(@"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"));
-				Assert.False(rfac.MatchLink(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"));
+				Assert.True(rfac.MatchResource(@"https://www.youtube.com/watch?v=robqdGEhQWo") == MatchCertainty.Always);
+				Assert.True(rfac.MatchResource(@"https://youtu.be/robqdGEhQWo") == MatchCertainty.Always);
+				Assert.False(rfac.MatchResource(@"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3") == MatchCertainty.Never);
+				Assert.False(rfac.MatchResource(@"http://splamy.de/youtube.com/youtu.be/fake.mp3") != MatchCertainty.Always);
 
 				// restoring links
 				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink("robqdGEhQWo"));

@@ -16,7 +16,7 @@ namespace TS3AudioBot.History.Deprecated
 
 	public class AudioLogEntry
 	{
-		/// <summary>A unique id for each <see cref="AudioRessource"/>, given by the history system.</summary>
+		/// <summary>A unique id for each <see cref="ResourceFactories.AudioResource"/>, given by the history system.</summary>
 		public uint Id { get; }
 		/// <summary>The dbid of the teamspeak user, who played this song first.</summary>
 		public uint UserInvokeId { get; set; }
@@ -36,8 +36,8 @@ namespace TS3AudioBot.History.Deprecated
 			AudioResource = resource;
 		}
 
-		public AudioLogEntry(uint id, string resourceId, string resourceTitle, AudioType type)
-			: this(id, new AudioResource(resourceId, resourceTitle, type)) { }
+		public AudioLogEntry(uint id, string resourceId, string resourceTitle, string audioType)
+			: this(id, new AudioResource(resourceId, resourceTitle, audioType)) { }
 
 		public void SetName(string newName)
 		{
@@ -79,8 +79,7 @@ namespace TS3AudioBot.History.Deprecated
 			uint playCount = uint.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 			long dtStamp = long.Parse(strParts[index++], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 			var dateTime = DateTime.FromFileTime(dtStamp);
-			if (!Enum.TryParse(strParts[index++], out AudioType audioType))
-				return null;
+			string audioType = strParts[index++];
 			string resId = Uri.UnescapeDataString(strParts[index++]);
 			string title = Uri.UnescapeDataString(strParts[index++]);
 			return new AudioLogEntry(id, resId, title, audioType)

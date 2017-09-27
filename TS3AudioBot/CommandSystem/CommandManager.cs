@@ -25,7 +25,7 @@ namespace TS3AudioBot.CommandSystem
 		private readonly List<BotCommand> baseCommands;
 		private readonly HashSet<string> commandPaths;
 		private readonly List<BotCommand> dynamicCommands;
-		private readonly Dictionary<Plugin, IReadOnlyList<BotCommand>> pluginCommands;
+		private readonly Dictionary<ICommandBag, IReadOnlyList<BotCommand>> pluginCommands;
 
 		public CommandManager()
 		{
@@ -73,16 +73,16 @@ namespace TS3AudioBot.CommandSystem
 			dynamicCommands.Add(command);
 		}
 
-		internal void RegisterPlugin(Plugin plugin)
+		internal void RegisterCollection(ICommandBag bag)
 		{
-			if (pluginCommands.ContainsKey(plugin))
-				throw new InvalidOperationException("Plugin is already laoded.");
+			if (pluginCommands.ContainsKey(bag))
+				throw new InvalidOperationException("This bag is already laoded.");
 
-			var comList = plugin.ExposedCommands.ToList();
+			var comList = bag.ExposedCommands.ToList();
 
 			CheckDistinct(comList);
 
-			pluginCommands.Add(plugin, comList.AsReadOnly());
+			pluginCommands.Add(bag, comList.AsReadOnly());
 
 			int loaded = 0;
 			try
@@ -98,11 +98,11 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		internal void UnregisterPlugin(Plugin plugin)
+		internal void UnregisterCollection(ICommandBag bag)
 		{
-			if (pluginCommands.TryGetValue(plugin, out var commands))
+			if (pluginCommands.TryGetValue(bag, out var commands))
 			{
-				pluginCommands.Remove(plugin);
+				pluginCommands.Remove(bag);
 				foreach (var com in commands)
 				{
 					UnloadCommand(com);
@@ -122,7 +122,7 @@ namespace TS3AudioBot.CommandSystem
 		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj)
 		{
 			var objType = obj.GetType();
-			foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+			foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
 			{
 				var comAtt = method.GetCustomAttribute<CommandAttribute>();
 				if (comAtt == null) continue;

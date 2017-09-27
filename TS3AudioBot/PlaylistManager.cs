@@ -217,8 +217,7 @@ namespace TS3AudioBot
 						meta.ResourceOwnerDbId = userid;
 					else
 						Log.Write(Log.Level.Warning, "Erroneus playlist meta data: {0}", line);
-
-					AudioType audioType;
+					
 					switch (kind)
 					{
 					case "ln":
@@ -226,8 +225,8 @@ namespace TS3AudioBot
 						if (lnSplit.Length < 2)
 							goto default;
 #pragma warning disable CS0612
-						if (!string.IsNullOrWhiteSpace(lnSplit[0]) && Enum.TryParse(lnSplit[0], out audioType))
-							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), audioType, meta));
+						if (!string.IsNullOrWhiteSpace(lnSplit[0]))
+							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), lnSplit[0], meta));
 						else
 							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), null, meta));
 #pragma warning restore CS0612
@@ -237,8 +236,8 @@ namespace TS3AudioBot
 						var rsSplit = content.Split(new[] { ',' }, 3);
 						if (rsSplit.Length < 3)
 							goto default;
-						if (!string.IsNullOrWhiteSpace(rsSplit[0]) && Enum.TryParse(rsSplit[0], out audioType))
-							plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), audioType), meta));
+						if (!string.IsNullOrWhiteSpace(rsSplit[0]))
+							plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0]), meta));
 						else
 							goto default;
 						break;
@@ -309,8 +308,8 @@ namespace TS3AudioBot
 						if (pli.Meta.ResourceOwnerDbId.HasValue)
 							sw.Write(pli.Meta.ResourceOwnerDbId.Value);
 						sw.Write(":");
-						if (pli.AudioType.HasValue)
-							sw.Write(pli.AudioType.Value);
+						if (pli.AudioType != null)
+							sw.Write(pli.AudioType);
 						sw.Write(",");
 						sw.Write(Uri.EscapeDataString(pli.Link));
 					}
@@ -427,7 +426,7 @@ namespace TS3AudioBot
 		public uint? HistoryId { get; }
 		// > can be a link to be resolved normally (+ optional audio type)
 		public string Link { get; }
-		public AudioType? AudioType { get; }
+		public string AudioType { get; }
 
 		public string DisplayString
 		{
@@ -438,7 +437,7 @@ namespace TS3AudioBot
 				else if (HistoryId.HasValue)
 					return $"HistoryID: {HistoryId.Value}";
 				else if (!string.IsNullOrWhiteSpace(Link))
-					return (AudioType.HasValue ? AudioType.Value + ": " : string.Empty) + Link;
+					return (AudioType != null ? AudioType + ": " : string.Empty) + Link;
 				else
 					return "<Invalid entry>";
 			}
@@ -448,7 +447,7 @@ namespace TS3AudioBot
 		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { Resource = resource; }
 		public PlaylistItem(uint hId, MetaData meta = null) : this(meta) { HistoryId = hId; }
 		[Obsolete]
-		public PlaylistItem(string message, AudioType? type, MetaData meta = null) : this(meta) { Link = message; AudioType = type; }
+		public PlaylistItem(string message, string audioType, MetaData meta = null) : this(meta) { Link = message; AudioType = audioType; }
 	}
 
 	public class Playlist
