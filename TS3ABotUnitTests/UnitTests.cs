@@ -382,10 +382,10 @@ namespace TS3ABotUnitTests
 			using (IResourceFactory rfac = new YoutubeFactory(new YoutubeFactoryData()))
 			{
 				// matching links
-				Assert.True(rfac.MatchResource(@"https://www.youtube.com/watch?v=robqdGEhQWo") == MatchCertainty.Always);
-				Assert.True(rfac.MatchResource(@"https://youtu.be/robqdGEhQWo") == MatchCertainty.Always);
-				Assert.False(rfac.MatchResource(@"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3") == MatchCertainty.Never);
-				Assert.False(rfac.MatchResource(@"http://splamy.de/youtube.com/youtu.be/fake.mp3") != MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(@"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(@"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(@"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
+				Assert.AreNotEqual(rfac.MatchResource(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
 
 				// restoring links
 				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink("robqdGEhQWo"));

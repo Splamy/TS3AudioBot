@@ -247,7 +247,7 @@ namespace TS3AudioBot.Plugins
 				case PluginStatus.Active: strb.Append("+ON"); break;
 				case PluginStatus.Disabled: strb.Append("UNL"); break;
 				case PluginStatus.Error: strb.Append("ERR"); break;
-				default: throw new InvalidProgramException();
+				default: throw Util.UnhandledDefault(plugin.Status);
 				}
 				strb.Append('|').AppendLine(plugin.Name ?? "<not loaded>");
 			}
