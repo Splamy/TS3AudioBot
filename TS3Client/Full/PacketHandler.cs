@@ -218,11 +218,13 @@ namespace TS3Client.Full
 				}
 
 #if DIAGNOSTICS && DIAG_RAWPKG
-				Console.WriteLine($"[OT] {packet}");
+				if (packet.PacketType != PacketType.Ping && packet.PacketType != PacketType.Pong)
+					Console.WriteLine($"[OT] {packet}");
 #endif
 
 				ts3Crypt.Encrypt(packet);
 
+				packet.FirstSendTime = Util.Now;
 				SendRaw(packet);
 			}
 		}
@@ -309,7 +311,8 @@ namespace TS3Client.Full
 				NetworkStats.LogInPacket(packet);
 
 #if DIAGNOSTICS && DIAG_RAWPKG
-				Console.WriteLine($"[IN] {packet}");
+				if (packet.PacketType != PacketType.Ping && packet.PacketType != PacketType.Pong)
+					Console.WriteLine($"[IN] {packet}");
 #endif
 
 				switch (packet.PacketType)
@@ -590,7 +593,7 @@ namespace TS3Client.Full
 
 		private void SendRaw(OutgoingPacket packet)
 		{
-			packet.FirstSendTime = packet.LastSendTime = Util.Now;
+			packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}

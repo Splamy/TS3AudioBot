@@ -32,6 +32,7 @@ namespace TS3Client
 	[Flags]
 	public enum ClientListOptions
 	{
+		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		uid = 1 << 0,
 		away = 1 << 1,
 		voice = 1 << 2,
@@ -40,6 +41,7 @@ namespace TS3Client
 		info = 1 << 5,
 		icon = 1 << 6,
 		country = 1 << 7,
+		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
 	public enum GroupNamingMode
@@ -99,6 +101,7 @@ namespace TS3Client
 		// TODO: notifychanneldescriptionchanged
 	}
 
+	// ReSharper disable UnusedMember.Global
 	public enum MoveReason
 	{
 		UserAction = 0,
@@ -135,10 +138,12 @@ namespace TS3Client
 		CompleteChannelFamily,
 		Subchannels,
 	}
+	// ReSharper enable UnusedMember.Global
 
 	// Source: http://forum.teamspeak.com/threads/102276-Server-query-error-id-list
 	public enum Ts3ErrorCode : ushort
 	{
+		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		/// <summary>(normal) unknown error code</summary>
 		ok = 0x0000,
 		/// <summary>(normal) undefined error</summary>
@@ -534,6 +539,7 @@ namespace TS3Client
 
 		/// <summary>For own custom errors</summary>
 		custom_error = 0xFFFF,
+		// ReSharper enable InconsistentNaming, UnusedMember.Global
 	}
 
 	// Source: https://www.tsviewer.com/index.php?page=faq&id=12&newlanguage=en

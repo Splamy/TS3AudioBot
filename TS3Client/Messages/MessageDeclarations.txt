@@ -140,6 +140,8 @@ Field: cpid, cpid, ChannelParentId, ChannelIdT
 Field: ctid, ctid, TargetChannelId, ChannelIdT
 Field: current_speed, current_speed, CurrentSpeed, float
 Field: datetime, datetime, DateTime, DateTime
+:: ?? type, name
+Field: es, es, Es, ushort
 Field: ft_status, status, Status, int
 Field: ft_type, type, IsFile, bool
 Field: ftkey, ftkey, FileTransferKey, string
@@ -162,6 +164,7 @@ Field: permid, permid, PermissionId, PermissionId
 Field: permvalue, permvalue, PermissionValue, int
 Field: pid, pid, ParentChannelId, ChannelIdT
 Field: port, port, Port, ushort
+:: ?? type, name
 Field: pv, pv, Pv, uint
 Field: reasonid, reasonid, Reason, MoveReason
 Field: reasonmsg, reasonmsg, ReasonMessage, string
@@ -275,7 +278,7 @@ Msg: ChannelList, channellist, cid, cpid, channel_name, channel_topic, channel_c
 Msg: ChannelListFinished, channellistfinished
 Msg: ChannelMoved, notifychannelmoved, order, cid, invokerid, invokername, invokeruid, reasonid, cpid
 Msg: ChannelPasswordChanged, notifychannelpasswordchanged, cid
-Msg: ChannelSubscribed, notifychannelsubscribed, cid
+Msg: ChannelSubscribed, notifychannelsubscribed, cid, es
 Msg: ChannelUnsubscribed, notifychannelunsubscribed, cid
 Msg: ClientChannelGroupChanged, notifyclientchannelgroupchanged, invokerid, invokername, cgid, cgi, cid, clid
 Msg: ClientChatComposing, notifyclientchatcomposing, clid, cluid

@@ -346,6 +346,7 @@ namespace TS3Client.Messages
 		
 
 		public ChannelIdT ChannelId { get; set; }
+		public ushort Es { get; set; }
 
 		public void SetField(string name, string value)
 		{
@@ -354,6 +355,7 @@ namespace TS3Client.Messages
 			{
 
 			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
+			case "es": Es = CommandDeserializer.DeserializeUInt16(value); break;
 			
 			}
 
@@ -1635,7 +1637,7 @@ namespace TS3Client.Messages
 			case NotificationType.FileInfo: return new FileInfoTs();
 			case NotificationType.FileTransferStatus: return new FileTransferStatus();
 			case NotificationType.Unknown:
-			default: throw new ArgumentOutOfRangeException(nameof(name));
+			default: throw Util.UnhandledDefault(name);
 			}
 		}
 	}
