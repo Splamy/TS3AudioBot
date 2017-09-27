@@ -10,6 +10,7 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using Helper;
+	using Plugins;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -18,52 +19,52 @@ namespace TS3AudioBot.CommandSystem
 
 	public class CommandManager
 	{
-		private readonly HashSet<string> commandPaths;
-		public XCommandSystem CommandSystem { get; }
+		private static readonly Regex CommandNamespaceValidator =
+			new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
-		public IList<BotCommand> BaseCommands { get; private set; }
+		private readonly List<BotCommand> baseCommands;
+		private readonly HashSet<string> commandPaths;
 		private readonly List<BotCommand> dynamicCommands;
-		public IDictionary<Plugin, IList<BotCommand>> PluginCommands { get; }
+		private readonly Dictionary<Plugin, IReadOnlyList<BotCommand>> pluginCommands;
+
+		public CommandManager()
+		{
+			CommandSystem = new XCommandSystem();
+			Util.Init(ref baseCommands);
+			Util.Init(ref commandPaths);
+			Util.Init(ref dynamicCommands);
+			Util.Init(ref pluginCommands);
+		}
+
+		public XCommandSystem CommandSystem { get; }
 
 		public IEnumerable<BotCommand> AllCommands
 		{
 			get
 			{
-				foreach (var com in BaseCommands)
+				foreach (var com in baseCommands)
 					yield return com;
 				foreach (var com in dynamicCommands)
 					yield return com;
-				foreach (var comArr in PluginCommands.Values)
-					foreach (var com in comArr)
-						yield return com;
+				foreach (var comArr in pluginCommands.Values)
+				foreach (var com in comArr)
+					yield return com;
 				// todo alias
 			}
 		}
+
 		public IEnumerable<string> AllRights => AllCommands.Select(x => x.RequiredRight);
-
-		private static readonly Regex CommandNamespaceValidator = new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
-
-		public CommandManager()
-		{
-			CommandSystem = new XCommandSystem();
-			PluginCommands = new Dictionary<Plugin, IList<BotCommand>>();
-			Util.Init(ref dynamicCommands);
-			Util.Init(ref commandPaths);
-		}
 
 		public void RegisterMain(MainBot main)
 		{
-			if (BaseCommands != null)
+			if (baseCommands.Count > 0)
 				throw new InvalidOperationException("Operation can only be executed once.");
 
-			var comList = new List<BotCommand>();
 			foreach (var com in GetBotCommands(GetCommandMethods(main)))
 			{
 				LoadCommand(com);
-				comList.Add(com);
+				baseCommands.Add(com);
 			}
-
-			BaseCommands = comList.AsReadOnly();
 		}
 
 		public void RegisterCommand(BotCommand command)
@@ -72,16 +73,16 @@ namespace TS3AudioBot.CommandSystem
 			dynamicCommands.Add(command);
 		}
 
-		public void RegisterPlugin(Plugin plugin)
+		internal void RegisterPlugin(Plugin plugin)
 		{
-			if (PluginCommands.ContainsKey(plugin))
+			if (pluginCommands.ContainsKey(plugin))
 				throw new InvalidOperationException("Plugin is already laoded.");
 
-			var comList = plugin.GetWrappedCommands().ToList();
+			var comList = plugin.ExposedCommands.ToList();
 
 			CheckDistinct(comList);
 
-			PluginCommands.Add(plugin, comList.AsReadOnly());
+			pluginCommands.Add(plugin, comList.AsReadOnly());
 
 			int loaded = 0;
 			try
@@ -97,10 +98,11 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public void UnregisterPlugin(Plugin plugin)
+		internal void UnregisterPlugin(Plugin plugin)
 		{
-			if (PluginCommands.TryGetValue(plugin, out var commands))
+			if (pluginCommands.TryGetValue(plugin, out var commands))
 			{
+				pluginCommands.Remove(plugin);
 				foreach (var com in commands)
 				{
 					UnloadCommand(com);
@@ -108,7 +110,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		private static IEnumerable<BotCommand> GetBotCommands(IEnumerable<CommandBuildInfo> methods)
+		public static IEnumerable<BotCommand> GetBotCommands(IEnumerable<CommandBuildInfo> methods)
 		{
 			foreach (var botData in methods)
 			{
@@ -129,7 +131,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		private static void CheckDistinct(IList<BotCommand> list) // TODO test
+		private static void CheckDistinct(ICollection<BotCommand> list) // TODO test
 		{
 			if (list.Select(c => c.InvokeName).Distinct().Count() < list.Count)
 			{
@@ -232,7 +234,7 @@ namespace TS3AudioBot.CommandSystem
 				else
 					return "An empty named function under a group cannot be overloaded.";
 			}
-			
+
 			if (!(com is FunctionCommand funcCom))
 				return $"The command cannot be inserted into a complex node ({name}).";
 
@@ -257,10 +259,10 @@ namespace TS3AudioBot.CommandSystem
 			return R.OkR;
 		}
 
-		private void GenerateError(string msg, BotCommand involvedCom)
+		private static void GenerateError(string msg, BotCommand involvedCom)
 		{
 			throw new InvalidOperationException(
-					$@"Command error path: {involvedCom?.InvokeName}
+				$@"Command error path: {involvedCom?.InvokeName}
 					Command: {involvedCom?.FullQualifiedName}
 					Error: {msg}");
 		}
@@ -282,7 +284,7 @@ namespace TS3AudioBot.CommandSystem
 			// build up the list to our desired node
 			for (int i = 0; i < comPath.Length - 1; i++)
 			{
-				if(!(node.self.GetCommand(comPath[i]) is CommandGroup nextGroup))
+				if (!(node.self.GetCommand(comPath[i]) is CommandGroup nextGroup))
 					break;
 
 				node = new CommandUnloadNode

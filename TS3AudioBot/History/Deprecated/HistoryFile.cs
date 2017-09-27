@@ -219,7 +219,7 @@ namespace TS3AudioBot.History.Deprecated
 			return null;
 		}
 
-		/// <summary>Gets all Entrys last called from a user.<\br>
+		/// <summary>Gets all Entrys last called from a user.
 		/// Sort: By id ascending.</summary>
 		/// <param name="userId">TeamSpeak 3 Database UID of the user.</param>
 		/// <returns>A list of all found entries.</returns>
@@ -231,7 +231,7 @@ namespace TS3AudioBot.History.Deprecated
 				return noResult;
 		}
 
-		/// <summary>Gets all Entries until a certain datetime.<\br>
+		/// <summary>Gets all Entries until a certain datetime.
 		/// Sort: By call time ascending.</summary>
 		/// <param name="time">Included last time of an entry called.</param>
 		/// <returns>A list of all found entries.</returns>
@@ -255,7 +255,7 @@ namespace TS3AudioBot.History.Deprecated
 			}
 		}
 
-		/// <summary>Gets the last played entries.<\br>
+		/// <summary>Gets the last played entries.
 		/// Sort: By call time ascending.</summary>
 		/// <param name="idAmount">The maximal amount of entries.</param>
 		/// <returns>A list of all found entries.</returns>
@@ -275,7 +275,7 @@ namespace TS3AudioBot.History.Deprecated
 		// User features
 
 		/// <summary>Increases the playcount and updates the last playtime.</summary>
-		/// <param name="id">The id of the AudioLogEntry to update.</param>
+		/// <param name="ale">The AudioLogEntry to update.</param>
 		/// <param name="flush">True when the changes should be applied directly to the file.
 		/// False to write it manually later with <see cref="ReWriteToFile(AudioLogEntry)"/></param>
 		public void LogEntryPlay(AudioLogEntry ale, bool flush = true)
@@ -295,8 +295,8 @@ namespace TS3AudioBot.History.Deprecated
 		}
 
 		/// <summary>Sets the name of a AudioLogEntry.</summary>
-		/// <param name="id">The id of the AudioLogEntry to rename.</param>
-		/// <param name="name">The new name for the AudioLogEntry.</param>
+		/// <param name="ale">The AudioLogEntry to rename.</param>
+		/// <param name="newName">The new name for the AudioLogEntry.</param>
 		/// <param name="flush">True when the changes should be applied directly to the file.
 		/// False to write it manually later with <see cref="ReWriteToFile(AudioLogEntry)"/></param>
 		/// <exception cref="ArgumentNullException">When the name is null, empty or only whitspaces</exception>
@@ -312,7 +312,7 @@ namespace TS3AudioBot.History.Deprecated
 		}
 
 		/// <summary>Removes the AudioLogEntry from the memory index list and file.</summary>
-		/// <param name="id">The id of the AudioLogEntry to delete.</param>
+		/// <param name="ale">The AudioLogEntry to delete.</param>
 		public void LogEntryRemove(AudioLogEntry ale)
 		{
 			if (ale == null)

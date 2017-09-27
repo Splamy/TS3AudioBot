@@ -1,12 +1,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3AudioBot", "TS3AudioBot\TS3AudioBot.csproj", "{0ECC38F3-DE6E-4D7F-81EB-58B15F584635}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3ABotUnitTests", "TS3ABotUnitTests\TS3ABotUnitTests.csproj", "{20B6F767-5396-41D9-83D8-98B5730C6E2E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginTests", "PluginTests\PluginTests.csproj", "{DDBB1943-929D-43F6-A7E1-01903DD05D64}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3Client", "TS3Client\TS3Client.csproj", "{0EB99E9D-87E5-4534-A100-55D231C2B6A6}"
 EndProject
@@ -33,10 +31,6 @@ Global
 		{20B6F767-5396-41D9-83D8-98B5730C6E2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20B6F767-5396-41D9-83D8-98B5730C6E2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20B6F767-5396-41D9-83D8-98B5730C6E2E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DDBB1943-929D-43F6-A7E1-01903DD05D64}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DDBB1943-929D-43F6-A7E1-01903DD05D64}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DDBB1943-929D-43F6-A7E1-01903DD05D64}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DDBB1943-929D-43F6-A7E1-01903DD05D64}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0EB99E9D-87E5-4534-A100-55D231C2B6A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0EB99E9D-87E5-4534-A100-55D231C2B6A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EB99E9D-87E5-4534-A100-55D231C2B6A6}.Release|Any CPU.ActiveCfg = Release|Any CPU

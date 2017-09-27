@@ -90,6 +90,10 @@
     <Compile Include="Helper\Cache.cs" />
     <Compile Include="Helper\ImageUtil.cs" />
     <Compile Include="Helper\NativeWinDllLoader.cs" />
+    <Compile Include="Plugins\ITabPlugin.cs" />
+    <Compile Include="Plugins\Plugin.cs" />
+    <Compile Include="Plugins\PluginResponse.cs" />
+    <Compile Include="Plugins\PluginStatus.cs" />
     <Compile Include="ResourceFactories\AudioType.cs" />
     <Compile Include="ResourceFactories\IFactory.cs" />
     <Compile Include="ResourceFactories\IThumbnailFactory.cs" />
@@ -131,7 +135,7 @@
     <Compile Include="MainBot.cs" />
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PlayManager.cs" />
-    <Compile Include="PluginManager.cs" />
+    <Compile Include="Plugins\PluginManager.cs" />
     <Compile Include="ResourceFactories\IPlaylistFactory.cs" />
     <Compile Include="Sessions\SessionManager.cs" />
     <Compile Include="CommandSystem\CommandParser.cs" />

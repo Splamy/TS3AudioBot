@@ -9,6 +9,13 @@
 
 namespace TS3AudioBot
 {
+	using CommandSystem;
+	using Helper;
+	using History;
+	using Plugins;
+	using ResourceFactories;
+	using Rights;
+	using Sessions;
 	using System;
 	using System.Collections.Generic;
 	using System.Drawing;
@@ -17,18 +24,10 @@ namespace TS3AudioBot
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
-
-	using CommandSystem;
-	using Helper;
-	using History;
-	using ResourceFactories;
-	using Sessions;
-	using Web.Api;
-	using Web;
-	using Rights;
-
 	using TS3Client;
 	using TS3Client.Messages;
+	using Web;
+	using Web.Api;
 
 	public sealed class MainBot : IDisposable
 	{
@@ -353,6 +352,7 @@ namespace TS3AudioBot
 		// [text] = Option for fixed text
 		// (a|b) = either or switch
 
+		// ReSharper disable UnusedMember.Global
 		[Command("add", "Adds a new song to the queue.")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
 		public void CommandAdd(ExecutionInformation info, string parameter)
@@ -503,7 +503,7 @@ namespace TS3AudioBot
 		[Command("help", "Shows all commands or detailed help about a specific command.")]
 		[Usage("[<command>]", "Any currently accepted command")]
 		[RequiredParameters(0)]
-		public JsonObject CommandHelp(ExecutionInformation info, params string[] parameter)
+		public JsonObject CommandHelp(params string[] parameter)
 		{
 			if (parameter.Length == 0)
 			{
@@ -517,47 +517,45 @@ namespace TS3AudioBot
 				strb.Length -= 2;
 				return new JsonArray<string>(strb.ToString(), botComList);
 			}
-			else
+
+			CommandGroup group = CommandManager.CommandSystem.RootCommand;
+			ICommand target = null;
+			for (int i = 0; i < parameter.Length; i++)
 			{
-				CommandGroup group = CommandManager.CommandSystem.RootCommand;
-				ICommand target = null;
-				for (int i = 0; i < parameter.Length; i++)
+				var possibilities = XCommandSystem.FilterList(group.Commands, parameter[i]).ToList();
+				if (possibilities.Count == 0)
+					throw new CommandException("No matching command found! Try !help to get a list of all commands.", CommandExceptionReason.CommandError);
+				else if (possibilities.Count > 1)
+					throw new CommandException("Requested command is ambiguous between: " + string.Join(", ", possibilities.Select(kvp => kvp.Key)),
+						CommandExceptionReason.CommandError);
+				else if (possibilities.Count == 1)
 				{
-					var possibilities = XCommandSystem.FilterList(group.Commands, parameter[i]).ToList();
-					if (possibilities.Count == 0)
-						throw new CommandException("No matching command found! Try !help to get a list of all commands.", CommandExceptionReason.CommandError);
-					else if (possibilities.Count > 1)
-						throw new CommandException("Requested command is ambiguous between: " + string.Join(", ", possibilities.Select(kvp => kvp.Key)),
-							CommandExceptionReason.CommandError);
-					else if (possibilities.Count == 1)
+					target = possibilities.First().Value;
+					if (i < parameter.Length - 1)
 					{
-						target = possibilities.First().Value;
-						if (i < parameter.Length - 1)
-						{
-							group = target as CommandGroup;
-							if (group == null)
-								throw new CommandException("The command has no further subfunctions after " + string.Join(" ", parameter, 0, i),
-									CommandExceptionReason.CommandError);
-						}
+						group = target as CommandGroup;
+						if (group == null)
+							throw new CommandException("The command has no further subfunctions after " + string.Join(" ", parameter, 0, i),
+								CommandExceptionReason.CommandError);
 					}
 				}
-
-				switch (target)
-				{
-					case BotCommand targetB:
-						return new JsonSingleValue<string>(targetB.GetHelp());
-					case CommandGroup targetCg:
-						var subList = targetCg.Commands.Select(g => g.Key).ToArray();
-						return new JsonArray<string>("The command contains the following subfunctions: " + string.Join(", ", subList), subList);
-					case OverloadedFunctionCommand targetOfc:
-						var strb = new StringBuilder();
-						foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
-							strb.Append(botCom.GetHelp());
-						return new JsonSingleValue<string>(strb.ToString());
-				}
-
-				throw new CommandException("Seems like something went wrong. No help can be shown for this command path.", CommandExceptionReason.CommandError);
 			}
+
+			switch (target)
+			{
+				case BotCommand targetB:
+					return new JsonSingleValue<string>(targetB.GetHelp());
+				case CommandGroup targetCg:
+					var subList = targetCg.Commands.Select(g => g.Key).ToArray();
+					return new JsonArray<string>("The command contains the following subfunctions: " + string.Join(", ", subList), subList);
+				case OverloadedFunctionCommand targetOfc:
+					var strb = new StringBuilder();
+					foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
+						strb.Append(botCom.GetHelp());
+					return new JsonSingleValue<string>(strb.ToString());
+			}
+
+			throw new CommandException("Seems like something went wrong. No help can be shown for this command path.", CommandExceptionReason.CommandError);
 		}
 
 		[Command("history add", "<id> Adds the song with <id> to the queue")]
@@ -902,7 +900,7 @@ namespace TS3AudioBot
 		[Command("list list", "Displays all available playlists from all users.")]
 		[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
 		[RequiredParameters(0)]
-		public JsonObject CommandListList(ExecutionInformation info, string pattern)
+		public JsonObject CommandListList(string pattern)
 		{
 			var files = PlaylistManager.GetAvailablePlaylists(pattern).ToArray();
 			if (files.Length <= 0)
@@ -1088,21 +1086,29 @@ namespace TS3AudioBot
 		}
 
 		[Command("plugin list", "Lists all found plugins.")]
-		public string CommandPluginList()
+		public JsonArray<PluginStatusInfo> CommandPluginList()
 		{
-			return PluginManager.GetPluginOverview(); // TODO Api callcable
+			var overview = PluginManager.GetPluginOverview();
+			return new JsonArray<PluginStatusInfo>(
+				PluginManager.FormatOverview(overview),
+				overview);
 		}
 
 		[Command("plugin unload", "Unloads a plugin.")]
-		public JsonObject CommandPluginUnload(string identifier)
+		public void CommandPluginUnload(string identifier)
 		{
-			string ret = PluginManager.UnloadPlugin(identifier).ToString();
-			return new JsonSingleValue<string>(ret);
+			var result = PluginManager.StopPlugin(identifier);
+			if (result != PluginResponse.Ok)
+				throw new CommandException("Plugin error: " + result, CommandExceptionReason.CommandError);
 		}
 
 		[Command("plugin load", "Unloads a plugin.")]
 		public void CommandPluginLoad(string identifier)
-			=> PluginManager.LoadPlugin(identifier).UnwrapThrow();
+		{
+			var result = PluginManager.StartPlugin(identifier);
+			if (result != PluginResponse.Ok)
+				throw new CommandException("Plugin error: " + result, CommandExceptionReason.CommandError);
+		}
 
 		[Command("previous", "Plays the previous song in the playlist.")]
 		public void CommandPrevious(ExecutionInformation info)
@@ -1233,7 +1239,7 @@ namespace TS3AudioBot
 		[Command("seek", "Jumps to a timemark within the current song.")]
 		[Usage("<sec>", "Time in seconds")]
 		[Usage("<min:sec>", "Time in Minutes:Seconds")]
-		public void CommandSeek(ExecutionInformation info, string parameter)
+		public void CommandSeek(string parameter)
 		{
 			TimeSpan span;
 			bool parsed = false;
@@ -1268,7 +1274,7 @@ namespace TS3AudioBot
 		[Usage("<key>", "Get the value of a setting")]
 		[Usage("<key> <value>", "Set the value of a setting")]
 		[RequiredParameters(0)]
-		public JsonObject CommandSettings(ExecutionInformation info, string key, string value)
+		public JsonObject CommandSettings(string key, string value)
 		{
 			var configMap = ConfigManager.GetConfigMap();
 			if (string.IsNullOrEmpty(key))
@@ -1453,7 +1459,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("version", "Gets the current build version.")]
-		public JsonObject CommandVersion(ExecutionInformation info)
+		public JsonObject CommandVersion()
 		{
 			var data = Util.GetAssemblyData();
 			return new JsonSingleValue<Util.BuildData>(data.ToLongString(), data);
@@ -1529,6 +1535,7 @@ namespace TS3AudioBot
 			foreach (var arg in arguments)
 				arg.Execute(info, Enumerable.Empty<ICommand>(), retType);
 		}
+		// ReSharper enable UnusedMember.Global
 
 		#endregion
 
