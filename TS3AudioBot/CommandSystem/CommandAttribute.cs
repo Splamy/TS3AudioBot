@@ -11,7 +11,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System;
 
-	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
 	public sealed class CommandAttribute : Attribute
 	{
 		public CommandAttribute(string commandNameSpace, string help = null)
@@ -36,7 +36,7 @@ namespace TS3AudioBot.CommandSystem
 		public string UsageHelp { get; }
 	}
 
-	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
 	public sealed class RequiredParametersAttribute : Attribute
 	{
 		public RequiredParametersAttribute(int amount)
