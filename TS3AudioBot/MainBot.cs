@@ -1759,7 +1759,7 @@ namespace TS3AudioBot
 #pragma warning disable CS0649
 	internal class MainBotData : ConfigData
 	{
-		[Info("Path to the logfile", "log_ts3audiobot")]
+		[Info("Path to the logfile", "ts3audiobot.log")]
 		public string LogFile { get; set; }
 		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
 		public ulong BotGroupId { get; set; }
