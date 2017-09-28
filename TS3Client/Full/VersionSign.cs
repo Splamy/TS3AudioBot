@@ -28,6 +28,8 @@ namespace TS3Client.Full
 
 		// Many ids implemented from here: https://r4p3.net/threads/client-builds.499/
 
+		public static readonly VersionSign VER_WIN_3_0_11
+			= new VersionSign("3.0.11 [Build: 1375083581]", ClientPlattform.Windows, "54wPDkfv0kT56UE0lv/LFkFJObH+Q4Irmo4Brfz1EcvjVhj8hJ+RCHcVTZsdKU2XvVvh+VLJpURulEHsAOsyBw==");
 		public static readonly VersionSign VER_WIN_3_0_19_3
 			= new VersionSign("3.0.19.3 [Build: 1466672534]", ClientPlattform.Windows, "a1OYzvM18mrmfUQBUgxYBxYz2DUU6y5k3/mEL6FurzU0y97Bd1FL7+PRpcHyPkg4R+kKAFZ1nhyzbgkGphDWDg==");
 		public static readonly VersionSign VER_WIN_3_0_19_4
@@ -42,6 +44,10 @@ namespace TS3Client.Full
 			= new VersionSign("3.0.23 [Build: 1463662487]", ClientPlattform.Android, "RN+cwFI+jSHJEhggucIuUyEteWNVFy4iw0QDp3qn2UzfopypFVE9BPZqJjBUGeoCN7Q/SfYL4RNIRzJEQaZUCA==");
 		public static readonly VersionSign VER_WIN_3_1
 			= new VersionSign("3.1 [Build: 1471417187]", ClientPlattform.Windows, "Vr9F7kbVorcrkV5b/Iw+feH9qmDGvfsW8tpa737zhc1fDpK5uaEo6M5l2DzgaGqqOr3GKl5A7PF9Sj6eTM26Aw==");
+		public static readonly VersionSign VER_WIN_3_UNKNOWN
+			= new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Windows, "DX5NIYLvfJEUjuIbCidnoeozxIDRRkpq3I9vVMBmE9L2qnekOoBzSenkzsg2lC9CMv8K5hkEzhr2TYUYSwUXCg==");
+		public static readonly VersionSign VER_AND_3_UNKNOWN
+			= new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Android, "AWb948BY32Z7bpIyoAlQguSmxOGcmjESPceQe1DpW5IZ4+AW1KfTk2VUIYNfUPsxReDJMCtlhVKslzhR2lf0AA==");
 	}
 
 	public enum ClientPlattform
