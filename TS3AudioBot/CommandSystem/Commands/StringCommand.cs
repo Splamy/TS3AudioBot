@@ -20,9 +20,11 @@ namespace TS3AudioBot.CommandSystem
 			content = contentArg;
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			return new StringCommandResult(content);
 		}
+
+		public override string ToString() => $"S\"{content}\"";
 	}
 }

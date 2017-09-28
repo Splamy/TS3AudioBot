@@ -10,25 +10,29 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using System.Collections.Generic;
-	using System.Linq;
 
 	/// <summary>
 	/// A special group command that also accepts commands as first parameter and executes them on the left over parameters.
 	/// </summary>
 	public class RootCommand : CommandGroup
 	{
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
-			if (!arguments.Any())
+			if (arguments.Count == 0)
 				return base.Execute(info, arguments, returnTypes);
 
-			var result = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.Command, CommandResultType.String });
+			var result = arguments[0].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.Command, CommandResultType.String });
 			if (result.ResultType == CommandResultType.String)
+			{
 				// Use cached result so we don't execute the first argument twice
-				return base.Execute(info, new ICommand[] { new StringCommand(((StringCommandResult)result).Content) }
-				                    .Concat(arguments.Skip(1)), returnTypes);
-
-			return ((CommandCommandResult)result).Command.Execute(info, arguments.Skip(1), returnTypes);
+				var passArgs = new ICommand[arguments.Count];
+				passArgs[0] = new StringCommand(((StringCommandResult)result).Content);
+				arguments.CopyTo(1, passArgs, 1);
+				return base.Execute(info, passArgs, returnTypes);
+			}
+			return ((CommandCommandResult)result).Command.Execute(info, arguments.TrySegment(1), returnTypes);
 		}
+
+		public override string ToString() => "<root>";
 	}
 }

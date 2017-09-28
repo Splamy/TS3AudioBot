@@ -47,11 +47,11 @@ namespace TS3AudioBot.CommandSystem
 			return cmds.Where(c => c.name.Length == minLength).Select(fi => new KeyValuePair<string, T>(fi.name, fi.value));
 		}
 
-		private class FilterItem<T>
+		private sealed class FilterItem<T>
 		{
-			public string name;
-			public T value;
-			public int index;
+			public readonly string name;
+			public readonly T value;
+			public readonly int index;
 
 			public FilterItem(string n, T v, int i)
 			{
@@ -69,13 +69,15 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException("Found an unconvertable ASTNode of type Error", CommandExceptionReason.InternalError);
 			case AstType.Command:
 				var cmd = (AstCommand)node;
-				var arguments = new List<ICommand>();
-				arguments.AddRange(cmd.Parameter.Select(AstToCommandResult));
+				var arguments = new ICommand[cmd.Parameter.Count];
+				for (int i = 0; i < cmd.Parameter.Count; i++)
+					arguments[i] = AstToCommandResult(cmd.Parameter[i]);
 				return new AppliedCommand(RootCommand, arguments);
 			case AstType.Value:
 				return new StringCommand(((AstValue)node).Value);
+			default:
+				throw new NotSupportedException("Seems like there's a new NodeType, this code should not be reached");
 			}
-			throw new NotSupportedException("Seems like there's a new NodeType, this code should not be reached");
 		}
 
 		public ICommandResult Execute(ExecutionInformation info, string command)
@@ -83,19 +85,19 @@ namespace TS3AudioBot.CommandSystem
 			return Execute(info, command, new[] { CommandResultType.String, CommandResultType.Empty });
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, string command, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, string command, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
-			return cmd.Execute(info, Enumerable.Empty<ICommand>(), returnTypes);
+			return cmd.Execute(info, StaticList.Empty<ICommand>(), returnTypes);
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments)
+		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			return Execute(info, arguments, new[] { CommandResultType.String, CommandResultType.Empty });
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			return RootCommand.Execute(info, arguments, returnTypes);
 		}

@@ -22,13 +22,13 @@ namespace TS3AudioBot.CommandSystem
 		public void RemoveCommand(ICommand command) => commands.Remove(commands.FirstOrDefault(kvp => kvp.Value == command).Key);
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
 		public ICommand GetCommand(string name) => commands.TryGetValue(name, out var com) ? com : null;
-		public bool IsEmpty => !commands.Any();
+		public bool IsEmpty => commands.Count == 0;
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			string result;
-			if (!arguments.Any())
+			if (arguments.Count == 0)
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 					return new CommandCommandResult(this);
@@ -36,16 +36,21 @@ namespace TS3AudioBot.CommandSystem
 			}
 			else
 			{
-				var comResult = arguments.First().Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String });
+				var comResult = arguments[0].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String });
 				result = ((StringCommandResult)comResult).Content;
 			}
 
-			var commandResults = XCommandSystem.FilterList(commands, result);
-			if (commandResults.Skip(1).Any())
+			var commandResults = XCommandSystem.FilterList(commands, result).ToArray();
+			if (commandResults.Length > 1)
 				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults.Select(g => g.Key)), CommandExceptionReason.AmbiguousCall);
+			if (commandResults.Length == 0)
+				throw new CommandException("No matching command", CommandExceptionReason.AmbiguousCall);
 
-			var argSubList = arguments.Skip(1).ToArray();
-			return commandResults.First().Value.Execute(info, argSubList, returnTypes);
+
+			var argSubList = arguments.TrySegment(1);
+			return commandResults[0].Value.Execute(info, argSubList, returnTypes);
 		}
+
+		public override string ToString() => "<group>";
 	}
 }

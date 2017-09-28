@@ -59,7 +59,7 @@ namespace TS3AudioBot.Web.Api
 			var execInfo = new ExecutionInformation(MainBot, invoker, null);
 			try
 			{
-				var res = command.Execute(execInfo, Enumerable.Empty<ICommand>(),
+				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(),
 					new[] { CommandResultType.Json, CommandResultType.Empty });
 
 				if (res.ResultType == CommandResultType.Empty)

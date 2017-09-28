@@ -25,7 +25,7 @@ namespace TS3AudioBot.CommandSystem
 			innerCommand = innerCommandArg;
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			if (result == null)
 			{
@@ -37,5 +37,7 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException("The cached result can't be returned", CommandExceptionReason.NoReturnMatch);
 			return result;
 		}
+
+		public override string ToString() => $"L({innerCommand})";
 	}
 }

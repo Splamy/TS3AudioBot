@@ -22,7 +22,7 @@ namespace TS3AudioBot.CommandSystem
 		/// Parameter types of the underlying function that won't be filled normally.
 		/// All theses types have a special meaning and don't count to the required parameters.
 		/// </summary>
-		public static readonly Type[] SpecialTypes = { typeof(ExecutionInformation), typeof(IEnumerable<ICommand>), typeof(IEnumerable<CommandResultType>) };
+		public static readonly Type[] SpecialTypes = { typeof(ExecutionInformation), typeof(IReadOnlyList<ICommand>), typeof(IReadOnlyList<CommandResultType>) };
 
 		// Needed for non-static member methods
 		private readonly object callee;
@@ -85,10 +85,9 @@ namespace TS3AudioBot.CommandSystem
 		/// <param name="arguments">The arguments that are applied to this function.</param>
 		/// <param name="returnTypes">The possible return types.</param>
 		/// <param name="availableArguments">How many arguments could be set.</param>
-		public object[] FitArguments(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes, out int availableArguments)
+		public object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int availableArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
-			var argList = new Lazy<List<ICommand>>(arguments.ToList);
 
 			// availableArguments: Iterate through arguments
 			// p: Iterate through parameters
@@ -98,22 +97,22 @@ namespace TS3AudioBot.CommandSystem
 				var arg = CommandParameter[p];
 				if (arg == typeof(ExecutionInformation))
 					parameters[p] = info;
-				else if (arg == typeof(IEnumerable<ICommand>))
+				else if (arg == typeof(IReadOnlyList<ICommand>))
 					parameters[p] = arguments;
-				else if (arg == typeof(IEnumerable<CommandResultType>))
+				else if (arg == typeof(IReadOnlyList<CommandResultType>))
 					parameters[p] = returnTypes;
 				// Only add arguments if we still have some
-				else if (availableArguments < argList.Value.Count)
+				else if (availableArguments < arguments.Count)
 				{
 					if (arg.IsArray) // array
 					{
 						var typeArr = arg.GetElementType();
-						var args = Array.CreateInstance(typeArr, argList.Value.Count - availableArguments);
+						var args = Array.CreateInstance(typeArr, arguments.Count - availableArguments);
 						try
 						{
 							for (int i = 0; i < args.Length; i++, availableArguments++)
 							{
-								var argResult = ((StringCommandResult)argList.Value[availableArguments].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+								var argResult = ((StringCommandResult)arguments[availableArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 								var convResult = ConvertParam(argResult, typeArr);
 								args.SetValue(convResult, i);
 							}
@@ -125,7 +124,7 @@ namespace TS3AudioBot.CommandSystem
 					}
 					else // primitive value
 					{
-						var argResult = ((StringCommandResult)argList.Value[availableArguments].Execute(info, Enumerable.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+						var argResult = ((StringCommandResult)arguments[availableArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
 						try { parameters[p] = ConvertParam(argResult, arg); }
 						catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex, CommandExceptionReason.CommandError); }
 						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
@@ -144,10 +143,10 @@ namespace TS3AudioBot.CommandSystem
 			return parameters;
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
-			arguments = arguments.Select(c => new LazyCommand(c));
+			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
 			object[] parameters = FitArguments(info, arguments, returnTypes, out int availableArguments);
 
 			// Check if we were able to set enough arguments

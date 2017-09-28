@@ -9,23 +9,27 @@
 
 namespace TS3AudioBot.CommandSystem
 {
-	using System.Linq;
 	using System.Collections.Generic;
 
 	public class AppliedCommand : ICommand
 	{
 		private readonly ICommand internCommand;
-		private readonly IEnumerable<ICommand> internArguments;
+		private readonly IReadOnlyList<ICommand> internArguments;
 
-		public AppliedCommand(ICommand command, IEnumerable<ICommand> arguments)
+		public AppliedCommand(ICommand command, IReadOnlyList<ICommand> arguments)
 		{
 			internCommand = command;
 			internArguments = arguments;
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
-			return internCommand.Execute(info, internArguments.Concat(arguments), returnTypes);
+			var merged = new ICommand[internArguments.Count + arguments.Count];
+			internArguments.CopyTo(0, merged, 0);
+			arguments.CopyTo(0, merged, internArguments.Count);
+			return internCommand.Execute(info, merged, returnTypes);
 		}
+
+		public override string ToString() => $"F\"{internCommand}\"({string.Join(", ", internArguments)})";
 	}
 }

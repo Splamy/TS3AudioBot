@@ -16,26 +16,28 @@
 
 namespace TS3ABotUnitTests
 {
-	using LockCheck;
-	using NUnit.Framework;
 	using System;
 	using System.Collections;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
 	using System.Text.RegularExpressions;
+	using LockCheck;
+	using NUnit.Framework;
 	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
-	using TS3Client.Messages;
 	using TS3Client.Full;
+	using TS3Client.Messages;
 
 	[TestFixture]
 	public class UnitTests
 	{
+		// ReSharper disable PossibleMultipleEnumeration
+
 		/* ======================= General Tests ==========================*/
 
 		[Test]
@@ -64,7 +66,7 @@ namespace TS3ABotUnitTests
 			var data3 = new HistorySaveData(ar3, 103);
 
 
-			var hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
+			var hf = new HistoryManager(new HistoryManagerData { HistoryFile = testFile, FillDeletedIds = false });
 
 			hf.LogAudioResource(data1);
 
@@ -75,7 +77,7 @@ namespace TS3ABotUnitTests
 
 			hf.Dispose();
 
-			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData { HistoryFile = testFile, FillDeletedIds = false });
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
@@ -92,7 +94,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// store and order check
-			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData { HistoryFile = testFile, FillDeletedIds = false });
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -106,7 +108,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// check entry renaming
-			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData { HistoryFile = testFile, FillDeletedIds = false });
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
@@ -126,7 +128,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// recheck order
-			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData { HistoryFile = testFile, FillDeletedIds = false });
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -134,7 +136,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// delete entry 1
-			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData { HistoryFile = testFile, FillDeletedIds = false });
 			hf.RemoveEntry(hf.FindEntryByResource(ar1));
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
@@ -148,7 +150,7 @@ namespace TS3ABotUnitTests
 			hf.Dispose();
 
 			// delete entry 2
-			hf = new HistoryManager(new HistoryManagerData() { HistoryFile = testFile, FillDeletedIds = false });
+			hf = new HistoryManager(new HistoryManagerData { HistoryFile = testFile, FillDeletedIds = false });
 			// .. check integrity from previous store
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -203,7 +205,7 @@ namespace TS3ABotUnitTests
 					var line = reader.ReadLine();
 					pos += val.Length;
 
-					Assert.AreEqual(val.TrimEnd(new[] { '\r', '\n' }), line);
+					Assert.AreEqual(val.TrimEnd('\r', '\n'), line);
 					Assert.AreEqual(pos, reader.ReadPosition);
 				}
 			}
@@ -216,7 +218,7 @@ namespace TS3ABotUnitTests
 			{
 				// Setting streams up
 				var writer = new StreamWriter(memStream);
-				string[] values = new[] {
+				string[] values = {
 					new string('1', 1024) + '\n', // 1025: 1 over buffer size
 					new string('1', 1023) + '\n', // 1024: exactly the buffer size, but 1 over the 1024 line block due to the previous
 					new string('1', 1022) + '\n', // 1023: 1 less then the buffer size, should now match the line block again
@@ -234,7 +236,7 @@ namespace TS3ABotUnitTests
 					var line = reader.ReadLine();
 					pos += val.Length;
 
-					Assert.AreEqual(val.TrimEnd(new[] { '\r', '\n' }), line);
+					Assert.AreEqual(val.TrimEnd('\r', '\n'), line);
 					Assert.AreEqual(pos, reader.ReadPosition);
 				}
 			}
@@ -330,8 +332,8 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!(!e on)"));
 
 			// Command overloading
-			var intCom = new Func<int, string>((int i) => "INT");
-			var strCom = new Func<string, string>((string s) => "STRING");
+			var intCom = new Func<int, string>(i => "INT");
+			var strCom = new Func<string, string>(s => "STRING");
 			group.AddCommand("overlord", new OverloadedFunctionCommand(new[] {
 				new FunctionCommand(intCom.Method, intCom.Target),
 				new FunctionCommand(strCom.Method, strCom.Target)
@@ -462,13 +464,12 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Ts3Client_RingQueueTest2()
 		{
-			int ov;
 			var q = new RingQueue<int>(50, ushort.MaxValue + 1);
 
 			for (int i = 0; i < ushort.MaxValue - 10; i++)
 			{
 				q.Set(i, 42);
-				q.TryDequeue(out ov);
+				q.TryDequeue(out var _);
 			}
 
 			var setStatus = q.IsSet(ushort.MaxValue - 20);

@@ -21,7 +21,7 @@ namespace TS3AudioBot
 	using TS3Client.Full;
 	using TS3Client.Messages;
 
-	internal class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
+	internal sealed class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
 	{
 		private readonly Ts3FullClient tsFullClient;
 
@@ -91,6 +91,13 @@ namespace TS3AudioBot
 			Util.Init(ref channelSubscriptionsSetup);
 			Util.Init(ref clientSubscriptionsSetup);
 			subscriptionSetupChanged = true;
+		}
+
+		public override T GetLowLibrary<T>()
+		{
+			if (typeof(T) == typeof(Ts3FullClient) && tsFullClient != null)
+				return tsFullClient as T;
+			return base.GetLowLibrary<T>();
 		}
 
 		private void Tfcd_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -196,7 +203,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		protected override ClientData GetSelf()
+		public override ClientData GetSelf()
 		{
 			var data = tsBaseClient.WhoAmI();
 			var cd = new ClientData

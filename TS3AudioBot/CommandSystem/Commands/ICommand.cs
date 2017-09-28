@@ -23,6 +23,6 @@ namespace TS3AudioBot.CommandSystem
 		/// The possible return types that should be returned by this execution.
 		/// They are ordered by priority so, if possible, the first return type should be picked, then the second and so on.
 		/// </param>
-		public abstract ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes);
+		public abstract ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes);
 	}
 }

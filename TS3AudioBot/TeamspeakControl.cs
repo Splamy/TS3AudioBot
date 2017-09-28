@@ -81,6 +81,13 @@ namespace TS3AudioBot
 			tsBaseClient.OnDisconnected += OnDisconnected;
 		}
 
+		public virtual T GetLowLibrary<T>() where T : class
+		{
+			if (typeof(T) == typeof(Ts3BaseFunctions) && tsBaseClient != null)
+				return tsBaseClient as T;
+			return null;
+		}
+
 		public abstract void Connect();
 		protected virtual void OnConnected(object sender, EventArgs e)
 		{
@@ -182,7 +189,7 @@ namespace TS3AudioBot
 			return clientData;
 		}
 
-		protected abstract ClientData GetSelf();
+		public abstract ClientData GetSelf();
 
 		public R RefreshClientBuffer(bool force)
 		{

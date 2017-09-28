@@ -85,17 +85,17 @@ namespace TS3AudioBot.CommandSystem
 			});
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IEnumerable<ICommand> arguments, IEnumerable<CommandResultType> returnTypes)
+		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
-			arguments = arguments.Select(c => new LazyCommand(c));
+			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
 			foreach (var f in Functions)
 			{
 				bool fits = false;
 				try
 				{
 					// Find out if this overload works
-					f.FitArguments(info, arguments, returnTypes, out var i);
+					f.FitArguments(info, arguments, returnTypes, out var _);
 					fits = true;
 				}
 				catch (CommandException)
