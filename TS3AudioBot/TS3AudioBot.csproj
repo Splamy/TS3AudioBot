@@ -41,6 +41,8 @@
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet />
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -120,7 +122,7 @@
     <Compile Include="CommandSystem\Commands\StringCommand.cs" />
     <Compile Include="CommandSystem\XCommandSystem.cs" />
     <Compile Include="DocGen.cs" />
-    <Compile Include="ErrorLogger.cs" />
+    <Compile Include="Log.cs" />
     <Compile Include="Helper\R.cs" />
     <Compile Include="History\AudioLogEntry.cs" />
     <Compile Include="History\HistorySaveData.cs" />

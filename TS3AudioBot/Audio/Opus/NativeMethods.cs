@@ -38,25 +38,25 @@ namespace TS3AudioBot.Audio.Opus
 			Log.Write(Log.Level.Info, "Using opus version: {0} ({1})", verString, NativeWinDllLoader.ArchFolder);
 		}
 
-// ignore wrong spelling
+		// ReSharper disable EnumUnderlyingTypeIsInt, InconsistentNaming
 #pragma warning disable IDE1006
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern IntPtr opus_encoder_create(int Fs, int channels, int application, out IntPtr error);
+		internal static extern IntPtr opus_encoder_create(int sampleRate, int channels, Application application, out IntPtr error);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern void opus_encoder_destroy(IntPtr encoder);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_encode(IntPtr st, byte[] pcm, int frame_size, byte[] data, int max_data_bytes);
+		internal static extern int opus_encode(IntPtr st, byte[] pcm, int frameSize, byte[] data, int maxDataBytes);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern IntPtr opus_decoder_create(int Fs, int channels, out IntPtr error);
+		internal static extern IntPtr opus_decoder_create(int sampleRate, int channels, out IntPtr error);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern void opus_decoder_destroy(IntPtr decoder);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_decode(IntPtr st, byte[] data, int len, byte[] pcm, int frame_size, int decode_fec);
+		internal static extern int opus_decode(IntPtr st, byte[] data, int len, byte[] pcm, int frameSize, int decodeFec);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, int value);
@@ -80,7 +80,7 @@ namespace TS3AudioBot.Audio.Opus
 	/// <summary>
 	/// Supported coding modes.
 	/// </summary>
-	public enum Application
+	public enum Application : int
 	{
 		/// <summary>
 		/// Best for most VoIP/videoconference applications where listening quality and intelligibility matter most.
@@ -96,7 +96,7 @@ namespace TS3AudioBot.Audio.Opus
 		RestrictedLowLatency = 2051
 	}
 
-	public enum Errors
+	public enum Errors : int
 	{
 		/// <summary>
 		/// No error.

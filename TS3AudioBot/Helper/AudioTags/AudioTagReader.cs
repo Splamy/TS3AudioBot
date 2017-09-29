@@ -50,6 +50,7 @@ namespace TS3AudioBot.Helper.AudioTags
 			public abstract string GetTitle(BinaryReader fileStream);
 		}
 
+		// ReSharper disable InconsistentNaming
 		private class Id3_1 : Tag
 		{
 			private const int TitleLength = 30;
@@ -78,86 +79,86 @@ namespace TS3AudioBot.Helper.AudioTags
 				// using the official id3 tag documentation
 				// http://id3.org/id3v2.3.0#ID3_tag_version_2.3.0
 
-				int read_count = 10;
+				int readCount = 10;
 
 				// read + validate header                                    [10 bytes]
 				// skipped for TagID                                         >03 bytes
-				byte version_major = fileStream.ReadByte(); //               >01 bytes
+				byte versionMajor = fileStream.ReadByte(); //                >01 bytes
 				/*byte version_minor =*/ fileStream.ReadByte(); //           >01 bytes
 				/*byte data_flags =*/ fileStream.ReadByte(); //              >01 bytes
-				byte[] tag_size = fileStream.ReadBytes(4); //                >04 bytes
-				int tag_size_int = 0;
+				byte[] tagSize = fileStream.ReadBytes(4); //                 >04 bytes
+				int tagSizeInt = 0;
 				for (int i = 0; i < 4; i++)
-					tag_size_int |= tag_size[3 - i] << (i * 7);
-				read_count += 10;
+					tagSizeInt |= tagSize[3 - i] << (i * 7);
+				readCount += 10;
 
 				#region ID3v2											     
-				if (version_major == 2)
+				if (versionMajor == 2)
 				{
-					while (read_count < tag_size_int + 10)
+					while (readCount < tagSizeInt + 10)
 					{
 						// frame header                                      [06 bytes]
-						int frame_id = fileStream.ReadInt24BE(); //          >03 bytes
-						int frame_size = fileStream.ReadInt24BE(); //        >03 bytes
-						read_count += 6;
+						int frameId = fileStream.ReadInt24BE(); //           >03 bytes
+						int frameSize = fileStream.ReadInt24BE(); //         >03 bytes
+						readCount += 6;
 
-						if (frame_id == v2_TT2)
+						if (frameId == v2_TT2)
 						{
 							string title;
-							byte[] textBuffer = fileStream.ReadBytes(frame_size);
+							byte[] textBuffer = fileStream.ReadBytes(frameSize);
 							if (textBuffer[0] == 0)
-								title = Encoding.GetEncoding(28591).GetString(textBuffer, 1, frame_size - 1);
+								title = Encoding.GetEncoding(28591).GetString(textBuffer, 1, frameSize - 1);
 							else
 								throw new FormatException("The id3 tag is damaged");
 							return title;
 						}
 						else
 						{
-							fileStream.ReadBytes(frame_size);
-							read_count += frame_size;
+							fileStream.ReadBytes(frameSize);
+							readCount += frameSize;
 						}
 					}
 					throw new FormatException("The id3 tag contains no title");
 				}
 				#endregion
 				#region ID3v3/4
-				else if (version_major == 3 || version_major == 4)
+				else if (versionMajor == 3 || versionMajor == 4)
 				{
-					while (read_count < tag_size_int + 10)
+					while (readCount < tagSizeInt + 10)
 					{
 						// frame header                                        [10 bytes]
-						uint frame_id = fileStream.ReadUInt32BE(); //          >04 bytes
-						int frame_size = fileStream.ReadInt32BE(); //          >04 bytes
-						/*ushort frame_flags =*/ fileStream.ReadUInt16BE(); // >02 bytes 
-						read_count += 10;
+						uint frameId = fileStream.ReadUInt32BE(); //           >04 bytes
+						int frameSize = fileStream.ReadInt32BE(); //           >04 bytes
+						/*ushort frame_flags =*/ fileStream.ReadUInt16BE(); // >02 bytes
+						readCount += 10;
 
 						// content
-						if (frame_id == v3_TIT2)
+						if (frameId == v3_TIT2)
 						{
 							string title;
-							byte[] textBuffer = fileStream.ReadBytes(frame_size);
+							byte[] textBuffer = fileStream.ReadBytes(frameSize);
 							// is a string, so the first byte is a indicator byte
 							switch (textBuffer[0])
 							{
 							case 0:
-								title = Encoding.GetEncoding(28591).GetString(textBuffer, 1, frame_size - 1); break;
+								title = Encoding.GetEncoding(28591).GetString(textBuffer, 1, frameSize - 1); break;
 							case 1:
-								title = Encoding.Unicode.GetString(textBuffer, 1, frame_size - 1); break;
+								title = Encoding.Unicode.GetString(textBuffer, 1, frameSize - 1); break;
 							case 2:
-								title = new UnicodeEncoding(true, false).GetString(textBuffer, 1, frame_size - 1); break;
+								title = new UnicodeEncoding(true, false).GetString(textBuffer, 1, frameSize - 1); break;
 							case 3:
-								title = Encoding.UTF8.GetString(textBuffer, 1, frame_size - 1); break;
+								title = Encoding.UTF8.GetString(textBuffer, 1, frameSize - 1); break;
 							default:
 								throw new FormatException("The id3 tag is damaged");
 							}
 							return title;
 						}
-						else if (frame_id == 0)
+						else if (frameId == 0)
 							break;
 						else
 						{
-							fileStream.ReadBytes(frame_size);
-							read_count += frame_size;
+							fileStream.ReadBytes(frameSize);
+							readCount += frameSize;
 						}
 					}
 					throw new FormatException("The id3 tag contains no title");
@@ -176,5 +177,6 @@ namespace TS3AudioBot.Helper.AudioTags
 				return BitConverterBigEndian.ToUInt32(Encoding.ASCII.GetBytes(id));
 			}
 		}
+		// ReSharper enable InconsistentNaming
 	}
 }

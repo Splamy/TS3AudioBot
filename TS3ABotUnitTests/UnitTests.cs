@@ -22,9 +22,7 @@ namespace TS3ABotUnitTests
 	using System.IO;
 	using System.Linq;
 	using System.Text.RegularExpressions;
-	using LockCheck;
 	using NUnit.Framework;
-	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.Helper;
@@ -39,13 +37,6 @@ namespace TS3ABotUnitTests
 		// ReSharper disable PossibleMultipleEnumeration
 
 		/* ======================= General Tests ==========================*/
-
-		[Test]
-		public void DeadLockCheck()
-		{
-			var warnings = LockChecker.CheckAll<MainBot>(true);
-			Assert.IsTrue(warnings.Count == 0, "At least one possible deadlock detected");
-		}
 
 		[Test]
 		public void HistoryFileIntergrityTest()

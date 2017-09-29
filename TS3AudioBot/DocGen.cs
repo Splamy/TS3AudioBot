@@ -9,18 +9,17 @@
 
 namespace TS3AudioBot
 {
-	using System;
-	using System.Text;
-	using System.IO;
-	using System.Collections.Generic;
 	using CommandSystem;
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
 
 	/// <summary>
 	/// Used to generate the command overview for GitHub.
 	/// </summary>
-	class DocGen
+	internal static class DocGen
 	{
-		static void Main(string[] args)
+		private static void Main(string[] args)
 		{
 			const bool writeSubCommands = false;
 

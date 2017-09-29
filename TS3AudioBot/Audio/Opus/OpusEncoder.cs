@@ -46,7 +46,7 @@ namespace TS3AudioBot.Audio.Opus
 			if (inputChannels != 1 && inputChannels != 2)
 				throw new ArgumentOutOfRangeException(nameof(inputChannels));
 
-			IntPtr encoder = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, (int)application, out IntPtr error);
+			IntPtr encoder = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, application, out IntPtr error);
 			if ((Errors)error != Errors.Ok)
 			{
 				throw new Exception("Exception occured while creating encoder");

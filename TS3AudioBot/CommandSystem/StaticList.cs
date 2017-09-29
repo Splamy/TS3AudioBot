@@ -1,11 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// Copyright (C) 2017  TS3AudioBot contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 namespace TS3AudioBot.CommandSystem
 {
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+
 	internal static class StaticList
 	{
 		public static IReadOnlyList<T> Empty<T>() => StaticListInternal<T>.Empty();
@@ -14,37 +21,44 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (start == 0)
 				return list;
-			if (list is T[] array)
-				return new ArraySegment<T>(array, start, array.Length - start);
-			return list.Skip(start).ToArray();
+			if (start >= list.Count)
+				return Empty<T>();
+			switch (list)
+			{
+			case T[] array: return new ArraySegment<T>(array, start, array.Length - start);
+			case ArraySegment<T> arrayseg: return new ArraySegment<T>(arrayseg.Array, arrayseg.Offset + start, arrayseg.Count - start);
+			default: return list.Skip(start).ToArray();
+			}
 		}
 
 		public static IReadOnlyList<T> TrySegment<T>(this IReadOnlyList<T> list, int start, int length)
 		{
-			if (start == 0)
-				return list;
 			if (list is T[] array)
 				return new ArraySegment<T>(array, start, length);
 			return list.Skip(start).Take(length).ToArray();
 		}
 
 		public static void CopyTo<T>(this IReadOnlyList<T> list, int srcOffset, T[] target, int dstOffset)
-			=> CopyTo<T>(list, srcOffset, target, dstOffset, list.Count - srcOffset);
+			=> CopyTo(list, srcOffset, target, dstOffset, list.Count - srcOffset);
 
 		public static void CopyTo<T>(this IReadOnlyList<T> list, int srcOffset, T[] target, int dstOffset, int length)
 		{
-			if (list is T[] array)
-				Array.Copy(array, srcOffset, target, dstOffset, length);
-			else if (list is ArraySegment<T> segArray)
+			switch (list)
 			{
+			case T[] array:
+				Array.Copy(array, srcOffset, target, dstOffset, length);
+				break;
+
+			case ArraySegment<T> segArray:
 				if (srcOffset + length > segArray.Count)
 					throw new ArgumentOutOfRangeException(nameof(length));
 				Array.Copy(segArray.Array, segArray.Offset + srcOffset, target, dstOffset, length);
-			}
-			else
-			{
+				break;
+
+			default:
 				for (int i = 0; i < length; i++)
 					target[dstOffset + i] = list[srcOffset + i];
+				break;
 			}
 		}
 

@@ -164,22 +164,36 @@ namespace TS3AudioBot
 
 			if (consoleOutput)
 			{
-				Log.RegisterLogger("[%T]%L: %M", "", Console.WriteLine);
-				Log.RegisterLogger("Error call Stack:\n%S", "", Console.WriteLine, Log.Level.Error);
+				void ColorLog(string msg, Log.Level lvl)
+				{
+					switch (lvl)
+					{
+					case Log.Level.Debug: break;
+					case Log.Level.Info: Console.ForegroundColor = ConsoleColor.Cyan; break;
+					case Log.Level.Warning: Console.ForegroundColor = ConsoleColor.Yellow; break;
+					case Log.Level.Error: Console.ForegroundColor = ConsoleColor.Red; break;
+					default: throw new ArgumentOutOfRangeException(nameof(lvl), lvl, null);
+					}
+					Console.WriteLine(msg);
+					Console.ResetColor();
+				}
+
+				Log.RegisterLogger("[%T]%L: %M", 19, ColorLog);
+				Log.RegisterLogger("Error call Stack:\n%S", 19, ColorLog, Log.Level.Error);
 			}
 
 			if (writeLog && !string.IsNullOrEmpty(mainBotData.LogFile))
 			{
 				logStream = new StreamWriter(File.Open(mainBotData.LogFile, FileMode.Append, FileAccess.Write, FileShare.Read), Util.Utf8Encoder);
-				Log.RegisterLogger("[%T]%L: %M\n" + (writeLogStack ? "%S\n" : ""), "", (msg) =>
+				Log.RegisterLogger("[%T]%L: %M\n" + (writeLogStack ? "%S\n" : ""), 19, (msg, lvl) =>
 				{
-					if (logStream != null)
-						try
-						{
-							logStream.Write(msg);
-							logStream.Flush();
-						}
-						catch (IOException) { }
+					if (logStream == null) return;
+					try
+					{
+						logStream.Write(msg);
+						logStream.Flush();
+					}
+					catch (IOException) { }
 				});
 			}
 

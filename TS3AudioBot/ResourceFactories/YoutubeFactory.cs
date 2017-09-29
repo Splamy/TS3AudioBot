@@ -241,7 +241,7 @@ namespace TS3AudioBot.ResourceFactories
 
 				if (!WebWrapper.DownloadString(out string response, queryString))
 					return "Web response error";
-				var parsed = Util.Serializer.Deserialize<JSON_PlaylistItems>(response);
+				var parsed = Util.Serializer.Deserialize<JsonPlaylistItems>(response);
 				var videoItems = parsed.items;
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoItems.Length];
 				for (int i = 0; i < videoItems.Length; i++)
@@ -331,8 +331,8 @@ namespace TS3AudioBot.ResourceFactories
 				Uri[] uriList = urlOptions.Select(s => new Uri(s)).ToArray();
 				Uri bestMatch = uriList
 					.FirstOrDefault(u => HttpUtility.ParseQueryString(u.Query)
-						.GetValues("mime")
-						.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)));
+						.GetValues("mime")?
+						.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)) ?? false);
 				url = (bestMatch ?? uriList[0]).OriginalString;
 			}
 
@@ -348,7 +348,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!WebWrapper.DownloadString(out string response,
 				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={data.ApiKey}")))
 				return "No connection";
-			var parsed = Util.Serializer.Deserialize<JSON_PlaylistItems>(response);
+			var parsed = Util.Serializer.Deserialize<JsonPlaylistItems>(response);
 
 			// default: 120px/ 90px
 			// medium : 320px/180px
@@ -370,36 +370,37 @@ namespace TS3AudioBot.ResourceFactories
 
 		public void Dispose() { }
 
-#pragma warning disable CS0649
-		private class JSON_PlaylistItems
+#pragma warning disable CS0649, CS0169
+		// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
+		private class JsonPlaylistItems
 		{
 			public string nextPageToken;
-			public JSON_Item[] items;
+			public JsonItem[] items;
 
-			public class JSON_Item
+			public class JsonItem
 			{
-				public JSON_ContentDetails contentDetails;
-				public JSON_Snippet snippet;
+				public JsonContentDetails contentDetails;
+				public JsonSnippet snippet;
 
-				public class JSON_ContentDetails
+				public class JsonContentDetails
 				{
 					public string videoId;
 				}
 
-				public class JSON_Snippet
+				public class JsonSnippet
 				{
 					public string title;
-					public JSON_ThumbnailList thumbnails;
+					public JsonThumbnailList thumbnails;
 
-					public class JSON_ThumbnailList
+					public class JsonThumbnailList
 					{
-						public JSON_Thumbnail @default;
-						public JSON_Thumbnail medium;
-						public JSON_Thumbnail high;
-						public JSON_Thumbnail standard;
-						public JSON_Thumbnail maxres;
+						public JsonThumbnail @default;
+						public JsonThumbnail medium;
+						public JsonThumbnail high;
+						public JsonThumbnail standard;
+						public JsonThumbnail maxres;
 
-						public class JSON_Thumbnail
+						public class JsonThumbnail
 						{
 							public string url;
 							public int heigth;
@@ -409,7 +410,8 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 		}
-#pragma warning restore CS0649
+		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
+#pragma warning restore CS0649, CS0169
 	}
 
 #pragma warning disable CS0649

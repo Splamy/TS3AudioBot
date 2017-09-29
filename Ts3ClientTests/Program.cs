@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using TS3Client;
-using TS3Client.Messages;
-using TS3Client.Commands;
-using TS3Client.Full;
 using System.IO;
+using TS3Client;
+using TS3Client.Full;
+using TS3Client.Messages;
 
+// ReSharper disable All
 namespace Ts3ClientTests
 {
 	static class Program

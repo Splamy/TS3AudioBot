@@ -23,13 +23,12 @@ namespace TS3AudioBot
 	[Serializable]
 	public static class Log
 	{
-		public static bool Active { get; set; }
-		public static int StackLevel { get; set; }
-
+		private static readonly Regex LinebreakRegex = new Regex(@"(\r\n?|\n)", Util.DefaultRegexConfig);
 		private static readonly object WriteLock;
 		private static readonly List<LogAction> LoggerFormats;
 
 		private static string[] spaceup;
+		private static string[] formatCache;
 
 		private const string PlaceLogLevelSpaced = "{0}";
 		private const string PlaceErrorTextFormatted = "{1}";
@@ -41,11 +40,13 @@ namespace TS3AudioBot
 			WriteLock = new object();
 			LoggerFormats = new List<LogAction>();
 
-			StackLevel = 10;
 			Active = true;
+			formatCache = new string[0];
 
 			CalcSpaceLength();
 		}
+
+		public static bool Active { get; set; }
 
 		private static void CalcSpaceLength()
 		{
@@ -66,17 +67,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		public static void RegisterLogger(string format, string linebreakIndent, CallbackActionDelegate callback)
+		public static void RegisterLogger(string format, int linebreakIndent, CallbackActionDelegate callback)
 			=> RegisterLogger(format, linebreakIndent, callback, 0);
 
-		public static void RegisterLogger(string format, string linebreakIndent, CallbackActionDelegate callback, Level logLevel)
+		public static void RegisterLogger(string format, int linebreakIndent, CallbackActionDelegate callback, Level logLevel)
 		{
-			try
-			{
-				var tokenList = ParseAndValidate(format);
-				RegisterLoggerUnsafe(tokenList, linebreakIndent, callback, logLevel);
-			}
-			catch (ArgumentException) { throw; }
+			var tokenList = ParseAndValidate(format);
+			RegisterLogger(tokenList, linebreakIndent, callback, logLevel);
 		}
 
 		private static List<ParseToken> ParseAndValidate(string format)
@@ -113,6 +110,11 @@ namespace TS3AudioBot
 						case 'S': // Stack
 							validator.Add(new ParseToken(MethodBuildToken.StackFormatted, null));
 							break;
+						case '%': // %-Escape
+							validator.Add(new ParseToken(MethodBuildToken.Text, "%"));
+							break;
+						default:
+							throw new ArgumentException("Unrecognized variable name after '%' at char: " + c);
 						}
 						c++;
 						starttext = c + 1;
@@ -127,7 +129,7 @@ namespace TS3AudioBot
 			return validator;
 		}
 
-		private static void RegisterLoggerUnsafe(List<ParseToken> tokenList, string linebreakIndent, CallbackActionDelegate callback, Level logLevel)
+		private static void RegisterLogger(List<ParseToken> tokenList, int linebreakIndent, CallbackActionDelegate callback, Level logLevel)
 		{
 			bool usesLls = false, usesEtf = false, usesDf = false, usesStf = false;
 			var formatString = new StringBuilder();
@@ -163,9 +165,13 @@ namespace TS3AudioBot
 			{
 				LoggerFormats.Add(new LogAction(
 						formatString.ToString(),
+						linebreakIndent,
 						callback,
 						logLevel,
 						usesLls, usesEtf, usesDf, usesStf));
+
+				if (formatCache.Length <= linebreakIndent)
+					formatCache = new string[linebreakIndent + 1];
 			}
 		}
 
@@ -178,7 +184,6 @@ namespace TS3AudioBot
 			lock (WriteLock)
 			{
 				string logLevelSpaced = null;
-				string errorTextFormatted = null;
 				string dateFormatted = null;
 				string stackTraceFormatted = null;
 
@@ -189,8 +194,8 @@ namespace TS3AudioBot
 
 					if (callbackProc.UsesLogLevelSpaced && logLevelSpaced == null)
 						logLevelSpaced = GenLogLevelRaw(lvl);
-					if (callbackProc.UsesErrorTextFormatted && errorTextFormatted == null)
-						errorTextFormatted = GenErrorTextFormatted(0, errText, infos);
+					if (callbackProc.UsesErrorTextFormatted && formatCache[callbackProc.FormatIndent] == null)
+						formatCache[callbackProc.FormatIndent] = GenErrorTextFormatted(callbackProc.FormatIndent, errText, infos);
 					if (callbackProc.UsesDateFormatted && dateFormatted == null)
 						dateFormatted = GenDateFormatted();
 					if (callbackProc.UsesStackTraceFormatted && stackTraceFormatted == null)
@@ -199,17 +204,28 @@ namespace TS3AudioBot
 					callbackProc.Callback.Invoke(
 						string.Format(callbackProc.FormatString,
 							logLevelSpaced,
-							errorTextFormatted,
+							formatCache[callbackProc.FormatIndent],
 							dateFormatted,
-							stackTraceFormatted));
+							stackTraceFormatted),
+						lvl);
 				}
+
+				Array.Clear(formatCache, 0, formatCache.Length);
 			}
 		}
 
 		private static string GenLogLevelRaw(Level lvl) => spaceup[(int)lvl];
 
 		private static string GenErrorTextFormatted(int linebreakIndent, string errorTextRaw, object[] infos)
-			 => string.Format(CultureInfo.InvariantCulture, errorTextRaw, infos);
+		{
+			var text = string.Format(CultureInfo.InvariantCulture, errorTextRaw, infos);
+			if (linebreakIndent > 0)
+			{
+				string indentedSpace = Environment.NewLine + new string(' ', linebreakIndent);
+				text = LinebreakRegex.Replace(text, x => indentedSpace);
+			}
+			return text;
+		}
 
 		private static string GenDateFormatted() => DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
 
@@ -234,23 +250,6 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
-		private static string ExtractAnonymous(string name)
-		{
-			int startName = name.IndexOf('<');
-			int endName = name.IndexOf('>');
-
-			if (startName < 0 || endName < 0)
-				return string.Empty;
-
-			return name.Substring(startName, endName - startName);
-		}
-
-		private static string AdjustIndentation(int indentation, string text)
-		{
-			string spaces = new string(' ', indentation);
-			return Regex.Replace(text, @"(\r\n?|\n)", (x) => x.Value + spaces);
-		}
-
 		private enum MethodBuildToken
 		{
 			Text,
@@ -260,7 +259,7 @@ namespace TS3AudioBot
 			StackFormatted,
 		}
 
-		public enum Level : int
+		public enum Level
 		{
 			Debug,
 			Info,
@@ -283,6 +282,7 @@ namespace TS3AudioBot
 		private class LogAction
 		{
 			public string FormatString { get; }
+			public int FormatIndent { get; }
 			public CallbackActionDelegate Callback { get; }
 			public Level LogLevel { get; }
 
@@ -291,10 +291,12 @@ namespace TS3AudioBot
 			public bool UsesDateFormatted { get; }
 			public bool UsesStackTraceFormatted { get; }
 
-			public LogAction(string formatString, CallbackActionDelegate callback, Level logLevel,
+			public LogAction(string formatString, int formatIndent,
+				CallbackActionDelegate callback, Level logLevel,
 				bool usesLls, bool usesEtf, bool usesDf, bool usesStf)
 			{
 				FormatString = formatString;
+				FormatIndent = formatIndent;
 				Callback = callback;
 				LogLevel = logLevel;
 
@@ -307,5 +309,5 @@ namespace TS3AudioBot
 	}
 
 	[Serializable]
-	public delegate void CallbackActionDelegate(string result);
+	public delegate void CallbackActionDelegate(string result, Log.Level level);
 }

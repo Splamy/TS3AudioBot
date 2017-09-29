@@ -49,7 +49,7 @@ namespace TS3AudioBot.Helper
 		public string Message { get; }
 		public T Value { get; }
 
-		private R(T value) { isError = false; Message = null; if (value == null) throw new System.Exception("Return of ok must not be null."); Value = value; }
+		private R(T value) { isError = false; Message = null; if (value == null) throw new System.ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
 		private R(string message) { isError = true; Message = message; Value = default(T); }
 
 		/// <summary>Creates a new failed result with a message</summary>
@@ -58,10 +58,10 @@ namespace TS3AudioBot.Helper
 		/// <summary>Creates a new successful result with a value</summary>
 		/// <param name="value">The value</param>
 		public static R<T> OkR(T value) => new R<T>(value);
-
+		
 		public static implicit operator bool(R<T> result) => result.Ok;
 		public static implicit operator string(R<T> result) => result.Message;
-
+		
 		public static implicit operator R<T>(T result) => new R<T>(result);
 		public static implicit operator R<T>(string message) => new R<T>(message);
 

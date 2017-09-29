@@ -1,4 +1,4 @@
-﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2016  TS3AudioBot contributors
 // 
 // This program is free software: you can redistribute it and/or modify
@@ -24,16 +24,18 @@ namespace TS3ABotUnitTests
 	[TestFixture]
 	public class BotCommandTests
 	{
-		MainBot bot;
+		private readonly MainBot bot;
 
 		public BotCommandTests()
 		{
 			bot = new MainBot();
-			typeof(MainBot).GetProperty(nameof(MainBot.CommandManager)).SetValue(bot, new CommandManager());
+			var prop = typeof(MainBot).GetProperty(nameof(MainBot.CommandManager));
+			if (prop != null)
+				prop.SetValue(bot, new CommandManager());
 			bot.CommandManager.RegisterMain(bot);
 		}
 
-		string CallCommand(string command)
+		private string CallCommand(string command)
 		{
 			var info = new ExecutionInformation(null, new InvokerData("InvokerUid"), null) { SkipRightsChecks = true };
 			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);

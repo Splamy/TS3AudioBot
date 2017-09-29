@@ -19,6 +19,7 @@ namespace TS3AudioBot.Plugins
 	using System.Linq;
 	using System.Reflection;
 	using System.Security.Cryptography;
+	using System.Text;
 
 	internal class Plugin : ICommandBag
 	{
@@ -177,16 +178,19 @@ namespace TS3AudioBot.Plugins
 			if (result.Errors.Count > 0)
 			{
 				bool containsErrors = false;
+				var strb = new StringBuilder();
+				strb.AppendFormat("Plugin_{0} compiler notifications:\n", Id);
 				foreach (CompilerError error in result.Errors)
 				{
 					containsErrors |= !error.IsWarning;
-					Log.Write(Log.Level.Warning, "Plugin_{0}: {1} L{2}/C{3}: {4}\n",
-						Id,
+					strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
 						error.IsWarning ? "Warning" : "Error",
 						error.Line,
 						error.Column,
 						error.ErrorText);
 				}
+				strb.Length -= 1; // remove last linebreak
+				Log.Write(Log.Level.Warning, strb.ToString());
 
 				if (containsErrors)
 				{

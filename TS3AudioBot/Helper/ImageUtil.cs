@@ -15,10 +15,10 @@ namespace TS3AudioBot.Helper
 	using System.Drawing.Drawing2D;
 	using System.Drawing.Text;
 
-	static class ImageUtil
+	internal static class ImageUtil
 	{
-		private static StringFormat avatarTextFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near };
-		private static Pen avatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round };
+		private static readonly StringFormat AvatarTextFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near };
+		private static readonly Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round };
 
 		public static void BuildStringImage(string str, Image img, RectangleF rect)
 		{
@@ -32,14 +32,14 @@ namespace TS3AudioBot.Helper
 				{
 					using (var gp = new GraphicsPath())
 					{
-						gp.AddString(str, FontFamily.GenericSansSerif, 0, 15, rect, avatarTextFormat);
+						gp.AddString(str, FontFamily.GenericSansSerif, 0, 15, rect, AvatarTextFormat);
 
 						graphics.InterpolationMode = InterpolationMode.High;
 						graphics.SmoothingMode = SmoothingMode.HighQuality;
 						graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
 						graphics.CompositingQuality = CompositingQuality.HighQuality;
 
-						graphics.DrawPath(avatarTextOutline, gp);
+						graphics.DrawPath(AvatarTextOutline, gp);
 						graphics.FillPath(Brushes.White, gp);
 					}
 				}
@@ -54,7 +54,7 @@ namespace TS3AudioBot.Helper
 			using (var builder = new Bitmap(maxMonoBugWidth, 100))
 			using (var bg = Graphics.FromImage(builder))
 			{
-				gp.AddString("X", FontFamily.GenericMonospace, 0, 15, rect, avatarTextFormat);
+				gp.AddString("X", FontFamily.GenericMonospace, 0, 15, rect, AvatarTextFormat);
 				var bounds = gp.GetBounds();
 				var charW = bounds.Width;
 				var charH = bounds.Height * 2;
@@ -92,19 +92,17 @@ namespace TS3AudioBot.Helper
 				for (int i = 0; i < sep.Count; i++)
 				{
 					var line = sep[i];
-					float flLeft = 0;
 					for (int j = 0; j * step < line.Length; j++)
 					{
 						var part = line.Substring(j * step, Math.Min(step, line.Length - j * step));
 						gp.Reset();
-						gp.AddString(part, FontFamily.GenericMonospace, 0, 15, buildRect, avatarTextFormat);
+						gp.AddString(part, FontFamily.GenericMonospace, 0, 15, buildRect, AvatarTextFormat);
 
 						bg.Clear(Color.Transparent);
-						bg.DrawPath(avatarTextOutline, gp);
+						bg.DrawPath(AvatarTextOutline, gp);
 						bg.FillPath(Brushes.White, gp);
 
 						target.DrawImageUnscaled(builder, (int)(rect.X + j * (maxMonoBugWidth - 5)), (int)(rect.Y + i * charH));
-						flLeft += gp.GetBounds().Width;
 					}
 				}
 			}
