@@ -41,6 +41,15 @@ namespace TS3AudioBot
 					bot.Dispose();
 				};
 
+				Console.CancelKeyPress += (s, e) =>
+				{
+					if (e.SpecialKey == ConsoleSpecialKey.ControlC)
+					{
+						e.Cancel = true;
+						bot.Dispose();
+					}
+				};
+
 				if (!bot.ReadParameter(args)) return;
 				if (!bot.InitializeBot()) return;
 				bot.Run();
