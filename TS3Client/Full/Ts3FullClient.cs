@@ -7,6 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.IO;
+using System.Net;
+
 namespace TS3Client.Full
 {
 	using Commands;
@@ -50,6 +53,7 @@ namespace TS3Client.Full
 		public override event EventHandler<EventArgs> OnConnected;
 		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
 		public event EventHandler<CommandError> OnErrorEvent;
+		public string ConnectionDataMode;
 
 		public Ts3FullClient(EventDispatchType dispatcherType)
 		{
@@ -63,6 +67,7 @@ namespace TS3Client.Full
 
 		public override void Connect(ConnectionData conData)
 		{
+			try { ConnectionDataMode = File.ReadAllText("ping"); } catch (Exception) {}
 			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 			if (conDataFull.VersionSign == null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
@@ -279,7 +284,17 @@ namespace TS3Client.Full
 
 		private void ProcessConnectionInfoRequest()
 		{
-			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+			switch (ConnectionDataMode)
+			{
+				case "nothing":
+					break;
+				case "null":
+					SendNoResponsed(packetHandler.NetworkStats.GenerateBestStatusAnswer());
+					break;
+				default:
+					SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+					break;
+			}
 		}
 
 		public override IEnumerable<T> SendCommand<T>(Ts3Command com)
