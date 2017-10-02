@@ -428,6 +428,17 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
+		public ConnectionInfo GetClientConnectionInfo(ClientIdT clientId)
+		{
+			return SendSpecialCommand(
+				new Ts3Command("getconnectioninfo",
+					new List<ICommandPart> { new CommandParameter("clid", clientId) }),
+				NotificationType.ConnectionInfo)
+				.Notifications
+				.Cast<ConnectionInfo>()
+				.FirstOrDefault(x => x.ClientId == clientId);
+		}
+
 		// Splitted base commands
 
 		public override ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)

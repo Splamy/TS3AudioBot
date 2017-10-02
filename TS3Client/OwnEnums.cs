@@ -81,6 +81,7 @@ namespace TS3Client
 		ClientChannelGroupChanged,
 		ClientServerGroupAdded,
 		ConnectionInfoRequest,
+		ConnectionInfo,
 		ChannelSubscribed,
 		ChannelUnsubscribed,
 		ClientChatComposing,

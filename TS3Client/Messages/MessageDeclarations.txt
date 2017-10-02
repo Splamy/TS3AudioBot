@@ -105,18 +105,18 @@ Field: client_needed_serverquery_view_power, client_needed_serverquery_view_powe
 Field: client_nickname, client_nickname, NickName, string
 Field: client_nickname_phonetic, client_nickname_phonetic, PhoneticName, string
 Field: client_origin_server_id, client_origin_server_id, OriginServerId, ulong
-Field: client_outputonly_muted, client_outputonly_muted, IsOutputOnlyMuted, bool
 Field: client_output_hardware, client_output_hardware, IsClientOutputHardware, bool
 Field: client_output_muted, client_output_muted, IsOutputMuted, bool
+Field: client_outputonly_muted, client_outputonly_muted, IsOutputOnlyMuted, bool
 Field: client_platform, client_platform, ClientPlattform, string
 Field: client_security_hash, client_security_hash, SecurityHash, string
 Field: client_servergroups, client_servergroups, ServerGroups, ServerGroupIdT[]
 Field: client_talk_power, client_talk_power, TalkPower, int
 Field: client_talk_request, client_talk_request, RequestedTalkPower, int
 Field: client_talk_request_msg, client_talk_request_msg, TalkPowerRequestMessage, string
-Field: client_totalconnections, client_totalconnections, TotalConnections, int
 Field: client_total_bytes_downloaded, client_total_bytes_downloaded, TotalDownloadQuota, long
 Field: client_total_bytes_uploaded, client_total_bytes_uploaded, TotalUploadQuota, long
+Field: client_totalconnections, client_totalconnections, TotalConnections, int
 Field: client_type, client_type, ClientType, ClientType
 Field: client_unique_identifier, client_unique_identifier, Uid, ClientUidT
 Field: client_unread_messages, client_unread_messages, UnreadMessages, int
@@ -124,18 +124,54 @@ Field: client_version, client_version, ClientVersion, string
 Field: client_version_sign, client_version_sign, ClientVersionSign, string
 Field: clientftfid, clientftfid, ClientFileTransferId, ushort
 Field: cluid, cluid, ClientUid, ClientUidT
+Field: connection_bandwidth_received_last_minute_control, connection_bandwidth_received_last_minute_control, ConnectionBandwidthReceivedLastMinuteControl, uint
+Field: connection_bandwidth_received_last_minute_keepalive, connection_bandwidth_received_last_minute_keepalive, ConnectionBandwidthReceivedLastMinuteKeepalive, uint
+Field: connection_bandwidth_received_last_minute_speech, connection_bandwidth_received_last_minute_speech, ConnectionBandwidthReceivedLastMinuteSpeech, uint
 Field: connection_bandwidth_received_last_minute_total, connection_bandwidth_received_last_minute_total, ConnectionBandwidtReceivedLastMinute, long
+Field: connection_bandwidth_received_last_second_control, connection_bandwidth_received_last_second_control, ConnectionBandwidthReceivedLastSecondControl, uint
+Field: connection_bandwidth_received_last_second_keepalive, connection_bandwidth_received_last_second_keepalive, ConnectionBandwidthReceivedLastSecondKeepalive, uint
+Field: connection_bandwidth_received_last_second_speech, connection_bandwidth_received_last_second_speech, ConnectionBandwidthReceivedLastSecondSpeech, uint
 Field: connection_bandwidth_received_last_second_total, connection_bandwidth_received_last_second_total, ConnectionBandwidtReceivedLastSecond, long
+Field: connection_bandwidth_sent_last_minute_control, connection_bandwidth_sent_last_minute_control, ConnectionBandwidthSentLastMinuteControl, uint
+Field: connection_bandwidth_sent_last_minute_keepalive, connection_bandwidth_sent_last_minute_keepalive, ConnectionBandwidthSentLastMinuteKeepalive, uint
+Field: connection_bandwidth_sent_last_minute_speech, connection_bandwidth_sent_last_minute_speech, ConnectionBandwidthSentLastMinuteSpeech, uint
 Field: connection_bandwidth_sent_last_minute_total, connection_bandwidth_sent_last_minute_total, ConnectionBandwidtSentLastMinute, long
+Field: connection_bandwidth_sent_last_second_control, connection_bandwidth_sent_last_second_control, ConnectionBandwidthSentLastSecondControl, uint
+Field: connection_bandwidth_sent_last_second_keepalive, connection_bandwidth_sent_last_second_keepalive, ConnectionBandwidthSentLastSecondKeepalive, uint
+Field: connection_bandwidth_sent_last_second_speech, connection_bandwidth_sent_last_second_speech, ConnectionBandwidthSentLastSecondSpeech, uint
 Field: connection_bandwidth_sent_last_second_total, connection_bandwidth_sent_last_second_total, ConnectionBandwidtSentLastSecond, long
+Field: connection_bytes_received_control, connection_bytes_received_control, ConnectionBytesReceivedControl, ulong
+Field: connection_bytes_received_keepalive, connection_bytes_received_keepalive, ConnectionBytesReceivedKeepalive, ulong
+Field: connection_bytes_received_speech, connection_bytes_received_speech, ConnectionBytesReceivedSpeech, ulong
 Field: connection_bytes_received_total, connection_bytes_received_total, ConnectionBytesReceived, long
+Field: connection_bytes_sent_control, connection_bytes_sent_control, ConnectionBytesSentControl, ulong
+Field: connection_bytes_sent_keepalive, connection_bytes_sent_keepalive, ConnectionBytesSentKeepalive, ulong
+Field: connection_bytes_sent_speech, connection_bytes_sent_speech, ConnectionBytesSentSpeech, ulong
 Field: connection_bytes_sent_total, connection_bytes_sent_total, ConnectionBytesSent, long
 Field: connection_client_ip, connection_client_ip, Ip, string
+Field: connection_client_port, connection_client_port, ConnectionClientPort, ushort
+Field: connection_client2server_packetloss_control, connection_client2server_packetloss_control, ConnectionClientToServerPacketlossControl, float
+Field: connection_client2server_packetloss_keepalive, connection_client2server_packetloss_keepalive, ConnectionClientToServerPacketlossKeepalive, float
+Field: connection_client2server_packetloss_speech, connection_client2server_packetloss_speech, ConnectionClientToServerPacketlossSpeech, float
+Field: connection_client2server_packetloss_total, connection_client2server_packetloss_total, ConnectionClientToServerPacketlossTotal, float
 Field: connection_connected_time, connection_connected_time, ConnectionTime, TimeSpanMillisecT
 Field: connection_filetransfer_bandwidth_received, connection_filetransfer_bandwidth_received, ConnectionFiletransferReceived, long
 Field: connection_filetransfer_bandwidth_sent, connection_filetransfer_bandwidth_sent, ConnectionFiletransferSent, long
+Field: connection_idle_time, connection_idle_time, ConnectionIdleTime, TimeSpanMillisecT
+Field: connection_packets_received_control, connection_packets_received_control, ConnectionPacketsReceivedControl, ulong
+Field: connection_packets_received_keepalive, connection_packets_received_keepalive, ConnectionPacketsReceivedKeepalive, ulong
+Field: connection_packets_received_speech, connection_packets_received_speech, ConnectionPacketsReceivedSpeech, ulong
 Field: connection_packets_received_total, connection_packets_received_total, ConnectionPacketsReceived, long
+Field: connection_packets_sent_control, connection_packets_sent_control, ConnectionPacketsSentControl, ulong
+Field: connection_packets_sent_keepalive, connection_packets_sent_keepalive, ConnectionPacketsSentKeepalive, ulong
+Field: connection_packets_sent_speech, connection_packets_sent_speech, ConnectionPacketsSentSpeech, long
 Field: connection_packets_sent_total, connection_packets_sent_total, ConnectionPacketsSent, long
+Field: connection_ping, connection_ping, ConnectionPing, float
+Field: connection_ping_deviation, connection_ping_deviation, ConnectionPingDeviation, float
+Field: connection_server2client_packetloss_control, connection_server2client_packetloss_control, ConnectionServerToClientPacketlossControl, float
+Field: connection_server2client_packetloss_keepalive, connection_server2client_packetloss_keepalive, ConnectionServerToClientPacketlossKeepalive, float
+Field: connection_server2client_packetloss_speech, connection_server2client_packetloss_speech, ConnectionServerToClientPacketlossSpeech, float
+Field: connection_server2client_packetloss_total, connection_server2client_packetloss_total, ConnectionServerToClientPacketlossTotal, float
 Field: cpid, cpid, ChannelParentId, ChannelIdT
 Field: ctid, ctid, TargetChannelId, ChannelIdT
 Field: current_speed, current_speed, CurrentSpeed, float
@@ -152,9 +188,9 @@ Field: invokername, invokername, InvokerName, string
 Field: invokeruid, invokeruid, InvokerUid, ClientUidT
 Field: lt, lt, LicenseType, ushort
 Field: msg, msg, Message, string
-Field: n_modifyp, n_modifyp, NeededModifyPower, int
 Field: n_member_addp, n_member_addp, NeededMemberAddPower, int
 Field: n_member_remove_p, n_member_remove_p, NeededMemberRemovePower, int
+Field: n_modifyp, n_modifyp, NeededModifyPower, int
 Field: name, name, Name, string
 Field: namemode, namemode, NamingMode, GroupNamingMode
 Field: omega, omega, Omega, string
@@ -212,7 +248,7 @@ Field: virtualserver_icon_id, virtualserver_icon_id, IconId, ulong
 Field: virtualserver_id, virtualserver_id, VirtualServerId, ulong
 Field: virtualserver_ip, virtualserver_ip, ServerIp, string
 Field: virtualserver_machine_id, virtualserver_machine_id, MachineId, string
-Field: virtualserver_maxclients, virtualserver_maxclients, MaxClients, ClientIdT
+Field: virtualserver_maxclients, virtualserver_maxclients, MaxClients, int
 Field: virtualserver_name, virtualserver_name, ServerName, string
 Field: virtualserver_name_phonetic, virtualserver_name_phonetic, PhoneticName, string
 Field: virtualserver_platform, virtualserver_platform, ServerPlatform, string
@@ -232,6 +268,7 @@ Field: extra_msg, extra_msg, ExtraMessage, string
 
 
 : <Teamspeak notification name>, <Enum name>
+Notify: error, Error
 Notify: notifychannelchanged, ChannelChanged
 Notify: notifychannelcreated, ChannelCreated
 Notify: notifychanneldeleted, ChannelDeleted
@@ -244,7 +281,6 @@ Notify: notifyclientmoved, ClientMoved
 Notify: notifyserveredited, ServerEdited
 Notify: notifytextmessage, TextMessage
 Notify: notifytokenused, TokenUsed
-Notify: error, Error
 
 Notify: channellist, ChannelList
 Notify: channellistfinished, ChannelListFinished
@@ -255,16 +291,17 @@ Notify: notifychannelunsubscribed, ChannelUnsubscribed
 Notify: notifyclientchannelgroupchanged, ClientChannelGroupChanged
 Notify: notifyclientchatcomposing, ClientChatComposing
 Notify: notifyclientneededpermissions, ClientNeededPermissions
+Notify: notifyconnectioninfo, ConnectionInfo
 Notify: notifyconnectioninforequest, ConnectionInfoRequest
+Notify: notifyfileinfo, FileInfo
+Notify: notifyfilelist, FileList
+Notify: notifyfilelistfinished, FileListFinished
+Notify: notifyfiletransferlist, FileTransfer
 Notify: notifyservergroupclientadded, ClientServerGroupAdded
 Notify: notifyservergrouplist, ServerGroupList
 Notify: notifyservergroupsbyclientid, ServerGroupsByClientId
-Notify: notifystartupload, StartUpload
 Notify: notifystartdownload, StartDownload
-Notify: notifyfiletransferlist, FileTransfer
-Notify: notifyfilelist, FileList
-Notify: notifyfilelistfinished, FileListFinished
-Notify: notifyfileinfo, FileInfo
+Notify: notifystartupload, StartUpload
 Notify: notifystatusfiletransfer, FileTransferStatus
 
 
@@ -287,6 +324,8 @@ Msg: ClientLeftView, notifyclientleftview, reasonmsg, bantime, reasonid, ctid, i
 Msg: ClientMoved, notifyclientmoved, clid, reasonid, ctid, invokerid, invokername, invokeruid
 Msg: ClientNeededPermissions, notifyclientneededpermissions, permid, permvalue
 Msg: ClientServerGroupAdded, notifyservergroupclientadded, name, sgid, invokerid, invokername, invokeruid, clid, cluid
+Msg: CommandError, error, error_id, msg, failed_permid, return_code, extra_msg
+Msg: ConnectionInfo, notifyconnectioninfo, clid, connection_ping, connection_ping_deviation, connection_connected_time, connection_client_ip, connection_client_port, connection_packets_sent_speech, connection_packets_sent_keepalive, connection_packets_sent_control, connection_bytes_sent_speech, connection_bytes_sent_keepalive, connection_bytes_sent_control, connection_packets_received_speech, connection_packets_received_keepalive, connection_packets_received_control, connection_bytes_received_speech, connection_bytes_received_keepalive, connection_bytes_received_control, connection_server2client_packetloss_speech, connection_server2client_packetloss_keepalive, connection_server2client_packetloss_control, connection_server2client_packetloss_total, connection_client2server_packetloss_speech, connection_client2server_packetloss_keepalive, connection_client2server_packetloss_control, connection_client2server_packetloss_total, connection_bandwidth_sent_last_second_speech, connection_bandwidth_sent_last_second_keepalive, connection_bandwidth_sent_last_second_control, connection_bandwidth_sent_last_minute_speech, connection_bandwidth_sent_last_minute_keepalive, connection_bandwidth_sent_last_minute_control, connection_bandwidth_received_last_second_speech, connection_bandwidth_received_last_second_keepalive, connection_bandwidth_received_last_second_control, connection_bandwidth_received_last_minute_speech, connection_bandwidth_received_last_minute_keepalive, connection_bandwidth_received_last_minute_control, connection_filetransfer_bandwidth_sent, connection_filetransfer_bandwidth_received, connection_idle_time
 Msg: ConnectionInfoRequest, notifyconnectioninforequest
 Msg: FileListFinished, notifyfilelistfinished, cid, path
 Msg: FileTransferStatus, notifystatusfiletransfer, clientftfid, status, msg, size
@@ -296,7 +335,6 @@ Msg: ServerEdited, notifyserveredited, invokerid, invokername, invokeruid, reaso
 Msg: ServerGroupList, notifyservergrouplist, sgid, name, type, iconid, savedb, sortid, namemode, n_modifyp, n_member_addp, n_member_remove_p
 Msg: TextMessage, notifytextmessage, targetmode, msg, target, invokerid, invokername, invokeruid
 Msg: TokenUsed, notifytokenused, token, tokencustomset, token1, token2, clid, cldbid, cluid
-Msg: CommandError, error, error_id, msg, failed_permid, return_code, extra_msg
 :Responses
 Msg: ChannelData,, id, pid, seconds_empty, total_clients_family, total_clients, channel_needed_subscribe_power, channel_order, channel_name, channel_topic, channel_flag_default, channel_flag_password, channel_flag_permanent, channel_flag_semi_permanent, channel_codec, channel_codec_quality, channel_needed_talk_power, channel_icon_id, channel_maxclients, channel_maxfamilyclients
 Msg: ClientData,, clid, client_unique_identifier, cid, client_database_id, client_nickname, client_type
@@ -308,7 +346,7 @@ Msg: WhoAmI,, client_id, client_channel_id, client_nickname, client_database_id,
 :Hybrid
 Msg: ClientServerGroup, +notifyservergroupsbyclientid, name, sgid, cldbid
 Msg: FileDownload, +notifystartdownload, clientftfid, serverftfid, ftkey, port, size, msg
-Msg: FileUpload, +notifystartupload, clientftfid, serverftfid, ftkey, port, seekpos, msg
-Msg: FileTransfer, +notifyfiletransferlist, clid, path, name, size, sizedone, clientftfid, serverftfid, sender, ft_status, current_speed, average_speed, runtime
-Msg: FileList, +notifyfilelist, cid, path, name, size, datetime, ft_type
 Msg: FileInfoTs, +notifyfileinfo, cid, path, name, size, datetime
+Msg: FileList, +notifyfilelist, cid, path, name, size, datetime, ft_type
+Msg: FileTransfer, +notifyfiletransferlist, clid, path, name, size, sizedone, clientftfid, serverftfid, sender, ft_status, current_speed, average_speed, runtime
+Msg: FileUpload, +notifystartupload, clientftfid, serverftfid, ftkey, port, seekpos, msg
