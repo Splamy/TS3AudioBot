@@ -14,6 +14,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Linq;
 	using Helper;
 	using Helper.AudioTags;
+	using System.Collections.Generic;
 
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory
 	{
@@ -21,7 +22,10 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(string uri) => MatchCertainty.OnlyIfLast;
 
-		public MatchCertainty MatchPlaylist(string uri) => Directory.Exists(uri) ? MatchCertainty.Probably : MatchCertainty.Never;
+		public MatchCertainty MatchPlaylist(string uri) =>
+			Directory.Exists(uri) ? MatchCertainty.Probably :
+			File.Exists(uri) ? MatchCertainty.Maybe
+			: MatchCertainty.OnlyIfLast;
 
 		public R<PlayResource> GetResource(string uri)
 		{
@@ -124,26 +128,53 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Playlist> GetPlaylist(string url)
 		{
-			if (!Directory.Exists(url))
-				return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString());
-
-			try
+			if (Directory.Exists(url))
 			{
-				var di = new DirectoryInfo(url);
-				var plist = new Playlist(di.Name);
-				var resources = from file in di.EnumerateFiles()
-								select ValidateFile(file.FullName) into result
-								where result.Ok
-								select result.Value into val
-								select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, FactoryFor) into res
-								select new PlaylistItem(res);
-				plist.AddRange(resources);
+				try
+				{
+					var di = new DirectoryInfo(url);
+					var plist = new Playlist(di.Name);
+					var resources = from file in di.EnumerateFiles()
+									select ValidateFile(file.FullName) into result
+									where result.Ok
+									select result.Value into val
+									select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, FactoryFor) into res
+									select new PlaylistItem(res);
+					plist.AddRange(resources);
 
-				return plist;
+					return plist;
+				}
+				// TODO: correct errors
+				catch (PathTooLongException) { return R<Playlist>.Err(RResultCode.AccessDenied.ToString()); }
+				catch (ArgumentException) { return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString()); }
 			}
-			// TODO: correct errors
-			catch (PathTooLongException) { return R<Playlist>.Err(RResultCode.AccessDenied.ToString()); }
-			catch (ArgumentException) { return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString()); }
+			
+			var m3uresult = R<IReadOnlyList<PlaylistItem>>.Err(string.Empty);
+			if (File.Exists(url))
+			{
+				using (var stream = File.OpenRead(url))
+					m3uresult = M3uReader.TryGetData(stream);
+			}
+			else if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+			{
+				var ret = WebWrapper.GetResponse(uri, resp =>
+				{
+					using (var stream = resp.GetResponseStream())
+						m3uresult = M3uReader.TryGetData(stream);
+
+				});
+				if (ret != ValidateCode.Ok)
+					return R<Playlist>.Err(ret.ToString());
+			}
+
+			if (m3uresult)
+			{
+				var m3ulist = new Playlist(PlaylistManager.CleanseName(url));
+				m3ulist.AddRange(m3uresult.Value);
+				return m3ulist;
+			}
+			
+			return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString());
 		}
 	}
 

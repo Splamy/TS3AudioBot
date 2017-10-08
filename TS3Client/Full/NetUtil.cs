@@ -28,17 +28,48 @@ namespace TS3Client.Full
 				return (ushort)((intArr[inOff] << 8) | intArr[inOff + 1]);
 			}
 		}
+
+		public static int N2Hint(byte[] intArr, int inOff)
+		{
+			if (!BitConverter.IsLittleEndian)
+			{
+				return intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24);
+			}
+			else
+			{
+				return (intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3];
+			}
+		}
+
 		public static void H2N(ushort value, byte[] outArr, int outOff)
 		{
 			if (!BitConverter.IsLittleEndian)
 			{
-				outArr[outOff] = (byte)(value & 0xFF);
+				outArr[outOff + 0] = (byte)((value >> 0) & 0xFF);
 				outArr[outOff + 1] = (byte)((value >> 8) & 0xFF);
 			}
 			else
 			{
-				outArr[outOff] = (byte)((value >> 8) & 0xFF);
-				outArr[outOff + 1] = (byte)(value & 0xFF);
+				outArr[outOff + 0] = (byte)((value >> 8) & 0xFF);
+				outArr[outOff + 1] = (byte)((value >> 0) & 0xFF);
+			}
+		}
+
+		public static void H2N(uint value, byte[] outArr, int outOff)
+		{
+			if (!BitConverter.IsLittleEndian)
+			{
+				outArr[outOff + 0] = (byte)((value >> 00) & 0xFF);
+				outArr[outOff + 1] = (byte)((value >> 08) & 0xFF);
+				outArr[outOff + 2] = (byte)((value >> 16) & 0xFF);
+				outArr[outOff + 3] = (byte)((value >> 24) & 0xFF);
+			}
+			else
+			{
+				outArr[outOff + 0] = (byte)((value >> 24) & 0xFF);
+				outArr[outOff + 1] = (byte)((value >> 16) & 0xFF);
+				outArr[outOff + 2] = (byte)((value >> 08) & 0xFF);
+				outArr[outOff + 3] = (byte)((value >> 00) & 0xFF);
 			}
 		}
 
@@ -65,18 +96,6 @@ namespace TS3Client.Full
 				outArr[outOff + 5] = (byte)((value >> 16) & 0xFF);
 				outArr[outOff + 6] = (byte)((value >> 08) & 0xFF);
 				outArr[outOff + 7] = (byte)((value >> 00) & 0xFF);
-			}
-		}
-
-		public static int N2Hint(byte[] intArr, int inOff)
-		{
-			if (!BitConverter.IsLittleEndian)
-			{
-				return intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24);
-			}
-			else
-			{
-				return (intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3];
 			}
 		}
 	}

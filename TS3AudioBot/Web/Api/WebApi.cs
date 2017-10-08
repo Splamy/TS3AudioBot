@@ -14,12 +14,11 @@ namespace TS3AudioBot.Web.Api
 	using Sessions;
 	using System;
 	using System.IO;
-	using System.Linq;
 	using System.Net;
 	using System.Security.Cryptography;
 	using System.Security.Principal;
-	using System.Text.RegularExpressions;
 	using System.Text;
+	using System.Text.RegularExpressions;
 
 	public sealed class WebApi : WebComponent
 	{

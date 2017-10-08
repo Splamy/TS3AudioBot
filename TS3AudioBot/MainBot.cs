@@ -1032,7 +1032,7 @@ namespace TS3AudioBot
 		public JsonObject CommandListShow(ExecutionInformation info, int? offset) => CommandListShow(info, null, offset);
 
 		[Command("list show", "<name> Displays all songs currently in the playlists with the name <name>")]
-		[Usage("name> <index>", "Lets you specify the starting index from which songs should be listed.")]
+		[Usage("<name> <index>", "Lets you specify the starting index from which songs should be listed.")]
 		[RequiredParameters(0)]
 		public JsonObject CommandListShow(ExecutionInformation info, string name, int? offset)
 		{

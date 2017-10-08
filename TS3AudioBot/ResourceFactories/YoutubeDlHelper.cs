@@ -41,9 +41,16 @@ namespace TS3AudioBot.ResourceFactories
 
 			if (YoutubeDlPath == null)
 				return null;
+			
+			string fullCustomPath;
+			try { fullCustomPath = Path.GetFullPath(YoutubeDlPath); }
+			catch (ArgumentException)
+			{
+				Log.Write(Log.Level.Warning, "Your youtube-dl path contains invalid characters");
+				return null;
+			}
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
-			string fullCustomPath = Path.GetFullPath(YoutubeDlPath);
 			if (File.Exists(fullCustomPath) || File.Exists(fullCustomPath + ".exe"))
 				return new Tuple<string, string>(fullCustomPath, param);
 
