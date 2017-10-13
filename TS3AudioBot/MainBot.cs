@@ -474,58 +474,63 @@ namespace TS3AudioBot
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
-		[Command("getuser uid", "Gets the unique Id of a user.")]
+		[Command("getuser id", "Gets the id of a user.")]
+		public JsonObject CommandGetId(ExecutionInformation info)
+			=> info.InvokerData.ClientId.HasValue
+			? new JsonSingleValue<ushort>(info.InvokerData.ClientId.Value)
+			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
+		[Command("getuser uid", "Gets the unique id of a user.")]
 		public JsonObject CommandGetUid(ExecutionInformation info)
 			=> info.InvokerData.ClientUid != null
 			? new JsonSingleValue<string>(info.InvokerData.ClientUid)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser name", "Gets the Nickname of a user.")]
+		[Command("getuser name", "Gets the nickname of a user.")]
 		public JsonObject CommandGetName(ExecutionInformation info)
 			=> info.InvokerData.NickName != null
 			? new JsonSingleValue<string>(info.InvokerData.NickName)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser dbid", "Gets the DatabaseId of a user.")]
+		[Command("getuser dbid", "Gets the database id of a user.")]
 		public JsonObject CommandGetDbId(ExecutionInformation info)
 			=> info.InvokerData.DatabaseId.HasValue
 			? new JsonSingleValue<ulong>(info.InvokerData.DatabaseId.Value)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser channel", "Gets the ChannelId a user is currently in.")]
+		[Command("getuser channel", "Gets the channel id a user is currently in.")]
 		public JsonObject CommandGetChannel(ExecutionInformation info)
 			=> info.InvokerData.ChannelId.HasValue
 			? new JsonSingleValue<ulong>(info.InvokerData.ChannelId.Value)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser all", "Gets the unique Id of a user.")]
+		[Command("getuser all", "Gets all information of a user.")]
 		public JsonObject CommandGetUser(ExecutionInformation info)
 		{
 			var client = info.InvokerData;
 			return new JsonSingleObject<InvokerData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.ClientUid}", client);
 		}
 
-		[Command("getuser uid byid", "Gets the unique Id of a user.")]
+		[Command("getuser uid byid", "Gets the unique id of a user.")]
 		public JsonObject CommandGetUidById(ushort id) => new JsonSingleValue<string>(QueryConnection.GetClientById(id).UnwrapThrow().Uid);
-		[Command("getuser name byid", "Gets the Nickname of a user.")]
+		[Command("getuser name byid", "Gets the nickname of a user.")]
 		public JsonObject CommandGetNameById(ushort id) => new JsonSingleValue<string>(QueryConnection.GetClientById(id).UnwrapThrow().NickName);
-		[Command("getuser dbid byid", "Gets the DatabaseId of a user.")]
+		[Command("getuser dbid byid", "Gets the database id of a user.")]
 		public JsonObject CommandGetDbIdById(ushort id) => new JsonSingleValue<ulong>(QueryConnection.GetClientById(id).UnwrapThrow().DatabaseId);
-		[Command("getuser channel byid", "Gets the ChannelId a user is currently in.")]
+		[Command("getuser channel byid", "Gets the channel id a user is currently in.")]
 		public JsonObject CommandGetChannelById(ushort id) => new JsonSingleValue<ulong>(QueryConnection.GetClientById(id).UnwrapThrow().ChannelId);
-		[Command("getuser all byid", "Gets the unique Id of a user.")]
+		[Command("getuser all byid", "Gets the unique id of a user.")]
 		public JsonObject CommandGetUserById(ushort id)
 		{
 			var client = QueryConnection.GetClientById(id).UnwrapThrow();
 			return new JsonSingleObject<ClientData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}", client);
 		}
-		[Command("getuser id byname", "Gets the Id of a user.")]
+		[Command("getuser id byname", "Gets the id of a user.")]
 		public JsonObject CommandGetIdByName(string username) => new JsonSingleValue<ushort>(QueryConnection.GetClientByName(username).UnwrapThrow().ClientId);
-		[Command("getuser all byname", "Gets the unique Id of a user.")]
+		[Command("getuser all byname", "Gets all information of a user.")]
 		public JsonObject CommandGetUserByName(string username)
 		{
 			var client = QueryConnection.GetClientByName(username).UnwrapThrow();
 			return new JsonSingleObject<ClientData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}", client);
 		}
-		[Command("getuser name bydbid", "Gets the User name by dbid.")]
+		[Command("getuser name bydbid", "Gets the user name by dbid.")]
 		public JsonObject CommandGetNameByDbId(ulong dbId) => new JsonSingleValue<string>(QueryConnection.GetDbClientByDbId(dbId).UnwrapThrow().NickName ?? string.Empty);
-		[Command("getuser uid bydbid", "Gets the unique Id of a user.")]
+		[Command("getuser uid bydbid", "Gets the unique id of a user.")]
 		public JsonObject CommandGetUidByDbId(ulong dbId) => new JsonSingleValue<string>(QueryConnection.GetDbClientByDbId(dbId).UnwrapThrow().Uid);
 
 		[Command("help", "Shows all commands or detailed help about a specific command.")]
