@@ -346,7 +346,7 @@ namespace TS3Client.Messages
 		
 
 		public ChannelIdT ChannelId { get; set; }
-		public ushort Es { get; set; }
+		public TimeSpanSecondsT EmptySince { get; set; }
 
 		public void SetField(string name, string value)
 		{
@@ -355,7 +355,7 @@ namespace TS3Client.Messages
 			{
 
 			case "cid": ChannelId = CommandDeserializer.DeserializeUInt64(value); break;
-			case "es": Es = CommandDeserializer.DeserializeUInt16(value); break;
+			case "es": EmptySince = CommandDeserializer.DeserializeTimeSpanSeconds(value); break;
 			
 			}
 
@@ -875,7 +875,7 @@ namespace TS3Client.Messages
 		public bool AskForPrivilege { get; set; }
 		public string ClientName { get; set; }
 		public ClientIdT ClientId { get; set; }
-		public uint Pv { get; set; }
+		public ushort ProtocolVersion { get; set; }
 		public ushort LicenseType { get; set; }
 		public int TalkPower { get; set; }
 		public int NeededServerQueryViewPower { get; set; }
@@ -913,7 +913,7 @@ namespace TS3Client.Messages
 			case "virtualserver_ask_for_privilegekey": AskForPrivilege = CommandDeserializer.DeserializeBool(value); break;
 			case "acn": ClientName = CommandDeserializer.DeserializeString(value); break;
 			case "aclid": ClientId = CommandDeserializer.DeserializeUInt16(value); break;
-			case "pv": Pv = CommandDeserializer.DeserializeUInt32(value); break;
+			case "pv": ProtocolVersion = CommandDeserializer.DeserializeUInt16(value); break;
 			case "lt": LicenseType = CommandDeserializer.DeserializeUInt16(value); break;
 			case "client_talk_power": TalkPower = CommandDeserializer.DeserializeInt32(value); break;
 			case "client_needed_serverquery_view_power": NeededServerQueryViewPower = CommandDeserializer.DeserializeInt32(value); break;

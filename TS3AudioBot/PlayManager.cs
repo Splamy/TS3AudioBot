@@ -141,7 +141,7 @@ namespace TS3AudioBot
 				int index = PlaylistManager.InsertToFreelist(new PlaylistItem(play.BaseData, meta));
 				PlaylistManager.Index = index;
 			}
-			
+
 			CurrentPlayData = playInfo; // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, CurrentPlayData);
 
@@ -267,15 +267,18 @@ namespace TS3AudioBot
 		public string Token { get; internal set; }
 		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
 
-		public InvokerData(string clientUid)
+		public InvokerData(string clientUid, ulong? databaseId = null, ulong? channelId = null,
+			ushort? clientId = null, string nickName = null, bool isApi = false, string token = null,
+			TS3Client.TextMessageTargetMode? visibiliy = null)
 		{
 			ClientUid = clientUid;
-			ChannelId = null;
-			ClientId = null;
-			DatabaseId = null;
-			IsApi = false;
-			Token = null;
-			Visibiliy = null;
+			DatabaseId = databaseId;
+			ChannelId = channelId;
+			ClientId = clientId;
+			NickName = nickName;
+			IsApi = isApi;
+			Token = token;
+			Visibiliy = visibiliy;
 		}
 
 		public override int GetHashCode()

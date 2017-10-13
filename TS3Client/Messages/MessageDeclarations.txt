@@ -177,7 +177,7 @@ Field: ctid, ctid, TargetChannelId, ChannelIdT
 Field: current_speed, current_speed, CurrentSpeed, float
 Field: datetime, datetime, DateTime, DateTime
 :: ?? type, name
-Field: es, es, Es, ushort
+Field: es, es, EmptySince, TimeSpanSecondsT
 Field: ft_status, status, Status, int
 Field: ft_type, type, IsFile, bool
 Field: ftkey, ftkey, FileTransferKey, string
@@ -200,8 +200,7 @@ Field: permid, permid, PermissionId, PermissionId
 Field: permvalue, permvalue, PermissionValue, int
 Field: pid, pid, ParentChannelId, ChannelIdT
 Field: port, port, Port, ushort
-:: ?? type, name
-Field: pv, pv, Pv, uint
+Field: pv, pv, ProtocolVersion, ushort
 Field: reasonid, reasonid, Reason, MoveReason
 Field: reasonmsg, reasonmsg, ReasonMessage, string
 : ?? type
@@ -209,14 +208,14 @@ Field: runtime, runtime, Runtime, TimeSpanSecondsT
 Field: savedb, savedb, GroupIsPermanent, bool
 Field: seconds_empty, seconds_empty, DurationEmpty, TimeSpanSecondsT
 Field: seekpos, seekpos, SeekPosistion, long
-: ?? datatype
+: ?? type
 Field: sender, sender, Sender, ulong
 Field: serverftfid, serverftfid, ServerFileTransferId, ushort
 Field: sgid, sgid, ServerGroupId, ServerGroupIdT
 Field: size, size, Size, long
 Field: sizedone, sizedone, SizeDone, long
 Field: sortid, sortid, SortId, int
-:: ?? datatype/enum
+:: ?? type/enum
 Field: status, status, Status, Ts3ErrorCode
 Field: target, target, TargetClientId, ClientIdT
 Field: targetmode, targetmode, Target, TextMessageTargetMode

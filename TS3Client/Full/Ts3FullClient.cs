@@ -439,6 +439,9 @@ namespace TS3Client.Full
 				.FirstOrDefault(x => x.ClientId == clientId);
 		}
 
+		// serverrequestconnectioninfo
+		// servergetvariables
+
 		// Splitted base commands
 
 		public override ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)

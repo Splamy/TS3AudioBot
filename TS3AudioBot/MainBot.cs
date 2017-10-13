@@ -419,15 +419,19 @@ namespace TS3AudioBot
 		[Command("bot commander off", "Disables channel commander.")]
 		public void CommandBotCommanderOff() => QueryConnection.SetChannelCommander(false);
 
-		[Command("bot move", "Moves the bot to you or a specified channel.")]
+		[Command("bot come", "Moves the bot to you or a specified channel.")]
 		[RequiredParameters(0)]
-		public void CommandBotMove(ExecutionInformation info, ulong? channel)
+		public void CommandBotCome(ExecutionInformation info, string password = null) => CommandBotMove(info, null, password);
+
+		[Command("bot move", "Moves the bot to you or a specified channel.")]
+		[RequiredParameters(1)]
+		public void CommandBotMove(ExecutionInformation info, ulong? channel, string password = null)
 		{
 			if (!channel.HasValue)
 				channel = (CommandGetChannel(info) as JsonSingleValue<ulong>)?.Value;
 			if (!channel.HasValue)
 				throw new CommandException("No target channel found");
-			QueryConnection.MoveTo(channel.Value).UnwrapThrow();
+			QueryConnection.MoveTo(channel.Value, password).UnwrapThrow();
 		}
 
 		[Command("bot name", "Gives the bot a new name.")]

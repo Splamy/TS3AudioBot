@@ -233,7 +233,8 @@ namespace TS3Client
 				new CommandParameter("clid", clientId),
 				new CommandParameter("cid", channelId) });
 			if (channelPassword != null)
-				cmd.AppendParameter(new CommandParameter("cpw", channelPassword));
+				cmd.AppendParameter(new CommandParameter("cpw",
+					ClientType == ClientType.Full ? Full.Ts3Crypt.HashPassword(channelPassword) : channelPassword));
 			SendCommand<ResponseVoid>(cmd);
 		}
 

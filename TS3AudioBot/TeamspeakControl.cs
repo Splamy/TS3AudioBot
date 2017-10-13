@@ -345,11 +345,11 @@ namespace TS3AudioBot
 			catch (Ts3CommandException ts3ex) { return ts3ex.ErrorStatus.ErrorFormat(); }
 		}
 
-		public R MoveTo(ulong channelId)
+		public R MoveTo(ulong channelId, string password = null)
 		{
 			try
 			{
-				tsBaseClient.ClientMove(me.ClientId, channelId);
+				tsBaseClient.ClientMove(me.ClientId, channelId, password);
 				return R.OkR;
 			}
 			catch (Ts3CommandException) { return "Cannot move there."; }
