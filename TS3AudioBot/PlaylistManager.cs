@@ -19,7 +19,7 @@ namespace TS3AudioBot
 	using System.Text;
 	using System.Text.RegularExpressions;
 
-	public sealed class PlaylistManager : IDisposable
+	public sealed class PlaylistManager
 	{
 		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
@@ -136,7 +136,9 @@ namespace TS3AudioBot
 		}
 
 		public int AddToFreelist(PlaylistItem item) => freeList.AddItem(item);
+		public void AddToFreelist(IEnumerable<PlaylistItem> items) => freeList.AddRange(items);
 		public int AddToTrash(PlaylistItem item) => trashList.AddItem(item);
+		public void AddToTrash(IEnumerable<PlaylistItem> items) => trashList.AddRange(items);
 
 		public int InsertToFreelist(PlaylistItem item) => freeList.InsertItem(item, Math.Min(Index + 1, freeList.Count));
 
@@ -411,8 +413,6 @@ namespace TS3AudioBot
 			default: return "Special list not found";
 			}
 		}
-
-		public void Dispose() { }
 	}
 
 	public class PlaylistItem

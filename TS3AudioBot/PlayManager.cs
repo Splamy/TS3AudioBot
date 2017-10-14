@@ -13,6 +13,7 @@ namespace TS3AudioBot
 	using History;
 	using ResourceFactories;
 	using System;
+	using System.Collections.Generic;
 
 	public class PlayManager
 	{
@@ -44,6 +45,11 @@ namespace TS3AudioBot
 			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
 		}
 		public R Enqueue(InvokerData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId));
+		public R Enqueue(IEnumerable<PlaylistItem> pli)
+		{
+			PlaylistManager.AddToFreelist(pli);
+			return R.OkR;
+		}
 
 		private R EnqueueInternal(InvokerData invoker, PlaylistItem pli)
 		{
@@ -232,6 +238,13 @@ namespace TS3AudioBot
 		public int? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
 		public bool FromPlaylist { get; set; }
+
+		public MetaData Clone() => new MetaData
+		{
+			ResourceOwnerDbId = ResourceOwnerDbId,
+			FromPlaylist = FromPlaylist,
+			Volume = Volume
+		};
 	}
 
 	public class SongEndEventArgs : EventArgs

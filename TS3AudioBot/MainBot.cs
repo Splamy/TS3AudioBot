@@ -29,6 +29,7 @@ namespace TS3AudioBot
 	using Web;
 	using Web.Api;
 
+	/// <summary>Core class managing all bots and utility modules.</summary>
 	public sealed class MainBot : IDisposable
 	{
 		internal static void Main(string[] args)
@@ -67,18 +68,30 @@ namespace TS3AudioBot
 
 		private TargetScript TargetScript { get; set; }
 		internal PluginManager PluginManager { get; private set; }
+		/// <summary>Mangement for the bot command system.</summary>
 		public CommandManager CommandManager { get; private set; }
+		/// <summary>Mangement for playlists.</summary>
 		public PlaylistManager PlaylistManager { get; private set; }
+		/// <summary>Connection object for the current client.</summary>
 		public TeamspeakControl QueryConnection { get; private set; }
+		/// <summary>Management for clients talking with the bot.</summary>
 		public SessionManager SessionManager { get; private set; }
 		private HistoryManager historyManager = null;
+		/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
 		public HistoryManager HistoryManager => historyManager ?? throw new CommandException("History has not been enabled", CommandExceptionReason.NotSupported);
+		/// <summary>Manages factories which can load resources.</summary>
 		public ResourceFactoryManager FactoryManager { get; private set; }
+		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
 		public WebManager WebManager { get; private set; }
+		/// <summary>Redirects playing, enqueing and song events.</summary>
 		public PlayManager PlayManager { get; private set; }
+		/// <summary>Used to specify playing mode and active targets to send to.</summary>
 		public ITargetManager TargetManager { get; private set; }
+		/// <summary>Slim interface to control the audio player.</summary>
 		public IPlayerConnection PlayerConnection { get; private set; }
+		/// <summary>Minimalistic config store for automatically serialized classes.</summary>
 		public ConfigFile ConfigManager { get; private set; }
+		/// <summary>Permission system of the bot.</summary>
 		public RightsManager RightsManager { get; private set; }
 
 		public bool QuizMode { get; set; }
@@ -474,63 +487,63 @@ namespace TS3AudioBot
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
-		[Command("getuser id", "Gets the id of a user.")]
+		[Command("getuser id", "Gets your id.")]
 		public JsonObject CommandGetId(ExecutionInformation info)
 			=> info.InvokerData.ClientId.HasValue
 			? new JsonSingleValue<ushort>(info.InvokerData.ClientId.Value)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser uid", "Gets the unique id of a user.")]
+		[Command("getuser uid", "Gets your unique id.")]
 		public JsonObject CommandGetUid(ExecutionInformation info)
 			=> info.InvokerData.ClientUid != null
 			? new JsonSingleValue<string>(info.InvokerData.ClientUid)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser name", "Gets the nickname of a user.")]
+		[Command("getuser name", "Gets your nickname.")]
 		public JsonObject CommandGetName(ExecutionInformation info)
 			=> info.InvokerData.NickName != null
 			? new JsonSingleValue<string>(info.InvokerData.NickName)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser dbid", "Gets the database id of a user.")]
+		[Command("getuser dbid", "Gets your database id.")]
 		public JsonObject CommandGetDbId(ExecutionInformation info)
 			=> info.InvokerData.DatabaseId.HasValue
 			? new JsonSingleValue<ulong>(info.InvokerData.DatabaseId.Value)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser channel", "Gets the channel id a user is currently in.")]
+		[Command("getuser channel", "Gets your channel id you are currently in.")]
 		public JsonObject CommandGetChannel(ExecutionInformation info)
 			=> info.InvokerData.ChannelId.HasValue
 			? new JsonSingleValue<ulong>(info.InvokerData.ChannelId.Value)
 			: (JsonObject)new JsonError("Not found.", CommandExceptionReason.CommandError);
-		[Command("getuser all", "Gets all information of a user.")]
+		[Command("getuser all", "Gets all information about you.")]
 		public JsonObject CommandGetUser(ExecutionInformation info)
 		{
 			var client = info.InvokerData;
 			return new JsonSingleObject<InvokerData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.ClientUid}", client);
 		}
 
-		[Command("getuser uid byid", "Gets the unique id of a user.")]
+		[Command("getuser uid byid", "Gets the unique id of a user, searching with his id.")]
 		public JsonObject CommandGetUidById(ushort id) => new JsonSingleValue<string>(QueryConnection.GetClientById(id).UnwrapThrow().Uid);
-		[Command("getuser name byid", "Gets the nickname of a user.")]
+		[Command("getuser name byid", "Gets the nickname of a user, searching with his id.")]
 		public JsonObject CommandGetNameById(ushort id) => new JsonSingleValue<string>(QueryConnection.GetClientById(id).UnwrapThrow().NickName);
-		[Command("getuser dbid byid", "Gets the database id of a user.")]
+		[Command("getuser dbid byid", "Gets the database id of a user, searching with his id.")]
 		public JsonObject CommandGetDbIdById(ushort id) => new JsonSingleValue<ulong>(QueryConnection.GetClientById(id).UnwrapThrow().DatabaseId);
-		[Command("getuser channel byid", "Gets the channel id a user is currently in.")]
+		[Command("getuser channel byid", "Gets the channel id a user is currently in, searching with his id.")]
 		public JsonObject CommandGetChannelById(ushort id) => new JsonSingleValue<ulong>(QueryConnection.GetClientById(id).UnwrapThrow().ChannelId);
-		[Command("getuser all byid", "Gets the unique id of a user.")]
+		[Command("getuser all byid", "Gets all information about a user, searching with his id.")]
 		public JsonObject CommandGetUserById(ushort id)
 		{
 			var client = QueryConnection.GetClientById(id).UnwrapThrow();
 			return new JsonSingleObject<ClientData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}", client);
 		}
-		[Command("getuser id byname", "Gets the id of a user.")]
+		[Command("getuser id byname", "Gets the id of a user, searching with his name.")]
 		public JsonObject CommandGetIdByName(string username) => new JsonSingleValue<ushort>(QueryConnection.GetClientByName(username).UnwrapThrow().ClientId);
-		[Command("getuser all byname", "Gets all information of a user.")]
+		[Command("getuser all byname", "Gets all information of a user, searching with his name.")]
 		public JsonObject CommandGetUserByName(string username)
 		{
 			var client = QueryConnection.GetClientByName(username).UnwrapThrow();
 			return new JsonSingleObject<ClientData>($"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}", client);
 		}
-		[Command("getuser name bydbid", "Gets the user name by dbid.")]
+		[Command("getuser name bydbid", "Gets the user name by dbid, searching with his database id.")]
 		public JsonObject CommandGetNameByDbId(ulong dbId) => new JsonSingleValue<string>(QueryConnection.GetDbClientByDbId(dbId).UnwrapThrow().NickName ?? string.Empty);
-		[Command("getuser uid bydbid", "Gets the unique id of a user.")]
+		[Command("getuser uid bydbid", "Gets the unique id of a user, searching with his database id.")]
 		public JsonObject CommandGetUidByDbId(ulong dbId) => new JsonSingleValue<string>(QueryConnection.GetDbClientByDbId(dbId).UnwrapThrow().Uid);
 
 		[Command("help", "Shows all commands or detailed help about a specific command.")]
@@ -1017,6 +1030,13 @@ namespace TS3AudioBot
 				PlayManager.Play(info.InvokerData, item).UnwrapThrow();
 			else
 				throw new CommandException("Nothing to play...", CommandExceptionReason.CommandError);
+		}
+
+		[Command("list queue", "Appends your playlist to the freelist.")]
+		public void CommandListQueue(ExecutionInformation info)
+		{
+			var plist = AutoGetPlaylist(info);
+			PlayManager.Enqueue(plist.AsEnumerable());
 		}
 
 		[Command("list save", "Stores your current workinglist to disk.")]
