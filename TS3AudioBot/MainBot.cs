@@ -170,6 +170,7 @@ namespace TS3AudioBot
 			var pmd = ConfigManager.GetDataStruct<PluginManagerData>("PluginManager", true);
 			var pld = ConfigManager.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
 			var yfd = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
+			var mfd = ConfigManager.GetDataStruct<MediaFactoryData>("MediaFactory", true);
 			var webd = ConfigManager.GetDataStruct<WebData>("WebData", true);
 			var rmd = ConfigManager.GetDataStruct<RightsManagerData>("RightsManager", true);
 			mainBotData = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
@@ -238,7 +239,7 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			YoutubeDlHelper.DataObj = yfd;
 			FactoryManager = new ResourceFactoryManager(this);
-			FactoryManager.AddFactory(new MediaFactory());
+			FactoryManager.AddFactory(new MediaFactory(mfd));
 			FactoryManager.AddFactory(new YoutubeFactory(yfd));
 			FactoryManager.AddFactory(new SoundcloudFactory());
 			FactoryManager.AddFactory(new TwitchFactory());

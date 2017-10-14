@@ -350,18 +350,7 @@ namespace TS3AudioBot
 		{
 			sendTick.Active = false;
 			audioTimer.Stop();
-			lock (ffmpegLock)
-			{
-				try
-				{
-					if (!ffmpegProcess?.HasExited ?? false)
-						ffmpegProcess?.Kill();
-					else
-						ffmpegProcess?.Close();
-				}
-				catch (InvalidOperationException) { }
-				ffmpegProcess = null;
-			}
+			StopFfmpegProcess();
 			return R.OkR;
 		}
 
@@ -422,6 +411,8 @@ namespace TS3AudioBot
 			{
 				lock (ffmpegLock)
 				{
+					StopFfmpegProcess();
+
 					ffmpegProcess = new Process
 					{
 						StartInfo = new ProcessStartInfo
@@ -447,6 +438,25 @@ namespace TS3AudioBot
 				}
 			}
 			catch (Exception ex) { return $"Unable to create stream ({ex.Message})"; }
+		}
+
+		private void StopFfmpegProcess()
+		{
+			lock (ffmpegLock)
+			{
+				if (ffmpegProcess == null)
+					return;
+
+				try
+				{
+					if (!ffmpegProcess.HasExited)
+						ffmpegProcess.Kill();
+					else
+						ffmpegProcess.Close();
+				}
+				catch (InvalidOperationException) { }
+				ffmpegProcess = null;
+			}
 		}
 
 		private TimeSpan GetCurrentSongLength()

@@ -18,9 +18,19 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory
 	{
+		private readonly MediaFactoryData mediaFactoryData;
+
+		public MediaFactory(MediaFactoryData mfd)
+		{
+			mediaFactoryData = mfd;
+		}
+
 		public string FactoryFor => "media";
 
-		public MatchCertainty MatchResource(string uri) => MatchCertainty.OnlyIfLast;
+		public MatchCertainty MatchResource(string uri) =>
+			File.Exists(uri)
+			? MatchCertainty.Maybe
+			: MatchCertainty.OnlyIfLast;
 
 		public MatchCertainty MatchPlaylist(string uri) =>
 			Directory.Exists(uri) ? MatchCertainty.Probably :
@@ -56,29 +66,23 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(string id) => id;
 
-		private static R<ResData> ValidateUri(string uri)
+		private R<ResData> ValidateUri(string uri)
 		{
-			if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out Uri uriResult))
-				return R<ResData>.Err(RResultCode.MediaInvalidUri.ToString());
-
-			string fullUri = uri;
-			if (!uriResult.IsAbsoluteUri)
+			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri uriResult))
 			{
-				try { fullUri = Path.GetFullPath(uri); }
-				catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException) { }
-
-				if (!Uri.TryCreate(fullUri, UriKind.Absolute, out uriResult))
-					return R<ResData>.Err(RResultCode.MediaInvalidUri.ToString());
+				if (uriResult.Scheme == Uri.UriSchemeHttp
+				 || uriResult.Scheme == Uri.UriSchemeHttps
+				 || uriResult.Scheme == Uri.UriSchemeFtp)
+					return ValidateWeb(uriResult);
+				else if (uriResult.Scheme == Uri.UriSchemeFile)
+					return ValidateFile(uriResult.OriginalString);
+				else
+					return R<ResData>.Err(RResultCode.MediaUnknownUri.ToString());
 			}
-
-			if (uriResult.Scheme == Uri.UriSchemeHttp
-			 || uriResult.Scheme == Uri.UriSchemeHttps
-			 || uriResult.Scheme == Uri.UriSchemeFtp)
-				return ValidateWeb(uriResult);
-			else if (uriResult.Scheme == Uri.UriSchemeFile)
-				return ValidateFile(fullUri);
 			else
-				return R<ResData>.Err(RResultCode.MediaUnknownUri.ToString());
+			{
+				return ValidateFile(uri);
+			}
 		}
 
 		private static string GetStreamName(Stream stream)
@@ -103,16 +107,17 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private static R<ResData> ValidateFile(string path)
+		private R<ResData> ValidateFile(string path)
 		{
-			if (!File.Exists(path))
+			var foundPath = FindFile(path);
+			if (foundPath == null)
 				return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString());
 
 			try
 			{
-				using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
+				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read))
 				{
-					return R<ResData>.OkR(new ResData(path, GetStreamName(stream)));
+					return R<ResData>.OkR(new ResData(foundPath.LocalPath, GetStreamName(stream)));
 				}
 			}
 			// TODO: correct errors
@@ -122,6 +127,29 @@ namespace TS3AudioBot.ResourceFactories
 			catch (IOException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
 			catch (UnauthorizedAccessException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
 			catch (NotSupportedException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+		}
+
+		private Uri FindFile(string path)
+		{
+			if (!Uri.TryCreate(path, UriKind.RelativeOrAbsolute, out var uri))
+				return null;
+
+			if (uri.IsAbsoluteUri)
+				return File.Exists(path) || Directory.Exists(path) ? uri : null;
+
+			try
+			{
+				var fullPath = Path.GetFullPath(path);
+				if (File.Exists(fullPath) || Directory.Exists(fullPath))
+					return new Uri(fullPath, UriKind.Absolute);
+				fullPath = Path.GetFullPath(Path.Combine(mediaFactoryData.DefaultPath, path));
+				if (File.Exists(fullPath) || Directory.Exists(fullPath))
+					return new Uri(fullPath, UriKind.Absolute);
+			}
+			catch (Exception ex)
+			when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException)
+			{ }
+			return null;
 		}
 
 		public void Dispose() { }
@@ -148,7 +176,7 @@ namespace TS3AudioBot.ResourceFactories
 				catch (PathTooLongException) { return R<Playlist>.Err(RResultCode.AccessDenied.ToString()); }
 				catch (ArgumentException) { return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString()); }
 			}
-			
+
 			var m3uresult = R<IReadOnlyList<PlaylistItem>>.Err(string.Empty);
 			if (File.Exists(url))
 			{
@@ -173,7 +201,7 @@ namespace TS3AudioBot.ResourceFactories
 				m3ulist.AddRange(m3uresult.Value);
 				return m3ulist;
 			}
-			
+
 			return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString());
 		}
 	}
@@ -188,5 +216,11 @@ namespace TS3AudioBot.ResourceFactories
 			FullUri = fullUri;
 			Title = title;
 		}
+	}
+
+	public class MediaFactoryData : ConfigData
+	{
+		[Info("The default path to look for local resources.", "")]
+		public string DefaultPath { get; set; }
 	}
 }
