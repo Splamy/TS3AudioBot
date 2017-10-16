@@ -11,6 +11,7 @@ namespace TS3Client
 {
 	using Full;
 
+	/// <summary>Used to pass basic connecting information. (Usually for the query)</summary>
 	public class ConnectionData
 	{
 		/// <summary>Hostname or Ip-Address including the port. This address can point to the
@@ -18,6 +19,7 @@ namespace TS3Client
 		public string Address { get; set; }
 	}
 
+	/// <summary>Used to pass detailed connecting information to the full client.</summary>
 	public class ConnectionDataFull : ConnectionData
 	{
 		/// <summary>

@@ -26,6 +26,7 @@ namespace TS3Client.Full
 	using System.Text;
 	using System.Security.Cryptography;
 
+	/// <summary>Provides all cryptographic functions needed for the low- and high level TeamSpeak protocol usage.</summary>
 	public sealed class Ts3Crypt
 	{
 		private const string DummyKeyAndNonceString = "c:\\windows\\system\\firewall32.cpl";

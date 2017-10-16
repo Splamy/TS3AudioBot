@@ -9,7 +9,7 @@
 
 namespace TS3Client.Full
 {
-	public sealed class IncomingPacket : BasePacket
+	internal sealed class IncomingPacket : BasePacket
 	{
 		public IncomingPacket(byte[] raw)
 		{

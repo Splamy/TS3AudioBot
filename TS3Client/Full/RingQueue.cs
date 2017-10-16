@@ -11,6 +11,8 @@ namespace TS3Client.Full
 {
 	using System;
 
+	/// <summary>Provides a ring queue with packet offset and direct item access functionality.</summary>
+	/// <typeparam name="T">Item type</typeparam>
 	public class RingQueue<T>
 	{
 		private const int InitialBufferSize = 16;

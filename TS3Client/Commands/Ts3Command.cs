@@ -15,7 +15,8 @@ namespace TS3Client.Commands
 	using System.Text;
 	using System.Text.RegularExpressions;
 
-	public class Ts3Command
+	/// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
+	public sealed class Ts3Command
 	{
 		private static readonly Regex CommandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 		public static List<ICommandPart> NoParameter => new List<ICommandPart>();
@@ -23,9 +24,15 @@ namespace TS3Client.Commands
 		internal bool ExpectResponse { get; set; }
 		public string Command { get; }
 		private readonly List<ICommandPart> parameter;
-
+		
+		/// <summary>Creates a new command.</summary>
+		/// <param name="command">The command name.</param>
 		[DebuggerStepThrough]
 		public Ts3Command(string command) : this(command, NoParameter) { }
+		/// <summary>Creates a new command.</summary>
+		/// <param name="command">The command name.</param>
+		/// <param name="parameter">The parameters to be added to this command.
+		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		[DebuggerStepThrough]
 		public Ts3Command(string command, List<ICommandPart> parameter)
 		{
@@ -46,8 +53,16 @@ namespace TS3Client.Commands
 			return this;
 		}
 
+		/// <summary>Builds this command to the query-like command.</summary>
+		/// <returns>The formatted query-like command.</returns>
 		public override string ToString() => BuildToString(Command, parameter);
 
+		/// <summary>Builds the command from its parameters and returns the query-like command.</summary>
+		/// <param name="command">The command name.</param>
+		/// <param name="parameter">The parameter to be added to this command.</param>
+		/// <returns>The formatted query-like command.</returns>
+		/// <exception cref="ArgumentException">When a command is null or not valid.</exception>
+		/// <exception cref="ArgumentOutOfRangeException">When multiple <see cref="CommandMultiParameter"/> are added but have different array lengths.</exception>
 		public static string BuildToString(string command, IEnumerable<ICommandPart> parameter)
 		{
 			if (string.IsNullOrWhiteSpace(command))

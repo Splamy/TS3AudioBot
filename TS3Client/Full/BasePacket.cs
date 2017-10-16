@@ -9,7 +9,7 @@
 
 namespace TS3Client.Full
 {
-	public class BasePacket
+	internal class BasePacket
 	{
 		public PacketType PacketType
 		{

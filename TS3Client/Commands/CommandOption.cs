@@ -13,12 +13,17 @@ namespace TS3Client.Commands
 	using System.Linq;
 	using System.Text;
 
+	/// <summary>Command options which will be added with "-name" at the and.</summary>
 	public class CommandOption : ICommandPart
 	{
 		public string Value { get; }
 		public CommandPartType Type => CommandPartType.Option;
 
 		public CommandOption(string name) { Value = string.Concat(" -", name); }
+		/// <summary>Creates one or many options from the enum.
+		/// The enum must be a flag list which will be expanded.
+		/// The name of each set enum flag will be used as the option name.</summary>
+		/// <param name="values"></param>
 		public CommandOption(Enum values)
 		{
 			var strb = new StringBuilder();

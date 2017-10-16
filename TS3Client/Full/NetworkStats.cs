@@ -15,7 +15,7 @@ namespace TS3Client.Full
 	using System.Linq;
 
 	// TODO include udp/ip header size to get correct values
-
+	/// <summary>Provides connection stats by logging packets.</summary>
 	public sealed class NetworkStats
 	{
 		private readonly long[] outPackets = new long[3];
@@ -29,7 +29,7 @@ namespace TS3Client.Full
 		private static readonly TimeSpan TimeMinute = TimeSpan.FromMinutes(1);
 		private readonly object queueLock = new object();
 
-		public void LogOutPacket(OutgoingPacket packet)
+		internal void LogOutPacket(OutgoingPacket packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
 			outPackets[(int)kind]++;
@@ -41,7 +41,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		public void LogInPacket(IncomingPacket packet)
+		internal void LogInPacket(IncomingPacket packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
 			inPackets[(int)kind]++;

@@ -23,6 +23,7 @@ namespace TS3Client.Full
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
 
+	/// <summary>Creates a full TeampSpeak3 client with voice capabilities.</summary>
 	public sealed class Ts3FullClient : Ts3BaseFunctions
 	{
 		private readonly Ts3Crypt ts3Crypt;
@@ -36,8 +37,11 @@ namespace TS3Client.Full
 
 		private readonly IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
+		/// <summary>The client id given to this connection by the server.</summary>
 		public ushort ClientId => packetHandler.ClientId;
+		/// <summary>The disonnect message when leaving.</summary>
 		public string QuitMessage { get; set; } = "Disconnected";
+		/// <summary>The <see cref="Full.VersionSign"/> used to connect.</summary>
 		public VersionSign VersionSign { get; private set; }
 		private Ts3ClientStatus status;
 		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
@@ -51,6 +55,9 @@ namespace TS3Client.Full
 		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
 		public event EventHandler<CommandError> OnErrorEvent;
 
+		/// <summary>Creates a new client. A client can manage one connection to a server.</summary>
+		/// <param name="dispatcherType">The message processing method for incomming notifications.
+		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
 		public Ts3FullClient(EventDispatchType dispatcherType)
 		{
 			status = Ts3ClientStatus.Disconnected;
@@ -61,6 +68,11 @@ namespace TS3Client.Full
 			wasExit = true;
 		}
 
+		/// <summary>Tries to connect to a server.</summary>
+		/// <param name="conData">Set the connection information properties as needed.
+		/// For further details about each setting see the respective property documentation in <see cref="ConnectionData"/></param>
+		/// <exception cref="ArgumentException">When not some required values are not set or invalid.</exception>
+		/// <exception cref="Ts3Exception">When the connection could not be established.</exception>
 		public override void Connect(ConnectionData conData)
 		{
 			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
@@ -88,6 +100,10 @@ namespace TS3Client.Full
 			dispatcher.EnterEventLoop();
 		}
 
+		/// <summary>
+		/// Disconnects from the current server and closes the connection.
+		/// Does nothing if the client is not connected.
+		/// </summary>
 		public override void Disconnect()
 		{
 			DisconnectInternal();
@@ -282,6 +298,17 @@ namespace TS3Client.Full
 			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
 		}
 
+		/// <summary>
+		/// Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.
+		/// <para>NOTE: Do not expect all commands to work exactly like in the query documentation.</para>
+		/// </summary>
+		/// <typeparam name="T">The type to deserialize the response to. Use <see cref="ResponseDictionary"/> for unknow response data.</typeparam>
+		/// <param name="com">The raw command to send.
+		/// <para>NOTE: By default does the command expect an answer from the server. Set <see cref="Ts3Command.ExpectResponse"/> to false
+		/// if the client hangs after a special command (<see cref="SendCommand{T}"/> will return <code>null</code> instead).</para></param>
+		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.
+		/// Or <code>null</code> if no reponse is expected.</returns>
+		/// <exception cref="Ts3CommandException">When the response has an error code.</exception>
 		public override IEnumerable<T> SendCommand<T>(Ts3Command com)
 		{
 			using (var wb = new WaitBlock())
@@ -325,6 +352,7 @@ namespace TS3Client.Full
 			}
 		}
 
+		/// <summary>Release all resources. Will try to disconnect before disposing.</summary>
 		public override void Dispose()
 		{
 			Disconnect();

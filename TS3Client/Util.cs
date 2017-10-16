@@ -40,12 +40,13 @@ namespace TS3Client
 		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString()); }
 	}
 
-	public class MissingEnumCaseException : Exception
+	internal sealed class MissingEnumCaseException : Exception
 	{
 		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
 		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 
+	/// <summary>Provides useful extension methods for error formatting.</summary>
 	public static class Extensions
 	{
 		public static string ErrorFormat(this CommandError error)

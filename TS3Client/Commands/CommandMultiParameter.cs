@@ -14,7 +14,9 @@ namespace TS3Client.Commands
 	using System.Diagnostics;
 	using System.Linq;
 
-	public class CommandMultiParameter : ICommandPart
+	/// <summary>Represents an array of data. Will be expanded to a pipe seperated list when sent.
+	/// Multiple <see cref="CommandMultiParameter"/> will be merged automatically but will need the same array length.</summary>
+	public sealed class CommandMultiParameter : ICommandPart
 	{
 		public string Key { get; }
 		public string[] Values { get; }

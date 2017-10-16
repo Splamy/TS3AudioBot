@@ -14,6 +14,7 @@ namespace TS3Client
 	using System.Net;
 	using System.Text.RegularExpressions;
 
+	/// <summary>Provides methods to resovle TSDNS, SRV redirects and nicknames</summary>
 	public static class TsDnsResolver
 	{
 		private const ushort Ts3DefaultPort = 9987;
@@ -21,6 +22,10 @@ namespace TS3Client
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 
+		/// <summary>Tries to resolve a address string to an ip.</summary>
+		/// <param name="address">The address, nickname, etc. to resolve.</param>
+		/// <param name="endPoint">The ip address if successfully resolved. Otherwise a dummy.</param>
+		/// <returns>Whether the resolve was succesful.</returns>
 		public static bool TryResolve(string address, out IPEndPoint endPoint)
 		{
 			// if this address does not look like a domain it might be a nickname
@@ -102,7 +107,7 @@ namespace TS3Client
 			return null;
 		}
 
-		private static Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\])(?::(?<port>\d{1,6}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
+		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\])(?::(?<port>\d{1,6}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
 		private static IPEndPoint ParseIpEndPoint(string address)
 		{

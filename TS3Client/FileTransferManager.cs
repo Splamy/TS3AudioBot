@@ -25,7 +25,8 @@ namespace TS3Client
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
 
-	public class FileTransferManager
+	/// <summary>Queues and manages up- and downloads.</summary>
+	public sealed class FileTransferManager
 	{
 		private readonly Ts3BaseFunctions parent;
 		private readonly Queue<FileTransferToken> transferQueue;
@@ -40,9 +41,26 @@ namespace TS3Client
 			Util.Init(ref transferQueue);
 		}
 
+		/// <summary>Initiate a file upload to the server.</summary>
+		/// <param name="file">Local file to upload.</param>
+		/// <param name="channel">The channel id to upload to.</param>
+		/// <param name="path">The upload path within the channel. Eg: "file.txt", "path/file.png"</param>
+		/// <param name="overwrite">True if the upload should overwrite the file if it exists.
+		/// False will throw an exception if the file already exists.</param>
+		/// <param name="channelPassword">The password for the channel.</param>
+		/// <returns>A token to track the file transfer.</returns>
 		public FileTransferToken UploadFile(FileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
 			=> UploadFile(file.Open(FileMode.Open, FileAccess.Read), channel, path, overwrite, channelPassword);
 
+		/// <summary>Initiate a file upload to the server.</summary>
+		/// <param name="stream">Data stream to upload.</param>
+		/// <param name="channel">The channel id to upload to.</param>
+		/// <param name="path">The upload path within the channel. Eg: "file.txt", "path/file.png"</param>
+		/// <param name="overwrite">True if the upload should overwrite the file if it exists.
+		/// False will throw an exception if the file already exists.</param>
+		/// <param name="channelPassword">The password for the channel.</param>
+		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the upload is finished.</param>
+		/// <returns>A token to track the file transfer.</returns>
 		public FileTransferToken UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = false)
 		{
 			ushort cftid = GetFreeTransferId();
@@ -54,9 +72,22 @@ namespace TS3Client
 			return token;
 		}
 
+		/// <summary>Initiate a file download from the server.</summary>
+		/// <param name="file">Local file to save to.</param>
+		/// <param name="channel">The channel id to download from.</param>
+		/// <param name="path">The download path within the channel. Eg: "file.txt", "path/file.png"</param>
+		/// <param name="channelPassword">The password for the channel.</param>
+		/// <returns>A token to track the file transfer.</returns>
 		public FileTransferToken DownloadFile(FileInfo file, ChannelIdT channel, string path, string channelPassword = "")
 			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, channelPassword, true);
 
+		/// <summary>Initiate a file download from the server.</summary>
+		/// <param name="stream">Data stream to write to.</param>
+		/// <param name="channel">The channel id to download from.</param>
+		/// <param name="path">The download path within the channel. Eg: "file.txt", "path/file.png"</param>
+		/// <param name="channelPassword">The password for the channel.</param>
+		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the download is finished.</param>
+		/// <returns>A token to track the file transfer.</returns>
 		public FileTransferToken DownloadFile(Stream stream, ChannelIdT channel, string path, string channelPassword = "", bool closeStream = false)
 		{
 			ushort cftid = GetFreeTransferId();
@@ -88,6 +119,8 @@ namespace TS3Client
 			return ++transferIdCnt;
 		}
 
+		/// <summary>Resumes a download from a previously stopped position.</summary>
+		/// <param name="token">The aborted token.</param>
 		public void Resume(FileTransferToken token)
 		{
 			lock (token)
@@ -120,6 +153,10 @@ namespace TS3Client
 			StartWorker(token);
 		}
 
+		/// <summary>Stops an active transfer.</summary>
+		/// <param name="token">The token to abort.</param>
+		/// <param name="delete">True to delete the file.
+		/// False to only temporarily stop the transfer (can be resumed again with <see cref="Resume"/>).</param>
 		public void Abort(FileTransferToken token, bool delete = false)
 		{
 			lock (token)
@@ -135,6 +172,9 @@ namespace TS3Client
 			}
 		}
 
+		/// <summary>Gets information about the current transfer status.</summary>
+		/// <param name="token">The transfer to check.</param>
+		/// <returns>Returns an information object or <code>null</code> when not available.</returns>
 		public FileTransfer GetStats(FileTransferToken token)
 		{
 			lock (token)
@@ -225,7 +265,9 @@ namespace TS3Client
 		}
 	}
 
-	public class FileTransferToken
+	/// <summary>Points to a file transfer.
+	/// This token can be used to further interact with a transfer via the <see cref="FileTransferManager"/>.</summary>
+	public sealed class FileTransferToken
 	{
 		public Stream LocalStream { get; }
 		public TransferDirection Direction { get; }

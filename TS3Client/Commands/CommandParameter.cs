@@ -13,6 +13,7 @@ namespace TS3Client.Commands
 	using System.Diagnostics;
 	using System.Globalization;
 
+	/// <summary>Simple parameter which will be expanded to "Key=Value" and automatically escaped.</summary>
 	public class CommandParameter : ICommandPart
 	{
 		public string Key { get; }

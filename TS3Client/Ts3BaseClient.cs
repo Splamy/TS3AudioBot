@@ -17,19 +17,29 @@ namespace TS3Client
 
 	public delegate void NotifyEventHandler<in TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
 
+	/// <summary>A shared function base between the query and full client.</summary>
 	public abstract class Ts3BaseFunctions : IDisposable
 	{
+		/// <summary>When this client receives any visible message.</summary>
 		public abstract event NotifyEventHandler<TextMessage> OnTextMessageReceived;
+		/// <summary>When another client enters visiblility.</summary>
 		public abstract event NotifyEventHandler<ClientEnterView> OnClientEnterView;
+		/// <summary>When another client leaves visiblility.</summary>
 		public abstract event NotifyEventHandler<ClientLeftView> OnClientLeftView;
+		/// <summary>After the client connected.</summary>
 		public abstract event EventHandler<EventArgs> OnConnected;
+		/// <summary>After the client disconnected.</summary>
 		public abstract event EventHandler<DisconnectEventArgs> OnDisconnected;
 
+		/// <summary>Get whether this client is currently connected.</summary>
 		public abstract bool Connected { get; }
+		/// <summary>The derived client type.</summary>
 		public abstract ClientType ClientType { get; }
+		/// <summary>The connection data this client was last connected with (or is currenly connected to).</summary>
 		public ConnectionData ConnectionData { get; protected set; }
 		internal IPEndPoint remoteAddress;
 		private FileTransferManager ftm;
+		/// <summary>An instance to a <see cref="FileTransferManager"/> dedicated for this client.</summary>
 		public FileTransferManager FileTransferManager => ftm ?? (ftm = new FileTransferManager(this));
 
 		public abstract void Connect(ConnectionData conData);
@@ -38,22 +48,42 @@ namespace TS3Client
 
 		#region NETWORK SEND
 
+		/// <summary>Creates a new command.</summary>
+		/// <param name="command">The command name.</param>
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command));
 
+		/// <summary>Creates a new command.</summary>
+		/// <param name="command">The command name.</param>
+		/// <param name="parameter">The parameters to be added to this command.
+		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		[DebuggerStepThrough]
 		public IEnumerable<ResponseDictionary> Send(string command, params ICommandPart[] parameter)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command, parameter.ToList()));
 
+		/// <summary>Creates a new command.</summary>
+		/// <typeparam name="T">The type to deserialize the response to.</typeparam>
+		/// <param name="command">The command name.</param>
+		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command));
 
+		/// <summary>Creates a new command.</summary>
+		/// <typeparam name="T">The type to deserialize the response to.</typeparam>
+		/// <param name="command">The command name.</param>
+		/// <param name="parameter">The parameters to be added to this command.</param>
+		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
 			=> Send<T>(command, parameter.ToList());
 
+		/// <summary>Creates a new command.</summary>
+		/// <typeparam name="T">The type to deserialize the response to.</typeparam>
+		/// <param name="command">The command name.</param>
+		/// <param name="parameter">The parameters to be added to this command.</param>
+		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		[DebuggerStepThrough]
 		public IEnumerable<T> Send<T>(string command, List<ICommandPart> parameter) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command, parameter));
@@ -62,6 +92,10 @@ namespace TS3Client
 		protected void SendNoResponsed(Ts3Command command)
 			=> SendCommand<ResponseVoid>(command.ExpectsResponse(false));
 
+		/// <summary>Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.</summary>
+		/// <typeparam name="T">The type to deserialize the response to. Use <see cref="ResponseDictionary"/> for unknow response data.</typeparam>
+		/// <param name="com">The raw command to send.</param>
+		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		public abstract IEnumerable<T> SendCommand<T>(Ts3Command com) where T : IResponse, new();
 
 		#endregion

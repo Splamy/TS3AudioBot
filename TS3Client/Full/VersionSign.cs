@@ -9,6 +9,10 @@
 
 namespace TS3Client.Full
 {
+	/// <summary>
+	/// Describes a triple of version, plattform and a crytographical signature (usually distributed by "TeamSpeak Systems").
+	/// Each triple has to match and is not interchangeable with other triple parts.
+	/// </summary>
 	public class VersionSign
 	{
 		private static readonly string[] Plattforms = { "Windows", "Linux", "OS X", "Android" };

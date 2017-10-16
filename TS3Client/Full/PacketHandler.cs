@@ -24,7 +24,7 @@ namespace TS3Client.Full
 	using System.Net.Sockets;
 	using System.Threading;
 
-	public sealed class PacketHandler
+	internal sealed class PacketHandler
 	{
 		/// <summary>Greatest allowed packet size, including the complete header.</summary>
 		private const int MaxPacketSize = 500;

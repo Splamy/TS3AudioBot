@@ -29,6 +29,8 @@ bld/
 [Oo]bj/
 cov-int/
 cov-int.zip
+html/
+latex/
 
 # C++ Build results
 *.o

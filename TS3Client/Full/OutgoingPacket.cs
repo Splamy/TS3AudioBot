@@ -11,7 +11,7 @@ namespace TS3Client.Full
 {
 	using System;
 
-	public sealed class OutgoingPacket : BasePacket
+	internal sealed class OutgoingPacket : BasePacket
 	{
 		public ushort ClientId { get; set; }
 
