@@ -38,13 +38,9 @@ namespace TS3Client
 		/// to be accepted by an official TeamSpeak 3 Server.
 		/// </summary>
 		public VersionSign VersionSign { get; set; } = VersionSign.VER_LIN_3_0_19_4;
-		/// <summary>
-		/// <para>The display username.</para>
-		/// </summary>
+		/// <summary>The display username.</summary>
 		public string Username { get; set; }
-		/// <summary>
-		/// <para>The server password. Leave null if none.</para>
-		/// </summary>
+		/// <summary>The server password. Leave null if none.</summary>
 		public string Password { get; set; }
 		/// <summary>
 		/// <para>The default channel this client should try to join when connecting.</para>
@@ -52,5 +48,7 @@ namespace TS3Client
 		/// Or with the channel id in the following format: /&lt;id&gt;, example: "/5"</para>
 		/// </summary>
 		public string DefaultChannel { get; set; } = string.Empty;
+		/// <summary>Password for the default channel. Leave null if none.</summary>
+		public string DefaultChannelPassword { get; set; }
 	}
 }

@@ -613,5 +613,7 @@ namespace TS3AudioBot
 		[Info("Default Channel when connectiong\n" +
 			"# Use a channel path or '/<id>', examples: 'Home/Lobby', '/5', 'Home/Afk \\/ Not Here'", "")]
 		public string DefaultChannel { get; set; }
+		[Info("The password for the default channel. Leave empty for none. Not required with permission b_channel_join_ignore_password")]
+		public string DefaultChannelPassword { get; set; }
 	}
 }
