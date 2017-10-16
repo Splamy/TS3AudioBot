@@ -52,5 +52,9 @@ namespace TS3Client
 		/// Or with the channel id in the following format: /&lt;id&gt;, example: "/5"</para>
 		/// </summary>
 		public string DefaultChannel { get; set; } = string.Empty;
+		/// <summary>
+		/// <para>The default channel password. Leave null if none.</para>
+		/// </summary>
+		public string DefaultChannelPassword { get; set; } = string.Empty;
 	}
 }

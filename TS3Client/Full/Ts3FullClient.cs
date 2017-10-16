@@ -278,7 +278,7 @@ namespace TS3Client.Full
 			ClientInit(
 				connectionDataFull.Username,
 				true, true,
-				connectionDataFull.DefaultChannel, string.Empty, password,
+				connectionDataFull.DefaultChannel, Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword), password,
 				string.Empty, string.Empty, string.Empty, "123,456",
 				VersionSign);
 		}
