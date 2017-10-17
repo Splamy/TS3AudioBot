@@ -11,7 +11,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	public class CommandCommandResult : ICommandResult
 	{
-		public override CommandResultType ResultType => CommandResultType.Command;
+		public CommandResultType ResultType => CommandResultType.Command;
 
 		public virtual ICommand Command { get; }
 
@@ -19,5 +19,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			Command = commandArg;
 		}
+
+		public override string ToString() => "CommandCommandResult can't be converted into a string";
 	}
 }

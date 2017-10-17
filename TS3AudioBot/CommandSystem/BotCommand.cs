@@ -19,12 +19,12 @@ namespace TS3AudioBot.CommandSystem
 		private string cachedHelp;
 		private string cachedFullQualifiedName;
 
-		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.method, buildInfo.parent, buildInfo.reqiredParameters?.Count)
+		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent, buildInfo.ReqiredParameters?.Count)
 		{
-			InvokeName = buildInfo.commandData.CommandNameSpace;
+			InvokeName = buildInfo.CommandData.CommandNameSpace;
 			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
-			Description = buildInfo.commandData.CommandHelp;
-			UsageList = buildInfo.usageList?.ToArray() ?? new UsageAttribute[0];
+			Description = buildInfo.CommandData.CommandHelp;
+			UsageList = buildInfo.UsageList?.ToArray() ?? new UsageAttribute[0];
 		}
 
 		public string InvokeName { get; }
@@ -90,18 +90,18 @@ namespace TS3AudioBot.CommandSystem
 
 	public class CommandBuildInfo
 	{
-		public readonly object parent;
-		public readonly MethodInfo method;
-		public readonly CommandAttribute commandData;
-		public readonly RequiredParametersAttribute reqiredParameters;
-		public UsageAttribute[] usageList;
+		public object Parent { get; }
+		public MethodInfo Method { get; }
+		public CommandAttribute CommandData { get; }
+		public RequiredParametersAttribute ReqiredParameters { get; }
+		public UsageAttribute[] UsageList { get; set; }
 
 		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt, RequiredParametersAttribute reqAtt)
 		{
-			parent = p;
-			method = m;
-			commandData = comAtt;
-			reqiredParameters = reqAtt;
+			Parent = p;
+			Method = m;
+			CommandData = comAtt;
+			ReqiredParameters = reqAtt;
 		}
 	}
 }

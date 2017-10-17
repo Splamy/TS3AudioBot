@@ -11,6 +11,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	public class EmptyCommandResult : ICommandResult
 	{
-		public override CommandResultType ResultType => CommandResultType.Empty;
+		public CommandResultType ResultType => CommandResultType.Empty;
+		public override string ToString() => string.Empty;
 	}
 }

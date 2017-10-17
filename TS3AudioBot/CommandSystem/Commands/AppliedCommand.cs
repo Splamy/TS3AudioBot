@@ -22,7 +22,7 @@ namespace TS3AudioBot.CommandSystem
 			internArguments = arguments;
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			var merged = new ICommand[internArguments.Count + arguments.Count];
 			internArguments.CopyTo(0, merged, 0);

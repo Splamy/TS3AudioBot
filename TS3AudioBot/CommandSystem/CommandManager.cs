@@ -10,7 +10,6 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using Helper;
-	using Plugins;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -47,8 +46,8 @@ namespace TS3AudioBot.CommandSystem
 				foreach (var com in dynamicCommands)
 					yield return com;
 				foreach (var comArr in pluginCommands.Values)
-				foreach (var com in comArr)
-					yield return com;
+					foreach (var com in comArr)
+						yield return com;
 				// todo alias
 			}
 		}
@@ -114,7 +113,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			foreach (var botData in methods)
 			{
-				botData.usageList = botData.method.GetCustomAttributes<UsageAttribute>().ToArray();
+				botData.UsageList = botData.Method.GetCustomAttributes<UsageAttribute>().ToArray();
 				yield return new BotCommand(botData);
 			}
 		}
@@ -277,30 +276,30 @@ namespace TS3AudioBot.CommandSystem
 
 			var node = new CommandUnloadNode
 			{
-				parentNode = null,
-				self = CommandSystem.RootCommand,
+				ParentNode = null,
+				Self = CommandSystem.RootCommand,
 			};
 
 			// build up the list to our desired node
 			for (int i = 0; i < comPath.Length - 1; i++)
 			{
-				if (!(node.self.GetCommand(comPath[i]) is CommandGroup nextGroup))
+				if (!(node.Self.GetCommand(comPath[i]) is CommandGroup nextGroup))
 					break;
 
 				node = new CommandUnloadNode
 				{
-					parentNode = node,
-					self = nextGroup,
+					ParentNode = node,
+					Self = nextGroup,
 				};
 			}
-			var subGroup = node.self.GetCommand(comPath.Last());
+			var subGroup = node.Self.GetCommand(comPath.Last());
 			// nothing to remove
 			if (subGroup == null)
 				return;
 			// if the subnode is a plain FunctionCommand then we found our command to delete
 			else if (subGroup is FunctionCommand)
 			{
-				node.self.RemoveCommand(com);
+				node.Self.RemoveCommand(com);
 			}
 			// here we can delete our command from the overloader
 			else if (subGroup is OverloadedFunctionCommand subOverloadGroup)
@@ -316,24 +315,24 @@ namespace TS3AudioBot.CommandSystem
 				// add the node for cleanup
 				node = new CommandUnloadNode
 				{
-					parentNode = node,
-					self = insertGroup,
+					ParentNode = node,
+					Self = insertGroup,
 				};
 			}
 
 			// and finally clean all empty nodes up
 			while (node != null)
 			{
-				if (node.self.IsEmpty && node.parentNode != null)
-					node.parentNode.self.RemoveCommand(node.self);
-				node = node.parentNode;
+				if (node.Self.IsEmpty && node.ParentNode != null)
+					node.ParentNode.Self.RemoveCommand(node.Self);
+				node = node.ParentNode;
 			}
 		}
 
 		private class CommandUnloadNode
 		{
-			public CommandUnloadNode parentNode;
-			public CommandGroup self;
+			public CommandUnloadNode ParentNode { get; set; }
+			public CommandGroup Self { get; set; }
 		}
 	}
 }

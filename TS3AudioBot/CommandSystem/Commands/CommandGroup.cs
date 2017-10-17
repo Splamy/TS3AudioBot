@@ -25,7 +25,7 @@ namespace TS3AudioBot.CommandSystem
 		public bool IsEmpty => commands.Count == 0;
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
-		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			string result;
 			if (arguments.Count == 0)

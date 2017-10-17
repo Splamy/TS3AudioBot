@@ -11,13 +11,14 @@ namespace TS3AudioBot.CommandSystem
 {
 	public class StringCommandResult : ICommandResult
 	{
-		public override CommandResultType ResultType => CommandResultType.String;
+		public CommandResultType ResultType => CommandResultType.String;
 		public virtual string Content { get; }
 
 		public StringCommandResult(string contentArg)
 		{
 			Content = contentArg;
 		}
-	}
 
+		public override string ToString() => Content;
+	}
 }

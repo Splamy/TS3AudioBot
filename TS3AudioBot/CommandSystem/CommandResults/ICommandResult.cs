@@ -9,26 +9,8 @@
 
 namespace TS3AudioBot.CommandSystem
 {
-	using Helper;
-
-	public abstract class ICommandResult
+	public interface ICommandResult
 	{
-		public abstract CommandResultType ResultType { get; }
-
-		public override string ToString()
-		{
-			switch (ResultType)
-			{
-			case CommandResultType.String:
-				return ((StringCommandResult)this).Content;
-			case CommandResultType.Empty:
-				return string.Empty;
-			case CommandResultType.Command:
-			case CommandResultType.Json:
-				return "CommandResult can't be converted into a string";
-			default:
-				throw Util.UnhandledDefault(ResultType);
-			}
-		}
+		CommandResultType ResultType { get; }
 	}
 }

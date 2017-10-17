@@ -11,7 +11,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System.Collections.Generic;
 
-	public abstract class ICommand
+	public interface ICommand
 	{
 		/// <summary>Execute this command.</summary>
 		/// <param name="info">All global informations for this execution.</param>
@@ -23,6 +23,6 @@ namespace TS3AudioBot.CommandSystem
 		/// The possible return types that should be returned by this execution.
 		/// They are ordered by priority so, if possible, the first return type should be picked, then the second and so on.
 		/// </param>
-		public abstract ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes);
+		ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes);
 	}
 }

@@ -20,7 +20,7 @@ namespace TS3AudioBot.CommandSystem
 			content = contentArg;
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			return new StringCommandResult(content);
 		}

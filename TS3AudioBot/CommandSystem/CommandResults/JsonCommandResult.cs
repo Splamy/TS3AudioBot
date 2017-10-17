@@ -13,7 +13,7 @@ namespace TS3AudioBot.CommandSystem
 
 	public class JsonCommandResult : ICommandResult
 	{
-		public override CommandResultType ResultType => CommandResultType.Json;
+		public CommandResultType ResultType => CommandResultType.Json;
 
 		public JsonObject JsonObject { get; }
 
@@ -21,5 +21,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			JsonObject = jsonObj;
 		}
+
+		public override string ToString() => "JsonCommandResult can't be converted into a string"; // TODO: why?
 	}
 }

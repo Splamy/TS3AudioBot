@@ -143,7 +143,7 @@ namespace TS3AudioBot.CommandSystem
 			return parameters;
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
