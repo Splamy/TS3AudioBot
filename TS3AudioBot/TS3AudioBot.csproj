@@ -91,6 +91,7 @@
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="CommandSystem\ICommandBag.cs" />
     <Compile Include="CommandSystem\StaticList.cs" />
+    <Compile Include="DbStore.cs" />
     <Compile Include="Helper\AudioTags\M3uReader.cs" />
     <Compile Include="Helper\Cache.cs" />
     <Compile Include="Helper\ImageUtil.cs" />
@@ -154,8 +155,6 @@
     <Compile Include="Helper\TickPool.cs" />
     <Compile Include="Helper\Util.cs" />
     <Compile Include="Helper\WebWrapper.cs" />
-    <Compile Include="History\Deprecated\AudioLogEntry.cs" />
-    <Compile Include="History\Deprecated\HistoryFile.cs" />
     <Compile Include="History\HistoryManager.cs" />
     <Compile Include="History\SearchQuery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -66,8 +66,9 @@ namespace TS3AudioBot
 
 		private StreamWriter logStream;
 
+		internal DbStore Database { get; set; }
 		private TargetScript TargetScript { get; set; }
-		internal PluginManager PluginManager { get; private set; }
+		private PluginManager PluginManager { get; set; }
 		/// <summary>Mangement for the bot command system.</summary>
 		public CommandManager CommandManager { get; private set; }
 		/// <summary>Mangement for playlists.</summary>
@@ -222,13 +223,14 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			AudioValues.audioFrameworkData = afd;
+			Database = new DbStore(hmd);
 			var teamspeakClient = new Ts3Full(tfcd);
 			QueryConnection = teamspeakClient;
 			PlayerConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
 			SessionManager = new SessionManager();
 			if (hmd.EnableHistory)
-				historyManager = new HistoryManager(hmd);
+				historyManager = new HistoryManager(hmd, Database);
 			PluginManager = new PluginManager(this, pmd);
 			PlayManager = new PlayManager(this);
 			WebManager = new WebManager(this, webd);
@@ -614,7 +616,7 @@ namespace TS3AudioBot
 		{
 			if (info.ApiCall)
 			{
-				HistoryManager.CleanHistoryFile();
+				Database.CleanFile();
 				return null;
 			}
 			info.Session.SetResponse(ResponseHistoryClean, null);
@@ -1663,7 +1665,7 @@ namespace TS3AudioBot
 					string param = info.Session.ResponseData as string;
 					if (string.IsNullOrEmpty(param))
 					{
-						HistoryManager.CleanHistoryFile();
+						Database.CleanFile();
 						return "Cleanup done!";
 					}
 					else if (param == "removedefective")
@@ -1791,8 +1793,8 @@ namespace TS3AudioBot
 			QueryConnection?.Dispose(); // before: logStream,
 			QueryConnection = null;
 
-			historyManager?.Dispose(); // before: logStream,
-			historyManager = null;
+			Database?.Dispose(); // before: logStream,
+			Database = null;
 
 			TickPool.Close(); // before:
 

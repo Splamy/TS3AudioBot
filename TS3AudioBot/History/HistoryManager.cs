@@ -14,17 +14,14 @@ namespace TS3AudioBot.History
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
-	using System.IO;
 	using System.Linq;
 
-	public sealed class HistoryManager : IDisposable
+	public sealed class HistoryManager
 	{
 		private const int CurrentHistoryVersion = 1;
 		private const string AudioLogEntriesTable = "audioLogEntries";
-		private const string DbMetaInformationTable = "dbmeta";
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
-		private readonly LiteDatabase database;
 		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly HistoryManagerData historyManagerData;
 		private readonly LinkedList<int> unusedIds;
@@ -38,77 +35,28 @@ namespace TS3AudioBot.History
 				.Id(x => x.Id);
 		}
 
-		public HistoryManager(HistoryManagerData hmd)
+		public HistoryManager(HistoryManagerData hmd, DbStore database)
 		{
 			Formatter = new SmartHistoryFormatter();
 			historyManagerData = hmd;
 
-			#region CheckUpgrade
-			AudioLogEntry[] moveData = null;
-
-			var upgrader = new Deprecated.HistoryFile();
-			// check if the old history database system can open it
-			try
-			{
-				upgrader.OpenFile(historyManagerData.HistoryFile);
-				Log.Write(Log.Level.Info, "Found old history database vesion, upgrading now.");
-
-				moveData = upgrader
-					.GetAll()
-					.Select(x => new AudioLogEntry((int)x.Id, x.AudioResource)
-					{
-						PlayCount = x.PlayCount,
-						Timestamp = x.Timestamp,
-						UserInvokeId = x.UserInvokeId,
-					})
-					.ToArray();
-				// the old database allowed 0-id, while the new one kinda doesn't
-				var nullIdEntity = moveData.FirstOrDefault(x => x.Id == 0);
-				if (nullIdEntity != null)
-					nullIdEntity.Id = moveData.Select(x => x.Id).Max() + 1;
-
-				upgrader.CloseFile();
-				upgrader.BackupFile();
-				upgrader.historyFile.Delete();
-			}
-			// if not it is already the new one or corrupted
-			catch (FormatException) { }
-			finally
-			{
-				upgrader.Dispose();
-			}
-			#endregion
-
 			Util.Init(ref unusedIds);
-			var historyFile = new FileInfo(hmd.HistoryFile);
-			database = new LiteDatabase(historyFile.FullName);
 
 			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
 			audioLogEntries.EnsureIndex(x => x.Timestamp);
 			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
 				$"LOWER($.{nameof(AudioLogEntry.AudioResource)}.{nameof(AudioResource.ResourceTitle)})");
-			
+
 			RestoreFromFile();
 
-			#region CheckUpgrade
-			if (moveData != null)
-				audioLogEntries.Insert(moveData);
-			#endregion
-
 			// Content upgrade
-			var metaTable = database.GetCollection<DbMetaData>(DbMetaInformationTable);
-			var metaInfo = metaTable.FindById(0);
-			if (metaInfo == null)
-			{
-				metaInfo = new DbMetaData { Id = 0, DbVersion = 0, HistoryVersion = 0 };
-				metaTable.Insert(metaInfo);
-			}
 
-			if (metaInfo.HistoryVersion >= CurrentHistoryVersion)
+			var meta = database.GetMetaData(AudioLogEntriesTable);
+			if (meta.Version >= CurrentHistoryVersion)
 				return;
 
-			switch (metaInfo.HistoryVersion)
+			switch (meta.Version)
 			{
 			case 0:
 				var all = audioLogEntries.FindAll().ToArray();
@@ -123,11 +71,12 @@ namespace TS3AudioBot.History
 					}
 				}
 				audioLogEntries.Update(all);
-				metaInfo.HistoryVersion = 1;
+				meta.Version = 1;
+				database.UpdateMetaData(meta);
 				goto default;
 
 			default:
-				metaTable.Update(metaInfo);
+				Log.Write(Log.Level.Info, "Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
 				break;
 			}
 		}
@@ -284,11 +233,6 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void CleanHistoryFile()
-		{
-			database.Shrink();
-		}
-
 		public void RemoveBrokenLinks(CommandSystem.ExecutionInformation info)
 		{
 			const int iterations = 3;
@@ -333,18 +277,6 @@ namespace TS3AudioBot.History
 			}
 			return nextIter;
 		}
-
-		public void Dispose()
-		{
-			database.Dispose();
-		}
-	}
-
-	internal class DbMetaData
-	{
-		public int Id { get; set; }
-		public int DbVersion { get; set; }
-		public int HistoryVersion { get; set; }
 	}
 
 	public class HistoryManagerData : ConfigData
