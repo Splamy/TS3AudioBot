@@ -85,6 +85,7 @@ namespace TS3AudioBot.History
 
 			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
+			audioLogEntries.EnsureIndex(x => x.Timestamp);
 			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
 				$"LOWER($.{nameof(AudioLogEntry.AudioResource)}.{nameof(AudioResource.ResourceTitle)})");
 			
@@ -200,7 +201,7 @@ namespace TS3AudioBot.History
 				PlayCount = 1,
 			};
 
-			audioLogEntries.Upsert(ale);
+			audioLogEntries.Insert(ale);
 			return ale;
 		}
 
