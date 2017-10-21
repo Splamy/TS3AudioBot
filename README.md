@@ -3,6 +3,8 @@
 |:--:|:--:|
 |[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|
 
+Nightly builds are available here: http://splamy.de/Nightly#ts3ab
+
 ## About
 This is our open-source TeamSpeak 3 audiobot project since
 we haven't found any other open-source one so far.  

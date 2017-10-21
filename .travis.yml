@@ -41,7 +41,7 @@ after_script:
   - cd ./TS3AudioBot/bin/Release
   - ls
   - zip TS3AudioBot.zip TS3AudioBot.exe TS3Client.dll Nett.dll LiteDB.dll Heijden.Dns.dll BouncyCastle.Crypto.dll
-  - "curl -I -H \"Content-Type: application/zip\" -X PUT \"http://splamy.de/splamy/api/nightly/ts3ab/${TRAVIS_BRANCH}?token=${uploadkey}&filename=TS3AudioBot.zip&commit=${TRAVIS_COMMIT}&version=alpha\" --upload-file ./TS3AudioBot.zip"
+  - "curl -I -H \"Content-Type: application/zip\" -X PUT \"http://splamy.de/api/nightly/ts3ab/${TRAVIS_BRANCH}?token=${uploadkey}&filename=TS3AudioBot.zip&commit=${TRAVIS_COMMIT}&version=alpha\" --upload-file ./TS3AudioBot.zip"
   - cd "$MAIN_DIR"
   - chmod u+x ts3notify.sh
   - ./ts3notify.sh

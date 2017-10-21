@@ -15,7 +15,7 @@
 using System;
 
 #pragma warning disable CS0675
-static class QuickLZ
+public static class QuickLZ
 {
 	public const int QLZ_VERSION_MAJOR = 1;
 	public const int QLZ_VERSION_MINOR = 5;
