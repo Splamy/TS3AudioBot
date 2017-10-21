@@ -151,7 +151,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(string id) => "https://youtu.be/" + id;
 
-		private int SelectStream(List<VideoData> list)
+		private static int SelectStream(List<VideoData> list)
 		{
 #if DEBUG
 			var dbg = new StringBuilder("YT avail codecs: ");

@@ -19,8 +19,10 @@ namespace TS3AudioBot.History
 
 	public sealed class HistoryManager : IDisposable
 	{
+		private const int CurrentHistoryVersion = 1;
 		private const string AudioLogEntriesTable = "audioLogEntries";
-		private const string ResourceTitleQueryColumn = nameof(AudioLogEntry.AudioResource) + "." + nameof(AudioResource.ResourceTitle);
+		private const string DbMetaInformationTable = "dbmeta";
+		private const string ResourceTitleQueryColumn = "lowTitle";
 
 		private readonly LiteDatabase database;
 		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
@@ -33,9 +35,7 @@ namespace TS3AudioBot.History
 		static HistoryManager()
 		{
 			BsonMapper.Global.Entity<AudioLogEntry>()
-				.Id(x => x.Id)
-				.Index(x => x.UserInvokeId)
-				.Index(x => x.Timestamp);
+				.Id(x => x.Id);
 		}
 
 		public HistoryManager(HistoryManagerData hmd)
@@ -84,15 +84,51 @@ namespace TS3AudioBot.History
 			database = new LiteDatabase(historyFile.FullName);
 
 			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
-			audioLogEntries.EnsureIndex(x => x.AudioResource.ResourceTitle);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
-
+			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
+				$"LOWER($.{nameof(AudioLogEntry.AudioResource)}.{nameof(AudioResource.ResourceTitle)})");
+			
 			RestoreFromFile();
 
 			#region CheckUpgrade
 			if (moveData != null)
 				audioLogEntries.Insert(moveData);
 			#endregion
+
+			// Content upgrade
+			var metaTable = database.GetCollection<DbMetaData>(DbMetaInformationTable);
+			var metaInfo = metaTable.FindById(0);
+			if (metaInfo == null)
+			{
+				metaInfo = new DbMetaData { Id = 0, DbVersion = 0, HistoryVersion = 0 };
+				metaTable.Insert(metaInfo);
+			}
+
+			if (metaInfo.HistoryVersion >= CurrentHistoryVersion)
+				return;
+
+			switch (metaInfo.HistoryVersion)
+			{
+			case 0:
+				var all = audioLogEntries.FindAll().ToArray();
+				foreach (var audioLogEntry in all)
+				{
+					switch (audioLogEntry.AudioResource.AudioType)
+					{
+					case "MediaLink": audioLogEntry.AudioResource.AudioType = "media"; break;
+					case "Youtube": audioLogEntry.AudioResource.AudioType = "youtube"; break;
+					case "Soundcloud": audioLogEntry.AudioResource.AudioType = "soundcloud"; break;
+					case "Twitch": audioLogEntry.AudioResource.AudioType = "twitch"; break;
+					}
+				}
+				audioLogEntries.Update(all);
+				metaInfo.HistoryVersion = 1;
+				goto default;
+
+			default:
+				metaTable.Update(metaInfo);
+				break;
+			}
 		}
 
 		private void RestoreFromFile()
@@ -112,19 +148,16 @@ namespace TS3AudioBot.History
 			if (saveData == null)
 				throw new ArgumentNullException(nameof(saveData));
 
-			AudioLogEntry ale;
-			using (var trans = database.BeginTrans())
+			var ale = FindByUniqueId(saveData.Resource.UniqueId);
+			if (ale == null)
 			{
-				ale = FindByUniqueId(saveData.Resource.UniqueId);
+				ale = CreateLogEntry(saveData);
 				if (ale == null)
-				{
-					ale = CreateLogEntry(saveData);
-					if (ale == null)
-						Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
-				}
-				else
-					LogEntryPlay(ale);
-				trans.Commit();
+					Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
+			}
+			else
+			{
+				LogEntryPlay(ale);
 			}
 			return ale;
 		}
@@ -167,7 +200,7 @@ namespace TS3AudioBot.History
 				PlayCount = 1,
 			};
 
-			audioLogEntries.Insert(ale);
+			audioLogEntries.Upsert(ale);
 			return ale;
 		}
 
@@ -188,7 +221,11 @@ namespace TS3AudioBot.History
 			var query = Query.All(nameof(AudioLogEntry.Timestamp), Query.Descending);
 
 			if (!string.IsNullOrEmpty(search.TitlePart))
-				query = Query.And(query, Query.Where(ResourceTitleQueryColumn, val => val.AsString.ToLowerInvariant().Contains(search.TitlePart)));
+			{
+				var titleLower = search.TitlePart.ToLowerInvariant();
+				query = Query.And(query,
+					Query.Where(ResourceTitleQueryColumn, val => val.AsString.Contains(titleLower)));
+			}
 
 			if (search.UserId.HasValue)
 				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserInvokeId), (long)search.UserId.Value));
@@ -253,25 +290,20 @@ namespace TS3AudioBot.History
 
 		public void RemoveBrokenLinks(CommandSystem.ExecutionInformation info)
 		{
-			using (var trans = database.BeginTrans())
+			const int iterations = 3;
+			var currentIter = audioLogEntries.FindAll().ToList();
+
+			for (int i = 0; i < iterations; i++)
 			{
-				const int iterations = 3;
-				var currentIter = audioLogEntries.FindAll();
+				info.Write("Filter iteration " + i);
+				currentIter = FilterList(info, currentIter);
+			}
 
-				for (int i = 0; i < iterations; i++)
-				{
-					info.Write("Filter iteration " + i);
-					currentIter = FilterList(info, currentIter);
-				}
-
-				foreach (var entry in currentIter)
-				{
-					RemoveEntry(entry);
-					info.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
-					info.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
-				}
-
-				trans.Commit();
+			foreach (var entry in currentIter)
+			{
+				RemoveEntry(entry);
+				info.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
+				info.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
 			}
 		}
 
@@ -282,7 +314,7 @@ namespace TS3AudioBot.History
 		/// <param name="info">Session object to inform the user about the current cleaning status.</param>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private static List<AudioLogEntry> FilterList(CommandSystem.ExecutionInformation info, IEnumerable<AudioLogEntry> list)
+		private static List<AudioLogEntry> FilterList(CommandSystem.ExecutionInformation info, List<AudioLogEntry> list)
 		{
 			int userNotityCnt = 0;
 			var nextIter = new List<AudioLogEntry>();
@@ -305,6 +337,13 @@ namespace TS3AudioBot.History
 		{
 			database.Dispose();
 		}
+	}
+
+	internal class DbMetaData
+	{
+		public int Id { get; set; }
+		public int DbVersion { get; set; }
+		public int HistoryVersion { get; set; }
 	}
 
 	public class HistoryManagerData : ConfigData
