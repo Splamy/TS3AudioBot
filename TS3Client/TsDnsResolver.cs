@@ -7,6 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Generic;
+using System.Net.Sockets;
+using System.Text;
+
 namespace TS3Client
 {
 	using Heijden.DNS;
@@ -18,6 +22,7 @@ namespace TS3Client
 	public static class TsDnsResolver
 	{
 		private const ushort Ts3DefaultPort = 9987;
+		private const ushort TsDnsDefaultPort = 41144;
 		private const string DnsPrefixTcp = "_tsdns._tcp.";
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
@@ -40,6 +45,11 @@ namespace TS3Client
 			if ((endPoint = ParseIpEndPoint(address)) != null)
 				return true;
 
+			if (!Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
+				return false;
+
+			var hasUriPort = string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped));
+
 			// host is a dns name
 			var resolver = new Resolver
 			{
@@ -51,63 +61,114 @@ namespace TS3Client
 				TransportType = Heijden.DNS.TransportType.Udp,
 			};
 
-			// Try resolve tcp prefix
-			// Under this address we'll get the tsdns server
-			var srvEndPoint = ResolveSrv(resolver, DnsPrefixTcp + address);
-			if (srvEndPoint != null)
-			{
-				// Do something i guess?
-			}
 
 			// Try resolve udp prefix
 			// Under this address we'll get ts3 voice server
-			srvEndPoint = ResolveSrv(resolver, DnsPrefixUdp + address);
+			var srvEndPoint = ResolveSrv(resolver, DnsPrefixUdp + uri.Host);
 			if (srvEndPoint != null)
 			{
+				if (hasUriPort)
+					srvEndPoint.Port = uri.Port;
 				endPoint = srvEndPoint;
 				return true;
 			}
 
-			// Try to normally resolve server address
-			if (Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
+			// split domain to get a list of subdomains, for e.g.:
+			// my.cool.subdomain.from.de
+			// => from.de
+			// => subdomain.from.de
+			// => cool.subdomain.from.de
+			var domainSplit = uri.Host.Split('.');
+			if (domainSplit.Length <= 1)
+				return false;
+
+			var domainList = new List<string>();
+			for (int i = 1; i < Math.Min(domainSplit.Length, 4); i++)
+				domainList.Add(string.Join(".", domainSplit, (domainSplit.Length - (i + 1)), i + 1));
+
+			using (var tcpClient = new TcpClient())
 			{
-				var hostEntry = Dns.GetHostEntry(uri.Host);
-				if (hostEntry.AddressList.Length == 0)
-					return false;
+				// Try resolve tcp prefix
+				// Under this address we'll get the tsdns server
+				foreach (var domain in domainList)
+				{
+					srvEndPoint = ResolveSrv(resolver, DnsPrefixTcp + domain);
+					if (srvEndPoint == null)
+						continue;
 
-				var port = string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped))
-					? Ts3DefaultPort
-					: uri.Port;
+					endPoint = ResolveTsDns(tcpClient, srvEndPoint, uri.Host);
+					if (endPoint != null)
+						return true;
+				}
 
-				endPoint = new IPEndPoint(hostEntry.AddressList[0], port);
-				return true;
+				// Try resolve to the tsdns service directly
+				foreach (var domain in domainList)
+				{
+					endPoint = ResolveTsDns(tcpClient, domain, TsDnsDefaultPort, uri.Host);
+					if (endPoint != null)
+						return true;
+				}
 			}
 
-			return false;
+			// Try to normally resolve server address
+			var hostEntry = Dns.GetHostEntry(uri.Host);
+			if (hostEntry.AddressList.Length == 0)
+				return false;
+
+			var port = string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped))
+				? Ts3DefaultPort
+				: uri.Port;
+
+			endPoint = new IPEndPoint(hostEntry.AddressList[0], port);
+			return true;
 		}
 
-		private static IPEndPoint ResolveSrv(Resolver resolver, string address)
+		private static IPEndPoint ResolveSrv(Resolver resolver, string domain)
 		{
-			if (Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
+			var response = resolver.Query(domain, QType.SRV, QClass.IN);
+
+			if (response.RecordsSRV.Length > 0)
 			{
-				var response = resolver.Query(uri.Host, QType.SRV, QClass.IN);
+				var srvRecord = response.RecordsSRV[0];
 
-				if (response.RecordsSRV.Length > 0)
+				var hostEntry = Dns.GetHostEntry(srvRecord.TARGET);
+				if (hostEntry.AddressList.Length > 0)
 				{
-					var srvRecord = response.RecordsSRV[0];
-
-					var hostEntry = Dns.GetHostEntry(srvRecord.TARGET);
-					if (hostEntry.AddressList.Length > 0)
-					{
-						var hostAddress = hostEntry.AddressList[0];
-						return new IPEndPoint(hostAddress, srvRecord.PORT);
-					}
+					var hostAddress = hostEntry.AddressList[0];
+					return new IPEndPoint(hostAddress, srvRecord.PORT);
 				}
 			}
 			return null;
 		}
 
-		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\])(?::(?<port>\d{1,6}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
+		private static IPEndPoint ResolveTsDns(TcpClient client, string tsDnsAddress, ushort port, string resolveAddress)
+		{
+			var hostEntry = Dns.GetHostEntry(tsDnsAddress);
+			if (hostEntry.AddressList.Length == 0)
+				return null;
+
+			return ResolveTsDns(client, new IPEndPoint(hostEntry.AddressList[0], port), resolveAddress);
+		}
+
+		private static IPEndPoint ResolveTsDns(TcpClient client, IPEndPoint tsDnsAddress, string resolveAddress)
+		{
+			try { client.Connect(tsDnsAddress); }
+			catch (SocketException) { return null; }
+
+			var stream = client.GetStream();
+			var addBuf = Encoding.ASCII.GetBytes(resolveAddress);
+			stream.Write(addBuf, 0, addBuf.Length);
+			stream.Flush();
+
+			stream.ReadTimeout = 10_000;
+			var readBuffer = new byte[128];
+			int readLen = stream.Read(readBuffer, 0, readBuffer.Length);
+			var returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
+
+			return ParseIpEndPoint(returnString);
+		}
+
+		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\])(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
 		private static IPEndPoint ParseIpEndPoint(string address)
 		{
