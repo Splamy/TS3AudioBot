@@ -11,6 +11,8 @@ namespace TS3AudioBot.Helper
 {
 	using System;
 	using System.Globalization;
+	using System.Security.Cryptography;
+	using System.Text;
 	using System.Text.RegularExpressions;
 
 	[Serializable]
@@ -57,14 +59,18 @@ namespace TS3AudioBot.Helper
 			return quotedString.Substring(1, quotedString.Length - 2);
 		}
 
-		public static string GenToken(int len)
+		public static string GenToken(int length)
 		{
-			const string alph = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-			var arr = new char[len];
-			for (int i = 0; i < arr.Length; i++)
-				arr[i] = alph[Util.Random.Next(0, alph.Length)];
-			return new string(arr);
+			const string tokenChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+			using (var rng = RandomNumberGenerator.Create())
+			{
+				var buffer = new byte[length];
+				rng.GetBytes(buffer);
+				var strb = new StringBuilder(buffer.Length);
+				for (int i = 0; i < buffer.Length; i++)
+					strb.Append(tokenChars[((tokenChars.Length - 1) * buffer[i]) / 255]);
+				return strb.ToString();
+			}
 		}
 	}
 

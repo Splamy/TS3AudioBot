@@ -35,6 +35,7 @@ namespace TS3AudioBot.Rights
 		public HashSet<ulong> MatchChannelGroupId { get; set; }
 		public HashSet<string> MatchPermission { get; set; }
 		public HashSet<string> MatchToken { get; set; }
+		public bool? MatchIsApi { get; set; }
 		public TextMessageTargetMode[] MatchVisibility { get; set; }
 
 		public RightsRule()
@@ -45,12 +46,13 @@ namespace TS3AudioBot.Rights
 		public bool HasMatcher()
 		{
 			return MatchClientGroupId.Count > 0
-			|| MatchClientUid.Count > 0
-			|| MatchHost.Count > 0
-			|| MatchPermission.Count > 0
-			|| MatchChannelGroupId.Count > 0
-			|| MatchToken.Count > 0
-			|| MatchVisibility.Length > 0;
+				|| MatchClientUid.Count > 0
+				|| MatchHost.Count > 0
+				|| MatchPermission.Count > 0
+				|| MatchChannelGroupId.Count > 0
+				|| MatchToken.Count > 0
+				|| MatchIsApi.HasValue
+				|| MatchVisibility.Length > 0;
 		}
 
 		public override void FillNull()
@@ -101,6 +103,10 @@ namespace TS3AudioBot.Rights
 				var apitoken = TomlTools.GetValues<string>(tomlObj);
 				if (apitoken == null) ctx.Errors.Add("<apitoken> Field has invalid data.");
 				else MatchToken = new HashSet<string>(apitoken);
+				return true;
+			case "isapi":
+				if (!TomlTools.TryGetValue<bool>(tomlObj, out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");
+				else MatchIsApi = isapi;
 				return true;
 			case "visibility":
 				var visibility = TomlTools.GetValues<TextMessageTargetMode>(tomlObj);

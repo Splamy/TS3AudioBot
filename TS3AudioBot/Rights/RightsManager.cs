@@ -107,7 +107,7 @@ namespace TS3AudioBot.Rights
 					{
 						if (execCtx.AvailableGroups == null)
 							execCtx.AvailableGroups = result.Value.ServerGroups;
-						if(!execCtx.ChannelGroupId.HasValue)
+						if (!execCtx.ChannelGroupId.HasValue)
 							execCtx.ChannelGroupId = result.Value.ChannelGroupId;
 					}
 				}
@@ -124,6 +124,7 @@ namespace TS3AudioBot.Rights
 				execCtx.ClientUid = inv.ClientUid;
 				execCtx.Visibiliy = inv.Visibiliy;
 				execCtx.ApiToken = inv.Token;
+				execCtx.IsApi = inv.IsApi;
 
 				ProcessNode(rootRule, execCtx);
 
@@ -147,7 +148,8 @@ namespace TS3AudioBot.Rights
 				|| (ctx.ClientUid != null && rule.MatchClientUid.Contains(ctx.ClientUid))
 				|| (ctx.AvailableGroups.Length > 0 && rule.MatchClientGroupId.Overlaps(ctx.AvailableGroups))
 				|| (ctx.ChannelGroupId.HasValue && rule.MatchChannelGroupId.Contains(ctx.ChannelGroupId.Value))
-			    || (ctx.ApiToken != null && rule.MatchToken.Contains(ctx.ApiToken))
+				|| (ctx.ApiToken != null && rule.MatchToken.Contains(ctx.ApiToken))
+				|| (ctx.IsApi == rule.MatchIsApi)
 				|| (ctx.Visibiliy.HasValue && rule.MatchVisibility.Contains(ctx.Visibiliy.Value)))
 			{
 				bool hasMatchingChild = false;
