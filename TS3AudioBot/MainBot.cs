@@ -228,7 +228,7 @@ namespace TS3AudioBot
 			QueryConnection = teamspeakClient;
 			PlayerConnection = teamspeakClient;
 			PlaylistManager = new PlaylistManager(pld);
-			SessionManager = new SessionManager();
+			SessionManager = new SessionManager(Database);
 			if (hmd.EnableHistory)
 				historyManager = new HistoryManager(hmd, Database);
 			PluginManager = new PluginManager(this, pmd);
@@ -399,13 +399,25 @@ namespace TS3AudioBot
 			=> PlayManager.Enqueue(info.InvokerData, parameter).UnwrapThrow();
 
 		[Command("api token", "Generates an api token.")]
-		public JsonObject CommandApiToken(ExecutionInformation info)
+		[Usage("[<link>]", "Optionally specifies a duration this key is valid in hours.")]
+		[RequiredParameters(0)]
+		public JsonObject CommandApiToken(ExecutionInformation info, double? validHours)
 		{
 			if (info.InvokerData.Visibiliy.HasValue && info.InvokerData.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
 			if (info.InvokerData.ClientUid == null)
 				throw new CommandException("No Uid found to register token for.", CommandExceptionReason.CommandError);
-			var token = SessionManager.GenerateToken(info.InvokerData.ClientUid).UnwrapThrow();
+			TimeSpan? validSpan = null;
+			try
+			{
+				if(validHours.HasValue)
+					validSpan = TimeSpan.FromHours(validHours.Value);
+			}
+			catch (OverflowException oex)
+			{
+				throw new CommandException("Invalid token-valid duration.", oex, CommandExceptionReason.CommandError);
+			}
+			var token = SessionManager.GenerateToken(info.InvokerData.ClientUid, validSpan).UnwrapThrow();
 			return new JsonSingleValue<string>(token);
 		}
 

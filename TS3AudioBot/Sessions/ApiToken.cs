@@ -18,7 +18,7 @@ namespace TS3AudioBot.Sessions
 		public const int TokenLen = 32;
 		public const int NonceLen = 32;
 		public const int MaxNonceCount = 100;
-		public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.FromDays(1);
+		public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.MaxValue;
 		public static readonly TimeSpan DefaultNonceTimeout = TimeSpan.FromHours(1);
 
 		public string Value { get; set; }
