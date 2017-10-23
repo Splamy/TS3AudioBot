@@ -123,6 +123,7 @@ namespace TS3AudioBot.Rights
 					execCtx.AvailableGroups = new ulong[0];
 				execCtx.ClientUid = inv.ClientUid;
 				execCtx.Visibiliy = inv.Visibiliy;
+				execCtx.ApiToken = inv.Token;
 
 				ProcessNode(rootRule, execCtx);
 
@@ -146,6 +147,7 @@ namespace TS3AudioBot.Rights
 				|| (ctx.ClientUid != null && rule.MatchClientUid.Contains(ctx.ClientUid))
 				|| (ctx.AvailableGroups.Length > 0 && rule.MatchClientGroupId.Overlaps(ctx.AvailableGroups))
 				|| (ctx.ChannelGroupId.HasValue && rule.MatchChannelGroupId.Contains(ctx.ChannelGroupId.Value))
+			    || (ctx.ApiToken != null && rule.MatchToken.Contains(ctx.ApiToken))
 				|| (ctx.Visibiliy.HasValue && rule.MatchVisibility.Contains(ctx.Visibiliy.Value)))
 			{
 				bool hasMatchingChild = false;
@@ -154,7 +156,7 @@ namespace TS3AudioBot.Rights
 
 				if (!hasMatchingChild)
 					ctx.MatchingRules.Add(rule);
-				return hasMatchingChild;
+				return true;
 			}
 			return false;
 		}
@@ -509,6 +511,7 @@ namespace TS3AudioBot.Rights
 		public ulong? ChannelGroupId { get; set; }
 		public string ClientUid { get; set; }
 		public bool IsApi { get; set; }
+		public string ApiToken { get; set; }
 		public TextMessageTargetMode? Visibiliy { get; set; }
 
 		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();

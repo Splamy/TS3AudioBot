@@ -20,6 +20,8 @@ namespace TS3AudioBot.Rights
 	// 3) Add To FillNull when not declared
 	// 4) Add new case to ParseKey switch
 	// 5) Add match condition to RightManager.ProcessNode
+	// 6) Add Property in the ExecuteContext class
+	// 7) Set value in RightManager.GetRightsContext
 
 	internal class RightsRule : RightsDecl
 	{
@@ -32,6 +34,7 @@ namespace TS3AudioBot.Rights
 		public HashSet<ulong> MatchClientGroupId { get; set; }
 		public HashSet<ulong> MatchChannelGroupId { get; set; }
 		public HashSet<string> MatchPermission { get; set; }
+		public HashSet<string> MatchToken { get; set; }
 		public TextMessageTargetMode[] MatchVisibility { get; set; }
 
 		public RightsRule()
@@ -46,6 +49,7 @@ namespace TS3AudioBot.Rights
 			|| MatchHost.Count > 0
 			|| MatchPermission.Count > 0
 			|| MatchChannelGroupId.Count > 0
+			|| MatchToken.Count > 0
 			|| MatchVisibility.Length > 0;
 		}
 
@@ -57,6 +61,7 @@ namespace TS3AudioBot.Rights
 			if (MatchClientGroupId == null) MatchClientGroupId = new HashSet<ulong>();
 			if (MatchChannelGroupId == null) MatchChannelGroupId = new HashSet<ulong>();
 			if (MatchPermission == null) MatchPermission = new HashSet<string>();
+			if (MatchToken == null) MatchToken = new HashSet<string>();
 			if (MatchVisibility == null) MatchVisibility = new TextMessageTargetMode[0];
 		}
 
@@ -91,6 +96,11 @@ namespace TS3AudioBot.Rights
 				var perm = TomlTools.GetValues<string>(tomlObj);
 				if (perm == null) ctx.Errors.Add("<perm> Field has invalid data.");
 				else MatchPermission = new HashSet<string>(perm);
+				return true;
+			case "apitoken":
+				var apitoken = TomlTools.GetValues<string>(tomlObj);
+				if (apitoken == null) ctx.Errors.Add("<apitoken> Field has invalid data.");
+				else MatchToken = new HashSet<string>(apitoken);
 				return true;
 			case "visibility":
 				var visibility = TomlTools.GetValues<TextMessageTargetMode>(tomlObj);
