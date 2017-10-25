@@ -12,7 +12,6 @@
 //#define DIAG_TIMEOUT
 //#define DIAG_RTT
 
-
 namespace TS3Client.Full
 {
 	using System;
@@ -154,8 +153,8 @@ namespace TS3Client.Full
 					// VoiceWhisper packets are for some reason excluded
 					if (packetType == PacketType.Voice)
 						return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
-
-					packet = QuickLZ.Compress(packet, 1);
+					
+					packet = QuickerLz.Compress(packet, 1).ToArr();
 					addFlags |= PacketFlags.Compressed;
 
 					if (NeedsSplitting(packet.Length))
@@ -430,9 +429,15 @@ namespace TS3Client.Full
 			// DECOMPRESS
 			if (packet.CompressedFlag)
 			{
-				if (QuickLZ.SizeDecompressed(packet.Data) > MaxDecompressedSize)
-					throw new InvalidOperationException("Compressed packet is too large");
-				packet.Data = QuickLZ.Decompress(packet.Data);
+				try
+				{
+					packet.Data = QuickerLz.Decompress(packet.Data, MaxDecompressedSize);
+				}
+				catch (Exception)
+				{
+					Debug.WriteLine("Got invalid compressed data.");
+					return false;
+				}
 			}
 			return true;
 		}

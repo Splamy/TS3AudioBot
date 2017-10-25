@@ -57,6 +57,7 @@
     <Compile Include="DocumentedEnums.cs" />
     <Compile Include="FileTransferManager.cs" />
     <Compile Include="Full\BasePacket.cs" />
+    <Compile Include="Full\QuickerLz.cs" />
     <Compile Include="Full\IdentityData.cs" />
     <Compile Include="Full\NetworkStats.cs" />
     <Compile Include="Full\PacketHandler.cs" />
@@ -64,7 +65,6 @@
     <Compile Include="Full\NetUtil.cs" />
     <Compile Include="Full\OutgoingPacket.cs" />
     <Compile Include="Full\PacketType.cs" />
-    <Compile Include="Full\QuickLZ.cs" />
     <Compile Include="Full\RingQueue.cs" />
     <Compile Include="Full\Ts3Crypt.cs" />
     <Compile Include="Full\Ts3FullClient.cs" />
