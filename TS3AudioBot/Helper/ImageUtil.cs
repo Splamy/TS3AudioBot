@@ -62,7 +62,6 @@ namespace TS3AudioBot.Helper
 			{
 				float ratio = img.Width / (float)img.Height;
 				var destImage = new Bitmap(resizeMaxWidth, (int)(resizeMaxWidth / ratio));
-				destImage.SetResolution(img.HorizontalResolution, img.VerticalResolution);
 
 				using (var graphics = Graphics.FromImage(destImage))
 				{
@@ -71,12 +70,7 @@ namespace TS3AudioBot.Helper
 					graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 					graphics.SmoothingMode = SmoothingMode.HighQuality;
 					graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-					using (var wrapMode = new ImageAttributes())
-					{
-						wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-						graphics.DrawImage(img, new Rectangle(0, 0, destImage.Width, destImage.Height), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, wrapMode);
-					}
+					graphics.DrawImage(img, new Rectangle(0, 0, destImage.Width, destImage.Height), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel);
 				}
 
 				return destImage;
