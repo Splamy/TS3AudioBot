@@ -73,6 +73,7 @@
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithm\DependencyGraph.cs" />
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\AudioEncoder.cs" />
     <Compile Include="Audio\AudioModifier.cs" />

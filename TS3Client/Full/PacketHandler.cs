@@ -7,11 +7,6 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-//#define DIAGNOSTICS
-//#define DIAG_RAWPKG
-//#define DIAG_TIMEOUT
-//#define DIAG_RTT
-
 namespace TS3Client.Full
 {
 	using System;
@@ -153,9 +148,13 @@ namespace TS3Client.Full
 					// VoiceWhisper packets are for some reason excluded
 					if (packetType == PacketType.Voice)
 						return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
-					
-					packet = QuickerLz.Compress(packet, 1).ToArr();
-					addFlags |= PacketFlags.Compressed;
+
+					var tmpCompress = QuickerLz.Compress(packet, 1);
+					if (tmpCompress.Length < packet.Length)
+					{
+						packet = tmpCompress.ToArr();
+						addFlags |= PacketFlags.Compressed;
+					}
 
 					if (NeedsSplitting(packet.Length))
 					{
@@ -216,10 +215,7 @@ namespace TS3Client.Full
 				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
 
-#if DIAGNOSTICS && DIAG_RAWPKG
-				if (packet.PacketType != PacketType.Ping && packet.PacketType != PacketType.Pong)
-					Console.WriteLine($"[OT] {packet}");
-#endif
+				ColorDbg.WritePkgOut(packet);
 
 				ts3Crypt.Encrypt(packet);
 
@@ -309,10 +305,7 @@ namespace TS3Client.Full
 
 				NetworkStats.LogInPacket(packet);
 
-#if DIAGNOSTICS && DIAG_RAWPKG
-				if (packet.PacketType != PacketType.Ping && packet.PacketType != PacketType.Pong)
-					Console.WriteLine($"[IN] {packet}");
-#endif
+				ColorDbg.WritePkgIn(packet);
 
 				switch (packet.PacketType)
 				{
@@ -507,6 +500,7 @@ namespace TS3Client.Full
 			// But usually this should be no problem since the init order is linear
 			lock (sendLoopLock)
 			{
+				ColorDbg.WriteDetail("Cleaned Inits", "INIT");
 				var remPacket = packetAckManager.Values.Where(x => x.PacketType == PacketType.Init1).ToArray();
 				foreach (var packet in remPacket)
 					packetAckManager.Remove(packet.PacketId);
@@ -527,9 +521,7 @@ namespace TS3Client.Full
 				smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
 			smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
 			currentRto = smoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
-#if DIAGNOSTICS && DIAG_RTT
-			Console.WriteLine("SRTT:{0} RTTVAR:{1} RTO: {2}", SmoothedRtt, SmoothedRttVar, CurrentRto);
-#endif
+			ColorDbg.WriteRtt(smoothedRtt, smoothedRttVar, currentRto);
 		}
 
 		/// <summary>
@@ -572,21 +564,19 @@ namespace TS3Client.Full
 			var now = Util.Now;
 			foreach (var outgoingPacket in packetList)
 			{
+				ColorDbg.WriteResend(outgoingPacket, "QUEUE");
+
 				// Check if the packet timed out completely
 				if (outgoingPacket.FirstSendTime < now - PacketTimeout)
 				{
-#if DIAGNOSTICS && DIAG_TIMEOUT
-					Console.WriteLine("TIMEOUT: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
-#endif
+					ColorDbg.WriteResend(outgoingPacket, "TIMEOUT");
 					return true;
 				}
 
 				// Check if we should retransmit a packet because it probably got lost
 				if (outgoingPacket.LastSendTime < now - currentRto)
 				{
-#if DIAGNOSTICS && DIAG_TIMEOUT
-					Console.WriteLine("RESEND PACKET: " + DebugUtil.DebugToHex(outgoingPacket.Raw));
-#endif
+					ColorDbg.WriteResend(outgoingPacket, "RESEND");
 					currentRto = currentRto + currentRto;
 					if (currentRto > MaxRetryInterval)
 						currentRto = MaxRetryInterval;

@@ -14,25 +14,30 @@ namespace TS3AudioBot.Helper
 	using System.Drawing;
 	using System.Drawing.Drawing2D;
 	using System.Drawing.Text;
+	using System.Drawing.Imaging;
 
 	internal static class ImageUtil
 	{
 		private static readonly StringFormat AvatarTextFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near };
 		private static readonly Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round };
 
-		public static void BuildStringImage(string str, Image img, RectangleF rect)
+		public static Image BuildStringImage(string str, Image img, int resizeMaxWidth = 320)
 		{
+			img = AutoResize(img, resizeMaxWidth);
+
+			var imgRect = new RectangleF(0, 0, img.Width, img.Height);
+
 			using (var graphics = Graphics.FromImage(img))
 			{
 				if (Util.IsLinux)
 				{
-					BuildStringImageLinux(str, graphics, rect);
+					BuildStringImageLinux(str, graphics, imgRect);
 				}
 				else
 				{
 					using (var gp = new GraphicsPath())
 					{
-						gp.AddString(str, FontFamily.GenericSansSerif, 0, 15, rect, AvatarTextFormat);
+						gp.AddString(str, FontFamily.GenericSansSerif, 0, 15, imgRect, AvatarTextFormat);
 
 						graphics.InterpolationMode = InterpolationMode.High;
 						graphics.SmoothingMode = SmoothingMode.HighQuality;
@@ -43,6 +48,38 @@ namespace TS3AudioBot.Helper
 						graphics.FillPath(Brushes.White, gp);
 					}
 				}
+			}
+
+			return img;
+		}
+
+		private static Image AutoResize(Image img, int resizeMaxWidth)
+		{
+			if (img.Width <= resizeMaxWidth)
+				return img;
+
+			using (img)
+			{
+				float ratio = img.Width / (float)img.Height;
+				var destImage = new Bitmap(resizeMaxWidth, (int)(resizeMaxWidth / ratio));
+				destImage.SetResolution(img.HorizontalResolution, img.VerticalResolution);
+
+				using (var graphics = Graphics.FromImage(destImage))
+				{
+					graphics.CompositingMode = CompositingMode.SourceCopy;
+					graphics.CompositingQuality = CompositingQuality.HighQuality;
+					graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+					graphics.SmoothingMode = SmoothingMode.HighQuality;
+					graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+					using (var wrapMode = new ImageAttributes())
+					{
+						wrapMode.SetWrapMode(WrapMode.TileFlipXY);
+						graphics.DrawImage(img, new Rectangle(0, 0, destImage.Width, destImage.Height), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, wrapMode);
+					}
+				}
+
+				return destImage;
 			}
 		}
 

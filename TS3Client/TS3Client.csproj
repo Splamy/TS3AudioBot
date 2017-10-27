@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;COLOG, COLOG_DETAILED, COLOG_TIMEOUT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -50,6 +50,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ColorDbg.cs" />
     <Compile Include="Commands\CommandMultiParameter.cs" />
     <Compile Include="Commands\ICommandPart.cs" />
     <Compile Include="ConnectionData.cs" />

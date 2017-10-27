@@ -9,14 +9,15 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using System;
-	using System.IO;
-	using System.Linq;
 	using Helper;
 	using Helper.AudioTags;
+	using System;
 	using System.Collections.Generic;
+	using System.Drawing;
+	using System.IO;
+	using System.Linq;
 
-	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory
+	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
 		private readonly MediaFactoryData mediaFactoryData;
 
@@ -74,10 +75,10 @@ namespace TS3AudioBot.ResourceFactories
 				 || uriResult.Scheme == Uri.UriSchemeHttps
 				 || uriResult.Scheme == Uri.UriSchemeFtp)
 					return ValidateWeb(uriResult);
-				else if (uriResult.Scheme == Uri.UriSchemeFile)
+				if (uriResult.Scheme == Uri.UriSchemeFile)
 					return ValidateFile(uriResult.OriginalString);
-				else
-					return R<ResData>.Err(RResultCode.MediaUnknownUri.ToString());
+
+				return R<ResData>.Err(RResultCode.MediaUnknownUri.ToString());
 			}
 			else
 			{
@@ -90,21 +91,12 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R<ResData> ValidateWeb(Uri link)
 		{
-			string outName = null;
-			var valCode = WebWrapper.GetResponse(link, response =>
-			{
-				using (var stream = response.GetResponseStream())
-					outName = GetStreamName(stream);
-			});
+			var result = WebWrapper.GetResponseUnsafe(link);
+			if (!result.Ok)
+				return result.Message;
 
-			if (valCode == ValidateCode.Ok)
-			{
-				return R<ResData>.OkR(new ResData(link.AbsoluteUri, outName));
-			}
-			else
-			{
-				return R<ResData>.Err(RResultCode.MediaNoWebResponse.ToString());
-			}
+			using (var stream = result.Value)
+				return new ResData(link.AbsoluteUri, GetStreamName(stream));
 		}
 
 		private R<ResData> ValidateFile(string path)
@@ -156,11 +148,13 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Playlist> GetPlaylist(string url)
 		{
-			if (Directory.Exists(url))
+			var foundUri = FindFile(url);
+
+			if (foundUri != null && Directory.Exists(foundUri.OriginalString))
 			{
 				try
 				{
-					var di = new DirectoryInfo(url);
+					var di = new DirectoryInfo(foundUri.OriginalString);
 					var plist = new Playlist(di.Name);
 					var resources = from file in di.EnumerateFiles()
 									select ValidateFile(file.FullName) into result
@@ -177,32 +171,69 @@ namespace TS3AudioBot.ResourceFactories
 				catch (ArgumentException) { return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString()); }
 			}
 
-			var m3uresult = R<IReadOnlyList<PlaylistItem>>.Err(string.Empty);
-			if (File.Exists(url))
+			var m3uResult = R<IReadOnlyList<PlaylistItem>>.Err(string.Empty);
+			if (foundUri != null && File.Exists(foundUri.OriginalString))
 			{
-				using (var stream = File.OpenRead(url))
-					m3uresult = M3uReader.TryGetData(stream);
+				using (var stream = File.OpenRead(foundUri.OriginalString))
+					m3uResult = M3uReader.TryGetData(stream);
 			}
-			else if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+			else if (foundUri != null)
 			{
-				var ret = WebWrapper.GetResponse(uri, resp =>
-				{
-					using (var stream = resp.GetResponseStream())
-						m3uresult = M3uReader.TryGetData(stream);
-
-				});
-				if (ret != ValidateCode.Ok)
-					return R<Playlist>.Err(ret.ToString());
+				var status = WebWrapper.GetResponseUnsafe(foundUri);
+				if (status.Ok)
+					using (var stream = status.Value)
+						m3uResult = M3uReader.TryGetData(stream);
+				else
+					return status.Message;
 			}
 
-			if (m3uresult)
+			if (m3uResult)
 			{
-				var m3ulist = new Playlist(PlaylistManager.CleanseName(url));
-				m3ulist.AddRange(m3uresult.Value);
-				return m3ulist;
+				var m3uList = new Playlist(PlaylistManager.CleanseName(url));
+				m3uList.AddRange(m3uResult.Value);
+				return m3uList;
 			}
 
 			return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString());
+		}
+
+		private static R<Stream> GetStreamFromUriUnsafe(Uri uri)
+		{
+			if (uri.Scheme == Uri.UriSchemeHttp
+				|| uri.Scheme == Uri.UriSchemeHttps
+				|| uri.Scheme == Uri.UriSchemeFtp)
+				return WebWrapper.GetResponseUnsafe(uri);
+			if (uri.Scheme == Uri.UriSchemeFile)
+				return File.OpenRead(uri.LocalPath);
+
+			return RResultCode.MediaUnknownUri.ToString();
+		}
+
+		public R<Image> GetThumbnail(PlayResource playResource)
+		{
+			var uri = new Uri(playResource.PlayUri);
+			var result = GetStreamFromUriUnsafe(uri);
+			if (!result)
+				return result.Message;
+
+			using (var stream = result.Value)
+			{
+				var data = AudioTagReader.GetImage(stream);
+				if (data == null)
+					return "No image found";
+
+				using (var memStream = new MemoryStream(data))
+				{
+					try
+					{
+						return new Bitmap(memStream);
+					}
+					catch (ArgumentException)
+					{
+						return "Inavlid image data";
+					}
+				}
+			}
 		}
 	}
 

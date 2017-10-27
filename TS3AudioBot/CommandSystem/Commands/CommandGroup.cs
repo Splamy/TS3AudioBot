@@ -32,7 +32,7 @@ namespace TS3AudioBot.CommandSystem
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 					return new CommandCommandResult(this);
-				result = string.Empty;
+				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commands.Keys.Take(4)) + ", ...", CommandExceptionReason.AmbiguousCall);
 			}
 			else
 			{

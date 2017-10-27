@@ -83,6 +83,29 @@ namespace TS3AudioBot.Helper
 				}
 			}
 		}
+
+		internal static R<Stream> GetResponseUnsafe(Uri link) => GetResponseUnsafe(link, DefaultTimeout);
+		internal static R<Stream> GetResponseUnsafe(Uri link, TimeSpan timeout)
+		{
+			var request = WebRequest.Create(link);
+			try
+			{
+				request.Timeout = (int)timeout.TotalMilliseconds;
+				var stream = request.GetResponse().GetResponseStream();
+				if (stream == null)
+					return "WEB No content";
+				return stream;
+			}
+			catch (WebException webEx)
+			{
+				HttpWebResponse errorResponse;
+				if (webEx.Status == WebExceptionStatus.Timeout)
+					return "WEB Request timed out";
+				if ((errorResponse = webEx.Response as HttpWebResponse) != null)
+					return $"WEB error: [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}";
+				return $"WEB Unknown request error: {webEx}";
+			}
+		}
 	}
 
 	internal enum ValidateCode

@@ -66,34 +66,34 @@ namespace TS3AudioBot
 
 		private StreamWriter logStream;
 
-		internal DbStore Database { get; set; }
-		private TargetScript TargetScript { get; set; }
-		private PluginManager PluginManager { get; set; }
-		/// <summary>Mangement for the bot command system.</summary>
-		public CommandManager CommandManager { get; private set; }
-		/// <summary>Mangement for playlists.</summary>
-		public PlaylistManager PlaylistManager { get; private set; }
-		/// <summary>Connection object for the current client.</summary>
-		public TeamspeakControl QueryConnection { get; private set; }
-		/// <summary>Management for clients talking with the bot.</summary>
-		public SessionManager SessionManager { get; private set; }
-		private HistoryManager historyManager = null;
-		/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
+		private DbStore Database { get; set; } // G
+		private TargetScript TargetScript { get; set; } // L
+		private PluginManager PluginManager { get; set; } // G
+														  /// <summary>Mangement for the bot command system.</summary>
+		public CommandManager CommandManager { get; private set; } // G|L
+																   /// <summary>Mangement for playlists.</summary>
+		public PlaylistManager PlaylistManager { get; private set; } // L|G+
+																	 /// <summary>Connection object for the current client.</summary>
+		public TeamspeakControl QueryConnection { get; private set; } // L
+																	  /// <summary>Management for clients talking with the bot.</summary>
+		public SessionManager SessionManager { get; private set; } // G|L+
+		private HistoryManager historyManager = null; // G+|L
+													  /// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
 		public HistoryManager HistoryManager => historyManager ?? throw new CommandException("History has not been enabled", CommandExceptionReason.NotSupported);
 		/// <summary>Manages factories which can load resources.</summary>
-		public ResourceFactoryManager FactoryManager { get; private set; }
-		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
-		public WebManager WebManager { get; private set; }
-		/// <summary>Redirects playing, enqueing and song events.</summary>
-		public PlayManager PlayManager { get; private set; }
-		/// <summary>Used to specify playing mode and active targets to send to.</summary>
-		public ITargetManager TargetManager { get; private set; }
-		/// <summary>Slim interface to control the audio player.</summary>
-		public IPlayerConnection PlayerConnection { get; private set; }
-		/// <summary>Minimalistic config store for automatically serialized classes.</summary>
-		public ConfigFile ConfigManager { get; private set; }
-		/// <summary>Permission system of the bot.</summary>
-		public RightsManager RightsManager { get; private set; }
+		public ResourceFactoryManager FactoryManager { get; private set; } // G
+																		   /// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
+		public WebManager WebManager { get; private set; } // G+
+														   /// <summary>Redirects playing, enqueing and song events.</summary>
+		public PlayManager PlayManager { get; private set; } // L
+															 /// <summary>Used to specify playing mode and active targets to send to.</summary>
+		public ITargetManager TargetManager { get; private set; } // L
+																  /// <summary>Slim interface to control the audio player.</summary>
+		public IPlayerConnection PlayerConnection { get; private set; } // L
+																		/// <summary>Minimalistic config store for automatically serialized classes.</summary>
+		public ConfigFile ConfigManager { get; private set; } // G
+															  /// <summary>Permission system of the bot.</summary>
+		public RightsManager RightsManager { get; private set; } // G|L+
 
 		public bool QuizMode { get; set; }
 
@@ -410,7 +410,7 @@ namespace TS3AudioBot
 			TimeSpan? validSpan = null;
 			try
 			{
-				if(validHours.HasValue)
+				if (validHours.HasValue)
 					validSpan = TimeSpan.FromHours(validHours.Value);
 			}
 			catch (OverflowException oex)
@@ -1748,15 +1748,11 @@ namespace TS3AudioBot
 				if (!thumresult.Ok)
 					return;
 
-				using (var bmp = thumresult.Value)
+				using (var bmp = ImageUtil.BuildStringImage("Now playing: " + startEvent.ResourceData.ResourceTitle, thumresult.Value))
 				{
-					ImageUtil.BuildStringImage(
-						"Now playing: " + startEvent.ResourceData.ResourceTitle,
-						bmp,
-						new RectangleF(0, 0, bmp.Width, bmp.Height));
 					using (var mem = new MemoryStream())
 					{
-						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Png);
+						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
 						var result = QueryConnection.UploadAvatar(mem);
 						if (!result.Ok)
 							Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Message);
