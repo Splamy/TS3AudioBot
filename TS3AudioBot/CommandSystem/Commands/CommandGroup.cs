@@ -32,7 +32,7 @@ namespace TS3AudioBot.CommandSystem
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 					return new CommandCommandResult(this);
-				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commands.Keys.Take(4)) + ", ...", CommandExceptionReason.AmbiguousCall);
+				result = string.Empty;
 			}
 			else
 			{
@@ -45,6 +45,8 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commandResults.Select(g => g.Key)), CommandExceptionReason.AmbiguousCall);
 			if (commandResults.Length == 0)
 				throw new CommandException("No matching command", CommandExceptionReason.AmbiguousCall);
+			if(commandResults.Length == 1 && result == string.Empty && commandResults[0].Key != string.Empty)
+				throw new CommandException("Ambiguous command, possible names: " + string.Join(", ", commands.Keys.Take(4)) + ", ...", CommandExceptionReason.AmbiguousCall);
 
 
 			var argSubList = arguments.TrySegment(1);

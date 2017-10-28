@@ -14,7 +14,6 @@ namespace TS3AudioBot.Helper
 	using System.Drawing;
 	using System.Drawing.Drawing2D;
 	using System.Drawing.Text;
-	using System.Drawing.Imaging;
 
 	internal static class ImageUtil
 	{
