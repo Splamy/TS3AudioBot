@@ -184,7 +184,7 @@ namespace TS3Client.Full
 			case NotificationType.InitIvExpand: ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault()); break;
 			case NotificationType.InitServer: ProcessInitServer((InitServer)notification.FirstOrDefault()); break;
 			case NotificationType.ChannelList: break;
-			case NotificationType.ChannelListFinished: ChannelSubscribeAll(); break;
+			case NotificationType.ChannelListFinished: try { ChannelSubscribeAll(); } catch (Ts3CommandException) {} break;
 			case NotificationType.ClientNeededPermissions: break;
 			case NotificationType.ClientChannelGroupChanged: break;
 			case NotificationType.ClientServerGroupAdded: break;
