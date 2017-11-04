@@ -33,7 +33,7 @@ namespace TS3Client.Full
 		private readonly object statusLock = new object();
 
 		private int returnCode;
-		private bool wasExit;
+		private ConnectionContext context;
 
 		private readonly IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
@@ -65,7 +65,7 @@ namespace TS3Client.Full
 			packetHandler = new PacketHandler(ts3Crypt);
 			msgProc = new MessageProcessor(false);
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
-			wasExit = true;
+			context = new ConnectionContext { WasExit = true };
 		}
 
 		/// <summary>Tries to connect to a server.</summary>
@@ -89,13 +89,14 @@ namespace TS3Client.Full
 			lock (statusLock)
 			{
 				returnCode = 0;
-				wasExit = false;
+				context = new ConnectionContext { WasExit = false };
 
 				VersionSign = conDataFull.VersionSign;
+				ts3Crypt.Reset();
 				ts3Crypt.Identity = conDataFull.Identity;
 
 				packetHandler.Connect(remoteAddress);
-				dispatcher.Init(NetworkLoop, InvokeEvent);
+				dispatcher.Init(NetworkLoop, InvokeEvent, context);
 			}
 			dispatcher.EnterEventLoop();
 		}
@@ -106,28 +107,28 @@ namespace TS3Client.Full
 		/// </summary>
 		public override void Disconnect()
 		{
-			DisconnectInternal();
+			DisconnectInternal(context);
 			while (true)
 			{
-				if (wasExit)
+				if (context.WasExit)
 					break;
 				dispatcher.DoWork();
-				if (!wasExit)
+				if (!context.WasExit)
 					Thread.Sleep(1);
 			}
 		}
 
-		private void DisconnectInternal(bool triggerEvent = true)
+		private void DisconnectInternal(ConnectionContext ctx, bool triggerEvent = true)
 		{
 			lock (statusLock)
 			{
-				if (wasExit)
+				if (ctx.WasExit)
 					return;
 
 				switch (status)
 				{
 				case Ts3ClientStatus.Disconnected:
-					wasExit = true;
+					ctx.WasExit = true;
 					packetHandler.Stop();
 					msgProc.DropQueue();
 					dispatcher.Dispose();
@@ -169,7 +170,7 @@ namespace TS3Client.Full
 					lock (statusLock)
 					{
 						status = Ts3ClientStatus.Disconnected;
-						DisconnectInternal();
+						DisconnectInternal(context);
 					}
 					break;
 				}
@@ -184,7 +185,7 @@ namespace TS3Client.Full
 			case NotificationType.InitIvExpand: ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault()); break;
 			case NotificationType.InitServer: ProcessInitServer((InitServer)notification.FirstOrDefault()); break;
 			case NotificationType.ChannelList: break;
-			case NotificationType.ChannelListFinished: try { ChannelSubscribeAll(); } catch (Ts3CommandException) {} break;
+			case NotificationType.ChannelListFinished: try { ChannelSubscribeAll(); } catch (Ts3CommandException) { } break;
 			case NotificationType.ClientNeededPermissions: break;
 			case NotificationType.ClientChannelGroupChanged: break;
 			case NotificationType.ClientServerGroupAdded: break;
@@ -208,7 +209,7 @@ namespace TS3Client.Full
 					if (status == Ts3ClientStatus.Connecting)
 					{
 						status = Ts3ClientStatus.Disconnected;
-						DisconnectInternal(false);
+						DisconnectInternal(context, false);
 					}
 				}
 
@@ -219,16 +220,18 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void NetworkLoop()
+		private void NetworkLoop(object ctxObject)
 		{
+			var ctx = (ConnectionContext)ctxObject;
+
 			while (true)
 			{
 				lock (statusLock)
 				{
-					if (wasExit)
+					if (ctx.WasExit)
 						break;
 				}
-				if (wasExit)
+				if (ctx.WasExit)
 					break;
 
 				IncomingPacket packet = packetHandler.FetchPacket();
@@ -263,7 +266,7 @@ namespace TS3Client.Full
 			lock (statusLock)
 			{
 				status = Ts3ClientStatus.Disconnected;
-				DisconnectInternal();
+				DisconnectInternal(ctx);
 			}
 		}
 
@@ -347,7 +350,7 @@ namespace TS3Client.Full
 			byte[] data = Util.Encoder.GetBytes(com.ToString());
 			lock (statusLock)
 			{
-				if (wasExit)
+				if (context.WasExit)
 					throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
@@ -565,5 +568,10 @@ namespace TS3Client.Full
 			Connected,
 			Connecting,
 		}
+	}
+
+	internal class ConnectionContext
+	{
+		public bool WasExit { get; set; }
 	}
 }

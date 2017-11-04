@@ -3,6 +3,7 @@ namespace TS3Client
 	using System;
 	using System.Diagnostics;
 	using Full;
+	using System.Runtime.CompilerServices;
 
 	internal static class ColorDbg
 	{
@@ -21,12 +22,16 @@ namespace TS3Client
 		}
 
 		[Conditional("COLOG")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
 		public static void WriteLine(string type, string text)
 		{
 			WriteType(type);
+			Write(text, ConsoleColor.Gray);
+			Console.WriteLine();
 		}
 
 		[Conditional("COLOG_RTT")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
 		public static void WriteRtt(TimeSpan smoothedRtt, TimeSpan smoothedRttVar, TimeSpan currentRto)
 		{
 			WriteType("RTT");
@@ -40,6 +45,7 @@ namespace TS3Client
 		}
 
 		[Conditional("COLOG_RAWPKG")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
 		public static void WritePkgOut(OutgoingPacket packet)
 		{
 			if (packet.PacketType == PacketType.Ping || packet.PacketType == PacketType.Pong)
@@ -48,8 +54,13 @@ namespace TS3Client
 			switch (packet.PacketType)
 			{
 			case PacketType.Init1:
-				Console.Write("ID: ");
+				Console.Write("InitID: ");
 				Write(packet.Data[4].ToString(), ConsoleColor.Magenta);
+				break;
+			case PacketType.Ack:
+			case PacketType.AckLow:
+				Console.Write("Acking: ");
+				Write(NetUtil.N2Hushort(packet.Data, 0).ToString(), ConsoleColor.Magenta);
 				break;
 			default:
 				Console.Write(packet);
@@ -59,6 +70,7 @@ namespace TS3Client
 		}
 
 		[Conditional("COLOG_RAWPKG")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
 		public static void WritePkgIn(IncomingPacket packet)
 		{
 			if (packet.PacketType == PacketType.Ping || packet.PacketType == PacketType.Pong)
@@ -67,8 +79,13 @@ namespace TS3Client
 			switch (packet.PacketType)
 			{
 			case PacketType.Init1:
-				Console.Write("ID: ");
+				Console.Write("InitID: ");
 				Write(packet.Data[0].ToString(), ConsoleColor.Magenta);
+				break;
+			case PacketType.Ack:
+			case PacketType.AckLow:
+				Console.Write("Acking: ");
+				Write(NetUtil.N2Hushort(packet.Data, 0).ToString(), ConsoleColor.Magenta);
 				break;
 			default:
 				Console.Write(packet);
@@ -77,7 +94,22 @@ namespace TS3Client
 			Console.WriteLine();
 		}
 
+		[Conditional("COLOG_RAWPKG")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		public static void WritePkgRaw(byte[] data, string op)
+		{
+			WriteType("[I]");
+			switch (op)
+			{
+				case "DROPPING": Write("DROPPING ", ConsoleColor.DarkRed); break;
+				case "RAW": Write("RAW ", ConsoleColor.Cyan); break;
+			}
+			//Console.WriteLine(Encoding.ASCII.GetString(data));
+			Console.WriteLine(DebugUtil.DebugToHex(data));
+		}
+
 		[Conditional("COLOG_TIMEOUT")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
 		public static void WriteResend(BasePacket packet, string op = "")
 		{
 			WriteType("PKG");
@@ -91,6 +123,7 @@ namespace TS3Client
 		}
 
 		[Conditional("COLOG_DETAILED")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
 		public static void WriteDetail(string detail, string plus = "")
 		{
 			WriteType("+++");

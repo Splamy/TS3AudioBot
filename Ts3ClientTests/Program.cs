@@ -16,7 +16,7 @@ namespace Ts3ClientTests
 		{
 			var clients = new List<Ts3FullClient>();
 
-			for (int i = 0; i < 50; i++)
+			//for (int i = 0; i < 50; i++)
 			{
 				var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
 				client.OnConnected += Client_OnConnected;
@@ -44,8 +44,8 @@ namespace Ts3ClientTests
 			var client = (Ts3FullClient)sender;
 			Console.WriteLine("Connected id {0}", client.ClientId);
 			var data = client.ClientInfo(client.ClientId);
-			//client.Disconnect();
-			//client.Connect(con);
+			client.Disconnect();
+			client.Connect(con);
 		}
 
 		private static void Client_OnTextMessageReceived(object sender, IEnumerable<TextMessage> e)

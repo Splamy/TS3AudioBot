@@ -66,7 +66,7 @@ namespace TS3Client.Query
 			for (int i = 0; i < 3; i++)
 				tcpReader.ReadLine();
 
-			dispatcher.Init(NetworkLoop, InvokeEvent);
+			dispatcher.Init(NetworkLoop, InvokeEvent, null);
 			OnConnected?.Invoke(this, new EventArgs());
 			dispatcher.EnterEventLoop();
 		}
@@ -81,7 +81,7 @@ namespace TS3Client.Query
 			}
 		}
 
-		private void NetworkLoop()
+		private void NetworkLoop(object ctx)
 		{
 			while (true)
 			{

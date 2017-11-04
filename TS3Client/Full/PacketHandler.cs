@@ -291,13 +291,19 @@ namespace TS3Client.Full
 				try { buffer = udpClient.Receive(ref dummy); }
 				catch (IOException) { return null; }
 				catch (SocketException) { return null; }
+
+				ColorDbg.WritePkgRaw(buffer, "RAW");
+
 				if (dummy.Address.Equals(remoteAddress.Address) && dummy.Port != remoteAddress.Port)
 					continue;
-
+				
 				packet = Ts3Crypt.GetIncommingPacket(buffer);
 				// Invalid packet, ignore
 				if (packet == null)
+				{
+					ColorDbg.WritePkgRaw(buffer, "DROPPING");
 					continue;
+				}
 
 				GenerateGenerationId(packet);
 				if (!ts3Crypt.Decrypt(packet))
@@ -564,8 +570,6 @@ namespace TS3Client.Full
 			var now = Util.Now;
 			foreach (var outgoingPacket in packetList)
 			{
-				ColorDbg.WriteResend(outgoingPacket, "QUEUE");
-
 				// Check if the packet timed out completely
 				if (outgoingPacket.FirstSendTime < now - PacketTimeout)
 				{
