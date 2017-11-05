@@ -38,6 +38,9 @@ namespace TS3Client
 		public static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
 
 		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString()); }
+
+		public static CommandError TimeOutCommandError { get; } =
+			new CommandError {Id = Ts3ErrorCode.custom_error, Message = "Connection closed"};
 	}
 
 	internal sealed class MissingEnumCaseException : Exception

@@ -154,8 +154,7 @@ namespace TS3Client
 			if (synchronQueue)
 			{
 				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out WaitBlock waitBlock))
-					waitBlock.SetAnswer(
-						new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection Closed" });
+					waitBlock.SetAnswer(Util.TimeOutCommandError);
 			}
 			else
 			{
@@ -164,8 +163,7 @@ namespace TS3Client
 				foreach (var block in dependingBlocks)
 					block?.Clear();
 				foreach (var val in arr)
-					val.Value.SetAnswer(
-						new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection Closed" });
+					val.Value.SetAnswer(Util.TimeOutCommandError);
 			}
 		}
 	}

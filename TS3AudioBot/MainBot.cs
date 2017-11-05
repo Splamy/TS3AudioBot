@@ -18,7 +18,6 @@ namespace TS3AudioBot
 	using Sessions;
 	using System;
 	using System.Collections.Generic;
-	using System.Drawing;
 	using System.Globalization;
 	using System.IO;
 	using System.Linq;
@@ -34,27 +33,33 @@ namespace TS3AudioBot
 	{
 		internal static void Main(string[] args)
 		{
-			using (var bot = new MainBot())
+			Thread.CurrentThread.Name = "TAB Main";
+
+			var bot = new MainBot();
+
+			AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 			{
-				AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+				Log.Write(Log.Level.Error, "Critical program failure!. Exception:\n{0}", (e.ExceptionObject as Exception).UnrollException());
+				bot.Dispose();
+			};
+
+			Console.CancelKeyPress += (s, e) =>
+			{
+				if (e.SpecialKey == ConsoleSpecialKey.ControlC)
 				{
-					Log.Write(Log.Level.Error, "Critical program failure!. Exception:\n{0}", (e.ExceptionObject as Exception).UnrollException());
+					e.Cancel = true;
 					bot.Dispose();
-				};
+				}
+			};
 
-				Console.CancelKeyPress += (s, e) =>
-				{
-					if (e.SpecialKey == ConsoleSpecialKey.ControlC)
-					{
-						e.Cancel = true;
-						bot.Dispose();
-					}
-				};
+			if (!bot.ReadParameter(args))
+				return;
 
-				if (!bot.ReadParameter(args)) return;
-				if (!bot.InitializeBot()) return;
-				bot.Run();
-			}
+			if (!bot.InitializeBot())
+				bot.Dispose();
+
+			while (!bot.isDisposed)
+				Thread.Sleep(10);
 		}
 
 		private bool isDisposed;
@@ -62,7 +67,7 @@ namespace TS3AudioBot
 		private bool writeLog;
 		private bool writeLogStack;
 		private string configFilePath;
-		internal MainBotData mainBotData;
+		private MainBotData mainBotData;
 
 		private StreamWriter logStream;
 
@@ -262,6 +267,7 @@ namespace TS3AudioBot
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += OnClientDisconnect;
+			QueryConnection.OnBotDisconnect += (s, e) => Dispose();
 
 			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
 			PluginManager.RestorePlugins();
@@ -273,20 +279,16 @@ namespace TS3AudioBot
 
 			WebManager.StartServerAsync();
 
-			Log.Write(Log.Level.Info, "[==================== Done ====================]");
-			return true;
-		}
-
-		// TODO rework later for multi instance feature
-		private void Run()
-		{
-			Thread.CurrentThread.Name = "Main/Eventloop";
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
 			catch (Ts3Exception qcex)
 			{
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
+				return false;
 			}
+
+			Log.Write(Log.Level.Info, "[==================== Done ====================]");
+			return true;
 		}
 
 		private void TextCallback(object sender, TextMessage textMessage)

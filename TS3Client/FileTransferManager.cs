@@ -116,7 +116,7 @@ namespace TS3Client
 
 		private ushort GetFreeTransferId()
 		{
-			return ++transferIdCnt;
+			return unchecked(++transferIdCnt);
 		}
 
 		/// <summary>Resumes a download from a previously stopped position.</summary>

@@ -30,14 +30,16 @@ namespace TS3AudioBot
 		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
 		private const uint StallCountInterval = 10;
 		private const uint StallNoErrorCountMax = 5;
-		private static readonly string[] QuitMessages =
-		{ "I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
-		  "Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
-		  "Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
-		  "Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
-		  "?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
-		  "connection lost", "disconnected", "Requested by API.",
-		  "Robert'); DROP TABLE students;--" };
+		private static readonly string[] QuitMessages = {
+			"I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
+			"Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
+			"Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
+			"Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
+			"?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
+			"connection lost", "disconnected", "Requested by API.",
+			"Robert'); DROP TABLE students;--", "It works!! No, wait...",
+			"Notice me, senpai", ":wq"
+		};
 
 		private const string PreLinkConf = "-hide_banner -nostats -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
@@ -64,7 +66,6 @@ namespace TS3AudioBot
 		private uint stallCount;
 		private uint stallNoErrorCount;
 		private IdentityData identity;
-		private bool autoReconnectOnce;
 
 		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup;
 		private readonly List<ushort> clientSubscriptionsSetup;
@@ -86,7 +87,6 @@ namespace TS3AudioBot
 			isStall = false;
 			stallCount = 0;
 			identity = null;
-			autoReconnectOnce = false;
 
 			Util.Init(ref channelSubscriptionsSetup);
 			Util.Init(ref clientSubscriptionsSetup);
@@ -124,9 +124,20 @@ namespace TS3AudioBot
 			{
 				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.Identity, ts3FullClientData.IdentityOffset);
 			}
+
 			// check required security level
-			Ts3Crypt.ImproveSecurity(identity, ts3FullClientData.IdentityLevel);
-			ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+			if (ts3FullClientData.IdentityLevel == "auto") { }
+			else if (int.TryParse(ts3FullClientData.IdentityLevel, out int targetLevel))
+			{
+				Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetLevel);
+				Ts3Crypt.ImproveSecurity(identity, targetLevel);
+				ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+			}
+			else
+			{
+				Log.Write(Log.Level.Warning, "Invalid value for QueryConnection::IdentityLevel, enter a number or \"auto\".");
+			}
+
 
 			// get or compute password
 			if (!string.IsNullOrEmpty(ts3FullClientData.ServerPassword)
@@ -139,7 +150,6 @@ namespace TS3AudioBot
 
 			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
-			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
 			ConnectClient();
 		}
 
@@ -169,15 +179,6 @@ namespace TS3AudioBot
 			});
 		}
 
-		private void TsFullClient_OnDisconnected(object sender, DisconnectEventArgs e)
-		{
-			if (autoReconnectOnce)
-			{
-				autoReconnectOnce = false;
-				ConnectClient();
-			}
-		}
-
 		private void TsFullClient_OnErrorEvent(object sender, CommandError e)
 		{
 			switch (e.Id)
@@ -188,13 +189,20 @@ namespace TS3AudioBot
 				break;
 
 			case Ts3ErrorCode.client_could_not_validate_identity:
-				autoReconnectOnce = true;
-				int targetSecLevel = int.Parse(e.ExtraMessage);
-				Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetSecLevel);
-				Ts3Crypt.ImproveSecurity(identity, targetSecLevel);
-				ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+				if (ts3FullClientData.IdentityLevel == "auto")
+				{
+					int targetSecLevel = int.Parse(e.ExtraMessage);
+					Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetSecLevel);
+					Ts3Crypt.ImproveSecurity(identity, targetSecLevel);
+					ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
 
-				tsFullClient.Disconnect();
+					ConnectClient();
+				}
+				else
+				{
+					Log.Write(Log.Level.Warning, "The server reported that the security level you set is not high enough." +
+												 "Increase the value to \"{0}\" or set it to \"auto\" to generate it on demand when connecting.", e.ExtraMessage);
+				}
 				break;
 
 			default:
@@ -590,8 +598,8 @@ namespace TS3AudioBot
 		public string Identity { get; set; }
 		[Info("The client identity security offset", "0")]
 		public ulong IdentityOffset { get; set; }
-		[Info("The client identity security level which should be reached.", "8")]
-		public int IdentityLevel { get; set; }
+		[Info("The client identity security level which should be calculated before connecting, or \"auto\" to generate on demand.", "auto")]
+		public string IdentityLevel { get; set; }
 		[Info("The server password. Leave empty for none.")]
 		public string ServerPassword { get; set; }
 		[Info("Set this to true, if the server password is hashed.", "false")]

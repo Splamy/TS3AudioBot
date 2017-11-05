@@ -20,42 +20,42 @@ namespace TS3Client.Full
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ushort N2Hushort(byte[] intArr, int inOff)
 		{
-			return (ushort)((intArr[inOff] << 8) | intArr[inOff + 1]);
+			return unchecked((ushort)((intArr[inOff] << 8) | intArr[inOff + 1]));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static int N2Hint(byte[] intArr, int inOff)
 		{
-			return (intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3];
+			return unchecked((intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3]);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void H2N(ushort value, byte[] outArr, int outOff)
 		{
-			outArr[outOff + 0] = (byte)(value >> 8);
-			outArr[outOff + 1] = (byte)(value >> 0);
+			outArr[outOff + 0] = unchecked((byte)(value >> 8));
+			outArr[outOff + 1] = unchecked((byte)(value >> 0));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void H2N(uint value, byte[] outArr, int outOff)
 		{
-			outArr[outOff + 0] = (byte)(value >> 24);
-			outArr[outOff + 1] = (byte)(value >> 16);
-			outArr[outOff + 2] = (byte)(value >> 08);
-			outArr[outOff + 3] = (byte)(value >> 00);
+			outArr[outOff + 0] = unchecked((byte)(value >> 24));
+			outArr[outOff + 1] = unchecked((byte)(value >> 16));
+			outArr[outOff + 2] = unchecked((byte)(value >> 08));
+			outArr[outOff + 3] = unchecked((byte)(value >> 00));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void H2N(ulong value, byte[] outArr, int outOff)
 		{
-			outArr[outOff + 0] = (byte)(value >> 56);
-			outArr[outOff + 1] = (byte)(value >> 48);
-			outArr[outOff + 2] = (byte)(value >> 40);
-			outArr[outOff + 3] = (byte)(value >> 32);
-			outArr[outOff + 4] = (byte)(value >> 24);
-			outArr[outOff + 5] = (byte)(value >> 16);
-			outArr[outOff + 6] = (byte)(value >> 08);
-			outArr[outOff + 7] = (byte)(value >> 00);
+			outArr[outOff + 0] = unchecked((byte)(value >> 56));
+			outArr[outOff + 1] = unchecked((byte)(value >> 48));
+			outArr[outOff + 2] = unchecked((byte)(value >> 40));
+			outArr[outOff + 3] = unchecked((byte)(value >> 32));
+			outArr[outOff + 4] = unchecked((byte)(value >> 24));
+			outArr[outOff + 5] = unchecked((byte)(value >> 16));
+			outArr[outOff + 6] = unchecked((byte)(value >> 08));
+			outArr[outOff + 7] = unchecked((byte)(value >> 00));
 		}
 	}
 }

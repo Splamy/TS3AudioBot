@@ -89,6 +89,7 @@ namespace TS3Client.Full
 			lock (statusLock)
 			{
 				returnCode = 0;
+				status = Ts3ClientStatus.Connecting;
 				context = new ConnectionContext { WasExit = false };
 
 				VersionSign = conDataFull.VersionSign;
@@ -120,6 +121,8 @@ namespace TS3Client.Full
 
 		private void DisconnectInternal(ConnectionContext ctx, bool triggerEvent = true)
 		{
+			bool triggerEventSafe = false;
+
 			lock (statusLock)
 			{
 				if (ctx.WasExit)
@@ -132,8 +135,7 @@ namespace TS3Client.Full
 					packetHandler.Stop();
 					msgProc.DropQueue();
 					dispatcher.Dispose();
-					if (triggerEvent)
-						OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
+					triggerEventSafe = triggerEvent;
 					break;
 				case Ts3ClientStatus.Disconnecting:
 					break;
@@ -147,6 +149,9 @@ namespace TS3Client.Full
 					throw Util.UnhandledDefault(status);
 				}
 			}
+
+			if (triggerEventSafe)
+				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -231,35 +236,39 @@ namespace TS3Client.Full
 					if (ctx.WasExit)
 						break;
 				}
-				if (ctx.WasExit)
-					break;
 
 				IncomingPacket packet = packetHandler.FetchPacket();
 				if (packet == null)
 					break;
 
-				switch (packet.PacketType)
+				lock (statusLock)
 				{
-				case PacketType.Command:
-				case PacketType.CommandLow:
-					string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-					var result = msgProc.PushMessage(message);
-					if (result.HasValue)
-						dispatcher.Invoke(result.Value);
-					break;
-
-				case PacketType.Voice:
-				case PacketType.VoiceWhisper:
-					// VOICE
-
-					break;
-
-				case PacketType.Init1:
-					var forwardData = ts3Crypt.ProcessInit1(packet.Data);
-					if (forwardData == null)
+					if (ctx.WasExit)
 						break;
-					packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
-					break;
+
+					switch (packet.PacketType)
+					{
+					case PacketType.Command:
+					case PacketType.CommandLow:
+						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
+						var result = msgProc.PushMessage(message);
+						if (result.HasValue)
+							dispatcher.Invoke(result.Value);
+						break;
+
+					case PacketType.Voice:
+					case PacketType.VoiceWhisper:
+						// VOICE
+
+						break;
+
+					case PacketType.Init1:
+						var forwardData = ts3Crypt.ProcessInit1(packet.Data);
+						if (forwardData == null)
+							break;
+						packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
+						break;
+					}
 				}
 			}
 
@@ -278,13 +287,17 @@ namespace TS3Client.Full
 
 			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			packetHandler.CryptoInitDone();
-			ClientInit(
-				connectionDataFull.Username,
-				true, true,
-				connectionDataFull.DefaultChannel,
-				Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
-				password, string.Empty, string.Empty, string.Empty,
-				"123,456", VersionSign);
+			try
+			{
+				ClientInit(
+					connectionDataFull.Username,
+					true, true,
+					connectionDataFull.DefaultChannel,
+					Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
+					password, string.Empty, string.Empty, string.Empty,
+					"123,456", VersionSign);
+			}
+			catch (Ts3CommandException) { }
 		}
 
 		private void ProcessInitServer(InitServer initServer)
@@ -339,19 +352,20 @@ namespace TS3Client.Full
 
 		private void SendCommandBase(WaitBlock wb, Ts3Command com)
 		{
-			if (com.ExpectResponse)
-			{
-				var responseNumber = Interlocked.Increment(ref returnCode);
-				var retCodeParameter = new CommandParameter("return_code", responseNumber);
-				com.AppendParameter(retCodeParameter);
-				msgProc.EnqueueRequest(retCodeParameter.Value, wb);
-			}
-
-			byte[] data = Util.Encoder.GetBytes(com.ToString());
 			lock (statusLock)
 			{
-				if (context.WasExit)
-					throw new Ts3CommandException(new CommandError { Id = Ts3ErrorCode.custom_error, Message = "Connection closed" });
+				if (context.WasExit || (!Connected && com.ExpectResponse))
+					throw new Ts3CommandException(Util.TimeOutCommandError);
+
+				if (com.ExpectResponse)
+				{
+					var responseNumber = ++returnCode;
+					var retCodeParameter = new CommandParameter("return_code", responseNumber);
+					com.AppendParameter(retCodeParameter);
+					msgProc.EnqueueRequest(retCodeParameter.Value, wb);
+				}
+
+				byte[] data = Util.Encoder.GetBytes(com.ToString());
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
 		}

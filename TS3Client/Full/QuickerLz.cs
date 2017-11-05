@@ -260,51 +260,51 @@ namespace TS3Client.Full
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void WriteU16(byte[] outArr, int outOff, int value)
 		{
-			outArr[outOff + 0] = (byte)(value >> 0);
-			outArr[outOff + 1] = (byte)(value >> 8);
+			outArr[outOff + 0] = unchecked((byte)(value >> 0));
+			outArr[outOff + 1] = unchecked((byte)(value >> 8));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Write24(byte[] outArr, int outOff, int value)
 		{
-			outArr[outOff + 0] = (byte)(value >> 00);
-			outArr[outOff + 1] = (byte)(value >> 08);
-			outArr[outOff + 2] = (byte)(value >> 16);
+			outArr[outOff + 0] = unchecked((byte)(value >> 00));
+			outArr[outOff + 1] = unchecked((byte)(value >> 08));
+			outArr[outOff + 2] = unchecked((byte)(value >> 16));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void WriteI32(byte[] outArr, int outOff, int value)
 		{
-			outArr[outOff + 0] = (byte)(value >> 00);
-			outArr[outOff + 1] = (byte)(value >> 08);
-			outArr[outOff + 2] = (byte)(value >> 16);
-			outArr[outOff + 3] = (byte)(value >> 24);
+			outArr[outOff + 0] = unchecked((byte)(value >> 00));
+			outArr[outOff + 1] = unchecked((byte)(value >> 08));
+			outArr[outOff + 2] = unchecked((byte)(value >> 16));
+			outArr[outOff + 3] = unchecked((byte)(value >> 24));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void WriteU32(byte[] outArr, int outOff, uint value)
 		{
-			outArr[outOff + 0] = (byte)(value >> 00);
-			outArr[outOff + 1] = (byte)(value >> 08);
-			outArr[outOff + 2] = (byte)(value >> 16);
-			outArr[outOff + 3] = (byte)(value >> 24);
+			outArr[outOff + 0] = unchecked((byte)(value >> 00));
+			outArr[outOff + 1] = unchecked((byte)(value >> 08));
+			outArr[outOff + 2] = unchecked((byte)(value >> 16));
+			outArr[outOff + 3] = unchecked((byte)(value >> 24));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static ushort ReadU16(byte[] intArr, int inOff)
-			=> (ushort)(intArr[inOff] | (intArr[inOff + 1] << 8));
+			=> unchecked((ushort)(intArr[inOff] | (intArr[inOff + 1] << 8)));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Read24(byte[] intArr, int inOff)
-			=> intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16);
+			=> unchecked(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int ReadI32(byte[] intArr, int inOff)
-			=> intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24);
+			=> unchecked(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint ReadU32(byte[] intArr, int inOff)
-			=> (uint)(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24));
+			=> unchecked ((uint)(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24)));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Hash(int value) => ((value >> 12) ^ value) & 0xfff;

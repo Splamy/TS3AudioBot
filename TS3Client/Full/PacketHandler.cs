@@ -231,7 +231,7 @@ namespace TS3Client.Full
 
 		private void IncPacketCounter(PacketType packetType)
 		{
-			packetCounter[(int)packetType]++;
+			unchecked { packetCounter[(int)packetType]++; }
 			if (packetCounter[(int)packetType] == 0)
 				generationCounter[(int)packetType]++;
 		}
@@ -292,11 +292,9 @@ namespace TS3Client.Full
 				catch (IOException) { return null; }
 				catch (SocketException) { return null; }
 
-				ColorDbg.WritePkgRaw(buffer, "RAW");
-
 				if (dummy.Address.Equals(remoteAddress.Address) && dummy.Port != remoteAddress.Port)
 					continue;
-				
+
 				packet = Ts3Crypt.GetIncommingPacket(buffer);
 				// Invalid packet, ignore
 				if (packet == null)

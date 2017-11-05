@@ -57,6 +57,8 @@ namespace TS3AudioBot
 			}
 		}
 
+		public event EventHandler OnBotDisconnect;
+
 		private List<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
 		private readonly Cache<ulong, ClientDbData> clientDbNames;
@@ -70,9 +72,9 @@ namespace TS3AudioBot
 			Util.Init(ref clientbuffer);
 
 			if (connectionType == ClientType.Full)
-				tsBaseClient = new Ts3FullClient(EventDispatchType.ExtraDispatchThread);
+				tsBaseClient = new Ts3FullClient(EventDispatchType.DoubleThread);
 			else if (connectionType == ClientType.Query)
-				tsBaseClient = new Ts3QueryClient(EventDispatchType.ExtraDispatchThread);
+				tsBaseClient = new Ts3QueryClient(EventDispatchType.DoubleThread);
 
 			tsBaseClient.OnClientLeftView += ExtendedClientLeftView;
 			tsBaseClient.OnClientEnterView += ExtendedClientEnterView;
@@ -97,6 +99,7 @@ namespace TS3AudioBot
 		private void OnDisconnected(object sender, DisconnectEventArgs e)
 		{
 			Log.Write(Log.Level.Debug, "Bot disconnected. Reason: {0}", e.ExitReason);
+			OnBotDisconnect?.Invoke(this, new EventArgs());
 		}
 
 		public R SendMessage(string message, ushort clientId)

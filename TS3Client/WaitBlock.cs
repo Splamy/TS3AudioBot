@@ -24,6 +24,7 @@ namespace TS3Client
 		public NotificationType[] DependsOn { get; }
 		private LazyNotification notification;
 		public bool Closed { get; private set; }
+		private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(15);
 
 		public WaitBlock(NotificationType[] dependsOn = null)
 		{
@@ -40,7 +41,8 @@ namespace TS3Client
 
 		public IEnumerable<T> WaitForMessage<T>() where T : IResponse, new()
 		{
-			answerWaiter.WaitOne();
+			if (!answerWaiter.WaitOne(CommandTimeout))
+				throw new Ts3CommandException(Util.TimeOutCommandError);
 			if (commandError.Id != Ts3ErrorCode.ok)
 				throw new Ts3CommandException(commandError);
 
@@ -51,10 +53,12 @@ namespace TS3Client
 		{
 			if (DependsOn == null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
-			answerWaiter.WaitOne();
+			if (!answerWaiter.WaitOne(CommandTimeout))
+				throw new Ts3CommandException(Util.TimeOutCommandError);
 			if (commandError.Id != Ts3ErrorCode.ok)
 				throw new Ts3CommandException(commandError);
-			notificationWaiter.WaitOne();
+			if (!notificationWaiter.WaitOne(CommandTimeout))
+				throw new Ts3CommandException(Util.TimeOutCommandError);
 
 			return notification;
 		}
