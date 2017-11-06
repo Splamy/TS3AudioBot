@@ -52,6 +52,10 @@ namespace TS3Client.Full
 			= new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Windows, "DX5NIYLvfJEUjuIbCidnoeozxIDRRkpq3I9vVMBmE9L2qnekOoBzSenkzsg2lC9CMv8K5hkEzhr2TYUYSwUXCg==");
 		public static readonly VersionSign VER_AND_3_UNKNOWN
 			= new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Android, "AWb948BY32Z7bpIyoAlQguSmxOGcmjESPceQe1DpW5IZ4+AW1KfTk2VUIYNfUPsxReDJMCtlhVKslzhR2lf0AA==");
+		public static readonly VersionSign VER_WIN_3_1_6
+			= new VersionSign("3.1.6 [Build: 1502873983]", ClientPlattform.Windows, "o+l92HKfiUF+THx2rBsuNjj/S1QpxG1fd5o3Q7qtWxkviR3LI3JeWyc26eTmoQoMTgI3jjHV7dCwHsK1BVu6Aw==");
+		public static readonly VersionSign VER_LIN_3_1_6
+			= new VersionSign("3.1.6 [Build: 1502873983]", ClientPlattform.Linux, "o+l92HKfiUF+THx2rBsuNjj/S1QpxG1fd5o3Q7qtWxkviR3LI3JeWyc26eTmoQoMTgI3jjHV7dCwHsK1BVu6Aw==");
 	}
 
 	public enum ClientPlattform
