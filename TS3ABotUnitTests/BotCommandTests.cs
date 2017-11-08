@@ -25,16 +25,20 @@ namespace TS3ABotUnitTests
 	public class BotCommandTests
 	{
 		private readonly CommandManager cmdMgr;
+		private readonly Core core;
 
 		public BotCommandTests()
 		{
 			cmdMgr = new CommandManager();
 			cmdMgr.RegisterMain();
+
+			core = new Core();
+			typeof(Core).GetProperty(nameof(Core.CommandManager)).SetValue(core, cmdMgr);
 		}
 
 		private string CallCommand(string command)
 		{
-			var info = new ExecutionInformation(null, null, new InvokerData("InvokerUid"), null) { SkipRightsChecks = true };
+			var info = new ExecutionInformation(core, null, new InvokerData("InvokerUid"), null) { SkipRightsChecks = true };
 			return cmdMgr.CommandSystem.ExecuteCommand(info, command);
 		}
 
