@@ -33,15 +33,17 @@ Done:
 * (un)subscribe to the Bob to hear music in any channel
 * (un)subscribe the Bob to certain channels
 * Playlist management for all users
-* *broken* | Basic plugin support
-
-In progress:
+* Advanced permission configuration
+* Extensive plugin support
 * Web API
 
-In planning:
-* Create multiple client instances automatically for different channels
-* (Improved) Rights system
+In progress:
 * Own web-interface
+* (Improved) Rights system
+* Multi-instance
+
+In planning:  
+*See issues*
 
 ## Bot Commands
 All in all, the bot is fully operable only via chat (and actually only via chat).  
@@ -109,3 +111,6 @@ Why OSL-3.0:
 - OSL allows you to link to our libraries without needing to disclose your own project, which might be useful if you want to use the TS3Client as a library.
 - If you create plugins you do not have to make them public like in GPL. (Although we would be happier if you shared them :)
 - With OSL we want to allow you providing the TS3AB as a service (even commercially). We do not want the software to be sold but the service. We want this software to be free for everyone.
+
+# Badges
+[![forthebadge](http://forthebadge.com/images/badges/60-percent-of-the-time-works-every-time.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/built-with-love.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/contains-cat-gifs.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/made-with-c-sharp.svg)](http://forthebadge.com)

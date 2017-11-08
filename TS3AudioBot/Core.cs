@@ -20,7 +20,7 @@ namespace TS3AudioBot
 	using System.Threading;
 	using Web;
 
-	public class Core : IDisposable
+	public sealed class Core : IDisposable
 	{
 		private bool isRunning;
 		private bool consoleOutput;
