@@ -22,7 +22,7 @@ namespace TS3AudioBot.Rights
 	{
 		private const int RuleLevelSize = 2;
 
-		private readonly MainBot botParent;
+		private readonly Core core;
 
 		private bool needsRecalculation;
 		private readonly Cache<InvokerData, ExecuteContext> cachedRights;
@@ -39,9 +39,9 @@ namespace TS3AudioBot.Rights
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
 
-		public RightsManager(MainBot bot, RightsManagerData rmd)
+		public RightsManager(Core core, RightsManagerData rmd)
 		{
-			botParent = bot;
+			this.core = core;
 			rightsManagerData = rmd;
 			cachedRights = new Cache<InvokerData, ExecuteContext>();
 			registeredRights = new HashSet<string>();
@@ -102,7 +102,8 @@ namespace TS3AudioBot.Rights
 					((needsAvailableGroups && execCtx.AvailableGroups == null)
 					|| (needsAvailableChanGroups && !execCtx.ChannelGroupId.HasValue)))
 				{
-					var result = botParent.QueryConnection.GetClientInfoById(inv.ClientId.Value);
+					// TODO fixme !!!!!!!!
+					var result = core.Bots.GetBot(0)?.QueryConnection.GetClientInfoById(inv.ClientId.Value) ?? R<TS3Client.Messages.ClientInfo>.Err("No bot");
 					if (result.Ok)
 					{
 						if (execCtx.AvailableGroups == null)
@@ -114,7 +115,8 @@ namespace TS3AudioBot.Rights
 
 				if (needsAvailableGroups && inv.DatabaseId.HasValue && execCtx.AvailableGroups == null)
 				{
-					var result = botParent.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value);
+					// TODO fixme !!!!!!!!
+					var result = core.Bots.GetBot(0)?.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value) ?? R<ulong[]>.Err("");
 					if (result.Ok)
 						execCtx.AvailableGroups = result.Value;
 				}

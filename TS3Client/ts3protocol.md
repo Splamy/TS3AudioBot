@@ -351,7 +351,7 @@ All high level packets specified in this chapter are sent as `Command` Type
 packets as explained in (see 2.8.3). Additionally the `Newprotocol` flag
 (see 2.3) must be set on all `Command`, `CommandLow` and `Init1` packets.
 
-The packet header values for (see 3.1) and (see 3.2) are as following:
+The packet header/encryption values for (see 3.1) and (see 3.2) are as following:
 
 | Parameter | Value                                                                                                |
 |-----------|------------------------------------------------------------------------------------------------------|
@@ -372,7 +372,7 @@ omega ASN.1 encoding here)_
 ## 3.1 clientinitiv (Client -> Server)
 The first packet is sent (Client -> Server) although this is only sent for
 legacy reasons since newer servers (at least 3.0.13.0?) use the data part
-embedded in the last `Init1` packet from the low-level handshake (see 1.5).
+embedded in the last `Init1` packet from the low-level handshake (see 2.5).
 
 The ip parameter is added but left without value for legacy reasons.
 

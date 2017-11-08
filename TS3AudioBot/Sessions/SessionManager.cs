@@ -39,7 +39,7 @@ namespace TS3AudioBot.Sessions
 			database.GetMetaData(ApiTokenTable);
 		}
 
-		public UserSession CreateSession(MainBot bot, ClientData client)
+		public UserSession CreateSession(Bot bot, ClientData client)
 		{
 			if (bot == null)
 				throw new ArgumentNullException(nameof(bot));

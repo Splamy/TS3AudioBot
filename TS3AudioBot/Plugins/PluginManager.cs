@@ -32,14 +32,14 @@ namespace TS3AudioBot.Plugins
 
 	internal class PluginManager : IDisposable
 	{
-		private readonly MainBot mainBot;
+		private readonly Core core;
 		private readonly PluginManagerData pluginManagerData;
 		private readonly Dictionary<string, Plugin> plugins;
 		private readonly HashSet<int> usedIds;
 
-		public PluginManager(MainBot bot, PluginManagerData pmd)
+		public PluginManager(Core core, PluginManagerData pmd)
 		{
-			mainBot = bot ?? throw new ArgumentNullException(nameof(bot));
+			this.core = core ?? throw new ArgumentNullException(nameof(core));
 			pluginManagerData = pmd;
 			Util.Init(ref plugins);
 			Util.Init(ref usedIds);
@@ -81,7 +81,7 @@ namespace TS3AudioBot.Plugins
 					if (IgnoreFile(file))
 						continue;
 
-					plugin = new Plugin(file, mainBot, GetFreeId());
+					plugin = new Plugin(file, core, GetFreeId());
 
 					if (plugin.Load() == PluginResponse.Disabled)
 					{

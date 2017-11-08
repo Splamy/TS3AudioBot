@@ -14,7 +14,8 @@ namespace TS3AudioBot.CommandSystem
 
 	public class ExecutionInformation
 	{
-		public MainBot Bot { get; }
+		public Core Core { get; }
+		public Bot Bot { get; }
 		// TODO session as R ?
 		public UserSession Session { get; internal set; }
 		public InvokerData InvokerData { get; internal set; }
@@ -22,9 +23,10 @@ namespace TS3AudioBot.CommandSystem
 		public bool ApiCall => InvokerData.IsApi;
 		public bool SkipRightsChecks { get; set; }
 
-		private ExecutionInformation() : this(null, null, null) { }
-		public ExecutionInformation(MainBot bot, InvokerData invoker, string textMessage, UserSession userSession = null)
+		private ExecutionInformation() : this(null, null, null, null) { }
+		public ExecutionInformation(Core core, Bot bot, InvokerData invoker, string textMessage, UserSession userSession = null)
 		{
+			Core = core;
 			Bot = bot;
 			TextMessage = textMessage;
 			InvokerData = invoker;
@@ -35,7 +37,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (SkipRightsChecks)
 				return true;
-			return Bot.RightsManager.HasAllRights(InvokerData, rights);
+			return Core.RightsManager.HasAllRights(InvokerData, rights);
 		}
 
 		public R Write(string message)

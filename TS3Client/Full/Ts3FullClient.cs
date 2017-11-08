@@ -194,6 +194,7 @@ namespace TS3Client.Full
 			case NotificationType.ClientNeededPermissions: break;
 			case NotificationType.ClientChannelGroupChanged: break;
 			case NotificationType.ClientServerGroupAdded: break;
+			case NotificationType.ConnectionInfo: break;
 			case NotificationType.ConnectionInfoRequest: ProcessConnectionInfoRequest(); break;
 			case NotificationType.ChannelSubscribed: break;
 			case NotificationType.ChannelUnsubscribed: break;

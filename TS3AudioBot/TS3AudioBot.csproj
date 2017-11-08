@@ -32,7 +32,7 @@
     <ApplicationIcon>Media\favicon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>TS3AudioBot.MainBot</StartupObject>
+    <StartupObject>TS3AudioBot.Core</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -81,6 +81,8 @@
     <Compile Include="Audio\Opus\OpusDecoder.cs" />
     <Compile Include="Audio\Opus\OpusEncoder.cs" />
     <Compile Include="Audio\PreciseAudioTimer.cs" />
+    <Compile Include="BotManager.cs" />
+    <Compile Include="Commands.cs" />
     <Compile Include="CommandSystem\ASTCommand.cs" />
     <Compile Include="CommandSystem\ASTError.cs" />
     <Compile Include="CommandSystem\ASTNode.cs" />
@@ -92,6 +94,7 @@
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="CommandSystem\ICommandBag.cs" />
     <Compile Include="CommandSystem\StaticList.cs" />
+    <Compile Include="Core.cs" />
     <Compile Include="DbStore.cs" />
     <Compile Include="Helper\AudioTags\M3uReader.cs" />
     <Compile Include="Helper\Cache.cs" />
@@ -139,7 +142,7 @@
     <Compile Include="Sessions\ApiToken.cs" />
     <Compile Include="TargetScript.cs" />
     <Compile Include="TeamspeakControl.cs" />
-    <Compile Include="MainBot.cs" />
+    <Compile Include="Bot.cs" />
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PlayManager.cs" />
     <Compile Include="Plugins\PluginManager.cs" />

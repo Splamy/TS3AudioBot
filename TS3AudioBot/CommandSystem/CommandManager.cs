@@ -54,12 +54,12 @@ namespace TS3AudioBot.CommandSystem
 
 		public IEnumerable<string> AllRights => AllCommands.Select(x => x.RequiredRight);
 
-		public void RegisterMain(MainBot main)
+		public void RegisterMain()
 		{
 			if (baseCommands.Count > 0)
 				throw new InvalidOperationException("Operation can only be executed once.");
 
-			foreach (var com in GetBotCommands(GetCommandMethods(main)))
+			foreach (var com in GetBotCommands(GetCommandMethods(null, typeof(Commands))))
 			{
 				LoadCommand(com);
 				baseCommands.Add(com);
@@ -118,9 +118,12 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj)
+		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj, Type type = null)
 		{
-			var objType = obj.GetType();
+			if (obj == null && type == null)
+				throw new ArgumentNullException(nameof(type), "No type information given.");
+			var objType = type ?? obj.GetType();
+
 			foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
 			{
 				var comAtt = method.GetCustomAttribute<CommandAttribute>();

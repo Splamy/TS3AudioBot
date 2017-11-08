@@ -25,7 +25,7 @@ namespace TS3AudioBot.Web.Api
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
 		private static readonly MD5 Md5Hash = MD5.Create();
 
-		public WebApi(MainBot bot) : base(bot) { }
+		public WebApi(Core core) : base(core) { }
 
 		public override void DispatchCall(HttpListenerContext context)
 		{
@@ -52,10 +52,10 @@ namespace TS3AudioBot.Web.Api
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
 
-			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
+			var command = Core.CommandManager.CommandSystem.AstToCommandResult(ast);
 
 			invoker.IsApi = true;
-			var execInfo = new ExecutionInformation(MainBot, invoker, null);
+			var execInfo = new ExecutionInformation(Core, null, invoker, null); // TODO Mainbot !!!
 			try
 			{
 				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(),
@@ -153,7 +153,7 @@ namespace TS3AudioBot.Web.Api
 			if (identity == null)
 				return null;
 
-			var result = MainBot.SessionManager.GetToken(identity.Name);
+			var result = R<ApiToken>.Err(""); // TODO !!! MainBot.SessionManager.GetToken(identity.Name);
 			if (!result.Ok)
 				return null;
 
