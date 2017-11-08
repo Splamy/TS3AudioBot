@@ -9,13 +9,15 @@
 
 namespace TS3Client.Full
 {
+	using System;
+
 	/// <summary>
 	/// Describes a triple of version, plattform and a crytographical signature (usually distributed by "TeamSpeak Systems").
 	/// Each triple has to match and is not interchangeable with other triple parts.
 	/// </summary>
 	public class VersionSign
 	{
-		private static readonly string[] Plattforms = { "Windows", "Linux", "OS X", "Android" };
+		private static readonly string[] Plattforms = { null, "Windows", "Linux", "OS X", "Android" };
 
 		public string Sign { get; }
 		public string Name { get; }
@@ -24,10 +26,20 @@ namespace TS3Client.Full
 
 		public VersionSign(string name, ClientPlattform plattform, string sign)
 		{
+			if (plattform == ClientPlattform.Other)
+				throw new ArgumentException(nameof(plattform));
 			Name = name;
 			Sign = sign;
 			Plattform = plattform;
 			PlattformName = Plattforms[(int)plattform];
+		}
+
+		public VersionSign(string name, string plattform, string sign)
+		{
+			Name = name;
+			Sign = sign;
+			Plattform = ClientPlattform.Other;
+			PlattformName = plattform;
 		}
 
 		// Many ids implemented from here: https://r4p3.net/threads/client-builds.499/
@@ -53,14 +65,15 @@ namespace TS3Client.Full
 		public static readonly VersionSign VER_AND_3_UNKNOWN
 			= new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Android, "AWb948BY32Z7bpIyoAlQguSmxOGcmjESPceQe1DpW5IZ4+AW1KfTk2VUIYNfUPsxReDJMCtlhVKslzhR2lf0AA==");
 		public static readonly VersionSign VER_WIN_3_1_6
-			= new VersionSign("3.1.6 [Build: 1502873983]", ClientPlattform.Windows, "o+l92HKfiUF+THx2rBsuNjj/S1QpxG1fd5o3Q7qtWxkviR3LI3JeWyc26eTmoQoMTgI3jjHV7dCwHsK1BVu6Aw==");
+			= new VersionSign("3.1.6 [Build: 1502873983]", ClientPlattform.Windows, "73fB82Jt1lmIRHKBFaE8h1JKPGFbnt6/yrXOHwTS93Oo7Adx1usY5TzNg+8BKy9nmmA2FEBnRmz5cRfXDghnBA==");
 		public static readonly VersionSign VER_LIN_3_1_6
 			= new VersionSign("3.1.6 [Build: 1502873983]", ClientPlattform.Linux, "o+l92HKfiUF+THx2rBsuNjj/S1QpxG1fd5o3Q7qtWxkviR3LI3JeWyc26eTmoQoMTgI3jjHV7dCwHsK1BVu6Aw==");
 	}
 
 	public enum ClientPlattform
 	{
-		Windows = 0,
+		Other = 0,
+		Windows,
 		Linux,
 		Osx,
 		Android,

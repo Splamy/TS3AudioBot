@@ -85,9 +85,9 @@ namespace TS3AudioBot
 			return new JsonSingleValue<bool>("Channel commander is " + (value ? "on" : "off"), value);
 		}
 		[Command("bot commander on", "Enables channel commander.")]
-		public static void CommandBotCommanderOn(ExecutionInformation info) => info.Bot.QueryConnection.SetChannelCommander(true);
+		public static void CommandBotCommanderOn(ExecutionInformation info) => info.Bot.QueryConnection.SetChannelCommander(true).UnwrapThrow();
 		[Command("bot commander off", "Disables channel commander.")]
-		public static void CommandBotCommanderOff(ExecutionInformation info) => info.Bot.QueryConnection.SetChannelCommander(false);
+		public static void CommandBotCommanderOff(ExecutionInformation info) => info.Bot.QueryConnection.SetChannelCommander(false).UnwrapThrow();
 
 		[Command("bot come", "Moves the bot to you or a specified channel.")]
 		[RequiredParameters(0)]

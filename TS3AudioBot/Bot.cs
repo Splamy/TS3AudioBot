@@ -51,6 +51,8 @@ namespace TS3AudioBot
 
 		public bool InitializeBot()
 		{
+			Log.Write(Log.Level.Info, "Bot connecting...");
+
 			// Read Config File
 			var conf = core.ConfigManager;
 			var afd = conf.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
@@ -59,7 +61,6 @@ namespace TS3AudioBot
 			var pld = conf.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
 			mainBotData = conf.GetDataStruct<MainBotData>("MainBot", true);
 
-			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			AudioValues.audioFrameworkData = afd;
 			var teamspeakClient = new Ts3Full(tfcd);
 			QueryConnection = teamspeakClient;
@@ -71,8 +72,7 @@ namespace TS3AudioBot
 			PlayManager = new PlayManager(core, this);
 			TargetManager = teamspeakClient;
 			TargetScript = new TargetScript(core, this);
-
-			Log.Write(Log.Level.Info, "[=========== Registering callbacks ============]");
+			
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
 			PlayManager.BeforeResourceStarted += TargetScript.BeforeResourceStarted;
 			// In own favor update the own status text to the current song title
@@ -97,8 +97,6 @@ namespace TS3AudioBot
 				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
 				return false;
 			}
-
-			Log.Write(Log.Level.Info, "[==================== Done ====================]");
 			return true;
 		}
 

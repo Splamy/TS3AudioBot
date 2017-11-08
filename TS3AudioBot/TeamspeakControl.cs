@@ -27,7 +27,8 @@ namespace TS3AudioBot
 			if (OnMessageReceived == null) return;
 			foreach (var evData in eventArgs)
 			{
-				if (evData.InvokerId == me.ClientId)
+				var me = GetSelf();
+				if (me.Ok && evData.InvokerId == me.Value.ClientId)
 					continue;
 				OnMessageReceived?.Invoke(sender, evData);
 			}
@@ -64,7 +65,6 @@ namespace TS3AudioBot
 		private readonly Cache<ulong, ClientDbData> clientDbNames;
 
 		protected Ts3BaseFunctions tsBaseClient;
-		protected ClientData me;
 
 		protected TeamspeakControl(ClientType connectionType)
 		{
@@ -79,7 +79,6 @@ namespace TS3AudioBot
 			tsBaseClient.OnClientLeftView += ExtendedClientLeftView;
 			tsBaseClient.OnClientEnterView += ExtendedClientEnterView;
 			tsBaseClient.OnTextMessageReceived += ExtendedTextMessage;
-			tsBaseClient.OnConnected += OnConnected;
 			tsBaseClient.OnDisconnected += OnDisconnected;
 		}
 
@@ -91,10 +90,6 @@ namespace TS3AudioBot
 		}
 
 		public abstract void Connect();
-		protected virtual void OnConnected(object sender, EventArgs e)
-		{
-			me = GetSelf();
-		}
 
 		private void OnDisconnected(object sender, DisconnectEventArgs e)
 		{
@@ -131,10 +126,11 @@ namespace TS3AudioBot
 
 		public R ChangeDescription(string description)
 		{
-			if (me == null)
+			var me = GetSelf();
+			if (!me.Ok)
 				return "Internal error (me==null)";
 
-			try { tsBaseClient.ChangeDescription(description, me.ClientId); return R.OkR; }
+			try { tsBaseClient.ChangeDescription(description, me.Value.ClientId); return R.OkR; }
 			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
 		}
 
@@ -192,7 +188,7 @@ namespace TS3AudioBot
 			return clientData;
 		}
 
-		public abstract ClientData GetSelf();
+		public abstract R<ClientData> GetSelf();
 
 		public R RefreshClientBuffer(bool force)
 		{
@@ -235,8 +231,12 @@ namespace TS3AudioBot
 		{
 			try
 			{
+				var me = GetSelf();
+				if (!me.Ok)
+					return me.Message;
+
 				// Check all own server groups
-				var result = GetClientServerGroups(me.DatabaseId);
+				var result = GetClientServerGroups(me.Value.DatabaseId);
 				var groups = result.Ok ? result.Value : new ulong[0];
 
 				// Add self to master group (via token)
@@ -245,7 +245,7 @@ namespace TS3AudioBot
 
 				// Remember new group (or check if in new group at all)
 				if (result.Ok)
-					result = GetClientServerGroups(me.DatabaseId);
+					result = GetClientServerGroups(me.Value.DatabaseId);
 				var groupsNew = result.Ok ? result.Value : new ulong[0];
 				var groupDiff = groupsNew.Except(groups).ToArray();
 
@@ -256,7 +256,7 @@ namespace TS3AudioBot
 					mainBotData.BotGroupId = botGroup.ServerGroupId;
 
 					// Add self to new group
-					tsBaseClient.ServerGroupAddClient(botGroup.ServerGroupId, me.DatabaseId);
+					tsBaseClient.ServerGroupAddClient(botGroup.ServerGroupId, me.Value.DatabaseId);
 				}
 
 				const int max = 75;
@@ -330,7 +330,7 @@ namespace TS3AudioBot
 				if (groupDiff.Length > 0)
 				{
 					foreach (var grp in groupDiff)
-						tsBaseClient.ServerGroupDelClient(grp, me.DatabaseId);
+						tsBaseClient.ServerGroupDelClient(grp, me.Value.DatabaseId);
 				}
 
 				return R.OkR;
@@ -352,7 +352,10 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				tsBaseClient.ClientMove(me.ClientId, channelId, password);
+				var me = GetSelf();
+				if (!me.Ok)
+					return me.Message;
+				tsBaseClient.ClientMove(me.Value.ClientId, channelId, password);
 				return R.OkR;
 			}
 			catch (Ts3CommandException) { return "Cannot move there."; }
@@ -371,7 +374,10 @@ namespace TS3AudioBot
 		}
 		public R<bool> IsChannelCommander()
 		{
-			var getInfoResult = GetClientInfoById(me.ClientId);
+			var me = GetSelf();
+			if (!me.Ok)
+				return me.Message;
+			var getInfoResult = GetClientInfoById(me.Value.ClientId);
 			if (!getInfoResult.Ok)
 				return getInfoResult.Message;
 			return getInfoResult.Value.IsChannelCommander;

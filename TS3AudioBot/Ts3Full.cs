@@ -16,6 +16,7 @@ namespace TS3AudioBot
 	using System.Diagnostics;
 	using System.Globalization;
 	using System.Linq;
+	using System.Reflection;
 	using System.Text.RegularExpressions;
 	using TS3Client;
 	using TS3Client.Full;
@@ -24,6 +25,7 @@ namespace TS3AudioBot
 	internal sealed class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
 	{
 		private readonly Ts3FullClient tsFullClient;
+		private ClientData self;
 
 		private const Codec SendCodec = Codec.OpusMusic;
 		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(5);
@@ -155,12 +157,27 @@ namespace TS3AudioBot
 
 		private void ConnectClient()
 		{
-			VersionSign verionSign;
+			VersionSign verionSign = null;
 			if (!string.IsNullOrEmpty(ts3FullClientData.ClientVersion))
 			{
 				var splitData = ts3FullClientData.ClientVersion.Split('|').Select(x => x.Trim()).ToArray();
-				var plattform = (ClientPlattform)Enum.Parse(typeof(ClientPlattform), splitData[1], true);
-				verionSign = new VersionSign(splitData[0], plattform, splitData[2]);
+				if (splitData.Length == 3)
+				{
+					verionSign = new VersionSign(splitData[0], splitData[1], splitData[2]);
+				}
+				else if (splitData.Length == 1)
+				{
+					var signType = typeof(VersionSign).GetField("VER_" + ts3FullClientData.ClientVersion,
+						BindingFlags.IgnoreCase | BindingFlags.Static | BindingFlags.Public);
+					if (signType != null)
+						verionSign = (VersionSign)signType.GetValue(null);
+				}
+
+				if(verionSign == null)
+				{
+					Log.Write(Log.Level.Warning, "Invalid version sign, falling back to unknown :P");
+					verionSign = VersionSign.VER_WIN_3_UNKNOWN;
+				}
 			}
 			else if (Util.IsLinux)
 				verionSign = VersionSign.VER_LIN_3_0_19_4;
@@ -211,25 +228,36 @@ namespace TS3AudioBot
 			}
 		}
 
-		public override ClientData GetSelf()
+		public override R<ClientData> GetSelf()
 		{
-			var data = tsBaseClient.WhoAmI();
-			var cd = new ClientData
-			{
-				Uid = identity.ClientUid,
-				ChannelId = data.ChannelId,
-				ClientId = tsFullClient.ClientId,
-				NickName = data.NickName,
-				ClientType = tsBaseClient.ClientType
-			};
+			if (self != null)
+				return self;
+
 			try
 			{
-				var response = tsBaseClient.Send("clientgetdbidfromuid", new TS3Client.Commands.CommandParameter("cluid", identity.ClientUid)).FirstOrDefault();
+				var data = tsBaseClient.WhoAmI();
+				var cd = new ClientData
+				{
+					Uid = identity.ClientUid,
+					ChannelId = data.ChannelId,
+					ClientId = tsFullClient.ClientId,
+					NickName = data.NickName,
+					ClientType = tsBaseClient.ClientType
+				};
+
+				var response = tsBaseClient
+					.Send("clientgetdbidfromuid", new TS3Client.Commands.CommandParameter("cluid", identity.ClientUid))
+					.FirstOrDefault();
 				if (response != null && ulong.TryParse(response["cldbid"], out var dbId))
 					cd.DatabaseId = dbId;
+
+				self = cd;
+				return cd;
 			}
-			catch (Ts3CommandException) { }
-			return cd;
+			catch (Ts3CommandException)
+			{
+				return "Could not get self";
+			}
 		}
 
 		private void AudioSend()
