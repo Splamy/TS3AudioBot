@@ -157,7 +157,7 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 			{
-				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out WaitBlock waitBlock))
+				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
 					waitBlock.SetAnswer(Util.TimeOutCommandError);
 			}
 			else
@@ -170,7 +170,7 @@ namespace TS3Client
 
 					foreach (var block in dependingBlocks)
 					{
-						block.ForEach(wb => wb.SetAnswer(Util.TimeOutCommandError));
+						block?.ForEach(wb => wb.SetAnswer(Util.TimeOutCommandError));
 						block?.Clear();
 					}
 				}
