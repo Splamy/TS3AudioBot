@@ -26,9 +26,9 @@ namespace TS3AudioBot.Sessions
 		public Response ResponseProcessor { get; private set; }
 		public object ResponseData { get; private set; }
 
-		public MainBot Bot { get; }
+		public Bot Bot { get; }
 
-		public UserSession(MainBot bot, ClientData client)
+		public UserSession(Bot bot, ClientData client)
 		{
 			this.client = client;
 			Bot = bot;

@@ -13,6 +13,6 @@ namespace TS3AudioBot.Plugins
 
 	public interface ITabPlugin : IDisposable
 	{
-		void Initialize(MainBot bot);
+		void Initialize(Core core);
 	}
 }

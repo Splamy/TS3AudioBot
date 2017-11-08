@@ -12,17 +12,19 @@ namespace TS3AudioBot
 	using CommandSystem;
 	using System;
 
-	class TargetScript
+	internal class TargetScript
 	{
 		private const string DefaultVoiceScript = "!whisper off";
 		private const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getuser channel))";
 
-		private readonly MainBot parent;
-		private CommandManager CommandManager => parent.CommandManager;
+		private readonly Core core;
+		private readonly Bot bot;
+		private CommandManager CommandManager => core.CommandManager;
 
-		public TargetScript(MainBot bot)
+		public TargetScript(Core core, Bot bot)
 		{
-			parent = bot;
+			this.core = core;
+			this.bot = bot;
 		}
 
 		public void BeforeResourceStarted(object sender, PlayInfoEventArgs e)
@@ -47,7 +49,7 @@ namespace TS3AudioBot
 		{
 			try
 			{
-				var info = new ExecutionInformation(parent, invoker, null) { SkipRightsChecks = true };
+				var info = new ExecutionInformation(core, bot, invoker, null) { SkipRightsChecks = true };
 				CommandManager.CommandSystem.Execute(info, script);
 			}
 			catch (CommandException) { }

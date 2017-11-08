@@ -23,7 +23,7 @@ namespace TS3AudioBot.Plugins
 
 	internal class Plugin : ICommandBag
 	{
-		private readonly MainBot mainBot;
+		private readonly Core core;
 
 		private Assembly assembly;
 		private byte[] md5CacheSum;
@@ -32,9 +32,9 @@ namespace TS3AudioBot.Plugins
 		private Type coreType;
 		private PluginType corePluginType;
 
-		public Plugin(FileInfo pluginFile, MainBot parent, int id)
+		public Plugin(FileInfo pluginFile, Core core, int id)
 		{
-			mainBot = parent;
+			this.core = core;
 			PluginFile = pluginFile;
 			Id = id;
 			Status = PluginStatus.Off;
@@ -81,7 +81,6 @@ namespace TS3AudioBot.Plugins
 
 		public IEnumerable<BotCommand> ExposedCommands { get; private set; }
 		public IEnumerable<string> ExposedRights => ExposedCommands.Select(x => x.RequiredRight);
-
 
 		public PluginResponse Load()
 		{
@@ -273,14 +272,14 @@ namespace TS3AudioBot.Plugins
 					pluginObject = (ITabPlugin)Activator.CreateInstance(coreType);
 					var comBuilds = CommandManager.GetCommandMethods(pluginObject);
 					ExposedCommands = CommandManager.GetBotCommands(comBuilds).ToList();
-					mainBot.RightsManager.RegisterRights(ExposedRights);
-					mainBot.CommandManager.RegisterCollection(this);
-					pluginObject.Initialize(mainBot);
+					core.RightsManager.RegisterRights(ExposedRights);
+					core.CommandManager.RegisterCollection(this);
+					pluginObject.Initialize(core);
 					break;
 
 				case PluginType.Factory:
 					factoryObject = (IFactory)Activator.CreateInstance(coreType);
-					mainBot.FactoryManager.AddFactory(factoryObject);
+					core.FactoryManager.AddFactory(factoryObject);
 					break;
 
 				default:
@@ -312,15 +311,15 @@ namespace TS3AudioBot.Plugins
 				break;
 
 			case PluginType.Plugin:
-				mainBot.CommandManager.UnregisterCollection(this);
-				mainBot.RightsManager.UnregisterRights(ExposedRights);
+				core.CommandManager.UnregisterCollection(this);
+				core.RightsManager.UnregisterRights(ExposedRights);
 				ExposedCommands = null;
 				pluginObject.Dispose();
 				pluginObject = null;
 				break;
 
 			case PluginType.Factory:
-				mainBot.FactoryManager.RemoveFactory(factoryObject);
+				core.FactoryManager.RemoveFactory(factoryObject);
 				break;
 
 			default:

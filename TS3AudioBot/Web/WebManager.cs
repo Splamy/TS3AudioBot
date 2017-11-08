@@ -30,7 +30,7 @@ namespace TS3AudioBot.Web
 		public Api.WebApi Api { get; private set; }
 		public Interface.WebDisplay Display { get; private set; }
 
-		public WebManager(MainBot mainBot, WebData webd)
+		public WebManager(Core core, WebData webd)
 		{
 			webData = webd;
 			webListener = new HttpListener
@@ -40,20 +40,20 @@ namespace TS3AudioBot.Web
 				AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector,
 			};
 
-			InitializeSubcomponents(mainBot);
+			InitializeSubcomponents(core);
 		}
 
-		private void InitializeSubcomponents(MainBot mainBot)
+		private void InitializeSubcomponents(Core core)
 		{
 			startWebServer = false;
 			if (webData.EnableApi)
 			{
-				Api = new Api.WebApi(mainBot);
+				Api = new Api.WebApi(core);
 				startWebServer = true;
 			}
 			if (webData.EnableWebinterface)
 			{
-				Display = new Interface.WebDisplay(mainBot);
+				Display = new Interface.WebDisplay(core);
 				startWebServer = true;
 			}
 		}

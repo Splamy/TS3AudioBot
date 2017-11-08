@@ -17,10 +17,11 @@ namespace TS3AudioBot
 
 	public class PlayManager
 	{
-		private readonly MainBot botParent;
+		private readonly Core core;
+		private readonly Bot botParent;
 		private IPlayerConnection PlayerConnection => botParent.PlayerConnection;
 		private PlaylistManager PlaylistManager => botParent.PlaylistManager;
-		private ResourceFactoryManager ResourceFactoryManager => botParent.FactoryManager;
+		private ResourceFactoryManager ResourceFactoryManager => core.FactoryManager;
 		private HistoryManager HistoryManager => botParent.HistoryManager;
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
@@ -31,8 +32,9 @@ namespace TS3AudioBot
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
-		public PlayManager(MainBot parent)
+		public PlayManager(Core core, Bot parent)
 		{
+			this.core = core;
 			botParent = parent;
 		}
 

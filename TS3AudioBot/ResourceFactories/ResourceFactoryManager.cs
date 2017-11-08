@@ -23,14 +23,14 @@ namespace TS3AudioBot.ResourceFactories
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
-		private readonly MainBot mainBot;
+		private readonly Core core;
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
 		private readonly List<IResourceFactory> resFactories;
 
-		public ResourceFactoryManager(MainBot bot)
+		public ResourceFactoryManager(Core core)
 		{
-			mainBot = bot;
+			this.core = core;
 			Util.Init(ref allFacories);
 			Util.Init(ref resFactories);
 			Util.Init(ref listFactories);
@@ -180,8 +180,8 @@ namespace TS3AudioBot.ResourceFactories
 
 			var factoryInfo = new FactoryData(factory, commands.ToArray());
 			allFacories.Add(factory.FactoryFor, factoryInfo);
-			mainBot.CommandManager.RegisterCollection(factoryInfo);
-			mainBot.RightsManager.RegisterRights(factoryInfo.ExposedRights);
+			core.CommandManager.RegisterCollection(factoryInfo);
+			core.RightsManager.RegisterRights(factoryInfo.ExposedRights);
 		}
 
 		public void RemoveFactory(IFactory factory)
@@ -196,8 +196,8 @@ namespace TS3AudioBot.ResourceFactories
 			if (factory is IPlaylistFactory listFactory)
 				listFactories.Remove(listFactory);
 
-			mainBot.CommandManager.UnregisterCollection(factoryInfo);
-			mainBot.RightsManager.UnregisterRights(factoryInfo.ExposedRights);
+			core.CommandManager.UnregisterCollection(factoryInfo);
+			core.RightsManager.UnregisterRights(factoryInfo.ExposedRights);
 		}
 
 
@@ -269,7 +269,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			public string PropagiateLoad(ExecutionInformation info, string parameter)
 			{
-				var result = info.Session.Bot.FactoryManager.LoadPlaylistFrom(parameter, factory);
+				var result = info.Core.FactoryManager.LoadPlaylistFrom(parameter, factory);
 
 				if (!result)
 					return result;

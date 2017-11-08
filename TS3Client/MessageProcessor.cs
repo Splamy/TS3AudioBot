@@ -20,7 +20,7 @@ namespace TS3Client
 		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
 		private readonly ConcurrentQueue<WaitBlock> requestQueue;
 		private readonly bool synchronQueue;
-		private readonly object dependantBlockLock = new object();
+		private readonly object waitBlockLock = new object();
 		private readonly List<WaitBlock>[] dependingBlocks;
 
 		private string cmdLineBuffer;
@@ -62,10 +62,10 @@ namespace TS3Client
 			{
 				var notification = CommandDeserializer.GenerateNotification(lineDataPart, ntfyType);
 				var lazyNotification = new LazyNotification(notification, ntfyType);
-				var dependantList = dependingBlocks[(int)ntfyType];
-				if (dependantList != null)
+				lock (waitBlockLock)
 				{
-					lock (dependantBlockLock)
+					var dependantList = dependingBlocks[(int)ntfyType];
+					if (dependantList != null)
 					{
 						foreach (var item in dependantList)
 						{
@@ -109,12 +109,15 @@ namespace TS3Client
 				}
 
 				// otherwise it is the result status code to a request
-				if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
+				lock (waitBlockLock)
 				{
-					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
-					cmdLineBuffer = null;
+					if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
+					{
+						waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
+						cmdLineBuffer = null;
+					}
+					else { /* ??? */ }
 				}
-				else { /* ??? */ }
 			}
 
 			return null;
@@ -124,12 +127,14 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 				throw new InvalidOperationException();
-			if (!requestDict.TryAdd(returnCode, waitBlock))
-				throw new InvalidOperationException("Trying to add alreading existing WaitBlock returnCode");
-			if (waitBlock.DependsOn != null)
+
+			lock (waitBlockLock)
 			{
-				lock (dependantBlockLock)
+				if (!requestDict.TryAdd(returnCode, waitBlock))
+					throw new InvalidOperationException("Trying to add alreading existing WaitBlock returnCode");
+				if (waitBlock.DependsOn != null)
 				{
+
 					foreach (var dependantType in waitBlock.DependsOn)
 					{
 						var depentantList = dependingBlocks[(int)dependantType];

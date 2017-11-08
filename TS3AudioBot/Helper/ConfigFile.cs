@@ -58,6 +58,9 @@ namespace TS3AudioBot.Helper
 			if (string.IsNullOrEmpty(associatedClass))
 				throw new ArgumentNullException(nameof(associatedClass));
 
+			if (confObjects.TryGetValue(associatedClass, out var co))
+				return (T)co;
+
 			var dataStruct = new T();
 			var fields = typeof(T).GetProperties();
 			foreach (var field in fields)

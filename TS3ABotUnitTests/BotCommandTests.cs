@@ -24,21 +24,18 @@ namespace TS3ABotUnitTests
 	[TestFixture]
 	public class BotCommandTests
 	{
-		private readonly MainBot bot;
+		private readonly CommandManager cmdMgr;
 
 		public BotCommandTests()
 		{
-			bot = new MainBot();
-			var prop = typeof(MainBot).GetProperty(nameof(MainBot.CommandManager));
-			if (prop != null)
-				prop.SetValue(bot, new CommandManager());
-			bot.CommandManager.RegisterMain(bot);
+			cmdMgr = new CommandManager();
+			cmdMgr.RegisterMain();
 		}
 
 		private string CallCommand(string command)
 		{
-			var info = new ExecutionInformation(null, new InvokerData("InvokerUid"), null) { SkipRightsChecks = true };
-			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
+			var info = new ExecutionInformation(null, null, new InvokerData("InvokerUid"), null) { SkipRightsChecks = true };
+			return cmdMgr.CommandSystem.ExecuteCommand(info, command);
 		}
 
 		[Test]

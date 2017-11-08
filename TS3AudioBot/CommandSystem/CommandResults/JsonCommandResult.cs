@@ -22,6 +22,6 @@ namespace TS3AudioBot.CommandSystem
 			JsonObject = jsonObj;
 		}
 
-		public override string ToString() => "JsonCommandResult can't be converted into a string"; // TODO: why?
+		public override string ToString() => "JsonCommandResult can't be converted into a string";
 	}
 }

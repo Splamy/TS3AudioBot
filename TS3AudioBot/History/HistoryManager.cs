@@ -25,6 +25,7 @@ namespace TS3AudioBot.History
 		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly HistoryManagerData historyManagerData;
 		private readonly LinkedList<int> unusedIds;
+		private readonly object dbLock = new object();
 
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
@@ -98,18 +99,22 @@ namespace TS3AudioBot.History
 			if (saveData == null)
 				throw new ArgumentNullException(nameof(saveData));
 
-			var ale = FindByUniqueId(saveData.Resource.UniqueId);
-			if (ale == null)
+			lock (dbLock)
 			{
-				ale = CreateLogEntry(saveData);
+				var ale = FindByUniqueId(saveData.Resource.UniqueId);
 				if (ale == null)
-					Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
+				{
+					ale = CreateLogEntry(saveData);
+					if (ale == null)
+						Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
+				}
+				else
+				{
+					LogEntryPlay(ale);
+				}
+
+				return ale;
 			}
-			else
-			{
-				LogEntryPlay(ale);
-			}
-			return ale;
 		}
 
 		/// <summary>Increases the playcount and updates the last playtime.</summary>
@@ -211,11 +216,11 @@ namespace TS3AudioBot.History
 
 		/// <summary>Removes the <see cref="AudioLogEntry"/> from the Database.</summary>
 		/// <param name="ale">The <see cref="AudioLogEntry"/> to delete.</param>
-		public void RemoveEntry(AudioLogEntry ale)
+		public bool RemoveEntry(AudioLogEntry ale)
 		{
 			if (ale == null)
 				throw new ArgumentNullException(nameof(ale));
-			audioLogEntries.Delete(ale.Id);
+			return audioLogEntries.Delete(ale.Id);
 		}
 
 		/// <summary>Sets the name of a <see cref="AudioLogEntry"/>.</summary>
@@ -246,9 +251,11 @@ namespace TS3AudioBot.History
 
 			foreach (var entry in currentIter)
 			{
-				RemoveEntry(entry);
-				info.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
-				info.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
+				if (RemoveEntry(entry))
+				{
+					info.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
+					info.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
+				}
 			}
 		}
 
@@ -265,7 +272,7 @@ namespace TS3AudioBot.History
 			var nextIter = new List<AudioLogEntry>();
 			foreach (var entry in list)
 			{
-				var result = info.Bot.FactoryManager.Load(entry.AudioResource);
+				var result = info.Core.FactoryManager.Load(entry.AudioResource);
 				if (!result)
 				{
 					info.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}");
