@@ -15,7 +15,7 @@ namespace TS3Client
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 
-	internal class MessageProcessor
+	internal sealed class MessageProcessor
 	{
 		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
 		private readonly ConcurrentQueue<WaitBlock> requestQueue;
@@ -69,8 +69,7 @@ namespace TS3Client
 					{
 						foreach (var item in dependantList)
 						{
-							if (!item.Closed)
-								item.SetNotification(lazyNotification);
+							item.SetNotification(lazyNotification);
 							if (item.DependsOn != null)
 							{
 								foreach (var otherDepType in item.DependsOn)
@@ -163,18 +162,19 @@ namespace TS3Client
 			}
 			else
 			{
-				var arr = requestDict.ToArray();
-				requestDict.Clear();
-				foreach (var block in dependingBlocks)
-					block?.Clear();
-				foreach (var val in arr)
-					val.Value.SetAnswer(Util.TimeOutCommandError);
+				lock (waitBlockLock)
+				{
+					foreach (var wb in requestDict.Values)
+						wb.SetAnswer(Util.TimeOutCommandError);
+					requestDict.Clear();
+
+					foreach (var block in dependingBlocks)
+					{
+						block.ForEach(wb => wb.SetAnswer(Util.TimeOutCommandError));
+						block?.Clear();
+					}
+				}
 			}
 		}
 	}
-
-	/*internal class AsyncMessageProcessor : MessageProcessor
-	{
-
-	}*/
 }

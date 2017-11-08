@@ -15,7 +15,7 @@ namespace TS3Client
 	using System.Collections.Generic;
 	using System.Threading;
 
-	internal class WaitBlock : IDisposable
+	internal sealed class WaitBlock : IDisposable
 	{
 		private readonly ManualResetEvent answerWaiter;
 		private readonly ManualResetEvent notificationWaiter;
@@ -23,12 +23,12 @@ namespace TS3Client
 		private string commandLine;
 		public NotificationType[] DependsOn { get; }
 		private LazyNotification notification;
-		public bool Closed { get; private set; }
+		public bool isDisposed;
 		private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(15);
 
 		public WaitBlock(NotificationType[] dependsOn = null)
 		{
-			Closed = false;
+			isDisposed = false;
 			answerWaiter = new ManualResetEvent(false);
 			DependsOn = dependsOn;
 			if (DependsOn != null)
@@ -41,6 +41,8 @@ namespace TS3Client
 
 		public IEnumerable<T> WaitForMessage<T>() where T : IResponse, new()
 		{
+			if (isDisposed)
+				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (!answerWaiter.WaitOne(CommandTimeout))
 				throw new Ts3CommandException(Util.TimeOutCommandError);
 			if (commandError.Id != Ts3ErrorCode.ok)
@@ -51,6 +53,8 @@ namespace TS3Client
 
 		public LazyNotification WaitForNotification()
 		{
+			if (isDisposed)
+				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (DependsOn == null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			if (!answerWaiter.WaitOne(CommandTimeout))
@@ -65,6 +69,8 @@ namespace TS3Client
 
 		public void SetAnswer(CommandError commandError, string commandLine = null)
 		{
+			if (isDisposed)
+				return;
 			this.commandError = commandError ?? throw new ArgumentNullException(nameof(commandError));
 			this.commandLine = commandLine;
 			answerWaiter.Set();
@@ -72,6 +78,8 @@ namespace TS3Client
 
 		public void SetNotification(LazyNotification notification)
 		{
+			if (isDisposed)
+				return;
 			if (DependsOn != null && Array.IndexOf(DependsOn, notification.NotifyType) < 0)
 				throw new ArgumentException("The notification does not match this waitblock");
 			this.notification = notification;
@@ -80,7 +88,9 @@ namespace TS3Client
 
 		public void Dispose()
 		{
-			Closed = true;
+			if (isDisposed)
+				return;
+			isDisposed = true;
 
 			answerWaiter.Set();
 			answerWaiter.Dispose();
