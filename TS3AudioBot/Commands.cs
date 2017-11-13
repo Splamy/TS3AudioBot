@@ -122,13 +122,15 @@ namespace TS3AudioBot
 		}
 
 		[Command("connect", "Start a new bot instance.")]
-		public static void CommandFork(ExecutionInformation info)
+		public static void CommandFork(ExecutionInformation info, int count=1)
 		{
-			if (!info.Core.Bots.CreateBot())
-				throw new CommandException("Could not create new instance");
+			for (int i = 0; i < count; i++) {
+				if (!info.Core.Bots.CreateBot())
+					throw new CommandException("Could not create new instance");
+			}
 		}
 
-		[Command("disconnect", "Start a new bot instance.")]
+		[Command("disconnect", "Stop a bot instance.")]
 		public static void CommandDisconnect(ExecutionInformation info)
 		{
 			info.Core.Bots.StopBot(info.Bot);
