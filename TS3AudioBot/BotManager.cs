@@ -47,6 +47,7 @@ namespace TS3AudioBot
 
 		public bool CreateBot(/*Ts3FullClientData bot*/)
 		{
+			string error = string.Empty;
 			var bot = new Bot(core);
 			try
 			{
@@ -59,10 +60,10 @@ namespace TS3AudioBot
 					return true;
 				}
 			}
-			catch (Exception) { }
+			catch (Exception ex) { error = ex.ToString(); }
 
 			bot.Dispose();
-			Log.Write(Log.Level.Warning, "Could not create new Bot");
+			Log.Write(Log.Level.Warning, "Could not create new Bot ({0})", error);
 			return false;
 		}
 
