@@ -54,8 +54,13 @@ namespace TS3AudioBot
 			if (!core.ReadParameter(args))
 				return;
 
-			if (!core.Initialize())
+			var initResult = core.Initialize();
+			if (!initResult)
+			{
+				Log.Write(Log.Level.Error, "Core initialization failed: {0}", initResult.Message);
 				core.Dispose();
+				return;
+			}
 
 			core.Run();
 		}
@@ -141,7 +146,7 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		private bool Initialize()
+		private R Initialize()
 		{
 			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
 			var pmd = ConfigManager.GetDataStruct<PluginManagerData>("PluginManager", true);
@@ -201,9 +206,11 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[============ TS3AudioBot started =============]");
 			Log.Write(Log.Level.Info, "[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
 			Log.Write(Log.Level.Info, "[=== Version: {0}", Util.GetAssemblyData().ToString());
+			Log.Write(Log.Level.Info, "[=== Plattform: {0}", Util.GetPlattformData());
 			Log.Write(Log.Level.Info, "[==============================================]");
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
+			Audio.Opus.NativeMethods.DummyLoad();
 			CommandManager = new CommandManager();
 			CommandManager.RegisterMain();
 			Database = new DbStore(hmd);
@@ -215,7 +222,7 @@ namespace TS3AudioBot
 			RightsManager.RegisterRights(CommandManager.AllRights);
 			RightsManager.RegisterRights(Commands.RightHighVolume, Commands.RightDeleteAllPlaylists);
 			if (!RightsManager.ReadFile())
-				return false;
+				return "Could not read Permission file.";
 
 			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
 			YoutubeDlHelper.DataObj = yfd;
@@ -230,7 +237,7 @@ namespace TS3AudioBot
 
 			WebManager.StartServerAsync();
 
-			return true;
+			return R.OkR;
 		}
 
 		private void Run()

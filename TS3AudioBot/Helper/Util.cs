@@ -11,6 +11,7 @@ namespace TS3AudioBot.Helper
 {
 	using CommandSystem;
 	using System;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Reflection;
 	using System.Security.Principal;
@@ -200,11 +201,60 @@ namespace TS3AudioBot.Helper
 			public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
 			public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
 		}
+
+		static readonly Regex PlattformRegex = new Regex(@"(\w+)=(.*)", DefaultRegexConfig | RegexOptions.Multiline);
+
+		public static string GetPlattformData()
+		{
+			string plattform = null;
+			string version = "<?>";
+			string bitness = Environment.Is64BitProcess ? "64bit" : "32bit";
+
+			if (IsLinux)
+			{
+				try
+				{
+					var p = new Process()
+					{
+						StartInfo = new ProcessStartInfo()
+						{
+							FileName = "bash",
+							Arguments = "-c \"cat / etc/*[_-]release\"",
+							RedirectStandardOutput = true,
+						}
+					};
+					p.Start();
+					p.WaitForExit();
+
+					var info = p.StandardOutput.ReadToEnd();
+					var match = PlattformRegex.Match(info);
+
+					while (match.Success)
+					{
+						switch (match.Groups[1].Value.ToUpper())
+						{
+						case "DISTRIB_ID": plattform = match.Groups[2].Value; break;
+						case "DISTRIB_RELEASE": version = match.Groups[2].Value; break;
+						}
+					}
+				}
+				catch (Exception) { }
+				if (plattform == null)
+					plattform = "Linux";
+			}
+			else
+			{
+				plattform = "Windows";
+				version = Environment.OSVersion.Version.ToString();
+			}
+
+			return $"{plattform} {version} ({bitness})";
+		}
 	}
 
 	public class MissingEnumCaseException : Exception
 	{
-	public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
-	public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
+		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
+		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 }

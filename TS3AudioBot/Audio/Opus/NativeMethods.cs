@@ -38,6 +38,8 @@ namespace TS3AudioBot.Audio.Opus
 			Log.Write(Log.Level.Info, "Using opus version: {0} ({1})", verString, NativeWinDllLoader.ArchFolder);
 		}
 
+		public static void DummyLoad() { }
+
 		// ReSharper disable EnumUnderlyingTypeIsInt, InconsistentNaming
 #pragma warning disable IDE1006
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
