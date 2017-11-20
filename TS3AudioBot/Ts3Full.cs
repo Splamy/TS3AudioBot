@@ -223,7 +223,7 @@ namespace TS3AudioBot
 				break;
 
 			default:
-				Log.Write(Log.Level.Debug, e.ErrorFormat());
+				Log.Write(Log.Level.Debug, "Got ts3 error event: {0}", e.ErrorFormat());
 				break;
 			}
 		}

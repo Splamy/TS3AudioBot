@@ -219,18 +219,24 @@ namespace TS3AudioBot.Helper
 						StartInfo = new ProcessStartInfo()
 						{
 							FileName = "bash",
-							Arguments = "-c \"cat / etc/*[_-]release\"",
+							Arguments = "-c \"cat /etc/*[_-]release\"",
+							CreateNoWindow = true,
+							UseShellExecute = false,
 							RedirectStandardOutput = true,
 						}
 					};
 					p.Start();
-					p.WaitForExit();
-
-					var info = p.StandardOutput.ReadToEnd();
-					var match = PlattformRegex.Match(info);
-
-					while (match.Success)
+					p.WaitForExit(100);
+					
+					while (p.StandardOutput.Peek() > -1)
 					{
+						var infoLine = p.StandardOutput.ReadLine();
+						if (string.IsNullOrEmpty(infoLine))
+							continue;
+						var match = PlattformRegex.Match(infoLine);
+						if (!match.Success)
+							continue;
+
 						switch (match.Groups[1].Value.ToUpper())
 						{
 						case "DISTRIB_ID": plattform = match.Groups[2].Value; break;
