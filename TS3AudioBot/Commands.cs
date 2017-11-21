@@ -107,6 +107,9 @@ namespace TS3AudioBot
 		[Command("bot name", "Gives the bot a new name.")]
 		public static void CommandBotName(ExecutionInformation info, string name) => info.Bot.QueryConnection.ChangeName(name).UnwrapThrow();
 
+		[Command("bot badges", "Set your bot a badge. The badges string starts with 'overwolf=0:badges='")]
+		public static void CommandBotBadges(ExecutionInformation info, string badgesString) => info.Bot.QueryConnection.ChangeBadges(badgesString).UnwrapThrow();
+
 		[Command("bot setup", "Sets all teamspeak rights for the bot to be fully functional.")]
 		[RequiredParameters(0)]
 		public static void CommandBotSetup(ExecutionInformation info, string adminToken)

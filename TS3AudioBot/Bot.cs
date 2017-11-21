@@ -43,6 +43,7 @@ namespace TS3AudioBot
 		public IPlayerConnection PlayerConnection { get; private set; }
 
 		public bool QuizMode { get; set; }
+		public string BadgesString { get; set; }
 
 		public Bot(Core core)
 		{
@@ -89,6 +90,8 @@ namespace TS3AudioBot
 			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += OnClientDisconnect;
 			QueryConnection.OnBotDisconnect += (s, e) => Dispose();
+			QueryConnection.OnClientConnect += OnClientConnect;
+			BadgesString = tfcd.ClientBadges;
 
 			// Connect the query after everyting is set up
 			try { QueryConnection.Connect(); }
@@ -98,6 +101,15 @@ namespace TS3AudioBot
 				return false;
 			}
 			return true;
+		}
+
+		private void OnClientConnect(object sender, ClientEnterView e)
+		{
+			var me = QueryConnection.GetSelf();
+			if (e.ClientId == me.Value.ClientId)
+			{
+				QueryConnection.ChangeBadges(BadgesString);
+			}
 		}
 
 		private void TextCallback(object sender, TextMessage textMessage)
