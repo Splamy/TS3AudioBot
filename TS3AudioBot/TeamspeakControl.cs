@@ -134,6 +134,12 @@ namespace TS3AudioBot
 			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
 		}
 
+		public R ChangeBadges(string badgesString)
+		{
+			try { tsBaseClient.ChangeBadges(badgesString); return R.OkR; }
+			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
+		}
+
 		public R ChangeName(string name)
 		{
 			try

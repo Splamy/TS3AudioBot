@@ -106,6 +106,10 @@ namespace TS3Client
 			=> Send("clientupdate",
 			new CommandParameter("client_nickname", newName));
 
+		public void ChangeBadges(string newBadges)
+  			=> Send("clientupdate",
+  			new CommandParameter("client_badges", newBadges));
+ 
 		public void ChangeDescription(string newDescription, ClientIdT clientId)
 			=> Send("clientedit",
 			new CommandParameter("clid", clientId),
