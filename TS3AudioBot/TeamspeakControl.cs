@@ -82,6 +82,7 @@ namespace TS3AudioBot
 			tsBaseClient.OnDisconnected += OnDisconnected;
 		}
 
+
 		public virtual T GetLowLibrary<T>() where T : class
 		{
 			if (typeof(T) == typeof(Ts3BaseFunctions) && tsBaseClient != null)
@@ -131,6 +132,12 @@ namespace TS3AudioBot
 				return "Internal error (me==null)";
 
 			try { tsBaseClient.ChangeDescription(description, me.Value.ClientId); return R.OkR; }
+			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
+		}
+
+		public R ChangeBadges(string badges)
+		{
+			try { tsBaseClient.ChangeBadges(badges); return R.OkR; }
 			catch (Ts3CommandException ex) { return ex.ErrorStatus.ErrorFormat(); }
 		}
 

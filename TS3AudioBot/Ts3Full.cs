@@ -651,5 +651,7 @@ namespace TS3AudioBot
 		public string DefaultChannel { get; set; }
 		[Info("The password for the default channel. Leave empty for none. Not required with permission b_channel_join_ignore_password", "")]
 		public string DefaultChannelPassword { get; set; }
+		[Info("The client badges. You can set a comma seperate string with max three GUID's. Here is a list: http://yat.qa/ressourcen/abzeichen-badges/", "overwolf=0:badges=")]
+		public string ClientBadges { get; set; }
 	}
 }
