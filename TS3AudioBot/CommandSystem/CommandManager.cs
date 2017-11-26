@@ -16,7 +16,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Reflection;
 	using System.Text.RegularExpressions;
 
-	public class CommandManager
+	public class CommandManager : Dependency.ICoreModule
 	{
 		private static readonly Regex CommandNamespaceValidator =
 			new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
@@ -29,10 +29,15 @@ namespace TS3AudioBot.CommandSystem
 		public CommandManager()
 		{
 			CommandSystem = new XCommandSystem();
-			Util.Init(ref baseCommands);
-			Util.Init(ref commandPaths);
-			Util.Init(ref dynamicCommands);
-			Util.Init(ref pluginCommands);
+			Util.Init(out baseCommands);
+			Util.Init(out commandPaths);
+			Util.Init(out dynamicCommands);
+			Util.Init(out pluginCommands);
+		}
+
+		public void Initialize()
+		{
+			RegisterMain();
 		}
 
 		public XCommandSystem CommandSystem { get; }

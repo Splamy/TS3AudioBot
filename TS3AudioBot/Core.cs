@@ -20,9 +20,8 @@ namespace TS3AudioBot
 	using System.Threading;
 	using Web;
 
-	public sealed class Core : IDisposable
+	public sealed class Core : IDisposable, Dependency.ICoreModule
 	{
-		private bool isRunning;
 		private bool consoleOutput;
 		private bool writeLog;
 		private bool writeLogStack;
@@ -54,7 +53,7 @@ namespace TS3AudioBot
 			if (!core.ReadParameter(args))
 				return;
 
-			var initResult = core.Initialize();
+			var initResult = core.InitializeCore();
 			if (!initResult)
 			{
 				Log.Write(Log.Level.Error, "Core initialization failed: {0}", initResult.Message);
@@ -70,22 +69,21 @@ namespace TS3AudioBot
 		/// <summary>Manges plugins, provides various loading and unloading mechanisms.</summary>
 		internal PluginManager PluginManager { get; set; }
 		/// <summary>Mangement for the bot command system.</summary>
-		public CommandManager CommandManager { get; private set; }
+		public CommandManager CommandManager { get; set; }
 		/// <summary>Manages factories which can load resources.</summary>
-		public ResourceFactoryManager FactoryManager { get; private set; }
+		public ResourceFactoryManager FactoryManager { get; set; }
 		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
-		public WebManager WebManager { get; private set; }
+		public WebManager WebManager { get; set; }
 		/// <summary>Minimalistic config store for automatically serialized classes.</summary>
-		public ConfigFile ConfigManager { get; private set; }
+		public ConfigFile ConfigManager { get; set; }
 		/// <summary>Permission system of the bot.</summary>
-		public RightsManager RightsManager { get; private set; }
+		public RightsManager RightsManager { get; set; }
 		/// <summary>Permission system of the bot.</summary>
-		public BotManager Bots { get; private set; }
+		public BotManager Bots { get; set; }
 
 		public Core()
 		{
 			// setting defaults
-			isRunning = true;
 			consoleOutput = true;
 			writeLog = true;
 			writeLogStack = false;
@@ -146,24 +144,24 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		private R Initialize()
+		public void Initialize() { }
+
+		private R InitializeCore()
 		{
 			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
-			var pmd = ConfigManager.GetDataStruct<PluginManagerData>("PluginManager", true);
 			var webd = ConfigManager.GetDataStruct<WebData>("WebData", true);
 			var rmd = ConfigManager.GetDataStruct<RightsManagerData>("RightsManager", true);
-			var hmd = ConfigManager.GetDataStruct<HistoryManagerData>("HistoryManager", true);
-
-			var yfd = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
-			var mfd = ConfigManager.GetDataStruct<MediaFactoryData>("MediaFactory", true);
 
 			// TODO: DUMMY REQUESTS
+			YoutubeDlHelper.DataObj = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
+			ConfigManager.GetDataStruct<PluginManagerData>("PluginManager", true);
+			ConfigManager.GetDataStruct<MediaFactoryData>("MediaFactory", true);
+			ConfigManager.GetDataStruct<HistoryManagerData>("HistoryManager", true);
 			ConfigManager.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
 			ConfigManager.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 			ConfigManager.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
 			mainBotData = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
 			// END TODO
-			ConfigManager.Close();
 
 			mainBotData = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
 			ConfigManager.Close();
@@ -211,32 +209,33 @@ namespace TS3AudioBot
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			Audio.Opus.NativeMethods.DummyLoad();
-			CommandManager = new CommandManager();
-			CommandManager.RegisterMain();
-			Database = new DbStore(hmd);
-			RightsManager = new RightsManager(this, rmd);
-			WebManager = new WebManager(this, webd);
-			PluginManager = new PluginManager(this, pmd);
-			Bots = new BotManager(this);
 
-			RightsManager.RegisterRights(CommandManager.AllRights);
-			RightsManager.RegisterRights(Commands.RightHighVolume, Commands.RightDeleteAllPlaylists);
-			if (!RightsManager.ReadFile())
-				return "Could not read Permission file.";
+			var d = new Dependency.DependencyRealm();
+			d.RegisterModule(this); // OK
+			d.RegisterModule(ConfigManager); // OK
+			Database = d.Create<DbStore>(); // OK
+			PluginManager = d.Create<PluginManager>(); // OK
+			CommandManager = d.Create<CommandManager>(); // OK
+			FactoryManager = d.Create<ResourceFactoryManager>(); // OK
+			WebManager = d.Create<WebManager>(); // OK
+			RightsManager = d.Create<RightsManager>(); // OK
+			Bots = d.Create<BotManager>(); // OK
 
-			Log.Write(Log.Level.Info, "[=========== Initializing Factories ===========]");
-			YoutubeDlHelper.DataObj = yfd;
-			FactoryManager = new ResourceFactoryManager(this);
-			FactoryManager.AddFactory(new MediaFactory(mfd));
-			FactoryManager.AddFactory(new YoutubeFactory(yfd));
-			FactoryManager.AddFactory(new SoundcloudFactory());
-			FactoryManager.AddFactory(new TwitchFactory());
+			d.SkipInitialized(this);
 
-			Log.Write(Log.Level.Info, "[================= Finalizing =================]");
-			PluginManager.RestorePlugins();
+			if (!d.AllResolved())
+			{
+				// TODO detailed log + for inner if
+				Log.Write(Log.Level.Warning, "Cyclic module dependency");
+				d.ForceCyclicResolve();
+				if (!d.AllResolved())
+				{
+					Log.Write(Log.Level.Error, "Missing module dependency");
+					return "Could not load all modules";
+				}
+			}
 
-			WebManager.StartServerAsync();
-
+			Log.Write(Log.Level.Info, "[==================== Done ====================]");
 			return R.OkR;
 		}
 
@@ -248,7 +247,6 @@ namespace TS3AudioBot
 		public void Dispose()
 		{
 			Log.Write(Log.Level.Info, "TS3AudioBot shutting down.");
-			isRunning = false;
 
 			Bots?.Dispose();
 			Bots = null;

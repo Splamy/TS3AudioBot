@@ -90,7 +90,7 @@ namespace TS3Client.Full
 				LastCheckedKeyOffset = lastCheckedKeyOffset < keyOffset ? keyOffset : lastCheckedKeyOffset,
 			};
 		}
-
+		
 		private static readonly ECKeyGenerationParameters KeyGenParams = new ECKeyGenerationParameters(X9ObjectIdentifiers.Prime256v1, new SecureRandom());
 
 		private static ECPoint ImportPublicKey(byte[] asnByteArray)

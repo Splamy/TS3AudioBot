@@ -82,11 +82,7 @@ The final byte then looks like this
 ## 1.4 Packet Compression
 To reduce a packet size the data can be compressed.
 When the data is compressed the `Compressed` flag must be set.
-The algorithm "QuickLZ" is used for compression.
-QuickLZ offers different compression levels.
-The chosen level differs depending on the packet direction as following
-- (Client -> Server) Level 1
-- (Client <- Server) Level 3
+The algorithm "QuickLZ" with Level 1 is used for compression.
 
 ## 1.5 Packet Splitting
 When the packet payload exceeds the maximum datablock size the data can be
@@ -483,7 +479,7 @@ channel encryption or server wide encryption flag is set.
 - `acn` the accepted client nickname, this might differ from the desired
   nickname if it's already in use
 - `aclid` the assigned client Id
-- `pv` ???
+- `pv` Protocol Version
 - `lt` License Type of the server
 - `client_talk_power` the initial talk power
 - `client_needed_serverquery_view_power`

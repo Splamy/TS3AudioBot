@@ -18,7 +18,7 @@ namespace TS3AudioBot.Helper
 	using System.Reflection;
 	using System.Linq;
 
-	public abstract class ConfigFile
+	public abstract class ConfigFile : Dependency.ICoreModule
 	{
 		private const char SplitChar = '=';
 		private static readonly char[] SplitCharArr = { SplitChar };
@@ -28,9 +28,11 @@ namespace TS3AudioBot.Helper
 		private bool changed;
 		private readonly Dictionary<string, ConfigData> confObjects;
 
+		public void Initialize() { }
+
 		protected ConfigFile()
 		{
-			Util.Init(ref confObjects);
+			Util.Init(out confObjects);
 		}
 
 		public static ConfigFile OpenOrCreate(string path)

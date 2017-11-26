@@ -30,19 +30,24 @@ namespace TS3AudioBot.Plugins
 	// - Add commands to command manager
 	// - Start config to system?
 
-	internal class PluginManager : IDisposable
+	internal class PluginManager : IDisposable, Dependency.ICoreModule
 	{
-		private readonly Core core;
-		private readonly PluginManagerData pluginManagerData;
+		public Core Core { get; set; }
+		public ConfigFile Config { get; set; }
+
+		private PluginManagerData pluginManagerData;
 		private readonly Dictionary<string, Plugin> plugins;
 		private readonly HashSet<int> usedIds;
 
-		public PluginManager(Core core, PluginManagerData pmd)
+		public PluginManager()
 		{
-			this.core = core ?? throw new ArgumentNullException(nameof(core));
-			pluginManagerData = pmd;
-			Util.Init(ref plugins);
-			Util.Init(ref usedIds);
+			Util.Init(out plugins);
+			Util.Init(out usedIds);
+		}
+
+		public void Initialize()
+		{
+			pluginManagerData = Config.GetDataStruct<PluginManagerData>("PluginManager", true);
 		}
 
 		private void CheckAndClearPlugins()
@@ -81,7 +86,7 @@ namespace TS3AudioBot.Plugins
 					if (IgnoreFile(file))
 						continue;
 
-					plugin = new Plugin(file, core, GetFreeId());
+					plugin = new Plugin(file, Core, GetFreeId());
 
 					if (plugin.Load() == PluginResponse.Disabled)
 					{
@@ -181,7 +186,7 @@ namespace TS3AudioBot.Plugins
 					StopPlugin(plugin);
 					Log.Write(Log.Level.Warning, "Plugin \"{0}\" failed to load: {1}",
 						plugin.PluginFile.Name,
-						ex.Message);
+						ex);
 					return PluginResponse.UnknownError;
 				}
 			case PluginStatus.Active:

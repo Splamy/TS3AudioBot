@@ -38,7 +38,7 @@ namespace TS3Client
 		{
 			parent = ts3Connection;
 			//ts3connection.OnFileTransferStatus += FileStatusNotification;
-			Util.Init(ref transferQueue);
+			Util.Init(out transferQueue);
 		}
 
 		/// <summary>Initiate a file upload to the server.</summary>

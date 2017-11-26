@@ -90,8 +90,8 @@ namespace TS3AudioBot
 			stallCount = 0;
 			identity = null;
 
-			Util.Init(ref channelSubscriptionsSetup);
-			Util.Init(ref clientSubscriptionsSetup);
+			Util.Init(out channelSubscriptionsSetup);
+			Util.Init(out clientSubscriptionsSetup);
 			subscriptionSetupChanged = true;
 		}
 

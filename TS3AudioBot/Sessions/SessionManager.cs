@@ -29,8 +29,8 @@ namespace TS3AudioBot.Sessions
 
 		public SessionManager(DbStore database)
 		{
-			Util.Init(ref openSessions);
-			Util.Init(ref liveTokenList);
+			Util.Init(out openSessions);
+			Util.Init(out liveTokenList);
 
 			dbTokenList = database.GetCollection<DbApiToken>(ApiTokenTable);
 			dbTokenList.EnsureIndex(x => x.UserUid, true);

@@ -25,7 +25,7 @@ namespace TS3AudioBot.Helper
 		static TickPool()
 		{
 			run = false;
-			Util.Init(ref workList);
+			Util.Init(out workList);
 			tickThread = new Thread(Tick) {Name = "TickPool"};
 		}
 
@@ -110,7 +110,7 @@ namespace TS3AudioBot.Helper
 		public static void Close()
 		{
 			run = false;
-			Util.WaitForThreadEnd(tickThread, TimeSpan.FromMilliseconds(100));
+			Util.WaitForThreadEnd(tickThread, MinTick + MinTick);
 			tickThread = null;
 		}
 	}

@@ -58,9 +58,21 @@ namespace TS3ABotUnitTests
 			var data2 = new HistorySaveData(ar2, inv2.DatabaseId);
 			var data3 = new HistorySaveData(ar3, 103);
 
-			var hmf = new HistoryManagerData {HistoryFile = testFile, FillDeletedIds = false};
-			var db = new DbStore(hmf);
-			var hf = new HistoryManager(hmf, db);
+			var memcfg = ConfigFile.CreateDummy();
+			var hmf = memcfg.GetDataStruct<HistoryManagerData>("HistoryManager", true);
+			hmf.HistoryFile = testFile;
+			hmf.FillDeletedIds = false;
+
+			DbStore db = null;
+			HistoryManager hf = null;
+			Action createDbStore = () =>
+			{
+				db = new DbStore() { Config = memcfg };
+				db.Initialize();
+				hf = new HistoryManager(hmf, db);
+			};
+
+			createDbStore();
 
 			hf.LogAudioResource(data1);
 
@@ -71,8 +83,7 @@ namespace TS3ABotUnitTests
 
 			db.Dispose();
 
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			createDbStore();
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
@@ -89,8 +100,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// store and order check
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			createDbStore();
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -104,8 +114,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// check entry renaming
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			createDbStore();
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
@@ -125,8 +134,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// recheck order
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			createDbStore();
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -134,8 +142,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// delete entry 1
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			createDbStore();
 			hf.RemoveEntry(hf.FindEntryByResource(ar1));
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
@@ -149,8 +156,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// delete entry 2
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			createDbStore();
 			// .. check integrity from previous store
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);

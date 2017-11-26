@@ -104,7 +104,7 @@ namespace TS3AudioBot.Sessions
 			VerifyLock();
 
 			if (assocMap == null)
-				Util.Init(ref assocMap);
+				Util.Init(out assocMap);
 
 			if (assocMap.ContainsKey(typeof(TAssoc)))
 				assocMap[typeof(TAssoc)] = data;

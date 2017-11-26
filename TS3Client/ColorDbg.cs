@@ -44,6 +44,14 @@ namespace TS3Client
 			Console.WriteLine();
 		}
 
+		[Conditional("COLOG_CMD")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		public static void WriteCmd(string cmd, bool send)
+		{
+			WriteType(send ? "[O]" : "[I]");
+			Console.WriteLine(cmd);
+		}
+
 		[Conditional("COLOG_RAWPKG")]
 		[MethodImpl(MethodImplOptions.Synchronized)]
 		public static void WritePkgOut(OutgoingPacket packet)

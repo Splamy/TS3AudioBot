@@ -74,9 +74,9 @@ namespace TS3AudioBot.Web.Interface
 			{
 				Name = name;
 				FullPath = fullPath;
-				Util.Init(ref childFolder);
-				Util.Init(ref fileMap);
-				Util.Init(ref childNodes);
+				Util.Init(out childFolder);
+				Util.Init(out fileMap);
+				Util.Init(out childNodes);
 			}
 
 			public ISiteProvider TryGetSite(string name)

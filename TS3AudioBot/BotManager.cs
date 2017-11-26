@@ -14,18 +14,19 @@ namespace TS3AudioBot
 	using System.Collections.Generic;
 	using System.Threading;
 
-	public class BotManager : IDisposable
+	public class BotManager : Dependency.ICoreModule, IDisposable
 	{
 		private bool isRunning;
-		private readonly Core core;
+		public Core Core { get; set; }
 		private readonly List<Bot> activeBots;
 
-		public BotManager(Core core)
+		public BotManager()
 		{
 			isRunning = true;
-			this.core = core;
-			Util.Init(ref activeBots);
+			Util.Init(out activeBots);
 		}
+
+		public void Initialize() { }
 
 		public void WatchBots()
 		{
@@ -48,7 +49,7 @@ namespace TS3AudioBot
 		public bool CreateBot(/*Ts3FullClientData bot*/)
 		{
 			string error = string.Empty;
-			var bot = new Bot(core);
+			var bot = new Bot(Core);
 			try
 			{
 				if (bot.InitializeBot())

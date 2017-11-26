@@ -14,16 +14,20 @@ namespace TS3AudioBot
 	using System;
 	using System.IO;
 
-	public class DbStore : IDisposable
+	public class DbStore : Dependency.ICoreModule, IDisposable
 	{
 		private const string DbMetaInformationTable = "dbmeta";
 
-		private readonly LiteDatabase database;
-		private readonly LiteCollection<DbMetaData> metaTable;
+		public Helper.ConfigFile Config { get; set; }
 
-		// TODO rework config class with config rewok
-		public DbStore(HistoryManagerData hmd)
+		private LiteDatabase database;
+		private LiteCollection<DbMetaData> metaTable;
+
+		public DbStore() { }
+
+		public void Initialize()
 		{
+			var hmd = Config.GetDataStruct<HistoryManagerData>("HistoryManager", true);
 			var historyFile = new FileInfo(hmd.HistoryFile);
 			database = new LiteDatabase(historyFile.FullName);
 

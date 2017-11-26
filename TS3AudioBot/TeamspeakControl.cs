@@ -68,8 +68,8 @@ namespace TS3AudioBot
 
 		protected TeamspeakControl(ClientType connectionType)
 		{
-			Util.Init(ref clientDbNames);
-			Util.Init(ref clientbuffer);
+			Util.Init(out clientDbNames);
+			Util.Init(out clientbuffer);
 
 			if (connectionType == ClientType.Full)
 				tsBaseClient = new Ts3FullClient(EventDispatchType.DoubleThread);

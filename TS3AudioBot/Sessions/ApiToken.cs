@@ -30,7 +30,7 @@ namespace TS3AudioBot.Sessions
 		{
 			Value = null;
 			Timeout = DateTime.MinValue;
-			Util.Init(ref nonceList);
+			Util.Init(out nonceList);
 		}
 
 		public ApiNonce UseNonce(string nonce)

@@ -42,8 +42,8 @@ namespace TS3AudioBot.Audio
 
 		public AudioEncoder(Codec codec)
 		{
-			Util.Init(ref opusQueue);
-			Util.Init(ref freeArrays);
+			Util.Init(out opusQueue);
+			Util.Init(out freeArrays);
 			Codec = codec;
 
 			switch (codec)

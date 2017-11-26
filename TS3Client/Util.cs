@@ -22,7 +22,7 @@ namespace TS3Client
 
 		public static IEnumerable<Enum> GetFlags(this Enum input) => Enum.GetValues(input.GetType()).Cast<Enum>().Where(input.HasFlag);
 
-		public static void Init<T>(ref T fld) where T : new() => fld = new T();
+		public static void Init<T>(out T fld) where T : new() => fld = new T();
 
 		public static Encoding Encoder { get; } = new UTF8Encoding(false);
 

@@ -18,22 +18,35 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Collections.Generic;
 	using System.Reflection;
 
-	public sealed class ResourceFactoryManager : IDisposable
+	public sealed class ResourceFactoryManager : Dependency.ICoreModule, IDisposable
 	{
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
-		private readonly Core core;
+		public ConfigFile Config { get; set; }
+		public CommandManager CommandManager { get; set; }
+		public Rights.RightsManager RightsManager { get; set; }
+
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
 		private readonly List<IResourceFactory> resFactories;
 
-		public ResourceFactoryManager(Core core)
+		public ResourceFactoryManager()
 		{
-			this.core = core;
-			Util.Init(ref allFacories);
-			Util.Init(ref resFactories);
-			Util.Init(ref listFactories);
+			Util.Init(out allFacories);
+			Util.Init(out resFactories);
+			Util.Init(out listFactories);
+		}
+
+		void Dependency.ITabModule.Initialize()
+		{
+			var yfd = Config.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
+			var mfd = Config.GetDataStruct<MediaFactoryData>("MediaFactory", true);
+
+			AddFactory(new MediaFactory(mfd));
+			AddFactory(new YoutubeFactory(yfd));
+			AddFactory(new SoundcloudFactory());
+			AddFactory(new TwitchFactory());
 		}
 
 		// Load lookup stages
@@ -180,8 +193,8 @@ namespace TS3AudioBot.ResourceFactories
 
 			var factoryInfo = new FactoryData(factory, commands.ToArray());
 			allFacories.Add(factory.FactoryFor, factoryInfo);
-			core.CommandManager.RegisterCollection(factoryInfo);
-			core.RightsManager.RegisterRights(factoryInfo.ExposedRights);
+			CommandManager.RegisterCollection(factoryInfo);
+			RightsManager.RegisterRights(factoryInfo.ExposedRights);
 		}
 
 		public void RemoveFactory(IFactory factory)
@@ -196,8 +209,8 @@ namespace TS3AudioBot.ResourceFactories
 			if (factory is IPlaylistFactory listFactory)
 				listFactories.Remove(listFactory);
 
-			core.CommandManager.UnregisterCollection(factoryInfo);
-			core.RightsManager.UnregisterRights(factoryInfo.ExposedRights);
+			CommandManager.UnregisterCollection(factoryInfo);
+			RightsManager.UnregisterRights(factoryInfo.ExposedRights);
 		}
 
 

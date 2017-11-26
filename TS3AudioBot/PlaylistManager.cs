@@ -463,7 +463,7 @@ namespace TS3AudioBot
 
 		public Playlist(string name, ulong? creatorDbId = null)
 		{
-			Util.Init(ref resources);
+			Util.Init(out resources);
 			CreatorDbId = creatorDbId;
 			Name = name;
 		}

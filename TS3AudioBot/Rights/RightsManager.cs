@@ -18,15 +18,17 @@ namespace TS3AudioBot.Rights
 	using System.Text;
 	using TS3Client;
 
-	public class RightsManager
+	public class RightsManager : Dependency.ICoreModule
 	{
 		private const int RuleLevelSize = 2;
 
-		private readonly Core core;
+		public ConfigFile Config { get; set; }
+		public BotManager Bots { get; set; }
+		public CommandSystem.CommandManager CommandManager { get; set; }
 
 		private bool needsRecalculation;
 		private readonly Cache<InvokerData, ExecuteContext> cachedRights;
-		private readonly RightsManagerData rightsManagerData;
+		private RightsManagerData rightsManagerData;
 		private RightsRule rootRule;
 		private RightsRule[] rules;
 		private readonly HashSet<string> registeredRights;
@@ -39,12 +41,19 @@ namespace TS3AudioBot.Rights
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
 
-		public RightsManager(Core core, RightsManagerData rmd)
+		public RightsManager()
 		{
-			this.core = core;
-			rightsManagerData = rmd;
-			cachedRights = new Cache<InvokerData, ExecuteContext>();
-			registeredRights = new HashSet<string>();
+			Util.Init(out cachedRights);
+			Util.Init(out registeredRights);
+		}
+
+		public void Initialize()
+		{
+			rightsManagerData = Config.GetDataStruct<RightsManagerData>("RightsManager", true);
+			RegisterRights(CommandManager.AllRights);
+			RegisterRights(Commands.RightHighVolume, Commands.RightDeleteAllPlaylists);
+			if (!ReadFile())
+				Log.Write(Log.Level.Error, "Could not read Permission file.");
 		}
 
 		public void RegisterRights(params string[] rights) => RegisterRights((IEnumerable<string>)rights);
@@ -103,7 +112,7 @@ namespace TS3AudioBot.Rights
 					|| (needsAvailableChanGroups && !execCtx.ChannelGroupId.HasValue)))
 				{
 					// TODO fixme !!!!!!!!
-					var result = core.Bots.GetBot(0)?.QueryConnection.GetClientInfoById(inv.ClientId.Value) ?? R<TS3Client.Messages.ClientInfo>.Err("No bot");
+					var result = Bots.GetBot(0)?.QueryConnection.GetClientInfoById(inv.ClientId.Value) ?? R<TS3Client.Messages.ClientInfo>.Err("No bot");
 					if (result.Ok)
 					{
 						if (execCtx.AvailableGroups == null)
@@ -116,7 +125,7 @@ namespace TS3AudioBot.Rights
 				if (needsAvailableGroups && inv.DatabaseId.HasValue && execCtx.AvailableGroups == null)
 				{
 					// TODO fixme !!!!!!!!
-					var result = core.Bots.GetBot(0)?.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value) ?? R<ulong[]>.Err("");
+					var result = Bots.GetBot(0)?.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value) ?? R<ulong[]>.Err("");
 					if (result.Ok)
 						execCtx.AvailableGroups = result.Value;
 				}

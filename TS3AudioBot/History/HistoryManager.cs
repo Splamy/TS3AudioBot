@@ -41,7 +41,7 @@ namespace TS3AudioBot.History
 			Formatter = new SmartHistoryFormatter();
 			historyManagerData = hmd;
 
-			Util.Init(ref unusedIds);
+			Util.Init(out unusedIds);
 
 			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);

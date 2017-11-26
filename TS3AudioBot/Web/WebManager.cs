@@ -15,7 +15,7 @@ namespace TS3AudioBot.Web
 	using System.Net;
 	using System.Threading;
 
-	public sealed class WebManager : IDisposable
+	public sealed class WebManager : Dependency.ICoreModule, IDisposable
 	{
 		public const string WebRealm = "ts3ab";
 
@@ -24,37 +24,48 @@ namespace TS3AudioBot.Web
 
 		private HttpListener webListener;
 		private Thread serverThread;
-		private readonly WebData webData;
+		private WebData webData;
 		private bool startWebServer;
+
+		public ConfigFile Config { get; set; }
+		public Core Core { get; set; }
 
 		public Api.WebApi Api { get; private set; }
 		public Interface.WebDisplay Display { get; private set; }
 
-		public WebManager(Core core, WebData webd)
-		{
-			webData = webd;
-			webListener = new HttpListener
-			{
-				AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic,
-				Realm = WebRealm,
-				AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector,
-			};
+		public WebManager() { }
 
-			InitializeSubcomponents(core);
+		public void Initialize()
+		{
+			webData = Config.GetDataStruct<WebData>("WebData", true);
+
+			InitializeSubcomponents();
+
+			StartServerAsync();
 		}
 
-		private void InitializeSubcomponents(Core core)
+		private void InitializeSubcomponents()
 		{
 			startWebServer = false;
 			if (webData.EnableApi)
 			{
-				Api = new Api.WebApi(core);
+				Api = new Api.WebApi(Core);
 				startWebServer = true;
 			}
 			if (webData.EnableWebinterface)
 			{
-				Display = new Interface.WebDisplay(core);
+				Display = new Interface.WebDisplay(Core);
 				startWebServer = true;
+			}
+
+			if(startWebServer)
+			{
+				webListener = new HttpListener
+				{
+					AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic,
+					Realm = WebRealm,
+					AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector,
+				};
 			}
 		}
 

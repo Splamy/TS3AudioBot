@@ -58,7 +58,7 @@ namespace TS3AudioBot.Helper
 
 		public static DateTime GetNow() => DateTime.Now;
 
-		public static void Init<T>(ref T obj) where T : new() => obj = new T();
+		public static void Init<T>(out T obj) where T : new() => obj = new T();
 
 		public static Random Random { get; } = new Random();
 
