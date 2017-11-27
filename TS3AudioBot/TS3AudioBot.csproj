@@ -70,6 +70,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
@@ -134,7 +137,6 @@
     <Compile Include="CommandSystem\XCommandSystem.cs" />
     <Compile Include="DocGen.cs" />
     <Compile Include="Log.cs" />
-    <Compile Include="Helper\R.cs" />
     <Compile Include="History\AudioLogEntry.cs" />
     <Compile Include="History\HistorySaveData.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />

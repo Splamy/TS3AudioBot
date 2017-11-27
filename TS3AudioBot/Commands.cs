@@ -497,20 +497,15 @@ namespace TS3AudioBot
 			if (info.ApiCall)
 				throw new CommandException("This command is not available as API", CommandExceptionReason.NotSupported);
 
-			try
+			if (info.InvokerData.ClientId.HasValue)
 			{
-				if (info.InvokerData.ClientId.HasValue)
-				{
-					if (string.IsNullOrEmpty(parameter) || parameter == "near")
-						info.Bot.QueryConnection.KickClientFromChannel(info.InvokerData.ClientId.Value);
-					else if (parameter == "far")
-						info.Bot.QueryConnection.KickClientFromServer(info.InvokerData.ClientId.Value);
-				}
-			}
-			catch (Ts3CommandException ex)
-			{
-				Log.Write(Log.Level.Info, "Could not kick: {0}", ex);
-				throw new CommandException("I'm not strong enough, master!", ex, CommandExceptionReason.CommandError);
+				var result = R.OkR;
+				if (string.IsNullOrEmpty(parameter) || parameter == "near")
+					result = info.Bot.QueryConnection.KickClientFromChannel(info.InvokerData.ClientId.Value);
+				else if (parameter == "far")
+					result = info.Bot.QueryConnection.KickClientFromServer(info.InvokerData.ClientId.Value);
+				if (!result.Ok)
+					throw new CommandException("I'm not strong enough, master!", CommandExceptionReason.CommandError);
 			}
 		}
 
@@ -561,7 +556,7 @@ namespace TS3AudioBot
 			if (!hresult)
 			{
 				info.Session.SetResponse(ResponseListDelete, name);
-				return new JsonEmpty($"Do you really want to delete the playlist \"{name}\" (error:{hresult.Message})");
+				return new JsonEmpty($"Do you really want to delete the playlist \"{name}\" (error:{hresult.Error})");
 			}
 			else
 			{
@@ -855,14 +850,13 @@ namespace TS3AudioBot
 		{
 			if (info.ApiCall)
 			{
-				info.Bot.Dispose();
+				info.Core.Dispose();
 				return null;
 			}
 
 			if (param == "force")
 			{
-				// TODO necessary?: info.Bot.QueryConnection.OnMessageReceived -= TextCallback;
-				info.Bot.Dispose();
+				info.Core.Dispose();
 				return null;
 			}
 			else
@@ -1022,7 +1016,7 @@ namespace TS3AudioBot
 				{
 					var result = info.Core.ConfigManager.SetSetting(filteredArr[0].Key, value);
 					if (result.Ok) return null;
-					else throw new CommandException(result.Message, CommandExceptionReason.CommandError);
+					else throw new CommandException(result.Error, CommandExceptionReason.CommandError);
 				}
 			}
 			else
@@ -1358,7 +1352,7 @@ namespace TS3AudioBot
 			{
 				var name = info.Session.ResponseData as string;
 				var result = info.Bot.PlaylistManager.DeletePlaylist(name, info.InvokerData.DatabaseId ?? 0, info.HasRights(RightDeleteAllPlaylists));
-				if (!result) return result.Message;
+				if (!result) return result.Error;
 				else return "Ok";
 			}
 			return null;

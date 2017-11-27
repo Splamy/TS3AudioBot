@@ -49,7 +49,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			if (!result)
 			{
-				return result.Message;
+				return result.Error;
 			}
 			else
 			{
@@ -93,7 +93,7 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			var result = WebWrapper.GetResponseUnsafe(link);
 			if (!result.Ok)
-				return result.Message;
+				return result.Error;
 
 			using (var stream = result.Value)
 				return new ResData(link.AbsoluteUri, GetStreamName(stream));
@@ -184,7 +184,7 @@ namespace TS3AudioBot.ResourceFactories
 					using (var stream = status.Value)
 						m3uResult = M3uReader.TryGetData(stream);
 				else
-					return status.Message;
+					return status.Error;
 			}
 
 			if (m3uResult)
@@ -214,7 +214,7 @@ namespace TS3AudioBot.ResourceFactories
 			var uri = new Uri(playResource.PlayUri);
 			var result = GetStreamFromUriUnsafe(uri);
 			if (!result)
-				return result.Message;
+				return result.Error;
 
 			using (var stream = result.Value)
 			{

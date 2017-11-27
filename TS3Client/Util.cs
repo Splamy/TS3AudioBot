@@ -39,8 +39,11 @@ namespace TS3Client
 
 		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString()); }
 
-		public static CommandError TimeOutCommandError { get; } =
-			new CommandError {Id = Ts3ErrorCode.custom_error, Message = "Connection closed"};
+		public static CommandError TimeOutCommandError { get; } = CustomError("Connection closed");
+
+		public static CommandError NoResultCommandError { get; } = CustomError("Result is empty");
+
+		public static CommandError CustomError(string message) => new CommandError { Id = Ts3ErrorCode.custom_error, Message = message };
 	}
 
 	internal sealed class MissingEnumCaseException : Exception
@@ -58,6 +61,28 @@ namespace TS3Client
 				return $"{error.Id}: the command failed to execute: {error.Message} (missing permission:{error.MissingPermissionId})";
 			else
 				return $"{error.Id}: the command failed to execute: {error.Message}";
+		}
+
+		public static R<T, CommandError> WrapSingle<T>(this R<IEnumerable<T>, CommandError> result) where T : class
+		{
+			if (result.Ok)
+				return WrapSingle(result.Value);
+			return R<T, CommandError>.Err(result.Error);
+		}
+
+		internal static R<T, CommandError> WrapSingle<T>(this IEnumerable<T> enu) where T : class
+		{
+			var first = enu.FirstOrDefault();
+			if (first != null)
+				return R<T, CommandError>.OkR(first);
+			return R<T, CommandError>.Err(Util.NoResultCommandError);
+		}
+
+		internal static R<IEnumerable<T>, CommandError> UnwrapNotification<T>(this R<LazyNotification, CommandError> result) where T : class
+		{
+			if (!result.Ok)
+				return result.Error;
+			return R<IEnumerable<T>, CommandError>.OkR(result.Value.Notifications.Cast<T>());
 		}
 	}
 

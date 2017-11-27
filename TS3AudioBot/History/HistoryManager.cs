@@ -275,7 +275,7 @@ namespace TS3AudioBot.History
 				var result = info.Core.FactoryManager.Load(entry.AudioResource);
 				if (!result)
 				{
-					info.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}");
+					info.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Error}");
 					nextIter.Add(entry);
 				}
 

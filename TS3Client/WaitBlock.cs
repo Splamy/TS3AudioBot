@@ -39,30 +39,30 @@ namespace TS3Client
 			}
 		}
 
-		public IEnumerable<T> WaitForMessage<T>() where T : IResponse, new()
+		public R<IEnumerable<T>, CommandError> WaitForMessage<T>() where T : IResponse, new()
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (!answerWaiter.WaitOne(CommandTimeout))
-				throw new Ts3CommandException(Util.TimeOutCommandError);
+				return Util.TimeOutCommandError;
 			if (commandError.Id != Ts3ErrorCode.ok)
-				throw new Ts3CommandException(commandError);
+				return commandError;
 
-			return CommandDeserializer.GenerateResponse<T>(commandLine);
+			return R<IEnumerable<T>, CommandError>.OkR(CommandDeserializer.GenerateResponse<T>(commandLine));
 		}
 
-		public LazyNotification WaitForNotification()
+		public R<LazyNotification, CommandError> WaitForNotification()
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (DependsOn == null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			if (!answerWaiter.WaitOne(CommandTimeout))
-				throw new Ts3CommandException(Util.TimeOutCommandError);
+				return Util.TimeOutCommandError;
 			if (commandError.Id != Ts3ErrorCode.ok)
-				throw new Ts3CommandException(commandError);
+				return commandError;
 			if (!notificationWaiter.WaitOne(CommandTimeout))
-				throw new Ts3CommandException(Util.TimeOutCommandError);
+				return Util.TimeOutCommandError;
 
 			return notification;
 		}

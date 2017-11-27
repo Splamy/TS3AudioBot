@@ -7,15 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System.Linq;
-
 namespace TS3AudioBot.ResourceFactories
 {
 	using CommandSystem;
 	using Helper;
 	using System;
-	using System.Drawing;
 	using System.Collections.Generic;
+	using System.Drawing;
+	using System.Linq;
 	using System.Reflection;
 
 	public sealed class ResourceFactoryManager : Dependency.ICoreModule, IDisposable
@@ -91,7 +90,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			var result = factory.GetResourceById(resource);
 			if (!result)
-				return $"Could not load ({result.Message})";
+				return $"Could not load ({result.Error})";
 			return result;
 		}
 
@@ -118,7 +117,7 @@ namespace TS3AudioBot.ResourceFactories
 
 				var result = factory.GetResource(netlinkurl);
 				if (!result)
-					return $"Could not load ({result.Message})";
+					return $"Could not load ({result.Error})";
 				return result;
 			}
 

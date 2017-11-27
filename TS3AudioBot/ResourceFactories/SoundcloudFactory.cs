@@ -9,13 +9,13 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using System;
-	using System.Linq;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Text.RegularExpressions;
 	using Helper;
+	using System;
+	using System.Collections.Generic;
 	using System.Drawing;
+	using System.Globalization;
+	using System.Linq;
+	using System.Text.RegularExpressions;
 
 	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
@@ -92,12 +92,12 @@ namespace TS3AudioBot.ResourceFactories
 
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(link);
 			if (!result.Ok)
-				return result.Message;
+				return result.Error;
 
 			var response = result.Value;
-			string title = response.Item1;
-			string url = response.Item2.FirstOrDefault();
-			if (response.Item2.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+			string title = response.title;
+			string url = response.links.FirstOrDefault();
+			if (response.links.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
 				return "No youtube-dl response";
 
 			Log.Write(Log.Level.Debug, "SC Saved!");

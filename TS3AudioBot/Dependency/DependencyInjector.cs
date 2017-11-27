@@ -1,12 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Reflection;
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// Copyright (C) 2017  TS3AudioBot contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 namespace TS3AudioBot.Dependency
 {
 	using Helper;
+	using System;
+	using System.Collections.Concurrent;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Reflection;
 
 	public class Injector : DependencyRealm, ICoreModule
 	{
@@ -16,9 +24,11 @@ namespace TS3AudioBot.Dependency
 
 		public void Initialize() { }
 
-		public T GetCoreModule<T>() where T : ICoreModule
+		public R<T> GetCoreModule<T>() where T : ICoreModule
 		{
-			throw new NotImplementedException();
+			if(loaded.TryGetValue(typeof(T), out var mod))
+				return (T)mod.Obj;
+			return "Module not found";
 		}
 	}
 
@@ -93,12 +103,12 @@ namespace TS3AudioBot.Dependency
 
 		public void SkipInitialized(object obj)
 		{
-			var index = waiting.Select((m, i) => new Tuple<Module, int>(m, i)).FirstOrDefault(t => t.Item1.Obj == obj);
-			if (index == null)
+			var (mod, idx) = waiting.Select((m, i) => (mod: m, idx: i)).FirstOrDefault(t => t.mod.Obj == obj);
+			if (mod == null)
 				return;
 
-			waiting.RemoveAt(index.Item2);
-			SetInitalized(index.Item1);
+			waiting.RemoveAt(idx);
+			SetInitalized(mod);
 
 			DoQueueInitialize();
 		}

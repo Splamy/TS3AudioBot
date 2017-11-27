@@ -9,11 +9,11 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Globalization;
 	using System.Text.RegularExpressions;
-	using Helper;
 
 	public sealed class TwitchFactory : IResourceFactory
 	{

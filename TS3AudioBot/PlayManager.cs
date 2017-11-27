@@ -43,7 +43,7 @@ namespace TS3AudioBot
 		{
 			var result = ResourceFactoryManager.Load(message, audioType);
 			if (!result)
-				return result.Message;
+				return result.Error;
 			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
 		}
 		public R Enqueue(InvokerData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId));
@@ -70,7 +70,7 @@ namespace TS3AudioBot
 		{
 			var result = ResourceFactoryManager.Load(ar);
 			if (!result)
-				return result.Message;
+				return result.Error;
 			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
 		/// <summary>Tries to play the passed link.</summary>
@@ -83,18 +83,18 @@ namespace TS3AudioBot
 		{
 			var result = ResourceFactoryManager.Load(link, audioType);
 			if (!result)
-				return result.Message;
+				return result.Error;
 			return Play(invoker, result.Value, meta ?? new MetaData());
 		}
 		public R Play(InvokerData invoker, uint historyId, MetaData meta = null)
 		{
 			var getresult = HistoryManager.GetEntryById(historyId);
 			if (!getresult)
-				return getresult.Message;
+				return getresult.Error;
 
 			var loadresult = ResourceFactoryManager.Load(getresult.Value.AudioResource);
 			if (!loadresult)
-				return loadresult.Message;
+				return loadresult.Error;
 
 			return Play(invoker, loadresult.Value, meta ?? new MetaData());
 		}
@@ -124,7 +124,7 @@ namespace TS3AudioBot
 				if (lastResult)
 					return R.OkR;
 			}
-			return $"Playlist item could not be played ({lastResult.Message})";
+			return $"Playlist item could not be played ({lastResult.Error})";
 		}
 		/// <summary>Plays the passed <see cref="PlayResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
@@ -167,8 +167,8 @@ namespace TS3AudioBot
 			var result = PlayerConnection.AudioStart(playResource.PlayUri);
 			if (!result)
 			{
-				Log.Write(Log.Level.Error, "Error return from player: {0}", result.Message);
-				return $"Internal player error ({result.Message})";
+				Log.Write(Log.Level.Error, "Error return from player: {0}", result.Error);
+				return $"Internal player error ({result.Error})";
 			}
 
 			PlayerConnection.Volume = config.Volume ?? AudioValues.DefaultVolume;
@@ -220,7 +220,7 @@ namespace TS3AudioBot
 				R result = Next(CurrentPlayData.Invoker);
 				if (result)
 					return;
-				Log.Write(Log.Level.Warning, nameof(SongStoppedHook) + " could not play Next: " + result.Message);
+				Log.Write(Log.Level.Warning, nameof(SongStoppedHook) + " could not play Next: " + result.Error);
 			}
 			else
 			{

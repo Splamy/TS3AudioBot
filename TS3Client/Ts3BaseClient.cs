@@ -1,3 +1,12 @@
+// TS3Client - A free TeamSpeak3 client implementation
+// Copyright (C) 2017  TS3Client contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+
 namespace TS3Client
 {
 	using Commands;
@@ -7,6 +16,8 @@ namespace TS3Client
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Net;
+
+	using CmdR = E<Messages.CommandError>;
 
 	using ClientUidT = System.String;
 	using ClientDbIdT = System.UInt64;
@@ -51,7 +62,7 @@ namespace TS3Client
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
 		[DebuggerStepThrough]
-		public IEnumerable<ResponseDictionary> Send(string command)
+		public R<IEnumerable<ResponseDictionary>, CommandError> Send(string command)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command));
 
 		/// <summary>Creates a new command.</summary>
@@ -59,7 +70,7 @@ namespace TS3Client
 		/// <param name="parameter">The parameters to be added to this command.
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		[DebuggerStepThrough]
-		public IEnumerable<ResponseDictionary> Send(string command, params ICommandPart[] parameter)
+		public R<IEnumerable<ResponseDictionary>, CommandError> Send(string command, params ICommandPart[] parameter)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command, parameter.ToList()));
 
 		/// <summary>Creates a new command.</summary>
@@ -67,7 +78,7 @@ namespace TS3Client
 		/// <param name="command">The command name.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command) where T : IResponse, new()
+		public R<IEnumerable<T>, CommandError> Send<T>(string command) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command));
 
 		/// <summary>Creates a new command.</summary>
@@ -76,7 +87,7 @@ namespace TS3Client
 		/// <param name="parameter">The parameters to be added to this command.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
+		public R<IEnumerable<T>, CommandError> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
 			=> Send<T>(command, parameter.ToList());
 
 		/// <summary>Creates a new command.</summary>
@@ -85,78 +96,78 @@ namespace TS3Client
 		/// <param name="parameter">The parameters to be added to this command.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		[DebuggerStepThrough]
-		public IEnumerable<T> Send<T>(string command, List<ICommandPart> parameter) where T : IResponse, new()
+		public R<IEnumerable<T>, CommandError> Send<T>(string command, List<ICommandPart> parameter) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command, parameter));
 
 		[DebuggerStepThrough]
-		protected void SendNoResponsed(Ts3Command command)
+		protected CmdR SendNoResponsed(Ts3Command command)
 			=> SendCommand<ResponseVoid>(command.ExpectsResponse(false));
 
 		/// <summary>Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.</summary>
 		/// <typeparam name="T">The type to deserialize the response to. Use <see cref="ResponseDictionary"/> for unknow response data.</typeparam>
 		/// <param name="com">The raw command to send.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		public abstract IEnumerable<T> SendCommand<T>(Ts3Command com) where T : IResponse, new();
+		public abstract R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com) where T : IResponse, new();
 
 		#endregion
 
 		#region UNIVERSAL COMMANDS
 
-		public void ChangeName(string newName)
+		public CmdR ChangeName(string newName)
 			=> Send("clientupdate",
 			new CommandParameter("client_nickname", newName));
 
-		public void ChangeBadges(string newBadges)
+		public CmdR ChangeBadges(string newBadges)
 			=> Send("clientupdate",
 			new CommandParameter("client_badges", newBadges));
 
-		public void ChangeDescription(string newDescription, ClientIdT clientId)
+		public CmdR ChangeDescription(string newDescription, ClientIdT clientId)
 			=> Send("clientedit",
 			new CommandParameter("clid", clientId),
 			new CommandParameter("client_description", newDescription));
 
 		/// <summary>Displays information about your current ServerQuery connection including your loginname, etc.</summary>
-		public WhoAmI WhoAmI() // Q ?
-			=> Send<WhoAmI>("whoami").FirstOrDefault();
+		public R<WhoAmI, CommandError> WhoAmI() // Q ?
+			=> Send<WhoAmI>("whoami").WrapSingle();
 
-		public void SendMessage(string message, ClientData client)
+		public CmdR SendMessage(string message, ClientData client)
 			=> SendPrivateMessage(message, client.ClientId);
-		public void SendPrivateMessage(string message, ushort clientId)
+		public CmdR SendPrivateMessage(string message, ushort clientId)
 			=> SendMessage(message, TextMessageTargetMode.Private, clientId);
 
-		public void SendChannelMessage(string message)
+		public CmdR SendChannelMessage(string message)
 			=> SendMessage(message, TextMessageTargetMode.Channel, 0);
 
-		public void SendMessage(string message, ServerData server)
+		public CmdR SendMessage(string message, ServerData server)
 			=> SendServerMessage(message, server.VirtualServerId);
-		public void SendServerMessage(string message, ulong serverId)
+		public CmdR SendServerMessage(string message, ulong serverId)
 			=> SendMessage(message, TextMessageTargetMode.Server, serverId);
 
 		/// <summary>Sends a text message to a specified target.
 		/// If targetmode is set to <see cref="TextMessageTargetMode.Private"/>, a message is sent to the client with the ID specified by target.
 		/// If targetmode is set to <see cref="TextMessageTargetMode.Channel"/> or <see cref="TextMessageTargetMode.Server"/>,
 		/// the target parameter will be ignored and a message is sent to the current channel or server respectively.</summary>
-		public void SendMessage(string message, TextMessageTargetMode target, ulong id)
+		public CmdR SendMessage(string message, TextMessageTargetMode target, ulong id)
 			=> Send("sendtextmessage",
 			new CommandParameter("targetmode", (int)target),
 			new CommandParameter("target", id),
 			new CommandParameter("msg", message));
 
 		/// <summary>Sends a text message to all clients on all virtual servers in the TeamSpeak 3 Server instance.</summary>
-		public void SendGlobalMessage(string message)
+		public CmdR SendGlobalMessage(string message)
 			=> Send("gm",
 			new CommandParameter("msg", message));
 
-		public void KickClientFromServer(ClientIdT[] clientIds)
+		public CmdR KickClientFromServer(ClientIdT[] clientIds)
 			=> KickClient(clientIds, ReasonIdentifier.Server);
 
-		public void KickClientFromChannel(ClientIdT[] clientIds)
+		public CmdR KickClientFromChannel(ClientIdT[] clientIds)
 			=> KickClient(clientIds, ReasonIdentifier.Channel);
 
 		/// <summary>Kicks one or more clients specified with clid from their currently joined channel or from the server, depending on <paramref name="reasonId"/>.
 		/// The reasonmsg parameter specifies a text message sent to the kicked clients.
 		/// This parameter is optional and may only have a maximum of 40 characters.</summary>
-		public void KickClient(ClientIdT[] clientIds, ReasonIdentifier reasonId, string reasonMsg = null)
+		public CmdR KickClient(ClientIdT[] clientIds, ReasonIdentifier reasonId, string reasonMsg = null)
 			=> Send("clientkick",
 			new CommandParameter("reasonid", (int)reasonId),
 			new CommandMultiParameter("clid", clientIds));
@@ -164,29 +175,29 @@ namespace TS3Client
 		/// <summary>Displays a list of clients online on a virtual server including their ID, nickname, status flags, etc.
 		/// The output can be modified using several command options.
 		/// Please note that the output will only contain clients which are currently in channels you're able to subscribe to.</summary>
-		public IEnumerable<ClientData> ClientList(ClientListOptions options = 0)
+		public R<IEnumerable<ClientData>, CommandError> ClientList(ClientListOptions options = 0)
 			=> Send<ClientData>("clientlist",
 			new CommandOption(options));
 
 		/// <summary>Displays detailed database information about a client including unique ID, creation date, etc.</summary>
-		public ClientDbData ClientDbInfo(ClientDbIdT clDbId)
+		public R<ClientDbData, CommandError> ClientDbInfo(ClientDbIdT clDbId)
 			=> Send<ClientDbData>("clientdbinfo",
-			new CommandParameter("cldbid", clDbId)).FirstOrDefault();
+			new CommandParameter("cldbid", clDbId)).WrapSingle();
 
 		/// <summary>Displays detailed configuration information about a client including unique ID, nickname, client version, etc.</summary>
-		public ClientInfo ClientInfo(ClientIdT clientId)
+		public R<ClientInfo, CommandError> ClientInfo(ClientIdT clientId)
 			=> Send<ClientInfo>("clientinfo",
-			new CommandParameter("clid", clientId)).FirstOrDefault();
+			new CommandParameter("clid", clientId)).WrapSingle();
 
 		/// <summary>Use a token key gain access to a server or channel group.
 		/// Please note that the server will automatically delete the token after it has been used.</summary>
-		public void PrivilegeKeyUse(string key)
+		public CmdR PrivilegeKeyUse(string key)
 			=> Send("privilegekeyuse",
 			new CommandParameter("token", key));
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public void ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId permissionId, int permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId permissionId, int permissionValue,
 				bool permissionNegated, bool permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
@@ -197,7 +208,7 @@ namespace TS3Client
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public void ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId[] permissionId, int[] permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId[] permissionId, int[] permissionValue,
 				bool[] permissionNegated, bool[] permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
@@ -208,35 +219,35 @@ namespace TS3Client
 
 		/// <summary>Adds a client to the server group specified with <paramref name="serverGroupId"/>. Please note that a
 		/// client cannot be added to default groups or template groups.</summary>
-		public void ServerGroupAddClient(ServerGroupIdT serverGroupId, ClientDbIdT clientDbId)
+		public CmdR ServerGroupAddClient(ServerGroupIdT serverGroupId, ClientDbIdT clientDbId)
 			=> Send("servergroupaddclient",
 			new CommandParameter("sgid", serverGroupId),
 			new CommandParameter("cldbid", clientDbId));
 
 		/// <summary>Removes a client specified with cldbid from the server group specified with <paramref name="serverGroupId"/>.</summary>
-		public void ServerGroupDelClient(ServerGroupIdT serverGroupId, ClientDbIdT clientDbId)
+		public CmdR ServerGroupDelClient(ServerGroupIdT serverGroupId, ClientDbIdT clientDbId)
 			=> Send("servergroupdelclient",
 			new CommandParameter("sgid", serverGroupId),
 			new CommandParameter("cldbid", clientDbId));
 
-		public void FileTransferStop(ushort serverTransferId, bool delete)
+		public CmdR FileTransferStop(ushort serverTransferId, bool delete)
 			=> Send("ftstop",
 			new CommandParameter("serverftfid", serverTransferId),
 			new CommandParameter("delete", delete));
 
-		public void FileTransferDeleteFile(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public CmdR FileTransferDeleteFile(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> Send("ftdeletefile",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("cpw", channelPassword),
 			new CommandMultiParameter("name", path));
 
-		public void FileTransferCreateDirectory(ChannelIdT channelId, string path, string channelPassword = "")
+		public CmdR FileTransferCreateDirectory(ChannelIdT channelId, string path, string channelPassword = "")
 			=> Send("ftcreatedir",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("dirname", path),
 			new CommandParameter("cpw", channelPassword));
 
-		public void FileTransferRenameFile(ChannelIdT channelId, string oldName, string channelPassword, string newName,
+		public CmdR FileTransferRenameFile(ChannelIdT channelId, string oldName, string channelPassword, string newName,
 			ChannelIdT? targetChannel = null, string targetChannelPassword = "")
 		{
 			var cmd = new Ts3Command("ftrenamefile", new List<ICommandPart> {
@@ -249,23 +260,25 @@ namespace TS3Client
 				cmd.AppendParameter(new CommandParameter("tcid", targetChannel.Value));
 				cmd.AppendParameter(new CommandParameter("tcpw", targetChannelPassword));
 			}
-			SendCommand<ResponseVoid>(cmd);
+			return SendCommand<ResponseVoid>(cmd);
 		}
 
-		public void UploadAvatar(System.IO.Stream image)
+		public CmdR UploadAvatar(System.IO.Stream image)
 		{
 			var token = FileTransferManager.UploadFile(image, 0, "/avatar", true);
-			token.Wait();
+			if (!token.Ok)
+				return token.Error;
+			token.Value.Wait();
 			image.Seek(0, System.IO.SeekOrigin.Begin);
 			using (var md5Dig = System.Security.Cryptography.MD5.Create())
 			{
 				var md5Bytes = md5Dig.ComputeHash(image);
 				var md5 = string.Join("", md5Bytes.Select(x => x.ToString("x2")));
-				Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
+				return Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
 			}
 		}
 
-		public void ClientMove(ClientIdT clientId, ChannelIdT channelId, string channelPassword = null)
+		public CmdR ClientMove(ClientIdT clientId, ChannelIdT channelId, string channelPassword = null)
 		{
 			var cmd = new Ts3Command("clientmove", new List<ICommandPart> {
 				new CommandParameter("clid", clientId),
@@ -273,7 +286,7 @@ namespace TS3Client
 			if (channelPassword != null)
 				cmd.AppendParameter(new CommandParameter("cpw",
 					ClientType == ClientType.Full ? Full.Ts3Crypt.HashPassword(channelPassword) : channelPassword));
-			SendCommand<ResponseVoid>(cmd);
+			return SendCommand<ResponseVoid>(cmd);
 		}
 
 		// Base Stuff for splitted up commands
@@ -281,22 +294,22 @@ namespace TS3Client
 
 		/// <summary>Creates a new server group using the name specified with <paramref name="name"/> and return its ID.
 		/// The optional <paramref name="type"/> parameter can be used to create ServerQuery groups and template groups.</summary>
-		public abstract ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null);
+		public abstract R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null);
 
 		/// <summary>Displays all server groups the client specified with <paramref name="clDbId"/> is currently residing in.</summary>
-		public abstract IEnumerable<ClientServerGroup> ServerGroupsByClientDbId(ClientDbIdT clDbId);
+		public abstract R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);
 
-		public abstract FileUpload FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
+		public abstract R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume);
 
-		public abstract FileDownload FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
+		public abstract R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek);
 
-		public abstract IEnumerable<FileTransfer> FileTransferList();
+		public abstract R<IEnumerable<FileTransfer>, CommandError> FileTransferList();
 
-		public abstract IEnumerable<FileList> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "");
+		public abstract R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "");
 
-		public abstract IEnumerable<FileInfoTs> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
+		public abstract R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
 
 		#endregion
 	}

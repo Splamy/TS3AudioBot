@@ -9,35 +9,34 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
 	using System;
 	using System.Collections.Generic;
-	using System.IO;
-	using System.Diagnostics;
 	using System.ComponentModel;
+	using System.Diagnostics;
+	using System.IO;
 
 	static class YoutubeDlHelper
 	{
 		public static YoutubeFactoryData DataObj { private get; set; }
 		private static string YoutubeDlPath => DataObj?.YoutubedlPath;
 
-		public static R<Tuple<string, IList<string>>> FindAndRunYoutubeDl(string id)
+		public static R<(string title, IList<string> links)> FindAndRunYoutubeDl(string id)
 		{
 			var ytdlPath = FindYoutubeDl(id);
 			if (ytdlPath == null)
 				return "Youtube-Dl could not be found. The song/video cannot be played due to restrictions";
 
-			return RunYoutubeDl(ytdlPath.Item1, ytdlPath.Item2);
+			return RunYoutubeDl(ytdlPath.Value.ytdlpath, ytdlPath.Value.param);
 		}
 
-		public static Tuple<string, string> FindYoutubeDl(string id)
+		public static (string ytdlpath, string param)? FindYoutubeDl(string id)
 		{
 			string param = $"--no-warnings --get-title --get-url --format bestaudio/best --id -- {id}";
 
 			// Default path youtube-dl is suggesting to install
 			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
 			if (File.Exists(defaultYtDlPath))
-				return new Tuple<string, string>(defaultYtDlPath, param);
+				return (defaultYtDlPath, param);
 
 			if (YoutubeDlPath == null)
 				return null;
@@ -52,22 +51,22 @@ namespace TS3AudioBot.ResourceFactories
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the binary
 			if (File.Exists(fullCustomPath) || File.Exists(fullCustomPath + ".exe"))
-				return new Tuple<string, string>(fullCustomPath, param);
+				return (fullCustomPath, param);
 
 			// Example: /home/teamspeak where the binary 'youtube-dl' lies in ./teamspeak/
 			string fullCustomPathWithoutFile = Path.Combine(fullCustomPath, "youtube-dl");
 			if (File.Exists(fullCustomPathWithoutFile) || File.Exists(fullCustomPathWithoutFile + ".exe"))
-				return new Tuple<string, string>(fullCustomPathWithoutFile, param);
+				return (fullCustomPathWithoutFile, param);
 
 			// Example: /home/teamspeak/youtube-dl where 'youtube-dl' is the github project folder
 			string fullCustomPathGhProject = Path.Combine(fullCustomPath, "youtube_dl", "__main__.py");
 			if (File.Exists(fullCustomPathGhProject))
-				return new Tuple<string, string>("python", $"\"{fullCustomPathGhProject}\" {param}");
+				return ("python", $"\"{fullCustomPathGhProject}\" {param}");
 
 			return null;
 		}
 
-		public static R<Tuple<string, IList<string>>> RunYoutubeDl(string path, string args)
+		public static R<(string title, IList<string> links)> RunYoutubeDl(string path, string args)
 		{
 			try
 			{
@@ -98,7 +97,7 @@ namespace TS3AudioBot.ResourceFactories
 			catch (Win32Exception) { return "Failed to run youtube-dl"; }
 		}
 
-		public static Tuple<string, IList<string>> ParseResponse(StreamReader stream)
+		public static (string title, IList<string> links) ParseResponse(StreamReader stream)
 		{
 			string title = stream.ReadLine();
 
@@ -107,7 +106,7 @@ namespace TS3AudioBot.ResourceFactories
 			while ((line = stream.ReadLine()) != null)
 				urlOptions.Add(line);
 
-			return new Tuple<string, IList<string>>(title, urlOptions);
+			return (title, urlOptions);
 		}
 	}
 }

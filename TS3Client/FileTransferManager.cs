@@ -49,7 +49,7 @@ namespace TS3Client
 		/// False will throw an exception if the file already exists.</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public FileTransferToken UploadFile(FileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
+		public R<FileTransferToken, CommandError> UploadFile(FileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
 			=> UploadFile(file.Open(FileMode.Open, FileAccess.Read), channel, path, overwrite, channelPassword);
 
 		/// <summary>Initiate a file upload to the server.</summary>
@@ -61,13 +61,13 @@ namespace TS3Client
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the upload is finished.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public FileTransferToken UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = false)
+		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = false)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
-			if (!string.IsNullOrEmpty(request.Message))
-				throw new Ts3Exception(request.Message);
-			var token = new FileTransferToken(stream, request, channel, path, channelPassword, stream.Length) { CloseStreamWhenDone = closeStream };
+			if (!request.Ok)
+				return request.Error;
+			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length) { CloseStreamWhenDone = closeStream };
 			StartWorker(token);
 			return token;
 		}
@@ -78,7 +78,7 @@ namespace TS3Client
 		/// <param name="path">The download path within the channel. Eg: "file.txt", "path/file.png"</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public FileTransferToken DownloadFile(FileInfo file, ChannelIdT channel, string path, string channelPassword = "")
+		public R<FileTransferToken, CommandError> DownloadFile(FileInfo file, ChannelIdT channel, string path, string channelPassword = "")
 			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, channelPassword, true);
 
 		/// <summary>Initiate a file download from the server.</summary>
@@ -88,13 +88,13 @@ namespace TS3Client
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the download is finished.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public FileTransferToken DownloadFile(Stream stream, ChannelIdT channel, string path, string channelPassword = "", bool closeStream = false)
+		public R<FileTransferToken, CommandError> DownloadFile(Stream stream, ChannelIdT channel, string path, string channelPassword = "", bool closeStream = false)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
-			if (!string.IsNullOrEmpty(request.Message))
-				throw new Ts3Exception(request.Message);
-			var token = new FileTransferToken(stream, request, channel, path, channelPassword, 0) { CloseStreamWhenDone = closeStream };
+			if (!request.Ok)
+				return request.Error;
+			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, 0) { CloseStreamWhenDone = closeStream };
 			StartWorker(token);
 			return token;
 		}
@@ -121,18 +121,19 @@ namespace TS3Client
 
 		/// <summary>Resumes a download from a previously stopped position.</summary>
 		/// <param name="token">The aborted token.</param>
-		public void Resume(FileTransferToken token)
+		public E<CommandError> Resume(FileTransferToken token)
 		{
 			lock (token)
 			{
 				if (token.Status != TransferStatus.Cancelled)
-					throw new Ts3Exception("Only cancelled transfers can be resumed");
+					return Util.CustomError("Only cancelled transfers can be resumed");
 
 				if (token.Direction == TransferDirection.Upload)
 				{
-					var request = parent.FileTransferInitUpload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.Size, false, true);
-					if (!string.IsNullOrEmpty(request.Message))
-						throw new Ts3Exception(request.Message);
+					var result = parent.FileTransferInitUpload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.Size, false, true);
+					if (!result.Ok)
+						return result.Error;
+					var request = result.Value;
 					token.ServerTransferId = request.ServerFileTransferId;
 					token.SeekPosition = request.SeekPosistion;
 					token.Port = request.Port;
@@ -140,9 +141,10 @@ namespace TS3Client
 				}
 				else // Download
 				{
-					var request = parent.FileTransferInitDownload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.LocalStream.Position);
-					if (!string.IsNullOrEmpty(request.Message))
-						throw new Ts3Exception(request.Message);
+					var result = parent.FileTransferInitDownload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.LocalStream.Position);
+					if (!result.Ok)
+						return result.Error;
+					var request = result.Value;
 					token.ServerTransferId = request.ServerFileTransferId;
 					token.SeekPosition = -1;
 					token.Port = request.Port;
@@ -151,6 +153,7 @@ namespace TS3Client
 				token.Status = TransferStatus.Waiting;
 			}
 			StartWorker(token);
+			return E<CommandError>.OkR;
 		}
 
 		/// <summary>Stops an active transfer.</summary>
@@ -175,16 +178,17 @@ namespace TS3Client
 		/// <summary>Gets information about the current transfer status.</summary>
 		/// <param name="token">The transfer to check.</param>
 		/// <returns>Returns an information object or <code>null</code> when not available.</returns>
-		public FileTransfer GetStats(FileTransferToken token)
+		public R<FileTransfer, CommandError> GetStats(FileTransferToken token)
 		{
 			lock (token)
 			{
 				if (token.Status != TransferStatus.Trasfering)
-					return null;
+					return Util.CustomError("No transfer found");
 			}
-			try { return parent.FileTransferList().FirstOrDefault(x => x.ServerFileTransferId == token.ServerTransferId); }
-			// catch case when transfer is not found (probably already over or not yet started)
-			catch (Ts3CommandException ts3ex) when (ts3ex.ErrorStatus.Id == Ts3ErrorCode.database_empty_result) { return null; }
+			var result = parent.FileTransferList();
+			if (result.Ok)
+				return result.Value.Where(x => x.ServerFileTransferId == token.ServerTransferId).WrapSingle();
+			return R<FileTransfer, CommandError>.Err(result.Error);
 		}
 
 		private void TransferLoop()

@@ -40,31 +40,24 @@ namespace TS3AudioBot.Sessions
 		{
 			VerifyLock();
 
-			try
+			R result;
+			switch (targetMode)
 			{
-				R result;
-				switch (targetMode)
-				{
-				case TextMessageTargetMode.Private:
-					result = Bot.QueryConnection.SendMessage(message, client.ClientId);
-					break;
-				case TextMessageTargetMode.Channel:
-					result = Bot.QueryConnection.SendChannelMessage(message);
-					break;
-				case TextMessageTargetMode.Server:
-					result = Bot.QueryConnection.SendServerMessage(message);
-					break;
-				default:
-					throw new InvalidOperationException();
-				}
+			case TextMessageTargetMode.Private:
+				result = Bot.QueryConnection.SendMessage(message, client.ClientId);
+				break;
+			case TextMessageTargetMode.Channel:
+				result = Bot.QueryConnection.SendChannelMessage(message);
+				break;
+			case TextMessageTargetMode.Server:
+				result = Bot.QueryConnection.SendServerMessage(message);
+				break;
+			default:
+				throw Util.UnhandledDefault(targetMode);
+			}
 
-				if (!result)
-					Log.Write(Log.Level.Error, "Could not write message (Err:{0}) (Msg:{1})", result.Message, message);
-			}
-			catch (Ts3CommandException ex)
-			{
-				Log.Write(Log.Level.Error, "Could not write message (Ex:{0}) (Msg:{1})", ex.UnrollException(), message);
-			}
+			if (!result)
+				Log.Write(Log.Level.Error, "Could not write message (Err:{0}) (Msg:{1})", result.Error, message);
 		}
 
 		public void SetResponse(Response responseProcessor, object responseData)

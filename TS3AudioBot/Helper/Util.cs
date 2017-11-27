@@ -139,7 +139,7 @@ namespace TS3AudioBot.Helper
 		public static void UnwrapThrow(this R r)
 		{
 			if (!r.Ok)
-				throw new CommandException(r.Message, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
 		}
 
 		public static T UnwrapThrow<T>(this R<T> r)
@@ -147,9 +147,9 @@ namespace TS3AudioBot.Helper
 			if (r.Ok)
 				return r.Value;
 			else
-				throw new CommandException(r.Message, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
 		}
-
+		
 		public static string UnrollException(this Exception ex)
 		{
 			var strb = new StringBuilder();

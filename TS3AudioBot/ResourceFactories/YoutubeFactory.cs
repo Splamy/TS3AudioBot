@@ -13,18 +13,18 @@ namespace TS3AudioBot.ResourceFactories
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
+	using System.Drawing;
 	using System.Globalization;
 	using System.Linq;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
-	using System.Drawing;
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
-		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);
+		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
-		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w-]+)", Util.DefaultRegexConfig);
+		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
 
 		private readonly YoutubeFactoryData data;
 
@@ -141,7 +141,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!result)
 			{
 				if (string.IsNullOrWhiteSpace(data.YoutubedlPath))
-					return result.Message;
+					return result.Error;
 
 				return YoutubeDlWrapped(resource);
 			}
@@ -315,11 +315,11 @@ namespace TS3AudioBot.ResourceFactories
 
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(resource.ResourceId);
 			if (!result.Ok)
-				return result.Message;
+				return result.Error;
 
 			var response = result.Value;
-			var title = response.Item1;
-			var urlOptions = response.Item2;
+			var title = response.title;
+			var urlOptions = response.links;
 
 			string url = null;
 			if (urlOptions.Count == 1)

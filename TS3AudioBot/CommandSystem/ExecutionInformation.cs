@@ -10,7 +10,6 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using Sessions;
-	using Helper;
 
 	public class ExecutionInformation
 	{

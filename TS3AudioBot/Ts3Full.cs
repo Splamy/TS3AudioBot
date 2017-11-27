@@ -173,7 +173,7 @@ namespace TS3AudioBot
 						verionSign = (VersionSign)signType.GetValue(null);
 				}
 
-				if(verionSign == null)
+				if (verionSign == null)
 				{
 					Log.Write(Log.Level.Warning, "Invalid version sign, falling back to unknown :P");
 					verionSign = VersionSign.VER_WIN_3_UNKNOWN;
@@ -233,31 +233,27 @@ namespace TS3AudioBot
 			if (self != null)
 				return self;
 
-			try
+			var result = tsBaseClient.WhoAmI();
+			if (!result.Ok)
+				return $"Could not get self ({result.Error.ErrorFormat()})";
+			var data = result.Value;
+			var cd = new ClientData
 			{
-				var data = tsBaseClient.WhoAmI();
-				var cd = new ClientData
-				{
-					Uid = identity.ClientUid,
-					ChannelId = data.ChannelId,
-					ClientId = tsFullClient.ClientId,
-					NickName = data.NickName,
-					ClientType = tsBaseClient.ClientType
-				};
+				Uid = identity.ClientUid,
+				ChannelId = data.ChannelId,
+				ClientId = tsFullClient.ClientId,
+				NickName = data.NickName,
+				ClientType = tsBaseClient.ClientType
+			};
 
-				var response = tsBaseClient
-					.Send("clientgetdbidfromuid", new TS3Client.Commands.CommandParameter("cluid", identity.ClientUid))
-					.FirstOrDefault();
-				if (response != null && ulong.TryParse(response["cldbid"], out var dbId))
-					cd.DatabaseId = dbId;
+			var response = tsBaseClient
+				.Send("clientgetdbidfromuid", new TS3Client.Commands.CommandParameter("cluid", identity.ClientUid))
+				.WrapSingle();
+			if (response.Ok && ulong.TryParse(response.Value["cldbid"], out var dbId))
+				cd.DatabaseId = dbId;
 
-				self = cd;
-				return cd;
-			}
-			catch (Ts3CommandException)
-			{
-				return "Could not get self";
-			}
+			self = cd;
+			return cd;
 		}
 
 		private void AudioSend()

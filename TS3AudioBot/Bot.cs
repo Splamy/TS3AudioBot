@@ -122,7 +122,7 @@ namespace TS3AudioBot
 
 			var refreshResult = QueryConnection.RefreshClientBuffer(true);
 			if (!refreshResult.Ok)
-				Log.Write(Log.Level.Warning, "Bot is not correctly set up. Some requests might fail or are slower. ({0})", refreshResult.Message);
+				Log.Write(Log.Level.Warning, "Bot is not correctly set up. Some requests might fail or are slower. ({0})", refreshResult.Error);
 
 			var clientResult = QueryConnection.GetClientById(textMessage.InvokerId);
 
@@ -137,7 +137,7 @@ namespace TS3AudioBot
 			{
 				if (!clientResult.Ok)
 				{
-					Log.Write(Log.Level.Error, clientResult.Message);
+					Log.Write(Log.Level.Error, clientResult.Error);
 					return;
 				}
 				session = SessionManager.CreateSession(this, clientResult.Value);
@@ -209,7 +209,7 @@ namespace TS3AudioBot
 		{
 			var result = UpdateBotStatus();
 			if (!result)
-				Log.Write(Log.Level.Warning, result.Message);
+				Log.Write(Log.Level.Warning, result.Error);
 		}
 
 		public R UpdateBotStatus(string overrideStr = null)
@@ -251,7 +251,7 @@ namespace TS3AudioBot
 						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
 						var result = QueryConnection.UploadAvatar(mem);
 						if (!result.Ok)
-							Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Message);
+							Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Error);
 					}
 				}
 			}
@@ -261,7 +261,7 @@ namespace TS3AudioBot
 				{
 					var result = QueryConnection.UploadAvatar(sleepPic);
 					if (!result.Ok)
-						Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Message);
+						Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Error);
 				}
 			}
 		}

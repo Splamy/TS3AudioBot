@@ -10,6 +10,7 @@
 namespace TS3AudioBot
 {
 	using CommandSystem;
+	using Dependency;
 	using Helper;
 	using History;
 	using Plugins;
@@ -20,7 +21,7 @@ namespace TS3AudioBot
 	using System.Threading;
 	using Web;
 
-	public sealed class Core : IDisposable, Dependency.ICoreModule
+	public sealed class Core : IDisposable, ICoreModule
 	{
 		private bool consoleOutput;
 		private bool writeLog;
@@ -41,12 +42,21 @@ namespace TS3AudioBot
 				core.Dispose();
 			};
 
+			bool forceNextExit = false;
 			Console.CancelKeyPress += (s, e) =>
 			{
 				if (e.SpecialKey == ConsoleSpecialKey.ControlC)
 				{
-					e.Cancel = true;
-					core.Dispose();
+					if (!forceNextExit)
+					{
+						e.Cancel = true;
+						core.Dispose();
+						forceNextExit = true;
+					}
+					else
+					{
+						Environment.Exit(0);
+					}
 				}
 			};
 
@@ -56,7 +66,7 @@ namespace TS3AudioBot
 			var initResult = core.InitializeCore();
 			if (!initResult)
 			{
-				Log.Write(Log.Level.Error, "Core initialization failed: {0}", initResult.Message);
+				Log.Write(Log.Level.Error, "Core initialization failed: {0}", initResult.Error);
 				core.Dispose();
 				return;
 			}
@@ -68,6 +78,8 @@ namespace TS3AudioBot
 		internal DbStore Database { get; set; }
 		/// <summary>Manges plugins, provides various loading and unloading mechanisms.</summary>
 		internal PluginManager PluginManager { get; set; }
+		/// <summary>Manges plugins, provides various loading and unloading mechanisms.</summary>
+		internal Injector Injector { get; set; }
 		/// <summary>Mangement for the bot command system.</summary>
 		public CommandManager CommandManager { get; set; }
 		/// <summary>Manages factories which can load resources.</summary>
@@ -210,25 +222,26 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
 			Audio.Opus.NativeMethods.DummyLoad();
 
-			var d = new Dependency.DependencyRealm();
-			d.RegisterModule(this); // OK
-			d.RegisterModule(ConfigManager); // OK
-			Database = d.Create<DbStore>(); // OK
-			PluginManager = d.Create<PluginManager>(); // OK
-			CommandManager = d.Create<CommandManager>(); // OK
-			FactoryManager = d.Create<ResourceFactoryManager>(); // OK
-			WebManager = d.Create<WebManager>(); // OK
-			RightsManager = d.Create<RightsManager>(); // OK
-			Bots = d.Create<BotManager>(); // OK
+			Injector = new Injector();
+			Injector.RegisterModule(this); // OK
+			Injector.RegisterModule(ConfigManager); // OK
+			Injector.RegisterModule(Injector); // OK
+			Database = Injector.Create<DbStore>(); // OK
+			PluginManager = Injector.Create<PluginManager>(); // OK
+			CommandManager = Injector.Create<CommandManager>(); // OK
+			FactoryManager = Injector.Create<ResourceFactoryManager>(); // OK
+			WebManager = Injector.Create<WebManager>(); // OK
+			RightsManager = Injector.Create<RightsManager>(); // OK
+			Bots = Injector.Create<BotManager>(); // OK
 
-			d.SkipInitialized(this);
+			Injector.SkipInitialized(this);
 
-			if (!d.AllResolved())
+			if (!Injector.AllResolved())
 			{
 				// TODO detailed log + for inner if
 				Log.Write(Log.Level.Warning, "Cyclic module dependency");
-				d.ForceCyclicResolve();
-				if (!d.AllResolved())
+				Injector.ForceCyclicResolve();
+				if (!Injector.AllResolved())
 				{
 					Log.Write(Log.Level.Error, "Missing module dependency");
 					return "Could not load all modules";

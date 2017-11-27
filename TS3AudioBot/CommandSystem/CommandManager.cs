@@ -168,11 +168,11 @@ namespace TS3AudioBot.CommandSystem
 
 			var buildResult = BuildAndGet(comPath.Take(comPath.Length - 1));
 			if (!buildResult)
-				GenerateError(buildResult.Message, com as BotCommand);
+				GenerateError(buildResult.Error, com as BotCommand);
 
 			var result = InsertInto(buildResult.Value, com, comPath.Last());
 			if (!result)
-				GenerateError(result.Message, com as BotCommand);
+				GenerateError(result.Error, com as BotCommand);
 		}
 
 		private R<CommandGroup> BuildAndGet(IEnumerable<string> comPath)

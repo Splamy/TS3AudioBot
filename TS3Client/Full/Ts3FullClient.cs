@@ -16,6 +16,8 @@ namespace TS3Client.Full
 	using System.Linq;
 	using System.Threading;
 
+	using CmdR = E<Messages.CommandError>;
+
 	using ClientUidT = System.String;
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
@@ -190,7 +192,7 @@ namespace TS3Client.Full
 			case NotificationType.InitIvExpand: ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault()); break;
 			case NotificationType.InitServer: ProcessInitServer((InitServer)notification.FirstOrDefault()); break;
 			case NotificationType.ChannelList: break;
-			case NotificationType.ChannelListFinished: try { ChannelSubscribeAll(); } catch (Ts3CommandException) { } break;
+			case NotificationType.ChannelListFinished: ChannelSubscribeAll(); break;
 			case NotificationType.ClientNeededPermissions: break;
 			case NotificationType.ClientChannelGroupChanged: break;
 			case NotificationType.ClientServerGroupAdded: break;
@@ -289,17 +291,13 @@ namespace TS3Client.Full
 
 			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			packetHandler.CryptoInitDone();
-			try
-			{
-				ClientInit(
-					connectionDataFull.Username,
-					true, true,
-					connectionDataFull.DefaultChannel,
-					Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
-					password, string.Empty, string.Empty, string.Empty,
-					"123,456", VersionSign);
-			}
-			catch (Ts3CommandException) { }
+			ClientInit(
+				connectionDataFull.Username,
+				true, true,
+				connectionDataFull.DefaultChannel,
+				Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
+				password, string.Empty, string.Empty, string.Empty,
+				"123,456", VersionSign);
 		}
 
 		private void ProcessInitServer(InitServer initServer)
@@ -328,36 +326,42 @@ namespace TS3Client.Full
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.
 		/// Or <code>null</code> if no reponse is expected.</returns>
 		/// <exception cref="Ts3CommandException">When the response has an error code.</exception>
-		public override IEnumerable<T> SendCommand<T>(Ts3Command com)
+		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com)
 		{
 			using (var wb = new WaitBlock())
 			{
-				SendCommandBase(wb, com);
+				var result = SendCommandBase(wb, com);
+				if (!result.Ok)
+					return result.Error;
 				if (com.ExpectResponse)
 					return wb.WaitForMessage<T>();
 				else
-					return null;
+					// This might not be the nicest way to return in this case
+					// but we don't know what the response is, so this acceptable.
+					return Util.NoResultCommandError;
 			}
 		}
 
-		private LazyNotification SendSpecialCommand(Ts3Command com, params NotificationType[] dependsOn)
+		public R<LazyNotification, CommandError> SendNotifyCommand(Ts3Command com, params NotificationType[] dependsOn)
 		{
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
 
 			using (var wb = new WaitBlock(dependsOn))
 			{
-				SendCommandBase(wb, com);
+				var result = SendCommandBase(wb, com);
+				if (!result.Ok)
+					return result.Error;
 				return wb.WaitForNotification();
 			}
 		}
 
-		private void SendCommandBase(WaitBlock wb, Ts3Command com)
+		private E<CommandError> SendCommandBase(WaitBlock wb, Ts3Command com)
 		{
 			lock (statusLock)
 			{
 				if (context.WasExit || (!Connected && com.ExpectResponse))
-					throw new Ts3CommandException(Util.TimeOutCommandError);
+					return Util.TimeOutCommandError;
 
 				if (com.ExpectResponse)
 				{
@@ -372,6 +376,7 @@ namespace TS3Client.Full
 				byte[] data = Util.Encoder.GetBytes(message);
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
+			return E<CommandError>.OkR;
 		}
 
 		/// <summary>Release all resources. Will try to disconnect before disposing.</summary>
@@ -383,11 +388,11 @@ namespace TS3Client.Full
 
 		#region FULLCLIENT SPECIFIC COMMANDS
 
-		public void ChangeIsChannelCommander(bool isChannelCommander)
+		public CmdR ChangeIsChannelCommander(bool isChannelCommander)
 			=> Send("clientupdate",
 			new CommandParameter("client_is_channel_commander", isChannelCommander));
 
-		public void ClientInit(string nickname, bool inputHardware, bool outputHardware,
+		public CmdR ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> SendNoResponsed(
@@ -407,16 +412,16 @@ namespace TS3Client.Full
 					new CommandParameter("client_default_token", defaultToken),
 					new CommandParameter("hwid", hwid) }));
 
-		public void ClientDisconnect(MoveReason reason, string reasonMsg)
+		public CmdR ClientDisconnect(MoveReason reason, string reasonMsg)
 			=> SendNoResponsed(
 				new Ts3Command("clientdisconnect", new List<ICommandPart>() {
 					new CommandParameter("reasonid", (int)reason),
 					new CommandParameter("reasonmsg", reasonMsg) }));
 
-		public void ChannelSubscribeAll()
+		public CmdR ChannelSubscribeAll()
 			=> Send("channelsubscribeall");
 
-		public void ChannelUnsubscribeAll()
+		public CmdR ChannelUnsubscribeAll()
 			=> Send("channelunsubscribeall");
 
 		public void SendAudio(byte[] buffer, int length, Codec codec)
@@ -478,15 +483,17 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
-		public ConnectionInfo GetClientConnectionInfo(ClientIdT clientId)
+		public R<ConnectionInfo, CommandError> GetClientConnectionInfo(ClientIdT clientId)
 		{
-			return SendSpecialCommand(
-				new Ts3Command("getconnectioninfo",
-					new List<ICommandPart> { new CommandParameter("clid", clientId) }),
-				NotificationType.ConnectionInfo)
-				.Notifications
+			var result = SendNotifyCommand(new Ts3Command("getconnectioninfo", new List<ICommandPart> {
+				new CommandParameter("clid", clientId) }),
+				NotificationType.ConnectionInfo);
+			if (!result.Ok)
+				return result.Error;
+			return result.Value.Notifications
 				.Cast<ConnectionInfo>()
-				.FirstOrDefault(x => x.ClientId == clientId);
+				.Where(x => x.ClientId == clientId)
+				.WrapSingle();
 		}
 
 		// serverrequestconnectioninfo
@@ -494,88 +501,100 @@ namespace TS3Client.Full
 
 		// Splitted base commands
 
-		public override ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
+		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
 		{
 			var cmd = new Ts3Command("servergroupadd", new List<ICommandPart> { new CommandParameter("name", name) });
 			if (type.HasValue)
 				cmd.AppendParameter(new CommandParameter("type", (int)type.Value));
-			var answer = SendSpecialCommand(cmd, NotificationType.ServerGroupList).Notifications
+			var result = SendNotifyCommand(cmd, NotificationType.ServerGroupList);
+			if (!result.Ok)
+				return result.Error;
+			return result.Value.Notifications
 				.Cast<ServerGroupList>()
-				.FirstOrDefault(x => x.Name == name);
-			if (answer == null)
-				throw new Ts3CommandException(new CommandError() { Id = Ts3ErrorCode.custom_error, Message = "Missing answer" });
-			else
-				return new ServerGroupAddResponse() { ServerGroupId = answer.ServerGroupId };
+				.Where(x => x.Name == name)
+				.Take(1)
+				.Select(x => new ServerGroupAddResponse() { ServerGroupId = x.ServerGroupId })
+				.WrapSingle();
 		}
 
-		public override IEnumerable<ClientServerGroup> ServerGroupsByClientDbId(ClientDbIdT clDbId)
+		public override R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
 		{
-			return SendSpecialCommand(
-				new Ts3Command("servergroupsbyclientid",
-					new List<ICommandPart> { new CommandParameter("cldbid", clDbId) }),
-				NotificationType.ServerGroupsByClientId)
-				.Notifications
+			var result = SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
+				new CommandParameter("cldbid", clDbId) }),
+				NotificationType.ServerGroupsByClientId);
+			if (!result.Ok)
+				return result.Error;
+
+			return R<IEnumerable<ClientServerGroup>, CommandError>.OkR(
+				result.Value.Notifications
 				.Cast<ClientServerGroup>()
-				.Where(x => x.ClientDbId == clDbId);
+				.Where(x => x.ClientDbId == clDbId));
 		}
 
-		public override FileUpload FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
+		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
 		{
-			var lazyNot = SendSpecialCommand(new Ts3Command("ftinitupload", new List<ICommandPart>() {
-			new CommandParameter("cid", channelId),
-			new CommandParameter("name", path),
-			new CommandParameter("cpw", channelPassword),
-			new CommandParameter("clientftfid", clientTransferId),
-			new CommandParameter("size", fileSize),
-			new CommandParameter("overwrite", overwrite),
-			new CommandParameter("resume", resume) }), NotificationType.StartUpload, NotificationType.FileTransferStatus);
-			if (lazyNot.NotifyType == NotificationType.StartUpload)
-				return lazyNot.Notifications.Cast<FileUpload>().First();
+			var result = SendNotifyCommand(new Ts3Command("ftinitupload", new List<ICommandPart>() {
+				new CommandParameter("cid", channelId),
+				new CommandParameter("name", path),
+				new CommandParameter("cpw", channelPassword),
+				new CommandParameter("clientftfid", clientTransferId),
+				new CommandParameter("size", fileSize),
+				new CommandParameter("overwrite", overwrite),
+				new CommandParameter("resume", resume) }),
+				NotificationType.StartUpload, NotificationType.FileTransferStatus);
+			if (!result.Ok)
+				return result.Error;
+			if (result.Value.NotifyType == NotificationType.StartUpload)
+				return result.UnwrapNotification<FileUpload>().WrapSingle();
 			else
 			{
-				var ft = lazyNot.Notifications.Cast<FileTransferStatus>().First();
-				throw new Ts3CommandException(new CommandError() { Id = ft.Status, Message = ft.Message });
+				var ftresult = result.UnwrapNotification<FileTransferStatus>().WrapSingle();
+				if (!ftresult)
+					return ftresult.Error;
+				return new CommandError() { Id = ftresult.Value.Status, Message = ftresult.Value.Message };
 			}
 		}
 
-		public override FileDownload FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
+		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long seek)
 		{
-			var lazyNot = SendSpecialCommand(new Ts3Command("ftinitdownload", new List<ICommandPart>() {
-			new CommandParameter("cid", channelId),
-			new CommandParameter("name", path),
-			new CommandParameter("cpw", channelPassword),
-			new CommandParameter("clientftfid", clientTransferId),
-			new CommandParameter("seekpos", seek) }), NotificationType.StartDownload, NotificationType.FileTransferStatus);
-			if (lazyNot.NotifyType == NotificationType.StartDownload)
-				return lazyNot.Notifications.Cast<FileDownload>().First();
+			var result = SendNotifyCommand(new Ts3Command("ftinitdownload", new List<ICommandPart>() {
+				new CommandParameter("cid", channelId),
+				new CommandParameter("name", path),
+				new CommandParameter("cpw", channelPassword),
+				new CommandParameter("clientftfid", clientTransferId),
+				new CommandParameter("seekpos", seek) }), NotificationType.StartDownload, NotificationType.FileTransferStatus);
+			if (!result.Ok)
+				return result.Error;
+			if (result.Value.NotifyType == NotificationType.StartDownload)
+				return result.UnwrapNotification<FileDownload>().WrapSingle();
 			else
 			{
-				var ft = lazyNot.Notifications.Cast<FileTransferStatus>().First();
-				throw new Ts3CommandException(new CommandError() { Id = ft.Status, Message = ft.Message });
+				var ftresult = result.UnwrapNotification<FileTransferStatus>().WrapSingle();
+				if (!ftresult)
+					return ftresult.Error;
+				return new CommandError() { Id = ftresult.Value.Status, Message = ftresult.Value.Message };
 			}
 		}
 
-		public override IEnumerable<FileTransfer> FileTransferList()
-			=> SendSpecialCommand(new Ts3Command("ftlist"), NotificationType.FileTransfer)
-			.Notifications.Cast<FileTransfer>();
+		public override R<IEnumerable<FileTransfer>, CommandError> FileTransferList()
+			=> SendNotifyCommand(new Ts3Command("ftlist"),
+				NotificationType.FileTransfer).UnwrapNotification<FileTransfer>();
 
-		public override IEnumerable<FileList> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
-			=> SendSpecialCommand(new Ts3Command("ftgetfilelist", new List<ICommandPart>() {
-			new CommandParameter("cid", channelId),
-			new CommandParameter("path", path),
-			new CommandParameter("cpw", channelPassword) }), NotificationType.FileList)
-			.Notifications
-			.Cast<FileList>();
+		public override R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+			=> SendNotifyCommand(new Ts3Command("ftgetfilelist", new List<ICommandPart>() {
+				new CommandParameter("cid", channelId),
+				new CommandParameter("path", path),
+				new CommandParameter("cpw", channelPassword) }),
+				NotificationType.FileList).UnwrapNotification<FileList>();
 
-		public override IEnumerable<FileInfoTs> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
-			=> SendSpecialCommand(new Ts3Command("ftgetfileinfo", new List<ICommandPart>() {
-			new CommandParameter("cid", channelId),
-			new CommandParameter("cpw", channelPassword),
-			new CommandMultiParameter("name", path) }), NotificationType.FileInfo)
-			.Notifications
-			.Cast<FileInfoTs>();
+		public override R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+			=> SendNotifyCommand(new Ts3Command("ftgetfileinfo", new List<ICommandPart>() {
+				new CommandParameter("cid", channelId),
+				new CommandParameter("cpw", channelPassword),
+				new CommandMultiParameter("name", path) }),
+				NotificationType.FileInfo).UnwrapNotification<FileInfoTs>();
 
 		#endregion
 
