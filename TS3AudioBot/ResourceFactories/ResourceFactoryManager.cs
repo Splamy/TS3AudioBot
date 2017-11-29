@@ -60,20 +60,35 @@ namespace TS3AudioBot.ResourceFactories
 				? factory
 				: null;
 
-		private IEnumerable<IResourceFactory> GetResFactoryByLink(string uri) =>
+		private IEnumerable<(IResourceFactory, MatchCertainty)> GetResFactoryByLink(string uri) =>
 			from fac in resFactories
 			let facCertain = fac.MatchResource(uri)
 			where facCertain != MatchCertainty.Never
 			orderby facCertain descending
-			select fac;
+			select (fac, facCertain);
 
-		private IEnumerable<IPlaylistFactory> GetListFactoryByLink(string uri) =>
+		private IEnumerable<(IPlaylistFactory, MatchCertainty)> GetListFactoryByLink(string uri) =>
 			from fac in listFactories
 			let facCertain = fac.MatchPlaylist(uri)
 			where facCertain != MatchCertainty.Never
 			orderby facCertain descending
-			select fac;
+			select (fac, facCertain);
 
+		private static IEnumerable<T> FilterUsable<T>(IEnumerable<(T, MatchCertainty)> enu)
+		{
+			MatchCertainty highestCertainty = MatchCertainty.Never;
+			foreach (var (fac, cert) in enu)
+			{
+				if ((highestCertainty == MatchCertainty.Always && cert < MatchCertainty.Always)
+					|| (highestCertainty > MatchCertainty.Never && cert <= MatchCertainty.OnlyIfLast))
+					yield break;
+
+				yield return fac;
+
+				if (cert > highestCertainty)
+					highestCertainty = cert;
+			}
+		}
 
 		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.</summary>
 		/// <param name="resource">An <see cref="AudioResource"/> with at least
@@ -121,7 +136,7 @@ namespace TS3AudioBot.ResourceFactories
 				return result;
 			}
 
-			var factories = GetResFactoryByLink(netlinkurl);
+			var factories = FilterUsable(GetResFactoryByLink(netlinkurl));
 			foreach (var factory in factories)
 			{
 				var result = factory.GetResource(netlinkurl);
@@ -144,7 +159,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (listFactory != null)
 				return listFactory.GetPlaylist(netlinkurl);
 
-			var factories = GetListFactoryByLink(netlinkurl);
+			var factories = FilterUsable(GetListFactoryByLink(netlinkurl));
 			foreach (var factory in factories)
 			{
 				var result = factory.GetPlaylist(netlinkurl);
@@ -169,7 +184,6 @@ namespace TS3AudioBot.ResourceFactories
 
 			return factory.GetThumbnail(playResource);
 		}
-
 
 		public void AddFactory(IFactory factory)
 		{

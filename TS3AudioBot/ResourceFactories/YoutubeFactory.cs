@@ -48,14 +48,24 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			Match matchYtId = IdMatch.Match(ytLink);
 			if (!matchYtId.Success)
-				return RResultCode.YtIdNotFound.ToString();
+				return "The youtube id could not get parsed.";
 			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, FactoryFor));
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
+			var result = ResolveResourceInternal(resource);
+			if (result.Ok)
+				return result;
+
+			Log.Write(Log.Level.Debug, "YT Falling back to youtube-dl!");
+			return YoutubeDlWrapped(resource);
+		}
+
+		private R<PlayResource> ResolveResourceInternal(AudioResource resource)
+		{
 			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
-				return RResultCode.NoConnection.ToString();
+				return "No connection to the youtube api could be established";
 
 			var videoTypes = new List<VideoData>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
@@ -131,7 +141,7 @@ namespace TS3AudioBot.ResourceFactories
 			// Validation Process
 
 			if (videoTypes.Count <= 0)
-				return RResultCode.YtNoVideosExtracted.ToString();
+				return "No video streams extracted.";
 
 			int codec = SelectStream(videoTypes);
 			if (codec < 0)
@@ -140,6 +150,7 @@ namespace TS3AudioBot.ResourceFactories
 			var result = ValidateMedia(videoTypes[codec]);
 			if (!result)
 			{
+				return result.Error;
 				if (string.IsNullOrWhiteSpace(data.YoutubedlPath))
 					return result.Error;
 
@@ -171,7 +182,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R ValidateMedia(VideoData media)
 		{
-			var vcode = WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(1));
+			var vcode = WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(3));
 
 			switch (vcode)
 			{
@@ -311,8 +322,6 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
-			Log.Write(Log.Level.Debug, "YT Ruined!");
-
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(resource.ResourceId);
 			if (!result.Ok)
 				return result.Error;
@@ -339,7 +348,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
 				return "No youtube-dl response";
 
-			Log.Write(Log.Level.Debug, "YT Saved!");
+			Log.Write(Log.Level.Debug, "YT youtube-dl succeeded!");
 			return new PlayResource(url, resource.WithName(title));
 		}
 
