@@ -48,7 +48,7 @@ namespace TS3Client
 			if (!Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
 				return false;
 
-			var hasUriPort = string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped));
+			var hasUriPort = string.IsNullOrEmpty(uri.GetComponents(UriComponents.StrongPort, UriFormat.Unescaped));
 
 			// host is a dns name
 			var resolver = new Resolver
