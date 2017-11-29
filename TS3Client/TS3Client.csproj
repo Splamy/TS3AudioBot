@@ -56,6 +56,7 @@
     <Compile Include="ColorDbg.cs" />
     <Compile Include="Commands\CommandMultiParameter.cs" />
     <Compile Include="Commands\ICommandPart.cs" />
+    <Compile Include="Commands\Ts3Const.cs" />
     <Compile Include="ConnectionData.cs" />
     <Compile Include="DisconnectEventArgs.cs" />
     <Compile Include="DocumentedEnums.cs" />

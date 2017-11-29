@@ -625,7 +625,7 @@ namespace TS3AudioBot
 			foreach (var file in files)
 			{
 				int newTokenLen = tokenLen + TS3Client.Commands.Ts3String.TokenLength(file) + 3;
-				if (newTokenLen < TS3Client.Commands.Ts3String.MaxMsgLength)
+				if (newTokenLen < TS3Client.Commands.Ts3Const.MaxSizeTextMessage)
 				{
 					strb.Append(file).Append(", ");
 					tokenLen = newTokenLen;

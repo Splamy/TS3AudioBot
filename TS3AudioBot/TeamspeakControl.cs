@@ -100,22 +100,22 @@ namespace TS3AudioBot
 
 		public R SendMessage(string message, ushort clientId)
 		{
-			if (Ts3String.TokenLength(message) > Ts3String.MaxMsgLength)
-				return "The message to send is longer than the maximum of " + Ts3String.MaxMsgLength + " characters";
+			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
+				return "The message to send is longer than the maximum of " + Ts3Const.MaxSizeTextMessage + " characters";
 			return tsBaseClient.SendPrivateMessage(message, clientId).ToR(Extensions.ErrorFormat);
 		}
 
 		public R SendChannelMessage(string message)
 		{
-			if (Ts3String.TokenLength(message) > Ts3String.MaxMsgLength)
-				return "The message to send is longer than the maximum of " + Ts3String.MaxMsgLength + " characters";
+			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
+				return "The message to send is longer than the maximum of " + Ts3Const.MaxSizeTextMessage + " characters";
 			return tsBaseClient.SendChannelMessage(message).ToR(Extensions.ErrorFormat);
 		}
 
 		public R SendServerMessage(string message)
 		{
-			if (Ts3String.TokenLength(message) > Ts3String.MaxMsgLength)
-				return "The message to send is longer than the maximum of " + Ts3String.MaxMsgLength + " characters";
+			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
+				return "The message to send is longer than the maximum of " + Ts3Const.MaxSizeTextMessage + " characters";
 			return tsBaseClient.SendServerMessage(message, 1).ToR(Extensions.ErrorFormat);
 		}
 

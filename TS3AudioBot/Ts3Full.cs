@@ -131,9 +131,12 @@ namespace TS3AudioBot
 			if (ts3FullClientData.IdentityLevel == "auto") { }
 			else if (int.TryParse(ts3FullClientData.IdentityLevel, out int targetLevel))
 			{
-				Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetLevel);
-				Ts3Crypt.ImproveSecurity(identity, targetLevel);
-				ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+				if(Ts3Crypt.GetSecurityLevel(identity) < targetLevel)
+				{
+					Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetLevel);
+					Ts3Crypt.ImproveSecurity(identity, targetLevel);
+					ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+				}
 			}
 			else
 			{

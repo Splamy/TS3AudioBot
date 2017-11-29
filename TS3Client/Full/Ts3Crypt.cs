@@ -538,6 +538,14 @@ namespace TS3Client.Full
 			}
 		}
 
+		public static int GetSecurityLevel(IdentityData identity)
+		{
+			byte[] hashBuffer = new byte[identity.PublicKeyString.Length + MaxUlongStringLen];
+			byte[] pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
+			Array.Copy(pubKeyBytes, 0, hashBuffer, 0, pubKeyBytes.Length);
+			return GetSecurityLevel(hashBuffer, pubKeyBytes.Length, identity.ValidKeyOffset);
+		}
+
 		/// <summary>Creates a new TeamSpeak3 identity.</summary>
 		/// <param name="securityLevel">Minimum security level this identity will have.</param>
 		/// <returns>The identity information.</returns>
