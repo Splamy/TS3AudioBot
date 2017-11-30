@@ -48,7 +48,7 @@ namespace TS3Client
 			if (!Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
 				return false;
 
-			var hasUriPort = string.IsNullOrEmpty(uri.GetComponents(UriComponents.StrongPort, UriFormat.Unescaped));
+			var hasUriPort = !string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped));
 
 			// host is a dns name
 			var resolver = new Resolver
@@ -60,7 +60,6 @@ namespace TS3Client
 				DnsServer = "8.8.8.8",
 				TransportType = Heijden.DNS.TransportType.Udp,
 			};
-
 
 			// Try resolve udp prefix
 			// Under this address we'll get ts3 voice server
@@ -81,7 +80,6 @@ namespace TS3Client
 			var domainSplit = uri.Host.Split('.');
 			if (domainSplit.Length <= 1)
 				return false;
-
 			var domainList = new List<string>();
 			for (int i = 1; i < Math.Min(domainSplit.Length, 4); i++)
 				domainList.Add(string.Join(".", domainSplit, (domainSplit.Length - (i + 1)), i + 1));
@@ -168,12 +166,18 @@ namespace TS3Client
 			return ParseIpEndPoint(returnString);
 		}
 
-		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\])(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
+		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|localhost)(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
 		private static IPEndPoint ParseIpEndPoint(string address)
 		{
 			var match = IpRegex.Match(address);
-			if (!match.Success || !IPAddress.TryParse(match.Groups["ip"].Value, out IPAddress ipAddr))
+			if (!match.Success)
+				return null;
+
+			IPAddress ipAddr;
+			if (match.Groups["ip"].Value == "localhost")
+				ipAddr = IPAddress.Loopback;
+			else if (!IPAddress.TryParse(match.Groups["ip"].Value, out ipAddr))
 				return null;
 
 			if (!match.Groups["port"].Success)
