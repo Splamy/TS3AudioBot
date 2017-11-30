@@ -76,9 +76,9 @@ namespace TS3AudioBot
 
 		/// <summary>General purpose persistant storage for internal modules.</summary>
 		internal DbStore Database { get; set; }
-		/// <summary>Manges plugins, provides various loading and unloading mechanisms.</summary>
+		/// <summary>Manages plugins, provides various loading and unloading mechanisms.</summary>
 		internal PluginManager PluginManager { get; set; }
-		/// <summary>Manges plugins, provides various loading and unloading mechanisms.</summary>
+		/// <summary>Manages a dependency hierachy and injects required modules at runtime.</summary>
 		internal Injector Injector { get; set; }
 		/// <summary>Mangement for the bot command system.</summary>
 		public CommandManager CommandManager { get; set; }
@@ -223,16 +223,16 @@ namespace TS3AudioBot
 			Audio.Opus.NativeMethods.DummyLoad();
 
 			Injector = new Injector();
-			Injector.RegisterModule(this); // OK
-			Injector.RegisterModule(ConfigManager); // OK
-			Injector.RegisterModule(Injector); // OK
-			Database = Injector.Create<DbStore>(); // OK
-			PluginManager = Injector.Create<PluginManager>(); // OK
-			CommandManager = Injector.Create<CommandManager>(); // OK
-			FactoryManager = Injector.Create<ResourceFactoryManager>(); // OK
-			WebManager = Injector.Create<WebManager>(); // OK
-			RightsManager = Injector.Create<RightsManager>(); // OK
-			Bots = Injector.Create<BotManager>(); // OK
+			Injector.RegisterModule(this);
+			Injector.RegisterModule(ConfigManager);
+			Injector.RegisterModule(Injector);
+			Database = Injector.Create<DbStore>();
+			PluginManager = Injector.Create<PluginManager>();
+			CommandManager = Injector.Create<CommandManager>();
+			FactoryManager = Injector.Create<ResourceFactoryManager>();
+			WebManager = Injector.Create<WebManager>();
+			RightsManager = Injector.Create<RightsManager>();
+			Bots = Injector.Create<BotManager>();
 
 			Injector.SkipInitialized(this);
 
