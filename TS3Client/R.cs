@@ -7,6 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+
+#pragma warning disable IDE0016
+
 /// <summary>
 /// Provides a safe alternative to Exceptions for error and result wrapping.
 /// This type represents either success or an error + message.
@@ -15,12 +19,10 @@ public struct R
 {
 	public static readonly R OkR = new R();
 
-	// using default false bool so Ok is true on default
-	private readonly bool isError;
-	public bool Ok => !isError;
+	public bool Ok => Error == null;
 	public string Error { get; }
 
-	private R(string error) { isError = true; Error = error; }
+	private R(string error) { Error = error ?? throw new ArgumentNullException(nameof(error), "Error must not be null."); }
 	/// <summary>Creates a new failed result with a message</summary>
 	/// <param name="error">The message</param>
 	public static R Err(string error) => new R(error);
@@ -46,8 +48,8 @@ public struct R<TSuccess>
 	public string Error { get; }
 	public TSuccess Value { get; }
 
-	private R(TSuccess value) { isError = false; Error = null; if (value == null) throw new System.ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
-	private R(string error) { isError = true; Error = error; Value = default(TSuccess); }
+	private R(TSuccess value) { isError = false; Error = null; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
+	private R(string error) { isError = true; Error = error ?? throw new ArgumentNullException(nameof(error), "Error must not be null."); Value = default(TSuccess); }
 	//internal R(bool isError, TSuccess value)
 
 	/// <summary>Creates a new failed result with a message</summary>
@@ -80,8 +82,8 @@ public struct R<TSuccess, TError>
 	public TError Error { get; }
 	public TSuccess Value { get; }
 
-	private R(TSuccess value) { isError = false; Error = default(TError); if (value == null) throw new System.ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
-	private R(TError error) { isError = true; Error = error; Value = default(TSuccess); }
+	private R(TSuccess value) { isError = false; Error = default(TError); if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
+	private R(TError error) { isError = true; Value = default(TSuccess); if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
 
 	/// <summary>Creates a new failed result with an error object</summary>
 	/// <param name="message">The error</param>
@@ -115,8 +117,8 @@ public struct E<TError>
 	public bool Ok => !isError;
 	public TError Error { get; }
 
-	private E(TError error) { isError = true; Error = error; }
-	internal E(bool isError, TError error) { this.isError = isError; Error = error; }
+	private E(TError error) { isError = true; if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
+	internal E(bool isError, TError error) { this.isError = isError; Error = error; } // No null check here, we already check cosistently.
 
 	/// <summary>Creates a new failed result with a message</summary>
 	/// <param name="error">The message</param>
@@ -127,3 +129,5 @@ public struct E<TError>
 
 	public static implicit operator E<TError>(TError result) => new E<TError>(result);
 }
+
+#pragma warning restore IDE0016

@@ -47,6 +47,7 @@ namespace TS3Client.Full
 		public VersionSign VersionSign { get; private set; }
 		private Ts3ClientStatus status;
 		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
+		public override bool Connecting { get { lock (statusLock) return status == Ts3ClientStatus.Connecting; } }
 		private ConnectionDataFull connectionDataFull;
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;

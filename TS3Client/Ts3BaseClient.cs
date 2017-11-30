@@ -44,6 +44,8 @@ namespace TS3Client
 
 		/// <summary>Get whether this client is currently connected.</summary>
 		public abstract bool Connected { get; }
+		/// <summary>Get whether this client is currently trying to connect.</summary>
+		public abstract bool Connecting { get; }
 		/// <summary>The derived client type.</summary>
 		public abstract ClientType ClientType { get; }
 		/// <summary>The connection data this client was last connected with (or is currenly connected to).</summary>

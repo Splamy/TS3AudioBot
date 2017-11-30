@@ -36,6 +36,8 @@ namespace TS3Client.Query
 
 		public override ClientType ClientType => ClientType.Query;
 		public override bool Connected => tcpClient.Connected;
+		private bool connecting;
+		public override bool Connecting => connecting && !Connected;
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
@@ -45,6 +47,7 @@ namespace TS3Client.Query
 
 		public Ts3QueryClient(EventDispatchType dispatcherType)
 		{
+			connecting = false;
 			tcpClient = new TcpClient();
 			msgProc = new MessageProcessor(true);
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
@@ -55,16 +58,23 @@ namespace TS3Client.Query
 			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
 				throw new Ts3Exception("Could not read or resolve address.");
 
-			try { tcpClient.Connect(remoteAddress); }
+			try
+			{
+				connecting = true;
+
+				tcpClient.Connect(remoteAddress);
+
+				ConnectionData = conData;
+
+				tcpStream = tcpClient.GetStream();
+				tcpReader = new StreamReader(tcpStream, Util.Encoder);
+				tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
+
+				for (int i = 0; i < 3; i++)
+					tcpReader.ReadLine();
+			}
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
-			ConnectionData = conData;
-
-			tcpStream = tcpClient.GetStream();
-			tcpReader = new StreamReader(tcpStream, Util.Encoder);
-			tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
-
-			for (int i = 0; i < 3; i++)
-				tcpReader.ReadLine();
+			finally { connecting = false; }
 
 			dispatcher.Init(NetworkLoop, InvokeEvent, null);
 			OnConnected?.Invoke(this, new EventArgs());

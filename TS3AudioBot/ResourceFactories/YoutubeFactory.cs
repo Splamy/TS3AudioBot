@@ -148,14 +148,8 @@ namespace TS3AudioBot.ResourceFactories
 				return "No playable codec found";
 
 			var result = ValidateMedia(videoTypes[codec]);
-			if (!result)
-			{
+			if (!result.Ok)
 				return result.Error;
-				if (string.IsNullOrWhiteSpace(data.YoutubedlPath))
-					return result.Error;
-
-				return YoutubeDlWrapped(resource);
-			}
 
 			return new PlayResource(videoTypes[codec].Link, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
 		}

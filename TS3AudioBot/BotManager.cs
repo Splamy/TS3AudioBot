@@ -41,9 +41,30 @@ namespace TS3AudioBot
 							Thread.Sleep(1000);
 						}
 					}
+
+					CleanStrayBots();
 				}
 				Thread.Sleep(200);
 			}
+		}
+
+		private void CleanStrayBots()
+		{
+			List<Bot> strayList = null;
+			foreach (var bot in activeBots)
+			{
+				var client = bot.QueryConnection.GetLowLibrary<TS3Client.Full.Ts3FullClient>();
+				if (!client.Connected && !client.Connecting)
+				{
+					Log.Write(Log.Level.Warning, "Cleaning up stray bot.");
+					strayList = strayList ?? new List<Bot>();
+					strayList.Add(bot);
+				}
+			}
+
+			if (strayList != null)
+				foreach (var bot in strayList)
+					StopBot(bot);
 		}
 
 		public bool CreateBot(/*Ts3FullClientData bot*/)
