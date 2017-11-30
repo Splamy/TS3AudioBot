@@ -9,11 +9,11 @@
 
 namespace TS3Client
 {
+	using Messages;
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
-	using System;
-	using Messages;
 
 	internal static class Util
 	{
@@ -52,7 +52,7 @@ namespace TS3Client
 		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 
-	/// <summary>Provides useful extension methods for error formatting.</summary>
+	/// <summary>Provides useful extension methods and error formatting.</summary>
 	public static class Extensions
 	{
 		public static string ErrorFormat(this CommandError error)

@@ -11,6 +11,7 @@ namespace TS3Client
 {
 	using Messages;
 	using System.Collections.Generic;
+	using System.Linq;
 
 	public struct LazyNotification
 	{
@@ -21,6 +22,14 @@ namespace TS3Client
 		{
 			Notifications = notifications;
 			NotifyType = notifyType;
+		}
+
+		public R<T, CommandError> WrapSingle<T>() where T : INotification
+		{
+			var first = Notifications.FirstOrDefault();
+			if (first == null)
+				return R<T, CommandError>.Err(Util.NoResultCommandError);
+			return R<T, CommandError>.OkR((T)first);
 		}
 	}
 }

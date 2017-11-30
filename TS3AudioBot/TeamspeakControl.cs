@@ -59,7 +59,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public event EventHandler OnBotDisconnect;
+		public abstract event EventHandler OnBotDisconnect;
 
 		private List<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
@@ -80,7 +80,6 @@ namespace TS3AudioBot
 			tsBaseClient.OnClientLeftView += ExtendedClientLeftView;
 			tsBaseClient.OnClientEnterView += ExtendedClientEnterView;
 			tsBaseClient.OnTextMessageReceived += ExtendedTextMessage;
-			tsBaseClient.OnDisconnected += OnDisconnected;
 		}
 
 		public virtual T GetLowLibrary<T>() where T : class
@@ -91,12 +90,6 @@ namespace TS3AudioBot
 		}
 
 		public abstract void Connect();
-
-		private void OnDisconnected(object sender, DisconnectEventArgs e)
-		{
-			Log.Write(Log.Level.Debug, "Bot disconnected. Reason: {0}", e.ExitReason);
-			OnBotDisconnect?.Invoke(this, new EventArgs());
-		}
 
 		public R SendMessage(string message, ushort clientId)
 		{
@@ -365,7 +358,6 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
-			Log.Write(Log.Level.Info, "Closing QueryConnection...");
 			if (tsBaseClient != null)
 			{
 				tsBaseClient.Dispose();

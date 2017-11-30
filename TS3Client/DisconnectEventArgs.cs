@@ -9,15 +9,18 @@
 
 namespace TS3Client
 {
+	using Messages;
 	using System;
 
 	public class DisconnectEventArgs : EventArgs
 	{
 		public MoveReason ExitReason { get; }
+		public CommandError Error { get; }
 
-		public DisconnectEventArgs(MoveReason exitReason)
+		public DisconnectEventArgs(MoveReason exitReason, CommandError error = null)
 		{
 			ExitReason = exitReason;
+			Error = error;
 		}
 	}
 }

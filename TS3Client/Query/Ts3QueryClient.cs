@@ -104,7 +104,7 @@ namespace TS3Client.Query
 				var message = line.Trim();
 				msgProc.PushMessage(message);
 			}
-			OnDisconnected?.Invoke(this, new DisconnectEventArgs(MoveReason.LeftServer)); // TODO ??
+			OnDisconnected?.Invoke(this, new DisconnectEventArgs(MoveReason.LeftServer));
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)

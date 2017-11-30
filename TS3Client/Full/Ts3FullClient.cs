@@ -122,7 +122,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void DisconnectInternal(ConnectionContext ctx, bool triggerEvent = true)
+		private void DisconnectInternal(ConnectionContext ctx, bool triggerEvent = true, CommandError error = null)
 		{
 			bool triggerEventSafe = false;
 
@@ -154,7 +154,7 @@ namespace TS3Client.Full
 			}
 
 			if (triggerEventSafe)
-				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer));
+				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer, error));
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -190,8 +190,8 @@ namespace TS3Client.Full
 			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
 			case NotificationType.TokenUsed: break;
 			// full client events
-			case NotificationType.InitIvExpand: ProcessInitIvExpand((InitIvExpand)notification.FirstOrDefault()); break;
-			case NotificationType.InitServer: ProcessInitServer((InitServer)notification.FirstOrDefault()); break;
+			case NotificationType.InitIvExpand: { var result = lazyNotification.WrapSingle<InitIvExpand>(); if (result.Ok) ProcessInitIvExpand(result.Value); } break;
+			case NotificationType.InitServer: { var result = lazyNotification.WrapSingle<InitServer>(); if (result.Ok) ProcessInitServer(result.Value); } break;
 			case NotificationType.ChannelList: break;
 			case NotificationType.ChannelListFinished: ChannelSubscribeAll(); break;
 			case NotificationType.ClientNeededPermissions: break;
@@ -213,16 +213,24 @@ namespace TS3Client.Full
 			case NotificationType.FileInfo: break;
 			// special
 			case NotificationType.Error:
-				lock (statusLock)
 				{
-					if (status == Ts3ClientStatus.Connecting)
-					{
-						status = Ts3ClientStatus.Disconnected;
-						DisconnectInternal(context, false);
-					}
-				}
+					var result = lazyNotification.WrapSingle<CommandError>();
+					var error = result.Ok ? result.Value : Util.CustomError("Got empty error while connecting.");
 
-				OnErrorEvent?.Invoke(this, (CommandError)notification.First());
+					bool skipError = false;
+					lock (statusLock)
+					{
+						if (status == Ts3ClientStatus.Connecting)
+						{
+							skipError = true;
+							status = Ts3ClientStatus.Disconnected;
+							DisconnectInternal(context, true, error);
+						}
+					}
+
+					if (!skipError)
+						OnErrorEvent?.Invoke(this, error);
+				}
 				break;
 			case NotificationType.Unknown:
 			default: throw Util.UnhandledDefault(lazyNotification.NotifyType);

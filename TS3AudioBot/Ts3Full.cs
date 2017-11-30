@@ -51,6 +51,7 @@ namespace TS3AudioBot
 		private readonly object ffmpegLock = new object();
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 		private bool hasTriedToReconnectAudio;
+		public override event EventHandler OnBotDisconnect;
 
 		private readonly Ts3FullClientData ts3FullClientData;
 		private float volume = 1;
@@ -131,7 +132,7 @@ namespace TS3AudioBot
 			if (ts3FullClientData.IdentityLevel == "auto") { }
 			else if (int.TryParse(ts3FullClientData.IdentityLevel, out int targetLevel))
 			{
-				if(Ts3Crypt.GetSecurityLevel(identity) < targetLevel)
+				if (Ts3Crypt.GetSecurityLevel(identity) < targetLevel)
 				{
 					Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetLevel);
 					Ts3Crypt.ImproveSecurity(identity, targetLevel);
@@ -155,6 +156,7 @@ namespace TS3AudioBot
 
 			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
+			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
 			ConnectClient();
 		}
 
@@ -199,36 +201,57 @@ namespace TS3AudioBot
 			});
 		}
 
-		private void TsFullClient_OnErrorEvent(object sender, CommandError e)
+		private void TsFullClient_OnErrorEvent(object sender, CommandError error)
 		{
-			switch (e.Id)
+			switch (error.Id)
 			{
 			case Ts3ErrorCode.whisper_no_targets:
 				stallNoErrorCount = 0;
 				isStall = true;
 				break;
 
-			case Ts3ErrorCode.client_could_not_validate_identity:
-				if (ts3FullClientData.IdentityLevel == "auto")
-				{
-					int targetSecLevel = int.Parse(e.ExtraMessage);
-					Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetSecLevel);
-					Ts3Crypt.ImproveSecurity(identity, targetSecLevel);
-					ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
-
-					ConnectClient();
-				}
-				else
-				{
-					Log.Write(Log.Level.Warning, "The server reported that the security level you set is not high enough." +
-												 "Increase the value to \"{0}\" or set it to \"auto\" to generate it on demand when connecting.", e.ExtraMessage);
-				}
-				break;
-
 			default:
-				Log.Write(Log.Level.Debug, "Got ts3 error event: {0}", e.ErrorFormat());
+				Log.Write(Log.Level.Debug, "Got ts3 error event: {0}", error.ErrorFormat());
 				break;
 			}
+		}
+
+		private void TsFullClient_OnDisconnected(object sender, DisconnectEventArgs e)
+		{
+			if (e.Error != null)
+			{
+				var error = e.Error;
+				switch (error.Id)
+				{
+				case Ts3ErrorCode.client_could_not_validate_identity:
+					if (ts3FullClientData.IdentityLevel == "auto")
+					{
+						int targetSecLevel = int.Parse(error.ExtraMessage);
+						Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetSecLevel);
+						Ts3Crypt.ImproveSecurity(identity, targetSecLevel);
+						ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+
+						ConnectClient();
+						return; // skip triggering event, we want to reconnect
+					}
+					else
+					{
+						Log.Write(Log.Level.Warning, "The server reported that the security level you set is not high enough." +
+													 "Increase the value to \"{0}\" or set it to \"auto\" to generate it on demand when connecting.", error.ExtraMessage);
+					}
+					break;
+
+				default:
+					Log.Write(Log.Level.Warning, "Could not connect: {0}", error.ErrorFormat());
+					break;
+				}
+			}
+			else
+			{
+				Log.Write(Log.Level.Debug, "Bot disconnected. Reason: {0}", e.ExitReason);
+			}
+
+			OnBotDisconnect?.Invoke(this, new EventArgs());
 		}
 
 		public override R<ClientData> GetSelf()
