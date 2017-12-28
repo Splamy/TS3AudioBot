@@ -15,7 +15,7 @@ namespace TS3AudioBot
 	{
 		event EventHandler OnSongEnd;
 
-		int Volume { get; set; }
+		float Volume { get; set; }
 		TimeSpan Position { get; set; }
 		bool Repeated { get; set; }
 		bool Paused { get; set; }

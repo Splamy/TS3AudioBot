@@ -9,6 +9,7 @@
 
 namespace TS3Client.Full
 {
+	using System;
 	using System.Net;
 	using System.Runtime.CompilerServices;
 
@@ -21,6 +22,12 @@ namespace TS3Client.Full
 		public static ushort N2Hushort(byte[] intArr, int inOff)
 		{
 			return unchecked((ushort)((intArr[inOff] << 8) | intArr[inOff + 1]));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ushort N2Hushort(ReadOnlySpan<byte> buf)
+		{
+			return unchecked((ushort)((buf[0] << 8) | buf[1]));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

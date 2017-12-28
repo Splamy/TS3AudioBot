@@ -25,7 +25,7 @@ namespace TS3Client.Full.Audio
 
 		public void Write(ReadOnlySpan<byte> data, Meta meta)
 		{
-			foreach (var consumer in consumerList)
+			foreach (var consumer in consumerList) // TODO threadsafe
 			{
 				consumer.Write(data, meta);
 			}

@@ -51,8 +51,8 @@ namespace TS3Client.Full.Audio
 		{
 			if (OutStream == null || SendMode == TargetSendMode.None)
 				return;
-			if (meta.Out == null)
-				meta.Out = new MetaOut();
+
+			meta.Out = meta.Out ?? new MetaOut();
 			meta.Out.SendMode = SendMode;
 			switch (SendMode)
 			{
@@ -67,9 +67,9 @@ namespace TS3Client.Full.Audio
 				meta.Out.GroupWhisperType = setMeta.GroupWhisperType;
 				meta.Out.TargetId = setMeta.TargetId;
 				break;
-			default:
-				break;
+			default: break;
 			}
+			OutStream?.Write(data, meta);
 		}
 	}
 }

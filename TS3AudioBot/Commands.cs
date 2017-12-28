@@ -1186,16 +1186,16 @@ namespace TS3AudioBot
 		public static JsonObject CommandVolume(ExecutionInformation info, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
-				return new JsonSingleValue<int>("Current volume: " + info.Bot.PlayerConnection.Volume, info.Bot.PlayerConnection.Volume);
+				return new JsonSingleValue<float>("Current volume: " + info.Bot.PlayerConnection.Volume, info.Bot.PlayerConnection.Volume);
 
 			bool relPos = parameter.StartsWith("+", StringComparison.Ordinal);
 			bool relNeg = parameter.StartsWith("-", StringComparison.Ordinal);
 			string numberString = (relPos || relNeg) ? parameter.Remove(0, 1) : parameter;
 
-			if (!int.TryParse(numberString, out int volume))
+			if (!float.TryParse(numberString, NumberStyles.Float, CultureInfo.InvariantCulture, out var volume))
 				throw new CommandException("The new volume could not be parsed", CommandExceptionReason.CommandError);
 
-			int newVolume;
+			float newVolume;
 			if (relPos) newVolume = info.Bot.PlayerConnection.Volume + volume;
 			else if (relNeg) newVolume = info.Bot.PlayerConnection.Volume - volume;
 			else newVolume = volume;
@@ -1262,13 +1262,13 @@ namespace TS3AudioBot
 			{
 				if (info.HasRights(RightHighVolume))
 				{
-					if (info.Session.ResponseData is int respInt)
+					if (info.Session.ResponseData is float respInt)
 					{
 						info.Bot.PlayerConnection.Volume = respInt;
 					}
 					else
 					{
-						Log.Write(Log.Level.Error, "responseData is not an int.");
+						Log.Write(Log.Level.Error, "responseData is not an float.");
 						return "Internal error";
 					}
 				}

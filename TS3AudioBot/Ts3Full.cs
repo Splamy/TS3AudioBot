@@ -368,7 +368,7 @@ namespace TS3AudioBot
 						break;
 
 					AudioModifier.AdjustVolume(audioBuffer, read, volume);
-					encoder.PushPcmAudio(audioBuffer, read);
+					encoder.PushPcmAudio(new ReadOnlySpan<byte>(audioBuffer, 0, read));
 
 					while (encoder.HasPacket)
 					{
@@ -430,14 +430,14 @@ namespace TS3AudioBot
 			}
 		}
 
-		public int Volume
+		public float Volume
 		{
-			get => (int)Math.Round(volume * AudioValues.MaxVolume);
+			get => volume * AudioValues.MaxVolume;
 			set
 			{
 				if (value < 0 || value > AudioValues.MaxVolume)
 					throw new ArgumentOutOfRangeException(nameof(value));
-				volume = value / (float)AudioValues.MaxVolume;
+				volume = value / AudioValues.MaxVolume;
 			}
 		}
 

@@ -70,6 +70,7 @@
     <Compile Include="FileTransferManager.cs" />
     <Compile Include="Full\Audio\AudioMeta.cs" />
     <Compile Include="Full\Audio\AudioInterfaces.cs" />
+    <Compile Include="Full\Audio\AudioPacketReader.cs" />
     <Compile Include="Full\Audio\AudioPipeExtensions.cs" />
     <Compile Include="Full\Audio\PreciseTimedPipe.cs" />
     <Compile Include="Full\Audio\SplitterPipe.cs" />

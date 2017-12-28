@@ -123,7 +123,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void DisconnectInternal(ConnectionContext ctx, bool triggerEvent = true, CommandError error = null)
+		private void DisconnectInternal(ConnectionContext ctx, CommandError error = null)
 		{
 			bool triggerEventSafe = false;
 
@@ -139,7 +139,7 @@ namespace TS3Client.Full
 					packetHandler.Stop();
 					msgProc.DropQueue();
 					dispatcher.Dispose();
-					triggerEventSafe = triggerEvent;
+					triggerEventSafe = true;
 					break;
 				case Ts3ClientStatus.Disconnecting:
 					break;
@@ -225,7 +225,7 @@ namespace TS3Client.Full
 						{
 							skipError = true;
 							status = Ts3ClientStatus.Disconnected;
-							DisconnectInternal(context, true, error);
+							DisconnectInternal(context, error);
 						}
 					}
 

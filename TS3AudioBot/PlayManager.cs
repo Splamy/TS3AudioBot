@@ -237,7 +237,7 @@ namespace TS3AudioBot
 		/// <summary>Defaults to: invoker.DbId - Can be set if the owner of a song differs from the invoker.</summary>
 		public ulong? ResourceOwnerDbId { get; set; }
 		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
-		public int? Volume { get; set; } = null;
+		public float? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
 		public bool FromPlaylist { get; set; }
 
@@ -314,20 +314,20 @@ namespace TS3AudioBot
 
 	public static class AudioValues
 	{
-		public const int MaxVolume = 100;
+		public const float MaxVolume = 100;
 
 		internal static AudioFrameworkData audioFrameworkData;
 
-		public static int MaxUserVolume => audioFrameworkData.MaxUserVolume;
-		public static int DefaultVolume => audioFrameworkData.DefaultVolume;
+		public static float MaxUserVolume => audioFrameworkData.MaxUserVolume;
+		public static float DefaultVolume => audioFrameworkData.DefaultVolume;
 	}
 
 	public class AudioFrameworkData : ConfigData
 	{
 		[Info("The default volume a song should start with", "10")]
-		public int DefaultVolume { get; set; }
+		public float DefaultVolume { get; set; }
 		[Info("The maximum volume a normal user can request", "30")]
-		public int MaxUserVolume { get; set; }
+		public float MaxUserVolume { get; set; }
 		[Info("How the bot should play music. Options are: whisper, voice, (!...)", "whisper")]
 		public string AudioMode { get; set; }
 	}

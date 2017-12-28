@@ -88,15 +88,15 @@ namespace TS3AudioBot.Audio
 				return new byte[opusEncoder.MaxDataBytes];
 		}
 
-		public void PushPcmAudio(byte[] buffer, int bufferlen)
+		public void PushPcmAudio(ReadOnlySpan<byte> buffer)
 		{
-			int newSoundBufferLength = bufferlen + notEncodedBufferLength;
+			int newSoundBufferLength = buffer.Length + notEncodedBufferLength;
 			if (newSoundBufferLength > soundBuffer.Length)
 				soundBuffer = new byte[newSoundBufferLength];
 			soundBufferLength = newSoundBufferLength;
 
 			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBufferLength);
-			Array.Copy(buffer, 0, soundBuffer, notEncodedBufferLength, bufferlen);
+			buffer.CopyTo(new Span<byte>(soundBuffer, notEncodedBufferLength));
 
 			int byteCap = OptimalPacketSize;
 			int segmentCount = (int)Math.Floor((float)soundBufferLength / byteCap);
