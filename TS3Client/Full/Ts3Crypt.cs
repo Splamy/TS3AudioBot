@@ -106,15 +106,20 @@ namespace TS3Client.Full
 			publicKey = null;
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
 			var bitInfo = ((DerBitString)asnKeyData[0]).IntValue;
-			if (bitInfo == 0b0000_0000 || bitInfo == 0b1100_0000)
+			if (bitInfo == 0b0000_0000 || bitInfo == 0b1000_0000)
 			{
 				var x = ((DerInteger)asnKeyData[2]).Value;
 				var y = ((DerInteger)asnKeyData[3]).Value;
 				publicKey = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
+
+				if (bitInfo == 0b1000_0000)
+				{
+					privateKey = ((DerInteger)asnKeyData[4]).Value;
+				}
 			}
-			if (bitInfo == 0b1000_0000)
+			else if (bitInfo == 0b1100_0000)
 			{
-				privateKey = ((DerInteger)asnKeyData[4]).Value;
+				privateKey = ((DerInteger)asnKeyData[2]).Value;
 			}
 		}
 
@@ -279,7 +284,7 @@ namespace TS3Client.Full
 
 				return sendData;
 			}
-			
+
 			return "Got invalid init packet id";
 		}
 
