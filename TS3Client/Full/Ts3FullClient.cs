@@ -9,6 +9,7 @@
 
 namespace TS3Client.Full
 {
+	using Audio;
 	using Commands;
 	using Messages;
 	using System;
@@ -26,7 +27,7 @@ namespace TS3Client.Full
 	using ChannelGroupIdT = System.UInt64;
 
 	/// <summary>Creates a full TeampSpeak3 client with voice capabilities.</summary>
-	public sealed class Ts3FullClient : Ts3BaseFunctions
+	public sealed class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
@@ -271,15 +272,20 @@ namespace TS3Client.Full
 
 					case PacketType.Voice:
 					case PacketType.VoiceWhisper:
-						// VOICE
-
+						OutStream?.Write(packet.Data, new Meta
+						{
+							In = new MetaIn
+							{
+								Whisper = packet.PacketType == PacketType.VoiceWhisper
+							}
+						});
 						break;
 
 					case PacketType.Init1:
 						var forwardData = ts3Crypt.ProcessInit1(packet.Data);
-						if (forwardData == null)
+						if (!forwardData.Ok)
 							break;
-						packetHandler.AddOutgoingPacket(forwardData, PacketType.Init1);
+						packetHandler.AddOutgoingPacket(forwardData.Value, PacketType.Init1);
 						break;
 					}
 				}
@@ -332,9 +338,8 @@ namespace TS3Client.Full
 		/// <param name="com">The raw command to send.
 		/// <para>NOTE: By default does the command expect an answer from the server. Set <see cref="Ts3Command.ExpectResponse"/> to false
 		/// if the client hangs after a special command (<see cref="SendCommand{T}"/> will return <code>null</code> instead).</para></param>
-		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.
-		/// Or <code>null</code> if no reponse is expected.</returns>
-		/// <exception cref="Ts3CommandException">When the response has an error code.</exception>
+		/// <returns>Returns <code>R(OK)</code> with an enumeration of the deserialized and split up in <see cref="T"/> objects data.
+		/// Or <code>R(ERR)</code> with the returned error if no reponse is expected.</returns>
 		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com)
 		{
 			using (var wb = new WaitBlock())
@@ -395,6 +400,15 @@ namespace TS3Client.Full
 			dispatcher?.Dispose();
 		}
 
+		#region Audio
+		/// <summary>Incomming Voice data</summary>
+		public IAudioPassiveConsumer OutStream { get; set; }
+		public void Write(ReadOnlySpan<byte> data, Meta meta)
+		{
+			// TODO
+		}
+		#endregion
+
 		#region FULLCLIENT SPECIFIC COMMANDS
 
 		public CmdR ChangeIsChannelCommander(bool isChannelCommander)
@@ -433,21 +447,20 @@ namespace TS3Client.Full
 		public CmdR ChannelUnsubscribeAll()
 			=> Send("channelunsubscribeall");
 
-		public void SendAudio(byte[] buffer, int length, Codec codec)
+		public void SendAudio(ReadOnlySpan<byte> data, Codec codec)
 		{
 			// [X,X,Y,DATA]
 			// > X is a ushort in H2N order of a own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
-			byte[] tmpBuffer = new byte[length + 3];
+			byte[] tmpBuffer = new byte[data.Length + 3];
 			tmpBuffer[2] = (byte)codec;
-			Array.Copy(buffer, 0, tmpBuffer, 3, length);
-			buffer = tmpBuffer;
+			data.CopyTo(new Span<byte>(tmpBuffer, 3));
 
-			packetHandler.AddOutgoingPacket(buffer, PacketType.Voice);
+			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
 		}
 
-		public void SendAudioWhisper(byte[] buffer, int length, Codec codec, IList<ChannelIdT> channelIds, IList<ClientIdT> clientIds)
+		public void SendAudioWhisper(ReadOnlySpan<byte> data, Codec codec, IReadOnlyList<ChannelIdT> channelIds, IReadOnlyList<ClientIdT> clientIds)
 		{
 			// [X,X,Y,N,M,(U,U,U,U,U,U,U,U)*,(T,T)*,DATA]
 			// > X is a ushort in H2N order of a own audio packet counter
@@ -458,7 +471,7 @@ namespace TS3Client.Full
 			// > U is a ulong in H2N order of each targeted channelId, (U...U) is repeated N times
 			// > T is a ushort in H2N order of each targeted clientId, (T...T) is repeated M times
 			int offset = 2 + 1 + 2 + channelIds.Count * 8 + clientIds.Count * 2;
-			byte[] tmpBuffer = new byte[length + offset];
+			byte[] tmpBuffer = new byte[data.Length + offset];
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)channelIds.Count;
 			tmpBuffer[4] = (byte)clientIds.Count;
@@ -466,13 +479,12 @@ namespace TS3Client.Full
 				NetUtil.H2N(channelIds[i], tmpBuffer, 5 + (i * 8));
 			for (int i = 0; i < clientIds.Count; i++)
 				NetUtil.H2N(clientIds[i], tmpBuffer, 5 + channelIds.Count * 8 + (i * 2));
-			Array.Copy(buffer, 0, tmpBuffer, offset, length);
-			buffer = tmpBuffer;
+			data.CopyTo(new Span<byte>(tmpBuffer, offset));
 
-			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper);
+			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
 		}
 
-		public void SendAudioGroupWhisper(byte[] buffer, int length, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+		public void SendAudioGroupWhisper(ReadOnlySpan<byte> data, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
 		{
 			// [X,X,Y,N,M,U,U,U,U,U,U,U,U,DATA]
 			// > X is a ushort in H2N order of a own audio packet counter
@@ -481,15 +493,14 @@ namespace TS3Client.Full
 			// > N is a byte, specifying the GroupWhisperType
 			// > M is a byte, specifying the GroupWhisperTarget
 			// > U is a ulong in H2N order for the targeted channelId or groupId (0 if not applicable)
-			byte[] tmpBuffer = new byte[length + 13];
+			byte[] tmpBuffer = new byte[data.Length + 13];
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)type;
 			tmpBuffer[4] = (byte)target;
 			NetUtil.H2N(targetId, tmpBuffer, 5);
-			Array.Copy(buffer, 0, tmpBuffer, 13, length);
-			buffer = tmpBuffer;
+			data.CopyTo(new Span<byte>(tmpBuffer, 13));
 
-			packetHandler.AddOutgoingPacket(buffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
+			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
 		public R<ConnectionInfo, CommandError> GetClientConnectionInfo(ClientIdT clientId)

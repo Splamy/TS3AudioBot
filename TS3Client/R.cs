@@ -86,7 +86,7 @@ public struct R<TSuccess, TError>
 	private R(TError error) { isError = true; Value = default(TSuccess); if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
 
 	/// <summary>Creates a new failed result with an error object</summary>
-	/// <param name="message">The error</param>
+	/// <param name="error">The error</param>
 	public static R<TSuccess, TError> Err(TError error) => new R<TSuccess, TError>(error);
 	/// <summary>Creates a new successful result with a value</summary>
 	/// <param name="value">The value</param>

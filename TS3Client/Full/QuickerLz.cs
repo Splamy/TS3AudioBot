@@ -32,11 +32,11 @@ namespace TS3Client.Full
 		[ThreadStatic]
 		private static int[] cachetable;
 
-		public static ArrLim Compress(byte[] data, int level)
+		public static Span<byte> Compress(ReadOnlySpan<byte> data, int level)
 		{
 			if (level != 1) // && level != 3
 				throw new ArgumentException("This QuickLZ implementation supports only level 1 and 3 compress");
-			if (data.LongLength >= int.MaxValue)
+			if (data.Length >= int.MaxValue)
 				throw new ArgumentException($"This QuickLZ can only compress up to {int.MaxValue}");
 
 			int headerlen = data.Length < 216 ? 3 : 9;
@@ -64,10 +64,11 @@ namespace TS3Client.Full
 					{
 						if (sourcePos > data.Length / 2 && destPos > sourcePos - (sourcePos / 32))
 						{
-							Array.Copy(data, 0, dest, headerlen, data.Length);
+							data.CopyTo(new Span<byte>(dest, headerlen));
+							//Array.Copy(data, 0, dest, headerlen, data.Length);
 							destPos = headerlen + data.Length;
 							WriteHeader(dest, destPos, data.Length, level, headerlen, false);
-							return new ArrLim(dest, destPos);
+							return new Span<byte>(dest, 0, destPos);
 						}
 						WriteU32(dest, controlPos, (control >> 1) | SetControl); // C
 						controlPos = destPos;
@@ -137,7 +138,7 @@ namespace TS3Client.Full
 			WriteU32(dest, controlPos, (control >> 1) | SetControl); // C
 
 			WriteHeader(dest, destPos, data.Length, level, headerlen, true);
-			return new ArrLim(dest, destPos);
+			return new Span<byte>(dest, 0, destPos);
 		}
 
 		public static byte[] Decompress(byte[] data, int maxSize)
@@ -295,7 +296,7 @@ namespace TS3Client.Full
 			=> unchecked((ushort)(intArr[inOff] | (intArr[inOff + 1] << 8)));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static int Read24(byte[] intArr, int inOff)
+		private static int Read24(ReadOnlySpan<byte> intArr, int inOff)
 			=> unchecked(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -304,13 +305,13 @@ namespace TS3Client.Full
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint ReadU32(byte[] intArr, int inOff)
-			=> unchecked ((uint)(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24)));
+			=> unchecked((uint)(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24)));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Hash(int value) => ((value >> 12) ^ value) & 0xfff;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static bool Is6Same(byte[] arr, int i)
+		private static bool Is6Same(ReadOnlySpan<byte> arr, int i)
 		{
 			return arr[i + 0] == arr[i + 1]
 				&& arr[i + 1] == arr[i + 2]
@@ -343,25 +344,6 @@ namespace TS3Client.Full
 				next = (next >> 8) | (dest[i + 2] << 16);
 				hashtable[Hash(next)] = i;
 			}
-		}
-	}
-
-	public struct ArrLim
-	{
-		public readonly byte[] Data;
-		public readonly int Length;
-
-		public ArrLim(byte[] data, int length)
-		{
-			Data = data;
-			Length = length;
-		}
-
-		public byte[] ToArr()
-		{
-			var res = new byte[Length];
-			Array.Copy(Data, res, Length);
-			return res;
 		}
 	}
 }

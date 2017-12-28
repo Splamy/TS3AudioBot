@@ -10,7 +10,6 @@
 namespace TS3AudioBot
 {
 	using System;
-	using Helper;
 
 	public interface IPlayerConnection : IDisposable
 	{

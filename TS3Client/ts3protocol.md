@@ -173,10 +173,13 @@ The following chapter describes the data structure for different packet types.
 | C    | u8   | Codec Type      |
 | Data | var  | Voice Data      |
 
-### 1.8.2.1 VoiceWhisper
+### 1.8.2.1 VoiceWhisper (Client -> Server)
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
     | VId |C |N |M |           U*          |  T* |        Data        |
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
+
+For direct user/channel targeting
+The `Newprotocol` Flag must be *unset*
 
 | Name | Type  | Explanation                           |
 |------|-------|---------------------------------------|
@@ -187,6 +190,49 @@ The following chapter describes the data structure for different packet types.
 | U    | [u64] | Targeted ChannelIds, repeated N times |
 | T    | [u16] | Targeted ClientIds, repeated M times  |
 | Data | var   | Voice Data                            |
+
+OR
+
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
+    | VId |C |TY|TA|           U           |        Data        |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
+
+For targeting special groups
+The `Newprotocol` Flag must be *set*
+
+| Name | Type  | Explanation                                             |
+|------|-------|---------------------------------------------------------|
+| VId  | u16   | Voice Packet Id                                         |
+| C    | u8    | Codec Type                                              |
+| TY   | u8    | GroupWhisperType (see below)                            |
+| TA   | u8    | GroupWhisperTarget (see below)                          |
+| U    | u64   | the targeted channelId or groupId (0 if not applicable) |
+| Data | var   | Voice Data                                              |
+
+```
+enum GroupWhisperType : u8
+{
+	// Targets all users in the specified server group.
+	ServerGroup      = 0 /* U = servergroup targetId */,
+	// Targets all users in the specified channel group.
+	ChannelGroup     = 1 /* U = channelgroup targetId */,
+	// Targets all users with channel commander.
+	ChannelCommander = 2, /* U = 0 (ignored) */,
+	// Targets all users on the server.
+	AllClients       = 3, /* U = 0 (ignored) */,
+}
+
+enum GroupWhisperTarget : u8
+{
+	AllChannels           = 0,
+	CurrentChannel        = 1,
+	ParentChannel         = 2,
+	AllParentChannel      = 3,
+	ChannelFamily         = 4,
+	CompleteChannelFamily = 5,
+	Subchannels           = 6,
+}
+```
 
 ### 1.8.2.2 VoiceWhisper (Client <- Server)
     +--+--+--+--+--+---------//---------+

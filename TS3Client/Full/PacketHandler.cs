@@ -108,7 +108,7 @@ namespace TS3Client.Full
 
 			resendThread.Start();
 
-			AddOutgoingPacket(ts3Crypt.ProcessInit1(null), PacketType.Init1);
+			AddOutgoingPacket(ts3Crypt.ProcessInit1(null).Value, PacketType.Init1);
 		}
 
 		private void ConnectUdpClient(IPEndPoint address)
@@ -136,7 +136,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		public void AddOutgoingPacket(byte[] packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
+		public void AddOutgoingPacket(ReadOnlySpan<byte> packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
 			lock (sendLoopLock)
 			{
@@ -152,7 +152,7 @@ namespace TS3Client.Full
 					var tmpCompress = QuickerLz.Compress(packet, 1);
 					if (tmpCompress.Length < packet.Length)
 					{
-						packet = tmpCompress.ToArr();
+						packet = tmpCompress;
 						addFlags |= PacketFlags.Compressed;
 					}
 
@@ -163,7 +163,7 @@ namespace TS3Client.Full
 						return;
 					}
 				}
-				AddOutgoingPacket(new OutgoingPacket(packet, packetType), addFlags);
+				AddOutgoingPacket(new OutgoingPacket(packet.ToArray(), packetType), addFlags); // TODO optimize to array here
 			}
 		}
 
@@ -243,7 +243,7 @@ namespace TS3Client.Full
 			IncPacketCounter(PacketType.Command);
 		}
 
-		private static IEnumerable<OutgoingPacket> BuildSplitList(byte[] rawData, PacketType packetType)
+		private static IEnumerable<OutgoingPacket> BuildSplitList(ReadOnlySpan<byte> rawData, PacketType packetType)
 		{
 			int pos = 0;
 			bool first = true;
@@ -254,10 +254,8 @@ namespace TS3Client.Full
 			{
 				int blockSize = Math.Min(maxContent, rawData.Length - pos);
 				if (blockSize <= 0) break;
-
-				var tmpBuffer = new byte[blockSize];
-				Array.Copy(rawData, pos, tmpBuffer, 0, blockSize);
-				var packet = new OutgoingPacket(tmpBuffer, packetType);
+				
+				var packet = new OutgoingPacket(rawData.Slice(pos, blockSize).ToArray(), packetType); // TODO optimize toarray call
 
 				last = pos + blockSize == rawData.Length;
 				if (first ^ last)

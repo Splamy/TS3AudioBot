@@ -121,11 +121,15 @@ namespace TS3Client
 
 	public enum GroupWhisperType : byte
 	{
-		/// <summary>Requires servergroup targetId</summary>
+		/// <summary>Targets all users in the specified server group.
+		/// (Requires servergroup targetId)</summary>
 		ServerGroup = 0,
-		/// <summary>Requires channelgroup targetId</summary>
+		/// <summary>Targets all users in the specified channel group.
+		/// (Requires channelgroup targetId)</summary>
 		ChannelGroup,
+		/// <summary>Targets all users with channel commander.</summary>
 		ChannelCommander,
+		/// <summary>Targets all users on the server.</summary>
 		AllClients,
 	}
 

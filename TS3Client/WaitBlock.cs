@@ -23,7 +23,7 @@ namespace TS3Client
 		private string commandLine;
 		public NotificationType[] DependsOn { get; }
 		private LazyNotification notification;
-		public bool isDisposed;
+		private bool isDisposed;
 		private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(15);
 
 		public WaitBlock(NotificationType[] dependsOn = null)

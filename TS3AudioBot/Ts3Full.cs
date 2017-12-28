@@ -373,16 +373,17 @@ namespace TS3AudioBot
 					while (encoder.HasPacket)
 					{
 						var packet = encoder.GetPacket();
+						var span = new ReadOnlySpan<byte>(packet.Array, 0, packet.Length);
 						switch (SendMode)
 						{
 						case TargetSendMode.Voice:
-							tsFullClient.SendAudio(packet.Array, packet.Length, encoder.Codec);
+							tsFullClient.SendAudio(span, encoder.Codec);
 							break;
 						case TargetSendMode.Whisper:
-							tsFullClient.SendAudioWhisper(packet.Array, packet.Length, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
+							tsFullClient.SendAudioWhisper(span, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
 							break;
 						case TargetSendMode.WhisperGroup:
-							tsFullClient.SendAudioGroupWhisper(packet.Array, packet.Length, encoder.Codec, GroupWhisperType, GroupWhisperTarget);
+							tsFullClient.SendAudioGroupWhisper(span, encoder.Codec, GroupWhisperType, GroupWhisperTarget);
 							break;
 						}
 						encoder.ReturnPacket(packet.Array);

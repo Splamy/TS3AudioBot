@@ -9,8 +9,6 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
-
 	public interface IResourceFactory : IFactory
 	{
 		/// <summary>Check method to ask if a factory can load the given link.</summary>

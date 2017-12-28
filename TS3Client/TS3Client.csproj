@@ -26,6 +26,7 @@
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <CodeAnalysisRuleSet />
+    <LangVersion>7</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -48,6 +49,12 @@
       <HintPath>..\packages\Heijden.Dns.2.0.0\lib\net35\Heijden.Dns.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Memory, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.4.0-preview1-25305-02\lib\netstandard1.0\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.4.0\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
@@ -61,6 +68,13 @@
     <Compile Include="DisconnectEventArgs.cs" />
     <Compile Include="DocumentedEnums.cs" />
     <Compile Include="FileTransferManager.cs" />
+    <Compile Include="Full\Audio\AudioMeta.cs" />
+    <Compile Include="Full\Audio\AudioInterfaces.cs" />
+    <Compile Include="Full\Audio\AudioPipeExtensions.cs" />
+    <Compile Include="Full\Audio\PreciseTimedPipe.cs" />
+    <Compile Include="Full\Audio\SplitterPipe.cs" />
+    <Compile Include="Full\Audio\StaticMetaPipe.cs" />
+    <Compile Include="Full\Audio\StreamAudioProducer.cs" />
     <Compile Include="Full\BasePacket.cs" />
     <Compile Include="Full\QuickerLz.cs" />
     <Compile Include="Full\IdentityData.cs" />

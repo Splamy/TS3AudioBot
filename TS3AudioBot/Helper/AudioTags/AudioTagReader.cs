@@ -216,7 +216,7 @@ namespace TS3AudioBot.Helper.AudioTags
 
 			private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)
 			{
-				switch (textBuffer[0])
+				switch (type)
 				{
 				case 0:
 					return Encoding.GetEncoding(28591).GetString(textBuffer, offset, length);

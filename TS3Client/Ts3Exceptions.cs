@@ -9,7 +9,6 @@
 
 namespace TS3Client
 {
-	using Messages;
 	using System;
 
 	/// <summary>Generel exeption when methods within the client fail.</summary>
