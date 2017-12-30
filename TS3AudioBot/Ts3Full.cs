@@ -367,8 +367,9 @@ namespace TS3AudioBot
 					if (!doSend)
 						break;
 
-					AudioModifier.AdjustVolume(audioBuffer, read, volume);
-					encoder.PushPcmAudio(new ReadOnlySpan<byte>(audioBuffer, 0, read));
+					var bufSpan = new Span<byte>(audioBuffer, 0, read);
+					TS3Client.Full.Audio.VolumePipe.AdjustVolume(bufSpan, volume);
+					encoder.PushPcmAudio(bufSpan);
 
 					while (encoder.HasPacket)
 					{

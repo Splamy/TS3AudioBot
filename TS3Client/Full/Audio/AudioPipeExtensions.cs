@@ -1,8 +1,10 @@
 namespace TS3Client.Full.Audio
 {
+	using System;
+
 	public static class AudioPipeExtensions
 	{
-		public static TC Chain<TC>(this IAudioActiveProducer producer, TC addConsumer) where TC : IAudioPassiveConsumer
+		public static T Chain<T>(this IAudioActiveProducer producer, T addConsumer) where T : IAudioPassiveConsumer
 		{
 			if (producer.OutStream == null)
 			{
@@ -22,9 +24,10 @@ namespace TS3Client.Full.Audio
 			return addConsumer;
 		}
 
-		public static T ChainNew<T>(this IAudioActiveProducer producer) where T : IAudioPassiveConsumer, new()
+		public static T Chain<T>(this IAudioActiveProducer producer, Action<T> init = null) where T : IAudioPassiveConsumer, new()
 		{
 			var addConsumer = new T();
+			init?.Invoke(addConsumer);
 			return producer.Chain(addConsumer);
 		}
 	}

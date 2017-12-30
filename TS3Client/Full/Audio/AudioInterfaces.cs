@@ -19,7 +19,7 @@ namespace TS3Client.Full.Audio
 	/// <summary>Passive consumer will wait for manually passed audio data.</summary>
 	public interface IAudioPassiveConsumer : IAudioStream
 	{
-		void Write(ReadOnlySpan<byte> data, Meta meta);
+		void Write(Span<byte> data, Meta meta);
 	}
 	/// <summary>Active consumer will pull audio data as soon as available.</summary>
 	public interface IAudioActiveConsumer : IAudioStream

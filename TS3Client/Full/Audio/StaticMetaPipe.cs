@@ -47,7 +47,7 @@ namespace TS3Client.Full.Audio
 			setMeta.TargetId = targetId;
 		}
 
-		public void Write(ReadOnlySpan<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta meta)
 		{
 			if (OutStream == null || SendMode == TargetSendMode.None)
 				return;

@@ -401,11 +401,34 @@ namespace TS3Client.Full
 		}
 
 		#region Audio
-		/// <summary>Incomming Voice data</summary>
+		/// <summary>Incomming voice packets.</summary>
 		public IAudioPassiveConsumer OutStream { get; set; }
-		public void Write(ReadOnlySpan<byte> data, Meta meta)
+		/// <summary>Outgoing voice data.</summary>
+		/// <param name="data">The encoded audio buffer.</param>
+		/// <param name="meta">The metadata where to send the packet.</param>
+		public void Write(Span<byte> data, Meta meta)
 		{
-			// TODO
+			if (meta.Out == null
+				|| meta.Out.SendMode == TargetSendMode.None
+				|| !meta.Codec.HasValue
+				|| meta.Codec.Value == Codec.Raw)
+				return;
+
+			switch (meta.Out.SendMode)
+			{
+			case TargetSendMode.None:
+				break;
+			case TargetSendMode.Voice:
+				SendAudio(data, meta.Codec.Value);
+				break;
+			case TargetSendMode.Whisper:
+				SendAudioWhisper(data, meta.Codec.Value, meta.Out.ChannelIds, meta.Out.ClientIds);
+				break;
+			case TargetSendMode.WhisperGroup:
+				SendAudioGroupWhisper(data, meta.Codec.Value, meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
+				break;
+			default: break;
+			}
 		}
 		#endregion
 

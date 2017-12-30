@@ -86,7 +86,6 @@
     <Compile Include="Algorithm\DependencyGraph.cs" />
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\AudioEncoder.cs" />
-    <Compile Include="Audio\AudioModifier.cs" />
     <Compile Include="Audio\Opus\NativeMethods.cs" />
     <Compile Include="Audio\Opus\OpusDecoder.cs" />
     <Compile Include="Audio\Opus\OpusEncoder.cs" />

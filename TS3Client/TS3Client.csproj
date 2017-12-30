@@ -72,10 +72,12 @@
     <Compile Include="Full\Audio\AudioInterfaces.cs" />
     <Compile Include="Full\Audio\AudioPacketReader.cs" />
     <Compile Include="Full\Audio\AudioPipeExtensions.cs" />
+    <Compile Include="Full\Audio\EncoderPipe.cs" />
     <Compile Include="Full\Audio\PreciseTimedPipe.cs" />
     <Compile Include="Full\Audio\SplitterPipe.cs" />
     <Compile Include="Full\Audio\StaticMetaPipe.cs" />
     <Compile Include="Full\Audio\StreamAudioProducer.cs" />
+    <Compile Include="Full\Audio\VolumePipe.cs" />
     <Compile Include="Full\BasePacket.cs" />
     <Compile Include="Full\QuickerLz.cs" />
     <Compile Include="Full\IdentityData.cs" />

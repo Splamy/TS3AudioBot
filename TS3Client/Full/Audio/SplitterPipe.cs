@@ -5,7 +5,11 @@ namespace TS3Client.Full.Audio
 
 	public class SplitterPipe : IAudioPassiveConsumer
 	{
-		private readonly ICollection<IAudioPassiveConsumer> consumerList = new List<IAudioPassiveConsumer>();
+		private readonly List<IAudioPassiveConsumer> safeConsumerList = new List<IAudioPassiveConsumer>();
+		private readonly List<IAudioPassiveConsumer> consumerList = new List<IAudioPassiveConsumer>();
+		private bool changed = false;
+		private readonly object listLock = new object();
+		private byte[] buffer = new byte[0];
 
 		public bool CloneMeta { get; set; } = false;
 
@@ -19,16 +23,49 @@ namespace TS3Client.Full.Audio
 		{
 			if (!consumerList.Contains(addConsumer) && addConsumer != this)
 			{
-				consumerList.Add(addConsumer);
+				lock (listLock)
+				{
+					consumerList.Add(addConsumer);
+					changed = true;
+				}
 			}
 		}
 
-		public void Write(ReadOnlySpan<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta meta)
 		{
-			foreach (var consumer in consumerList) // TODO threadsafe
+			if (changed)
 			{
-				consumer.Write(data, meta);
+				lock (listLock)
+				{
+					if (changed)
+					{
+						safeConsumerList.Clear();
+						safeConsumerList.AddRange(consumerList);
+						changed = false;
+					}
+				}
 			}
+
+			if (safeConsumerList.Count == 0)
+				return;
+
+			if (safeConsumerList.Count == 1)
+			{
+				safeConsumerList[0].Write(data, meta);
+				return;
+			}
+
+			if(buffer.Length < data.Length)
+				buffer = new byte[data.Length];
+
+			var bufSpan = new Span<byte>(buffer, 0, data.Length);
+			for (int i = 0; i < safeConsumerList.Count - 1; i++)
+			{
+				data.CopyTo(bufSpan);
+				safeConsumerList[i].Write(bufSpan, meta);
+			}
+			// safe one memcopy call by passing the last one our original data
+			safeConsumerList[safeConsumerList.Count - 1].Write(data, meta);
 		}
 	}
 }

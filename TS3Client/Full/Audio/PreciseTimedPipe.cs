@@ -24,7 +24,7 @@ namespace TS3Client.Full.Audio
 				if (inStream == null)
 					continue;
 				int read = inStream.Read(buffer, 0, buffer.Length, out var meta);
-				OutStream?.Write(new ReadOnlySpan<byte>(buffer, 0, read), meta);
+				OutStream?.Write(new Span<byte>(buffer, 0, read), meta);
 			}
 		}
 	}
