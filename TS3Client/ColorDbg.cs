@@ -1,8 +1,9 @@
 namespace TS3Client
 {
+	using Full;
+	using Helper;
 	using System;
 	using System.Diagnostics;
-	using Full;
 	using System.Runtime.CompilerServices;
 
 	internal static class ColorDbg

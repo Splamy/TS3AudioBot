@@ -10,6 +10,7 @@
 namespace TS3Client.Full
 {
 	using Commands;
+	using Helper;
 	using Org.BouncyCastle.Asn1;
 	using Org.BouncyCastle.Asn1.X9;
 	using Org.BouncyCastle.Crypto;
@@ -22,9 +23,8 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Math.EC;
 	using Org.BouncyCastle.Security;
 	using System;
-	using System.Linq;
-	using System.Text;
 	using System.Security.Cryptography;
+	using System.Text;
 
 	/// <summary>Provides all cryptographic functions needed for the low- and high level TeamSpeak protocol usage.</summary>
 	public sealed class Ts3Crypt
@@ -456,7 +456,7 @@ namespace TS3Client.Full
 				Array.Copy(BitConverter.GetBytes(NetUtil.H2N(generationId)), 0, tmpToHash, 2, 4);
 				Array.Copy(ivStruct, 0, tmpToHash, 6, 20);
 
-				var result = Hash256It(tmpToHash);
+				var result = Hash256It(tmpToHash).AsSpan();
 
 				cachedKeyNonces[cacheIndex] = new Tuple<byte[], byte[], uint>(result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
 			}
@@ -467,8 +467,8 @@ namespace TS3Client.Full
 			Array.Copy(cachedKeyNonces[cacheIndex].Item2, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
-			key[0] ^= (byte)((packetId >> 8) & 0xFF);
-			key[1] ^= (byte)((packetId) & 0xFF);
+			key[0] ^= (byte)(packetId >> 8);
+			key[1] ^= (byte)(packetId >> 0);
 
 			return (key, nonce);
 		}

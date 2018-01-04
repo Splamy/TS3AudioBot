@@ -10,6 +10,7 @@
 namespace TS3Client
 {
 	using Messages;
+	using Helper;
 	using System.Collections.Generic;
 	using System.Linq;
 

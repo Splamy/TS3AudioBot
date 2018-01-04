@@ -40,7 +40,7 @@ after_success:
   - export MAIN_DIR=`pwd`
   - cd ./TS3AudioBot/bin/Release
   - ls
-  - zip TS3AudioBot.zip TS3AudioBot.exe TS3Client.dll Nett.dll LiteDB.dll Heijden.Dns.dll BouncyCastle.Crypto.dll x64/* x86/*
+  - zip TS3AudioBot.zip *.exe *.dll x64/* x86/*
   - 'export version=`mono TS3AudioBot.exe --version | grep "Version: "`'
   - "curl -I -H \"Content-Type: application/zip\" -X PUT \"https://splamy.de/api/nightly/ts3ab/${TRAVIS_BRANCH}?token=${uploadkey}&filename=TS3AudioBot.zip&commit=${TRAVIS_COMMIT}&version=${version:9}\" --upload-file ./TS3AudioBot.zip"
   - cd "$MAIN_DIR"

@@ -10,6 +10,7 @@
 namespace TS3Client
 {
 	using Commands;
+	using Helper;
 	using Messages;
 	using System;
 	using System.Collections.Concurrent;

@@ -178,7 +178,7 @@ The following chapter describes the data structure for different packet types.
     | VId |C |N |M |           U*          |  T* |        Data        |
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
 
-For direct user/channel targeting
+For direct user/channel targeting  
 The `Newprotocol` Flag must be *unset*
 
 | Name | Type  | Explanation                           |
@@ -197,7 +197,7 @@ OR
     | VId |C |TY|TA|           U           |        Data        |
     +--+--+--+--+--+--+--+--+--+--+--+--+--+---------//---------+
 
-For targeting special groups
+For targeting special groups  
 The `Newprotocol` Flag must be *set*
 
 | Name | Type  | Explanation                                             |

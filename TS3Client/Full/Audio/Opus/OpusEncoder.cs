@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-namespace TS3AudioBot.Audio.Opus
+namespace TS3Client.Full.Audio.Opus
 {
 	using System;
 
@@ -73,7 +73,7 @@ namespace TS3AudioBot.Audio.Opus
 		/// <param name="outputEncodedBuffer">The encoded data is written to this buffer.</param>
 		/// <param name="encodedLength">Set to length of encoded audio.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
-		public void Encode(byte[] inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer, out int encodedLength)
+		public Span<byte> Encode(byte[] inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
 		{
 			if (disposed)
 				throw new ObjectDisposedException("OpusEncoder");
@@ -81,10 +81,12 @@ namespace TS3AudioBot.Audio.Opus
 				throw new ArgumentException("Array must be at least MaxDataBytes long", nameof(outputEncodedBuffer));
 
 			int frames = FrameCount(inputPcmSamples);
-			encodedLength = NativeMethods.opus_encode(encoder, inputPcmSamples, frames, outputEncodedBuffer, sampleLength);
-			
+			int encodedLength = NativeMethods.opus_encode(encoder, inputPcmSamples, frames, outputEncodedBuffer, sampleLength);
+
 			if (encodedLength < 0)
 				throw new Exception("Encoding failed - " + (Errors)encodedLength);
+
+			return new Span<byte>(outputEncodedBuffer, 0, encodedLength);
 		}
 
 		/// <summary>

@@ -9,27 +9,23 @@
 
 namespace TS3AudioBot
 {
-	using Audio;
 	using Helper;
 	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Globalization;
+	using Audio;
 	using System.Linq;
 	using System.Reflection;
-	using System.Text.RegularExpressions;
 	using TS3Client;
+	using TS3Client.Helper;
 	using TS3Client.Full;
+	using TS3Client.Full.Audio;
 	using TS3Client.Messages;
 
-	internal sealed class Ts3Full : TeamspeakControl, IPlayerConnection, ITargetManager
+	internal sealed class Ts3Full : TeamspeakControl, IPlayerConnection
 	{
 		private readonly Ts3FullClient tsFullClient;
 		private ClientData self;
 
 		private const Codec SendCodec = Codec.OpusMusic;
-		private readonly TimeSpan sendCheckInterval = TimeSpan.FromMilliseconds(5);
-		private readonly TimeSpan audioBufferLength = TimeSpan.FromMilliseconds(20);
 		private const uint StallCountInterval = 10;
 		private const uint StallNoErrorCountMax = 5;
 		private static readonly string[] QuitMessages = {
@@ -43,39 +39,20 @@ namespace TS3AudioBot
 			"Notice me, senpai", ":wq"
 		};
 
-		private const string PreLinkConf = "-hide_banner -nostats -i \"";
-		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
-		private string lastLink;
-		private static readonly Regex FindDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
-		private TimeSpan? parsedSongLength;
-		private readonly object ffmpegLock = new object();
-		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
-		private bool hasTriedToReconnectAudio;
 		public override event EventHandler OnBotDisconnect;
 
 		private readonly Ts3FullClientData ts3FullClientData;
-		private float volume = 1;
-		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
-		public ulong GroupWhisperTargetId { get; set; }
-		public GroupWhisperType GroupWhisperType { get; set; }
-		public GroupWhisperTarget GroupWhisperTarget { get; set; }
 
-		private TickWorker sendTick;
-		private Process ffmpegProcess;
-		private AudioEncoder encoder;
-		private readonly PreciseAudioTimer audioTimer;
-		private byte[] audioBuffer;
 		private bool isStall;
 		private uint stallCount;
 		private uint stallNoErrorCount;
 		private IdentityData identity;
 
-		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup;
-		private readonly List<ushort> clientSubscriptionsSetup;
-		private ulong[] channelSubscriptionsCache;
-		private ushort[] clientSubscriptionsCache;
-		private bool subscriptionSetupChanged;
-		private readonly object subscriptionLockObj = new object();
+		private VolumePipe volumePipe;
+		private FfmpegProducer ffmpegProducer;
+		private PreciseTimedPipe timePipe;
+		private EncoderPipe encoderPipe;
+		internal CustomTargetPipe TargetPipe { get; private set; }
 
 		public Ts3Full(Ts3FullClientData tfcd) : base(ClientType.Full)
 		{
@@ -84,16 +61,20 @@ namespace TS3AudioBot
 			ts3FullClientData = tfcd;
 			tfcd.PropertyChanged += Tfcd_PropertyChanged;
 
-			sendTick = TickPool.RegisterTick(AudioSend, sendCheckInterval, false);
-			encoder = new AudioEncoder(SendCodec) { Bitrate = ts3FullClientData.AudioBitrate * 1000 };
-			audioTimer = new PreciseAudioTimer(encoder.SampleRate, encoder.BitsPerSample, encoder.Channels);
+			ffmpegProducer = new FfmpegProducer(tfcd);
+			ffmpegProducer.OnSongEnd += OnSongEnd;
+			volumePipe = new VolumePipe();
+			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ts3FullClientData.AudioBitrate * 1000 };
+			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.OptimalPacketSize };
+			timePipe.Initialize(encoderPipe);
+			TargetPipe = new CustomTargetPipe(tsFullClient);
+
+			timePipe.InStream = ffmpegProducer;
+			timePipe.Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
+
 			isStall = false;
 			stallCount = 0;
 			identity = null;
-
-			Util.Init(out channelSubscriptionsSetup);
-			Util.Init(out clientSubscriptionsSetup);
-			subscriptionSetupChanged = true;
 		}
 
 		public override T GetLowLibrary<T>()
@@ -110,7 +91,7 @@ namespace TS3AudioBot
 				var value = (int)typeof(Ts3FullClientData).GetProperty(e.PropertyName).GetValue(sender);
 				if (value <= 0 || value >= 256)
 					return;
-				encoder.Bitrate = value * 1000;
+				encoderPipe.Bitrate = value * 1000;
 			}
 		}
 
@@ -284,360 +265,88 @@ namespace TS3AudioBot
 
 		private void AudioSend()
 		{
-			lock (ffmpegLock)
+			bool doSend = true;
+
+			var SendMode = TargetSendMode.None;
+			switch (SendMode)
 			{
-				if (ffmpegProcess == null)
-					return;
-
-				if (audioBuffer == null || audioBuffer.Length < encoder.OptimalPacketSize)
-					audioBuffer = new byte[encoder.OptimalPacketSize];
-
-				UpdatedSubscriptionCache();
-
-				while (audioTimer.RemainingBufferDuration < audioBufferLength)
+			case TargetSendMode.None:
+				doSend = false;
+				break;
+			case TargetSendMode.Voice:
+				break;
+			case TargetSendMode.Whisper:
+			case TargetSendMode.WhisperGroup:
+				if (isStall)
 				{
-					int read = ffmpegProcess.StandardOutput.BaseStream.Read(audioBuffer, 0, encoder.OptimalPacketSize);
-					if (read == 0)
+					if (++stallCount % StallCountInterval == 0)
 					{
-						// check for premature connection drop
-						if (ffmpegProcess.HasExited && !hasTriedToReconnectAudio)
+						stallNoErrorCount++;
+						if (stallNoErrorCount > StallNoErrorCountMax)
 						{
-							var expectedStopLength = GetCurrentSongLength();
-							if (expectedStopLength != TimeSpan.Zero)
-							{
-								var actualStopPosition = audioTimer.SongPosition;
-								if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
-								{
-									Log.Write(Log.Level.Debug, "Connection to song lost, retrying at {0}", actualStopPosition);
-									hasTriedToReconnectAudio = true;
-									Position = actualStopPosition;
-									return;
-								}
-							}
+							stallCount = 0;
+							isStall = false;
 						}
-
-						if (ffmpegProcess.HasExited
-							&& audioTimer.RemainingBufferDuration < TimeSpan.Zero
-							&& !encoder.HasPacket)
-						{
-							AudioStop();
-							OnSongEnd?.Invoke(this, new EventArgs());
-						}
-						return;
 					}
-
-					hasTriedToReconnectAudio = false;
-					audioTimer.PushBytes(read);
-
-					bool doSend = true;
-
-					switch (SendMode)
+					else
 					{
-					case TargetSendMode.None:
 						doSend = false;
-						break;
-					case TargetSendMode.Voice:
-						break;
-					case TargetSendMode.Whisper:
-					case TargetSendMode.WhisperGroup:
-						if (isStall)
-						{
-							if (++stallCount % StallCountInterval == 0)
-							{
-								stallNoErrorCount++;
-								if (stallNoErrorCount > StallNoErrorCountMax)
-								{
-									stallCount = 0;
-									isStall = false;
-								}
-							}
-							else
-							{
-								doSend = false;
-							}
-						}
-						if (SendMode == TargetSendMode.Whisper)
-							doSend &= channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
-						break;
-					default:
-						throw new InvalidOperationException();
-					}
-
-					// Save cpu when we know there is noone to send to
-					if (!doSend)
-						break;
-
-					var bufSpan = new Span<byte>(audioBuffer, 0, read);
-					TS3Client.Full.Audio.VolumePipe.AdjustVolume(bufSpan, volume);
-					encoder.PushPcmAudio(bufSpan);
-
-					while (encoder.HasPacket)
-					{
-						var packet = encoder.GetPacket();
-						var span = new ReadOnlySpan<byte>(packet.Array, 0, packet.Length);
-						switch (SendMode)
-						{
-						case TargetSendMode.Voice:
-							tsFullClient.SendAudio(span, encoder.Codec);
-							break;
-						case TargetSendMode.Whisper:
-							tsFullClient.SendAudioWhisper(span, encoder.Codec, channelSubscriptionsCache, clientSubscriptionsCache);
-							break;
-						case TargetSendMode.WhisperGroup:
-							tsFullClient.SendAudioGroupWhisper(span, encoder.Codec, GroupWhisperType, GroupWhisperTarget);
-							break;
-						}
-						encoder.ReturnPacket(packet.Array);
 					}
 				}
+				break;
+			default:
+				throw new InvalidOperationException();
 			}
+
+			// Save cpu when we know there is noone to send to
 		}
 
 		#region IPlayerConnection
 
 		public event EventHandler OnSongEnd;
 
-		public void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+		public R AudioStart(string url)
 		{
-			GroupWhisperType = type;
-			GroupWhisperTarget = target;
-			GroupWhisperTargetId = targetId;
+			var result = ffmpegProducer.AudioStart(url);
+			if (result)
+				timePipe.Paused = false;
+			return result;
 		}
-
-		public R AudioStart(string url) => StartFfmpegProcess(url);
 
 		public R AudioStop()
 		{
-			sendTick.Active = false;
-			audioTimer.Stop();
-			StopFfmpegProcess();
-			return R.OkR;
+			timePipe.Paused = true;
+			return ffmpegProducer.AudioStop();
 		}
 
-		public TimeSpan Length => GetCurrentSongLength();
+		public TimeSpan Length => ffmpegProducer.Length;
 
 		public TimeSpan Position
 		{
-			get => audioTimer.SongPosition;
-			set
-			{
-				if (value < TimeSpan.Zero || value > Length)
-					throw new ArgumentOutOfRangeException(nameof(value));
-				AudioStop();
-				StartFfmpegProcess(lastLink,
-					$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}",
-					$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}");
-				audioTimer.SongPositionOffset = value;
-			}
+			get => ffmpegProducer.Position;
+			set => ffmpegProducer.Position = value;
 		}
 
 		public float Volume
 		{
-			get => volume * AudioValues.MaxVolume;
+			get => volumePipe.Volume * AudioValues.MaxVolume;
 			set
 			{
 				if (value < 0 || value > AudioValues.MaxVolume)
 					throw new ArgumentOutOfRangeException(nameof(value));
-				volume = value / AudioValues.MaxVolume;
+				volumePipe.Volume = value / AudioValues.MaxVolume;
 			}
 		}
 
 		public bool Paused
 		{
-			get => sendTick.Active;
-			set
-			{
-				if (sendTick.Active == value)
-				{
-					sendTick.Active = !value;
-					if (value)
-					{
-						audioTimer.SongPositionOffset = audioTimer.SongPosition;
-						audioTimer.Stop();
-					}
-					else
-						audioTimer.Start();
-				}
-			}
+			get => timePipe.Paused;
+			set => timePipe.Paused = value;
 		}
 
-		public bool Playing => sendTick.Active;
+		public bool Playing => !timePipe.Paused;
 
 		public bool Repeated { get { return false; } set { } }
-
-		private R StartFfmpegProcess(string url, string extraPreParam = null, string extraPostParam = null)
-		{
-			try
-			{
-				lock (ffmpegLock)
-				{
-					StopFfmpegProcess();
-
-					ffmpegProcess = new Process
-					{
-						StartInfo = new ProcessStartInfo
-						{
-							FileName = ts3FullClientData.FfmpegPath,
-							Arguments = string.Concat(extraPreParam, " ", PreLinkConf, url, PostLinkConf, " ", extraPostParam),
-							RedirectStandardOutput = true,
-							RedirectStandardInput = true,
-							RedirectStandardError = true,
-							UseShellExecute = false,
-							CreateNoWindow = true,
-						}
-					};
-					ffmpegProcess.Start();
-
-					lastLink = url;
-					parsedSongLength = null;
-
-					audioTimer.SongPositionOffset = TimeSpan.Zero;
-					audioTimer.Start();
-					sendTick.Active = true;
-					return R.OkR;
-				}
-			}
-			catch (Exception ex) { return $"Unable to create stream ({ex.Message})"; }
-		}
-
-		private void StopFfmpegProcess()
-		{
-			lock (ffmpegLock)
-			{
-				if (ffmpegProcess == null)
-					return;
-
-				try
-				{
-					if (!ffmpegProcess.HasExited)
-						ffmpegProcess.Kill();
-					else
-						ffmpegProcess.Close();
-				}
-				catch (InvalidOperationException) { }
-				ffmpegProcess = null;
-			}
-		}
-
-		private TimeSpan GetCurrentSongLength()
-		{
-			lock (ffmpegLock)
-			{
-				if (ffmpegProcess == null)
-					return TimeSpan.Zero;
-
-				if (parsedSongLength.HasValue)
-					return parsedSongLength.Value;
-
-				Match match = null;
-				while (ffmpegProcess.StandardError.Peek() > -1)
-				{
-					var infoLine = ffmpegProcess.StandardError.ReadLine();
-					if (string.IsNullOrEmpty(infoLine))
-						continue;
-					match = FindDurationMatch.Match(infoLine);
-					if (match.Success)
-						break;
-				}
-				if (match == null || !match.Success)
-					return TimeSpan.Zero;
-
-				int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-				int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-				int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-				int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
-				parsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
-				return parsedSongLength.Value;
-			}
-		}
-
-		#endregion
-
-		#region ITargetManager
-
-		public void WhisperChannelSubscribe(ulong channel, bool temp)
-		{
-			// TODO move to requested channel
-			// TODO spawn new client
-			lock (subscriptionLockObj)
-			{
-				if (channelSubscriptionsSetup.TryGetValue(channel, out var subscriptionTemp))
-					channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
-				else
-				{
-					channelSubscriptionsSetup[channel] = !temp;
-					subscriptionSetupChanged = true;
-				}
-			}
-		}
-
-		public void WhisperChannelUnsubscribe(ulong channel, bool temp)
-		{
-			lock (subscriptionLockObj)
-			{
-				if (!temp)
-				{
-					subscriptionSetupChanged |= channelSubscriptionsSetup.Remove(channel);
-				}
-				else
-				{
-					if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp) && subscriptionTemp)
-					{
-						channelSubscriptionsSetup.Remove(channel);
-						subscriptionSetupChanged = true;
-					}
-				}
-			}
-		}
-
-		public void WhisperClientSubscribe(ushort userId)
-		{
-			lock (subscriptionLockObj)
-			{
-				if (!clientSubscriptionsSetup.Contains(userId))
-					clientSubscriptionsSetup.Add(userId);
-				subscriptionSetupChanged = true;
-			}
-		}
-
-		public void WhisperClientUnsubscribe(ushort userId)
-		{
-			lock (subscriptionLockObj)
-			{
-				clientSubscriptionsSetup.Remove(userId);
-				subscriptionSetupChanged = true;
-			}
-		}
-
-		public void ClearTemporary()
-		{
-			lock (subscriptionLockObj)
-			{
-				ulong[] removeList = channelSubscriptionsSetup
-					.Where(kvp => kvp.Value)
-					.Select(kvp => kvp.Key)
-					.ToArray();
-				foreach (var chan in removeList)
-				{
-					channelSubscriptionsSetup.Remove(chan);
-					subscriptionSetupChanged = true;
-				}
-			}
-		}
-
-		private void UpdatedSubscriptionCache()
-		{
-			if (!subscriptionSetupChanged)
-				return;
-			lock (subscriptionLockObj)
-			{
-				if (!subscriptionSetupChanged)
-					return;
-				channelSubscriptionsCache = channelSubscriptionsSetup.Keys.ToArray();
-				clientSubscriptionsCache = clientSubscriptionsSetup.ToArray();
-				subscriptionSetupChanged = false;
-			}
-		}
 
 		#endregion
 	}

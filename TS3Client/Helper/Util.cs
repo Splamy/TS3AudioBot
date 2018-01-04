@@ -7,7 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client
+namespace TS3Client.Helper
 {
 	using Messages;
 	using System;
@@ -17,8 +17,14 @@ namespace TS3Client
 
 	internal static class Util
 	{
-		public static IEnumerable<T> Slice<T>(this IList<T> arr, int from) => Slice(arr, from, arr.Count - from);
-		public static IEnumerable<T> Slice<T>(this IEnumerable<T> arr, int from, int len) => arr.Skip(from).Take(len);
+		public static bool IsLinux
+		{
+			get
+			{
+				int p = (int)Environment.OSVersion.Platform;
+				return (p == 4) || (p == 6) || (p == 128);
+			}
+		}
 
 		public static IEnumerable<Enum> GetFlags(this Enum input) => Enum.GetValues(input.GetType()).Cast<Enum>().Where(input.HasFlag);
 

@@ -19,7 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-namespace TS3AudioBot.Audio.Opus
+namespace TS3Client.Full.Audio.Opus
 {
 	using Helper;
 	using System;
@@ -28,17 +28,22 @@ namespace TS3AudioBot.Audio.Opus
 	/// <summary>
 	/// Wraps the Opus API.
 	/// </summary>
-	internal static class NativeMethods
+	public static class NativeMethods
 	{
 		static NativeMethods()
 		{
 			NativeWinDllLoader.DirectLoadLibrary("libopus");
-			var verStrPtr = opus_get_version_string();
-			var verString = Marshal.PtrToStringAnsi(verStrPtr);
-			Log.Write(Log.Level.Info, "Using opus version: {0} ({1})", verString, NativeWinDllLoader.ArchFolder);
 		}
 
-		public static void DummyLoad() { }
+		public static string Info
+		{
+			get
+			{
+				var verStrPtr = opus_get_version_string();
+				var verString = Marshal.PtrToStringAnsi(verStrPtr);
+				return $"{verString} ({NativeWinDllLoader.ArchFolder})";
+			}
+		}
 
 		// ReSharper disable EnumUnderlyingTypeIsInt, InconsistentNaming
 #pragma warning disable IDE1006

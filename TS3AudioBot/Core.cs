@@ -220,7 +220,7 @@ namespace TS3AudioBot
 			Log.Write(Log.Level.Info, "[==============================================]");
 
 			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
-			Audio.Opus.NativeMethods.DummyLoad();
+			Log.Write(Log.Level.Info, "Using opus version: {0}", TS3Client.Full.Audio.Opus.NativeMethods.Info);
 
 			Injector = new Injector();
 			Injector.RegisterModule(this);

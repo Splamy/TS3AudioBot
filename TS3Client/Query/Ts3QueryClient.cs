@@ -10,6 +10,7 @@
 namespace TS3Client.Query
 {
 	using Commands;
+	using Helper;
 	using Messages;
 	using System;
 	using System.Linq;

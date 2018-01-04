@@ -9,6 +9,7 @@
 
 namespace TS3Client
 {
+	using Helper;
 	using Messages;
 	using System;
 	using System.Collections.Generic;

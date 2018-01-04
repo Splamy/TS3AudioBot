@@ -10,6 +10,7 @@
 namespace TS3Client.Full
 {
 	using Commands;
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;

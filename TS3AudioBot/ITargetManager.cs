@@ -10,6 +10,7 @@
 namespace TS3AudioBot
 {
 	using TS3Client;
+	using TS3Client.Full.Audio;
 
 	public interface ITargetManager
 	{
@@ -29,13 +30,5 @@ namespace TS3AudioBot
 		void ClearTemporary();
 		void WhisperClientSubscribe(ushort userId);
 		void WhisperClientUnsubscribe(ushort userId);
-	}
-
-	public enum TargetSendMode
-	{
-		None,
-		Voice,
-		Whisper,
-		WhisperGroup,
 	}
 }

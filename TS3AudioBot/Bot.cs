@@ -71,7 +71,7 @@ namespace TS3AudioBot
 			if (hmd.EnableHistory)
 				historyManager = new HistoryManager(hmd, core.Database);
 			PlayManager = new PlayManager(core, this);
-			TargetManager = teamspeakClient;
+			TargetManager = teamspeakClient.TargetPipe;
 			TargetScript = new TargetScript(core, this);
 			
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;

@@ -49,7 +49,7 @@ namespace TS3Client
 		///<summary>stereo, 16bit, 48kHz, optimized for music</summary>
 		OpusMusic,
 
-		/// <summary>PCM S16LE 2 Channel (TS3Client extension; not supported by normal TeamSpeak 3 Clients!)</summary>
+		/// <summary>PCM S16LE 1/2 Channel (TS3Client extension; not supported by normal TeamSpeak 3 clients!)</summary>
 		Raw = 127,
 	}
 

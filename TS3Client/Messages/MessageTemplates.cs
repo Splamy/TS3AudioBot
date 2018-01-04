@@ -16,8 +16,10 @@
 
 namespace TS3Client.Messages
 {
-	using System;
 	using Commands;
+	using Helper;
+	using System;
+
 	using ClientUidT = System.String;
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;

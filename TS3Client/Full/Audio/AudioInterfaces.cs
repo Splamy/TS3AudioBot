@@ -28,4 +28,11 @@ namespace TS3Client.Full.Audio
 	}
 
 	public interface IAudioPipe : IAudioPassiveConsumer, IAudioActiveProducer { }
+
+	public interface ISampleInfo
+	{
+		int SampleRate { get; }
+		int Channels { get; }
+		int BitsPerSample { get; }
+	}
 }

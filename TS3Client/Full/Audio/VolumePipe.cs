@@ -19,20 +19,20 @@ namespace TS3Client.Full.Audio
 				// fast calculation for *0.5 volume
 				for (int i = 0; i < audioSamples.Length; i += 2)
 				{
-					short value = (short)((audioSamples[i + 1]) << 8 | audioSamples[i]);
+					short value = unchecked((short)((audioSamples[i + 1]) << 8 | audioSamples[i]));
 					var tmpshort = value >> 1;
-					audioSamples[i + 0] = (byte)(tmpshort >> 0);
-					audioSamples[i + 1] = (byte)(tmpshort >> 8);
+					audioSamples[i + 0] = unchecked((byte)(tmpshort >> 0));
+					audioSamples[i + 1] = unchecked((byte)(tmpshort >> 8));
 				}
 			}
 			else
 			{
 				for (int i = 0; i < audioSamples.Length; i += 2)
 				{
-					short value = (short)((audioSamples[i + 1]) << 8 | audioSamples[i]);
-					var tmpshort = (short)(value * volume);
-					audioSamples[i + 0] = (byte)(tmpshort >> 0);
-					audioSamples[i + 1] = (byte)(tmpshort >> 8);
+					short value = unchecked((short)((audioSamples[i + 1]) << 8 | audioSamples[i]));
+					var tmpshort = (short)Math.Max(Math.Min(value * volume, short.MaxValue), short.MinValue);
+					audioSamples[i + 0] = unchecked((byte)(tmpshort >> 0));
+					audioSamples[i + 1] = unchecked((byte)(tmpshort >> 8));
 				}
 			}
 		}

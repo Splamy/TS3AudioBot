@@ -9,6 +9,7 @@
 
 namespace TS3Client.Full
 {
+	using Helper;
 	using Audio;
 	using Commands;
 	using Messages;
@@ -26,7 +27,7 @@ namespace TS3Client.Full
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
 
-	/// <summary>Creates a full TeampSpeak3 client with voice capabilities.</summary>
+	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
 		private readonly Ts3Crypt ts3Crypt;

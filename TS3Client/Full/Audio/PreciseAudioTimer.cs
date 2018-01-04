@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Audio
+namespace TS3Client.Full.Audio
 {
 	using System;
 	using System.Diagnostics;
 
 	/// <summary>Provides a precise way to measure a playbackbuffer by tracking
 	/// sent bytes and elapsed time.</summary>
-	internal class PreciseAudioTimer
+	public class PreciseAudioTimer : ISampleInfo
 	{
 		public int SampleRate { get; }
-		public int Channel { get; }
+		public int Channels { get; }
 		public int BitsPerSample { get; }
 		public int BytesPerSecond { get; }
 
@@ -38,6 +38,9 @@ namespace TS3AudioBot.Audio
 		/// <summary>The current playback position.</summary>
 		public TimeSpan SongPosition => AbsoluteBufferDuration + SongPositionOffset;
 
+		public PreciseAudioTimer(ISampleInfo sampleInfo)
+			: this(sampleInfo.SampleRate, sampleInfo.BitsPerSample, sampleInfo.Channels) { }
+
 		public PreciseAudioTimer(int sampleRate, int bits, int channel)
 		{
 			if (bits != 8 && bits != 16 && bits != 24 && bits != 32) throw new ArgumentException(nameof(bits));
@@ -46,8 +49,8 @@ namespace TS3AudioBot.Audio
 
 			SampleRate = sampleRate;
 			BitsPerSample = bits;
-			Channel = channel;
-			BytesPerSecond = SampleRate * (BitsPerSample / 8) * Channel;
+			Channels = channel;
+			BytesPerSecond = SampleRate * (BitsPerSample / 8) * Channels;
 		}
 
 		public void Start()

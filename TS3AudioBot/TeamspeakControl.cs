@@ -17,6 +17,7 @@ namespace TS3AudioBot
 	using TS3Client;
 	using TS3Client.Commands;
 	using TS3Client.Full;
+	using TS3Client.Helper;
 	using TS3Client.Messages;
 	using TS3Client.Query;
 

@@ -9,6 +9,8 @@
 
 namespace TS3Client.Full
 {
+	using Helper;
+
 	internal class BasePacket
 	{
 		public PacketType PacketType

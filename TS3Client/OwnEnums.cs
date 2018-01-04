@@ -9,6 +9,7 @@
 
 namespace TS3Client
 {
+	using Helper;
 	using System;
 
 	/*

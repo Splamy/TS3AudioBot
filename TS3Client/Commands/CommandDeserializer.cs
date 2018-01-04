@@ -9,6 +9,7 @@
 
 namespace TS3Client.Commands
 {
+	using Helper;
 	using Messages;
 	using System;
 	using System.Collections.Generic;
@@ -113,8 +114,7 @@ namespace TS3Client.Commands
 		public static DateTime DeserializeDateTime(string v) => Util.UnixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture));
 		public static T DeserializeEnum<T>(string v) where T : struct
 		{
-			T val;
-			if (!Enum.TryParse(v, out val))
+			if (!Enum.TryParse(v, out T val))
 				throw new FormatException();
 			return val;
 		}

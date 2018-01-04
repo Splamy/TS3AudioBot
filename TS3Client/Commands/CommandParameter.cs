@@ -9,6 +9,7 @@
 
 namespace TS3Client.Commands
 {
+	using Helper;
 	using System;
 	using System.Diagnostics;
 	using System.Globalization;

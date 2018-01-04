@@ -85,11 +85,8 @@
   <ItemGroup>
     <Compile Include="Algorithm\DependencyGraph.cs" />
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
-    <Compile Include="Audio\AudioEncoder.cs" />
-    <Compile Include="Audio\Opus\NativeMethods.cs" />
-    <Compile Include="Audio\Opus\OpusDecoder.cs" />
-    <Compile Include="Audio\Opus\OpusEncoder.cs" />
-    <Compile Include="Audio\PreciseAudioTimer.cs" />
+    <Compile Include="Audio\CustomTargetPipe.cs" />
+    <Compile Include="Audio\FfmpegProducer.cs" />
     <Compile Include="BotManager.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="CommandSystem\ASTCommand.cs" />
@@ -164,7 +161,6 @@
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\ConfigFile.cs" />
-    <Compile Include="Helper\PositionedStreamReader.cs" />
     <Compile Include="Helper\TextUtil.cs" />
     <Compile Include="Helper\TickPool.cs" />
     <Compile Include="Helper\Util.cs" />
@@ -210,9 +206,6 @@
     <EmbeddedResource Include="Web\Interface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Audio\Opus\LICENSE" />
-    <None Include="Audio\Opus\OPUS_LICENSE" />
-    <None Include="Audio\Opus\README" />
     <None Include="Web\Interface\less\styles.less" />
     <None Include="Web\Interface\less\styles_authbox.less" />
     <None Include="Web\Interface\less\styles_button.less" />

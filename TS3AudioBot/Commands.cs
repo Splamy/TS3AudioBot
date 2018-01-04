@@ -19,6 +19,7 @@ namespace TS3AudioBot
 	using System.Linq;
 	using System.Text;
 	using TS3Client;
+	using TS3Client.Full.Audio;
 	using TS3Client.Messages;
 	using Web.Api;
 

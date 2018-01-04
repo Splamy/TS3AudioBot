@@ -73,6 +73,11 @@
     <Compile Include="Full\Audio\AudioPacketReader.cs" />
     <Compile Include="Full\Audio\AudioPipeExtensions.cs" />
     <Compile Include="Full\Audio\EncoderPipe.cs" />
+    <Compile Include="Full\Audio\Opus\NativeMethods.cs" />
+    <Compile Include="Helper\NativeWinDllLoader.cs" />
+    <Compile Include="Full\Audio\Opus\OpusDecoder.cs" />
+    <Compile Include="Full\Audio\Opus\OpusEncoder.cs" />
+    <Compile Include="Full\Audio\PreciseAudioTimer.cs" />
     <Compile Include="Full\Audio\PreciseTimedPipe.cs" />
     <Compile Include="Full\Audio\SplitterPipe.cs" />
     <Compile Include="Full\Audio\StaticMetaPipe.cs" />
@@ -100,10 +105,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>MessageTemplates.tt</DependentUpon>
     </Compile>
-    <Compile Include="R.cs" />
+    <Compile Include="Helper\R.cs" />
     <Compile Include="Ts3BaseClient.cs" />
     <Compile Include="TsDnsResolver.cs" />
-    <Compile Include="Util.cs" />
+    <Compile Include="Helper\Util.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
     <Compile Include="Messages\ResponseDictionary.cs" />
@@ -117,6 +122,9 @@
     <Compile Include="WaitBlock.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Full\Audio\Opus\LICENSE" />
+    <None Include="Full\Audio\Opus\OPUS_LICENSE" />
+    <None Include="Full\Audio\Opus\README" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
