@@ -1,0 +1,3 @@
+[submodule "TS3Client/Declarations"]
+	path = TS3Client/Declarations
+	url = https://github.com/ReSpeak/tsdeclarations

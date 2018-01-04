@@ -63,7 +63,7 @@ You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source 
 ### Compilation
 Before we start: _If you know what you are doing_ you can alternatively compile each dependency referenced here from source/git by yourself, but I won't add a tutorial for that.
 
-Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
+Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
 1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`

@@ -7,13 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client.Commands
+namespace TS3Client.Messages
 {
-	using Helper;
-	using Messages;
 	using System;
 	using System.Collections.Generic;
-	using System.Globalization;
 	using System.Linq;
 	using KVEnu = System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>;
 
@@ -96,29 +93,5 @@ namespace TS3Client.Commands
 
 		private static Dictionary<string, string> ParseKeyValueLineDict(KVEnu data)
 			=> data.ToDictionary(pair => pair.Key, pair => pair.Value);
-
-		public static bool DeserializeBool(string v) => v != "0";
-		public static sbyte DeserializeInt8(string v) => sbyte.Parse(v, CultureInfo.InvariantCulture);
-		public static byte DeserializeUInt8(string v) => byte.Parse(v, CultureInfo.InvariantCulture);
-		public static short DeserializeInt16(string v) => short.Parse(v, CultureInfo.InvariantCulture);
-		public static ushort DeserializeUInt16(string v) => ushort.Parse(v, CultureInfo.InvariantCulture);
-		public static int DeserializeInt32(string v) => int.Parse(v, CultureInfo.InvariantCulture);
-		public static uint DeserializeUInt32(string v) => uint.Parse(v, CultureInfo.InvariantCulture);
-		public static long DeserializeInt64(string v) => long.Parse(v, CultureInfo.InvariantCulture);
-		public static ulong DeserializeUInt64(string v) => ulong.Parse(v, CultureInfo.InvariantCulture);
-		public static float DeserializeSingle(string v) => float.Parse(v, CultureInfo.InvariantCulture);
-		public static double DeserializeDouble(string v) => double.Parse(v, CultureInfo.InvariantCulture);
-		public static string DeserializeString(string v) => Ts3String.Unescape(v);
-		public static TimeSpan DeserializeTimeSpanSeconds(string v) => TimeSpan.FromSeconds(double.Parse(v, CultureInfo.InvariantCulture));
-		public static TimeSpan DeserializeTimeSpanMillisec(string v) => TimeSpan.FromMilliseconds(double.Parse(v, CultureInfo.InvariantCulture));
-		public static DateTime DeserializeDateTime(string v) => Util.UnixTimeStart.AddSeconds(double.Parse(v, CultureInfo.InvariantCulture));
-		public static T DeserializeEnum<T>(string v) where T : struct
-		{
-			if (!Enum.TryParse(v, out T val))
-				throw new FormatException();
-			return val;
-		}
-		public static T[] DeserializeArray<T>(string v, Func<string, T> converter)
-			=> v.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Select(converter).ToArray();
 	}
 }

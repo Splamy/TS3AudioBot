@@ -16,7 +16,7 @@ namespace TS3AudioBot.Audio
 	using System.Text.RegularExpressions;
 	using TS3Client.Full.Audio;
 
-	class FfmpegProducer : IAudioPassiveProducer, ISampleInfo
+	class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
 	{
 		public event EventHandler OnSongEnd;
 
@@ -197,6 +197,11 @@ namespace TS3AudioBot.Audio
 				parsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
 				return parsedSongLength.Value;
 			}
+		}
+
+		public void Dispose()
+		{
+			// TODO close ffmpeg if open
 		}
 	}
 }

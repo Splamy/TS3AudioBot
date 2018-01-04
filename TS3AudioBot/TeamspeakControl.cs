@@ -357,7 +357,7 @@ namespace TS3AudioBot
 			return getInfoResult.Value.IsChannelCommander;
 		}
 
-		public void Dispose()
+		public virtual void Dispose()
 		{
 			if (tsBaseClient != null)
 			{

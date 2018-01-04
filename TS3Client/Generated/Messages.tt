@@ -9,6 +9,7 @@
 
 <#@ output extension=".cs" #>
 <#@ template debug="true" hostSpecific="true" #>
+<#@ assembly name="System.Core" #> 
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
@@ -19,6 +20,7 @@ namespace TS3Client.Messages
 	using Commands;
 	using Helper;
 	using System;
+	using System.Globalization;
 
 	using ClientUidT = System.String;
 	using ClientDbIdT = System.UInt64;
@@ -26,18 +28,92 @@ namespace TS3Client.Messages
 	using ChannelIdT = System.UInt64;
 	using ServerGroupIdT = System.UInt64;
 	using ChannelGroupIdT = System.UInt64;
-	using TimeSpanSecondsT = System.TimeSpan;
-	using TimeSpanMillisecT = System.TimeSpan;
 
 <#
-	string declFilePath = Host.ResolvePath("MessageDeclarations.txt");
+	string declFilePath = Host.ResolvePath("../Declarations/Messages.txt");
 	string[] declLines = File.ReadAllLines(declFilePath);
 	
 	var fldDict = new Dictionary<string, GenField>();
 	var msgDict = new Dictionary<string, GenMsg>();
 	var ntfyDict = new Dictionary<string, GenNotify>();
-	var convDict = new Dictionary<string, string>();
-	
+	var convSet = new HashSet<string>();
+
+	string GenerateDeserializer(GenField fld)
+	{
+		if(fld.isArray)
+			return $"{{ var t = value.Split(new[] {{ ',' }}, StringSplitOptions.RemoveEmptyEntries); {fld.fldName} = new {fld.fldType}[t.Length]; for(int i = 0; i < t.Length; i++) {GenerateSingleDeserializer(fld, "t[i]", fld.fldName + "[i]")} }}";
+		else
+			return GenerateSingleDeserializer(fld, "value", fld.fldName);
+	}
+
+	string GenerateSingleDeserializer(GenField fld, string input, string output)
+	{
+		if(!convSet.Contains(fld.fldType))
+			throw new Exception("Unregistered type");
+		switch (fld.fldType)
+		{
+		case "bool":
+			return $"{output} = {input} != \"0\";";
+		case "sbyte":
+		case "byte":
+		case "short":
+		case "ushort":
+		case "int":
+		case "uint":
+		case "long":
+		case "ulong":
+		case "float":
+		case "double":
+		case "ClientDbIdT":
+		case "ClientIdT":
+		case "ChannelIdT":
+		case "ServerGroupIdT":
+		case "ChannelGroupIdT":
+			return $"{output} = {fld.fldType}.Parse({input}, CultureInfo.InvariantCulture);";
+		case "TimeSpanSecondsT":
+			return $"{output} = TimeSpan.FromSeconds(double.Parse({input}, CultureInfo.InvariantCulture));";
+		case "TimeSpanMillisecT":
+			return $"{output} = TimeSpan.FromMilliseconds(double.Parse({input}, CultureInfo.InvariantCulture));";
+		case "DateTime":
+			return $"{output} = Util.UnixTimeStart.AddSeconds(double.Parse({input}, CultureInfo.InvariantCulture));";
+		case "string":
+		case "ClientUidT":
+			return $"{output} = Ts3String.Unescape({input});";
+		case "Codec":
+		case "HostMessageMode":
+		case "CodecEncryptionMode":
+		case "HostBannerMode":
+		case "MoveReason":
+		case "ClientType":
+		case "TextMessageTargetMode":
+		case "PermissionGroupDatabaseType":
+		case "GroupNamingMode":
+			return $"{{ if (!Enum.TryParse({input}, out {fld.fldType} val)) throw new FormatException(); {output} = val; }}";
+		case "Ts3ErrorCode":
+			return $"{output} = (Ts3ErrorCode)ushort.Parse({input}, CultureInfo.InvariantCulture);";
+		case "PermissionId":
+			return $"{output} = (PermissionId)int.Parse({input}, CultureInfo.InvariantCulture);";
+		case "IconHash":
+			return $"{output} = unchecked((int)long.Parse({input}, CultureInfo.InvariantCulture));";
+		default:
+			return "#error missing deserializer";
+		}
+	}
+
+	string GenerateType(GenField fld)
+	{
+		string final;
+		switch (fld.fldType)
+		{
+		case "TimeSpanSecondsT": final = "TimeSpan"; break;
+		case "TimeSpanMillisecT": final = "TimeSpan"; break;
+		case "IconHash": final = "int"; break;
+		default: final = fld.fldType; break;
+		}
+
+		return final + (fld.isArray ? "[]" : "");
+	}
+
 	foreach(var line in declLines)
 	{
 		if(string.IsNullOrWhiteSpace(line))
@@ -73,7 +149,7 @@ namespace TS3Client.Messages
 				GenField genField;
 				if(!fldDict.TryGetValue(param[i], out genField)) { this.Write(Environment.NewLine + "#warning Missing Field: " + param[i]); continue; }
 #>
-		public <#= genField.fldType #> <#= genField.fldName #> { get; set; }<#
+		public <#= genField.genType #> <#= genField.fldName #> { get; set; }<#
 			}
 #>
 
@@ -89,10 +165,10 @@ namespace TS3Client.Messages
 				GenField genField;
 				if(!fldDict.TryGetValue(param[i], out genField)) { this.Write(Environment.NewLine + "#warning Missing Field: " + param[i]); continue; }
 #>
-			case "<#= genField.tsName #>": <#= genField.fldName #> = <#= convDict[genField.fldType] #> break;<#
+			case "<#= genField.tsName #>": <#= GenerateDeserializer(genField) #> break;<#
 			}
 #>
-			<#= isNotify ? "" : ("case \"return_code\": ReturnCode = " + convDict["string"] + " break;") #>
+			<#= isNotify ? "" : ("case \"return_code\": " + GenerateDeserializer(fldDict["return_code"]) + " break;") #>
 			}
 <#
 			}#>
@@ -104,7 +180,19 @@ namespace TS3Client.Messages
 		{
 			var param = parts[1].Replace(" ", "").Split(',');
 			if(param.Length < 4) { this.Write("#warning Invalid FIELD: " + line); continue; }
-			fldDict.Add(param[0], new GenField { tsName=param[1], fldName=param[2], fldType=param[3] } );
+			var fld = new GenField { tsName=param[1], fldName=param[2], fldType=param[3], isArray = false, isOpt = false };
+			if(fld.fldType.EndsWith("[]"))
+			{
+				fld.isArray = true;
+				fld.fldType = fld.fldType.Substring(0, fld.fldType.Length - 2);
+			}
+			if(fld.fldType.EndsWith("?"))
+			{
+				fld.isOpt = true;
+				fld.fldType = fld.fldType.Substring(0, fld.fldType.Length - 1);
+			}
+			fld.genType = GenerateType(fld);
+			fldDict.Add(param[0], fld );
 		}
 		else if(parts[0] == "NOTIFY")
 		{
@@ -112,11 +200,10 @@ namespace TS3Client.Messages
 			if(param.Length < 2) { this.Write("#warning Invalid NOTIFY: " + line); continue; }
 			ntfyDict.Add(param[0], new GenNotify { enumName=param[1] } );
 		}
-		else if(parts[0] == "CONV")
+		else if(parts[0] == "TYPE")
 		{
-			var param = parts[1].Replace(" ", "").Split(new[] { ',' }, 2);
-			if(param.Length < 2) { this.Write("#warning Invalid CONV: " + line); continue; }
-			convDict.Add(param[0], param[1] );
+			if(parts[1].Contains(",")) { this.Write("#warning Invalid TYPE: " + line); continue; }
+			convSet.Add(parts[1].Trim());
 		}
 		else if(parts[0] == "BREAK")
 		{
@@ -162,8 +249,11 @@ namespace TS3Client.Messages
 <#+	class GenField
 {
 	public string tsName;
-	public string fldName;
-	public string fldType;
+	public string fldName; // propety name
+	public string fldType; // single type
+	public string genType; // final property Type
+	public bool isArray;
+	public bool isOpt;
 }
 class GenMsg
 {

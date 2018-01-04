@@ -349,6 +349,14 @@ namespace TS3AudioBot
 		public bool Repeated { get { return false; } set { } }
 
 		#endregion
+
+		public override void Dispose()
+		{
+			timePipe?.Dispose();
+			ffmpegProducer?.Dispose();
+			encoderPipe?.Dispose();
+			base.Dispose();
+		}
 	}
 
 	public class Ts3FullClientData : ConfigData

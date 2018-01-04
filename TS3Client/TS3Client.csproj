@@ -96,14 +96,14 @@
     <Compile Include="Full\Ts3Crypt.cs" />
     <Compile Include="Full\Ts3FullClient.cs" />
     <Compile Include="Full\VersionSign.cs" />
-    <Compile Include="Commands\CommandDeserializer.cs" />
+    <Compile Include="Messages\MessageDeserializer.cs" />
     <Compile Include="Commands\Ts3Command.cs" />
     <Compile Include="LazyNotification.cs" />
     <Compile Include="MessageProcessor.cs" />
-    <Compile Include="Messages\MessageTemplates.cs">
+    <Compile Include="Generated\Messages.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>MessageTemplates.tt</DependentUpon>
+      <DependentUpon>Messages.tt</DependentUpon>
     </Compile>
     <Compile Include="Helper\R.cs" />
     <Compile Include="Ts3BaseClient.cs" />
@@ -131,10 +131,13 @@
     <None Include="ts3protocol.md" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Messages\MessageDeclarations.txt" />
-    <Content Include="Messages\MessageTemplates.tt">
+    <Content Include="Declarations\Errors.csv" />
+    <Content Include="Declarations\Permissions.csv" />
+    <Content Include="Declarations\BookDeclarations.txt" />
+    <Content Include="Declarations\Messages.txt" />
+    <Content Include="Generated\Messages.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MessageTemplates.cs</LastGenOutput>
+      <LastGenOutput>Messages.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>
