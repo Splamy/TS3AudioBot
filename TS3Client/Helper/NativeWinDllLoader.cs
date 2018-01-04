@@ -1,5 +1,5 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
-// Copyright (C) 2017  TS3AudioBot contributors
+// TS3Client - A free TeamSpeak3 client implementation
+// Copyright (C) 2017  TS3Client contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the Open Software License v. 3.0
