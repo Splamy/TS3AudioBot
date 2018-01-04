@@ -8,8 +8,8 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 <#@ output extension=".cs" #>
-<#@ template debug="true" hostSpecific="true" #>
-<#@ assembly name="System.Core" #> 
+<#@ template debug="false" hostSpecific="true" language="C#" #>
+<#@ assembly name="System.Core" #>
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>

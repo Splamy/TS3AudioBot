@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <LangVersion>7</LangVersion>
+    <TransformOnBuild>true</TransformOnBuild>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -26,7 +27,6 @@
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <CodeAnalysisRuleSet />
-    <LangVersion>7</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -74,6 +74,11 @@
     <Compile Include="Full\Audio\AudioPipeExtensions.cs" />
     <Compile Include="Full\Audio\EncoderPipe.cs" />
     <Compile Include="Full\Audio\Opus\NativeMethods.cs" />
+    <Compile Include="Generated\Permissions.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Permissions.tt</DependentUpon>
+    </Compile>
     <Compile Include="Helper\NativeWinDllLoader.cs" />
     <Compile Include="Full\Audio\Opus\OpusDecoder.cs" />
     <Compile Include="Full\Audio\Opus\OpusEncoder.cs" />
@@ -138,6 +143,10 @@
     <Content Include="Generated\Messages.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Messages.cs</LastGenOutput>
+    </Content>
+    <Content Include="Generated\Permissions.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Permissions.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>
