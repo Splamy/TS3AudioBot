@@ -78,8 +78,7 @@ namespace TS3AudioBot.Audio
 			{
 				if (ffmpegProcess == null)
 					return 0;
-
-				ffmpegProcess.StandardOutput.BaseStream.ReadTimeout = 1000;
+				
 				int read = ffmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
 				if (read == 0)
 				{
