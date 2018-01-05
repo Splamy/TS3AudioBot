@@ -15,7 +15,7 @@
 <#@ import namespace="Microsoft.VisualBasic.FileIO" #>
 <#@ output extension=".cs" #>
 <#
-string declFilePath = Host.ResolvePath("../Declarations/Permissions.csv");
+string declFilePath = Host.ResolvePath("../Declarations/Errors.csv");
 var data = new List<string[]>();
 using (TextFieldParser parser = new TextFieldParser(declFilePath))
 {
@@ -27,29 +27,14 @@ using (TextFieldParser parser = new TextFieldParser(declFilePath))
 #>
 namespace TS3Client
 {
-	using Helper;
-
-	// Source: https://www.tsviewer.com/index.php?page=faq&id=12&newlanguage=en
-	public enum PermissionId : int
+	// Source: http://forum.teamspeak.com/threads/102276-Server-query-error-id-list
+	public enum Ts3ErrorCode : ushort
 	{
-		// ReSharper disable InconsistentNaming, UnusedMember.Global
-		undefined = -1,<# foreach (var line in data.Skip(1)) { #>
+		// ReSharper disable InconsistentNaming, UnusedMember.Global<# foreach (var line in data.Skip(1)) { #>
+		/// <summary><#= line[1] #></summary>
 		<#= line[0] #> = <#= line[2] #>,<# } #>
+		/// <summary>For own custom errors</summary>
+		custom_error = 0xFFFF,
 		// ReSharper enable InconsistentNaming, UnusedMember.Global
-	}
-
-	public static class PerissionInfo
-	{
-		public static string Get(PermissionId permid)
-		{
-			switch (permid)
-			{
-			// ReSharper disable InconsistentNaming, UnusedMember.Global
-			case PermissionId.undefined: return "Undefined permission";<# foreach (var line in data.Skip(1)) { #>
-			case PermissionId.<#= line[0] #> : return "<#= line[1] #>";<# } #>
-			default: throw Util.UnhandledDefault(permid);
-			// ReSharper enable InconsistentNaming, UnusedMember.Global
-			}
-		}
 	}
 }

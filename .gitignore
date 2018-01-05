@@ -41,8 +41,6 @@ latex/
 
 # Keep precompiled libs
 !TS3AudioBot/lib/**/*
-# Ignore auto-generated files
-TS3Client/Generated/*.cs
 
 # Roslyn cache directories
 *.ide/

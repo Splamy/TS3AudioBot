@@ -162,7 +162,7 @@ namespace TS3AudioBot
 				if (verionSign == null)
 				{
 					Log.Write(Log.Level.Warning, "Invalid version sign, falling back to unknown :P");
-					verionSign = VersionSign.VER_WIN_3_UNKNOWN;
+					verionSign = VersionSign.VER_WIN_3_X_X;
 				}
 			}
 			else if (Util.IsLinux)

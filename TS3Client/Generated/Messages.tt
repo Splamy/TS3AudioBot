@@ -22,7 +22,7 @@ namespace TS3Client.Messages
 	using System;
 	using System.Globalization;
 
-	using ClientUidT = System.String;
+	using UidT = System.String;
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
 	using ChannelIdT = System.UInt64;
@@ -77,7 +77,7 @@ namespace TS3Client.Messages
 		case "DateTime":
 			return $"{output} = Util.UnixTimeStart.AddSeconds(double.Parse({input}, CultureInfo.InvariantCulture));";
 		case "string":
-		case "ClientUidT":
+		case "UidT":
 			return $"{output} = Ts3String.Unescape({input});";
 		case "Codec":
 		case "HostMessageMode":
