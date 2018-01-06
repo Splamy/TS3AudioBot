@@ -90,9 +90,10 @@ namespace TS3Client.Messages
 		case "GroupNamingMode":
 			return $"{{ if (!Enum.TryParse({input}, out {fld.fldType} val)) throw new FormatException(); {output} = val; }}";
 		case "Ts3ErrorCode":
-			return $"{output} = (Ts3ErrorCode)ushort.Parse({input}, CultureInfo.InvariantCulture);";
+		case "LicenseType":
+			return $"{output} = ({fld.fldType})ushort.Parse({input}, CultureInfo.InvariantCulture);";
 		case "PermissionId":
-			return $"{output} = (PermissionId)int.Parse({input}, CultureInfo.InvariantCulture);";
+			return $"{output} = ({fld.fldType})int.Parse({input}, CultureInfo.InvariantCulture);";
 		case "IconHash":
 			return $"{output} = unchecked((int)long.Parse({input}, CultureInfo.InvariantCulture));";
 		default:
@@ -202,8 +203,9 @@ namespace TS3Client.Messages
 		}
 		else if(parts[0] == "TYPE")
 		{
-			if(parts[1].Contains(",")) { this.Write("#warning Invalid TYPE: " + line); continue; }
-			convSet.Add(parts[1].Trim());
+			var param = parts[1].Replace(" ", "").Split(',');
+			if(param.Length != 1 && param.Length != 2) { this.Write("#warning Invalid TYPE: " + line); continue; }
+			convSet.Add(param[0]);
 		}
 		else if(parts[0] == "BREAK")
 		{

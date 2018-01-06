@@ -142,5 +142,13 @@ namespace TS3Client
 			}
 			Console.WriteLine(detail);
 		}
+
+		[Conditional("DEBUG")]
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		public static void WriteErrParse(string errMsg)
+		{
+			WriteType("ERR");
+			Write(errMsg, ConsoleColor.Red);
+		}
 	}
 }

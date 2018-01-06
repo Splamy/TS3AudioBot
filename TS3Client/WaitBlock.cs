@@ -9,7 +9,6 @@
 
 namespace TS3Client
 {
-	using Commands;
 	using Helper;
 	using Messages;
 	using System;
@@ -49,7 +48,7 @@ namespace TS3Client
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
-			return R<IEnumerable<T>, CommandError>.OkR(CommandDeserializer.GenerateResponse<T>(commandLine));
+			return R<IEnumerable<T>, CommandError>.OkR(Deserializer.GenerateResponse<T>(commandLine));
 		}
 
 		public R<LazyNotification, CommandError> WaitForNotification()

@@ -878,7 +878,7 @@ namespace TS3Client.Messages
 		public string ClientName { get; set; }
 		public ClientIdT ClientId { get; set; }
 		public ushort ProtocolVersion { get; set; }
-		public ushort LicenseType { get; set; }
+		public LicenseType LicenseType { get; set; }
 		public int TalkPower { get; set; }
 		public int NeededServerQueryViewPower { get; set; }
 		public string ServerName { get; set; }
@@ -916,7 +916,7 @@ namespace TS3Client.Messages
 			case "acn": ClientName = Ts3String.Unescape(value); break;
 			case "aclid": ClientId = ClientIdT.Parse(value, CultureInfo.InvariantCulture); break;
 			case "pv": ProtocolVersion = ushort.Parse(value, CultureInfo.InvariantCulture); break;
-			case "lt": LicenseType = ushort.Parse(value, CultureInfo.InvariantCulture); break;
+			case "lt": LicenseType = (LicenseType)ushort.Parse(value, CultureInfo.InvariantCulture); break;
 			case "client_talk_power": TalkPower = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "client_needed_serverquery_view_power": NeededServerQueryViewPower = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "virtualserver_name": ServerName = Ts3String.Unescape(value); break;

@@ -84,6 +84,7 @@ public struct R<TSuccess, TError>
 
 	private R(TSuccess value) { isError = false; Error = default(TError); if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
 	private R(TError error) { isError = true; Value = default(TSuccess); if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
+	internal R(bool isError, TSuccess value, TError error) { this.isError = isError; Value = value; Error = error; }
 
 	/// <summary>Creates a new failed result with an error object</summary>
 	/// <param name="error">The error</param>
@@ -128,6 +129,13 @@ public struct E<TError>
 	public static implicit operator TError(E<TError> result) => result.Error;
 
 	public static implicit operator E<TError>(TError result) => new E<TError>(result);
+
+	// Upwrapping
+	public R<TSuccess, TError> WithValue<TSuccess>(TSuccess value)
+	{
+		if (!isError && value == null) throw new ArgumentNullException(nameof(value), "Value must not be null.");
+		return new R<TSuccess, TError>(isError, value, Error);
+	}
 }
 
 #pragma warning restore IDE0016

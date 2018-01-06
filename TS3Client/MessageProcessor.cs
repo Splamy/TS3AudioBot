@@ -61,7 +61,7 @@ namespace TS3Client
 			// if it's not an error it is a notification
 			if (ntfyType != NotificationType.Error)
 			{
-				var notification = CommandDeserializer.GenerateNotification(lineDataPart, ntfyType);
+				var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
 				var lazyNotification = new LazyNotification(notification, ntfyType);
 				lock (waitBlockLock)
 				{
@@ -88,7 +88,9 @@ namespace TS3Client
 				return lazyNotification;
 			}
 
-			var errorStatus = (CommandError)CommandDeserializer.GenerateSingleNotification(lineDataPart, NotificationType.Error);
+			CommandError errorStatus;
+			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.Error);
+			errorStatus = result.Ok ? (CommandError)result.Value : Util.CustomError("Invalid Error code");
 
 			if (synchronQueue)
 			{

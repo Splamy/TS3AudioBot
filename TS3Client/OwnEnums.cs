@@ -144,4 +144,18 @@ namespace TS3Client
 		Subchannels,
 	}
 	// ReSharper enable UnusedMember.Global
+
+	public enum LicenseType : ushort
+	{
+		/// <summary>No licence</summary>
+		NoLicense = 0,
+		///<summary>Authorised TeamSpeak Host Provider License (ATHP)</summary>
+		Athp = 1,
+		///<summary>Offline/LAN License</summary>
+		Lan = 2,
+		///<summary>Non-Profit License (NPL)</summary>
+		Npl = 3,
+		///<summary>Unknown License</summary>
+		Unknown = 4,
+	}
 }

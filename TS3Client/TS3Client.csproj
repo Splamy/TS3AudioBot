@@ -112,7 +112,7 @@
     <Compile Include="Full\RingQueue.cs" />
     <Compile Include="Full\Ts3Crypt.cs" />
     <Compile Include="Full\Ts3FullClient.cs" />
-    <Compile Include="Messages\MessageDeserializer.cs" />
+    <Compile Include="Messages\Deserializer.cs" />
     <Compile Include="Commands\Ts3Command.cs" />
     <Compile Include="LazyNotification.cs" />
     <Compile Include="MessageProcessor.cs" />

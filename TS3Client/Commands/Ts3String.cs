@@ -15,7 +15,9 @@ namespace TS3Client.Commands
 
 	public static class Ts3String
 	{
-		public static string Escape(string stringToEscape)
+		public static string Escape(string stringToEscape) => Escape(stringToEscape.AsSpan());
+
+		public static string Escape(ReadOnlySpan<char> stringToEscape)
 		{
 			var strb = new StringBuilder(stringToEscape.Length);
 			for (int i = 0; i < stringToEscape.Length; i++)
@@ -37,7 +39,9 @@ namespace TS3Client.Commands
 			return strb.ToString();
 		}
 
-		public static string Unescape(string stringToUnescape)
+		public static string Unescape(string stringToUnescape) => Unescape(stringToUnescape.AsSpan());
+
+		public static string Unescape(ReadOnlySpan<char> stringToUnescape)
 		{
 			var strb = new StringBuilder(stringToUnescape.Length);
 			for (int i = 0; i < stringToUnescape.Length; i++)
