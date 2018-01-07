@@ -401,7 +401,7 @@ namespace TS3AudioBot
 			=> PlayManager.Enqueue(info.InvokerData, parameter).UnwrapThrow();
 
 		[Command("api token", "Generates an api token.")]
-		[Usage("[<link>]", "Optionally specifies a duration this key is valid in hours.")]
+		[Usage("[<hour>]", "Optionally specifies a duration this key is valid in hours.")]
 		[RequiredParameters(0)]
 		public JsonObject CommandApiToken(ExecutionInformation info, double? validHours)
 		{
@@ -960,7 +960,7 @@ namespace TS3AudioBot
 		// add list item rename
 
 		[Command("list list", "Displays all available playlists from all users.")]
-		[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
+		[Usage("<pattern>", "Filters all lists containing the given pattern.")]
 		[RequiredParameters(0)]
 		public JsonObject CommandListList(string pattern)
 		{
