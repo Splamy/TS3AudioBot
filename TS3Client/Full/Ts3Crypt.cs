@@ -467,8 +467,8 @@ namespace TS3Client.Full
 			Array.Copy(cachedKeyNonces[cacheIndex].Item2, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
-			key[0] ^= (byte)(packetId >> 8);
-			key[1] ^= (byte)(packetId >> 0);
+			key[0] ^= unchecked((byte)(packetId >> 8));
+			key[1] ^= unchecked((byte)(packetId >> 0));
 
 			return (key, nonce);
 		}

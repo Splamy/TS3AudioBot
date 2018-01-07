@@ -73,7 +73,7 @@ namespace TS3AudioBot
 			PlayManager = new PlayManager(core, this);
 			TargetManager = teamspeakClient.TargetPipe;
 			TargetScript = new TargetScript(core, this);
-			
+
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
 			PlayManager.BeforeResourceStarted += TargetScript.BeforeResourceStarted;
 			// In own favor update the own status text to the current song title
@@ -90,7 +90,7 @@ namespace TS3AudioBot
 			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += OnClientDisconnect;
 			QueryConnection.OnBotDisconnect += (s, e) => Dispose();
-			QueryConnection.OnClientConnect += OnClientConnect;
+			QueryConnection.OnBotConnected += OnBotConnected;
 			BadgesString = tfcd.ClientBadges;
 
 			// Connect the query after everyting is set up
@@ -103,13 +103,9 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		private void OnClientConnect(object sender, ClientEnterView e)
+		private void OnBotConnected(object sender, EventArgs e)
 		{
-			var me = QueryConnection.GetSelf();
-			if (e.ClientId == me.Value.ClientId)
-			{
-				QueryConnection.ChangeBadges(BadgesString);
-			}
+			QueryConnection.ChangeBadges(BadgesString);
 		}
 
 		private void TextCallback(object sender, TextMessage textMessage)

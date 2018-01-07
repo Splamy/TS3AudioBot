@@ -60,6 +60,7 @@ namespace TS3AudioBot
 			}
 		}
 
+		public event EventHandler<EventArgs> OnBotConnected;
 		public abstract event EventHandler OnBotDisconnect;
 
 		private List<ClientData> clientbuffer;
@@ -81,6 +82,7 @@ namespace TS3AudioBot
 			tsBaseClient.OnClientLeftView += ExtendedClientLeftView;
 			tsBaseClient.OnClientEnterView += ExtendedClientEnterView;
 			tsBaseClient.OnTextMessageReceived += ExtendedTextMessage;
+			tsBaseClient.OnConnected += OnBotConnected;
 		}
 
 		public virtual T GetLowLibrary<T>() where T : class

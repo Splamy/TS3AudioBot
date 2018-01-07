@@ -18,7 +18,8 @@ namespace TS3AudioBot
 	{
 		private bool isRunning;
 		public Core Core { get; set; }
-		private readonly List<Bot> activeBots;
+		private List<Bot> activeBots;
+		private readonly object lockObj = new object();
 
 		public BotManager()
 		{
@@ -32,7 +33,7 @@ namespace TS3AudioBot
 		{
 			while (isRunning)
 			{
-				lock (activeBots)
+				lock (lockObj)
 				{
 					if (activeBots.Count == 0)
 					{
@@ -51,14 +52,17 @@ namespace TS3AudioBot
 		private void CleanStrayBots()
 		{
 			List<Bot> strayList = null;
-			foreach (var bot in activeBots)
+			lock (lockObj)
 			{
-				var client = bot.QueryConnection.GetLowLibrary<TS3Client.Full.Ts3FullClient>();
-				if (!client.Connected && !client.Connecting)
+				foreach (var bot in activeBots)
 				{
-					Log.Write(Log.Level.Warning, "Cleaning up stray bot.");
-					strayList = strayList ?? new List<Bot>();
-					strayList.Add(bot);
+					var client = bot.QueryConnection.GetLowLibrary<TS3Client.Full.Ts3FullClient>();
+					if (!client.Connected && !client.Connecting)
+					{
+						Log.Write(Log.Level.Warning, "Cleaning up stray bot.");
+						strayList = strayList ?? new List<Bot>();
+						strayList.Add(bot);
+					}
 				}
 			}
 
@@ -69,30 +73,30 @@ namespace TS3AudioBot
 
 		public bool CreateBot(/*Ts3FullClientData bot*/)
 		{
-			string error = string.Empty;
+			bool removeBot = false;
 			var bot = new Bot(Core);
-			try
+			if (bot.InitializeBot())
 			{
-				if (bot.InitializeBot())
+				lock (lockObj)
 				{
-					lock (activeBots)
-					{
-						activeBots.Add(bot);
-					}
-					return true;
+					activeBots.Add(bot);
+					removeBot = !isRunning;
 				}
 			}
-			catch (Exception ex) { error = ex.ToString(); }
-
-			bot.Dispose();
-			Log.Write(Log.Level.Warning, "Could not create new Bot ({0})", error);
-			return false;
+			if (removeBot)
+			{
+				StopBot(bot);
+				return false;
+			}
+			return true;
 		}
 
 		public Bot GetBot(int id)
 		{
-			lock (activeBots)
+			lock (lockObj)
 			{
+				if (!isRunning)
+					return null;
 				return id < activeBots.Count
 					? activeBots[id]
 					: null;
@@ -101,25 +105,30 @@ namespace TS3AudioBot
 
 		public void StopBot(Bot bot)
 		{
-			lock (activeBots)
+			bool tookBot = false;
+			lock (lockObj)
 			{
-				if (activeBots.Remove(bot))
-				{
-					bot.Dispose();
-				}
+				tookBot = activeBots.Remove(bot);
+			}
+			if (tookBot)
+			{
+				bot.Dispose();
 			}
 		}
 
 		public void Dispose()
 		{
-			isRunning = false;
-			lock (activeBots)
+			List<Bot> disposeBots;
+			lock (lockObj)
 			{
-				var bots = activeBots.ToArray();
-				foreach (var bot in bots)
-				{
-					StopBot(bot);
-				}
+				isRunning = false;
+				disposeBots = activeBots;
+				activeBots = new List<Bot>();
+			}
+
+			foreach (var bot in disposeBots)
+			{
+				StopBot(bot);
 			}
 		}
 	}

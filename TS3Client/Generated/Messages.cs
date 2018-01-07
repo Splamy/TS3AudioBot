@@ -101,7 +101,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if (!Enum.TryParse(value, out Codec val)) throw new FormatException(); Codec = val; } break;
 			case "channel_codec_quality": CodecQuality = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value, CultureInfo.InvariantCulture); break;
-			case "channel_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "channel_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "channel_maxclients": MaxClients = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_maxfamilyclients": MaxFamilyClients = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_codec_latency_factor": CodecLatencyFactor = int.Parse(value, CultureInfo.InvariantCulture); break;
@@ -195,7 +195,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if (!Enum.TryParse(value, out Codec val)) throw new FormatException(); Codec = val; } break;
 			case "channel_codec_quality": CodecQuality = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value, CultureInfo.InvariantCulture); break;
-			case "channel_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "channel_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "channel_maxclients": MaxClients = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_maxfamilyclients": MaxFamilyClients = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_codec_latency_factor": CodecLatencyFactor = int.Parse(value, CultureInfo.InvariantCulture); break;
@@ -270,7 +270,7 @@ namespace TS3Client.Messages
 			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_forced_silence": ForcedSilence = value != "0"; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "channel_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "channel_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "channel_flag_private": IsPrivate = value != "0"; break;
 			
 			}
@@ -498,7 +498,7 @@ namespace TS3Client.Messages
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarFlag = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "client_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "client_input_muted": IsInputMuted = value != "0"; break;
 			case "client_output_muted": IsOutputMuted = value != "0"; break;
 			case "client_outputonly_muted": IsOutputOnlyMuted = value != "0"; break;
@@ -931,7 +931,7 @@ namespace TS3Client.Messages
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "virtualserver_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "virtualserver_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "virtualserver_hostbanner_mode": { if (!Enum.TryParse(value, out HostBannerMode val)) throw new FormatException(); HostbannerMode = val; } break;
 			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = TimeSpan.FromSeconds(double.Parse(value, CultureInfo.InvariantCulture)); break;
 			
@@ -987,7 +987,7 @@ namespace TS3Client.Messages
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "virtualserver_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "virtualserver_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "virtualserver_hostbanner_mode": { if (!Enum.TryParse(value, out HostBannerMode val)) throw new FormatException(); HostbannerMode = val; } break;
 			case "virtualserver_channel_temp_delete_delay_default": DefaultTempChannelDeleteDelay = TimeSpan.FromSeconds(double.Parse(value, CultureInfo.InvariantCulture)); break;
 			
@@ -1143,7 +1143,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if (!Enum.TryParse(value, out Codec val)) throw new FormatException(); Codec = val; } break;
 			case "channel_codec_quality": CodecQuality = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value, CultureInfo.InvariantCulture); break;
-			case "channel_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "channel_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "channel_maxclients": MaxClients = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "channel_maxfamilyclients": MaxFamilyClients = int.Parse(value, CultureInfo.InvariantCulture); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -1221,7 +1221,7 @@ namespace TS3Client.Messages
 			case "client_type": { if (!Enum.TryParse(value, out ClientType val)) throw new FormatException(); ClientType = val; } break;
 			case "client_flag_avatar": AvatarFlag = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "client_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "client_created": CreationDate = Util.UnixTimeStart.AddSeconds(double.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "client_lastconnected": LastConnected = Util.UnixTimeStart.AddSeconds(double.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "client_totalconnections": TotalConnections = int.Parse(value, CultureInfo.InvariantCulture); break;
@@ -1365,7 +1365,7 @@ namespace TS3Client.Messages
 			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarFlag = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": IconId = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture)); break;
+			case "client_icon_id": IconId = unchecked((int)ulong.Parse(value, CultureInfo.InvariantCulture)); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
