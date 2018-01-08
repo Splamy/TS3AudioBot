@@ -9,7 +9,6 @@
 
 namespace TS3Client
 {
-	using Commands;
 	using Helper;
 	using Messages;
 	using System;
@@ -88,9 +87,8 @@ namespace TS3Client
 				return lazyNotification;
 			}
 
-			CommandError errorStatus;
 			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.Error);
-			errorStatus = result.Ok ? (CommandError)result.Value : Util.CustomError("Invalid Error code");
+			var errorStatus = result.Ok ? (CommandError)result.Value : Util.CustomError("Invalid Error code");
 
 			if (synchronQueue)
 			{

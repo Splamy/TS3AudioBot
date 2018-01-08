@@ -292,10 +292,6 @@ namespace TS3Client.Full
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static ushort ReadU16(byte[] intArr, int inOff)
-			=> unchecked((ushort)(intArr[inOff] | (intArr[inOff + 1] << 8)));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Read24(ReadOnlySpan<byte> intArr, int inOff)
 			=> unchecked(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16));
 

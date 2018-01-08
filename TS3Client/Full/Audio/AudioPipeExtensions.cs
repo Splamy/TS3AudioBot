@@ -19,7 +19,7 @@ namespace TS3Client.Full.Audio
 			{
 				producer.OutStream = addConsumer;
 			}
-			else if (producer is SplitterPipe splitter)
+			else if (producer.OutStream is SplitterPipe splitter)
 			{
 				splitter.Add(addConsumer);
 			}

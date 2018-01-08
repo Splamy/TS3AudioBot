@@ -14,9 +14,11 @@ namespace TS3Client
 	using System;
 	using System.Collections.Generic;
 	using System.Threading;
+	using System.Threading.Tasks;
 
 	internal sealed class WaitBlock : IDisposable
 	{
+		private readonly TaskCompletionSource<bool> answerWaiterAsync;
 		private readonly ManualResetEvent answerWaiter;
 		private readonly ManualResetEvent notificationWaiter;
 		private CommandError commandError;
@@ -25,11 +27,16 @@ namespace TS3Client
 		private LazyNotification notification;
 		private bool isDisposed;
 		private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(15);
+		private readonly bool async;
 
-		public WaitBlock(NotificationType[] dependsOn = null)
+		public WaitBlock(bool async, NotificationType[] dependsOn = null)
 		{
+			this.async = async;
 			isDisposed = false;
-			answerWaiter = new ManualResetEvent(false);
+			if (async)
+				answerWaiterAsync = new TaskCompletionSource<bool>();
+			else
+				answerWaiter = new ManualResetEvent(false);
 			DependsOn = dependsOn;
 			if (DependsOn != null)
 			{
@@ -44,6 +51,20 @@ namespace TS3Client
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (!answerWaiter.WaitOne(CommandTimeout))
+				return Util.TimeOutCommandError;
+			if (commandError.Id != Ts3ErrorCode.ok)
+				return commandError;
+
+			return R<IEnumerable<T>, CommandError>.OkR(Deserializer.GenerateResponse<T>(commandLine));
+		}
+
+		public async Task<R<IEnumerable<T>, CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
+		{
+			if (isDisposed)
+				throw new ObjectDisposedException(nameof(WaitBlock));
+			var timeOut = Task.Delay(CommandTimeout);
+			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
+			if (res == timeOut)
 				return Util.TimeOutCommandError;
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
@@ -73,7 +94,10 @@ namespace TS3Client
 				return;
 			this.commandError = commandError ?? throw new ArgumentNullException(nameof(commandError));
 			this.commandLine = commandLine;
-			answerWaiter.Set();
+			if (async)
+				answerWaiterAsync.SetResult(true);
+			else
+				answerWaiter.Set();
 		}
 
 		public void SetNotification(LazyNotification notification)
@@ -92,8 +116,11 @@ namespace TS3Client
 				return;
 			isDisposed = true;
 
-			answerWaiter.Set();
-			answerWaiter.Dispose();
+			if (!async)
+			{
+				answerWaiter.Set();
+				answerWaiter.Dispose();
+			}
 
 			if (notificationWaiter != null)
 			{

@@ -17,6 +17,7 @@ namespace TS3Client.Full
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Threading;
+	using System.Threading.Tasks;
 
 	using CmdR = E<Messages.CommandError>;
 
@@ -343,7 +344,7 @@ namespace TS3Client.Full
 		/// Or <code>R(ERR)</code> with the returned error if no reponse is expected.</returns>
 		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com)
 		{
-			using (var wb = new WaitBlock())
+			using (var wb = new WaitBlock(false))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -362,7 +363,7 @@ namespace TS3Client.Full
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
 
-			using (var wb = new WaitBlock(dependsOn))
+			using (var wb = new WaitBlock(false, dependsOn))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -392,6 +393,22 @@ namespace TS3Client.Full
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
 			return E<CommandError>.OkR;
+		}
+
+		public async Task<R<IEnumerable<T>, CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
+		{
+			using (var wb = new WaitBlock(true))
+			{
+				var result = SendCommandBase(wb, com);
+				if (!result.Ok)
+					return result.Error;
+				if (com.ExpectResponse)
+					return await wb.WaitForMessageAsync<T>();
+				else
+					// This might not be the nicest way to return in this case
+					// but we don't know what the response is, so this acceptable.
+					return Util.NoResultCommandError;
+			}
 		}
 
 		/// <summary>Release all resources. Will try to disconnect before disposing.</summary>
@@ -428,7 +445,7 @@ namespace TS3Client.Full
 			case TargetSendMode.WhisperGroup:
 				SendAudioGroupWhisper(data, meta.Codec.Value, meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
 				break;
-			default: break;
+			default: throw new ArgumentOutOfRangeException(nameof(meta.Out.SendMode), meta.Out.SendMode, "SendMode not handled");
 			}
 		}
 		#endregion

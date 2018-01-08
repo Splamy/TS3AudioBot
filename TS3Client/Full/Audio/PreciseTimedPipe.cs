@@ -24,8 +24,8 @@ namespace TS3Client.Full.Audio
 		public int ReadBufferSize { get; set; } = 2048;
 		private byte[] readBuffer = new byte[0];
 		private readonly object lockObject = new object();
-		private Thread tickThread = null;
-		private bool running = false;
+		private Thread tickThread;
+		private bool running;
 
 		private bool paused;
 		public bool Paused

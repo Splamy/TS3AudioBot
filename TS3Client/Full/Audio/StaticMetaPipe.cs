@@ -76,7 +76,7 @@ namespace TS3Client.Full.Audio
 				meta.Out.GroupWhisperType = setMeta.GroupWhisperType;
 				meta.Out.TargetId = setMeta.TargetId;
 				break;
-			default: break;
+			default: throw new ArgumentOutOfRangeException(nameof(SendMode), SendMode, "SendMode not handled");
 			}
 			OutStream?.Write(data, meta);
 		}

@@ -71,7 +71,6 @@ namespace TS3Client.Full.Audio.Opus
 		/// <param name="inputPcmSamples">PCM samples to encode.</param>
 		/// <param name="sampleLength">How many bytes to encode.</param>
 		/// <param name="outputEncodedBuffer">The encoded data is written to this buffer.</param>
-		/// <param name="encodedLength">Set to length of encoded audio.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
 		public Span<byte> Encode(byte[] inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
 		{

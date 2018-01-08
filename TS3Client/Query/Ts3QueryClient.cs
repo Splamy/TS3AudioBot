@@ -134,7 +134,7 @@ namespace TS3Client.Query
 
 		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com) // Synchronous
 		{
-			using (var wb = new WaitBlock())
+			using (var wb = new WaitBlock(false))
 			{
 				lock (sendQueueLock)
 				{

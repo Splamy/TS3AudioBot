@@ -16,7 +16,7 @@ namespace TS3Client.Full.Audio
 	{
 		private readonly List<IAudioPassiveConsumer> safeConsumerList = new List<IAudioPassiveConsumer>();
 		private readonly List<IAudioPassiveConsumer> consumerList = new List<IAudioPassiveConsumer>();
-		private bool changed = false;
+		private bool changed;
 		private readonly object listLock = new object();
 		private byte[] buffer = new byte[0];
 
