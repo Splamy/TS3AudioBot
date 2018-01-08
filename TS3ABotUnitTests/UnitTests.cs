@@ -396,11 +396,12 @@ namespace TS3ABotUnitTests
 		public void Ts3Client_RingQueueTest2()
 		{
 			var q = new RingQueue<int>(50, ushort.MaxValue + 1);
-
+			
 			for (int i = 0; i < ushort.MaxValue - 10; i++)
 			{
-				q.Set(i, 42);
-				q.TryDequeue(out var _);
+				q.Set(i, i);
+				Assert.True(q.TryDequeue(out var iCheck));
+				Assert.AreEqual(iCheck, i);
 			}
 
 			var setStatus = q.IsSet(ushort.MaxValue - 20);
@@ -409,6 +410,40 @@ namespace TS3ABotUnitTests
 			for (int i = ushort.MaxValue - 10; i < ushort.MaxValue + 10; i++)
 			{
 				q.Set(i % (ushort.MaxValue + 1), 42);
+			}
+		}
+
+		[Test]
+		public void Ts3Client_RingQueueTest3()
+		{
+			var q = new RingQueue<int>(100, ushort.MaxValue + 1);
+
+			int iSet = 0;
+			for (int blockSize = 1; blockSize < 100; blockSize++)
+			{
+				for (int i = 0; i < blockSize; i++)
+				{
+					q.Set(iSet++, i);
+				}
+				for (int i = 0; i < blockSize; i++)
+				{
+					Assert.True(q.TryDequeue(out var iCheck));
+					Assert.AreEqual(i, iCheck);
+				}
+			}
+
+			for (int blockSize = 1; blockSize < 100; blockSize++)
+			{
+				q = new RingQueue<int>(100, ushort.MaxValue + 1);
+				for (int i = 0; i < blockSize; i++)
+				{
+					q.Set(i, i);
+				}
+				for (int i = 0; i < blockSize; i++)
+				{
+					Assert.True(q.TryDequeue(out var iCheck));
+					Assert.AreEqual(i, iCheck);
+				}
 			}
 		}
 	}

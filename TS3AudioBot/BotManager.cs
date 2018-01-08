@@ -105,7 +105,7 @@ namespace TS3AudioBot
 
 		public void StopBot(Bot bot)
 		{
-			bool tookBot = false;
+			bool tookBot;
 			lock (lockObj)
 			{
 				tookBot = activeBots.Remove(bot);

@@ -159,17 +159,18 @@ namespace TS3Client.Full
 
 					if (NeedsSplitting(packet.Length))
 					{
-						foreach (var splitPacket in BuildSplitList(packet, packetType))
-							AddOutgoingPacket(splitPacket, addFlags);
+						AddOutgoingSplitData(packet, packetType, addFlags);
 						return;
 					}
 				}
-				AddOutgoingPacket(new OutgoingPacket(packet.ToArray(), packetType), addFlags); // TODO optimize to array here
+				SendOutgoingData(packet, packetType, addFlags);
 			}
 		}
 
-		private void AddOutgoingPacket(OutgoingPacket packet, PacketFlags flags = PacketFlags.None)
+		private void SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None, bool skipCommandFlagging = false)
 		{
+			var packet = new OutgoingPacket(data.ToArray(), packetType);
+
 			lock (sendLoopLock)
 			{
 				var ids = GetPacketCounter(packet.PacketType);
@@ -191,7 +192,8 @@ namespace TS3Client.Full
 
 				case PacketType.Command:
 				case PacketType.CommandLow:
-					packet.PacketFlags |= PacketFlags.Newprotocol;
+					if (!skipCommandFlagging)
+						packet.PacketFlags |= PacketFlags.Newprotocol;
 					packetAckManager.Add(packet.PacketId, packet);
 					break;
 
@@ -244,7 +246,7 @@ namespace TS3Client.Full
 			IncPacketCounter(PacketType.Command);
 		}
 
-		private static IEnumerable<OutgoingPacket> BuildSplitList(ReadOnlySpan<byte> rawData, PacketType packetType)
+		private void AddOutgoingSplitData(ReadOnlySpan<byte> rawData, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
 			int pos = 0;
 			bool first = true;
@@ -255,18 +257,20 @@ namespace TS3Client.Full
 			{
 				int blockSize = Math.Min(maxContent, rawData.Length - pos);
 				if (blockSize <= 0) break;
-				
-				var packet = new OutgoingPacket(rawData.Slice(pos, blockSize).ToArray(), packetType); // TODO optimize toarray call
 
+				var flags = PacketFlags.None;
+				var skipFlagging = !first;
 				last = pos + blockSize == rawData.Length;
 				if (first ^ last)
-					packet.FragmentedFlag = true;
+					flags |= PacketFlags.Fragmented;
 				if (first)
+				{
+					flags |= addFlags;
 					first = false;
+				}
 
-				yield return packet;
+				SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags, skipFlagging);
 				pos += blockSize;
-
 			} while (!last);
 		}
 
@@ -557,7 +561,7 @@ namespace TS3Client.Full
 					pingCheck += PingInterval;
 					SendPing();
 				}
-
+				// TODO implement ping-timeout here
 				sendLoopPulse.WaitOne(ClockResolution);
 			}
 		}
