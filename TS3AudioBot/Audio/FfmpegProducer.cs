@@ -18,8 +18,7 @@ namespace TS3AudioBot.Audio
 
 	class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
 	{
-		public event EventHandler OnSongEnd;
-
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex FindDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
 		private const string PreLinkConf = "-hide_banner -nostats -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
@@ -27,6 +26,8 @@ namespace TS3AudioBot.Audio
 		private readonly object ffmpegLock = new object();
 
 		private readonly Ts3FullClientData ts3FullClientData;
+
+		public event EventHandler OnSongEnd;
 
 		private PreciseAudioTimer audioTimer;
 		private string lastLink;
@@ -91,7 +92,7 @@ namespace TS3AudioBot.Audio
 							var actualStopPosition = audioTimer.SongPosition;
 							if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
 							{
-								Log.Write(Log.Level.Debug, "Connection to song lost, retrying at {0}", actualStopPosition);
+								Log.Debug("Connection to song lost, retrying at {0}", actualStopPosition);
 								hasTriedToReconnectAudio = true;
 								Position = actualStopPosition;
 								return 0;

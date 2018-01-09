@@ -17,6 +17,7 @@ namespace TS3AudioBot
 
 	public class PlayManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Core core;
 		private readonly Bot botParent;
 		private IPlayerConnection PlayerConnection => botParent.PlayerConnection;
@@ -163,11 +164,11 @@ namespace TS3AudioBot
 			if (string.IsNullOrWhiteSpace(playResource.PlayUri))
 				return "Internal resource error: link is empty";
 
-			Log.Write(Log.Level.Debug, "PM ar start: {0}", playResource);
+			Log.Debug("AudioResource start: {0}", playResource);
 			var result = PlayerConnection.AudioStart(playResource.PlayUri);
 			if (!result)
 			{
-				Log.Write(Log.Level.Error, "Error return from player: {0}", result.Error);
+				Log.Error("Error return from player: {0}", result.Error);
 				return $"Internal player error ({result.Error})";
 			}
 
@@ -217,10 +218,10 @@ namespace TS3AudioBot
 
 			if (songEndedByCallback && CurrentPlayData != null)
 			{
-				R result = Next(CurrentPlayData.Invoker);
+				var result = Next(CurrentPlayData.Invoker);
 				if (result)
 					return;
-				Log.Write(Log.Level.Warning, nameof(SongStoppedHook) + " could not play Next: " + result.Error);
+				Log.Warn(nameof(SongStoppedHook) + " could not play Next: {0}", result.Error);
 			}
 			else
 			{

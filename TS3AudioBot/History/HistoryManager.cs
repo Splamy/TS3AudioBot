@@ -18,6 +18,7 @@ namespace TS3AudioBot.History
 
 	public sealed class HistoryManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int CurrentHistoryVersion = 1;
 		private const string AudioLogEntriesTable = "audioLogEntries";
 		private const string ResourceTitleQueryColumn = "lowTitle";
@@ -77,7 +78,7 @@ namespace TS3AudioBot.History
 				goto default;
 
 			default:
-				Log.Write(Log.Level.Info, "Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
+				Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
 				break;
 			}
 		}
@@ -106,7 +107,7 @@ namespace TS3AudioBot.History
 				{
 					ale = CreateLogEntry(saveData);
 					if (ale == null)
-						Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
+						Log.Error("AudioLogEntry could not be created!");
 				}
 				else
 				{

@@ -16,6 +16,7 @@ namespace TS3AudioBot
 
 	public class BotManager : Dependency.ICoreModule, IDisposable
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private bool isRunning;
 		public Core Core { get; set; }
 		private List<Bot> activeBots;
@@ -59,7 +60,7 @@ namespace TS3AudioBot
 					var client = bot.QueryConnection.GetLowLibrary<TS3Client.Full.Ts3FullClient>();
 					if (!client.Connected && !client.Connecting)
 					{
-						Log.Write(Log.Level.Warning, "Cleaning up stray bot.");
+						Log.Warn("Cleaning up stray bot.");
 						strayList = strayList ?? new List<Bot>();
 						strayList.Add(bot);
 					}

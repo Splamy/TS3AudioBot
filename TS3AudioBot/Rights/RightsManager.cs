@@ -20,6 +20,7 @@ namespace TS3AudioBot.Rights
 
 	public class RightsManager : Dependency.ICoreModule
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int RuleLevelSize = 2;
 
 		public ConfigFile Config { get; set; }
@@ -53,7 +54,7 @@ namespace TS3AudioBot.Rights
 			RegisterRights(CommandManager.AllRights);
 			RegisterRights(Commands.RightHighVolume, Commands.RightDeleteAllPlaylists);
 			if (!ReadFile())
-				Log.Write(Log.Level.Error, "Could not read Permission file.");
+				Log.Error("Could not read Permission file.");
 		}
 
 		public void RegisterRights(params string[] rights) => RegisterRights((IEnumerable<string>)rights);
@@ -182,7 +183,7 @@ namespace TS3AudioBot.Rights
 			{
 				if (!File.Exists(rightsManagerData.RightsFile))
 				{
-					Log.Write(Log.Level.Info, "No rights file found. Creating default.");
+					Log.Info("No rights file found. Creating default.");
 					using (var fs = File.OpenWrite(rightsManagerData.RightsFile))
 					using (var data = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
 						data.CopyTo(fs);
@@ -192,14 +193,14 @@ namespace TS3AudioBot.Rights
 				var ctx = new ParseContext();
 				RecalculateRights(table, ctx);
 				foreach (var err in ctx.Errors)
-					Log.Write(Log.Level.Error, err);
+					Log.Error(err);
 				foreach (var warn in ctx.Warnings)
-					Log.Write(Log.Level.Warning, warn);
+					Log.Warn(warn);
 				return ctx.Errors.Count == 0;
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Error, "The rights file could not be parsed: {0}", ex);
+				Log.Error(ex, "The rights file could not be parsed");
 				return false;
 			}
 		}

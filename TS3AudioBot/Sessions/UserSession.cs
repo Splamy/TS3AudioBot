@@ -19,6 +19,7 @@ namespace TS3AudioBot.Sessions
 
 	public sealed class UserSession
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private Dictionary<Type, object> assocMap;
 		private bool lockToken;
 		private readonly ClientData client;
@@ -57,7 +58,7 @@ namespace TS3AudioBot.Sessions
 			}
 
 			if (!result)
-				Log.Write(Log.Level.Error, "Could not write message (Err:{0}) (Msg:{1})", result.Error, message);
+				Log.Error("Could not write message (Err:{0}) (Msg:{1})", result.Error, message);
 		}
 
 		public void SetResponse(Response responseProcessor, object responseData)

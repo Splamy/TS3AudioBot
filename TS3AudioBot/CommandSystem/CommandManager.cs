@@ -18,6 +18,7 @@ namespace TS3AudioBot.CommandSystem
 
 	public class CommandManager : Dependency.ICoreModule
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex CommandNamespaceValidator =
 			new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
@@ -235,7 +236,7 @@ namespace TS3AudioBot.CommandSystem
 				{
 					insertCommand.AddCommand(string.Empty, com);
 					if (com is BotCommand botCom && botCom.NormalParameters > 0)
-						Log.Write(Log.Level.Warning, $"\"{botCom.FullQualifiedName}\" has at least one parameter and won't be reachable due to an overloading function.");
+						Log.Warn("\"{0}\" has at least one parameter and won't be reachable due to an overloading function.", botCom.FullQualifiedName);
 					return R.OkR;
 				}
 				else

@@ -21,6 +21,8 @@ namespace TS3AudioBot
 	/// <summary>Core class managing all bots and utility modules.</summary>
 	public sealed class Bot : IDisposable
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		private bool isDisposed;
 		private readonly Core core;
 		private MainBotData mainBotData;
@@ -52,7 +54,7 @@ namespace TS3AudioBot
 
 		public bool InitializeBot()
 		{
-			Log.Write(Log.Level.Info, "Bot connecting...");
+			Log.Info("Bot connecting...");
 
 			// Read Config File
 			var conf = core.ConfigManager;
@@ -97,7 +99,7 @@ namespace TS3AudioBot
 			try { QueryConnection.Connect(); }
 			catch (Ts3Exception qcex)
 			{
-				Log.Write(Log.Level.Error, "There is either a problem with your connection configuration, or the query has not all permissions it needs. ({0})", qcex);
+				Log.Info(qcex, "There is either a problem with your connection configuration, or the query has not all permissions it needs.");
 				return false;
 			}
 			return true;
@@ -110,7 +112,7 @@ namespace TS3AudioBot
 
 		private void TextCallback(object sender, TextMessage textMessage)
 		{
-			Log.Write(Log.Level.Debug, "MB Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
+			Log.Debug("Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
 			textMessage.Message = textMessage.Message.TrimStart(' ');
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
@@ -118,7 +120,7 @@ namespace TS3AudioBot
 
 			var refreshResult = QueryConnection.RefreshClientBuffer(true);
 			if (!refreshResult.Ok)
-				Log.Write(Log.Level.Warning, "Bot is not correctly set up. Some requests might fail or are slower. ({0})", refreshResult.Error);
+				Log.Warn("Bot is not correctly set up. Some requests might fail or are slower. ({0})", refreshResult.Error);
 
 			var clientResult = QueryConnection.GetClientById(textMessage.InvokerId);
 
@@ -133,7 +135,7 @@ namespace TS3AudioBot
 			{
 				if (!clientResult.Ok)
 				{
-					Log.Write(Log.Level.Error, clientResult.Error);
+					Log.Error(clientResult.Error);
 					return;
 				}
 				session = SessionManager.CreateSession(this, clientResult.Value);
@@ -185,11 +187,12 @@ namespace TS3AudioBot
 				}
 				catch (CommandException ex)
 				{
+					Log.Debug(ex, "Command Error");
 					execInfo.Write("Error: " + ex.Message);
 				}
 				catch (Exception ex)
 				{
-					Log.Write(Log.Level.Error, "MB Unexpected command error: {0}", ex.UnrollException());
+					Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
 					execInfo.Write("An unexpected error occured: " + ex.Message);
 				}
 			}
@@ -205,7 +208,7 @@ namespace TS3AudioBot
 		{
 			var result = UpdateBotStatus();
 			if (!result)
-				Log.Write(Log.Level.Warning, result.Error);
+				Log.Warn(result.Error);
 		}
 
 		public R UpdateBotStatus(string overrideStr = null)
@@ -247,7 +250,7 @@ namespace TS3AudioBot
 						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
 						var result = QueryConnection.UploadAvatar(mem);
 						if (!result.Ok)
-							Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Error);
+							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
 				}
 			}
@@ -257,7 +260,7 @@ namespace TS3AudioBot
 				{
 					var result = QueryConnection.UploadAvatar(sleepPic);
 					if (!result.Ok)
-						Log.Write(Log.Level.Warning, "Could not save avatar: {0}", result.Error);
+						Log.Warn("Could not save avatar: {0}", result.Error);
 				}
 			}
 		}
@@ -266,7 +269,7 @@ namespace TS3AudioBot
 		{
 			if (!isDisposed) isDisposed = true;
 			else return;
-			Log.Write(Log.Level.Info, "Bot disconnecting.");
+			Log.Info("Bot disconnecting.");
 
 			core.Bots.StopBot(this);
 
@@ -283,8 +286,6 @@ namespace TS3AudioBot
 #pragma warning disable CS0649
 	internal class MainBotData : ConfigData
 	{
-		[Info("Path to the logfile", "ts3audiobot.log")]
-		public string LogFile { get; set; }
 		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
 		public ulong BotGroupId { get; set; }
 		[Info("Generate fancy status images as avatar", "true")]

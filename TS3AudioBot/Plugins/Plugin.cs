@@ -23,6 +23,7 @@ namespace TS3AudioBot.Plugins
 
 	internal class Plugin : ICommandBag
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Core core;
 
 		private Assembly assembly;
@@ -108,7 +109,7 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (BadImageFormatException bifex)
 			{
-				Log.Write(Log.Level.Warning, "Plugin \"{0}\" has an invalid format: {1} (Add a \"{0}.ignore\" file to ignore this file)",
+				Log.Warn("Plugin \"{0}\" has an invalid format: {1} (Add a \"{0}.ignore\" file to ignore this file)",
 					PluginFile.Name,
 					bifex.InnerException?.Message ?? bifex.Message);
 				Status = PluginStatus.Error;
@@ -116,7 +117,7 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Warning, "Plugin \"{0}\" failed to prepare: {1}",
+				Log.Warn("Plugin \"{0}\" failed to prepare: {1}",
 					PluginFile.Name,
 					ex.Message);
 				Status = PluginStatus.Error;
@@ -189,7 +190,7 @@ namespace TS3AudioBot.Plugins
 						error.ErrorText);
 				}
 				strb.Length -= 1; // remove last linebreak
-				Log.Write(Log.Level.Warning, strb.ToString());
+				Log.Warn(strb.ToString());
 
 				if (containsErrors)
 				{
@@ -211,12 +212,12 @@ namespace TS3AudioBot.Plugins
 
 				if (pluginTypes.Length + factoryTypes.Length > 1)
 				{
-					Log.Write(Log.Level.Warning, "Any source or binary plugin file may contain one plugin or factory at most.");
+					Log.Warn("Any source or binary plugin file may contain one plugin or factory at most.");
 					return PluginResponse.TooManyPlugins;
 				}
 				if (pluginTypes.Length + factoryTypes.Length == 0)
 				{
-					Log.Write(Log.Level.Warning, "Any source or binary plugin file must contain at least one plugin or factory.");
+					Log.Warn("Any source or binary plugin file must contain at least one plugin or factory.");
 					return PluginResponse.NoTypeMatch;
 				}
 
@@ -240,13 +241,12 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (TypeLoadException tlex)
 			{
-				Log.Write(Log.Level.Warning,
-					$"{nameof(InitlializeAssembly)} failed, The file \"{PluginFile.Name}\" seems to be missing some dependecies ({tlex.Message})");
+				Log.Warn(nameof(InitlializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependecies ({1})", PluginFile.Name, tlex.Message);
 				return PluginResponse.MissingDependency;
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Error, $"{nameof(InitlializeAssembly)} failed ({ex})");
+				Log.Error(ex, nameof(InitlializeAssembly) + " failed");
 				return PluginResponse.Crash;
 			}
 		}
@@ -288,7 +288,7 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (MissingMethodException mmex)
 			{
-				Log.Write(Log.Level.Error, "Plugins and Factories needs a parameterless constructor ({0}).", mmex.Message);
+				Log.Error(mmex, "Plugins and Factories needs a parameterless constructor.");
 				Status = PluginStatus.Error;
 				return;
 			}

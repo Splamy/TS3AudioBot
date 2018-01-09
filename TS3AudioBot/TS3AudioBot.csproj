@@ -64,6 +64,9 @@
     <Reference Include="Nett, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nett.0.8.0\lib\Net40\Nett.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="PropertyChanged, Version=2.1.4.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
       <HintPath>..\packages\PropertyChanged.Fody.2.1.4\lib\netstandard1.0\PropertyChanged.dll</HintPath>
       <Private>False</Private>
@@ -138,7 +141,6 @@
     <Compile Include="CommandSystem\Commands\StringCommand.cs" />
     <Compile Include="CommandSystem\XCommandSystem.cs" />
     <Compile Include="DocGen.cs" />
-    <Compile Include="Log.cs" />
     <Compile Include="History\AudioLogEntry.cs" />
     <Compile Include="History\HistorySaveData.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />
@@ -206,6 +208,9 @@
     <EmbeddedResource Include="Web\Interface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="NLog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Web\Interface\less\styles.less" />
     <None Include="Web\Interface\less\styles_authbox.less" />
     <None Include="Web\Interface\less\styles_button.less" />

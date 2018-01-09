@@ -23,6 +23,7 @@ namespace TS3AudioBot.Helper
 	[Serializable]
 	public static class Util
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 
 		public static bool IsLinux
@@ -81,7 +82,7 @@ namespace TS3AudioBot.Helper
 				catch (UnauthorizedAccessException) { return false; }
 				catch (Exception)
 				{
-					Log.Write(Log.Level.Warning, "Uncatched admin check.");
+					Log.Warn("Uncatched admin check.");
 					return false;
 				}
 			}

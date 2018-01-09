@@ -22,6 +22,7 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
@@ -57,8 +58,7 @@ namespace TS3AudioBot.ResourceFactories
 			var result = ResolveResourceInternal(resource);
 			if (result.Ok)
 				return result;
-
-			Log.Write(Log.Level.Debug, "YT Falling back to youtube-dl!");
+			
 			return YoutubeDlWrapped(resource);
 		}
 
@@ -162,7 +162,7 @@ namespace TS3AudioBot.ResourceFactories
 			var dbg = new StringBuilder("YT avail codecs: ");
 			foreach (var yd in list)
 				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
-			Log.Write(Log.Level.Debug, dbg.ToString());
+			Log.Trace(dbg.ToString());
 #endif
 
 			int autoselectIndex = list.FindIndex(t => t.Codec == VideoCodec.M4A);
@@ -202,9 +202,8 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else return VideoCodec.Unknown;
 
-			string extractedCodec;
 			int codecEnd;
-			extractedCodec = (codecEnd = codecSubStr.IndexOf(';')) >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
+			var extractedCodec = (codecEnd = codecSubStr.IndexOf(';')) >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
 
 			switch (extractedCodec)
 			{
@@ -316,6 +315,8 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
+			Log.Debug("Falling back to youtube-dl!");
+
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(resource.ResourceId);
 			if (!result.Ok)
 				return result.Error;
@@ -342,7 +343,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
 				return "No youtube-dl response";
 
-			Log.Write(Log.Level.Debug, "YT youtube-dl succeeded!");
+			Log.Debug("youtube-dl succeeded!");
 			return new PlayResource(url, resource.WithName(title));
 		}
 

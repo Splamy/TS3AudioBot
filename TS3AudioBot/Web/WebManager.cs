@@ -17,6 +17,7 @@ namespace TS3AudioBot.Web
 
 	public sealed class WebManager : Dependency.ICoreModule, IDisposable
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const string WebRealm = "ts3ab";
 
 		private Uri localhost;
@@ -87,7 +88,7 @@ namespace TS3AudioBot.Web
 			}
 			else
 			{
-				Log.Write(Log.Level.Warning, "App launched without elevated rights. Only localhost will be availbale as api server.");
+				Log.Warn("App launched without elevated rights. Only localhost will be availbale as api server.");
 				hostPaths = new[] { localhost };
 			}
 
@@ -132,7 +133,7 @@ namespace TS3AudioBot.Web
 			try { webListener.Start(); }
 			catch (HttpListenerException ex)
 			{
-				Log.Write(Log.Level.Error, "The webserver could not be started ({0})", ex.Message);
+				Log.Error(ex, "The webserver could not be started");
 				return;
 			} // TODO
 
@@ -150,7 +151,7 @@ namespace TS3AudioBot.Web
 					}
 					catch (NullReferenceException) { return; }
 
-					Log.Write(Log.Level.Info, "{0} Requested: {1}", remoteAddress, context.Request.Url.PathAndQuery);
+					Log.Info("{0} Requested: {1}", remoteAddress, context.Request.Url.PathAndQuery);
 					if (context.Request.Url.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
 						Api?.DispatchCall(context);
 					else

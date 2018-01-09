@@ -17,6 +17,7 @@ namespace TS3AudioBot.Sessions
 
 	public class SessionManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
 
 		// Map: Id => UserSession
@@ -49,7 +50,7 @@ namespace TS3AudioBot.Sessions
 				if (openSessions.TryGetValue(client.ClientId, out var session))
 					return session;
 
-				Log.Write(Log.Level.Debug, "SM User {0} created session with the bot", client.NickName);
+				Log.Debug("User {0} created session with the bot", client.NickName);
 				session = new UserSession(bot, client);
 				openSessions.Add(client.ClientId, session);
 				return session;

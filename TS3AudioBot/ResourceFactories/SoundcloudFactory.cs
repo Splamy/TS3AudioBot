@@ -19,6 +19,7 @@ namespace TS3AudioBot.ResourceFactories
 
 	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex SoundcloudLink = new Regex(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
 		private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
 
@@ -88,21 +89,19 @@ namespace TS3AudioBot.ResourceFactories
 
 		private R<PlayResource> YoutubeDlWrapped(string link)
 		{
-			Log.Write(Log.Level.Debug, "SC Ruined!");
+			Log.Debug("Falling back to youtube-dl!");
 
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(link);
 			if (!result.Ok)
 				return result.Error;
 
-			var response = result.Value;
-			string title = response.title;
-			string url = response.links.FirstOrDefault();
-			if (response.links.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+			var (title, urls) = result.Value;
+			if (urls.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(urls[0]))
 				return "No youtube-dl response";
 
-			Log.Write(Log.Level.Debug, "SC Saved!");
+			Log.Debug("youtube-dl succeeded!");
 
-			return new PlayResource(url, new AudioResource(link, title, FactoryFor));
+			return new PlayResource(urls[0], new AudioResource(link, title, FactoryFor));
 		}
 
 		public R<Playlist> GetPlaylist(string url)

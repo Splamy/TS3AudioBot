@@ -266,7 +266,7 @@ namespace TS3Client.Full
 					case PacketType.Command:
 					case PacketType.CommandLow:
 						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-						ColorDbg.WriteCmd(message, false);
+						LogCmd.Debug("[I] {0}", message);
 						var result = msgProc.PushMessage(message);
 						if (result.HasValue)
 							dispatcher.Invoke(result.Value);
@@ -388,7 +388,7 @@ namespace TS3Client.Full
 				}
 
 				var message = com.ToString();
-				ColorDbg.WriteCmd(message, true);
+				LogCmd.Debug("[O] {0}", message);
 				byte[] data = Util.Encoder.GetBytes(message);
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}

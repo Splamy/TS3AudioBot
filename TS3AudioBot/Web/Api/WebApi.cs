@@ -22,6 +22,7 @@ namespace TS3AudioBot.Web.Api
 
 	public sealed class WebApi : WebComponent
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
 		private static readonly MD5 Md5Hash = MD5.Create();
 
@@ -36,7 +37,7 @@ namespace TS3AudioBot.Web.Api
 				var invoker = Authenticate(context);
 				if (invoker == null)
 				{
-					Log.Write(Log.Level.Debug, "Not authorized!");
+					Log.Debug("Unauthorized request!");
 					ReturnError(CommandExceptionReason.Unauthorized, "", context.Response);
 					return;
 				}
@@ -83,7 +84,7 @@ namespace TS3AudioBot.Web.Api
 					response.StatusCode = (int)HttpStatusCode.NotImplemented;
 				else
 					response.StatusCode = (int)HttpStatusCode.InternalServerError;
-				Log.Write(Log.Level.Error, "WA Unexpected command error: {0}", ex);
+				Log.Error(ex, "Unexpected command error");
 				using (var responseStream = new StreamWriter(response.OutputStream))
 					responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
 			}

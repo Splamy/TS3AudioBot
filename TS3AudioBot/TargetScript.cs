@@ -14,6 +14,7 @@ namespace TS3AudioBot
 
 	internal class TargetScript
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string DefaultVoiceScript = "!whisper off";
 		private const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getuser channel))";
 
@@ -39,7 +40,7 @@ namespace TS3AudioBot
 				script = DefaultWhisperScript;
 			else
 			{
-				Log.Write(Log.Level.Error, "Invalid voice mode");
+				Log.Error("Invalid voice mode");
 				return;
 			}
 			CallScript(script, e.Invoker);

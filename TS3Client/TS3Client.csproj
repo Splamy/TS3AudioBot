@@ -50,6 +50,9 @@
     <Reference Include="Heijden.Dns, Version=2.0.0.6, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Heijden.Dns.2.0.0\lib\net35\Heijden.Dns.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Memory, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Memory.4.4.0-preview1-25305-02\lib\netstandard1.0\System.Memory.dll</HintPath>
@@ -62,7 +65,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ColorDbg.cs" />
     <Compile Include="Commands\CommandMultiParameter.cs" />
     <Compile Include="Commands\ICommandPart.cs" />
     <Compile Include="Commands\Ts3Const.cs" />

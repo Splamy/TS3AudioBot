@@ -22,6 +22,7 @@ namespace TS3AudioBot
 
 	internal sealed class Ts3Full : TeamspeakControl, IPlayerConnection
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3FullClient tsFullClient;
 		private ClientData self;
 
@@ -115,14 +116,14 @@ namespace TS3AudioBot
 			{
 				if (Ts3Crypt.GetSecurityLevel(identity) < targetLevel)
 				{
-					Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetLevel);
+					Log.Info("Calculating up to required security level: {0}", targetLevel);
 					Ts3Crypt.ImproveSecurity(identity, targetLevel);
 					ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
 				}
 			}
 			else
 			{
-				Log.Write(Log.Level.Warning, "Invalid value for QueryConnection::IdentityLevel, enter a number or \"auto\".");
+				Log.Warn("Invalid value for QueryConnection::IdentityLevel, enter a number or \"auto\".");
 			}
 
 
@@ -161,7 +162,7 @@ namespace TS3AudioBot
 
 				if (verionSign == null)
 				{
-					Log.Write(Log.Level.Warning, "Invalid version sign, falling back to unknown :P");
+					Log.Warn("Invalid version sign, falling back to unknown :P");
 					verionSign = VersionSign.VER_WIN_3_X_X;
 				}
 			}
@@ -192,7 +193,7 @@ namespace TS3AudioBot
 				break;
 
 			default:
-				Log.Write(Log.Level.Debug, "Got ts3 error event: {0}", error.ErrorFormat());
+				Log.Debug("Got ts3 error event: {0}", error.ErrorFormat());
 				break;
 			}
 		}
@@ -208,7 +209,7 @@ namespace TS3AudioBot
 					if (ts3FullClientData.IdentityLevel == "auto")
 					{
 						int targetSecLevel = int.Parse(error.ExtraMessage);
-						Log.Write(Log.Level.Info, "Calculating up to required security level: {0}", targetSecLevel);
+						Log.Info("Calculating up to required security level: {0}", targetSecLevel);
 						Ts3Crypt.ImproveSecurity(identity, targetSecLevel);
 						ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
 
@@ -217,19 +218,19 @@ namespace TS3AudioBot
 					}
 					else
 					{
-						Log.Write(Log.Level.Warning, "The server reported that the security level you set is not high enough." +
-													 "Increase the value to \"{0}\" or set it to \"auto\" to generate it on demand when connecting.", error.ExtraMessage);
+						Log.Warn("The server reported that the security level you set is not high enough." +
+								"Increase the value to \"{0}\" or set it to \"auto\" to generate it on demand when connecting.", error.ExtraMessage);
 					}
 					break;
 
 				default:
-					Log.Write(Log.Level.Warning, "Could not connect: {0}", error.ErrorFormat());
+					Log.Warn("Could not connect: {0}", error.ErrorFormat());
 					break;
 				}
 			}
 			else
 			{
-				Log.Write(Log.Level.Debug, "Bot disconnected. Reason: {0}", e.ExitReason);
+				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 			}
 
 			OnBotDisconnect?.Invoke(this, new EventArgs());

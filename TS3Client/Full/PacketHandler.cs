@@ -10,6 +10,7 @@
 namespace TS3Client.Full
 {
 	using Helper;
+	using NLog;
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
@@ -27,6 +28,9 @@ namespace TS3Client.Full
 		private const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
 		private const int ReceivePacketWindowSize = 100;
 
+		private static readonly Logger LoggerRtt = LogManager.GetLogger("TS3Client.PacketHandler.Rtt");
+		private static readonly Logger LoggerRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
+		private static readonly Logger LoggerTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
 		// Timout calculations
 		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
 		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
@@ -188,6 +192,7 @@ namespace TS3Client.Full
 				case PacketType.VoiceWhisper:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
 					NetUtil.H2N(packet.PacketId, packet.Data, 0);
+					LoggerRaw.ConditionalTrace("[O] {0}", packet);
 					break;
 
 				case PacketType.Command:
@@ -195,30 +200,34 @@ namespace TS3Client.Full
 					if (!skipCommandFlagging)
 						packet.PacketFlags |= PacketFlags.Newprotocol;
 					packetAckManager.Add(packet.PacketId, packet);
+					LoggerRaw.Debug("[O] {0}", packet);
 					break;
 
 				case PacketType.Ping:
 					lastSentPingId = packet.PacketId;
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-
+					LoggerRaw.ConditionalTrace("[O] Ping {0}", packet.PacketId);
 					break;
+
 				case PacketType.Pong:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
+					LoggerRaw.ConditionalTrace("[O] Pong {0}", NetUtil.N2Hushort(packet.Data, 0));
 					break;
 
 				case PacketType.Ack:
 				case PacketType.AckLow:
-					break; // Nothing to do
+					LoggerRaw.ConditionalDebug("[O] Acking {1}: {0}", NetUtil.N2Hushort(packet.Data, 0), packet.PacketType);
+					break;
 
 				case PacketType.Init1:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
 					packetAckManager.Add(packet.PacketId, packet);
+					LoggerRaw.Debug("[O] InitID: {0}", packet.Data[4]);
+					LoggerRaw.Trace("[O] {0}", packet);
 					break;
 
 				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
-
-				ColorDbg.WritePkgOut(packet);
 
 				ts3Crypt.Encrypt(packet);
 
@@ -302,7 +311,7 @@ namespace TS3Client.Full
 				// Invalid packet, ignore
 				if (packet == null)
 				{
-					ColorDbg.WritePkgRaw(buffer, "DROPPING");
+					LoggerRaw.Debug("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 					continue;
 				}
 
@@ -312,19 +321,38 @@ namespace TS3Client.Full
 
 				NetworkStats.LogInPacket(packet);
 
-				ColorDbg.WritePkgIn(packet);
-
 				switch (packet.PacketType)
 				{
-				case PacketType.Voice: break;
-				case PacketType.VoiceWhisper: break;
-				case PacketType.Command: packet = ReceiveCommand(packet, receiveQueue, PacketType.Ack); break;
-				case PacketType.CommandLow: packet = ReceiveCommand(packet, receiveQueueLow, PacketType.AckLow); break;
-				case PacketType.Ping: ReceivePing(packet); break;
-				case PacketType.Pong: ReceivePong(packet); break;
-				case PacketType.Ack: packet = ReceiveAck(packet); break;
+				case PacketType.Voice:
+				case PacketType.VoiceWhisper:
+					LoggerRaw.ConditionalTrace("[I] {0}", packet);
+					break;
+				case PacketType.Command:
+					LoggerRaw.Debug("[I] {0}", packet);
+					packet = ReceiveCommand(packet, receiveQueue, PacketType.Ack);
+					break;
+				case PacketType.CommandLow:
+					LoggerRaw.Debug("[I] {0}", packet);
+					packet = ReceiveCommand(packet, receiveQueueLow, PacketType.AckLow);
+					break;
+				case PacketType.Ping:
+					LoggerRaw.ConditionalTrace("[I] Ping {0}", packet.PacketId);
+					ReceivePing(packet);
+					break;
+				case PacketType.Pong:
+					LoggerRaw.ConditionalTrace("[I] Pong {0}", NetUtil.N2Hushort(packet.Data, 0));
+					ReceivePong(packet);
+					break;
+				case PacketType.Ack:
+					LoggerRaw.ConditionalDebug("[I] Acking: {0}", NetUtil.N2Hushort(packet.Data, 0));
+					packet = ReceiveAck(packet);
+					break;
 				case PacketType.AckLow: break;
-				case PacketType.Init1: ReceiveInitAck(); break;
+				case PacketType.Init1:
+					LoggerRaw.Debug("[I] InitID: {0}", packet.Data[0]);
+					LoggerRaw.Trace("[I] {0}", packet);
+					ReceiveInitAck();
+					break;
 				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
 
@@ -507,7 +535,7 @@ namespace TS3Client.Full
 			// But usually this should be no problem since the init order is linear
 			lock (sendLoopLock)
 			{
-				ColorDbg.WriteDetail("Cleaned Inits", "INIT");
+				LoggerRaw.Debug("Cleaned Inits");
 				var remPacket = packetAckManager.Values.Where(x => x.PacketType == PacketType.Init1).ToArray();
 				foreach (var packet in remPacket)
 					packetAckManager.Remove(packet.PacketId);
@@ -528,7 +556,7 @@ namespace TS3Client.Full
 				smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
 			smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
 			currentRto = smoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
-			ColorDbg.WriteRtt(smoothedRtt, smoothedRttVar, currentRto);
+			LoggerRtt.Debug("RTT SRTT:{0} RTTVAR:{1} RTO:{2}", smoothedRtt, smoothedRttVar, currentRto);
 		}
 
 		/// <summary>
@@ -574,14 +602,14 @@ namespace TS3Client.Full
 				// Check if the packet timed out completely
 				if (outgoingPacket.FirstSendTime < now - PacketTimeout)
 				{
-					ColorDbg.WriteResend(outgoingPacket, "TIMEOUT");
+					LoggerTimeout.Debug("TIMEOUT: {0}", outgoingPacket);
 					return true;
 				}
 
 				// Check if we should retransmit a packet because it probably got lost
 				if (outgoingPacket.LastSendTime < now - currentRto)
 				{
-					ColorDbg.WriteResend(outgoingPacket, "RESEND");
+					LoggerTimeout.Debug("RESEND: {0}", outgoingPacket);
 					currentRto = currentRto + currentRto;
 					if (currentRto > MaxRetryInterval)
 						currentRto = MaxRetryInterval;

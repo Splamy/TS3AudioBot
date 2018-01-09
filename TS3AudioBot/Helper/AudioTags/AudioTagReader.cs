@@ -16,6 +16,7 @@ namespace TS3AudioBot.Helper.AudioTags
 
 	internal static class AudioTagReader
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Dictionary<string, Tag> TagDict;
 
 		static AudioTagReader()
@@ -38,8 +39,8 @@ namespace TS3AudioBot.Helper.AudioTags
 			{
 				try { return tagHeader.GetTitle(sr)?.TrimEnd('\0'); }
 				catch (IOException) { }
-				catch (FormatException fex) { Log.Write(Log.Level.Debug, "ATR FEX: " + fex.Message); }
-				catch (NullReferenceException) { Log.Write(Log.Level.Debug, "ATR Unparsed Link!"); }
+				catch (FormatException fex) { Log.Debug(fex, "Audiotag format exception"); }
+				catch (NullReferenceException) { Log.Debug("Unparsed link!"); }
 			}
 			return null;
 		}
@@ -54,8 +55,8 @@ namespace TS3AudioBot.Helper.AudioTags
 			{
 				try { return tagHeader.GetImage(sr); }
 				catch (IOException) { }
-				catch (FormatException fex) { Log.Write(Log.Level.Debug, "ATR FEX: " + fex.Message); }
-				catch (NullReferenceException) { Log.Write(Log.Level.Debug, "ATR Unparsed Link!"); }
+				catch (FormatException fex) { Log.Debug(fex, "Audiotag format exception"); }
+				catch (NullReferenceException) { Log.Debug("Unparsed link!"); }
 			}
 			return null;
 		}

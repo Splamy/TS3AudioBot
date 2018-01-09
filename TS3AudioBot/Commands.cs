@@ -25,6 +25,8 @@ namespace TS3AudioBot
 
 	public static class Commands
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		#region COMMANDS
 
 		public const string RightHighVolume = "ts3ab.admin.volume";
@@ -706,7 +708,7 @@ namespace TS3AudioBot
 		public static void CommandListQueue(ExecutionInformation info)
 		{
 			var plist = AutoGetPlaylist(info);
-			info.Bot.PlayManager.Enqueue(plist.AsEnumerable());
+			info.Bot.PlayManager.Enqueue(plist.AsEnumerable()).UnwrapThrow();
 		}
 
 		[Command("list save", "Stores your current workinglist to disk.")]
@@ -1269,7 +1271,7 @@ namespace TS3AudioBot
 					}
 					else
 					{
-						Log.Write(Log.Level.Error, "responseData is not an float.");
+						Log.Error("responseData is not an float.");
 						return "Internal error";
 					}
 				}
@@ -1307,7 +1309,7 @@ namespace TS3AudioBot
 					}
 					else
 					{
-						Log.Write(Log.Level.Error, "No entry provided.");
+						Log.Error("No entry provided.");
 						return "Internal error";
 					}
 				}

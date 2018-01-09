@@ -15,8 +15,9 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Diagnostics;
 	using System.IO;
 
-	static class YoutubeDlHelper
+	internal static class YoutubeDlHelper
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public static YoutubeFactoryData DataObj { private get; set; }
 		private static string YoutubeDlPath => DataObj?.YoutubedlPath;
 
@@ -45,7 +46,7 @@ namespace TS3AudioBot.ResourceFactories
 			try { fullCustomPath = Path.GetFullPath(YoutubeDlPath); }
 			catch (ArgumentException)
 			{
-				Log.Write(Log.Level.Warning, "Your youtube-dl path contains invalid characters");
+				Log.Warn("Your youtube-dl path contains invalid characters");
 				return null;
 			}
 
@@ -86,7 +87,7 @@ namespace TS3AudioBot.ResourceFactories
 						string result = reader.ReadToEnd();
 						if (!string.IsNullOrEmpty(result))
 						{
-							Log.Write(Log.Level.Error, "youtube-dl failed to load the resource:\n{0}", result);
+							Log.Error("youtube-dl failed to load the resource:\n{0}", result);
 							return "youtube-dl failed to load the resource";
 						}
 					}

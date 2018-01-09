@@ -23,6 +23,8 @@ namespace TS3AudioBot
 
 	public abstract class TeamspeakControl : IDisposable
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		public event EventHandler<TextMessage> OnMessageReceived;
 		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)
 		{
@@ -145,7 +147,7 @@ namespace TS3AudioBot
 		{
 			var result = ClientBufferRequest(client => client.ClientId == id);
 			if (result.Ok) return result;
-			Log.Write(Log.Level.Debug, "Slow double request, due to missing or wrong permission confinguration!");
+			Log.Debug("Slow double request due to missing or wrong permission confinguration!");
 			var result2 = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
 			if (!result2.Ok)
 				return "No client found";
@@ -325,7 +327,7 @@ namespace TS3AudioBot
 
 			if (!result)
 			{
-				Log.Write(Log.Level.Warning, permresult.Error.ErrorFormat());
+				Log.Warn(permresult.Error.ErrorFormat());
 				return "Auto setup failed! (See logs for more details)";
 			}
 

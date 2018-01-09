@@ -32,6 +32,7 @@ namespace TS3AudioBot.Plugins
 
 	internal class PluginManager : IDisposable, Dependency.ICoreModule
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public Core Core { get; set; }
 		public ConfigFile Config { get; set; }
 
@@ -184,7 +185,7 @@ namespace TS3AudioBot.Plugins
 				catch (Exception ex)
 				{
 					StopPlugin(plugin);
-					Log.Write(Log.Level.Warning, "Plugin \"{0}\" failed to load: {1}",
+					Log.Warn("Plugin \"{0}\" failed to load: {1}",
 						plugin.PluginFile.Name,
 						ex);
 					return PluginResponse.UnknownError;

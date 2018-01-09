@@ -17,6 +17,7 @@ namespace TS3AudioBot.Helper
 	[Serializable]
 	public static class TickPool
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static bool run;
 		private static readonly Thread tickThread;
 		private static readonly object tickLock = new object();
@@ -120,7 +121,7 @@ namespace TS3AudioBot.Helper
 			}
 			else
 			{
-				Log.Write(Log.Level.Warning, "TickPool could not close correctly.");
+				Log.Warn("TickPool could not close correctly.");
 			}
 			tickLoopPulse.Set();
 			Util.WaitForThreadEnd(tickThread, MinTick);

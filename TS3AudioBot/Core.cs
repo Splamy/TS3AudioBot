@@ -7,38 +7,43 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+
+using NLog.Targets;
+
 namespace TS3AudioBot
 {
 	using CommandSystem;
 	using Dependency;
 	using Helper;
 	using History;
+	using NLog;
 	using Plugins;
 	using ResourceFactories;
 	using Rights;
 	using System;
-	using System.IO;
 	using System.Threading;
 	using Web;
 
 	public sealed class Core : IDisposable, ICoreModule
 	{
-		private bool consoleOutput;
-		private bool writeLog;
-		private bool writeLogStack;
-		internal string configFilePath;
-		private StreamWriter logStream;
-		private MainBotData mainBotData;
+		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+		private string configFilePath;
 
 		internal static void Main(string[] args)
 		{
 			Thread.CurrentThread.Name = "TAB Main";
 
+			if (LogManager.Configuration.AllTargets.Count == 0)
+			{
+				Console.WriteLine("No or empty NLog config found. Please refer to https://github.com/NLog/NLog/wiki/Configuration-file" +
+				                  "to learn more how to set up the logging configuration.");
+			}
+
 			var core = new Core();
 
 			AppDomain.CurrentDomain.UnhandledException += (s, e) =>
 			{
-				Log.Write(Log.Level.Error, "Critical program failure!. Exception:\n{0}", (e.ExceptionObject as Exception).UnrollException());
+				Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!.");
 				core.Dispose();
 			};
 
@@ -66,7 +71,7 @@ namespace TS3AudioBot
 			var initResult = core.InitializeCore();
 			if (!initResult)
 			{
-				Log.Write(Log.Level.Error, "Core initialization failed: {0}", initResult.Error);
+				Log.Error("Core initialization failed: {0}", initResult.Error);
 				core.Dispose();
 				return;
 			}
@@ -96,9 +101,6 @@ namespace TS3AudioBot
 		public Core()
 		{
 			// setting defaults
-			consoleOutput = true;
-			writeLog = true;
-			writeLogStack = false;
 			configFilePath = "configTS3AudioBot.cfg";
 		}
 
@@ -111,27 +113,10 @@ namespace TS3AudioBot
 				case "-h":
 				case "--help":
 					Console.WriteLine(" --quiet -q          Deactivates all output to stdout.");
-					Console.WriteLine(" --no-log -L         Deactivates writing to the logfile.");
-					Console.WriteLine(" --stack -s          Adds the stacktrace to all log writes.");
 					Console.WriteLine(" --config -c <file>  Specifies the path to the config file.");
 					Console.WriteLine(" --version -V        Gets the bot version.");
 					Console.WriteLine(" --help -h           Prints this help....");
 					return false;
-
-				case "-q":
-				case "--quiet":
-					consoleOutput = false;
-					break;
-
-				case "-L":
-				case "--no-log":
-					writeLog = false;
-					break;
-
-				case "-s":
-				case "--stack":
-					writeLogStack = true;
-					break;
 
 				case "-c":
 				case "--config":
@@ -163,6 +148,7 @@ namespace TS3AudioBot
 			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
 			var webd = ConfigManager.GetDataStruct<WebData>("WebData", true);
 			var rmd = ConfigManager.GetDataStruct<RightsManagerData>("RightsManager", true);
+			var mbd = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
 
 			// TODO: DUMMY REQUESTS
 			YoutubeDlHelper.DataObj = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
@@ -172,56 +158,18 @@ namespace TS3AudioBot
 			ConfigManager.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
 			ConfigManager.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 			ConfigManager.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
-			mainBotData = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
 			// END TODO
-
-			mainBotData = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
 			ConfigManager.Close();
 
-			if (consoleOutput)
-			{
-				void ColorLog(string msg, Log.Level lvl)
-				{
-					switch (lvl)
-					{
-					case Log.Level.Debug: break;
-					case Log.Level.Info: Console.ForegroundColor = ConsoleColor.Cyan; break;
-					case Log.Level.Warning: Console.ForegroundColor = ConsoleColor.Yellow; break;
-					case Log.Level.Error: Console.ForegroundColor = ConsoleColor.Red; break;
-					default: throw new ArgumentOutOfRangeException(nameof(lvl), lvl, null);
-					}
-					Console.WriteLine(msg);
-					Console.ResetColor();
-				}
+			Log.Info("[============ TS3AudioBot started =============]");
+			Log.Info("[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
+			Log.Info("[=== Version: {0}", Util.GetAssemblyData().ToString());
+			Log.Info("[=== Plattform: {0}", Util.GetPlattformData());
+			Log.Info("[==============================================]");
 
-				Log.RegisterLogger("[%T]%L: %M", 19, ColorLog);
-				Log.RegisterLogger("Error call Stack:\n%S", 19, ColorLog, Log.Level.Error);
-			}
-
-			if (writeLog && !string.IsNullOrEmpty(mainBotData.LogFile))
-			{
-				logStream = new StreamWriter(File.Open(mainBotData.LogFile, FileMode.Append, FileAccess.Write, FileShare.Read), Util.Utf8Encoder);
-				Log.RegisterLogger("[%T]%L: %M\n" + (writeLogStack ? "%S\n" : ""), 19, (msg, lvl) =>
-				{
-					if (logStream == null) return;
-					try
-					{
-						logStream.Write(msg);
-						logStream.Flush();
-					}
-					catch (IOException) { }
-				});
-			}
-
-			Log.Write(Log.Level.Info, "[============ TS3AudioBot started =============]");
-			Log.Write(Log.Level.Info, "[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
-			Log.Write(Log.Level.Info, "[=== Version: {0}", Util.GetAssemblyData().ToString());
-			Log.Write(Log.Level.Info, "[=== Plattform: {0}", Util.GetPlattformData());
-			Log.Write(Log.Level.Info, "[==============================================]");
-
-			Log.Write(Log.Level.Info, "[============ Initializing Modules ============]");
-			Log.Write(Log.Level.Info, "Using opus version: {0}", TS3Client.Full.Audio.Opus.NativeMethods.Info);
-			TS3Client.Messages.Deserializer.OnError += (s, e) => Log.Write(Log.Level.Error, e.ToString());
+			Log.Info("[============ Initializing Modules ============]");
+			Log.Info("Using opus version: {0}", TS3Client.Full.Audio.Opus.NativeMethods.Info);
+			TS3Client.Messages.Deserializer.OnError += (s, e) => Log.Error(e.ToString());
 
 			Injector = new Injector();
 			Injector.RegisterModule(this);
@@ -240,16 +188,16 @@ namespace TS3AudioBot
 			if (!Injector.AllResolved())
 			{
 				// TODO detailed log + for inner if
-				Log.Write(Log.Level.Warning, "Cyclic module dependency");
+				Log.Warn("Cyclic module dependency");
 				Injector.ForceCyclicResolve();
 				if (!Injector.AllResolved())
 				{
-					Log.Write(Log.Level.Error, "Missing module dependency");
+					Log.Error("Missing module dependency");
 					return "Could not load all modules";
 				}
 			}
 
-			Log.Write(Log.Level.Info, "[==================== Done ====================]");
+			Log.Info("[==================== Done ====================]");
 			return R.OkR;
 		}
 
@@ -260,7 +208,7 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
-			Log.Write(Log.Level.Info, "TS3AudioBot shutting down.");
+			Log.Info("TS3AudioBot shutting down.");
 
 			Bots?.Dispose();
 			Bots = null;
@@ -278,9 +226,6 @@ namespace TS3AudioBot
 			FactoryManager = null;
 
 			TickPool.Close();
-
-			logStream?.Dispose();
-			logStream = null;
 		}
 	}
 }
