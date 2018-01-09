@@ -106,9 +106,9 @@ namespace TS3AudioBot.Audio
 						OnSongEnd?.Invoke(this, new EventArgs());
 					}
 				}
-
+				
 				hasTriedToReconnectAudio = false;
-				// TODO push bytes //audioTimer.PushBytes(read);
+				audioTimer.PushBytes(read);
 				return read;
 			}
 		}
