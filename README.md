@@ -97,7 +97,7 @@ or dive into the Rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki
 1. Start the bot again.
 1. Send the bot in a private message `!bot setup <key>` where `<key>` is the privilege key from a previous step.
 1. Now you can move the process to the background or close the bot with `!quit` in teamspeak and run it in the background.  
-The recommended start from now on is `mono TS3AudioBot.exe -q` to disable writing to stdout since the bot logs everything to a log file anyway.
+1. (optional) You can configure the logging levels and outputs in the `NLog.config` file, read [here](https://github.com/NLog/NLog/wiki/Configuration-file) to learn more.
 1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).  
 For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
 

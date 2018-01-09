@@ -33,10 +33,26 @@ namespace TS3AudioBot
 		{
 			Thread.CurrentThread.Name = "TAB Main";
 
-			if (LogManager.Configuration.AllTargets.Count == 0)
+			if (LogManager.Configuration == null || LogManager.Configuration.AllTargets.Count == 0)
 			{
-				Console.WriteLine("No or empty NLog config found. Please refer to https://github.com/NLog/NLog/wiki/Configuration-file" +
-				                  "to learn more how to set up the logging configuration.");
+				Console.WriteLine("No or empty NLog config found.\n" +
+								  "You can copy the default config from TS3AudioBot/NLog.config.\n" +
+								  "Please refer to https://github.com/NLog/NLog/wiki/Configuration-file " +
+								  "to learn more how to set up your own logging configuration.");
+
+				if (LogManager.Configuration == null)
+				{
+					Console.WriteLine("Create a default config to prevent this step.");
+					Console.WriteLine("Do you want to continue? [Y/N]");
+					while (true)
+					{
+						var key = Console.ReadKey().Key;
+						if (key == ConsoleKey.N)
+							return;
+						if (key == ConsoleKey.Y)
+							break;
+					}
+				}
 			}
 
 			var core = new Core();
