@@ -44,6 +44,13 @@ namespace TS3Client.Full
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void H2N(ushort value, Span<byte> buf)
+		{
+			buf[0] = unchecked((byte)(value >> 8));
+			buf[1] = unchecked((byte)(value >> 0));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void H2N(uint value, byte[] outArr, int outOff)
 		{
 			outArr[outOff + 0] = unchecked((byte)(value >> 24));

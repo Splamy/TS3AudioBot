@@ -355,12 +355,11 @@ namespace TS3Client.Full
 
 		private static void FakeEncrypt(OutgoingPacket packet, byte[] mac)
 		{
-			packet.BuildHeader();
 			packet.Raw = new byte[packet.Data.Length + MacLen + OutHeaderLen];
 			// Copy the Mac from [Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(mac, 0, packet.Raw, 0, MacLen);
 			// Copy the Header from packet.Header to [Mac..., Header..., Data...]
-			Array.Copy(packet.Header, 0, packet.Raw, MacLen, OutHeaderLen);
+			packet.BuildHeader(packet.Raw.AsSpan().Slice(MacLen, OutHeaderLen));
 			// Copy the Data from packet.Data to [Mac..., Header..., Data...]
 			Array.Copy(packet.Data, 0, packet.Raw, MacLen + OutHeaderLen, packet.Data.Length);
 			// Raw is now [Mac..., Header..., Data...]

@@ -171,7 +171,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None, bool skipCommandFlagging = false)
+		private void SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None)
 		{
 			var packet = new OutgoingPacket(data.ToArray(), packetType);
 
@@ -197,8 +197,7 @@ namespace TS3Client.Full
 
 				case PacketType.Command:
 				case PacketType.CommandLow:
-					if (!skipCommandFlagging)
-						packet.PacketFlags |= PacketFlags.Newprotocol;
+					packet.PacketFlags |= PacketFlags.Newprotocol;
 					packetAckManager.Add(packet.PacketId, packet);
 					LoggerRaw.Debug("[O] {0}", packet);
 					break;
@@ -268,7 +267,6 @@ namespace TS3Client.Full
 				if (blockSize <= 0) break;
 
 				var flags = PacketFlags.None;
-				var skipFlagging = !first;
 				last = pos + blockSize == rawData.Length;
 				if (first ^ last)
 					flags |= PacketFlags.Fragmented;
@@ -278,7 +276,7 @@ namespace TS3Client.Full
 					first = false;
 				}
 
-				SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags, skipFlagging);
+				SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags);
 				pos += blockSize;
 			} while (!last);
 		}
@@ -623,6 +621,7 @@ namespace TS3Client.Full
 		{
 			packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);
+			LoggerRaw.ConditionalTrace("Sending Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}
 	}

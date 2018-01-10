@@ -279,14 +279,14 @@ namespace TS3AudioBot
 
 		public void Dispose()
 		{
+			core.Bots?.RemoveBot(this);
+
 			lock (SyncRoot)
 			{
 				if (!IsDisposed) IsDisposed = true;
 				else return;
 				Log.Info("Bot disconnecting.");
-
-				core.Bots.StopBot(this);
-
+				
 				PlayManager?.Stop();
 
 				PlayerConnection?.Dispose(); // before: logStream,

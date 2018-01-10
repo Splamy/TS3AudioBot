@@ -34,18 +34,18 @@ namespace TS3AudioBot
 		{
 			while (isRunning)
 			{
+				bool createBot;
 				lock (lockObj)
 				{
-					if (activeBots.Count == 0)
-					{
-						if (!CreateBot())
-						{
-							Thread.Sleep(1000);
-						}
-					}
-
-					CleanStrayBots();
+					createBot = activeBots.Count == 0;
 				}
+
+				if (createBot && !CreateBot())
+				{
+					Thread.Sleep(1000);
+				}
+
+				CleanStrayBots();
 				Thread.Sleep(200);
 			}
 		}
@@ -114,11 +114,16 @@ namespace TS3AudioBot
 
 		public void StopBot(Bot bot)
 		{
+			RemoveBot(bot);
+			bot.Dispose();
+		}
+
+		internal void RemoveBot(Bot bot)
+		{
 			lock (lockObj)
 			{
 				activeBots.Remove(bot);
 			}
-			bot.Dispose();
 		}
 
 		public void Dispose()

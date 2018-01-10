@@ -75,6 +75,7 @@ namespace TS3Client.Full
 				$"{(FragmentedFlag ? "X" : "_")} {(NewProtocolFlag ? "X" : "_")} " +
 				$"{(CompressedFlag ? "X" : "_")} {(UnencryptedFlag ? "X" : "_")} ]\t" +
 				$"Id: {PacketId}\n" +
+				$"  Header: { DebugUtil.DebugToHex(Header) }\n" +
 				$"  Data: { DebugUtil.DebugToHex(Data) }\n" +
 				$"  ASCI: { Util.Encoder.GetString(Data) }";
 		}

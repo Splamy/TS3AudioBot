@@ -31,5 +31,21 @@ namespace TS3Client.Full
 			NetUtil.H2N(ClientId, Header, 2);
 			Header[4] = PacketTypeFlagged;
 		}
+
+		public void BuildHeader(Span<byte> buffer)
+		{
+			NetUtil.H2N(PacketId, buffer.Slice(0, 2));
+			NetUtil.H2N(ClientId, buffer.Slice(2, 2));
+			buffer[4] = PacketTypeFlagged;
+#if DEBUG
+			buffer.CopyTo(Header.AsSpan());
+#endif
+		}
+
+		public override string ToString()
+		{
+			BuildHeader();
+			return base.ToString();
+		}
 	}
 }
