@@ -31,6 +31,7 @@ namespace TS3Client.Full
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
 		private readonly MessageProcessor msgProc;
@@ -125,12 +126,17 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void DisconnectInternal(ConnectionContext ctx, CommandError error = null)
+		private void DisconnectInternal(ConnectionContext ctx, CommandError error = null, Ts3ClientStatus? setStatus = null)
 		{
 			bool triggerEventSafe = false;
 
 			lock (statusLock)
 			{
+				Log.Debug("DisconnectInternal wasExit:{0} error:{1} oldStatus:{2} newStatus:{3}", ctx.WasExit, error?.ErrorFormat(), status, setStatus);
+
+				if (setStatus.HasValue)
+					status = setStatus.Value;
+
 				if (ctx.WasExit)
 					return;
 
@@ -178,11 +184,7 @@ namespace TS3Client.Full
 				if (leftViewEvent != null)
 				{
 					packetHandler.ExitReason = leftViewEvent.Reason;
-					lock (statusLock)
-					{
-						status = Ts3ClientStatus.Disconnected;
-						DisconnectInternal(context);
-					}
+					DisconnectInternal(context, setStatus: Ts3ClientStatus.Disconnected);
 					break;
 				}
 				OnClientLeftView?.Invoke(this, clientLeftArr);
@@ -221,16 +223,18 @@ namespace TS3Client.Full
 					var error = result.Ok ? result.Value : Util.CustomError("Got empty error while connecting.");
 
 					bool skipError = false;
+					bool disconnect = false;
 					lock (statusLock)
 					{
 						if (status == Ts3ClientStatus.Connecting)
 						{
+							disconnect = true;
 							skipError = true;
-							status = Ts3ClientStatus.Disconnected;
-							DisconnectInternal(context, error);
 						}
 					}
 
+					if (disconnect)
+						DisconnectInternal(context, error, Ts3ClientStatus.Disconnected);
 					if (!skipError)
 						OnErrorEvent?.Invoke(this, error);
 				}
@@ -295,8 +299,7 @@ namespace TS3Client.Full
 
 			lock (statusLock)
 			{
-				status = Ts3ClientStatus.Disconnected;
-				DisconnectInternal(ctx);
+				DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
 			}
 		}
 

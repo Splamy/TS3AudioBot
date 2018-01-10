@@ -49,10 +49,10 @@ namespace TS3AudioBot
 		private uint stallNoErrorCount;
 		private IdentityData identity;
 
-		private VolumePipe volumePipe;
-		private FfmpegProducer ffmpegProducer;
-		private PreciseTimedPipe timePipe;
-		private EncoderPipe encoderPipe;
+		private readonly VolumePipe volumePipe;
+		private readonly FfmpegProducer ffmpegProducer;
+		private readonly PreciseTimedPipe timePipe;
+		private readonly EncoderPipe encoderPipe;
 		internal CustomTargetPipe TargetPipe { get; private set; }
 
 		public Ts3Full(Ts3FullClientData tfcd) : base(ClientType.Full)
@@ -63,7 +63,6 @@ namespace TS3AudioBot
 			tfcd.PropertyChanged += Tfcd_PropertyChanged;
 
 			ffmpegProducer = new FfmpegProducer(tfcd);
-			ffmpegProducer.OnSongEnd += OnSongEnd;
 			volumePipe = new VolumePipe();
 			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ts3FullClientData.AudioBitrate * 1000 };
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.OptimalPacketSize };
@@ -304,7 +303,11 @@ namespace TS3AudioBot
 
 		#region IPlayerConnection
 
-		public event EventHandler OnSongEnd;
+		public event EventHandler OnSongEnd
+		{
+			add => ffmpegProducer.OnSongEnd += value;
+			remove => ffmpegProducer.OnSongEnd -= value;
+		}
 
 		public R AudioStart(string url)
 		{

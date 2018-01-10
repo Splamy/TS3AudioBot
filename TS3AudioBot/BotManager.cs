@@ -76,45 +76,49 @@ namespace TS3AudioBot
 		{
 			bool removeBot = false;
 			var bot = new Bot(Core);
-			if (bot.InitializeBot())
+			lock (bot.SyncRoot)
 			{
-				lock (lockObj)
+				if (bot.InitializeBot())
 				{
-					activeBots.Add(bot);
-					removeBot = !isRunning;
+					lock (lockObj)
+					{
+						activeBots.Add(bot);
+						removeBot = !isRunning;
+					}
 				}
-			}
-			if (removeBot)
-			{
-				StopBot(bot);
-				return false;
+
+				if (removeBot)
+				{
+					StopBot(bot);
+					return false;
+				}
 			}
 			return true;
 		}
 
-		public Bot GetBot(int id)
+		public BotLock GetBotLock(int id)
 		{
+			Bot bot;
 			lock (lockObj)
 			{
 				if (!isRunning)
 					return null;
-				return id < activeBots.Count
+				bot = id < activeBots.Count
 					? activeBots[id]
 					: null;
+				if (bot == null)
+					return new BotLock(false, null);
 			}
+			return bot.GetBotLock();
 		}
 
 		public void StopBot(Bot bot)
 		{
-			bool tookBot;
 			lock (lockObj)
 			{
-				tookBot = activeBots.Remove(bot);
+				activeBots.Remove(bot);
 			}
-			if (tookBot)
-			{
-				bot.Dispose();
-			}
+			bot.Dispose();
 		}
 
 		public void Dispose()
@@ -130,6 +134,28 @@ namespace TS3AudioBot
 			foreach (var bot in disposeBots)
 			{
 				StopBot(bot);
+			}
+		}
+	}
+
+	public class BotLock : IDisposable
+	{
+		private Bot bot;
+		public bool IsValid { get; private set; }
+		public Bot Bot => IsValid ? bot : throw new InvalidOperationException("The bot lock is not valid.");
+
+		internal BotLock(bool isValid, Bot bot)
+		{
+			IsValid = isValid;
+			this.bot = bot;
+		}
+
+		public void Dispose()
+		{
+			if (IsValid)
+			{
+				IsValid = false;
+				Monitor.Exit(bot.SyncRoot);
 			}
 		}
 	}

@@ -89,7 +89,6 @@ namespace TS3Client.Full.Audio
 				int read = inStream.Read(readBuffer, 0, readBuffer.Length, out var meta);
 				if (read == 0)
 				{
-					// TODO do stuff
 					AudioTimer.Start();
 					return;
 				}

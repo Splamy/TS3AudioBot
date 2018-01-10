@@ -16,7 +16,7 @@ namespace TS3AudioBot.Audio
 	using System.Text.RegularExpressions;
 	using TS3Client.Full.Audio;
 
-	class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
+	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex FindDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
@@ -29,7 +29,7 @@ namespace TS3AudioBot.Audio
 
 		public event EventHandler OnSongEnd;
 
-		private PreciseAudioTimer audioTimer;
+		private readonly PreciseAudioTimer audioTimer;
 		private string lastLink;
 		private Process ffmpegProcess;
 		private TimeSpan? parsedSongLength;
@@ -74,22 +74,26 @@ namespace TS3AudioBot.Audio
 		public int Read(byte[] buffer, int offset, int length, out Meta meta)
 		{
 			meta = null;
+			bool triggerEndSafe = false;
+			int read;
 
 			lock (ffmpegLock)
 			{
 				if (ffmpegProcess == null)
 					return 0;
-				
-				int read = ffmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
+
+				read = ffmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
 				if (read == 0)
 				{
 					// check for premature connection drop
 					if (ffmpegProcess.HasExited && !hasTriedToReconnectAudio)
 					{
 						var expectedStopLength = GetCurrentSongLength();
+						Log.Trace("Expected song length {0}", expectedStopLength);
 						if (expectedStopLength != TimeSpan.Zero)
 						{
 							var actualStopPosition = audioTimer.SongPosition;
+							Log.Trace("Actual song position {0}", actualStopPosition);
 							if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
 							{
 								Log.Debug("Connection to song lost, retrying at {0}", actualStopPosition);
@@ -102,19 +106,27 @@ namespace TS3AudioBot.Audio
 
 					if (ffmpegProcess.HasExited)
 					{
+						Log.Trace("Ffmpeg has exited with {0}", ffmpegProcess.ExitCode);
 						AudioStop();
-						OnSongEnd?.Invoke(this, new EventArgs());
+						triggerEndSafe = true;
 					}
 				}
-				
-				hasTriedToReconnectAudio = false;
-				audioTimer.PushBytes(read);
-				return read;
 			}
+
+			if (triggerEndSafe)
+			{
+				OnSongEnd?.Invoke(this, new EventArgs());
+				return 0;
+			}
+
+			hasTriedToReconnectAudio = false;
+			audioTimer.PushBytes(read);
+			return read;
 		}
 
 		public R StartFfmpegProcess(string url, string extraPreParam = null, string extraPostParam = null)
 		{
+			Log.Trace("Start request {0}", url);
 			try
 			{
 				lock (ffmpegLock)
@@ -134,6 +146,7 @@ namespace TS3AudioBot.Audio
 							CreateNoWindow = true,
 						}
 					};
+					Log.Trace("Starting with {0}", ffmpegProcess.StartInfo.Arguments);
 					ffmpegProcess.Start();
 
 					lastLink = url;

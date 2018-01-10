@@ -37,7 +37,7 @@ namespace TS3AudioBot.Sessions
 			ResponseData = null;
 		}
 
-		public void Write(string message, TextMessageTargetMode targetMode)
+		public R Write(string message, TextMessageTargetMode targetMode)
 		{
 			VerifyLock();
 
@@ -59,6 +59,7 @@ namespace TS3AudioBot.Sessions
 
 			if (!result)
 				Log.Error("Could not write message (Err:{0}) (Msg:{1})", result.Error, message);
+			return result;
 		}
 
 		public void SetResponse(Response responseProcessor, object responseData)

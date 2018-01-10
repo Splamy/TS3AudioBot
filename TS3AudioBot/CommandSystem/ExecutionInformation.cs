@@ -36,16 +36,13 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (SkipRightsChecks)
 				return true;
-			return Core.RightsManager.HasAllRights(InvokerData, rights);
+			return Core.RightsManager.HasAllRights(InvokerData, Bot, rights);
 		}
 
 		public R Write(string message)
 		{
 			if (InvokerData.Visibiliy.HasValue)
-			{
-				Session.Write(message, InvokerData.Visibiliy.Value);
-				return R.OkR;
-			}
+				return Session.Write(message, InvokerData.Visibiliy.Value);
 			else
 				return "User has no visibility";
 		}

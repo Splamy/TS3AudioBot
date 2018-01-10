@@ -919,7 +919,7 @@ namespace TS3AudioBot
 		[Command("rights can", "Returns the subset of allowed commands the caller (you) can execute.")]
 		public static JsonObject CommandRightsCan(ExecutionInformation info, params string[] rights)
 		{
-			var result = info.Core.RightsManager.GetRightsSubset(info.InvokerData, rights);
+			var result = info.Core.RightsManager.GetRightsSubset(info.InvokerData, info.Bot, rights);
 			if (result.Length > 0)
 				return new JsonArray<string>(string.Join(", ", result), result);
 			else

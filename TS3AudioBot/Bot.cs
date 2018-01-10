@@ -15,6 +15,7 @@ namespace TS3AudioBot
 	using Sessions;
 	using System;
 	using System.IO;
+	using System.Threading;
 	using TS3Client;
 	using TS3Client.Messages;
 
@@ -23,9 +24,11 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private bool isDisposed;
 		private readonly Core core;
 		private MainBotData mainBotData;
+
+		internal object SyncRoot { get; } = new object();
+		internal bool IsDisposed { get; private set; }
 
 		internal TargetScript TargetScript { get; set; }
 		/// <summary>Mangement for playlists.</summary>
@@ -213,23 +216,26 @@ namespace TS3AudioBot
 
 		public R UpdateBotStatus(string overrideStr = null)
 		{
-			string setString;
-			if (overrideStr != null)
+			lock (SyncRoot)
 			{
-				setString = overrideStr;
-			}
-			else if (PlayManager.IsPlaying)
-			{
-				setString = QuizMode
-					? "<Quiztime!>"
-					: PlayManager.CurrentPlayData.ResourceData.ResourceTitle;
-			}
-			else
-			{
-				setString = "<Sleeping>";
-			}
+				string setString;
+				if (overrideStr != null)
+				{
+					setString = overrideStr;
+				}
+				else if (PlayManager.IsPlaying)
+				{
+					setString = QuizMode
+						? "<Quiztime!>"
+						: PlayManager.CurrentPlayData.ResourceData.ResourceTitle;
+				}
+				else
+				{
+					setString = "<Sleeping>";
+				}
 
-			return QueryConnection.ChangeDescription(setString);
+				return QueryConnection.ChangeDescription(setString);
+			}
 		}
 
 		private void GenerateStatusImage(object sender, EventArgs e)
@@ -265,21 +271,30 @@ namespace TS3AudioBot
 			}
 		}
 
+		public BotLock GetBotLock()
+		{
+			Monitor.Enter(SyncRoot);
+			return new BotLock(!IsDisposed, this);
+		}
+
 		public void Dispose()
 		{
-			if (!isDisposed) isDisposed = true;
-			else return;
-			Log.Info("Bot disconnecting.");
+			lock (SyncRoot)
+			{
+				if (!IsDisposed) IsDisposed = true;
+				else return;
+				Log.Info("Bot disconnecting.");
 
-			core.Bots.StopBot(this);
+				core.Bots.StopBot(this);
 
-			PlayManager?.Stop();
+				PlayManager?.Stop();
 
-			PlayerConnection?.Dispose(); // before: logStream,
-			PlayerConnection = null;
+				PlayerConnection?.Dispose(); // before: logStream,
+				PlayerConnection = null;
 
-			QueryConnection?.Dispose(); // before: logStream,
-			QueryConnection = null;
+				QueryConnection?.Dispose(); // before: logStream,
+				QueryConnection = null;
+			}
 		}
 	}
 

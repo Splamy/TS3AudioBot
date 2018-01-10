@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Rights
 {
+	using CommandSystem;
 	using Helper;
 	using Nett;
 	using System;
@@ -24,8 +25,7 @@ namespace TS3AudioBot.Rights
 		private const int RuleLevelSize = 2;
 
 		public ConfigFile Config { get; set; }
-		public BotManager Bots { get; set; }
-		public CommandSystem.CommandManager CommandManager { get; set; }
+		public CommandManager CommandManager { get; set; }
 
 		private bool needsRecalculation;
 		private readonly Cache<InvokerData, ExecuteContext> cachedRights;
@@ -75,21 +75,21 @@ namespace TS3AudioBot.Rights
 		}
 
 		// TODO: b_client_permissionoverview_view
-		public bool HasAllRights(InvokerData inv, params string[] requestedRights)
+		public bool HasAllRights(InvokerData inv, Bot bot, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(inv);
+			var ctx = GetRightsContext(inv, bot);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
-		public string[] GetRightsSubset(InvokerData inv, params string[] requestedRights)
+		public string[] GetRightsSubset(InvokerData inv, Bot bot, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(inv);
+			var ctx = GetRightsContext(inv, bot);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
-		private ExecuteContext GetRightsContext(InvokerData inv)
+		private ExecuteContext GetRightsContext(InvokerData inv, Bot bot)
 		{
 			if (needsRecalculation)
 			{
@@ -112,8 +112,7 @@ namespace TS3AudioBot.Rights
 					((needsAvailableGroups && execCtx.AvailableGroups == null)
 					|| (needsAvailableChanGroups && !execCtx.ChannelGroupId.HasValue)))
 				{
-					// TODO fixme !!!!!!!!
-					var result = Bots.GetBot(0)?.QueryConnection.GetClientInfoById(inv.ClientId.Value) ?? R<TS3Client.Messages.ClientInfo>.Err("No bot");
+					var result = bot?.QueryConnection.GetClientInfoById(inv.ClientId.Value) ?? R<TS3Client.Messages.ClientInfo>.Err("");
 					if (result.Ok)
 					{
 						if (execCtx.AvailableGroups == null)
@@ -125,8 +124,7 @@ namespace TS3AudioBot.Rights
 
 				if (needsAvailableGroups && inv.DatabaseId.HasValue && execCtx.AvailableGroups == null)
 				{
-					// TODO fixme !!!!!!!!
-					var result = Bots.GetBot(0)?.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value) ?? R<ulong[]>.Err("");
+					var result = bot?.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value) ?? R<ulong[]>.Err("");
 					if (result.Ok)
 						execCtx.AvailableGroups = result.Value;
 				}
