@@ -29,6 +29,7 @@ namespace TS3Client
 	/// <summary>Queues and manages up- and downloads.</summary>
 	public sealed class FileTransferManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3BaseFunctions parent;
 		private readonly Queue<FileTransferToken> transferQueue;
 		private Thread workerThread;
@@ -216,9 +217,9 @@ namespace TS3Client
 						token.Status = TransferStatus.Trasfering;
 					}
 
-					using (var client = new TcpClient(AddressFamily.InterNetworkV6))
+					Log.Trace("Creating new file transfer connection to {0}", parent.remoteAddress);
+					using (var client = new TcpClient(parent.remoteAddress.AddressFamily))
 					{
-						client.Client.DualMode = true;
 						try { client.Connect(parent.remoteAddress.Address, token.Port); }
 						catch (SocketException)
 						{
