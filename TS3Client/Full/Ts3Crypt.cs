@@ -231,36 +231,45 @@ namespace TS3Client.Full
 			const int versionLen = 4;
 			const int initTypeLen = 1;
 
-			if (data == null)
+			int? type = null;
+			if (data != null)
 			{
-				var sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
+				type = data[0];
+				if (data.Length < initTypeLen)
+					return "Invalid init packet (too short)";
+			}
+			byte[] sendData;
+
+			switch (type)
+			{
+			case 0x7F:
+				// Some strange servers do this
+				// the normal client responds by starting agian
+			case null:
+				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
 				sendData[versionLen] = 0x00; // initType
 				NetUtil.H2N(Util.UnixNow, sendData, versionLen + initTypeLen); // 4byte timestamp
-				for (int i = 0; i < 4; i++) sendData[i + versionLen + initTypeLen + 4] = (byte)Util.Random.Next(0, 256); // 4byte random
+				for (int i = 0; i < 4; i++)
+					sendData[i + versionLen + initTypeLen + 4] = (byte)Util.Random.Next(0, 256); // 4byte random
 				return sendData;
-			}
 
-			if (data.Length < initTypeLen) return "Invalid init packet (too short)";
-			int type = data[0];
-			if (type == 1)
-			{
-				var sendData = new byte[versionLen + initTypeLen + 16 + 4];
+			case 1:
+				sendData = new byte[versionLen + initTypeLen + 16 + 4];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
 				sendData[versionLen] = 0x02; // initType
 				Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
 				return sendData;
-			}
-			else if (type == 3)
-			{
+
+			case 3:
 				byte[] alphaBytes = new byte[10];
 				Util.Random.NextBytes(alphaBytes);
 				var alpha = Convert.ToBase64String(alphaBytes);
 				string initAdd = Ts3Command.BuildToString("clientinitiv",
 					new ICommandPart[] {
-						new CommandParameter("alpha", alpha),
-						new CommandParameter("omega", Identity.PublicKeyString),
-						new CommandParameter("ip", string.Empty) });
+							new CommandParameter("alpha", alpha),
+							new CommandParameter("omega", Identity.PublicKeyString),
+							new CommandParameter("ip", string.Empty) });
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
 				// Prepare solution
@@ -270,7 +279,7 @@ namespace TS3Client.Full
 					return y;
 
 				// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
-				var sendData = new byte[versionLen + initTypeLen + 232 + 64 + textBytes.Length];
+				sendData = new byte[versionLen + initTypeLen + 232 + 64 + textBytes.Length];
 				// Copy this.Version
 				Array.Copy(Initversion, 0, sendData, 0, versionLen);
 				// Write InitType
@@ -281,11 +290,11 @@ namespace TS3Client.Full
 				Array.Copy(y.Value, 0, sendData, versionLen + initTypeLen + 232 + (64 - y.Value.Length), y.Value.Length);
 				// Copy text
 				Array.Copy(textBytes, 0, sendData, versionLen + initTypeLen + 232 + 64, textBytes.Length);
-
 				return sendData;
-			}
 
-			return "Got invalid init packet id";
+			default:
+				return "Got invalid init packet id";
+			}
 		}
 
 		/// <summary>This method calculates x ^ (2^level) % n = y which is the solution to the server RSA puzzle.</summary>

@@ -65,6 +65,8 @@ public struct R<TSuccess>
 	public static implicit operator R<TSuccess>(TSuccess result) => new R<TSuccess>(result);
 	public static implicit operator R<TSuccess>(string error) => new R<TSuccess>(error);
 
+	public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;
+
 	public override string ToString() => Error;
 }
 

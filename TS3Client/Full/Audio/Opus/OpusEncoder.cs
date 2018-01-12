@@ -72,7 +72,7 @@ namespace TS3Client.Full.Audio.Opus
 		/// <param name="sampleLength">How many bytes to encode.</param>
 		/// <param name="outputEncodedBuffer">The encoded data is written to this buffer.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
-		public Span<byte> Encode(byte[] inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
+		public Span<byte> Encode(ReadOnlySpan<byte> inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
 		{
 			if (disposed)
 				throw new ObjectDisposedException("OpusEncoder");
@@ -80,7 +80,7 @@ namespace TS3Client.Full.Audio.Opus
 				throw new ArgumentException("Array must be at least MaxDataBytes long", nameof(outputEncodedBuffer));
 
 			int frames = FrameCount(inputPcmSamples);
-			int encodedLength = NativeMethods.opus_encode(encoder, inputPcmSamples, frames, outputEncodedBuffer, sampleLength);
+			int encodedLength = NativeMethods.opus_encode(encoder, ref inputPcmSamples.DangerousGetPinnableReference(), frames, outputEncodedBuffer, sampleLength);
 
 			if (encodedLength < 0)
 				throw new Exception("Encoding failed - " + (Errors)encodedLength);
@@ -93,7 +93,7 @@ namespace TS3Client.Full.Audio.Opus
 		/// </summary>
 		/// <param name="pcmSamples"></param>
 		/// <returns></returns>
-		public int FrameCount(byte[] pcmSamples)
+		public int FrameCount(ReadOnlySpan<byte> pcmSamples)
 		{
 			//  seems like bitrate should be required
 			const int bitrate = 16;

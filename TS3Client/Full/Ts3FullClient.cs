@@ -286,13 +286,6 @@ namespace TS3Client.Full
 							}
 						});
 						break;
-
-					case PacketType.Init1:
-						var forwardData = ts3Crypt.ProcessInit1(packet.Data);
-						if (!forwardData.Ok)
-							break;
-						packetHandler.AddOutgoingPacket(forwardData.Value, PacketType.Init1);
-						break;
 					}
 				}
 			}
@@ -323,7 +316,7 @@ namespace TS3Client.Full
 		private void ProcessInitServer(InitServer initServer)
 		{
 			packetHandler.ClientId = initServer.ClientId;
-			packetHandler.ReceiveInitAck();
+			packetHandler.ReceivedFinalInitAck();
 
 			lock (statusLock)
 				status = Ts3ClientStatus.Connected;

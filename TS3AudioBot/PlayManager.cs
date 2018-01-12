@@ -183,9 +183,10 @@ namespace TS3AudioBot
 			for (int i = 0; i < 10; i++)
 			{
 				if ((pli = PlaylistManager.Next()) == null) break;
-				if (Play(invoker, pli))
-					return R.OkR;
-				// optional message here that playlist entry has been skipped
+				var result = Play(invoker, pli);
+				if (result.Ok)
+					return result;
+				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error);
 			}
 			if (pli == null)
 				return "No next song could be played";
@@ -221,7 +222,7 @@ namespace TS3AudioBot
 				var result = Next(CurrentPlayData.Invoker);
 				if (result)
 					return;
-				Log.Warn(nameof(SongStoppedHook) + " could not play Next: {0}", result.Error);
+				Log.Info("Song queue ended: {0}", result.Error);
 			}
 			else
 			{

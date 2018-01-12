@@ -10,6 +10,7 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Helper;
+	using Newtonsoft.Json.Linq;
 	using System;
 	using System.Collections.Generic;
 	using System.Globalization;
@@ -41,11 +42,15 @@ namespace TS3AudioBot.ResourceFactories
 			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", TwitchClientId)))
 				return RResultCode.NoConnection.ToString();
 
-			var jsonDict = (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
+			var jObj = JObject.Parse(jsonResponse);
 
 			// request m3u8 file
-			var token = Uri.EscapeUriString(jsonDict["token"].ToString());
-			var sig = jsonDict["sig"];
+			var tokenResult = jObj.TryCast<string>("token");
+			var sigResult = jObj.TryCast<string>("sig");
+			if (!tokenResult.Ok || !sigResult.Ok)
+				return "Invalid api response";
+			var token = Uri.EscapeUriString(tokenResult.Value);
+			var sig = sigResult.Value;
 			// guaranteed to be random, chosen by fair dice roll.
 			const int random = 4;
 			if (!WebWrapper.DownloadString(out string m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))

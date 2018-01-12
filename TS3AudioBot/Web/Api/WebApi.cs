@@ -11,6 +11,7 @@ namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
 	using Helper;
+	using Newtonsoft.Json;
 	using Sessions;
 	using System;
 	using System.IO;
@@ -126,7 +127,7 @@ namespace TS3AudioBot.Web.Api
 			}
 
 			using (var responseStream = new StreamWriter(response.OutputStream))
-				responseStream.Write(Util.Serializer.Serialize(new JsonError(message, reason)));
+				responseStream.Write(JsonConvert.SerializeObject(new JsonError(message, reason)));
 		}
 
 		private static void UnescapeAstTree(AstNode node)

@@ -32,8 +32,7 @@ namespace TS3Client.Full.Audio
 		private int soundBufferLength;
 		private byte[] notEncodedBuffer = new byte[0];
 		private int notEncodedBufferLength;
-		private readonly byte[] segment;
-		private byte[] encodedBuffer;
+		private readonly byte[] encodedBuffer;
 
 		public EncoderPipe(Codec codec)
 		{
@@ -72,7 +71,6 @@ namespace TS3Client.Full.Audio
 
 			BitsPerSample = 16;
 			OptimalPacketSize = opusEncoder.FrameByteCount(SegmentFrames);
-			segment = new byte[OptimalPacketSize];
 			encodedBuffer = new byte[opusEncoder.MaxDataBytes];
 		}
 
@@ -89,9 +87,9 @@ namespace TS3Client.Full.Audio
 			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBufferLength);
 			data.CopyTo(new Span<byte>(soundBuffer, notEncodedBufferLength));
 
-			int byteCap = OptimalPacketSize;
-			int segmentCount = (int)Math.Floor((float)soundBufferLength / byteCap);
-			int segmentsEnd = segmentCount * byteCap;
+			int packetSize = OptimalPacketSize;
+			int segmentCount = soundBufferLength / packetSize;
+			int segmentsEnd = segmentCount * packetSize;
 			int newNotEncodedBufferLength = soundBufferLength - segmentsEnd;
 			if (newNotEncodedBufferLength > notEncodedBuffer.Length)
 				notEncodedBuffer = new byte[newNotEncodedBufferLength];
@@ -100,9 +98,7 @@ namespace TS3Client.Full.Audio
 
 			for (int i = 0; i < segmentCount; i++)
 			{
-				for (int j = 0; j < segment.Length; j++)
-					segment[j] = soundBuffer[(i * byteCap) + j];
-				var encodedData = opusEncoder.Encode(segment, segment.Length, encodedBuffer);
+				var encodedData = opusEncoder.Encode(soundBuffer.AsSpan().Slice(i * packetSize, packetSize), packetSize, encodedBuffer);
 				if (meta != null)
 					meta.Codec = Codec; // TODO copy ?
 				OutStream?.Write(encodedData, meta);

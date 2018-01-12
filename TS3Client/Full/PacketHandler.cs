@@ -15,7 +15,6 @@ namespace TS3Client.Full
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.IO;
-	using System.Linq;
 	using System.Net;
 	using System.Net.Sockets;
 	using System.Threading;
@@ -30,6 +29,7 @@ namespace TS3Client.Full
 
 		private static readonly Logger LoggerRtt = LogManager.GetLogger("TS3Client.PacketHandler.Rtt");
 		private static readonly Logger LoggerRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
+		private static readonly Logger LoggerRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
 		private static readonly Logger LoggerTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
 		// Timout calculations
 		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
@@ -56,6 +56,7 @@ namespace TS3Client.Full
 
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
+		private OutgoingPacket initPacketCheck;
 		private readonly Dictionary<ushort, OutgoingPacket> packetAckManager;
 		private readonly RingQueue<IncomingPacket> receiveQueue;
 		private readonly RingQueue<IncomingPacket> receiveQueueLow;
@@ -101,6 +102,7 @@ namespace TS3Client.Full
 				lastSentPingId = 0;
 				lastReceivedPingId = 0;
 
+				initPacketCheck = null;
 				packetAckManager.Clear();
 				receiveQueue.Clear();
 				receiveQueueLow.Clear();
@@ -192,7 +194,7 @@ namespace TS3Client.Full
 				case PacketType.VoiceWhisper:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
 					NetUtil.H2N(packet.PacketId, packet.Data, 0);
-					LoggerRaw.ConditionalTrace("[O] {0}", packet);
+					LoggerRawVoice.ConditionalTrace("[O] {0}", packet);
 					break;
 
 				case PacketType.Command:
@@ -220,7 +222,7 @@ namespace TS3Client.Full
 
 				case PacketType.Init1:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-					packetAckManager.Add(packet.PacketId, packet);
+					initPacketCheck = packet;
 					LoggerRaw.Debug("[O] InitID: {0}", packet.Data[4]);
 					LoggerRaw.Trace("[O] {0}", packet);
 					break;
@@ -323,7 +325,7 @@ namespace TS3Client.Full
 				{
 				case PacketType.Voice:
 				case PacketType.VoiceWhisper:
-					LoggerRaw.ConditionalTrace("[I] {0}", packet);
+					LoggerRawVoice.ConditionalTrace("[I] {0}", packet);
 					break;
 				case PacketType.Command:
 					LoggerRaw.Debug("[I] {0}", packet);
@@ -349,7 +351,7 @@ namespace TS3Client.Full
 				case PacketType.Init1:
 					LoggerRaw.Debug("[I] InitID: {0}", packet.Data[0]);
 					LoggerRaw.Trace("[I] {0}", packet);
-					ReceiveInitAck();
+					ReceiveInitAck(packet);
 					break;
 				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
@@ -525,18 +527,27 @@ namespace TS3Client.Full
 			}
 		}
 
-		public void ReceiveInitAck()
+		public void ReceivedFinalInitAck() => ReceiveInitAck(null, true);
+
+		private void ReceiveInitAck(IncomingPacket packet, bool done = false)
 		{
-			// this method is a bit hacky since it removes ALL Init1 packets
-			// from the sendQueue instead of the one with the preceding
-			// init step id (see Ts3Crypt.ProcessInit1).
-			// But usually this should be no problem since the init order is linear
 			lock (sendLoopLock)
 			{
-				LoggerRaw.Debug("Cleaned Inits");
-				var remPacket = packetAckManager.Values.Where(x => x.PacketType == PacketType.Init1).ToArray();
-				foreach (var packet in remPacket)
-					packetAckManager.Remove(packet.PacketId);
+				if (initPacketCheck == null || packet == null)
+				{
+					if (done)
+						initPacketCheck = null;
+					return;
+				}
+				// optional: add random number check from init data
+				var forwardData = ts3Crypt.ProcessInit1(packet.Data);
+				if (!forwardData.Ok)
+				{
+					LoggerRaw.Debug("Wrong init: {0}", forwardData.Error);
+					return;
+				}
+				initPacketCheck = null;
+				AddOutgoingPacket(forwardData.Value, PacketType.Init1);
 			}
 		}
 
@@ -563,23 +574,24 @@ namespace TS3Client.Full
 		/// </summary>
 		private void ResendLoop()
 		{
-			DateTime pingCheck = Util.Now;
+			var pingCheck = Util.Now;
 
 			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
 			{
+				var now = Util.Now;
 				lock (sendLoopLock)
 				{
 					if (Closed)
 						break;
 
-					if (packetAckManager.Count > 0 && ResendPackages(packetAckManager.Values))
+					if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values, now)) ||
+						(initPacketCheck != null && ResendPacket(initPacketCheck, now)))
 					{
 						Stop(MoveReason.Timeout);
 						return;
 					}
 				}
 
-				var now = Util.Now;
 				var nextTest = pingCheck - now + PingInterval;
 				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
 				if (nextTest < TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
@@ -592,28 +604,33 @@ namespace TS3Client.Full
 			}
 		}
 
-		private bool ResendPackages(IEnumerable<OutgoingPacket> packetList)
+		private bool ResendPackets(IEnumerable<OutgoingPacket> packetList, DateTime now)
 		{
-			var now = Util.Now;
 			foreach (var outgoingPacket in packetList)
-			{
-				// Check if the packet timed out completely
-				if (outgoingPacket.FirstSendTime < now - PacketTimeout)
-				{
-					LoggerTimeout.Debug("TIMEOUT: {0}", outgoingPacket);
+				if (ResendPacket(outgoingPacket, now))
 					return true;
-				}
+			return false;
+		}
 
-				// Check if we should retransmit a packet because it probably got lost
-				if (outgoingPacket.LastSendTime < now - currentRto)
-				{
-					LoggerTimeout.Debug("RESEND: {0}", outgoingPacket);
-					currentRto = currentRto + currentRto;
-					if (currentRto > MaxRetryInterval)
-						currentRto = MaxRetryInterval;
-					SendRaw(outgoingPacket);
-				}
+		private bool ResendPacket(OutgoingPacket packet, DateTime now)
+		{
+			// Check if the packet timed out completely
+			if (packet.FirstSendTime < now - PacketTimeout)
+			{
+				LoggerTimeout.Debug("TIMEOUT: {0}", packet);
+				return true;
 			}
+
+			// Check if we should retransmit a packet because it probably got lost
+			if (packet.LastSendTime < now - currentRto)
+			{
+				LoggerTimeout.Debug("RESEND: {0}", packet);
+				currentRto = currentRto + currentRto;
+				if (currentRto > MaxRetryInterval)
+					currentRto = MaxRetryInterval;
+				SendRaw(packet);
+			}
+
 			return false;
 		}
 
@@ -621,7 +638,7 @@ namespace TS3Client.Full
 		{
 			packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);
-			LoggerRaw.ConditionalTrace("Sending Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
+			LoggerRaw.ConditionalTrace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}
 	}

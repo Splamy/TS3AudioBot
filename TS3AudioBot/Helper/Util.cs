@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Helper
 {
 	using CommandSystem;
+	using Newtonsoft.Json.Linq;
 	using System;
 	using System.Diagnostics;
 	using System.IO;
@@ -18,7 +19,6 @@ namespace TS3AudioBot.Helper
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
-	using System.Web.Script.Serialization;
 
 	[Serializable]
 	public static class Util
@@ -63,7 +63,7 @@ namespace TS3AudioBot.Helper
 
 		public static Random Random { get; } = new Random();
 
-		public static JavaScriptSerializer Serializer { get; } = new JavaScriptSerializer();
+		//public static JavaScriptSerializer Serializer { get; } = new JavaScriptSerializer();
 
 		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
 
@@ -150,7 +150,7 @@ namespace TS3AudioBot.Helper
 			else
 				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
 		}
-		
+
 		public static string UnrollException(this Exception ex)
 		{
 			var strb = new StringBuilder();
@@ -228,7 +228,7 @@ namespace TS3AudioBot.Helper
 					};
 					p.Start();
 					p.WaitForExit(100);
-					
+
 					while (p.StandardOutput.Peek() > -1)
 					{
 						var infoLine = p.StandardOutput.ReadLine();
@@ -256,6 +256,15 @@ namespace TS3AudioBot.Helper
 			}
 
 			return $"{plattform} {version} ({bitness})";
+		}
+
+		public static R<T> TryCast<T>(this JToken token, string key)
+		{
+			var value = token.SelectToken(key);
+			if (value == null)
+				return "Key not found";
+			try { return value.ToObject<T>(); }
+			catch (FormatException) { return "Invalid type"; }
 		}
 	}
 

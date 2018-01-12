@@ -63,16 +63,17 @@ namespace TS3ABotUnitTests
 			hmf.HistoryFile = testFile;
 			hmf.FillDeletedIds = false;
 
-			DbStore db = null;
-			HistoryManager hf = null;
-			Action createDbStore = () =>
+			DbStore db;
+			HistoryManager hf;
+
+			void CreateDbStore()
 			{
-				db = new DbStore() { Config = memcfg };
+				db = new DbStore() {Config = memcfg};
 				db.Initialize();
 				hf = new HistoryManager(hmf, db);
-			};
+			}
 
-			createDbStore();
+			CreateDbStore();
 
 			hf.LogAudioResource(data1);
 
@@ -83,7 +84,7 @@ namespace TS3ABotUnitTests
 
 			db.Dispose();
 
-			createDbStore();
+			CreateDbStore();
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
@@ -100,7 +101,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// store and order check
-			createDbStore();
+			CreateDbStore();
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -114,7 +115,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// check entry renaming
-			createDbStore();
+			CreateDbStore();
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
@@ -134,7 +135,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// recheck order
-			createDbStore();
+			CreateDbStore();
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -142,7 +143,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// delete entry 1
-			createDbStore();
+			CreateDbStore();
 			hf.RemoveEntry(hf.FindEntryByResource(ar1));
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
@@ -156,7 +157,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// delete entry 2
-			createDbStore();
+			CreateDbStore();
 			// .. check integrity from previous store
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -330,12 +331,11 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Ts3Client_RingQueueTest()
 		{
-			int ov;
 			var q = new RingQueue<int>(3, 5);
 
 			q.Set(0, 42);
 
-			Assert.True(q.TryPeekStart(0, out ov));
+			Assert.True(q.TryPeekStart(0, out int ov));
 			Assert.AreEqual(ov, 42);
 
 			q.Set(1, 43);

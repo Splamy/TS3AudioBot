@@ -10,16 +10,12 @@
 namespace TS3AudioBot.Audio
 {
 	using Helper;
-	using TS3Client;
-	using TS3Client.Helper;
-	using TS3Client.Full;
-	using TS3Client.Full.Audio;
-	using TS3Client.Messages;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using System.Text;
-	using System.Threading.Tasks;
+	using TS3Client;
+	using TS3Client.Full;
+	using TS3Client.Full.Audio;
 
 	internal class CustomTargetPipe : ITargetManager, IAudioPassiveConsumer
 	{
@@ -63,7 +59,8 @@ namespace TS3AudioBot.Audio
 			case TargetSendMode.WhisperGroup:
 				client.SendAudioGroupWhisper(data, codec, GroupWhisperType, GroupWhisperTarget, GroupWhisperTargetId);
 				break;
-			default: break;
+			default:
+				throw new ArgumentOutOfRangeException(nameof(SendMode), "Unknown send target");
 			}
 		}
 

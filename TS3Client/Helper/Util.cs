@@ -94,6 +94,21 @@ namespace TS3Client.Helper
 
 	internal static class DebugUtil
 	{
-		public static string DebugToHex(byte[] data) => string.Join(" ", data.Select(x => x.ToString("X2")));
+		public static string DebugToHex(byte[] bytes) => bytes == null ? "<null>" : DebugToHex(bytes.AsSpan());
+
+		public static string DebugToHex(ReadOnlySpan<byte> bytes)
+		{
+			char[] c = new char[bytes.Length * 3];
+			for (int bx = 0, cx = 0; bx < bytes.Length; ++bx, ++cx)
+			{
+				byte b = (byte)(bytes[bx] >> 4);
+				c[cx] = (char)(b > 9 ? b - 10 + 'A' : b + '0');
+
+				b = (byte)(bytes[bx] & 0x0F);
+				c[++cx] = (char)(b > 9 ? b - 10 + 'A' : b + '0');
+				c[++cx] = ' ';
+			}
+			return new string(c);
+		}
 	}
 }

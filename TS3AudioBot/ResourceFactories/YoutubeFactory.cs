@@ -19,6 +19,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
+	using Newtonsoft.Json;
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
@@ -245,7 +246,7 @@ namespace TS3AudioBot.ResourceFactories
 
 				if (!WebWrapper.DownloadString(out string response, queryString))
 					return "Web response error";
-				var parsed = Util.Serializer.Deserialize<JsonPlaylistItems>(response);
+				var parsed = JsonConvert.DeserializeObject<JsonPlaylistItems>(response);
 				var videoItems = parsed.items;
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoItems.Length];
 				for (int i = 0; i < videoItems.Length; i++)
@@ -260,7 +261,7 @@ namespace TS3AudioBot.ResourceFactories
 				queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.apiKey}");
 				if (!WebWrapper.DownloadString(out response, queryString))
 					return "Web response error";
-				var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
+				var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response); // TODO dictionary-object does not work with newtonsoft
 				var videoDicts = ((object[])parsedTime["items"]).Cast<Dictionary<string, object>>().ToArray();
 				for (int i = 0; i < videoDicts.Length; i++)
 					itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
@@ -273,46 +274,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			return plist;
 		}
-
-		public static string LoadAlternative(string id)
-		{
-			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
-				return "No con";
-
-			int indexof = resulthtml.IndexOf("ytplayer.config =", StringComparison.OrdinalIgnoreCase);
-			int ptr = indexof;
-			while (resulthtml[ptr] != '{') ptr++;
-			int start = ptr;
-			int stackcnt = 1;
-			while (stackcnt > 0)
-			{
-				ptr++;
-				if (resulthtml[ptr] == '{') stackcnt++;
-				else if (resulthtml[ptr] == '}') stackcnt--;
-			}
-
-			var jsonobj = Util.Serializer.DeserializeObject(resulthtml.Substring(start, ptr - start + 1));
-			var args = GetDictVal(jsonobj, "args");
-			var urlEncodedFmtStreamMap = GetDictVal(args, "url_encoded_fmt_stream_map");
-			if (urlEncodedFmtStreamMap == null)
-				return "No Data";
-
-			string[] encoSplit = ((string)urlEncodedFmtStreamMap).Split(',');
-			foreach (var singleEnco in encoSplit)
-			{
-				var lis = HttpUtility.ParseQueryString(singleEnco);
-
-				var signature = lis["s"];
-				var url = lis["url"];
-				if (!url.Contains("signature"))
-					url += "&signature=" + signature;
-				return url;
-			}
-			return "No match";
-		}
-
-		private static object GetDictVal(object dict, string field) => (dict as Dictionary<string, object>)?[field];
-
+		
 		private static R<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
 			Log.Debug("Falling back to youtube-dl!");
@@ -352,7 +314,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!WebWrapper.DownloadString(out string response,
 				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={data.ApiKey}")))
 				return "No connection";
-			var parsed = Util.Serializer.Deserialize<JsonPlaylistItems>(response);
+			var parsed = JsonConvert.DeserializeObject<JsonPlaylistItems>(response);
 
 			// default: 120px/ 90px
 			// medium : 320px/180px
