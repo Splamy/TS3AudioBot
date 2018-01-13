@@ -73,20 +73,20 @@ namespace TS3Client.Full
 		{
 			switch (type)
 			{
-			case PacketType.Voice:
-			case PacketType.VoiceWhisper:
-				return PacketKind.Speech;
-			case PacketType.Command:
-			case PacketType.CommandLow:
-			case PacketType.Ack:
-			case PacketType.AckLow:
-			case PacketType.Init1:
-				return PacketKind.Control;
-			case PacketType.Ping:
-			case PacketType.Pong:
-				return PacketKind.Keepalive;
-			default:
-				throw new ArgumentOutOfRangeException(nameof(type));
+				case PacketType.Voice:
+				case PacketType.VoiceWhisper:
+					return PacketKind.Speech;
+				case PacketType.Command:
+				case PacketType.CommandLow:
+				case PacketType.Ack:
+				case PacketType.AckLow:
+				case PacketType.Init1:
+					return PacketKind.Control;
+				case PacketType.Ping:
+				case PacketType.Pong:
+					return PacketKind.Keepalive;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(type));
 			}
 		}
 
@@ -109,6 +109,42 @@ namespace TS3Client.Full
 			var now = Util.Now;
 			while (queue.Count > 0 && now - queue.Peek().SendPoint > time)
 				queue.Dequeue();
+		}
+
+		public Ts3Command GenerateBestStatusAnswer() {
+			return new Ts3Command("setconnectioninfo", new List<ICommandPart>()
+			{
+				new CommandParameter("connection_ping", 0.0000f),
+				new CommandParameter("connection_ping_deviation", 0.0000f),
+				new CommandParameter("connection_packets_sent_speech", 0.0000f),
+				new CommandParameter("connection_packets_sent_keepalive", 0.0000f),
+				new CommandParameter("connection_packets_sent_control", 0.0000f),
+				new CommandParameter("connection_bytes_sent_speech", 0.0000f),
+				new CommandParameter("connection_bytes_sent_keepalive", 0.0000f),
+				new CommandParameter("connection_bytes_sent_control", 0.0000f),
+				new CommandParameter("connection_packets_received_speech", 0.0000f),
+				new CommandParameter("connection_packets_received_keepalive", 0.0000f),
+				new CommandParameter("connection_packets_received_control", 0.0000f),
+				new CommandParameter("connection_bytes_received_speech", 0.0000f),
+				new CommandParameter("connection_bytes_received_keepalive", 0.0000f),
+				new CommandParameter("connection_bytes_received_control", 0.0000f),
+				new CommandParameter("connection_server2client_packetloss_speech", 0.0000f),
+				new CommandParameter("connection_server2client_packetloss_keepalive", 0.0000f),
+				new CommandParameter("connection_server2client_packetloss_control", 0.0000f),
+				new CommandParameter("connection_server2client_packetloss_total", 0.0000f),
+				new CommandParameter("connection_bandwidth_sent_last_second_speech", 0.0000f),
+				new CommandParameter("connection_bandwidth_sent_last_second_keepalive", 0.0000f),
+				new CommandParameter("connection_bandwidth_sent_last_second_control", 0.0000f),
+				new CommandParameter("connection_bandwidth_sent_last_minute_speech", 0.0000f),
+				new CommandParameter("connection_bandwidth_sent_last_minute_keepalive", 0.0000f),
+				new CommandParameter("connection_bandwidth_sent_last_minute_control", 0.0000f),
+				new CommandParameter("connection_bandwidth_received_last_second_speech", 0.0000f),
+				new CommandParameter("connection_bandwidth_received_last_second_keepalive", 0.0000f),
+				new CommandParameter("connection_bandwidth_received_last_second_control", 0.0000f),
+				new CommandParameter("connection_bandwidth_received_last_minute_speech", 0.0000f),
+				new CommandParameter("connection_bandwidth_received_last_minute_keepalive", 0.0000f),
+				new CommandParameter("connection_bandwidth_received_last_minute_control", 0.0000f),
+			});
 		}
 
 		public Ts3Command GenerateStatusAnswer()
