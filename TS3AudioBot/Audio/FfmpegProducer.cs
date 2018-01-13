@@ -147,7 +147,9 @@ namespace TS3AudioBot.Audio
 						}
 					};
 					Log.Trace("Starting with {0}", ffmpegProcess.StartInfo.Arguments);
+					ffmpegProcess.ErrorDataReceived += FfmpegProcess_ErrorDataReceived;
 					ffmpegProcess.Start();
+					ffmpegProcess.BeginErrorReadLine();
 
 					lastLink = url;
 					parsedSongLength = null;
@@ -158,6 +160,31 @@ namespace TS3AudioBot.Audio
 				}
 			}
 			catch (Exception ex) { return $"Unable to create stream ({ex.Message})"; }
+		}
+
+		private void FfmpegProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+		{
+			if (e.Data == null)
+				return;
+
+			lock (ffmpegLock)
+			{
+				if (parsedSongLength.HasValue)
+					return;
+
+				var match = FindDurationMatch.Match(e.Data);
+				if (!match.Success)
+					return;
+
+				if (sender != ffmpegProcess)
+					return;
+
+				int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+				int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+				int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
+				int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
+				parsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
+			}
 		}
 
 		private void StopFfmpegProcess()
@@ -190,25 +217,7 @@ namespace TS3AudioBot.Audio
 				if (parsedSongLength.HasValue)
 					return parsedSongLength.Value;
 
-				Match match = null;
-				while (ffmpegProcess.StandardError.Peek() > -1)
-				{
-					var infoLine = ffmpegProcess.StandardError.ReadLine();
-					if (string.IsNullOrEmpty(infoLine))
-						continue;
-					match = FindDurationMatch.Match(infoLine);
-					if (match.Success)
-						break;
-				}
-				if (match == null || !match.Success)
-					return TimeSpan.Zero;
-
-				int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-				int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-				int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-				int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
-				parsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
-				return parsedSongLength.Value;
+				return TimeSpan.Zero;
 			}
 		}
 
