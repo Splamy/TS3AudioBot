@@ -1121,7 +1121,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("parse command", "Displays the AST of the requested command.")]
-		[Usage("<command>", "The comand to be parsed")]
+		[Usage("<command>", "The command to be parsed")]
 		public JsonObject CommandParse(string parameter)
 		{
 			if (!parameter.TrimStart().StartsWith("!", StringComparison.Ordinal))
@@ -1187,7 +1187,7 @@ namespace TS3AudioBot
 		[RequiredParameters(0)]
 		public JsonObject CommandPrint(params string[] parameter)
 		{
-			// << Desing changes expected >>
+			// << Design changes expected >>
 			var strb = new StringBuilder();
 			foreach (var param in parameter)
 				strb.Append(param);
@@ -1229,7 +1229,7 @@ namespace TS3AudioBot
 		public void CommandQuizOff(ExecutionInformation info)
 		{
 			if (!info.ApiCall && info.InvokerData.Visibiliy.HasValue && info.InvokerData.Visibiliy != TextMessageTargetMode.Private)
-				throw new CommandException("No cheatig! Everybody has to see it!", CommandExceptionReason.CommandError);
+				throw new CommandException("No cheating! Everybody has to see it!", CommandExceptionReason.CommandError);
 			QuizMode = false;
 			UpdateBotStatus().UnwrapThrow();
 		}
@@ -1334,7 +1334,7 @@ namespace TS3AudioBot
 			if (!parsed)
 				throw new CommandException("The time was not in a correct format, see !help seek for more information.", CommandExceptionReason.CommandError);
 			else if (span < TimeSpan.Zero || span > PlayerConnection.Length)
-				throw new CommandException("The point of time is not within the songlenth.", CommandExceptionReason.CommandError);
+				throw new CommandException("The point of time is not within the song length.", CommandExceptionReason.CommandError);
 			else
 				PlayerConnection.Position = span;
 		}
@@ -1532,7 +1532,7 @@ namespace TS3AudioBot
 
 		[Command("volume", "Sets the volume level of the music.")]
 		[Usage("<level>", "A new volume level between 0 and 100.")]
-		[Usage("+/-<level>", "Adds or subtracts a value form the current volume.")]
+		[Usage("+/-<level>", "Adds or subtracts a value from the current volume.")]
 		[RequiredParameters(0)]
 		public JsonObject CommandVolume(ExecutionInformation info, string parameter)
 		{
@@ -1567,7 +1567,7 @@ namespace TS3AudioBot
 		[Command("whisper off", "Enables normal voice mode.")]
 		public void CommandWhisperOff() => TargetManager.SendMode = TargetSendMode.Voice;
 
-		[Command("whisper subscription", "Enables default whisper subsciption mode.")]
+		[Command("whisper subscription", "Enables default whisper subscription mode.")]
 		public void CommandWhisperSubsription() => TargetManager.SendMode = TargetSendMode.Whisper;
 
 		[Command("whisper all", "Set how to send music.")]
@@ -1580,7 +1580,7 @@ namespace TS3AudioBot
 			if (type == GroupWhisperType.ServerGroup || type == GroupWhisperType.ChannelGroup)
 			{
 				if (!targetId.HasValue)
-					throw new CommandException("This type required an additional target", CommandExceptionReason.CommandError);
+					throw new CommandException("This type requires an additional target", CommandExceptionReason.CommandError);
 				TargetManager.SetGroupWhisper(type, target, targetId.Value);
 				TargetManager.SendMode = TargetSendMode.WhisperGroup;
 			}

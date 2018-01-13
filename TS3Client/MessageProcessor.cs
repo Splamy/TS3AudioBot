@@ -125,7 +125,7 @@ namespace TS3Client
 			if (synchronQueue)
 				throw new InvalidOperationException();
 			if (!requestDict.TryAdd(returnCode, waitBlock))
-				throw new InvalidOperationException("Trying to add alreading existing WaitBlock returnCode");
+				throw new InvalidOperationException("Trying to add already existing WaitBlock returnCode");
 			if (waitBlock.DependsOn != null)
 			{
 				lock (dependantBlockLock)

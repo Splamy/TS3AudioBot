@@ -93,7 +93,7 @@ namespace TS3AudioBot.Rights
 				execCtx = new ExecuteContext();
 
 				// Get Required Matcher Data:
-				// In this region we will iteratively go through different possobilitys to obtain
+				// In this region we will iteratively go through different possibilities to obtain
 				// as much data as we can about our invoker.
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
@@ -282,7 +282,7 @@ namespace TS3AudioBot.Rights
 				}
 				else
 				{
-					// Add all rights wich expand from that wildcard
+					// Add all rights which expand from that wildcard
 					string subMatch = right.Substring(0, index - 1);
 					rightsExpanded.UnionWith(registeredRights.Where(x => x.StartsWith(subMatch)));
 				}
@@ -292,7 +292,7 @@ namespace TS3AudioBot.Rights
 
 		/// <summary>
 		/// Removes rights which are in the Add and Deny category.
-		/// Expands wildcard delclarations to all explicit declarations.
+		/// Expands wildcard declarations to all explicit declarations.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private bool NormalizeRule(ParseContext ctx)
@@ -386,7 +386,7 @@ namespace TS3AudioBot.Rights
 						if (newInclude == checkGroup)
 						{
 							hasErrors = true;
-							ctx.Errors.Add($"Group \"{checkGroup.Name}\" has a cyclic include hierachy.");
+							ctx.Errors.Add($"Group \"{checkGroup.Name}\" has a cyclic include hierarchy.");
 							break;
 						}
 						if (!included.Contains(newInclude))
@@ -399,11 +399,11 @@ namespace TS3AudioBot.Rights
 		}
 
 		/// <summary>
-		/// Generates hierachial values for the <see cref="RightsDecl.Level"/> field
+		/// Generates hierarchical values for the <see cref="RightsDecl.Level"/> field
 		/// for all rules. This value represents which rule is more specified when
 		/// merging two rule in order to prioritize rights.
 		/// </summary>
-		/// <param name="root">The root element of the hierachy tree.</param>
+		/// <param name="root">The root element of the hierarchy tree.</param>
 		/// <param name="level">The base level for the root element.</param>
 		private static void BuildLevel(RightsDecl root, int level = 0)
 		{
@@ -459,7 +459,7 @@ namespace TS3AudioBot.Rights
 				}
 			}
 			foreach (var uGroup in unusedGroups)
-				ctx.Warnings.Add($"Group \"{uGroup.Name}\" is nerver included in a rule");
+				ctx.Warnings.Add($"Group \"{uGroup.Name}\" is never included in a rule");
 		}
 
 		/// <summary>
@@ -490,10 +490,10 @@ namespace TS3AudioBot.Rights
 		}
 
 		/// <summary>
-		/// Summs up all includes and parent rule delcarations for each rule and includes them
+		/// Summs up all includes and parent rule declarations for each rule and includes them
 		/// directly into the <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
 		/// </summary>
-		/// <param name="root">The root element of the hierachy tree.</param>
+		/// <param name="root">The root element of the hierarchy tree.</param>
 		private static void FlattenRules(RightsRule root)
 		{
 			if (root.Parent != null)

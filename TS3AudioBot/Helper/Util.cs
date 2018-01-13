@@ -35,7 +35,7 @@ namespace TS3AudioBot.Helper
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
-		/// <param name="timeout">Timeout in millisenconds.</param>
+		/// <param name="timeout">Timeout in milliseconds.</param>
 		public static void WaitOrTimeout(Func<bool> predicate, TimeSpan timeout)
 		{
 			int msTimeout = (int)timeout.TotalSeconds;
@@ -204,7 +204,7 @@ namespace TS3AudioBot.Helper
 
 	public class MissingEnumCaseException : Exception
 	{
-	public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
+	public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
 	public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 }

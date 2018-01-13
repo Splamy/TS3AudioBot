@@ -147,7 +147,7 @@ namespace TS3Client.Full
 				{
 					// VoiceWhisper packets are for some reason excluded
 					if (packetType == PacketType.Voice)
-						return; // Exception maybe ??? This happens when a voice packet is bigger then the allowed size
+						return; // Exception maybe ??? This happens when a voice packet is bigger than the allowed size
 
 					var tmpCompress = QuickerLz.Compress(packet, 1);
 					if (tmpCompress.Length < packet.Length)

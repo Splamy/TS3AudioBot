@@ -137,7 +137,7 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			var uri = new Uri($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
-				return "Error or no response by soundcould";
+				return "Error or no response by soundcloud";
 
 			var parsedDict = ParseJson(jsonResponse);
 			if (parsedDict == null)

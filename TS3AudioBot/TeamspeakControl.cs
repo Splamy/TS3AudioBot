@@ -158,7 +158,7 @@ namespace TS3AudioBot
 		{
 			var result = ClientBufferRequest(client => client.ClientId == id);
 			if (result.Ok) return result;
-			Log.Write(Log.Level.Debug, "Slow double request, due to missing or wrong permission confinguration!");
+			Log.Write(Log.Level.Debug, "Slow double request, due to missing or wrong permission configuration!");
 			ClientData cd;
 			try { cd = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).FirstOrDefault(); }
 			catch (Ts3CommandException) { cd = null; }
@@ -293,7 +293,7 @@ namespace TS3AudioBot
 						PermissionId.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
 						PermissionId.b_channel_join_ignore_maxclients, // + Allow joining full channels
 						PermissionId.i_channel_join_power, // + Allow joining to all channel even on strict servers
-						PermissionId.b_client_permissionoverview_view, // + Scanning though given perms for rights system
+						PermissionId.b_client_permissionoverview_view, // + Scanning through given perms for rights system
 
 						PermissionId.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
 						PermissionId.b_client_use_channel_commander, // + Enable channel commander

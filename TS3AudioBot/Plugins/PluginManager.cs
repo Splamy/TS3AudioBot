@@ -94,7 +94,7 @@ namespace TS3AudioBot.Plugins
 			}
 		}
 
-		/// <summary>Unloads all Plugins which have no corresponding file anymore and removes the from the index list.</summary>
+		/// <summary>Unloads all Plugins which have no corresponding file anymore and removes from the index list.</summary>
 		private void ClearMissingFiles()
 		{
 			// at first find all missing and ignored files

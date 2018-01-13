@@ -592,7 +592,7 @@ namespace TS3Client.Full
 
 		/// <summary>
 		/// This is the reference function from the TS3 Server for checking if a hashcash offset
-		/// is sufficient for the reqired level.
+		/// is sufficient for the required level.
 		/// </summary>
 		/// <param name="data">The sha1 result from the current offset calculation</param>
 		/// <param name="reqLevel">The required level to reach.</param>

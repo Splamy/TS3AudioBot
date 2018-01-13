@@ -47,7 +47,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			Functions.Sort((f1, f2) =>
 			{
-				// The first function in the list should be the most specialiced.
+				// The first function in the list should be the most specialized.
 				// If the execute the command we will iterate through the list from the beginning
 				// and choose the first matching function.
 

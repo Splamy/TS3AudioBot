@@ -391,7 +391,7 @@ namespace TS3Client
 		sound_internal_capture = 0x090e,
 		/// <summary>(normal) device still in use</summary>
 		sound_device_in_use = 0x090f,
-		/// <summary>(normal) device already registerred</summary>
+		/// <summary>(normal) device already registered</summary>
 		sound_device_already_registerred = 0x0910,
 		/// <summary>(normal) device not registered/known</summary>
 		sound_unknown_device = 0x0911,
@@ -809,7 +809,7 @@ namespace TS3Client
 			case PermissionId.b_serverinstance_info_view: return "Retrieve global server information";
 			case PermissionId.b_serverinstance_virtualserver_list: return "List virtual servers stored in the database";
 			case PermissionId.b_serverinstance_binding_list: return "List active IP bindings on multi-homed machines";
-			case PermissionId.b_serverinstance_permission_list: return "List permissions available available on the server instance";
+			case PermissionId.b_serverinstance_permission_list: return "List permissions available on the server instance";
 			case PermissionId.b_serverinstance_permission_find: return "Search permission assignments by name or ID";
 			case PermissionId.b_virtualserver_create: return "Create virtual servers";
 			case PermissionId.b_virtualserver_delete: return "Delete virtual servers";
@@ -986,7 +986,7 @@ namespace TS3Client
 			case PermissionId.b_client_ignore_bans: return "Ignore bans";
 			case PermissionId.b_client_ignore_antiflood: return "Ignore antiflood measurements";
 			case PermissionId.b_client_issue_client_query_command: return "Issue query commands from client";
-			case PermissionId.b_client_use_reserved_slot: return "Use an reserved slot";
+			case PermissionId.b_client_use_reserved_slot: return "Use a reserved slot";
 			case PermissionId.b_client_use_channel_commander: return "Use channel commander";
 			case PermissionId.b_client_request_talker: return "Allow to request talk power";
 			case PermissionId.b_client_avatar_delete_other: return "Allow deletion of avatars from other clients";
