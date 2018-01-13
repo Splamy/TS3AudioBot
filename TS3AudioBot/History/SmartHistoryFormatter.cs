@@ -17,11 +17,11 @@ namespace TS3AudioBot.History
 
 	public class SmartHistoryFormatter : IHistoryFormatter
 	{
-		// configurable constansts
+		// configurable constants
 		private const string LineBreak = "\n";
 		private const int MinTokenLine = 40;
 		private readonly bool fairDistribute = true;
-		// resulting constansts from configuration
+		// resulting constants from configuration
 		private static readonly int LineBreakLen = Ts3String.TokenLength(LineBreak);
 		private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;
 
@@ -68,7 +68,7 @@ namespace TS3AudioBot.History
 					break;
 				// now the further execution is legal because of either of those cases
 				// 1) !(spareToken < MinTokenLine):              entry will be trimmed to MinTokenLine and fits
-				// 2) !(spareToken < entryLines[i].TokenLength): entry alreay fits into spareTokens
+				// 2) !(spareToken < entryLines[i].TokenLength): entry already fits into spareTokens
 
 				if (eL.TokenLength < MinTokenLine)
 				{
@@ -101,7 +101,7 @@ namespace TS3AudioBot.History
 			else
 			{
 				// Now distribute the remaining tokens by first come first serve in reverse order
-				// so the more recent a entry is the more token it gets
+				// so the more recent an entry is the more token it gets
 				foreach (var eL in useList)
 				{
 					if (spareToken <= 0) break;

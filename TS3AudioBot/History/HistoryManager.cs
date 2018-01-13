@@ -221,7 +221,7 @@ namespace TS3AudioBot.History
 		/// <summary>Sets the name of a <see cref="AudioLogEntry"/>.</summary>
 		/// <param name="ale">The id of the <see cref="AudioLogEntry"/> to rename.</param>
 		/// <param name="newName">The new name for the <see cref="AudioLogEntry"/>.</param>
-		/// <exception cref="ArgumentNullException">When ale is null or the name is null, empty or only whitspaces</exception>
+		/// <exception cref="ArgumentNullException">When ale is null or the name is null, empty or only whitespaces</exception>
 		public void RenameEntry(AudioLogEntry ale, string newName)
 		{
 			if (ale == null)
@@ -254,7 +254,7 @@ namespace TS3AudioBot.History
 
 		/// <summary>
 		/// Goes through a list of <see cref="AudioLogEntry"/> and checks if the contained <see cref="AudioResource"/>
-		/// is playable/resolveable.
+		/// is playable/resolvable.
 		/// </summary>
 		/// <param name="info">Session object to inform the user about the current cleaning status.</param>
 		/// <param name="list">The list to iterate.</param>

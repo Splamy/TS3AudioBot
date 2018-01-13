@@ -35,7 +35,7 @@ namespace TS3Client
 		public abstract bool Connected { get; }
 		/// <summary>The derived client type.</summary>
 		public abstract ClientType ClientType { get; }
-		/// <summary>The connection data this client was last connected with (or is currenly connected to).</summary>
+		/// <summary>The connection data this client was last connected with (or is currently connected to).</summary>
 		public ConnectionData ConnectionData { get; protected set; }
 		internal IPEndPoint remoteAddress;
 		private FileTransferManager ftm;
@@ -93,7 +93,7 @@ namespace TS3Client
 			=> SendCommand<ResponseVoid>(command.ExpectsResponse(false));
 
 		/// <summary>Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.</summary>
-		/// <typeparam name="T">The type to deserialize the response to. Use <see cref="ResponseDictionary"/> for unknow response data.</typeparam>
+		/// <typeparam name="T">The type to deserialize the response to. Use <see cref="ResponseDictionary"/> for unknown response data.</typeparam>
 		/// <param name="com">The raw command to send.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
 		public abstract IEnumerable<T> SendCommand<T>(Ts3Command com) where T : IResponse, new();
@@ -174,7 +174,7 @@ namespace TS3Client
 			=> Send<ClientInfo>("clientinfo",
 			new CommandParameter("clid", clientId)).FirstOrDefault();
 
-		/// <summary>Use a token key gain access to a server or channel group.
+		/// <summary>Use a token key and gain access to a server or channel group.
 		/// Please note that the server will automatically delete the token after it has been used.</summary>
 		public void PrivilegeKeyUse(string key)
 			=> Send("privilegekeyuse",

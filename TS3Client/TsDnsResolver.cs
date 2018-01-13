@@ -18,7 +18,7 @@ namespace TS3Client
 	using System.Net;
 	using System.Text.RegularExpressions;
 
-	/// <summary>Provides methods to resovle TSDNS, SRV redirects and nicknames</summary>
+	/// <summary>Provides methods to resolve TSDNS, SRV redirects and nicknames</summary>
 	public static class TsDnsResolver
 	{
 		private const ushort Ts3DefaultPort = 9987;
@@ -27,7 +27,7 @@ namespace TS3Client
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 
-		/// <summary>Tries to resolve a address string to an ip.</summary>
+		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
 		/// <param name="endPoint">The ip address if successfully resolved. Otherwise a dummy.</param>
 		/// <returns>Whether the resolve was succesful.</returns>

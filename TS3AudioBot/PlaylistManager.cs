@@ -276,7 +276,7 @@ namespace TS3AudioBot
 			{
 				var tempList = LoadPlaylist(plist.Name, true);
 				if (!tempList)
-					return "Existing playlist ist corrupted, please use another name or repair the existing.";
+					return "Existing playlist is corrupted, please use another name or repair the existing.";
 				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != plist.CreatorDbId)
 					return "You cannot overwrite a playlist which you dont own.";
 			}
@@ -348,7 +348,7 @@ namespace TS3AudioBot
 			{
 				var tempList = LoadPlaylist(name, true);
 				if (!tempList)
-					return "Existing playlist ist corrupted, please use another name or repair the existing.";
+					return "Existing playlist is corrupted, please use another name or repair the existing.";
 				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != requestingClientDbId)
 					return "You cannot delete a playlist which you dont own.";
 			}
@@ -419,7 +419,7 @@ namespace TS3AudioBot
 	{
 		public MetaData Meta { get; }
 		//one of these:
-		// playdata holds all needed information for playing + first possiblity
+		// playdata holds all needed information for playing + first possibility
 		// > can be a resource
 		public AudioResource Resource { get; }
 		// > can be a history entry (will need to fall back to resource-load if entry is deleted in meanwhile)

@@ -71,11 +71,11 @@ namespace TS3Client.Full
 		/// <summary>Tries to connect to a server.</summary>
 		/// <param name="conData">Set the connection information properties as needed.
 		/// For further details about each setting see the respective property documentation in <see cref="ConnectionData"/></param>
-		/// <exception cref="ArgumentException">When not some required values are not set or invalid.</exception>
+		/// <exception cref="ArgumentException">When some required values are not set or invalid.</exception>
 		/// <exception cref="Ts3Exception">When the connection could not be established.</exception>
 		public override void Connect(ConnectionData conData)
 		{
-			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} deriverate to connect with the full client.", nameof(conData));
+			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 			if (conDataFull.VersionSign == null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
 			connectionDataFull = conDataFull;
@@ -324,7 +324,7 @@ namespace TS3Client.Full
 		/// <para>NOTE: By default does the command expect an answer from the server. Set <see cref="Ts3Command.ExpectResponse"/> to false
 		/// if the client hangs after a special command (<see cref="SendCommand{T}"/> will return <code>null</code> instead).</para></param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.
-		/// Or <code>null</code> if no reponse is expected.</returns>
+		/// Or <code>null</code> if no response is expected.</returns>
 		/// <exception cref="Ts3CommandException">When the response has an error code.</exception>
 		public override IEnumerable<T> SendCommand<T>(Ts3Command com)
 		{
@@ -418,7 +418,7 @@ namespace TS3Client.Full
 		public void SendAudio(byte[] buffer, int length, Codec codec)
 		{
 			// [X,X,Y,DATA]
-			// > X is a ushort in H2N order of a own audio packet counter
+			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
 			byte[] tmpBuffer = new byte[length + 3];
@@ -432,7 +432,7 @@ namespace TS3Client.Full
 		public void SendAudioWhisper(byte[] buffer, int length, Codec codec, IList<ChannelIdT> channelIds, IList<ClientIdT> clientIds)
 		{
 			// [X,X,Y,N,M,(U,U,U,U,U,U,U,U)*,(T,T)*,DATA]
-			// > X is a ushort in H2N order of a own audio packet counter
+			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
 			// > N is a byte, the count of ChannelIds to send to
@@ -457,7 +457,7 @@ namespace TS3Client.Full
 		public void SendAudioGroupWhisper(byte[] buffer, int length, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
 		{
 			// [X,X,Y,N,M,U,U,U,U,U,U,U,U,DATA]
-			// > X is a ushort in H2N order of a own audio packet counter
+			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
 			// > N is a byte, specifying the GroupWhisperType

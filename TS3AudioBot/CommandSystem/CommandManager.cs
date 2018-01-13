@@ -75,7 +75,7 @@ namespace TS3AudioBot.CommandSystem
 		internal void RegisterCollection(ICommandBag bag)
 		{
 			if (pluginCommands.ContainsKey(bag))
-				throw new InvalidOperationException("This bag is already laoded.");
+				throw new InvalidOperationException("This bag is already loaded.");
 
 			var comList = bag.ExposedCommands.ToList();
 

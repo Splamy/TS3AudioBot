@@ -273,7 +273,7 @@ namespace TS3AudioBot.ResourceFactories
 		public static string LoadAlternative(string id)
 		{
 			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
-				return "No con";
+				return "No connection";
 
 			int indexof = resulthtml.IndexOf("ytplayer.config =", StringComparison.OrdinalIgnoreCase);
 			int ptr = indexof;

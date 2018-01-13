@@ -281,7 +281,7 @@ namespace TS3Client
 		ExtraDispatchThread,
 		/// <summary>
 		/// Will start one thread for receiving and a second thread for invoking all events.
-		/// This is the best method for lightweight asynchronous dipatching with no parallelization.
+		/// This is the best method for lightweight asynchronous dispatching with no parallelization.
 		/// </summary>
 		DoubleThread,
 		/// <summary>

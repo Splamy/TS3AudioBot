@@ -43,7 +43,7 @@ namespace TS3AudioBot.ResourceFactories
 		// else                    => ret Error
 
 		private T GetFactoryByType<T>(string audioType) where T : class, IFactory =>
-			// ToLower for lecacy resons
+			// ToLower for legacy reasons
 			allFacories.TryGetValue(audioType.ToLowerInvariant(), out var factoryInfo) && factoryInfo.Factory is T factory
 				? factory
 				: null;

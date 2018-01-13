@@ -313,7 +313,7 @@ namespace TS3AudioBot
 						throw new InvalidOperationException();
 					}
 
-					// Save cpu when we know there is noone to send to
+					// Save cpu when we know there is no one to send to
 					if (!doSend)
 						break;
 
@@ -613,7 +613,7 @@ namespace TS3AudioBot
 			"# Values between 8 and 98 are supported, more or less can work but without guarantees.\n" +
 			"# Reference values: 32 - ok (~5KiB/s), 48 - good (~7KiB/s), 64 - very good (~9KiB/s), 92 - superb (~13KiB/s)", "48")]
 		public int AudioBitrate { get; set; }
-		[Info("Version for the client in the form of <version build>|<plattform>|<version sign>\n" +
+		[Info("Version for the client in the form of <version build>|<platform>|<version sign>\n" +
 			"# Leave empty for default.", "")]
 		public string ClientVersion { get; set; }
 		[Info("Default Nickname when connecting", "AudioBot")]
