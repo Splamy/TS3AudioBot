@@ -246,7 +246,7 @@ namespace TS3AudioBot.CommandSystem
 		}
 
 		/// <summary>
-		/// A convenient method to set the amount of required parameters and returns this object.
+		/// A convenience method to set the amount of required parameters and returns this object.
 		/// This is useful for method chaining.
 		/// </summary>
 		public FunctionCommand SetRequiredParameters(int required)
