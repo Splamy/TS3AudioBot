@@ -11,34 +11,38 @@ namespace TS3Client.Full
 {
 	using System;
 
-	internal sealed class OutgoingPacket : BasePacket
+	internal sealed class C2SPacket : BasePacket
 	{
+		public const int HeaderLen = 5;
+
 		public ushort ClientId { get; set; }
+		public override bool FromServer { get; } = false;
+		public override int HeaderLength { get; } = HeaderLen;
 
 		public DateTime FirstSendTime { get; set; }
 		public DateTime LastSendTime { get; set; }
 
-		public OutgoingPacket(byte[] data, PacketType type)
+		public C2SPacket(byte[] data, PacketType type)
 		{
 			Data = data;
 			PacketType = type;
-			Header = new byte[5];
+			Header = new byte[HeaderLen];
 		}
 
-		public void BuildHeader()
+		public override void BuildHeader()
 		{
 			NetUtil.H2N(PacketId, Header, 0);
 			NetUtil.H2N(ClientId, Header, 2);
 			Header[4] = PacketTypeFlagged;
 		}
 
-		public void BuildHeader(Span<byte> buffer)
+		public override void BuildHeader(Span<byte> into)
 		{
-			NetUtil.H2N(PacketId, buffer.Slice(0, 2));
-			NetUtil.H2N(ClientId, buffer.Slice(2, 2));
-			buffer[4] = PacketTypeFlagged;
+			NetUtil.H2N(PacketId, into.Slice(0, 2));
+			NetUtil.H2N(ClientId, into.Slice(2, 2));
+			into[4] = PacketTypeFlagged;
 #if DEBUG
-			buffer.CopyTo(Header.AsSpan());
+			into.CopyTo(Header.AsSpan());
 #endif
 		}
 

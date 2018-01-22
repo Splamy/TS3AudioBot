@@ -196,6 +196,7 @@ namespace TS3Client.Full
 			case NotificationType.TokenUsed: break;
 			// full client events
 			case NotificationType.InitIvExpand: { var result = lazyNotification.WrapSingle<InitIvExpand>(); if (result.Ok) ProcessInitIvExpand(result.Value); } break;
+			case NotificationType.InitIvExpand2: { var result = lazyNotification.WrapSingle<InitIvExpand2>(); if (result.Ok) ProcessInitIvExpand2(result.Value); } break;
 			case NotificationType.InitServer: { var result = lazyNotification.WrapSingle<InitServer>(); if (result.Ok) ProcessInitServer(result.Value); } break;
 			case NotificationType.ChannelList: break;
 			case NotificationType.ChannelListFinished: ChannelSubscribeAll(); break;
@@ -256,7 +257,7 @@ namespace TS3Client.Full
 						break;
 				}
 
-				IncomingPacket packet = packetHandler.FetchPacket();
+				var packet = packetHandler.FetchPacket();
 				if (packet == null)
 					break;
 
@@ -304,6 +305,42 @@ namespace TS3Client.Full
 
 			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			packetHandler.CryptoInitDone();
+			ClientInit(
+				connectionDataFull.Username,
+				true, true,
+				connectionDataFull.DefaultChannel,
+				Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
+				password, string.Empty, string.Empty, string.Empty,
+				"123,456", VersionSign);
+		}
+
+		private void ProcessInitIvExpand2(InitIvExpand2 initIvExpand2)
+		{
+			//DisconnectInternal(context, Util.CustomError("Cannot connect to server 3.1 yet."));
+			//return;
+
+			var password = connectionDataFull.IsPasswordHashed
+				? connectionDataFull.Password
+				: Ts3Crypt.HashPassword(connectionDataFull.Password);
+
+			packetHandler.IncPacketCounter(PacketType.Command);
+
+			// EK SIGN
+			var buffer = new byte[32];
+			Util.Random.NextBytes(buffer);
+			var ek = Convert.ToBase64String(buffer);
+			var toSign = new byte[86];
+			Array.Copy(buffer, 0, toSign, 0, 32);
+			var beta = Convert.FromBase64String(initIvExpand2.Beta);
+			Array.Copy(beta, 0, toSign, 32, 54);
+			var sign = Ts3Crypt.Sign(connectionDataFull.Identity.PrivateKey, toSign);
+			var proof = Convert.ToBase64String(sign);
+			ClientEk(ek, proof);
+			// END EK SIGN
+
+			//ts3Crypt.CryptoInit2("", initIvExpand2.Beta, initIvExpand2.Omega); //  TODO ???
+			//packetHandler.CryptoInitDone();
+
 			ClientInit(
 				connectionDataFull.Username,
 				true, true,
@@ -452,11 +489,16 @@ namespace TS3Client.Full
 			=> Send("clientupdate",
 			new CommandParameter("client_is_channel_commander", isChannelCommander));
 
+		public CmdR ClientEk(string ek, string proof)
+			=> SendNoResponsed(new Ts3Command("clientek", new List<ICommandPart> {
+				new CommandParameter("ek", ek),
+				new CommandParameter("proof", proof) }));
+
 		public CmdR ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> SendNoResponsed(
-				new Ts3Command("clientinit", new List<ICommandPart>() {
+				new Ts3Command("clientinit", new List<ICommandPart> {
 					new CommandParameter("client_nickname", nickname),
 					new CommandParameter("client_version", versionSign.Name),
 					new CommandParameter("client_platform", versionSign.PlattformName),

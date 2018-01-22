@@ -17,6 +17,7 @@ namespace TS3AudioBot
 	using System;
 	using System.IO;
 	using System.Threading;
+	using Dependency;
 	using TS3Client;
 	using TS3Client.Messages;
 
@@ -30,6 +31,8 @@ namespace TS3AudioBot
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
+
+		internal DependencyRealm<IBotModule> Injector { get; set; }
 
 		internal TargetScript TargetScript { get; set; }
 		/// <summary>Mangement for playlists.</summary>
@@ -287,7 +290,7 @@ namespace TS3AudioBot
 				if (!IsDisposed) IsDisposed = true;
 				else return;
 				Log.Info("Bot disconnecting.");
-				
+
 				PlayManager?.Stop();
 
 				PlayerConnection?.Dispose(); // before: logStream,

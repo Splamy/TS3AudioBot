@@ -12,6 +12,9 @@
 
 
 
+
+
+
 namespace TS3Client
 {
 	using Helper;

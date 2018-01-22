@@ -9,10 +9,10 @@
 
 namespace TS3Client.Messages
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using KVEnu = System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>;
 
 	public static class Deserializer
 	{
@@ -39,7 +39,7 @@ namespace TS3Client.Messages
 				throw new ArgumentNullException(nameof(lineDataPart));
 
 			var notification = MessageHelper.GenerateNotificationType(ntfyType);
-			return ParseKeyValueLine(notification, lineDataPart, false);
+			return ParseKeyValueLine(notification, lineDataPart);
 		}
 
 		// data to response
@@ -48,40 +48,48 @@ namespace TS3Client.Messages
 			if (string.IsNullOrWhiteSpace(line))
 				return Enumerable.Empty<T>();
 			var messageList = line.Split('|');
-			return messageList.Select(msg => ParseKeyValueLine(new T(), msg, false)).Where(x => x.Ok).Select(x => x.Value);
+			return messageList.Select(msg => ParseKeyValueLine(new T(), msg)).Where(x => x.Ok).Select(x => x.Value);
 		}
 
-		private static R<T> ParseKeyValueLine<T>(T qm, string line, bool ignoreFirst) where T : IQueryMessage
+		private static R<T> ParseKeyValueLine<T>(T qm, string line) where T : IQueryMessage
 		{
 			if (string.IsNullOrWhiteSpace(line))
 				return R<T>.Err("Empty");
 
-			// can be optimized by using Span (wating for more features)
-			var splitValues = line.Split(' ');
-			string key = null, value = null;
+			var ss = new SpanSplitter();
+			var lineSpan = ss.First(line, ' ');
+			var key = default(ReadOnlySpan<char>);
+			var value = default(ReadOnlySpan<char>);
 			try
 			{
-				for (int i = ignoreFirst ? 1 : 0; i < splitValues.Length; i++)
+				do
 				{
-					var keyValuePair = splitValues[i].Split(new[] { '=' }, 2);
-					key = keyValuePair[0];
-					value = keyValuePair.Length > 1 ? keyValuePair[1] : string.Empty;
-					qm.SetField(key, value);
-				}
+					var param = ss.Trim(lineSpan);
+					var kvpSplitIndex = param.IndexOf('=');
+					var skey = kvpSplitIndex >= 0 ? param.Slice(0, kvpSplitIndex) : ReadOnlySpan<char>.Empty;
+					value = kvpSplitIndex <= param.Length - 1 ? param.Slice(kvpSplitIndex + 1) : ReadOnlySpan<char>.Empty;
+
+					qm.SetField(skey.NewString(), value);
+
+					if (!ss.HasNext)
+						break;
+					lineSpan = ss.Next(lineSpan);
+				} while (lineSpan.Length > 0);
 				return R<T>.OkR(qm);
 			}
-			catch (Exception) { OnError?.Invoke(null, new Error(qm.GetType().Name, line, key, value)); }
+			catch (Exception ex) { OnError?.Invoke(null, new Error(qm.GetType().Name, line, key.NewString(), value.NewString(), ex)); }
 			return R<T>.Err("Error");
 		}
 
 		public class Error : EventArgs
 		{
-			public string Class { get; set; }
-			public string Message { get; set; }
+			public string Class { get; }
+			public string Message { get; }
 			public string Field { get; }
 			public string Value { get; }
+			public Exception Exception { get; }
 
-			public Error(string classname, string message, string field, string value) { Class = classname; Message = message; Field = field; Value = value; }
+			public Error(string classname, string message, string field, string value, Exception ex = null) { Class = classname; Message = message; Field = field; Value = value; Exception = ex; }
 
 			public override string ToString() => $"Deserealization format error. Data: class:{Class} field:{Field} value:{Value} msg:{Message}";
 		}

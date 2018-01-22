@@ -16,35 +16,16 @@ namespace TS3AudioBot.Dependency
 	using System.Linq;
 	using System.Reflection;
 
-	public class Injector : DependencyRealm, ICoreModule
-	{
-		public Injector()
-		{
-		}
-
-		public void Initialize() { }
-
-		public R<T> GetCoreModule<T>() where T : ICoreModule
-		{
-			if(loaded.TryGetValue(typeof(T), out var mod))
-				return (T)mod.Obj;
-			return "Module not found";
-		}
-	}
+	public sealed class CoreInjector : DependencyRealm<ICoreModule> { }
 
 	public class Module
 	{
-		private static readonly ConcurrentDictionary<Type, Type[]> typeData;
+		private static readonly ConcurrentDictionary<Type, Type[]> TypeData = new ConcurrentDictionary<Type, Type[]>();
 
 		public bool IsInitialized { get; set; }
 		public object Obj { get; }
 		public Type BaseType { get; }
 		// object SyncContext;
-
-		static Module()
-		{
-			Util.Init(out typeData);
-		}
 
 		public Module(object obj, Type baseType)
 		{
@@ -55,26 +36,26 @@ namespace TS3AudioBot.Dependency
 
 		public Type[] GetDependants() => GetDependants(Obj.GetType());
 
-		public IEnumerable<PropertyInfo> GetModuleProperties() => GetModuleProperties(Obj.GetType());
-
 		private static Type[] GetDependants(Type type)
 		{
-			if (!typeData.TryGetValue(type, out var depArr))
+			if (!TypeData.TryGetValue(type, out var depArr))
 			{
 				depArr = GetModuleProperties(type).Select(p => p.PropertyType).ToArray();
-				typeData[type] = depArr;
+				TypeData[type] = depArr;
 			}
 			return depArr;
 		}
 
-		private static IEnumerable<PropertyInfo> GetModuleProperties(Type type) => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+		public IEnumerable<PropertyInfo> GetModuleProperties() => GetModuleProperties(Obj.GetType());
+
+		private static IEnumerable<PropertyInfo> GetModuleProperties(IReflect type) => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
 			.Where(p => p.CanRead && p.CanWrite && typeof(ITabModule).IsAssignableFrom(p.PropertyType));
 	}
 
-	public class DependencyRealm
+	public class DependencyRealm<TRealm> where TRealm : ITabModule
 	{
-		protected ConcurrentDictionary<Type, Module> loaded;
-		protected List<Module> waiting;
+		private readonly ConcurrentDictionary<Type, Module> loaded;
+		private readonly List<Module> waiting;
 
 		public DependencyRealm()
 		{
@@ -82,14 +63,14 @@ namespace TS3AudioBot.Dependency
 			Util.Init(out waiting);
 		}
 
-		public T Create<T>() where T : ICoreModule => (T)CreateFromType(typeof(T));
+		public TModule Create<TModule>() where TModule : TRealm => (TModule)CreateFromType(typeof(TModule));
 		public object CreateFromType(Type type)
 		{
 			var obj = Activator.CreateInstance(type);
 			RegisterInjectable(obj, false);
 			return obj;
 		}
-		public void RegisterModule<T>(T obj, bool initialized = false) where T : ICoreModule => RegisterInjectable(obj, initialized, typeof(T));
+		public void RegisterModule<TModule>(TModule obj, bool initialized = false) => RegisterInjectable(obj, initialized, typeof(TModule));
 		public void RegisterInjectable(object obj, bool initialized = false, Type baseType = null)
 		{
 			var modType = baseType ?? obj.GetType();
@@ -115,10 +96,10 @@ namespace TS3AudioBot.Dependency
 
 		public void ForceCyclicResolve()
 		{
-
+			// TODO
 		}
 
-		protected bool SetInitalized(Module module)
+		private bool SetInitalized(Module module)
 		{
 			if (!module.IsInitialized && module.Obj is ITabModule tabModule)
 			{
@@ -129,7 +110,7 @@ namespace TS3AudioBot.Dependency
 			return true;
 		}
 
-		protected void DoQueueInitialize()
+		private void DoQueueInitialize()
 		{
 			bool changed;
 			do
@@ -153,7 +134,7 @@ namespace TS3AudioBot.Dependency
 			} while (changed);
 		}
 
-		protected bool IsResolvable(Module module)
+		private bool IsResolvable(Module module)
 		{
 			var deps = module.GetDependants();
 			foreach (var depeningType in deps)
@@ -164,7 +145,7 @@ namespace TS3AudioBot.Dependency
 			return true;
 		}
 
-		protected bool DoResolve(Module module)
+		private bool DoResolve(Module module)
 		{
 			var props = module.GetModuleProperties();
 			foreach (var prop in props)
@@ -179,6 +160,13 @@ namespace TS3AudioBot.Dependency
 				}
 			}
 			return SetInitalized(module);
+		}
+
+		public R<TModule> GetModule<TModule>() where TModule : TRealm
+		{
+			if (loaded.TryGetValue(typeof(TModule), out var mod))
+				return (TModule)mod.Obj;
+			return "Module not found";
 		}
 
 		public bool AllResolved() => waiting.Count == 0;

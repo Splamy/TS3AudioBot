@@ -23,16 +23,16 @@ namespace Ts3ClientTests
 				client.OnDisconnected += Client_OnDisconnected;
 				client.OnErrorEvent += Client_OnErrorEvent;
 				client.OnTextMessageReceived += Client_OnTextMessageReceived;
-				var data = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEAqNonGuL0w/8kLlgLbl4UkH8DQQJ7fEu1tLt+mx1E+XkCIQDgQoIGcBVvAvNoiDT37iWbPQb2kYe0+VKLg67OH2eQQwIgTyijCKx7QB/xQSnIW5uIkVmcm3UU5P2YnobR9IEEYPg=", 64, 0);
-				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, Password = "qwer" };
+				var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0);
+				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, Password = "qwer", VersionSign = VersionSign.VER_WIN_3_1_7 };
 				client.Connect(con);
 				clients.Add(client);
 			}
 
 			Console.WriteLine("End");
-			Console.ReadLine();
+			//Console.ReadLine();
 		}
-
+		
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)
 		{
 			var client = (Ts3FullClient)sender;
@@ -44,6 +44,7 @@ namespace Ts3ClientTests
 			var client = (Ts3FullClient)sender;
 			Console.WriteLine("Connected id {0}", client.ClientId);
 			var data = client.ClientInfo(client.ClientId);
+
 			client.Disconnect();
 			client.Connect(con);
 		}

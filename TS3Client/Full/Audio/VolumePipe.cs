@@ -26,23 +26,15 @@ namespace TS3Client.Full.Audio
 			else if (IsAbout(volume, 0.5f))
 			{
 				// fast calculation for *0.5 volume
-				for (int i = 0; i < audioSamples.Length; i += 2)
-				{
-					short value = unchecked((short)((audioSamples[i + 1] << 8) | audioSamples[i]));
-					var tmpshort = value >> 1;
-					audioSamples[i + 0] = unchecked((byte)(tmpshort >> 0));
-					audioSamples[i + 1] = unchecked((byte)(tmpshort >> 8));
-				}
+				var shortArr = audioSamples.NonPortableCast<byte, short>();
+				for (int i = 0; i < shortArr.Length; i++)
+					shortArr[i] = (short)(shortArr[i] >> 1);
 			}
 			else
 			{
-				for (int i = 0; i < audioSamples.Length; i += 2)
-				{
-					short value = unchecked((short)((audioSamples[i + 1] << 8) | audioSamples[i]));
-					var tmpshort = (short)Math.Max(Math.Min(value * volume, short.MaxValue), short.MinValue);
-					audioSamples[i + 0] = unchecked((byte)(tmpshort >> 0));
-					audioSamples[i + 1] = unchecked((byte)(tmpshort >> 8));
-				}
+				var shortArr = audioSamples.NonPortableCast<byte, short>();
+				for (int i = 0; i < shortArr.Length; i++)
+					shortArr[i] = (short)Math.Max(Math.Min(shortArr[i] * volume, short.MaxValue), short.MinValue);
 			}
 		}
 

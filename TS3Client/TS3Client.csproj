@@ -93,6 +93,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Versions.tt</DependentUpon>
     </Compile>
+    <Compile Include="Helper\Extensions.cs" />
     <Compile Include="Helper\NativeWinDllLoader.cs" />
     <Compile Include="Full\Audio\Opus\OpusDecoder.cs" />
     <Compile Include="Full\Audio\Opus\OpusEncoder.cs" />
@@ -107,13 +108,14 @@
     <Compile Include="Full\IdentityData.cs" />
     <Compile Include="Full\NetworkStats.cs" />
     <Compile Include="Full\PacketHandler.cs" />
-    <Compile Include="Full\IncomingPacket.cs" />
+    <Compile Include="Full\S2CPacket.cs" />
     <Compile Include="Full\NetUtil.cs" />
-    <Compile Include="Full\OutgoingPacket.cs" />
+    <Compile Include="Full\C2SPacket.cs" />
     <Compile Include="Full\PacketType.cs" />
     <Compile Include="Full\RingQueue.cs" />
     <Compile Include="Full\Ts3Crypt.cs" />
     <Compile Include="Full\Ts3FullClient.cs" />
+    <Compile Include="Helper\SpanSplitter.cs" />
     <Compile Include="Messages\Deserializer.cs" />
     <Compile Include="Commands\Ts3Command.cs" />
     <Compile Include="LazyNotification.cs" />
@@ -147,7 +149,6 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="ts3protocol.md" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Declarations\Errors.csv" />

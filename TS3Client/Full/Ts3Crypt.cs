@@ -38,14 +38,12 @@ namespace TS3Client.Full
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 
 		private const int MacLen = 8;
-		private const int OutHeaderLen = 5;
-		private const int InHeaderLen = 3;
 		private const int PacketTypeKinds = 9;
 
 		public IdentityData Identity { get; set; }
 
 		internal bool CryptoInitComplete { get; private set; }
-		private readonly byte[] ivStruct = new byte[20];
+		private byte[] ivStruct;
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly Tuple<byte[], byte[], uint>[] cachedKeyNonces = new Tuple<byte[], byte[], uint>[PacketTypeKinds * 2];
 
@@ -57,7 +55,7 @@ namespace TS3Client.Full
 		internal void Reset()
 		{
 			CryptoInitComplete = false;
-			Array.Clear(ivStruct, 0, ivStruct.Length);
+			ivStruct = null; // TODO recheck
 			Array.Clear(fakeSignature, 0, fakeSignature.Length);
 			Array.Clear(cachedKeyNonces, 0, cachedKeyNonces.Length);
 			Identity = null;
@@ -214,6 +212,7 @@ namespace TS3Client.Full
 		private void SetSharedSecret(byte[] alpha, byte[] beta, byte[] sharedKey)
 		{
 			// prepares the ivstruct consisting of 2 random byte chains of 10 bytes which each both clients agreed on
+			ivStruct = new byte[20];
 			Array.Copy(alpha, 0, ivStruct, 0, 10);
 			Array.Copy(beta, 0, ivStruct, 10, 10);
 
@@ -225,6 +224,10 @@ namespace TS3Client.Full
 			buffer = Hash1It(ivStruct, 0, 20);
 			Array.Copy(buffer, 0, fakeSignature, 0, 8);
 		}
+
+		internal void CryptoInit2(string alpha, string beta, string omega) { throw new NotImplementedException(); }
+		private byte[] GetSharedSecret2(ECPoint publicKeyPoint) { throw new NotImplementedException(); }
+		private void SetSharedSecret2(byte[] alpha, byte[] beta, byte[] sharedKey) { throw new NotImplementedException(); }
 
 		internal R<byte[]> ProcessInit1(byte[] data)
 		{
@@ -243,8 +246,8 @@ namespace TS3Client.Full
 			switch (type)
 			{
 			case 0x7F:
-				// Some strange servers do this
-				// the normal client responds by starting agian
+			// Some strange servers do this
+			// the normal client responds by starting agian
 			case null:
 				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
@@ -269,6 +272,7 @@ namespace TS3Client.Full
 					new ICommandPart[] {
 							new CommandParameter("alpha", alpha),
 							new CommandParameter("omega", Identity.PublicKeyString),
+							new CommandParameter("ot", 1),
 							new CommandParameter("ip", string.Empty) });
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
@@ -317,7 +321,7 @@ namespace TS3Client.Full
 
 		#region ENCRYPTION/DECRYPTION
 
-		internal void Encrypt(OutgoingPacket packet)
+		internal void Encrypt(BasePacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
 			{
@@ -330,7 +334,7 @@ namespace TS3Client.Full
 				return;
 			}
 
-			var (key, nonce) = GetKeyNonce(false, packet.PacketId, packet.GenerationId, packet.PacketType);
+			var (key, nonce) = GetKeyNonce(packet.FromServer, packet.PacketId, packet.GenerationId, packet.PacketType);
 			packet.BuildHeader();
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(key), 8 * MacLen, nonce, packet.Header);
 
@@ -352,41 +356,41 @@ namespace TS3Client.Full
 			// to build the final TS3/libtomcrypt we need to copy it into another order
 
 			// len is Data.Length + Mac.Length
-			packet.Raw = new byte[OutHeaderLen + len];
+			packet.Raw = new byte[packet.HeaderLength + len];
 			// Copy the Mac from [Data..., Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(result, len - MacLen, packet.Raw, 0, MacLen);
 			// Copy the Header from packet.Header to [Mac..., Header..., Data...]
-			Array.Copy(packet.Header, 0, packet.Raw, MacLen, OutHeaderLen);
+			Array.Copy(packet.Header, 0, packet.Raw, MacLen, packet.HeaderLength);
 			// Copy the Data from [Data..., Mac...] to [Mac..., Header..., Data...]
-			Array.Copy(result, 0, packet.Raw, MacLen + OutHeaderLen, len - MacLen);
+			Array.Copy(result, 0, packet.Raw, MacLen + packet.HeaderLength, len - MacLen);
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		private static void FakeEncrypt(OutgoingPacket packet, byte[] mac)
+		private static void FakeEncrypt(BasePacket packet, byte[] mac)
 		{
-			packet.Raw = new byte[packet.Data.Length + MacLen + OutHeaderLen];
+			packet.Raw = new byte[packet.Data.Length + MacLen + packet.HeaderLength];
 			// Copy the Mac from [Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(mac, 0, packet.Raw, 0, MacLen);
 			// Copy the Header from packet.Header to [Mac..., Header..., Data...]
-			packet.BuildHeader(packet.Raw.AsSpan().Slice(MacLen, OutHeaderLen));
+			packet.BuildHeader(packet.Raw.AsSpan().Slice(MacLen, packet.HeaderLength));
 			// Copy the Data from packet.Data to [Mac..., Header..., Data...]
-			Array.Copy(packet.Data, 0, packet.Raw, MacLen + OutHeaderLen, packet.Data.Length);
+			Array.Copy(packet.Data, 0, packet.Raw, MacLen + packet.HeaderLength, packet.Data.Length);
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		internal static IncomingPacket GetIncommingPacket(byte[] data)
+		internal static S2CPacket GetIncommingPacket(byte[] data)
 		{
-			if (data.Length < InHeaderLen + MacLen)
+			if (data.Length < S2CPacket.HeaderLen + MacLen)
 				return null;
 
-			return new IncomingPacket(data)
+			return new S2CPacket(data)
 			{
 				PacketTypeFlagged = data[MacLen + 2],
 				PacketId = NetUtil.N2Hushort(data, MacLen),
 			};
 		}
 
-		internal bool Decrypt(IncomingPacket packet)
+		internal bool Decrypt(BasePacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
 				return FakeDecrypt(packet, Ts3InitMac);
@@ -397,11 +401,11 @@ namespace TS3Client.Full
 			return DecryptData(packet);
 		}
 
-		private bool DecryptData(IncomingPacket packet)
+		private bool DecryptData(BasePacket packet)
 		{
-			Array.Copy(packet.Raw, MacLen, packet.Header, 0, InHeaderLen);
+			Array.Copy(packet.Raw, MacLen, packet.Header, 0, packet.HeaderLength);
 			var (key, nonce) = GetKeyNonce(true, packet.PacketId, packet.GenerationId, packet.PacketType);
-			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
+			int dataLen = packet.Raw.Length - (MacLen + packet.HeaderLength);
 
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(key), 8 * MacLen, nonce, packet.Header);
 			try
@@ -412,9 +416,12 @@ namespace TS3Client.Full
 					eaxCipher.Init(false, ivAndKey);
 					result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
 
-					int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
+					int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + packet.HeaderLength, dataLen, result, 0);
 					len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);
 					len += eaxCipher.DoFinal(result, len);
+
+					if (len != dataLen)
+						return false;
 				}
 
 				packet.Data = result;
@@ -423,13 +430,13 @@ namespace TS3Client.Full
 			return true;
 		}
 
-		private static bool FakeDecrypt(IncomingPacket packet, byte[] mac)
+		private static bool FakeDecrypt(BasePacket packet, byte[] mac)
 		{
 			if (!CheckEqual(packet.Raw, 0, mac, 0, MacLen))
 				return false;
-			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
+			int dataLen = packet.Raw.Length - (MacLen + packet.HeaderLength);
 			packet.Data = new byte[dataLen];
-			Array.Copy(packet.Raw, MacLen + InHeaderLen, packet.Data, 0, dataLen);
+			Array.Copy(packet.Raw, MacLen + packet.HeaderLength, packet.Data, 0, dataLen);
 			return true;
 		}
 
@@ -501,8 +508,10 @@ namespace TS3Client.Full
 
 		private static readonly SHA1Managed Sha1HashInternal = new SHA1Managed();
 		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
+		private static readonly Sha512Digest Sha512Hash = new Sha512Digest();
 		private static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
 		private static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
+		private static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha512Hash, data, offset, len);
 		private static byte[] HashItInternal(HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			lock (hashAlgo)
@@ -510,7 +519,7 @@ namespace TS3Client.Full
 				return hashAlgo.ComputeHash(data, offset, len == 0 ? data.Length - offset : len);
 			}
 		}
-		private static byte[] HashIt(GeneralDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
+		private static byte[] HashIt(IDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			byte[] result;
 			lock (hashAlgo)
@@ -530,6 +539,15 @@ namespace TS3Client.Full
 			var bytes = Util.Encoder.GetBytes(password);
 			var hashed = Hash1It(bytes);
 			return Convert.ToBase64String(hashed);
+		}
+
+		public static byte[] Sign(BigInteger privateKey, byte[] data)
+		{
+			var signer = SignerUtilities.GetSigner(X9ObjectIdentifiers.ECDsaWithSha256);
+			var signKey = new ECPrivateKeyParameters(privateKey, KeyGenParams.DomainParameters);
+			signer.Init(true, signKey);
+			signer.BlockUpdate(data, 0, data.Length);
+			return signer.GenerateSignature();
 		}
 
 		#endregion

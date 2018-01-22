@@ -56,10 +56,10 @@ namespace TS3Client.Full
 
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
-		private OutgoingPacket initPacketCheck;
-		private readonly Dictionary<ushort, OutgoingPacket> packetAckManager;
-		private readonly RingQueue<IncomingPacket> receiveQueue;
-		private readonly RingQueue<IncomingPacket> receiveQueueLow;
+		private C2SPacket initPacketCheck;
+		private readonly Dictionary<ushort, C2SPacket> packetAckManager;
+		private readonly RingQueue<S2CPacket> receiveQueue;
+		private readonly RingQueue<S2CPacket> receiveQueueLow;
 		private readonly object sendLoopLock = new object();
 		private readonly AutoResetEvent sendLoopPulse = new AutoResetEvent(false);
 		private readonly Ts3Crypt ts3Crypt;
@@ -76,9 +76,9 @@ namespace TS3Client.Full
 
 		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
-			packetAckManager = new Dictionary<ushort, OutgoingPacket>();
-			receiveQueue = new RingQueue<IncomingPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
-			receiveQueueLow = new RingQueue<IncomingPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			packetAckManager = new Dictionary<ushort, C2SPacket>();
+			receiveQueue = new RingQueue<S2CPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveQueueLow = new RingQueue<S2CPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			NetworkStats = new NetworkStats();
 
 			packetCounter = new ushort[9];
@@ -175,7 +175,7 @@ namespace TS3Client.Full
 
 		private void SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None)
 		{
-			var packet = new OutgoingPacket(data.ToArray(), packetType);
+			var packet = new C2SPacket(data.ToArray(), packetType);
 
 			lock (sendLoopLock)
 			{
@@ -242,7 +242,7 @@ namespace TS3Client.Full
 				? new IdTuple(packetCounter[(int)packetType], generationCounter[(int)packetType])
 				: new IdTuple(101, 0);
 
-		private void IncPacketCounter(PacketType packetType)
+		public void IncPacketCounter(PacketType packetType)
 		{
 			unchecked { packetCounter[(int)packetType]++; }
 			if (packetCounter[(int)packetType] == 0)
@@ -285,7 +285,7 @@ namespace TS3Client.Full
 
 		private static bool NeedsSplitting(int dataSize) => dataSize + HeaderSize > MaxPacketSize;
 
-		public IncomingPacket FetchPacket()
+		public S2CPacket FetchPacket()
 		{
 			while (true)
 			{
@@ -365,10 +365,10 @@ namespace TS3Client.Full
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-		private void GenerateGenerationId(IncomingPacket packet)
+		private void GenerateGenerationId(S2CPacket packet)
 		{
 			// TODO rework this for all packet types
-			RingQueue<IncomingPacket> packetQueue;
+			RingQueue<S2CPacket> packetQueue;
 			switch (packet.PacketType)
 			{
 			case PacketType.Command: packetQueue = receiveQueue; break;
@@ -379,7 +379,7 @@ namespace TS3Client.Full
 			packet.GenerationId = packetQueue.GetGeneration(packet.PacketId);
 		}
 
-		private IncomingPacket ReceiveCommand(IncomingPacket packet, RingQueue<IncomingPacket> packetQueue, PacketType ackType)
+		private S2CPacket ReceiveCommand(S2CPacket packet, RingQueue<S2CPacket> packetQueue, PacketType ackType)
 		{
 			var setStatus = packetQueue.IsSet(packet.PacketId);
 
@@ -398,7 +398,7 @@ namespace TS3Client.Full
 			return TryFetchPacket(packetQueue, out var retPacket) ? retPacket : null;
 		}
 
-		private static bool TryFetchPacket(RingQueue<IncomingPacket> packetQueue, out IncomingPacket packet)
+		private static bool TryFetchPacket(RingQueue<S2CPacket> packetQueue, out S2CPacket packet)
 		{
 			if (packetQueue.Count <= 0) { packet = null; return false; }
 
@@ -445,7 +445,7 @@ namespace TS3Client.Full
 
 				for (int i = 1; i < take; i++)
 				{
-					if (!packetQueue.TryDequeue(out IncomingPacket nextPacket))
+					if (!packetQueue.TryDequeue(out S2CPacket nextPacket))
 						throw new InvalidOperationException("Packet in queue got missing (?)");
 
 					Array.Copy(nextPacket.Data, 0, preFinalArray, curCopyPos, nextPacket.Size);
@@ -480,7 +480,7 @@ namespace TS3Client.Full
 				throw new InvalidOperationException("Packet type is not an Ack-type");
 		}
 
-		private IncomingPacket ReceiveAck(IncomingPacket packet)
+		private S2CPacket ReceiveAck(S2CPacket packet)
 		{
 			if (packet.Data.Length < 2)
 				return null;
@@ -503,7 +503,7 @@ namespace TS3Client.Full
 			pingTimer.Restart();
 		}
 
-		private void ReceivePing(IncomingPacket packet)
+		private void ReceivePing(S2CPacket packet)
 		{
 			var idDiff = packet.PacketId - lastReceivedPingId;
 			if (idDiff > 1 && idDiff < ReceivePacketWindowSize)
@@ -515,7 +515,7 @@ namespace TS3Client.Full
 			AddOutgoingPacket(pongData, PacketType.Pong);
 		}
 
-		private void ReceivePong(IncomingPacket packet)
+		private void ReceivePong(S2CPacket packet)
 		{
 			ushort answerId = NetUtil.N2Hushort(packet.Data, 0);
 
@@ -529,7 +529,7 @@ namespace TS3Client.Full
 
 		public void ReceivedFinalInitAck() => ReceiveInitAck(null, true);
 
-		private void ReceiveInitAck(IncomingPacket packet, bool done = false)
+		private void ReceiveInitAck(S2CPacket packet, bool done = false)
 		{
 			lock (sendLoopLock)
 			{
@@ -604,7 +604,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private bool ResendPackets(IEnumerable<OutgoingPacket> packetList, DateTime now)
+		private bool ResendPackets(IEnumerable<C2SPacket> packetList, DateTime now)
 		{
 			foreach (var outgoingPacket in packetList)
 				if (ResendPacket(outgoingPacket, now))
@@ -612,7 +612,7 @@ namespace TS3Client.Full
 			return false;
 		}
 
-		private bool ResendPacket(OutgoingPacket packet, DateTime now)
+		private bool ResendPacket(C2SPacket packet, DateTime now)
 		{
 			// Check if the packet timed out completely
 			if (packet.FirstSendTime < now - PacketTimeout)
@@ -634,7 +634,7 @@ namespace TS3Client.Full
 			return false;
 		}
 
-		private void SendRaw(OutgoingPacket packet)
+		private void SendRaw(C2SPacket packet)
 		{
 			packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);

@@ -97,7 +97,7 @@ namespace TS3AudioBot
 		/// <summary>Manages plugins, provides various loading and unloading mechanisms.</summary>
 		internal PluginManager PluginManager { get; set; }
 		/// <summary>Manages a dependency hierachy and injects required modules at runtime.</summary>
-		internal Injector Injector { get; set; }
+		internal CoreInjector Injector { get; set; }
 		/// <summary>Mangement for the bot command system.</summary>
 		public CommandManager CommandManager { get; set; }
 		/// <summary>Manages factories which can load resources.</summary>
@@ -176,15 +176,15 @@ namespace TS3AudioBot
 
 			Log.Info("[============ TS3AudioBot started =============]");
 			Log.Info("[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
-			Log.Info("[=== Version: {0}", Util.GetAssemblyData().ToString());
-			Log.Info("[=== Plattform: {0}", Util.GetPlattformData());
+			Log.Info("[=== Version: {0}", Util.GetAssemblyData());
+			Log.Info("[=== Platform: {0}", Util.GetPlattformData());
 			Log.Info("[==============================================]");
 
 			Log.Info("[============ Initializing Modules ============]");
 			Log.Info("Using opus version: {0}", TS3Client.Full.Audio.Opus.NativeMethods.Info);
 			TS3Client.Messages.Deserializer.OnError += (s, e) => Log.Error(e.ToString());
 
-			Injector = new Injector();
+			Injector = new CoreInjector();
 			Injector.RegisterModule(this);
 			Injector.RegisterModule(ConfigManager);
 			Injector.RegisterModule(Injector);

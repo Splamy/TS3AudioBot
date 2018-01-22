@@ -54,54 +54,6 @@ namespace TS3Client
 		After
 	}
 
-	public enum NotificationType
-	{
-		Unknown,
-		Error,
-		// Official notifies, used by client and query
-		ChannelCreated,
-		ChannelDeleted,
-		ChannelChanged,
-		ChannelEdited,
-		ChannelMoved,
-		ChannelPasswordChanged,
-		ClientEnterView,
-		ClientLeftView,
-		ClientMoved,
-		ServerEdited,
-		TextMessage,
-		TokenUsed,
-
-		// Internal notifies, used by client
-		InitIvExpand,
-		InitServer,
-		ChannelList,
-		ChannelListFinished,
-		ClientNeededPermissions,
-		ClientChannelGroupChanged,
-		ClientServerGroupAdded,
-		ConnectionInfoRequest,
-		ConnectionInfo,
-		ChannelSubscribed,
-		ChannelUnsubscribed,
-		ClientChatComposing,
-		ServerGroupList,
-		ServerGroupsByClientId,
-		StartUpload,
-		StartDownload,
-		FileTransfer,
-		FileTransferStatus,
-		FileList,
-		FileListFinished,
-		FileInfo,
-		// TODO: notifyclientchatclosed
-		// TODO: notifyclientpoke
-		// TODO: notifyclientupdated
-		// TODO: notifyclientchannelgroupchanged
-		// TODO: notifychannelpasswordchanged
-		// TODO: notifychanneldescriptionchanged
-	}
-
 	// ReSharper disable UnusedMember.Global
 	public enum MoveReason
 	{

@@ -41,7 +41,11 @@ namespace TS3Client.Messages
 	string GenerateDeserializer(GenField fld)
 	{
 		if(fld.isArray)
-			return $"{{ var t = value.Split(new[] {{ ',' }}, StringSplitOptions.RemoveEmptyEntries); {fld.fldName} = new {fld.fldType}[t.Length]; for(int i = 0; i < t.Length; i++) {GenerateSingleDeserializer(fld, "t[i]", fld.fldName + "[i]")} }}";
+			return $"{{ if(value.Length == 0) {fld.fldName} = new {fld.fldType}[0]; else {{"
+			     + $" var ss = new SpanSplitter(); ss.First(value, ',');"
+			     + $" int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++;"
+			     + $" {fld.fldName} = new {fld.fldType}[cnt + 1];"
+			     + $" for(int i = 0; i < cnt + 1; i++) {{ {GenerateSingleDeserializer(fld, "ss.Trim(value)", fld.fldName + "[i]")} if (i < cnt) value = ss.Next(value); }} }} }}";
 		else
 			return GenerateSingleDeserializer(fld, "value", fld.fldName);
 	}
@@ -53,7 +57,7 @@ namespace TS3Client.Messages
 		switch (fld.fldType)
 		{
 		case "bool":
-			return $"{output} = {input} != \"0\";";
+			return $"{output} = {input}.Length > 0 && {input}[0] != '0';";
 		case "sbyte":
 		case "byte":
 		case "short":
@@ -69,13 +73,13 @@ namespace TS3Client.Messages
 		case "ChannelIdT":
 		case "ServerGroupIdT":
 		case "ChannelGroupIdT":
-			return $"{output} = {fld.fldType}.Parse({input}, CultureInfo.InvariantCulture);";
+			return $"{output} = {fld.fldType}.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
 		case "TimeSpanSecondsT":
-			return $"{output} = TimeSpan.FromSeconds(double.Parse({input}, CultureInfo.InvariantCulture));";
+			return $"{output} = TimeSpan.FromSeconds(double.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
 		case "TimeSpanMillisecT":
-			return $"{output} = TimeSpan.FromMilliseconds(double.Parse({input}, CultureInfo.InvariantCulture));";
+			return $"{output} = TimeSpan.FromMilliseconds(double.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
 		case "DateTime":
-			return $"{output} = Util.UnixTimeStart.AddSeconds(double.Parse({input}, CultureInfo.InvariantCulture));";
+			return $"{output} = Util.UnixTimeStart.AddSeconds(double.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
 		case "string":
 		case "UidT":
 			return $"{output} = Ts3String.Unescape({input});";
@@ -88,14 +92,14 @@ namespace TS3Client.Messages
 		case "TextMessageTargetMode":
 		case "PermissionGroupDatabaseType":
 		case "GroupNamingMode":
-			return $"{{ if (!Enum.TryParse({input}, out {fld.fldType} val)) throw new FormatException(); {output} = val; }}";
+			return $"{{ if (!Enum.TryParse({input}.NewString(), out {fld.fldType} val)) throw new FormatException(); {output} = val; }}";
 		case "Ts3ErrorCode":
 		case "LicenseType":
-			return $"{output} = ({fld.fldType})ushort.Parse({input}, CultureInfo.InvariantCulture);";
+			return $"{output} = ({fld.fldType})ushort.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
 		case "PermissionId":
-			return $"{output} = ({fld.fldType})int.Parse({input}, CultureInfo.InvariantCulture);";
+			return $"{output} = ({fld.fldType})int.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
 		case "IconHash":
-			return $"{output} = unchecked((int)ulong.Parse({input}, CultureInfo.InvariantCulture));";
+			return $"{output} = unchecked((int)ulong.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
 		default:
 			return "#error missing deserializer";
 		}
@@ -154,7 +158,7 @@ namespace TS3Client.Messages
 			}
 #>
 
-		public void SetField(string name, string value)
+		public void SetField(string name, ReadOnlySpan<char> value)
 		{
 <#
 			if (param.Length > 2) {#>
@@ -213,16 +217,22 @@ namespace TS3Client.Messages
 		}
 	}
 #>
+	public enum NotificationType
+	{
+		Unknown,
+<# foreach(var kvp in ntfyDict) { #>
+		<#= kvp.Value.enumName #>,<#
+	}
+#>
+	}
+
 	public static class MessageHelper
 	{
 		public static NotificationType GetNotificationType(string name)
 		{
 			switch(name)
 			{
-<#
-	foreach(var kvp in ntfyDict)
-	{
-#>
+<# foreach(var kvp in ntfyDict) { #>
 			case "<#= kvp.Key #>": return NotificationType.<#= kvp.Value.enumName #>;<#
 	}
 #>

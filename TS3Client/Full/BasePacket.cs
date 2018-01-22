@@ -12,7 +12,7 @@ namespace TS3Client.Full
 	using Helper;
 	using System;
 
-	internal class BasePacket
+	internal abstract class BasePacket
 	{
 		public PacketType PacketType
 		{
@@ -28,6 +28,8 @@ namespace TS3Client.Full
 		public ushort PacketId { get; set; }
 		public uint GenerationId { get; set; }
 		public int Size => Data.Length;
+		public abstract bool FromServer { get; }
+		public abstract int HeaderLength { get; }
 
 		public byte[] Raw { get; set; }
 		public byte[] Header { get; protected set; }
@@ -80,5 +82,8 @@ namespace TS3Client.Full
 				$"  Header: { DebugUtil.DebugToHex(Header) }\n" +
 				$"  Data: { DebugUtil.DebugToHex(Data) }";
 		}
+
+		public abstract void BuildHeader();
+		public abstract void BuildHeader(Span<byte> into);
 	}
 }
