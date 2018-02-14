@@ -9,15 +9,16 @@
 
 namespace TS3AudioBot
 {
-	using Helper;
-	using System;
 	using Audio;
+	using Helper;
+	using Helper.Environment;
+	using System;
 	using System.Linq;
 	using System.Reflection;
 	using TS3Client;
-	using TS3Client.Helper;
 	using TS3Client.Full;
 	using TS3Client.Full.Audio;
+	using TS3Client.Helper;
 	using TS3Client.Messages;
 
 	internal sealed class Ts3Full : TeamspeakControl, IPlayerConnection
@@ -65,7 +66,7 @@ namespace TS3AudioBot
 			ffmpegProducer = new FfmpegProducer(tfcd);
 			volumePipe = new VolumePipe();
 			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ts3FullClientData.AudioBitrate * 1000 };
-			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.OptimalPacketSize };
+			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
 			timePipe.Initialize(encoderPipe);
 			TargetPipe = new CustomTargetPipe(tsFullClient);
 
@@ -165,7 +166,7 @@ namespace TS3AudioBot
 					verionSign = VersionSign.VER_WIN_3_X_X;
 				}
 			}
-			else if (Util.IsLinux)
+			else if (SystemData.IsLinux)
 				verionSign = VersionSign.VER_LIN_3_0_19_4;
 			else
 				verionSign = VersionSign.VER_WIN_3_0_19_4;
@@ -265,6 +266,8 @@ namespace TS3AudioBot
 
 		private void AudioSend()
 		{
+			// TODO Make a pipe for this
+			// Save cpu when we know there is noone to send to
 			bool doSend = true;
 
 			var SendMode = TargetSendMode.None;
@@ -297,8 +300,6 @@ namespace TS3AudioBot
 			default:
 				throw new InvalidOperationException();
 			}
-
-			// Save cpu when we know there is noone to send to
 		}
 
 		#region IPlayerConnection

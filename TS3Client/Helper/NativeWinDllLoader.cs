@@ -15,7 +15,9 @@ namespace TS3Client.Helper
 
 	internal static class NativeWinDllLoader
 	{
-		[DllImport("kernel32.dll")]
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
+		[DllImport("kernel32.dll", SetLastError = true)]
 		private static extern IntPtr LoadLibrary(string dllToLoad);
 
 		public static void DirectLoadLibrary(string lib)
@@ -23,8 +25,11 @@ namespace TS3Client.Helper
 			if (Util.IsLinux)
 				return;
 
-			string libPath = Path.Combine(ArchFolder, lib);
-			LoadLibrary(libPath);
+			var libPath = Path.Combine(ArchFolder, lib);
+			Log.Debug("Loading \"{0}\" from \"{1}\"", lib, libPath);
+			var handle = LoadLibrary(libPath);
+			if (handle == IntPtr.Zero)
+				Log.Error("Failed to load library \"{0}\" from \"{1}\", error: {2}", lib, libPath, Marshal.GetLastWin32Error());
 		}
 
 		public static string ArchFolder

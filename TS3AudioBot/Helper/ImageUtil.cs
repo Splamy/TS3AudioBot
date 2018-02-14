@@ -7,8 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+
 namespace TS3AudioBot.Helper
 {
+	using Environment;
 	using System;
 	using System.Collections.Generic;
 	using System.Drawing;
@@ -27,7 +29,7 @@ namespace TS3AudioBot.Helper
 
 			using (var graphics = Graphics.FromImage(img))
 			{
-				if (Util.IsLinux)
+				if (SystemData.IsLinux)
 				{
 					BuildStringImageLinux(str, graphics, imgRect);
 				}
@@ -42,7 +44,7 @@ namespace TS3AudioBot.Helper
 						graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
 						graphics.CompositingQuality = CompositingQuality.HighQuality;
 
-						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) {LineJoin = LineJoin.Round})
+						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
 						{
 							graphics.DrawPath(AvatarTextOutline, gp);
 						}
@@ -131,7 +133,7 @@ namespace TS3AudioBot.Helper
 						gp.AddString(part, FontFamily.GenericMonospace, 0, 15, buildRect, AvatarTextFormat);
 
 						bg.Clear(Color.Transparent);
-						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) {LineJoin = LineJoin.Round})
+						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
 						{
 							bg.DrawPath(AvatarTextOutline, gp);
 						}

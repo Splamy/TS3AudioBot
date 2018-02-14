@@ -21,15 +21,15 @@ namespace TS3Client.Full.Audio
 		public int Channels { get; }
 		public int BitsPerSample { get; }
 
-		public int OptimalPacketSize { get; }
+		public int PacketSize { get; }
 		public int Bitrate { get => opusEncoder.Bitrate; set => opusEncoder.Bitrate = value; }
 
 		// opus
 		private readonly OpusEncoder opusEncoder;
 
 		private const int SegmentFrames = 960;
+		// todo add upper limit to buffer size and drop everying over
 		private byte[] soundBuffer = new byte[0];
-		private int soundBufferLength;
 		private byte[] notEncodedBuffer = new byte[0];
 		private int notEncodedBufferLength;
 		private readonly byte[] encodedBuffer;
@@ -70,7 +70,7 @@ namespace TS3Client.Full.Audio
 			}
 
 			BitsPerSample = 16;
-			OptimalPacketSize = opusEncoder.FrameByteCount(SegmentFrames);
+			PacketSize = opusEncoder.FrameByteCount(SegmentFrames);
 			encodedBuffer = new byte[opusEncoder.MaxDataBytes];
 		}
 
@@ -82,14 +82,14 @@ namespace TS3Client.Full.Audio
 			int newSoundBufferLength = data.Length + notEncodedBufferLength;
 			if (newSoundBufferLength > soundBuffer.Length)
 				soundBuffer = new byte[newSoundBufferLength];
-			soundBufferLength = newSoundBufferLength;
+			int soundBufferLength = newSoundBufferLength;
 
+			// TODO use buffer swap to save one copy call
 			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBufferLength);
 			data.CopyTo(new Span<byte>(soundBuffer, notEncodedBufferLength));
-
-			int packetSize = OptimalPacketSize;
-			int segmentCount = soundBufferLength / packetSize;
-			int segmentsEnd = segmentCount * packetSize;
+			
+			int segmentCount = soundBufferLength / PacketSize;
+			int segmentsEnd = segmentCount * PacketSize;
 			int newNotEncodedBufferLength = soundBufferLength - segmentsEnd;
 			if (newNotEncodedBufferLength > notEncodedBuffer.Length)
 				notEncodedBuffer = new byte[newNotEncodedBufferLength];
@@ -98,7 +98,7 @@ namespace TS3Client.Full.Audio
 
 			for (int i = 0; i < segmentCount; i++)
 			{
-				var encodedData = opusEncoder.Encode(soundBuffer.AsSpan().Slice(i * packetSize, packetSize), packetSize, encodedBuffer);
+				var encodedData = opusEncoder.Encode(soundBuffer.AsSpan().Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
 				if (meta != null)
 					meta.Codec = Codec; // TODO copy ?
 				OutStream?.Write(encodedData, meta);

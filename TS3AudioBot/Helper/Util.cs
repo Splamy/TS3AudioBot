@@ -12,7 +12,6 @@ namespace TS3AudioBot.Helper
 	using CommandSystem;
 	using Newtonsoft.Json.Linq;
 	using System;
-	using System.Diagnostics;
 	using System.IO;
 	using System.Reflection;
 	using System.Security.Principal;
@@ -25,15 +24,6 @@ namespace TS3AudioBot.Helper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
-
-		public static bool IsLinux
-		{
-			get
-			{
-				int p = (int)Environment.OSVersion.Platform;
-				return (p == 4) || (p == 6) || (p == 128);
-			}
-		}
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
@@ -62,8 +52,6 @@ namespace TS3AudioBot.Helper
 		public static void Init<T>(out T obj) where T : new() => obj = new T();
 
 		public static Random Random { get; } = new Random();
-
-		//public static JavaScriptSerializer Serializer { get; } = new JavaScriptSerializer();
 
 		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
 
@@ -168,94 +156,6 @@ namespace TS3AudioBot.Helper
 		{
 			var assembly = Assembly.GetExecutingAssembly();
 			return assembly.GetManifestResourceStream(name);
-		}
-
-		private static BuildData buildData;
-		public static BuildData GetAssemblyData()
-		{
-			if (buildData == null)
-			{
-				var gitInfoType = Assembly.GetExecutingAssembly().GetType("TS3AudioBot.GitVersionInformation");
-				if (gitInfoType == null)
-				{
-					buildData = new BuildData();
-				}
-				else
-				{
-					buildData = new BuildData
-					{
-						Version = (string)gitInfoType.GetField("SemVer", BindingFlags.Static | BindingFlags.Public).GetValue(null),
-						Branch = (string)gitInfoType.GetField("BranchName", BindingFlags.Static | BindingFlags.Public).GetValue(null),
-						CommitSha = (string)gitInfoType.GetField("Sha", BindingFlags.Static | BindingFlags.Public).GetValue(null),
-					};
-				}
-			}
-			return buildData;
-		}
-
-		public class BuildData
-		{
-			public string Version = "<?>";
-			public string Branch = "<?>";
-			public string CommitSha = "<?>";
-
-			public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
-			public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
-		}
-
-		static readonly Regex PlattformRegex = new Regex(@"(\w+)=(.*)", DefaultRegexConfig | RegexOptions.Multiline);
-
-		public static string GetPlattformData()
-		{
-			string plattform = null;
-			string version = "<?>";
-			string bitness = Environment.Is64BitProcess ? "64bit" : "32bit";
-
-			if (IsLinux)
-			{
-				try
-				{
-					var p = new Process()
-					{
-						StartInfo = new ProcessStartInfo()
-						{
-							FileName = "bash",
-							Arguments = "-c \"cat /etc/*[_-]release\"",
-							CreateNoWindow = true,
-							UseShellExecute = false,
-							RedirectStandardOutput = true,
-						}
-					};
-					p.Start();
-					p.WaitForExit(100);
-
-					while (p.StandardOutput.Peek() > -1)
-					{
-						var infoLine = p.StandardOutput.ReadLine();
-						if (string.IsNullOrEmpty(infoLine))
-							continue;
-						var match = PlattformRegex.Match(infoLine);
-						if (!match.Success)
-							continue;
-
-						switch (match.Groups[1].Value.ToUpper())
-						{
-						case "DISTRIB_ID": plattform = match.Groups[2].Value; break;
-						case "DISTRIB_RELEASE": version = match.Groups[2].Value; break;
-						}
-					}
-				}
-				catch (Exception) { }
-				if (plattform == null)
-					plattform = "Linux";
-			}
-			else
-			{
-				plattform = "Windows";
-				version = Environment.OSVersion.Version.ToString();
-			}
-
-			return $"{plattform} {version} ({bitness})";
 		}
 
 		public static R<T> TryCast<T>(this JToken token, string key)

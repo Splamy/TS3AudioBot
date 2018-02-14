@@ -12,6 +12,7 @@ namespace TS3AudioBot
 	using CommandSystem;
 	using Dependency;
 	using Helper;
+	using Helper.Environment;
 	using History;
 	using NLog;
 	using Plugins;
@@ -143,7 +144,7 @@ namespace TS3AudioBot
 
 				case "-V":
 				case "--version":
-					Console.WriteLine(Util.GetAssemblyData().ToLongString());
+					Console.WriteLine(SystemData.AssemblyData.ToLongString());
 					return false;
 
 				default:
@@ -176,12 +177,28 @@ namespace TS3AudioBot
 
 			Log.Info("[============ TS3AudioBot started =============]");
 			Log.Info("[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
-			Log.Info("[=== Version: {0}", Util.GetAssemblyData());
-			Log.Info("[=== Platform: {0}", Util.GetPlattformData());
+			Log.Info("[=== Version: {0}", SystemData.AssemblyData);
+			Log.Info("[=== Platform: {0}", SystemData.PlattformData);
+			Log.Info("[=== Runtime: {0}", SystemData.RuntimeData.FullName);
+			Log.Info("[=== Opus: {0}", TS3Client.Full.Audio.Opus.NativeMethods.Info);
 			Log.Info("[==============================================]");
+			if (SystemData.RuntimeData.Runtime == Runtime.Mono)
+			{
+				if (SystemData.RuntimeData.SemVer == null)
+				{
+					Log.Warn("Could not find your running mono version!");
+					Log.Warn("This version might not work properly.");
+					Log.Warn("If you encounter any problems, try installing the latest mono version by following http://www.mono-project.com/download/");
+				}
+				else if (SystemData.RuntimeData.SemVer.Major < 5)
+				{
+					Log.Error("You are running a mono version below 5.0.0!");
+					Log.Error("This version is not supported and will not work properly.");
+					Log.Error("Install the latest mono version by following http://www.mono-project.com/download/");
+				}
+			}
 
 			Log.Info("[============ Initializing Modules ============]");
-			Log.Info("Using opus version: {0}", TS3Client.Full.Audio.Opus.NativeMethods.Info);
 			TS3Client.Messages.Deserializer.OnError += (s, e) => Log.Error(e.ToString());
 
 			Injector = new CoreInjector();

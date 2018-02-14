@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Web
 {
 	using Helper;
+	using Helper.Environment;
 	using System;
 	using System.Globalization;
 	using System.Net;
@@ -59,7 +60,7 @@ namespace TS3AudioBot.Web
 				startWebServer = true;
 			}
 
-			if(startWebServer)
+			if (startWebServer)
 			{
 				webListener = new HttpListener
 				{
@@ -74,7 +75,7 @@ namespace TS3AudioBot.Web
 		{
 			localhost = new Uri($"http://localhost:{webData.Port}/");
 
-			if (Util.IsAdmin || Util.IsLinux) // todo: hostlist
+			if (Util.IsAdmin || SystemData.IsLinux) // todo: hostlist
 			{
 				var addrs = webData.HostAddress.SplitNoEmpty(' ');
 				hostPaths = new Uri[addrs.Length + 1];

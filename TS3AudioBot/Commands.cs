@@ -11,6 +11,7 @@ namespace TS3AudioBot
 {
 	using CommandSystem;
 	using Helper;
+	using Helper.Environment;
 	using History;
 	using Plugins;
 	using System;
@@ -44,7 +45,7 @@ namespace TS3AudioBot
 			=> info.Bot.PlayManager.Enqueue(info.InvokerData, parameter).UnwrapThrow();
 
 		[Command("api token", "Generates an api token.")]
-		[Usage("[<link>]", "Optionally specifies a duration this key is valid in hours.")]
+		[Usage("[<duration>]", "Optionally specifies a duration this key is valid in hours.")]
 		[RequiredParameters(0)]
 		public static JsonObject CommandApiToken(ExecutionInformation info, double? validHours)
 		{
@@ -1178,8 +1179,8 @@ namespace TS3AudioBot
 		[Command("version", "Gets the current build version.")]
 		public static JsonObject CommandVersion()
 		{
-			var data = Util.GetAssemblyData();
-			return new JsonSingleValue<Util.BuildData>(data.ToLongString(), data);
+			var data = SystemData.AssemblyData;
+			return new JsonSingleValue<BuildData>(data.ToLongString(), data);
 		}
 
 		[Command("volume", "Sets the volume level of the music.")]

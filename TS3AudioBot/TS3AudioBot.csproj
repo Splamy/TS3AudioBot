@@ -112,7 +112,7 @@
     <Compile Include="Helper\AudioTags\M3uReader.cs" />
     <Compile Include="Helper\Cache.cs" />
     <Compile Include="Helper\ImageUtil.cs" />
-    <Compile Include="Helper\NativeWinDllLoader.cs" />
+    <Compile Include="Helper\Environment\SystemData.cs" />
     <Compile Include="Plugins\ITabPlugin.cs" />
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginResponse.cs" />
@@ -212,6 +212,7 @@
   <ItemGroup>
     <None Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </None>
     <None Include="Web\Interface\less\styles.less" />
     <None Include="Web\Interface\less\styles_authbox.less" />

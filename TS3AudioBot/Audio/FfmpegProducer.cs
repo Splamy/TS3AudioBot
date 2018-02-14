@@ -11,6 +11,7 @@ namespace TS3AudioBot.Audio
 {
 	using Helper;
 	using System;
+	using System.ComponentModel;
 	using System.Diagnostics;
 	using System.Globalization;
 	using System.Text.RegularExpressions;
@@ -159,6 +160,7 @@ namespace TS3AudioBot.Audio
 					return R.OkR;
 				}
 			}
+			catch (Win32Exception ex) { return $"Ffmpeg could not be found ({ex.Message})"; }
 			catch (Exception ex) { return $"Unable to create stream ({ex.Message})"; }
 		}
 
