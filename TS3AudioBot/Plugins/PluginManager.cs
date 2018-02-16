@@ -36,19 +36,15 @@ namespace TS3AudioBot.Plugins
 		public Core Core { get; set; }
 		public ConfigFile Config { get; set; }
 
-		private PluginManagerData pluginManagerData;
+		private readonly PluginManagerData pluginManagerData;
 		private readonly Dictionary<string, Plugin> plugins;
 		private readonly HashSet<int> usedIds;
 
-		public PluginManager()
+		public PluginManager(PluginManagerData pmd)
 		{
 			Util.Init(out plugins);
 			Util.Init(out usedIds);
-		}
-
-		public void Initialize()
-		{
-			pluginManagerData = Config.GetDataStruct<PluginManagerData>("PluginManager", true);
+			pluginManagerData = pmd;
 		}
 
 		private void CheckAndClearPlugins()

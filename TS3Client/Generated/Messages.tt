@@ -36,7 +36,7 @@ namespace TS3Client.Messages
 	var fldDict = new Dictionary<string, GenField>();
 	var msgDict = new Dictionary<string, GenMsg>();
 	var ntfyDict = new Dictionary<string, GenNotify>();
-	var convSet = new HashSet<string>();
+	var convSet = new Dictionary<string, GenType>();
 
 	string GenerateDeserializer(GenField fld)
 	{
@@ -52,7 +52,8 @@ namespace TS3Client.Messages
 
 	string GenerateSingleDeserializer(GenField fld, string input, string output)
 	{
-		if(!convSet.Contains(fld.fldType))
+		GenType typeInfo;
+		if(!convSet.TryGetValue(fld.fldType, out typeInfo))
 			throw new Exception("Unregistered type");
 		switch (fld.fldType)
 		{
@@ -83,7 +84,6 @@ namespace TS3Client.Messages
 		case "string":
 		case "UidT":
 			return $"{output} = Ts3String.Unescape({input});";
-		case "Codec":
 		case "HostMessageMode":
 		case "CodecEncryptionMode":
 		case "HostBannerMode":
@@ -93,11 +93,11 @@ namespace TS3Client.Messages
 		case "PermissionGroupDatabaseType":
 		case "GroupNamingMode":
 			return $"{{ if (!Enum.TryParse({input}.NewString(), out {fld.fldType} val)) throw new FormatException(); {output} = val; }}";
+		case "Codec":
 		case "Ts3ErrorCode":
 		case "LicenseType":
-			return $"{output} = ({fld.fldType})ushort.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
 		case "PermissionId":
-			return $"{output} = ({fld.fldType})int.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
+			return $"{output} = ({fld.fldType}){typeInfo.backingType}.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
 		case "IconHash":
 			return $"{output} = unchecked((int)ulong.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
 		default:
@@ -209,7 +209,7 @@ namespace TS3Client.Messages
 		{
 			var param = parts[1].Replace(" ", "").Split(',');
 			if(param.Length != 1 && param.Length != 2) { this.Write("#warning Invalid TYPE: " + line); continue; }
-			convSet.Add(param[0]);
+			convSet.Add(param[0], new GenType { typeName = param[0], backingType = param.Length > 1 ? param[1] : null });
 		}
 		else if(parts[0] == "BREAK")
 		{
@@ -276,5 +276,10 @@ class GenNotify
 {
 	public string enumName;
 	public GenMsg assocMsg;
+}
+class GenType
+{
+	public string typeName;
+	public string backingType;
 }
 #>

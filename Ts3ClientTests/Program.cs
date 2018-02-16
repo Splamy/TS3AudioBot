@@ -18,7 +18,7 @@ namespace Ts3ClientTests
 
 		static void Main()
 		{
-			Ts3Crypt.Test();
+			//Ts3Crypt.Test();
 
 			//return;
 			var clients = new List<Ts3FullClient>();

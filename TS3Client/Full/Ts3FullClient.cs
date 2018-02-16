@@ -286,6 +286,19 @@ namespace TS3Client.Full
 							}
 						});
 						break;
+
+					case PacketType.Init1:
+						// Init error
+						if (packet.Data.Length == 5 && packet.Data[0] == 1)
+						{
+							var errorNum = NetUtil.N2Huint(packet.Data, 1);
+							if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
+								Log.Info("Got init error: {0}", (Ts3ErrorCode)errorNum);
+							else
+								Log.Warn("Got undefined init error: {0}", errorNum);
+							DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
+						}
+						break;
 					}
 				}
 			}

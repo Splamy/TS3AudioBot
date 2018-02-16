@@ -18,7 +18,7 @@
 namespace TS3Client
 {
 	// Source: http://forum.teamspeak.com/threads/102276-Server-query-error-id-list
-	public enum Ts3ErrorCode : ushort
+	public enum Ts3ErrorCode : uint
 	{
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		/// <summary>unknown error code</summary>

@@ -10,9 +10,6 @@
 namespace TS3AudioBot.Dependency
 {
 	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Reflection;
 	using System.Text;
 
 	internal class Module
@@ -20,32 +17,20 @@ namespace TS3AudioBot.Dependency
 		public InitState Status { get; private set; }
 		public object Obj { get; }
 		public Type Type => Obj.GetType();
-		public Action<object> Initializer { get; }
 		// object SyncContext;
+		private readonly Action<object> initializer;
 
 		public Module(object obj, Action<object> initializer)
 		{
 			Status = initializer == null ? InitState.SetOnly : InitState.SetAndInit;
-			Initializer = initializer;
+			this.initializer = initializer;
 			Obj = obj;
 		}
-
-		public IEnumerable<Type> GetDependants(HashSet<Type> deps)
-		{
-			var type = Obj.GetType();
-			return GetModuleProperties(deps, type).Select(p => p.PropertyType);
-		}
-
-		public IEnumerable<PropertyInfo> GetModuleProperties(HashSet<Type> deps) => GetModuleProperties(deps, Obj.GetType());
-
-		private static IEnumerable<PropertyInfo> GetModuleProperties(HashSet<Type> deps, IReflect type) =>
-			type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-				.Where(p => p.CanRead && p.CanWrite && deps.Any(x => x.IsAssignableFrom(p.PropertyType)));
 
 		public void SetInitalized()
 		{
 			if (Status == InitState.SetAndInit)
-				Initializer?.Invoke(Obj);
+				initializer?.Invoke(Obj);
 			Status = InitState.Done;
 		}
 
@@ -55,10 +40,10 @@ namespace TS3AudioBot.Dependency
 			strb.Append(Type.Name);
 			switch (Status)
 			{
-				case InitState.Done: strb.Append("+"); break;
-				case InitState.SetOnly: strb.Append("*"); break;
-				case InitState.SetAndInit: strb.Append("-"); break;
-				default: throw new ArgumentOutOfRangeException();
+			case InitState.Done: strb.Append("+"); break;
+			case InitState.SetOnly: strb.Append("*"); break;
+			case InitState.SetAndInit: strb.Append("-"); break;
+			default: throw new ArgumentOutOfRangeException();
 			}
 			return strb.ToString();
 		}

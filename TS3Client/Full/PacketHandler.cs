@@ -543,7 +543,7 @@ namespace TS3Client.Full
 				var forwardData = ts3Crypt.ProcessInit1(packet.Data);
 				if (!forwardData.Ok)
 				{
-					LoggerRaw.Debug("Wrong init: {0}", forwardData.Error);
+					LoggerRaw.Debug("Error init: {0}", forwardData.Error);
 					return;
 				}
 				initPacketCheck = null;

@@ -37,6 +37,12 @@ namespace TS3Client.Full
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static uint N2Huint(byte[] intArr, int inOff)
+		{
+			return (uint)unchecked((intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3]);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void H2N(ushort value, byte[] outArr, int outOff)
 		{
 			outArr[outOff + 0] = unchecked((byte)(value >> 8));

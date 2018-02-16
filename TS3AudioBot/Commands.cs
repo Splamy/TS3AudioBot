@@ -93,7 +93,7 @@ namespace TS3AudioBot
 		[Command("bot commander off", "Disables channel commander.")]
 		public static void CommandBotCommanderOff(ExecutionInformation info) => info.Bot.QueryConnection.SetChannelCommander(false).UnwrapThrow();
 
-		[Command("bot come", "Moves the bot to you or a specified channel.")]
+		[Command("bot come", "Moves the bot to your channel.")]
 		[RequiredParameters(0)]
 		public static void CommandBotCome(ExecutionInformation info, string password = null) => CommandBotMove(info, null, password);
 
@@ -451,8 +451,8 @@ namespace TS3AudioBot
 			case ">": comparer = (a, b) => a > b; break;
 			case "<=": comparer = (a, b) => a <= b; break;
 			case ">=": comparer = (a, b) => a >= b; break;
-			case "==": comparer = (a, b) => a == b; break;
-			case "!=": comparer = (a, b) => a != b; break;
+			case "==": comparer = (a, b) => Math.Abs(a - b) < 1e-6; break;
+			case "!=": comparer = (a, b) => Math.Abs(a - b) > 1e-6; break;
 			default: throw new CommandException("Unknown comparison operator", CommandExceptionReason.CommandError);
 			}
 

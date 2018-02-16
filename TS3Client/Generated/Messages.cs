@@ -67,11 +67,11 @@ namespace TS3Client.Messages
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public Codec Codec { get; set; }
-		public int CodecQuality { get; set; }
+		public byte CodecQuality { get; set; }
 		public int NeededTalkPower { get; set; }
 		public int IconId { get; set; }
-		public int MaxClients { get; set; }
-		public int MaxFamilyClients { get; set; }
+		public ushort MaxClients { get; set; }
+		public uint MaxFamilyClients { get; set; }
 		public int CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
 		public TimeSpan DeleteDelay { get; set; }
@@ -98,12 +98,12 @@ namespace TS3Client.Messages
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec": { if (!Enum.TryParse(value.NewString(), out Codec val)) throw new FormatException(); Codec = val; } break;
-			case "channel_codec_quality": CodecQuality = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_icon_id": IconId = unchecked((int)ulong.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "channel_maxclients": MaxClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_codec_latency_factor": CodecLatencyFactor = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": DeleteDelay = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
@@ -161,11 +161,11 @@ namespace TS3Client.Messages
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public Codec Codec { get; set; }
-		public int CodecQuality { get; set; }
+		public byte CodecQuality { get; set; }
 		public int NeededTalkPower { get; set; }
 		public int IconId { get; set; }
-		public int MaxClients { get; set; }
-		public int MaxFamilyClients { get; set; }
+		public ushort MaxClients { get; set; }
+		public uint MaxFamilyClients { get; set; }
 		public int CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
 		public TimeSpan DeleteDelay { get; set; }
@@ -192,12 +192,12 @@ namespace TS3Client.Messages
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec": { if (!Enum.TryParse(value.NewString(), out Codec val)) throw new FormatException(); Codec = val; } break;
-			case "channel_codec_quality": CodecQuality = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_icon_id": IconId = unchecked((int)ulong.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "channel_maxclients": MaxClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_codec_latency_factor": CodecLatencyFactor = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": DeleteDelay = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
@@ -222,9 +222,9 @@ namespace TS3Client.Messages
 		public string Name { get; set; }
 		public string Topic { get; set; }
 		public Codec Codec { get; set; }
-		public int CodecQuality { get; set; }
-		public int MaxClients { get; set; }
-		public int MaxFamilyClients { get; set; }
+		public byte CodecQuality { get; set; }
+		public ushort MaxClients { get; set; }
+		public uint MaxFamilyClients { get; set; }
 		public int Order { get; set; }
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
@@ -252,10 +252,10 @@ namespace TS3Client.Messages
 			case "cpid": ChannelParentId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
-			case "channel_codec": { if (!Enum.TryParse(value.NewString(), out Codec val)) throw new FormatException(); Codec = val; } break;
-			case "channel_codec_quality": CodecQuality = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxclients": MaxClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_order": Order = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
@@ -608,7 +608,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "permid": PermissionId = (PermissionId)int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "permid": PermissionId = (PermissionId)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "permvalue": PermissionValue = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
@@ -665,9 +665,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "id": Id = (Ts3ErrorCode)ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "id": Id = (Ts3ErrorCode)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "msg": Message = Ts3String.Unescape(value); break;
-			case "failed_permid": MissingPermissionId = (PermissionId)int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "failed_permid": MissingPermissionId = (PermissionId)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			case "extra_msg": ExtraMessage = Ts3String.Unescape(value); break;
 			
@@ -827,7 +827,7 @@ namespace TS3Client.Messages
 			{
 
 			case "clientftfid": ClientFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "status": Status = (Ts3ErrorCode)ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "status": Status = (Ts3ErrorCode)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "msg": Message = Ts3String.Unescape(value); break;
 			case "size": Size = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
@@ -898,12 +898,12 @@ namespace TS3Client.Messages
 		public string WelcomeMessage { get; set; }
 		public string ServerPlatform { get; set; }
 		public string ServerVersion { get; set; }
-		public int MaxClients { get; set; }
-		public long ServerCreated { get; set; }
+		public uint MaxClients { get; set; }
+		public DateTime ServerCreated { get; set; }
 		public string Hostmessage { get; set; }
 		public HostMessageMode HostmessageMode { get; set; }
 		public ulong VirtualServerId { get; set; }
-		public string ServerIp { get; set; }
+		public string[] ServerIp { get; set; }
 		public bool AskForPrivilege { get; set; }
 		public string ClientName { get; set; }
 		public ClientIdT ClientId { get; set; }
@@ -936,12 +936,12 @@ namespace TS3Client.Messages
 			case "virtualserver_welcomemessage": WelcomeMessage = Ts3String.Unescape(value); break;
 			case "virtualserver_platform": ServerPlatform = Ts3String.Unescape(value); break;
 			case "virtualserver_version": ServerVersion = Ts3String.Unescape(value); break;
-			case "virtualserver_maxclients": MaxClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_created": ServerCreated = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_maxclients": MaxClients = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_created": ServerCreated = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if (!Enum.TryParse(value.NewString(), out HostMessageMode val)) throw new FormatException(); HostmessageMode = val; } break;
 			case "virtualserver_id": VirtualServerId = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_ip": ServerIp = Ts3String.Unescape(value); break;
+			case "virtualserver_ip": { if(value.Length == 0) ServerIp = new string[0]; else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new string[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
 			case "virtualserver_ask_for_privilegekey": AskForPrivilege = value.Length > 0 && value[0] != '0'; break;
 			case "acn": ClientName = Ts3String.Unescape(value); break;
 			case "aclid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
@@ -1051,7 +1051,7 @@ namespace TS3Client.Messages
 			case "sgid": ServerGroupId = ServerGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "type": { if (!Enum.TryParse(value.NewString(), out PermissionGroupDatabaseType val)) throw new FormatException(); GroupType = val; } break;
-			case "iconid": IconId = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "iconid": IconId = unchecked((int)ulong.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "savedb": GroupIsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "sortid": SortId = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "namemode": { if (!Enum.TryParse(value.NewString(), out GroupNamingMode val)) throw new FormatException(); NamingMode = val; } break;
@@ -1145,11 +1145,11 @@ namespace TS3Client.Messages
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public Codec Codec { get; set; }
-		public int CodecQuality { get; set; }
+		public byte CodecQuality { get; set; }
 		public int NeededTalkPower { get; set; }
 		public int IconId { get; set; }
-		public int MaxClients { get; set; }
-		public int MaxFamilyClients { get; set; }
+		public ushort MaxClients { get; set; }
+		public uint MaxFamilyClients { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1170,12 +1170,12 @@ namespace TS3Client.Messages
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec": { if (!Enum.TryParse(value.NewString(), out Codec val)) throw new FormatException(); Codec = val; } break;
-			case "channel_codec_quality": CodecQuality = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_icon_id": IconId = unchecked((int)ulong.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "channel_maxclients": MaxClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -1409,7 +1409,7 @@ namespace TS3Client.Messages
 
 		public int ClientsOnline { get; set; }
 		public int QueriesOnline { get; set; }
-		public int MaxClients { get; set; }
+		public uint MaxClients { get; set; }
 		public TimeSpan Uptime { get; set; }
 		public bool Autostart { get; set; }
 		public string MachineId { get; set; }
@@ -1427,7 +1427,7 @@ namespace TS3Client.Messages
 
 			case "virtualserver_clientsonline": ClientsOnline = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_queryclientsonline": QueriesOnline = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_maxclients": MaxClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_maxclients": MaxClients = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_uptime": Uptime = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_machine_id": MachineId = Ts3String.Unescape(value); break;

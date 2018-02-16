@@ -199,7 +199,7 @@ namespace TS3AudioBot
 					var msg = session.ResponseProcessor(execInfo);
 					session.ClearResponse();
 					if (!string.IsNullOrEmpty(msg))
-						execInfo.Write(msg);
+						execInfo.Write(msg).UnwrapThrow();
 					return;
 				}
 
@@ -212,24 +212,24 @@ namespace TS3AudioBot
 					{
 						var sRes = (StringCommandResult)res;
 						if (!string.IsNullOrEmpty(sRes.Content))
-							execInfo.Write(sRes.Content);
+							execInfo.Write(sRes.Content).UnwrapThrow();
 					}
 					else if (res.ResultType == CommandResultType.Json)
 					{
 						var sRes = (JsonCommandResult)res;
-						execInfo.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult);
-						execInfo.Write("\nJson val: \n" + JsonConvert.SerializeObject(sRes.JsonObject));
+						execInfo.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult).UnwrapThrow();
+						execInfo.Write("\nJson val: \n" + JsonConvert.SerializeObject(sRes.JsonObject)).UnwrapThrow();
 					}
 				}
 				catch (CommandException ex)
 				{
 					Log.Debug(ex, "Command Error");
-					execInfo.Write("Error: " + ex.Message);
+					execInfo.Write("Error: " + ex.Message); // XXX check return
 				}
 				catch (Exception ex)
 				{
 					Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-					execInfo.Write("An unexpected error occured: " + ex.Message);
+					execInfo.Write("An unexpected error occured: " + ex.Message); // XXX check return
 				}
 			}
 		}

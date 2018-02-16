@@ -37,7 +37,7 @@ namespace TS3Client.Full
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly byte[] Initversion = { 0x06, 0x3b, 0xec, 0xe9 };
+		private static readonly byte[] Initversion = { 0x09, 0x83, 0x8C, 0xCF }; // 3.1.8 [Stable]
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 
 		private const int MacLen = 8;
@@ -312,15 +312,15 @@ namespace TS3Client.Full
 			{
 				type = data[0];
 				if (data.Length < initTypeLen)
-					return "Invalid init packet (too short)";
+					return "Invalid Init1 packet (too short)";
 			}
 			byte[] sendData;
 
 			switch (type)
 			{
 			case 0x7F:
-			// Some strange servers do this
-			// the normal client responds by starting agian
+			// 0x7F: Some strange servers do this
+			// the normal client responds by starting again
 			case null:
 				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
@@ -331,22 +331,33 @@ namespace TS3Client.Full
 				return sendData;
 
 			case 1:
-				sendData = new byte[versionLen + initTypeLen + 16 + 4];
-				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
-				sendData[versionLen] = 0x02; // initType
-				Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
-				return sendData;
+				switch (data.Length)
+				{
+				case 21:
+					sendData = new byte[versionLen + initTypeLen + 16 + 4];
+					Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+					sendData[versionLen] = 0x02; // initType
+					Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
+					return sendData;
+				case 5:
+					var errorNum = NetUtil.N2Huint(data, 1);
+					if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
+						return $"Got Init1(1) error: {(Ts3ErrorCode)errorNum}";
+					return $"Got Init1(1) undefined error code: {errorNum}";
+				default:
+					return "Invalid or unrecognized Init1(1) packet";
+				}
 
 			case 3:
 				byte[] alphaBytes = new byte[10];
-				//Util.Random.NextBytes(alphaBytes);
+				Util.Random.NextBytes(alphaBytes);
 				var alpha = Convert.ToBase64String(alphaBytes);
 				string initAdd = Ts3Command.BuildToString("clientinitiv",
 					new ICommandPart[] {
-							new CommandParameter("alpha", alpha),
-							new CommandParameter("omega", Identity.PublicKeyString),
-							new CommandParameter("ot", 1),
-							new CommandParameter("ip", string.Empty) });
+						new CommandParameter("alpha", alpha),
+						new CommandParameter("omega", Identity.PublicKeyString),
+						new CommandParameter("ot", 1),
+						new CommandParameter("ip", string.Empty) });
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
 				// Prepare solution
@@ -370,7 +381,7 @@ namespace TS3Client.Full
 				return sendData;
 
 			default:
-				return "Got invalid init packet id";
+				return $"Got invalid Init1({type}) packet id";
 			}
 		}
 

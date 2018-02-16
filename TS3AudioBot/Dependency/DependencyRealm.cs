@@ -13,6 +13,7 @@ namespace TS3AudioBot.Dependency
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Reflection;
 
 	public sealed class CoreInjector : DependencyRealm { }
 	public sealed class BotInjector : DependencyRealm { }
@@ -21,8 +22,8 @@ namespace TS3AudioBot.Dependency
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private readonly HashSet<Type> registeredTypes;
 		private readonly List<Module> modules;
+		private readonly HashSet<Type> registeredTypes;
 
 		public DependencyRealm()
 		{
@@ -30,7 +31,9 @@ namespace TS3AudioBot.Dependency
 			Util.Init(out modules);
 		}
 
+		// TODO doc
 		public void RegisterType<TModule>() => RegisterType(typeof(TModule));
+
 		private void RegisterType(Type modType)
 		{
 			if (registeredTypes.Contains(modType))
@@ -38,6 +41,7 @@ namespace TS3AudioBot.Dependency
 			registeredTypes.Add(modType);
 		}
 
+		// TODO doc
 		public void RegisterModule<TMod>(TMod module, Action<TMod> onInit = null) where TMod : class
 		{
 			var onInitObject = onInit != null ? new Action<object>(x => onInit((TMod)x)) : null;
@@ -45,6 +49,9 @@ namespace TS3AudioBot.Dependency
 			modules.Add(mod);
 			DoQueueInitialize(false);
 		}
+
+		// TODO doc
+		public bool TryInject(object obj) => TryResolve(obj, InitState.SetOnly, false);
 
 		// Maybe in future update child realm when parent gets updated
 		public T CloneRealm<T>() where T : DependencyRealm, new()
@@ -55,6 +62,7 @@ namespace TS3AudioBot.Dependency
 			return child;
 		}
 
+		// TODO doc
 		public void ForceCyclicResolve()
 		{
 			DoQueueInitialize(true);
@@ -78,34 +86,60 @@ namespace TS3AudioBot.Dependency
 			} while (changed);
 		}
 
+		private IEnumerable<Type> GetDependants(Module mod)
+		{
+			return GetModuleProperties(mod.Type).Select(p => p.PropertyType);
+		}
+
+		private IEnumerable<PropertyInfo> GetModuleProperties(IReflect type) =>
+			type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+				.Where(p => p.CanRead && p.CanWrite && registeredTypes.Any(x => x.IsAssignableFrom(p.PropertyType)));
+
 		private IEnumerable<Type> GetUnresolvedResolvable(Module module)
-			=> module.GetDependants(registeredTypes).Where(dep => FindInjectableModule(dep, module.Status, false) == null);
+			=> GetDependants(module).Where(dep => FindInjectableModule(dep, module.Status, false) == null);
 
 		private Module FindInjectableModule(Type type, InitState state, bool force)
 			=> modules.FirstOrDefault(
-				x => (x.Status == InitState.Done || x.Status == InitState.SetOnly && state == InitState.SetOnly || force) && type.IsAssignableFrom(x.Type));
+				x => (x.Status == InitState.Done || x.Status == InitState.SetOnly && state == InitState.SetOnly || force) &&
+					 type.IsAssignableFrom(x.Type));
 
 		private bool TryResolve(Module module, bool force)
 		{
-			var props = module.GetModuleProperties(registeredTypes);
+			var result = TryResolve(module.Obj, module.Status, force);
+			if (result)
+			{
+				module.SetInitalized();
+				Log.ConditionalTrace("Module {0} added", module);
+			}
+			else
+			{
+				Log.ConditionalTrace("Module {0} waiting for {1}", module,
+					string.Join(", ", GetUnresolvedResolvable(module).Select(x => x.Name)));
+			}
+
+			return result;
+		}
+
+		private bool TryResolve(object obj, InitState state, bool force)
+		{
+			var props = GetModuleProperties(obj.GetType());
 			foreach (var prop in props)
 			{
-				var depModule = FindInjectableModule(prop.PropertyType, module.Status, force);
+				var depModule = FindInjectableModule(prop.PropertyType, state, force);
 				if (depModule != null)
 				{
-					prop.SetValue(module.Obj, depModule.Obj);
+					prop.SetValue(obj, depModule.Obj);
 				}
 				else
 				{
-					Log.ConditionalTrace("Module {0} waiting for {1}", module, string.Join(", ", GetUnresolvedResolvable(module).Select(x => x.Name)));
 					return false;
 				}
 			}
-			module.SetInitalized();
-			Log.ConditionalTrace("Module {0} added", module);
+
 			return true;
 		}
 
+		// TODO doc
 		public R<TModule> GetModule<TModule>() where TModule : class
 		{
 			var mod = FindInjectableModule(typeof(TModule), InitState.Done, false);
@@ -114,6 +148,7 @@ namespace TS3AudioBot.Dependency
 			return "Module not found";
 		}
 
+		// TODO doc
 		public bool AllResolved() => modules.All(x => x.Status == InitState.Done);
 
 		public void Unregister(Type type)

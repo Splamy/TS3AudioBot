@@ -23,13 +23,12 @@ namespace TS3AudioBot.Rights
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int RuleLevelSize = 2;
-
-		public ConfigFile Config { get; set; }
+		
 		public CommandManager CommandManager { get; set; }
 
 		private bool needsRecalculation;
 		private readonly Cache<InvokerData, ExecuteContext> cachedRights;
-		private RightsManagerData rightsManagerData;
+		private readonly RightsManagerData rightsManagerData;
 		private RightsRule rootRule;
 		private RightsRule[] rules;
 		private readonly HashSet<string> registeredRights;
@@ -42,15 +41,15 @@ namespace TS3AudioBot.Rights
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
 
-		public RightsManager()
+		public RightsManager(RightsManagerData rmd)
 		{
 			Util.Init(out cachedRights);
 			Util.Init(out registeredRights);
+			rightsManagerData = rmd;
 		}
 
 		public void Initialize()
 		{
-			rightsManagerData = Config.GetDataStruct<RightsManagerData>("RightsManager", true);
 			RegisterRights(CommandManager.AllRights);
 			RegisterRights(Commands.RightHighVolume, Commands.RightDeleteAllPlaylists);
 			if (!ReadFile())

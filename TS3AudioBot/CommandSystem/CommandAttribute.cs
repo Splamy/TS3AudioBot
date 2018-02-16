@@ -11,6 +11,10 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System;
 
+	/// <summary>
+	/// Marks a method as callable from the CommandSystem.
+	/// The containing class must be registered in the CommandSystem to use this method.
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
 	public sealed class CommandAttribute : Attribute
 	{
@@ -24,6 +28,10 @@ namespace TS3AudioBot.CommandSystem
 		public string CommandHelp { get; }
 	}
 
+	/// <summary>
+	/// Gives an example on how to use this method.
+	/// Can be used to clarify different functionality from various overloads.
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
 	public sealed class UsageAttribute : Attribute
 	{
@@ -36,6 +44,11 @@ namespace TS3AudioBot.CommandSystem
 		public string UsageHelp { get; }
 	}
 
+	/// <summary>
+	/// Denotes how many parameter are required for this method.
+	/// Use this attribute to allow optional parameters.
+	/// Special parameters like the <see cref="ExecutionInformation"/> context do not count towards this amount.
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
 	public sealed class RequiredParametersAttribute : Attribute
 	{

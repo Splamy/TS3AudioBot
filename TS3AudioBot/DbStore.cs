@@ -18,14 +18,11 @@ namespace TS3AudioBot
 	{
 		private const string DbMetaInformationTable = "dbmeta";
 
-		public Helper.ConfigFile Config { get; set; }
+		private readonly LiteDatabase database;
+		private readonly LiteCollection<DbMetaData> metaTable;
 
-		private LiteDatabase database;
-		private LiteCollection<DbMetaData> metaTable;
-
-		public void Initialize()
+		public DbStore(HistoryManagerData hmd)
 		{
-			var hmd = Config.GetDataStruct<HistoryManagerData>("HistoryManager", true);
 			var historyFile = new FileInfo(hmd.HistoryFile);
 			database = new LiteDatabase(historyFile.FullName);
 
