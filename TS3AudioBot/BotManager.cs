@@ -9,26 +9,27 @@
 
 namespace TS3AudioBot
 {
+	using Dependency;
 	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Threading;
 
-	public class BotManager : Dependency.ICoreModule, IDisposable
+	public class BotManager : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		private bool isRunning;
-		public Core Core { get; set; }
 		private List<Bot> activeBots;
 		private readonly object lockObj = new object();
+		
+		public CoreInjector CoreInjector { get; set; }
 
 		public BotManager()
 		{
 			isRunning = true;
 			Util.Init(out activeBots);
 		}
-
-		public void Initialize() { }
 
 		public void WatchBots()
 		{
@@ -46,7 +47,7 @@ namespace TS3AudioBot
 				}
 
 				CleanStrayBots();
-				Thread.Sleep(200);
+				Thread.Sleep(1000);
 			}
 		}
 
@@ -75,7 +76,12 @@ namespace TS3AudioBot
 		public bool CreateBot(/*Ts3FullClientData bot*/)
 		{
 			bool removeBot = false;
-			var bot = new Bot(Core);
+			var core = CoreInjector.GetModule<Core>().Value; // XXX
+			var bot = new Bot(core)
+			{
+				Injector = CoreInjector.CloneRealm<BotInjector>()
+			};
+
 			lock (bot.SyncRoot)
 			{
 				if (bot.InitializeBot())
@@ -145,7 +151,7 @@ namespace TS3AudioBot
 
 	public class BotLock : IDisposable
 	{
-		private Bot bot;
+		private readonly Bot bot;
 		public bool IsValid { get; private set; }
 		public Bot Bot => IsValid ? bot : throw new InvalidOperationException("The bot lock is not valid.");
 

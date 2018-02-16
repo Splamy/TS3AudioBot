@@ -15,4 +15,10 @@ namespace TS3AudioBot.Plugins
 	{
 		void Initialize(Core core);
 	}
+
+	// TODO
+
+	public interface ICoreModule { }
+
+	public interface IBotModule { }
 }

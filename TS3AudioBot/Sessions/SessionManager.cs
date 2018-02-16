@@ -20,24 +20,29 @@ namespace TS3AudioBot.Sessions
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
 
+		public DbStore Database { get; set; }
+
 		// Map: Id => UserSession
 		private readonly Dictionary<ushort, UserSession> openSessions;
 
 		// Map: Uid => InvokerData
 		private const string ApiTokenTable = "apiToken";
-		private readonly LiteCollection<DbApiToken> dbTokenList;
+		private LiteCollection<DbApiToken> dbTokenList;
 		private readonly Dictionary<string, ApiToken> liveTokenList;
 
-		public SessionManager(DbStore database)
+		public SessionManager()
 		{
 			Util.Init(out openSessions);
 			Util.Init(out liveTokenList);
+		}
 
-			dbTokenList = database.GetCollection<DbApiToken>(ApiTokenTable);
+		public void Initialize()
+		{
+			dbTokenList = Database.GetCollection<DbApiToken>(ApiTokenTable);
 			dbTokenList.EnsureIndex(x => x.UserUid, true);
 			dbTokenList.EnsureIndex(x => x.Token, true);
 
-			database.GetMetaData(ApiTokenTable);
+			Database.GetMetaData(ApiTokenTable);
 		}
 
 		public UserSession CreateSession(Bot bot, ClientData client)

@@ -22,10 +22,11 @@ namespace TS3AudioBot
 	using System.Threading;
 	using Web;
 
-	public sealed class Core : IDisposable, ICoreModule
+	public sealed class Core : IDisposable
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 		private string configFilePath;
+		private bool forceNextExit;
 
 		internal static void Main(string[] args)
 		{
@@ -54,30 +55,8 @@ namespace TS3AudioBot
 			}
 
 			var core = new Core();
-
-			AppDomain.CurrentDomain.UnhandledException += (s, e) =>
-			{
-				Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!.");
-				core.Dispose();
-			};
-
-			bool forceNextExit = false;
-			Console.CancelKeyPress += (s, e) =>
-			{
-				if (e.SpecialKey == ConsoleSpecialKey.ControlC)
-				{
-					if (!forceNextExit)
-					{
-						e.Cancel = true;
-						core.Dispose();
-						forceNextExit = true;
-					}
-					else
-					{
-						Environment.Exit(0);
-					}
-				}
-			};
+			AppDomain.CurrentDomain.UnhandledException += core.ExceptionHandler;
+			Console.CancelKeyPress += core.ConsoleInterruptHandler;
 
 			if (!core.ReadParameter(args))
 				return;
@@ -155,8 +134,6 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		public void Initialize() { }
-
 		private R InitializeCore()
 		{
 			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
@@ -202,28 +179,38 @@ namespace TS3AudioBot
 			TS3Client.Messages.Deserializer.OnError += (s, e) => Log.Error(e.ToString());
 
 			Injector = new CoreInjector();
+
+			Injector.RegisterType<Core>();
+			Injector.RegisterType<ConfigFile>();
+			Injector.RegisterType<CoreInjector>();
+			Injector.RegisterType<DbStore>();
+			Injector.RegisterType<PluginManager>();
+			Injector.RegisterType<CommandManager>();
+			Injector.RegisterType<ResourceFactoryManager>();
+			Injector.RegisterType<WebManager>();
+			Injector.RegisterType<RightsManager>();
+			Injector.RegisterType<BotManager>();
+
 			Injector.RegisterModule(this);
 			Injector.RegisterModule(ConfigManager);
 			Injector.RegisterModule(Injector);
-			Database = Injector.Create<DbStore>();
-			PluginManager = Injector.Create<PluginManager>();
-			CommandManager = Injector.Create<CommandManager>();
-			FactoryManager = Injector.Create<ResourceFactoryManager>();
-			WebManager = Injector.Create<WebManager>();
-			RightsManager = Injector.Create<RightsManager>();
-			Bots = Injector.Create<BotManager>();
-
-			Injector.SkipInitialized(this);
+			Injector.RegisterModule(new DbStore(), x => x.Initialize());
+			Injector.RegisterModule(new PluginManager(), x => x.Initialize());
+			Injector.RegisterModule(new CommandManager(), x => x.Initialize());
+			Injector.RegisterModule(new ResourceFactoryManager(), x => x.Initialize());
+			Injector.RegisterModule(new WebManager(), x => x.Initialize());
+			Injector.RegisterModule(new RightsManager(), x => x.Initialize());
+			Injector.RegisterModule(new BotManager());
 
 			if (!Injector.AllResolved())
 			{
 				// TODO detailed log + for inner if
-				Log.Warn("Cyclic module dependency");
+				Log.Debug("Cyclic core module dependency");
 				Injector.ForceCyclicResolve();
 				if (!Injector.AllResolved())
 				{
-					Log.Error("Missing module dependency");
-					return "Could not load all modules";
+					Log.Error("Missing core module dependency");
+					return "Could not load all core modules";
 				}
 			}
 
@@ -234,6 +221,29 @@ namespace TS3AudioBot
 		private void Run()
 		{
 			Bots.WatchBots();
+		}
+
+		public void ExceptionHandler(object sender, UnhandledExceptionEventArgs e)
+		{
+			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!.");
+			Dispose();
+		}
+
+		public void ConsoleInterruptHandler(object sender, ConsoleCancelEventArgs e)
+		{
+			if (e.SpecialKey == ConsoleSpecialKey.ControlC)
+			{
+				if (!forceNextExit)
+				{
+					e.Cancel = true;
+					forceNextExit = true;
+					Dispose();
+				}
+				else
+				{
+					Environment.Exit(0);
+				}
+			}
 		}
 
 		public void Dispose()

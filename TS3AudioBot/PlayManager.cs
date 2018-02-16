@@ -18,12 +18,11 @@ namespace TS3AudioBot
 	public class PlayManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly Core core;
-		private readonly Bot botParent;
-		private IPlayerConnection PlayerConnection => botParent.PlayerConnection;
-		private PlaylistManager PlaylistManager => botParent.PlaylistManager;
-		private ResourceFactoryManager ResourceFactoryManager => core.FactoryManager;
-		private HistoryManager HistoryManager => botParent.HistoryManager;
+
+		public IPlayerConnection PlayerConnection { get; set; }
+		public PlaylistManager PlaylistManager { get; set; }
+		public HistoryManager HistoryManager { get; set; }
+		public ResourceFactoryManager ResourceFactoryManager { get; set; }
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
@@ -32,12 +31,6 @@ namespace TS3AudioBot
 		public event EventHandler<PlayInfoEventArgs> AfterResourceStarted;
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
-
-		public PlayManager(Core core, Bot parent)
-		{
-			this.core = core;
-			botParent = parent;
-		}
 
 		public R Enqueue(InvokerData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
 		public R Enqueue(InvokerData invoker, string message, string audioType = null)

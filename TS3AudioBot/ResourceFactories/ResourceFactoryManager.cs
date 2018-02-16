@@ -17,8 +17,9 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Linq;
 	using System.Reflection;
 
-	public sealed class ResourceFactoryManager : Dependency.ICoreModule, IDisposable
+	public sealed class ResourceFactoryManager : IDisposable
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
@@ -37,7 +38,7 @@ namespace TS3AudioBot.ResourceFactories
 			Util.Init(out listFactories);
 		}
 
-		void Dependency.ITabModule.Initialize()
+		public void Initialize()
 		{
 			var yfd = Config.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
 			var mfd = Config.GetDataStruct<MediaFactoryData>("MediaFactory", true);
@@ -76,7 +77,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static IEnumerable<T> FilterUsable<T>(IEnumerable<(T, MatchCertainty)> enu)
 		{
-			MatchCertainty highestCertainty = MatchCertainty.Never;
+			var highestCertainty = MatchCertainty.Never;
 			foreach (var (fac, cert) in enu)
 			{
 				if ((highestCertainty == MatchCertainty.Always && cert < MatchCertainty.Always)
@@ -140,6 +141,7 @@ namespace TS3AudioBot.ResourceFactories
 			foreach (var factory in factories)
 			{
 				var result = factory.GetResource(netlinkurl);
+				Log.Trace("Factory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error);
 				if (result)
 					return result;
 			}

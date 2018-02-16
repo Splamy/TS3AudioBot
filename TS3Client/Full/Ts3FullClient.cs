@@ -142,6 +142,7 @@ namespace TS3Client.Full
 
 				switch (status)
 				{
+				case Ts3ClientStatus.Connecting:
 				case Ts3ClientStatus.Disconnected:
 					ctx.WasExit = true;
 					packetHandler.Stop();
@@ -154,8 +155,6 @@ namespace TS3Client.Full
 				case Ts3ClientStatus.Connected:
 					ClientDisconnect(MoveReason.LeftServer, QuitMessage);
 					status = Ts3ClientStatus.Disconnecting;
-					break;
-				case Ts3ClientStatus.Connecting:
 					break;
 				default:
 					throw Util.UnhandledDefault(status);
@@ -316,19 +315,24 @@ namespace TS3Client.Full
 
 		private void ProcessInitIvExpand2(InitIvExpand2 initIvExpand2)
 		{
-			//DisconnectInternal(context, Util.CustomError("Cannot connect to server 3.1 yet."));
-			//return;
+			DisconnectInternal(context, Util.CustomError("Cannot connect to server 3.1 yet."));
+			return;
 
 			var password = connectionDataFull.IsPasswordHashed
 				? connectionDataFull.Password
 				: Ts3Crypt.HashPassword(connectionDataFull.Password);
 
 			packetHandler.IncPacketCounter(PacketType.Command);
+			/*
+			ts3Crypt.GenerateTemporaryKey();
 
 			// EK SIGN
 			var buffer = new byte[32];
 			Util.Random.NextBytes(buffer);
-			var ek = Convert.ToBase64String(buffer);
+			var ek = Convert.ToBase64String(Ed25519.EncodePoint(
+				ts3Crypt.publicTmp.AffineXCoord.ToBigInteger().ToNetBi(),
+				ts3Crypt.publicTmp.AffineYCoord.ToBigInteger().ToNetBi()));
+			
 			var toSign = new byte[86];
 			Array.Copy(buffer, 0, toSign, 0, 32);
 			var beta = Convert.FromBase64String(initIvExpand2.Beta);
@@ -337,9 +341,9 @@ namespace TS3Client.Full
 			var proof = Convert.ToBase64String(sign);
 			ClientEk(ek, proof);
 			// END EK SIGN
-
-			//ts3Crypt.CryptoInit2("", initIvExpand2.Beta, initIvExpand2.Omega); //  TODO ???
-			//packetHandler.CryptoInitDone();
+			*/
+			ts3Crypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof); //  TODO ???
+			packetHandler.CryptoInitDone();
 
 			ClientInit(
 				connectionDataFull.Username,

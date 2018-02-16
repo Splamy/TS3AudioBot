@@ -22,7 +22,10 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Math;
 	using Org.BouncyCastle.Math.EC;
 	using Org.BouncyCastle.Security;
+	using Org.BouncyCastle.Crypto.EC;
+	using System.Collections.Generic;
 	using System;
+	using System.Linq;
 	using System.Security.Cryptography;
 	using System.Text;
 
@@ -225,9 +228,79 @@ namespace TS3Client.Full
 			Array.Copy(buffer, 0, fakeSignature, 0, 8);
 		}
 
-		internal void CryptoInit2(string alpha, string beta, string omega) { throw new NotImplementedException(); }
-		private byte[] GetSharedSecret2(ECPoint publicKeyPoint) { throw new NotImplementedException(); }
-		private void SetSharedSecret2(byte[] alpha, byte[] beta, byte[] sharedKey) { throw new NotImplementedException(); }
+		public static ECPoint publicTmp;
+		public static BigInteger privateTmp;
+
+		public static string ToHex(IEnumerable<byte> seq) => string.Join(" ", seq.Select(x => x.ToString("X2")));
+		public static byte[] FromHex(string hex) => hex.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
+
+		public static readonly X9ECParameters Ed25519Curve = CustomNamedCurves.GetByName("Curve25519");
+		public static readonly ECDomainParameters Ed25519Domain = new ECDomainParameters(Ed25519Curve.Curve, Ed25519Curve.G, Ed25519Curve.N, Ed25519Curve.H, Ed25519Curve.GetSeed());
+		private static readonly ECKeyGenerationParameters EdKeyGenParams = new ECKeyGenerationParameters(Ed25519Domain, new SecureRandom());
+
+		public static void Test()
+		{
+			/*var dat = FromHex("20 41 11 60 A1 36 E0 DC 4E 67 03 E6 E3 6C E1 7F 3A 7A 8F 70 56 1B FD E8 EE 50 8E E5 CE C7 10 66");
+			
+			var pt = Ed25519.DecodeInt(dat).ToBcBi();
+
+			var pub = Ed25519Curve.G.Multiply(pt);
+			var x = Ed25519.EncodePoint(
+				pub.Normalize().AffineXCoord.ToBigInteger().ToNetBi(),
+				pub.Normalize().AffineYCoord.ToBigInteger().ToNetBi());
+			var xstr = ToHex(x);*/
+
+			var pk2nd = FromHex("");
+			var scalar = FromHex("");
+
+			var hash = Hash512It(pk2nd.Concat(scalar).ToArray());
+
+			hash[0] &= 0xF8;
+			hash[31] &= 0x3F;
+			hash[31] |= 0x40;
+
+			var p1 = Ed25519.DecodePoint(hash.Take(32).ToArray());
+		}
+
+		private static void GenerateTemporaryKey()
+		{
+			// TODO own method fn(curve) -> (q, d)
+			var generator = new ECKeyPairGenerator();
+			generator.Init(EdKeyGenParams);
+			var keyPair = generator.GenerateKeyPair();
+
+			var privateKey = (ECPrivateKeyParameters)keyPair.Private;
+			var publicKey = (ECPublicKeyParameters)keyPair.Public;
+
+			publicTmp = publicKey.Q;
+			privateTmp = privateKey.D;
+		}
+
+		public static byte[] EncodeInt(BigInteger y)
+		{
+			byte[] nin = y.ToByteArray();
+			var nout = new byte[Math.Max(nin.Length, 32)];
+			Array.Copy(nin, nout, nin.Length);
+			return nout;
+		}
+
+		internal void CryptoInit2(string license, string omega, string proof)
+		{
+			// TODO verify proof
+
+			var licenseArr = Convert.FromBase64String(license);
+
+		}
+
+		private byte[] GetSharedSecret2(ECPoint publicKeyPoint)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void SetSharedSecret2(byte[] alpha, byte[] beta, byte[] sharedKey)
+		{
+
+		}
 
 		internal R<byte[]> ProcessInit1(byte[] data)
 		{
@@ -266,7 +339,7 @@ namespace TS3Client.Full
 
 			case 3:
 				byte[] alphaBytes = new byte[10];
-				Util.Random.NextBytes(alphaBytes);
+				//Util.Random.NextBytes(alphaBytes);
 				var alpha = Convert.ToBase64String(alphaBytes);
 				string initAdd = Ts3Command.BuildToString("clientinitiv",
 					new ICommandPart[] {
@@ -548,6 +621,25 @@ namespace TS3Client.Full
 			signer.Init(true, signKey);
 			signer.BlockUpdate(data, 0, data.Length);
 			return signer.GenerateSignature();
+		}
+
+		public static readonly byte[] Ts3VerionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
+
+		public static bool EdCheck(VersionSign sign)
+		{
+			var ver = Encoding.ASCII.GetBytes(sign.PlattformName + sign.Name);
+			return Ed25519.CheckValid(Convert.FromBase64String(sign.Sign), ver, Ts3VerionSignPublicKey);
+		}
+
+		public static void VersionSelfCheck()
+		{
+			var versions = typeof(VersionSign).GetProperties().Where(prop => prop.PropertyType == typeof(VersionSign));
+			foreach (var ver in versions)
+			{
+				var verObj = (VersionSign)ver.GetValue(null);
+				if (!EdCheck(verObj))
+					throw new Exception($"Version is invalid: {verObj}");
+			}
 		}
 
 		#endregion

@@ -25,12 +25,6 @@ namespace TS3AudioBot
 		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
 
-		// get video info
-		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
-
-		// get playlist videos
-		// https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId=...&key=...
-
 		private readonly PlaylistManagerData data;
 		private static readonly Encoding FileEncoding = Util.Utf8Encoder;
 		private readonly Playlist freeList;

@@ -32,18 +32,22 @@ namespace TS3AudioBot
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
 
-		internal DependencyRealm<IBotModule> Injector { get; set; }
+		internal BotInjector Injector { get; set; }
 
 		internal TargetScript TargetScript { get; set; }
 		/// <summary>Mangement for playlists.</summary>
-		public PlaylistManager PlaylistManager { get; private set; }
+		public PlaylistManager PlaylistManager { get; set; }
 		/// <summary>Connection object for the current client.</summary>
-		public TeamspeakControl QueryConnection { get; private set; }
+		public TeamspeakControl QueryConnection { get; set; }
 		/// <summary>Management for clients talking with the bot.</summary>
-		public SessionManager SessionManager { get; private set; }
+		public SessionManager SessionManager { get; set; }
 		private HistoryManager historyManager = null;
 		/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
-		public HistoryManager HistoryManager => historyManager ?? throw new CommandException("History has not been enabled", CommandExceptionReason.NotSupported);
+		public HistoryManager HistoryManager
+		{
+			get => historyManager ?? throw new CommandException("History has not been enabled", CommandExceptionReason.NotSupported);
+			set => historyManager = value;
+		}
 		/// <summary>Redirects playing, enqueing and song events.</summary>
 		public PlayManager PlayManager { get; private set; }
 		/// <summary>Used to specify playing mode and active targets to send to.</summary>
@@ -59,12 +63,12 @@ namespace TS3AudioBot
 			this.core = core;
 		}
 
-		public bool InitializeBot()
+		public R InitializeBot()
 		{
 			Log.Info("Bot connecting...");
 
 			// Read Config File
-			var conf = core.ConfigManager;
+			var conf = Injector.GetModule<ConfigFile>().Value; // XXX
 			var afd = conf.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
 			var tfcd = conf.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 			var hmd = conf.GetDataStruct<HistoryManagerData>("HistoryManager", true);
@@ -72,16 +76,41 @@ namespace TS3AudioBot
 			mainBotData = conf.GetDataStruct<MainBotData>("MainBot", true);
 
 			AudioValues.audioFrameworkData = afd;
+
+			Injector.RegisterType<Bot>();
+			Injector.RegisterType<BotInjector>();
+			Injector.RegisterType<TargetScript>();
+			Injector.RegisterType<PlaylistManager>();
+			Injector.RegisterType<TeamspeakControl>();
+			Injector.RegisterType<SessionManager>();
+			Injector.RegisterType<HistoryManager>();
+			Injector.RegisterType<PlayManager>();
+			Injector.RegisterType<IPlayerConnection>();
+
+			Injector.RegisterModule(this);
+			Injector.RegisterModule(Injector);
+			Injector.RegisterModule(new PlaylistManager(pld));
 			var teamspeakClient = new Ts3Full(tfcd);
-			QueryConnection = teamspeakClient;
-			PlayerConnection = teamspeakClient;
-			PlaylistManager = new PlaylistManager(pld);
-			SessionManager = new SessionManager(core.Database);
+			Injector.RegisterModule(teamspeakClient);
+			Injector.RegisterModule(new SessionManager(), x => x.Initialize());
 			if (hmd.EnableHistory)
-				historyManager = new HistoryManager(hmd, core.Database);
-			PlayManager = new PlayManager(core, this);
+				Injector.RegisterModule(new HistoryManager(hmd), x => x.Initialize());
+			Injector.RegisterModule(new PlayManager());
+			Injector.RegisterModule(new TargetScript());
+
 			TargetManager = teamspeakClient.TargetPipe;
-			TargetScript = new TargetScript(core, this);
+
+			if (!Injector.AllResolved())
+			{
+				// TODO detailed log + for inner if
+				Log.Warn("Cyclic bot module dependency");
+				Injector.ForceCyclicResolve();
+				if (!Injector.AllResolved())
+				{
+					Log.Error("Missing bot module dependency");
+					return "Could not load all bot modules";
+				}
+			}
 
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
 			PlayManager.BeforeResourceStarted += TargetScript.BeforeResourceStarted;
@@ -107,9 +136,9 @@ namespace TS3AudioBot
 			catch (Ts3Exception qcex)
 			{
 				Log.Info(qcex, "There is either a problem with your connection configuration, or the query has not all permissions it needs.");
-				return false;
+				return "Query error";
 			}
-			return true;
+			return R.OkR;
 		}
 
 		private void OnBotConnected(object sender, EventArgs e)

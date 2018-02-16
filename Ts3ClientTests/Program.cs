@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TS3Client;
 using TS3Client.Full;
 using TS3Client.Messages;
@@ -12,8 +13,14 @@ namespace Ts3ClientTests
 	{
 		static ConnectionDataFull con;
 
+		public static string ToHex(this IEnumerable<byte> seq) => string.Join(" ", seq.Select(x => x.ToString("X2")));
+		public static byte[] FromHex(this string hex) => hex.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
+
 		static void Main()
 		{
+			Ts3Crypt.Test();
+
+			//return;
 			var clients = new List<Ts3FullClient>();
 
 			//for (int i = 0; i < 50; i++)

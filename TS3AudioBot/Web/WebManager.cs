@@ -16,7 +16,7 @@ namespace TS3AudioBot.Web
 	using System.Net;
 	using System.Threading;
 
-	public sealed class WebManager : Dependency.ICoreModule, IDisposable
+	public sealed class WebManager : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const string WebRealm = "ts3ab";
@@ -34,8 +34,6 @@ namespace TS3AudioBot.Web
 
 		public Api.WebApi Api { get; private set; }
 		public Interface.WebDisplay Display { get; private set; }
-
-		public WebManager() { }
 
 		public void Initialize()
 		{

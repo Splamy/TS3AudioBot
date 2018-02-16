@@ -16,7 +16,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Reflection;
 	using System.Text.RegularExpressions;
 
-	public class CommandManager : Dependency.ICoreModule
+	public class CommandManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex CommandNamespaceValidator =

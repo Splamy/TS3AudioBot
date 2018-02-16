@@ -23,7 +23,7 @@ namespace TS3AudioBot.History
 		private const string AudioLogEntriesTable = "audioLogEntries";
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
-		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
+		private LiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly HistoryManagerData historyManagerData;
 		private readonly LinkedList<int> unusedIds;
 		private readonly object dbLock = new object();
@@ -31,20 +31,25 @@ namespace TS3AudioBot.History
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
 
+		public DbStore Database { get; set; }
+
 		static HistoryManager()
 		{
 			BsonMapper.Global.Entity<AudioLogEntry>()
 				.Id(x => x.Id);
 		}
 
-		public HistoryManager(HistoryManagerData hmd, DbStore database)
+		public HistoryManager(HistoryManagerData hmd)
 		{
 			Formatter = new SmartHistoryFormatter();
 			historyManagerData = hmd;
 
 			Util.Init(out unusedIds);
+		}
 
-			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
+		public void Initialize()
+		{
+			audioLogEntries = Database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
 			audioLogEntries.EnsureIndex(x => x.Timestamp);
 			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
@@ -54,32 +59,32 @@ namespace TS3AudioBot.History
 
 			// Content upgrade
 
-			var meta = database.GetMetaData(AudioLogEntriesTable);
+			var meta = Database.GetMetaData(AudioLogEntriesTable);
 			if (meta.Version >= CurrentHistoryVersion)
 				return;
 
 			switch (meta.Version)
 			{
-			case 0:
-				var all = audioLogEntries.FindAll().ToArray();
-				foreach (var audioLogEntry in all)
-				{
-					switch (audioLogEntry.AudioResource.AudioType)
+				case 0:
+					var all = audioLogEntries.FindAll().ToArray();
+					foreach (var audioLogEntry in all)
 					{
-					case "MediaLink": audioLogEntry.AudioResource.AudioType = "media"; break;
-					case "Youtube": audioLogEntry.AudioResource.AudioType = "youtube"; break;
-					case "Soundcloud": audioLogEntry.AudioResource.AudioType = "soundcloud"; break;
-					case "Twitch": audioLogEntry.AudioResource.AudioType = "twitch"; break;
+						switch (audioLogEntry.AudioResource.AudioType)
+						{
+							case "MediaLink": audioLogEntry.AudioResource.AudioType = "media"; break;
+							case "Youtube": audioLogEntry.AudioResource.AudioType = "youtube"; break;
+							case "Soundcloud": audioLogEntry.AudioResource.AudioType = "soundcloud"; break;
+							case "Twitch": audioLogEntry.AudioResource.AudioType = "twitch"; break;
+						}
 					}
-				}
-				audioLogEntries.Update(all);
-				meta.Version = 1;
-				database.UpdateMetaData(meta);
-				goto default;
+					audioLogEntries.Update(all);
+					meta.Version = 1;
+					Database.UpdateMetaData(meta);
+					goto default;
 
-			default:
-				Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
-				break;
+				default:
+					Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
+					break;
 			}
 		}
 

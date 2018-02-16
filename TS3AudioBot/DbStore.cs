@@ -14,7 +14,7 @@ namespace TS3AudioBot
 	using System;
 	using System.IO;
 
-	public class DbStore : Dependency.ICoreModule, IDisposable
+	public class DbStore : IDisposable
 	{
 		private const string DbMetaInformationTable = "dbmeta";
 
@@ -22,8 +22,6 @@ namespace TS3AudioBot
 
 		private LiteDatabase database;
 		private LiteCollection<DbMetaData> metaTable;
-
-		public DbStore() { }
 
 		public void Initialize()
 		{

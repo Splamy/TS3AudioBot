@@ -19,7 +19,7 @@ namespace TS3AudioBot.Rights
 	using System.Text;
 	using TS3Client;
 
-	public class RightsManager : Dependency.ICoreModule
+	public class RightsManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int RuleLevelSize = 2;

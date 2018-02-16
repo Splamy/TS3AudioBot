@@ -45,7 +45,7 @@ namespace TS3AudioBot.Audio
 		{
 			UpdatedSubscriptionCache();
 
-			var codec = meta?.Codec ?? Codec.OpusMusic; // a bit hacky
+			var codec = meta?.Codec ?? Codec.OpusMusic; // XXX a bit hacky
 			switch (SendMode)
 			{
 			case TargetSendMode.None:
