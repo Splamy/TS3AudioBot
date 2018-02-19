@@ -32,6 +32,8 @@ namespace TS3AudioBot.History
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
 
 		public DbStore Database { get; set; }
+		public ResourceFactoryManager FactoryManager { get; set; }
+		public PlaylistManager PlaylistManager { get; set; }
 
 		static HistoryManager()
 		{
@@ -65,26 +67,26 @@ namespace TS3AudioBot.History
 
 			switch (meta.Version)
 			{
-				case 0:
-					var all = audioLogEntries.FindAll().ToArray();
-					foreach (var audioLogEntry in all)
+			case 0:
+				var all = audioLogEntries.FindAll().ToArray();
+				foreach (var audioLogEntry in all)
+				{
+					switch (audioLogEntry.AudioResource.AudioType)
 					{
-						switch (audioLogEntry.AudioResource.AudioType)
-						{
-							case "MediaLink": audioLogEntry.AudioResource.AudioType = "media"; break;
-							case "Youtube": audioLogEntry.AudioResource.AudioType = "youtube"; break;
-							case "Soundcloud": audioLogEntry.AudioResource.AudioType = "soundcloud"; break;
-							case "Twitch": audioLogEntry.AudioResource.AudioType = "twitch"; break;
-						}
+					case "MediaLink": audioLogEntry.AudioResource.AudioType = "media"; break;
+					case "Youtube": audioLogEntry.AudioResource.AudioType = "youtube"; break;
+					case "Soundcloud": audioLogEntry.AudioResource.AudioType = "soundcloud"; break;
+					case "Twitch": audioLogEntry.AudioResource.AudioType = "twitch"; break;
 					}
-					audioLogEntries.Update(all);
-					meta.Version = 1;
-					Database.UpdateMetaData(meta);
-					goto default;
+				}
+				audioLogEntries.Update(all);
+				meta.Version = 1;
+				Database.UpdateMetaData(meta);
+				goto default;
 
-				default:
-					Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
-					break;
+			default:
+				Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
+				break;
 			}
 		}
 
@@ -244,23 +246,23 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void RemoveBrokenLinks(CommandSystem.ExecutionInformation info)
+		public void RemoveBrokenLinks()
 		{
 			const int iterations = 3;
 			var currentIter = audioLogEntries.FindAll().ToList();
 
 			for (int i = 0; i < iterations; i++)
 			{
-				info.Write("Filter iteration " + i);
-				currentIter = FilterList(info, currentIter);
+				Log.Info("Filter iteration {0}", i);
+				currentIter = FilterList(currentIter);
 			}
 
 			foreach (var entry in currentIter)
 			{
 				if (RemoveEntry(entry))
 				{
-					info.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
-					info.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
+					PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
+					Log.Info("Removed: {0} - {1}", entry.Id, entry.AudioResource.ResourceTitle);
 				}
 			}
 		}
@@ -272,21 +274,21 @@ namespace TS3AudioBot.History
 		/// <param name="info">Session object to inform the user about the current cleaning status.</param>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private static List<AudioLogEntry> FilterList(CommandSystem.ExecutionInformation info, List<AudioLogEntry> list)
+		private List<AudioLogEntry> FilterList(IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotityCnt = 0;
-			var nextIter = new List<AudioLogEntry>();
+			var nextIter = new List<AudioLogEntry>(list.Count);
 			foreach (var entry in list)
 			{
-				var result = info.Core.FactoryManager.Load(entry.AudioResource);
+				var result = FactoryManager.Load(entry.AudioResource);
 				if (!result)
 				{
-					info.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Error}");
+					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, result.Error);
 					nextIter.Add(entry);
 				}
 
 				if (++userNotityCnt % 100 == 0)
-					info.Write("Working" + new string('.', userNotityCnt / 100));
+					Log.Debug("Clean in progress {0}", new string('.', userNotityCnt / 100 % 10));
 			}
 			return nextIter;
 		}

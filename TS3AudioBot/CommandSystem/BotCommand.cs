@@ -41,7 +41,7 @@ namespace TS3AudioBot.CommandSystem
 					var strb = new StringBuilder();
 					strb.Append(InvokeName);
 					strb.Append(" (");
-					strb.Append(string.Join(", ", CommandParameter.Where(p => !SpecialTypes.Contains(p)).Select(p => p.FullName)));
+					strb.Append(string.Join(", ", CommandParameter.Where(p => p.kind.IsNormal()).Select(p => p.type.FullName)));
 					strb.Append(")");
 					cachedFullQualifiedName = strb.ToString();
 				}

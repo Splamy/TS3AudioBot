@@ -242,26 +242,26 @@ namespace TS3ABotUnitTests
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
-			group.AddCommand("optional", new FunctionCommand(new Func<string, string>(s => s == null ? "NULL" : "NOT NULL")).SetRequiredParameters(0));
+			group.AddCommand("optional", new FunctionCommand(new Func<string, string>(s => s == null ? "NULL" : "NOT NULL"), 0));
 
 			// Basic tests
-			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(ExecutionInformation.Debug,
+			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(Utils.ExecInfo,
 				 new ICommand[] { new StringCommand("one") })).Content);
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!one"));
-			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!t"));
-			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e TEST"));
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!o"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!one"));
+			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(Utils.ExecInfo, "!t"));
+			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e TEST"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!o"));
 
 			// Optional parameters
-			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e"));
-			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!op"));
-			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!op 1"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!e"));
+			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op"));
+			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op 1"));
 
 			// Command chaining
-			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e (!e TEST)"));
-			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e (!t)"));
-			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!op (!e TEST)"));
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!(!e on)"));
+			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e (!e TEST)"));
+			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e (!t)"));
+			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op (!e TEST)"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!(!e on)"));
 
 			// Command overloading
 			var intCom = new Func<int, string>(i => "INT");
@@ -271,9 +271,9 @@ namespace TS3ABotUnitTests
 				new FunctionCommand(strCom.Method, strCom.Target)
 			}));
 
-			Assert.AreEqual("INT", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!overlord 1"));
-			Assert.AreEqual("STRING", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!overlord a"));
-			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!overlord"));
+			Assert.AreEqual("INT", commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord 1"));
+			Assert.AreEqual("STRING", commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord a"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord"));
 		}
 
 		[Test]

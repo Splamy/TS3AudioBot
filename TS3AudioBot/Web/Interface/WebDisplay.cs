@@ -17,10 +17,10 @@ namespace TS3AudioBot.Web.Interface
 
 	public sealed class WebDisplay : WebComponent, IDisposable
 	{
-		public ISiteProvider Site404 { get; private set; }
-		private SiteMapper map = new SiteMapper();
+		public ISiteProvider Site404 { get; }
+		private readonly SiteMapper map = new SiteMapper();
 
-		public static readonly Dictionary<string, string> MimeTypes = new Dictionary<string, string>()
+		public static readonly Dictionary<string, string> MimeTypes = new Dictionary<string, string>
 		{
 			{ ".js", "application/javascript" },
 			{ ".html", "text/html" },
@@ -33,7 +33,7 @@ namespace TS3AudioBot.Web.Interface
 			{ ".less", "text/css" },
 		};
 
-		public WebDisplay(Core core) : base(core)
+		public WebDisplay()
 		{
 			var baseDir = new DirectoryInfo(Path.Combine("..", "..", "Web", "Interface"));
 			var dir = new FolderProvider(baseDir);

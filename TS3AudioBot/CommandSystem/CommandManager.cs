@@ -218,18 +218,16 @@ namespace TS3AudioBot.CommandSystem
 
 		private static R InsertInto(CommandGroup group, ICommand com, string name)
 		{
-			ICommand subCommand = group.GetCommand(name);
+			var subCommand = group.GetCommand(name);
+
+			switch (subCommand)
+			{
 			// the group we are trying to insert has no element with the current
 			// name, so just insert it
-			if (subCommand == null)
-			{
+			case null:
 				group.AddCommand(name, com);
 				return R.OkR;
-			}
-			// to add a command to CommandGroup will have to treat it as a subcommand
-			// with an empty string as a name
-			else if (subCommand is CommandGroup insertCommand)
-			{
+			case CommandGroup insertCommand:
 				var noparamCommand = insertCommand.GetCommand(string.Empty);
 
 				if (noparamCommand == null)
@@ -248,21 +246,21 @@ namespace TS3AudioBot.CommandSystem
 
 			// if we have is a simple function, we need to create a overlaoder
 			// and then add both functions to it
-			if (subCommand is FunctionCommand subFuncCommand)
+			switch (subCommand)
 			{
+			case FunctionCommand subFuncCommand:
 				group.RemoveCommand(name);
 				var overloader = new OverloadedFunctionCommand();
 				overloader.AddCommand(subFuncCommand);
 				overloader.AddCommand(funcCom);
 				group.AddCommand(name, overloader);
-			}
-			// if we have a overloaded function, we can simply add it
-			else if (subCommand is OverloadedFunctionCommand insertCommand)
-			{
+				break;
+			case OverloadedFunctionCommand insertCommand:
 				insertCommand.AddCommand(funcCom);
-			}
-			else
+				break;
+			default:
 				return "Unknown node to insert to.";
+			}
 
 			return R.OkR;
 		}

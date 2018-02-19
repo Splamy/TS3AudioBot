@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Web
 {
+	using Dependency;
 	using Helper;
 	using Helper.Environment;
 	using System;
@@ -26,18 +27,23 @@ namespace TS3AudioBot.Web
 
 		private HttpListener webListener;
 		private Thread serverThread;
-		private WebData webData;
+		private readonly WebData webData;
 		private bool startWebServer;
 
-		public ConfigFile Config { get; set; }
-		public Core Core { get; set; }
+		public CoreInjector Injector { get; set; }
 
 		public Api.WebApi Api { get; private set; }
 		public Interface.WebDisplay Display { get; private set; }
 
+		public WebManager(WebData webData)
+		{
+			this.webData = webData;
+		}
+
 		public void Initialize()
 		{
-			webData = Config.GetDataStruct<WebData>("WebData", true);
+			Injector.RegisterType<Api.WebApi>();
+			Injector.RegisterType<Interface.WebDisplay>();
 
 			InitializeSubcomponents();
 
@@ -49,12 +55,14 @@ namespace TS3AudioBot.Web
 			startWebServer = false;
 			if (webData.EnableApi)
 			{
-				Api = new Api.WebApi(Core);
+				Api = new Api.WebApi();
+				Injector.RegisterModule(Api);
 				startWebServer = true;
 			}
 			if (webData.EnableWebinterface)
 			{
-				Display = new Interface.WebDisplay(Core);
+				Display = new Interface.WebDisplay();
+				Injector.RegisterModule(Display);
 				startWebServer = true;
 			}
 

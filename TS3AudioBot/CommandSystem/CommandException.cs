@@ -45,5 +45,6 @@ namespace TS3AudioBot.CommandSystem
 		NoReturnMatch,
 		FunctionNotFound,
 		NotSupported,
+		MissingContext,
 	}
 }

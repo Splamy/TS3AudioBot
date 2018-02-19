@@ -93,12 +93,14 @@
     <Compile Include="Audio\FfmpegProducer.cs" />
     <Compile Include="BotManager.cs" />
     <Compile Include="Commands.cs" />
-    <Compile Include="CommandSystem\ASTCommand.cs" />
-    <Compile Include="CommandSystem\ASTError.cs" />
-    <Compile Include="CommandSystem\ASTNode.cs" />
-    <Compile Include="CommandSystem\ASTType.cs" />
-    <Compile Include="CommandSystem\ASTValue.cs" />
+    <Compile Include="CommandSystem\Ast\AstCommand.cs" />
+    <Compile Include="CommandSystem\Ast\AstError.cs" />
+    <Compile Include="CommandSystem\Ast\AstNode.cs" />
+    <Compile Include="CommandSystem\Ast\AstType.cs" />
+    <Compile Include="CommandSystem\Ast\AstValue.cs" />
+    <Compile Include="CommandSystem\BasicInjector.cs" />
     <Compile Include="CommandSystem\BotCommand.cs" />
+    <Compile Include="CommandSystem\CallerInfo.cs" />
     <Compile Include="CommandSystem\CommandManager.cs" />
     <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
@@ -126,6 +128,7 @@
     <Compile Include="Rights\RightsRule.cs" />
     <Compile Include="Rights\TomlTools.cs" />
     <Compile Include="Sessions\ApiNonce.cs" />
+    <Compile Include="Sessions\TokenManager.cs" />
     <Compile Include="Sessions\UserSession.cs" />
     <Compile Include="CommandSystem\CommandException.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
@@ -150,7 +153,6 @@
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="ITargetManager.cs" />
     <Compile Include="Sessions\ApiToken.cs" />
-    <Compile Include="TargetScript.cs" />
     <Compile Include="TeamspeakControl.cs" />
     <Compile Include="Bot.cs" />
     <Compile Include="PlaylistManager.cs" />

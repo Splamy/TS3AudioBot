@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
+	using Dependency;
 	using Helper;
 	using Newtonsoft.Json;
 	using Sessions;
@@ -27,7 +28,9 @@ namespace TS3AudioBot.Web.Api
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
 		private static readonly MD5 Md5Hash = MD5.Create();
 
-		public WebApi(Core core) : base(core) { }
+		public CoreInjector CoreInjector { get; set; }
+		public CommandManager CommandManager { get; set; }
+		public TokenManager TokenManager { get; set; }
 
 		public override void DispatchCall(HttpListenerContext context)
 		{
@@ -54,10 +57,11 @@ namespace TS3AudioBot.Web.Api
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
 
-			var command = Core.CommandManager.CommandSystem.AstToCommandResult(ast);
+			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
 
 			invoker.IsApi = true;
-			var execInfo = new ExecutionInformation(Core, null, invoker, null); // TODO Mainbot !!!
+			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
+			execInfo.AddDynamicObject(new CallerInfo(invoker, apirequest));
 			try
 			{
 				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(),
@@ -115,6 +119,7 @@ namespace TS3AudioBot.Web.Api
 			case CommandExceptionReason.AmbiguousCall:
 			case CommandExceptionReason.MissingParameter:
 			case CommandExceptionReason.NoReturnMatch:
+			case CommandExceptionReason.MissingContext:
 				response.StatusCode = 422; // Unprocessable Entity
 				break;
 
@@ -155,7 +160,7 @@ namespace TS3AudioBot.Web.Api
 			if (identity == null)
 				return null;
 
-			var result = R<ApiToken>.Err(""); // TODO !!! MainBot.SessionManager.GetToken(identity.Name);
+			var result = TokenManager.GetToken(identity.Name);
 			if (!result.Ok)
 				return null;
 

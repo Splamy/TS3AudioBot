@@ -10,6 +10,7 @@
 namespace TS3AudioBot
 {
 	using CommandSystem;
+	using Dependency;
 	using Helper;
 	using History;
 	using Newtonsoft.Json;
@@ -17,8 +18,8 @@ namespace TS3AudioBot
 	using System;
 	using System.IO;
 	using System.Threading;
-	using Dependency;
 	using TS3Client;
+	using TS3Client.Full;
 	using TS3Client.Messages;
 
 	/// <summary>Core class managing all bots and utility modules.</summary>
@@ -26,15 +27,25 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private readonly Core core;
 		private MainBotData mainBotData;
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
-
 		internal BotInjector Injector { get; set; }
 
-		internal TargetScript TargetScript { get; set; }
+		public int Id { get; internal set; }
+		public bool QuizMode { get; set; }
+		public string BadgesString { get; set; }
+
+		// Injected dependencies
+
+		public ConfigFile Config { get; set; }
+		public ResourceFactories.ResourceFactoryManager FactoryManager { get; set; }
+		public CommandManager CommandManager { get; set; }
+		public BotManager BotManager { get; set; }
+
+		// Onw modules
+
 		/// <summary>Mangement for playlists.</summary>
 		public PlaylistManager PlaylistManager { get; set; }
 		/// <summary>Connection object for the current client.</summary>
@@ -49,56 +60,47 @@ namespace TS3AudioBot
 			set => historyManager = value;
 		}
 		/// <summary>Redirects playing, enqueing and song events.</summary>
-		public PlayManager PlayManager { get; private set; }
+		public PlayManager PlayManager { get; set; }
 		/// <summary>Used to specify playing mode and active targets to send to.</summary>
 		public ITargetManager TargetManager { get; private set; }
 		/// <summary>Slim interface to control the audio player.</summary>
 		public IPlayerConnection PlayerConnection { get; private set; }
-
-		public bool QuizMode { get; set; }
-		public string BadgesString { get; set; }
-
-		public Bot(Core core)
-		{
-			this.core = core;
-		}
 
 		public R InitializeBot()
 		{
 			Log.Info("Bot connecting...");
 
 			// Read Config File
-			var conf = Injector.GetModule<ConfigFile>().Value; // XXX
-			var afd = conf.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
-			var tfcd = conf.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
-			var hmd = conf.GetDataStruct<HistoryManagerData>("HistoryManager", true);
-			var pld = conf.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
-			mainBotData = conf.GetDataStruct<MainBotData>("MainBot", true);
+			var afd = Config.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
+			var tfcd = Config.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
+			var hmd = Config.GetDataStruct<HistoryManagerData>("HistoryManager", true);
+			var pld = Config.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
+			mainBotData = Config.GetDataStruct<MainBotData>("MainBot", true);
 
 			AudioValues.audioFrameworkData = afd;
 
 			Injector.RegisterType<Bot>();
 			Injector.RegisterType<BotInjector>();
-			Injector.RegisterType<TargetScript>();
 			Injector.RegisterType<PlaylistManager>();
 			Injector.RegisterType<TeamspeakControl>();
 			Injector.RegisterType<SessionManager>();
 			Injector.RegisterType<HistoryManager>();
 			Injector.RegisterType<PlayManager>();
 			Injector.RegisterType<IPlayerConnection>();
+			Injector.RegisterType<ITargetManager>();
+			Injector.RegisterType<Ts3BaseFunctions>();
 
 			Injector.RegisterModule(this);
 			Injector.RegisterModule(Injector);
 			Injector.RegisterModule(new PlaylistManager(pld));
 			var teamspeakClient = new Ts3Full(tfcd);
 			Injector.RegisterModule(teamspeakClient);
-			Injector.RegisterModule(new SessionManager(), x => x.Initialize());
+			Injector.RegisterModule(teamspeakClient.GetLowLibrary<Ts3FullClient>());
+			Injector.RegisterModule(new SessionManager());
 			if (hmd.EnableHistory)
 				Injector.RegisterModule(new HistoryManager(hmd), x => x.Initialize());
 			Injector.RegisterModule(new PlayManager());
-			Injector.RegisterModule(new TargetScript());
-
-			TargetManager = teamspeakClient.TargetPipe;
+			Injector.RegisterModule(teamspeakClient.TargetPipe);
 
 			if (!Injector.AllResolved())
 			{
@@ -113,7 +115,7 @@ namespace TS3AudioBot
 			}
 
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
-			PlayManager.BeforeResourceStarted += TargetScript.BeforeResourceStarted;
+			PlayManager.BeforeResourceStarted += BeforeResourceStarted;
 			// In own favor update the own status text to the current song title
 			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
 			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
@@ -191,46 +193,19 @@ namespace TS3AudioBot
 					invoker.ChannelId = clientResult.Value.ChannelId;
 					invoker.DatabaseId = clientResult.Value.DatabaseId;
 				}
-				var execInfo = new ExecutionInformation(core, this, invoker, textMessage.Message, session);
+				var callerInfo = new CallerInfo(invoker, textMessage.Message, session);
 
 				// check if the user has an open request
 				if (session.ResponseProcessor != null)
 				{
-					var msg = session.ResponseProcessor(execInfo);
+					var msg = session.ResponseProcessor(textMessage.Message);
 					session.ClearResponse();
 					if (!string.IsNullOrEmpty(msg))
-						execInfo.Write(msg).UnwrapThrow();
+						callerInfo.Write(msg).UnwrapThrow();
 					return;
 				}
 
-				try
-				{
-					// parse (and execute) the command
-					var res = core.CommandManager.CommandSystem.Execute(execInfo, textMessage.Message);
-					// Write result to user
-					if (res.ResultType == CommandResultType.String)
-					{
-						var sRes = (StringCommandResult)res;
-						if (!string.IsNullOrEmpty(sRes.Content))
-							execInfo.Write(sRes.Content).UnwrapThrow();
-					}
-					else if (res.ResultType == CommandResultType.Json)
-					{
-						var sRes = (JsonCommandResult)res;
-						execInfo.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult).UnwrapThrow();
-						execInfo.Write("\nJson val: \n" + JsonConvert.SerializeObject(sRes.JsonObject)).UnwrapThrow();
-					}
-				}
-				catch (CommandException ex)
-				{
-					Log.Debug(ex, "Command Error");
-					execInfo.Write("Error: " + ex.Message); // XXX check return
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-					execInfo.Write("An unexpected error occured: " + ex.Message); // XXX check return
-				}
+				CallScript(callerInfo, textMessage.Message, true);
 			}
 		}
 
@@ -278,7 +253,7 @@ namespace TS3AudioBot
 
 			if (e is PlayInfoEventArgs startEvent)
 			{
-				var thumresult = core.FactoryManager.GetThumbnail(startEvent.PlayResource);
+				var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
 				if (!thumresult.Ok)
 					return;
 
@@ -304,15 +279,78 @@ namespace TS3AudioBot
 			}
 		}
 
+		private void BeforeResourceStarted(object sender, PlayInfoEventArgs e)
+		{
+			const string DefaultVoiceScript = "!whisper off";
+			const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getmy channel))";
+
+			var mode = AudioValues.audioFrameworkData.AudioMode;
+			string script;
+			if (mode.StartsWith("!", StringComparison.Ordinal))
+				script = mode;
+			else if (mode.Equals("voice", StringComparison.OrdinalIgnoreCase))
+				script = DefaultVoiceScript;
+			else if (mode.Equals("whisper", StringComparison.OrdinalIgnoreCase))
+				script = DefaultWhisperScript;
+			else
+			{
+				Log.Error("Invalid voice mode");
+				return;
+			}
+
+			var callerInfo = new CallerInfo(e.Invoker, script);
+			CallScript(callerInfo, script, false);
+		}
+
+		private void CallScript(CallerInfo callerInfo, string command, bool answer)
+		{
+			var info = new ExecutionInformation(Injector.CloneRealm<DependencyRealm>());
+			info.AddDynamicObject(callerInfo);
+			try
+			{
+				// parse (and execute) the command
+				var res = CommandManager.CommandSystem.Execute(info, command);
+
+				if (!answer)
+					return;
+
+				// Write result to user
+				if (res.ResultType == CommandResultType.String)
+				{
+					var sRes = (StringCommandResult)res;
+					if (!string.IsNullOrEmpty(sRes.Content))
+						callerInfo.Write(sRes.Content).UnwrapThrow();
+				}
+				else if (res.ResultType == CommandResultType.Json)
+				{
+					var sRes = (JsonCommandResult)res;
+					callerInfo.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult).UnwrapThrow();
+					callerInfo.Write("\nJson val: \n" + JsonConvert.SerializeObject(sRes.JsonObject)).UnwrapThrow();
+				}
+			}
+			catch (CommandException ex)
+			{
+				Log.Debug(ex, "Command Error");
+				if (answer) callerInfo.Write("Error: " + ex.Message); // XXX check return
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
+				if (answer) callerInfo.Write("An unexpected error occured: " + ex.Message); // XXX check return
+			}
+		}
+
 		public BotLock GetBotLock()
 		{
 			Monitor.Enter(SyncRoot);
 			return new BotLock(!IsDisposed, this);
 		}
 
+		public BotInfo GetInfo() => new BotInfo { Id = Id, NickName = QueryConnection.GetSelf().OkOr(null)?.NickName };
+
 		public void Dispose()
 		{
-			core.Bots?.RemoveBot(this);
+			BotManager.RemoveBot(this);
 
 			lock (SyncRoot)
 			{
@@ -329,6 +367,15 @@ namespace TS3AudioBot
 				QueryConnection = null;
 			}
 		}
+	}
+
+	public class BotInfo
+	{
+		public int Id { get; set; }
+		public string NickName { get; set; }
+		public string Server { get; set; }
+
+		public override string ToString() => $"Id: {Id} Name: {NickName} Server: {Server}";
 	}
 
 #pragma warning disable CS0649

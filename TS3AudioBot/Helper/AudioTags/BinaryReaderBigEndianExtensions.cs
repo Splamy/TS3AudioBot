@@ -43,6 +43,16 @@ namespace TS3AudioBot.Helper.AudioTags
 		{
 			return BitConverterBigEndian.ToUInt64(br.ReadBytes(sizeof(ulong)));
 		}
+
+		public static int ReadId3Int(this BinaryReader br)
+		{
+			int num = 0;
+			num |= br.ReadByte() << (3 * 7);
+			num |= br.ReadByte() << (2 * 7);
+			num |= br.ReadByte() << (1 * 7);
+			num |= br.ReadByte() << (0 * 7);
+			return num;
+		}
 	}
 
 	internal class BitConverterBigEndian

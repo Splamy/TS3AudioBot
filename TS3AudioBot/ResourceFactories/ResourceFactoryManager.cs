@@ -273,9 +273,9 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiatePlay(ExecutionInformation info, string parameter)
+			public string PropagiatePlay(PlayManager playManager, CallerInfo caller, string parameter)
 			{
-				return info.Session.Bot.PlayManager.Play(info.InvokerData, parameter, audioType);
+				return playManager.Play(caller.InvokerData, parameter, audioType);
 			}
 		}
 
@@ -295,15 +295,15 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiateLoad(ExecutionInformation info, string parameter)
+			public string PropagiateLoad(ResourceFactoryManager factoryManager, CallerInfo caller, string parameter)
 			{
-				var result = info.Core.FactoryManager.LoadPlaylistFrom(parameter, factory);
+				var result = factoryManager.LoadPlaylistFrom(parameter, factory);
 
 				if (!result)
 					return result;
 
-				result.Value.CreatorDbId = info.InvokerData.DatabaseId;
-				info.Session.Set<PlaylistManager, Playlist>(result.Value);
+				result.Value.CreatorDbId = caller.InvokerData.DatabaseId;
+				caller.Session.Set<PlaylistManager, Playlist>(result.Value);
 				return "Ok";
 			}
 		}

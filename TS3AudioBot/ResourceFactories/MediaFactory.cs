@@ -107,7 +107,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			try
 			{
-				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read))
+				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read))
 				{
 					return R<ResData>.OkR(new ResData(foundPath.LocalPath, GetStreamName(stream)));
 				}

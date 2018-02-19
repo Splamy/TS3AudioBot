@@ -15,12 +15,6 @@ namespace TS3AudioBot.Web
 	public abstract class WebComponent
 	{
 		protected static readonly Uri Dummy = new Uri("http://dummy/");
-		protected Core Core { get; }
-
-		protected WebComponent(Core core)
-		{
-			Core = core;
-		}
 
 		public abstract void DispatchCall(HttpListenerContext context);
 	}

@@ -45,7 +45,7 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException("Ambiguous call, possible subcommands: " + string.Join(", ", commandResults.Select(g => g.Key)), CommandExceptionReason.AmbiguousCall);
 			if (commandResults.Length == 0)
 				throw new CommandException("No matching command", CommandExceptionReason.AmbiguousCall);
-			if(commandResults.Length == 1 && result == string.Empty && commandResults[0].Key != string.Empty)
+			if (commandResults.Length == 1 && result == string.Empty && commandResults[0].Key != string.Empty)
 				throw new CommandException("Ambiguous call, possible subcommands: " + string.Join(", ", commands.Keys.Take(4)) + ", ...", CommandExceptionReason.AmbiguousCall);
 
 

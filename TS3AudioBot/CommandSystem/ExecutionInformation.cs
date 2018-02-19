@@ -9,44 +9,34 @@
 
 namespace TS3AudioBot.CommandSystem
 {
-	using Sessions;
+	using Dependency;
+	using System;
 
 	public class ExecutionInformation
 	{
-		public Core Core { get; }
-		public Bot Bot { get; }
-		// TODO session as R ?
-		public UserSession Session { get; internal set; }
-		public InvokerData InvokerData { get; internal set; }
-		public string TextMessage { get; }
-		public bool ApiCall => InvokerData.IsApi;
-		public bool SkipRightsChecks { get; set; }
+		private readonly IInjector dynamicObjects;
 
-		private ExecutionInformation() : this(null, null, null, null) { }
-		public ExecutionInformation(Core core, Bot bot, InvokerData invoker, string textMessage, UserSession userSession = null)
+		public ExecutionInformation() : this(new BasicInjector()) { }
+
+		public ExecutionInformation(IInjector injector)
 		{
-			Core = core;
-			Bot = bot;
-			TextMessage = textMessage;
-			InvokerData = invoker;
-			Session = userSession;
+			dynamicObjects = injector;
+			AddDynamicObject(this);
 		}
 
-		public bool HasRights(params string[] rights)
-		{
-			if (SkipRightsChecks)
-				return true;
-			return Core.RightsManager.HasAllRights(InvokerData, Bot, rights);
-		}
+		public void AddDynamicObject(object obj) => dynamicObjects.AddModule(obj);
 
-		public R Write(string message)
+		public bool TryGet<T>(out T obj)
 		{
-			if (InvokerData.Visibiliy.HasValue)
-				return Session.Write(message, InvokerData.Visibiliy.Value);
-			else
-				return "User has no visibility";
+			var ok = TryGet(typeof(T), out var oobj);
+			if (ok) obj = (T)oobj;
+			else obj = default(T);
+			return ok;
 		}
-
-		public static readonly ExecutionInformation Debug = new ExecutionInformation { SkipRightsChecks = true };
+		public bool TryGet(Type t, out object obj)
+		{
+			obj = dynamicObjects.GetModule(t);
+			return obj != null;
+		}
 	}
 }

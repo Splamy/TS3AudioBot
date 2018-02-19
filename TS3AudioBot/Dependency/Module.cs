@@ -29,8 +29,13 @@ namespace TS3AudioBot.Dependency
 
 		public void SetInitalized()
 		{
+			if (Status == InitState.Initializing)
+				return;
 			if (Status == InitState.SetAndInit)
+			{
+				Status = InitState.Initializing;
 				initializer?.Invoke(Obj);
+			}
 			Status = InitState.Done;
 		}
 
@@ -43,6 +48,7 @@ namespace TS3AudioBot.Dependency
 			case InitState.Done: strb.Append("+"); break;
 			case InitState.SetOnly: strb.Append("*"); break;
 			case InitState.SetAndInit: strb.Append("-"); break;
+			case InitState.Initializing: strb.Append("-i"); break;
 			default: throw new ArgumentOutOfRangeException();
 			}
 			return strb.ToString();
@@ -54,5 +60,6 @@ namespace TS3AudioBot.Dependency
 		Done,
 		SetOnly,
 		SetAndInit,
+		Initializing,
 	}
 }

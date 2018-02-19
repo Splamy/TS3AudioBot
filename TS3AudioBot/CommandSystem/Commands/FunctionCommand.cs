@@ -18,50 +18,42 @@ namespace TS3AudioBot.CommandSystem
 
 	public class FunctionCommand : ICommand
 	{
-		/// <summary>
-		/// Parameter types of the underlying function that won't be filled normally.
-		/// All theses types have a special meaning and don't count to the required parameters.
-		/// </summary>
-		public static readonly Type[] SpecialTypes = { typeof(ExecutionInformation), typeof(IReadOnlyList<ICommand>), typeof(IReadOnlyList<CommandResultType>) };
-
 		// Needed for non-static member methods
 		private readonly object callee;
-		/// <summary>The amount of non-special parameter.</summary>
+		/// <summary>The method that will be called internally by this command.</summary>
+		private readonly MethodInfo internCommand;
+
+		/// <summary>All parameter types, including special types.</summary>
+		public (Type type, ParamKind kind)[] CommandParameter { get; }
+		/// <summary>Return type of method.</summary>
+		public Type CommandReturn { get; }
+		/// <summary>Count of parameter, without special types.</summary>
 		public int NormalParameters { get; }
 		/// <summary>
-		/// The method that will be called internally by this command.
-		/// </summary>
-		private readonly MethodInfo internCommand;
-		/// <summary>All parameter types, including special types.</summary>
-		public Type[] CommandParameter { get; }
-		public Type CommandReturn { get; }
-		/// <summary>
 		/// How many free arguments have to be applied to this function.
-		/// This includes only user-supplied arguments, e.g. the ExecutionInformation is not included.
+		/// This includes only user-supplied arguments, e.g. the <see cref="ExecutionInformation"/> is not included.
 		/// </summary>
-		public int RequiredParameters { get; private set; }
+		private int RequiredParameters { get; }
 
 		public FunctionCommand(MethodInfo command, object obj = null, int? requiredParameters = null)
 		{
 			internCommand = command;
-			CommandParameter = command.GetParameters().Select(p => p.ParameterType).ToArray();
+			CommandParameter = command.GetParameters().Select(p => (p.ParameterType, ParamKind.Unknown)).ToArray();
+			PrecomputeTypes();
 			CommandReturn = command.ReturnType;
 
 			callee = obj;
-			// Require all parameters by default
-			NormalParameters = CommandParameter.Count(p => !SpecialTypes.Contains(p));
+
+			NormalParameters = CommandParameter.Count(p => p.kind.IsNormal());
 			RequiredParameters = requiredParameters ?? NormalParameters;
 		}
 
 		// Provide some constructors that take lambda expressions directly
+		public FunctionCommand(Delegate command, int? requiredParameters = null) : this(command.Method, command.Target, requiredParameters) { }
 		public FunctionCommand(Action command) : this(command.Method, command.Target) { }
 		public FunctionCommand(Func<string> command) : this(command.Method, command.Target) { }
 		public FunctionCommand(Action<string> command) : this(command.Method, command.Target) { }
 		public FunctionCommand(Func<string, string> command) : this(command.Method, command.Target) { }
-		public FunctionCommand(Action<ExecutionInformation> command) : this(command.Method, command.Target) { }
-		public FunctionCommand(Func<ExecutionInformation, string> command) : this(command.Method, command.Target) { }
-		public FunctionCommand(Action<ExecutionInformation, string> command) : this(command.Method, command.Target) { }
-		public FunctionCommand(Func<ExecutionInformation, string, string> command) : this(command.Method, command.Target) { }
 
 		protected virtual object ExecuteFunction(object[] parameters)
 		{
@@ -81,63 +73,81 @@ namespace TS3AudioBot.CommandSystem
 		/// This function will throw an exception if the parameters can't be applied.
 		/// The parameters that are extracted from the arguments will be returned if they can be applied successfully.
 		/// </summary>
-		/// <param name="info">The ExecutionInformation.</param>
+		/// <param name="info">The current call <see cref="ExecutionInformation"/>.</param>
 		/// <param name="arguments">The arguments that are applied to this function.</param>
 		/// <param name="returnTypes">The possible return types.</param>
-		/// <param name="availableArguments">How many arguments could be set.</param>
-		public object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int availableArguments)
+		/// <param name="takenArguments">How many arguments could be set.</param>
+		public object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
 
-			// availableArguments: Iterate through arguments
+			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
-			availableArguments = 0;
+			takenArguments = 0;
 			for (int p = 0; p < parameters.Length; p++)
 			{
-				var arg = CommandParameter[p];
-				if (arg == typeof(ExecutionInformation))
-					parameters[p] = info;
-				else if (arg == typeof(IReadOnlyList<ICommand>))
-					parameters[p] = arguments;
-				else if (arg == typeof(IReadOnlyList<CommandResultType>))
-					parameters[p] = returnTypes;
-				// Only add arguments if we still have some
-				else if (availableArguments < arguments.Count)
+				var arg = CommandParameter[p].type;
+				switch (CommandParameter[p].kind)
 				{
-					if (arg.IsArray) // array
+				case ParamKind.SpecialArguments:
+					parameters[p] = arguments;
+					break;
+
+				case ParamKind.SpecialReturns:
+					parameters[p] = returnTypes;
+					break;
+
+				case ParamKind.Dependency:
+					if (info.TryGet(arg, out var obj))
+						parameters[p] = obj;
+					else
+						throw new CommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", CommandExceptionReason.MissingContext);
+					break;
+
+				case ParamKind.NormalCommand:
+					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
+					parameters[p] = arguments[takenArguments];
+					takenArguments++;
+					break;
+
+				case ParamKind.NormalParam:
+					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
+
+					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+					try { parameters[p] = ConvertParam(argResultP, arg); }
+					catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex, CommandExceptionReason.CommandError); }
+					catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
+
+					takenArguments++;
+					break;
+
+				case ParamKind.NormalArray:
+					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
+
+					var typeArr = arg.GetElementType();
+					var args = Array.CreateInstance(typeArr, arguments.Count - takenArguments);
+					try
 					{
-						var typeArr = arg.GetElementType();
-						var args = Array.CreateInstance(typeArr, arguments.Count - availableArguments);
-						try
+						for (int i = 0; i < args.Length; i++, takenArguments++)
 						{
-							for (int i = 0; i < args.Length; i++, availableArguments++)
-							{
-								var argResult = ((StringCommandResult)arguments[availableArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
-								var convResult = ConvertParam(argResult, typeArr);
-								args.SetValue(convResult, i);
-							}
+							var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+							var convResult = ConvertParam(argResultA, typeArr);
+							args.SetValue(convResult, i);
 						}
-						catch (FormatException ex) { throw new CommandException("Could not convert to " + arg.Name, ex, CommandExceptionReason.CommandError); }
-						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
-
-						parameters[p] = args;
 					}
-					else // primitive value
-					{
-						var argResult = ((StringCommandResult)arguments[availableArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
-						try { parameters[p] = ConvertParam(argResult, arg); }
-						catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex, CommandExceptionReason.CommandError); }
-						catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
+					catch (FormatException ex) { throw new CommandException("Could not convert to " + arg.Name, ex, CommandExceptionReason.CommandError); }
+					catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
-						availableArguments++;
-					}
+					parameters[p] = args;
+					break;
+
+				default:
+					throw new ArgumentOutOfRangeException();
 				}
-				else
-					parameters[p] = GetDefault(arg);
 			}
 
 			// Check if we were able to set enough arguments
-			if (availableArguments < Math.Min(parameters.Length, RequiredParameters) && !returnTypes.Contains(CommandResultType.Command))
+			if (takenArguments < Math.Min(parameters.Length, RequiredParameters) && !returnTypes.Contains(CommandResultType.Command))
 				throw new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
 
 			return parameters;
@@ -154,7 +164,7 @@ namespace TS3AudioBot.CommandSystem
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 				{
-					return arguments.Any()
+					return arguments.Count > 0
 						? new CommandCommandResult(new AppliedCommand(this, arguments))
 						: new CommandCommandResult(this);
 				}
@@ -173,7 +183,7 @@ namespace TS3AudioBot.CommandSystem
 				{
 				case CommandResultType.Command:
 					// Return a command if we can take more arguments
-					if (CommandParameter.Any(p => p == typeof(string[])) || availableArguments < NormalParameters)
+					if (CommandParameter.Any(p => p.type == typeof(string[])) || availableArguments < NormalParameters)
 						return new CommandCommandResult(new AppliedCommand(this, arguments));
 					break;
 				case CommandResultType.Empty:
@@ -198,12 +208,36 @@ namespace TS3AudioBot.CommandSystem
 					if (result is JsonObject jsonResult)
 						return new JsonCommandResult(jsonResult);
 					break;
+				default:
+					throw new ArgumentOutOfRangeException();
 				}
 			}
 			// Try to return an empty string
 			if (returnTypes.Contains(CommandResultType.String) && executed)
 				return new StringCommandResult("");
 			throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name, CommandExceptionReason.NoReturnMatch);
+		}
+
+		private void PrecomputeTypes()
+		{
+			for (int i = 0; i < CommandParameter.Length; i++)
+			{
+				var arg = CommandParameter[i].type;
+				if (arg == typeof(IReadOnlyList<ICommand>))
+					CommandParameter[i].kind = ParamKind.SpecialArguments;
+				else if (arg == typeof(IReadOnlyList<CommandResultType>))
+					CommandParameter[i].kind = ParamKind.SpecialReturns;
+				else if (arg == typeof(ICommand))
+					CommandParameter[i].kind = ParamKind.NormalCommand;
+				else if (arg.IsArray)
+					CommandParameter[i].kind = ParamKind.NormalArray;
+				else if (arg.IsEnum
+					|| XCommandSystem.BasicTypes.Contains(arg)
+					|| XCommandSystem.BasicTypes.Contains(UnwrapType(arg)))
+					CommandParameter[i].kind = ParamKind.NormalParam;
+				else
+					CommandParameter[i].kind = ParamKind.Dependency;
+			}
 		}
 
 		public static Type UnwrapType(Type type)
@@ -221,7 +255,7 @@ namespace TS3AudioBot.CommandSystem
 			{
 				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
 				var result = XCommandSystem.FilterList(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), value).Select(x => x.Value).FirstOrDefault();
-				if(result == null)
+				if (result == null)
 					throw new CommandException($"Invalid parameter \"{value}\"", CommandExceptionReason.MissingParameter);
 				return result;
 			}
@@ -244,16 +278,21 @@ namespace TS3AudioBot.CommandSystem
 			}
 			return null;
 		}
-
-		/// <summary>
-		/// A conveniance method to set the amount of required parameters and returns this object.
-		/// This is useful for method chaining.
-		/// </summary>
-		public FunctionCommand SetRequiredParameters(int required)
-		{
-			RequiredParameters = required;
-			return this;
-		}
 	}
 
+	public enum ParamKind
+	{
+		Unknown,
+		SpecialArguments,
+		SpecialReturns,
+		Dependency,
+		NormalCommand,
+		NormalParam,
+		NormalArray,
+	}
+
+	public static class FunctionCommandExtensions
+	{
+		public static bool IsNormal(this ParamKind kind) => kind == ParamKind.NormalParam || kind == ParamKind.NormalArray || kind == ParamKind.NormalCommand;
+	}
 }

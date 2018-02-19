@@ -18,6 +18,7 @@ namespace TS3AudioBot
 	using Plugins;
 	using ResourceFactories;
 	using Rights;
+	using Sessions;
 	using System;
 	using System.Threading;
 	using Web;
@@ -137,11 +138,11 @@ namespace TS3AudioBot
 		private R InitializeCore()
 		{
 			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
+
+			// TODO: DUMMY REQUESTS
 			var webd = ConfigManager.GetDataStruct<WebData>("WebData", true);
 			var rmd = ConfigManager.GetDataStruct<RightsManagerData>("RightsManager", true);
 			var mbd = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
-
-			// TODO: DUMMY REQUESTS
 			YoutubeDlHelper.DataObj = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
 			var pmd = ConfigManager.GetDataStruct<PluginManagerData>("PluginManager", true);
 			ConfigManager.GetDataStruct<MediaFactoryData>("MediaFactory", true);
@@ -190,6 +191,7 @@ namespace TS3AudioBot
 			Injector.RegisterType<WebManager>();
 			Injector.RegisterType<RightsManager>();
 			Injector.RegisterType<BotManager>();
+			Injector.RegisterType<TokenManager>();
 
 			Injector.RegisterModule(this);
 			Injector.RegisterModule(ConfigManager);
@@ -198,9 +200,10 @@ namespace TS3AudioBot
 			Injector.RegisterModule(new PluginManager(pmd));
 			Injector.RegisterModule(new CommandManager(), x => x.Initialize());
 			Injector.RegisterModule(new ResourceFactoryManager(), x => x.Initialize());
-			Injector.RegisterModule(new WebManager(), x => x.Initialize());
+			Injector.RegisterModule(new WebManager(webd), x => x.Initialize());
 			Injector.RegisterModule(new RightsManager(rmd), x => x.Initialize());
 			Injector.RegisterModule(new BotManager());
+			Injector.RegisterModule(new TokenManager(), x => x.Initialize());
 
 			if (!Injector.AllResolved())
 			{

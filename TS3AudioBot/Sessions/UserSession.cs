@@ -15,7 +15,7 @@ namespace TS3AudioBot.Sessions
 	using System.Threading;
 	using TS3Client;
 	using TS3Client.Messages;
-	using Response = System.Func<CommandSystem.ExecutionInformation, string>;
+	using Response = System.Func<string, string>;
 
 	public sealed class UserSession
 	{
@@ -25,7 +25,6 @@ namespace TS3AudioBot.Sessions
 		private readonly ClientData client;
 
 		public Response ResponseProcessor { get; private set; }
-		public object ResponseData { get; private set; }
 
 		public Bot Bot { get; }
 
@@ -34,7 +33,6 @@ namespace TS3AudioBot.Sessions
 			this.client = client;
 			Bot = bot;
 			ResponseProcessor = null;
-			ResponseData = null;
 		}
 
 		public R Write(string message, TextMessageTargetMode targetMode)
@@ -62,12 +60,11 @@ namespace TS3AudioBot.Sessions
 			return result;
 		}
 
-		public void SetResponse(Response responseProcessor, object responseData)
+		public void SetResponse(Response responseProcessor)
 		{
 			VerifyLock();
 
 			ResponseProcessor = responseProcessor;
-			ResponseData = responseData;
 		}
 
 		public void ClearResponse()
@@ -75,7 +72,6 @@ namespace TS3AudioBot.Sessions
 			VerifyLock();
 
 			ResponseProcessor = null;
-			ResponseData = null;
 		}
 
 		public R<TData> Get<TAssoc, TData>()

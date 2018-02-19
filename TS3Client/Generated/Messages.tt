@@ -99,7 +99,7 @@ namespace TS3Client.Messages
 		case "PermissionId":
 			return $"{output} = ({fld.fldType}){typeInfo.backingType}.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
 		case "IconHash":
-			return $"{output} = unchecked((int)ulong.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
+			return $"{output} = unchecked((int)long.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
 		default:
 			return "#error missing deserializer";
 		}

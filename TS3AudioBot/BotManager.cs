@@ -13,6 +13,7 @@ namespace TS3AudioBot
 	using Helper;
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using System.Threading;
 
 	public class BotManager : IDisposable
@@ -22,7 +23,7 @@ namespace TS3AudioBot
 		private bool isRunning;
 		private List<Bot> activeBots;
 		private readonly object lockObj = new object();
-		
+
 		public CoreInjector CoreInjector { get; set; }
 
 		public BotManager()
@@ -41,7 +42,7 @@ namespace TS3AudioBot
 					createBot = activeBots.Count == 0;
 				}
 
-				if (createBot && !CreateBot())
+				if (createBot && CreateBot() != null)
 				{
 					Thread.Sleep(1000);
 				}
@@ -73,14 +74,12 @@ namespace TS3AudioBot
 					StopBot(bot);
 		}
 
-		public bool CreateBot(/*Ts3FullClientData bot*/)
+		public BotInfo CreateBot(/*Ts3FullClientData bot*/)
 		{
 			bool removeBot = false;
-			var core = CoreInjector.GetModule<Core>().Value; // XXX
-			var bot = new Bot(core)
-			{
-				Injector = CoreInjector.CloneRealm<BotInjector>()
-			};
+			var bot = new Bot { Injector = CoreInjector.CloneRealm<BotInjector>() };
+			if (!CoreInjector.TryInject(bot))
+				Log.Warn("Partial bot dependency loaded only");
 
 			lock (bot.SyncRoot)
 			{
@@ -89,6 +88,7 @@ namespace TS3AudioBot
 					lock (lockObj)
 					{
 						activeBots.Add(bot);
+						bot.Id = activeBots.Count - 1;
 						removeBot = !isRunning;
 					}
 				}
@@ -96,10 +96,10 @@ namespace TS3AudioBot
 				if (removeBot)
 				{
 					StopBot(bot);
-					return false;
+					return null;
 				}
 			}
-			return true;
+			return bot.GetInfo();
 		}
 
 		public BotLock GetBotLock(int id)
@@ -109,7 +109,7 @@ namespace TS3AudioBot
 			{
 				if (!isRunning)
 					return null;
-				bot = id < activeBots.Count
+				bot = id >= 0 && id < activeBots.Count
 					? activeBots[id]
 					: null;
 				if (bot == null)
@@ -129,6 +129,14 @@ namespace TS3AudioBot
 			lock (lockObj)
 			{
 				activeBots.Remove(bot);
+			}
+		}
+
+		public BotInfo[] GetBotInfolist()
+		{
+			lock (lockObj)
+			{
+				return activeBots.Select(x => x.GetInfo()).ToArray();
 			}
 		}
 

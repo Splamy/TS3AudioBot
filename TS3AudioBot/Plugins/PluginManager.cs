@@ -30,11 +30,10 @@ namespace TS3AudioBot.Plugins
 	// - Add commands to command manager
 	// - Start config to system?
 
-	internal class PluginManager : IDisposable
+	public class PluginManager : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public Core Core { get; set; }
-		public ConfigFile Config { get; set; }
 
 		private readonly PluginManagerData pluginManagerData;
 		private readonly Dictionary<string, Plugin> plugins;

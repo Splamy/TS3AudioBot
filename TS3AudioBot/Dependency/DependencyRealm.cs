@@ -18,12 +18,12 @@ namespace TS3AudioBot.Dependency
 	public sealed class CoreInjector : DependencyRealm { }
 	public sealed class BotInjector : DependencyRealm { }
 
-	public class DependencyRealm
+	public class DependencyRealm : IInjector
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private readonly List<Module> modules;
 		private readonly HashSet<Type> registeredTypes;
+		private readonly List<Module> modules;
 
 		public DependencyRealm()
 		{
@@ -45,7 +45,11 @@ namespace TS3AudioBot.Dependency
 		public void RegisterModule<TMod>(TMod module, Action<TMod> onInit = null) where TMod : class
 		{
 			var onInitObject = onInit != null ? new Action<object>(x => onInit((TMod)x)) : null;
-			var mod = new Module(module, onInitObject);
+			RegisterModule(module, onInitObject);
+		}
+		private void RegisterModule(object module, Action<object> onInit = null)
+		{
+			var mod = new Module(module, onInit);
 			modules.Add(mod);
 			DoQueueInitialize(false);
 		}
@@ -74,9 +78,10 @@ namespace TS3AudioBot.Dependency
 			do
 			{
 				changed = false;
-				foreach (var mod in modules)
+				var modulesIterCache = modules.ToArray();
+				foreach (var mod in modulesIterCache)
 				{
-					if (mod.Status == InitState.Done)
+					if (mod.Status == InitState.Done || mod.Status == InitState.Initializing)
 						continue;
 
 					if (!TryResolve(mod, force))
@@ -140,13 +145,12 @@ namespace TS3AudioBot.Dependency
 		}
 
 		// TODO doc
-		public R<TModule> GetModule<TModule>() where TModule : class
-		{
-			var mod = FindInjectableModule(typeof(TModule), InitState.Done, false);
-			if (mod != null)
-				return (TModule)mod.Obj;
-			return "Module not found";
-		}
+		public object GetModule<TModule>() where TModule : class => GetModule(typeof(TModule));
+		public object GetModule(Type type) => FindInjectableModule(type, InitState.Done, false)?.Obj;
+
+		void IInjector.AddModule(object obj) => RegisterModule(obj);
+
+		public IEnumerable<object> GetAllModules() => modules.Select(x => x.Obj);
 
 		// TODO doc
 		public bool AllResolved() => modules.All(x => x.Status == InitState.Done);
@@ -163,5 +167,11 @@ namespace TS3AudioBot.Dependency
 			int setinit = modules.Count(x => x.Status == InitState.SetAndInit);
 			return $"Done: {done} Set: {set} SetInit: {setinit}";
 		}
+	}
+
+	public interface IInjector
+	{
+		object GetModule(Type type);
+		void AddModule(object obj);
 	}
 }
