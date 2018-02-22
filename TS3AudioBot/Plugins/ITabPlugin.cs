@@ -11,14 +11,13 @@ namespace TS3AudioBot.Plugins
 {
 	using System;
 
-	public interface ITabPlugin : IDisposable
+	public interface ICorePlugin : IDisposable
 	{
-		void Initialize(Core core);
+		void Initialize();
 	}
 
-	// TODO
+	public interface IBotPlugin : ICorePlugin { }
 
-	public interface ICoreModule { }
-
-	public interface IBotModule { }
+	[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+	public sealed class StaticPluginAttribute : Attribute { }
 }

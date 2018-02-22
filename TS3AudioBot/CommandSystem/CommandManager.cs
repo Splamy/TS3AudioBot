@@ -134,6 +134,11 @@ namespace TS3AudioBot.CommandSystem
 			{
 				var comAtt = method.GetCustomAttribute<CommandAttribute>();
 				if (comAtt == null) continue;
+				if (obj == null && !method.IsStatic)
+				{
+					Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
+					continue;
+				}
 				var reqAtt = method.GetCustomAttribute<RequiredParametersAttribute>();
 				yield return new CommandBuildInfo(obj, method, comAtt, reqAtt);
 			}
@@ -222,14 +227,16 @@ namespace TS3AudioBot.CommandSystem
 
 			switch (subCommand)
 			{
-			// the group we are trying to insert has no element with the current
-			// name, so just insert it
 			case null:
+				// the group we are trying to insert has no element with the current
+				// name, so just insert it
 				group.AddCommand(name, com);
 				return R.OkR;
-			case CommandGroup insertCommand:
-				var noparamCommand = insertCommand.GetCommand(string.Empty);
 
+			case CommandGroup insertCommand:
+				// to add a command to CommandGroup will have to treat it as a subcommand
+				// with an empty string as a name
+				var noparamCommand = insertCommand.GetCommand(string.Empty);
 				if (noparamCommand == null)
 				{
 					insertCommand.AddCommand(string.Empty, com);
@@ -244,20 +251,23 @@ namespace TS3AudioBot.CommandSystem
 			if (!(com is FunctionCommand funcCom))
 				return $"The command cannot be inserted into a complex node ({name}).";
 
-			// if we have is a simple function, we need to create a overlaoder
-			// and then add both functions to it
 			switch (subCommand)
 			{
 			case FunctionCommand subFuncCommand:
+				// if we have is a simple function, we need to create a overlaoder
+				// and then add both functions to it
 				group.RemoveCommand(name);
 				var overloader = new OverloadedFunctionCommand();
 				overloader.AddCommand(subFuncCommand);
 				overloader.AddCommand(funcCom);
 				group.AddCommand(name, overloader);
 				break;
+
 			case OverloadedFunctionCommand insertCommand:
+				// if we have a overloaded function, we can simply add it
 				insertCommand.AddCommand(funcCom);
 				break;
+
 			default:
 				return "Unknown node to insert to.";
 			}

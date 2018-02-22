@@ -15,6 +15,7 @@ namespace TS3AudioBot
 	using System;
 	using System.Collections.Generic;
 
+	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary> 
 	public class PlayManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

@@ -39,7 +39,7 @@ namespace TS3AudioBot.ResourceFactories
 			var channel = resource.ResourceId;
 
 			// request api token
-			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), new Tuple<string, string>("Client-ID", TwitchClientId)))
+			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientId)))
 				return RResultCode.NoConnection.ToString();
 
 			var jObj = JObject.Parse(jsonResponse);

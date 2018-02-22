@@ -14,6 +14,7 @@ namespace TS3AudioBot.Plugins
 		Ok,
 		Crash,
 		MissingDependency,
+		MissingContext,
 		InvalidBinary,
 		NoTypeMatch,
 		TooManyPlugins,

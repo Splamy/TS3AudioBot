@@ -14,6 +14,7 @@ namespace TS3AudioBot.Sessions
 	using System.Collections.Generic;
 	using TS3Client.Messages;
 
+	/// <summary>Management for clients talking with the bot.</summary>
 	public class SessionManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

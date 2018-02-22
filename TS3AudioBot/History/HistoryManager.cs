@@ -16,6 +16,7 @@ namespace TS3AudioBot.History
 	using System.Collections.Generic;
 	using System.Linq;
 
+	/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
 	public sealed class HistoryManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -271,7 +272,6 @@ namespace TS3AudioBot.History
 		/// Goes through a list of <see cref="AudioLogEntry"/> and checks if the contained <see cref="AudioResource"/>
 		/// is playable/resolveable.
 		/// </summary>
-		/// <param name="info">Session object to inform the user about the current cleaning status.</param>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
 		private List<AudioLogEntry> FilterList(IReadOnlyCollection<AudioLogEntry> list)

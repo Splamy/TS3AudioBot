@@ -14,6 +14,7 @@ namespace TS3AudioBot
 	using Helper;
 	using History;
 	using Newtonsoft.Json;
+	using Plugins;
 	using Sessions;
 	using System;
 	using System.IO;
@@ -43,27 +44,15 @@ namespace TS3AudioBot
 		public ResourceFactories.ResourceFactoryManager FactoryManager { get; set; }
 		public CommandManager CommandManager { get; set; }
 		public BotManager BotManager { get; set; }
+		public PluginManager PluginManager { get; set; }
 
 		// Onw modules
 
-		/// <summary>Mangement for playlists.</summary>
-		public PlaylistManager PlaylistManager { get; set; }
 		/// <summary>Connection object for the current client.</summary>
 		public TeamspeakControl QueryConnection { get; set; }
-		/// <summary>Management for clients talking with the bot.</summary>
 		public SessionManager SessionManager { get; set; }
-		private HistoryManager historyManager = null;
-		/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
-		public HistoryManager HistoryManager
-		{
-			get => historyManager ?? throw new CommandException("History has not been enabled", CommandExceptionReason.NotSupported);
-			set => historyManager = value;
-		}
-		/// <summary>Redirects playing, enqueing and song events.</summary>
 		public PlayManager PlayManager { get; set; }
-		/// <summary>Used to specify playing mode and active targets to send to.</summary>
 		public ITargetManager TargetManager { get; private set; }
-		/// <summary>Slim interface to control the audio player.</summary>
 		public IPlayerConnection PlayerConnection { get; private set; }
 
 		public R InitializeBot()
@@ -97,8 +86,9 @@ namespace TS3AudioBot
 			Injector.RegisterModule(teamspeakClient);
 			Injector.RegisterModule(teamspeakClient.GetLowLibrary<Ts3FullClient>());
 			Injector.RegisterModule(new SessionManager());
+			HistoryManager historyManager = null;
 			if (hmd.EnableHistory)
-				Injector.RegisterModule(new HistoryManager(hmd), x => x.Initialize());
+				Injector.RegisterModule(historyManager = new HistoryManager(hmd), x => x.Initialize());
 			Injector.RegisterModule(new PlayManager());
 			Injector.RegisterModule(teamspeakClient.TargetPipe);
 
@@ -121,7 +111,7 @@ namespace TS3AudioBot
 			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
 			// Log our resource in the history
 			if (hmd.EnableHistory)
-				PlayManager.AfterResourceStarted += (s, e) => HistoryManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Owner));
+				PlayManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Owner));
 			// Update our thumbnail
 			PlayManager.AfterResourceStarted += GenerateStatusImage;
 			PlayManager.AfterResourceStopped += GenerateStatusImage;
@@ -358,12 +348,15 @@ namespace TS3AudioBot
 				else return;
 				Log.Info("Bot disconnecting.");
 
-				PlayManager?.Stop();
+				PluginManager.StopPlugins(this);
 
-				PlayerConnection?.Dispose(); // before: logStream,
+				PlayManager.Stop();
+				PlayManager = null;
+
+				PlayerConnection.Dispose(); // before: logStream,
 				PlayerConnection = null;
 
-				QueryConnection?.Dispose(); // before: logStream,
+				QueryConnection.Dispose(); // before: logStream,
 				QueryConnection = null;
 			}
 		}

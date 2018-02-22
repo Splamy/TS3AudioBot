@@ -18,11 +18,11 @@ namespace TS3AudioBot.Helper
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
 
-		public static bool DownloadString(out string site, Uri link, params Tuple<string, string>[] optionalHeaders)
+		public static bool DownloadString(out string site, Uri link, params (string name, string value)[] optionalHeaders)
 		{
 			var request = WebRequest.Create(link);
-			foreach (var header in optionalHeaders)
-				request.Headers.Add(header.Item1, header.Item2);
+			foreach (var (name, value) in optionalHeaders)
+				request.Headers.Add(name, value);
 			try
 			{
 				using (var response = request.GetResponse())

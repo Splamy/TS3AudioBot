@@ -115,7 +115,7 @@ namespace TS3AudioBot
 		public static void CommandBotMove(TeamspeakControl queryConnection, CallerInfo caller, ulong? channel, string password = null)
 		{
 			if (!channel.HasValue)
-				channel = (CommandGetChannel(caller) as JsonSingleValue<ulong>)?.Value;
+				channel = caller.InvokerData.ChannelId;
 			if (!channel.HasValue)
 				throw new CommandException("No target channel found", CommandExceptionReason.CommandError);
 			queryConnection.MoveTo(channel.Value, password).UnwrapThrow();
@@ -159,7 +159,7 @@ namespace TS3AudioBot
 		{
 			var botInfo = bots.CreateBot();
 			if (botInfo == null)
-				throw new CommandException("Could not create new instance");
+				throw new CommandException("Could not create new instance", CommandExceptionReason.CommandError);
 			return new JsonSingleValue<BotInfo>(botInfo);
 		}
 
@@ -260,7 +260,7 @@ namespace TS3AudioBot
 				strb.Append("\n========= Welcome to the TS3AudioBot ========="
 					+ "\nIf you need any help with a special command use !help <commandName>."
 					+ "\nHere are all possible commands:\n");
-				var botComList = commandManager.AllCommands.Select(c => c.InvokeName).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
+				var botComList = commandManager.AllCommands.Select(c => c.InvokeName).OrderBy(x => x).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
 				foreach (var botCom in botComList)
 					strb.Append(botCom).Append(", ");
 				strb.Length -= 2;
@@ -418,27 +418,24 @@ namespace TS3AudioBot
 				throw new CommandException("Unrecognized name descriptor", CommandExceptionReason.CommandError);
 		}
 
-		[Command("history last", "Plays the last song again")]
-		[Usage("<count>", "Gets the last <count> played songs.")]
-		[RequiredParameters(0)]
-		public static JsonObject CommandHistoryLast(PlayManager playManager, HistoryManager historyManager, CallerInfo caller, int? amount)
+		[Command("history last", "<count> Gets the last <count> played songs.")]
+		public static JsonObject CommandHistoryLast(HistoryManager historyManager, int amount)
 		{
-			if (amount.HasValue)
+			var query = new SeachQuery { MaxResults = amount };
+			var results = historyManager.Search(query).ToArray();
+			return new JsonArray<AudioLogEntry>(historyManager.Format(results), results);
+		}
+
+		[Command("history last", "Plays the last song again")]
+		public static JsonObject CommandHistoryLast(PlayManager playManager, HistoryManager historyManager, CallerInfo caller)
+		{
+			var ale = historyManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
+			if (ale != null)
 			{
-				var query = new SeachQuery { MaxResults = amount.Value };
-				var results = historyManager.Search(query).ToArray();
-				return new JsonArray<AudioLogEntry>(historyManager.Format(results), results);
+				playManager.Play(caller.InvokerData, ale.AudioResource).UnwrapThrow();
+				return null;
 			}
-			else
-			{
-				var ale = historyManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
-				if (ale != null)
-				{
-					playManager.Play(caller.InvokerData, ale.AudioResource).UnwrapThrow();
-					return null;
-				}
-				else return new JsonEmpty("There is no song in the history");
-			}
+			else return new JsonEmpty("There is no song in the history");
 		}
 
 		[Command("history play", "<id> Playes the song with <id>")]
@@ -880,24 +877,36 @@ namespace TS3AudioBot
 		}
 
 		[Command("plugin list", "Lists all found plugins.")]
-		public static JsonArray<PluginStatusInfo> CommandPluginList(PluginManager pluginManager)
+		public static JsonArray<PluginStatusInfo> CommandPluginList(ExecutionInformation info, PluginManager pluginManager)
 		{
-			var overview = pluginManager.GetPluginOverview();
+			// Get bot instance dynamically since it might be optional
+			// Requesting it via parameter injection would prevent some plugin types to be loaded from a higher context like 'Core'
+			if (!info.TryGet<Bot>(out var bot))
+				bot = null;
+			var overview = pluginManager.GetPluginOverview(bot);
 			return new JsonArray<PluginStatusInfo>(PluginManager.FormatOverview(overview), overview);
 		}
 
 		[Command("plugin unload", "Unloads a plugin.")]
-		public static void CommandPluginUnload(PluginManager pluginManager, string identifier)
+		public static void CommandPluginUnload(ExecutionInformation info, PluginManager pluginManager, string identifier)
 		{
-			var result = pluginManager.StopPlugin(identifier);
+			// Get bot instance dynamically since it might be optional
+			// Requesting it via parameter injection would prevent some plugin types to be loaded from a higher context like 'Core'
+			if (!info.TryGet<Bot>(out var bot))
+				bot = null;
+			var result = pluginManager.StopPlugin(identifier, bot);
 			if (result != PluginResponse.Ok)
 				throw new CommandException("Plugin error: " + result, CommandExceptionReason.CommandError);
 		}
 
 		[Command("plugin load", "Unloads a plugin.")]
-		public static void CommandPluginLoad(PluginManager pluginManager, string identifier)
+		public static void CommandPluginLoad(ExecutionInformation info, PluginManager pluginManager, string identifier)
 		{
-			var result = pluginManager.StartPlugin(identifier);
+			// Get bot instance dynamically since it might be optional
+			// Requesting it via parameter injection would prevent some plugin types to be loaded from a higher context like 'Core'
+			if (!info.TryGet<Bot>(out var bot))
+				bot = null;
+			var result = pluginManager.StartPlugin(identifier, bot);
 			if (result != PluginResponse.Ok)
 				throw new CommandException("Plugin error: " + result, CommandExceptionReason.CommandError);
 		}

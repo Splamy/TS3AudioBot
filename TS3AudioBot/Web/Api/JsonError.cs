@@ -11,9 +11,9 @@ namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
 
-	class JsonError : JsonObject
+	public class JsonError : JsonObject
 	{
-		private CommandExceptionReason reason;
+		private readonly CommandExceptionReason reason;
 		public int ErrorCode => (int)reason;
 		public string ErrorName => reason.ToString();
 		public string ErrorMessage { get; }

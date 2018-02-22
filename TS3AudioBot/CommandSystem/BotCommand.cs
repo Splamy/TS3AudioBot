@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Reflection;
@@ -100,6 +101,8 @@ namespace TS3AudioBot.CommandSystem
 		{
 			Parent = p;
 			Method = m;
+			if (!m.IsStatic && p == null)
+				throw new ArgumentException("Got instance method without accociated object");
 			CommandData = comAtt;
 			ReqiredParameters = reqAtt;
 		}

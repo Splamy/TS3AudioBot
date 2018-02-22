@@ -11,6 +11,7 @@ namespace TS3AudioBot
 {
 	using System;
 
+	/// <summary>Slim interface to control the audio player.</summary>
 	public interface IPlayerConnection : IDisposable
 	{
 		event EventHandler OnSongEnd;

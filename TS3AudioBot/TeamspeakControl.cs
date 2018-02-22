@@ -375,7 +375,7 @@ namespace TS3AudioBot
 	{
 		static class RExtentions
 		{
-			public static R ToR<E>(this E<E> result, string message)
+			public static R ToR<TE>(this E<TE> result, string message)
 			{
 				if (!result.Ok)
 					return R.Err(message);
@@ -383,7 +383,7 @@ namespace TS3AudioBot
 					return R.OkR;
 			}
 
-			public static R ToR<E>(this E<E> result, Func<E, string> fromError)
+			public static R ToR<TE>(this E<TE> result, Func<TE, string> fromError)
 			{
 				if (!result.Ok)
 					return R.Err(fromError(result.Error));
@@ -391,7 +391,7 @@ namespace TS3AudioBot
 					return R.OkR;
 			}
 
-			public static R<T> ToR<T, E>(this R<T, E> result, string message)
+			public static R<T> ToR<T, TE>(this R<T, TE> result, string message)
 			{
 				if (!result.Ok)
 					return R<T>.Err(message);
@@ -399,7 +399,7 @@ namespace TS3AudioBot
 					return R<T>.OkR(result.Value);
 			}
 
-			public static R<T> ToR<T, E>(this R<T, E> result, Func<E, string> fromError)
+			public static R<T> ToR<T, TE>(this R<T, TE> result, Func<TE, string> fromError)
 			{
 				if (!result.Ok)
 					return R<T>.Err(fromError(result.Error));

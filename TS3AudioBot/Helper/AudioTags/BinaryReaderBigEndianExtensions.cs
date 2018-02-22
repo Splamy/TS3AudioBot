@@ -55,11 +55,9 @@ namespace TS3AudioBot.Helper.AudioTags
 		}
 	}
 
-	internal class BitConverterBigEndian
+	internal static class BitConverterBigEndian
 	{
 		private const int BitsInByte = 8;
-
-		private BitConverterBigEndian() { }
 
 		public static short ToInt16(byte[] bytes)
 		{
