@@ -158,7 +158,7 @@ namespace TS3AudioBot
 			Log.Info("[=== Version: {0}", SystemData.AssemblyData);
 			Log.Info("[=== Platform: {0}", SystemData.PlattformData);
 			Log.Info("[=== Runtime: {0}", SystemData.RuntimeData.FullName);
-			Log.Info("[=== Opus: {0}", TS3Client.Full.Audio.Opus.NativeMethods.Info);
+			Log.Info("[=== Opus: {0}", TS3Client.Audio.Opus.NativeMethods.Info);
 			Log.Info("[==============================================]");
 			if (SystemData.RuntimeData.Runtime == Runtime.Mono)
 			{
@@ -207,7 +207,6 @@ namespace TS3AudioBot
 
 			if (!Injector.AllResolved())
 			{
-				// TODO detailed log + for inner if
 				Log.Debug("Cyclic core module dependency");
 				Injector.ForceCyclicResolve();
 				if (!Injector.AllResolved())

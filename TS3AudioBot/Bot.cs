@@ -94,7 +94,6 @@ namespace TS3AudioBot
 
 			if (!Injector.AllResolved())
 			{
-				// TODO detailed log + for inner if
 				Log.Warn("Cyclic bot module dependency");
 				Injector.ForceCyclicResolve();
 				if (!Injector.AllResolved())

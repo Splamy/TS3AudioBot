@@ -336,7 +336,7 @@ namespace TS3AudioBot.Plugins
 				return PluginResponse.UnknownError;
 
 			case PluginStatus.NotAvailable:
-				return PluginResponse.MissingContext; // TODO
+				return PluginResponse.MissingContext;
 
 			default:
 				throw new ArgumentOutOfRangeException();

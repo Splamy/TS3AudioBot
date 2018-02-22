@@ -469,9 +469,11 @@ namespace TS3Client.Full
 		}
 
 		#region Audio
-		/// <summary>Incomming voice packets.</summary>
+		/// <summary>Receive voice packets.</summary>
 		public IAudioPassiveConsumer OutStream { get; set; }
-		/// <summary>Outgoing voice data.</summary>
+		/// <summary>When voice data can be sent.</summary>
+		public bool Active => true; // TODO may set to false if no talk power, etc.
+		/// <summary>Send voice data.</summary>
 		/// <param name="data">The encoded audio buffer.</param>
 		/// <param name="meta">The metadata where to send the packet.</param>
 		public void Write(Span<byte> data, Meta meta)

@@ -35,7 +35,7 @@ namespace TS3Client
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		undefined = -1,<# foreach (var line in data.Skip(1)) { #>
 		<#= line[0] #> = <#= line[2] #>,<# } #>
-		// ReSharper enable InconsistentNaming, UnusedMember.Global
+		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
 	public static class PerissionInfo
@@ -44,11 +44,9 @@ namespace TS3Client
 		{
 			switch (permid)
 			{
-			// ReSharper disable InconsistentNaming, UnusedMember.Global
 			case PermissionId.undefined: return "Undefined permission";<# foreach (var line in data.Skip(1)) { #>
 			case PermissionId.<#= line[0] #> : return "<#= line[1] #>";<# } #>
 			default: throw Util.UnhandledDefault(permid);
-			// ReSharper enable InconsistentNaming, UnusedMember.Global
 			}
 		}
 	}

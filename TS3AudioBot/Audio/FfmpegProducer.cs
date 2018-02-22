@@ -15,7 +15,7 @@ namespace TS3AudioBot.Audio
 	using System.Diagnostics;
 	using System.Globalization;
 	using System.Text.RegularExpressions;
-	using TS3Client.Full.Audio;
+	using TS3Client.Audio;
 
 	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
 	{

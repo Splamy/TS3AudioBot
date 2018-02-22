@@ -7,7 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client.Full.Audio
+namespace TS3Client.Audio
 {
 	using System;
 
@@ -28,6 +28,7 @@ namespace TS3Client.Full.Audio
 	/// <summary>Passive consumer will wait for manually passed audio data.</summary>
 	public interface IAudioPassiveConsumer : IAudioStream
 	{
+		bool Active { get; }
 		void Write(Span<byte> data, Meta meta);
 	}
 	/// <summary>Active consumer will pull audio data as soon as available.</summary>
@@ -36,6 +37,9 @@ namespace TS3Client.Full.Audio
 		IAudioPassiveProducer InStream { get; set; }
 	}
 
+	// Best practices for pipes:
+	// - Use Active-Propagiation: `Active => OutStream?.Active ?? false`
+	// - Alway check `OutStream != null` at begin of Write(...)
 	public interface IAudioPipe : IAudioPassiveConsumer, IAudioActiveProducer { }
 
 	public interface ISampleInfo

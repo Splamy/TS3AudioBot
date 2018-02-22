@@ -77,8 +77,10 @@ namespace TS3Client.Full
 
 		// Many ids implemented from here: https://r4p3.net/threads/client-builds.499/
 
+		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		<# foreach (var line in data.Skip(1)) { var ver = dict[line[1]]; #>
 		public static VersionSign VER_<#= ver.plat #>_<#= BuildToFld(line[0]) #> { get; } = new VersionSign("<#= line[0] #>", ClientPlattform.<#= ver.enu #>, "<#= line[2] #>");<# } #>
+		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
 	public enum ClientPlattform

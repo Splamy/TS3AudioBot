@@ -10,7 +10,7 @@
 namespace TS3AudioBot
 {
 	using TS3Client;
-	using TS3Client.Full.Audio;
+	using TS3Client.Audio;
 
 	/// <summary>Used to specify playing mode and active targets to send to.</summary>
 	public interface ITargetManager

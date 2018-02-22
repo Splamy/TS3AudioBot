@@ -91,6 +91,7 @@
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\CustomTargetPipe.cs" />
     <Compile Include="Audio\FfmpegProducer.cs" />
+    <Compile Include="Audio\StallCheckPipe.cs" />
     <Compile Include="BotManager.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="CommandSystem\Ast\AstCommand.cs" />

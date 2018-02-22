@@ -7,19 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client.Full.Audio
+namespace TS3Client.Audio
 {
-	using System.IO;
+	using System;
 
-	public class StreamAudioProducer : IAudioPassiveProducer
+	public class ActiveCheckPipe : IAudioPipe
 	{
-		private readonly Stream stream;
+		public bool Active => OutStream?.Active ?? false;
+		public IAudioPassiveConsumer OutStream { get; set; }
 
-		public int Read(byte[] buffer, int offset, int length, out Meta meta)
+		public void Write(Span<byte> data, Meta meta)
 		{
-			meta = default(Meta);
-			return stream.Read(buffer, offset, length);
+			if (OutStream == null || !Active)
+				return;
+
+			OutStream?.Write(data, meta);
 		}
-		public StreamAudioProducer(Stream stream) { this.stream = stream; }
 	}
 }

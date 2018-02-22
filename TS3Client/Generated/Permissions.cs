@@ -271,7 +271,7 @@ namespace TS3Client
 		i_ft_needed_directory_create_power = 244,
 		i_ft_quota_mb_download_per_client = 245,
 		i_ft_quota_mb_upload_per_client = 246,
-		// ReSharper enable InconsistentNaming, UnusedMember.Global
+		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
 	public static class PerissionInfo
@@ -280,7 +280,6 @@ namespace TS3Client
 		{
 			switch (permid)
 			{
-			// ReSharper disable InconsistentNaming, UnusedMember.Global
 			case PermissionId.undefined: return "Undefined permission";
 			case PermissionId.unknown : return "May occour on error returns with no associated permission";
 			case PermissionId.b_serverinstance_help_view : return "Retrieve information about ServerQuery commands";
@@ -530,7 +529,6 @@ namespace TS3Client
 			case PermissionId.i_ft_quota_mb_download_per_client : return "Download quota per client in MByte";
 			case PermissionId.i_ft_quota_mb_upload_per_client : return "Upload quota per client in MByte";
 			default: throw Util.UnhandledDefault(permid);
-			// ReSharper enable InconsistentNaming, UnusedMember.Global
 			}
 		}
 	}

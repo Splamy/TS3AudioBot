@@ -16,8 +16,8 @@ namespace TS3AudioBot
 	using System.Linq;
 	using System.Reflection;
 	using TS3Client;
+	using TS3Client.Audio;
 	using TS3Client.Full;
-	using TS3Client.Full.Audio;
 	using TS3Client.Helper;
 	using TS3Client.Messages;
 
@@ -28,8 +28,6 @@ namespace TS3AudioBot
 		private ClientData self;
 
 		private const Codec SendCodec = Codec.OpusMusic;
-		private const uint StallCountInterval = 10;
-		private const uint StallNoErrorCountMax = 5;
 		private static readonly string[] QuitMessages = {
 			"I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
 			"Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
@@ -45,11 +43,10 @@ namespace TS3AudioBot
 
 		private readonly Ts3FullClientData ts3FullClientData;
 
-		private bool isStall;
-		private uint stallCount;
-		private uint stallNoErrorCount;
 		private IdentityData identity;
 
+		private readonly StallCheckPipe stallCheckPipe;
+		private readonly ActiveCheckPipe activeCheckPipe;
 		private readonly VolumePipe volumePipe;
 		private readonly FfmpegProducer ffmpegProducer;
 		private readonly PreciseTimedPipe timePipe;
@@ -64,6 +61,8 @@ namespace TS3AudioBot
 			tfcd.PropertyChanged += Tfcd_PropertyChanged;
 
 			ffmpegProducer = new FfmpegProducer(tfcd);
+			stallCheckPipe = new StallCheckPipe();
+			activeCheckPipe = new ActiveCheckPipe();
 			volumePipe = new VolumePipe();
 			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ts3FullClientData.AudioBitrate * 1000 };
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
@@ -71,10 +70,8 @@ namespace TS3AudioBot
 			TargetPipe = new CustomTargetPipe(tsFullClient);
 
 			timePipe.InStream = ffmpegProducer;
-			timePipe.Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
+			timePipe.Chain(activeCheckPipe).Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
 
-			isStall = false;
-			stallCount = 0;
 			identity = null;
 		}
 
@@ -188,8 +185,7 @@ namespace TS3AudioBot
 			switch (error.Id)
 			{
 			case Ts3ErrorCode.whisper_no_targets:
-				stallNoErrorCount = 0;
-				isStall = true;
+				stallCheckPipe.SetStall();
 				break;
 
 			default:
@@ -262,44 +258,6 @@ namespace TS3AudioBot
 
 			self = cd;
 			return cd;
-		}
-
-		private void AudioSend()
-		{
-			// TODO Make a pipe for this
-			// Save cpu when we know there is noone to send to
-			bool doSend = true;
-
-			var SendMode = TargetSendMode.None;
-			switch (SendMode)
-			{
-			case TargetSendMode.None:
-				doSend = false;
-				break;
-			case TargetSendMode.Voice:
-				break;
-			case TargetSendMode.Whisper:
-			case TargetSendMode.WhisperGroup:
-				if (isStall)
-				{
-					if (++stallCount % StallCountInterval == 0)
-					{
-						stallNoErrorCount++;
-						if (stallNoErrorCount > StallNoErrorCountMax)
-						{
-							stallCount = 0;
-							isStall = false;
-						}
-					}
-					else
-					{
-						doSend = false;
-					}
-				}
-				break;
-			default:
-				throw new InvalidOperationException();
-			}
 		}
 
 		#region IPlayerConnection

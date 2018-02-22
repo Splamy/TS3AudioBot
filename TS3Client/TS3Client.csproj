@@ -72,14 +72,15 @@
     <Compile Include="ConnectionData.cs" />
     <Compile Include="DisconnectEventArgs.cs" />
     <Compile Include="DocumentedEnums.cs" />
+    <Compile Include="Audio\ActiveCheckPipe.cs" />
     <Compile Include="Full\Ed25519.cs" />
     <Compile Include="FileTransferManager.cs" />
-    <Compile Include="Full\Audio\AudioMeta.cs" />
-    <Compile Include="Full\Audio\AudioInterfaces.cs" />
-    <Compile Include="Full\Audio\AudioPacketReader.cs" />
-    <Compile Include="Full\Audio\AudioPipeExtensions.cs" />
-    <Compile Include="Full\Audio\EncoderPipe.cs" />
-    <Compile Include="Full\Audio\Opus\NativeMethods.cs" />
+    <Compile Include="Audio\AudioMeta.cs" />
+    <Compile Include="Audio\AudioInterfaces.cs" />
+    <Compile Include="Audio\AudioPacketReader.cs" />
+    <Compile Include="Audio\AudioPipeExtensions.cs" />
+    <Compile Include="Audio\EncoderPipe.cs" />
+    <Compile Include="Audio\Opus\NativeMethods.cs" />
     <Compile Include="Generated\Errors.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -97,14 +98,14 @@
     </Compile>
     <Compile Include="Helper\Extensions.cs" />
     <Compile Include="Helper\NativeWinDllLoader.cs" />
-    <Compile Include="Full\Audio\Opus\OpusDecoder.cs" />
-    <Compile Include="Full\Audio\Opus\OpusEncoder.cs" />
-    <Compile Include="Full\Audio\PreciseAudioTimer.cs" />
-    <Compile Include="Full\Audio\PreciseTimedPipe.cs" />
-    <Compile Include="Full\Audio\SplitterPipe.cs" />
-    <Compile Include="Full\Audio\StaticMetaPipe.cs" />
-    <Compile Include="Full\Audio\StreamAudioProducer.cs" />
-    <Compile Include="Full\Audio\VolumePipe.cs" />
+    <Compile Include="Audio\Opus\OpusDecoder.cs" />
+    <Compile Include="Audio\Opus\OpusEncoder.cs" />
+    <Compile Include="Audio\PreciseAudioTimer.cs" />
+    <Compile Include="Audio\PreciseTimedPipe.cs" />
+    <Compile Include="Audio\SplitterPipe.cs" />
+    <Compile Include="Audio\StaticMetaPipe.cs" />
+    <Compile Include="Audio\StreamAudioProducer.cs" />
+    <Compile Include="Audio\VolumePipe.cs" />
     <Compile Include="Full\BasePacket.cs" />
     <Compile Include="Full\QuickerLz.cs" />
     <Compile Include="Full\IdentityData.cs" />
@@ -145,9 +146,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Declarations\Versions.csv" />
-    <None Include="Full\Audio\Opus\LICENSE" />
-    <None Include="Full\Audio\Opus\OPUS_LICENSE" />
-    <None Include="Full\Audio\Opus\README" />
+    <None Include="Audio\Opus\LICENSE" />
+    <None Include="Audio\Opus\OPUS_LICENSE" />
+    <None Include="Audio\Opus\README" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>

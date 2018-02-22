@@ -14,8 +14,8 @@ namespace TS3AudioBot.Audio
 	using System.Collections.Generic;
 	using System.Linq;
 	using TS3Client;
+	using TS3Client.Audio;
 	using TS3Client.Full;
-	using TS3Client.Full.Audio;
 
 	internal class CustomTargetPipe : ITargetManager, IAudioPassiveConsumer
 	{
@@ -23,6 +23,23 @@ namespace TS3AudioBot.Audio
 		public ulong GroupWhisperTargetId { get; set; }
 		public GroupWhisperType GroupWhisperType { get; set; }
 		public GroupWhisperTarget GroupWhisperTarget { get; set; }
+
+		public bool Active
+		{
+			get
+			{
+				switch (SendMode)
+				{
+				case TargetSendMode.None:
+					return false;
+				case TargetSendMode.Whisper:
+					UpdatedSubscriptionCache();
+					return channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
+				default:
+					return true;
+				}
+			}
+		}
 
 		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup;
 		private readonly List<ushort> clientSubscriptionsSetup;
@@ -64,10 +81,6 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		// TODO get this somehow to the front of the pipechain, to prevent further chain execution
-		// if (SendMode == TargetSendMode.Whisper)
-		// doSend &= channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
-
 		#region ITargetManager
 
 		public void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
@@ -79,8 +92,6 @@ namespace TS3AudioBot.Audio
 
 		public void WhisperChannelSubscribe(ulong channel, bool temp)
 		{
-			// TODO move to requested channel
-			// TODO spawn new client
 			lock (subscriptionLockObj)
 			{
 				if (channelSubscriptionsSetup.TryGetValue(channel, out var subscriptionTemp))

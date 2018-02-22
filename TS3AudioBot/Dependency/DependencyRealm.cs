@@ -31,7 +31,8 @@ namespace TS3AudioBot.Dependency
 			Util.Init(out modules);
 		}
 
-		// TODO doc
+		/// <summary>Will add the type to pool of registered types which can be injected into other dependencies.</summary>
+		/// <typeparam name="TModule">The type to add</typeparam>
 		public void RegisterType<TModule>() => RegisterType(typeof(TModule));
 
 		private void RegisterType(Type modType)
@@ -41,7 +42,13 @@ namespace TS3AudioBot.Dependency
 			registeredTypes.Add(modType);
 		}
 
-		// TODO doc
+		/// <summary>Adds an object as a new module to the module pool.
+		/// The realm will inject all registered types into public propeties as soon as available.</summary>
+		/// <typeparam name="TMod">The type of the module to add</typeparam>
+		/// <param name="module">The object to add as a new module.</param>
+		/// <param name="onInit">An initialize method that gets called when all dependencies are inected into this module.
+		/// Note that declaring this param will force the realm to be more strict with this modul
+		/// and make cyclic dependencies harder to resolve.</param>
 		public void RegisterModule<TMod>(TMod module, Action<TMod> onInit = null) where TMod : class
 		{
 			var onInitObject = onInit != null ? new Action<object>(x => onInit((TMod)x)) : null;
@@ -54,7 +61,9 @@ namespace TS3AudioBot.Dependency
 			DoQueueInitialize(false);
 		}
 
-		// TODO doc
+		/// <summary>Injects all dependencies into the passe object without registering it as a new module.</summary>
+		/// <param name="obj">The object to fill.</param>
+		/// <returns>True if all registered types were available and could be injected, false otherwise.</returns>
 		public bool TryInject(object obj) => TryResolve(obj, InitState.SetOnly, false);
 
 		// Maybe in future update child realm when parent gets updated
@@ -66,7 +75,7 @@ namespace TS3AudioBot.Dependency
 			return child;
 		}
 
-		// TODO doc
+		/// <summary>Tries to initialize all modules while allowing undefined behaviour when resolving cyclic dependecies.</summary>
 		public void ForceCyclicResolve()
 		{
 			DoQueueInitialize(true);
@@ -144,15 +153,18 @@ namespace TS3AudioBot.Dependency
 			return true;
 		}
 
-		// TODO doc
-		public object GetModule<TModule>() where TModule : class => GetModule(typeof(TModule));
+		/// <summary>Gets a module assignable to the requested type.</summary>
+		/// <typeparam name="TModule">The type to get.</typeparam>
+		/// <returns>The object if found, null otherwiese.</returns>
+		public TModule GetModule<TModule>() where TModule : class => (TModule)GetModule(typeof(TModule));
 		public object GetModule(Type type) => FindInjectableModule(type, InitState.Done, false)?.Obj;
 
 		void IInjector.AddModule(object obj) => RegisterModule(obj);
 
 		public IEnumerable<object> GetAllModules() => modules.Select(x => x.Obj);
 
-		// TODO doc
+		/// <summary>Checks if all module could get initialized.</summary>
+		/// <returns>True if all are initialized, false otherwise.</returns>
 		public bool AllResolved() => modules.All(x => x.Status == InitState.Done);
 
 		public void Unregister(Type type)

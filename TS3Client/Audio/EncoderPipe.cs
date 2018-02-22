@@ -7,13 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client.Full.Audio
+namespace TS3Client.Audio
 {
 	using Opus;
 	using System;
 
 	public class EncoderPipe : IAudioPipe, IDisposable, ISampleInfo
 	{
+		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer OutStream { get; set; }
 
 		public Codec Codec { get; }
@@ -29,9 +30,8 @@ namespace TS3Client.Full.Audio
 
 		private const int SegmentFrames = 960;
 		// todo add upper limit to buffer size and drop everying over
-		private byte[] soundBuffer = new byte[0];
 		private byte[] notEncodedBuffer = new byte[0];
-		private int notEncodedBufferLength;
+		private int notEncodedLength;
 		private readonly byte[] encodedBuffer;
 
 		public EncoderPipe(Codec codec)
@@ -79,30 +79,30 @@ namespace TS3Client.Full.Audio
 			if (OutStream == null)
 				return;
 
-			int newSoundBufferLength = data.Length + notEncodedBufferLength;
-			if (newSoundBufferLength > soundBuffer.Length)
-				soundBuffer = new byte[newSoundBufferLength];
-			int soundBufferLength = newSoundBufferLength;
-
-			// TODO use buffer swap to save one copy call
-			Array.Copy(notEncodedBuffer, 0, soundBuffer, 0, notEncodedBufferLength);
-			data.CopyTo(new Span<byte>(soundBuffer, notEncodedBufferLength));
+			int newSoundBufferLength = data.Length + notEncodedLength;
+			if (newSoundBufferLength >= notEncodedBuffer.Length)
+			{
+				var tmpSoundBuffer = new byte[newSoundBufferLength];
+				Array.Copy(notEncodedBuffer, 0, tmpSoundBuffer, 0, notEncodedLength);
+				notEncodedBuffer = tmpSoundBuffer;
+			}
 			
-			int segmentCount = soundBufferLength / PacketSize;
+			var soundBuffer = new Span<byte>(notEncodedBuffer);
+			data.CopyTo(soundBuffer.Slice(notEncodedLength));
+			
+			int segmentCount = newSoundBufferLength / PacketSize;
 			int segmentsEnd = segmentCount * PacketSize;
-			int newNotEncodedBufferLength = soundBufferLength - segmentsEnd;
-			if (newNotEncodedBufferLength > notEncodedBuffer.Length)
-				notEncodedBuffer = new byte[newNotEncodedBufferLength];
-			notEncodedBufferLength = newNotEncodedBufferLength;
-			Array.Copy(soundBuffer, segmentsEnd, notEncodedBuffer, 0, notEncodedBufferLength);
+			notEncodedLength = newSoundBufferLength - segmentsEnd;
 
 			for (int i = 0; i < segmentCount; i++)
 			{
-				var encodedData = opusEncoder.Encode(soundBuffer.AsSpan().Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
+				var encodedData = opusEncoder.Encode(soundBuffer.Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
 				if (meta != null)
 					meta.Codec = Codec; // TODO copy ?
 				OutStream?.Write(encodedData, meta);
 			}
+
+			soundBuffer.Slice(segmentsEnd, notEncodedLength).CopyTo(soundBuffer);
 		}
 
 		public TimeSpan GetPlayLength(int bytes)
@@ -113,6 +113,13 @@ namespace TS3Client.Full.Audio
 		public void Dispose()
 		{
 			opusEncoder?.Dispose();
+		}
+
+		private void Swap<T>(ref T a, ref T b)
+		{
+			var tmp = a;
+			a = b;
+			b = tmp;
 		}
 	}
 }

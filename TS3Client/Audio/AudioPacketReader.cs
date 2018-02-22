@@ -7,12 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client.Full.Audio
+namespace TS3Client.Audio
 {
+	using Full;
 	using System;
 
 	public class AudioPacketReader : IAudioPipe
 	{
+		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer OutStream { get; set; }
 
 		public void Write(Span<byte> data, Meta meta)

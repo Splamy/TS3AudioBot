@@ -7,13 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client.Full.Audio
+namespace TS3Client.Audio
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 
 	public class SplitterPipe : IAudioPassiveConsumer
 	{
+		public bool Active => consumerList.Count > 0 && consumerList.Any(x => x.Active);
 		private readonly List<IAudioPassiveConsumer> safeConsumerList = new List<IAudioPassiveConsumer>();
 		private readonly List<IAudioPassiveConsumer> consumerList = new List<IAudioPassiveConsumer>();
 		private bool changed;
@@ -64,7 +66,7 @@ namespace TS3Client.Full.Audio
 				return;
 			}
 
-			if(buffer.Length < data.Length)
+			if (buffer.Length < data.Length)
 				buffer = new byte[data.Length];
 
 			var bufSpan = new Span<byte>(buffer, 0, data.Length);
