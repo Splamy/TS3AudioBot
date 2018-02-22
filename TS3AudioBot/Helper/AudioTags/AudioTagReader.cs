@@ -16,6 +16,7 @@ namespace TS3AudioBot.Helper.AudioTags
 
 	internal static class AudioTagReader
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Dictionary<string, Tag> TagDict;
 
 		static AudioTagReader()
@@ -38,8 +39,8 @@ namespace TS3AudioBot.Helper.AudioTags
 			{
 				try { return tagHeader.GetTitle(sr)?.TrimEnd('\0'); }
 				catch (IOException) { }
-				catch (FormatException fex) { Log.Write(Log.Level.Debug, "ATR FEX: " + fex.Message); }
-				catch (NullReferenceException) { Log.Write(Log.Level.Debug, "ATR Unparsed Link!"); }
+				catch (FormatException fex) { Log.Debug(fex, "Audiotag format exception"); }
+				catch (NullReferenceException) { Log.Debug("Unparsed link!"); }
 			}
 			return null;
 		}
@@ -54,8 +55,8 @@ namespace TS3AudioBot.Helper.AudioTags
 			{
 				try { return tagHeader.GetImage(sr); }
 				catch (IOException) { }
-				catch (FormatException fex) { Log.Write(Log.Level.Debug, "ATR FEX: " + fex.Message); }
-				catch (NullReferenceException) { Log.Write(Log.Level.Debug, "ATR Unparsed Link!"); }
+				catch (FormatException fex) { Log.Debug(fex, "Audiotag format exception"); }
+				catch (NullReferenceException) { Log.Debug("Unparsed link!"); }
 			}
 			return null;
 		}
@@ -92,7 +93,7 @@ namespace TS3AudioBot.Helper.AudioTags
 		private class Id3_2 : Tag
 		{
 			private readonly int v2_TT2 = FrameIdV2("TT2"); // Title
-			private readonly int v2_PIC = FrameIdV2("PIC"); // Title
+			private readonly int v2_PIC = FrameIdV2("PIC"); // Picture
 			private readonly uint v3_TIT2 = FrameIdV3("TIT2"); // Title
 			private readonly uint v3_APIC = FrameIdV3("APIC"); // Picture
 
@@ -104,29 +105,29 @@ namespace TS3AudioBot.Helper.AudioTags
 
 				// using the official id3 tag documentation
 				// http://id3.org/id3v2.3.0#ID3_tag_version_2.3.0
-
-				int readCount = 10;
-
+				
 				// read + validate header                                    [10 bytes]
 				// skipped for TagID                                         >03 bytes
 				byte versionMajor = fileStream.ReadByte(); //                >01 bytes
-				/*byte version_minor =*/ fileStream.ReadByte(); //           >01 bytes
-				/*byte data_flags =*/ fileStream.ReadByte(); //              >01 bytes
-				byte[] tagSize = fileStream.ReadBytes(4); //                 >04 bytes
-				int tagSizeInt = 0;
-				for (int i = 0; i < 4; i++)
-					tagSizeInt |= tagSize[3 - i] << (i * 7);
-				readCount += 10;
+				byte version_minor = fileStream.ReadByte(); //               >01 bytes
+				byte data_flags = fileStream.ReadByte(); //                  >01 bytes
+				int tagSize = fileStream.ReadId3Int(); //                    >04 bytes
+
+				// start at 0, the header is excluded from `tagSize`
+				int readCount = 0;
 
 				#region ID3v2
 				if (versionMajor == 2)
 				{
-					while (readCount < tagSizeInt + 10)
+					while (readCount < tagSize)
 					{
 						// frame header                                      [06 bytes]
 						int frameId = fileStream.ReadInt24BE(); //           >03 bytes
 						int frameSize = fileStream.ReadInt24BE(); //         >03 bytes
 						readCount += 6;
+
+						if (readCount + frameSize > tagSize)
+							throw new FormatException("Frame position+size exceedes header size");
 
 						if (frameId == v2_TT2)
 						{
@@ -157,14 +158,16 @@ namespace TS3AudioBot.Helper.AudioTags
 				#region ID3v3/4
 				else if (versionMajor == 3 || versionMajor == 4)
 				{
-					while (readCount < tagSizeInt + 10)
+					while (readCount < tagSize)
 					{
 						// frame header                                        [10 bytes]
 						uint frameId = fileStream.ReadUInt32BE(); //           >04 bytes
-						int frameSize = fileStream.ReadInt32BE(); //           >04 bytes
-																  /*ushort frame_flags =*/
-						fileStream.ReadUInt16BE(); // >02 bytes
+						int frameSize = fileStream.ReadId3Int(); //            >04 bytes
+						ushort frame_flags = fileStream.ReadUInt16BE(); //     >02 bytes
 						readCount += 10;
+
+						if(readCount + frameSize > tagSize)
+							throw new FormatException("Frame position+size exceedes header size");
 
 						// content
 						if (frameId == v3_TIT2)
@@ -188,11 +191,8 @@ namespace TS3AudioBot.Helper.AudioTags
 							retdata.Picture = fileStream.ReadBytes(frameSize - (description.Count + mime.Count + 2));
 						}
 						else if (frameId == 0) { break; }
-						else
-						{
-							fileStream.ReadBytes(frameSize);
-							readCount += frameSize;
-						}
+						else { fileStream.ReadBytes(frameSize); }
+						readCount += frameSize;
 					}
 				}
 				#endregion
@@ -216,7 +216,7 @@ namespace TS3AudioBot.Helper.AudioTags
 
 			private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)
 			{
-				switch (textBuffer[0])
+				switch (type)
 				{
 				case 0:
 					return Encoding.GetEncoding(28591).GetString(textBuffer, offset, length);

@@ -23,13 +23,12 @@ namespace TS3AudioBot
 		{
 			const bool writeSubCommands = false;
 
-			var bot = new MainBot();
-			typeof(MainBot).GetProperty(nameof(MainBot.CommandManager)).SetValue(bot, new CommandManager());
-			bot.CommandManager.RegisterMain(bot);
+			var cmdMgr = new CommandManager();
+			cmdMgr.RegisterMain();
 			
 			var lines = new List<string>();
 
-			foreach (var com in bot.CommandManager.AllCommands)
+			foreach (var com in cmdMgr.AllCommands)
 			{
 				if (!writeSubCommands && com.InvokeName.Contains(" "))
 					continue;

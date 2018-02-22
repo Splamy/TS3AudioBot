@@ -15,64 +15,56 @@ namespace TS3AudioBot.Sessions
 	using System.Threading;
 	using TS3Client;
 	using TS3Client.Messages;
-	using Response = System.Func<CommandSystem.ExecutionInformation, string>;
+	using Response = System.Func<string, string>;
 
 	public sealed class UserSession
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private Dictionary<Type, object> assocMap;
 		private bool lockToken;
 		private readonly ClientData client;
 
 		public Response ResponseProcessor { get; private set; }
-		public object ResponseData { get; private set; }
 
-		public MainBot Bot { get; }
+		public Bot Bot { get; }
 
-		public UserSession(MainBot bot, ClientData client)
+		public UserSession(Bot bot, ClientData client)
 		{
 			this.client = client;
 			Bot = bot;
 			ResponseProcessor = null;
-			ResponseData = null;
 		}
 
-		public void Write(string message, TextMessageTargetMode targetMode)
+		public R Write(string message, TextMessageTargetMode targetMode)
 		{
 			VerifyLock();
 
-			try
+			R result;
+			switch (targetMode)
 			{
-				R result;
-				switch (targetMode)
-				{
-				case TextMessageTargetMode.Private:
-					result = Bot.QueryConnection.SendMessage(message, client.ClientId);
-					break;
-				case TextMessageTargetMode.Channel:
-					result = Bot.QueryConnection.SendChannelMessage(message);
-					break;
-				case TextMessageTargetMode.Server:
-					result = Bot.QueryConnection.SendServerMessage(message);
-					break;
-				default:
-					throw new InvalidOperationException();
-				}
+			case TextMessageTargetMode.Private:
+				result = Bot.QueryConnection.SendMessage(message, client.ClientId);
+				break;
+			case TextMessageTargetMode.Channel:
+				result = Bot.QueryConnection.SendChannelMessage(message);
+				break;
+			case TextMessageTargetMode.Server:
+				result = Bot.QueryConnection.SendServerMessage(message);
+				break;
+			default:
+				throw Util.UnhandledDefault(targetMode);
+			}
 
-				if (!result)
-					Log.Write(Log.Level.Error, "Could not write message (Err:{0}) (Msg:{1})", result.Message, message);
-			}
-			catch (Ts3CommandException ex)
-			{
-				Log.Write(Log.Level.Error, "Could not write message (Ex:{0}) (Msg:{1})", ex.UnrollException(), message);
-			}
+			if (!result)
+				Log.Error("Could not write message (Err:{0}) (Msg:{1})", result.Error, message);
+			return result;
 		}
 
-		public void SetResponse(Response responseProcessor, object responseData)
+		public void SetResponse(Response responseProcessor)
 		{
 			VerifyLock();
 
 			ResponseProcessor = responseProcessor;
-			ResponseData = responseData;
 		}
 
 		public void ClearResponse()
@@ -80,7 +72,6 @@ namespace TS3AudioBot.Sessions
 			VerifyLock();
 
 			ResponseProcessor = null;
-			ResponseData = null;
 		}
 
 		public R<TData> Get<TAssoc, TData>()
@@ -104,7 +95,7 @@ namespace TS3AudioBot.Sessions
 			VerifyLock();
 
 			if (assocMap == null)
-				Util.Init(ref assocMap);
+				Util.Init(out assocMap);
 
 			if (assocMap.ContainsKey(typeof(TAssoc)))
 				assocMap[typeof(TAssoc)] = data;

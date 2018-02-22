@@ -15,13 +15,14 @@ namespace TS3AudioBot.Helper
 
 	internal static class WebWrapper
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
 
-		public static bool DownloadString(out string site, Uri link, params Tuple<string, string>[] optionalHeaders)
+		public static bool DownloadString(out string site, Uri link, params (string name, string value)[] optionalHeaders)
 		{
 			var request = WebRequest.Create(link);
-			foreach (var header in optionalHeaders)
-				request.Headers.Add(header.Item1, header.Item2);
+			foreach (var (name, value) in optionalHeaders)
+				request.Headers.Add(name, value);
 			try
 			{
 				using (var response = request.GetResponse())
@@ -68,17 +69,17 @@ namespace TS3AudioBot.Helper
 				HttpWebResponse errorResponse;
 				if (webEx.Status == WebExceptionStatus.Timeout)
 				{
-					Log.Write(Log.Level.Warning, "TH Request timed out");
+					Log.Warn("Request timed out");
 					return ValidateCode.Timeout;
 				}
 				else if ((errorResponse = webEx.Response as HttpWebResponse) != null)
 				{
-					Log.Write(Log.Level.Warning, $"TH Web error: [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
+					Log.Warn("Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
 					return ValidateCode.Restricted;
 				}
 				else
 				{
-					Log.Write(Log.Level.Warning, $"TH Unknown request error: {webEx}");
+					Log.Warn("Unknown request error: {0}", webEx);
 					return ValidateCode.UnknownError;
 				}
 			}
@@ -98,10 +99,9 @@ namespace TS3AudioBot.Helper
 			}
 			catch (WebException webEx)
 			{
-				HttpWebResponse errorResponse;
 				if (webEx.Status == WebExceptionStatus.Timeout)
 					return "WEB Request timed out";
-				if ((errorResponse = webEx.Response as HttpWebResponse) != null)
+				if (webEx.Response is HttpWebResponse errorResponse)
 					return $"WEB error: [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}";
 				return $"WEB Unknown request error: {webEx}";
 			}

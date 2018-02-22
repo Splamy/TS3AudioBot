@@ -24,21 +24,18 @@ namespace TS3ABotUnitTests
 	[TestFixture]
 	public class BotCommandTests
 	{
-		private readonly MainBot bot;
+		private readonly CommandManager cmdMgr;
 
 		public BotCommandTests()
 		{
-			bot = new MainBot();
-			var prop = typeof(MainBot).GetProperty(nameof(MainBot.CommandManager));
-			if (prop != null)
-				prop.SetValue(bot, new CommandManager());
-			bot.CommandManager.RegisterMain(bot);
+			cmdMgr = new CommandManager();
+			cmdMgr.RegisterMain();
+			Utils.ExecInfo.AddDynamicObject(cmdMgr);
 		}
 
 		private string CallCommand(string command)
 		{
-			var info = new ExecutionInformation(null, new InvokerData("InvokerUid"), null) { SkipRightsChecks = true };
-			return bot.CommandManager.CommandSystem.ExecuteCommand(info, command);
+			return cmdMgr.CommandSystem.ExecuteCommand(Utils.ExecInfo, command);
 		}
 
 		[Test]
@@ -91,5 +88,16 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual("text", CallCommand("!if a == a text (!)"));
 			Assert.Throws<CommandException>(() => CallCommand("!if a == b text (!)"));
 		}
+	}
+
+	static class Utils
+	{
+		static Utils()
+		{
+			ExecInfo = new ExecutionInformation();
+			ExecInfo.AddDynamicObject(new CallerInfo(new InvokerData("InvokerUid"), null) { SkipRightsChecks = true });
+		}
+
+		public static ExecutionInformation ExecInfo { get; }
 	}
 }

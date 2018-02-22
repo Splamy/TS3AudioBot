@@ -10,6 +10,7 @@
 namespace TS3Client.Query
 {
 	using Commands;
+	using Helper;
 	using Messages;
 	using System;
 	using System.Linq;
@@ -36,6 +37,8 @@ namespace TS3Client.Query
 
 		public override ClientType ClientType => ClientType.Query;
 		public override bool Connected => tcpClient.Connected;
+		private bool connecting;
+		public override bool Connecting => connecting && !Connected;
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
@@ -45,6 +48,7 @@ namespace TS3Client.Query
 
 		public Ts3QueryClient(EventDispatchType dispatcherType)
 		{
+			connecting = false;
 			tcpClient = new TcpClient();
 			msgProc = new MessageProcessor(true);
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
@@ -55,16 +59,23 @@ namespace TS3Client.Query
 			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
 				throw new Ts3Exception("Could not read or resolve address.");
 
-			try { tcpClient.Connect(remoteAddress); }
+			try
+			{
+				connecting = true;
+
+				tcpClient.Connect(remoteAddress);
+
+				ConnectionData = conData;
+
+				tcpStream = tcpClient.GetStream();
+				tcpReader = new StreamReader(tcpStream, Util.Encoder);
+				tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
+
+				for (int i = 0; i < 3; i++)
+					tcpReader.ReadLine();
+			}
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
-			ConnectionData = conData;
-
-			tcpStream = tcpClient.GetStream();
-			tcpReader = new StreamReader(tcpStream, Util.Encoder);
-			tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
-
-			for (int i = 0; i < 3; i++)
-				tcpReader.ReadLine();
+			finally { connecting = false; }
 
 			dispatcher.Init(NetworkLoop, InvokeEvent, null);
 			OnConnected?.Invoke(this, new EventArgs());
@@ -94,7 +105,7 @@ namespace TS3Client.Query
 				var message = line.Trim();
 				msgProc.PushMessage(message);
 			}
-			OnDisconnected?.Invoke(this, new DisconnectEventArgs(MoveReason.LeftServer)); // TODO ??
+			OnDisconnected?.Invoke(this, new DisconnectEventArgs(MoveReason.LeftServer));
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -121,9 +132,9 @@ namespace TS3Client.Query
 			}
 		}
 
-		public override IEnumerable<T> SendCommand<T>(Ts3Command com) // Synchronous
+		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com) // Synchronous
 		{
-			using (var wb = new WaitBlock())
+			using (var wb = new WaitBlock(false))
 			{
 				lock (sendQueueLock)
 				{
@@ -173,17 +184,17 @@ namespace TS3Client.Query
 
 		// Splitted base commands
 
-		public override ServerGroupAddResponse ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
+		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
 			=> Send<ServerGroupAddResponse>("servergroupadd",
 				type.HasValue
 				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }
-				: new List<ICommandPart> { new CommandParameter("name", name) }).FirstOrDefault();
+				: new List<ICommandPart> { new CommandParameter("name", name) }).WrapSingle();
 
-		public override IEnumerable<ClientServerGroup> ServerGroupsByClientDbId(ulong clDbId)
+		public override R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ulong clDbId)
 			=> Send<ClientServerGroup>("servergroupsbyclientid",
 			new CommandParameter("cldbid", clDbId));
 
-		public override FileUpload FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
+		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume)
 			=> Send<FileUpload>("ftinitupload",
 			new CommandParameter("cid", channelId),
@@ -192,27 +203,27 @@ namespace TS3Client.Query
 			new CommandParameter("clientftfid", clientTransferId),
 			new CommandParameter("size", fileSize),
 			new CommandParameter("overwrite", overwrite),
-			new CommandParameter("resume", resume)).First();
+			new CommandParameter("resume", resume)).WrapSingle();
 
-		public override FileDownload FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
+		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek)
 			=> Send<FileDownload>("ftinitdownload",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("name", path),
 			new CommandParameter("cpw", channelPassword),
 			new CommandParameter("clientftfid", clientTransferId),
-			new CommandParameter("seekpos", seek)).First();
+			new CommandParameter("seekpos", seek)).WrapSingle();
 
-		public override IEnumerable<FileTransfer> FileTransferList()
+		public override R<IEnumerable<FileTransfer>, CommandError> FileTransferList()
 			=> Send<FileTransfer>("ftlist");
 
-		public override IEnumerable<FileList> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+		public override R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
 			=> Send<FileList>("ftgetfilelist",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("path", path),
 			new CommandParameter("cpw", channelPassword));
 
-		public override IEnumerable<FileInfoTs> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public override R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> Send<FileInfoTs>("ftgetfileinfo",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("cpw", channelPassword),

@@ -21,14 +21,9 @@ namespace TS3AudioBot
 
 	public sealed class PlaylistManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
-
-		// get video info
-		// https://www.googleapis.com/youtube/v3/videos?id=...,...&part=contentDetails&key=...
-
-		// get playlist videos
-		// https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=50&playlistId=...&key=...
 
 		private readonly PlaylistManagerData data;
 		private static readonly Encoding FileEncoding = Util.Utf8Encoder;
@@ -205,7 +200,7 @@ namespace TS3AudioBot
 					var kvp = line.Split(new[] { ':' }, 3);
 					if (kvp.Length < 3)
 					{
-						Log.Write(Log.Level.Warning, "Erroneus playlist split count: {0}", line);
+						Log.Warn("Erroneus playlist split count: {0}", line);
 						continue;
 					}
 					string kind = kvp[0];
@@ -218,7 +213,7 @@ namespace TS3AudioBot
 					else if (ulong.TryParse(optOwner, out var userid))
 						meta.ResourceOwnerDbId = userid;
 					else
-						Log.Write(Log.Level.Warning, "Erroneus playlist meta data: {0}", line);
+						Log.Warn("Erroneus playlist meta data: {0}", line);
 					
 					switch (kind)
 					{
@@ -251,7 +246,7 @@ namespace TS3AudioBot
 						break;
 
 					default:
-						Log.Write(Log.Level.Warning, "Erroneus playlist data block: {0}", line);
+						Log.Warn("Erroneus playlist data block: {0}", line);
 						break;
 					}
 				}
@@ -463,7 +458,7 @@ namespace TS3AudioBot
 
 		public Playlist(string name, ulong? creatorDbId = null)
 		{
-			Util.Init(ref resources);
+			Util.Init(out resources);
 			CreatorDbId = creatorDbId;
 			Name = name;
 		}

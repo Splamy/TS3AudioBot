@@ -10,36 +10,24 @@
 namespace TS3AudioBot.Sessions
 {
 	using Helper;
-	using LiteDB;
 	using System;
 	using System.Collections.Generic;
 	using TS3Client.Messages;
 
+	/// <summary>Management for clients talking with the bot.</summary>
 	public class SessionManager
 	{
-		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		// Map: Id => UserSession
 		private readonly Dictionary<ushort, UserSession> openSessions;
 
-		// Map: Uid => InvokerData
-		private const string ApiTokenTable = "apiToken";
-		private readonly LiteCollection<DbApiToken> dbTokenList;
-		private readonly Dictionary<string, ApiToken> liveTokenList;
-
-		public SessionManager(DbStore database)
+		public SessionManager()
 		{
-			Util.Init(ref openSessions);
-			Util.Init(ref liveTokenList);
-
-			dbTokenList = database.GetCollection<DbApiToken>(ApiTokenTable);
-			dbTokenList.EnsureIndex(x => x.UserUid, true);
-			dbTokenList.EnsureIndex(x => x.Token, true);
-
-			database.GetMetaData(ApiTokenTable);
+			Util.Init(out openSessions);
 		}
 
-		public UserSession CreateSession(MainBot bot, ClientData client)
+		public UserSession CreateSession(Bot bot, ClientData client)
 		{
 			if (bot == null)
 				throw new ArgumentNullException(nameof(bot));
@@ -49,7 +37,7 @@ namespace TS3AudioBot.Sessions
 				if (openSessions.TryGetValue(client.ClientId, out var session))
 					return session;
 
-				Log.Write(Log.Level.Debug, "SM User {0} created session with the bot", client.NickName);
+				Log.Debug("User {0} created session with the bot", client.NickName);
 				session = new UserSession(bot, client);
 				openSessions.Add(client.ClientId, session);
 				return session;
@@ -73,80 +61,6 @@ namespace TS3AudioBot.Sessions
 			{
 				openSessions.Remove(id);
 			}
-		}
-
-		public R<string> GenerateToken(string uid, TimeSpan? timeout = null)
-		{
-			if (string.IsNullOrEmpty(uid))
-				throw new ArgumentNullException(nameof(uid));
-
-			if (!liveTokenList.TryGetValue(uid, out var token))
-			{
-				token = new ApiToken();
-				liveTokenList.Add(uid, token);
-			}
-
-			token.Value = TextUtil.GenToken(ApiToken.TokenLen);
-			if (timeout.HasValue)
-				token.Timeout = timeout.Value == TimeSpan.MaxValue
-					? DateTime.MaxValue
-					: AddTimeSpanSafe(Util.GetNow(), timeout.Value);
-			else
-				token.Timeout = AddTimeSpanSafe(Util.GetNow(), ApiToken.DefaultTokenTimeout);
-
-			dbTokenList.Upsert(new DbApiToken
-			{
-				UserUid = uid,
-				Token = token.Value,
-				ValidUntil = token.Timeout
-			});
-
-			return R<string>.OkR(string.Format(TokenFormat, uid, token.Value));
-		}
-
-		private static DateTime AddTimeSpanSafe(DateTime dateTime, TimeSpan addSpan)
-		{
-			if (addSpan == TimeSpan.MaxValue)
-				return DateTime.MaxValue;
-			if (addSpan == TimeSpan.MinValue)
-				return DateTime.MinValue;
-			try
-			{
-				return dateTime + addSpan;
-			}
-			catch (ArgumentOutOfRangeException)
-			{
-				return addSpan >= TimeSpan.Zero ? DateTime.MaxValue : DateTime.MinValue;
-			}
-		}
-
-		internal R<ApiToken> GetToken(string uid)
-		{
-			if (liveTokenList.TryGetValue(uid, out var token)
-				&& token.ApiTokenActive)
-				return token;
-
-			var dbToken = dbTokenList.FindById(uid);
-			if (dbToken == null)
-				return "No active Token";
-
-			if (dbToken.ValidUntil < Util.GetNow())
-			{
-				dbTokenList.Delete(uid);
-				return "No active Token";
-			}
-
-			token = new ApiToken { Value = dbToken.Token };
-			liveTokenList[uid] = token;
-			return token;
-		}
-
-		private class DbApiToken
-		{
-			[BsonId]
-			public string UserUid { get; set; }
-			public string Token { get; set; }
-			public DateTime ValidUntil { get; set; }
 		}
 	}
 }

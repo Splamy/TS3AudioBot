@@ -10,6 +10,7 @@
 namespace TS3Client.Full
 {
 	using Commands;
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -29,7 +30,7 @@ namespace TS3Client.Full
 		private static readonly TimeSpan TimeMinute = TimeSpan.FromMinutes(1);
 		private readonly object queueLock = new object();
 
-		internal void LogOutPacket(OutgoingPacket packet)
+		internal void LogOutPacket(C2SPacket packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
 			outPackets[(int)kind]++;
@@ -41,7 +42,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		internal void LogInPacket(IncomingPacket packet)
+		internal void LogInPacket(S2CPacket packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
 			inPackets[(int)kind]++;

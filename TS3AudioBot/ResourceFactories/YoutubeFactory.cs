@@ -13,18 +13,20 @@ namespace TS3AudioBot.ResourceFactories
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
+	using System.Drawing;
 	using System.Globalization;
 	using System.Linq;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
-	using System.Drawing;
+	using Newtonsoft.Json;
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
-		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([a-zA-Z0-9\-_]+)", Util.DefaultRegexConfig);
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
-		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w-]+)", Util.DefaultRegexConfig);
+		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
 
 		private readonly YoutubeFactoryData data;
 
@@ -48,14 +50,23 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			Match matchYtId = IdMatch.Match(ytLink);
 			if (!matchYtId.Success)
-				return RResultCode.YtIdNotFound.ToString();
+				return "The youtube id could not get parsed.";
 			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, FactoryFor));
 		}
 
 		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
+			var result = ResolveResourceInternal(resource);
+			if (result.Ok)
+				return result;
+			
+			return YoutubeDlWrapped(resource);
+		}
+
+		private R<PlayResource> ResolveResourceInternal(AudioResource resource)
+		{
 			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
-				return RResultCode.NoConnection.ToString();
+				return "No connection to the youtube api could be established";
 
 			var videoTypes = new List<VideoData>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
@@ -131,20 +142,15 @@ namespace TS3AudioBot.ResourceFactories
 			// Validation Process
 
 			if (videoTypes.Count <= 0)
-				return RResultCode.YtNoVideosExtracted.ToString();
+				return "No video streams extracted.";
 
 			int codec = SelectStream(videoTypes);
 			if (codec < 0)
 				return "No playable codec found";
 
 			var result = ValidateMedia(videoTypes[codec]);
-			if (!result)
-			{
-				if (string.IsNullOrWhiteSpace(data.YoutubedlPath))
-					return result.Message;
-
-				return YoutubeDlWrapped(resource);
-			}
+			if (!result.Ok)
+				return result.Error;
 
 			return new PlayResource(videoTypes[codec].Link, resource.ResourceTitle != null ? resource : resource.WithName(dataParse["title"] ?? $"<YT - no title : {resource.ResourceTitle}>"));
 		}
@@ -157,7 +163,7 @@ namespace TS3AudioBot.ResourceFactories
 			var dbg = new StringBuilder("YT avail codecs: ");
 			foreach (var yd in list)
 				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
-			Log.Write(Log.Level.Debug, dbg.ToString());
+			Log.Trace(dbg.ToString());
 #endif
 
 			int autoselectIndex = list.FindIndex(t => t.Codec == VideoCodec.M4A);
@@ -171,7 +177,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R ValidateMedia(VideoData media)
 		{
-			var vcode = WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(1));
+			var vcode = WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(3));
 
 			switch (vcode)
 			{
@@ -197,9 +203,8 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else return VideoCodec.Unknown;
 
-			string extractedCodec;
 			int codecEnd;
-			extractedCodec = (codecEnd = codecSubStr.IndexOf(';')) >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
+			var extractedCodec = (codecEnd = codecSubStr.IndexOf(';')) >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
 
 			switch (extractedCodec)
 			{
@@ -241,7 +246,7 @@ namespace TS3AudioBot.ResourceFactories
 
 				if (!WebWrapper.DownloadString(out string response, queryString))
 					return "Web response error";
-				var parsed = Util.Serializer.Deserialize<JsonPlaylistItems>(response);
+				var parsed = JsonConvert.DeserializeObject<JsonPlaylistItems>(response);
 				var videoItems = parsed.items;
 				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoItems.Length];
 				for (int i = 0; i < videoItems.Length; i++)
@@ -256,7 +261,7 @@ namespace TS3AudioBot.ResourceFactories
 				queryString = new Uri($"https://www.googleapis.com/youtube/v3/videos?id={string.Join(",", itemBuffer.Select(item => item.Resource.ResourceId))}&part=contentDetails&key={data.apiKey}");
 				if (!WebWrapper.DownloadString(out response, queryString))
 					return "Web response error";
-				var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response);
+				var parsedTime = (Dictionary<string, object>)Util.Serializer.DeserializeObject(response); // TODO dictionary-object does not work with newtonsoft
 				var videoDicts = ((object[])parsedTime["items"]).Cast<Dictionary<string, object>>().ToArray();
 				for (int i = 0; i < videoDicts.Length; i++)
 					itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
@@ -269,57 +274,18 @@ namespace TS3AudioBot.ResourceFactories
 
 			return plist;
 		}
-
-		public static string LoadAlternative(string id)
-		{
-			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"https://www.youtube.com/watch?v={id}&gl=US&hl=en&has_verified=1&bpctr=9999999999")))
-				return "No connection";
-
-			int indexof = resulthtml.IndexOf("ytplayer.config =", StringComparison.OrdinalIgnoreCase);
-			int ptr = indexof;
-			while (resulthtml[ptr] != '{') ptr++;
-			int start = ptr;
-			int stackcnt = 1;
-			while (stackcnt > 0)
-			{
-				ptr++;
-				if (resulthtml[ptr] == '{') stackcnt++;
-				else if (resulthtml[ptr] == '}') stackcnt--;
-			}
-
-			var jsonobj = Util.Serializer.DeserializeObject(resulthtml.Substring(start, ptr - start + 1));
-			var args = GetDictVal(jsonobj, "args");
-			var urlEncodedFmtStreamMap = GetDictVal(args, "url_encoded_fmt_stream_map");
-			if (urlEncodedFmtStreamMap == null)
-				return "No Data";
-
-			string[] encoSplit = ((string)urlEncodedFmtStreamMap).Split(',');
-			foreach (var singleEnco in encoSplit)
-			{
-				var lis = HttpUtility.ParseQueryString(singleEnco);
-
-				var signature = lis["s"];
-				var url = lis["url"];
-				if (!url.Contains("signature"))
-					url += "&signature=" + signature;
-				return url;
-			}
-			return "No match";
-		}
-
-		private static object GetDictVal(object dict, string field) => (dict as Dictionary<string, object>)?[field];
-
+		
 		private static R<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
-			Log.Write(Log.Level.Debug, "YT Ruined!");
+			Log.Debug("Falling back to youtube-dl!");
 
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(resource.ResourceId);
 			if (!result.Ok)
-				return result.Message;
+				return result.Error;
 
 			var response = result.Value;
-			var title = response.Item1;
-			var urlOptions = response.Item2;
+			var title = response.title;
+			var urlOptions = response.links;
 
 			string url = null;
 			if (urlOptions.Count == 1)
@@ -339,7 +305,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
 				return "No youtube-dl response";
 
-			Log.Write(Log.Level.Debug, "YT Saved!");
+			Log.Debug("youtube-dl succeeded!");
 			return new PlayResource(url, resource.WithName(title));
 		}
 
@@ -348,7 +314,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!WebWrapper.DownloadString(out string response,
 				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={data.ApiKey}")))
 				return "No connection";
-			var parsed = Util.Serializer.Deserialize<JsonPlaylistItems>(response);
+			var parsed = JsonConvert.DeserializeObject<JsonPlaylistItems>(response);
 
 			// default: 120px/ 90px
 			// medium : 320px/180px

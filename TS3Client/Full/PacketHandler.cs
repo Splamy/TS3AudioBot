@@ -9,11 +9,12 @@
 
 namespace TS3Client.Full
 {
+	using Helper;
+	using NLog;
 	using System;
-	using System.Diagnostics;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.IO;
-	using System.Linq;
 	using System.Net;
 	using System.Net.Sockets;
 	using System.Threading;
@@ -26,6 +27,10 @@ namespace TS3Client.Full
 		private const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
 		private const int ReceivePacketWindowSize = 100;
 
+		private static readonly Logger LoggerRtt = LogManager.GetLogger("TS3Client.PacketHandler.Rtt");
+		private static readonly Logger LoggerRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
+		private static readonly Logger LoggerRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
+		private static readonly Logger LoggerTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
 		// Timout calculations
 		private static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
 		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
@@ -51,9 +56,10 @@ namespace TS3Client.Full
 
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
-		private readonly Dictionary<ushort, OutgoingPacket> packetAckManager;
-		private readonly RingQueue<IncomingPacket> receiveQueue;
-		private readonly RingQueue<IncomingPacket> receiveQueueLow;
+		private C2SPacket initPacketCheck;
+		private readonly Dictionary<ushort, C2SPacket> packetAckManager;
+		private readonly RingQueue<S2CPacket> receiveQueue;
+		private readonly RingQueue<S2CPacket> receiveQueueLow;
 		private readonly object sendLoopLock = new object();
 		private readonly AutoResetEvent sendLoopPulse = new AutoResetEvent(false);
 		private readonly Ts3Crypt ts3Crypt;
@@ -70,9 +76,9 @@ namespace TS3Client.Full
 
 		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
-			packetAckManager = new Dictionary<ushort, OutgoingPacket>();
-			receiveQueue = new RingQueue<IncomingPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
-			receiveQueueLow = new RingQueue<IncomingPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			packetAckManager = new Dictionary<ushort, C2SPacket>();
+			receiveQueue = new RingQueue<S2CPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveQueueLow = new RingQueue<S2CPacket>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			NetworkStats = new NetworkStats();
 
 			packetCounter = new ushort[9];
@@ -96,6 +102,7 @@ namespace TS3Client.Full
 				lastSentPingId = 0;
 				lastReceivedPingId = 0;
 
+				initPacketCheck = null;
 				packetAckManager.Clear();
 				receiveQueue.Clear();
 				receiveQueueLow.Clear();
@@ -108,7 +115,7 @@ namespace TS3Client.Full
 
 			resendThread.Start();
 
-			AddOutgoingPacket(ts3Crypt.ProcessInit1(null), PacketType.Init1);
+			AddOutgoingPacket(ts3Crypt.ProcessInit1(null).Value, PacketType.Init1);
 		}
 
 		private void ConnectUdpClient(IPEndPoint address)
@@ -136,7 +143,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		public void AddOutgoingPacket(byte[] packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
+		public void AddOutgoingPacket(ReadOnlySpan<byte> packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
 			lock (sendLoopLock)
 			{
@@ -152,23 +159,24 @@ namespace TS3Client.Full
 					var tmpCompress = QuickerLz.Compress(packet, 1);
 					if (tmpCompress.Length < packet.Length)
 					{
-						packet = tmpCompress.ToArr();
+						packet = tmpCompress;
 						addFlags |= PacketFlags.Compressed;
 					}
 
 					if (NeedsSplitting(packet.Length))
 					{
-						foreach (var splitPacket in BuildSplitList(packet, packetType))
-							AddOutgoingPacket(splitPacket, addFlags);
+						AddOutgoingSplitData(packet, packetType, addFlags);
 						return;
 					}
 				}
-				AddOutgoingPacket(new OutgoingPacket(packet, packetType), addFlags);
+				SendOutgoingData(packet, packetType, addFlags);
 			}
 		}
 
-		private void AddOutgoingPacket(OutgoingPacket packet, PacketFlags flags = PacketFlags.None)
+		private void SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None)
 		{
+			var packet = new C2SPacket(data.ToArray(), packetType);
+
 			lock (sendLoopLock)
 			{
 				var ids = GetPacketCounter(packet.PacketType);
@@ -186,36 +194,41 @@ namespace TS3Client.Full
 				case PacketType.VoiceWhisper:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
 					NetUtil.H2N(packet.PacketId, packet.Data, 0);
+					LoggerRawVoice.ConditionalTrace("[O] {0}", packet);
 					break;
 
 				case PacketType.Command:
 				case PacketType.CommandLow:
 					packet.PacketFlags |= PacketFlags.Newprotocol;
 					packetAckManager.Add(packet.PacketId, packet);
+					LoggerRaw.Debug("[O] {0}", packet);
 					break;
 
 				case PacketType.Ping:
 					lastSentPingId = packet.PacketId;
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-
+					LoggerRaw.ConditionalTrace("[O] Ping {0}", packet.PacketId);
 					break;
+
 				case PacketType.Pong:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
+					LoggerRaw.ConditionalTrace("[O] Pong {0}", NetUtil.N2Hushort(packet.Data, 0));
 					break;
 
 				case PacketType.Ack:
 				case PacketType.AckLow:
-					break; // Nothing to do
+					LoggerRaw.ConditionalDebug("[O] Acking {1}: {0}", NetUtil.N2Hushort(packet.Data, 0), packet.PacketType);
+					break;
 
 				case PacketType.Init1:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-					packetAckManager.Add(packet.PacketId, packet);
+					initPacketCheck = packet;
+					LoggerRaw.Debug("[O] InitID: {0}", packet.Data[4]);
+					LoggerRaw.Trace("[O] {0}", packet);
 					break;
 
 				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
-
-				ColorDbg.WritePkgOut(packet);
 
 				ts3Crypt.Encrypt(packet);
 
@@ -229,7 +242,7 @@ namespace TS3Client.Full
 				? new IdTuple(packetCounter[(int)packetType], generationCounter[(int)packetType])
 				: new IdTuple(101, 0);
 
-		private void IncPacketCounter(PacketType packetType)
+		public void IncPacketCounter(PacketType packetType)
 		{
 			unchecked { packetCounter[(int)packetType]++; }
 			if (packetCounter[(int)packetType] == 0)
@@ -243,7 +256,7 @@ namespace TS3Client.Full
 			IncPacketCounter(PacketType.Command);
 		}
 
-		private static IEnumerable<OutgoingPacket> BuildSplitList(byte[] rawData, PacketType packetType)
+		private void AddOutgoingSplitData(ReadOnlySpan<byte> rawData, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
 			int pos = 0;
 			bool first = true;
@@ -255,25 +268,24 @@ namespace TS3Client.Full
 				int blockSize = Math.Min(maxContent, rawData.Length - pos);
 				if (blockSize <= 0) break;
 
-				var tmpBuffer = new byte[blockSize];
-				Array.Copy(rawData, pos, tmpBuffer, 0, blockSize);
-				var packet = new OutgoingPacket(tmpBuffer, packetType);
-
+				var flags = PacketFlags.None;
 				last = pos + blockSize == rawData.Length;
 				if (first ^ last)
-					packet.FragmentedFlag = true;
+					flags |= PacketFlags.Fragmented;
 				if (first)
+				{
+					flags |= addFlags;
 					first = false;
+				}
 
-				yield return packet;
+				SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags);
 				pos += blockSize;
-
 			} while (!last);
 		}
 
 		private static bool NeedsSplitting(int dataSize) => dataSize + HeaderSize > MaxPacketSize;
 
-		public IncomingPacket FetchPacket()
+		public S2CPacket FetchPacket()
 		{
 			while (true)
 			{
@@ -299,7 +311,7 @@ namespace TS3Client.Full
 				// Invalid packet, ignore
 				if (packet == null)
 				{
-					ColorDbg.WritePkgRaw(buffer, "DROPPING");
+					LoggerRaw.Debug("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 					continue;
 				}
 
@@ -309,19 +321,38 @@ namespace TS3Client.Full
 
 				NetworkStats.LogInPacket(packet);
 
-				ColorDbg.WritePkgIn(packet);
-
 				switch (packet.PacketType)
 				{
-				case PacketType.Voice: break;
-				case PacketType.VoiceWhisper: break;
-				case PacketType.Command: packet = ReceiveCommand(packet, receiveQueue, PacketType.Ack); break;
-				case PacketType.CommandLow: packet = ReceiveCommand(packet, receiveQueueLow, PacketType.AckLow); break;
-				case PacketType.Ping: ReceivePing(packet); break;
-				case PacketType.Pong: ReceivePong(packet); break;
-				case PacketType.Ack: packet = ReceiveAck(packet); break;
+				case PacketType.Voice:
+				case PacketType.VoiceWhisper:
+					LoggerRawVoice.ConditionalTrace("[I] {0}", packet);
+					break;
+				case PacketType.Command:
+					LoggerRaw.Debug("[I] {0}", packet);
+					packet = ReceiveCommand(packet, receiveQueue, PacketType.Ack);
+					break;
+				case PacketType.CommandLow:
+					LoggerRaw.Debug("[I] {0}", packet);
+					packet = ReceiveCommand(packet, receiveQueueLow, PacketType.AckLow);
+					break;
+				case PacketType.Ping:
+					LoggerRaw.ConditionalTrace("[I] Ping {0}", packet.PacketId);
+					ReceivePing(packet);
+					break;
+				case PacketType.Pong:
+					LoggerRaw.ConditionalTrace("[I] Pong {0}", NetUtil.N2Hushort(packet.Data, 0));
+					ReceivePong(packet);
+					break;
+				case PacketType.Ack:
+					LoggerRaw.ConditionalDebug("[I] Acking: {0}", NetUtil.N2Hushort(packet.Data, 0));
+					packet = ReceiveAck(packet);
+					break;
 				case PacketType.AckLow: break;
-				case PacketType.Init1: ReceiveInitAck(); break;
+				case PacketType.Init1:
+					LoggerRaw.Debug("[I] InitID: {0}", packet.Data[0]);
+					LoggerRaw.Trace("[I] {0}", packet);
+					ReceiveInitAck(packet);
+					break;
 				default: throw Util.UnhandledDefault(packet.PacketType);
 				}
 
@@ -334,10 +365,10 @@ namespace TS3Client.Full
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-		private void GenerateGenerationId(IncomingPacket packet)
+		private void GenerateGenerationId(S2CPacket packet)
 		{
 			// TODO rework this for all packet types
-			RingQueue<IncomingPacket> packetQueue;
+			RingQueue<S2CPacket> packetQueue;
 			switch (packet.PacketType)
 			{
 			case PacketType.Command: packetQueue = receiveQueue; break;
@@ -348,7 +379,7 @@ namespace TS3Client.Full
 			packet.GenerationId = packetQueue.GetGeneration(packet.PacketId);
 		}
 
-		private IncomingPacket ReceiveCommand(IncomingPacket packet, RingQueue<IncomingPacket> packetQueue, PacketType ackType)
+		private S2CPacket ReceiveCommand(S2CPacket packet, RingQueue<S2CPacket> packetQueue, PacketType ackType)
 		{
 			var setStatus = packetQueue.IsSet(packet.PacketId);
 
@@ -367,7 +398,7 @@ namespace TS3Client.Full
 			return TryFetchPacket(packetQueue, out var retPacket) ? retPacket : null;
 		}
 
-		private static bool TryFetchPacket(RingQueue<IncomingPacket> packetQueue, out IncomingPacket packet)
+		private static bool TryFetchPacket(RingQueue<S2CPacket> packetQueue, out S2CPacket packet)
 		{
 			if (packetQueue.Count <= 0) { packet = null; return false; }
 
@@ -414,7 +445,7 @@ namespace TS3Client.Full
 
 				for (int i = 1; i < take; i++)
 				{
-					if (!packetQueue.TryDequeue(out IncomingPacket nextPacket))
+					if (!packetQueue.TryDequeue(out S2CPacket nextPacket))
 						throw new InvalidOperationException("Packet in queue got missing (?)");
 
 					Array.Copy(nextPacket.Data, 0, preFinalArray, curCopyPos, nextPacket.Size);
@@ -449,7 +480,7 @@ namespace TS3Client.Full
 				throw new InvalidOperationException("Packet type is not an Ack-type");
 		}
 
-		private IncomingPacket ReceiveAck(IncomingPacket packet)
+		private S2CPacket ReceiveAck(S2CPacket packet)
 		{
 			if (packet.Data.Length < 2)
 				return null;
@@ -472,7 +503,7 @@ namespace TS3Client.Full
 			pingTimer.Restart();
 		}
 
-		private void ReceivePing(IncomingPacket packet)
+		private void ReceivePing(S2CPacket packet)
 		{
 			var idDiff = packet.PacketId - lastReceivedPingId;
 			if (idDiff > 1 && idDiff < ReceivePacketWindowSize)
@@ -484,7 +515,7 @@ namespace TS3Client.Full
 			AddOutgoingPacket(pongData, PacketType.Pong);
 		}
 
-		private void ReceivePong(IncomingPacket packet)
+		private void ReceivePong(S2CPacket packet)
 		{
 			ushort answerId = NetUtil.N2Hushort(packet.Data, 0);
 
@@ -496,18 +527,27 @@ namespace TS3Client.Full
 			}
 		}
 
-		public void ReceiveInitAck()
+		public void ReceivedFinalInitAck() => ReceiveInitAck(null, true);
+
+		private void ReceiveInitAck(S2CPacket packet, bool done = false)
 		{
-			// this method is a bit hacky since it removes ALL Init1 packets
-			// from the sendQueue instead of the one with the preceding
-			// init step id (see Ts3Crypt.ProcessInit1).
-			// But usually this should be no problem since the init order is linear
 			lock (sendLoopLock)
 			{
-				ColorDbg.WriteDetail("Cleaned Inits", "INIT");
-				var remPacket = packetAckManager.Values.Where(x => x.PacketType == PacketType.Init1).ToArray();
-				foreach (var packet in remPacket)
-					packetAckManager.Remove(packet.PacketId);
+				if (initPacketCheck == null || packet == null)
+				{
+					if (done)
+						initPacketCheck = null;
+					return;
+				}
+				// optional: add random number check from init data
+				var forwardData = ts3Crypt.ProcessInit1(packet.Data);
+				if (!forwardData.Ok)
+				{
+					LoggerRaw.Debug("Error init: {0}", forwardData.Error);
+					return;
+				}
+				initPacketCheck = null;
+				AddOutgoingPacket(forwardData.Value, PacketType.Init1);
 			}
 		}
 
@@ -525,7 +565,7 @@ namespace TS3Client.Full
 				smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
 			smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
 			currentRto = smoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
-			ColorDbg.WriteRtt(smoothedRtt, smoothedRttVar, currentRto);
+			LoggerRtt.Debug("RTT SRTT:{0} RTTVAR:{1} RTO:{2}", smoothedRtt, smoothedRttVar, currentRto);
 		}
 
 		/// <summary>
@@ -534,23 +574,24 @@ namespace TS3Client.Full
 		/// </summary>
 		private void ResendLoop()
 		{
-			DateTime pingCheck = Util.Now;
+			var pingCheck = Util.Now;
 
 			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
 			{
+				var now = Util.Now;
 				lock (sendLoopLock)
 				{
 					if (Closed)
 						break;
 
-					if (packetAckManager.Count > 0 && ResendPackages(packetAckManager.Values))
+					if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values, now)) ||
+						(initPacketCheck != null && ResendPacket(initPacketCheck, now)))
 					{
 						Stop(MoveReason.Timeout);
 						return;
 					}
 				}
 
-				var now = Util.Now;
 				var nextTest = pingCheck - now + PingInterval;
 				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
 				if (nextTest < TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
@@ -558,40 +599,46 @@ namespace TS3Client.Full
 					pingCheck += PingInterval;
 					SendPing();
 				}
-
+				// TODO implement ping-timeout here
 				sendLoopPulse.WaitOne(ClockResolution);
 			}
 		}
 
-		private bool ResendPackages(IEnumerable<OutgoingPacket> packetList)
+		private bool ResendPackets(IEnumerable<C2SPacket> packetList, DateTime now)
 		{
-			var now = Util.Now;
 			foreach (var outgoingPacket in packetList)
-			{
-				// Check if the packet timed out completely
-				if (outgoingPacket.FirstSendTime < now - PacketTimeout)
-				{
-					ColorDbg.WriteResend(outgoingPacket, "TIMEOUT");
+				if (ResendPacket(outgoingPacket, now))
 					return true;
-				}
-
-				// Check if we should retransmit a packet because it probably got lost
-				if (outgoingPacket.LastSendTime < now - currentRto)
-				{
-					ColorDbg.WriteResend(outgoingPacket, "RESEND");
-					currentRto = currentRto + currentRto;
-					if (currentRto > MaxRetryInterval)
-						currentRto = MaxRetryInterval;
-					SendRaw(outgoingPacket);
-				}
-			}
 			return false;
 		}
 
-		private void SendRaw(OutgoingPacket packet)
+		private bool ResendPacket(C2SPacket packet, DateTime now)
+		{
+			// Check if the packet timed out completely
+			if (packet.FirstSendTime < now - PacketTimeout)
+			{
+				LoggerTimeout.Debug("TIMEOUT: {0}", packet);
+				return true;
+			}
+
+			// Check if we should retransmit a packet because it probably got lost
+			if (packet.LastSendTime < now - currentRto)
+			{
+				LoggerTimeout.Debug("RESEND: {0}", packet);
+				currentRto = currentRto + currentRto;
+				if (currentRto > MaxRetryInterval)
+					currentRto = MaxRetryInterval;
+				SendRaw(packet);
+			}
+
+			return false;
+		}
+
+		private void SendRaw(C2SPacket packet)
 		{
 			packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);
+			LoggerRaw.ConditionalTrace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}
 	}

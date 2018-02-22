@@ -9,6 +9,7 @@
 
 namespace TS3Client.Full
 {
+	using System;
 	using System.Net;
 	using System.Runtime.CompilerServices;
 
@@ -24,9 +25,21 @@ namespace TS3Client.Full
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ushort N2Hushort(ReadOnlySpan<byte> buf)
+		{
+			return unchecked((ushort)((buf[0] << 8) | buf[1]));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static int N2Hint(byte[] intArr, int inOff)
 		{
 			return unchecked((intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3]);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static uint N2Huint(byte[] intArr, int inOff)
+		{
+			return (uint)unchecked((intArr[inOff] << 24) | (intArr[inOff + 1] << 16) | (intArr[inOff + 2] << 8) | intArr[inOff + 3]);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,6 +47,13 @@ namespace TS3Client.Full
 		{
 			outArr[outOff + 0] = unchecked((byte)(value >> 8));
 			outArr[outOff + 1] = unchecked((byte)(value >> 0));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void H2N(ushort value, Span<byte> buf)
+		{
+			buf[0] = unchecked((byte)(value >> 8));
+			buf[1] = unchecked((byte)(value >> 0));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

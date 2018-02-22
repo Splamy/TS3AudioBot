@@ -9,7 +9,6 @@
 
 namespace TS3Client
 {
-	using Messages;
 	using System;
 
 	/// <summary>Generel exeption when methods within the client fail.</summary>
@@ -17,14 +16,5 @@ namespace TS3Client
 	{
 		public Ts3Exception(string message) : base(message) { }
 		public Ts3Exception(string message, Exception innerException) : base(message, innerException) { }
-	}
-
-	/// <summary>Exception when commands return an error code from the server.</summary>
-	public class Ts3CommandException : Ts3Exception
-	{
-		public CommandError ErrorStatus { get; }
-
-		internal Ts3CommandException(CommandError message) : base(message.ErrorFormat()) { ErrorStatus = message; }
-		internal Ts3CommandException(CommandError message, Exception inner) : base(message.ErrorFormat(), inner) { ErrorStatus = message; }
 	}
 }

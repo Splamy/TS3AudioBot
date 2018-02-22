@@ -10,6 +10,7 @@
 namespace TS3Client.Full
 {
 	using Commands;
+	using Helper;
 	using Org.BouncyCastle.Asn1;
 	using Org.BouncyCastle.Asn1.X9;
 	using Org.BouncyCastle.Crypto;
@@ -21,10 +22,12 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Math;
 	using Org.BouncyCastle.Math.EC;
 	using Org.BouncyCastle.Security;
+	using Org.BouncyCastle.Crypto.EC;
+	using System.Collections.Generic;
 	using System;
 	using System.Linq;
-	using System.Text;
 	using System.Security.Cryptography;
+	using System.Text;
 
 	/// <summary>Provides all cryptographic functions needed for the low- and high level TeamSpeak protocol usage.</summary>
 	public sealed class Ts3Crypt
@@ -32,20 +35,18 @@ namespace TS3Client.Full
 		private const string DummyKeyAndNonceString = "c:\\windows\\system\\firewall32.cpl";
 		private static readonly byte[] DummyKey = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(0, 16));
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
-		private static readonly Tuple<byte[], byte[]> DummyKeyAndNonceTuple = new Tuple<byte[], byte[]>(DummyKey, DummyIv);
+		private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly byte[] Initversion = { 0x06, 0x3b, 0xec, 0xe9 };
+		private static readonly byte[] Initversion = { 0x09, 0x83, 0x8C, 0xCF }; // 3.1.8 [Stable]
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 
 		private const int MacLen = 8;
-		private const int OutHeaderLen = 5;
-		private const int InHeaderLen = 3;
 		private const int PacketTypeKinds = 9;
 
 		public IdentityData Identity { get; set; }
 
 		internal bool CryptoInitComplete { get; private set; }
-		private readonly byte[] ivStruct = new byte[20];
+		private byte[] ivStruct;
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly Tuple<byte[], byte[], uint>[] cachedKeyNonces = new Tuple<byte[], byte[], uint>[PacketTypeKinds * 2];
 
@@ -57,7 +58,7 @@ namespace TS3Client.Full
 		internal void Reset()
 		{
 			CryptoInitComplete = false;
-			Array.Clear(ivStruct, 0, ivStruct.Length);
+			ivStruct = null; // TODO recheck
 			Array.Clear(fakeSignature, 0, fakeSignature.Length);
 			Array.Clear(cachedKeyNonces, 0, cachedKeyNonces.Length);
 			Identity = null;
@@ -65,7 +66,8 @@ namespace TS3Client.Full
 
 		#region KEY IMPORT/EXPROT
 		/// <summary>This methods loads a secret identity.</summary>
-		/// <param name="key">The key stored in base64, encoded like the libtomcrypt export method (of a private key).</param>
+		/// <param name="key">The key stored in base64, encoded like the libtomcrypt export method of a private key.
+		/// Or the TS3Client's shorted private-only key.</param>
 		/// <param name="keyOffset">A number which determines the security level of an identity.</param>
 		/// <param name="lastCheckedKeyOffset">The last brute forced number. Default 0: will take the current keyOffset.</param>
 		/// <returns>The identity information.</returns>
@@ -74,18 +76,14 @@ namespace TS3Client.Full
 			// Note: libtomcrypt stores the private AND public key when exporting a private key
 			// This makes importing very convenient :)
 			byte[] asnByteArray = Convert.FromBase64String(key);
-			var pubPrivKey = ImportPublicAndPrivateKey(asnByteArray);
-			return LoadIdentity(pubPrivKey, keyOffset, lastCheckedKeyOffset);
+			ImportKeyDynamic(asnByteArray, out var publicKey, out var privateKey);
+			return LoadIdentity(publicKey, privateKey, keyOffset, lastCheckedKeyOffset);
 		}
 
-		private static IdentityData LoadIdentity(Tuple<ECPoint, BigInteger> pubPrivKey, ulong keyOffset, ulong lastCheckedKeyOffset)
+		private static IdentityData LoadIdentity(ECPoint publicKey, BigInteger privateKey, ulong keyOffset, ulong lastCheckedKeyOffset)
 		{
-			return new IdentityData
+			return new IdentityData(privateKey, publicKey)
 			{
-				PublicKey = pubPrivKey.Item1,
-				PrivateKey = pubPrivKey.Item2,
-				PublicKeyString = ExportPublicKey(pubPrivKey.Item1),
-				PrivateKeyString = ExportPublicAndPrivateKey(pubPrivKey),
 				ValidKeyOffset = keyOffset,
 				LastCheckedKeyOffset = lastCheckedKeyOffset < keyOffset ? keyOffset : lastCheckedKeyOffset,
 			};
@@ -103,37 +101,56 @@ namespace TS3Client.Full
 			return ecPoint;
 		}
 
-		private static Tuple<ECPoint, BigInteger> ImportPublicAndPrivateKey(byte[] asnByteArray)
+		private static void ImportKeyDynamic(byte[] asnByteArray, out ECPoint publicKey, out BigInteger privateKey)
 		{
+			privateKey = null;
+			publicKey = null;
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
-			var x = ((DerInteger)asnKeyData[2]).Value;
-			var y = ((DerInteger)asnKeyData[3]).Value;
-			var bigi = ((DerInteger)asnKeyData[4]).Value;
+			var bitInfo = ((DerBitString)asnKeyData[0]).IntValue;
+			if (bitInfo == 0b0000_0000 || bitInfo == 0b1000_0000)
+			{
+				var x = ((DerInteger)asnKeyData[2]).Value;
+				var y = ((DerInteger)asnKeyData[3]).Value;
+				publicKey = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
 
-			var ecPoint = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
-			return new Tuple<ECPoint, BigInteger>(ecPoint, bigi);
+				if (bitInfo == 0b1000_0000)
+				{
+					privateKey = ((DerInteger)asnKeyData[4]).Value;
+				}
+			}
+			else if (bitInfo == 0b1100_0000)
+			{
+				privateKey = ((DerInteger)asnKeyData[2]).Value;
+			}
 		}
 
-		private static string ExportPublicKey(ECPoint publicKey)
+		internal static string ExportPublicKey(ECPoint publicKey)
 		{
 			var dataArray = new DerSequence(
-					new DerBitString(new byte[] { 0 }, 7),
-					new DerInteger(32),
-					new DerInteger(publicKey.AffineXCoord.ToBigInteger()),
-					new DerInteger(publicKey.AffineYCoord.ToBigInteger())).GetDerEncoded();
+				new DerBitString(new byte[] { 0b0000_0000 }, 7),
+				new DerInteger(32),
+				new DerInteger(publicKey.AffineXCoord.ToBigInteger()),
+				new DerInteger(publicKey.AffineYCoord.ToBigInteger())).GetDerEncoded();
 			return Convert.ToBase64String(dataArray);
 		}
 
-		// TODO Private only key + rework of identitydata public members
-
-		private static string ExportPublicAndPrivateKey(Tuple<ECPoint, BigInteger> pubPrivKey)
+		internal static string ExportPrivateKey(BigInteger privateKey)
 		{
 			var dataArray = new DerSequence(
-					new DerBitString(new byte[] { 128 }, 7),
-					new DerInteger(32),
-					new DerInteger(pubPrivKey.Item1.AffineXCoord.ToBigInteger()),
-					new DerInteger(pubPrivKey.Item1.AffineYCoord.ToBigInteger()),
-					new DerInteger(pubPrivKey.Item2)).GetDerEncoded();
+				new DerBitString(new byte[] { 0b1100_0000 }, 6),
+				new DerInteger(32),
+				new DerInteger(privateKey)).GetDerEncoded();
+			return Convert.ToBase64String(dataArray);
+		}
+
+		internal static string ExportPublicAndPrivateKey(ECPoint publicKey, BigInteger privateKey)
+		{
+			var dataArray = new DerSequence(
+				new DerBitString(new byte[] { 0b1000_0000 }, 7),
+				new DerInteger(32),
+				new DerInteger(publicKey.AffineXCoord.ToBigInteger()),
+				new DerInteger(publicKey.AffineYCoord.ToBigInteger()),
+				new DerInteger(privateKey)).GetDerEncoded();
 			return Convert.ToBase64String(dataArray);
 		}
 
@@ -144,7 +161,7 @@ namespace TS3Client.Full
 			return Convert.ToBase64String(hashBytes);
 		}
 
-		private static ECPoint RestorePublicFromPrivateKey(BigInteger privateKey)
+		internal static ECPoint RestorePublicFromPrivateKey(BigInteger privateKey)
 		{
 			var curve = ECNamedCurveTable.GetByOid(X9ObjectIdentifiers.Prime256v1);
 			return curve.G.Multiply(privateKey).Normalize();
@@ -198,6 +215,7 @@ namespace TS3Client.Full
 		private void SetSharedSecret(byte[] alpha, byte[] beta, byte[] sharedKey)
 		{
 			// prepares the ivstruct consisting of 2 random byte chains of 10 bytes which each both clients agreed on
+			ivStruct = new byte[20];
 			Array.Copy(alpha, 0, ivStruct, 0, 10);
 			Array.Copy(beta, 0, ivStruct, 10, 10);
 
@@ -210,33 +228,127 @@ namespace TS3Client.Full
 			Array.Copy(buffer, 0, fakeSignature, 0, 8);
 		}
 
-		internal byte[] ProcessInit1(byte[] data)
+		public static ECPoint publicTmp;
+		public static BigInteger privateTmp;
+
+		public static string ToHex(IEnumerable<byte> seq) => string.Join(" ", seq.Select(x => x.ToString("X2")));
+		public static byte[] FromHex(string hex) => hex.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
+
+		public static readonly X9ECParameters Ed25519Curve = CustomNamedCurves.GetByName("Curve25519");
+		public static readonly ECDomainParameters Ed25519Domain = new ECDomainParameters(Ed25519Curve.Curve, Ed25519Curve.G, Ed25519Curve.N, Ed25519Curve.H, Ed25519Curve.GetSeed());
+		private static readonly ECKeyGenerationParameters EdKeyGenParams = new ECKeyGenerationParameters(Ed25519Domain, new SecureRandom());
+
+		public static void Test()
+		{
+			/*var dat = FromHex("20 41 11 60 A1 36 E0 DC 4E 67 03 E6 E3 6C E1 7F 3A 7A 8F 70 56 1B FD E8 EE 50 8E E5 CE C7 10 66");
+			
+			var pt = Ed25519.DecodeInt(dat).ToBcBi();
+
+			var pub = Ed25519Curve.G.Multiply(pt);
+			var x = Ed25519.EncodePoint(
+				pub.Normalize().AffineXCoord.ToBigInteger().ToNetBi(),
+				pub.Normalize().AffineYCoord.ToBigInteger().ToNetBi());
+			var xstr = ToHex(x);*/
+
+			var pk2nd = FromHex("");
+			var scalar = FromHex("");
+
+			var hash = Hash512It(pk2nd.Concat(scalar).ToArray());
+
+			hash[0] &= 0xF8;
+			hash[31] &= 0x3F;
+			hash[31] |= 0x40;
+
+			var p1 = Ed25519.DecodePoint(hash.Take(32).ToArray());
+		}
+
+		private static void GenerateTemporaryKey()
+		{
+			// TODO own method fn(curve) -> (q, d)
+			var generator = new ECKeyPairGenerator();
+			generator.Init(EdKeyGenParams);
+			var keyPair = generator.GenerateKeyPair();
+
+			var privateKey = (ECPrivateKeyParameters)keyPair.Private;
+			var publicKey = (ECPublicKeyParameters)keyPair.Public;
+
+			publicTmp = publicKey.Q;
+			privateTmp = privateKey.D;
+		}
+
+		public static byte[] EncodeInt(BigInteger y)
+		{
+			byte[] nin = y.ToByteArray();
+			var nout = new byte[Math.Max(nin.Length, 32)];
+			Array.Copy(nin, nout, nin.Length);
+			return nout;
+		}
+
+		internal void CryptoInit2(string license, string omega, string proof)
+		{
+			// TODO verify proof
+
+			var licenseArr = Convert.FromBase64String(license);
+
+		}
+
+		private byte[] GetSharedSecret2(ECPoint publicKeyPoint)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void SetSharedSecret2(byte[] alpha, byte[] beta, byte[] sharedKey)
+		{
+
+		}
+
+		internal R<byte[]> ProcessInit1(byte[] data)
 		{
 			const int versionLen = 4;
 			const int initTypeLen = 1;
 
-			if (data == null)
+			int? type = null;
+			if (data != null)
 			{
-				var sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
+				type = data[0];
+				if (data.Length < initTypeLen)
+					return "Invalid Init1 packet (too short)";
+			}
+			byte[] sendData;
+
+			switch (type)
+			{
+			case 0x7F:
+			// 0x7F: Some strange servers do this
+			// the normal client responds by starting again
+			case null:
+				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
 				sendData[versionLen] = 0x00; // initType
 				NetUtil.H2N(Util.UnixNow, sendData, versionLen + initTypeLen); // 4byte timestamp
-				for (int i = 0; i < 4; i++) sendData[i + versionLen + initTypeLen + 4] = (byte)Util.Random.Next(0, 256); // 4byte random
+				for (int i = 0; i < 4; i++)
+					sendData[i + versionLen + initTypeLen + 4] = (byte)Util.Random.Next(0, 256); // 4byte random
 				return sendData;
-			}
 
-			if (data.Length < initTypeLen) return null;
-			int type = data[0];
-			if (type == 1)
-			{
-				var sendData = new byte[versionLen + initTypeLen + 16 + 4];
-				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
-				sendData[versionLen] = 0x02; // initType
-				Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
-				return sendData;
-			}
-			else if (type == 3)
-			{
+			case 1:
+				switch (data.Length)
+				{
+				case 21:
+					sendData = new byte[versionLen + initTypeLen + 16 + 4];
+					Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+					sendData[versionLen] = 0x02; // initType
+					Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
+					return sendData;
+				case 5:
+					var errorNum = NetUtil.N2Huint(data, 1);
+					if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
+						return $"Got Init1(1) error: {(Ts3ErrorCode)errorNum}";
+					return $"Got Init1(1) undefined error code: {errorNum}";
+				default:
+					return "Invalid or unrecognized Init1(1) packet";
+				}
+
+			case 3:
 				byte[] alphaBytes = new byte[10];
 				Util.Random.NextBytes(alphaBytes);
 				var alpha = Convert.ToBase64String(alphaBytes);
@@ -244,15 +356,18 @@ namespace TS3Client.Full
 					new ICommandPart[] {
 						new CommandParameter("alpha", alpha),
 						new CommandParameter("omega", Identity.PublicKeyString),
+						new CommandParameter("ot", 1),
 						new CommandParameter("ip", string.Empty) });
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
 				// Prepare solution
 				int level = NetUtil.N2Hint(data, initTypeLen + 128);
-				byte[] y = SolveRsaChallange(data, initTypeLen, level);
+				var y = SolveRsaChallange(data, initTypeLen, level);
+				if (!y.Ok)
+					return y;
 
 				// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
-				var sendData = new byte[versionLen + initTypeLen + 232 + 64 + textBytes.Length];
+				sendData = new byte[versionLen + initTypeLen + 232 + 64 + textBytes.Length];
 				// Copy this.Version
 				Array.Copy(Initversion, 0, sendData, 0, versionLen);
 				// Write InitType
@@ -260,14 +375,14 @@ namespace TS3Client.Full
 				// Copy data
 				Array.Copy(data, initTypeLen, sendData, versionLen + initTypeLen, 232);
 				// Copy y
-				Array.Copy(y, 0, sendData, versionLen + initTypeLen + 232 + (64 - y.Length), y.Length);
+				Array.Copy(y.Value, 0, sendData, versionLen + initTypeLen + 232 + (64 - y.Value.Length), y.Value.Length);
 				// Copy text
 				Array.Copy(textBytes, 0, sendData, versionLen + initTypeLen + 232 + 64, textBytes.Length);
-
 				return sendData;
+
+			default:
+				return $"Got invalid Init1({type}) packet id";
 			}
-			else
-				return null;
 		}
 
 		/// <summary>This method calculates x ^ (2^level) % n = y which is the solution to the server RSA puzzle.</summary>
@@ -275,8 +390,11 @@ namespace TS3Client.Full
 		/// <param name="offset">The offset of x and n in the data array.</param>
 		/// <param name="level">The exponent to x.</param>
 		/// <returns>The y value, unsigned, as a BigInteger bytearray.</returns>
-		private static byte[] SolveRsaChallange(byte[] data, int offset, int level)
+		private static R<byte[]> SolveRsaChallange(byte[] data, int offset, int level)
 		{
+			if (level < 0 || level > 1_000_000)
+				return "RSA challange level is not within an acceptable range";
+
 			// x is the base, n is the modulus.
 			var x = new BigInteger(1, data, 00 + offset, 64);
 			var n = new BigInteger(1, data, 64 + offset, 64);
@@ -287,7 +405,7 @@ namespace TS3Client.Full
 
 		#region ENCRYPTION/DECRYPTION
 
-		internal void Encrypt(OutgoingPacket packet)
+		internal void Encrypt(BasePacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
 			{
@@ -300,9 +418,9 @@ namespace TS3Client.Full
 				return;
 			}
 
-			var keyNonce = GetKeyNonce(false, packet.PacketId, packet.GenerationId, packet.PacketType);
+			var (key, nonce) = GetKeyNonce(packet.FromServer, packet.PacketId, packet.GenerationId, packet.PacketType);
 			packet.BuildHeader();
-			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
+			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(key), 8 * MacLen, nonce, packet.Header);
 
 			byte[] result;
 			int len;
@@ -322,42 +440,41 @@ namespace TS3Client.Full
 			// to build the final TS3/libtomcrypt we need to copy it into another order
 
 			// len is Data.Length + Mac.Length
-			packet.Raw = new byte[OutHeaderLen + len];
+			packet.Raw = new byte[packet.HeaderLength + len];
 			// Copy the Mac from [Data..., Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(result, len - MacLen, packet.Raw, 0, MacLen);
 			// Copy the Header from packet.Header to [Mac..., Header..., Data...]
-			Array.Copy(packet.Header, 0, packet.Raw, MacLen, OutHeaderLen);
+			Array.Copy(packet.Header, 0, packet.Raw, MacLen, packet.HeaderLength);
 			// Copy the Data from [Data..., Mac...] to [Mac..., Header..., Data...]
-			Array.Copy(result, 0, packet.Raw, MacLen + OutHeaderLen, len - MacLen);
+			Array.Copy(result, 0, packet.Raw, MacLen + packet.HeaderLength, len - MacLen);
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		private static void FakeEncrypt(OutgoingPacket packet, byte[] mac)
+		private static void FakeEncrypt(BasePacket packet, byte[] mac)
 		{
-			packet.BuildHeader();
-			packet.Raw = new byte[packet.Data.Length + MacLen + OutHeaderLen];
+			packet.Raw = new byte[packet.Data.Length + MacLen + packet.HeaderLength];
 			// Copy the Mac from [Mac...] to [Mac..., Header..., Data...]
 			Array.Copy(mac, 0, packet.Raw, 0, MacLen);
 			// Copy the Header from packet.Header to [Mac..., Header..., Data...]
-			Array.Copy(packet.Header, 0, packet.Raw, MacLen, OutHeaderLen);
+			packet.BuildHeader(packet.Raw.AsSpan().Slice(MacLen, packet.HeaderLength));
 			// Copy the Data from packet.Data to [Mac..., Header..., Data...]
-			Array.Copy(packet.Data, 0, packet.Raw, MacLen + OutHeaderLen, packet.Data.Length);
+			Array.Copy(packet.Data, 0, packet.Raw, MacLen + packet.HeaderLength, packet.Data.Length);
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		internal static IncomingPacket GetIncommingPacket(byte[] data)
+		internal static S2CPacket GetIncommingPacket(byte[] data)
 		{
-			if (data.Length < InHeaderLen + MacLen)
+			if (data.Length < S2CPacket.HeaderLen + MacLen)
 				return null;
 
-			return new IncomingPacket(data)
+			return new S2CPacket(data)
 			{
 				PacketTypeFlagged = data[MacLen + 2],
 				PacketId = NetUtil.N2Hushort(data, MacLen),
 			};
 		}
 
-		internal bool Decrypt(IncomingPacket packet)
+		internal bool Decrypt(BasePacket packet)
 		{
 			if (packet.PacketType == PacketType.Init1)
 				return FakeDecrypt(packet, Ts3InitMac);
@@ -368,13 +485,13 @@ namespace TS3Client.Full
 			return DecryptData(packet);
 		}
 
-		private bool DecryptData(IncomingPacket packet)
+		private bool DecryptData(BasePacket packet)
 		{
-			Array.Copy(packet.Raw, MacLen, packet.Header, 0, InHeaderLen);
-			var keyNonce = GetKeyNonce(true, packet.PacketId, packet.GenerationId, packet.PacketType);
-			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
+			Array.Copy(packet.Raw, MacLen, packet.Header, 0, packet.HeaderLength);
+			var (key, nonce) = GetKeyNonce(true, packet.PacketId, packet.GenerationId, packet.PacketType);
+			int dataLen = packet.Raw.Length - (MacLen + packet.HeaderLength);
 
-			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(keyNonce.Item1), 8 * MacLen, keyNonce.Item2, packet.Header);
+			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(key), 8 * MacLen, nonce, packet.Header);
 			try
 			{
 				byte[] result;
@@ -383,9 +500,12 @@ namespace TS3Client.Full
 					eaxCipher.Init(false, ivAndKey);
 					result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
 
-					int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + InHeaderLen, dataLen, result, 0);
+					int len = eaxCipher.ProcessBytes(packet.Raw, MacLen + packet.HeaderLength, dataLen, result, 0);
 					len += eaxCipher.ProcessBytes(packet.Raw, 0, MacLen, result, len);
 					len += eaxCipher.DoFinal(result, len);
+
+					if (len != dataLen)
+						return false;
 				}
 
 				packet.Data = result;
@@ -394,13 +514,13 @@ namespace TS3Client.Full
 			return true;
 		}
 
-		private static bool FakeDecrypt(IncomingPacket packet, byte[] mac)
+		private static bool FakeDecrypt(BasePacket packet, byte[] mac)
 		{
 			if (!CheckEqual(packet.Raw, 0, mac, 0, MacLen))
 				return false;
-			int dataLen = packet.Raw.Length - (MacLen + InHeaderLen);
+			int dataLen = packet.Raw.Length - (MacLen + packet.HeaderLength);
 			packet.Data = new byte[dataLen];
-			Array.Copy(packet.Raw, MacLen + InHeaderLen, packet.Data, 0, dataLen);
+			Array.Copy(packet.Raw, MacLen + packet.HeaderLength, packet.Data, 0, dataLen);
 			return true;
 		}
 
@@ -410,7 +530,7 @@ namespace TS3Client.Full
 		/// <param name="generationId">Each time the packetId reaches 65535 the next packet will go on with 0 and the generationId will be increased by 1.</param>
 		/// <param name="packetType">The packetType.</param>
 		/// <returns>A tuple of (key, nonce)</returns>
-		private Tuple<byte[], byte[]> GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
+		private (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
 		{
 			if (!CryptoInitComplete)
 				return DummyKeyAndNonceTuple;
@@ -435,7 +555,7 @@ namespace TS3Client.Full
 				Array.Copy(BitConverter.GetBytes(NetUtil.H2N(generationId)), 0, tmpToHash, 2, 4);
 				Array.Copy(ivStruct, 0, tmpToHash, 6, 20);
 
-				var result = Hash256It(tmpToHash);
+				var result = Hash256It(tmpToHash).AsSpan();
 
 				cachedKeyNonces[cacheIndex] = new Tuple<byte[], byte[], uint>(result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
 			}
@@ -446,10 +566,10 @@ namespace TS3Client.Full
 			Array.Copy(cachedKeyNonces[cacheIndex].Item2, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
-			key[0] ^= (byte)((packetId >> 8) & 0xFF);
-			key[1] ^= (byte)((packetId) & 0xFF);
+			key[0] ^= unchecked((byte)(packetId >> 8));
+			key[1] ^= unchecked((byte)(packetId >> 0));
 
-			return new Tuple<byte[], byte[]>(key, nonce);
+			return (key, nonce);
 		}
 
 		#endregion
@@ -472,8 +592,10 @@ namespace TS3Client.Full
 
 		private static readonly SHA1Managed Sha1HashInternal = new SHA1Managed();
 		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
+		private static readonly Sha512Digest Sha512Hash = new Sha512Digest();
 		private static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
 		private static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
+		private static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha512Hash, data, offset, len);
 		private static byte[] HashItInternal(HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			lock (hashAlgo)
@@ -481,7 +603,7 @@ namespace TS3Client.Full
 				return hashAlgo.ComputeHash(data, offset, len == 0 ? data.Length - offset : len);
 			}
 		}
-		private static byte[] HashIt(GeneralDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
+		private static byte[] HashIt(IDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			byte[] result;
 			lock (hashAlgo)
@@ -501,6 +623,34 @@ namespace TS3Client.Full
 			var bytes = Util.Encoder.GetBytes(password);
 			var hashed = Hash1It(bytes);
 			return Convert.ToBase64String(hashed);
+		}
+
+		public static byte[] Sign(BigInteger privateKey, byte[] data)
+		{
+			var signer = SignerUtilities.GetSigner(X9ObjectIdentifiers.ECDsaWithSha256);
+			var signKey = new ECPrivateKeyParameters(privateKey, KeyGenParams.DomainParameters);
+			signer.Init(true, signKey);
+			signer.BlockUpdate(data, 0, data.Length);
+			return signer.GenerateSignature();
+		}
+
+		public static readonly byte[] Ts3VerionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
+
+		public static bool EdCheck(VersionSign sign)
+		{
+			var ver = Encoding.ASCII.GetBytes(sign.PlattformName + sign.Name);
+			return Ed25519.CheckValid(Convert.FromBase64String(sign.Sign), ver, Ts3VerionSignPublicKey);
+		}
+
+		public static void VersionSelfCheck()
+		{
+			var versions = typeof(VersionSign).GetProperties().Where(prop => prop.PropertyType == typeof(VersionSign));
+			foreach (var ver in versions)
+			{
+				var verObj = (VersionSign)ver.GetValue(null);
+				if (!EdCheck(verObj))
+					throw new Exception($"Version is invalid: {verObj}");
+			}
 		}
 
 		#endregion
@@ -538,6 +688,14 @@ namespace TS3Client.Full
 			}
 		}
 
+		public static int GetSecurityLevel(IdentityData identity)
+		{
+			byte[] hashBuffer = new byte[identity.PublicKeyString.Length + MaxUlongStringLen];
+			byte[] pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
+			Array.Copy(pubKeyBytes, 0, hashBuffer, 0, pubKeyBytes.Length);
+			return GetSecurityLevel(hashBuffer, pubKeyBytes.Length, identity.ValidKeyOffset);
+		}
+
 		/// <summary>Creates a new TeamSpeak3 identity.</summary>
 		/// <param name="securityLevel">Minimum security level this identity will have.</param>
 		/// <returns>The identity information.</returns>
@@ -553,8 +711,7 @@ namespace TS3Client.Full
 			var privateKey = (ECPrivateKeyParameters)keyPair.Private;
 			var publicKey = (ECPublicKeyParameters)keyPair.Public;
 
-			var pubPrivKey = new Tuple<ECPoint, BigInteger>(publicKey.Q.Normalize(), privateKey.D);
-			var identity = LoadIdentity(pubPrivKey, 0, 0);
+			var identity = LoadIdentity(publicKey.Q.Normalize(), privateKey.D, 0, 0);
 			ImproveSecurity(identity, securityLevel);
 			return identity;
 		}

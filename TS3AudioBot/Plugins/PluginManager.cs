@@ -23,36 +23,38 @@ namespace TS3AudioBot.Plugins
 	// - Validate
 	//   - 0/1 Plugin
 	//     - Command name conflict
-	//   - 0+ Factory
+	//   - 0/1 Factory
 	//     - Facory name conflict
+	// - [ Instantiate plugin (Depending on type) ]
 	// - Add commands to rights system
-	// - Instantiate plugin
 	// - Add commands to command manager
 	// - Start config to system?
 
-	internal class PluginManager : IDisposable
+	public class PluginManager : IDisposable
 	{
-		private readonly MainBot mainBot;
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
+		public Dependency.CoreInjector CoreInjector { get; set; }
+
 		private readonly PluginManagerData pluginManagerData;
 		private readonly Dictionary<string, Plugin> plugins;
 		private readonly HashSet<int> usedIds;
 
-		public PluginManager(MainBot bot, PluginManagerData pmd)
+		public PluginManager(PluginManagerData pmd)
 		{
-			mainBot = bot ?? throw new ArgumentNullException(nameof(bot));
+			Util.Init(out plugins);
+			Util.Init(out usedIds);
 			pluginManagerData = pmd;
-			Util.Init(ref plugins);
-			Util.Init(ref usedIds);
 		}
 
-		private void CheckAndClearPlugins()
+		private void CheckAndClearPlugins(Bot bot)
 		{
 			ClearMissingFiles();
-			CheckLocalPlugins();
+			CheckLocalPlugins(bot);
 		}
 
 		/// <summary>Updates the plugin dictionary with new and changed plugins.</summary>
-		private void CheckLocalPlugins()
+		private void CheckLocalPlugins(Bot bot)
 		{
 			var dir = new DirectoryInfo(pluginManagerData.PluginPath);
 			if (!dir.Exists)
@@ -62,10 +64,11 @@ namespace TS3AudioBot.Plugins
 			{
 				if (plugins.TryGetValue(file.Name, out var plugin))
 				{
-					switch (plugin.Status)
+					switch (plugin.CheckStatus(bot))
 					{
 					case PluginStatus.Disabled:
 					case PluginStatus.Active:
+					case PluginStatus.NotAvailable:
 						continue;
 					case PluginStatus.Ready:
 					case PluginStatus.Off:
@@ -73,15 +76,15 @@ namespace TS3AudioBot.Plugins
 						plugin.Load();
 						break;
 					default:
-						throw Util.UnhandledDefault(plugin.Status);
+						throw new ArgumentOutOfRangeException();
 					}
 				}
 				else
 				{
-					if (IgnoreFile(file))
+					if (IsIgnored(file))
 						continue;
 
-					plugin = new Plugin(file, mainBot, GetFreeId());
+					plugin = new Plugin(file, GetFreeId(), pluginManagerData.WriteStatusFiles);
 
 					if (plugin.Load() == PluginResponse.Disabled)
 					{
@@ -89,6 +92,7 @@ namespace TS3AudioBot.Plugins
 						continue;
 					}
 
+					CoreInjector.TryInject(plugin);
 					plugins.Add(file.Name, plugin);
 				}
 			}
@@ -100,8 +104,8 @@ namespace TS3AudioBot.Plugins
 			// at first find all missing and ignored files
 			var missingFiles = plugins.Where(kvp =>
 			{
-				kvp.Value.PluginFile.Refresh();
-				return !kvp.Value.PluginFile.Exists || IgnoreFile(kvp.Value.PluginFile);
+				kvp.Value.File.Refresh();
+				return !kvp.Value.File.Exists || IsIgnored(kvp.Value.File);
 			}).ToArray();
 
 			// unload if it is loaded and remove
@@ -109,18 +113,7 @@ namespace TS3AudioBot.Plugins
 				RemovePlugin(misFile.Value);
 		}
 
-		public void RestorePlugins()
-		{
-			CheckAndClearPlugins();
-
-			foreach (var plugin in plugins.Values)
-			{
-				if (plugin.PersistentEnabled)
-					StartPlugin(plugin);
-			}
-		}
-
-		public static bool IgnoreFile(FileInfo file) =>
+		public static bool IsIgnored(FileInfo file) =>
 			(file.Extension != ".cs" && file.Extension != ".dll" && file.Extension != ".exe")
 			|| File.Exists(file.FullName + ".ignore");
 
@@ -144,88 +137,43 @@ namespace TS3AudioBot.Plugins
 			return id;
 		}
 
-		public PluginResponse StartPlugin(string identifier)
+		public PluginResponse StartPlugin(string identifier, Bot bot)
 		{
-			CheckLocalPlugins();
+			CheckLocalPlugins(bot);
 
-			return StartPlugin(TryGetPlugin(identifier));
+			return TryGetPlugin(identifier)?.Start(bot) ?? PluginResponse.PluginNotFound;
 		}
 
-		private PluginResponse StartPlugin(Plugin plugin)
+		public PluginResponse StopPlugin(string identifier, Bot bot)
+			=> TryGetPlugin(identifier)?.Stop(bot) ?? PluginResponse.PluginNotFound;
+
+		internal void StopPlugins(Bot bot)
 		{
-			if (plugin == null)
-				return PluginResponse.PluginNotFound;
-
-			if (pluginManagerData.WriteStatusFiles)
-				plugin.PersistentEnabled = true;
-
-			switch (plugin.Status)
+			foreach (var plugin in plugins.Values)
 			{
-			case PluginStatus.Disabled:
-				return PluginResponse.Disabled;
-
-			case PluginStatus.Off:
-				var response = plugin.Load();
-				if (response != PluginResponse.Ok)
-					return response;
-				goto case PluginStatus.Ready;
-
-			case PluginStatus.Ready:
-				try
-				{
-					plugin.Start();
-					return PluginResponse.Ok;
-				}
-				catch (Exception ex)
-				{
-					StopPlugin(plugin);
-					Log.Write(Log.Level.Warning, "Plugin \"{0}\" failed to load: {1}",
-						plugin.PluginFile.Name,
-						ex.Message);
-					return PluginResponse.UnknownError;
-				}
-			case PluginStatus.Active:
-				return PluginResponse.Ok;
-
-			case PluginStatus.Error:
-				return PluginResponse.UnknownError;
-
-			default:
-				throw Util.UnhandledDefault(plugin.Status);
+				if (plugin.Type == PluginType.BotPlugin && plugin.CheckStatus(bot) == PluginStatus.Active)
+					plugin.Stop(bot);
 			}
-		}
-
-		public PluginResponse StopPlugin(string identifier) => StopPlugin(TryGetPlugin(identifier));
-
-		private PluginResponse StopPlugin(Plugin plugin)
-		{
-			if (plugin == null)
-				return PluginResponse.PluginNotFound;
-
-			if (pluginManagerData.WriteStatusFiles)
-				plugin.PersistentEnabled = false;
-
-			plugin.Stop();
-
-			return PluginResponse.Ok;
 		}
 
 		private void RemovePlugin(Plugin plugin)
 		{
 			usedIds.Remove(plugin.Id);
-			plugins.Remove(plugin.PluginFile.Name);
+			plugins.Remove(plugin.File.Name);
 			plugin.Unload();
 		}
 
-		public PluginStatusInfo[] GetPluginOverview()
+		public PluginStatusInfo[] GetPluginOverview(Bot bot)
 		{
-			CheckAndClearPlugins();
+			CheckAndClearPlugins(bot);
 
-			return plugins.Values.Select(x =>
+			return plugins.Values.Select(plugin =>
 				new PluginStatusInfo(
-					x.Id,
-					x.Status != PluginStatus.Error ? x.Name : x.PluginFile.Name,
-					x.Status)
+					plugin.Id,
+					plugin.Name,
+					plugin.CheckStatus(bot),
+					plugin.Type
+				)
 			).ToArray();
 		}
 
@@ -247,6 +195,7 @@ namespace TS3AudioBot.Plugins
 				case PluginStatus.Active: strb.Append("+ON"); break;
 				case PluginStatus.Disabled: strb.Append("UNL"); break;
 				case PluginStatus.Error: strb.Append("ERR"); break;
+				case PluginStatus.NotAvailable: strb.Append("N/A"); break;
 				default: throw Util.UnhandledDefault(plugin.Status);
 				}
 				strb.Append('|').AppendLine(plugin.Name ?? "<not loaded>");
@@ -266,12 +215,14 @@ namespace TS3AudioBot.Plugins
 		public int Id { get; }
 		public string Name { get; }
 		public PluginStatus Status { get; }
+		public PluginType Type { get; }
 
-		public PluginStatusInfo(int id, string name, PluginStatus status)
+		public PluginStatusInfo(int id, string name, PluginStatus status, PluginType type)
 		{
 			Id = id;
 			Name = name;
 			Status = status;
+			Type = type;
 		}
 	}
 

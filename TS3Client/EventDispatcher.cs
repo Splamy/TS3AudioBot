@@ -47,6 +47,7 @@ namespace TS3Client
 		/// <param name="eventLoop">The main loop which will be receiving packets.</param>
 		/// <param name="dispatcher">The method to call asynchronously when a new
 		/// notification comes in.</param>
+		/// <param name="ctx">The current connection context.</param>
 		void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx);
 		/// <summary>Dispatches the notification.</summary>
 		/// <param name="lazyNotification"></param>

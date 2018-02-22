@@ -15,7 +15,20 @@ namespace TS3AudioBot.CommandSystem
 
 	public class XCommandSystem
 	{
-		public static readonly CommandResultType[] AllTypes = Enum.GetValues(typeof(CommandResultType)).OfType<CommandResultType>().ToArray();
+		public static readonly CommandResultType[] ReturnTypes = Enum.GetValues(typeof(CommandResultType)).OfType<CommandResultType>().ToArray();
+		/// <summary>
+		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
+		/// </summary>
+		public static readonly Type[] TypeOrder = {
+			typeof(bool),
+			typeof(sbyte), typeof(byte),
+			typeof(short), typeof(ushort),
+			typeof(int), typeof(uint),
+			typeof(long), typeof(ulong),
+			typeof(float), typeof(double),
+			typeof(TimeSpan), typeof(DateTime),
+			typeof(string) };
+		public static readonly HashSet<Type> BasicTypes = new HashSet<Type>(TypeOrder);
 
 		public RootCommand RootCommand { get; }
 
@@ -104,7 +117,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public string ExecuteCommand(ExecutionInformation info, string command)
 		{
-			ICommandResult result = Execute(info, command);
+			var result = Execute(info, command);
 			if (result.ResultType == CommandResultType.String)
 				return result.ToString();
 			if (result.ResultType == CommandResultType.Empty)

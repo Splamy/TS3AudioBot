@@ -18,6 +18,7 @@ namespace TS3AudioBot.CommandSystem
 
 	public class CommandManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex CommandNamespaceValidator =
 			new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
@@ -29,10 +30,15 @@ namespace TS3AudioBot.CommandSystem
 		public CommandManager()
 		{
 			CommandSystem = new XCommandSystem();
-			Util.Init(ref baseCommands);
-			Util.Init(ref commandPaths);
-			Util.Init(ref dynamicCommands);
-			Util.Init(ref pluginCommands);
+			Util.Init(out baseCommands);
+			Util.Init(out commandPaths);
+			Util.Init(out dynamicCommands);
+			Util.Init(out pluginCommands);
+		}
+
+		public void Initialize()
+		{
+			RegisterMain();
 		}
 
 		public XCommandSystem CommandSystem { get; }
@@ -54,12 +60,12 @@ namespace TS3AudioBot.CommandSystem
 
 		public IEnumerable<string> AllRights => AllCommands.Select(x => x.RequiredRight);
 
-		public void RegisterMain(MainBot main)
+		public void RegisterMain()
 		{
 			if (baseCommands.Count > 0)
 				throw new InvalidOperationException("Operation can only be executed once.");
 
-			foreach (var com in GetBotCommands(GetCommandMethods(main)))
+			foreach (var com in GetBotCommands(GetCommandMethods(null, typeof(Commands))))
 			{
 				LoadCommand(com);
 				baseCommands.Add(com);
@@ -118,13 +124,21 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj)
+		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj, Type type = null)
 		{
-			var objType = obj.GetType();
+			if (obj == null && type == null)
+				throw new ArgumentNullException(nameof(type), "No type information given.");
+			var objType = type ?? obj.GetType();
+
 			foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
 			{
 				var comAtt = method.GetCustomAttribute<CommandAttribute>();
 				if (comAtt == null) continue;
+				if (obj == null && !method.IsStatic)
+				{
+					Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
+					continue;
+				}
 				var reqAtt = method.GetCustomAttribute<RequiredParametersAttribute>();
 				yield return new CommandBuildInfo(obj, method, comAtt, reqAtt);
 			}
@@ -160,11 +174,11 @@ namespace TS3AudioBot.CommandSystem
 
 			var buildResult = BuildAndGet(comPath.Take(comPath.Length - 1));
 			if (!buildResult)
-				GenerateError(buildResult.Message, com as BotCommand);
+				GenerateError(buildResult.Error, com as BotCommand);
 
 			var result = InsertInto(buildResult.Value, com, comPath.Last());
 			if (!result)
-				GenerateError(result.Message, com as BotCommand);
+				GenerateError(result.Error, com as BotCommand);
 		}
 
 		private R<CommandGroup> BuildAndGet(IEnumerable<string> comPath)
@@ -209,25 +223,25 @@ namespace TS3AudioBot.CommandSystem
 
 		private static R InsertInto(CommandGroup group, ICommand com, string name)
 		{
-			ICommand subCommand = group.GetCommand(name);
-			// the group we are trying to insert has no element with the current
-			// name, so just insert it
-			if (subCommand == null)
+			var subCommand = group.GetCommand(name);
+
+			switch (subCommand)
 			{
+			case null:
+				// the group we are trying to insert has no element with the current
+				// name, so just insert it
 				group.AddCommand(name, com);
 				return R.OkR;
-			}
-			// to add a command to CommandGroup will have to treat it as a subcommand
-			// with an empty string as a name
-			else if (subCommand is CommandGroup insertCommand)
-			{
-				var noparamCommand = insertCommand.GetCommand(string.Empty);
 
+			case CommandGroup insertCommand:
+				// to add a command to CommandGroup will have to treat it as a subcommand
+				// with an empty string as a name
+				var noparamCommand = insertCommand.GetCommand(string.Empty);
 				if (noparamCommand == null)
 				{
 					insertCommand.AddCommand(string.Empty, com);
 					if (com is BotCommand botCom && botCom.NormalParameters > 0)
-						Log.Write(Log.Level.Warning, $"\"{botCom.FullQualifiedName}\" has at least one parameter and won't be reachable due to an overloading function.");
+						Log.Warn("\"{0}\" has at least one parameter and won't be reachable due to an overloading function.", botCom.FullQualifiedName);
 					return R.OkR;
 				}
 				else
@@ -237,23 +251,26 @@ namespace TS3AudioBot.CommandSystem
 			if (!(com is FunctionCommand funcCom))
 				return $"The command cannot be inserted into a complex node ({name}).";
 
-			// if we have is a simple function, we need to create a overlaoder
-			// and then add both functions to it
-			if (subCommand is FunctionCommand subFuncCommand)
+			switch (subCommand)
 			{
+			case FunctionCommand subFuncCommand:
+				// if we have is a simple function, we need to create a overlaoder
+				// and then add both functions to it
 				group.RemoveCommand(name);
 				var overloader = new OverloadedFunctionCommand();
 				overloader.AddCommand(subFuncCommand);
 				overloader.AddCommand(funcCom);
 				group.AddCommand(name, overloader);
-			}
-			// if we have a overloaded function, we can simply add it
-			else if (subCommand is OverloadedFunctionCommand insertCommand)
-			{
+				break;
+
+			case OverloadedFunctionCommand insertCommand:
+				// if we have a overloaded function, we can simply add it
 				insertCommand.AddCommand(funcCom);
-			}
-			else
+				break;
+
+			default:
 				return "Unknown node to insert to.";
+			}
 
 			return R.OkR;
 		}

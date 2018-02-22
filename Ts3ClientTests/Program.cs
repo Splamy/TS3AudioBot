@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TS3Client;
 using TS3Client.Full;
 using TS3Client.Messages;
@@ -12,8 +13,14 @@ namespace Ts3ClientTests
 	{
 		static ConnectionDataFull con;
 
+		public static string ToHex(this IEnumerable<byte> seq) => string.Join(" ", seq.Select(x => x.ToString("X2")));
+		public static byte[] FromHex(this string hex) => hex.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
+
 		static void Main()
 		{
+			//Ts3Crypt.Test();
+
+			//return;
 			var clients = new List<Ts3FullClient>();
 
 			//for (int i = 0; i < 50; i++)
@@ -23,16 +30,16 @@ namespace Ts3ClientTests
 				client.OnDisconnected += Client_OnDisconnected;
 				client.OnErrorEvent += Client_OnErrorEvent;
 				client.OnTextMessageReceived += Client_OnTextMessageReceived;
-				var data = Ts3Crypt.LoadIdentity("MG8DAgeAAgEgAiEAqNonGuL0w/8kLlgLbl4UkH8DQQJ7fEu1tLt+mx1E+XkCIQDgQoIGcBVvAvNoiDT37iWbPQb2kYe0+VKLg67OH2eQQwIgTyijCKx7QB/xQSnIW5uIkVmcm3UU5P2YnobR9IEEYPg=", 64, 0);
-				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, Password = "qwer" };
+				var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0);
+				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, Password = "qwer", VersionSign = VersionSign.VER_WIN_3_1_7 };
 				client.Connect(con);
 				clients.Add(client);
 			}
 
 			Console.WriteLine("End");
-			Console.ReadLine();
+			//Console.ReadLine();
 		}
-
+		
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)
 		{
 			var client = (Ts3FullClient)sender;
@@ -44,6 +51,7 @@ namespace Ts3ClientTests
 			var client = (Ts3FullClient)sender;
 			Console.WriteLine("Connected id {0}", client.ClientId);
 			var data = client.ClientInfo(client.ClientId);
+
 			client.Disconnect();
 			client.Connect(con);
 		}
@@ -66,8 +74,10 @@ namespace Ts3ClientTests
 				{
 					var client = (Ts3FullClient)sender;
 
-					var tok = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", true);
-					tok.Wait();
+					var token = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", true);
+					if (!token.Ok)
+						return;
+					token.Value.Wait();
 				}
 			}
 		}

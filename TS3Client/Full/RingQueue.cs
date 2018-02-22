@@ -99,8 +99,8 @@ namespace TS3Client.Full
 			var extRingBufferSet = new bool[extendTo];
 			Array.Copy(ringBuffer, currentStart, extRingBuffer, 0, ringBuffer.Length - currentStart);
 			Array.Copy(ringBufferSet, currentStart, extRingBufferSet, 0, ringBufferSet.Length - currentStart);
-			Array.Copy(ringBuffer, 0, extRingBuffer, currentStart, currentStart);
-			Array.Copy(ringBufferSet, 0, extRingBufferSet, currentStart, currentStart);
+			Array.Copy(ringBuffer, 0, extRingBuffer, ringBuffer.Length - currentStart, currentStart);
+			Array.Copy(ringBufferSet, 0, extRingBufferSet, ringBufferSet.Length - currentStart, currentStart);
 			currentStart = 0;
 			ringBuffer = extRingBuffer;
 			ringBufferSet = extRingBufferSet;

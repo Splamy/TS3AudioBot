@@ -10,9 +10,11 @@
 namespace TS3Client
 {
 	using Messages;
+	using Helper;
 	using System.Collections.Generic;
+	using System.Linq;
 
-	internal struct LazyNotification
+	public struct LazyNotification
 	{
 		public readonly IEnumerable<INotification> Notifications;
 		public readonly NotificationType NotifyType;
@@ -21,6 +23,14 @@ namespace TS3Client
 		{
 			Notifications = notifications;
 			NotifyType = notifyType;
+		}
+
+		public R<T, CommandError> WrapSingle<T>() where T : INotification
+		{
+			var first = Notifications.FirstOrDefault();
+			if (first == null)
+				return R<T, CommandError>.Err(Util.NoResultCommandError);
+			return R<T, CommandError>.OkR((T)first);
 		}
 	}
 }

@@ -9,7 +9,6 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
 	using System.Drawing;
 
 	public interface IThumbnailFactory : IFactory

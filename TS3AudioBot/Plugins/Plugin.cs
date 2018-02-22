@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Plugins
 {
 	using CommandSystem;
+	using Dependency;
 	using Helper;
 	using ResourceFactories;
 	using System;
@@ -23,42 +24,56 @@ namespace TS3AudioBot.Plugins
 
 	internal class Plugin : ICommandBag
 	{
-		private readonly MainBot mainBot;
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private Assembly assembly;
+		public CoreInjector CoreInjector { get; set; }
+		public ResourceFactoryManager FactoryManager { get; set; }
+		public Rights.RightsManager RightsManager { get; set; }
+		public CommandManager CommandManager { get; set; }
+
 		private byte[] md5CacheSum;
-		private ITabPlugin pluginObject;
+		private ICorePlugin pluginObject;
+		private Dictionary<Bot, IBotPlugin> pluginObjectList;
 		private IFactory factoryObject;
 		private Type coreType;
-		private PluginType corePluginType;
+		private readonly bool writeStatus;
+		private PluginStatus status;
 
-		public Plugin(FileInfo pluginFile, MainBot parent, int id)
-		{
-			mainBot = parent;
-			PluginFile = pluginFile;
-			Id = id;
-			Status = PluginStatus.Off;
-			corePluginType = PluginType.None;
-		}
-
+		internal PluginType Type { get; private set; }
 		public int Id { get; }
-		public FileInfo PluginFile { get; }
-		public PluginStatus Status { get; private set; }
+		public FileInfo File { get; }
+
+		public Plugin(FileInfo file, int id, bool writeStatus)
+		{
+			pluginObject = null;
+			this.writeStatus = writeStatus;
+			File = file;
+			Id = id;
+			status = PluginStatus.Off;
+			Type = PluginType.None;
+		}
 
 		public string Name
 		{
 			get
 			{
-				switch (corePluginType)
+				if (CheckStatus(null) == PluginStatus.Error)
+					return $"Error ({File.Name})";
+
+				switch (Type)
 				{
 				case PluginType.Factory:
 					return "Factory: " + (factoryObject?.FactoryFor ?? coreType?.Name ?? "<unknown>");
-				case PluginType.Plugin:
-					return "Plugin: " + (coreType?.Name ?? "<unknown>");
+				case PluginType.BotPlugin:
+					return "BotPlugin: " + (coreType?.Name ?? "<unknown>");
+				case PluginType.CorePlugin:
+					return "CorePlugin: " + (coreType?.Name ?? "<unknown>");
+				case PluginType.Commands:
+					return "Commands: " + (coreType?.Name ?? "<unknown>");
 				case PluginType.None:
-					return "Unknown";
+					return $"Unknown ({File.Name})";
 				default:
-					throw Util.UnhandledDefault(corePluginType);
+					throw Util.UnhandledDefault(Type);
 				}
 			}
 		}
@@ -67,60 +82,79 @@ namespace TS3AudioBot.Plugins
 		{
 			get
 			{
-				if (!File.Exists(PluginFile.FullName + ".status"))
+				if (!System.IO.File.Exists(File.FullName + ".status"))
 					return false;
-				return File.ReadAllText(PluginFile.FullName + ".status") != "0";
+				return System.IO.File.ReadAllText(File.FullName + ".status") != "0";
 			}
 			set
 			{
-				if (!File.Exists(PluginFile.FullName + ".status"))
+				if (!System.IO.File.Exists(File.FullName + ".status"))
 					return;
-				File.WriteAllText(PluginFile.FullName + ".status", value ? "1" : "0");
+				System.IO.File.WriteAllText(File.FullName + ".status", value ? "1" : "0");
 			}
 		}
 
 		public IEnumerable<BotCommand> ExposedCommands { get; private set; }
 		public IEnumerable<string> ExposedRights => ExposedCommands.Select(x => x.RequiredRight);
 
+		public PluginStatus CheckStatus(Bot bot)
+		{
+			if (Type != PluginType.BotPlugin)
+				return status;
+			if (status == PluginStatus.Disabled
+				|| status == PluginStatus.Error
+				|| status == PluginStatus.Off)
+				return status;
+			if (bot == null)
+				return PluginStatus.NotAvailable;
+			if (status == PluginStatus.Ready)
+				return pluginObjectList.ContainsKey(bot) ? PluginStatus.Active : PluginStatus.Ready;
+			if (status == PluginStatus.Active)
+				throw new InvalidOperationException("BotPlugin must not be active");
+			throw Util.UnhandledDefault(status);
+		}
 
 		public PluginResponse Load()
 		{
 			try
 			{
-				if (PluginManager.IgnoreFile(PluginFile))
+				if (PluginManager.IsIgnored(File))
 					return PluginResponse.Disabled;
 
-				if (Status != PluginStatus.Off && Md5EqualsCache())
-					return Status == PluginStatus.Ready || Status == PluginStatus.Active
+				var locStatus = CheckStatus(null);
+				if (locStatus != PluginStatus.Off && Md5EqualsCache())
+				{
+					return locStatus == PluginStatus.Ready || locStatus == PluginStatus.Active
 						? PluginResponse.Ok
 						: PluginResponse.UnknownError;
+				}
 
 				Unload();
 
 				PluginResponse result;
-				if (PluginFile.Extension == ".cs")
+				if (File.Extension == ".cs")
 					result = PrepareSource();
-				else if (PluginFile.Extension == ".dll" || PluginFile.Extension == ".exe")
+				else if (File.Extension == ".dll" || File.Extension == ".exe")
 					result = PrepareBinary();
 				else throw new InvalidProgramException();
 
-				Status = result == PluginResponse.Ok ? PluginStatus.Ready : PluginStatus.Error;
+				status = result == PluginResponse.Ok ? PluginStatus.Ready : PluginStatus.Error;
 				return result;
 			}
 			catch (BadImageFormatException bifex)
 			{
-				Log.Write(Log.Level.Warning, "Plugin \"{0}\" has an invalid format: {1} (Add a \"{0}.ignore\" file to ignore this file)",
-					PluginFile.Name,
+				Log.Warn("Plugin \"{0}\" has an invalid format: {1} (Add a \"{0}.ignore\" file to ignore this file)",
+					File.Name,
 					bifex.InnerException?.Message ?? bifex.Message);
-				Status = PluginStatus.Error;
+				status = PluginStatus.Error;
 				return PluginResponse.InvalidBinary;
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Warning, "Plugin \"{0}\" failed to prepare: {1}",
-					PluginFile.Name,
+				Log.Warn("Plugin \"{0}\" failed to prepare: {1}",
+					File.Name,
 					ex.Message);
-				Status = PluginStatus.Error;
+				status = PluginStatus.Error;
 				return PluginResponse.Crash;
 			}
 		}
@@ -129,7 +163,7 @@ namespace TS3AudioBot.Plugins
 		{
 			using (var md5 = MD5.Create())
 			{
-				using (var stream = File.OpenRead(PluginFile.FullName))
+				using (var stream = System.IO.File.OpenRead(File.FullName))
 				{
 					var newHashSum = md5.ComputeHash(stream);
 					if (md5CacheSum == null)
@@ -146,8 +180,8 @@ namespace TS3AudioBot.Plugins
 
 		private PluginResponse PrepareBinary()
 		{
-			var asmBin = File.ReadAllBytes(PluginFile.FullName);
-			assembly = Assembly.Load(asmBin);
+			var asmBin = System.IO.File.ReadAllBytes(File.FullName);
+			var assembly = Assembly.Load(asmBin);
 			return InitlializeAssembly(assembly);
 		}
 
@@ -173,7 +207,7 @@ namespace TS3AudioBot.Plugins
 		{
 			var provider = CodeDomProvider.CreateProvider("CSharp");
 			var cp = GenerateCompilerParameter();
-			var result = provider.CompileAssemblyFromFile(cp, PluginFile.FullName);
+			var result = provider.CompileAssemblyFromFile(cp, File.FullName);
 
 			if (result.Errors.Count > 0)
 			{
@@ -190,11 +224,11 @@ namespace TS3AudioBot.Plugins
 						error.ErrorText);
 				}
 				strb.Length -= 1; // remove last linebreak
-				Log.Write(Log.Level.Warning, strb.ToString());
+				Log.Warn(strb.ToString());
 
 				if (containsErrors)
 				{
-					Status = PluginStatus.Error;
+					status = PluginStatus.Error;
 					return PluginResponse.CompileError;
 				}
 			}
@@ -205,35 +239,46 @@ namespace TS3AudioBot.Plugins
 		{
 			try
 			{
-				this.assembly = assembly;
 				var allTypes = assembly.GetExportedTypes();
-				var pluginTypes = allTypes.Where(t => typeof(ITabPlugin).IsAssignableFrom(t)).ToArray();
+				var pluginTypes = allTypes.Where(t => typeof(ICorePlugin).IsAssignableFrom(t)).ToArray();
 				var factoryTypes = allTypes.Where(t => typeof(IFactory).IsAssignableFrom(t)).ToArray();
+				var commandsTypes = allTypes.Where(t => t.GetCustomAttribute<StaticPluginAttribute>() != null).ToArray();
 
-				if (pluginTypes.Length + factoryTypes.Length > 1)
+				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length > 1)
 				{
-					Log.Write(Log.Level.Warning, "Any source or binary plugin file may contain one plugin or factory at most.");
+					Log.Warn("Any source or binary plugin file may contain one plugin or factory at most.");
 					return PluginResponse.TooManyPlugins;
 				}
-				if (pluginTypes.Length + factoryTypes.Length == 0)
+				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length == 0)
 				{
-					Log.Write(Log.Level.Warning, "Any source or binary plugin file must contain at least one plugin or factory.");
+					Log.Warn("Any source or binary plugin file must contain at least one plugin or factory.");
 					return PluginResponse.NoTypeMatch;
 				}
 
 				if (pluginTypes.Length == 1)
 				{
 					coreType = pluginTypes[0];
-					corePluginType = PluginType.Plugin;
+					if (typeof(IBotPlugin).IsAssignableFrom(coreType))
+					{
+						Type = PluginType.BotPlugin;
+						Util.Init(out pluginObjectList);
+					}
+					else
+						Type = PluginType.CorePlugin;
 				}
 				else if (factoryTypes.Length == 1)
 				{
 					coreType = factoryTypes[0];
-					corePluginType = PluginType.Factory;
+					Type = PluginType.Factory;
+				}
+				else if (commandsTypes.Length == 1)
+				{
+					coreType = commandsTypes[0];
+					Type = PluginType.Commands;
 				}
 				else
 				{
-					corePluginType = PluginType.None;
+					Type = PluginType.None;
 					throw new InvalidOperationException();
 				}
 
@@ -241,13 +286,12 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (TypeLoadException tlex)
 			{
-				Log.Write(Log.Level.Warning,
-					$"{nameof(InitlializeAssembly)} failed, The file \"{PluginFile.Name}\" seems to be missing some dependecies ({tlex.Message})");
+				Log.Warn(nameof(InitlializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependecies ({1})", File.Name, tlex.Message);
 				return PluginResponse.MissingDependency;
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Error, $"{nameof(InitlializeAssembly)} failed ({ex})");
+				Log.Error(ex, nameof(InitlializeAssembly) + " failed");
 				return PluginResponse.Crash;
 			}
 		}
@@ -257,97 +301,202 @@ namespace TS3AudioBot.Plugins
 		/// This call requires this plugin to be in the <see cref="PluginStatus.Ready"/> state.
 		/// Changes the status to <see cref="PluginStatus.Active"/> when successful or <see cref="PluginStatus.Error"/> otherwise.
 		/// </summary>
-		public void Start()
+		public PluginResponse Start(Bot bot)
 		{
-			if (Status != PluginStatus.Ready)
+			if (writeStatus)
+				PersistentEnabled = true;
+
+			switch (CheckStatus(bot))
+			{
+			case PluginStatus.Disabled:
+				return PluginResponse.Disabled;
+
+			case PluginStatus.Off:
+				var response = Load();
+				if (response != PluginResponse.Ok)
+					return response;
+				goto case PluginStatus.Ready;
+
+			case PluginStatus.Ready:
+				try
+				{
+					StartInternal(bot);
+					return PluginResponse.Ok;
+				}
+				catch (Exception ex)
+				{
+					Stop(bot);
+					Log.Warn("Plugin \"{0}\" failed to load: {1}", File.Name, ex);
+					return PluginResponse.UnknownError;
+				}
+			case PluginStatus.Active:
+				return PluginResponse.Ok;
+
+			case PluginStatus.Error:
+				return PluginResponse.UnknownError;
+
+			case PluginStatus.NotAvailable:
+				return PluginResponse.MissingContext;
+
+			default:
+				throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		private void StartInternal(Bot bot)
+		{
+			if (CheckStatus(bot) != PluginStatus.Ready)
 				throw new InvalidOperationException("This plugin has not yet been prepared");
 
 			try
 			{
-				switch (corePluginType)
+				switch (Type)
 				{
 				case PluginType.None:
+					throw new InvalidOperationException("A 'None' plugin cannot be loaded");
+
+				case PluginType.BotPlugin:
+					if (bot == null)
+					{
+						Log.Error("This plugin needs to be activated on a bot instance.");
+						status = PluginStatus.Error;
+						return;
+					}
+					if (pluginObjectList.ContainsKey(bot))
+						throw new InvalidOperationException("Plugin is already instantiated on this bot");
+					var pluginInstance = (IBotPlugin)Activator.CreateInstance(coreType);
+					if (pluginObjectList.Count == 0)
+						StartRegisterCommands(pluginInstance, coreType);
+					pluginObjectList.Add(bot, pluginInstance);
+					if (!bot.Injector.TryInject(pluginInstance))
+						Log.Warn("Some dependencies are missing for this plugin");
+					pluginInstance.Initialize();
 					break;
 
-				case PluginType.Plugin:
-					pluginObject = (ITabPlugin)Activator.CreateInstance(coreType);
-					var comBuilds = CommandManager.GetCommandMethods(pluginObject);
-					ExposedCommands = CommandManager.GetBotCommands(comBuilds).ToList();
-					mainBot.RightsManager.RegisterRights(ExposedRights);
-					mainBot.CommandManager.RegisterCollection(this);
-					pluginObject.Initialize(mainBot);
+				case PluginType.CorePlugin:
+					pluginObject = (ICorePlugin)Activator.CreateInstance(coreType);
+					StartRegisterCommands(pluginObject, coreType);
+					if (!CoreInjector.TryInject(pluginObject))
+						Log.Warn("Some dependencies are missing for this plugin");
+					pluginObject.Initialize();
 					break;
 
 				case PluginType.Factory:
 					factoryObject = (IFactory)Activator.CreateInstance(coreType);
-					mainBot.FactoryManager.AddFactory(factoryObject);
+					FactoryManager.AddFactory(factoryObject);
+					break;
+
+				case PluginType.Commands:
+					StartRegisterCommands(null, coreType);
 					break;
 
 				default:
-					throw Util.UnhandledDefault(corePluginType);
+					throw Util.UnhandledDefault(Type);
 				}
 			}
 			catch (MissingMethodException mmex)
 			{
-				Log.Write(Log.Level.Error, "Plugins and Factories needs a parameterless constructor ({0}).", mmex.Message);
-				Status = PluginStatus.Error;
+				Log.Error(mmex, "Plugins and Factories needs a parameterless constructor.");
+				status = PluginStatus.Error;
 				return;
 			}
 
-			Status = PluginStatus.Active;
+			if (Type != PluginType.BotPlugin)
+				status = PluginStatus.Active;
+		}
+
+		private void StartRegisterCommands(object obj, Type t)
+		{
+			var cmdBuildList = CommandManager.GetCommandMethods(obj, t);
+			ExposedCommands = CommandManager.GetBotCommands(cmdBuildList).ToList();
+			RightsManager.RegisterRights(ExposedRights);
+			CommandManager.RegisterCollection(this);
+		}
+
+		private void StopUnregisterCommands()
+		{
+			CommandManager.UnregisterCollection(this);
+			RightsManager.UnregisterRights(ExposedRights);
+			ExposedCommands = null;
 		}
 
 		/// <summary>
 		/// Stops the plugin and removes all its functionality available in the bot.
 		/// Changes the status from <see cref="PluginStatus.Active"/> to <see cref="PluginStatus.Ready"/> when successful or <see cref="PluginStatus.Error"/> otherwise.
 		/// </summary>
-		public void Stop()
+		public PluginResponse Stop(Bot bot)
 		{
-			if (Status != PluginStatus.Active)
-				return;
+			if (writeStatus)
+				PersistentEnabled = false;
 
-			switch (corePluginType)
+			if (CheckStatus(bot) != PluginStatus.Active)
+				return PluginResponse.Ok;
+
+			switch (Type)
 			{
 			case PluginType.None:
 				break;
 
-			case PluginType.Plugin:
-				mainBot.CommandManager.UnregisterCollection(this);
-				mainBot.RightsManager.UnregisterRights(ExposedRights);
-				ExposedCommands = null;
+			case PluginType.BotPlugin:
+				if (bot == null)
+				{
+					foreach (var plugin in pluginObjectList.Values)
+						plugin.Dispose();
+					pluginObjectList.Clear();
+				}
+				else
+				{
+					if (!pluginObjectList.TryGetValue(bot, out var plugin))
+						throw new InvalidOperationException("Plugin active but no instance found");
+					plugin.Dispose();
+					pluginObjectList.Remove(bot);
+				}
+				if (pluginObjectList.Count == 0)
+					StopUnregisterCommands();
+				break;
+
+			case PluginType.CorePlugin:
+				StopUnregisterCommands();
 				pluginObject.Dispose();
 				pluginObject = null;
 				break;
 
 			case PluginType.Factory:
-				mainBot.FactoryManager.RemoveFactory(factoryObject);
+				FactoryManager.RemoveFactory(factoryObject);
+				break;
+
+			case PluginType.Commands:
+				StopUnregisterCommands();
 				break;
 
 			default:
-				throw Util.UnhandledDefault(corePluginType);
+				throw Util.UnhandledDefault(Type);
 			}
 
-			Status = PluginStatus.Ready;
+			status = PluginStatus.Ready;
+
+			return PluginResponse.Ok;
 		}
 
 		public void Unload()
 		{
-			Stop();
+			Stop(null);
 
-			assembly = null;
 			coreType = null;
 
-			if (Status == PluginStatus.Ready)
-				Status = PluginStatus.Off;
+			if (CheckStatus(null) == PluginStatus.Ready)
+				status = PluginStatus.Off;
 		}
 
 		public override string ToString() => Name;
+	}
 
-		private enum PluginType
-		{
-			None,
-			Plugin,
-			Factory,
-		}
+	public enum PluginType
+	{
+		None,
+		BotPlugin,
+		CorePlugin,
+		Factory,
+		Commands,
 	}
 }

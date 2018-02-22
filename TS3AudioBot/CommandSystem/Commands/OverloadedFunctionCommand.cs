@@ -15,19 +15,6 @@ namespace TS3AudioBot.CommandSystem
 
 	public class OverloadedFunctionCommand : ICommand
 	{
-		/// <summary>
-		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
-		/// </summary>
-		private static readonly Type[] TypeOrder = {
-			typeof(bool),
-			typeof(sbyte), typeof(byte),
-			typeof(short), typeof(ushort),
-			typeof(int), typeof(uint),
-			typeof(long), typeof(ulong),
-			typeof(float), typeof(double),
-			typeof(TimeSpan), typeof(DateTime),
-			typeof(string) };
-
 		public List<FunctionCommand> Functions { get; }
 
 		public OverloadedFunctionCommand() : this(Enumerable.Empty<FunctionCommand>()) { }
@@ -54,24 +41,24 @@ namespace TS3AudioBot.CommandSystem
 				// Sort out special arguments
 				// and remove the nullable wrapper
 				var params1 = (from p in f1.CommandParameter
-							   where !FunctionCommand.SpecialTypes.Contains(p)
-							   select FunctionCommand.UnwrapType(p)).ToList();
+							   where p.kind.IsNormal()
+							   select FunctionCommand.UnwrapType(p.type)).ToList();
 
 				var params2 = (from p in f2.CommandParameter
-							   where !FunctionCommand.SpecialTypes.Contains(p)
-							   select FunctionCommand.UnwrapType(p)).ToList();
+							   where p.kind.IsNormal()
+							   select FunctionCommand.UnwrapType(p.type)).ToList();
 
 				for (int i = 0; i < params1.Count; i++)
 				{
 					// Prefer functions with higher parameter count
 					if (i >= params2.Count)
 						return -1;
-					int i1 = Array.IndexOf(TypeOrder, params1[i]);
+					int i1 = Array.IndexOf(XCommandSystem.TypeOrder, params1[i]);
 					if (i1 == -1)
-						i1 = TypeOrder.Length;
-					int i2 = Array.IndexOf(TypeOrder, params2[i]);
+						i1 = XCommandSystem.TypeOrder.Length;
+					int i2 = Array.IndexOf(XCommandSystem.TypeOrder, params2[i]);
 					if (i2 == -1)
-						i2 = TypeOrder.Length;
+						i2 = XCommandSystem.TypeOrder.Length;
 					// Prefer lower argument
 					if (i1 < i2)
 						return -1;

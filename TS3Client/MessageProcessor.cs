@@ -9,18 +9,18 @@
 
 namespace TS3Client
 {
-	using Commands;
+	using Helper;
 	using Messages;
 	using System;
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 
-	internal class MessageProcessor
+	internal sealed class MessageProcessor
 	{
 		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
 		private readonly ConcurrentQueue<WaitBlock> requestQueue;
 		private readonly bool synchronQueue;
-		private readonly object dependantBlockLock = new object();
+		private readonly object waitBlockLock = new object();
 		private readonly List<WaitBlock>[] dependingBlocks;
 
 		private string cmdLineBuffer;
@@ -60,17 +60,16 @@ namespace TS3Client
 			// if it's not an error it is a notification
 			if (ntfyType != NotificationType.Error)
 			{
-				var notification = CommandDeserializer.GenerateNotification(lineDataPart, ntfyType);
+				var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
 				var lazyNotification = new LazyNotification(notification, ntfyType);
-				var dependantList = dependingBlocks[(int)ntfyType];
-				if (dependantList != null)
+				lock (waitBlockLock)
 				{
-					lock (dependantBlockLock)
+					var dependantList = dependingBlocks[(int)ntfyType];
+					if (dependantList != null)
 					{
 						foreach (var item in dependantList)
 						{
-							if (!item.Closed)
-								item.SetNotification(lazyNotification);
+							item.SetNotification(lazyNotification);
 							if (item.DependsOn != null)
 							{
 								foreach (var otherDepType in item.DependsOn)
@@ -88,7 +87,8 @@ namespace TS3Client
 				return lazyNotification;
 			}
 
-			var errorStatus = (CommandError)CommandDeserializer.GenerateSingleNotification(lineDataPart, NotificationType.Error);
+			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.Error);
+			var errorStatus = result.Ok ? (CommandError)result.Value : Util.CustomError("Invalid Error code");
 
 			if (synchronQueue)
 			{
@@ -109,12 +109,15 @@ namespace TS3Client
 				}
 
 				// otherwise it is the result status code to a request
-				if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
+				lock (waitBlockLock)
 				{
-					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
-					cmdLineBuffer = null;
+					if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
+					{
+						waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
+						cmdLineBuffer = null;
+					}
+					else { /* ??? */ }
 				}
-				else { /* ??? */ }
 			}
 
 			return null;
@@ -124,12 +127,14 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 				throw new InvalidOperationException();
-			if (!requestDict.TryAdd(returnCode, waitBlock))
-				throw new InvalidOperationException("Trying to add already existing WaitBlock returnCode");
-			if (waitBlock.DependsOn != null)
+
+			lock (waitBlockLock)
 			{
-				lock (dependantBlockLock)
+				if (!requestDict.TryAdd(returnCode, waitBlock))
+					throw new InvalidOperationException("Trying to add already existing WaitBlock returnCode");
+				if (waitBlock.DependsOn != null)
 				{
+
 					foreach (var dependantType in waitBlock.DependsOn)
 					{
 						var depentantList = dependingBlocks[(int)dependantType];
@@ -153,23 +158,24 @@ namespace TS3Client
 		{
 			if (synchronQueue)
 			{
-				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out WaitBlock waitBlock))
+				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
 					waitBlock.SetAnswer(Util.TimeOutCommandError);
 			}
 			else
 			{
-				var arr = requestDict.ToArray();
-				requestDict.Clear();
-				foreach (var block in dependingBlocks)
-					block?.Clear();
-				foreach (var val in arr)
-					val.Value.SetAnswer(Util.TimeOutCommandError);
+				lock (waitBlockLock)
+				{
+					foreach (var wb in requestDict.Values)
+						wb.SetAnswer(Util.TimeOutCommandError);
+					requestDict.Clear();
+
+					foreach (var block in dependingBlocks)
+					{
+						block?.ForEach(wb => wb.SetAnswer(Util.TimeOutCommandError));
+						block?.Clear();
+					}
+				}
 			}
 		}
 	}
-
-	/*internal class AsyncMessageProcessor : MessageProcessor
-	{
-
-	}*/
 }

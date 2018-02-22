@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Rights
 {
+	using CommandSystem;
 	using Helper;
 	using Nett;
 	using System;
@@ -20,9 +21,10 @@ namespace TS3AudioBot.Rights
 
 	public class RightsManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int RuleLevelSize = 2;
-
-		private readonly MainBot botParent;
+		
+		public CommandManager CommandManager { get; set; }
 
 		private bool needsRecalculation;
 		private readonly Cache<InvokerData, ExecuteContext> cachedRights;
@@ -39,12 +41,19 @@ namespace TS3AudioBot.Rights
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
 
-		public RightsManager(MainBot bot, RightsManagerData rmd)
+		public RightsManager(RightsManagerData rmd)
 		{
-			botParent = bot;
+			Util.Init(out cachedRights);
+			Util.Init(out registeredRights);
 			rightsManagerData = rmd;
-			cachedRights = new Cache<InvokerData, ExecuteContext>();
-			registeredRights = new HashSet<string>();
+		}
+
+		public void Initialize()
+		{
+			RegisterRights(CommandManager.AllRights);
+			RegisterRights(Commands.RightHighVolume, Commands.RightDeleteAllPlaylists);
+			if (!ReadFile())
+				Log.Error("Could not read Permission file.");
 		}
 
 		public void RegisterRights(params string[] rights) => RegisterRights((IEnumerable<string>)rights);
@@ -65,21 +74,21 @@ namespace TS3AudioBot.Rights
 		}
 
 		// TODO: b_client_permissionoverview_view
-		public bool HasAllRights(InvokerData inv, params string[] requestedRights)
+		public bool HasAllRights(InvokerData inv, Bot bot, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(inv);
+			var ctx = GetRightsContext(inv, bot);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
-		public string[] GetRightsSubset(InvokerData inv, params string[] requestedRights)
+		public string[] GetRightsSubset(InvokerData inv, Bot bot, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(inv);
+			var ctx = GetRightsContext(inv, bot);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
-		private ExecuteContext GetRightsContext(InvokerData inv)
+		private ExecuteContext GetRightsContext(InvokerData inv, Bot bot)
 		{
 			if (needsRecalculation)
 			{
@@ -102,7 +111,7 @@ namespace TS3AudioBot.Rights
 					((needsAvailableGroups && execCtx.AvailableGroups == null)
 					|| (needsAvailableChanGroups && !execCtx.ChannelGroupId.HasValue)))
 				{
-					var result = botParent.QueryConnection.GetClientInfoById(inv.ClientId.Value);
+					var result = bot?.QueryConnection.GetClientInfoById(inv.ClientId.Value) ?? R<TS3Client.Messages.ClientInfo>.Err("");
 					if (result.Ok)
 					{
 						if (execCtx.AvailableGroups == null)
@@ -114,7 +123,7 @@ namespace TS3AudioBot.Rights
 
 				if (needsAvailableGroups && inv.DatabaseId.HasValue && execCtx.AvailableGroups == null)
 				{
-					var result = botParent.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value);
+					var result = bot?.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value) ?? R<ulong[]>.Err("");
 					if (result.Ok)
 						execCtx.AvailableGroups = result.Value;
 				}
@@ -171,7 +180,7 @@ namespace TS3AudioBot.Rights
 			{
 				if (!File.Exists(rightsManagerData.RightsFile))
 				{
-					Log.Write(Log.Level.Info, "No rights file found. Creating default.");
+					Log.Info("No rights file found. Creating default.");
 					using (var fs = File.OpenWrite(rightsManagerData.RightsFile))
 					using (var data = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
 						data.CopyTo(fs);
@@ -181,14 +190,14 @@ namespace TS3AudioBot.Rights
 				var ctx = new ParseContext();
 				RecalculateRights(table, ctx);
 				foreach (var err in ctx.Errors)
-					Log.Write(Log.Level.Error, err);
+					Log.Error(err);
 				foreach (var warn in ctx.Warnings)
-					Log.Write(Log.Level.Warning, warn);
+					Log.Warn(warn);
 				return ctx.Errors.Count == 0;
 			}
 			catch (Exception ex)
 			{
-				Log.Write(Log.Level.Error, "The rights file could not be parsed: {0}", ex);
+				Log.Error(ex, "The rights file could not be parsed");
 				return false;
 			}
 		}

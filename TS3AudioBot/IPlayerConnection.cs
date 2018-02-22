@@ -10,13 +10,13 @@
 namespace TS3AudioBot
 {
 	using System;
-	using Helper;
 
+	/// <summary>Slim interface to control the audio player.</summary>
 	public interface IPlayerConnection : IDisposable
 	{
 		event EventHandler OnSongEnd;
 
-		int Volume { get; set; }
+		float Volume { get; set; }
 		TimeSpan Position { get; set; }
 		bool Repeated { get; set; }
 		bool Paused { get; set; }

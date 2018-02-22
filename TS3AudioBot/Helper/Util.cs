@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Helper
 {
 	using CommandSystem;
+	using Newtonsoft.Json.Linq;
 	using System;
 	using System.IO;
 	using System.Reflection;
@@ -17,21 +18,12 @@ namespace TS3AudioBot.Helper
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
-	using System.Web.Script.Serialization;
 
 	[Serializable]
 	public static class Util
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
-
-		public static bool IsLinux
-		{
-			get
-			{
-				int p = (int)Environment.OSVersion.Platform;
-				return (p == 4) || (p == 6) || (p == 128);
-			}
-		}
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
@@ -57,11 +49,9 @@ namespace TS3AudioBot.Helper
 
 		public static DateTime GetNow() => DateTime.Now;
 
-		public static void Init<T>(ref T obj) where T : new() => obj = new T();
+		public static void Init<T>(out T obj) where T : new() => obj = new T();
 
 		public static Random Random { get; } = new Random();
-
-		public static JavaScriptSerializer Serializer { get; } = new JavaScriptSerializer();
 
 		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
 
@@ -80,7 +70,7 @@ namespace TS3AudioBot.Helper
 				catch (UnauthorizedAccessException) { return false; }
 				catch (Exception)
 				{
-					Log.Write(Log.Level.Warning, "Uncatched admin check.");
+					Log.Warn("Uncatched admin check.");
 					return false;
 				}
 			}
@@ -138,7 +128,7 @@ namespace TS3AudioBot.Helper
 		public static void UnwrapThrow(this R r)
 		{
 			if (!r.Ok)
-				throw new CommandException(r.Message, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
 		}
 
 		public static T UnwrapThrow<T>(this R<T> r)
@@ -146,7 +136,7 @@ namespace TS3AudioBot.Helper
 			if (r.Ok)
 				return r.Value;
 			else
-				throw new CommandException(r.Message, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
 		}
 
 		public static string UnrollException(this Exception ex)
@@ -168,43 +158,19 @@ namespace TS3AudioBot.Helper
 			return assembly.GetManifestResourceStream(name);
 		}
 
-		private static BuildData buildData;
-		public static BuildData GetAssemblyData()
+		public static R<T> TryCast<T>(this JToken token, string key)
 		{
-			if (buildData == null)
-			{
-				var gitInfoType = Assembly.GetExecutingAssembly().GetType("TS3AudioBot.GitVersionInformation");
-				if (gitInfoType == null)
-				{
-					buildData = new BuildData();
-				}
-				else
-				{
-					buildData = new BuildData
-					{
-						Version = (string)gitInfoType.GetField("SemVer", BindingFlags.Static | BindingFlags.Public).GetValue(null),
-						Branch = (string)gitInfoType.GetField("BranchName", BindingFlags.Static | BindingFlags.Public).GetValue(null),
-						CommitSha = (string)gitInfoType.GetField("Sha", BindingFlags.Static | BindingFlags.Public).GetValue(null),
-					};
-				}
-			}
-			return buildData;
-		}
-
-		public class BuildData
-		{
-			public string Version = "<?>";
-			public string Branch = "<?>";
-			public string CommitSha = "<?>";
-
-			public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
-			public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
+			var value = token.SelectToken(key);
+			if (value == null)
+				return "Key not found";
+			try { return value.ToObject<T>(); }
+			catch (FormatException) { return "Invalid type"; }
 		}
 	}
 
 	public class MissingEnumCaseException : Exception
 	{
-	public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
-	public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
+		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
+		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 }

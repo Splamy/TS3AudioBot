@@ -5,35 +5,41 @@ using System.Linq;
 
 namespace TS3AudioBot.Algorithm
 {
-	public class DependencyGraph<T> where T : IEquatable<T>
+	public class DependencyGraph<T> where T : class
 	{
-		List<Node> DependencyObjects { get; }
+		private Dictionary<T, Node> DependencyObjects { get; }
 		public List<T> DependencyList { get; }
 
 		public DependencyGraph()
 		{
-			DependencyObjects = new List<Node>();
+			DependencyObjects = new Dictionary<T, Node>();
 			DependencyList = new List<T>();
+		}
+
+		public bool Contains(T obj)
+		{
+			return DependencyObjects.ContainsKey(obj);
 		}
 
 		public void Map(T obj, T[] depentants)
 		{
 			var node = new Node(obj, depentants);
-			DependencyObjects.Add(node);
+			DependencyObjects.Add(obj, node);
 		}
 
 		public void BuildList()
 		{
 			DependencyList.Clear();
 
-			for (int i = 0; i < DependencyObjects.Count; i++)
-				DependencyObjects[i].Id = i;
-			foreach (var node in DependencyObjects)
-				node.DIdList = node.DList.Select(x => DependencyObjects.First(y => y.DObject.Equals(x)).Id).ToArray();
+			int id = 0;
+			foreach (var node in DependencyObjects.Values)
+				node.Id = id++;
+			foreach (var node in DependencyObjects.Values)
+				node.DIdList = node.DList.Select(x => DependencyObjects[x].Id).ToArray();
 
 			var reachable = new BitArray(DependencyObjects.Count, false);
 
-			var remainingObjects = DependencyObjects.ToList();
+			var remainingObjects = DependencyObjects.Values.ToList();
 			while (remainingObjects.Count > 0)
 			{
 				bool hasChanged = false;

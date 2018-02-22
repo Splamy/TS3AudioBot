@@ -1,4 +1,4 @@
-﻿# Rights declaration file
+# Rights declaration file
 # For more information about syntax and structure see here:
 # https://github.com/Splamy/TS3AudioBot/wiki/Rights
 
@@ -20,6 +20,9 @@
 	"cmd.rng",
 	"cmd.eval",
 	"cmd.take",
+
+	# Changing bot context in the api
+	"cmd.bot.use"
 ]
 
 # Admin rule

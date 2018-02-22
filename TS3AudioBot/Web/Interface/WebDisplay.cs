@@ -17,10 +17,10 @@ namespace TS3AudioBot.Web.Interface
 
 	public sealed class WebDisplay : WebComponent, IDisposable
 	{
-		public ISiteProvider Site404 { get; private set; }
-		private SiteMapper map = new SiteMapper();
+		public ISiteProvider Site404 { get; }
+		private readonly SiteMapper map = new SiteMapper();
 
-		public static readonly Dictionary<string, string> MimeTypes = new Dictionary<string, string>()
+		public static readonly Dictionary<string, string> MimeTypes = new Dictionary<string, string>
 		{
 			{ ".js", "application/javascript" },
 			{ ".html", "text/html" },
@@ -33,7 +33,7 @@ namespace TS3AudioBot.Web.Interface
 			{ ".less", "text/css" },
 		};
 
-		public WebDisplay(MainBot bot) : base(bot)
+		public WebDisplay()
 		{
 			var baseDir = new DirectoryInfo(Path.Combine("..", "..", "Web", "Interface"));
 			var dir = new FolderProvider(baseDir);
@@ -81,57 +81,4 @@ namespace TS3AudioBot.Web.Interface
 		{
 		}
 	}
-
-	/*
-	abstract class WebEvent : WebStaticSite
-	{
-		public override string MimeType { set { throw new InvalidOperationException(); } }
-		private List<HttpListenerResponse> response;
-
-		public WebEvent(string sitePath) : base(sitePath)
-		{
-			response = new List<HttpListenerResponse>();
-			mimeType = "text/event-stream";
-		}
-
-		public sealed override PreparedData PrepareSite(UriExt url) => new PreparedData(long.MaxValue, null);
-		public sealed override void PrepareHeader(HttpListenerContext context, PreparedData callData)
-		{
-			base.PrepareHeader(context, callData);
-			context.Response.KeepAlive = true;
-		}
-		public sealed override void GenerateSite(HttpListenerContext context, PreparedData callData)
-		{
-			response.Add(context.Response);
-			InvokeEvent();
-		}
-
-		public void InvokeEvent()
-		{
-			string eventText = "data: " + GetData() + "\n\n";
-			var data = Encoding.GetBytes(eventText);
-			for (int i = 0; i < response.Count; i++)
-			{
-				try
-				{
-					response[i].OutputStream.Write(data, 0, data.Length);
-					response[i].OutputStream.Flush();
-				}
-				catch (Exception ex)
-					when (ex is HttpListenerException || ex is InvalidOperationException || ex is IOException)
-				{
-					response.RemoveAt(i);
-					i--;
-				}
-			}
-		}
-
-		protected abstract string GetData();
-
-		public override void FinalizeResponse(HttpListenerContext context)
-		{
-			context.Response.OutputStream.Flush();
-		}
-	}
-	*/
 }

@@ -9,27 +9,34 @@
 
 namespace TS3Client
 {
-	using Commands;
+	using Helper;
 	using Messages;
 	using System;
 	using System.Collections.Generic;
 	using System.Threading;
+	using System.Threading.Tasks;
 
-	internal class WaitBlock : IDisposable
+	internal sealed class WaitBlock : IDisposable
 	{
+		private readonly TaskCompletionSource<bool> answerWaiterAsync;
 		private readonly ManualResetEvent answerWaiter;
 		private readonly ManualResetEvent notificationWaiter;
 		private CommandError commandError;
 		private string commandLine;
 		public NotificationType[] DependsOn { get; }
 		private LazyNotification notification;
-		public bool Closed { get; private set; }
+		private bool isDisposed;
 		private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(15);
+		private readonly bool async;
 
-		public WaitBlock(NotificationType[] dependsOn = null)
+		public WaitBlock(bool async, NotificationType[] dependsOn = null)
 		{
-			Closed = false;
-			answerWaiter = new ManualResetEvent(false);
+			this.async = async;
+			isDisposed = false;
+			if (async)
+				answerWaiterAsync = new TaskCompletionSource<bool>();
+			else
+				answerWaiter = new ManualResetEvent(false);
 			DependsOn = dependsOn;
 			if (DependsOn != null)
 			{
@@ -39,39 +46,64 @@ namespace TS3Client
 			}
 		}
 
-		public IEnumerable<T> WaitForMessage<T>() where T : IResponse, new()
+		public R<IEnumerable<T>, CommandError> WaitForMessage<T>() where T : IResponse, new()
 		{
+			if (isDisposed)
+				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (!answerWaiter.WaitOne(CommandTimeout))
-				throw new Ts3CommandException(Util.TimeOutCommandError);
+				return Util.TimeOutCommandError;
 			if (commandError.Id != Ts3ErrorCode.ok)
-				throw new Ts3CommandException(commandError);
+				return commandError;
 
-			return CommandDeserializer.GenerateResponse<T>(commandLine);
+			return R<IEnumerable<T>, CommandError>.OkR(Deserializer.GenerateResponse<T>(commandLine));
 		}
 
-		public LazyNotification WaitForNotification()
+		public async Task<R<IEnumerable<T>, CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
 		{
+			if (isDisposed)
+				throw new ObjectDisposedException(nameof(WaitBlock));
+			var timeOut = Task.Delay(CommandTimeout);
+			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
+			if (res == timeOut)
+				return Util.TimeOutCommandError;
+			if (commandError.Id != Ts3ErrorCode.ok)
+				return commandError;
+
+			return R<IEnumerable<T>, CommandError>.OkR(Deserializer.GenerateResponse<T>(commandLine));
+		}
+
+		public R<LazyNotification, CommandError> WaitForNotification()
+		{
+			if (isDisposed)
+				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (DependsOn == null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			if (!answerWaiter.WaitOne(CommandTimeout))
-				throw new Ts3CommandException(Util.TimeOutCommandError);
+				return Util.TimeOutCommandError;
 			if (commandError.Id != Ts3ErrorCode.ok)
-				throw new Ts3CommandException(commandError);
+				return commandError;
 			if (!notificationWaiter.WaitOne(CommandTimeout))
-				throw new Ts3CommandException(Util.TimeOutCommandError);
+				return Util.TimeOutCommandError;
 
 			return notification;
 		}
 
 		public void SetAnswer(CommandError commandError, string commandLine = null)
 		{
+			if (isDisposed)
+				return;
 			this.commandError = commandError ?? throw new ArgumentNullException(nameof(commandError));
 			this.commandLine = commandLine;
-			answerWaiter.Set();
+			if (async)
+				answerWaiterAsync.SetResult(true);
+			else
+				answerWaiter.Set();
 		}
 
 		public void SetNotification(LazyNotification notification)
 		{
+			if (isDisposed)
+				return;
 			if (DependsOn != null && Array.IndexOf(DependsOn, notification.NotifyType) < 0)
 				throw new ArgumentException("The notification does not match this waitblock");
 			this.notification = notification;
@@ -80,10 +112,15 @@ namespace TS3Client
 
 		public void Dispose()
 		{
-			Closed = true;
+			if (isDisposed)
+				return;
+			isDisposed = true;
 
-			answerWaiter.Set();
-			answerWaiter.Dispose();
+			if (!async)
+			{
+				answerWaiter.Set();
+				answerWaiter.Dispose();
+			}
 
 			if (notificationWaiter != null)
 			{

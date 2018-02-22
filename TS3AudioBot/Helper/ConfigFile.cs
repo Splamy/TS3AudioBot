@@ -30,7 +30,7 @@ namespace TS3AudioBot.Helper
 
 		protected ConfigFile()
 		{
-			Util.Init(ref confObjects);
+			Util.Init(out confObjects);
 		}
 
 		public static ConfigFile OpenOrCreate(string path)
@@ -57,6 +57,9 @@ namespace TS3AudioBot.Helper
 		{
 			if (string.IsNullOrEmpty(associatedClass))
 				throw new ArgumentNullException(nameof(associatedClass));
+
+			if (confObjects.TryGetValue(associatedClass, out var co))
+				return (T)co;
 
 			var dataStruct = new T();
 			var fields = typeof(T).GetProperties();

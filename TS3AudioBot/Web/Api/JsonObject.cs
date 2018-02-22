@@ -9,12 +9,11 @@
 
 namespace TS3AudioBot.Web.Api
 {
-	using Helper;
-	using System.Web.Script.Serialization;
+	using Newtonsoft.Json;
 
 	public abstract class JsonObject
 	{
-		[ScriptIgnore]
+		[JsonIgnore]
 		public string AsStringResult { get; }
 
 		protected JsonObject(string stringResult)
@@ -25,6 +24,6 @@ namespace TS3AudioBot.Web.Api
 		public override string ToString() => AsStringResult;
 
 		public virtual object GetSerializeObject() => this;
-		public virtual string Serialize() => Util.Serializer.Serialize(GetSerializeObject());
+		public virtual string Serialize() => JsonConvert.SerializeObject(GetSerializeObject());
 	}
 }

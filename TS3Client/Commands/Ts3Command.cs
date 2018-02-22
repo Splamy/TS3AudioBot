@@ -9,6 +9,7 @@
 
 namespace TS3Client.Commands
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
@@ -37,7 +38,7 @@ namespace TS3Client.Commands
 		public Ts3Command(string command, List<ICommandPart> parameter)
 		{
 			ExpectResponse = true;
-			this.Command = command;
+			Command = command;
 			this.parameter = parameter;
 		}
 

@@ -33,15 +33,17 @@ Done:
 * (un)subscribe to the Bob to hear music in any channel
 * (un)subscribe the Bob to certain channels
 * Playlist management for all users
-* *broken* | Basic plugin support
-
-In progress:
+* Advanced permission configuration
+* Extensive plugin support
 * Web API
 
-In planning:
-* Create multiple client instances automatically for different channels
-* (Improved) Rights system
+In progress:
 * Own web-interface
+* (Improved) Rights system
+* Multi-instance
+
+In planning:  
+*See issues*
 
 ## Bot Commands
 All in all, the bot is fully operable only via chat (and actually only via chat).  
@@ -61,7 +63,7 @@ You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source 
 ### Compilation
 Before we start: _If you know what you are doing_ you can alternatively compile each dependency referenced here from source/git by yourself, but I won't add a tutorial for that.
 
-Download the git repository with `git clone https://github.com/Splamy/TS3AudioBot.git`.
+Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
 1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
@@ -95,7 +97,7 @@ or dive into the Rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki
 1. Start the bot again.
 1. Send the bot in a private message `!bot setup <key>` where `<key>` is the privilege key from a previous step.
 1. Now you can move the process to the background or close the bot with `!quit` in teamspeak and run it in the background.  
-The recommended start from now on is `mono TS3AudioBot.exe -q` to disable writing to stdout since the bot logs everything to a log file anyway.
+1. (optional) You can configure the logging levels and outputs in the `NLog.config` file, read [here](https://github.com/NLog/NLog/wiki/Configuration-file) to learn more.
 1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).  
 For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
 
@@ -109,3 +111,6 @@ Why OSL-3.0:
 - OSL allows you to link to our libraries without needing to disclose your own project, which might be useful if you want to use the TS3Client as a library.
 - If you create plugins you do not have to make them public like in GPL. (Although we would be happier if you shared them :)
 - With OSL we want to allow you providing the TS3AB as a service (even commercially). We do not want the software to be sold but the service. We want this software to be free for everyone.
+
+# Badges
+[![forthebadge](http://forthebadge.com/images/badges/60-percent-of-the-time-works-every-time.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/built-with-love.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/contains-cat-gifs.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/made-with-c-sharp.svg)](http://forthebadge.com)

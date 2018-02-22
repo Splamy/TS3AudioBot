@@ -17,15 +17,18 @@ namespace TS3AudioBot.Helper
 	[Serializable]
 	public static class TickPool
 	{
-		private static Thread tickThread;
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		private static bool run;
+		private static readonly Thread tickThread;
+		private static readonly object tickLock = new object();
 		private static readonly TimeSpan MinTick = TimeSpan.FromMilliseconds(1000);
 		private static readonly List<TickWorker> workList;
-		private static bool run;
+		private static readonly AutoResetEvent tickLoopPulse = new AutoResetEvent(false);
 
 		static TickPool()
 		{
 			run = false;
-			Util.Init(ref workList);
+			Util.Init(out workList);
 			tickThread = new Thread(Tick) {Name = "TickPool"};
 		}
 
@@ -45,7 +48,7 @@ namespace TS3AudioBot.Helper
 
 		private static void AddWorker(TickWorker worker)
 		{
-			lock (workList)
+			lock (tickLock)
 			{
 				workList.Add(worker);
 				worker.Timer.Start();
@@ -60,13 +63,11 @@ namespace TS3AudioBot.Helper
 		public static void UnregisterTicker(TickWorker worker)
 		{
 			if (worker == null) throw new ArgumentNullException(nameof(worker));
-			lock (workList) { RemoveUnlocked(worker); }
-		}
-
-		private static void RemoveUnlocked(TickWorker worker)
-		{
-			workList.Remove(worker);
-			worker.Timer.Stop();
+			lock (tickLock)
+			{
+				workList.Remove(worker);
+				worker.Timer.Stop();
+			}
 		}
 
 		private static void Tick()
@@ -75,7 +76,7 @@ namespace TS3AudioBot.Helper
 			{
 				var curSleep = MinTick;
 
-				lock (workList)
+				lock (tickLock)
 				{
 					for (int i = 0; i < workList.Count; i++)
 					{
@@ -89,7 +90,7 @@ namespace TS3AudioBot.Helper
 
 							if (worker.TickOnce)
 							{
-								RemoveUnlocked(worker);
+								UnregisterTicker(worker);
 								i--;
 							}
 							else
@@ -103,15 +104,27 @@ namespace TS3AudioBot.Helper
 					}
 				}
 
-				Thread.Sleep(curSleep);
+				tickLoopPulse.WaitOne(curSleep);
 			}
 		}
 
 		public static void Close()
 		{
 			run = false;
-			Util.WaitForThreadEnd(tickThread, TimeSpan.FromMilliseconds(100));
-			tickThread = null;
+			tickLoopPulse.Set();
+			bool lockTaken = false;
+			Monitor.TryEnter(workList, TimeSpan.FromSeconds(1), ref lockTaken);
+			if (lockTaken)
+			{
+				workList.Clear();
+				Monitor.Exit(workList);
+			}
+			else
+			{
+				Log.Warn("TickPool could not close correctly.");
+			}
+			tickLoopPulse.Set();
+			Util.WaitForThreadEnd(tickThread, MinTick);
 		}
 	}
 

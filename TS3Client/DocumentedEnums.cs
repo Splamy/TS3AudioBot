@@ -34,7 +34,7 @@ namespace TS3Client
 		KeepAspect
 	}
 
-	public enum Codec
+	public enum Codec : byte
 	{
 		///<summary>mono, 16bit, 8kHz</summary>
 		SpeexNarrowband = 0,
@@ -48,6 +48,9 @@ namespace TS3Client
 		OpusVoice,
 		///<summary>stereo, 16bit, 48kHz, optimized for music</summary>
 		OpusMusic,
+
+		/// <summary>PCM S16LE 1/2 Channel (TS3Client extension; not supported by normal TeamSpeak 3 clients!)</summary>
+		Raw = 127,
 	}
 
 	public enum CodecEncryptionMode

@@ -16,18 +16,25 @@ namespace TS3AudioBot.History
 	using System.Collections.Generic;
 	using System.Linq;
 
+	/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
 	public sealed class HistoryManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int CurrentHistoryVersion = 1;
 		private const string AudioLogEntriesTable = "audioLogEntries";
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
-		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
+		private LiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly HistoryManagerData historyManagerData;
 		private readonly LinkedList<int> unusedIds;
+		private readonly object dbLock = new object();
 
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
+
+		public DbStore Database { get; set; }
+		public ResourceFactoryManager FactoryManager { get; set; }
+		public PlaylistManager PlaylistManager { get; set; }
 
 		static HistoryManager()
 		{
@@ -35,14 +42,17 @@ namespace TS3AudioBot.History
 				.Id(x => x.Id);
 		}
 
-		public HistoryManager(HistoryManagerData hmd, DbStore database)
+		public HistoryManager(HistoryManagerData hmd)
 		{
 			Formatter = new SmartHistoryFormatter();
 			historyManagerData = hmd;
 
-			Util.Init(ref unusedIds);
+			Util.Init(out unusedIds);
+		}
 
-			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
+		public void Initialize()
+		{
+			audioLogEntries = Database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
 			audioLogEntries.EnsureIndex(x => x.Timestamp);
 			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
@@ -52,7 +62,7 @@ namespace TS3AudioBot.History
 
 			// Content upgrade
 
-			var meta = database.GetMetaData(AudioLogEntriesTable);
+			var meta = Database.GetMetaData(AudioLogEntriesTable);
 			if (meta.Version >= CurrentHistoryVersion)
 				return;
 
@@ -72,11 +82,11 @@ namespace TS3AudioBot.History
 				}
 				audioLogEntries.Update(all);
 				meta.Version = 1;
-				database.UpdateMetaData(meta);
+				Database.UpdateMetaData(meta);
 				goto default;
 
 			default:
-				Log.Write(Log.Level.Info, "Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
+				Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
 				break;
 			}
 		}
@@ -98,18 +108,22 @@ namespace TS3AudioBot.History
 			if (saveData == null)
 				throw new ArgumentNullException(nameof(saveData));
 
-			var ale = FindByUniqueId(saveData.Resource.UniqueId);
-			if (ale == null)
+			lock (dbLock)
 			{
-				ale = CreateLogEntry(saveData);
+				var ale = FindByUniqueId(saveData.Resource.UniqueId);
 				if (ale == null)
-					Log.Write(Log.Level.Error, "AudioLogEntry could not be created!");
+				{
+					ale = CreateLogEntry(saveData);
+					if (ale == null)
+						Log.Error("AudioLogEntry could not be created!");
+				}
+				else
+				{
+					LogEntryPlay(ale);
+				}
+
+				return ale;
 			}
-			else
-			{
-				LogEntryPlay(ale);
-			}
-			return ale;
 		}
 
 		/// <summary>Increases the playcount and updates the last playtime.</summary>
@@ -211,11 +225,11 @@ namespace TS3AudioBot.History
 
 		/// <summary>Removes the <see cref="AudioLogEntry"/> from the Database.</summary>
 		/// <param name="ale">The <see cref="AudioLogEntry"/> to delete.</param>
-		public void RemoveEntry(AudioLogEntry ale)
+		public bool RemoveEntry(AudioLogEntry ale)
 		{
 			if (ale == null)
 				throw new ArgumentNullException(nameof(ale));
-			audioLogEntries.Delete(ale.Id);
+			return audioLogEntries.Delete(ale.Id);
 		}
 
 		/// <summary>Sets the name of a <see cref="AudioLogEntry"/>.</summary>
@@ -233,22 +247,24 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void RemoveBrokenLinks(CommandSystem.ExecutionInformation info)
+		public void RemoveBrokenLinks()
 		{
 			const int iterations = 3;
 			var currentIter = audioLogEntries.FindAll().ToList();
 
 			for (int i = 0; i < iterations; i++)
 			{
-				info.Write("Filter iteration " + i);
-				currentIter = FilterList(info, currentIter);
+				Log.Info("Filter iteration {0}", i);
+				currentIter = FilterList(currentIter);
 			}
 
 			foreach (var entry in currentIter)
 			{
-				RemoveEntry(entry);
-				info.Bot.PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
-				info.Write($"Removed: {entry.Id} - {entry.AudioResource.ResourceTitle}");
+				if (RemoveEntry(entry))
+				{
+					PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
+					Log.Info("Removed: {0} - {1}", entry.Id, entry.AudioResource.ResourceTitle);
+				}
 			}
 		}
 
@@ -256,24 +272,23 @@ namespace TS3AudioBot.History
 		/// Goes through a list of <see cref="AudioLogEntry"/> and checks if the contained <see cref="AudioResource"/>
 		/// is playable/resolvable.
 		/// </summary>
-		/// <param name="info">Session object to inform the user about the current cleaning status.</param>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private static List<AudioLogEntry> FilterList(CommandSystem.ExecutionInformation info, List<AudioLogEntry> list)
+		private List<AudioLogEntry> FilterList(IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotityCnt = 0;
-			var nextIter = new List<AudioLogEntry>();
+			var nextIter = new List<AudioLogEntry>(list.Count);
 			foreach (var entry in list)
 			{
-				var result = info.Bot.FactoryManager.Load(entry.AudioResource);
+				var result = FactoryManager.Load(entry.AudioResource);
 				if (!result)
 				{
-					info.Write($"//DEBUG// ({entry.AudioResource.UniqueId}) Reason: {result.Message}");
+					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, result.Error);
 					nextIter.Add(entry);
 				}
 
 				if (++userNotityCnt % 100 == 0)
-					info.Write("Working" + new string('.', userNotityCnt / 100));
+					Log.Debug("Clean in progress {0}", new string('.', userNotityCnt / 100 % 10));
 			}
 			return nextIter;
 		}

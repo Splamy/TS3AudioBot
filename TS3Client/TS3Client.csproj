@@ -13,6 +13,8 @@
     <FileAlignment>512</FileAlignment>
     <LangVersion>7</LangVersion>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -38,6 +40,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
+    <TransformOnBuild>true</TransformOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
@@ -47,41 +50,88 @@
     <Reference Include="Heijden.Dns, Version=2.0.0.6, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Heijden.Dns.2.0.0\lib\net35\Heijden.Dns.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Memory, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.4.0-preview1-25305-02\lib\netstandard1.0\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.4.0\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ColorDbg.cs" />
     <Compile Include="Commands\CommandMultiParameter.cs" />
     <Compile Include="Commands\ICommandPart.cs" />
+    <Compile Include="Commands\Ts3Const.cs" />
     <Compile Include="ConnectionData.cs" />
     <Compile Include="DisconnectEventArgs.cs" />
     <Compile Include="DocumentedEnums.cs" />
+    <Compile Include="Audio\ActiveCheckPipe.cs" />
+    <Compile Include="Full\Ed25519.cs" />
     <Compile Include="FileTransferManager.cs" />
+    <Compile Include="Audio\AudioMeta.cs" />
+    <Compile Include="Audio\AudioInterfaces.cs" />
+    <Compile Include="Audio\AudioPacketReader.cs" />
+    <Compile Include="Audio\AudioPipeExtensions.cs" />
+    <Compile Include="Audio\EncoderPipe.cs" />
+    <Compile Include="Audio\Opus\NativeMethods.cs" />
+    <Compile Include="Generated\Errors.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Errors.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Generated\Permissions.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Permissions.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Generated\Versions.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Versions.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Helper\Extensions.cs" />
+    <Compile Include="Helper\NativeWinDllLoader.cs" />
+    <Compile Include="Audio\Opus\OpusDecoder.cs" />
+    <Compile Include="Audio\Opus\OpusEncoder.cs" />
+    <Compile Include="Audio\PreciseAudioTimer.cs" />
+    <Compile Include="Audio\PreciseTimedPipe.cs" />
+    <Compile Include="Audio\SplitterPipe.cs" />
+    <Compile Include="Audio\StaticMetaPipe.cs" />
+    <Compile Include="Audio\StreamAudioProducer.cs" />
+    <Compile Include="Audio\VolumePipe.cs" />
     <Compile Include="Full\BasePacket.cs" />
     <Compile Include="Full\QuickerLz.cs" />
     <Compile Include="Full\IdentityData.cs" />
     <Compile Include="Full\NetworkStats.cs" />
     <Compile Include="Full\PacketHandler.cs" />
-    <Compile Include="Full\IncomingPacket.cs" />
+    <Compile Include="Full\S2CPacket.cs" />
     <Compile Include="Full\NetUtil.cs" />
-    <Compile Include="Full\OutgoingPacket.cs" />
+    <Compile Include="Full\C2SPacket.cs" />
     <Compile Include="Full\PacketType.cs" />
     <Compile Include="Full\RingQueue.cs" />
     <Compile Include="Full\Ts3Crypt.cs" />
     <Compile Include="Full\Ts3FullClient.cs" />
-    <Compile Include="Full\VersionSign.cs" />
-    <Compile Include="Commands\CommandDeserializer.cs" />
+    <Compile Include="Helper\SpanSplitter.cs" />
+    <Compile Include="Messages\Deserializer.cs" />
     <Compile Include="Commands\Ts3Command.cs" />
     <Compile Include="LazyNotification.cs" />
     <Compile Include="MessageProcessor.cs" />
-    <Compile Include="Messages\MessageTemplates.cs">
+    <Compile Include="Generated\Messages.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>MessageTemplates.tt</DependentUpon>
+      <DependentUpon>Messages.tt</DependentUpon>
     </Compile>
+    <Compile Include="Helper\R.cs" />
     <Compile Include="Ts3BaseClient.cs" />
     <Compile Include="TsDnsResolver.cs" />
-    <Compile Include="Util.cs" />
+    <Compile Include="Helper\Util.cs" />
     <Compile Include="OwnEnums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
     <Compile Include="Messages\ResponseDictionary.cs" />
@@ -95,16 +145,34 @@
     <Compile Include="WaitBlock.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Declarations\Versions.csv" />
+    <None Include="Audio\Opus\LICENSE" />
+    <None Include="Audio\Opus\OPUS_LICENSE" />
+    <None Include="Audio\Opus\README" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="ts3protocol.md" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Messages\MessageDeclarations.txt" />
-    <Content Include="Messages\MessageTemplates.tt">
+    <Content Include="Declarations\Errors.csv" />
+    <Content Include="Declarations\Permissions.csv" />
+    <Content Include="Declarations\BookDeclarations.txt" />
+    <Content Include="Declarations\Messages.txt" />
+    <Content Include="Generated\Errors.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MessageTemplates.cs</LastGenOutput>
+      <LastGenOutput>Errors.cs</LastGenOutput>
+    </Content>
+    <Content Include="Generated\Messages.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Messages.cs</LastGenOutput>
+    </Content>
+    <Content Include="Generated\Permissions.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Permissions.cs</LastGenOutput>
+    </Content>
+    <Content Include="Generated\Versions.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Versions.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>

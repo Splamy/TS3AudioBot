@@ -58,9 +58,22 @@ namespace TS3ABotUnitTests
 			var data2 = new HistorySaveData(ar2, inv2.DatabaseId);
 			var data3 = new HistorySaveData(ar3, 103);
 
-			var hmf = new HistoryManagerData {HistoryFile = testFile, FillDeletedIds = false};
-			var db = new DbStore(hmf);
-			var hf = new HistoryManager(hmf, db);
+			var memcfg = ConfigFile.CreateDummy();
+			var hmf = memcfg.GetDataStruct<HistoryManagerData>("HistoryManager", true);
+			hmf.HistoryFile = testFile;
+			hmf.FillDeletedIds = false;
+
+			DbStore db;
+			HistoryManager hf;
+
+			void CreateDbStore()
+			{
+				db = new DbStore(hmf);
+				hf = new HistoryManager(hmf) { Database = db };
+				hf.Initialize();
+			}
+
+			CreateDbStore();
 
 			hf.LogAudioResource(data1);
 
@@ -71,8 +84,7 @@ namespace TS3ABotUnitTests
 
 			db.Dispose();
 
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			CreateDbStore();
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
 			lastEntry = lastXEntries.First();
@@ -89,8 +101,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// store and order check
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			CreateDbStore();
 			var lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -104,8 +115,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// check entry renaming
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			CreateDbStore();
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
@@ -125,8 +135,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// recheck order
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			CreateDbStore();
 			lastXEntriesArray = hf.GetLastXEntrys(2).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
 			Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
@@ -134,8 +143,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// delete entry 1
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			CreateDbStore();
 			hf.RemoveEntry(hf.FindEntryByResource(ar1));
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
@@ -149,8 +157,7 @@ namespace TS3ABotUnitTests
 			db.Dispose();
 
 			// delete entry 2
-			db = new DbStore(hmf);
-			hf = new HistoryManager(hmf, db);
+			CreateDbStore();
 			// .. check integrity from previous store
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -165,81 +172,6 @@ namespace TS3ABotUnitTests
 
 
 			File.Delete(testFile);
-		}
-
-		[Test]
-		public void PositionedStreamReaderLineEndings()
-		{
-			using (var memStream = new MemoryStream())
-			{
-				// Setting streams up
-				var writer = new StreamWriter(memStream);
-				string[] values = {
-					"11\n",
-					"22\n",
-					"33\n",
-					"44\r",
-					"55\r",
-					"66\r",
-					"77\r\n",
-					"88\r\n",
-					"99\r\n",
-					"xx\n","\r",
-					"yy\n","\r",
-					"zz\n","\r",
-					"a\r",
-					"b\n",
-					"c\r\n",
-					"d\n","\r",
-					"e" };
-				foreach (var val in values)
-					writer.Write(val);
-				writer.Flush();
-
-				memStream.Seek(0, SeekOrigin.Begin);
-				var reader = new PositionedStreamReader(memStream);
-
-				int pos = 0;
-				foreach (var val in values)
-				{
-					var line = reader.ReadLine();
-					pos += val.Length;
-
-					Assert.AreEqual(val.TrimEnd('\r', '\n'), line);
-					Assert.AreEqual(pos, reader.ReadPosition);
-				}
-			}
-		}
-
-		[Test]
-		public void PositionedStreamReaderBufferSize()
-		{
-			using (var memStream = new MemoryStream())
-			{
-				// Setting streams up
-				var writer = new StreamWriter(memStream);
-				string[] values = {
-					new string('1', 1024) + '\n', // 1025: 1 over buffer size
-					new string('1', 1023) + '\n', // 1024: exactly the buffer size, but 1 over the 1024 line block due to the previous
-					new string('1', 1022) + '\n', // 1023: 1 less then the buffer size, should now match the line block again
-					new string('1', 1024) };
-				foreach (var val in values)
-					writer.Write(val);
-				writer.Flush();
-
-				memStream.Seek(0, SeekOrigin.Begin);
-				var reader = new PositionedStreamReader(memStream);
-
-				int pos = 0;
-				foreach (var val in values)
-				{
-					var line = reader.ReadLine();
-					pos += val.Length;
-
-					Assert.AreEqual(val.TrimEnd('\r', '\n'), line);
-					Assert.AreEqual(pos, reader.ReadPosition);
-				}
-			}
 		}
 
 		[Test]
@@ -310,26 +242,26 @@ namespace TS3ABotUnitTests
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
-			group.AddCommand("optional", new FunctionCommand(new Func<string, string>(s => s == null ? "NULL" : "NOT NULL")).SetRequiredParameters(0));
+			group.AddCommand("optional", new FunctionCommand(new Func<string, string>(s => s == null ? "NULL" : "NOT NULL"), 0));
 
 			// Basic tests
-			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(ExecutionInformation.Debug,
+			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(Utils.ExecInfo,
 				 new ICommand[] { new StringCommand("one") })).Content);
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!one"));
-			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!t"));
-			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e TEST"));
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!o"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!one"));
+			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(Utils.ExecInfo, "!t"));
+			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e TEST"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!o"));
 
 			// Optional parameters
-			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e"));
-			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!op"));
-			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!op 1"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!e"));
+			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op"));
+			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op 1"));
 
 			// Command chaining
-			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e (!e TEST)"));
-			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!e (!t)"));
-			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!op (!e TEST)"));
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!(!e on)"));
+			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e (!e TEST)"));
+			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e (!t)"));
+			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op (!e TEST)"));
+			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!(!e on)"));
 
 			// Command overloading
 			var intCom = new Func<int, string>(i => "INT");
@@ -339,9 +271,9 @@ namespace TS3ABotUnitTests
 				new FunctionCommand(strCom.Method, strCom.Target)
 			}));
 
-			Assert.AreEqual("INT", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!overlord 1"));
-			Assert.AreEqual("STRING", commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!overlord a"));
-			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(ExecutionInformation.Debug, "!overlord"));
+			Assert.AreEqual("INT", commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord 1"));
+			Assert.AreEqual("STRING", commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord a"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord"));
 		}
 
 		[Test]
@@ -399,12 +331,11 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Ts3Client_RingQueueTest()
 		{
-			int ov;
 			var q = new RingQueue<int>(3, 5);
 
 			q.Set(0, 42);
 
-			Assert.True(q.TryPeekStart(0, out ov));
+			Assert.True(q.TryPeekStart(0, out int ov));
 			Assert.AreEqual(ov, 42);
 
 			q.Set(1, 43);
@@ -465,11 +396,12 @@ namespace TS3ABotUnitTests
 		public void Ts3Client_RingQueueTest2()
 		{
 			var q = new RingQueue<int>(50, ushort.MaxValue + 1);
-
+			
 			for (int i = 0; i < ushort.MaxValue - 10; i++)
 			{
-				q.Set(i, 42);
-				q.TryDequeue(out var _);
+				q.Set(i, i);
+				Assert.True(q.TryDequeue(out var iCheck));
+				Assert.AreEqual(iCheck, i);
 			}
 
 			var setStatus = q.IsSet(ushort.MaxValue - 20);
@@ -478,6 +410,40 @@ namespace TS3ABotUnitTests
 			for (int i = ushort.MaxValue - 10; i < ushort.MaxValue + 10; i++)
 			{
 				q.Set(i % (ushort.MaxValue + 1), 42);
+			}
+		}
+
+		[Test]
+		public void Ts3Client_RingQueueTest3()
+		{
+			var q = new RingQueue<int>(100, ushort.MaxValue + 1);
+
+			int iSet = 0;
+			for (int blockSize = 1; blockSize < 100; blockSize++)
+			{
+				for (int i = 0; i < blockSize; i++)
+				{
+					q.Set(iSet++, i);
+				}
+				for (int i = 0; i < blockSize; i++)
+				{
+					Assert.True(q.TryDequeue(out var iCheck));
+					Assert.AreEqual(i, iCheck);
+				}
+			}
+
+			for (int blockSize = 1; blockSize < 100; blockSize++)
+			{
+				q = new RingQueue<int>(100, ushort.MaxValue + 1);
+				for (int i = 0; i < blockSize; i++)
+				{
+					q.Set(i, i);
+				}
+				for (int i = 0; i < blockSize; i++)
+				{
+					Assert.True(q.TryDequeue(out var iCheck));
+					Assert.AreEqual(i, iCheck);
+				}
 			}
 		}
 	}

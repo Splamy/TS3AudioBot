@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Reflection;
@@ -41,7 +42,7 @@ namespace TS3AudioBot.CommandSystem
 					var strb = new StringBuilder();
 					strb.Append(InvokeName);
 					strb.Append(" (");
-					strb.Append(string.Join(", ", CommandParameter.Where(p => !SpecialTypes.Contains(p)).Select(p => p.FullName)));
+					strb.Append(string.Join(", ", CommandParameter.Where(p => p.kind.IsNormal()).Select(p => p.type.FullName)));
 					strb.Append(")");
 					cachedFullQualifiedName = strb.ToString();
 				}
@@ -100,6 +101,8 @@ namespace TS3AudioBot.CommandSystem
 		{
 			Parent = p;
 			Method = m;
+			if (!m.IsStatic && p == null)
+				throw new ArgumentException("Got instance method without accociated object");
 			CommandData = comAtt;
 			ReqiredParameters = reqAtt;
 		}

@@ -21,7 +21,6 @@ namespace TS3AudioBot
 		private readonly LiteDatabase database;
 		private readonly LiteCollection<DbMetaData> metaTable;
 
-		// TODO rework config class with config rewok
 		public DbStore(HistoryManagerData hmd)
 		{
 			var historyFile = new FileInfo(hmd.HistoryFile);

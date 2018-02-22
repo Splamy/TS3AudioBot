@@ -10,7 +10,9 @@
 namespace TS3AudioBot
 {
 	using TS3Client;
+	using TS3Client.Audio;
 
+	/// <summary>Used to specify playing mode and active targets to send to.</summary>
 	public interface ITargetManager
 	{
 		TargetSendMode SendMode { get; set; }
@@ -29,13 +31,5 @@ namespace TS3AudioBot
 		void ClearTemporary();
 		void WhisperClientSubscribe(ushort userId);
 		void WhisperClientUnsubscribe(ushort userId);
-	}
-
-	public enum TargetSendMode
-	{
-		None,
-		Voice,
-		Whisper,
-		WhisperGroup,
 	}
 }

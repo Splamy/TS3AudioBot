@@ -9,11 +9,12 @@
 
 namespace TS3AudioBot.Plugins
 {
-	internal enum PluginResponse
+	public enum PluginResponse
 	{
 		Ok,
 		Crash,
 		MissingDependency,
+		MissingContext,
 		InvalidBinary,
 		NoTypeMatch,
 		TooManyPlugins,

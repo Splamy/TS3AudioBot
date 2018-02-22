@@ -7,33 +7,46 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System.Linq;
-
 namespace TS3AudioBot.ResourceFactories
 {
 	using CommandSystem;
 	using Helper;
 	using System;
-	using System.Drawing;
 	using System.Collections.Generic;
+	using System.Drawing;
+	using System.Linq;
 	using System.Reflection;
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
-		private readonly MainBot mainBot;
+		public ConfigFile Config { get; set; }
+		public CommandManager CommandManager { get; set; }
+		public Rights.RightsManager RightsManager { get; set; }
+
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
 		private readonly List<IResourceFactory> resFactories;
 
-		public ResourceFactoryManager(MainBot bot)
+		public ResourceFactoryManager()
 		{
-			mainBot = bot;
-			Util.Init(ref allFacories);
-			Util.Init(ref resFactories);
-			Util.Init(ref listFactories);
+			Util.Init(out allFacories);
+			Util.Init(out resFactories);
+			Util.Init(out listFactories);
+		}
+
+		public void Initialize()
+		{
+			var yfd = Config.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
+			var mfd = Config.GetDataStruct<MediaFactoryData>("MediaFactory", true);
+
+			AddFactory(new MediaFactory(mfd));
+			AddFactory(new YoutubeFactory(yfd));
+			AddFactory(new SoundcloudFactory());
+			AddFactory(new TwitchFactory());
 		}
 
 		// Load lookup stages
@@ -48,20 +61,35 @@ namespace TS3AudioBot.ResourceFactories
 				? factory
 				: null;
 
-		private IEnumerable<IResourceFactory> GetResFactoryByLink(string uri) =>
+		private IEnumerable<(IResourceFactory, MatchCertainty)> GetResFactoryByLink(string uri) =>
 			from fac in resFactories
 			let facCertain = fac.MatchResource(uri)
 			where facCertain != MatchCertainty.Never
 			orderby facCertain descending
-			select fac;
+			select (fac, facCertain);
 
-		private IEnumerable<IPlaylistFactory> GetListFactoryByLink(string uri) =>
+		private IEnumerable<(IPlaylistFactory, MatchCertainty)> GetListFactoryByLink(string uri) =>
 			from fac in listFactories
 			let facCertain = fac.MatchPlaylist(uri)
 			where facCertain != MatchCertainty.Never
 			orderby facCertain descending
-			select fac;
+			select (fac, facCertain);
 
+		private static IEnumerable<T> FilterUsable<T>(IEnumerable<(T, MatchCertainty)> enu)
+		{
+			var highestCertainty = MatchCertainty.Never;
+			foreach (var (fac, cert) in enu)
+			{
+				if ((highestCertainty == MatchCertainty.Always && cert < MatchCertainty.Always)
+					|| (highestCertainty > MatchCertainty.Never && cert <= MatchCertainty.OnlyIfLast))
+					yield break;
+
+				yield return fac;
+
+				if (cert > highestCertainty)
+					highestCertainty = cert;
+			}
+		}
 
 		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.</summary>
 		/// <param name="resource">An <see cref="AudioResource"/> with at least
@@ -78,7 +106,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			var result = factory.GetResourceById(resource);
 			if (!result)
-				return $"Could not load ({result.Message})";
+				return $"Could not load ({result.Error})";
 			return result;
 		}
 
@@ -105,14 +133,15 @@ namespace TS3AudioBot.ResourceFactories
 
 				var result = factory.GetResource(netlinkurl);
 				if (!result)
-					return $"Could not load ({result.Message})";
+					return $"Could not load ({result.Error})";
 				return result;
 			}
 
-			var factories = GetResFactoryByLink(netlinkurl);
+			var factories = FilterUsable(GetResFactoryByLink(netlinkurl));
 			foreach (var factory in factories)
 			{
 				var result = factory.GetResource(netlinkurl);
+				Log.Trace("Factory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error);
 				if (result)
 					return result;
 			}
@@ -132,7 +161,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (listFactory != null)
 				return listFactory.GetPlaylist(netlinkurl);
 
-			var factories = GetListFactoryByLink(netlinkurl);
+			var factories = FilterUsable(GetListFactoryByLink(netlinkurl));
 			foreach (var factory in factories)
 			{
 				var result = factory.GetPlaylist(netlinkurl);
@@ -158,7 +187,6 @@ namespace TS3AudioBot.ResourceFactories
 			return factory.GetThumbnail(playResource);
 		}
 
-
 		public void AddFactory(IFactory factory)
 		{
 			if (factory.FactoryFor.ToLowerInvariant() != factory.FactoryFor)
@@ -180,8 +208,8 @@ namespace TS3AudioBot.ResourceFactories
 
 			var factoryInfo = new FactoryData(factory, commands.ToArray());
 			allFacories.Add(factory.FactoryFor, factoryInfo);
-			mainBot.CommandManager.RegisterCollection(factoryInfo);
-			mainBot.RightsManager.RegisterRights(factoryInfo.ExposedRights);
+			CommandManager.RegisterCollection(factoryInfo);
+			RightsManager.RegisterRights(factoryInfo.ExposedRights);
 		}
 
 		public void RemoveFactory(IFactory factory)
@@ -196,8 +224,8 @@ namespace TS3AudioBot.ResourceFactories
 			if (factory is IPlaylistFactory listFactory)
 				listFactories.Remove(listFactory);
 
-			mainBot.CommandManager.UnregisterCollection(factoryInfo);
-			mainBot.RightsManager.UnregisterRights(factoryInfo.ExposedRights);
+			CommandManager.UnregisterCollection(factoryInfo);
+			RightsManager.UnregisterRights(factoryInfo.ExposedRights);
 		}
 
 
@@ -245,9 +273,9 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiatePlay(ExecutionInformation info, string parameter)
+			public string PropagiatePlay(PlayManager playManager, CallerInfo caller, string parameter)
 			{
-				return info.Session.Bot.PlayManager.Play(info.InvokerData, parameter, audioType);
+				return playManager.Play(caller.InvokerData, parameter, audioType);
 			}
 		}
 
@@ -267,15 +295,15 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiateLoad(ExecutionInformation info, string parameter)
+			public string PropagiateLoad(ResourceFactoryManager factoryManager, CallerInfo caller, string parameter)
 			{
-				var result = info.Session.Bot.FactoryManager.LoadPlaylistFrom(parameter, factory);
+				var result = factoryManager.LoadPlaylistFrom(parameter, factory);
 
 				if (!result)
 					return result;
 
-				result.Value.CreatorDbId = info.InvokerData.DatabaseId;
-				info.Session.Set<PlaylistManager, Playlist>(result.Value);
+				result.Value.CreatorDbId = caller.InvokerData.DatabaseId;
+				caller.Session.Set<PlaylistManager, Playlist>(result.Value);
 				return "Ok";
 			}
 		}

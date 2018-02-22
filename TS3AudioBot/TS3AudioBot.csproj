@@ -32,7 +32,7 @@
     <ApplicationIcon>Media\favicon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>TS3AudioBot.MainBot</StartupObject>
+    <StartupObject>TS3AudioBot.Core</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -45,6 +45,7 @@
     <CodeAnalysisRuleSet />
     <DocumentationFile>
     </DocumentationFile>
+    <LangVersion>7</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -57,46 +58,63 @@
     <CodeAnalysisRuleSet />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="LiteDB, Version=4.0.0.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiteDB.4.0.0\lib\net40\LiteDB.dll</HintPath>
+    <Reference Include="LiteDB, Version=4.1.1.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiteDB.4.1.1\lib\net40\LiteDB.dll</HintPath>
     </Reference>
     <Reference Include="Nett, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nett.0.8.0\lib\Net40\Nett.dll</HintPath>
     </Reference>
-    <Reference Include="PropertyChanged, Version=2.1.4.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
-      <HintPath>..\packages\PropertyChanged.Fody.2.1.4\lib\netstandard1.0\PropertyChanged.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="PropertyChanged, Version=2.2.1.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
+      <HintPath>..\packages\PropertyChanged.Fody.2.2.1.0\lib\net452\PropertyChanged.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Memory, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.4.0-preview1-25305-02\lib\netstandard1.0\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.4.0\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithm\DependencyGraph.cs" />
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
-    <Compile Include="Audio\AudioEncoder.cs" />
-    <Compile Include="Audio\AudioModifier.cs" />
-    <Compile Include="Audio\Opus\NativeMethods.cs" />
-    <Compile Include="Audio\Opus\OpusDecoder.cs" />
-    <Compile Include="Audio\Opus\OpusEncoder.cs" />
-    <Compile Include="Audio\PreciseAudioTimer.cs" />
-    <Compile Include="CommandSystem\ASTCommand.cs" />
-    <Compile Include="CommandSystem\ASTError.cs" />
-    <Compile Include="CommandSystem\ASTNode.cs" />
-    <Compile Include="CommandSystem\ASTType.cs" />
-    <Compile Include="CommandSystem\ASTValue.cs" />
+    <Compile Include="Audio\CustomTargetPipe.cs" />
+    <Compile Include="Audio\FfmpegProducer.cs" />
+    <Compile Include="Audio\StallCheckPipe.cs" />
+    <Compile Include="BotManager.cs" />
+    <Compile Include="Commands.cs" />
+    <Compile Include="CommandSystem\Ast\AstCommand.cs" />
+    <Compile Include="CommandSystem\Ast\AstError.cs" />
+    <Compile Include="CommandSystem\Ast\AstNode.cs" />
+    <Compile Include="CommandSystem\Ast\AstType.cs" />
+    <Compile Include="CommandSystem\Ast\AstValue.cs" />
+    <Compile Include="CommandSystem\BasicInjector.cs" />
     <Compile Include="CommandSystem\BotCommand.cs" />
+    <Compile Include="CommandSystem\CallerInfo.cs" />
     <Compile Include="CommandSystem\CommandManager.cs" />
     <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
     <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
     <Compile Include="CommandSystem\ICommandBag.cs" />
     <Compile Include="CommandSystem\StaticList.cs" />
+    <Compile Include="Core.cs" />
     <Compile Include="DbStore.cs" />
+    <Compile Include="Dependency\DependencyRealm.cs" />
+    <Compile Include="Dependency\Module.cs" />
     <Compile Include="Helper\AudioTags\M3uReader.cs" />
     <Compile Include="Helper\Cache.cs" />
     <Compile Include="Helper\ImageUtil.cs" />
-    <Compile Include="Helper\NativeWinDllLoader.cs" />
+    <Compile Include="Helper\Environment\SystemData.cs" />
     <Compile Include="Plugins\ITabPlugin.cs" />
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginResponse.cs" />
@@ -111,6 +129,7 @@
     <Compile Include="Rights\RightsRule.cs" />
     <Compile Include="Rights\TomlTools.cs" />
     <Compile Include="Sessions\ApiNonce.cs" />
+    <Compile Include="Sessions\TokenManager.cs" />
     <Compile Include="Sessions\UserSession.cs" />
     <Compile Include="CommandSystem\CommandException.cs" />
     <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
@@ -127,8 +146,6 @@
     <Compile Include="CommandSystem\Commands\StringCommand.cs" />
     <Compile Include="CommandSystem\XCommandSystem.cs" />
     <Compile Include="DocGen.cs" />
-    <Compile Include="Log.cs" />
-    <Compile Include="Helper\R.cs" />
     <Compile Include="History\AudioLogEntry.cs" />
     <Compile Include="History\HistorySaveData.cs" />
     <Compile Include="History\IHistoryFormatter.cs" />
@@ -137,9 +154,8 @@
     <Compile Include="IPlayerConnection.cs" />
     <Compile Include="ITargetManager.cs" />
     <Compile Include="Sessions\ApiToken.cs" />
-    <Compile Include="TargetScript.cs" />
     <Compile Include="TeamspeakControl.cs" />
-    <Compile Include="MainBot.cs" />
+    <Compile Include="Bot.cs" />
     <Compile Include="PlaylistManager.cs" />
     <Compile Include="PlayManager.cs" />
     <Compile Include="Plugins\PluginManager.cs" />
@@ -151,7 +167,6 @@
     <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
     <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
     <Compile Include="Helper\ConfigFile.cs" />
-    <Compile Include="Helper\PositionedStreamReader.cs" />
     <Compile Include="Helper\TextUtil.cs" />
     <Compile Include="Helper\TickPool.cs" />
     <Compile Include="Helper\Util.cs" />
@@ -197,9 +212,10 @@
     <EmbeddedResource Include="Web\Interface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Audio\Opus\LICENSE" />
-    <None Include="Audio\Opus\OPUS_LICENSE" />
-    <None Include="Audio\Opus\README" />
+    <None Include="NLog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Web\Interface\less\styles.less" />
     <None Include="Web\Interface\less\styles_authbox.less" />
     <None Include="Web\Interface\less\styles_button.less" />
@@ -262,6 +278,7 @@
     <Content Include="Web\Interface\test.html" />
     <Content Include="Web\Interface\test.js" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

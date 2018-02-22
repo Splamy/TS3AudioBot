@@ -9,6 +9,7 @@
 
 namespace TS3Client.Messages
 {
+	using Helper;
 	using System;
 	using System.Collections;
 	using System.Collections.Generic;
@@ -22,7 +23,11 @@ namespace TS3Client.Messages
 		public ResponseDictionary() { data = new Dictionary<KeyType, ValueType>(); }
 		public ResponseDictionary(IDictionary<KeyType, ValueType> dataDict) { data = dataDict; }
 
-		public ValueType this[KeyType key] { get { return data[key]; } set { throw new NotSupportedException(); } }
+		public ValueType this[KeyType key]
+		{
+			get => data[key];
+			set => throw new NotSupportedException();
+		}
 		public int Count => data.Count;
 		public bool IsReadOnly => true;
 		public ICollection<KeyType> Keys => data.Keys;
@@ -39,17 +44,17 @@ namespace TS3Client.Messages
 		public bool TryGetValue(KeyType key, out ValueType value) => data.TryGetValue(key, out value);
 		IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
 
-		public void SetField(string name, string value) => data[name] = value;
+		public void SetField(string name, ReadOnlySpan<char> value) => data[name] = value.NewString();
 		public string ReturnCode
 		{
-			get { return data.ContainsKey("return_code") ? data["return_code"] : string.Empty; }
-			set { data["return_code"] = value; }
+			get => data.ContainsKey("return_code") ? data["return_code"] : string.Empty;
+			set => data["return_code"] = value;
 		}
 	}
 
 	public sealed class ResponseVoid : IResponse
 	{
 		public string ReturnCode { get; set; }
-		public void SetField(string name, string value) { }
+		public void SetField(string name, ReadOnlySpan<char> value) { }
 	}
 }

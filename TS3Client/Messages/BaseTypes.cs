@@ -9,9 +9,11 @@
 
 namespace TS3Client.Messages
 {
+	using System;
+
 	public interface IQueryMessage
 	{
-		void SetField(string name, string value);
+		void SetField(string name, ReadOnlySpan<char> value);
 	}
 
 	public interface INotification : IQueryMessage

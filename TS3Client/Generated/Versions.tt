@@ -1,0 +1,101 @@
+// TS3Client - A free TeamSpeak3 client implementation
+// Copyright (C) 2017  TS3Client contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="Microsoft.VisualBasic" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Microsoft.VisualBasic.FileIO" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ output extension=".cs" #>
+<#
+string declFilePath = Host.ResolvePath("../Declarations/Versions.csv");
+var data = new List<string[]>();
+using (TextFieldParser parser = new TextFieldParser(declFilePath))
+{
+	parser.TextFieldType = FieldType.Delimited;
+	parser.SetDelimiters(",");
+	while (!parser.EndOfData)
+		data.Add(parser.ReadFields());
+}
+var dict = new Dictionary<string, Ver> {
+	{ "Windows", new Ver { plat = "WIN", enu = "Windows" } },
+	{ "Linux", new Ver { plat = "LIN", enu = "Linux" } },
+	{ "OS X", new Ver { plat = "OSX", enu = "Osx" } },
+	{ "Android", new Ver { plat = "AND", enu = "Android" } },
+	{ "iOS", new Ver { plat = "IOS", enu = "Ios" } },
+};
+var reg = new Regex(@"^(\d(?:\.[\d?]+)+)");
+string BuildToFld(string build)
+{
+	var m = reg.Match(build);
+	return string.Join("_", m.Groups[1].Value.Split('.').Select(x => x.Replace("?", "X")));
+}
+#>
+
+namespace TS3Client.Full
+{
+	using System;
+
+	/// <summary>
+	/// Describes a triple of version, platform and a cryptographical signature (usually distributed by "TeamSpeak Systems").
+	/// Each triple has to match and is not interchangeable with other triple parts.
+	/// </summary>
+	public class VersionSign
+	{
+		private static readonly string[] Plattforms = { null, "Windows", "Linux", "OS X", "Android", "iOS" };
+
+		public string Sign { get; }
+		public string Name { get; }
+		public ClientPlattform Plattform { get; }
+		public string PlattformName { get; }
+
+		public VersionSign(string name, ClientPlattform plattform, string sign)
+		{
+			if (plattform == ClientPlattform.Other)
+				throw new ArgumentException(nameof(plattform));
+			Name = name;
+			Sign = sign;
+			Plattform = plattform;
+			PlattformName = Plattforms[(int)plattform];
+		}
+
+		public VersionSign(string name, string plattform, string sign)
+		{
+			Name = name;
+			Sign = sign;
+			Plattform = ClientPlattform.Other;
+			PlattformName = plattform;
+		}
+
+		// Many ids implemented from here: https://r4p3.net/threads/client-builds.499/
+
+		// ReSharper disable InconsistentNaming, UnusedMember.Global
+		<# foreach (var line in data.Skip(1)) { var ver = dict[line[1]]; #>
+		public static VersionSign VER_<#= ver.plat #>_<#= BuildToFld(line[0]) #> { get; } = new VersionSign("<#= line[0] #>", ClientPlattform.<#= ver.enu #>, "<#= line[2] #>");<# } #>
+		// ReSharper restore InconsistentNaming, UnusedMember.Global
+	}
+
+	public enum ClientPlattform
+	{
+		Other = 0,
+		Windows,
+		Linux,
+		Osx,
+		Android,
+		Ios,
+	}
+}
+<#+	class Ver
+{
+	public string plat;
+	public string enu;
+}
+#>

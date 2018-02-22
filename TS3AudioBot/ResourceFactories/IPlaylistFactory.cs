@@ -9,8 +9,6 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
-
 	public interface IPlaylistFactory : IFactory
 	{
 		MatchCertainty MatchPlaylist(string uri);

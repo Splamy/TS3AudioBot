@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Helper
 {
+	using Environment;
 	using System;
 	using System.Collections.Generic;
 	using System.Drawing;
@@ -18,7 +19,6 @@ namespace TS3AudioBot.Helper
 	internal static class ImageUtil
 	{
 		private static readonly StringFormat AvatarTextFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near };
-		private static readonly Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round };
 
 		public static Image BuildStringImage(string str, Image img, int resizeMaxWidth = 320)
 		{
@@ -28,7 +28,7 @@ namespace TS3AudioBot.Helper
 
 			using (var graphics = Graphics.FromImage(img))
 			{
-				if (Util.IsLinux)
+				if (SystemData.IsLinux)
 				{
 					BuildStringImageLinux(str, graphics, imgRect);
 				}
@@ -43,7 +43,10 @@ namespace TS3AudioBot.Helper
 						graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
 						graphics.CompositingQuality = CompositingQuality.HighQuality;
 
-						graphics.DrawPath(AvatarTextOutline, gp);
+						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
+						{
+							graphics.DrawPath(AvatarTextOutline, gp);
+						}
 						graphics.FillPath(Brushes.White, gp);
 					}
 				}
@@ -129,7 +132,10 @@ namespace TS3AudioBot.Helper
 						gp.AddString(part, FontFamily.GenericMonospace, 0, 15, buildRect, AvatarTextFormat);
 
 						bg.Clear(Color.Transparent);
-						bg.DrawPath(AvatarTextOutline, gp);
+						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
+						{
+							bg.DrawPath(AvatarTextOutline, gp);
+						}
 						bg.FillPath(Brushes.White, gp);
 
 						target.DrawImageUnscaled(builder, (int)(rect.X + j * (maxMonoBugWidth - 5)), (int)(rect.Y + i * charH));

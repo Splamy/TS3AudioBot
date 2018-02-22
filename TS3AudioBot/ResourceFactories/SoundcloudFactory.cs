@@ -9,16 +9,16 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Helper;
+	using Newtonsoft.Json.Linq;
 	using System;
-	using System.Linq;
-	using System.Collections.Generic;
+	using System.Drawing;
 	using System.Globalization;
 	using System.Text.RegularExpressions;
-	using Helper;
-	using System.Drawing;
 
 	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex SoundcloudLink = new Regex(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
 		private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
 
@@ -38,7 +38,7 @@ namespace TS3AudioBot.ResourceFactories
 				return YoutubeDlWrapped(link);
 			}
 			var parsedDict = ParseJson(jsonResponse);
-			var resource = ParseDictToResource(parsedDict);
+			var resource = ParseJObjectToResource(parsedDict);
 			if (resource == null)
 				return "Empty or missing response parts (parsedDict)";
 			return GetResourceById(resource, false);
@@ -71,38 +71,41 @@ namespace TS3AudioBot.ResourceFactories
 			var uri = new Uri($"https://api.soundcloud.com/tracks/{id}?client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return null;
-			var parsedDict = ParseJson(jsonResponse);
-			return parsedDict?["permalink_url"] as string;
+			var jobj = ParseJson(jsonResponse);
+			return jobj.TryCast<string>("permalink_url").OkOr(null);
 		}
 
-		private static Dictionary<string, object> ParseJson(string jsonResponse)
-			=> (Dictionary<string, object>)Util.Serializer.DeserializeObject(jsonResponse);
-
-		private AudioResource ParseDictToResource(Dictionary<string, object> dict)
+		private static JObject ParseJson(string jsonResponse)
 		{
-			if (dict == null) return null;
-			if (!(dict["id"] is int id)) return null;
-			if (!(dict["title"] is string title)) return null;
-			return new AudioResource(id.ToString(CultureInfo.InvariantCulture), title, FactoryFor);
+			try { return JObject.Parse(jsonResponse); }
+			catch (FormatException) { return null; }
+		}
+
+		private AudioResource ParseJObjectToResource(JToken jobj)
+		{
+			if (jobj == null) return null;
+			var id = jobj.TryCast<int>("id");
+			if (!id.Ok) return null;
+			var title = jobj.TryCast<string>("title");
+			if (!title.Ok) return null;
+			return new AudioResource(id.Value.ToString(CultureInfo.InvariantCulture), title.Value, FactoryFor);
 		}
 
 		private R<PlayResource> YoutubeDlWrapped(string link)
 		{
-			Log.Write(Log.Level.Debug, "SC Ruined!");
+			Log.Debug("Falling back to youtube-dl!");
 
 			var result = YoutubeDlHelper.FindAndRunYoutubeDl(link);
 			if (!result.Ok)
-				return result.Message;
+				return result.Error;
 
-			var response = result.Value;
-			string title = response.Item1;
-			string url = response.Item2.FirstOrDefault();
-			if (response.Item2.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+			var (title, urls) = result.Value;
+			if (urls.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(urls[0]))
 				return "No youtube-dl response";
 
-			Log.Write(Log.Level.Debug, "SC Saved!");
+			Log.Debug("youtube-dl succeeded!");
 
-			return new PlayResource(url, new AudioResource(link, title, FactoryFor));
+			return new PlayResource(urls[0], new AudioResource(link, title, FactoryFor));
 		}
 
 		public R<Playlist> GetPlaylist(string url)
@@ -115,15 +118,16 @@ namespace TS3AudioBot.ResourceFactories
 			if (parsedDict == null)
 				return "Empty or missing response parts (parsedDict)";
 
-			string name = PlaylistManager.CleanseName(parsedDict["title"] as string);
+			string name = PlaylistManager.CleanseName(parsedDict.TryCast<string>("title").OkOr(null));
 			var plist = new Playlist(name);
 
-			if (!(parsedDict["tracks"] is object[] tracks))
+			var tracksJobj = parsedDict["tracks"];
+			if (tracksJobj == null)
 				return "Empty or missing response parts (tracks)";
 
-			foreach (var track in tracks.OfType<Dictionary<string, object>>())
+			foreach (var track in tracksJobj)
 			{
-				var resource = ParseDictToResource(track);
+				var resource = ParseJObjectToResource(track);
 				if (resource == null)
 					continue;
 
@@ -143,7 +147,8 @@ namespace TS3AudioBot.ResourceFactories
 			if (parsedDict == null)
 				return "Empty or missing response parts (parsedDict)";
 
-			if (!(parsedDict["artwork_url"] is string imgUrl))
+			var imgUrl = parsedDict.TryCast<string>("artwork_url").OkOr(null);
+			if (imgUrl == null)
 				return "Empty or missing response parts (artwork_url)";
 
 			// t500x500: 500px×500px

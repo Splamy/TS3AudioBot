@@ -10,7 +10,9 @@
 namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
+	using Dependency;
 	using Helper;
+	using Newtonsoft.Json;
 	using Sessions;
 	using System;
 	using System.IO;
@@ -22,10 +24,13 @@ namespace TS3AudioBot.Web.Api
 
 	public sealed class WebApi : WebComponent
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
 		private static readonly MD5 Md5Hash = MD5.Create();
 
-		public WebApi(MainBot bot) : base(bot) { }
+		public CoreInjector CoreInjector { get; set; }
+		public CommandManager CommandManager { get; set; }
+		public TokenManager TokenManager { get; set; }
 
 		public override void DispatchCall(HttpListenerContext context)
 		{
@@ -36,7 +41,7 @@ namespace TS3AudioBot.Web.Api
 				var invoker = Authenticate(context);
 				if (invoker == null)
 				{
-					Log.Write(Log.Level.Debug, "Not authorized!");
+					Log.Debug("Unauthorized request!");
 					ReturnError(CommandExceptionReason.Unauthorized, "", context.Response);
 					return;
 				}
@@ -52,10 +57,11 @@ namespace TS3AudioBot.Web.Api
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
 
-			var command = MainBot.CommandManager.CommandSystem.AstToCommandResult(ast);
+			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
 
 			invoker.IsApi = true;
-			var execInfo = new ExecutionInformation(MainBot, invoker, null);
+			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
+			execInfo.AddDynamicObject(new CallerInfo(invoker, apirequest));
 			try
 			{
 				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(),
@@ -83,7 +89,7 @@ namespace TS3AudioBot.Web.Api
 					response.StatusCode = (int)HttpStatusCode.NotImplemented;
 				else
 					response.StatusCode = (int)HttpStatusCode.InternalServerError;
-				Log.Write(Log.Level.Error, "WA Unexpected command error: {0}", ex);
+				Log.Error(ex, "Unexpected command error");
 				using (var responseStream = new StreamWriter(response.OutputStream))
 					responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
 			}
@@ -113,6 +119,7 @@ namespace TS3AudioBot.Web.Api
 			case CommandExceptionReason.AmbiguousCall:
 			case CommandExceptionReason.MissingParameter:
 			case CommandExceptionReason.NoReturnMatch:
+			case CommandExceptionReason.MissingContext:
 				response.StatusCode = 422; // Unprocessable Entity
 				break;
 
@@ -125,7 +132,7 @@ namespace TS3AudioBot.Web.Api
 			}
 
 			using (var responseStream = new StreamWriter(response.OutputStream))
-				responseStream.Write(Util.Serializer.Serialize(new JsonError(message, reason)));
+				responseStream.Write(JsonConvert.SerializeObject(new JsonError(message, reason)));
 		}
 
 		private static void UnescapeAstTree(AstNode node)
@@ -153,7 +160,7 @@ namespace TS3AudioBot.Web.Api
 			if (identity == null)
 				return null;
 
-			var result = MainBot.SessionManager.GetToken(identity.Name);
+			var result = TokenManager.GetToken(identity.Name);
 			if (!result.Ok)
 				return null;
 
