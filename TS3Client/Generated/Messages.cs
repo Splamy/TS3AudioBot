@@ -508,7 +508,7 @@ namespace TS3Client.Messages
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
 			case "client_channel_group_id": ChannelGroupId = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_channel_group_inherited_channel_id": InheritedChannelGroupFromChannelId = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = new ServerGroupIdT[0]; else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupIdT[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupIdT.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupIdT>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupIdT[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupIdT.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
 			case "client_talk_power": TalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
@@ -941,7 +941,7 @@ namespace TS3Client.Messages
 			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if (!Enum.TryParse(value.NewString(), out HostMessageMode val)) throw new FormatException(); HostmessageMode = val; } break;
 			case "virtualserver_id": VirtualServerId = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_ip": { if(value.Length == 0) ServerIp = new string[0]; else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new string[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
+			case "virtualserver_ip": { if(value.Length == 0) ServerIp = Array.Empty<string>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new string[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
 			case "virtualserver_ask_for_privilegekey": AskForPrivilege = value.Length > 0 && value[0] != '0'; break;
 			case "acn": ClientName = Ts3String.Unescape(value); break;
 			case "aclid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
@@ -1371,7 +1371,7 @@ namespace TS3Client.Messages
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
 			case "client_channel_group_id": ChannelGroupId = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_channel_group_inherited_channel_id": InheritedChannelGroupFromChannelId = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = new ServerGroupIdT[0]; else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupIdT[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupIdT.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupIdT>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupIdT[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupIdT.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
 			case "client_talk_power": TalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;

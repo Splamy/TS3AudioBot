@@ -226,7 +226,7 @@ namespace TS3AudioBot
 
 			// Check all own server groups
 			var result = GetClientServerGroups(me.Value.DatabaseId);
-			var groups = result.Ok ? result.Value : new ulong[0];
+			var groups = result.Ok ? result.Value : Array.Empty<ulong>();
 
 			// Add self to master group (via token)
 			if (!string.IsNullOrEmpty(key))
@@ -235,7 +235,7 @@ namespace TS3AudioBot
 			// Remember new group (or check if in new group at all)
 			if (result.Ok)
 				result = GetClientServerGroups(me.Value.DatabaseId);
-			var groupsNew = result.Ok ? result.Value : new ulong[0];
+			var groupsNew = result.Ok ? result.Value : Array.Empty<ulong>();
 			var groupDiff = groupsNew.Except(groups).ToArray();
 
 			if (mainBotData.BotGroupId == 0)

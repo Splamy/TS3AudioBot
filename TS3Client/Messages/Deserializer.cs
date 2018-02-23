@@ -46,7 +46,7 @@ namespace TS3Client.Messages
 		internal static IEnumerable<T> GenerateResponse<T>(string line) where T : IResponse, new()
 		{
 			if (string.IsNullOrWhiteSpace(line))
-				return Enumerable.Empty<T>();
+				return Array.Empty<T>();
 			var messageList = line.Split('|');
 			return messageList.Select(msg => ParseKeyValueLine(new T(), msg)).Where(x => x.Ok).Select(x => x.Value);
 		}

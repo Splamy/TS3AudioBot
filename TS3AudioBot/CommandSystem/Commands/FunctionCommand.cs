@@ -116,7 +116,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case ParamKind.NormalParam:
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
-					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 					try { parameters[p] = ConvertParam(argResultP, arg); }
 					catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex, CommandExceptionReason.CommandError); }
 					catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
@@ -133,7 +133,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					{
 						for (int i = 0; i < args.Length; i++, takenArguments++)
 						{
-							var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+							var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 							var convResult = ConvertParam(argResultA, typeArr);
 							args.SetValue(convResult, i);
 						}

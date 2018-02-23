@@ -30,7 +30,7 @@ namespace TS3Client.Audio
 
 		private const int SegmentFrames = 960;
 		// todo add upper limit to buffer size and drop everying over
-		private byte[] notEncodedBuffer = new byte[0];
+		private byte[] notEncodedBuffer = Array.Empty<byte>();
 		private int notEncodedLength;
 		private readonly byte[] encodedBuffer;
 

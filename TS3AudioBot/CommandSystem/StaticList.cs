@@ -15,14 +15,12 @@ namespace TS3AudioBot.CommandSystem
 
 	internal static class StaticList
 	{
-		public static IReadOnlyList<T> Empty<T>() => StaticListInternal<T>.Empty();
-
 		public static IReadOnlyList<T> TrySegment<T>(this IReadOnlyList<T> list, int start)
 		{
 			if (start == 0)
 				return list;
 			if (start >= list.Count)
-				return Empty<T>();
+				return Array.Empty<T>();
 			switch (list)
 			{
 			case T[] array: return new ArraySegment<T>(array, start, array.Length - start);
@@ -60,13 +58,6 @@ namespace TS3AudioBot.CommandSystem
 					target[dstOffset + i] = list[srcOffset + i];
 				break;
 			}
-		}
-
-		private static class StaticListInternal<T>
-		{
-			private static readonly T[] EmptyInstance = new T[0];
-
-			public static IReadOnlyList<T> Empty() => EmptyInstance;
 		}
 	}
 }

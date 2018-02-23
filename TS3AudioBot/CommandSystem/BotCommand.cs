@@ -27,7 +27,7 @@ namespace TS3AudioBot.CommandSystem
 			InvokeName = buildInfo.CommandData.CommandNameSpace;
 			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			Description = buildInfo.CommandData.CommandHelp;
-			UsageList = buildInfo.UsageList?.ToArray() ?? new UsageAttribute[0];
+			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
 		}
 
 		public string InvokeName { get; }

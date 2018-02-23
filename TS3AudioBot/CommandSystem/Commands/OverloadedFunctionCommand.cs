@@ -18,7 +18,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 	{
 		public List<FunctionCommand> Functions { get; }
 
-		public OverloadedFunctionCommand() : this(Enumerable.Empty<FunctionCommand>()) { }
+		public OverloadedFunctionCommand() : this(Array.Empty<FunctionCommand>()) { }
 		public OverloadedFunctionCommand(IEnumerable<FunctionCommand> functionsArg)
 		{
 			Functions = functionsArg.ToList();

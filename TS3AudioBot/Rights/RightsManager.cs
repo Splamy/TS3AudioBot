@@ -252,7 +252,7 @@ namespace TS3AudioBot.Rights
 
 		private void RecalculateRights(TomlTable table, ParseContext parseCtx)
 		{
-			rules = new RightsRule[0];
+			rules = Array.Empty<RightsRule>();
 
 			rootRule = new RightsRule();
 			if (!rootRule.ParseChilden(table, parseCtx))
@@ -533,10 +533,8 @@ namespace TS3AudioBot.Rights
 
 	internal class ExecuteContext
 	{
-		public static readonly ulong[] NoGroups = new ulong[0];
-
 		public string Host { get; set; }
-		public ulong[] AvailableGroups { get; set; } = NoGroups;
+		public ulong[] AvailableGroups { get; set; } = Array.Empty<ulong>();
 		public ulong? ChannelGroupId { get; set; }
 		public string ClientUid { get; set; }
 		public bool IsApi { get; set; }

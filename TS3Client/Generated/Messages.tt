@@ -41,7 +41,7 @@ namespace TS3Client.Messages
 	string GenerateDeserializer(GenField fld)
 	{
 		if(fld.isArray)
-			return $"{{ if(value.Length == 0) {fld.fldName} = new {fld.fldType}[0]; else {{"
+			return $"{{ if(value.Length == 0) {fld.fldName} = Array.Empty<{fld.fldType}>(); else {{"
 			     + $" var ss = new SpanSplitter(); ss.First(value, ',');"
 			     + $" int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++;"
 			     + $" {fld.fldName} = new {fld.fldType}[cnt + 1];"

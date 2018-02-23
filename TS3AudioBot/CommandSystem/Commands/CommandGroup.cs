@@ -10,6 +10,7 @@
 namespace TS3AudioBot.CommandSystem.Commands
 {
 	using CommandResults;
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 
@@ -37,7 +38,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			}
 			else
 			{
-				var comResult = arguments[0].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString);
+				var comResult = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString);
 				result = ((StringCommandResult)comResult).Content;
 			}
 

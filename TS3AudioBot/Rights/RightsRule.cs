@@ -10,8 +10,9 @@
 namespace TS3AudioBot.Rights
 {
 	using Nett;
-	using System.Linq;
+	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using TS3Client;
 
 	// Adding a new Matcher:
@@ -64,7 +65,7 @@ namespace TS3AudioBot.Rights
 			if (MatchChannelGroupId == null) MatchChannelGroupId = new HashSet<ulong>();
 			if (MatchPermission == null) MatchPermission = new HashSet<string>();
 			if (MatchToken == null) MatchToken = new HashSet<string>();
-			if (MatchVisibility == null) MatchVisibility = new TextMessageTargetMode[0];
+			if (MatchVisibility == null) MatchVisibility = Array.Empty<TextMessageTargetMode>();
 		}
 
 		public override bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)

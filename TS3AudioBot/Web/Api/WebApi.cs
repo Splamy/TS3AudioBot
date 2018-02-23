@@ -85,7 +85,7 @@ namespace TS3AudioBot.Web.Api
 
 			try
 			{
-				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(), XCommandSystem.ReturnJsonOrNothing);
+				var res = command.Execute(execInfo, Array.Empty<ICommand>(), XCommandSystem.ReturnJsonOrNothing);
 
 				if (res.ResultType == CommandResultType.Empty)
 				{

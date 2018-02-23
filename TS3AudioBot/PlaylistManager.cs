@@ -385,7 +385,7 @@ namespace TS3AudioBot
 		{
 			var di = new DirectoryInfo(data.PlaylistPath);
 			if (!di.Exists)
-				return Enumerable.Empty<string>();
+				return Array.Empty<string>();
 
 			IEnumerable<FileInfo> fileEnu;
 			if (string.IsNullOrEmpty(pattern))

@@ -22,7 +22,7 @@ namespace TS3Client.Audio
 		public TimeSpan AudioBufferLength { get; set; } = TimeSpan.FromMilliseconds(20);
 		public TimeSpan SendCheckInterval { get; set; } = TimeSpan.FromMilliseconds(5);
 		public int ReadBufferSize { get; set; } = 2048;
-		private byte[] readBuffer = new byte[0];
+		private byte[] readBuffer = Array.Empty<byte>();
 		private readonly object lockObject = new object();
 		private Thread tickThread;
 		private bool running;

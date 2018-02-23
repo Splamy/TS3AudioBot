@@ -180,7 +180,7 @@ namespace TS3AudioBot.History
 				throw new ArgumentNullException(nameof(search));
 
 			if (search.MaxResults <= 0)
-				return Enumerable.Empty<AudioLogEntry>();
+				return Array.Empty<AudioLogEntry>();
 
 			var query = Query.All(nameof(AudioLogEntry.Timestamp), Query.Descending);
 

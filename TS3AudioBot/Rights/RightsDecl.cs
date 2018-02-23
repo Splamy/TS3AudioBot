@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System.Collections.Generic;
-
 namespace TS3AudioBot.Rights
 {
 	using Nett;
+	using System;
+	using System.Collections.Generic;
 	using System.Linq;
 
 	internal abstract class RightsDecl
@@ -28,9 +28,9 @@ namespace TS3AudioBot.Rights
 
 		public virtual void FillNull()
 		{
-			if (includeNames == null) includeNames = new string[0];
-			if (DeclAdd == null) DeclAdd = new string[0];
-			if (DeclDeny == null) DeclDeny = new string[0];
+			if (includeNames == null) includeNames = Array.Empty<string>();
+			if (DeclAdd == null) DeclAdd = Array.Empty<string>();
+			if (DeclDeny == null) DeclDeny = Array.Empty<string>();
 		}
 
 		public virtual bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)

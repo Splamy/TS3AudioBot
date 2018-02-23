@@ -110,7 +110,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
-			return cmd.Execute(info, StaticList.Empty<ICommand>(), returnTypes);
+			return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
 		}
 
 		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)

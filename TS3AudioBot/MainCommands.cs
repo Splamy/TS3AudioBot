@@ -149,7 +149,7 @@ namespace TS3AudioBot
 				if (info.TryGet<UserSession>(out var session))
 					childInfo.AddDynamicObject(session);
 
-				return cmd.Execute(childInfo, StaticList.Empty<ICommand>(), returnTypes);
+				return cmd.Execute(childInfo, Array.Empty<ICommand>(), returnTypes);
 			}
 		}
 
@@ -177,7 +177,7 @@ namespace TS3AudioBot
 			if (arguments.Count == 0)
 				throw new CommandException("Need at least one argument to evaluate", CommandExceptionReason.MissingParameter);
 			var leftArguments = arguments.TrySegment(1);
-			var arg0 = arguments[0].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
+			var arg0 = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
 			if (arg0.ResultType == CommandResultType.Command)
 				return ((CommandCommandResult)arg0).Command.Execute(info, leftArguments, returnTypes);
 
@@ -186,7 +186,7 @@ namespace TS3AudioBot
 
 			// Add the rest of the arguments
 			args += string.Join(" ", arguments.Select(a =>
-				((StringCommandResult)a.Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content));
+				((StringCommandResult)a.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content));
 
 			var cmd = commandManager.CommandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(args));
 			return cmd.Execute(info, leftArguments, returnTypes);
@@ -475,9 +475,9 @@ namespace TS3AudioBot
 		{
 			if (arguments.Count < 4)
 				throw new CommandException("Expected at least 4 arguments", CommandExceptionReason.MissingParameter);
-			var arg0 = ((StringCommandResult)arguments[0].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-			var cmp = ((StringCommandResult)arguments[1].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-			var arg1 = ((StringCommandResult)arguments[2].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+			var arg0 = ((StringCommandResult)arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+			var cmp = ((StringCommandResult)arguments[1].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+			var arg1 = ((StringCommandResult)arguments[2].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 
 			Func<double, double, bool> comparer;
 			switch (cmp)
@@ -501,10 +501,10 @@ namespace TS3AudioBot
 
 			// If branch
 			if (cmpResult)
-				return arguments[3].Execute(info, StaticList.Empty<ICommand>(), returnTypes);
+				return arguments[3].Execute(info, Array.Empty<ICommand>(), returnTypes);
 			// Else branch
 			if (arguments.Count > 4)
-				return arguments[4].Execute(info, StaticList.Empty<ICommand>(), returnTypes);
+				return arguments[4].Execute(info, Array.Empty<ICommand>(), returnTypes);
 
 			// Try to return nothing
 			if (returnTypes.Contains(CommandResultType.Empty))
@@ -516,10 +516,10 @@ namespace TS3AudioBot
 		public static JsonArray<object> CommandJsonMerge(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			if (arguments.Count == 0)
-				return new JsonArray<object>(new object[0], string.Empty);
+				return new JsonArray<object>(Array.Empty<object>(), string.Empty);
 
 			var jsonArr = arguments
-				.Select(arg => arg.Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnJson))
+				.Select(arg => arg.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnJson))
 				.Where(arg => arg.ResultType == CommandResultType.Json)
 				.OfType<JsonCommandResult>()
 				.Select(arg => arg.JsonObject.GetSerializeObject())
@@ -1114,24 +1114,24 @@ namespace TS3AudioBot
 			string delimiter = null;
 
 			// Get count
-			var res = ((StringCommandResult)arguments[0].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+			var res = ((StringCommandResult)arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 			if (!int.TryParse(res, out int count) || count < 0)
 				throw new CommandException("Count must be an integer >= 0", CommandExceptionReason.CommandError);
 
 			if (arguments.Count > 2)
 			{
 				// Get start
-				res = ((StringCommandResult)arguments[1].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+				res = ((StringCommandResult)arguments[1].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 				if (!int.TryParse(res, out start) || start < 0)
 					throw new CommandException("Start must be an integer >= 0", CommandExceptionReason.CommandError);
 			}
 
 			if (arguments.Count > 3)
 				// Get delimiter
-				delimiter = ((StringCommandResult)arguments[2].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+				delimiter = ((StringCommandResult)arguments[2].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 
 			string text = ((StringCommandResult)arguments[Math.Min(arguments.Count - 1, 3)]
-				.Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+				.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 
 			var splitted = delimiter == null
 				? text.Split()
@@ -1255,7 +1255,7 @@ namespace TS3AudioBot
 		public static void CommandXecute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			foreach (var arg in arguments)
-				arg.Execute(info, StaticList.Empty<ICommand>(), ReturnPreferNothingAllowAny);
+				arg.Execute(info, Array.Empty<ICommand>(), ReturnPreferNothingAllowAny);
 		}
 		// ReSharper enable UnusedMember.Global
 

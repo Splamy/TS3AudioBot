@@ -20,7 +20,7 @@ namespace TS3Client.Audio
 		private readonly List<IAudioPassiveConsumer> consumerList = new List<IAudioPassiveConsumer>();
 		private bool changed;
 		private readonly object listLock = new object();
-		private byte[] buffer = new byte[0];
+		private byte[] buffer = Array.Empty<byte>();
 
 		public bool CloneMeta { get; set; } = false;
 

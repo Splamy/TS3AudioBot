@@ -10,6 +10,7 @@
 namespace TS3AudioBot.CommandSystem.Commands
 {
 	using CommandResults;
+	using System;
 	using System.Collections.Generic;
 
 	/// <summary>
@@ -22,7 +23,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (arguments.Count == 0)
 				return base.Execute(info, arguments, returnTypes);
 
-			var result = arguments[0].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
+			var result = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
 			if (result.ResultType == CommandResultType.String)
 			{
 				// Use cached result so we don't execute the first argument twice

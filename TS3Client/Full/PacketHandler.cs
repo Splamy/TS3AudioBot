@@ -499,7 +499,7 @@ namespace TS3Client.Full
 
 		private void SendPing()
 		{
-			AddOutgoingPacket(new byte[0], PacketType.Ping);
+			AddOutgoingPacket(Array.Empty<byte>(), PacketType.Ping);
 			pingTimer.Restart();
 		}
 
