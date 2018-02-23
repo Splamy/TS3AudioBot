@@ -13,51 +13,18 @@ namespace TS3AudioBot.Sessions
 	using System;
 	using System.Collections.Generic;
 	using System.Threading;
-	using TS3Client;
-	using TS3Client.Messages;
 	using Response = System.Func<string, string>;
 
 	public sealed class UserSession
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private Dictionary<Type, object> assocMap;
 		private bool lockToken;
-		private readonly ClientData client;
 
 		public Response ResponseProcessor { get; private set; }
 
-		public Bot Bot { get; }
-
-		public UserSession(Bot bot, ClientData client)
+		public UserSession()
 		{
-			this.client = client;
-			Bot = bot;
 			ResponseProcessor = null;
-		}
-
-		public R Write(string message, TextMessageTargetMode targetMode)
-		{
-			VerifyLock();
-
-			R result;
-			switch (targetMode)
-			{
-			case TextMessageTargetMode.Private:
-				result = Bot.QueryConnection.SendMessage(message, client.ClientId);
-				break;
-			case TextMessageTargetMode.Channel:
-				result = Bot.QueryConnection.SendChannelMessage(message);
-				break;
-			case TextMessageTargetMode.Server:
-				result = Bot.QueryConnection.SendServerMessage(message);
-				break;
-			default:
-				throw Util.UnhandledDefault(targetMode);
-			}
-
-			if (!result)
-				Log.Error("Could not write message (Err:{0}) (Msg:{1})", result.Error, message);
-			return result;
 		}
 
 		public void SetResponse(Response responseProcessor)

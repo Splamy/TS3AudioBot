@@ -148,12 +148,12 @@ namespace TS3AudioBot
 
 			var refreshResult = QueryConnection.RefreshClientBuffer(true);
 			if (!refreshResult.Ok)
-				Log.Warn("Bot is not correctly set up. Some requests might fail or are slower. ({0})", refreshResult.Error);
+				Log.Warn("Bot is not correctly set up. Some commands might not work or are slower. ({0})", refreshResult.Error);
 
 			var clientResult = QueryConnection.GetClientById(textMessage.InvokerId);
 
 			// get the current session
-			UserSession session;
+			UserSession session = null;
 			var result = SessionManager.GetSession(textMessage.InvokerId);
 			if (result.Ok)
 			{
@@ -161,41 +161,48 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				if (!clientResult.Ok)
-				{
-					Log.Error(clientResult.Error);
-					return;
-				}
-				session = SessionManager.CreateSession(this, clientResult.Value);
+				if (clientResult.Ok)
+					session = SessionManager.CreateSession(clientResult.Value);
+				else
+					Log.Warn("Could not create session with user, some commands might not work ({0})", clientResult.Error);
 			}
 
-			using (session.GetLock())
+			var invoker = new InvokerData(textMessage.InvokerUid)
 			{
-				var invoker = new InvokerData(textMessage.InvokerUid)
-				{
-					ClientId = textMessage.InvokerId,
-					IsApi = false,
-					Visibiliy = textMessage.Target,
-					NickName = textMessage.InvokerName,
-				};
-				if (clientResult.Ok)
-				{
-					invoker.ChannelId = clientResult.Value.ChannelId;
-					invoker.DatabaseId = clientResult.Value.DatabaseId;
-				}
-				var callerInfo = new CallerInfo(invoker, textMessage.Message, session);
+				ClientId = textMessage.InvokerId,
+				Visibiliy = textMessage.Target,
+				NickName = textMessage.InvokerName,
+			};
+			if (clientResult.Ok)
+			{
+				invoker.ChannelId = clientResult.Value.ChannelId;
+				invoker.DatabaseId = clientResult.Value.DatabaseId;
+			}
 
-				// check if the user has an open request
-				if (session.ResponseProcessor != null)
+			var info = CreateExecInfo(invoker, session);
+
+			UserSession.SessionToken sessionLock = null;
+			try
+			{
+				if (session != null)
 				{
-					var msg = session.ResponseProcessor(textMessage.Message);
-					session.ClearResponse();
-					if (!string.IsNullOrEmpty(msg))
-						callerInfo.Write(msg).UnwrapThrow();
-					return;
+					sessionLock = session.GetLock();
+					// check if the user has an open request
+					if (session.ResponseProcessor != null)
+					{
+						var msg = session.ResponseProcessor(textMessage.Message);
+						session.ClearResponse();
+						if (!string.IsNullOrEmpty(msg))
+							info.Write(msg).UnwrapThrow();
+						return;
+					}
 				}
 
-				CallScript(callerInfo, textMessage.Message, true);
+				CallScript(info, textMessage.Message, true);
+			}
+			finally
+			{
+				sessionLock?.Dispose();
 			}
 		}
 
@@ -288,14 +295,14 @@ namespace TS3AudioBot
 				return;
 			}
 
-			var callerInfo = new CallerInfo(e.Invoker, script);
-			CallScript(callerInfo, script, false);
+			var info = CreateExecInfo(e.Invoker);
+			CallScript(info, script, false);
 		}
 
-		private void CallScript(CallerInfo callerInfo, string command, bool answer)
+		private void CallScript(ExecutionInformation info, string command, bool answer)
 		{
-			var info = new ExecutionInformation(Injector.CloneRealm<DependencyRealm>());
-			info.AddDynamicObject(callerInfo);
+			info.AddDynamicObject(new CallerInfo(command, false));
+
 			try
 			{
 				// parse (and execute) the command
@@ -309,25 +316,35 @@ namespace TS3AudioBot
 				{
 					var sRes = (StringCommandResult)res;
 					if (!string.IsNullOrEmpty(sRes.Content))
-						callerInfo.Write(sRes.Content).UnwrapThrow();
+						info.Write(sRes.Content).UnwrapThrow();
 				}
 				else if (res.ResultType == CommandResultType.Json)
 				{
 					var sRes = (JsonCommandResult)res;
-					callerInfo.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult).UnwrapThrow();
-					callerInfo.Write("\nJson val: \n" + JsonConvert.SerializeObject(sRes.JsonObject)).UnwrapThrow();
+					info.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult).UnwrapThrow();
+					info.Write("\nJson val: \n" + JsonConvert.SerializeObject(sRes.JsonObject)).UnwrapThrow();
 				}
 			}
 			catch (CommandException ex)
 			{
 				Log.Debug(ex, "Command Error");
-				if (answer) callerInfo.Write("Error: " + ex.Message); // XXX check return
+				if (answer) info.Write("Error: " + ex.Message); // XXX check return
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-				if (answer) callerInfo.Write("An unexpected error occured: " + ex.Message); // XXX check return
+				if (answer) info.Write("An unexpected error occured: " + ex.Message); // XXX check return
 			}
+		}
+
+		private ExecutionInformation CreateExecInfo(InvokerData invoker = null, UserSession session = null)
+		{
+			var info = new ExecutionInformation(Injector.CloneRealm<DependencyRealm>());
+			if (invoker != null)
+				info.AddDynamicObject(invoker);
+			if (session != null)
+				info.AddDynamicObject(session);
+			return info;
 		}
 
 		public BotLock GetBotLock()

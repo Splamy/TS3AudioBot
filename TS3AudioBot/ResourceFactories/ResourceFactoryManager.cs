@@ -11,6 +11,7 @@ namespace TS3AudioBot.ResourceFactories
 {
 	using CommandSystem;
 	using Helper;
+	using Sessions;
 	using System;
 	using System.Collections.Generic;
 	using System.Drawing;
@@ -273,9 +274,9 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiatePlay(PlayManager playManager, CallerInfo caller, string parameter)
+			public string PropagiatePlay(PlayManager playManager, InvokerData invoker, string parameter)
 			{
-				return playManager.Play(caller.InvokerData, parameter, audioType);
+				return playManager.Play(invoker, parameter, audioType);
 			}
 		}
 
@@ -295,15 +296,15 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiateLoad(ResourceFactoryManager factoryManager, CallerInfo caller, string parameter)
+			public string PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string parameter)
 			{
 				var result = factoryManager.LoadPlaylistFrom(parameter, factory);
 
 				if (!result)
 					return result;
 
-				result.Value.CreatorDbId = caller.InvokerData.DatabaseId;
-				caller.Session.Set<PlaylistManager, Playlist>(result.Value);
+				result.Value.CreatorDbId = invoker.DatabaseId;
+				session.Set<PlaylistManager, Playlist>(result.Value);
 				return "Ok";
 			}
 		}

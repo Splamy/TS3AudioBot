@@ -44,17 +44,17 @@ namespace TS3AudioBot
 		// ReSharper disable UnusedMember.Global
 		[Command("add", "Adds a new song to the queue.")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
-		public static void CommandAdd(PlayManager playManager, CallerInfo caller, string parameter)
-			=> playManager.Enqueue(caller.InvokerData, parameter).UnwrapThrow();
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, string parameter)
+			=> playManager.Enqueue(invoker, parameter).UnwrapThrow();
 
 		[Command("api token", "Generates an api token.")]
 		[Usage("[<duration>]", "Optionally specifies a duration this key is valid in hours.")]
 		[RequiredParameters(0)]
-		public static string CommandApiToken(TokenManager tokenManager, CallerInfo caller, double? validHours)
+		public static string CommandApiToken(TokenManager tokenManager, InvokerData invoker, double? validHours)
 		{
-			if (caller.InvokerData.Visibiliy.HasValue && caller.InvokerData.Visibiliy != TextMessageTargetMode.Private)
+			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
-			if (caller.InvokerData.ClientUid == null)
+			if (invoker.ClientUid == null)
 				throw new CommandException("No Uid found to register token for.", CommandExceptionReason.CommandError);
 			TimeSpan? validSpan = null;
 			try
@@ -66,18 +66,18 @@ namespace TS3AudioBot
 			{
 				throw new CommandException("Invalid token-valid duration.", oex, CommandExceptionReason.CommandError);
 			}
-			var token = tokenManager.GenerateToken(caller.InvokerData.ClientUid, validSpan).UnwrapThrow();
+			var token = tokenManager.GenerateToken(invoker.ClientUid, validSpan).UnwrapThrow();
 			return token;
 		}
 
 		[Command("api nonce", "Generates an api nonce.")]
-		public static string CommandApiNonce(TokenManager tokenManager, CallerInfo caller)
+		public static string CommandApiNonce(TokenManager tokenManager, InvokerData invoker)
 		{
-			if (caller.InvokerData.Visibiliy.HasValue && caller.InvokerData.Visibiliy != TextMessageTargetMode.Private)
+			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
-			if (caller.InvokerData.ClientUid == null)
+			if (invoker.ClientUid == null)
 				throw new CommandException("No Uid found to register token for.", CommandExceptionReason.CommandError);
-			var result = tokenManager.GetToken(caller.InvokerData.ClientUid);
+			var result = tokenManager.GetToken(invoker.ClientUid);
 			if (!result.Ok)
 				throw new CommandException("No active token found.", CommandExceptionReason.CommandError);
 
@@ -98,7 +98,7 @@ namespace TS3AudioBot
 
 		[Command("bot come", "Moves the bot to your channel.")]
 		[RequiredParameters(0)]
-		public static void CommandBotCome(TeamspeakControl queryConnection, CallerInfo caller, string password = null) => CommandBotMove(queryConnection, caller, null, password);
+		public static void CommandBotCome(TeamspeakControl queryConnection, InvokerData invoker, string password = null) => CommandBotMove(queryConnection, invoker, null, password);
 
 		[Command("bot info", "Gets various information about the bot.")]
 		public static BotInfo CommandBotInfo(Bot bot) => bot.GetInfo();
@@ -115,10 +115,10 @@ namespace TS3AudioBot
 
 		[Command("bot move", "Moves the bot to you or a specified channel.")]
 		[RequiredParameters(1)]
-		public static void CommandBotMove(TeamspeakControl queryConnection, CallerInfo caller, ulong? channel, string password = null)
+		public static void CommandBotMove(TeamspeakControl queryConnection, InvokerData invoker, ulong? channel, string password = null)
 		{
 			if (!channel.HasValue)
-				channel = caller.InvokerData.ChannelId;
+				channel = invoker.ChannelId;
 			if (!channel.HasValue)
 				throw new CommandException("No target channel found", CommandExceptionReason.CommandError);
 			queryConnection.MoveTo(channel.Value, password).UnwrapThrow();
@@ -149,6 +149,10 @@ namespace TS3AudioBot
 				var childInfo = new ExecutionInformation(botLock.Bot.Injector.CloneRealm<BotInjector>());
 				if (info.TryGet<CallerInfo>(out var caller))
 					childInfo.AddDynamicObject(caller);
+				if (info.TryGet<InvokerData>(out var invoker))
+					childInfo.AddDynamicObject(invoker);
+				if (info.TryGet<UserSession>(out var session))
+					childInfo.AddDynamicObject(session);
 
 				return cmd.Execute(childInfo, StaticList.Empty<ICommand>(), returnTypes);
 			}
@@ -194,26 +198,23 @@ namespace TS3AudioBot
 		}
 
 		[Command("getmy id", "Gets your id.")]
-		public static ushort CommandGetId(CallerInfo caller)
-			=> caller.InvokerData.ClientId ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
+		public static ushort CommandGetId(InvokerData invoker)
+			=> invoker.ClientId ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
 		[Command("getmy uid", "Gets your unique id.")]
-		public static string CommandGetUid(CallerInfo caller)
-			=> caller.InvokerData.ClientUid ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
+		public static string CommandGetUid(InvokerData invoker)
+			=> invoker.ClientUid ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
 		[Command("getmy name", "Gets your nickname.")]
-		public static string CommandGetName(CallerInfo caller)
-			=> caller.InvokerData.NickName ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
+		public static string CommandGetName(InvokerData invoker)
+			=> invoker.NickName ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
 		[Command("getmy dbid", "Gets your database id.")]
-		public static ulong CommandGetDbId(CallerInfo caller)
-			=> caller.InvokerData.DatabaseId ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
+		public static ulong CommandGetDbId(InvokerData invoker)
+			=> invoker.DatabaseId ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
 		[Command("getmy channel", "Gets your channel id you are currently in.")]
-		public static ulong CommandGetChannel(CallerInfo caller)
-			=> caller.InvokerData.ChannelId ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
+		public static ulong CommandGetChannel(InvokerData invoker)
+			=> invoker.ChannelId ?? throw new CommandException("Not found.", CommandExceptionReason.CommandError);
 		[Command("getmy all", "Gets all information about you.")]
-		public static JsonValue<InvokerData> CommandGetUser(CallerInfo caller)
-		{
-			var client = caller.InvokerData;
-			return new JsonValue<InvokerData>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.ClientUid}");
-		}
+		public static JsonValue<InvokerData> CommandGetUser(InvokerData invoker)
+			=> new JsonValue<InvokerData>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}");
 
 		[Command("getuser uid byid", "Gets the unique id of a user, searching with his id.")]
 		public static string CommandGetUidById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().Uid;
@@ -301,17 +302,19 @@ namespace TS3AudioBot
 		}
 
 		[Command("history add", "<id> Adds the song with <id> to the queue")]
-		public static void CommandHistoryQueue(PlayManager playManager, CallerInfo caller, uint id)
-			=> playManager.Enqueue(caller.InvokerData, id).UnwrapThrow();
+		public static void CommandHistoryQueue(PlayManager playManager, InvokerData invoker, uint id)
+			=> playManager.Enqueue(invoker, id).UnwrapThrow();
 
 		[Command("history clean", "Cleans up the history file for better startup performance.")]
-		public static JsonEmpty CommandHistoryClean(DbStore database, CallerInfo caller)
+		public static JsonEmpty CommandHistoryClean(ExecutionInformation info, DbStore database, CallerInfo caller)
 		{
 			if (caller.ApiCall)
 			{
 				database.CleanFile();
 				return new JsonEmpty(string.Empty);
 			}
+			if (!info.TryGet<UserSession>(out var session))
+				throw new CommandException("No session context", CommandExceptionReason.CommandError);
 
 			string ResponseHistoryClean(string message)
 			{
@@ -322,20 +325,22 @@ namespace TS3AudioBot
 				}
 				return null;
 			}
-			caller.Session.SetResponse(ResponseHistoryClean);
+			session.SetResponse(ResponseHistoryClean);
 			return new JsonEmpty("Do want to clean the history file now? " +
 				"This might take a while and make the bot unresponsive in meanwhile. !(yes|no)");
 		}
 
 		[Command("history clean removedefective", "Cleans up the history file for better startup performance. " +
 			"Also checks for all links in the history which cannot be opened anymore")]
-		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, CallerInfo caller)
+		public static JsonEmpty CommandHistoryCleanRemove(ExecutionInformation info, HistoryManager historyManager, CallerInfo caller)
 		{
 			if (caller.ApiCall)
 			{
 				historyManager.RemoveBrokenLinks();
 				return new JsonEmpty(string.Empty);
 			}
+			if (!info.TryGet<UserSession>(out var session))
+				throw new CommandException("No session context", CommandExceptionReason.CommandError);
 
 			string ResponseHistoryCleanRemove(string message)
 			{
@@ -346,13 +351,13 @@ namespace TS3AudioBot
 				}
 				return null;
 			}
-			caller.Session.SetResponse(ResponseHistoryCleanRemove);
+			session.SetResponse(ResponseHistoryCleanRemove);
 			return new JsonEmpty("Do want to remove all defective links file now? " +
 				"This might(will!) take a while and make the bot unresponsive in meanwhile. !(yes|no)");
 		}
 
 		[Command("history delete", "<id> Removes the entry with <id> from the history")]
-		public static JsonEmpty CommandHistoryDelete(HistoryManager historyManager, CallerInfo caller, uint id)
+		public static JsonEmpty CommandHistoryDelete(ExecutionInformation info, HistoryManager historyManager, CallerInfo caller, uint id)
 		{
 			var ale = historyManager.GetEntryById(id).UnwrapThrow();
 
@@ -361,6 +366,8 @@ namespace TS3AudioBot
 				historyManager.RemoveEntry(ale);
 				return new JsonEmpty(string.Empty);
 			}
+			if (!info.TryGet<UserSession>(out var session))
+				throw new CommandException("No session context", CommandExceptionReason.CommandError);
 
 			string ResponseHistoryDelete(string message)
 			{
@@ -372,7 +379,7 @@ namespace TS3AudioBot
 				return null;
 			}
 
-			caller.Session.SetResponse(ResponseHistoryDelete);
+			session.SetResponse(ResponseHistoryDelete);
 			string name = ale.AudioResource.ResourceTitle;
 			if (name.Length > 100)
 				name = name.Substring(100) + "...";
@@ -418,17 +425,17 @@ namespace TS3AudioBot
 		}
 
 		[Command("history last", "Plays the last song again")]
-		public static void CommandHistoryLast(PlayManager playManager, HistoryManager historyManager, CallerInfo caller)
+		public static void CommandHistoryLast(PlayManager playManager, HistoryManager historyManager, InvokerData invoker)
 		{
 			var ale = historyManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
 			if (ale == null)
 				throw new CommandException("There is no song in the history", CommandExceptionReason.CommandError);
-			playManager.Play(caller.InvokerData, ale.AudioResource).UnwrapThrow();
+			playManager.Play(invoker, ale.AudioResource).UnwrapThrow();
 		}
 
 		[Command("history play", "<id> Playes the song with <id>")]
-		public static void CommandHistoryPlay(PlayManager playManager, CallerInfo caller, uint id)
-			=> playManager.Play(caller.InvokerData, id).UnwrapThrow();
+		public static void CommandHistoryPlay(PlayManager playManager, InvokerData invoker, uint id)
+			=> playManager.Play(invoker, id).UnwrapThrow();
 
 		[Command("history rename", "<id> <name> Sets the name of the song with <id> to <name>")]
 		public static void CommandHistoryRename(HistoryManager historyManager, uint id, string newName)
@@ -537,29 +544,29 @@ namespace TS3AudioBot
 		[Command("kickme", "Guess what?")]
 		[Usage("[far]", "Optional attribute for the extra punch strength")]
 		[RequiredParameters(0)]
-		public static void CommandKickme(TeamspeakControl queryConnection, CallerInfo caller, string parameter)
+		public static void CommandKickme(TeamspeakControl queryConnection, InvokerData invoker, CallerInfo caller, string parameter)
 		{
 			if (caller.ApiCall)
 				throw new CommandException("This command is not available as API", CommandExceptionReason.NotSupported);
 
-			if (caller.InvokerData.ClientId.HasValue)
+			if (invoker.ClientId.HasValue)
 			{
 				var result = R.OkR;
 				if (string.IsNullOrEmpty(parameter) || parameter == "near")
-					result = queryConnection.KickClientFromChannel(caller.InvokerData.ClientId.Value);
+					result = queryConnection.KickClientFromChannel(invoker.ClientId.Value);
 				else if (parameter == "far")
-					result = queryConnection.KickClientFromServer(caller.InvokerData.ClientId.Value);
+					result = queryConnection.KickClientFromServer(invoker.ClientId.Value);
 				if (!result.Ok)
 					throw new CommandException("I'm not strong enough, master!", CommandExceptionReason.CommandError);
 			}
 		}
 
 		[Command("link", "Gets a link to the origin of the current song.")]
-		public static string CommandLink(ResourceFactoryManager factoryManager, PlayManager playManager, Bot bot, CallerInfo caller)
+		public static string CommandLink(ResourceFactoryManager factoryManager, PlayManager playManager, Bot bot, CallerInfo caller, InvokerData invoker)
 		{
 			if (playManager.CurrentPlayData == null)
 				throw new CommandException("There is nothing on right now...", CommandExceptionReason.CommandError);
-			if (bot.QuizMode && playManager.CurrentPlayData.Invoker.ClientId != caller.InvokerData.ClientId && !caller.ApiCall)
+			if (bot.QuizMode && playManager.CurrentPlayData.Invoker.ClientId != invoker.ClientId && !caller.ApiCall)
 				throw new CommandException("Sorry, you have to guess!", CommandExceptionReason.CommandError);
 
 			return factoryManager.RestoreLink(playManager.CurrentPlayData.ResourceData);
@@ -567,32 +574,34 @@ namespace TS3AudioBot
 
 		[Command("list add", "Adds a link to your private playlist.")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
-		public static void CommandListAdd(ResourceFactoryManager factoryManager, CallerInfo caller, string link)
+		public static void CommandListAdd(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string link)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 			var playResource = factoryManager.Load(link).UnwrapThrow();
-			plist.AddItem(new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerDbId = caller.InvokerData.DatabaseId }));
+			plist.AddItem(new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerDbId = invoker.DatabaseId }));
 		}
 
 		[Command("list add", "<id> Adds a link to your private playlist from the history by <id>.")]
-		public static void CommandListAdd(HistoryManager historyManager, CallerInfo caller, uint hid)
+		public static void CommandListAdd(HistoryManager historyManager, UserSession session, InvokerData invoker, uint hid)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 
 			if (!historyManager.GetEntryById(hid))
 				throw new CommandException("History entry not found", CommandExceptionReason.CommandError);
 
-			plist.AddItem(new PlaylistItem(hid, new MetaData { ResourceOwnerDbId = caller.InvokerData.DatabaseId }));
+			plist.AddItem(new PlaylistItem(hid, new MetaData { ResourceOwnerDbId = invoker.DatabaseId }));
 		}
 
 		[Command("list clear", "Clears your private playlist.")]
-		public static void CommandListClear(CallerInfo caller) => AutoGetPlaylist(caller).Clear();
+		public static void CommandListClear(UserSession session, InvokerData invoker) => AutoGetPlaylist(session, invoker).Clear();
 
 		[Command("list delete", "<name> Deletes the playlist with the name <name>. You can only delete playlists which you also have created. Admins can delete every playlist.")]
-		public static JsonEmpty CommandListDelete(ExecutionInformation info, PlaylistManager playlistManager, CallerInfo caller, string name)
+		public static JsonEmpty CommandListDelete(ExecutionInformation info, PlaylistManager playlistManager, CallerInfo caller, InvokerData invoker, string name)
 		{
 			if (caller.ApiCall)
-				playlistManager.DeletePlaylist(name, caller.InvokerData.DatabaseId ?? 0, info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
+				playlistManager.DeletePlaylist(name, invoker.DatabaseId ?? 0, info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
+			if (!info.TryGet<UserSession>(out var session))
+				throw new CommandException("No session context", CommandExceptionReason.CommandError);
 
 			bool? canDeleteAllPlaylists = null;
 
@@ -600,7 +609,7 @@ namespace TS3AudioBot
 			{
 				if (TextUtil.GetAnswer(message) == Answer.Yes)
 				{
-					playlistManager.DeletePlaylist(name, caller.InvokerData.DatabaseId ?? 0, canDeleteAllPlaylists ?? info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
+					playlistManager.DeletePlaylist(name, invoker.DatabaseId ?? 0, canDeleteAllPlaylists ?? info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
 				}
 				return null;
 			}
@@ -608,35 +617,35 @@ namespace TS3AudioBot
 			var hresult = playlistManager.LoadPlaylist(name, true);
 			if (!hresult)
 			{
-				caller.Session.SetResponse(ResponseListDelete);
+				session.SetResponse(ResponseListDelete);
 				// TODO check if return == string => ask, return == empty => just delete
 				return new JsonEmpty($"Do you really want to delete the playlist \"{name}\" (error:{hresult.Error})");
 			}
 			else
 			{
 				canDeleteAllPlaylists = info.HasRights(RightDeleteAllPlaylists);
-				if (hresult.Value.CreatorDbId != caller.InvokerData.DatabaseId && !canDeleteAllPlaylists.Value)
+				if (hresult.Value.CreatorDbId != invoker.DatabaseId && !canDeleteAllPlaylists.Value)
 					throw new CommandException("You are not allowed to delete others playlists", CommandExceptionReason.MissingRights);
 
-				caller.Session.SetResponse(ResponseListDelete);
+				session.SetResponse(ResponseListDelete);
 				return new JsonEmpty($"Do you really want to delete the playlist \"{name}\"");
 			}
 		}
 
 		[Command("list get", "<link> Imports a playlist form an other plattform like youtube etc.")]
-		public static JsonEmpty CommandListGet(ResourceFactoryManager factoryManager, CallerInfo caller, string link)
+		public static JsonEmpty CommandListGet(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string link)
 		{
 			var playlist = factoryManager.LoadPlaylistFrom(link).UnwrapThrow();
 
-			playlist.CreatorDbId = caller.InvokerData.DatabaseId;
-			caller.Session.Set<PlaylistManager, Playlist>(playlist);
+			playlist.CreatorDbId = invoker.DatabaseId;
+			session.Set<PlaylistManager, Playlist>(playlist);
 			return new JsonEmpty("Ok");
 		}
 
 		[Command("list item move", "<from> <to> Moves a item in a playlist <from> <to> position.")]
-		public static void CommandListMove(CallerInfo caller, int from, int to)
+		public static void CommandListMove(UserSession session, InvokerData invoker, int from, int to)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 
 			if (from < 0 || from >= plist.Count
 				|| to < 0 || to >= plist.Count)
@@ -651,9 +660,9 @@ namespace TS3AudioBot
 		}
 
 		[Command("list item delete", "<index> Removes the item at <index>.")]
-		public static string CommandListRemove(CallerInfo caller, int index)
+		public static string CommandListRemove(UserSession session, InvokerData invoker, int index)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 
 			if (index < 0 || index >= plist.Count)
 				throw new CommandException("Index must be within playlist length", CommandExceptionReason.CommandError);
@@ -694,9 +703,9 @@ namespace TS3AudioBot
 		}
 
 		[Command("list load", "Opens a playlist to be editable for you. This replaces your current worklist with the opened playlist.")]
-		public static JsonValue<Playlist> CommandListLoad(PlaylistManager playlistManager, CallerInfo caller, string name)
+		public static JsonValue<Playlist> CommandListLoad(PlaylistManager playlistManager, UserSession session, InvokerData invoker, string name)
 		{
-			Playlist loadList = AutoGetPlaylist(caller);
+			var loadList = AutoGetPlaylist(session, invoker);
 
 			var playList = playlistManager.LoadPlaylist(name).UnwrapThrow();
 
@@ -707,9 +716,9 @@ namespace TS3AudioBot
 		}
 
 		[Command("list merge", "Appends another playlist to yours.")]
-		public static void CommandListMerge(PlaylistManager playlistManager, CallerInfo caller, string name)
+		public static void CommandListMerge(PlaylistManager playlistManager, UserSession session, InvokerData invoker, string name)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 
 			var lresult = playlistManager.LoadPlaylist(name);
 			if (!lresult)
@@ -720,9 +729,9 @@ namespace TS3AudioBot
 
 		[Command("list name", "Displays the name of the playlist you are currently working on.")]
 		[Usage("<name>", "Changes the playlist name to <name>.")]
-		public static string CommandListName(CallerInfo caller, string name)
+		public static string CommandListName(UserSession session, InvokerData invoker, string name)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 
 			if (string.IsNullOrEmpty(name))
 				return plist.Name;
@@ -736,9 +745,9 @@ namespace TS3AudioBot
 		[Command("list play", "Replaces the current freelist with your workinglist and plays from the beginning.")]
 		[Usage("<index>", "Lets you specify the starting song index.")]
 		[RequiredParameters(0)]
-		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, CallerInfo caller, int? index)
+		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, UserSession session, InvokerData invoker, int? index)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 
 			if (!index.HasValue || (index.Value >= 0 && index.Value < plist.Count))
 			{
@@ -750,24 +759,24 @@ namespace TS3AudioBot
 
 			var item = playlistManager.Current();
 			if (item != null)
-				playManager.Play(caller.InvokerData, item).UnwrapThrow();
+				playManager.Play(invoker, item).UnwrapThrow();
 			else
 				throw new CommandException("Nothing to play...", CommandExceptionReason.CommandError);
 		}
 
 		[Command("list queue", "Appends your playlist to the freelist.")]
-		public static void CommandListQueue(PlayManager playManager, CallerInfo caller)
+		public static void CommandListQueue(PlayManager playManager, UserSession session, InvokerData invoker)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 			playManager.Enqueue(plist.AsEnumerable()).UnwrapThrow();
 		}
 
 		[Command("list save", "Stores your current workinglist to disk.")]
 		[Usage("<name>", "Changes the playlist name to <name> before saving.")]
 		[RequiredParameters(0)]
-		public static void CommandListSave(PlaylistManager playlistManager, CallerInfo caller, string optNewName)
+		public static void CommandListSave(PlaylistManager playlistManager, UserSession session, InvokerData invoker, string optNewName)
 		{
-			var plist = AutoGetPlaylist(caller);
+			var plist = AutoGetPlaylist(session, invoker);
 			if (!string.IsNullOrEmpty(optNewName))
 			{
 				PlaylistManager.IsNameValid(optNewName).UnwrapThrow();
@@ -780,18 +789,18 @@ namespace TS3AudioBot
 		[Command("list show", "Displays all songs currently in the playlists you are working on")]
 		[Usage("<index>", "Lets you specify the staring index from which songs should be listed.")]
 		[RequiredParameters(0)]
-		public static JsonArray<PlaylistItem> CommandListShow(PlaylistManager playlistManager, CallerInfo caller, int? offset) => CommandListShow(playlistManager, caller, null, offset);
+		public static JsonArray<PlaylistItem> CommandListShow(PlaylistManager playlistManager, UserSession session, InvokerData invoker, int? offset) => CommandListShow(playlistManager, session, invoker, null, offset);
 
 		[Command("list show", "<name> Displays all songs currently in the playlists with the name <name>")]
 		[Usage("<name> <index>", "Lets you specify the starting index from which songs should be listed.")]
 		[RequiredParameters(0)]
-		public static JsonArray<PlaylistItem> CommandListShow(PlaylistManager playlistManager, CallerInfo caller, string name, int? offset)
+		public static JsonArray<PlaylistItem> CommandListShow(PlaylistManager playlistManager, UserSession session, InvokerData invoker, string name, int? offset)
 		{
 			Playlist plist;
 			if (!string.IsNullOrEmpty(name))
 				plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
 			else
-				plist = AutoGetPlaylist(caller);
+				plist = AutoGetPlaylist(session, invoker);
 
 			var strb = new StringBuilder();
 			strb.Append("Playlist: \"").Append(plist.Name).Append("\" with ").Append(plist.Count).AppendLine(" songs.");
@@ -811,18 +820,18 @@ namespace TS3AudioBot
 		public static void CommandLoopOff(PlaylistManager playlistManager) => playlistManager.Loop = false;
 
 		[Command("next", "Plays the next song in the playlist.")]
-		public static void CommandNext(PlayManager playManager, CallerInfo caller)
+		public static void CommandNext(PlayManager playManager, InvokerData invoker)
 		{
-			playManager.Next(caller.InvokerData).UnwrapThrow();
+			playManager.Next(invoker).UnwrapThrow();
 		}
 
 		[Command("pm", "Requests a private session with the ServerBot so you can be intimate.")]
-		public static string CommandPm(CallerInfo caller)
+		public static string CommandPm(CallerInfo caller, InvokerData invoker)
 		{
 			if (caller.ApiCall)
 				throw new CommandException("This command is not available as API", CommandExceptionReason.NotSupported);
-			caller.InvokerData.Visibiliy = TextMessageTargetMode.Private;
-			return "Hi " + (caller.InvokerData.NickName ?? "Anonymous");
+			invoker.Visibiliy = TextMessageTargetMode.Private;
+			return "Hi " + (invoker.NickName ?? "Anonymous");
 		}
 
 		[Command("parse command", "Displays the AST of the requested command.")]
@@ -851,12 +860,12 @@ namespace TS3AudioBot
 		[Command("play", "Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it.")]
 		[Usage("<link>", "Youtube, Soundcloud, local path or file link")]
 		[RequiredParameters(0)]
-		public static void CommandPlay(IPlayerConnection playerConnection, PlayManager playManager, CallerInfo caller, string parameter)
+		public static void CommandPlay(IPlayerConnection playerConnection, PlayManager playManager, InvokerData invoker, string parameter)
 		{
 			if (string.IsNullOrEmpty(parameter))
 				playerConnection.Paused = false;
 			else
-				playManager.Play(caller.InvokerData, parameter).UnwrapThrow();
+				playManager.Play(invoker, parameter).UnwrapThrow();
 		}
 
 		[Command("plugin list", "Lists all found plugins.")]
@@ -895,8 +904,8 @@ namespace TS3AudioBot
 		}
 
 		[Command("previous", "Plays the previous song in the playlist.")]
-		public static void CommandPrevious(PlayManager playManager, CallerInfo caller)
-			=> playManager.Previous(caller.InvokerData).UnwrapThrow();
+		public static void CommandPrevious(PlayManager playManager, InvokerData invoker)
+			=> playManager.Previous(invoker).UnwrapThrow();
 
 		[Command("print", "Lets you format multiple parameter to one.")]
 		[RequiredParameters(0)]
@@ -911,13 +920,15 @@ namespace TS3AudioBot
 
 		[Command("quit", "Closes the TS3AudioBot application.")]
 		[RequiredParameters(0)]
-		public static JsonEmpty CommandQuit(Core core, CallerInfo caller, string param)
+		public static JsonEmpty CommandQuit(ExecutionInformation info, Core core, CallerInfo caller, string param)
 		{
 			if (caller.ApiCall)
 			{
 				core.Dispose();
 				return new JsonEmpty(string.Empty);
 			}
+			if (!info.TryGet<UserSession>(out var session))
+				throw new CommandException("No session context", CommandExceptionReason.CommandError);
 
 			if (param == "force")
 			{
@@ -929,12 +940,12 @@ namespace TS3AudioBot
 			{
 				if (TextUtil.GetAnswer(message) == Answer.Yes)
 				{
-					CommandQuit(core, caller, "force");
+					CommandQuit(info, core, caller, "force");
 				}
 				return null;
 			}
 
-			caller.Session.SetResponse(ResponseQuit);
+			session.SetResponse(ResponseQuit);
 			return new JsonEmpty("Do you really want to quit? !(yes|no)");
 		}
 
@@ -947,9 +958,9 @@ namespace TS3AudioBot
 			bot.UpdateBotStatus().UnwrapThrow();
 		}
 		[Command("quiz off", "Disable to show the songnames again.")]
-		public static void CommandQuizOff(Bot bot, CallerInfo caller)
+		public static void CommandQuizOff(Bot bot, CallerInfo caller, InvokerData invoker)
 		{
-			if (!caller.ApiCall && caller.InvokerData.Visibiliy.HasValue && caller.InvokerData.Visibiliy != TextMessageTargetMode.Private)
+			if (!caller.ApiCall && invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException("No cheating! Everybody has to see it!", CommandExceptionReason.CommandError);
 			bot.QuizMode = false;
 			bot.UpdateBotStatus().UnwrapThrow();
@@ -985,9 +996,10 @@ namespace TS3AudioBot
 		public static void CommandRepeatOff(IPlayerConnection playerConnection) => playerConnection.Repeated = false;
 
 		[Command("rights can", "Returns the subset of allowed commands the caller (you) can execute.")]
-		public static JsonArray<string> CommandRightsCan(RightsManager rightsManager, Bot bot, CallerInfo caller, params string[] rights)
+		public static JsonArray<string> CommandRightsCan(ExecutionInformation info, RightsManager rightsManager, TeamspeakControl ts, CallerInfo caller, params string[] rights)
 		{
-			var result = rightsManager.GetRightsSubset(caller.InvokerData, bot, rights);
+			if (!info.TryGet<InvokerData>(out var invoker)) invoker = null;
+			var result = rightsManager.GetRightsSubset(caller, invoker, ts, rights);
 			return new JsonArray<string>(result, result.Length > 0 ? string.Join(", ", result) : "No");
 		}
 
@@ -1092,11 +1104,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("song", "Tells you the name of the current song.")]
-		public static JsonValue<string> CommandSong(PlayManager playManager, ResourceFactoryManager factoryManager, Bot bot, CallerInfo caller)
+		public static JsonValue<string> CommandSong(PlayManager playManager, ResourceFactoryManager factoryManager, Bot bot, CallerInfo caller, InvokerData invoker)
 		{
 			if (playManager.CurrentPlayData == null)
 				throw new CommandException("There is nothing on right now...", CommandExceptionReason.CommandError);
-			if (bot.QuizMode && playManager.CurrentPlayData.Invoker.ClientId != caller.InvokerData.ClientId && !caller.ApiCall)
+			if (bot.QuizMode && playManager.CurrentPlayData.Invoker.ClientId != invoker.ClientId && !caller.ApiCall)
 				throw new CommandException("Sorry, you have to guess!", CommandExceptionReason.CommandError);
 
 			return new JsonValue<string>(
@@ -1111,26 +1123,26 @@ namespace TS3AudioBot
 		}
 
 		[Command("subscribe", "Lets you hear the music independent from the channel you are in.")]
-		public static void CommandSubscribe(ITargetManager targetManager, CallerInfo caller)
+		public static void CommandSubscribe(ITargetManager targetManager, InvokerData invoker)
 		{
-			if (caller.InvokerData.ClientId.HasValue)
-				targetManager.WhisperClientSubscribe(caller.InvokerData.ClientId.Value);
+			if (invoker.ClientId.HasValue)
+				targetManager.WhisperClientSubscribe(invoker.ClientId.Value);
 		}
 
 		[Command("subscribe tempchannel", "Adds your current channel to the music playback.")]
 		[RequiredParameters(0)]
-		public static void CommandSubscribeTempChannel(ITargetManager targetManager, CallerInfo caller, ulong? channel)
+		public static void CommandSubscribeTempChannel(ITargetManager targetManager, InvokerData invoker, ulong? channel)
 		{
-			var subChan = channel ?? caller.InvokerData.ChannelId ?? 0;
+			var subChan = channel ?? invoker.ChannelId ?? 0;
 			if (subChan != 0)
 				targetManager.WhisperChannelSubscribe(subChan, true);
 		}
 
 		[Command("subscribe channel", "Adds your current channel to the music playback.")]
 		[RequiredParameters(0)]
-		public static void CommandSubscribeChannel(ITargetManager targetManager, CallerInfo caller, ulong? channel)
+		public static void CommandSubscribeChannel(ITargetManager targetManager, InvokerData invoker, ulong? channel)
 		{
-			var subChan = channel ?? caller.InvokerData.ChannelId ?? 0;
+			var subChan = channel ?? invoker.ChannelId ?? 0;
 			if (subChan != 0)
 				targetManager.WhisperChannelSubscribe(subChan, false);
 		}
@@ -1186,17 +1198,17 @@ namespace TS3AudioBot
 		}
 
 		[Command("unsubscribe", "Only lets you hear the music in active channels again.")]
-		public static void CommandUnsubscribe(ITargetManager targetManager, CallerInfo caller)
+		public static void CommandUnsubscribe(ITargetManager targetManager, InvokerData invoker)
 		{
-			if (caller.InvokerData.ClientId.HasValue)
-				targetManager.WhisperClientUnsubscribe(caller.InvokerData.ClientId.Value);
+			if (invoker.ClientId.HasValue)
+				targetManager.WhisperClientUnsubscribe(invoker.ClientId.Value);
 		}
 
 		[Command("unsubscribe channel", "Removes your current channel from the music playback.")]
 		[RequiredParameters(0)]
-		public static void CommandUnsubscribeChannel(ITargetManager targetManager, CallerInfo caller, ulong? channel)
+		public static void CommandUnsubscribeChannel(ITargetManager targetManager, InvokerData invoker, ulong? channel)
 		{
-			var subChan = channel ?? caller.InvokerData.ChannelId ?? 0;
+			var subChan = channel ?? invoker.ChannelId ?? 0;
 			if (subChan != 0)
 				targetManager.WhisperChannelUnsubscribe(subChan, false);
 		}
@@ -1252,7 +1264,9 @@ namespace TS3AudioBot
 					return null;
 				}
 
-				caller.Session.SetResponse(ResponseVolume);
+				if (!info.TryGet<UserSession>(out var session))
+					throw new CommandException("No session context", CommandExceptionReason.CommandError);
+				session.SetResponse(ResponseVolume);
 				throw new CommandException("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)", CommandExceptionReason.CommandError);
 			}
 			return null;
@@ -1296,29 +1310,53 @@ namespace TS3AudioBot
 		}
 		// ReSharper enable UnusedMember.Global
 
-		private static Playlist AutoGetPlaylist(CallerInfo caller)
+		private static Playlist AutoGetPlaylist(UserSession session, InvokerData invoker)
 		{
-			if (caller.Session == null)
+			if (session == null)
 				throw new CommandException("Missing session context", CommandExceptionReason.CommandError);
-			var result = caller.Session.Get<PlaylistManager, Playlist>();
+			var result = session.Get<PlaylistManager, Playlist>();
 			if (result)
 				return result.Value;
 
-			var newPlist = new Playlist(caller.InvokerData.NickName, caller.InvokerData.DatabaseId);
-			caller.Session.Set<PlaylistManager, Playlist>(newPlist);
+			var newPlist = new Playlist(invoker.NickName, invoker.DatabaseId);
+			session.Set<PlaylistManager, Playlist>(newPlist);
 			return newPlist;
 		}
 
 		public static bool HasRights(this ExecutionInformation info, params string[] rights)
 		{
-			if (!info.TryGet<CallerInfo>(out var caller))
-				return false;
-			if (caller.SkipRightsChecks)
+			if (!info.TryGet<CallerInfo>(out var caller)) caller = null;
+			if (caller?.SkipRightsChecks ?? false)
 				return true;
 			if (!info.TryGet<RightsManager>(out var rightsManager))
 				return false;
-			if (!info.TryGet<Bot>(out var bot)) bot = null;
-			return rightsManager.HasAllRights(caller.InvokerData, bot, rights);
+			if (!info.TryGet<InvokerData>(out var invoker)) invoker = null;
+			if (!info.TryGet<TeamspeakControl>(out var ts)) ts = null;
+			return rightsManager.HasAllRights(caller, invoker, ts, rights);
+		}
+
+		public static R Write(this ExecutionInformation info, string message)
+		{
+			if (!info.TryGet<TeamspeakControl>(out var queryConnection))
+				return "No teamspeak connection in context";
+
+			if (!info.TryGet<InvokerData>(out var invoker))
+				return "No invoker in context";
+
+			if (!invoker.Visibiliy.HasValue || !invoker.ClientId.HasValue)
+				return "Invoker casted Ghost Walk";
+
+			switch (invoker.Visibiliy.Value)
+			{
+			case TextMessageTargetMode.Private:
+				return queryConnection.SendMessage(message, invoker.ClientId.Value);
+			case TextMessageTargetMode.Channel:
+				return queryConnection.SendChannelMessage(message);
+			case TextMessageTargetMode.Server:
+				return queryConnection.SendServerMessage(message);
+			default:
+				throw Util.UnhandledDefault(invoker.Visibiliy.Value);
+			}
 		}
 	}
 }

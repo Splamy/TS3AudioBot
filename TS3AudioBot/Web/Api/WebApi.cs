@@ -31,6 +31,15 @@ namespace TS3AudioBot.Web.Api
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
 		private static readonly MD5 Md5Hash = MD5.Create();
 
+		private const string InfoNonceAdded = "Added a nonce to your request";
+		private const string ErrorUnknownRealm = "Unknown realm";
+		private const string ErrorNoUserOrToken = "Unknown user or no active token found";
+		private const string ErrorAuthFailure = "Authentication failed";
+		private const string ErrorAnonymousDisabled = "This bot does not allow anonymous api requests";
+		private const string ErrorUnsupportedScheme = "Unsupported authentication scheme";
+
+		public bool AllowAnonymousRequest { get; set; } = true;
+
 		public CoreInjector CoreInjector { get; set; }
 		public CommandManager CommandManager { get; set; }
 		public TokenManager TokenManager { get; set; }
@@ -41,16 +50,23 @@ namespace TS3AudioBot.Web.Api
 			{
 				response.AddHeader("Access-Control-Allow-Origin", "*");
 
-				var invoker = Authenticate(context);
-				if (invoker == null)
+				var authResult = Authenticate(context);
+				if (!authResult.Ok)
 				{
-					Log.Debug("Unauthorized request!");
-					ReturnError(CommandExceptionReason.Unauthorized, "", context.Response);
+					Log.Debug("Authorization failed!");
+					ReturnError(CommandExceptionReason.Unauthorized, authResult.Error, context.Response);
 					return;
 				}
+				if (!AllowAnonymousRequest && authResult.Value.anonymous)
+				{
+					Log.Debug("Unauthorized request!");
+					ReturnError(CommandExceptionReason.Unauthorized, ErrorAnonymousDisabled, context.Response);
+					return;
+				}
+				//AllowAnonymousRequest && invoker == null 
 
 				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
-				ProcessApiV1Call(requestUrl, context.Response, invoker);
+				ProcessApiV1Call(requestUrl, context.Response, authResult.Value.invoker);
 			}
 		}
 
@@ -62,9 +78,11 @@ namespace TS3AudioBot.Web.Api
 
 			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
 
-			invoker.IsApi = true;
 			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
-			execInfo.AddDynamicObject(new CallerInfo(invoker, apirequest));
+			execInfo.AddDynamicObject(new CallerInfo(apirequest, true));
+			if (invoker != null) execInfo.AddDynamicObject(invoker);
+			// todo creating token usersessions is now possible
+
 			try
 			{
 				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(), XCommandSystem.ReturnJsonOrNothing);
@@ -156,20 +174,19 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private InvokerData Authenticate(HttpListenerContext context)
+		private R<(bool anonymous, InvokerData invoker)> Authenticate(HttpListenerContext context)
 		{
-			IIdentity identity = GetIdentity(context);
+			var identity = GetIdentity(context);
 			if (identity == null)
-				return null;
+				return (true, null);
 
 			var result = TokenManager.GetToken(identity.Name);
 			if (!result.Ok)
-				return null;
+				return ErrorNoUserOrToken;
 
 			var token = result.Value;
 			var invoker = new InvokerData(identity.Name)
 			{
-				IsApi = true,
 				Token = token.Value,
 			};
 
@@ -179,9 +196,10 @@ namespace TS3AudioBot.Web.Api
 				var identityBasic = (HttpListenerBasicIdentity)identity;
 
 				if (token.Value != identityBasic.Password)
-					return null;
+					return ErrorAuthFailure;
 
-				return invoker;
+				return (false, invoker);
+
 			case "Digest":
 				var identityDigest = (HttpListenerDigestIdentity)identity;
 
@@ -189,14 +207,14 @@ namespace TS3AudioBot.Web.Api
 				{
 					var newNonce = token.CreateNonce();
 					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{newNonce.Value}\"");
-					return null;
+					return InfoNonceAdded;
 				}
 
 				if (identityDigest.Realm != WebManager.WebRealm)
-					return null;
+					return ErrorUnknownRealm;
 
 				if (identityDigest.Uri != context.Request.RawUrl)
-					return null;
+					return ErrorAuthFailure;
 
 				//HA1=MD5(username:realm:password)
 				//HA2=MD5(method:digestURI)
@@ -206,16 +224,17 @@ namespace TS3AudioBot.Web.Api
 				var response = HashString($"{ha1}:{identityDigest.Nonce}:{ha2}");
 
 				if (identityDigest.Hash != response)
-					return null;
+					return ErrorAuthFailure;
 
 				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
 				if (nextNonce == null)
-					return null;
+					return ErrorAuthFailure;
 				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 
-				return invoker;
+				return (false, invoker);
+
 			default:
-				return null;
+				return ErrorUnsupportedScheme;
 			}
 		}
 

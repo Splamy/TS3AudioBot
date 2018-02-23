@@ -274,12 +274,11 @@ namespace TS3AudioBot
 		public ulong? ChannelId { get; internal set; }
 		public ushort? ClientId { get; internal set; }
 		public string NickName { get; internal set; }
-		public bool IsApi { get; internal set; }
 		public string Token { get; internal set; }
 		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
 
 		public InvokerData(string clientUid, ulong? databaseId = null, ulong? channelId = null,
-			ushort? clientId = null, string nickName = null, bool isApi = false, string token = null,
+			ushort? clientId = null, string nickName = null, string token = null,
 			TS3Client.TextMessageTargetMode? visibiliy = null)
 		{
 			ClientUid = clientUid;
@@ -287,7 +286,6 @@ namespace TS3AudioBot
 			ChannelId = channelId;
 			ClientId = clientId;
 			NickName = nickName;
-			IsApi = isApi;
 			Token = token;
 			Visibiliy = visibiliy;
 		}

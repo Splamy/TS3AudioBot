@@ -24,11 +24,11 @@ namespace TS3AudioBot.Rights
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int RuleLevelSize = 2;
-		
+
 		public CommandManager CommandManager { get; set; }
 
 		private bool needsRecalculation;
-		private readonly Cache<InvokerData, ExecuteContext> cachedRights;
+		private readonly Cache<string, ExecuteContext> cachedRights;
 		private readonly RightsManagerData rightsManagerData;
 		private RightsRule rootRule;
 		private RightsRule[] rules;
@@ -75,21 +75,21 @@ namespace TS3AudioBot.Rights
 		}
 
 		// TODO: b_client_permissionoverview_view
-		public bool HasAllRights(InvokerData inv, Bot bot, params string[] requestedRights)
+		public bool HasAllRights(CallerInfo caller, InvokerData invoker, TeamspeakControl ts, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(inv, bot);
+			var ctx = GetRightsContext(caller, invoker, ts);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
-		public string[] GetRightsSubset(InvokerData inv, Bot bot, params string[] requestedRights)
+		public string[] GetRightsSubset(CallerInfo caller, InvokerData invoker, TeamspeakControl ts, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(inv, bot);
+			var ctx = GetRightsContext(caller, invoker, ts);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
-		private ExecuteContext GetRightsContext(InvokerData inv, Bot bot)
+		private ExecuteContext GetRightsContext(CallerInfo caller, InvokerData invoker, TeamspeakControl ts)
 		{
 			if (needsRecalculation)
 			{
@@ -98,8 +98,17 @@ namespace TS3AudioBot.Rights
 				ReadFile();
 			}
 
-			if (!cachedRights.TryGetValue(inv, out ExecuteContext execCtx))
+			ExecuteContext execCtx;
+			if (invoker != null)
 			{
+				if (cachedRights.TryGetValue(invoker.ClientUid, out execCtx))
+				{
+					// TODO check if all fields are same
+					// if yes => returen
+					// if no => delete from cache
+					return execCtx;
+				}
+
 				execCtx = new ExecuteContext();
 
 				// Get Required Matcher Data:
@@ -108,44 +117,50 @@ namespace TS3AudioBot.Rights
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
 
-				if (inv.ClientId.HasValue &&
-					((needsAvailableGroups && execCtx.AvailableGroups == null)
-					|| (needsAvailableChanGroups && !execCtx.ChannelGroupId.HasValue)))
+				ulong[] availableGroups = null;
+				if (ts != null)
 				{
-					var result = bot?.QueryConnection.GetClientInfoById(inv.ClientId.Value) ?? R<TS3Client.Messages.ClientInfo>.Err("");
-					if (result.Ok)
+					if (invoker.ClientId.HasValue &&
+						(needsAvailableGroups || needsAvailableChanGroups))
 					{
-						if (execCtx.AvailableGroups == null)
-							execCtx.AvailableGroups = result.Value.ServerGroups;
-						if (!execCtx.ChannelGroupId.HasValue)
+						var result = ts.GetClientInfoById(invoker.ClientId.Value);
+						if (result.Ok)
+						{
+							availableGroups = result.Value.ServerGroups;
 							execCtx.ChannelGroupId = result.Value.ChannelGroupId;
+						}
+					}
+
+					if (needsAvailableGroups && invoker.DatabaseId.HasValue && availableGroups == null)
+					{
+						var result = ts.GetClientServerGroups(invoker.DatabaseId.Value);
+						if (result.Ok)
+							availableGroups = result.Value;
 					}
 				}
 
-				if (needsAvailableGroups && inv.DatabaseId.HasValue && execCtx.AvailableGroups == null)
-				{
-					var result = bot?.QueryConnection.GetClientServerGroups(inv.DatabaseId.Value) ?? R<ulong[]>.Err("");
-					if (result.Ok)
-						execCtx.AvailableGroups = result.Value;
-				}
-
-				if (execCtx.AvailableGroups == null)
-					execCtx.AvailableGroups = new ulong[0];
-				execCtx.ClientUid = inv.ClientUid;
-				execCtx.Visibiliy = inv.Visibiliy;
-				execCtx.ApiToken = inv.Token;
-				execCtx.IsApi = inv.IsApi;
-
-				ProcessNode(rootRule, execCtx);
-
-				if (execCtx.MatchingRules.Count == 0)
-					return execCtx;
-
-				foreach (var rule in execCtx.MatchingRules)
-					execCtx.DeclAdd.UnionWith(rule.DeclAdd);
-
-				cachedRights.Store(inv, execCtx);
+				if (availableGroups != null)
+					execCtx.AvailableGroups = availableGroups;
+				execCtx.ClientUid = invoker.ClientUid;
+				execCtx.Visibiliy = invoker.Visibiliy;
+				execCtx.ApiToken = invoker.Token;
 			}
+			else
+			{
+				execCtx = new ExecuteContext();
+			}
+			execCtx.IsApi = caller.ApiCall;
+
+			ProcessNode(rootRule, execCtx);
+
+			if (execCtx.MatchingRules.Count == 0)
+				return execCtx;
+
+			foreach (var rule in execCtx.MatchingRules)
+				execCtx.DeclAdd.UnionWith(rule.DeclAdd);
+
+			if (invoker != null)
+				cachedRights.Store(invoker.ClientUid, execCtx);
 
 			return execCtx;
 		}
@@ -518,8 +533,10 @@ namespace TS3AudioBot.Rights
 
 	internal class ExecuteContext
 	{
+		public static readonly ulong[] NoGroups = new ulong[0];
+
 		public string Host { get; set; }
-		public ulong[] AvailableGroups { get; set; }
+		public ulong[] AvailableGroups { get; set; } = NoGroups;
 		public ulong? ChannelGroupId { get; set; }
 		public string ClientUid { get; set; }
 		public bool IsApi { get; set; }

@@ -9,30 +9,16 @@
 
 namespace TS3AudioBot.CommandSystem
 {
-	using Sessions;
-
 	public class CallerInfo
 	{
-		// TODO session as R ?
-		public UserSession Session { get; }
-		public InvokerData InvokerData { get; }
 		public string TextMessage { get; }
-		public bool ApiCall => InvokerData.IsApi;
+		public bool ApiCall { get; }
 		public bool SkipRightsChecks { get; set; }
 
-		public CallerInfo(InvokerData invoker, string textMessage, UserSession userSession = null)
+		public CallerInfo(string textMessage, bool isApi)
 		{
 			TextMessage = textMessage;
-			InvokerData = invoker;
-			Session = userSession;
-		}
-
-		public R Write(string message)
-		{
-			if (Session != null && InvokerData.Visibiliy.HasValue)
-				return Session.Write(message, InvokerData.Visibiliy.Value);
-			else
-				return "User has no visibility";
+			ApiCall = isApi;
 		}
 	}
 }

@@ -13,6 +13,10 @@
 	# Getting song info
 	"cmd.link",
 	"cmd.song",
+	"cmd.loop",
+	"cmd.random",
+	"cmd.random.seed",
+	"cmd.volume",
 
 	# Conditionals and basic scripting
 	"cmd.if",
@@ -20,9 +24,12 @@
 	"cmd.rng",
 	"cmd.eval",
 	"cmd.take",
+	"cmd.json.merge",
+	"cmd.xecute",
+	"cmd.getmy.*",
 
 	# Changing bot context in the api
-	"cmd.bot.use"
+	"cmd.bot.use",
 ]
 
 # Admin rule

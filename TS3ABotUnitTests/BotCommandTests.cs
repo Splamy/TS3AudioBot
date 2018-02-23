@@ -95,7 +95,8 @@ namespace TS3ABotUnitTests
 		static Utils()
 		{
 			ExecInfo = new ExecutionInformation();
-			ExecInfo.AddDynamicObject(new CallerInfo(new InvokerData("InvokerUid"), null) { SkipRightsChecks = true });
+			ExecInfo.AddDynamicObject(new CallerInfo(null, false) { SkipRightsChecks = true });
+			ExecInfo.AddDynamicObject(new InvokerData("InvokerUid"));
 		}
 
 		public static ExecutionInformation ExecInfo { get; }
