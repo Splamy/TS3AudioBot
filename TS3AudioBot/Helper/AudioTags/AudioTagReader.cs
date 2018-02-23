@@ -99,6 +99,7 @@ namespace TS3AudioBot.Helper.AudioTags
 
 			public override string TagId => "ID3";
 
+			// ReSharper disable UnusedVariable
 			private IdData GetData(BinaryReader fileStream)
 			{
 				var retdata = new IdData();
@@ -122,8 +123,8 @@ namespace TS3AudioBot.Helper.AudioTags
 					while (readCount < tagSize)
 					{
 						// frame header                                      [06 bytes]
-						int frameId = fileStream.ReadInt24BE(); //           >03 bytes
-						int frameSize = fileStream.ReadInt24BE(); //         >03 bytes
+						int frameId = fileStream.ReadInt24Be(); //           >03 bytes
+						int frameSize = fileStream.ReadInt24Be(); //         >03 bytes
 						readCount += 6;
 
 						if (readCount + frameSize > tagSize)
@@ -137,7 +138,7 @@ namespace TS3AudioBot.Helper.AudioTags
 						else if (frameId == v2_PIC)
 						{
 							var textEncoding = fileStream.ReadByte();
-							var imageType = fileStream.ReadInt24BE(); // JPG or PNG (or other?)
+							var imageType = fileStream.ReadInt24Be(); // JPG or PNG (or other?)
 							var pictureType = fileStream.ReadByte();
 							var description = new List<byte>();
 							byte textByte;
@@ -161,9 +162,9 @@ namespace TS3AudioBot.Helper.AudioTags
 					while (readCount < tagSize)
 					{
 						// frame header                                        [10 bytes]
-						uint frameId = fileStream.ReadUInt32BE(); //           >04 bytes
+						uint frameId = fileStream.ReadUInt32Be(); //           >04 bytes
 						int frameSize = fileStream.ReadId3Int(); //            >04 bytes
-						ushort frame_flags = fileStream.ReadUInt16BE(); //     >02 bytes
+						ushort frame_flags = fileStream.ReadUInt16Be(); //     >02 bytes
 						readCount += 10;
 
 						if(readCount + frameSize > tagSize)
@@ -201,6 +202,7 @@ namespace TS3AudioBot.Helper.AudioTags
 
 				return retdata;
 			}
+			// ReSharper restore UnusedVariable
 
 			public override string GetTitle(BinaryReader fileStream)
 			{

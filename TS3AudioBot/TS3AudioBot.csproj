@@ -87,13 +87,12 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Algorithm\DependencyGraph.cs" />
     <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
     <Compile Include="Audio\CustomTargetPipe.cs" />
     <Compile Include="Audio\FfmpegProducer.cs" />
     <Compile Include="Audio\StallCheckPipe.cs" />
     <Compile Include="BotManager.cs" />
-    <Compile Include="Commands.cs" />
+    <Compile Include="MainCommands.cs" />
     <Compile Include="CommandSystem\Ast\AstCommand.cs" />
     <Compile Include="CommandSystem\Ast\AstError.cs" />
     <Compile Include="CommandSystem\Ast\AstNode.cs" />
@@ -189,8 +188,7 @@
     <Compile Include="Web\Api\JsonEmpty.cs" />
     <Compile Include="Web\Api\JsonError.cs" />
     <Compile Include="Web\Api\JsonObject.cs" />
-    <Compile Include="Web\Api\JsonSingleValue.cs" />
-    <Compile Include="Web\Api\JsonSingleObject.cs" />
+    <Compile Include="Web\Api\JsonValue.cs" />
     <Compile Include="Web\Api\WebApi.cs" />
     <Compile Include="Web\HttpListenerDigestIdentity.cs" />
     <Compile Include="Web\Interface\FileProvider.cs" />

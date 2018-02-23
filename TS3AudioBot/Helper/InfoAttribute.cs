@@ -11,7 +11,7 @@ namespace TS3AudioBot.Helper
 {
 	using System;
 
-	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 	internal sealed class InfoAttribute : Attribute
 	{
 		public bool HasDefault => DefaultValue != null;

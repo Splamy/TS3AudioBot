@@ -46,7 +46,6 @@ namespace TS3AudioBot
 		private IdentityData identity;
 
 		private readonly StallCheckPipe stallCheckPipe;
-		private readonly ActiveCheckPipe activeCheckPipe;
 		private readonly VolumePipe volumePipe;
 		private readonly FfmpegProducer ffmpegProducer;
 		private readonly PreciseTimedPipe timePipe;
@@ -62,7 +61,6 @@ namespace TS3AudioBot
 
 			ffmpegProducer = new FfmpegProducer(tfcd);
 			stallCheckPipe = new StallCheckPipe();
-			activeCheckPipe = new ActiveCheckPipe();
 			volumePipe = new VolumePipe();
 			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ts3FullClientData.AudioBitrate * 1000 };
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
@@ -70,7 +68,7 @@ namespace TS3AudioBot
 			TargetPipe = new CustomTargetPipe(tsFullClient);
 
 			timePipe.InStream = ffmpegProducer;
-			timePipe.Chain(activeCheckPipe).Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
+			timePipe.Chain<ActiveCheckPipe>().Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
 
 			identity = null;
 		}
@@ -84,9 +82,9 @@ namespace TS3AudioBot
 
 		private void Tfcd_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
 		{
-			if (e.PropertyName == nameof(Ts3FullClientData.AudioBitrate))
+			if (e.PropertyName == nameof(Ts3FullClientData.AudioBitrate) && sender is Ts3FullClientData tfcd)
 			{
-				var value = (int)typeof(Ts3FullClientData).GetProperty(e.PropertyName).GetValue(sender);
+				var value = tfcd.AudioBitrate;
 				if (value <= 0 || value >= 256)
 					return;
 				encoderPipe.Bitrate = value * 1000;
@@ -309,7 +307,7 @@ namespace TS3AudioBot
 
 		public bool Playing => !timePipe.Paused;
 
-		public bool Repeated { get { return false; } set { } }
+		public bool Repeated { get => false; set { } }
 
 		#endregion
 

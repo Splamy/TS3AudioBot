@@ -10,6 +10,7 @@
 namespace TS3AudioBot
 {
 	using CommandSystem;
+	using CommandSystem.CommandResults;
 	using Dependency;
 	using Helper;
 	using History;

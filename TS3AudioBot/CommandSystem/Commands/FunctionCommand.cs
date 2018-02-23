@@ -7,8 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem.Commands
 {
+	using CommandResults;
 	using System;
 	using System.Collections.Generic;
 	using System.Globalization;
@@ -113,7 +114,7 @@ namespace TS3AudioBot.CommandSystem
 				case ParamKind.NormalParam:
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
-					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 					try { parameters[p] = ConvertParam(argResultP, arg); }
 					catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex, CommandExceptionReason.CommandError); }
 					catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
@@ -130,7 +131,7 @@ namespace TS3AudioBot.CommandSystem
 					{
 						for (int i = 0; i < args.Length; i++, takenArguments++)
 						{
-							var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.String })).Content;
+							var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 							var convResult = ConvertParam(argResultA, typeArr);
 							args.SetValue(convResult, i);
 						}
@@ -205,9 +206,15 @@ namespace TS3AudioBot.CommandSystem
 						result = ExecuteFunction(parameters);
 						executed = true;
 					}
-					if (result is JsonObject jsonResult)
-						return new JsonCommandResult(jsonResult);
+
+					switch (result)
+					{
+					case null: break;
+					case JsonObject jsonResult: return new JsonCommandResult(jsonResult);
+					default: return new JsonCommandResult((JsonObject)Activator.CreateInstance(typeof(JsonValue<>).MakeGenericType(result.GetType()), result));
+					}
 					break;
+
 				default:
 					throw new ArgumentOutOfRangeException();
 				}

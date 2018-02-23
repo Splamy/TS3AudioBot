@@ -14,34 +14,34 @@ namespace TS3AudioBot.Helper.AudioTags
 
 	internal static class BinaryReaderBigEndianExtensions
 	{
-		public static short ReadInt16BE(this BinaryReader br)
+		public static short ReadInt16Be(this BinaryReader br)
 		{
-			return BitConverterBigEndian.ToInt16(br.ReadBytes(sizeof(short)));
+			return BitConverterBigEndian.ToInt16(br.ReadBytes(2));
 		}
-		public static int ReadInt24BE(this BinaryReader br)
+		public static int ReadInt24Be(this BinaryReader br)
 		{
 			return BitConverterBigEndian.ToInt24(br.ReadBytes(3));
 		}
-		public static int ReadInt32BE(this BinaryReader br)
+		public static int ReadInt32Be(this BinaryReader br)
 		{
-			return BitConverterBigEndian.ToInt32(br.ReadBytes(sizeof(int)));
+			return BitConverterBigEndian.ToInt32(br.ReadBytes(4));
 		}
-		public static long ReadInt64BE(this BinaryReader br)
+		public static long ReadInt64Be(this BinaryReader br)
 		{
-			return BitConverterBigEndian.ToInt64(br.ReadBytes(sizeof(long)));
+			return BitConverterBigEndian.ToInt64(br.ReadBytes(8));
 		}
 
-		public static ushort ReadUInt16BE(this BinaryReader br)
+		public static ushort ReadUInt16Be(this BinaryReader br)
 		{
-			return BitConverterBigEndian.ToUInt16(br.ReadBytes(sizeof(ushort)));
+			return BitConverterBigEndian.ToUInt16(br.ReadBytes(2));
 		}
-		public static uint ReadUInt32BE(this BinaryReader br)
+		public static uint ReadUInt32Be(this BinaryReader br)
 		{
-			return BitConverterBigEndian.ToUInt32(br.ReadBytes(sizeof(uint)));
+			return BitConverterBigEndian.ToUInt32(br.ReadBytes(4));
 		}
-		public static ulong ReadUInt64BE(this BinaryReader br)
+		public static ulong ReadUInt64Be(this BinaryReader br)
 		{
-			return BitConverterBigEndian.ToUInt64(br.ReadBytes(sizeof(ulong)));
+			return BitConverterBigEndian.ToUInt64(br.ReadBytes(8));
 		}
 
 		public static int ReadId3Int(this BinaryReader br)
@@ -67,18 +67,18 @@ namespace TS3AudioBot.Helper.AudioTags
 		}
 		public static int ToInt24(byte[] bytes)
 		{
-			return (int)(
+			return
 				(bytes[0] << 2 * BitsInByte) |
 				(bytes[1] << 1 * BitsInByte) |
-				(bytes[2] << 0 * BitsInByte));
+				(bytes[2] << 0 * BitsInByte);
 		}
 		public static int ToInt32(byte[] bytes)
 		{
-			return (int)(
+			return
 				(bytes[0] << 3 * BitsInByte) |
 				(bytes[1] << 2 * BitsInByte) |
 				(bytes[2] << 1 * BitsInByte) |
-				(bytes[3] << 0 * BitsInByte));
+				(bytes[3] << 0 * BitsInByte);
 		}
 		public static long ToInt64(byte[] bytes)
 		{
@@ -94,7 +94,7 @@ namespace TS3AudioBot.Helper.AudioTags
 				(bytes[5] << 2 * BitsInByte) |
 				(bytes[6] << 1 * BitsInByte) |
 				(bytes[7] << 0 * BitsInByte);
-			return (long)ri.value;
+			return ri.value;
 		}
 
 		public static ushort ToUInt16(byte[] bytes)
@@ -105,11 +105,11 @@ namespace TS3AudioBot.Helper.AudioTags
 		}
 		public static uint ToUInt32(byte[] bytes)
 		{
-			return (uint)(
-				(bytes[0] << 3 * BitsInByte) |
-				(bytes[1] << 2 * BitsInByte) |
-				(bytes[2] << 1 * BitsInByte) |
-				(bytes[3] << 0 * BitsInByte));
+			return
+				((uint)bytes[0] << 3 * BitsInByte) |
+				((uint)bytes[1] << 2 * BitsInByte) |
+				((uint)bytes[2] << 1 * BitsInByte) |
+				((uint)bytes[3] << 0 * BitsInByte);
 		}
 		public static ulong ToUInt64(byte[] bytes)
 		{
@@ -125,7 +125,7 @@ namespace TS3AudioBot.Helper.AudioTags
 				(bytes[5] << 2 * BitsInByte) |
 				(bytes[6] << 1 * BitsInByte) |
 				(bytes[7] << 0 * BitsInByte);
-			return (ulong)ri.value;
+			return unchecked((ulong)ri.value);
 		}
 
 		[StructLayout(LayoutKind.Explicit)]

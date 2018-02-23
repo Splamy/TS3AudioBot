@@ -160,9 +160,7 @@ namespace TS3AudioBot.Rights
 				if (child.Name == groupName)
 					return child;
 			}
-			if (Parent == null)
-				return null;
-			return Parent.ResolveGroup(groupName, ctx);
+			return Parent?.ResolveGroup(groupName, ctx);
 		}
 
 		public override string ToString()

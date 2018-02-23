@@ -252,8 +252,7 @@ namespace TS3AudioBot.Helper
 
 			private void ConfigDataPropertyChanged(object sender, PropertyChangedEventArgs e)
 			{
-				var cd = sender as ConfigData;
-				if (cd == null)
+				if (!(sender is ConfigData cd))
 					return;
 
 				string key = cd.AssociatedClass + NameSeperator + e.PropertyName;

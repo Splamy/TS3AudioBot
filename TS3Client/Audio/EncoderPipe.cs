@@ -114,12 +114,5 @@ namespace TS3Client.Audio
 		{
 			opusEncoder?.Dispose();
 		}
-
-		private void Swap<T>(ref T a, ref T b)
-		{
-			var tmp = a;
-			a = b;
-			b = tmp;
-		}
 	}
 }

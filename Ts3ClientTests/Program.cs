@@ -37,9 +37,9 @@ namespace Ts3ClientTests
 			}
 
 			Console.WriteLine("End");
-			//Console.ReadLine();
+			Console.ReadLine();
 		}
-		
+
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)
 		{
 			var client = (Ts3FullClient)sender;
@@ -52,8 +52,19 @@ namespace Ts3ClientTests
 			Console.WriteLine("Connected id {0}", client.ClientId);
 			var data = client.ClientInfo(client.ClientId);
 
+			var sw = System.Diagnostics.Stopwatch.StartNew();
+			const int amnt = 1000;
+			for (int i = 0; i < amnt; i++)
+			{
+				client.SendChannelMessage("Hi" + i);
+			}
+			sw.Start();
+			var elap = (sw.ElapsedTicks / (float)System.Diagnostics.Stopwatch.Frequency);
+			Console.WriteLine("{0} messages in {1}s", amnt, elap);
+			Console.WriteLine("{0:0.000}ms per message", elap / amnt * 1000);
+
 			client.Disconnect();
-			client.Connect(con);
+			//client.Connect(con);
 		}
 
 		private static void Client_OnTextMessageReceived(object sender, IEnumerable<TextMessage> e)

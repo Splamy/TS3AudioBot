@@ -9,6 +9,7 @@
 
 using System;
 
+// ReSharper disable CheckNamespace
 #pragma warning disable IDE0016
 
 /// <summary>

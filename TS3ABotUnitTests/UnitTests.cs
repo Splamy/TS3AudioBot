@@ -14,19 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-using TS3AudioBot;
-
 namespace TS3ABotUnitTests
 {
+	using NUnit.Framework;
 	using System;
 	using System.Collections;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
 	using System.Text.RegularExpressions;
-	using NUnit.Framework;
+	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.CommandSystem;
+	using TS3AudioBot.CommandSystem.CommandResults;
+	using TS3AudioBot.CommandSystem.Commands;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
@@ -396,7 +397,7 @@ namespace TS3ABotUnitTests
 		public void Ts3Client_RingQueueTest2()
 		{
 			var q = new RingQueue<int>(50, ushort.MaxValue + 1);
-			
+
 			for (int i = 0; i < ushort.MaxValue - 10; i++)
 			{
 				q.Set(i, i);

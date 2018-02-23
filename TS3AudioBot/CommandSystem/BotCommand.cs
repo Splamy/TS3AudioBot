@@ -9,6 +9,8 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using CommandResults;
+	using Commands;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;

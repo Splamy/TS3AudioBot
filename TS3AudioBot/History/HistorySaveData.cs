@@ -19,9 +19,7 @@ namespace TS3AudioBot.History
 
 		public HistorySaveData(AudioResource resource, ulong? ownerDbId)
 		{
-			if (resource == null)
-				throw new ArgumentNullException(nameof(resource));
-			Resource = resource;
+			Resource = resource ?? throw new ArgumentNullException(nameof(resource));
 			OwnerDbId = ownerDbId;
 		}
 	}

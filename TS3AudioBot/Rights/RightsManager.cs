@@ -19,6 +19,7 @@ namespace TS3AudioBot.Rights
 	using System.Text;
 	using TS3Client;
 
+	/// <summary>Permission system of the bot.</summary>
 	public class RightsManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -51,7 +52,7 @@ namespace TS3AudioBot.Rights
 		public void Initialize()
 		{
 			RegisterRights(CommandManager.AllRights);
-			RegisterRights(Commands.RightHighVolume, Commands.RightDeleteAllPlaylists);
+			RegisterRights(MainCommands.RightHighVolume, MainCommands.RightDeleteAllPlaylists);
 			if (!ReadFile())
 				Log.Error("Could not read Permission file.");
 		}

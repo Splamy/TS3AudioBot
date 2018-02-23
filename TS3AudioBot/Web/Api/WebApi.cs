@@ -10,6 +10,9 @@
 namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
+	using CommandSystem.Ast;
+	using CommandSystem.CommandResults;
+	using CommandSystem.Commands;
 	using Dependency;
 	using Helper;
 	using Newtonsoft.Json;
@@ -64,8 +67,7 @@ namespace TS3AudioBot.Web.Api
 			execInfo.AddDynamicObject(new CallerInfo(invoker, apirequest));
 			try
 			{
-				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(),
-					new[] { CommandResultType.Json, CommandResultType.Empty });
+				var res = command.Execute(execInfo, StaticList.Empty<ICommand>(), XCommandSystem.ReturnJsonOrNothing);
 
 				if (res.ResultType == CommandResultType.Empty)
 				{

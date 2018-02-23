@@ -47,10 +47,8 @@ namespace TS3AudioBot.Web.Interface
 			var currentNode = RootNode;
 			var parts = path.AbsolutePath.Split('/');
 
-			for (int i = 0; i < parts.Length; i++)
+			foreach (var part in parts)
 			{
-				var part = parts[i];
-				
 				var site = currentNode.TryGetSite(path.AbsolutePath);
 				if (site != null)
 					return site;

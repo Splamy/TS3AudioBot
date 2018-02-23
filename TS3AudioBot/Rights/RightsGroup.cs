@@ -22,9 +22,7 @@ namespace TS3AudioBot.Rights
 		{
 			if (Name == groupName)
 				return this;
-			if (Parent == null)
-				return null;
-			return Parent.ResolveGroup(groupName, ctx);
+			return Parent?.ResolveGroup(groupName, ctx);
 		}
 	}
 }

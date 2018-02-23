@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using Commands;
 	using Helper;
 	using System;
 	using System.Collections.Generic;
@@ -16,6 +17,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Reflection;
 	using System.Text.RegularExpressions;
 
+	/// <summary>Mangement for the bot command system.</summary>
 	public class CommandManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -65,7 +67,7 @@ namespace TS3AudioBot.CommandSystem
 			if (baseCommands.Count > 0)
 				throw new InvalidOperationException("Operation can only be executed once.");
 
-			foreach (var com in GetBotCommands(GetCommandMethods(null, typeof(Commands))))
+			foreach (var com in GetBotCommands(GetCommandMethods(null, typeof(MainCommands))))
 			{
 				LoadCommand(com);
 				baseCommands.Add(com);
@@ -340,8 +342,8 @@ namespace TS3AudioBot.CommandSystem
 			// and finally clean all empty nodes up
 			while (node != null)
 			{
-				if (node.Self.IsEmpty && node.ParentNode != null)
-					node.ParentNode.Self.RemoveCommand(node.Self);
+				if (node.Self.IsEmpty)
+					node.ParentNode?.Self.RemoveCommand(node.Self);
 				node = node.ParentNode;
 			}
 		}

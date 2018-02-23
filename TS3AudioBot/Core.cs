@@ -79,17 +79,13 @@ namespace TS3AudioBot
 		internal PluginManager PluginManager { get; set; }
 		/// <summary>Manages a dependency hierachy and injects required modules at runtime.</summary>
 		internal CoreInjector Injector { get; set; }
-		/// <summary>Mangement for the bot command system.</summary>
-		public CommandManager CommandManager { get; set; }
 		/// <summary>Manages factories which can load resources.</summary>
 		public ResourceFactoryManager FactoryManager { get; set; }
 		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
 		public WebManager WebManager { get; set; }
 		/// <summary>Minimalistic config store for automatically serialized classes.</summary>
 		public ConfigFile ConfigManager { get; set; }
-		/// <summary>Permission system of the bot.</summary>
-		public RightsManager RightsManager { get; set; }
-		/// <summary>Permission system of the bot.</summary>
+		/// <summary>Management of conntected Bots.</summary>
 		public BotManager Bots { get; set; }
 
 		public Core()
@@ -142,7 +138,7 @@ namespace TS3AudioBot
 			// TODO: DUMMY REQUESTS
 			var webd = ConfigManager.GetDataStruct<WebData>("WebData", true);
 			var rmd = ConfigManager.GetDataStruct<RightsManagerData>("RightsManager", true);
-			var mbd = ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
+			ConfigManager.GetDataStruct<MainBotData>("MainBot", true);
 			YoutubeDlHelper.DataObj = ConfigManager.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
 			var pmd = ConfigManager.GetDataStruct<PluginManagerData>("PluginManager", true);
 			ConfigManager.GetDataStruct<MediaFactoryData>("MediaFactory", true);

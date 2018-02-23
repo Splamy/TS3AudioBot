@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using Ast;
 	using System;
 	using System.Collections.Generic;
 	using System.Text;

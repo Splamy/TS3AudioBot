@@ -9,13 +9,21 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using Ast;
+	using CommandResults;
+	using Commands;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 
 	public class XCommandSystem
 	{
-		public static readonly CommandResultType[] ReturnTypes = Enum.GetValues(typeof(CommandResultType)).OfType<CommandResultType>().ToArray();
+		public static readonly CommandResultType[] ReturnJson = { CommandResultType.Json };
+		public static readonly CommandResultType[] ReturnJsonOrNothing = { CommandResultType.Json, CommandResultType.Empty };
+		public static readonly CommandResultType[] ReturnString = { CommandResultType.String };
+		public static readonly CommandResultType[] ReturnStringOrNothing = { CommandResultType.String, CommandResultType.Empty };
+		public static readonly CommandResultType[] ReturnCommandOrString = { CommandResultType.Command, CommandResultType.String };
+
 		/// <summary>
 		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
 		/// </summary>
@@ -45,32 +53,32 @@ namespace TS3AudioBot.CommandSystem
 			foreach (var c in filter.ToLowerInvariant())
 			{
 				var newPossibilities = (from p in possibilities
-										let pos = p.name.ToLowerInvariant().IndexOf(c, p.index)
+										let pos = p.Name.ToLowerInvariant().IndexOf(c, p.Index)
 										where pos != -1
-										select new FilterItem<T>(p.name, p.value, pos + 1)).ToList();
+										select new FilterItem<T>(p.Name, p.Value, pos + 1)).ToList();
 				if (newPossibilities.Count > 0)
 					possibilities = newPossibilities;
 			}
 			// Take command with lowest index
-			int minIndex = possibilities.Min(t => t.index);
-			var cmds = possibilities.Where(t => t.index == minIndex).ToArray();
+			int minIndex = possibilities.Min(t => t.Index);
+			var cmds = possibilities.Where(t => t.Index == minIndex).ToArray();
 			// Take the smallest command
-			int minLength = cmds.Min(c => c.name.Length);
+			int minLength = cmds.Min(c => c.Name.Length);
 
-			return cmds.Where(c => c.name.Length == minLength).Select(fi => new KeyValuePair<string, T>(fi.name, fi.value));
+			return cmds.Where(c => c.Name.Length == minLength).Select(fi => new KeyValuePair<string, T>(fi.Name, fi.Value));
 		}
 
 		private sealed class FilterItem<T>
 		{
-			public readonly string name;
-			public readonly T value;
-			public readonly int index;
+			public readonly string Name;
+			public readonly T Value;
+			public readonly int Index;
 
 			public FilterItem(string n, T v, int i)
 			{
-				name = n;
-				value = v;
-				index = i;
+				Name = n;
+				Value = v;
+				Index = i;
 			}
 		}
 
@@ -95,7 +103,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public ICommandResult Execute(ExecutionInformation info, string command)
 		{
-			return Execute(info, command, new[] { CommandResultType.String, CommandResultType.Empty });
+			return Execute(info, command, ReturnStringOrNothing);
 		}
 
 		public ICommandResult Execute(ExecutionInformation info, string command, IReadOnlyList<CommandResultType> returnTypes)
@@ -107,7 +115,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
-			return Execute(info, arguments, new[] { CommandResultType.String, CommandResultType.Empty });
+			return Execute(info, arguments, ReturnStringOrNothing);
 		}
 
 		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)

@@ -7,8 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem.Commands
 {
+	using CommandResults;
 	using System.Collections.Generic;
 
 	/// <summary>
@@ -21,7 +22,7 @@ namespace TS3AudioBot.CommandSystem
 			if (arguments.Count == 0)
 				return base.Execute(info, arguments, returnTypes);
 
-			var result = arguments[0].Execute(info, StaticList.Empty<ICommand>(), new[] { CommandResultType.Command, CommandResultType.String });
+			var result = arguments[0].Execute(info, StaticList.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
 			if (result.ResultType == CommandResultType.String)
 			{
 				// Use cached result so we don't execute the first argument twice
