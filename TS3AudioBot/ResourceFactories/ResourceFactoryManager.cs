@@ -269,8 +269,7 @@ namespace TS3AudioBot.ResourceFactories
 				var builder = new CommandBuildInfo(
 					this,
 					PlayMethod,
-					new CommandAttribute(cmdPath),
-					null);
+					new CommandAttribute(cmdPath));
 				Command = new BotCommand(builder);
 			}
 
@@ -291,8 +290,7 @@ namespace TS3AudioBot.ResourceFactories
 				var builder = new CommandBuildInfo(
 					this,
 					PlayMethod,
-					new CommandAttribute(cmdPath),
-					null);
+					new CommandAttribute(cmdPath));
 				Command = new BotCommand(builder);
 			}
 

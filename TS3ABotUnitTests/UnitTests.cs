@@ -22,6 +22,7 @@ namespace TS3ABotUnitTests
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
+	using System.Reflection;
 	using System.Text.RegularExpressions;
 	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
@@ -235,6 +236,8 @@ namespace TS3ABotUnitTests
 			Assert.IsTrue(result.Any(r => r.Key == "pla"));
 		}
 
+		private static string OptionalFunc(string s = null) => s == null ? "NULL" : "NOT NULL";
+
 		[Test]
 		public void XCommandSystemTest()
 		{
@@ -243,7 +246,7 @@ namespace TS3ABotUnitTests
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
-			group.AddCommand("optional", new FunctionCommand(new Func<string, string>(s => s == null ? "NULL" : "NOT NULL"), 0));
+			group.AddCommand("optional", new FunctionCommand(typeof(UnitTests).GetMethod(nameof(OptionalFunc), BindingFlags.NonPublic | BindingFlags.Static)));
 
 			// Basic tests
 			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(Utils.ExecInfo,

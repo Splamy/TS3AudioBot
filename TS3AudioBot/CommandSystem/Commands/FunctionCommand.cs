@@ -25,7 +25,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private readonly MethodInfo internCommand;
 
 		/// <summary>All parameter types, including special types.</summary>
-		public (Type type, ParamKind kind)[] CommandParameter { get; }
+		public (Type type, ParamKind kind, bool optional)[] CommandParameter { get; }
 		/// <summary>Return type of method.</summary>
 		public Type CommandReturn { get; }
 		/// <summary>Count of parameter, without special types.</summary>
@@ -39,14 +39,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public FunctionCommand(MethodInfo command, object obj = null, int? requiredParameters = null)
 		{
 			internCommand = command;
-			CommandParameter = command.GetParameters().Select(p => (p.ParameterType, ParamKind.Unknown)).ToArray();
+			CommandParameter = command.GetParameters().Select(p => (p.ParameterType, ParamKind.Unknown, p.IsOptional || p.GetCustomAttribute<ParamArrayAttribute>() != null)).ToArray();
 			PrecomputeTypes();
 			CommandReturn = command.ReturnType;
 
 			callee = obj;
 
 			NormalParameters = CommandParameter.Count(p => p.kind.IsNormal());
-			RequiredParameters = requiredParameters ?? NormalParameters;
+			RequiredParameters = requiredParameters ?? CommandParameter.Count(p => !p.optional && p.kind.IsNormal());
 		}
 
 		// Provide some constructors that take lambda expressions directly
@@ -101,6 +101,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case ParamKind.Dependency:
 					if (info.TryGet(arg, out var obj))
 						parameters[p] = obj;
+					else if (CommandParameter[p].optional)
+						parameters[p] = null;
 					else
 						throw new CommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", CommandExceptionReason.MissingContext);
 					break;

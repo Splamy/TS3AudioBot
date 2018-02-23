@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Sessions
 {
+	using CommandSystem;
 	using Helper;
 	using System;
 	using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace TS3AudioBot.Sessions
 			ResponseProcessor = null;
 		}
 
-		public void SetResponse(Response responseProcessor)
+		public void SetResponseInstance(Response responseProcessor)
 		{
 			VerifyLock();
 
@@ -91,6 +92,16 @@ namespace TS3AudioBot.Sessions
 			public void Take() { Monitor.Enter(session); session.lockToken = true; }
 			public void Free() { Monitor.Exit(session); session.lockToken = false; }
 			public void Dispose() => Free();
+		}
+	}
+
+	public static class UserSessionExtensions
+	{
+		public static void SetResponse(this UserSession session, Response responseProcessor)
+		{
+			if (session == null)
+				throw new CommandException("No session context", CommandExceptionReason.CommandError);
+			session.SetResponseInstance(responseProcessor);
 		}
 	}
 }

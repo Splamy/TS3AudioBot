@@ -43,19 +43,4 @@ namespace TS3AudioBot.CommandSystem
 		public string UsageSyntax { get; }
 		public string UsageHelp { get; }
 	}
-
-	/// <summary>
-	/// Denotes how many parameter are required for this method.
-	/// Use this attribute to allow optional parameters.
-	/// Special parameters like the <see cref="ExecutionInformation"/> context do not count towards this amount.
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public sealed class RequiredParametersAttribute : Attribute
-	{
-		public RequiredParametersAttribute(int amount)
-		{
-			Count = amount;
-		}
-		public int Count { get; }
-	}
 }

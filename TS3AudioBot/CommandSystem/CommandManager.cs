@@ -141,8 +141,7 @@ namespace TS3AudioBot.CommandSystem
 					Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
 					continue;
 				}
-				var reqAtt = method.GetCustomAttribute<RequiredParametersAttribute>();
-				yield return new CommandBuildInfo(obj, method, comAtt, reqAtt);
+				yield return new CommandBuildInfo(obj, method, comAtt);
 			}
 		}
 

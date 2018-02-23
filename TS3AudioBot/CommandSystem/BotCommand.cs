@@ -22,7 +22,7 @@ namespace TS3AudioBot.CommandSystem
 		private string cachedHelp;
 		private string cachedFullQualifiedName;
 
-		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent, buildInfo.ReqiredParameters?.Count)
+		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{
 			InvokeName = buildInfo.CommandData.CommandNameSpace;
 			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
@@ -96,17 +96,15 @@ namespace TS3AudioBot.CommandSystem
 		public object Parent { get; }
 		public MethodInfo Method { get; }
 		public CommandAttribute CommandData { get; }
-		public RequiredParametersAttribute ReqiredParameters { get; }
 		public UsageAttribute[] UsageList { get; set; }
 
-		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt, RequiredParametersAttribute reqAtt)
+		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt)
 		{
 			Parent = p;
 			Method = m;
 			if (!m.IsStatic && p == null)
 				throw new ArgumentException("Got instance method without accociated object");
 			CommandData = comAtt;
-			ReqiredParameters = reqAtt;
 		}
 	}
 }
