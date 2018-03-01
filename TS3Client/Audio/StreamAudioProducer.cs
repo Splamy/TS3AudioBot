@@ -9,16 +9,21 @@
 
 namespace TS3Client.Audio
 {
+	using System;
 	using System.IO;
 
 	public class StreamAudioProducer : IAudioPassiveProducer
 	{
 		private readonly Stream stream;
+		public event EventHandler HitEnd;
 
 		public int Read(byte[] buffer, int offset, int length, out Meta meta)
 		{
 			meta = default(Meta);
-			return stream.Read(buffer, offset, length);
+			int read = stream.Read(buffer, offset, length);
+			if (read < length)
+				HitEnd?.Invoke(this, EventArgs.Empty);
+			return read;
 		}
 		public StreamAudioProducer(Stream stream) { this.stream = stream; }
 	}

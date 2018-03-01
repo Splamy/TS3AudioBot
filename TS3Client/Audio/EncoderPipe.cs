@@ -80,14 +80,14 @@ namespace TS3Client.Audio
 				return;
 
 			int newSoundBufferLength = data.Length + notEncodedLength;
-			if (newSoundBufferLength >= notEncodedBuffer.Length)
+			if (newSoundBufferLength > notEncodedBuffer.Length)
 			{
 				var tmpSoundBuffer = new byte[newSoundBufferLength];
 				Array.Copy(notEncodedBuffer, 0, tmpSoundBuffer, 0, notEncodedLength);
 				notEncodedBuffer = tmpSoundBuffer;
 			}
 			
-			var soundBuffer = new Span<byte>(notEncodedBuffer);
+			var soundBuffer = notEncodedBuffer.AsSpan();
 			data.CopyTo(soundBuffer.Slice(notEncodedLength));
 			
 			int segmentCount = newSoundBufferLength / PacketSize;

@@ -43,11 +43,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 				// and remove the nullable wrapper
 				var params1 = (from p in f1.CommandParameter
 							   where p.kind.IsNormal()
-							   select FunctionCommand.UnwrapType(p.type)).ToList();
+							   select FunctionCommand.UnwrapParamType(p.type)).ToList();
 
 				var params2 = (from p in f2.CommandParameter
 							   where p.kind.IsNormal()
-							   select FunctionCommand.UnwrapType(p.type)).ToList();
+							   select FunctionCommand.UnwrapParamType(p.type)).ToList();
 
 				for (int i = 0; i < params1.Count; i++)
 				{

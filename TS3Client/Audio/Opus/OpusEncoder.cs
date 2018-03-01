@@ -72,7 +72,7 @@ namespace TS3Client.Audio.Opus
 		/// <param name="sampleLength">How many bytes to encode.</param>
 		/// <param name="outputEncodedBuffer">The encoded data is written to this buffer.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
-		public Span<byte> Encode(ReadOnlySpan<byte> inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
+		public Span<byte> Encode(Span<byte> inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
 		{
 			if (disposed)
 				throw new ObjectDisposedException("OpusEncoder");
@@ -80,7 +80,8 @@ namespace TS3Client.Audio.Opus
 				throw new ArgumentException("Array must be at least MaxDataBytes long", nameof(outputEncodedBuffer));
 
 			int frames = FrameCount(inputPcmSamples);
-			int encodedLength = NativeMethods.opus_encode(encoder, ref inputPcmSamples.DangerousGetPinnableReference(), frames, outputEncodedBuffer, sampleLength);
+			// TODO fix hacky ref implementation once there is a good alternative with spans
+			int encodedLength = NativeMethods.opus_encode(encoder, ref inputPcmSamples[0], frames, outputEncodedBuffer, sampleLength);
 
 			if (encodedLength < 0)
 				throw new Exception("Encoding failed - " + (Errors)encodedLength);

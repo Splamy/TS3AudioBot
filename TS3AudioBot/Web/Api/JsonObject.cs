@@ -13,8 +13,7 @@ namespace TS3AudioBot.Web.Api
 
 	public abstract class JsonObject
 	{
-		[JsonIgnore]
-		public string AsStringResult { get; }
+		protected string AsStringResult { get; set; }
 
 		protected JsonObject(string stringResult)
 		{

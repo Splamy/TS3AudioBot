@@ -21,7 +21,7 @@ namespace TS3AudioBot
 	using TS3Client.Helper;
 	using TS3Client.Messages;
 
-	internal sealed class Ts3Full : TeamspeakControl, IPlayerConnection
+	public sealed class Ts3Full : TeamspeakControl, IPlayerConnection
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3FullClient tsFullClient;
@@ -49,6 +49,7 @@ namespace TS3AudioBot
 		private readonly VolumePipe volumePipe;
 		private readonly FfmpegProducer ffmpegProducer;
 		private readonly PreciseTimedPipe timePipe;
+		private readonly PassiveMergePipe mergePipe;
 		private readonly EncoderPipe encoderPipe;
 		internal CustomTargetPipe TargetPipe { get; private set; }
 
@@ -66,8 +67,10 @@ namespace TS3AudioBot
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
 			timePipe.Initialize(encoderPipe);
 			TargetPipe = new CustomTargetPipe(tsFullClient);
+			mergePipe = new PassiveMergePipe();
 
-			timePipe.InStream = ffmpegProducer;
+			mergePipe.Add(ffmpegProducer);
+			timePipe.InStream = mergePipe;
 			timePipe.Chain<ActiveCheckPipe>().Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
 
 			identity = null;
@@ -227,7 +230,7 @@ namespace TS3AudioBot
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 			}
 
-			OnBotDisconnect?.Invoke(this, new EventArgs());
+			OnBotDisconnect?.Invoke(this, EventArgs.Empty);
 		}
 
 		public override R<ClientData> GetSelf()
@@ -258,6 +261,14 @@ namespace TS3AudioBot
 			return cd;
 		}
 
+		[Obsolete(AttributeStrings.UnderDevelopment)]
+		public void MixInStreamOnce(StreamAudioProducer producer)
+		{
+			mergePipe.Add(producer);
+			producer.HitEnd += (s, e) => mergePipe.Remove(producer);
+			timePipe.Paused = false;
+		}
+
 		#region IPlayerConnection
 
 		public event EventHandler OnSongEnd
@@ -276,6 +287,7 @@ namespace TS3AudioBot
 
 		public R AudioStop()
 		{
+			// TODO clean up all mixins
 			timePipe.Paused = true;
 			return ffmpegProducer.AudioStop();
 		}

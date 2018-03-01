@@ -19,13 +19,13 @@ namespace TS3Client.Audio
 			{
 				producer.OutStream = addConsumer;
 			}
-			else if (producer.OutStream is SplitterPipe splitter)
+			else if (producer.OutStream is PassiveSplitterPipe splitter)
 			{
 				splitter.Add(addConsumer);
 			}
 			else
 			{
-				splitter = new SplitterPipe();
+				splitter = new PassiveSplitterPipe();
 				splitter.Add(addConsumer);
 				splitter.Add(producer.OutStream);
 				producer.OutStream = splitter;

@@ -23,6 +23,7 @@ namespace TS3AudioBot.Web.Interface
 		public static readonly Dictionary<string, string> MimeTypes = new Dictionary<string, string>
 		{
 			{ ".js", "application/javascript" },
+			{ ".json", "application/json" },
 			{ ".html", "text/html" },
 			{ ".css", "text/css" },
 			{ ".ico", "image/x-icon" },

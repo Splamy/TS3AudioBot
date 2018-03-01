@@ -21,19 +21,12 @@ namespace TS3AudioBot.CommandSystem
 	{
 		private string cachedHelp;
 		private string cachedFullQualifiedName;
-
-		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
-		{
-			InvokeName = buildInfo.CommandData.CommandNameSpace;
-			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
-			Description = buildInfo.CommandData.CommandHelp;
-			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
-		}
+		private object cachedAsJsonObj;
 
 		public string InvokeName { get; }
 		private readonly string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
-		public string Description { get; private set; }
+		public string Description { get; }
 		public UsageAttribute[] UsageList { get; }
 		public string FullQualifiedName
 		{
@@ -50,6 +43,24 @@ namespace TS3AudioBot.CommandSystem
 				}
 				return cachedFullQualifiedName;
 			}
+		}
+
+		public object AsJsonObj
+		{
+			get
+			{
+				if (cachedAsJsonObj == null)
+					cachedAsJsonObj = new CommadSerializeObj(this);
+				return cachedAsJsonObj;
+			}
+		}
+
+		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
+		{
+			InvokeName = buildInfo.CommandData.CommandNameSpace;
+			Description = buildInfo.CommandData.CommandHelp;
+			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
+			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
 		}
 
 		public string GetHelp()
@@ -88,6 +99,30 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException($"You cannot execute \"{InvokeName}\". You are missing the \"{RequiredRight}\" right.!",
 					CommandExceptionReason.MissingRights);
 			return base.Execute(info, arguments, returnTypes);
+		}
+
+		private class CommadSerializeObj
+		{
+			private readonly BotCommand botCmd;
+			public string Name => botCmd.InvokeName;
+			public string Description => botCmd.Description;
+			public string[] Parameter { get; }
+			public string[] Modules { get; }
+			public string Return { get; }
+
+			public CommadSerializeObj(BotCommand botCmd)
+			{
+				this.botCmd = botCmd;
+				Parameter = (
+					from x in botCmd.CommandParameter
+					where x.kind.IsNormal()
+					select UnwrapParamType(x.type).Name + (x.optional ? "?" : "")).ToArray();
+				Modules = (
+					from x in botCmd.CommandParameter
+					where x.kind == ParamKind.Dependency
+					select x.type.Name + (x.optional ? "?" : "")).ToArray();
+				Return = UnwrapReturnType(botCmd.CommandReturn).Name;
+			}
 		}
 	}
 

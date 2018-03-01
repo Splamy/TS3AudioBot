@@ -240,9 +240,9 @@ namespace TS3AudioBot
 
 		[Command("help", "Shows all commands or detailed help about a specific command.")]
 		[Usage("[<command>]", "Any currently accepted command")]
-		public static JsonObject CommandHelp(CommandManager commandManager, params string[] parameter)
+		public static JsonObject CommandHelp(CommandManager commandManager, CallerInfo caller, params string[] parameter)
 		{
-			if (parameter.Length == 0)
+			if (parameter.Length == 0 && !caller.ApiCall)
 			{
 				var strb = new StringBuilder();
 				strb.Append("\n========= Welcome to the TS3AudioBot ========="
@@ -256,32 +256,28 @@ namespace TS3AudioBot
 			}
 
 			CommandGroup group = commandManager.CommandSystem.RootCommand;
-			ICommand target = null;
+			ICommand target = group;
 			for (int i = 0; i < parameter.Length; i++)
 			{
 				var possibilities = XCommandSystem.FilterList(group.Commands, parameter[i]).ToList();
-				if (possibilities.Count == 0)
+				if (possibilities.Count <= 0)
 					throw new CommandException("No matching command found! Try !help to get a list of all commands.", CommandExceptionReason.CommandError);
-				else if (possibilities.Count > 1)
-					throw new CommandException("Requested command is ambiguous between: " + string.Join(", ", possibilities.Select(kvp => kvp.Key)),
-						CommandExceptionReason.CommandError);
-				else if (possibilities.Count == 1)
+				if (possibilities.Count > 1)
+					throw new CommandException("Requested command is ambiguous between: " + string.Join(", ", possibilities.Select(kvp => kvp.Key)), CommandExceptionReason.CommandError);
+
+				target = possibilities[0].Value;
+				if (i < parameter.Length - 1)
 				{
-					target = possibilities.First().Value;
-					if (i < parameter.Length - 1)
-					{
-						group = target as CommandGroup;
-						if (group == null)
-							throw new CommandException("The command has no further subfunctions after " + string.Join(" ", parameter, 0, i),
-								CommandExceptionReason.CommandError);
-					}
+					group = target as CommandGroup;
+					if (group == null)
+						throw new CommandException("The command has no further subfunctions after " + string.Join(" ", parameter, 0, i), CommandExceptionReason.CommandError);
 				}
 			}
 
 			switch (target)
 			{
 			case BotCommand targetB:
-				return new JsonValue<string>(targetB.GetHelp());
+				return new JsonValue<BotCommand>(targetB);
 			case CommandGroup targetCg:
 				var subList = targetCg.Commands.Select(g => g.Key).ToArray();
 				return new JsonArray<string>(subList, "The command contains the following subfunctions: " + string.Join(", ", subList));
@@ -290,9 +286,9 @@ namespace TS3AudioBot
 				foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
 					strb.Append(botCom.GetHelp());
 				return new JsonValue<string>(strb.ToString());
+			default:
+				throw new CommandException("Seems like something went wrong. No help can be shown for this command path.", CommandExceptionReason.CommandError);
 			}
-
-			throw new CommandException("Seems like something went wrong. No help can be shown for this command path.", CommandExceptionReason.CommandError);
 		}
 
 		[Command("history add", "<id> Adds the song with <id> to the queue")]
@@ -906,7 +902,7 @@ namespace TS3AudioBot
 				}
 				return null;
 			}
-			
+
 			session.SetResponse(ResponseQuit);
 			return new JsonEmpty("Do you really want to quit? !(yes|no)");
 		}
@@ -1214,7 +1210,7 @@ namespace TS3AudioBot
 					}
 					return null;
 				}
-				
+
 				session.SetResponse(ResponseVolume);
 				throw new CommandException("Careful you are requesting a very high volume! Do you want to apply this? !(yes|no)", CommandExceptionReason.CommandError);
 			}

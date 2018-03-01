@@ -118,7 +118,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 					try { parameters[p] = ConvertParam(argResultP, arg); }
-					catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapType(arg).Name, ex, CommandExceptionReason.CommandError); }
+					catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapParamType(arg).Name, ex, CommandExceptionReason.CommandError); }
 					catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
 					takenArguments++;
@@ -199,8 +199,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 						result = ExecuteFunction(parameters);
 						executed = true;
 					}
-					if (!string.IsNullOrEmpty(result?.ToString()))
-						return new StringCommandResult(result.ToString());
+					var resultStr = result?.ToString();
+					if (!string.IsNullOrEmpty(resultStr))
+						return new StringCommandResult(resultStr);
 					break;
 				case CommandResultType.Json:
 					if (!executed)
@@ -242,17 +243,30 @@ namespace TS3AudioBot.CommandSystem.Commands
 					CommandParameter[i].kind = ParamKind.NormalArray;
 				else if (arg.IsEnum
 					|| XCommandSystem.BasicTypes.Contains(arg)
-					|| XCommandSystem.BasicTypes.Contains(UnwrapType(arg)))
+					|| XCommandSystem.BasicTypes.Contains(UnwrapParamType(arg)))
 					CommandParameter[i].kind = ParamKind.NormalParam;
 				else
 					CommandParameter[i].kind = ParamKind.Dependency;
 			}
 		}
 
-		public static Type UnwrapType(Type type)
+		public static Type UnwrapParamType(Type type)
 		{
 			if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
 				return type.GenericTypeArguments[0];
+			return type;
+		}
+
+		public static Type UnwrapReturnType(Type type)
+		{
+			if (type.IsConstructedGenericType)
+			{
+				var genDef = type.GetGenericTypeDefinition();
+				if (genDef == typeof(Nullable<>))
+					return type.GenericTypeArguments[0];
+				if (genDef == typeof(JsonValue<>))
+					return type.GenericTypeArguments[0];
+			}
 			return type;
 		}
 

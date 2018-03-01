@@ -78,7 +78,7 @@ namespace TS3Client.Query
 			finally { connecting = false; }
 
 			dispatcher.Init(NetworkLoop, InvokeEvent, null);
-			OnConnected?.Invoke(this, new EventArgs());
+			OnConnected?.Invoke(this, EventArgs.Empty);
 			dispatcher.EnterEventLoop();
 		}
 

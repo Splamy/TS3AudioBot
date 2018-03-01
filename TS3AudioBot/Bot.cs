@@ -14,7 +14,6 @@ namespace TS3AudioBot
 	using Dependency;
 	using Helper;
 	using History;
-	using Newtonsoft.Json;
 	using Plugins;
 	using Sessions;
 	using System;
@@ -321,8 +320,8 @@ namespace TS3AudioBot
 				else if (res.ResultType == CommandResultType.Json)
 				{
 					var sRes = (JsonCommandResult)res;
-					info.Write("\nJson str: \n" + sRes.JsonObject.AsStringResult).UnwrapThrow();
-					info.Write("\nJson val: \n" + JsonConvert.SerializeObject(sRes.JsonObject)).UnwrapThrow();
+					info.Write("\nJson str: \n" + sRes.JsonObject).UnwrapThrow();
+					info.Write("\nJson val: \n" + sRes.JsonObject.Serialize()).UnwrapThrow();
 				}
 			}
 			catch (CommandException ex)

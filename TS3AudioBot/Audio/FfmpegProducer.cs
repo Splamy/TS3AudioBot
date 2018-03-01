@@ -116,7 +116,7 @@ namespace TS3AudioBot.Audio
 
 			if (triggerEndSafe)
 			{
-				OnSongEnd?.Invoke(this, new EventArgs());
+				OnSongEnd?.Invoke(this, EventArgs.Empty);
 				return 0;
 			}
 

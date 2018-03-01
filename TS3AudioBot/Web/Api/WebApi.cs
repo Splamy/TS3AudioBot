@@ -44,10 +44,17 @@ namespace TS3AudioBot.Web.Api
 		public CommandManager CommandManager { get; set; }
 		public TokenManager TokenManager { get; set; }
 
+		static WebApi()
+		{
+			JsonValue<BotCommand>.AsString = cmd => cmd.GetHelp();
+			JsonValue<BotCommand>.AsJson = cmd => cmd.AsJsonObj;
+		}
+
 		public override void DispatchCall(HttpListenerContext context)
 		{
 			using (var response = context.Response)
 			{
+				response.ContentType = "application/json";
 				response.AddHeader("Access-Control-Allow-Origin", "*");
 
 				var authResult = Authenticate(context);

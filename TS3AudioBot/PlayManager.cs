@@ -224,7 +224,7 @@ namespace TS3AudioBot
 			}
 
 			CurrentPlayData = null;
-			AfterResourceStopped?.Invoke(this, new EventArgs());
+			AfterResourceStopped?.Invoke(this, EventArgs.Empty);
 		}
 	}
 

@@ -374,7 +374,7 @@ namespace TS3Client.Full
 
 			lock (statusLock)
 				status = Ts3ClientStatus.Connected;
-			OnConnected?.Invoke(this, new EventArgs());
+			OnConnected?.Invoke(this, EventArgs.Empty);
 		}
 
 		private void ProcessConnectionInfoRequest()
@@ -473,9 +473,9 @@ namespace TS3Client.Full
 		public IAudioPassiveConsumer OutStream { get; set; }
 		/// <summary>When voice data can be sent.</summary>
 		public bool Active => true; // TODO may set to false if no talk power, etc.
-		/// <summary>Send voice data.</summary>
-		/// <param name="data">The encoded audio buffer.</param>
-		/// <param name="meta">The metadata where to send the packet.</param>
+									/// <summary>Send voice data.</summary>
+									/// <param name="data">The encoded audio buffer.</param>
+									/// <param name="meta">The metadata where to send the packet.</param>
 		public void Write(Span<byte> data, Meta meta)
 		{
 			if (meta.Out == null
@@ -553,7 +553,7 @@ namespace TS3Client.Full
 			// > Y is the codec byte (see Enum)
 			byte[] tmpBuffer = new byte[data.Length + 3];
 			tmpBuffer[2] = (byte)codec;
-			data.CopyTo(new Span<byte>(tmpBuffer, 3));
+			data.CopyTo(tmpBuffer.AsSpan().Slice(3));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
 		}
@@ -577,7 +577,7 @@ namespace TS3Client.Full
 				NetUtil.H2N(channelIds[i], tmpBuffer, 5 + (i * 8));
 			for (int i = 0; i < clientIds.Count; i++)
 				NetUtil.H2N(clientIds[i], tmpBuffer, 5 + channelIds.Count * 8 + (i * 2));
-			data.CopyTo(new Span<byte>(tmpBuffer, offset));
+			data.CopyTo(tmpBuffer.AsSpan().Slice(offset));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
 		}
@@ -596,7 +596,7 @@ namespace TS3Client.Full
 			tmpBuffer[3] = (byte)type;
 			tmpBuffer[4] = (byte)target;
 			NetUtil.H2N(targetId, tmpBuffer, 5);
-			data.CopyTo(new Span<byte>(tmpBuffer, 13));
+			data.CopyTo(tmpBuffer.AsSpan().Slice(13));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}

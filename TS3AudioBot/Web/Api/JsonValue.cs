@@ -9,23 +9,49 @@
 
 namespace TS3AudioBot.Web.Api
 {
-	using Newtonsoft.Json;
 	using CommandSystem;
+	using Newtonsoft.Json;
+	using System;
 
 	public class JsonValue<T> : JsonValueBase
 	{
+		public static Func<T, string> AsString { get; set; }
+		public static Func<T, object> AsJson { get; set; }
+
 		public new T Value => (T)base.Value;
 
-		public JsonValue(T value) : base(value, value?.ToString() ?? string.Empty) { }
+		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }
+
+		public override object GetSerializeObject()
+		{
+			if (AsJson != null)
+				return AsJson(Value);
+			else
+				return Value;
+		}
+
+		public override string ToString()
+		{
+			if (AsStringResult == null)
+			{
+				if (Value == null)
+					AsStringResult = string.Empty;
+				else if (AsString != null)
+					AsStringResult = AsString.Invoke(Value);
+				else
+					AsStringResult = Value.ToString();
+			}
+			return AsStringResult;
+		}
 	}
 
 	public class JsonValueBase : JsonObject
 	{
 		protected object Value { get; }
 
-		public JsonValueBase(object value) : this(value, value?.ToString() ?? string.Empty) { }
-		public JsonValueBase(object value, string msg) : base(msg) { Value = value; }
+		public JsonValueBase(object value) : base(null) { Value = value; }
+		public JsonValueBase(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
 
 		public override object GetSerializeObject() => Value;
 
@@ -35,6 +61,13 @@ namespace TS3AudioBot.Web.Api
 			if (seriObj != null && XCommandSystem.BasicTypes.Contains(seriObj.GetType()))
 				return JsonConvert.SerializeObject(this);
 			return base.Serialize();
+		}
+
+		public override string ToString()
+		{
+			if (AsStringResult == null)
+				AsStringResult = Value?.ToString() ?? string.Empty;
+			return AsStringResult;
 		}
 	}
 }

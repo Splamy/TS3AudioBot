@@ -64,11 +64,12 @@ namespace TS3Client.Full
 					{
 						if (sourcePos > data.Length / 2 && destPos > sourcePos - (sourcePos / 32))
 						{
-							data.CopyTo(new Span<byte>(dest, headerlen));
+							var destSpan = dest.AsSpan();
+							data.CopyTo(destSpan.Slice(headerlen));
 							//Array.Copy(data, 0, dest, headerlen, data.Length);
 							destPos = headerlen + data.Length;
 							WriteHeader(dest, destPos, data.Length, level, headerlen, false);
-							return new Span<byte>(dest, 0, destPos);
+							return destSpan.Slice(0, destPos);
 						}
 						WriteU32(dest, controlPos, (control >> 1) | SetControl); // C
 						controlPos = destPos;

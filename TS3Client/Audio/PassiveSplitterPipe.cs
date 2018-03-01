@@ -13,7 +13,7 @@ namespace TS3Client.Audio
 	using System.Collections.Generic;
 	using System.Linq;
 
-	public class SplitterPipe : IAudioPassiveConsumer
+	public class PassiveSplitterPipe : IAudioPassiveConsumer
 	{
 		public bool Active => consumerList.Count > 0 && consumerList.Any(x => x.Active);
 		private readonly List<IAudioPassiveConsumer> safeConsumerList = new List<IAudioPassiveConsumer>();
