@@ -30,7 +30,7 @@ namespace TS3Client.Full
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler packetHandler;
-		private readonly MessageProcessor msgProc;
+		private readonly AsyncMessageProcessor msgProc;
 
 		private readonly object statusLock = new object();
 
@@ -66,7 +66,7 @@ namespace TS3Client.Full
 			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler(ts3Crypt);
-			msgProc = new MessageProcessor(false);
+			msgProc = new AsyncMessageProcessor();
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 			context = new ConnectionContext { WasExit = true };
 		}

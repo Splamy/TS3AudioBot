@@ -32,7 +32,7 @@ namespace TS3Client.Query
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
 		private StreamWriter tcpWriter;
-		private readonly MessageProcessor msgProc;
+		private readonly SyncMessageProcessor msgProc;
 		private readonly IEventDispatcher dispatcher;
 
 		public override ClientType ClientType => ClientType.Query;
@@ -50,7 +50,7 @@ namespace TS3Client.Query
 		{
 			connecting = false;
 			tcpClient = new TcpClient();
-			msgProc = new MessageProcessor(true);
+			msgProc = new SyncMessageProcessor();
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 		}
 

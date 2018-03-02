@@ -15,28 +15,16 @@ namespace TS3Client
 	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 
-	internal sealed class MessageProcessor
+	internal abstract class BaseMessageProcessor
 	{
-		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
-		private readonly ConcurrentQueue<WaitBlock> requestQueue;
-		private readonly bool synchronQueue;
-		private readonly object waitBlockLock = new object();
-		private readonly List<WaitBlock>[] dependingBlocks;
+		protected readonly List<WaitBlock>[] dependingBlocks;
 
-		private string cmdLineBuffer;
+		protected string cmdLineBuffer;
+		protected readonly object waitBlockLock = new object();
 
-		public MessageProcessor(bool synchronQueue)
+		public BaseMessageProcessor()
 		{
-			this.synchronQueue = synchronQueue;
-			if (synchronQueue)
-			{
-				requestQueue = new ConcurrentQueue<WaitBlock>();
-			}
-			else
-			{
-				requestDict = new ConcurrentDictionary<string, WaitBlock>();
-				dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
-			}
+			dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
 		}
 
 		public LazyNotification? PushMessage(string message)
@@ -90,34 +78,39 @@ namespace TS3Client
 			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.Error);
 			var errorStatus = result.Ok ? (CommandError)result.Value : Util.CustomError("Invalid Error code");
 
-			if (synchronQueue)
+			return PushMessageInternal(errorStatus, ntfyType);
+		}
+
+		protected abstract LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType);
+
+		public abstract void DropQueue();
+	}
+
+	internal sealed class AsyncMessageProcessor : BaseMessageProcessor
+	{
+		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
+
+		public AsyncMessageProcessor()
+		{
+			requestDict = new ConcurrentDictionary<string, WaitBlock>();
+		}
+
+		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
+		{
+			if (string.IsNullOrEmpty(errorStatus.ReturnCode))
 			{
-				if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
+				return new LazyNotification(new[] { errorStatus }, ntfyType);
+			}
+
+			// otherwise it is the result status code to a request
+			lock (waitBlockLock)
+			{
+				if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
 				{
 					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
 					cmdLineBuffer = null;
 				}
 				else { /* ??? */ }
-			}
-			else
-			{
-				// now check if this error is an answer to a request we made
-				// if there is no return code provided it means it is a error-notification
-				if (string.IsNullOrEmpty(errorStatus.ReturnCode))
-				{
-					return new LazyNotification(new[] { errorStatus }, ntfyType);
-				}
-
-				// otherwise it is the result status code to a request
-				lock (waitBlockLock)
-				{
-					if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
-					{
-						waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
-						cmdLineBuffer = null;
-					}
-					else { /* ??? */ }
-				}
 			}
 
 			return null;
@@ -125,9 +118,6 @@ namespace TS3Client
 
 		public void EnqueueRequest(string returnCode, WaitBlock waitBlock)
 		{
-			if (synchronQueue)
-				throw new InvalidOperationException();
-
 			lock (waitBlockLock)
 			{
 				if (!requestDict.TryAdd(returnCode, waitBlock))
@@ -147,35 +137,53 @@ namespace TS3Client
 			}
 		}
 
+		public override void DropQueue()
+		{
+			lock (waitBlockLock)
+			{
+				foreach (var wb in requestDict.Values)
+					wb.SetAnswer(Util.TimeOutCommandError);
+				requestDict.Clear();
+
+				foreach (var block in dependingBlocks)
+				{
+					block?.ForEach(wb => wb.SetAnswer(Util.TimeOutCommandError));
+					block?.Clear();
+				}
+			}
+		}
+	}
+
+	internal sealed class SyncMessageProcessor : BaseMessageProcessor
+	{
+		private readonly ConcurrentQueue<WaitBlock> requestQueue;
+
+		public SyncMessageProcessor()
+		{
+			requestQueue = new ConcurrentQueue<WaitBlock>();
+		}
+
+		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
+		{
+			if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
+			{
+				waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
+				cmdLineBuffer = null;
+			}
+			else { /* ??? */ }
+
+			return null;
+		}
+
 		public void EnqueueRequest(WaitBlock waitBlock)
 		{
-			if (!synchronQueue)
-				throw new InvalidOperationException();
 			requestQueue.Enqueue(waitBlock);
 		}
 
-		public void DropQueue()
+		public override void DropQueue()
 		{
-			if (synchronQueue)
-			{
-				while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
-					waitBlock.SetAnswer(Util.TimeOutCommandError);
-			}
-			else
-			{
-				lock (waitBlockLock)
-				{
-					foreach (var wb in requestDict.Values)
-						wb.SetAnswer(Util.TimeOutCommandError);
-					requestDict.Clear();
-
-					foreach (var block in dependingBlocks)
-					{
-						block?.ForEach(wb => wb.SetAnswer(Util.TimeOutCommandError));
-						block?.Clear();
-					}
-				}
-			}
+			while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
+				waitBlock.SetAnswer(Util.TimeOutCommandError);
 		}
 	}
 }
