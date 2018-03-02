@@ -15,6 +15,7 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Asn1.X9;
 	using Org.BouncyCastle.Crypto;
 	using Org.BouncyCastle.Crypto.Digests;
+	using Org.BouncyCastle.Crypto.EC;
 	using Org.BouncyCastle.Crypto.Engines;
 	using Org.BouncyCastle.Crypto.Generators;
 	using Org.BouncyCastle.Crypto.Modes;
@@ -22,9 +23,9 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Math;
 	using Org.BouncyCastle.Math.EC;
 	using Org.BouncyCastle.Security;
-	using Org.BouncyCastle.Crypto.EC;
-	using System.Collections.Generic;
 	using System;
+	using System.Buffers.Binary;
+	using System.Collections.Generic;
 	using System.Linq;
 	using System.Security.Cryptography;
 	using System.Text;
@@ -325,7 +326,7 @@ namespace TS3Client.Full
 				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
 				sendData[versionLen] = 0x00; // initType
-				NetUtil.H2N(Util.UnixNow, sendData, versionLen + initTypeLen); // 4byte timestamp
+				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan().Slice(versionLen + initTypeLen), Util.UnixNow);// 4byte timestamp
 				for (int i = 0; i < 4; i++)
 					sendData[i + versionLen + initTypeLen + 4] = (byte)Util.Random.Next(0, 256); // 4byte random
 				return sendData;
@@ -340,7 +341,7 @@ namespace TS3Client.Full
 					Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
 					return sendData;
 				case 5:
-					var errorNum = NetUtil.N2Huint(data, 1);
+					var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(data.AsReadOnlySpan().Slice(1));
 					if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
 						return $"Got Init1(1) error: {(Ts3ErrorCode)errorNum}";
 					return $"Got Init1(1) undefined error code: {errorNum}";
@@ -361,7 +362,7 @@ namespace TS3Client.Full
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
 				// Prepare solution
-				int level = NetUtil.N2Hint(data, initTypeLen + 128);
+				int level = BinaryPrimitives.ReadInt32BigEndian(data.AsReadOnlySpan().Slice(initTypeLen + 128));
 				var y = SolveRsaChallange(data, initTypeLen, level);
 				if (!y.Ok)
 					return y;
@@ -470,7 +471,7 @@ namespace TS3Client.Full
 			return new S2CPacket(data)
 			{
 				PacketTypeFlagged = data[MacLen + 2],
-				PacketId = NetUtil.N2Hushort(data, MacLen),
+				PacketId = BinaryPrimitives.ReadUInt16BigEndian(data.AsReadOnlySpan().Slice(MacLen)),
 			};
 		}
 
@@ -552,7 +553,7 @@ namespace TS3Client.Full
 
 				tmpToHash[1] = packetTypeRaw;
 
-				Array.Copy(BitConverter.GetBytes(NetUtil.H2N(generationId)), 0, tmpToHash, 2, 4);
+				BinaryPrimitives.WriteUInt32BigEndian(tmpToHash.AsSpan().Slice(2), generationId);
 				Array.Copy(ivStruct, 0, tmpToHash, 6, 20);
 
 				var result = Hash256It(tmpToHash).AsSpan();

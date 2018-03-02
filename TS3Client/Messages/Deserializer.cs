@@ -58,8 +58,8 @@ namespace TS3Client.Messages
 
 			var ss = new SpanSplitter();
 			var lineSpan = ss.First(line, ' ');
-			var key = default(ReadOnlySpan<char>);
-			var value = default(ReadOnlySpan<char>);
+			var key = ReadOnlySpan<char>.Empty;
+			var value = ReadOnlySpan<char>.Empty;
 			try
 			{
 				do

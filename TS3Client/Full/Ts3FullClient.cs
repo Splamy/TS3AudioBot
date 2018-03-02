@@ -9,24 +9,20 @@
 
 namespace TS3Client.Full
 {
-	using Helper;
 	using Audio;
 	using Commands;
+	using Helper;
 	using Messages;
 	using System;
+	using System.Buffers.Binary;
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
-
-	using CmdR = E<Messages.CommandError>;
-
-	using ClientUidT = System.String;
+	using ChannelIdT = System.UInt64;
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
-	using ChannelIdT = System.UInt64;
-	using ServerGroupIdT = System.UInt64;
-	using ChannelGroupIdT = System.UInt64;
+	using CmdR = E<Messages.CommandError>;
 
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
@@ -291,7 +287,7 @@ namespace TS3Client.Full
 						// Init error
 						if (packet.Data.Length == 5 && packet.Data[0] == 1)
 						{
-							var errorNum = NetUtil.N2Huint(packet.Data, 1);
+							var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsReadOnlySpan().Slice(1));
 							if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
 								Log.Info("Got init error: {0}", (Ts3ErrorCode)errorNum);
 							else
@@ -570,14 +566,15 @@ namespace TS3Client.Full
 			// > T is a ushort in H2N order of each targeted clientId, (T...T) is repeated M times
 			int offset = 2 + 1 + 2 + channelIds.Count * 8 + clientIds.Count * 2;
 			byte[] tmpBuffer = new byte[data.Length + offset];
+			var tmpBufferSpan = tmpBuffer.AsSpan(); // stackalloc
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)channelIds.Count;
 			tmpBuffer[4] = (byte)clientIds.Count;
 			for (int i = 0; i < channelIds.Count; i++)
-				NetUtil.H2N(channelIds[i], tmpBuffer, 5 + (i * 8));
+				BinaryPrimitives.WriteUInt64BigEndian(tmpBufferSpan.Slice(5 + (i * 8)), channelIds[i]);
 			for (int i = 0; i < clientIds.Count; i++)
-				NetUtil.H2N(clientIds[i], tmpBuffer, 5 + channelIds.Count * 8 + (i * 2));
-			data.CopyTo(tmpBuffer.AsSpan().Slice(offset));
+				BinaryPrimitives.WriteUInt16BigEndian(tmpBufferSpan.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i]);
+			data.CopyTo(tmpBufferSpan.Slice(offset));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
 		}
@@ -592,11 +589,12 @@ namespace TS3Client.Full
 			// > M is a byte, specifying the GroupWhisperTarget
 			// > U is a ulong in H2N order for the targeted channelId or groupId (0 if not applicable)
 			byte[] tmpBuffer = new byte[data.Length + 13];
+			var tmpBufferSpan = tmpBuffer.AsSpan(); // stackalloc
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)type;
 			tmpBuffer[4] = (byte)target;
-			NetUtil.H2N(targetId, tmpBuffer, 5);
-			data.CopyTo(tmpBuffer.AsSpan().Slice(13));
+			BinaryPrimitives.WriteUInt64BigEndian(tmpBufferSpan.Slice(5), targetId);
+			data.CopyTo(tmpBufferSpan.Slice(13));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}

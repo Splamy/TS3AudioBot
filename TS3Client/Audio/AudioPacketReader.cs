@@ -9,8 +9,8 @@
 
 namespace TS3Client.Audio
 {
-	using Full;
 	using System;
+	using System.Buffers.Binary;
 
 	public class AudioPacketReader : IAudioPipe
 	{
@@ -28,7 +28,7 @@ namespace TS3Client.Audio
 			// Skip [0,2) Voice Packet Id for now
 			// TODO add packet id order checking
 			// TODO add defragment start
-			meta.In.Sender = NetUtil.N2Hushort(data.Slice(2, 2));
+			meta.In.Sender = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
 			meta.Codec = (Codec)data[4];
 			OutStream?.Write(data.Slice(5), meta);
 		}

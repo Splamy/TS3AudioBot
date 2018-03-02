@@ -326,7 +326,7 @@ namespace TS3AudioBot
 			}
 			catch (CommandException ex)
 			{
-				Log.Debug(ex, "Command Error");
+				Log.Debug(ex, "Command Error ({0})", ex.Message);
 				if (answer) info.Write("Error: " + ex.Message); // XXX check return
 			}
 			catch (Exception ex)

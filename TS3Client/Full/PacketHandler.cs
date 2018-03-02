@@ -12,6 +12,7 @@ namespace TS3Client.Full
 	using Helper;
 	using NLog;
 	using System;
+	using System.Buffers.Binary;
 	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.IO;
@@ -193,7 +194,7 @@ namespace TS3Client.Full
 				case PacketType.Voice:
 				case PacketType.VoiceWhisper:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-					NetUtil.H2N(packet.PacketId, packet.Data, 0);
+					BinaryPrimitives.WriteUInt16BigEndian(packet.Data.AsSpan(), packet.PacketId);
 					LoggerRawVoice.ConditionalTrace("[O] {0}", packet);
 					break;
 
@@ -212,12 +213,12 @@ namespace TS3Client.Full
 
 				case PacketType.Pong:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-					LoggerRaw.ConditionalTrace("[O] Pong {0}", NetUtil.N2Hushort(packet.Data, 0));
+					LoggerRaw.ConditionalTrace("[O] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					break;
 
 				case PacketType.Ack:
 				case PacketType.AckLow:
-					LoggerRaw.ConditionalDebug("[O] Acking {1}: {0}", NetUtil.N2Hushort(packet.Data, 0), packet.PacketType);
+					LoggerRaw.ConditionalDebug("[O] Acking {1}: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data), packet.PacketType);
 					break;
 
 				case PacketType.Init1:
@@ -340,11 +341,11 @@ namespace TS3Client.Full
 					ReceivePing(packet);
 					break;
 				case PacketType.Pong:
-					LoggerRaw.ConditionalTrace("[I] Pong {0}", NetUtil.N2Hushort(packet.Data, 0));
+					LoggerRaw.ConditionalTrace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					ReceivePong(packet);
 					break;
 				case PacketType.Ack:
-					LoggerRaw.ConditionalDebug("[I] Acking: {0}", NetUtil.N2Hushort(packet.Data, 0));
+					LoggerRaw.ConditionalDebug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					packet = ReceiveAck(packet);
 					break;
 				case PacketType.AckLow: break;
@@ -472,8 +473,8 @@ namespace TS3Client.Full
 
 		private void SendAck(ushort ackId, PacketType ackType)
 		{
-			byte[] ackData = new byte[2];
-			NetUtil.H2N(ackId, ackData, 0);
+			byte[] ackData = new byte[2]; // stackalloc
+			BinaryPrimitives.WriteUInt16BigEndian(ackData.AsSpan(), ackId);
 			if (ackType == PacketType.Ack || ackType == PacketType.AckLow)
 				AddOutgoingPacket(ackData, ackType);
 			else
@@ -484,7 +485,7 @@ namespace TS3Client.Full
 		{
 			if (packet.Data.Length < 2)
 				return null;
-			ushort packetId = NetUtil.N2Hushort(packet.Data, 0);
+			ushort packetId = BinaryPrimitives.ReadUInt16BigEndian(packet.Data);
 
 			lock (sendLoopLock)
 			{
@@ -510,14 +511,14 @@ namespace TS3Client.Full
 				NetworkStats.LogLostPings(idDiff - 1);
 			if (idDiff > 0 || idDiff < -ReceivePacketWindowSize)
 				lastReceivedPingId = packet.PacketId;
-			byte[] pongData = new byte[2];
-			NetUtil.H2N(packet.PacketId, pongData, 0);
+			byte[] pongData = new byte[2]; // stackalloc
+			BinaryPrimitives.WriteUInt16BigEndian(pongData.AsSpan(), packet.PacketId);
 			AddOutgoingPacket(pongData, PacketType.Pong);
 		}
 
 		private void ReceivePong(S2CPacket packet)
 		{
-			ushort answerId = NetUtil.N2Hushort(packet.Data, 0);
+			ushort answerId = BinaryPrimitives.ReadUInt16BigEndian(packet.Data);
 
 			if (lastSentPingId == answerId)
 			{

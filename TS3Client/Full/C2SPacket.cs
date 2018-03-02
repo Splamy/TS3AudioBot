@@ -10,6 +10,7 @@
 namespace TS3Client.Full
 {
 	using System;
+	using System.Buffers.Binary;
 
 	internal sealed class C2SPacket : BasePacket
 	{
@@ -29,17 +30,10 @@ namespace TS3Client.Full
 			Header = new byte[HeaderLen];
 		}
 
-		public override void BuildHeader()
-		{
-			NetUtil.H2N(PacketId, Header, 0);
-			NetUtil.H2N(ClientId, Header, 2);
-			Header[4] = PacketTypeFlagged;
-		}
-
 		public override void BuildHeader(Span<byte> into)
 		{
-			NetUtil.H2N(PacketId, into.Slice(0, 2));
-			NetUtil.H2N(ClientId, into.Slice(2, 2));
+			BinaryPrimitives.WriteUInt16BigEndian(into.Slice(0, 2), PacketId);
+			BinaryPrimitives.WriteUInt16BigEndian(into.Slice(2, 2), ClientId);
 			into[4] = PacketTypeFlagged;
 #if DEBUG
 			into.CopyTo(Header.AsSpan());

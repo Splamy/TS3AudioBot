@@ -113,7 +113,6 @@
     <Compile Include="Full\NetworkStats.cs" />
     <Compile Include="Full\PacketHandler.cs" />
     <Compile Include="Full\S2CPacket.cs" />
-    <Compile Include="Full\NetUtil.cs" />
     <Compile Include="Full\C2SPacket.cs" />
     <Compile Include="Full\PacketType.cs" />
     <Compile Include="Full\RingQueue.cs" />

@@ -83,7 +83,7 @@ namespace TS3Client.Full
 				$"  Data: { DebugUtil.DebugToHex(Data) }";
 		}
 
-		public abstract void BuildHeader();
+		public void BuildHeader() => BuildHeader(Header.AsSpan());
 		public abstract void BuildHeader(Span<byte> into);
 	}
 }
