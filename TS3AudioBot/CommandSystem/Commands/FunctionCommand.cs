@@ -78,7 +78,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// <param name="arguments">The arguments that are applied to this function.</param>
 		/// <param name="returnTypes">The possible return types.</param>
 		/// <param name="takenArguments">How many arguments could be set.</param>
-		public object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
+		public R<object[], CommandException> FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
 
@@ -104,7 +104,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					else if (CommandParameter[p].optional)
 						parameters[p] = null;
 					else
-						throw new CommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", CommandExceptionReason.MissingContext);
+						return new CommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", CommandExceptionReason.MissingContext);
 					break;
 
 				case ParamKind.NormalCommand:
@@ -118,8 +118,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 					try { parameters[p] = ConvertParam(argResultP, arg); }
-					catch (FormatException ex) { throw new CommandException("Could not convert to " + UnwrapParamType(arg).Name, ex, CommandExceptionReason.CommandError); }
-					catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
+					catch (FormatException ex) { return new CommandException("Could not convert to " + UnwrapParamType(arg).Name, ex, CommandExceptionReason.CommandError); }
+					catch (OverflowException ex) { return new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
 					takenArguments++;
 					break;
@@ -138,8 +138,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 							args.SetValue(convResult, i);
 						}
 					}
-					catch (FormatException ex) { throw new CommandException("Could not convert to " + arg.Name, ex, CommandExceptionReason.CommandError); }
-					catch (OverflowException ex) { throw new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
+					catch (FormatException ex) { return new CommandException("Could not convert to " + arg.Name, ex, CommandExceptionReason.CommandError); }
+					catch (OverflowException ex) { return new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
 					parameters[p] = args;
 					break;
@@ -160,7 +160,10 @@ namespace TS3AudioBot.CommandSystem.Commands
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-			object[] parameters = FitArguments(info, arguments, returnTypes, out int availableArguments);
+			var fitresult = FitArguments(info, arguments, returnTypes, out int availableArguments);
+			if (!fitresult)
+				throw fitresult.Error;
+			object[] parameters = fitresult.Value;
 
 			// Check if we were able to set enough arguments
 			if (availableArguments < Math.Min(parameters.Length, RequiredParameters))

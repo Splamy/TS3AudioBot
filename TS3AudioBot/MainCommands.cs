@@ -292,8 +292,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("history add", "<id> Adds the song with <id> to the queue")]
-		public static void CommandHistoryQueue(PlayManager playManager, InvokerData invoker, uint id)
-			=> playManager.Enqueue(invoker, id).UnwrapThrow();
+		public static void CommandHistoryQueue(HistoryManager historyManager, PlayManager playManager, InvokerData invoker, uint hid)
+		{
+			var ale = historyManager.GetEntryById(hid).UnwrapThrow();
+			playManager.Enqueue(invoker, ale.AudioResource).UnwrapThrow();
+		}
 
 		[Command("history clean", "Cleans up the history file for better startup performance.")]
 		public static JsonEmpty CommandHistoryClean(DbStore database, CallerInfo caller, UserSession session = null)
@@ -343,7 +346,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("history delete", "<id> Removes the entry with <id> from the history")]
-		public static JsonEmpty CommandHistoryDelete(ExecutionInformation info, HistoryManager historyManager, CallerInfo caller, uint id, UserSession session = null)
+		public static JsonEmpty CommandHistoryDelete(HistoryManager historyManager, CallerInfo caller, uint id, UserSession session = null)
 		{
 			var ale = historyManager.GetEntryById(id).UnwrapThrow();
 
@@ -408,7 +411,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("history last", "Plays the last song again")]
-		public static void CommandHistoryLast(PlayManager playManager, HistoryManager historyManager, InvokerData invoker)
+		public static void CommandHistoryLast(HistoryManager historyManager, PlayManager playManager, InvokerData invoker)
 		{
 			var ale = historyManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
 			if (ale == null)
@@ -417,8 +420,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("history play", "<id> Playes the song with <id>")]
-		public static void CommandHistoryPlay(PlayManager playManager, InvokerData invoker, uint id)
-			=> playManager.Play(invoker, id).UnwrapThrow();
+		public static void CommandHistoryPlay(HistoryManager historyManager, PlayManager playManager, InvokerData invoker, uint hid)
+		{
+			var ale = historyManager.GetEntryById(hid).UnwrapThrow();
+			playManager.Play(invoker, ale.AudioResource).UnwrapThrow();
+		}
 
 		[Command("history rename", "<id> <name> Sets the name of the song with <id> to <name>")]
 		public static void CommandHistoryRename(HistoryManager historyManager, uint id, string newName)
@@ -567,11 +573,8 @@ namespace TS3AudioBot
 		public static void CommandListAdd(HistoryManager historyManager, UserSession session, InvokerData invoker, uint hid)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
-
-			if (!historyManager.GetEntryById(hid))
-				throw new CommandException("History entry not found", CommandExceptionReason.CommandError);
-
-			plist.AddItem(new PlaylistItem(hid, new MetaData { ResourceOwnerDbId = invoker.DatabaseId }));
+			var ale = historyManager.GetEntryById(hid).UnwrapThrow();
+			plist.AddItem(new PlaylistItem(ale.AudioResource, new MetaData { ResourceOwnerDbId = invoker.DatabaseId }));
 		}
 
 		[Command("list clear", "Clears your private playlist.")]

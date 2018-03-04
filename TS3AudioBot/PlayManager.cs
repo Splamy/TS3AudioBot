@@ -10,7 +10,6 @@
 namespace TS3AudioBot
 {
 	using Helper;
-	using History;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -22,7 +21,6 @@ namespace TS3AudioBot
 
 		public IPlayerConnection PlayerConnection { get; set; }
 		public PlaylistManager PlaylistManager { get; set; }
-		public HistoryManager HistoryManager { get; set; }
 		public ResourceFactoryManager ResourceFactoryManager { get; set; }
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
@@ -41,7 +39,6 @@ namespace TS3AudioBot
 				return result.Error;
 			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
 		}
-		public R Enqueue(InvokerData invoker, uint historyId) => EnqueueInternal(invoker, new PlaylistItem(historyId));
 		public R Enqueue(IEnumerable<PlaylistItem> pli)
 		{
 			PlaylistManager.AddToFreelist(pli);
@@ -56,6 +53,13 @@ namespace TS3AudioBot
 			return R.OkR;
 		}
 
+		public R Play(InvokerData invoker, PlaylistItem item)
+		{
+			if (item == null)
+				throw new ArgumentNullException(nameof(item));
+
+			return Play(invoker, item.Resource, item.Meta);
+		}
 		/// <summary>Tries to play the passed <see cref="AudioResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
 		/// <param name="ar">The resource to load and play.</param>
@@ -63,6 +67,9 @@ namespace TS3AudioBot
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public R Play(InvokerData invoker, AudioResource ar, MetaData meta = null)
 		{
+			if (ar == null)
+				throw new ArgumentNullException(nameof(ar));
+
 			var result = ResourceFactoryManager.Load(ar);
 			if (!result)
 				return result.Error;
@@ -80,46 +87,6 @@ namespace TS3AudioBot
 			if (!result)
 				return result.Error;
 			return Play(invoker, result.Value, meta ?? new MetaData());
-		}
-		public R Play(InvokerData invoker, uint historyId, MetaData meta = null)
-		{
-			var getresult = HistoryManager.GetEntryById(historyId);
-			if (!getresult)
-				return getresult.Error;
-
-			var loadresult = ResourceFactoryManager.Load(getresult.Value.AudioResource);
-			if (!loadresult)
-				return loadresult.Error;
-
-			return Play(invoker, loadresult.Value, meta ?? new MetaData());
-		}
-		public R Play(InvokerData invoker, PlaylistItem item)
-		{
-			if (item == null)
-				throw new ArgumentNullException(nameof(item));
-
-			R lastResult = R.OkR;
-			InvokerData realInvoker = CurrentPlayData?.Invoker ?? invoker;
-
-			if (item.HistoryId.HasValue)
-			{
-				lastResult = Play(realInvoker, item.HistoryId.Value, item.Meta);
-				if (lastResult)
-					return R.OkR;
-			}
-			if (!string.IsNullOrWhiteSpace(item.Link))
-			{
-				lastResult = Play(realInvoker, item.Link, item.AudioType, item.Meta);
-				if (lastResult)
-					return R.OkR;
-			}
-			if (item.Resource != null)
-			{
-				lastResult = Play(realInvoker, item.Resource, item.Meta);
-				if (lastResult)
-					return R.OkR;
-			}
-			return $"Playlist item could not be played ({lastResult.Error})";
 		}
 		/// <summary>Plays the passed <see cref="PlayResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>

@@ -79,22 +79,17 @@ namespace TS3AudioBot.CommandSystem.Commands
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
 			foreach (var f in Functions)
 			{
-				bool fits = false;
-				try
-				{
-					// Find out if this overload works
-					f.FitArguments(info, arguments, returnTypes, out var _);
-					fits = true;
-				}
-				catch (CommandException)
-				{
-					// Do nothing, just move on to the next function
-				}
-				if (fits)
+				// Find out if this overload works
+				var fitresult = f.FitArguments(info, arguments, returnTypes, out var _);
+				if (fitresult.Ok)
 				{
 					// Call this overload
 					return f.Execute(info, arguments, returnTypes);
 				}
+
+				if (fitresult.Error.Reason == CommandExceptionReason.MissingContext)
+					throw fitresult.Error;
+
 			}
 			throw new CommandException("No matching function overload could be found", CommandExceptionReason.FunctionNotFound);
 		}

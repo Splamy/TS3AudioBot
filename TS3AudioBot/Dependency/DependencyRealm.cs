@@ -110,11 +110,11 @@ namespace TS3AudioBot.Dependency
 				.Where(p => p.CanRead && p.CanWrite && registeredTypes.Any(x => x.IsAssignableFrom(p.PropertyType)));
 
 		private IEnumerable<Type> GetUnresolvedResolvable(Module module)
-			=> GetDependants(module).Where(dep => FindInjectableModule(dep, module.Status, false) == null);
+			=> GetDependants(module).Where(dep => FindInjectableModule(dep, module.Status) == null);
 
-		private Module FindInjectableModule(Type type, InitState state, bool force)
+		private Module FindInjectableModule(Type type, InitState? state)
 			=> modules.FirstOrDefault(
-				x => (x.Status == InitState.Done || x.Status == InitState.SetOnly && state == InitState.SetOnly || force) &&
+				x => (x.Status == InitState.Done || !state.HasValue || x.Status == InitState.SetOnly && state.Value == InitState.SetOnly) &&
 					 type.IsAssignableFrom(x.Type));
 
 		private bool TryResolve(Module module, bool force)
@@ -139,7 +139,7 @@ namespace TS3AudioBot.Dependency
 			var props = GetModuleProperties(obj.GetType());
 			foreach (var prop in props)
 			{
-				var depModule = FindInjectableModule(prop.PropertyType, state, force);
+				var depModule = FindInjectableModule(prop.PropertyType, force ? (InitState?)null : state);
 				if (depModule != null)
 				{
 					prop.SetValue(obj, depModule.Obj);
@@ -157,7 +157,7 @@ namespace TS3AudioBot.Dependency
 		/// <typeparam name="TModule">The type to get.</typeparam>
 		/// <returns>The object if found, null otherwiese.</returns>
 		public TModule GetModule<TModule>() where TModule : class => (TModule)GetModule(typeof(TModule));
-		public object GetModule(Type type) => FindInjectableModule(type, InitState.Done, false)?.Obj;
+		public object GetModule(Type type) => FindInjectableModule(type, InitState.Done)?.Obj;
 
 		void IInjector.AddModule(object obj) => RegisterModule(obj);
 

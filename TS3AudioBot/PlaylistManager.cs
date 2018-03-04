@@ -214,21 +214,9 @@ namespace TS3AudioBot
 						meta.ResourceOwnerDbId = userid;
 					else
 						Log.Warn("Erroneus playlist meta data: {0}", line);
-					
+
 					switch (kind)
 					{
-					case "ln":
-						var lnSplit = content.Split(new[] { ',' }, 2);
-						if (lnSplit.Length < 2)
-							goto default;
-#pragma warning disable CS0612
-						if (!string.IsNullOrWhiteSpace(lnSplit[0]))
-							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), lnSplit[0], meta));
-						else
-							plist.AddItem(new PlaylistItem(Uri.UnescapeDataString(lnSplit[1]), null, meta));
-#pragma warning restore CS0612
-						break;
-
 					case "rs":
 						var rsSplit = content.Split(new[] { ',' }, 3);
 						if (rsSplit.Length < 3)
@@ -240,9 +228,8 @@ namespace TS3AudioBot
 						break;
 
 					case "id":
-						if (!uint.TryParse(content, out var hid))
-							goto default;
-						plist.AddItem(new PlaylistItem(hid, meta));
+					case "ln":
+						Log.Warn("Deprecated playlist data block: {0}", line);
 						break;
 
 					default:
@@ -291,39 +278,16 @@ namespace TS3AudioBot
 
 				foreach (var pli in plist.AsEnumerable())
 				{
-					if (pli.HistoryId.HasValue)
-					{
-						sw.Write("id:");
-						if (pli.Meta.ResourceOwnerDbId.HasValue)
-							sw.Write(pli.Meta.ResourceOwnerDbId.Value);
-						sw.Write(":");
-						sw.Write(pli.HistoryId.Value);
-					}
-					else if (!string.IsNullOrWhiteSpace(pli.Link))
-					{
-						sw.Write("ln:");
-						if (pli.Meta.ResourceOwnerDbId.HasValue)
-							sw.Write(pli.Meta.ResourceOwnerDbId.Value);
-						sw.Write(":");
-						if (pli.AudioType != null)
-							sw.Write(pli.AudioType);
-						sw.Write(",");
-						sw.Write(Uri.EscapeDataString(pli.Link));
-					}
-					else if (pli.Resource != null)
-					{
-						sw.Write("rs:");
-						if (pli.Meta.ResourceOwnerDbId.HasValue)
-							sw.Write(pli.Meta.ResourceOwnerDbId.Value);
-						sw.Write(":");
-						sw.Write(pli.Resource.AudioType);
-						sw.Write(",");
-						sw.Write(Uri.EscapeDataString(pli.Resource.ResourceId));
-						sw.Write(",");
-						sw.Write(Uri.EscapeDataString(pli.Resource.ResourceTitle));
-					}
-					else
-						continue;
+					sw.Write("rs:");
+					if (pli.Meta.ResourceOwnerDbId.HasValue
+						&& (!plist.CreatorDbId.HasValue || pli.Meta.ResourceOwnerDbId.Value != plist.CreatorDbId.Value))
+						sw.Write(pli.Meta.ResourceOwnerDbId.Value);
+					sw.Write(":");
+					sw.Write(pli.Resource.AudioType);
+					sw.Write(",");
+					sw.Write(Uri.EscapeDataString(pli.Resource.ResourceId));
+					sw.Write(",");
+					sw.Write(Uri.EscapeDataString(pli.Resource.ResourceTitle));
 
 					sw.WriteLine();
 				}
@@ -417,32 +381,11 @@ namespace TS3AudioBot
 		// playdata holds all needed information for playing + first possibility
 		// > can be a resource
 		public AudioResource Resource { get; }
-		// > can be a history entry (will need to fall back to resource-load if entry is deleted in meanwhile)
-		public uint? HistoryId { get; }
-		// > can be a link to be resolved normally (+ optional audio type)
-		public string Link { get; }
-		public string AudioType { get; }
 
-		public string DisplayString
-		{
-			get
-			{
-				if (Resource != null)
-					return Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";
-				else if (HistoryId.HasValue)
-					return $"HistoryID: {HistoryId.Value}";
-				else if (!string.IsNullOrWhiteSpace(Link))
-					return (AudioType != null ? AudioType + ": " : string.Empty) + Link;
-				else
-					return "<Invalid entry>";
-			}
-		}
+		public string DisplayString => Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";
 
 		private PlaylistItem(MetaData meta) { Meta = meta ?? new MetaData(); }
 		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { Resource = resource; }
-		public PlaylistItem(uint hId, MetaData meta = null) : this(meta) { HistoryId = hId; }
-		[Obsolete]
-		public PlaylistItem(string message, string audioType, MetaData meta = null) : this(meta) { Link = message; AudioType = audioType; }
 	}
 
 	public class Playlist
