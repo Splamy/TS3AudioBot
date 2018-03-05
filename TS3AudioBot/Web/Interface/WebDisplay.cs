@@ -12,6 +12,7 @@ namespace TS3AudioBot.Web.Interface
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
+	using System.Linq;
 	using System.Net;
 	using System.Text;
 
@@ -34,9 +35,28 @@ namespace TS3AudioBot.Web.Interface
 			{ ".less", "text/css" },
 		};
 
-		public WebDisplay()
+		public WebDisplay(WebData webData)
 		{
-			var baseDir = new DirectoryInfo(Path.Combine("..", "..", "Web", "Interface"));
+			DirectoryInfo baseDir = null;
+			if (string.IsNullOrEmpty(webData.WebinterfaceHostPath))
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
+					var checkDir = Path.Combine(up, "WebInterface");
+					if (Directory.Exists(checkDir))
+					{
+						baseDir = new DirectoryInfo(checkDir);
+						break;
+					}
+				}
+			}
+			else if (Directory.Exists(webData.WebinterfaceHostPath))
+				baseDir = new DirectoryInfo(webData.WebinterfaceHostPath);
+
+			if (baseDir == null)
+				throw new InvalidOperationException("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+
 			var dir = new FolderProvider(baseDir);
 			map.Map("/", dir);
 			map.Map("/site/", dir);

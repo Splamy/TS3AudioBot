@@ -11,7 +11,7 @@ namespace TS3AudioBot.Web.Interface
 {
 	using System.IO;
 
-	class FolderProvider : IFolderProvider
+	public class FolderProvider : IFolderProvider
 	{
 		public DirectoryInfo LocalDirectory { get; }
 

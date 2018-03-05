@@ -202,27 +202,13 @@
     <Compile Include="Web\WebManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Web\Interface\index.html" />
-    <EmbeddedResource Include="Web\Interface\styles.css" />
     <EmbeddedResource Include="Media\favicon.ico" />
-    <EmbeddedResource Include="Web\Interface\favicon.ico" />
-    <EmbeddedResource Include="Web\Interface\history.html" />
-    <EmbeddedResource Include="Web\Interface\main.html" />
-    <EmbeddedResource Include="Web\Interface\playcontrols.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </None>
-    <None Include="Web\Interface\less\styles.less" />
-    <None Include="Web\Interface\less\styles_authbox.less" />
-    <None Include="Web\Interface\less\styles_button.less" />
-    <None Include="Web\Interface\less\styles_history.less" />
-    <None Include="Web\Interface\less\styles_playcontrols.less" />
-    <None Include="Web\Interface\less\styles_slider.less" />
-    <None Include="Web\Interface\tsconfig.json" />
-    <None Include="Web\Interface\tslint.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
@@ -253,13 +239,6 @@
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="Web\Interface\tssrc\ApiAuth.ts" />
-    <TypeScriptCompile Include="Web\Interface\tssrc\Get.ts" />
-    <TypeScriptCompile Include="Web\Interface\tssrc\Main.ts" />
-    <TypeScriptCompile Include="Web\Interface\tssrc\Md5.d.ts" />
-    <TypeScriptCompile Include="Web\Interface\tssrc\Util.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Media\SleepingKitty.svg" />
   </ItemGroup>
   <ItemGroup>
@@ -268,14 +247,6 @@
   <ItemGroup>
     <CopyLibs32 Include="lib\x86\*.*" />
     <CopyLibs64 Include="lib\x64\*.*" />
-    <Content Include="Web\Interface\404.html" />
-    <Content Include="Web\Interface\md5.js" />
-    <Content Include="Web\Interface\media\ghicon.png" />
-    <Content Include="Web\Interface\media\key.png" />
-    <Content Include="Web\Interface\playlist.html" />
-    <Content Include="Web\Interface\script.js" />
-    <Content Include="Web\Interface\test.html" />
-    <Content Include="Web\Interface\test.js" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -13,14 +13,17 @@ namespace TS3AudioBot.Web.Interface
 	using System;
 	using System.Collections.Generic;
 
-	internal class SiteMapper
+	public class SiteMapper
 	{
-		private readonly MapNode RootNode = new MapNode("", "");
+		private readonly MapNode rootNode = new MapNode("", "");
 
 		public void Map(string target, IProvider provider)
 		{
+			if (string.IsNullOrEmpty(target)) throw new ArgumentNullException(nameof(target));
+			if (provider == null) throw new ArgumentNullException(nameof(provider));
+
 			var nodesPath = target.Split('/');
-			var currentNode = RootNode;
+			var currentNode = rootNode;
 			for (int i = 0; i < nodesPath.Length - 1; i++)
 			{
 				if (!currentNode.childNodes.TryGetValue(nodesPath[i], out var childNode))
@@ -31,12 +34,17 @@ namespace TS3AudioBot.Web.Interface
 				currentNode = childNode;
 			}
 
-			if (provider is ISiteProvider site)
-				currentNode.fileMap.Add(nodesPath[nodesPath.Length - 1], site);
-			else if (provider is IFolderProvider folder)
-				currentNode.childFolder.Add(folder);
-			else
-				throw new InvalidOperationException();
+			switch (provider)
+			{
+				case ISiteProvider site:
+					currentNode.fileMap.Add(nodesPath[nodesPath.Length - 1], site);
+					break;
+				case IFolderProvider folder:
+					currentNode.childFolder.Add(folder);
+					break;
+				default:
+					throw new InvalidOperationException($"Unknown web provider type: {provider.GetType()}");
+			}
 		}
 
 		// public void Map(string target, FileInfo directory){ } // => ISiteProvider
@@ -44,7 +52,7 @@ namespace TS3AudioBot.Web.Interface
 
 		public ISiteProvider TryGetSite(Uri path)
 		{
-			var currentNode = RootNode;
+			var currentNode = rootNode;
 			var parts = path.AbsolutePath.Split('/');
 
 			foreach (var part in parts)

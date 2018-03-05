@@ -61,7 +61,7 @@ namespace TS3AudioBot.Web
 			}
 			if (webData.EnableWebinterface)
 			{
-				Display = new Interface.WebDisplay();
+				Display = new Interface.WebDisplay(webData);
 				Injector.RegisterModule(Display);
 				startWebServer = true;
 			}
@@ -192,5 +192,8 @@ namespace TS3AudioBot.Web
 
 		[Info("If you want to start the webinterface server", "false")]
 		public bool EnableWebinterface { get; set; }
+
+		[Info("The folder to host. Leave empty to let the bot look for default locations.", "")]
+		public string WebinterfaceHostPath { get; set; }
 	}
 }
