@@ -20,9 +20,18 @@ namespace TS3AudioBot.Audio
 	internal class CustomTargetPipe : ITargetManager, IAudioPassiveConsumer
 	{
 		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
-		public ulong GroupWhisperTargetId { get; set; }
-		public GroupWhisperType GroupWhisperType { get; set; }
-		public GroupWhisperTarget GroupWhisperTarget { get; set; }
+		public ulong GroupWhisperTargetId { get; private set; }
+		public GroupWhisperType GroupWhisperType { get; private set; }
+		public GroupWhisperTarget GroupWhisperTarget { get; private set; }
+
+		public IReadOnlyCollection<ushort> WhisperClients
+		{
+			get { lock (subscriptionLockObj) { return clientSubscriptionsSetup.ToArray(); } }
+		}
+		public IReadOnlyCollection<ulong> WhisperChannel
+		{
+			get { lock (subscriptionLockObj) { return channelSubscriptionsSetup.Keys.ToArray(); } }
+		}
 
 		public bool Active
 		{

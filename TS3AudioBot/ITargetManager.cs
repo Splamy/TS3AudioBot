@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot
 {
+	using System.Collections.Generic;
 	using TS3Client;
 	using TS3Client.Audio;
 
@@ -16,7 +17,13 @@ namespace TS3AudioBot
 	public interface ITargetManager
 	{
 		TargetSendMode SendMode { get; set; }
+		ulong GroupWhisperTargetId { get; }
+		GroupWhisperType GroupWhisperType { get; }
+		GroupWhisperTarget GroupWhisperTarget { get; }
 		void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId);
+
+		IReadOnlyCollection<ushort> WhisperClients { get; }
+		IReadOnlyCollection<ulong> WhisperChannel { get; }
 
 		/// <summary>Adds a channel to the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>

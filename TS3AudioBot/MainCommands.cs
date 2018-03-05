@@ -1220,12 +1220,6 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		[Command("whisper off", "Enables normal voice mode.")]
-		public static void CommandWhisperOff(ITargetManager targetManager) => targetManager.SendMode = TargetSendMode.Voice;
-
-		[Command("whisper subscription", "Enables default whisper subscription mode.")]
-		public static void CommandWhisperSubsription(ITargetManager targetManager) => targetManager.SendMode = TargetSendMode.Whisper;
-
 		[Command("whisper all", "Set how to send music.")]
 		public static void CommandWhisperAll(ITargetManager targetManager) => CommandWhisperGroup(targetManager, GroupWhisperType.AllClients, GroupWhisperTarget.AllChannels);
 
@@ -1247,6 +1241,66 @@ namespace TS3AudioBot
 				targetManager.SendMode = TargetSendMode.WhisperGroup;
 			}
 		}
+
+		[Command("whisper list", "Set how to send music.")]
+		public static WhisperListStruct CommandWhisperList(ITargetManager targetManager)
+		{
+			return new WhisperListStruct
+			{
+				SendMode = targetManager.SendMode,
+				GroupWhisper = targetManager.SendMode == TargetSendMode.WhisperGroup ?
+					new WhisperListStruct.GroupWhisperStruct
+					{
+						Target = targetManager.GroupWhisperTarget,
+						TargetId = targetManager.GroupWhisperTargetId,
+						Type = targetManager.GroupWhisperType,
+					}
+					: null,
+				WhisperClients = targetManager.WhisperClients,
+				WhisperChannel = targetManager.WhisperChannel,
+			};
+		}
+
+		public class WhisperListStruct
+		{
+			public TargetSendMode SendMode { get; set; }
+			public GroupWhisperStruct GroupWhisper { get; set; }
+			public IReadOnlyCollection<ushort> WhisperClients { get; set; }
+			public IReadOnlyCollection<ulong> WhisperChannel { get; set; }
+
+			public override string ToString()
+			{
+				var strb = new StringBuilder("Currently targeting:\n");
+				switch (SendMode)
+				{
+				case TargetSendMode.None: strb.Append("Nowhere!"); break;
+				case TargetSendMode.Voice: strb.Append("This channel via voice!"); break;
+				case TargetSendMode.Whisper:
+					strb.Append("Clients: [").Append(string.Join(",", WhisperClients)).Append("]\n");
+					strb.Append("Channel: [").Append(string.Join(",", WhisperChannel)).Append("]");
+					break;
+				case TargetSendMode.WhisperGroup:
+					strb.AppendFormat("A whisper group: {0} {1} ({2})!", GroupWhisper.Type, GroupWhisper.Target, GroupWhisper.TargetId);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
+				}
+				return strb.ToString();
+			}
+
+			public class GroupWhisperStruct
+			{
+				public ulong TargetId { get; set; }
+				public GroupWhisperType Type { get; set; }
+				public GroupWhisperTarget Target { get; set; }
+			}
+		}
+
+		[Command("whisper off", "Enables normal voice mode.")]
+		public static void CommandWhisperOff(ITargetManager targetManager) => targetManager.SendMode = TargetSendMode.Voice;
+
+		[Command("whisper subscription", "Enables default whisper subscription mode.")]
+		public static void CommandWhisperSubsription(ITargetManager targetManager) => targetManager.SendMode = TargetSendMode.Whisper;
 
 		private static readonly CommandResultType[] ReturnPreferNothingAllowAny = { CommandResultType.Empty, CommandResultType.String, CommandResultType.Json, CommandResultType.Command };
 
