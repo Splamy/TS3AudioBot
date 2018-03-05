@@ -298,7 +298,7 @@ namespace TS3Client
 
 		/// <summary>Creates a new server group using the name specified with <paramref name="name"/> and return its ID.
 		/// The optional <paramref name="type"/> parameter can be used to create ServerQuery groups and template groups.</summary>
-		public abstract R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null);
+		public abstract R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null);
 
 		/// <summary>Displays all server groups the client specified with <paramref name="clDbId"/> is currently residing in.</summary>
 		public abstract R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);

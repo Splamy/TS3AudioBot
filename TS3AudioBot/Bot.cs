@@ -352,7 +352,7 @@ namespace TS3AudioBot
 			return new BotLock(!IsDisposed, this);
 		}
 
-		public BotInfo GetInfo() => new BotInfo { Id = Id, NickName = QueryConnection.GetSelf().OkOr(null)?.NickName };
+		public BotInfo GetInfo() => new BotInfo { Id = Id, NickName = QueryConnection.GetSelf().OkOr(null)?.Name };
 
 		public void Dispose()
 		{

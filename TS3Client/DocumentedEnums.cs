@@ -93,7 +93,7 @@ namespace TS3Client
 		Server,
 	}
 
-	public enum PermissionGroupDatabaseType
+	public enum GroupType
 	{
 		///<summary>Template group (used for new virtual servers).</summary>
 		Template = 0,

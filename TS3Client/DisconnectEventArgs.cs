@@ -14,10 +14,10 @@ namespace TS3Client
 
 	public class DisconnectEventArgs : EventArgs
 	{
-		public MoveReason ExitReason { get; }
+		public Reason ExitReason { get; }
 		public CommandError Error { get; }
 
-		public DisconnectEventArgs(MoveReason exitReason, CommandError error = null)
+		public DisconnectEventArgs(Reason exitReason, CommandError error = null)
 		{
 			ExitReason = exitReason;
 			Error = error;

@@ -127,7 +127,7 @@ namespace TS3AudioBot.Rights
 						if (result.Ok)
 						{
 							availableGroups = result.Value.ServerGroups;
-							execCtx.ChannelGroupId = result.Value.ChannelGroupId;
+							execCtx.ChannelGroupId = result.Value.ChannelGroup;
 						}
 					}
 

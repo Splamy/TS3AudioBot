@@ -49,8 +49,8 @@ namespace TS3ABotUnitTests
 			if (File.Exists(testFile)) File.Delete(testFile);
 
 
-			var inv1 = new ClientData { ClientId = 10, DatabaseId = 101, NickName = "Invoker1" };
-			var inv2 = new ClientData { ClientId = 20, DatabaseId = 102, NickName = "Invoker2" };
+			var inv1 = new ClientData { ClientId = 10, DatabaseId = 101, Name = "Invoker1" };
+			var inv2 = new ClientData { ClientId = 20, DatabaseId = 102, Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");

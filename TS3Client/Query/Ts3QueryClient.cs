@@ -105,7 +105,7 @@ namespace TS3Client.Query
 				var message = line.Trim();
 				msgProc.PushMessage(message);
 			}
-			OnDisconnected?.Invoke(this, new DisconnectEventArgs(MoveReason.LeftServer));
+			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -184,7 +184,7 @@ namespace TS3Client.Query
 
 		// Splitted base commands
 
-		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
+		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
 			=> Send<ServerGroupAddResponse>("servergroupadd",
 				type.HasValue
 				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }

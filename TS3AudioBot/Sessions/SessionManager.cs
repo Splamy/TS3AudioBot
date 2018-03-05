@@ -33,7 +33,7 @@ namespace TS3AudioBot.Sessions
 				if (openSessions.TryGetValue(client.ClientId, out var session))
 					return session;
 
-				Log.Debug("User {0} created session with the bot", client.NickName);
+				Log.Debug("User {0} created session with the bot", client.Name);
 				session = new UserSession();
 				openSessions.Add(client.ClientId, session);
 				return session;

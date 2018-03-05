@@ -149,7 +149,7 @@ namespace TS3Client.Full
 				case Ts3ClientStatus.Disconnecting:
 					break;
 				case Ts3ClientStatus.Connected:
-					ClientDisconnect(MoveReason.LeftServer, QuitMessage);
+					ClientDisconnect(Reason.LeftServer, QuitMessage);
 					status = Ts3ClientStatus.Disconnecting;
 					break;
 				default:
@@ -158,7 +158,7 @@ namespace TS3Client.Full
 			}
 
 			if (triggerEventSafe)
-				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? MoveReason.LeftServer, error));
+				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? Reason.LeftServer, error));
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -529,7 +529,7 @@ namespace TS3Client.Full
 					new CommandParameter("client_default_token", defaultToken),
 					new CommandParameter("hwid", hwid) }));
 
-		public CmdR ClientDisconnect(MoveReason reason, string reasonMsg)
+		public CmdR ClientDisconnect(Reason reason, string reasonMsg)
 			=> SendNoResponsed(
 				new Ts3Command("clientdisconnect", new List<ICommandPart>() {
 					new CommandParameter("reasonid", (int)reason),
@@ -617,7 +617,7 @@ namespace TS3Client.Full
 
 		// Splitted base commands
 
-		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, PermissionGroupDatabaseType? type = null)
+		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
 		{
 			var cmd = new Ts3Command("servergroupadd", new List<ICommandPart> { new CommandParameter("name", name) });
 			if (type.HasValue)

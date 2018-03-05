@@ -247,7 +247,7 @@ namespace TS3AudioBot
 				Uid = identity.ClientUid,
 				ChannelId = data.ChannelId,
 				ClientId = tsFullClient.ClientId,
-				NickName = data.NickName,
+				Name = data.Name,
 				ClientType = tsBaseClient.ClientType
 			};
 

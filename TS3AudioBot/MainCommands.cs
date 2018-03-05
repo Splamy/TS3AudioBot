@@ -214,7 +214,7 @@ namespace TS3AudioBot
 		[Command("getuser uid byid", "Gets the unique id of a user, searching with his id.")]
 		public static string CommandGetUidById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().Uid;
 		[Command("getuser name byid", "Gets the nickname of a user, searching with his id.")]
-		public static string CommandGetNameById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().NickName;
+		public static string CommandGetNameById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().Name;
 		[Command("getuser dbid byid", "Gets the database id of a user, searching with his id.")]
 		public static ulong CommandGetDbIdById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().DatabaseId;
 		[Command("getuser channel byid", "Gets the channel id a user is currently in, searching with his id.")]
@@ -234,7 +234,7 @@ namespace TS3AudioBot
 			return new JsonValue<ClientData>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser name bydbid", "Gets the user name by dbid, searching with his database id.")]
-		public static string CommandGetNameByDbId(TeamspeakControl queryConnection, ulong dbId) => queryConnection.GetDbClientByDbId(dbId).UnwrapThrow().NickName;
+		public static string CommandGetNameByDbId(TeamspeakControl queryConnection, ulong dbId) => queryConnection.GetDbClientByDbId(dbId).UnwrapThrow().Name;
 		[Command("getuser uid bydbid", "Gets the unique id of a user, searching with his database id.")]
 		public static string CommandGetUidByDbId(TeamspeakControl queryConnection, ulong dbId) => queryConnection.GetDbClientByDbId(dbId).UnwrapThrow().Uid;
 

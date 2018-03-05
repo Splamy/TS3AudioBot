@@ -87,10 +87,10 @@ namespace TS3Client.Messages
 		case "HostMessageMode":
 		case "CodecEncryptionMode":
 		case "HostBannerMode":
-		case "MoveReason":
+		case "Reason":
 		case "ClientType":
 		case "TextMessageTargetMode":
-		case "PermissionGroupDatabaseType":
+		case "GroupType":
 		case "GroupNamingMode":
 			return $"{{ if (!Enum.TryParse({input}.NewString(), out {fld.fldType} val)) throw new FormatException(); {output} = val; }}";
 		case "Codec":

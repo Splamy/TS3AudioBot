@@ -55,7 +55,7 @@ namespace TS3Client
 	}
 
 	// ReSharper disable UnusedMember.Global
-	public enum MoveReason
+	public enum Reason
 	{
 		UserAction = 0,
 		UserOrChannelMoved,

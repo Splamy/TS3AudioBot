@@ -155,6 +155,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Declarations\Errors.csv" />
+    <Content Include="Declarations\MessagesToBook.txt" />
     <Content Include="Declarations\Permissions.csv" />
     <Content Include="Declarations\BookDeclarations.txt" />
     <Content Include="Declarations\Messages.txt" />

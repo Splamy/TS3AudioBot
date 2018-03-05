@@ -163,7 +163,7 @@ namespace TS3AudioBot
 			if (!refreshResult)
 				return refreshResult.Error;
 			var clients = CommandSystem.XCommandSystem.FilterList(
-				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.NickName, cb)), name).ToArray();
+				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.Name, cb)), name).ToArray();
 			if (clients.Length <= 0)
 				return "No client found";
 			return clients[0].Value;

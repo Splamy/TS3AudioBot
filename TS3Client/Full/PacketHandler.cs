@@ -72,7 +72,7 @@ namespace TS3Client.Full
 
 		public ushort ClientId { get; set; }
 		private IPEndPoint remoteAddress;
-		public MoveReason? ExitReason { get; set; }
+		public Reason? ExitReason { get; set; }
 		private bool Closed => ExitReason != null;
 
 		public PacketHandler(Ts3Crypt ts3Crypt)
@@ -132,7 +132,7 @@ namespace TS3Client.Full
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
 		}
 
-		public void Stop(MoveReason closeReason = MoveReason.LeftServer)
+		public void Stop(Reason closeReason = Reason.LeftServer)
 		{
 			resendThreadId = -1;
 			lock (sendLoopLock)
@@ -588,7 +588,7 @@ namespace TS3Client.Full
 					if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values, now)) ||
 						(initPacketCheck != null && ResendPacket(initPacketCheck, now)))
 					{
-						Stop(MoveReason.Timeout);
+						Stop(Reason.Timeout);
 						return;
 					}
 				}
