@@ -10,6 +10,7 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Helper;
+	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 	using System;
 	using System.Drawing;
@@ -75,10 +76,10 @@ namespace TS3AudioBot.ResourceFactories
 			return jobj.TryCast<string>("permalink_url").OkOr(null);
 		}
 
-		private static JObject ParseJson(string jsonResponse)
+		private static JToken ParseJson(string jsonResponse)
 		{
-			try { return JObject.Parse(jsonResponse); }
-			catch (FormatException) { return null; }
+			try { return JToken.Parse(jsonResponse); }
+			catch (JsonReaderException) { return null; }
 		}
 
 		private AudioResource ParseJObjectToResource(JToken jobj)

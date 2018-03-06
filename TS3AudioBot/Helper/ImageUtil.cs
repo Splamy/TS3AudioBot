@@ -18,9 +18,11 @@ namespace TS3AudioBot.Helper
 
 	internal static class ImageUtil
 	{
+		public const int ResizeMaxWidthDefault = 320;
+
 		private static readonly StringFormat AvatarTextFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Near };
 
-		public static Image BuildStringImage(string str, Image img, int resizeMaxWidth = 320)
+		public static Image BuildStringImage(string str, Image img, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
 			img = AutoResize(img, resizeMaxWidth);
 
@@ -43,9 +45,9 @@ namespace TS3AudioBot.Helper
 						graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
 						graphics.CompositingQuality = CompositingQuality.HighQuality;
 
-						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
+						using (Pen avatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
 						{
-							graphics.DrawPath(AvatarTextOutline, gp);
+							graphics.DrawPath(avatarTextOutline, gp);
 						}
 						graphics.FillPath(Brushes.White, gp);
 					}
@@ -132,9 +134,9 @@ namespace TS3AudioBot.Helper
 						gp.AddString(part, FontFamily.GenericMonospace, 0, 15, buildRect, AvatarTextFormat);
 
 						bg.Clear(Color.Transparent);
-						using (Pen AvatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
+						using (Pen avatarTextOutline = new Pen(Color.Black, 4) { LineJoin = LineJoin.Round })
 						{
-							bg.DrawPath(AvatarTextOutline, gp);
+							bg.DrawPath(avatarTextOutline, gp);
 						}
 						bg.FillPath(Brushes.White, gp);
 

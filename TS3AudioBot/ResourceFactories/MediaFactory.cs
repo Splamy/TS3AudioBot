@@ -46,23 +46,18 @@ namespace TS3AudioBot.ResourceFactories
 		public R<PlayResource> GetResourceById(AudioResource resource)
 		{
 			var result = ValidateUri(resource.ResourceId);
-
 			if (!result)
-			{
 				return result.Error;
-			}
+
+			var resData = result.Value;
+			AudioResource finalResource;
+			if (resource.ResourceTitle != null)
+				finalResource = resource;
+			else if (!string.IsNullOrWhiteSpace(resData.Title))
+				finalResource = resource.WithName(resData.Title);
 			else
-			{
-				var resData = result.Value;
-				AudioResource finalResource;
-				if (resource.ResourceTitle != null)
-					finalResource = resource;
-				else if (!string.IsNullOrWhiteSpace(resData.Title))
-					finalResource = resource.WithName(resData.Title);
-				else
-					finalResource = resource.WithName(resource.ResourceId);
-				return new PlayResource(resData.FullUri, finalResource);
-			}
+				finalResource = resource.WithName(resource.ResourceId);
+			return new MediaPlayResource(resData.FullUri, finalResource, resData.Image);
 		}
 
 		public string RestoreLink(string id) => id;
@@ -86,8 +81,12 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private static string GetStreamName(Stream stream)
-			=> AudioTagReader.GetTitle(stream) ?? string.Empty;
+		private static HeaderData GetStreamHeaderData(Stream stream)
+		{
+			var headerData = AudioTagReader.GetData(stream) ?? new HeaderData();
+			headerData.Title = headerData.Title ?? string.Empty;
+			return headerData;
+		}
 
 		private static R<ResData> ValidateWeb(Uri link)
 		{
@@ -96,7 +95,10 @@ namespace TS3AudioBot.ResourceFactories
 				return result.Error;
 
 			using (var stream = result.Value)
-				return new ResData(link.AbsoluteUri, GetStreamName(stream));
+			{
+				var headerData = GetStreamHeaderData(stream);
+				return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
+			}
 		}
 
 		private R<ResData> ValidateFile(string path)
@@ -109,7 +111,8 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read))
 				{
-					return R<ResData>.OkR(new ResData(foundPath.LocalPath, GetStreamName(stream)));
+					var headerData = GetStreamHeaderData(stream);
+					return R<ResData>.OkR(new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture });
 				}
 			}
 			// TODO: correct errors
@@ -211,27 +214,37 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Image> GetThumbnail(PlayResource playResource)
 		{
-			var uri = new Uri(playResource.PlayUri);
-			var result = GetStreamFromUriUnsafe(uri);
-			if (!result)
-				return result.Error;
+			byte[] rawImgData;
 
-			using (var stream = result.Value)
+			if (playResource is MediaPlayResource mediaPlayResource)
 			{
-				var data = AudioTagReader.GetImage(stream);
-				if (data == null)
-					return "No image found";
+				rawImgData = mediaPlayResource.Image;
+			}
+			else
+			{
+				var uri = new Uri(playResource.PlayUri);
+				var result = GetStreamFromUriUnsafe(uri);
+				if (!result)
+					return result.Error;
 
-				using (var memStream = new MemoryStream(data))
+				using (var stream = result.Value)
 				{
-					try
-					{
-						return new Bitmap(memStream);
-					}
-					catch (ArgumentException)
-					{
-						return "Inavlid image data";
-					}
+					rawImgData = AudioTagReader.GetData(stream)?.Picture;
+				}
+			}
+
+			if (rawImgData == null)
+				return "No image found";
+
+			using (var memStream = new MemoryStream(rawImgData))
+			{
+				try
+				{
+					return new Bitmap(memStream);
+				}
+				catch (ArgumentException)
+				{
+					return "Inavlid image data";
 				}
 			}
 		}
@@ -241,11 +254,22 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		public string FullUri { get; }
 		public string Title { get; }
+		public byte[] Image { get; set; }
 
 		public ResData(string fullUri, string title)
 		{
 			FullUri = fullUri;
 			Title = title;
+		}
+	}
+
+	public class MediaPlayResource : PlayResource
+	{
+		public byte[] Image { get; }
+
+		public MediaPlayResource(string uri, AudioResource baseData, byte[] image) : base(uri, baseData)
+		{
+			Image = image;
 		}
 	}
 

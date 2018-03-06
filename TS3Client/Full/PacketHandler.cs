@@ -304,6 +304,7 @@ namespace TS3Client.Full
 				try { buffer = udpClient.Receive(ref dummy); }
 				catch (IOException) { return null; }
 				catch (SocketException) { return null; }
+				catch (ObjectDisposedException) { return null; }
 
 				if (dummy.Address.Equals(remoteAddress.Address) && dummy.Port != remoteAddress.Port)
 					continue;

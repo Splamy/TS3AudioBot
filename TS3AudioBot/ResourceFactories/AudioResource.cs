@@ -9,7 +9,7 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public sealed class PlayResource
+	public class PlayResource
 	{
 		public AudioResource BaseData { get; }
 		public string PlayUri { get; }

@@ -13,7 +13,7 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Net;
 
-	internal static class WebWrapper
+	public static class WebWrapper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
@@ -108,7 +108,7 @@ namespace TS3AudioBot.Helper
 		}
 	}
 
-	internal enum ValidateCode
+	public enum ValidateCode
 	{
 		Ok,
 		UnknownError,

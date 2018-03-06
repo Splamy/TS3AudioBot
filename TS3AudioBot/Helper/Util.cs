@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Helper
 {
 	using CommandSystem;
+	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 	using System;
 	using System.IO;
@@ -160,11 +161,13 @@ namespace TS3AudioBot.Helper
 
 		public static R<T> TryCast<T>(this JToken token, string key)
 		{
+			if (token == null)
+				return "No json token";
 			var value = token.SelectToken(key);
 			if (value == null)
 				return "Key not found";
 			try { return value.ToObject<T>(); }
-			catch (FormatException) { return "Invalid type"; }
+			catch (JsonReaderException) { return "Invalid type"; }
 		}
 	}
 

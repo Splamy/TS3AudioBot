@@ -72,7 +72,6 @@
     <Compile Include="Commands\Ts3Const.cs" />
     <Compile Include="ConnectionData.cs" />
     <Compile Include="DisconnectEventArgs.cs" />
-    <Compile Include="DocumentedEnums.cs" />
     <Compile Include="Audio\ActiveCheckPipe.cs" />
     <Compile Include="Full\Ed25519.cs" />
     <Compile Include="FileTransferManager.cs" />
@@ -132,7 +131,7 @@
     <Compile Include="Ts3BaseClient.cs" />
     <Compile Include="TsDnsResolver.cs" />
     <Compile Include="Helper\Util.cs" />
-    <Compile Include="OwnEnums.cs" />
+    <Compile Include="Ts3Enums.cs" />
     <Compile Include="Messages\BaseTypes.cs" />
     <Compile Include="Messages\ResponseDictionary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

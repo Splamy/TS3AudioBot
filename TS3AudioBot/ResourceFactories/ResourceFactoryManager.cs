@@ -48,6 +48,7 @@ namespace TS3AudioBot.ResourceFactories
 			AddFactory(new YoutubeFactory(yfd));
 			AddFactory(new SoundcloudFactory());
 			AddFactory(new TwitchFactory());
+			AddFactory(new BandcampFactory());
 		}
 
 		// Load lookup stages

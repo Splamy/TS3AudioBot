@@ -119,6 +119,7 @@
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginResponse.cs" />
     <Compile Include="Plugins\PluginStatus.cs" />
+    <Compile Include="ResourceFactories\BandcampFactory.cs" />
     <Compile Include="ResourceFactories\IFactory.cs" />
     <Compile Include="ResourceFactories\IThumbnailFactory.cs" />
     <Compile Include="ResourceFactories\MatchCertainty.cs" />

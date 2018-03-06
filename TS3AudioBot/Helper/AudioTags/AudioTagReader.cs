@@ -31,29 +31,20 @@ namespace TS3AudioBot.Helper.AudioTags
 			TagDict.Add(tagHeader.TagId, tagHeader);
 		}
 
-		public static string GetTitle(Stream fileStream)
+		public static HeaderData GetData(Stream fileStream)
 		{
 			var sr = new BinaryReader(fileStream);
 			string tag = Encoding.ASCII.GetString(sr.ReadBytes(3));
 			if (TagDict.TryGetValue(tag, out var tagHeader))
 			{
-				try { return tagHeader.GetTitle(sr)?.TrimEnd('\0'); }
-				catch (IOException) { }
-				catch (FormatException fex) { Log.Debug(fex, "Audiotag format exception"); }
-				catch (NullReferenceException) { Log.Debug("Unparsed link!"); }
-			}
-			return null;
-		}
-
-		// TODO the concept is very dirty.
-		// Stream needs to be read twice for each factory
-		public static byte[] GetImage(Stream fileStream)
-		{
-			var sr = new BinaryReader(fileStream);
-			string tag = Encoding.ASCII.GetString(sr.ReadBytes(3));
-			if (TagDict.TryGetValue(tag, out var tagHeader))
-			{
-				try { return tagHeader.GetImage(sr); }
+				try
+				{
+					var data = tagHeader.GetData(sr);
+					if (data == null)
+						return null;
+					data.Title = data.Title?.TrimEnd('\0');
+					return data;
+				}
 				catch (IOException) { }
 				catch (FormatException fex) { Log.Debug(fex, "Audiotag format exception"); }
 				catch (NullReferenceException) { Log.Debug("Unparsed link!"); }
@@ -64,8 +55,7 @@ namespace TS3AudioBot.Helper.AudioTags
 		private abstract class Tag
 		{
 			public abstract string TagId { get; }
-			public abstract string GetTitle(BinaryReader fileStream);
-			public abstract byte[] GetImage(BinaryReader fileStream);
+			public abstract HeaderData GetData(BinaryReader fileStream);
 		}
 
 		// ReSharper disable InconsistentNaming
@@ -74,19 +64,16 @@ namespace TS3AudioBot.Helper.AudioTags
 			private const int TitleLength = 30;
 			public override string TagId => "TAG";
 
-			public override string GetTitle(BinaryReader fileStream)
+			public override HeaderData GetData(BinaryReader fileStream)
 			{
 				// 3 bytes skipped for TagID
-				string title = Encoding.ASCII.GetString(fileStream.ReadBytes(TitleLength));
+				return new HeaderData
+				{
+					Title = Encoding.ASCII.GetString(fileStream.ReadBytes(TitleLength)),
+					Picture = null,
+				};
 
 				// ignore other blocks
-
-				return title;
-			}
-
-			public override byte[] GetImage(BinaryReader fileStream)
-			{
-				throw new NotSupportedException();
 			}
 		}
 
@@ -96,17 +83,18 @@ namespace TS3AudioBot.Helper.AudioTags
 			private readonly int v2_PIC = FrameIdV2("PIC"); // Picture
 			private readonly uint v3_TIT2 = FrameIdV3("TIT2"); // Title
 			private readonly uint v3_APIC = FrameIdV3("APIC"); // Picture
+			private readonly uint v3_PIC0 = FrameIdV3("PIC\0"); // Picture
 
 			public override string TagId => "ID3";
 
 			// ReSharper disable UnusedVariable
-			private IdData GetData(BinaryReader fileStream)
+			public override HeaderData GetData(BinaryReader fileStream)
 			{
-				var retdata = new IdData();
+				var retdata = new HeaderData();
 
 				// using the official id3 tag documentation
 				// http://id3.org/id3v2.3.0#ID3_tag_version_2.3.0
-				
+
 				// read + validate header                                    [10 bytes]
 				// skipped for TagID                                         >03 bytes
 				byte versionMajor = fileStream.ReadByte(); //                >01 bytes
@@ -163,11 +151,13 @@ namespace TS3AudioBot.Helper.AudioTags
 					{
 						// frame header                                        [10 bytes]
 						uint frameId = fileStream.ReadUInt32Be(); //           >04 bytes
-						int frameSize = fileStream.ReadId3Int(); //            >04 bytes
+						int frameSize = versionMajor == 4 //                   >04 bytes
+							? fileStream.ReadId3Int()
+							: fileStream.ReadInt32Be();
 						ushort frame_flags = fileStream.ReadUInt16Be(); //     >02 bytes
 						readCount += 10;
 
-						if(readCount + frameSize > tagSize)
+						if (readCount + frameSize > tagSize)
 							throw new FormatException("Frame position+size exceedes header size");
 
 						// content
@@ -177,19 +167,14 @@ namespace TS3AudioBot.Helper.AudioTags
 							// is a string, so the first byte is a indicator byte
 							retdata.Title = DecodeString(textBuffer[0], textBuffer, 1, frameSize - 1);
 						}
-						else if (frameId == v3_APIC)
+						else if (frameId == v3_APIC || frameId == v3_PIC0)
 						{
-							var textEncoding = fileStream.ReadByte();
-							var mime = new List<byte>();
-							byte textByte;
-							while ((textByte = fileStream.ReadByte()) != 0)
-								mime.Add(textByte);
-							var pictureType = fileStream.ReadByte();
-							var description = new List<byte>();
-							while ((textByte = fileStream.ReadByte()) != 0)
-								description.Add(textByte);
+							var textEncoding = fileStream.ReadByte(); //                                  >01 bytes
+							var mimeLen = ReadNullTermString(fileStream, 0, null); //                     >?? bytes
+							var pictureType = fileStream.ReadByte(); //                                   >01 bytes
+							var descriptionLen = ReadNullTermString(fileStream, textEncoding, null); //   >?? bytes
 
-							retdata.Picture = fileStream.ReadBytes(frameSize - (description.Count + mime.Count + 2));
+							retdata.Picture = fileStream.ReadBytes(frameSize - (mimeLen + descriptionLen + 2));
 						}
 						else if (frameId == 0) { break; }
 						else { fileStream.ReadBytes(frameSize); }
@@ -204,34 +189,54 @@ namespace TS3AudioBot.Helper.AudioTags
 			}
 			// ReSharper restore UnusedVariable
 
-			public override string GetTitle(BinaryReader fileStream)
+			private static int ReadNullTermString(BinaryReader fileStream, byte encoding, List<byte> text)
 			{
-				var data = GetData(fileStream);
-				return data.Title;
+				bool unicode = encoding == 1 || encoding == 2;
+
+				if (!unicode)
+				{
+					int read = 0;
+					byte textByte;
+					while ((textByte = fileStream.ReadByte()) != 0)
+					{
+						text?.Add(textByte);
+						read++;
+					}
+					return read + 1; // +1 = null-byte
+				}
+				else
+				{
+					var buffer = new byte[2];
+					int read = 0;
+					while (fileStream.Read(buffer, 0, 2) == 2 && (buffer[0] != 0 || buffer[1] != 0))
+					{
+						text?.AddRange(buffer);
+						read += 2;
+					}
+					return read + 2;
+				}
 			}
 
-			public override byte[] GetImage(BinaryReader fileStream)
-			{
-				var data = GetData(fileStream);
-				return data.Picture;
-			}
-
-			private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)
+			private static readonly Encoding UnicodeBeEncoding = new UnicodeEncoding(true, false);
+			private static Encoding GetEncoding(byte type)
 			{
 				switch (type)
 				{
 				case 0:
-					return Encoding.GetEncoding(28591).GetString(textBuffer, offset, length);
+					return Encoding.GetEncoding(28591);
 				case 1:
-					return Encoding.Unicode.GetString(textBuffer, offset, length);
+					return Encoding.Unicode;
 				case 2:
-					return new UnicodeEncoding(true, false).GetString(textBuffer, offset, length);
+					return UnicodeBeEncoding;
 				case 3:
-					return Encoding.UTF8.GetString(textBuffer, offset, length);
+					return Encoding.UTF8;
 				default:
 					throw new FormatException("The id3 tag is damaged");
 				}
 			}
+
+			private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)
+				=> GetEncoding(type).GetString(textBuffer, offset, length);
 
 			private static int FrameIdV2(string id)
 			{
@@ -244,12 +249,12 @@ namespace TS3AudioBot.Helper.AudioTags
 			}
 		}
 
-		private struct IdData
-		{
-			public string Title { get; set; }
-			public byte[] Picture { get; set; }
-		}
-
 		// ReSharper enable InconsistentNaming
+	}
+
+	internal class HeaderData
+	{
+		public string Title { get; set; }
+		public byte[] Picture { get; set; }
 	}
 }
