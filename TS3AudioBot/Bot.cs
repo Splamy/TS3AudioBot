@@ -197,7 +197,7 @@ namespace TS3AudioBot
 					}
 				}
 
-				CallScript(info, textMessage.Message, true);
+				CallScript(info, textMessage.Message, true, false);
 			}
 			finally
 			{
@@ -295,12 +295,12 @@ namespace TS3AudioBot
 			}
 
 			var info = CreateExecInfo(e.Invoker);
-			CallScript(info, script, false);
+			CallScript(info, script, false, true);
 		}
 
-		private void CallScript(ExecutionInformation info, string command, bool answer)
+		private void CallScript(ExecutionInformation info, string command, bool answer, bool skipRights)
 		{
-			info.AddDynamicObject(new CallerInfo(command, false));
+			info.AddDynamicObject(new CallerInfo(command, false) { SkipRightsChecks = skipRights });
 
 			try
 			{
