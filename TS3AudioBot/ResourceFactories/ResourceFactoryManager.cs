@@ -140,15 +140,17 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			var factories = FilterUsable(GetResFactoryByLink(netlinkurl));
+			List<(string, string)> errors = null;
 			foreach (var factory in factories)
 			{
 				var result = factory.GetResource(netlinkurl);
-				Log.Trace("Factory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error);
+				Log.Trace("ResFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error);
 				if (result)
 					return result;
+				(errors = errors ?? new List<(string, string)>()).Add((factory.FactoryFor, result.Error));
 			}
 
-			return "Could not load (No factory wanted to take it or could load it)";
+			return ToErrorString(errors);
 		}
 
 		public R<Playlist> LoadPlaylistFrom(string message) => LoadPlaylistFrom(message, null);
@@ -164,14 +166,17 @@ namespace TS3AudioBot.ResourceFactories
 				return listFactory.GetPlaylist(netlinkurl);
 
 			var factories = FilterUsable(GetListFactoryByLink(netlinkurl));
+			List<(string, string)> errors = null;
 			foreach (var factory in factories)
 			{
 				var result = factory.GetPlaylist(netlinkurl);
+				Log.Trace("ListFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error);
 				if (result)
 					return result;
+				(errors = errors ?? new List<(string, string)>()).Add((factory.FactoryFor, result.Error));
 			}
 
-			return "Could not load (No factory wanted to take it or could load it)";
+			return ToErrorString(errors);
 		}
 
 		public string RestoreLink(AudioResource res)
@@ -230,6 +235,14 @@ namespace TS3AudioBot.ResourceFactories
 			RightsManager.UnregisterRights(factoryInfo.ExposedRights);
 		}
 
+		private static string ToErrorString(IReadOnlyList<(string fact, string err)> errors)
+		{
+			if (errors.Count == 0)
+				return "Could not load (The bot is stupid)";
+			if (errors.Count == 1)
+				return $"Could not load ({errors[0].fact}: {errors[0].err})";
+			return "Could not load (Considered multiple factories but all failed. Try selecting one manually with !from <factory> <link>)";
+		}
 
 		public void Dispose()
 		{

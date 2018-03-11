@@ -46,8 +46,8 @@ namespace TS3AudioBot.Helper.AudioTags
 					return data;
 				}
 				catch (IOException) { }
-				catch (FormatException fex) { Log.Debug(fex, "Audiotag format exception"); }
-				catch (NullReferenceException) { Log.Debug("Unparsed link!"); }
+				catch (FormatException fex) { Log.Debug(fex, "Audiotag has an invalid format"); }
+				catch (Exception ex) { Log.Warn(ex, "Unknown error while parsing audiotag"); }
 			}
 			return null;
 		}
@@ -157,7 +157,13 @@ namespace TS3AudioBot.Helper.AudioTags
 						ushort frame_flags = fileStream.ReadUInt16Be(); //     >02 bytes
 						readCount += 10;
 
-						if (readCount + frameSize > tagSize)
+						if ((frameId & 0xFF) == 0)
+						{
+							// legacy tags start here which we don't support
+							break;
+						}
+
+						if (frameSize <= 0 || readCount + frameSize > tagSize)
 							throw new FormatException("Frame position+size exceedes header size");
 
 						// content
@@ -197,7 +203,7 @@ namespace TS3AudioBot.Helper.AudioTags
 				{
 					int read = 0;
 					byte textByte;
-					while ((textByte = fileStream.ReadByte()) != 0)
+					while ((textByte = fileStream.ReadByte()) > 0)
 					{
 						text?.Add(textByte);
 						read++;
