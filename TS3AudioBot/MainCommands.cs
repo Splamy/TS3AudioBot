@@ -957,6 +957,9 @@ namespace TS3AudioBot
 		[Command("repeat off", "Disables single song repeat.")]
 		public static void CommandRepeatOff(IPlayerConnection playerConnection) => playerConnection.Repeated = false;
 
+		[Command("rename", "Renames bot to a given string")]
+		public static void CommandRename(string name, TeamspeakControl bot) => bot.ChangeName(name);
+		
 		[Command("rights can", "Returns the subset of allowed commands the caller (you) can execute.")]
 		public static JsonArray<string> CommandRightsCan(RightsManager rightsManager, TeamspeakControl ts, CallerInfo caller, InvokerData invoker = null, params string[] rights)
 		{
