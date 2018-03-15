@@ -93,7 +93,7 @@ namespace TS3Client.Full
 		Ios,
 	}
 }
-<#+	class Ver
+<#+ class Ver
 {
 	public string plat;
 	public string enu;

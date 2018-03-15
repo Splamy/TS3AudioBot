@@ -46,7 +46,7 @@ namespace TS3Client
 			var lineDataPart = splitindex < 0 ? "" : message.Substring(splitindex);
 
 			// if it's not an error it is a notification
-			if (ntfyType != NotificationType.Error)
+			if (ntfyType != NotificationType.CommandError)
 			{
 				var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
 				var lazyNotification = new LazyNotification(notification, ntfyType);
@@ -75,7 +75,7 @@ namespace TS3Client
 				return lazyNotification;
 			}
 
-			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.Error);
+			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.CommandError);
 			var errorStatus = result.Ok ? (CommandError)result.Value : Util.CustomError("Invalid Error code");
 
 			return PushMessageInternal(errorStatus, ntfyType);

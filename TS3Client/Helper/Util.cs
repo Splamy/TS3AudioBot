@@ -76,5 +76,9 @@ namespace TS3Client.Helper
 			}
 			return new string(c);
 		}
+		
+		public static byte[] DebugFromHex(string hex)
+			=> hex.Split(new []{' '}, StringSplitOptions.RemoveEmptyEntries)
+				.Select(x => Convert.ToByte(x, 16)).ToArray();
 	}
 }

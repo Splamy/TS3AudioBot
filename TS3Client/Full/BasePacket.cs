@@ -75,8 +75,8 @@ namespace TS3Client.Full
 		public override string ToString()
 		{
 			return $"Type: {PacketType}\tFlags: [ " +
-				$"{(FragmentedFlag ? "X" : "_")} {(NewProtocolFlag ? "X" : "_")} " +
-				$"{(CompressedFlag ? "X" : "_")} {(UnencryptedFlag ? "X" : "_")} ]\t" +
+				$"{(FragmentedFlag ? "F" : "_")} {(NewProtocolFlag ? "N" : "_")} " +
+				$"{(CompressedFlag ? "C" : "_")} {(UnencryptedFlag ? "U" : "_")} ]\t" +
 				$"Id: {PacketId}\n" +
 				$"  MAC: { (Raw == null ? string.Empty : DebugUtil.DebugToHex(Raw.AsSpan().Slice(0, 8))) }\t" +
 				$"  Header: { DebugUtil.DebugToHex(Header) }\n" +

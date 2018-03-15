@@ -126,7 +126,7 @@ namespace TS3Client.Query
 			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
 			case NotificationType.TokenUsed: break;
 			// special
-			case NotificationType.Error: break;
+			case NotificationType.CommandError: break;
 			case NotificationType.Unknown:
 			default: throw Util.UnhandledDefault(lazyNotification.NotifyType);
 			}

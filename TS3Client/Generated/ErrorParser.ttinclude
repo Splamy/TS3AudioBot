@@ -1,0 +1,30 @@
+<#@ assembly name="System.Core" #>
+<#@ assembly name="Microsoft.VisualBasic" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Microsoft.VisualBasic.FileIO" #>
+<#
+List<GenError> ParseErrors()
+{
+	string declFilePath = Host.ResolvePath("../Declarations/Errors.csv");
+	var data = new List<GenError>();
+	using (TextFieldParser parser = new TextFieldParser(declFilePath))
+	{
+		parser.TextFieldType = FieldType.Delimited;
+		parser.SetDelimiters(",");
+		while (!parser.EndOfData) {
+			var line = parser.ReadFields();
+			data.Add(new GenError { Doc = line[1], Name = line[0], Value = line[2] });
+		}
+	}
+	data.RemoveAt(0);
+	return data;
+}
+#><#+
+class GenError
+{
+	public string Doc { get; set; }
+	public string Name { get; set; }
+	public string Value { get; set; }
+}
+#>

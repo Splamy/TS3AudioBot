@@ -165,9 +165,9 @@ namespace TS3AudioBot
 				}
 			}
 			else if (SystemData.IsLinux)
-				verionSign = VersionSign.VER_LIN_3_0_19_4;
+				verionSign = VersionSign.VER_WIN_3_1_8;
 			else
-				verionSign = VersionSign.VER_WIN_3_0_19_4;
+				verionSign = VersionSign.VER_WIN_3_1_8;
 
 			tsFullClient.Connect(new ConnectionDataFull
 			{

@@ -25,7 +25,6 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Security;
 	using System;
 	using System.Buffers.Binary;
-	using System.Collections.Generic;
 	using System.Linq;
 	using System.Security.Cryptography;
 	using System.Text;
@@ -47,9 +46,14 @@ namespace TS3Client.Full
 		public IdentityData Identity { get; set; }
 
 		internal bool CryptoInitComplete { get; private set; }
+		private byte[] alphaTmp;
 		private byte[] ivStruct;
 		private readonly byte[] fakeSignature = new byte[MacLen];
-		private readonly Tuple<byte[], byte[], uint>[] cachedKeyNonces = new Tuple<byte[], byte[], uint>[PacketTypeKinds * 2];
+		private readonly (byte[] key, byte[] nonce, uint generation)?[] cachedKeyNonces = new(byte[], byte[], uint)?[PacketTypeKinds * 2];
+
+		public static readonly X9ECParameters Ed25519Curve = CustomNamedCurves.GetByName("Curve25519");
+		public static readonly ECDomainParameters Ed25519Domain = new ECDomainParameters(Ed25519Curve.Curve, Ed25519Curve.G, Ed25519Curve.N, Ed25519Curve.H, Ed25519Curve.GetSeed());
+
 
 		public Ts3Crypt()
 		{
@@ -59,7 +63,7 @@ namespace TS3Client.Full
 		internal void Reset()
 		{
 			CryptoInitComplete = false;
-			ivStruct = null; // TODO recheck
+			ivStruct = null;
 			Array.Clear(fakeSignature, 0, fakeSignature.Length);
 			Array.Clear(cachedKeyNonces, 0, cachedKeyNonces.Length);
 			Identity = null;
@@ -176,7 +180,7 @@ namespace TS3Client.Full
 		/// <param name="alpha">The alpha key from clientinit encoded in base64.</param>
 		/// <param name="beta">The beta key from clientinit encoded in base64.</param>
 		/// <param name="omega">The omega key from clientinit encoded in base64.</param>
-		internal void CryptoInit(string alpha, string beta, string omega)
+		internal R CryptoInit(string alpha, string beta, string omega)
 		{
 			if (Identity == null)
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
@@ -187,9 +191,7 @@ namespace TS3Client.Full
 			var serverPublicKey = ImportPublicKey(omegaBytes);
 
 			byte[] sharedKey = GetSharedSecret(serverPublicKey);
-			SetSharedSecret(alphaBytes, betaBytes, sharedKey);
-
-			CryptoInitComplete = true;
+			return SetSharedSecret(alphaBytes, betaBytes, sharedKey);
 		}
 
 		/// <summary>Calculates a shared secred with ECDH from the client private and server public key.</summary>
@@ -208,99 +210,57 @@ namespace TS3Client.Full
 				Array.Copy(keyArr, 0, sharedData, 32 - keyArr.Length, keyArr.Length);
 			return sharedData;
 		}
-
+		
 		/// <summary>Initializes all required variables for the secure communication.</summary>
 		/// <param name="alpha">The alpha key from clientinit.</param>
 		/// <param name="beta">The beta key from clientinit.</param>
 		/// <param name="sharedKey">The omega key from clientinit.</param>
-		private void SetSharedSecret(byte[] alpha, byte[] beta, byte[] sharedKey)
+		private R SetSharedSecret(byte[] alpha, byte[] beta, byte[] sharedKey)
 		{
-			// prepares the ivstruct consisting of 2 random byte chains of 10 bytes which each both clients agreed on
-			ivStruct = new byte[20];
-			Array.Copy(alpha, 0, ivStruct, 0, 10);
-			Array.Copy(beta, 0, ivStruct, 10, 10);
+			if (beta.Length != 10 && beta.Length != 54)
+				return $"Invalid beta size ({beta.Length})";
+
+			// prepares the ivstruct consisting of 2 random byte chains of 10/10 or 10/54 bytes which both sides agreed on
+			ivStruct = new byte[10 + beta.Length];
 
 			// applying hashes to get the required values for ts3
-			var buffer = Hash1It(sharedKey);
-			XorBinary(ivStruct, buffer, 20, ivStruct);
+			var buffer = beta.Length == 10 ? Hash1It(sharedKey) : Hash512It(sharedKey);
+			XorBinary(buffer, alpha, alpha.Length, ivStruct);
+			XorBinary(buffer.AsSpan().Slice(10), beta, beta.Length, ivStruct.AsSpan().Slice(10));
 
 			// creating a dummy signature which will be used on packets which dont use a real encryption signature (like plain voice)
-			buffer = Hash1It(ivStruct, 0, 20);
-			Array.Copy(buffer, 0, fakeSignature, 0, 8);
+			var buffer2 = Hash1It(ivStruct, 0, ivStruct.Length);
+			Array.Copy(buffer2, 0, fakeSignature, 0, 8);
+
+			alphaTmp = null;
+			CryptoInitComplete = true;
+			return R.OkR;
 		}
 
-		public static ECPoint publicTmp;
-		public static BigInteger privateTmp;
-
-		public static string ToHex(IEnumerable<byte> seq) => string.Join(" ", seq.Select(x => x.ToString("X2")));
-		public static byte[] FromHex(string hex) => hex.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
-
-		public static readonly X9ECParameters Ed25519Curve = CustomNamedCurves.GetByName("Curve25519");
-		public static readonly ECDomainParameters Ed25519Domain = new ECDomainParameters(Ed25519Curve.Curve, Ed25519Curve.G, Ed25519Curve.N, Ed25519Curve.H, Ed25519Curve.GetSeed());
-		private static readonly ECKeyGenerationParameters EdKeyGenParams = new ECKeyGenerationParameters(Ed25519Domain, new SecureRandom());
-
-		public static void Test()
+		public R CryptoInit2(string license, string omega, string proof, string beta, byte[] privateKey)
 		{
-			/*var dat = FromHex("20 41 11 60 A1 36 E0 DC 4E 67 03 E6 E3 6C E1 7F 3A 7A 8F 70 56 1B FD E8 EE 50 8E E5 CE C7 10 66");
-			
-			var pt = Ed25519.DecodeInt(dat).ToBcBi();
+			// TODO safe
+			var licenseBytes = Convert.FromBase64String(license);
+			var omegaBytes = Convert.FromBase64String(omega);
+			var proofBytes = Convert.FromBase64String(proof);
+			var betaBytes = Convert.FromBase64String(beta);
+			var serverPublicKey = ImportPublicKey(omegaBytes);
 
-			var pub = Ed25519Curve.G.Multiply(pt);
-			var x = Ed25519.EncodePoint(
-				pub.Normalize().AffineXCoord.ToBigInteger().ToNetBi(),
-				pub.Normalize().AffineYCoord.ToBigInteger().ToNetBi());
-			var xstr = ToHex(x);*/
+			// Verify that our connection isn't tampered with
+			if (!VerifySign(serverPublicKey, licenseBytes, proofBytes))
+				return "The init proof is not valid. Your connection might be tampered with or the sever is an idiot.";
 
-			var pk2nd = FromHex("");
-			var scalar = FromHex("");
+			var licenseChainR = Licenses.Parse(licenseBytes);
+			if (!licenseChainR.Ok)
+				return licenseChainR.Error;
 
-			var hash = Hash512It(pk2nd.Concat(scalar).ToArray());
+			var licenseChain = licenseChainR.Value;
+			var key = licenseChain.DeriveKey();
 
-			hash[0] &= 0xF8;
-			hash[31] &= 0x3F;
-			hash[31] |= 0x40;
+			var sharedec = Ed25519.ScalarMul(key, Ed25519.DecodeInt(privateKey));
+			var keyArr = sharedec.Encode();
 
-			var p1 = Ed25519.DecodePoint(hash.Take(32).ToArray());
-		}
-
-		private static void GenerateTemporaryKey()
-		{
-			// TODO own method fn(curve) -> (q, d)
-			var generator = new ECKeyPairGenerator();
-			generator.Init(EdKeyGenParams);
-			var keyPair = generator.GenerateKeyPair();
-
-			var privateKey = (ECPrivateKeyParameters)keyPair.Private;
-			var publicKey = (ECPublicKeyParameters)keyPair.Public;
-
-			publicTmp = publicKey.Q;
-			privateTmp = privateKey.D;
-		}
-
-		public static byte[] EncodeInt(BigInteger y)
-		{
-			byte[] nin = y.ToByteArray();
-			var nout = new byte[Math.Max(nin.Length, 32)];
-			Array.Copy(nin, nout, nin.Length);
-			return nout;
-		}
-
-		internal void CryptoInit2(string license, string omega, string proof)
-		{
-			// TODO verify proof
-
-			var licenseArr = Convert.FromBase64String(license);
-
-		}
-
-		private byte[] GetSharedSecret2(ECPoint publicKeyPoint)
-		{
-			throw new NotImplementedException();
-		}
-
-		private void SetSharedSecret2(byte[] alpha, byte[] beta, byte[] sharedKey)
-		{
-
+			return SetSharedSecret(alphaTmp, betaBytes, keyArr);
 		}
 
 		internal R<byte[]> ProcessInit1(byte[] data)
@@ -350,9 +310,9 @@ namespace TS3Client.Full
 				}
 
 			case 3:
-				byte[] alphaBytes = new byte[10];
-				Util.Random.NextBytes(alphaBytes);
-				var alpha = Convert.ToBase64String(alphaBytes);
+				alphaTmp = new byte[10];
+				Util.Random.NextBytes(alphaTmp);
+				var alpha = Convert.ToBase64String(alphaTmp);
 				string initAdd = Ts3Command.BuildToString("clientinitiv",
 					new ICommandPart[] {
 						new CommandParameter("alpha", alpha),
@@ -401,6 +361,8 @@ namespace TS3Client.Full
 			var n = new BigInteger(1, data, 64 + offset, 64);
 			return x.ModPow(BigInteger.Two.Pow(level), n).ToByteArrayUnsigned();
 		}
+
+		internal static (byte[] privateKey, byte[] publicKey) GenerateTemporaryKey() => Ed25519.CreateKeyPair();
 
 		#endregion
 
@@ -463,7 +425,7 @@ namespace TS3Client.Full
 			// Raw is now [Mac..., Header..., Data...]
 		}
 
-		internal static S2CPacket GetIncommingPacket(byte[] data)
+		internal static S2CPacket GetS2CPacket(byte[] data)
 		{
 			if (data.Length < S2CPacket.HeaderLen + MacLen)
 				return null;
@@ -471,6 +433,19 @@ namespace TS3Client.Full
 			return new S2CPacket(data)
 			{
 				PacketTypeFlagged = data[MacLen + 2],
+				PacketId = BinaryPrimitives.ReadUInt16BigEndian(data.AsReadOnlySpan().Slice(MacLen)),
+			};
+		}
+
+		internal static C2SPacket GetC2SPacket(byte[] data)
+		{
+			if (data.Length < C2SPacket.HeaderLen + MacLen)
+				return null;
+			// TODO standartize packet direction generation see s2c/c2s
+			return new C2SPacket(null, 0)
+			{
+				Raw = data,
+				PacketTypeFlagged = data[MacLen + 4],
 				PacketId = BinaryPrimitives.ReadUInt16BigEndian(data.AsReadOnlySpan().Slice(MacLen)),
 			};
 		}
@@ -489,7 +464,7 @@ namespace TS3Client.Full
 		private bool DecryptData(BasePacket packet)
 		{
 			Array.Copy(packet.Raw, MacLen, packet.Header, 0, packet.HeaderLength);
-			var (key, nonce) = GetKeyNonce(true, packet.PacketId, packet.GenerationId, packet.PacketType);
+			var (key, nonce) = GetKeyNonce(packet.FromServer, packet.PacketId, packet.GenerationId, packet.PacketType);
 			int dataLen = packet.Raw.Length - (MacLen + packet.HeaderLength);
 
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(key), 8 * MacLen, nonce, packet.Header);
@@ -517,7 +492,7 @@ namespace TS3Client.Full
 
 		private static bool FakeDecrypt(BasePacket packet, byte[] mac)
 		{
-			if (!CheckEqual(packet.Raw, 0, mac, 0, MacLen))
+			if (!CheckEqual(packet.Raw, mac, MacLen))
 				return false;
 			int dataLen = packet.Raw.Length - (MacLen + packet.HeaderLength);
 			packet.Data = new byte[dataLen];
@@ -531,7 +506,7 @@ namespace TS3Client.Full
 		/// <param name="generationId">Each time the packetId reaches 65535 the next packet will go on with 0 and the generationId will be increased by 1.</param>
 		/// <param name="packetType">The packetType.</param>
 		/// <returns>A tuple of (key, nonce)</returns>
-		private (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
+		public (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
 		{
 			if (!CryptoInitComplete)
 				return DummyKeyAndNonceTuple;
@@ -540,31 +515,27 @@ namespace TS3Client.Full
 			byte packetTypeRaw = (byte)packetType;
 
 			int cacheIndex = packetTypeRaw * (fromServer ? 1 : 2);
-			if (cachedKeyNonces[cacheIndex] == null || cachedKeyNonces[cacheIndex].Item3 != generationId)
+			if (!cachedKeyNonces[cacheIndex].HasValue || cachedKeyNonces[cacheIndex].Value.generation != generationId)
 			{
 				// this part of the key/nonce is fixed by the message direction and packetType
 
-				byte[] tmpToHash = new byte[26];
+				byte[] tmpToHash = new byte[ivStruct.Length == 20 ? 26 : 70];
 
-				if (fromServer)
-					tmpToHash[0] = 0x30;
-				else
-					tmpToHash[0] = 0x31;
-
+				tmpToHash[0] = fromServer ? (byte)0x30 : (byte)0x31;
 				tmpToHash[1] = packetTypeRaw;
 
 				BinaryPrimitives.WriteUInt32BigEndian(tmpToHash.AsSpan().Slice(2), generationId);
-				Array.Copy(ivStruct, 0, tmpToHash, 6, 20);
+				Array.Copy(ivStruct, 0, tmpToHash, 6, ivStruct.Length);
 
 				var result = Hash256It(tmpToHash).AsSpan();
 
-				cachedKeyNonces[cacheIndex] = new Tuple<byte[], byte[], uint>(result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
+				cachedKeyNonces[cacheIndex] = (result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
 			}
 
 			byte[] key = new byte[16];
 			byte[] nonce = new byte[16];
-			Array.Copy(cachedKeyNonces[cacheIndex].Item1, 0, key, 0, 16);
-			Array.Copy(cachedKeyNonces[cacheIndex].Item2, 0, nonce, 0, 16);
+			Array.Copy(cachedKeyNonces[cacheIndex].Value.key, 0, key, 0, 16);
+			Array.Copy(cachedKeyNonces[cacheIndex].Value.nonce, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
 			key[0] ^= unchecked((byte)(packetId >> 8));
@@ -577,14 +548,18 @@ namespace TS3Client.Full
 
 		#region CRYPT HELPER
 
-		private static bool CheckEqual(byte[] a1, int a1Index, byte[] a2, int a2Index, int len)
+		private static bool CheckEqual(ReadOnlySpan<byte> a1, ReadOnlySpan<byte> a2, int len)
 		{
+			if (a1.Length < len || a2.Length < len)
+				throw new ArgumentOutOfRangeException();
+
+			int res = 0;
 			for (int i = 0; i < len; i++)
-				if (a1[i + a1Index] != a2[i + a2Index]) return false;
-			return true;
+				res |= a1[i] ^ a2[i];
+			return res == 0;
 		}
 
-		private static void XorBinary(byte[] a, byte[] b, int len, byte[] outBuf)
+		private static void XorBinary(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b, int len, Span<byte> outBuf)
 		{
 			if (a.Length < len || b.Length < len || outBuf.Length < len) throw new ArgumentException();
 			for (int i = 0; i < len; i++)
@@ -594,9 +569,9 @@ namespace TS3Client.Full
 		private static readonly SHA1Managed Sha1HashInternal = new SHA1Managed();
 		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
 		private static readonly Sha512Digest Sha512Hash = new Sha512Digest();
-		private static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
-		private static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
-		private static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha512Hash, data, offset, len);
+		internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
+		internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
+		internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha512Hash, data, offset, len);
 		private static byte[] HashItInternal(HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			lock (hashAlgo)
@@ -633,6 +608,15 @@ namespace TS3Client.Full
 			signer.Init(true, signKey);
 			signer.BlockUpdate(data, 0, data.Length);
 			return signer.GenerateSignature();
+		}
+
+		public static bool VerifySign(ECPoint publicKey, byte[] data, byte[] proof)
+		{
+			var signer = SignerUtilities.GetSigner(X9ObjectIdentifiers.ECDsaWithSha256);
+			var signKey = new ECPublicKeyParameters(publicKey, KeyGenParams.DomainParameters);
+			signer.Init(false, signKey);
+			signer.BlockUpdate(data, 0, data.Length);
+			return signer.VerifySignature(proof);
 		}
 
 		public static readonly byte[] Ts3VerionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
@@ -779,5 +763,18 @@ namespace TS3Client.Full
 		}
 
 		#endregion
+
+		enum CryptoVer
+		{
+			Unknown,
+			/// <summary>
+			/// Supported on server &lt;3.1.
+			/// Supported on all clients.</summary>
+			Version1 = 1,
+			/// <summary>
+			/// Supported on server &gt;=3.1.
+			/// Supported on clients &gt;=3.1.6.</summary>
+			Version2 = 2,
+		}
 	}
 }

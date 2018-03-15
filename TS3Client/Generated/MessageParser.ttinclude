@@ -1,0 +1,194 @@
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#
+void Warn(string _warn) {
+	WriteLine($"#warning {_warn}");
+}
+GenMessages ParseMessages()
+{
+	const string attribList = @"(\s*(?<key>\w+):(?<value>\w+|""[^""]+""|\[[\w\s]+\]))*";
+	Regex attrRegex = new Regex("^" + attribList + "$");
+	Regex msgRegex = new Regex(@"^\s*(?<msg>\w+)\s*(;" + attribList + @"(\s*;\s*(?<flds>[\w\s,]*))?)?\s*$");
+	string declFilePath = Host.ResolvePath("../Declarations/Messages.txt");
+	string[] declLines = File.ReadAllLines(declFilePath);
+
+	//var fldDict 
+	//var msgDict 
+	//var ntfyDict 
+	//var convSet 
+
+	// - commands annotieren: S2C/C2S/Bi, Query/Full/Bi
+	// - tsproto-commands: Felder optional machen (z.B. ClientIp, Port)
+	// - tsproto-commands: Mark packets as Command or CommandLow, NewProtocol=true/false
+
+	var _gen = new GenMessages();
+
+	var defaults = new Dictionary<string, string>()
+	{
+		{"notify", null}
+	};
+
+	foreach(var line in declLines)
+	{
+		if(string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#"))
+			continue;
+
+		var parts = line.Split(new [] {':'}, 2);
+		if(parts.Length < 2 || string.IsNullOrWhiteSpace(parts[0]))
+			continue;
+
+		parts[0] = parts[0].Trim().ToUpper();
+		if(parts[0] == "MSG")
+		{
+			var mat =  msgRegex.Match(parts[1]);
+			if(!mat.Success) { Warn("Invalid MSG: " + line); continue; }
+
+			// Fixed param
+			var msg = new GenMsg
+			{
+				ClassName = mat.Groups["msg"].Value,
+				Attributes = new Dictionary<string, string>(defaults),
+			};
+
+			// Attributes
+			for (int i = 0; i < mat.Groups["key"].Captures.Count; i++)
+			{
+				var _key = mat.Groups["key"].Captures[i].Value;
+				var _value = mat.Groups["value"].Captures[i].Value; // ToDo clean
+				msg.Attributes[_key] = _value;
+
+				if (_key == "notify")
+				{
+					_gen.Notifies.Add(_value, msg );
+				}
+			}
+
+			// Fields
+			if (mat.Groups["flds"].Success)
+			{
+				var flds = mat.Groups["flds"].Value.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0);
+				foreach (var fld in flds)
+				{
+					var fldName = fld;
+					bool option = false;
+					if (fldName.EndsWith("?"))
+					{
+						fldName = fldName.Remove(fld.Length - 1);
+						option = true;
+					}
+
+					if(_gen.Fields.TryGetValue(fldName, out var _fld))
+						msg.Fields.Add(fldName, new GenMsgField { Field = _fld, Optional = option});
+					else
+						Warn($"Invalid MSG (missing field: {_fld}): {line}");
+				}
+			}
+
+			try {
+				var s2c = msg.S2C;
+				var c2s = msg.C2S;
+				var low = msg.Low;
+				var np = msg.Np;
+				var response = msg.Response;
+			} catch (Exception ex) { Warn($"Invalid MSG (missing attributes: {ex.Message}): {line}"); }
+
+			_gen.Messages.Add(msg.ClassName, msg);
+		}
+		else if(parts[0] == "FIELD")
+		{
+			var param = parts[1].Replace(" ", "").Split(',');
+			if(param.Length < 4) { Warn("Invalid FIELD: " + line); continue; }
+			var fld = new GenField { tsName=param[1], fldName=param[2], fldType=param[3], isArray = false };
+			if(fld.fldType.EndsWith("[]"))
+			{
+				fld.isArray = true;
+				fld.fldType = fld.fldType.Substring(0, fld.fldType.Length - 2);
+			}
+			fld.genType = GenerateType(fld);
+			_gen.Fields.Add(param[0], fld );
+		}
+		else if(parts[0] == "TYPE")
+		{
+			var param = parts[1].Replace(" ", "").Split(',');
+			if(param.Length != 1 && param.Length != 2) { Warn("Invalid TYPE: " + line); continue; }
+			_gen.Types.Add(param[0], new GenType { typeName = param[0], backingType = param.Length > 1 ? param[1] : null });
+		}
+		else if(parts[0] == "DEFAULT")
+		{
+			var mat =  attrRegex.Match(parts[1]);
+			if(!mat.Success) { Warn("Invalid DEFAULT: " + line); continue; }
+
+			// TODO refactor (Deduplicate)
+			for (int i = 0; i < mat.Groups["key"].Captures.Count; i++)
+			{
+				var _key = mat.Groups["key"].Captures[i].Value;
+				var _value = mat.Groups["value"].Captures[i].Value; // ToDo clean
+				defaults[_key] = _value;
+			}
+		}
+		else if(parts[0] == "BREAK")
+		{
+			break;
+		}
+		else
+		{
+			Warn($"Unknown declaration: {parts[0]}");
+		}
+	}
+
+	return _gen;
+}
+#><#+
+class GenMessages
+{
+	public Dictionary<string, GenField> Fields { get; set; } = new Dictionary<string, GenField>();
+	// msg class name -> Msg
+	public Dictionary<string, GenMsg> Messages { get; set; } = new Dictionary<string, GenMsg>();
+	public IEnumerable<GenMsg> MessagesSorted => Messages.Values.OrderBy(x => x.ClassName);
+	// ts3notifyname -> Msg
+	public Dictionary<string, GenMsg> Notifies { get; set; } = new Dictionary<string, GenMsg>();
+	public IEnumerable<GenMsg> NotifiesSorted => Notifies.Values.OrderBy(x => x.ClassName);
+	public Dictionary<string, GenType> Types { get; set; } = new Dictionary<string, GenType>();
+}
+class GenMsgField
+{
+	public GenField Field { get; set; }
+	public bool Optional { get; set; }
+}
+class GenField
+{
+	public string tsName;
+	public string fldName; // propety name
+	public string fldType; // single type
+	public string genType; // final property Type
+	public bool isArray;
+}
+class GenMsg
+{
+	public string ClassName { get; set; }
+	public Dictionary<string,GenMsgField> Fields { get; set; } = new Dictionary<string,GenMsgField>();
+	public Dictionary<string,string> Attributes { get; set; } = new Dictionary<string,string>();
+
+	public string Notify { get => Attributes.TryGetValue("notify", out var val) ? val : null;
+	                       set => Attributes["notify"] = value; }
+	public bool S2C { get => bool.Parse(Attributes["s2c"]);
+	                  set => Attributes["s2c"] = value.ToString(); }
+	public bool C2S { get => bool.Parse(Attributes["c2s"]);
+	                  set => Attributes["c2s"] = value.ToString(); }
+	public bool Response { get => bool.Parse(Attributes["response"]);
+	                       set => Attributes["response"] = value.ToString(); }
+	public bool Low { get => bool.Parse(Attributes["low"]);
+	                  set => Attributes["low"] = value.ToString(); }
+	public bool Np { get => bool.Parse(Attributes["np"]);
+	                 set => Attributes["np"] = value.ToString(); }
+}
+class GenType
+{
+	public string typeName;
+	public string backingType;
+}
+#>

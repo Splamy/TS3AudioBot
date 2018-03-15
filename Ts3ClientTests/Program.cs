@@ -18,9 +18,10 @@ namespace Ts3ClientTests
 
 		static void Main()
 		{
-			//Ts3Crypt.Test();
-
+			//var crypt = new Ts3Crypt();
+			//crypt.Test();
 			//return;
+
 			var clients = new List<Ts3FullClient>();
 
 			//for (int i = 0; i < 50; i++)
@@ -52,7 +53,7 @@ namespace Ts3ClientTests
 			Console.WriteLine("Connected id {0}", client.ClientId);
 			var data = client.ClientInfo(client.ClientId);
 
-			var sw = System.Diagnostics.Stopwatch.StartNew();
+			/*var sw = System.Diagnostics.Stopwatch.StartNew();
 			const int amnt = 1000;
 			for (int i = 0; i < amnt; i++)
 			{
@@ -61,9 +62,9 @@ namespace Ts3ClientTests
 			sw.Start();
 			var elap = (sw.ElapsedTicks / (float)System.Diagnostics.Stopwatch.Frequency);
 			Console.WriteLine("{0} messages in {1}s", amnt, elap);
-			Console.WriteLine("{0:0.000}ms per message", elap / amnt * 1000);
+			Console.WriteLine("{0:0.000}ms per message", elap / amnt * 1000);*/
 
-			client.Disconnect();
+			//client.Disconnect();
 			//client.Connect(con);
 		}
 

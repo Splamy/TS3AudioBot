@@ -51,7 +51,7 @@
       <HintPath>..\packages\Heijden.Dns.2.0.0\lib\net35\Heijden.Dns.dll</HintPath>
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
+      <HintPath>..\packages\NLog.4.4.13\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -81,6 +81,7 @@
     <Compile Include="Audio\AudioPipeExtensions.cs" />
     <Compile Include="Audio\EncoderPipe.cs" />
     <Compile Include="Audio\Opus\NativeMethods.cs" />
+    <Compile Include="Full\License.cs" />
     <Compile Include="Generated\Errors.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -148,6 +149,7 @@
     <None Include="Audio\Opus\LICENSE" />
     <None Include="Audio\Opus\OPUS_LICENSE" />
     <None Include="Audio\Opus\README" />
+    <None Include="Generated\MessageParser.ttinclude" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -158,6 +160,7 @@
     <Content Include="Declarations\Permissions.csv" />
     <Content Include="Declarations\BookDeclarations.txt" />
     <Content Include="Declarations\Messages.txt" />
+    <None Include="Generated\ErrorParser.ttinclude" />
     <Content Include="Generated\Errors.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Errors.cs</LastGenOutput>

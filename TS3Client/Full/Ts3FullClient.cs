@@ -204,16 +204,16 @@ namespace TS3Client.Full
 			case NotificationType.ChannelUnsubscribed: break;
 			case NotificationType.ClientChatComposing: break;
 			case NotificationType.ServerGroupList: break;
-			case NotificationType.ServerGroupsByClientId: break;
-			case NotificationType.StartUpload: break;
-			case NotificationType.StartDownload: break;
+			case NotificationType.ClientServerGroup: break;
+			case NotificationType.FileUpload: break;
+			case NotificationType.FileDownload: break;
 			case NotificationType.FileTransfer: break;
 			case NotificationType.FileTransferStatus: break;
 			case NotificationType.FileList: break;
 			case NotificationType.FileListFinished: break;
-			case NotificationType.FileInfo: break;
+			case NotificationType.FileInfoTs: break;
 			// special
-			case NotificationType.Error:
+			case NotificationType.CommandError:
 				{
 					var result = lazyNotification.WrapSingle<CommandError>();
 					var error = result.Ok ? result.Value : Util.CustomError("Got empty error while connecting.");
@@ -307,51 +307,50 @@ namespace TS3Client.Full
 
 		private void ProcessInitIvExpand(InitIvExpand initIvExpand)
 		{
-			var password = connectionDataFull.IsPasswordHashed
-				? connectionDataFull.Password
-				: Ts3Crypt.HashPassword(connectionDataFull.Password);
+			packetHandler.ReceivedFinalInitAck();
 
-			ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
+			var result = ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
+			if (!result)
+			{
+				DisconnectInternal(context, Util.CustomError($@"Failed to calculate shared secret: {result.Error}"));
+				return;
+			}
+
 			packetHandler.CryptoInitDone();
+
 			ClientInit(
 				connectionDataFull.Username,
 				true, true,
 				connectionDataFull.DefaultChannel,
 				Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
-				password, string.Empty, string.Empty, string.Empty,
+				connectionDataFull.HashedPassword, string.Empty, string.Empty, string.Empty,
 				"123,456", VersionSign);
 		}
 
 		private void ProcessInitIvExpand2(InitIvExpand2 initIvExpand2)
 		{
-			DisconnectInternal(context, Util.CustomError("Cannot connect to server 3.1 yet."));
-			return;
-
-			var password = connectionDataFull.IsPasswordHashed
-				? connectionDataFull.Password
-				: Ts3Crypt.HashPassword(connectionDataFull.Password);
+			packetHandler.ReceivedFinalInitAck();
 
 			packetHandler.IncPacketCounter(PacketType.Command);
-			/*
-			ts3Crypt.GenerateTemporaryKey();
 
-			// EK SIGN
-			var buffer = new byte[32];
-			Util.Random.NextBytes(buffer);
-			var ek = Convert.ToBase64String(Ed25519.EncodePoint(
-				ts3Crypt.publicTmp.AffineXCoord.ToBigInteger().ToNetBi(),
-				ts3Crypt.publicTmp.AffineYCoord.ToBigInteger().ToNetBi()));
+			var (privateKey, publicKey) = Ts3Crypt.GenerateTemporaryKey();
 			
+			var ekBase64 = Convert.ToBase64String(publicKey);
 			var toSign = new byte[86];
-			Array.Copy(buffer, 0, toSign, 0, 32);
+			Array.Copy(publicKey, 0, toSign, 0, 32);
 			var beta = Convert.FromBase64String(initIvExpand2.Beta);
 			Array.Copy(beta, 0, toSign, 32, 54);
 			var sign = Ts3Crypt.Sign(connectionDataFull.Identity.PrivateKey, toSign);
 			var proof = Convert.ToBase64String(sign);
-			ClientEk(ek, proof);
-			// END EK SIGN
-			*/
-			ts3Crypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof); //  TODO ???
+			ClientEk(ekBase64, proof);
+			
+			var result = ts3Crypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
+			if (!result)
+			{
+				DisconnectInternal(context, Util.CustomError($@"Failed to calculate shared secret: {result.Error}"));
+				return;
+			}
+
 			packetHandler.CryptoInitDone();
 
 			ClientInit(
@@ -359,14 +358,13 @@ namespace TS3Client.Full
 				true, true,
 				connectionDataFull.DefaultChannel,
 				Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
-				password, string.Empty, string.Empty, string.Empty,
+				connectionDataFull.HashedPassword, string.Empty, string.Empty, string.Empty,
 				"123,456", VersionSign);
 		}
 
 		private void ProcessInitServer(InitServer initServer)
 		{
 			packetHandler.ClientId = initServer.ClientId;
-			packetHandler.ReceivedFinalInitAck();
 
 			lock (statusLock)
 				status = Ts3ClientStatus.Connected;
@@ -468,10 +466,11 @@ namespace TS3Client.Full
 		/// <summary>Receive voice packets.</summary>
 		public IAudioPassiveConsumer OutStream { get; set; }
 		/// <summary>When voice data can be sent.</summary>
-		public bool Active => true; // TODO may set to false if no talk power, etc.
-									/// <summary>Send voice data.</summary>
-									/// <param name="data">The encoded audio buffer.</param>
-									/// <param name="meta">The metadata where to send the packet.</param>
+		// TODO may set to false if no talk power, etc.
+		public bool Active => true;
+		/// <summary>Send voice data.</summary>
+		/// <param name="data">The encoded audio buffer.</param>
+		/// <param name="meta">The metadata where to send the packet.</param>
 		public void Write(Span<byte> data, Meta meta)
 		{
 			if (meta.Out == null
@@ -637,7 +636,7 @@ namespace TS3Client.Full
 		{
 			var result = SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
 				new CommandParameter("cldbid", clDbId) }),
-				NotificationType.ServerGroupsByClientId);
+				NotificationType.ClientServerGroup);
 			if (!result.Ok)
 				return result.Error;
 
@@ -658,10 +657,10 @@ namespace TS3Client.Full
 				new CommandParameter("size", fileSize),
 				new CommandParameter("overwrite", overwrite),
 				new CommandParameter("resume", resume) }),
-				NotificationType.StartUpload, NotificationType.FileTransferStatus);
+				NotificationType.FileUpload, NotificationType.FileTransferStatus);
 			if (!result.Ok)
 				return result.Error;
-			if (result.Value.NotifyType == NotificationType.StartUpload)
+			if (result.Value.NotifyType == NotificationType.FileUpload)
 				return result.UnwrapNotification<FileUpload>().WrapSingle();
 			else
 			{
@@ -680,10 +679,10 @@ namespace TS3Client.Full
 				new CommandParameter("name", path),
 				new CommandParameter("cpw", channelPassword),
 				new CommandParameter("clientftfid", clientTransferId),
-				new CommandParameter("seekpos", seek) }), NotificationType.StartDownload, NotificationType.FileTransferStatus);
+				new CommandParameter("seekpos", seek) }), NotificationType.FileDownload, NotificationType.FileTransferStatus);
 			if (!result.Ok)
 				return result.Error;
-			if (result.Value.NotifyType == NotificationType.StartDownload)
+			if (result.Value.NotifyType == NotificationType.FileDownload)
 				return result.UnwrapNotification<FileDownload>().WrapSingle();
 			else
 			{
@@ -710,7 +709,7 @@ namespace TS3Client.Full
 				new CommandParameter("cid", channelId),
 				new CommandParameter("cpw", channelPassword),
 				new CommandMultiParameter("name", path) }),
-				NotificationType.FileInfo).UnwrapNotification<FileInfoTs>();
+				NotificationType.FileInfoTs).UnwrapNotification<FileInfoTs>();
 
 		#endregion
 

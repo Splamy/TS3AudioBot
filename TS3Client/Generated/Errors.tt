@@ -8,31 +8,18 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 <#@ template debug="false" hostspecific="true" language="C#" #>
-<#@ assembly name="System.Core" #>
-<#@ assembly name="Microsoft.VisualBasic" #>
-<#@ import namespace="System.Linq" #>
-<#@ import namespace="System.Collections.Generic" #>
-<#@ import namespace="Microsoft.VisualBasic.FileIO" #>
+<#@ include file="ErrorParser.ttinclude" once="true" #>
 <#@ output extension=".cs" #>
-<#
-string declFilePath = Host.ResolvePath("../Declarations/Errors.csv");
-var data = new List<string[]>();
-using (TextFieldParser parser = new TextFieldParser(declFilePath))
-{
-	parser.TextFieldType = FieldType.Delimited;
-	parser.SetDelimiters(",");
-	while (!parser.EndOfData)
-		data.Add(parser.ReadFields());
-}
-#>
+<# var errors = ParseErrors(); #>
+
 namespace TS3Client
 {
 	// Source: http://forum.teamspeak.com/threads/102276-Server-query-error-id-list
 	public enum Ts3ErrorCode : uint
 	{
-		// ReSharper disable InconsistentNaming, UnusedMember.Global<# foreach (var line in data.Skip(1)) { #>
-		/// <summary><#= line[1] #></summary>
-		<#= line[0] #> = <#= line[2] #>,<# } #>
+		// ReSharper disable InconsistentNaming, UnusedMember.Global<# foreach (var line in errors) { #>
+		/// <summary><#= line.Doc #></summary>
+		<#= line.Name #> = <#= line.Value #>,<# } #>
 		/// <summary>For own custom errors</summary>
 		custom_error = 0xFFFF,
 		// ReSharper enable InconsistentNaming, UnusedMember.Global

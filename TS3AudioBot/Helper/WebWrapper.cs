@@ -25,6 +25,7 @@ namespace TS3AudioBot.Helper
 				request.Headers.Add(name, value);
 			try
 			{
+				request.Timeout = (int)DefaultTimeout.TotalMilliseconds;
 				using (var response = request.GetResponse())
 				{
 					var stream = response.GetResponseStream();

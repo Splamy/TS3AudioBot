@@ -309,7 +309,7 @@ namespace TS3Client.Full
 				if (dummy.Address.Equals(remoteAddress.Address) && dummy.Port != remoteAddress.Port)
 					continue;
 
-				packet = Ts3Crypt.GetIncommingPacket(buffer);
+				packet = Ts3Crypt.GetS2CPacket(buffer);
 				// Invalid packet, ignore
 				if (packet == null)
 				{

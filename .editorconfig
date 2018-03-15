@@ -9,5 +9,5 @@ charset = utf-8
 indent_style = tab
 trim_trailing_whitespace = true
 
-[*.tt]
+[*.{tt,ttinclude}]
 insert_final_newline = false

@@ -51,7 +51,8 @@ namespace TS3Client.Full
 		private static BigInteger RecoverX(BigInteger y)
 		{
 			BigInteger y2 = y * y;
-			BigInteger xx = (y2 - 1) * Inv(D * y2 + 1);
+			var inv = Inv(D * y2 + 1);
+			BigInteger xx = (y2 - 1) * inv;
 			BigInteger x = ExpMod(xx, Qp3 / Eight, Q);
 			if (!(x * x - xx).Mod(Q).Equals(BigInteger.Zero))
 			{
@@ -64,38 +65,40 @@ namespace TS3Client.Full
 			return x;
 		}
 
-		private static Tuple<BigInteger, BigInteger> Edwards(BigInteger px, BigInteger py, BigInteger qx, BigInteger qy)
+		// This is a goddamn Add(p, q) function
+		public static (BigInteger x, BigInteger y) Edwards(BigInteger px, BigInteger py, BigInteger qx, BigInteger qy)
 		{
 			BigInteger xx12 = px * qx;
 			BigInteger yy12 = py * qy;
 			BigInteger dtemp = D * xx12 * yy12;
 			BigInteger x3 = (px * qy + qx * py) * (Inv(1 + dtemp));
 			BigInteger y3 = (py * qy + xx12) * (Inv(1 - dtemp));
-			return new Tuple<BigInteger, BigInteger>(x3.Mod(Q), y3.Mod(Q));
+			return (x3.Mod(Q), y3.Mod(Q));
 		}
 
-		private static Tuple<BigInteger, BigInteger> EdwardsSquare(BigInteger x, BigInteger y)
+		private static (BigInteger x, BigInteger y) EdwardsSquare(BigInteger x, BigInteger y)
 		{
 			BigInteger xx = x * x;
 			BigInteger yy = y * y;
 			BigInteger dtemp = D * xx * yy;
 			BigInteger x3 = (2 * x * y) * (Inv(1 + dtemp));
 			BigInteger y3 = (yy + xx) * (Inv(1 - dtemp));
-			return new Tuple<BigInteger, BigInteger>(x3.Mod(Q), y3.Mod(Q));
+			return (x3.Mod(Q), y3.Mod(Q));
 		}
-		private static Tuple<BigInteger, BigInteger> ScalarMul(Tuple<BigInteger, BigInteger> p, BigInteger e)
+
+		public static (BigInteger x, BigInteger y) ScalarMul((BigInteger x, BigInteger y) p, BigInteger e)
 		{
 			if (e.Equals(BigInteger.Zero))
 			{
-				return new Tuple<BigInteger, BigInteger>(BigInteger.Zero, BigInteger.One);
+				return (BigInteger.Zero, BigInteger.One);
 			}
 			var q = ScalarMul(p, e / Two);
-			q = EdwardsSquare(q.Item1, q.Item2);
-			if (!e.IsEven) q = Edwards(q.Item1, q.Item2, p.Item1, p.Item2);
+			q = EdwardsSquare(q.x, q.y);
+			if (!e.IsEven) q = Edwards(q.x, q.y, p.x, p.y);
 			return q;
 		}
 
-		public static byte[] EncodeInt(BigInteger y)
+		public static byte[] EncodeInt(this BigInteger y)
 		{
 			byte[] nin = y.ToByteArray();
 			var nout = new byte[Math.Max(nin.Length, 32)];
@@ -127,8 +130,8 @@ namespace TS3Client.Full
 					a += TwoPowCache[i];
 				}
 			}
-			var bigA = ScalarMul(B, a);
-			return EncodePoint(bigA.Item1, bigA.Item2);
+			var (x, y) = ScalarMul(B, a);
+			return EncodePoint(x, y);
 		}
 
 		private static BigInteger HashInt(byte[] m)
@@ -166,9 +169,9 @@ namespace TS3Client.Full
 				rsub.Write(message, 0, message.Length);
 				r = HashInt(rsub.ToArray());
 			}
-			var bigR = ScalarMul(B, r);
+			var (x, y) = ScalarMul(B, r);
 			BigInteger s;
-			var encodedBigR = EncodePoint(bigR.Item1, bigR.Item2);
+			var encodedBigR = EncodePoint(x, y);
 			using (var stemp = new MemoryStream(32 + publicKey.Length + message.Length))
 			{
 				stemp.Write(encodedBigR, 0, encodedBigR.Length);
@@ -199,15 +202,22 @@ namespace TS3Client.Full
 			return new BigInteger(s) & Un;
 		}
 
-		public static Tuple<BigInteger, BigInteger> DecodePoint(byte[] pointBytes)
+		public static BigInteger DecodeIntMod(byte[] s)
 		{
-			BigInteger y = new BigInteger(pointBytes) & Un;
+			var dec = DecodeInt(s);
+			var mod = dec % L;
+			return mod;
+		}
+
+		public static (BigInteger x, BigInteger y) DecodePoint(byte[] pointBytes)
+		{
+			BigInteger y = DecodeInt(pointBytes);
 			BigInteger x = RecoverX(y);
 			if ((x.IsEven ? 0 : 1) != GetBit(pointBytes, BitLength - 1))
 			{
 				x = Q - x;
 			}
-			var point = new Tuple<BigInteger, BigInteger>(x, y);
+			var point = (x, y);
 			if (!IsOnCurve(x, y)) throw new ArgumentException("Decoding point that is not on curve");
 			return point;
 		}
@@ -218,7 +228,7 @@ namespace TS3Client.Full
 			if (publicKey.Length != BitLength / 8) throw new ArgumentException("Public key length is wrong");
 
 			byte[] rByte = Arrays.CopyOfRange(signature, 0, BitLength / 8);
-			var r = DecodePoint(rByte);
+			var (x, y) = DecodePoint(rByte);
 			var a = DecodePoint(publicKey);
 
 			byte[] sByte = Arrays.CopyOfRange(signature, BitLength / 8, BitLength / 4);
@@ -227,7 +237,7 @@ namespace TS3Client.Full
 
 			using (var stemp = new MemoryStream(32 + publicKey.Length + message.Length))
 			{
-				var encodePoint = EncodePoint(r.Item1, r.Item2);
+				var encodePoint = EncodePoint(x, y);
 				stemp.Write(encodePoint, 0, encodePoint.Length);
 				stemp.Write(publicKey, 0, publicKey.Length);
 				stemp.Write(message, 0, message.Length);
@@ -235,10 +245,33 @@ namespace TS3Client.Full
 			}
 			var ra = ScalarMul(B, s);
 			var ah = ScalarMul(a, h);
-			var rb = Edwards(r.Item1, r.Item2, ah.Item1, ah.Item2);
-			if (!ra.Item1.Equals(rb.Item1) || !ra.Item2.Equals(rb.Item2))
+			var rb = Edwards(x, y, ah.x, ah.y);
+			if (!ra.x.Equals(rb.x) || !ra.y.Equals(rb.y))
 				return false;
 			return true;
+		}
+
+		public static (byte[] privateKey, byte[] publicKey) CreateKeyPair()
+		{
+			var privateKey = CreatePrivateKey();
+			var publicKey = CreatePublicKey(privateKey);
+			return (privateKey, publicKey.Encode());
+		}
+
+		public static byte[] CreatePrivateKey()
+		{
+			var privateBuffer = new byte[32];
+			using (var rng = RandomNumberGenerator.Create())
+			{
+				rng.GetBytes(privateBuffer);
+			}
+			return privateBuffer;
+		}
+
+		public static (BigInteger, BigInteger) CreatePublicKey(byte[] privateKey)
+		{
+			var privInt = DecodeInt(privateKey);
+			return ScalarMul(B, privInt);
 		}
 
 		private const int BitLength = 256;
@@ -267,10 +300,11 @@ namespace TS3Client.Full
 		private static readonly BigInteger By =
 			BigInteger.Parse("46316835694926478169428394003475163141307993866256225615783033603165251855960");
 
+		// base point
 		private static readonly BigInteger Bx =
 			BigInteger.Parse("15112221349535400772501151409588531511454012693041857206046113283949847762202");
 
-		private static readonly Tuple<BigInteger, BigInteger> B = new Tuple<BigInteger, BigInteger>(Bx.Mod(Q), By.Mod(Q));
+		private static readonly (BigInteger, BigInteger) B = (Bx.Mod(Q), By.Mod(Q));
 
 		private static readonly BigInteger Un =
 			BigInteger.Parse("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", NumberStyles.AllowHexSpecifier);
@@ -278,14 +312,29 @@ namespace TS3Client.Full
 		private static readonly BigInteger Two = new BigInteger(2);
 		private static readonly BigInteger Eight = new BigInteger(8);
 
-		public static BigInteger ToNetBi(this Org.BouncyCastle.Math.BigInteger num)
+		public static BigInteger ToNet(this Org.BouncyCastle.Math.BigInteger num)
 		{
 			return BigInteger.Parse(num.ToString());
 		}
 
-		public static Org.BouncyCastle.Math.BigInteger ToBcBi(this BigInteger num)
+		public static Org.BouncyCastle.Math.BigInteger ToBc(this BigInteger num)
 		{
 			return new Org.BouncyCastle.Math.BigInteger(num.ToString());
+		}
+
+		public static (BigInteger x, BigInteger y) ToNet(this Org.BouncyCastle.Math.EC.ECPoint ecp)
+		{
+			return (ecp.XCoord.ToBigInteger().ToNet(), ecp.YCoord.ToBigInteger().ToNet());
+		}
+
+		public static Org.BouncyCastle.Math.EC.ECPoint ToBc(this (BigInteger x, BigInteger y) ecp)
+		{
+			return Ts3Crypt.Ed25519Curve.Curve.CreatePoint(ecp.x.ToBc(), ecp.y.ToBc());
+		}
+
+		public static byte[] Encode(this (BigInteger x, BigInteger y) ecp)
+		{
+			return EncodePoint(ecp.x, ecp.y);
 		}
 	}
 

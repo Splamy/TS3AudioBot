@@ -50,5 +50,8 @@ namespace TS3Client
 		public string DefaultChannel { get; set; } = string.Empty;
 		/// <summary>Password for the default channel. Leave null if none.</summary>
 		public string DefaultChannelPassword { get; set; }
+
+		// TODO to own password class
+		public string HashedPassword => IsPasswordHashed ? Password : Ts3Crypt.HashPassword(Password);
 	}
 }
