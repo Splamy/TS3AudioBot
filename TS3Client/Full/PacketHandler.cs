@@ -195,7 +195,7 @@ namespace TS3Client.Full
 				case PacketType.VoiceWhisper:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
 					BinaryPrimitives.WriteUInt16BigEndian(packet.Data.AsSpan(), packet.PacketId);
-					LoggerRawVoice.ConditionalTrace("[O] {0}", packet);
+					LoggerRawVoice.Trace("[O] {0}", packet);
 					break;
 
 				case PacketType.Command:
@@ -208,17 +208,17 @@ namespace TS3Client.Full
 				case PacketType.Ping:
 					lastSentPingId = packet.PacketId;
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-					LoggerRaw.ConditionalTrace("[O] Ping {0}", packet.PacketId);
+					LoggerRaw.Trace("[O] Ping {0}", packet.PacketId);
 					break;
 
 				case PacketType.Pong:
 					packet.PacketFlags |= PacketFlags.Unencrypted;
-					LoggerRaw.ConditionalTrace("[O] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+					LoggerRaw.Trace("[O] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					break;
 
 				case PacketType.Ack:
 				case PacketType.AckLow:
-					LoggerRaw.ConditionalDebug("[O] Acking {1}: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data), packet.PacketType);
+					LoggerRaw.Debug("[O] Acking {1}: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data), packet.PacketType);
 					break;
 
 				case PacketType.Init1:
@@ -327,7 +327,7 @@ namespace TS3Client.Full
 				{
 				case PacketType.Voice:
 				case PacketType.VoiceWhisper:
-					LoggerRawVoice.ConditionalTrace("[I] {0}", packet);
+					LoggerRawVoice.Trace("[I] {0}", packet);
 					break;
 				case PacketType.Command:
 					LoggerRaw.Debug("[I] {0}", packet);
@@ -338,21 +338,21 @@ namespace TS3Client.Full
 					packet = ReceiveCommand(packet, receiveQueueLow, PacketType.AckLow);
 					break;
 				case PacketType.Ping:
-					LoggerRaw.ConditionalTrace("[I] Ping {0}", packet.PacketId);
+					LoggerRaw.Trace("[I] Ping {0}", packet.PacketId);
 					ReceivePing(packet);
 					break;
 				case PacketType.Pong:
-					LoggerRaw.ConditionalTrace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+					LoggerRaw.Trace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					ReceivePong(packet);
 					break;
 				case PacketType.Ack:
-					LoggerRaw.ConditionalDebug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+					LoggerRaw.Debug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					packet = ReceiveAck(packet);
 					break;
 				case PacketType.AckLow: break;
 				case PacketType.Init1:
-					LoggerRaw.Debug("[I] InitID: {0}", packet.Data[0]);
-					LoggerRaw.Trace("[I] {0}", packet);
+					if (!LoggerRaw.IsTraceEnabled) LoggerRaw.Debug("[I] InitID: {0}", packet.Data[0]);
+					if (!LoggerRaw.IsDebugEnabled) LoggerRaw.Trace("[I] {0}", packet);
 					ReceiveInitAck(packet);
 					break;
 				default: throw Util.UnhandledDefault(packet.PacketType);
@@ -640,7 +640,7 @@ namespace TS3Client.Full
 		{
 			packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);
-			LoggerRaw.ConditionalTrace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
+			LoggerRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
 			udpClient.Send(packet.Raw, packet.Raw.Length);
 		}
 	}

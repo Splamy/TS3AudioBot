@@ -1759,7 +1759,7 @@ namespace TS3Client.Messages
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
 			case "error": return NotificationType.CommandError;
 			case "notifyconnectioninfo": return NotificationType.ConnectionInfo;
-			case "connectioninforequest": return NotificationType.ConnectionInfoRequest;
+			case "notifyconnectioninforequest": return NotificationType.ConnectionInfoRequest;
 			case "notifystartdownload": return NotificationType.FileDownload;
 			case "notifyfileinfo": return NotificationType.FileInfoTs;
 			case "notifyfilelist": return NotificationType.FileList;

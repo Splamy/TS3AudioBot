@@ -17,6 +17,7 @@ namespace TS3Client
 
 	internal abstract class BaseMessageProcessor
 	{
+		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		protected readonly List<WaitBlock>[] dependingBlocks;
 
 		protected string cmdLineBuffer;
@@ -36,9 +37,13 @@ namespace TS3Client
 			else
 				notifyname = message.Substring(0, splitindex);
 
-			var ntfyType = MessageHelper.GetNotificationType(notifyname);
-			if (ntfyType == NotificationType.Unknown)
+			bool hasEqual;
+			NotificationType ntfyType;
+			if ((hasEqual = notifyname.IndexOf('=') >= 0)
+				|| (ntfyType = MessageHelper.GetNotificationType(notifyname)) == NotificationType.Unknown)
 			{
+				if (!hasEqual)
+					Log.Debug("Maybe unknown notification: {0}", notifyname);
 				cmdLineBuffer = message;
 				return null;
 			}
