@@ -237,7 +237,7 @@ namespace TS3Client.Full
 			return R.OkR;
 		}
 
-		public R CryptoInit2(string license, string omega, string proof, string beta, byte[] privateKey)
+		internal R CryptoInit2(string license, string omega, string proof, string beta, byte[] privateKey)
 		{
 			// TODO safe
 			var licenseBytes = Convert.FromBase64String(license);
@@ -256,9 +256,13 @@ namespace TS3Client.Full
 
 			var licenseChain = licenseChainR.Value;
 			var key = licenseChain.DeriveKey();
+			var dkey = Ed25519.DecodePoint(key);
 
-			var sharedec = Ed25519.ScalarMul(key, Ed25519.DecodeInt(privateKey));
-			var keyArr = sharedec.Encode();
+			var sharedec1 = Ed25519.ScalarMul(dkey, Ed25519.DecodeInt(privateKey));
+			//var shared = new byte[32];
+			//var expPriv = Chaos.NaCl.Ed25519.ExpandedPrivateKeyFromSeed(privateKey);
+			//Chaos.NaCl.Ed25519.KeyExchange(shared, key, expPriv);
+			var keyArr = sharedec1.Encode();
 
 			return SetSharedSecret(alphaTmp, betaBytes, keyArr);
 		}
@@ -506,7 +510,7 @@ namespace TS3Client.Full
 		/// <param name="generationId">Each time the packetId reaches 65535 the next packet will go on with 0 and the generationId will be increased by 1.</param>
 		/// <param name="packetType">The packetType.</param>
 		/// <returns>A tuple of (key, nonce)</returns>
-		public (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
+		private (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
 		{
 			if (!CryptoInitComplete)
 				return DummyKeyAndNonceTuple;

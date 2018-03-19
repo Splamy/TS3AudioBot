@@ -3,7 +3,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 using TS3Client.Helper;
-using EcPointNet = System.ValueTuple<System.Numerics.BigInteger, System.Numerics.BigInteger>;
 
 namespace TS3Client.Full
 {
@@ -44,9 +43,9 @@ namespace TS3Client.Full
 			return res;
 		}
 
-		public EcPointNet DeriveKey()
+		public byte[] DeriveKey()
 		{
-			var round = Ed25519.DecodePoint(LicenseRootKey);
+			var round = LicenseRootKey; //Ed25519.DecodePoint(LicenseRootKey);
 			foreach (var block in Blocks)
 				round = block.DeriveKey(round);
 			return round;
@@ -58,7 +57,7 @@ namespace TS3Client.Full
 		private const int MinBlockLen = 42;
 
 		public abstract ChainBlockType Type { get; }
-		public EcPointNet Key { get; set; }
+		public byte[] Key { get; set; }
 		public DateTime NotValidBefore { get; set; }
 		public DateTime NotValidAfter { get; set; }
 		public byte[] Hash { get; set; }
@@ -107,10 +106,10 @@ namespace TS3Client.Full
 
 			block.NotValidBefore = Util.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(34)) + 0x50e22700uL);
 			block.NotValidAfter = Util.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38)) + 0x50e22700uL);
-			block.Key = Ed25519.DecodePoint(data.Slice(1, 32).ToArray());
-
 			if (block.NotValidAfter < block.NotValidBefore)
 				return "License times are invalid";
+
+			block.Key = data.Slice(1, 32).ToArray();
 
 			var allLen = MinBlockLen + read;
 			var hash = Ts3Crypt.Hash512It(data.Slice(1, allLen - 1).ToArray());
@@ -127,24 +126,39 @@ namespace TS3Client.Full
 			return "Non-null-terminated issuer string";
 		}
 
-		public EcPointNet DeriveKey(EcPointNet parent)
+		public byte[] DeriveKey(byte[] parent)
 		{
-			Hash[0] &= 248;
-			Hash[31] &= 63;
-			Hash[31] |= 64;
-			var privateKey = Ed25519.DecodeIntMod(Hash);
+			//Hash[0] &= 248;
+			//Hash[31] &= 63;
+			//Hash[31] |= 64;
+			//var privateKey = Ed25519.DecodeIntMod(Hash);
+			//var parentKey = Ed25519.DecodePoint(parent);
 
-			var (x, y) = Ed25519.ScalarMul(Key, privateKey);
-			var add = Ed25519.Edwards(x, y, parent.Item1, parent.Item2);
-
+			//var mult = Ed25519.ScalarMul(Ed25519.DecodePoint(Key), privateKey);
+			//var add = Ed25519.Edwards(mult.x, mult.y, parentKey.x, parentKey.y);
+			
 			//var priv = privateKey.EncodeInt();
-			//var xpub = Key.Encode();
-			//var prnt = parent.ToNet().Encode();
+			//var xpub = Key;
 			//var xmul = mult.Encode();
 			//var mmad = add.Encode();
 			//Console.WriteLine(DebugUtil.DebugToHex(mmad));
 
-			return add;
+			Chaos.NaCl.Ed25519Ref10.ScalarOperations.sc_clamp(Hash);
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_frombytes_negate_vartime(out var pubkey, Key);
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_frombytes_negate_vartime(out var parkey, parent);
+
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_double_scalarmult_vartime_opt(out var res, Hash, pubkey);
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p3_to_cached(out var pargrp, parkey);
+
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p1p1_to_p3(out var r, res);
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_add(out var a, r, pargrp);
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p1p1_to_p3(out var r2, a);
+			byte[] final = new byte[32];
+			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p3_tobytes(final, r2);
+			final[31] ^= 0x80; // TODO REALLY HACKY !!
+			//Console.WriteLine(DebugUtil.DebugToHex(final));
+
+			return final; //add;
 		}
 	}
 

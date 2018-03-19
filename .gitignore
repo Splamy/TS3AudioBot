@@ -41,6 +41,7 @@ latex/
 
 # Keep precompiled libs
 !TS3AudioBot/lib/**/*
+!TS3Client/lib/**/*
 
 # Roslyn cache directories
 *.ide/

@@ -47,6 +47,10 @@
       <HintPath>..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Chaos.NaCl, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Chaos.NaCl.dll</HintPath>
+    </Reference>
     <Reference Include="Heijden.Dns, Version=2.0.0.6, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Heijden.Dns.2.0.0\lib\net35\Heijden.Dns.dll</HintPath>
     </Reference>
