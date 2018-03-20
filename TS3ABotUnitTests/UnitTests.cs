@@ -450,6 +450,12 @@ namespace TS3ABotUnitTests
 				}
 			}
 		}
+
+		[Test]
+		public void VersionSelfCheck()
+		{
+			Ts3Crypt.VersionSelfCheck();
+		}
 	}
 
 	static class Extensions

@@ -56,8 +56,13 @@ If the bot can't play some youtube videos it might be due to some embedding rest
 You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source folder and specify the path in the config to try to bypass this.
 
 ## How to set up the bot
-### Dependencies
-* Any C# Compiler (`Visual Studio` or `mono 5.0.0+` and `msbuild`)
+
+If you dont want to compile the AudioBot yourself you can always download the
+latest version from our nightly server (linked at the top) and jump straight to
+"Getting the dependencies" for your platform.
+
+### Prerequisites
+* Any C# Compiler (`Visual Studio` with `.NET 4.6` or `mono 5.10.0+` with `msbuild`)
 * (Linux only) A C Compiler for Opus
 
 ### Compilation
@@ -66,10 +71,11 @@ Before we start: _If you know what you are doing_ you can alternatively compile 
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. See if you have NuGet by just executing `nuget`. If not, get `NuGet.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
+1. Get the latest mono version by following [this tutorial](http://www.mono-project.com/download/stable/#download-lin) and install `mono-devel`
+1. See if you have NuGet by just executing `nuget`. If not, get `nuget.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
 1. Go into the directory of the repository with `cd TS3AudioBot`
-1. Execute `nuget restore` or `mono ../Nuget.exe restore` to download all dependencies
-1. Execute `msbuild /p:Configuration=Release TS3AudioBot.sln` to build the C# AudioBot
+1. Execute `nuget restore` or `mono ../nuget.exe restore` to download all dependencies
+1. Execute `msbuild /p:Configuration=Release TS3AudioBot.sln` to build the AudioBot
 1. Getting the dependencies
     * on **Ubuntu**:  
     Run `sudo apt-get install libopus-dev ffmpeg`
@@ -82,9 +88,11 @@ Download the git repository with `git clone --recurse-submodules https://github.
         1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-64bit-static\ffmpeg` and copy it to `TS3AudioBot/bin/Release/`
 
 #### Windows
-1. Build the C# AudioBot with Visual Studio.
-1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
-1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static\bin\ffmpeg.exe` to `TS3AudioBot\bin\Release\`
+1. Make sure you have installed `.NET Framework 4.6`
+1. Build the AudioBot with Visual Studio.
+1. Getting the dependencies
+   1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
+   1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static\bin\ffmpeg.exe` to `TS3AudioBot\bin\Release\`
 
 ### Installation
 1. Create a group for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).

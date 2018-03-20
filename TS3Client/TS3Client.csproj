@@ -28,6 +28,7 @@
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <CodeAnalysisRuleSet />
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -37,6 +38,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet />
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -77,7 +79,6 @@
     <Compile Include="ConnectionData.cs" />
     <Compile Include="DisconnectEventArgs.cs" />
     <Compile Include="Audio\ActiveCheckPipe.cs" />
-    <Compile Include="Full\Ed25519.cs" />
     <Compile Include="FileTransferManager.cs" />
     <Compile Include="Audio\AudioMeta.cs" />
     <Compile Include="Audio\AudioInterfaces.cs" />

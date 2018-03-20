@@ -9,13 +9,13 @@
 
 namespace TS3Client.Full
 {
+	using Chaos.NaCl.Ed25519Ref10;
 	using Commands;
 	using Helper;
 	using Org.BouncyCastle.Asn1;
 	using Org.BouncyCastle.Asn1.X9;
 	using Org.BouncyCastle.Crypto;
 	using Org.BouncyCastle.Crypto.Digests;
-	using Org.BouncyCastle.Crypto.EC;
 	using Org.BouncyCastle.Crypto.Engines;
 	using Org.BouncyCastle.Crypto.Generators;
 	using Org.BouncyCastle.Crypto.Modes;
@@ -25,6 +25,7 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Security;
 	using System;
 	using System.Buffers.Binary;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Security.Cryptography;
 	using System.Text;
@@ -32,6 +33,7 @@ namespace TS3Client.Full
 	/// <summary>Provides all cryptographic functions needed for the low- and high level TeamSpeak protocol usage.</summary>
 	public sealed class Ts3Crypt
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string DummyKeyAndNonceString = "c:\\windows\\system\\firewall32.cpl";
 		private static readonly byte[] DummyKey = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(0, 16));
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
@@ -50,10 +52,6 @@ namespace TS3Client.Full
 		private byte[] ivStruct;
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly (byte[] key, byte[] nonce, uint generation)?[] cachedKeyNonces = new(byte[], byte[], uint)?[PacketTypeKinds * 2];
-
-		public static readonly X9ECParameters Ed25519Curve = CustomNamedCurves.GetByName("Curve25519");
-		public static readonly ECDomainParameters Ed25519Domain = new ECDomainParameters(Ed25519Curve.Curve, Ed25519Curve.G, Ed25519Curve.N, Ed25519Curve.H, Ed25519Curve.GetSeed());
-
 
 		public Ts3Crypt()
 		{
@@ -96,14 +94,18 @@ namespace TS3Client.Full
 
 		private static readonly ECKeyGenerationParameters KeyGenParams = new ECKeyGenerationParameters(X9ObjectIdentifiers.Prime256v1, new SecureRandom());
 
-		private static ECPoint ImportPublicKey(byte[] asnByteArray)
+		private static R<ECPoint> ImportPublicKey(byte[] asnByteArray)
 		{
-			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
-			var x = ((DerInteger)asnKeyData[2]).Value;
-			var y = ((DerInteger)asnKeyData[3]).Value;
+			try
+			{
+				var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
+				var x = ((DerInteger)asnKeyData[2]).Value;
+				var y = ((DerInteger)asnKeyData[3]).Value;
 
-			var ecPoint = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
-			return ecPoint;
+				var ecPoint = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
+				return ecPoint;
+			}
+			catch (Exception) { return "Could not import public key"; }
 		}
 
 		private static void ImportKeyDynamic(byte[] asnByteArray, out ECPoint publicKey, out BigInteger privateKey)
@@ -185,13 +187,17 @@ namespace TS3Client.Full
 			if (Identity == null)
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
 
-			var alphaBytes = Convert.FromBase64String(alpha);
-			var betaBytes = Convert.FromBase64String(beta);
-			var omegaBytes = Convert.FromBase64String(omega);
-			var serverPublicKey = ImportPublicKey(omegaBytes);
+			var alphaBytes = Base64Decode(alpha);
+			if (!alphaBytes.Ok) return "alpha parameter is invalid";
+			var betaBytes = Base64Decode(beta);
+			if (!alphaBytes.Ok) return "betaBytes parameter is invalid";
+			var omegaBytes = Base64Decode(omega);
+			if (!alphaBytes.Ok) return "omegaBytes parameter is invalid";
+			var serverPublicKey = ImportPublicKey(omegaBytes.Value);
+			if (!serverPublicKey.Ok) return "server public key is invalid";
 
-			byte[] sharedKey = GetSharedSecret(serverPublicKey);
-			return SetSharedSecret(alphaBytes, betaBytes, sharedKey);
+			byte[] sharedKey = GetSharedSecret(serverPublicKey.Value);
+			return SetSharedSecret(alphaBytes.Value, betaBytes.Value, sharedKey);
 		}
 
 		/// <summary>Calculates a shared secred with ECDH from the client private and server public key.</summary>
@@ -208,14 +214,14 @@ namespace TS3Client.Full
 				Array.Copy(keyArr, keyArr.Length - 32, sharedData, 0, 32);
 			else // keyArr.Length < 32
 				Array.Copy(keyArr, 0, sharedData, 32 - keyArr.Length, keyArr.Length);
-			return sharedData;
+			return Hash1It(sharedData);
 		}
-		
+
 		/// <summary>Initializes all required variables for the secure communication.</summary>
 		/// <param name="alpha">The alpha key from clientinit.</param>
 		/// <param name="beta">The beta key from clientinit.</param>
 		/// <param name="sharedKey">The omega key from clientinit.</param>
-		private R SetSharedSecret(byte[] alpha, byte[] beta, byte[] sharedKey)
+		private R SetSharedSecret(ReadOnlySpan<byte> alpha, ReadOnlySpan<byte> beta, ReadOnlySpan<byte> sharedKey)
 		{
 			if (beta.Length != 10 && beta.Length != 54)
 				return $"Invalid beta size ({beta.Length})";
@@ -224,9 +230,8 @@ namespace TS3Client.Full
 			ivStruct = new byte[10 + beta.Length];
 
 			// applying hashes to get the required values for ts3
-			var buffer = beta.Length == 10 ? Hash1It(sharedKey) : Hash512It(sharedKey);
-			XorBinary(buffer, alpha, alpha.Length, ivStruct);
-			XorBinary(buffer.AsSpan().Slice(10), beta, beta.Length, ivStruct.AsSpan().Slice(10));
+			XorBinary(sharedKey, alpha, alpha.Length, ivStruct);
+			XorBinary(sharedKey.Slice(10), beta, beta.Length, ivStruct.AsSpan().Slice(10));
 
 			// creating a dummy signature which will be used on packets which dont use a real encryption signature (like plain voice)
 			var buffer2 = Hash1It(ivStruct, 0, ivStruct.Length);
@@ -239,32 +244,52 @@ namespace TS3Client.Full
 
 		internal R CryptoInit2(string license, string omega, string proof, string beta, byte[] privateKey)
 		{
-			// TODO safe
-			var licenseBytes = Convert.FromBase64String(license);
-			var omegaBytes = Convert.FromBase64String(omega);
-			var proofBytes = Convert.FromBase64String(proof);
-			var betaBytes = Convert.FromBase64String(beta);
-			var serverPublicKey = ImportPublicKey(omegaBytes);
+			var licenseBytes = Base64Decode(license);
+			if (!licenseBytes.Ok) return "license parameter is invalid";
+			var omegaBytes = Base64Decode(omega);
+			if (!omegaBytes.Ok) return "omega parameter is invalid";
+			var proofBytes = Base64Decode(proof);
+			if (!proofBytes.Ok) return "proof parameter is invalid";
+			var betaBytes = Base64Decode(beta);
+			if (!betaBytes.Ok) return "beta parameter is invalid";
+			var serverPublicKey = ImportPublicKey(omegaBytes.Value);
+			if (!serverPublicKey.Ok) return "server public key is invalid";
 
 			// Verify that our connection isn't tampered with
-			if (!VerifySign(serverPublicKey, licenseBytes, proofBytes))
+			if (!VerifySign(serverPublicKey.Value, licenseBytes.Value, proofBytes.Value))
 				return "The init proof is not valid. Your connection might be tampered with or the sever is an idiot.";
 
-			var licenseChainR = Licenses.Parse(licenseBytes);
+			var sw = Stopwatch.StartNew();
+			var licenseChainR = Licenses.Parse(licenseBytes.Value);
 			if (!licenseChainR.Ok)
 				return licenseChainR.Error;
+			Log.Debug("Parsed license successfully in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
 
 			var licenseChain = licenseChainR.Value;
+			sw.Restart();
 			var key = licenseChain.DeriveKey();
-			var dkey = Ed25519.DecodePoint(key);
+			Log.Debug("Processed license successfully in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
 
-			var sharedec1 = Ed25519.ScalarMul(dkey, Ed25519.DecodeInt(privateKey));
-			//var shared = new byte[32];
-			//var expPriv = Chaos.NaCl.Ed25519.ExpandedPrivateKeyFromSeed(privateKey);
-			//Chaos.NaCl.Ed25519.KeyExchange(shared, key, expPriv);
-			var keyArr = sharedec1.Encode();
+			sw.Restart();
+			var keyArr = GetSharedSecret(key, privateKey);
+			Log.Debug("Calculated shared secret in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
 
-			return SetSharedSecret(alphaTmp, betaBytes, keyArr);
+			return SetSharedSecret(alphaTmp, betaBytes.Value, keyArr);
+		}
+
+		private static byte[] GetSharedSecret(ReadOnlySpan<byte> publicKey, ReadOnlySpan<byte> privateKey)
+		{
+			Span<byte> privateKeyCpy = stackalloc byte[32];
+			privateKey.CopyTo(privateKeyCpy);
+			privateKeyCpy[31] &= 0x7F;
+			GroupOperations.ge_frombytes_negate_vartime(out var pub1, publicKey);
+			GroupOperations.ge_scalarmult_vartime(out GroupElementP2 mul, privateKeyCpy, pub1);
+			Span<byte> sharedTmp = stackalloc byte[32];
+			GroupOperations.ge_tobytes(sharedTmp, mul);
+			sharedTmp[31] ^= 0x80;
+			var bytes = new byte[64];
+			Chaos.NaCl.Sha512.Hash(sharedTmp, bytes);
+			return bytes;
 		}
 
 		internal R<byte[]> ProcessInit1(byte[] data)
@@ -366,7 +391,19 @@ namespace TS3Client.Full
 			return x.ModPow(BigInteger.Two.Pow(level), n).ToByteArrayUnsigned();
 		}
 
-		internal static (byte[] privateKey, byte[] publicKey) GenerateTemporaryKey() => Ed25519.CreateKeyPair();
+		internal static (byte[] publicKey, byte[] privateKey) GenerateTemporaryKey()
+		{
+			var privateKey = new byte[32];
+			using (var rng = RandomNumberGenerator.Create())
+				rng.GetBytes(privateKey);
+			ScalarOperations.sc_clamp(privateKey);
+
+			GroupOperations.ge_scalarmult_base(out var A, privateKey);
+			var publicKey = new byte[32];
+			GroupOperations.ge_p3_tobytes(publicKey, A);
+
+			return (publicKey, privateKey);
+		}
 
 		#endregion
 
@@ -628,7 +665,7 @@ namespace TS3Client.Full
 		public static bool EdCheck(VersionSign sign)
 		{
 			var ver = Encoding.ASCII.GetBytes(sign.PlattformName + sign.Name);
-			return Ed25519.CheckValid(Convert.FromBase64String(sign.Sign), ver, Ts3VerionSignPublicKey);
+			return Chaos.NaCl.Ed25519.Verify(Convert.FromBase64String(sign.Sign), ver, Ts3VerionSignPublicKey);
 		}
 
 		public static void VersionSelfCheck()
@@ -640,6 +677,12 @@ namespace TS3Client.Full
 				if (!EdCheck(verObj))
 					throw new Exception($"Version is invalid: {verObj}");
 			}
+		}
+
+		private static R<byte[]> Base64Decode(string str)
+		{
+			try { return Convert.FromBase64String(str); }
+			catch (FormatException) { return "Malformed base64 string"; }
 		}
 
 		#endregion

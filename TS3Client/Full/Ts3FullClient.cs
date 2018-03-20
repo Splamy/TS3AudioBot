@@ -333,8 +333,8 @@ namespace TS3Client.Full
 
 			packetHandler.IncPacketCounter(PacketType.Command);
 
-			var (privateKey, publicKey) = Ts3Crypt.GenerateTemporaryKey();
-			
+			var (publicKey, privateKey) = Ts3Crypt.GenerateTemporaryKey();
+
 			var ekBase64 = Convert.ToBase64String(publicKey);
 			var toSign = new byte[86];
 			Array.Copy(publicKey, 0, toSign, 0, 32);
@@ -343,7 +343,7 @@ namespace TS3Client.Full
 			var sign = Ts3Crypt.Sign(connectionDataFull.Identity.PrivateKey, toSign);
 			var proof = Convert.ToBase64String(sign);
 			ClientEk(ekBase64, proof);
-			
+
 			var result = ts3Crypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
 			if (!result)
 			{

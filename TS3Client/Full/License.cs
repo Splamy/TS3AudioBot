@@ -1,11 +1,21 @@
-using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Text;
-using TS3Client.Helper;
+// TS3Client - A free TeamSpeak3 client implementation
+// Copyright (C) 2017  TS3Client contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 namespace TS3Client.Full
 {
+	using Chaos.NaCl.Ed25519Ref10;
+	using Helper;
+	using System;
+	using System.Buffers.Binary;
+	using System.Collections.Generic;
+	using System.Text;
+
 	public class Licenses
 	{
 		public static readonly byte[] LicenseRootKey =
@@ -126,39 +136,30 @@ namespace TS3Client.Full
 			return "Non-null-terminated issuer string";
 		}
 
-		public byte[] DeriveKey(byte[] parent)
+		/// <summary>
+		/// Calculates a new public key by processing an existing one with this license bock.
+		/// The key is calculated as following: <code>new_pub_key = pub_key * hash + parent</code>.
+		/// Where <code>pub_key</code> and <code>parent</code> are public keys, and <code>hash</code> a private key.
+		/// </summary>
+		/// <param name="parent">The preceeding key (from the previous block or root key).</param>
+		/// <returns>The new public key after processing it with this block.</returns>
+		public byte[] DeriveKey(ReadOnlySpan<byte> parent)
 		{
-			//Hash[0] &= 248;
-			//Hash[31] &= 63;
-			//Hash[31] |= 64;
-			//var privateKey = Ed25519.DecodeIntMod(Hash);
-			//var parentKey = Ed25519.DecodePoint(parent);
+			ScalarOperations.sc_clamp(Hash);
+			GroupOperations.ge_frombytes_negate_vartime(out var pubkey, Key);
+			GroupOperations.ge_frombytes_negate_vartime(out var parkey, parent);
 
-			//var mult = Ed25519.ScalarMul(Ed25519.DecodePoint(Key), privateKey);
-			//var add = Ed25519.Edwards(mult.x, mult.y, parentKey.x, parentKey.y);
-			
-			//var priv = privateKey.EncodeInt();
-			//var xpub = Key;
-			//var xmul = mult.Encode();
-			//var mmad = add.Encode();
-			//Console.WriteLine(DebugUtil.DebugToHex(mmad));
+			GroupOperations.ge_scalarmult_vartime(out GroupElementP1P1 res, Hash, pubkey);
+			GroupOperations.ge_p3_to_cached(out var pargrp, parkey);
 
-			Chaos.NaCl.Ed25519Ref10.ScalarOperations.sc_clamp(Hash);
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_frombytes_negate_vartime(out var pubkey, Key);
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_frombytes_negate_vartime(out var parkey, parent);
-
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_double_scalarmult_vartime_opt(out var res, Hash, pubkey);
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p3_to_cached(out var pargrp, parkey);
-
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p1p1_to_p3(out var r, res);
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_add(out var a, r, pargrp);
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p1p1_to_p3(out var r2, a);
+			GroupOperations.ge_p1p1_to_p3(out var r, res);
+			GroupOperations.ge_add(out var a, r, pargrp);
+			GroupOperations.ge_p1p1_to_p3(out var r2, a);
 			byte[] final = new byte[32];
-			Chaos.NaCl.Ed25519Ref10.GroupOperations.ge_p3_tobytes(final, r2);
-			final[31] ^= 0x80; // TODO REALLY HACKY !!
-			//Console.WriteLine(DebugUtil.DebugToHex(final));
+			GroupOperations.ge_p3_tobytes(final, r2);
+			final[31] ^= 0x80;
 
-			return final; //add;
+			return final;
 		}
 	}
 
