@@ -208,13 +208,13 @@ namespace TS3Client.Full
 			ECPoint p = publicKeyPoint.Multiply(Identity.PrivateKey).Normalize();
 			byte[] keyArr = p.AffineXCoord.ToBigInteger().ToByteArray();
 			if (keyArr.Length == 32)
-				return keyArr;
-			var sharedData = new byte[32];
+				return Hash1It(keyArr);
 			if (keyArr.Length > 32)
-				Array.Copy(keyArr, keyArr.Length - 32, sharedData, 0, 32);
-			else // keyArr.Length < 32
-				Array.Copy(keyArr, 0, sharedData, 32 - keyArr.Length, keyArr.Length);
-			return Hash1It(sharedData);
+				return Hash1It(keyArr, keyArr.Length - 32, 32);
+			// else keyArr.Length < 32
+			var keyArrExt = new byte[32];
+			Array.Copy(keyArr, 0, keyArrExt, 32 - keyArr.Length, keyArr.Length);
+			return Hash1It(keyArrExt);
 		}
 
 		/// <summary>Initializes all required variables for the secure communication.</summary>
@@ -271,13 +271,13 @@ namespace TS3Client.Full
 			Log.Debug("Processed license successfully in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
 
 			sw.Restart();
-			var keyArr = GetSharedSecret(key, privateKey);
+			var keyArr = GetSharedSecret2(key, privateKey);
 			Log.Debug("Calculated shared secret in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
 
 			return SetSharedSecret(alphaTmp, betaBytes.Value, keyArr);
 		}
 
-		private static byte[] GetSharedSecret(ReadOnlySpan<byte> publicKey, ReadOnlySpan<byte> privateKey)
+		private static byte[] GetSharedSecret2(ReadOnlySpan<byte> publicKey, ReadOnlySpan<byte> privateKey)
 		{
 			Span<byte> privateKeyCpy = stackalloc byte[32];
 			privateKey.CopyTo(privateKeyCpy);
