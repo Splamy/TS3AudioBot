@@ -79,9 +79,10 @@ namespace TS3AudioBot.Web.Api
 
 		private void ProcessApiV1Call(Uri uri, HttpListenerResponse response, InvokerData invoker)
 		{
-			string apirequest = uri.AbsolutePath.Substring("/api".Length);
+			string apirequest = uri.OriginalString.Substring(uri.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
+			Log.Trace(ast.ToString);
 
 			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
 
