@@ -21,11 +21,13 @@ namespace TS3Client
 	/// <summary>Provides methods to resolve TSDNS, SRV redirects and nicknames</summary>
 	public static class TsDnsResolver
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const ushort Ts3DefaultPort = 9987;
 		private const ushort TsDnsDefaultPort = 41144;
 		private const string DnsPrefixTcp = "_tsdns._tcp.";
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
+		private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
@@ -33,17 +35,27 @@ namespace TS3Client
 		/// <returns>Whether the resolve was succesful.</returns>
 		public static bool TryResolve(string address, out IPEndPoint endPoint)
 		{
+			Log.Debug("Trying to look up '{0}'", address);
+
 			// if this address does not look like a domain it might be a nickname
 			if (!address.Contains(".") && !address.Contains(":") && address != "localhost")
 			{
+				Log.Trace("Resolving '{0}' as nickname", address);
 				var resolvedNickname = ResolveNickname(address);
 				if (resolvedNickname != null)
+				{
+					Log.Trace("Resolved nickname '{0}' as '{1}'", address, resolvedNickname);
 					address = resolvedNickname;
+				}
 			}
+
 
 			// host is specified as an IP (+ Port)
 			if ((endPoint = ParseIpEndPoint(address)) != null)
+			{
+				Log.Trace("Address is an ip: '{0}'", endPoint);
 				return true;
+			}
 
 			if (!Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
 				return false;
@@ -55,7 +67,7 @@ namespace TS3Client
 			{
 				Recursion = true,
 				Retries = 3,
-				TimeOut = 1000,
+				TimeOut = (int)LookupTimeout.TotalMilliseconds,
 				UseCache = true,
 				DnsServer = "8.8.8.8",
 				TransportType = Heijden.DNS.TransportType.Udp,
@@ -69,6 +81,7 @@ namespace TS3Client
 				if (hasUriPort)
 					srvEndPoint.Port = uri.Port;
 				endPoint = srvEndPoint;
+				Log.Trace("Address found using _udp prefix '{0}'", endPoint);
 				return true;
 			}
 
@@ -84,86 +97,107 @@ namespace TS3Client
 			for (int i = 1; i < Math.Min(domainSplit.Length, 4); i++)
 				domainList.Add(string.Join(".", domainSplit, (domainSplit.Length - (i + 1)), i + 1));
 
-			using (var tcpClient = new TcpClient())
+			// Try resolve tcp prefix
+			// Under this address we'll get the tsdns server
+			foreach (var domain in domainList)
 			{
-				// Try resolve tcp prefix
-				// Under this address we'll get the tsdns server
-				foreach (var domain in domainList)
-				{
-					srvEndPoint = ResolveSrv(resolver, DnsPrefixTcp + domain);
-					if (srvEndPoint == null)
-						continue;
+				srvEndPoint = ResolveSrv(resolver, DnsPrefixTcp + domain);
+				if (srvEndPoint == null)
+					continue;
 
-					endPoint = ResolveTsDns(tcpClient, srvEndPoint, uri.Host);
-					if (endPoint != null)
-						return true;
-				}
+				endPoint = ResolveTsDns(srvEndPoint, uri.Host);
+				if (endPoint != null)
+					return true;
+			}
 
-				// Try resolve to the tsdns service directly
-				foreach (var domain in domainList)
-				{
-					endPoint = ResolveTsDns(tcpClient, domain, TsDnsDefaultPort, uri.Host);
-					if (endPoint != null)
-						return true;
-				}
+			// Try resolve to the tsdns service directly
+			foreach (var domain in domainList)
+			{
+				endPoint = ResolveTsDns(domain, TsDnsDefaultPort, uri.Host);
+				if (endPoint != null)
+					return true;
 			}
 
 			// Try to normally resolve server address
-			var hostEntry = Dns.GetHostEntry(uri.Host);
-			if (hostEntry.AddressList.Length == 0)
+			var hostAddress = ResolveDns(uri.Host);
+			if (hostAddress == null)
 				return false;
 
 			var port = string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped))
 				? Ts3DefaultPort
 				: uri.Port;
 
-			endPoint = new IPEndPoint(hostEntry.AddressList[0], port);
+			endPoint = new IPEndPoint(hostAddress, port);
 			return true;
 		}
 
 		private static IPEndPoint ResolveSrv(Resolver resolver, string domain)
 		{
+			Log.Trace("Resolving srv record '{0}'", domain);
 			var response = resolver.Query(domain, QType.SRV, QClass.IN);
 
 			if (response.RecordsSRV.Length > 0)
 			{
 				var srvRecord = response.RecordsSRV[0];
 
-				var hostEntry = Dns.GetHostEntry(srvRecord.TARGET);
-				if (hostEntry.AddressList.Length > 0)
-				{
-					var hostAddress = hostEntry.AddressList[0];
+				var hostAddress = ResolveDns(srvRecord.TARGET);
+				if (hostAddress != null)
 					return new IPEndPoint(hostAddress, srvRecord.PORT);
-				}
 			}
 			return null;
 		}
 
-		private static IPEndPoint ResolveTsDns(TcpClient client, string tsDnsAddress, ushort port, string resolveAddress)
+		private static IPEndPoint ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress)
 		{
-			var hostEntry = Dns.GetHostEntry(tsDnsAddress);
-			if (hostEntry.AddressList.Length == 0)
+			Log.Trace("Looking for the tsdns under '{0}'", tsDnsAddress);
+			var hostAddress = ResolveDns(tsDnsAddress);
+			if (hostAddress == null)
 				return null;
 
-			return ResolveTsDns(client, new IPEndPoint(hostEntry.AddressList[0], port), resolveAddress);
+			return ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress);
 		}
 
-		private static IPEndPoint ResolveTsDns(TcpClient client, IPEndPoint tsDnsAddress, string resolveAddress)
+		private static IPEndPoint ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress)
 		{
-			try { client.Connect(tsDnsAddress); }
+			Log.Trace("Looking up tsdns address '{0}'", resolveAddress);
+			string returnString;
+			try
+			{
+				using (var client = new TcpClient())
+				{
+					if (!client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).Wait(LookupTimeout))
+					{
+						client.Close();
+						return null;
+					}
+
+					var stream = client.GetStream();
+					var addBuf = Encoding.ASCII.GetBytes(resolveAddress);
+					stream.Write(addBuf, 0, addBuf.Length);
+					stream.Flush();
+
+					stream.ReadTimeout = (int)LookupTimeout.TotalMilliseconds;
+					var readBuffer = new byte[128];
+					int readLen = stream.Read(readBuffer, 0, readBuffer.Length);
+					returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
+				}
+			}
 			catch (SocketException) { return null; }
 
-			var stream = client.GetStream();
-			var addBuf = Encoding.ASCII.GetBytes(resolveAddress);
-			stream.Write(addBuf, 0, addBuf.Length);
-			stream.Flush();
-
-			stream.ReadTimeout = 10_000;
-			var readBuffer = new byte[128];
-			int readLen = stream.Read(readBuffer, 0, readBuffer.Length);
-			var returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
-
 			return ParseIpEndPoint(returnString);
+		}
+
+		private static IPAddress ResolveDns(string hostOrNameAddress)
+		{
+			try
+			{
+				Log.Trace("Lookup dns: '{0}'", hostOrNameAddress);
+				IPHostEntry hostEntry = Dns.GetHostEntry(hostOrNameAddress);
+				if (hostEntry.AddressList.Length == 0)
+					return null;
+				return hostEntry.AddressList[0];
+			}
+			catch (SocketException) { return null; }
 		}
 
 		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|localhost)(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);

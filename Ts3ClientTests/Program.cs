@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TS3Client;
+using TS3Client.Helper;
 using TS3Client.Full;
 using TS3Client.Messages;
 
@@ -32,7 +33,7 @@ namespace Ts3ClientTests
 				client.OnErrorEvent += Client_OnErrorEvent;
 				client.OnTextMessageReceived += Client_OnTextMessageReceived;
 				var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0);
-				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, Password = "qwer", VersionSign = VersionSign.VER_WIN_3_1_8 };
+				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, ServerPassword = "123", VersionSign = VersionSign.VER_WIN_3_1_8 };
 				client.Connect(con);
 				clients.Add(client);
 			}
@@ -44,6 +45,8 @@ namespace Ts3ClientTests
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)
 		{
 			var client = (Ts3FullClient)sender;
+			if(e.Error!= null)
+				Console.WriteLine(e.Error.ErrorFormat());
 			Console.WriteLine("Disconnected id {0}", client.ClientId);
 		}
 
@@ -97,7 +100,7 @@ namespace Ts3ClientTests
 		private static void Client_OnErrorEvent(object sender, CommandError e)
 		{
 			//var client = (Ts3FullClient)sender;
-			//Console.WriteLine(e.ErrorFormat());
+			Console.WriteLine(e.ErrorFormat());
 			//if (!client.Connected)
 			//{
 			//	client.Connect(con);

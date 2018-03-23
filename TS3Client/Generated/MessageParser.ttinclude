@@ -12,7 +12,7 @@ GenMessages ParseMessages()
 {
 	const string attribList = @"(\s*(?<key>\w+):(?<value>\w+|""[^""]+""|\[[\w\s]+\]))*";
 	Regex attrRegex = new Regex("^" + attribList + "$");
-	Regex msgRegex = new Regex(@"^\s*(?<msg>\w+)\s*(;" + attribList + @"(\s*;\s*(?<flds>[\w\s,]*))?)?\s*$");
+	Regex msgRegex = new Regex(@"^\s*(?<msg>\w+)\s*(;" + attribList + @"(\s*;\s*(?<flds>[\w\s?,]*))?)?\s*$");
 	string declFilePath = Host.ResolvePath("../Declarations/Messages.txt");
 	string[] declLines = File.ReadAllLines(declFilePath);
 

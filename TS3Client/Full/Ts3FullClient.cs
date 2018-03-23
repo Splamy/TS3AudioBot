@@ -212,6 +212,8 @@ namespace TS3Client.Full
 			case NotificationType.FileList: break;
 			case NotificationType.FileListFinished: break;
 			case NotificationType.FileInfoTs: break;
+			case NotificationType.ChannelGroupList: break;
+			case NotificationType.PluginCommand: { var result = lazyNotification.WrapSingle<PluginCommand>(); if (result.Ok) ProcessPluginRequest(result.Value); } break;
 			// special
 			case NotificationType.CommandError:
 				{
@@ -318,13 +320,7 @@ namespace TS3Client.Full
 
 			packetHandler.CryptoInitDone();
 
-			ClientInit(
-				connectionDataFull.Username,
-				true, true,
-				connectionDataFull.DefaultChannel,
-				Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
-				connectionDataFull.HashedPassword, string.Empty, string.Empty, string.Empty,
-				"123,456", VersionSign);
+			DefaultClientInit();
 		}
 
 		private void ProcessInitIvExpand2(InitIvExpand2 initIvExpand2)
@@ -353,14 +349,17 @@ namespace TS3Client.Full
 
 			packetHandler.CryptoInitDone();
 
-			ClientInit(
-				connectionDataFull.Username,
-				true, true,
-				connectionDataFull.DefaultChannel,
-				Ts3Crypt.HashPassword(connectionDataFull.DefaultChannelPassword),
-				connectionDataFull.HashedPassword, string.Empty, string.Empty, string.Empty,
-				"123,456", VersionSign);
+			DefaultClientInit();
 		}
+
+		private CmdR DefaultClientInit() => ClientInit(
+			connectionDataFull.Username,
+			true, true,
+			connectionDataFull.DefaultChannel,
+			connectionDataFull.DefaultChannelPassword.HashedPassword,
+			connectionDataFull.ServerPassword.HashedPassword,
+			string.Empty, string.Empty, string.Empty,
+			connectionDataFull.Identity.ClientUid, VersionSign);
 
 		private void ProcessInitServer(InitServer initServer)
 		{
@@ -374,6 +373,12 @@ namespace TS3Client.Full
 		private void ProcessConnectionInfoRequest()
 		{
 			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+		}
+
+		private void ProcessPluginRequest(PluginCommand cmd)
+		{
+			if (cmd.Name == "cliententerview" && cmd.Data == "version")
+				SendPluginCommand("cliententerview", "TAB", 1);
 		}
 
 		/// <summary>
@@ -610,6 +615,12 @@ namespace TS3Client.Full
 				.Where(x => x.ClientId == clientId)
 				.WrapSingle();
 		}
+
+		public CmdR SendPluginCommand(string name, string data, int targetmode)
+			=> Send("plugincmd",
+			new CommandParameter("name", name),
+			new CommandParameter("data", data),
+			new CommandParameter("targetmode", targetmode)).OnlyError();
 
 		// serverrequestconnectioninfo
 		// servergetvariables

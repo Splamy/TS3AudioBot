@@ -27,21 +27,16 @@ namespace TS3Client
 		/// </summary>
 		public IdentityData Identity { get; set; }
 		/// <summary>
-		/// This can be set to true, when the password is already hashed.
-		/// The hash works like this: base64(sha1(password))
-		/// </summary>
-		public bool IsPasswordHashed { get; set; } = false;
-		/// <summary>
 		/// Set this to the TeamSpeak 3 Version this client should appear as.
 		/// You can find predefined version data in the <see cref="Full.VersionSign"/>
 		/// class. Please keep in mind that the version data has to have valid sign
 		/// to be accepted by an official TeamSpeak 3 Server.
 		/// </summary>
-		public VersionSign VersionSign { get; set; } = VersionSign.VER_LIN_3_0_19_4;
+		public VersionSign VersionSign { get; set; } = VersionSign.VER_WIN_3_1_8;
 		/// <summary>The display username.</summary>
 		public string Username { get; set; }
 		/// <summary>The server password. Leave null if none.</summary>
-		public string Password { get; set; }
+		public Password ServerPassword { get; set; } = new Password();
 		/// <summary>
 		/// <para>The default channel this client should try to join when connecting.</para>
 		/// <para>The channel can be specified with either the channel name path, example: "Lobby/Home".
@@ -49,9 +44,41 @@ namespace TS3Client
 		/// </summary>
 		public string DefaultChannel { get; set; } = string.Empty;
 		/// <summary>Password for the default channel. Leave null if none.</summary>
-		public string DefaultChannelPassword { get; set; }
+		public Password DefaultChannelPassword { get; set; } = new Password();
+	}
 
-		// TODO to own password class
-		public string HashedPassword => IsPasswordHashed ? Password : Ts3Crypt.HashPassword(Password);
+	public class Password
+	{
+		private string hashedPassword;
+		private string plainPassword;
+		/// <summary>
+		/// This can be set to true, when the password is already hashed.
+		/// The hash works like this: base64(sha1(password))
+		/// </summary>
+		private bool isHashed;
+		public string HashedPassword
+		{
+			get
+			{
+				if (isHashed && hashedPassword == null)
+					return string.Empty;
+				if (!isHashed)
+					HashedPassword = Ts3Crypt.HashPassword(plainPassword);
+				return hashedPassword;
+			}
+			set
+			{
+				hashedPassword = value;
+				plainPassword = null;
+				isHashed = true;
+			}
+		}
+		public string PlainPassword { set { plainPassword = value; isHashed = false; } }
+
+		public Password() { }
+		public static Password FromHash(string hash) => new Password() { HashedPassword = hash };
+		public static Password FromPlain(string pass) => new Password() { PlainPassword = pass };
+
+		public static implicit operator Password(string pass) => FromPlain(pass);
 	}
 }

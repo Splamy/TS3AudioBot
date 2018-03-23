@@ -474,8 +474,8 @@ namespace TS3Client.Full
 
 		private void SendAck(ushort ackId, PacketType ackType)
 		{
-			byte[] ackData = new byte[2]; // stackalloc
-			BinaryPrimitives.WriteUInt16BigEndian(ackData.AsSpan(), ackId);
+			Span<byte> ackData = stackalloc byte[2];
+			BinaryPrimitives.WriteUInt16BigEndian(ackData, ackId);
 			if (ackType == PacketType.Ack || ackType == PacketType.AckLow)
 				AddOutgoingPacket(ackData, ackType);
 			else
@@ -512,8 +512,8 @@ namespace TS3Client.Full
 				NetworkStats.LogLostPings(idDiff - 1);
 			if (idDiff > 0 || idDiff < -ReceivePacketWindowSize)
 				lastReceivedPingId = packet.PacketId;
-			byte[] pongData = new byte[2]; // stackalloc
-			BinaryPrimitives.WriteUInt16BigEndian(pongData.AsSpan(), packet.PacketId);
+			Span<byte> pongData = stackalloc byte[2];
+			BinaryPrimitives.WriteUInt16BigEndian(pongData, packet.PacketId);
 			AddOutgoingPacket(pongData, PacketType.Pong);
 		}
 

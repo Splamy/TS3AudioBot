@@ -275,6 +275,44 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ChannelGroupList : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupList;
+		
+
+		public ChannelGroupIdT ChannelGroup { get; set; }
+		public string Name { get; set; }
+		public GroupType GroupType { get; set; }
+		public int IconId { get; set; }
+		public bool IsPermanent { get; set; }
+		public int SortId { get; set; }
+		public GroupNamingMode NamingMode { get; set; }
+		public int NeededModifyPower { get; set; }
+		public int NeededMemberAddPower { get; set; }
+		public int NeededMemberRemovePower { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "cgid": ChannelGroup = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "type": { if (!Enum.TryParse(value.NewString(), out GroupType val)) throw new FormatException(); GroupType = val; } break;
+			case "iconid": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
+			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "sortid": SortId = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "namemode": { if (!Enum.TryParse(value.NewString(), out GroupNamingMode val)) throw new FormatException(); NamingMode = val; } break;
+			case "n_modifyp": NeededModifyPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_member_addp": NeededMemberAddPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_member_remove_p": NeededMemberRemovePower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class ChannelList : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelList;
@@ -1437,6 +1475,28 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class PluginCommand : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PluginCommand;
+		
+
+		public string Name { get; set; }
+		public string Data { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "data": Data = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class ServerData : IResponse
 	{
 		
@@ -1700,6 +1760,7 @@ namespace TS3Client.Messages
 		ChannelCreated,
 		ChannelDeleted,
 		ChannelEdited,
+		ChannelGroupList,
 		ChannelList,
 		ChannelListFinished,
 		ChannelMoved,
@@ -1727,6 +1788,7 @@ namespace TS3Client.Messages
 		InitIvExpand,
 		InitIvExpand2,
 		InitServer,
+		PluginCommand,
 		ServerEdited,
 		ServerGroupList,
 		TextMessage,
@@ -1743,6 +1805,7 @@ namespace TS3Client.Messages
 			case "notifychannelcreated": return NotificationType.ChannelCreated;
 			case "notifychanneldeleted": return NotificationType.ChannelDeleted;
 			case "notifychanneledited": return NotificationType.ChannelEdited;
+			case "notifychannelgrouplist": return NotificationType.ChannelGroupList;
 			case "channellist": return NotificationType.ChannelList;
 			case "channellistfinished": return NotificationType.ChannelListFinished;
 			case "notifychannelmoved": return NotificationType.ChannelMoved;
@@ -1770,6 +1833,7 @@ namespace TS3Client.Messages
 			case "initivexpand": return NotificationType.InitIvExpand;
 			case "initivexpand2": return NotificationType.InitIvExpand2;
 			case "initserver": return NotificationType.InitServer;
+			case "notifyplugincmd": return NotificationType.PluginCommand;
 			case "notifyserveredited": return NotificationType.ServerEdited;
 			case "notifyservergrouplist": return NotificationType.ServerGroupList;
 			case "notifytextmessage": return NotificationType.TextMessage;
@@ -1786,6 +1850,7 @@ namespace TS3Client.Messages
 			case NotificationType.ChannelCreated: return new ChannelCreated();
 			case NotificationType.ChannelDeleted: return new ChannelDeleted();
 			case NotificationType.ChannelEdited: return new ChannelEdited();
+			case NotificationType.ChannelGroupList: return new ChannelGroupList();
 			case NotificationType.ChannelList: return new ChannelList();
 			case NotificationType.ChannelListFinished: return new ChannelListFinished();
 			case NotificationType.ChannelMoved: return new ChannelMoved();
@@ -1813,6 +1878,7 @@ namespace TS3Client.Messages
 			case NotificationType.InitIvExpand: return new InitIvExpand();
 			case NotificationType.InitIvExpand2: return new InitIvExpand2();
 			case NotificationType.InitServer: return new InitServer();
+			case NotificationType.PluginCommand: return new PluginCommand();
 			case NotificationType.ServerEdited: return new ServerEdited();
 			case NotificationType.ServerGroupList: return new ServerGroupList();
 			case NotificationType.TextMessage: return new TextMessage();

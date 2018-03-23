@@ -165,17 +165,18 @@ namespace TS3AudioBot
 				}
 			}
 			else if (SystemData.IsLinux)
-				verionSign = VersionSign.VER_WIN_3_1_8;
+				verionSign = VersionSign.VER_LIN_3_1_8;
 			else
 				verionSign = VersionSign.VER_WIN_3_1_8;
 
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = ts3FullClientData.DefaultNickname,
-				Password = ts3FullClientData.ServerPassword,
+				ServerPassword = ts3FullClientData.ServerPasswordIsHashed
+					? Password.FromHash(ts3FullClientData.ServerPassword)
+					: Password.FromPlain(ts3FullClientData.ServerPassword),
 				Address = ts3FullClientData.Address,
 				Identity = identity,
-				IsPasswordHashed = ts3FullClientData.ServerPasswordIsHashed,
 				VersionSign = verionSign,
 				DefaultChannel = ts3FullClientData.DefaultChannel,
 			});

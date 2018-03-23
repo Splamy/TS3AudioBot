@@ -116,6 +116,7 @@ string GenerateType(GenField fld)
 
 foreach(var msg in gen.MessagesSorted)
 {
+	if(!msg.S2C) continue;
 #>
 	public sealed class <#= msg.ClassName #><#
 		bool isNotify = msg.Notify != null;
@@ -153,7 +154,8 @@ foreach(var msg in gen.MessagesSorted)
 	public enum NotificationType
 	{
 		Unknown,<#
-	foreach(var ntfy in gen.NotifiesSorted) { #>
+	foreach(var ntfy in gen.NotifiesSorted) {
+		if(!gen.Messages[ntfy.ClassName].S2C) continue; #>
 		<#= ntfy.ClassName #>,<#
 	}
 #>
@@ -165,7 +167,8 @@ foreach(var msg in gen.MessagesSorted)
 		{
 			switch(name)
 			{<#
-	foreach(var ntfy in gen.NotifiesSorted) { #>
+	foreach(var ntfy in gen.NotifiesSorted) { 
+		if(!gen.Messages[ntfy.ClassName].S2C) continue; #>
 			case "<#= ntfy.Notify #>": return NotificationType.<#= ntfy.ClassName #>;<#
 	}
 #>
@@ -179,6 +182,7 @@ foreach(var msg in gen.MessagesSorted)
 			{<#
 	foreach(var ntfy in gen.NotifiesSorted)
 	{
+		if(!gen.Messages[ntfy.ClassName].S2C) continue;
 #>
 			case NotificationType.<#= ntfy.ClassName #>: return new <#= ntfy.ClassName #>();<#
 	}
