@@ -182,7 +182,11 @@ namespace TS3Client
 					returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
 				}
 			}
-			catch (SocketException) { return null; }
+			catch (Exception ex)
+			{
+				Log.Trace("Socket forcibly closed when checking '{0}', reason {1}", resolveAddress, ex.Message);
+				return null;
+			}
 
 			return ParseIpEndPoint(returnString);
 		}
