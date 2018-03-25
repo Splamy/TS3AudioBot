@@ -105,7 +105,17 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				identity = Ts3Crypt.LoadIdentity(ts3FullClientData.Identity, ts3FullClientData.IdentityOffset);
+				var identityResult = Ts3Crypt.LoadIdentityDynamic(ts3FullClientData.Identity, ts3FullClientData.IdentityOffset);
+				if (!identityResult.Ok)
+				{
+					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it.");
+					return;
+				}
+				identity = identityResult.Value;
+				if (ts3FullClientData.Identity != identity.PrivateKeyString)
+					ts3FullClientData.Identity = identity.PrivateKeyString;
+				if (ts3FullClientData.IdentityOffset != identity.ValidKeyOffset)
+					ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
 			}
 
 			// check required security level

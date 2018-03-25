@@ -29,6 +29,7 @@ namespace TS3Client.Full
 	using System.Linq;
 	using System.Security.Cryptography;
 	using System.Text;
+	using System.Text.RegularExpressions;
 
 	/// <summary>Provides all cryptographic functions needed for the low- and high level TeamSpeak protocol usage.</summary>
 	public sealed class Ts3Crypt
@@ -41,6 +42,7 @@ namespace TS3Client.Full
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
 		private static readonly byte[] Initversion = { 0x09, 0x83, 0x8C, 0xCF }; // 3.1.8 [Stable]
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
+		private static readonly Regex IdentityRegex = new Regex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
 
 		private const int MacLen = 8;
 		private const int PacketTypeKinds = 9;
@@ -68,18 +70,46 @@ namespace TS3Client.Full
 		}
 
 		#region KEY IMPORT/EXPROT
+
+		/// <summary>
+		/// Detects the kind of key and creates an identity from it.
+		/// This method can import 3 kinds of identity keys.
+		/// <list type="bullet">
+		/// <item><description>The Teamspeak 3 key as it is stored by the normal client.</description></item>
+		/// <item><description>A libtomcrypt public+private key export. (+KeyOffset).</description></item>
+		/// <item><description>A TS3Client's private-only key export. (+KeyOffset).</description></item>
+		/// </list>
+		/// Keys with "(+KeyOffset)" should add the key offset for the security level in the seperate parameter.
+		/// </summary>
+		/// <param name="key">The identity string.</param>
+		/// <param name="keyOffset">A number which determines the security level of an identity.</param>
+		/// <param name="lastCheckedKeyOffset">The last brute forced number. Default 0: will take the current keyOffset.</param>
+		/// <returns>The identity information.</returns>
+		public static R<IdentityData> LoadIdentityDynamic(string key, ulong keyOffset = 0, ulong lastCheckedKeyOffset = 0)
+		{
+			var ts3identity = DeobfuscateAndImportTs3Identity(key);
+			if (ts3identity.Ok)
+				return ts3identity.Value;
+			return LoadIdentity(key, keyOffset, lastCheckedKeyOffset);
+		}
+
 		/// <summary>This methods loads a secret identity.</summary>
 		/// <param name="key">The key stored in base64, encoded like the libtomcrypt export method of a private key.
 		/// Or the TS3Client's shorted private-only key.</param>
 		/// <param name="keyOffset">A number which determines the security level of an identity.</param>
 		/// <param name="lastCheckedKeyOffset">The last brute forced number. Default 0: will take the current keyOffset.</param>
 		/// <returns>The identity information.</returns>
-		public static IdentityData LoadIdentity(string key, ulong keyOffset, ulong lastCheckedKeyOffset = 0)
+		public static R<IdentityData> LoadIdentity(string key, ulong keyOffset, ulong lastCheckedKeyOffset = 0)
 		{
 			// Note: libtomcrypt stores the private AND public key when exporting a private key
 			// This makes importing very convenient :)
-			byte[] asnByteArray = Convert.FromBase64String(key);
-			ImportKeyDynamic(asnByteArray, out var publicKey, out var privateKey);
+			var asnByteArray = Base64Decode(key);
+			if (!asnByteArray.Ok)
+				return "Invalid identity base64 string";
+			var importRes = ImportKeyDynamic(asnByteArray.Value);
+			if (!importRes.Ok)
+				return importRes.Error;
+			var (publicKey, privateKey) = importRes.Value;
 			return LoadIdentity(publicKey, privateKey, keyOffset, lastCheckedKeyOffset);
 		}
 
@@ -108,27 +138,32 @@ namespace TS3Client.Full
 			catch (Exception) { return "Could not import public key"; }
 		}
 
-		private static void ImportKeyDynamic(byte[] asnByteArray, out ECPoint publicKey, out BigInteger privateKey)
+		private static R<(ECPoint publicKey, BigInteger privateKey)> ImportKeyDynamic(byte[] asnByteArray)
 		{
-			privateKey = null;
-			publicKey = null;
-			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
-			var bitInfo = ((DerBitString)asnKeyData[0]).IntValue;
-			if (bitInfo == 0b0000_0000 || bitInfo == 0b1000_0000)
+			BigInteger privateKey = null;
+			ECPoint publicKey = null;
+			try
 			{
-				var x = ((DerInteger)asnKeyData[2]).Value;
-				var y = ((DerInteger)asnKeyData[3]).Value;
-				publicKey = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
-
-				if (bitInfo == 0b1000_0000)
+				var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
+				var bitInfo = ((DerBitString)asnKeyData[0]).IntValue;
+				if (bitInfo == 0b0000_0000 || bitInfo == 0b1000_0000)
 				{
-					privateKey = ((DerInteger)asnKeyData[4]).Value;
+					var x = ((DerInteger)asnKeyData[2]).Value;
+					var y = ((DerInteger)asnKeyData[3]).Value;
+					publicKey = KeyGenParams.DomainParameters.Curve.CreatePoint(x, y);
+
+					if (bitInfo == 0b1000_0000)
+					{
+						privateKey = ((DerInteger)asnKeyData[4]).Value;
+					}
+				}
+				else if (bitInfo == 0b1100_0000)
+				{
+					privateKey = ((DerInteger)asnKeyData[2]).Value;
 				}
 			}
-			else if (bitInfo == 0b1100_0000)
-			{
-				privateKey = ((DerInteger)asnKeyData[2]).Value;
-			}
+			catch (Exception ex) { return $"Could not import identity: {ex.Message}"; }
+			return (publicKey, privateKey);
 		}
 
 		internal static string ExportPublicKey(ECPoint publicKey)
@@ -172,6 +207,42 @@ namespace TS3Client.Full
 		{
 			var curve = ECNamedCurveTable.GetByOid(X9ObjectIdentifiers.Prime256v1);
 			return curve.G.Multiply(privateKey).Normalize();
+		}
+
+		private static readonly byte[] Ts3IdentityObfuscationKey = Encoding.ASCII.GetBytes("b9dfaa7bee6ac57ac7b65f1094a1c155e747327bc2fe5d51c512023fe54a280201004e90ad1daaae1075d53b7d571c30e063b5a62a4a017bb394833aa0983e6e");
+
+		public static R<IdentityData> DeobfuscateAndImportTs3Identity(string identity)
+		{
+			var match = IdentityRegex.Match(identity);
+			if (!match.Success)
+				return "Identity could not get matched as teamspeak identity";
+
+			if (!ulong.TryParse(match.Groups["level"].Value, out var level))
+				return "Invalid key offset";
+
+			var ident = Base64Decode(match.Groups["identity"].Value);
+			if (!ident.Ok)
+				return "Invalid identity base64 string";
+
+			var identityArr = ident.Value;
+			if (ident.Value.Length < 20)
+				return "Identity too short";
+
+			int nullIdx = identityArr.AsSpan().Slice(20).IndexOf((byte)0);
+			var hash = Hash1It(identityArr, 20, nullIdx < 0 ? identityArr.Length - 20 : nullIdx);
+
+			XorBinary(identityArr, hash, 20, identityArr);
+			XorBinary(identityArr, Ts3IdentityObfuscationKey, Math.Min(100, identityArr.Length), identityArr);
+
+			if (System.Buffers.Text.Base64.DecodeFromUtf8InPlace(identityArr, out var length) != System.Buffers.OperationStatus.Done)
+				return "Invalid deobfuscated base64 string";
+
+			var importRes = ImportKeyDynamic(identityArr.AsSpan().Slice(0, length).ToArray());
+			if (!importRes.Ok)
+				return importRes.Error;
+
+			var (publicKey, privateKey) = importRes.Value;
+			return LoadIdentity(publicKey, privateKey, level, level);
 		}
 
 		#endregion

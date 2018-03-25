@@ -67,6 +67,7 @@ public struct R<TSuccess>
 	public static implicit operator R<TSuccess>(string error) => new R<TSuccess>(error);
 
 	public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;
+	public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
 
 	public override string ToString() => Error;
 }

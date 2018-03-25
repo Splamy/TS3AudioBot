@@ -33,7 +33,7 @@ namespace Ts3ClientTests
 				client.OnErrorEvent += Client_OnErrorEvent;
 				client.OnTextMessageReceived += Client_OnTextMessageReceived;
 				var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0);
-				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data, ServerPassword = "123", VersionSign = VersionSign.VER_WIN_3_1_8 };
+				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data.Unwrap(), ServerPassword = "123", VersionSign = VersionSign.VER_WIN_3_1_8 };
 				client.Connect(con);
 				clients.Add(client);
 			}
