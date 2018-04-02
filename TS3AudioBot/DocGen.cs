@@ -25,7 +25,7 @@ namespace TS3AudioBot
 
 			var cmdMgr = new CommandManager();
 			cmdMgr.RegisterMain();
-			
+
 			var lines = new List<string>();
 
 			foreach (var com in cmdMgr.AllCommands)

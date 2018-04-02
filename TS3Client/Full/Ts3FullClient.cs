@@ -378,7 +378,7 @@ namespace TS3Client.Full
 		private void ProcessPluginRequest(PluginCommand cmd)
 		{
 			if (cmd.Name == "cliententerview" && cmd.Data == "version")
-				SendPluginCommand("cliententerview", "TAB", 1);
+				SendPluginCommand("cliententerview", "TAB", PluginTargetMode.Client);
 		}
 
 		/// <summary>
@@ -551,7 +551,7 @@ namespace TS3Client.Full
 			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
-			byte[] tmpBuffer = new byte[data.Length + 3];
+			var tmpBuffer = new byte[data.Length + 3];
 			tmpBuffer[2] = (byte)codec;
 			data.CopyTo(tmpBuffer.AsSpan().Slice(3));
 
@@ -569,7 +569,7 @@ namespace TS3Client.Full
 			// > U is a ulong in H2N order of each targeted channelId, (U...U) is repeated N times
 			// > T is a ushort in H2N order of each targeted clientId, (T...T) is repeated M times
 			int offset = 2 + 1 + 2 + channelIds.Count * 8 + clientIds.Count * 2;
-			byte[] tmpBuffer = new byte[data.Length + offset];
+			var tmpBuffer = new byte[data.Length + offset];
 			var tmpBufferSpan = tmpBuffer.AsSpan(); // stackalloc
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)channelIds.Count;
@@ -592,7 +592,7 @@ namespace TS3Client.Full
 			// > N is a byte, specifying the GroupWhisperType
 			// > M is a byte, specifying the GroupWhisperTarget
 			// > U is a ulong in H2N order for the targeted channelId or groupId (0 if not applicable)
-			byte[] tmpBuffer = new byte[data.Length + 13];
+			var tmpBuffer = new byte[data.Length + 13];
 			var tmpBufferSpan = tmpBuffer.AsSpan(); // stackalloc
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)type;
@@ -616,11 +616,11 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public CmdR SendPluginCommand(string name, string data, int targetmode)
+		public CmdR SendPluginCommand(string name, string data, PluginTargetMode targetmode)
 			=> Send("plugincmd",
 			new CommandParameter("name", name),
 			new CommandParameter("data", data),
-			new CommandParameter("targetmode", targetmode)).OnlyError();
+			new CommandParameter("targetmode", (int)targetmode)).OnlyError();
 
 		// serverrequestconnectioninfo
 		// servergetvariables

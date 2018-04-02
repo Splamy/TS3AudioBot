@@ -1,0 +1,69 @@
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ assembly name="$(SolutionDir)\packages\Nett.0.9.0\lib\Net40\Nett.dll" #>
+<#
+const string attribList = @"(\s*,?\s*(?<key>\w+):(?<value>\w+|""[^""]+""|\[[^\]]+\]))*";
+
+Regex attrRegex = new Regex("^" + attribList + "$");
+
+void Warn(string _warn) { WriteLine($"#warning {_warn}"); }
+
+Dictionary<string, string> ParseProps(Match mat, Dictionary<string, string> insert)
+{
+	if(!mat.Success) { throw new Exception("Invalid Atribute List"); }
+
+	if(insert == null)
+		insert = new Dictionary<string, string>();
+
+	for (int i = 0; i < mat.Groups["key"].Captures.Count; i++)
+	{
+		var _key = mat.Groups["key"].Captures[i].Value;
+		var _value = mat.Groups["value"].Captures[i].Value;
+		insert[_key] = _value;
+	}
+	return insert;
+}
+
+Dictionary<string, string> ParsePropsStr(string attrStr, Dictionary<string, string> insert)
+{
+	var mat = attrRegex.Match(attrStr);
+	return ParseProps(mat, insert);
+}
+
+const string ConversionSet = 
+	@"using i8  = System.Byte;
+	using u8  = System.SByte;
+	using i16 = System.Int16;
+	using u16 = System.UInt16;
+	using i32 = System.Int32;
+	using u32 = System.UInt32;
+	using i64 = System.Int64;
+	using u64 = System.UInt64;
+	using f32 = System.Single;
+	using d64 = System.Double;
+	using str = System.String;
+
+	using Duration = System.TimeSpan;
+	using SocketAddr = System.Net.IPAddress;
+
+	using Uid = System.String;
+	using ClientDbId = System.UInt64;
+	using ClientId = System.UInt16;
+	using ChannelId = System.UInt64;
+	using ServerGroupId = System.UInt64;
+	using ChannelGroupId = System.UInt64;
+	using IconHash = System.Int32;
+	using ConnectionId = System.UInt32;";
+
+string UnescapeAttrib(string str)
+{
+	if ((str.StartsWith("[")  && str.EndsWith("]"))
+	 || (str.StartsWith("\"") && str.EndsWith("\"")))
+		return str.Substring(1, str.Length - 2);
+	return str;
+}
+#>

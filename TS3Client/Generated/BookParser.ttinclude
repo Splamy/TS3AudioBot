@@ -1,0 +1,56 @@
+<#@ include file="Util.ttinclude" once="true" #>
+<#+
+public class BookDeclarations
+{
+	public static BookDeclarations Parse(string file)
+	{
+		var toml = Nett.Toml.ReadFile<BookDeclarations>(file);
+
+		// transfer all optional get/set confs
+		foreach (var struc in toml.@struct)
+		{
+			foreach (var prop in struc.properties)
+			{
+				prop.get = prop.get ?? struc.accessor.get;
+				prop.set = prop.set ?? struc.accessor.set;
+			}
+		}
+
+		return toml;
+	}
+
+	public Struct[] @struct { get; set; }
+
+	public class Struct
+	{
+		public string name { get; set; }
+		public Id[] id { get; set; }
+		public string doc { get; set; }
+		public Accessor accessor { get; set; }
+		public Property[] properties { get; set; }
+	}
+
+	public class Id
+	{
+		public string @struct { get; set; }
+		public string prop { get; set; }
+	}
+
+	public class Accessor
+	{
+		public bool get { get; set; }
+		public bool set { get; set; }
+	}
+
+	public class Property
+	{
+		public string name { get; set; }
+		public string type { get; set; }
+		public bool? get { get; set; }
+		public bool? set { get; set; }
+		public bool? opt { get; set; }
+		public string mod { get; set; }
+		public string key { get; set; }
+	}
+}
+#>

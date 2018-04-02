@@ -4,26 +4,13 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Text.RegularExpressions" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ include file="Util.ttinclude" once="true" #>
 <#
-void Warn(string _warn) {
-	WriteLine($"#warning {_warn}");
-}
 GenMessages ParseMessages()
 {
-	const string attribList = @"(\s*(?<key>\w+):(?<value>\w+|""[^""]+""|\[[\w\s]+\]))*";
-	Regex attrRegex = new Regex("^" + attribList + "$");
 	Regex msgRegex = new Regex(@"^\s*(?<msg>\w+)\s*(;" + attribList + @"(\s*;\s*(?<flds>[\w\s?,]*))?)?\s*$");
 	string declFilePath = Host.ResolvePath("../Declarations/Messages.txt");
 	string[] declLines = File.ReadAllLines(declFilePath);
-
-	//var fldDict 
-	//var msgDict 
-	//var ntfyDict 
-	//var convSet 
-
-	// - commands annotieren: S2C/C2S/Bi, Query/Full/Bi
-	// - tsproto-commands: Felder optional machen (z.B. ClientIp, Port)
-	// - tsproto-commands: Mark packets as Command or CommandLow, NewProtocol=true/false
 
 	var _gen = new GenMessages();
 
@@ -42,8 +29,8 @@ GenMessages ParseMessages()
 			continue;
 
 		parts[0] = parts[0].Trim().ToUpper();
-		if(parts[0] == "MSG")
-		{
+		switch(parts[0]) {
+		case "MSG": {
 			var mat =  msgRegex.Match(parts[1]);
 			if(!mat.Success) { Warn("Invalid MSG: " + line); continue; }
 
@@ -55,17 +42,10 @@ GenMessages ParseMessages()
 			};
 
 			// Attributes
-			for (int i = 0; i < mat.Groups["key"].Captures.Count; i++)
-			{
-				var _key = mat.Groups["key"].Captures[i].Value;
-				var _value = mat.Groups["value"].Captures[i].Value; // ToDo clean
-				msg.Attributes[_key] = _value;
+			msg.Attributes = ParseProps(mat, msg.Attributes);
 
-				if (_key == "notify")
-				{
-					_gen.Notifies.Add(_value, msg );
-				}
-			}
+			if (msg.Attributes.TryGetValue("notify", out var _value) && _value != null)
+				_gen.Notifies.Add(_value, msg);
 
 			// Fields
 			if (mat.Groups["flds"].Success)
@@ -97,9 +77,9 @@ GenMessages ParseMessages()
 			} catch (Exception ex) { Warn($"Invalid MSG (missing attributes: {ex.Message}): {line}"); }
 
 			_gen.Messages.Add(msg.ClassName, msg);
-		}
-		else if(parts[0] == "FIELD")
-		{
+		} break;
+
+		case "FIELD": {
 			var param = parts[1].Replace(" ", "").Split(',');
 			if(param.Length < 4) { Warn("Invalid FIELD: " + line); continue; }
 			var fld = new GenField { tsName=param[1], fldName=param[2], fldType=param[3], isArray = false };
@@ -110,33 +90,24 @@ GenMessages ParseMessages()
 			}
 			fld.genType = GenerateType(fld);
 			_gen.Fields.Add(param[0], fld );
-		}
-		else if(parts[0] == "TYPE")
-		{
+		} break;
+
+		case "TYPE": {
 			var param = parts[1].Replace(" ", "").Split(',');
 			if(param.Length != 1 && param.Length != 2) { Warn("Invalid TYPE: " + line); continue; }
 			_gen.Types.Add(param[0], new GenType { typeName = param[0], backingType = param.Length > 1 ? param[1] : null });
-		}
-		else if(parts[0] == "DEFAULT")
-		{
-			var mat =  attrRegex.Match(parts[1]);
-			if(!mat.Success) { Warn("Invalid DEFAULT: " + line); continue; }
+		} break;
 
-			// TODO refactor (Deduplicate)
-			for (int i = 0; i < mat.Groups["key"].Captures.Count; i++)
-			{
-				var _key = mat.Groups["key"].Captures[i].Value;
-				var _value = mat.Groups["value"].Captures[i].Value; // ToDo clean
-				defaults[_key] = _value;
-			}
-		}
-		else if(parts[0] == "BREAK")
-		{
-			break;
-		}
-		else
-		{
+		case "DEFAULT": {
+			ParsePropsStr(parts[1], defaults);
+		} break;
+
+		case "BREAK":
+			return _gen;
+
+		default:
 			Warn($"Unknown declaration: {parts[0]}");
+			break;
 		}
 	}
 

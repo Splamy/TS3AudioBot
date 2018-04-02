@@ -1,0 +1,51 @@
+// TS3Client - A free TeamSpeak3 client implementation
+// Copyright (C) 2017  TS3Client contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+
+<#@ template debug="true" hostSpecific="true" language="C#" #>
+<#@ include file="BookParser.ttinclude" once="true" #>
+<#@ output extension=".cs" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+namespace TS3Client.Full.Book
+{
+	using System;
+	using System.Collections.Generic;
+
+	<#= ConversionSet #>
+<#
+var gen = BookDeclarations.Parse(Host.ResolvePath("../Declarations/BookDeclarations.toml"));
+
+foreach (var struc in gen.@struct)
+{
+#>
+	public sealed partial class <#= struc.name #>
+	{<# foreach(var prop in struc.properties) { 
+			if (!prop.get.Value && !prop.set.Value) continue;
+		#>
+		public <#
+			switch(prop.mod) {
+			case "array":
+				Write($"List<{prop.type}>");
+				break;
+			case "map":
+				Write($"Dictionary<{prop.key},{prop.type}>");
+				break;
+			default:
+				Write(prop.type);
+				break;
+			}
+		#> <#= prop.name #> { <#= prop.get.Value?"get;":""#> <#= prop.set.Value?"set;":""#> }<# } #>
+	}
+<#
+}
+#>
+}

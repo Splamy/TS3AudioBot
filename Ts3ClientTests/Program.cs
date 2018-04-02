@@ -45,7 +45,7 @@ namespace Ts3ClientTests
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)
 		{
 			var client = (Ts3FullClient)sender;
-			if(e.Error!= null)
+			if (e.Error != null)
 				Console.WriteLine(e.Error.ErrorFormat());
 			Console.WriteLine("Disconnected id {0}", client.ClientId);
 		}

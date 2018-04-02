@@ -226,4 +226,16 @@ namespace TS3Client
 		///<summary>Channel group token (id1={groupID} id2={channelID}).</summary>
 		ChannelGroup
 	}
+
+	public enum PluginTargetMode
+	{
+		///<summary>Send to all clients in current channel.</summary>
+		CurrentChannel = 0,
+		///<summary>Send to all clients on server.</summary>
+		Server,
+		///<summary>Send to all given client ids.</summary>
+		Client,
+		///<summary>Send to all subscribed clients in current channel.</summary>
+		CurrentChannelSubscribedClients,
+	};
 }

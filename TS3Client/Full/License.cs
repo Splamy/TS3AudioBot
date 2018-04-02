@@ -155,7 +155,7 @@ namespace TS3Client.Full
 			GroupOperations.ge_p1p1_to_p3(out var r, res);
 			GroupOperations.ge_add(out var a, r, pargrp);
 			GroupOperations.ge_p1p1_to_p3(out var r2, a);
-			byte[] final = new byte[32];
+			var final = new byte[32];
 			GroupOperations.ge_p3_tobytes(final, r2);
 			final[31] ^= 0x80;
 

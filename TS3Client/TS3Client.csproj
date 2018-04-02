@@ -27,7 +27,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <CodeAnalysisRuleSet />
+    <CodeAnalysisRuleSet>TS3Client.ruleset</CodeAnalysisRuleSet>
     <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -37,7 +37,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet />
+    <CodeAnalysisRuleSet>TS3Client.ruleset</CodeAnalysisRuleSet>
     <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
@@ -56,8 +56,11 @@
     <Reference Include="Heijden.Dns, Version=2.0.0.6, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Heijden.Dns.2.0.0\lib\net35\Heijden.Dns.dll</HintPath>
     </Reference>
+    <Reference Include="Nett, Version=0.9.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nett.0.9.0\lib\Net40\Nett.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.4.4.13\lib\net45\NLog.dll</HintPath>
+      <HintPath>..\packages\NLog.4.5.0\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -86,7 +89,13 @@
     <Compile Include="Audio\AudioPipeExtensions.cs" />
     <Compile Include="Audio\EncoderPipe.cs" />
     <Compile Include="Audio\Opus\NativeMethods.cs" />
+    <Compile Include="Full\Book\SpecialTypes.cs" />
     <Compile Include="Full\License.cs" />
+    <Compile Include="Generated\Book.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Book.tt</DependentUpon>
+    </Compile>
     <Compile Include="Generated\Errors.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -154,10 +163,13 @@
     <None Include="Audio\Opus\LICENSE" />
     <None Include="Audio\Opus\OPUS_LICENSE" />
     <None Include="Audio\Opus\README" />
+    <None Include="Generated\BookParser.ttinclude" />
     <None Include="Generated\MessageParser.ttinclude" />
+    <None Include="Generated\Util.ttinclude" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="TS3Client.ruleset" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Declarations\Errors.csv" />
@@ -166,6 +178,10 @@
     <Content Include="Declarations\BookDeclarations.txt" />
     <Content Include="Declarations\Messages.txt" />
     <None Include="Generated\ErrorParser.ttinclude" />
+    <Content Include="Generated\Book.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Book.cs</LastGenOutput>
+    </Content>
     <Content Include="Generated\Errors.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Errors.cs</LastGenOutput>

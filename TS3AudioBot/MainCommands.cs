@@ -55,6 +55,7 @@ namespace TS3AudioBot
 				throw new CommandException("Please use this command in a private session.", CommandExceptionReason.CommandError);
 			if (invoker.ClientUid == null)
 				throw new CommandException("No Uid found to register token for.", CommandExceptionReason.CommandError);
+
 			TimeSpan? validSpan = null;
 			try
 			{
@@ -65,8 +66,7 @@ namespace TS3AudioBot
 			{
 				throw new CommandException("Invalid token-valid duration.", oex, CommandExceptionReason.CommandError);
 			}
-			var token = tokenManager.GenerateToken(invoker.ClientUid, validSpan).UnwrapThrow();
-			return token;
+			return tokenManager.GenerateToken(invoker.ClientUid, validSpan).UnwrapThrow();
 		}
 
 		[Command("api nonce", "Generates an api nonce.")]
@@ -979,18 +979,16 @@ namespace TS3AudioBot
 		[Usage("<min> <max>", "Gets a number between <min> and <max>")]
 		public static int CommandRng(int? first = null, int? second = null)
 		{
-			int num;
 			if (first.HasValue && second.HasValue)
-				num = Util.Random.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
+				return Util.Random.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
 			else if (first.HasValue)
 			{
 				if (first.Value <= 0)
 					throw new CommandException("Value must be 0 or positive", CommandExceptionReason.CommandError);
-				num = Util.Random.Next(first.Value);
+				return Util.Random.Next(first.Value);
 			}
 			else
-				num = Util.Random.Next();
-			return num;
+				return Util.Random.Next();
 		}
 
 		[Command("seek", "Jumps to a timemark within the current song.")]
