@@ -20,7 +20,7 @@ namespace TS3Client
 	using Helper;
 
 	// Source: https://www.tsviewer.com/index.php?page=faq&id=12&newlanguage=en
-	public enum PermissionId : int
+	public enum PermissionId
 	{
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		undefined = -1,

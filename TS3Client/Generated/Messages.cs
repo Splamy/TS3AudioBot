@@ -26,9 +26,6 @@
 
 
 
-
-
-
 namespace TS3Client.Messages
 {
 	using Commands;
@@ -36,20 +33,38 @@ namespace TS3Client.Messages
 	using System;
 	using System.Globalization;
 
-	using UidT = System.String;
-	using ClientDbIdT = System.UInt64;
-	using ClientIdT = System.UInt16;
-	using ChannelIdT = System.UInt64;
-	using ServerGroupIdT = System.UInt64;
-	using ChannelGroupIdT = System.UInt64;
+	using i8  = System.Byte;
+	using u8  = System.SByte;
+	using i16 = System.Int16;
+	using u16 = System.UInt16;
+	using i32 = System.Int32;
+	using u32 = System.UInt32;
+	using i64 = System.Int64;
+	using u64 = System.UInt64;
+	using f32 = System.Single;
+	using d64 = System.Double;
+	using str = System.String;
 
+	using Duration = System.TimeSpan;
+	using DurationSeconds = System.TimeSpan;
+	using DurationMilliseconds = System.TimeSpan;
+	using SocketAddr = System.Net.IPAddress;
+
+	using Uid = System.String;
+	using ClientDbId = System.UInt64;
+	using ClientId = System.UInt16;
+	using ChannelId = System.UInt64;
+	using ServerGroupId = System.UInt64;
+	using ChannelGroupId = System.UInt64;
+	using IconHash = System.Int32;
+	using ConnectionId = System.UInt32;
 
 	public sealed class ChannelChanged : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelChanged;
 		
 
-		public ChannelIdT ChannelId { get; set; }
+		public ChannelId ChannelId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -57,7 +72,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -69,31 +84,31 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreated;
 		
 
-		public ChannelIdT ChannelId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
-		public int Order { get; set; }
-		public string Name { get; set; }
-		public string Topic { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public i32 Order { get; set; }
+		public str Name { get; set; }
+		public str Topic { get; set; }
 		public bool IsDefault { get; set; }
 		public bool HasPassword { get; set; }
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public Codec Codec { get; set; }
-		public byte CodecQuality { get; set; }
-		public int NeededTalkPower { get; set; }
-		public int IconId { get; set; }
-		public ushort MaxClients { get; set; }
-		public ushort MaxFamilyClients { get; set; }
-		public int CodecLatencyFactor { get; set; }
+		public i8 CodecQuality { get; set; }
+		public i32 NeededTalkPower { get; set; }
+		public IconHash IconId { get; set; }
+		public u16 MaxClients { get; set; }
+		public u16 MaxFamilyClients { get; set; }
+		public i32 CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
-		public TimeSpan DeleteDelay { get; set; }
+		public DurationSeconds DeleteDelay { get; set; }
 		public bool IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool InheritsMaxFamilyClients { get; set; }
-		public string PhoneticName { get; set; }
-		public ChannelIdT ChannelParentId { get; set; }
+		public str PhoneticName { get; set; }
+		public ChannelId ChannelParentId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -101,31 +116,31 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "channel_order": Order = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_order": Order = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)u8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = i8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_needed_talk_power": NeededTalkPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_icon_id": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_codec_latency_factor": CodecLatencyFactor = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_latency_factor": CodecLatencyFactor = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": DeleteDelay = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "cpid": ChannelParentId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cpid": ChannelParentId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -137,25 +152,25 @@ namespace TS3Client.Messages
 		
 		public string ReturnCode { get; set; }
 
-		public ChannelIdT Id { get; set; }
-		public ChannelIdT ParentChannelId { get; set; }
-		public TimeSpan DurationEmpty { get; set; }
-		public int TotalFamilyClients { get; set; }
-		public int TotalClients { get; set; }
-		public int NeededSubscribePower { get; set; }
-		public int Order { get; set; }
-		public string Name { get; set; }
-		public string Topic { get; set; }
+		public ChannelId Id { get; set; }
+		public ChannelId ParentChannelId { get; set; }
+		public DurationSeconds DurationEmpty { get; set; }
+		public i32 TotalFamilyClients { get; set; }
+		public i32 TotalClients { get; set; }
+		public i32 NeededSubscribePower { get; set; }
+		public i32 Order { get; set; }
+		public str Name { get; set; }
+		public str Topic { get; set; }
 		public bool IsDefault { get; set; }
 		public bool HasPassword { get; set; }
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public Codec Codec { get; set; }
-		public byte CodecQuality { get; set; }
-		public int NeededTalkPower { get; set; }
-		public int IconId { get; set; }
-		public ushort MaxClients { get; set; }
-		public ushort MaxFamilyClients { get; set; }
+		public i8 CodecQuality { get; set; }
+		public i32 NeededTalkPower { get; set; }
+		public IconHash IconId { get; set; }
+		public u16 MaxClients { get; set; }
+		public u16 MaxFamilyClients { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -163,25 +178,25 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "id": Id = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "pid": ParentChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "id": Id = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "pid": ParentChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "seconds_empty": DurationEmpty = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "total_clients_family": TotalFamilyClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "total_clients": TotalClients = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_needed_subscribe_power": NeededSubscribePower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_order": Order = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "total_clients_family": TotalFamilyClients = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "total_clients": TotalClients = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_needed_subscribe_power": NeededSubscribePower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_order": Order = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)u8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = i8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_needed_talk_power": NeededTalkPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_icon_id": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -193,10 +208,10 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDeleted;
 		
 
-		public ChannelIdT ChannelId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -204,8 +219,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			
@@ -219,30 +234,30 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelEdited;
 		
 
-		public ChannelIdT ChannelId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
-		public int Order { get; set; }
-		public string Name { get; set; }
-		public string Topic { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public i32 Order { get; set; }
+		public str Name { get; set; }
+		public str Topic { get; set; }
 		public bool IsDefault { get; set; }
 		public bool HasPassword { get; set; }
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public Codec Codec { get; set; }
-		public byte CodecQuality { get; set; }
-		public int NeededTalkPower { get; set; }
-		public int IconId { get; set; }
-		public ushort MaxClients { get; set; }
-		public ushort MaxFamilyClients { get; set; }
-		public int CodecLatencyFactor { get; set; }
+		public i8 CodecQuality { get; set; }
+		public i32 NeededTalkPower { get; set; }
+		public IconHash IconId { get; set; }
+		public u16 MaxClients { get; set; }
+		public u16 MaxFamilyClients { get; set; }
+		public i32 CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
-		public TimeSpan DeleteDelay { get; set; }
+		public DurationSeconds DeleteDelay { get; set; }
 		public bool IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool InheritsMaxFamilyClients { get; set; }
-		public string PhoneticName { get; set; }
+		public str PhoneticName { get; set; }
 		public Reason Reason { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
@@ -251,24 +266,24 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "channel_order": Order = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_order": Order = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)u8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = i8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_needed_talk_power": NeededTalkPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_icon_id": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_codec_latency_factor": CodecLatencyFactor = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_latency_factor": CodecLatencyFactor = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": DeleteDelay = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
@@ -287,16 +302,16 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupList;
 		
 
-		public ChannelGroupIdT ChannelGroup { get; set; }
-		public string Name { get; set; }
+		public ChannelGroupId ChannelGroup { get; set; }
+		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
-		public int IconId { get; set; }
+		public IconHash IconId { get; set; }
 		public bool IsPermanent { get; set; }
-		public int SortId { get; set; }
+		public i32 SortId { get; set; }
 		public GroupNamingMode NamingMode { get; set; }
-		public int NeededModifyPower { get; set; }
-		public int NeededMemberAddPower { get; set; }
-		public int NeededMemberRemovePower { get; set; }
+		public i32 NeededModifyPower { get; set; }
+		public i32 NeededMemberAddPower { get; set; }
+		public i32 NeededMemberRemovePower { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -304,16 +319,16 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": ChannelGroup = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cgid": ChannelGroup = ChannelGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "type": { if (!Enum.TryParse(value.NewString(), out GroupType val)) throw new FormatException(); GroupType = val; } break;
 			case "iconid": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "sortid": SortId = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sortid": SortId = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "namemode": { if (!Enum.TryParse(value.NewString(), out GroupNamingMode val)) throw new FormatException(); NamingMode = val; } break;
-			case "n_modifyp": NeededModifyPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "n_member_addp": NeededMemberAddPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "n_member_remove_p": NeededMemberRemovePower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_modifyp": NeededModifyPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_member_addp": NeededMemberAddPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_member_remove_p": NeededMemberRemovePower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -325,29 +340,29 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelList;
 		
 
-		public ChannelIdT ChannelId { get; set; }
-		public ChannelIdT ChannelParentId { get; set; }
-		public string Name { get; set; }
-		public string Topic { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ChannelId ChannelParentId { get; set; }
+		public str Name { get; set; }
+		public str Topic { get; set; }
 		public Codec Codec { get; set; }
-		public byte CodecQuality { get; set; }
-		public ushort MaxClients { get; set; }
-		public ushort MaxFamilyClients { get; set; }
-		public int Order { get; set; }
+		public i8 CodecQuality { get; set; }
+		public u16 MaxClients { get; set; }
+		public u16 MaxFamilyClients { get; set; }
+		public i32 Order { get; set; }
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public bool IsDefault { get; set; }
 		public bool HasPassword { get; set; }
-		public int CodecLatencyFactor { get; set; }
+		public i32 CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
-		public TimeSpan DeleteDelay { get; set; }
+		public DurationSeconds DeleteDelay { get; set; }
 		public bool IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool InheritsMaxFamilyClients { get; set; }
-		public int NeededTalkPower { get; set; }
+		public i32 NeededTalkPower { get; set; }
 		public bool ForcedSilence { get; set; }
-		public string PhoneticName { get; set; }
-		public int IconId { get; set; }
+		public str PhoneticName { get; set; }
+		public IconHash IconId { get; set; }
 		public bool IsPrivate { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
@@ -356,26 +371,26 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "cpid": ChannelParentId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cpid": ChannelParentId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
-			case "channel_codec": Codec = (Codec)byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_codec_quality": CodecQuality = byte.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_maxfamilyclients": MaxFamilyClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "channel_order": Order = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec": Codec = (Codec)u8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_quality": CodecQuality = i8.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxclients": MaxClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_maxfamilyclients": MaxFamilyClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_order": Order = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec_latency_factor": CodecLatencyFactor = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_codec_latency_factor": CodecLatencyFactor = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": DeleteDelay = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
-			case "channel_needed_talk_power": NeededTalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "channel_needed_talk_power": NeededTalkPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "channel_forced_silence": ForcedSilence = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
 			case "channel_icon_id": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
@@ -403,13 +418,13 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMoved;
 		
 
-		public int Order { get; set; }
-		public ChannelIdT ChannelId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
+		public i32 Order { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
 		public Reason Reason { get; set; }
-		public ChannelIdT ChannelParentId { get; set; }
+		public ChannelId ChannelParentId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -417,13 +432,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "order": Order = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "order": Order = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "reasonid": { if (!Enum.TryParse(value.NewString(), out Reason val)) throw new FormatException(); Reason = val; } break;
-			case "cpid": ChannelParentId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cpid": ChannelParentId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -435,7 +450,7 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPasswordChanged;
 		
 
-		public ChannelIdT ChannelId { get; set; }
+		public ChannelId ChannelId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -443,7 +458,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -455,8 +470,8 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribed;
 		
 
-		public ChannelIdT ChannelId { get; set; }
-		public TimeSpan EmptySince { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public DurationSeconds EmptySince { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -464,7 +479,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "es": EmptySince = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			
 			}
@@ -477,7 +492,7 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribed;
 		
 
-		public ChannelIdT ChannelId { get; set; }
+		public ChannelId ChannelId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -485,7 +500,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -497,12 +512,12 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientChannelGroupChanged;
 		
 
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public ChannelGroupIdT ChannelGroup { get; set; }
-		public ChannelGroupIdT ChannelGroupIndex { get; set; }
-		public ChannelIdT ChannelId { get; set; }
-		public ClientIdT ClientId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public ChannelGroupId ChannelGroup { get; set; }
+		public ChannelGroupId ChannelGroupIndex { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientId ClientId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -510,12 +525,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "cgid": ChannelGroup = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "cgi": ChannelGroupIndex = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cgid": ChannelGroup = ChannelGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cgi": ChannelGroupIndex = ChannelGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -527,8 +542,8 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatComposing;
 		
 
-		public ClientIdT ClientId { get; set; }
-		public UidT ClientUid { get; set; }
+		public ClientId ClientId { get; set; }
+		public Uid ClientUid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -536,7 +551,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			
 			}
@@ -549,11 +564,11 @@ namespace TS3Client.Messages
 		
 		public string ReturnCode { get; set; }
 
-		public ClientIdT ClientId { get; set; }
-		public UidT Uid { get; set; }
-		public ChannelIdT ChannelId { get; set; }
-		public ClientDbIdT DatabaseId { get; set; }
-		public string Name { get; set; }
+		public ClientId ClientId { get; set; }
+		public Uid Uid { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId DatabaseId { get; set; }
+		public str Name { get; set; }
 		public ClientType ClientType { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
@@ -562,10 +577,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_database_id": DatabaseId = ClientDbIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_database_id": DatabaseId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
 			case "client_type": { if (!Enum.TryParse(value.NewString(), out ClientType val)) throw new FormatException(); ClientType = val; } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -579,24 +594,24 @@ namespace TS3Client.Messages
 		
 		public string ReturnCode { get; set; }
 
-		public string LastIp { get; set; }
-		public ClientIdT ClientId { get; set; }
-		public UidT Uid { get; set; }
-		public ChannelIdT ChannelId { get; set; }
-		public ClientDbIdT DatabaseId { get; set; }
-		public string Name { get; set; }
+		public str LastIp { get; set; }
+		public ClientId ClientId { get; set; }
+		public Uid Uid { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId DatabaseId { get; set; }
+		public str Name { get; set; }
 		public ClientType ClientType { get; set; }
-		public string AvatarHash { get; set; }
-		public string Description { get; set; }
-		public int IconId { get; set; }
+		public str AvatarHash { get; set; }
+		public str Description { get; set; }
+		public IconHash IconId { get; set; }
 		public DateTime CreationDate { get; set; }
 		public DateTime LastConnected { get; set; }
-		public int TotalConnections { get; set; }
-		public long MonthlyUploadQuota { get; set; }
-		public long MonthlyDownloadQuota { get; set; }
-		public long TotalUploadQuota { get; set; }
-		public long TotalDownloadQuota { get; set; }
-		public string Base64HashClientUid { get; set; }
+		public i32 TotalConnections { get; set; }
+		public i64 MonthlyUploadQuota { get; set; }
+		public i64 MonthlyDownloadQuota { get; set; }
+		public i64 TotalUploadQuota { get; set; }
+		public i64 TotalDownloadQuota { get; set; }
+		public str Base64HashClientUid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -605,10 +620,10 @@ namespace TS3Client.Messages
 			{
 
 			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_database_id": DatabaseId = ClientDbIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_database_id": DatabaseId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
 			case "client_type": { if (!Enum.TryParse(value.NewString(), out ClientType val)) throw new FormatException(); ClientType = val; } break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
@@ -616,11 +631,11 @@ namespace TS3Client.Messages
 			case "client_icon_id": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "client_created": CreationDate = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "client_lastconnected": LastConnected = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "client_totalconnections": TotalConnections = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_month_bytes_uploaded": MonthlyUploadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_month_bytes_downloaded": MonthlyDownloadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_total_bytes_uploaded": TotalUploadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_total_bytes_downloaded": TotalDownloadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_totalconnections": TotalConnections = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_month_bytes_uploaded": MonthlyUploadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_month_bytes_downloaded": MonthlyDownloadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_total_bytes_uploaded": TotalUploadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_total_bytes_downloaded": TotalDownloadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -634,42 +649,42 @@ namespace TS3Client.Messages
 		
 
 		public Reason Reason { get; set; }
-		public ChannelIdT TargetChannelId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
-		public ClientIdT ClientId { get; set; }
-		public ClientDbIdT DatabaseId { get; set; }
-		public string Name { get; set; }
+		public ChannelId TargetChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public ClientId ClientId { get; set; }
+		public ClientDbId DatabaseId { get; set; }
+		public str Name { get; set; }
 		public ClientType ClientType { get; set; }
-		public ChannelIdT SourceChannelId { get; set; }
-		public UidT Uid { get; set; }
-		public string AvatarHash { get; set; }
-		public string Description { get; set; }
-		public int IconId { get; set; }
+		public ChannelId SourceChannelId { get; set; }
+		public Uid Uid { get; set; }
+		public str AvatarHash { get; set; }
+		public str Description { get; set; }
+		public IconHash IconId { get; set; }
 		public bool InputMuted { get; set; }
 		public bool OutputMuted { get; set; }
 		public bool OutputOnlyMuted { get; set; }
 		public bool InputHardwareEnabled { get; set; }
 		public bool OutputHardwareEnabled { get; set; }
-		public string Metadata { get; set; }
+		public str Metadata { get; set; }
 		public bool IsRecording { get; set; }
-		public ChannelGroupIdT ChannelGroup { get; set; }
-		public ChannelIdT InheritedChannelGroupFromChannel { get; set; }
-		public ServerGroupIdT[] ServerGroups { get; set; }
+		public ChannelGroupId ChannelGroup { get; set; }
+		public ChannelId InheritedChannelGroupFromChannel { get; set; }
+		public ServerGroupId[] ServerGroups { get; set; }
 		public bool IsAway { get; set; }
-		public string AwayMessage { get; set; }
-		public int TalkPower { get; set; }
+		public str AwayMessage { get; set; }
+		public i32 TalkPower { get; set; }
 		public DateTime TalkPowerRequestTime { get; set; }
-		public string TalkPowerRequestMessage { get; set; }
+		public str TalkPowerRequestMessage { get; set; }
 		public bool TalkPowerGranted { get; set; }
 		public bool IsPrioritySpeaker { get; set; }
-		public uint UnreadMessages { get; set; }
-		public string PhoneticName { get; set; }
-		public int NeededServerqueryViewPower { get; set; }
+		public u32 UnreadMessages { get; set; }
+		public str PhoneticName { get; set; }
+		public i32 NeededServerqueryViewPower { get; set; }
 		public bool IsChannelCommander { get; set; }
-		public string CountryCode { get; set; }
-		public string Badges { get; set; }
+		public str CountryCode { get; set; }
+		public str Badges { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -678,15 +693,15 @@ namespace TS3Client.Messages
 			{
 
 			case "reasonid": { if (!Enum.TryParse(value.NewString(), out Reason val)) throw new FormatException(); Reason = val; } break;
-			case "ctid": TargetChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "ctid": TargetChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_database_id": DatabaseId = ClientDbIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_database_id": DatabaseId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
 			case "client_type": { if (!Enum.TryParse(value.NewString(), out ClientType val)) throw new FormatException(); ClientType = val; } break;
-			case "cfid": SourceChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cfid": SourceChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
@@ -698,19 +713,19 @@ namespace TS3Client.Messages
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_meta_data": Metadata = Ts3String.Unescape(value); break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
-			case "client_channel_group_id": ChannelGroup = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_channel_group_inherited_channel_id": InheritedChannelGroupFromChannel = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupIdT>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupIdT[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupIdT.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_channel_group_id": ChannelGroup = ChannelGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_channel_group_inherited_channel_id": InheritedChannelGroupFromChannel = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupId.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
-			case "client_talk_power": TalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_talk_power": TalkPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_talk_request": TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
-			case "client_unread_messages": UnreadMessages = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_unread_messages": UnreadMessages = u32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "client_needed_serverquery_view_power": NeededServerqueryViewPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_needed_serverquery_view_power": NeededServerqueryViewPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
 			case "client_country": CountryCode = Ts3String.Unescape(value); break;
 			case "client_badges": Badges = Ts3String.Unescape(value); break;
@@ -725,65 +740,65 @@ namespace TS3Client.Messages
 		
 		public string ReturnCode { get; set; }
 
-		public TimeSpan ClientIdleTime { get; set; }
-		public string ClientVersion { get; set; }
-		public string ClientVersionSign { get; set; }
-		public string ClientPlattform { get; set; }
-		public string DefaultChannel { get; set; }
-		public string SecurityHash { get; set; }
-		public string LoginName { get; set; }
-		public string DefaultToken { get; set; }
-		public ulong FiletransferBandwidthSent { get; set; }
-		public ulong FiletransferBandwidthReceived { get; set; }
-		public ulong PacketsSentTotal { get; set; }
-		public ulong PacketsReceivedTotal { get; set; }
-		public ulong BytesSentTotal { get; set; }
-		public ulong BytesReceivedTotal { get; set; }
-		public ulong BandwidthSentLastSecondTotal { get; set; }
-		public ulong BandwidthReceivedLastSecondTotal { get; set; }
-		public ulong BandwidthSentLastMinuteTotal { get; set; }
-		public ulong BandwidthReceivedLastMinuteTotal { get; set; }
-		public TimeSpan ConnectedTime { get; set; }
-		public string Ip { get; set; }
-		public ChannelIdT ChannelId { get; set; }
-		public UidT Uid { get; set; }
-		public ClientDbIdT DatabaseId { get; set; }
-		public string Name { get; set; }
+		public DurationMilliseconds ClientIdleTime { get; set; }
+		public str ClientVersion { get; set; }
+		public str ClientVersionSign { get; set; }
+		public str ClientPlattform { get; set; }
+		public str DefaultChannel { get; set; }
+		public str SecurityHash { get; set; }
+		public str LoginName { get; set; }
+		public str DefaultToken { get; set; }
+		public u64 FiletransferBandwidthSent { get; set; }
+		public u64 FiletransferBandwidthReceived { get; set; }
+		public u64 PacketsSentTotal { get; set; }
+		public u64 PacketsReceivedTotal { get; set; }
+		public u64 BytesSentTotal { get; set; }
+		public u64 BytesReceivedTotal { get; set; }
+		public u64 BandwidthSentLastSecondTotal { get; set; }
+		public u64 BandwidthReceivedLastSecondTotal { get; set; }
+		public u64 BandwidthSentLastMinuteTotal { get; set; }
+		public u64 BandwidthReceivedLastMinuteTotal { get; set; }
+		public DurationMilliseconds ConnectedTime { get; set; }
+		public str Ip { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public Uid Uid { get; set; }
+		public ClientDbId DatabaseId { get; set; }
+		public str Name { get; set; }
 		public ClientType ClientType { get; set; }
 		public bool InputMuted { get; set; }
 		public bool OutputMuted { get; set; }
 		public bool OutputOnlyMuted { get; set; }
 		public bool InputHardwareEnabled { get; set; }
 		public bool OutputHardwareEnabled { get; set; }
-		public string Metadata { get; set; }
+		public str Metadata { get; set; }
 		public bool IsRecording { get; set; }
-		public ChannelGroupIdT ChannelGroup { get; set; }
-		public ChannelIdT InheritedChannelGroupFromChannel { get; set; }
-		public ServerGroupIdT[] ServerGroups { get; set; }
+		public ChannelGroupId ChannelGroup { get; set; }
+		public ChannelId InheritedChannelGroupFromChannel { get; set; }
+		public ServerGroupId[] ServerGroups { get; set; }
 		public bool IsAway { get; set; }
-		public string AwayMessage { get; set; }
-		public int TalkPower { get; set; }
+		public str AwayMessage { get; set; }
+		public i32 TalkPower { get; set; }
 		public DateTime TalkPowerRequestTime { get; set; }
-		public string TalkPowerRequestMessage { get; set; }
+		public str TalkPowerRequestMessage { get; set; }
 		public bool TalkPowerGranted { get; set; }
 		public bool IsPrioritySpeaker { get; set; }
-		public uint UnreadMessages { get; set; }
-		public string PhoneticName { get; set; }
-		public int NeededServerqueryViewPower { get; set; }
+		public u32 UnreadMessages { get; set; }
+		public str PhoneticName { get; set; }
+		public i32 NeededServerqueryViewPower { get; set; }
 		public bool IsChannelCommander { get; set; }
-		public string CountryCode { get; set; }
-		public string Badges { get; set; }
+		public str CountryCode { get; set; }
+		public str Badges { get; set; }
 		public DateTime CreationDate { get; set; }
 		public DateTime LastConnected { get; set; }
-		public int TotalConnections { get; set; }
-		public long MonthlyUploadQuota { get; set; }
-		public long MonthlyDownloadQuota { get; set; }
-		public long TotalUploadQuota { get; set; }
-		public long TotalDownloadQuota { get; set; }
-		public string Base64HashClientUid { get; set; }
-		public string AvatarHash { get; set; }
-		public string Description { get; set; }
-		public int IconId { get; set; }
+		public i32 TotalConnections { get; set; }
+		public i64 MonthlyUploadQuota { get; set; }
+		public i64 MonthlyDownloadQuota { get; set; }
+		public i64 TotalUploadQuota { get; set; }
+		public i64 TotalDownloadQuota { get; set; }
+		public str Base64HashClientUid { get; set; }
+		public str AvatarHash { get; set; }
+		public str Description { get; set; }
+		public IconHash IconId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -799,21 +814,21 @@ namespace TS3Client.Messages
 			case "client_security_hash": SecurityHash = Ts3String.Unescape(value); break;
 			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
 			case "client_default_token": DefaultToken = Ts3String.Unescape(value); break;
-			case "connection_filetransfer_bandwidth_sent": FiletransferBandwidthSent = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_filetransfer_bandwidth_received": FiletransferBandwidthReceived = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_sent_total": PacketsSentTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_received_total": PacketsReceivedTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_sent_total": BytesSentTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_received_total": BytesReceivedTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_second_total": BandwidthSentLastSecondTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_second_total": BandwidthReceivedLastSecondTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_minute_total": BandwidthSentLastMinuteTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_minute_total": BandwidthReceivedLastMinuteTotal = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_filetransfer_bandwidth_sent": FiletransferBandwidthSent = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_filetransfer_bandwidth_received": FiletransferBandwidthReceived = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_sent_total": PacketsSentTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_received_total": PacketsReceivedTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_sent_total": BytesSentTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_received_total": BytesReceivedTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_second_total": BandwidthSentLastSecondTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_second_total": BandwidthReceivedLastSecondTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_minute_total": BandwidthSentLastMinuteTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_minute_total": BandwidthReceivedLastMinuteTotal = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "connection_connected_time": ConnectedTime = TimeSpan.FromMilliseconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "client_database_id": DatabaseId = ClientDbIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_database_id": DatabaseId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
 			case "client_type": { if (!Enum.TryParse(value.NewString(), out ClientType val)) throw new FormatException(); ClientType = val; } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
@@ -823,29 +838,29 @@ namespace TS3Client.Messages
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_meta_data": Metadata = Ts3String.Unescape(value); break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
-			case "client_channel_group_id": ChannelGroup = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_channel_group_inherited_channel_id": InheritedChannelGroupFromChannel = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupIdT>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupIdT[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupIdT.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_channel_group_id": ChannelGroup = ChannelGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_channel_group_inherited_channel_id": InheritedChannelGroupFromChannel = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerGroups[i] = ServerGroupId.Parse(ss.Trim(value).NewString(), CultureInfo.InvariantCulture); if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
-			case "client_talk_power": TalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_talk_power": TalkPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_talk_request": TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
-			case "client_unread_messages": UnreadMessages = uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_unread_messages": UnreadMessages = u32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "client_needed_serverquery_view_power": NeededServerqueryViewPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_needed_serverquery_view_power": NeededServerqueryViewPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
 			case "client_country": CountryCode = Ts3String.Unescape(value); break;
 			case "client_badges": Badges = Ts3String.Unescape(value); break;
 			case "client_created": CreationDate = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "client_lastconnected": LastConnected = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "client_totalconnections": TotalConnections = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_month_bytes_uploaded": MonthlyUploadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_month_bytes_downloaded": MonthlyDownloadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_total_bytes_uploaded": TotalUploadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_total_bytes_downloaded": TotalDownloadQuota = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_totalconnections": TotalConnections = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_month_bytes_uploaded": MonthlyUploadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_month_bytes_downloaded": MonthlyDownloadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_total_bytes_uploaded": TotalUploadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_total_bytes_downloaded": TotalDownloadQuota = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
@@ -861,15 +876,15 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientLeftView;
 		
 
-		public string ReasonMessage { get; set; }
-		public TimeSpan BanTime { get; set; }
+		public str ReasonMessage { get; set; }
+		public DurationSeconds BanTime { get; set; }
 		public Reason Reason { get; set; }
-		public ChannelIdT TargetChannelId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
-		public ClientIdT ClientId { get; set; }
-		public ChannelIdT SourceChannelId { get; set; }
+		public ChannelId TargetChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public ClientId ClientId { get; set; }
+		public ChannelId SourceChannelId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -880,12 +895,12 @@ namespace TS3Client.Messages
 			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
 			case "bantime": BanTime = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "reasonid": { if (!Enum.TryParse(value.NewString(), out Reason val)) throw new FormatException(); Reason = val; } break;
-			case "ctid": TargetChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "ctid": TargetChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "cfid": SourceChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cfid": SourceChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -897,12 +912,12 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientMoved;
 		
 
-		public ClientIdT ClientId { get; set; }
+		public ClientId ClientId { get; set; }
 		public Reason Reason { get; set; }
-		public ChannelIdT TargetChannelId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
+		public ChannelId TargetChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -910,10 +925,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "reasonid": { if (!Enum.TryParse(value.NewString(), out Reason val)) throw new FormatException(); Reason = val; } break;
-			case "ctid": TargetChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "ctid": TargetChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			
@@ -928,7 +943,7 @@ namespace TS3Client.Messages
 		
 
 		public PermissionId PermissionId { get; set; }
-		public int PermissionValue { get; set; }
+		public i32 PermissionValue { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -936,8 +951,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "permid": PermissionId = (PermissionId)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "permvalue": PermissionValue = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "permid": PermissionId = (PermissionId)i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "permvalue": PermissionValue = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -949,9 +964,9 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroup;
 		public string ReturnCode { get; set; }
 
-		public string Name { get; set; }
-		public ServerGroupIdT ServerGroupId { get; set; }
-		public ClientDbIdT ClientDbId { get; set; }
+		public str Name { get; set; }
+		public ServerGroupId ServerGroupId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -960,8 +975,8 @@ namespace TS3Client.Messages
 			{
 
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "sgid": ServerGroupId = ServerGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "cldbid": ClientDbId = ClientDbIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sgid": ServerGroupId = ServerGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cldbid": ClientDbId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -973,13 +988,13 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroupAdded;
 		
 
-		public string Name { get; set; }
-		public ServerGroupIdT ServerGroupId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
-		public ClientIdT ClientId { get; set; }
-		public UidT ClientUid { get; set; }
+		public str Name { get; set; }
+		public ServerGroupId ServerGroupId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public ClientId ClientId { get; set; }
+		public Uid ClientUid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -988,11 +1003,11 @@ namespace TS3Client.Messages
 			{
 
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "sgid": ServerGroupId = ServerGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sgid": ServerGroupId = ServerGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			
 			}
@@ -1006,10 +1021,10 @@ namespace TS3Client.Messages
 		
 
 		public Ts3ErrorCode Id { get; set; }
-		public string Message { get; set; }
+		public str Message { get; set; }
 		public PermissionId MissingPermissionId { get; set; }
-		public string ReturnCode { get; set; }
-		public string ExtraMessage { get; set; }
+		public str ReturnCode { get; set; }
+		public str ExtraMessage { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1017,9 +1032,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "id": Id = (Ts3ErrorCode)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "id": Id = (Ts3ErrorCode)u32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "msg": Message = Ts3String.Unescape(value); break;
-			case "failed_permid": MissingPermissionId = (PermissionId)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "failed_permid": MissingPermissionId = (PermissionId)i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			case "extra_msg": ExtraMessage = Ts3String.Unescape(value); break;
 			
@@ -1033,47 +1048,47 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ConnectionInfo;
 		
 
-		public ClientIdT ClientId { get; set; }
-		public TimeSpan Ping { get; set; }
-		public TimeSpan PingDeviation { get; set; }
-		public TimeSpan ConnectedTime { get; set; }
-		public string Ip { get; set; }
-		public ushort Port { get; set; }
-		public ulong PacketsSentSpeech { get; set; }
-		public ulong PacketsSentKeepalive { get; set; }
-		public ulong PacketsSentControl { get; set; }
-		public ulong BytesSentSpeech { get; set; }
-		public ulong BytesSentKeepalive { get; set; }
-		public ulong BytesSentControl { get; set; }
-		public ulong PacketsReceivedSpeech { get; set; }
-		public ulong PacketsReceivedKeepalive { get; set; }
-		public ulong PacketsReceivedControl { get; set; }
-		public ulong BytesReceivedSpeech { get; set; }
-		public ulong BytesReceivedKeepalive { get; set; }
-		public ulong BytesReceivedControl { get; set; }
-		public float ServerToClientPacketlossSpeech { get; set; }
-		public float ServerToClientPacketlossKeepalive { get; set; }
-		public float ServerToClientPacketlossControl { get; set; }
-		public float ServerToClientPacketlossTotal { get; set; }
-		public float ClientToServerPacketlossSpeech { get; set; }
-		public float ClientToServerPacketlossKeepalive { get; set; }
-		public float ClientToServerPacketlossControl { get; set; }
-		public float ClientToServerPacketlossTotal { get; set; }
-		public ulong BandwidthSentLastSecondSpeech { get; set; }
-		public ulong BandwidthSentLastSecondKeepalive { get; set; }
-		public ulong BandwidthSentLastSecondControl { get; set; }
-		public ulong BandwidthSentLastMinuteSpeech { get; set; }
-		public ulong BandwidthSentLastMinuteKeepalive { get; set; }
-		public ulong BandwidthSentLastMinuteControl { get; set; }
-		public ulong BandwidthReceivedLastSecondSpeech { get; set; }
-		public ulong BandwidthReceivedLastSecondKeepalive { get; set; }
-		public ulong BandwidthReceivedLastSecondControl { get; set; }
-		public ulong BandwidthReceivedLastMinuteSpeech { get; set; }
-		public ulong BandwidthReceivedLastMinuteKeepalive { get; set; }
-		public ulong BandwidthReceivedLastMinuteControl { get; set; }
-		public ulong FiletransferBandwidthSent { get; set; }
-		public ulong FiletransferBandwidthReceived { get; set; }
-		public TimeSpan IdleTime { get; set; }
+		public ClientId ClientId { get; set; }
+		public DurationMilliseconds Ping { get; set; }
+		public DurationMilliseconds PingDeviation { get; set; }
+		public DurationMilliseconds ConnectedTime { get; set; }
+		public str Ip { get; set; }
+		public u16 Port { get; set; }
+		public u64 PacketsSentSpeech { get; set; }
+		public u64 PacketsSentKeepalive { get; set; }
+		public u64 PacketsSentControl { get; set; }
+		public u64 BytesSentSpeech { get; set; }
+		public u64 BytesSentKeepalive { get; set; }
+		public u64 BytesSentControl { get; set; }
+		public u64 PacketsReceivedSpeech { get; set; }
+		public u64 PacketsReceivedKeepalive { get; set; }
+		public u64 PacketsReceivedControl { get; set; }
+		public u64 BytesReceivedSpeech { get; set; }
+		public u64 BytesReceivedKeepalive { get; set; }
+		public u64 BytesReceivedControl { get; set; }
+		public f32 ServerToClientPacketlossSpeech { get; set; }
+		public f32 ServerToClientPacketlossKeepalive { get; set; }
+		public f32 ServerToClientPacketlossControl { get; set; }
+		public f32 ServerToClientPacketlossTotal { get; set; }
+		public f32 ClientToServerPacketlossSpeech { get; set; }
+		public f32 ClientToServerPacketlossKeepalive { get; set; }
+		public f32 ClientToServerPacketlossControl { get; set; }
+		public f32 ClientToServerPacketlossTotal { get; set; }
+		public u64 BandwidthSentLastSecondSpeech { get; set; }
+		public u64 BandwidthSentLastSecondKeepalive { get; set; }
+		public u64 BandwidthSentLastSecondControl { get; set; }
+		public u64 BandwidthSentLastMinuteSpeech { get; set; }
+		public u64 BandwidthSentLastMinuteKeepalive { get; set; }
+		public u64 BandwidthSentLastMinuteControl { get; set; }
+		public u64 BandwidthReceivedLastSecondSpeech { get; set; }
+		public u64 BandwidthReceivedLastSecondKeepalive { get; set; }
+		public u64 BandwidthReceivedLastSecondControl { get; set; }
+		public u64 BandwidthReceivedLastMinuteSpeech { get; set; }
+		public u64 BandwidthReceivedLastMinuteKeepalive { get; set; }
+		public u64 BandwidthReceivedLastMinuteControl { get; set; }
+		public u64 FiletransferBandwidthSent { get; set; }
+		public u64 FiletransferBandwidthReceived { get; set; }
+		public DurationMilliseconds IdleTime { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1081,46 +1096,46 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "connection_ping": Ping = TimeSpan.FromMilliseconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "connection_ping_deviation": PingDeviation = TimeSpan.FromMilliseconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "connection_connected_time": ConnectedTime = TimeSpan.FromMilliseconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
-			case "connection_client_port": Port = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_sent_speech": PacketsSentSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_sent_keepalive": PacketsSentKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_sent_control": PacketsSentControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_sent_speech": BytesSentSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_sent_keepalive": BytesSentKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_sent_control": BytesSentControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_received_speech": PacketsReceivedSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_received_keepalive": PacketsReceivedKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_packets_received_control": PacketsReceivedControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_received_speech": BytesReceivedSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_received_keepalive": BytesReceivedKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bytes_received_control": BytesReceivedControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_server2client_packetloss_speech": ServerToClientPacketlossSpeech = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_server2client_packetloss_keepalive": ServerToClientPacketlossKeepalive = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_server2client_packetloss_control": ServerToClientPacketlossControl = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_server2client_packetloss_total": ServerToClientPacketlossTotal = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_client2server_packetloss_speech": ClientToServerPacketlossSpeech = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_client2server_packetloss_keepalive": ClientToServerPacketlossKeepalive = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_client2server_packetloss_control": ClientToServerPacketlossControl = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_client2server_packetloss_total": ClientToServerPacketlossTotal = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_second_speech": BandwidthSentLastSecondSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_second_keepalive": BandwidthSentLastSecondKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_second_control": BandwidthSentLastSecondControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_minute_speech": BandwidthSentLastMinuteSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_minute_keepalive": BandwidthSentLastMinuteKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_sent_last_minute_control": BandwidthSentLastMinuteControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_second_speech": BandwidthReceivedLastSecondSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_second_keepalive": BandwidthReceivedLastSecondKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_second_control": BandwidthReceivedLastSecondControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_minute_speech": BandwidthReceivedLastMinuteSpeech = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_minute_keepalive": BandwidthReceivedLastMinuteKeepalive = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_bandwidth_received_last_minute_control": BandwidthReceivedLastMinuteControl = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_filetransfer_bandwidth_sent": FiletransferBandwidthSent = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "connection_filetransfer_bandwidth_received": FiletransferBandwidthReceived = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_client_port": Port = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_sent_speech": PacketsSentSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_sent_keepalive": PacketsSentKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_sent_control": PacketsSentControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_sent_speech": BytesSentSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_sent_keepalive": BytesSentKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_sent_control": BytesSentControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_received_speech": PacketsReceivedSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_received_keepalive": PacketsReceivedKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_packets_received_control": PacketsReceivedControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_received_speech": BytesReceivedSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_received_keepalive": BytesReceivedKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bytes_received_control": BytesReceivedControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_server2client_packetloss_speech": ServerToClientPacketlossSpeech = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_server2client_packetloss_keepalive": ServerToClientPacketlossKeepalive = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_server2client_packetloss_control": ServerToClientPacketlossControl = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_server2client_packetloss_total": ServerToClientPacketlossTotal = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_client2server_packetloss_speech": ClientToServerPacketlossSpeech = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_client2server_packetloss_keepalive": ClientToServerPacketlossKeepalive = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_client2server_packetloss_control": ClientToServerPacketlossControl = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_client2server_packetloss_total": ClientToServerPacketlossTotal = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_second_speech": BandwidthSentLastSecondSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_second_keepalive": BandwidthSentLastSecondKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_second_control": BandwidthSentLastSecondControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_minute_speech": BandwidthSentLastMinuteSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_minute_keepalive": BandwidthSentLastMinuteKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_sent_last_minute_control": BandwidthSentLastMinuteControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_second_speech": BandwidthReceivedLastSecondSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_second_keepalive": BandwidthReceivedLastSecondKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_second_control": BandwidthReceivedLastSecondControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_minute_speech": BandwidthReceivedLastMinuteSpeech = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_minute_keepalive": BandwidthReceivedLastMinuteKeepalive = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_bandwidth_received_last_minute_control": BandwidthReceivedLastMinuteControl = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_filetransfer_bandwidth_sent": FiletransferBandwidthSent = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "connection_filetransfer_bandwidth_received": FiletransferBandwidthReceived = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "connection_idle_time": IdleTime = TimeSpan.FromMilliseconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			
 			}
@@ -1145,12 +1160,12 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.FileDownload;
 		public string ReturnCode { get; set; }
 
-		public ushort ClientFileTransferId { get; set; }
-		public ushort ServerFileTransferId { get; set; }
-		public string FileTransferKey { get; set; }
-		public ushort Port { get; set; }
-		public long Size { get; set; }
-		public string Message { get; set; }
+		public u16 ClientFileTransferId { get; set; }
+		public u16 ServerFileTransferId { get; set; }
+		public str FileTransferKey { get; set; }
+		public u16 Port { get; set; }
+		public i64 Size { get; set; }
+		public str Message { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1158,11 +1173,11 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": ClientFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "serverftfid": ServerFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clientftfid": ClientFileTransferId = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "serverftfid": ServerFileTransferId = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "ftkey": FileTransferKey = Ts3String.Unescape(value); break;
-			case "port": Port = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "size": Size = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "port": Port = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "size": Size = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "msg": Message = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -1175,10 +1190,10 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.FileInfoTs;
 		public string ReturnCode { get; set; }
 
-		public ChannelIdT ChannelId { get; set; }
-		public string Path { get; set; }
-		public string Name { get; set; }
-		public long Size { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str Path { get; set; }
+		public str Name { get; set; }
+		public i64 Size { get; set; }
 		public DateTime DateTime { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
@@ -1187,10 +1202,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": Size = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "size": Size = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "datetime": DateTime = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -1203,10 +1218,10 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.FileList;
 		public string ReturnCode { get; set; }
 
-		public ChannelIdT ChannelId { get; set; }
-		public string Path { get; set; }
-		public string Name { get; set; }
-		public long Size { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str Path { get; set; }
+		public str Name { get; set; }
+		public i64 Size { get; set; }
 		public DateTime DateTime { get; set; }
 		public bool IsFile { get; set; }
 
@@ -1216,10 +1231,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": Size = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "size": Size = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "datetime": DateTime = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "type": IsFile = value.Length > 0 && value[0] != '0'; break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -1233,8 +1248,8 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.FileListFinished;
 		
 
-		public ChannelIdT ChannelId { get; set; }
-		public string Path { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str Path { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1242,7 +1257,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cid": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "path": Path = Ts3String.Unescape(value); break;
 			
 			}
@@ -1255,18 +1270,18 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.FileTransfer;
 		public string ReturnCode { get; set; }
 
-		public ClientIdT ClientId { get; set; }
-		public string Path { get; set; }
-		public string Name { get; set; }
-		public long Size { get; set; }
-		public long SizeDone { get; set; }
-		public ushort ClientFileTransferId { get; set; }
-		public ushort ServerFileTransferId { get; set; }
-		public ulong Sender { get; set; }
-		public int Status { get; set; }
-		public float CurrentSpeed { get; set; }
-		public float AverageSpeed { get; set; }
-		public TimeSpan Runtime { get; set; }
+		public ClientId ClientId { get; set; }
+		public str Path { get; set; }
+		public str Name { get; set; }
+		public i64 Size { get; set; }
+		public i64 SizeDone { get; set; }
+		public u16 ClientFileTransferId { get; set; }
+		public u16 ServerFileTransferId { get; set; }
+		public u64 Sender { get; set; }
+		public i32 Status { get; set; }
+		public f32 CurrentSpeed { get; set; }
+		public f32 AverageSpeed { get; set; }
+		public DurationSeconds Runtime { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1274,17 +1289,17 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": Size = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "sizedone": SizeDone = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "clientftfid": ClientFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "serverftfid": ServerFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "sender": Sender = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "status": Status = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "current_speed": CurrentSpeed = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "average_speed": AverageSpeed = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "size": Size = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sizedone": SizeDone = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clientftfid": ClientFileTransferId = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "serverftfid": ServerFileTransferId = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sender": Sender = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "status": Status = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "current_speed": CurrentSpeed = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "average_speed": AverageSpeed = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "runtime": Runtime = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -1297,10 +1312,10 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.FileTransferStatus;
 		
 
-		public ushort ClientFileTransferId { get; set; }
+		public u16 ClientFileTransferId { get; set; }
 		public Ts3ErrorCode Status { get; set; }
-		public string Message { get; set; }
-		public long Size { get; set; }
+		public str Message { get; set; }
+		public i64 Size { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1308,10 +1323,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": ClientFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "status": Status = (Ts3ErrorCode)uint.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clientftfid": ClientFileTransferId = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "status": Status = (Ts3ErrorCode)u32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "msg": Message = Ts3String.Unescape(value); break;
-			case "size": Size = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "size": Size = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -1323,12 +1338,12 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.FileUpload;
 		public string ReturnCode { get; set; }
 
-		public ushort ClientFileTransferId { get; set; }
-		public ushort ServerFileTransferId { get; set; }
-		public string FileTransferKey { get; set; }
-		public ushort Port { get; set; }
-		public long SeekPosistion { get; set; }
-		public string Message { get; set; }
+		public u16 ClientFileTransferId { get; set; }
+		public u16 ServerFileTransferId { get; set; }
+		public str FileTransferKey { get; set; }
+		public u16 Port { get; set; }
+		public i64 SeekPosistion { get; set; }
+		public str Message { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1336,11 +1351,11 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": ClientFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "serverftfid": ServerFileTransferId = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clientftfid": ClientFileTransferId = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "serverftfid": ServerFileTransferId = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "ftkey": FileTransferKey = Ts3String.Unescape(value); break;
-			case "port": Port = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "seekpos": SeekPosistion = long.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "port": Port = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "seekpos": SeekPosistion = i64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "msg": Message = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -1353,9 +1368,9 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand;
 		
 
-		public string Alpha { get; set; }
-		public string Beta { get; set; }
-		public string Omega { get; set; }
+		public str Alpha { get; set; }
+		public str Beta { get; set; }
+		public str Omega { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1377,12 +1392,12 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand2;
 		
 
-		public string License { get; set; }
-		public string Beta { get; set; }
-		public string Omega { get; set; }
+		public str License { get; set; }
+		public str Beta { get; set; }
+		public str Omega { get; set; }
 		public bool Ot { get; set; }
-		public string Proof { get; set; }
-		public string Tvd { get; set; }
+		public str Proof { get; set; }
+		public str Tvd { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1407,37 +1422,37 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.InitServer;
 		
 
-		public string WelcomeMessage { get; set; }
-		public string ServerPlatform { get; set; }
-		public string ServerVersion { get; set; }
-		public ushort MaxClients { get; set; }
+		public str WelcomeMessage { get; set; }
+		public str ServerPlatform { get; set; }
+		public str ServerVersion { get; set; }
+		public u16 MaxClients { get; set; }
 		public DateTime ServerCreated { get; set; }
-		public string Hostmessage { get; set; }
+		public str Hostmessage { get; set; }
 		public HostMessageMode HostmessageMode { get; set; }
-		public ulong VirtualServerId { get; set; }
-		public string[] ServerIp { get; set; }
+		public u64 VirtualServerId { get; set; }
+		public str[] ServerIp { get; set; }
 		public bool AskForPrivilege { get; set; }
-		public string ClientName { get; set; }
-		public ClientIdT ClientId { get; set; }
-		public ushort ProtocolVersion { get; set; }
+		public str ClientName { get; set; }
+		public ClientId ClientId { get; set; }
+		public u16 ProtocolVersion { get; set; }
 		public LicenseType LicenseType { get; set; }
-		public int TalkPower { get; set; }
-		public int NeededServerqueryViewPower { get; set; }
-		public string Name { get; set; }
+		public i32 TalkPower { get; set; }
+		public i32 NeededServerqueryViewPower { get; set; }
+		public str Name { get; set; }
 		public CodecEncryptionMode CodecEncryptionMode { get; set; }
-		public ServerGroupIdT DefaultServerGroup { get; set; }
-		public ChannelGroupIdT DefaultChannelGroup { get; set; }
-		public string HostbannerUrl { get; set; }
-		public string HostbannerGfxUrl { get; set; }
-		public TimeSpan HostbannerGfxInterval { get; set; }
-		public float PrioritySpeakerDimmModificator { get; set; }
-		public string HostbuttonTooltip { get; set; }
-		public string HostbuttonUrl { get; set; }
-		public string HostbuttonGfxUrl { get; set; }
-		public string PhoneticName { get; set; }
-		public int IconId { get; set; }
+		public ServerGroupId DefaultServerGroup { get; set; }
+		public ChannelGroupId DefaultChannelGroup { get; set; }
+		public str HostbannerUrl { get; set; }
+		public str HostbannerGfxUrl { get; set; }
+		public DurationSeconds HostbannerGfxInterval { get; set; }
+		public f32 PrioritySpeakerDimmModificator { get; set; }
+		public str HostbuttonTooltip { get; set; }
+		public str HostbuttonUrl { get; set; }
+		public str HostbuttonGfxUrl { get; set; }
+		public str PhoneticName { get; set; }
+		public IconHash IconId { get; set; }
 		public HostBannerMode HostbannerMode { get; set; }
-		public TimeSpan TempChannelDefaultDeleteDelay { get; set; }
+		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1448,27 +1463,27 @@ namespace TS3Client.Messages
 			case "virtualserver_welcomemessage": WelcomeMessage = Ts3String.Unescape(value); break;
 			case "virtualserver_platform": ServerPlatform = Ts3String.Unescape(value); break;
 			case "virtualserver_version": ServerVersion = Ts3String.Unescape(value); break;
-			case "virtualserver_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_maxclients": MaxClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_created": ServerCreated = Util.UnixTimeStart.AddSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if (!Enum.TryParse(value.NewString(), out HostMessageMode val)) throw new FormatException(); HostmessageMode = val; } break;
-			case "virtualserver_id": VirtualServerId = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_ip": { if(value.Length == 0) ServerIp = Array.Empty<string>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new string[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
+			case "virtualserver_id": VirtualServerId = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_ip": { if(value.Length == 0) ServerIp = Array.Empty<str>(); else { var ss = new SpanSplitter(); ss.First(value, ','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new str[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
 			case "virtualserver_ask_for_privilegekey": AskForPrivilege = value.Length > 0 && value[0] != '0'; break;
 			case "acn": ClientName = Ts3String.Unescape(value); break;
-			case "aclid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "pv": ProtocolVersion = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "lt": LicenseType = (LicenseType)ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_talk_power": TalkPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_needed_serverquery_view_power": NeededServerqueryViewPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "aclid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "pv": ProtocolVersion = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "lt": LicenseType = (LicenseType)u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_talk_power": TalkPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_needed_serverquery_view_power": NeededServerqueryViewPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
 			case "virtualserver_codec_encryption_mode": { if (!Enum.TryParse(value.NewString(), out CodecEncryptionMode val)) throw new FormatException(); CodecEncryptionMode = val; } break;
-			case "virtualserver_default_server_group": DefaultServerGroup = ServerGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_default_channel_group": DefaultChannelGroup = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_default_server_group": DefaultServerGroup = ServerGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_default_channel_group": DefaultChannelGroup = ChannelGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_interval": HostbannerGfxInterval = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "virtualserver_priority_speaker_dimm_modificator": PrioritySpeakerDimmModificator = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_priority_speaker_dimm_modificator": PrioritySpeakerDimmModificator = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
@@ -1487,8 +1502,8 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.PluginCommand;
 		
 
-		public string Name { get; set; }
-		public string Data { get; set; }
+		public str Name { get; set; }
+		public str Data { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1509,17 +1524,17 @@ namespace TS3Client.Messages
 		
 		public string ReturnCode { get; set; }
 
-		public int ClientsOnline { get; set; }
-		public int QueriesOnline { get; set; }
-		public ushort MaxClients { get; set; }
-		public TimeSpan Uptime { get; set; }
+		public i32 ClientsOnline { get; set; }
+		public i32 QueriesOnline { get; set; }
+		public u16 MaxClients { get; set; }
+		public DurationSeconds Uptime { get; set; }
 		public bool Autostart { get; set; }
-		public string MachineId { get; set; }
-		public string Name { get; set; }
-		public ulong VirtualServerId { get; set; }
-		public UidT VirtualServerUid { get; set; }
-		public ushort VirtualServerPort { get; set; }
-		public string VirtualServerStatus { get; set; }
+		public str MachineId { get; set; }
+		public str Name { get; set; }
+		public u64 VirtualServerId { get; set; }
+		public Uid VirtualServerUid { get; set; }
+		public u16 VirtualServerPort { get; set; }
+		public str VirtualServerStatus { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1527,16 +1542,16 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "virtualserver_clientsonline": ClientsOnline = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_queryclientsonline": QueriesOnline = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_maxclients": MaxClients = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_clientsonline": ClientsOnline = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_queryclientsonline": QueriesOnline = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_maxclients": MaxClients = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_uptime": Uptime = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_machine_id": MachineId = Ts3String.Unescape(value); break;
 			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
-			case "virtualserver_id": VirtualServerId = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_id": VirtualServerId = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_unique_identifier": VirtualServerUid = Ts3String.Unescape(value); break;
-			case "virtualserver_port": VirtualServerPort = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_port": VirtualServerPort = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_status": VirtualServerStatus = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -1549,25 +1564,25 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ServerEdited;
 		
 
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
 		public Reason Reason { get; set; }
-		public string Name { get; set; }
+		public str Name { get; set; }
 		public CodecEncryptionMode CodecEncryptionMode { get; set; }
-		public ServerGroupIdT DefaultServerGroup { get; set; }
-		public ChannelGroupIdT DefaultChannelGroup { get; set; }
-		public string HostbannerUrl { get; set; }
-		public string HostbannerGfxUrl { get; set; }
-		public TimeSpan HostbannerGfxInterval { get; set; }
-		public float PrioritySpeakerDimmModificator { get; set; }
-		public string HostbuttonTooltip { get; set; }
-		public string HostbuttonUrl { get; set; }
-		public string HostbuttonGfxUrl { get; set; }
-		public string PhoneticName { get; set; }
-		public int IconId { get; set; }
+		public ServerGroupId DefaultServerGroup { get; set; }
+		public ChannelGroupId DefaultChannelGroup { get; set; }
+		public str HostbannerUrl { get; set; }
+		public str HostbannerGfxUrl { get; set; }
+		public DurationSeconds HostbannerGfxInterval { get; set; }
+		public f32 PrioritySpeakerDimmModificator { get; set; }
+		public str HostbuttonTooltip { get; set; }
+		public str HostbuttonUrl { get; set; }
+		public str HostbuttonGfxUrl { get; set; }
+		public str PhoneticName { get; set; }
+		public IconHash IconId { get; set; }
 		public HostBannerMode HostbannerMode { get; set; }
-		public TimeSpan TempChannelDefaultDeleteDelay { get; set; }
+		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1575,18 +1590,18 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "reasonid": { if (!Enum.TryParse(value.NewString(), out Reason val)) throw new FormatException(); Reason = val; } break;
 			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
 			case "virtualserver_codec_encryption_mode": { if (!Enum.TryParse(value.NewString(), out CodecEncryptionMode val)) throw new FormatException(); CodecEncryptionMode = val; } break;
-			case "virtualserver_default_server_group": DefaultServerGroup = ServerGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_default_channel_group": DefaultChannelGroup = ChannelGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_default_server_group": DefaultServerGroup = ServerGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_default_channel_group": DefaultChannelGroup = ChannelGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_interval": HostbannerGfxInterval = TimeSpan.FromSeconds(double.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
-			case "virtualserver_priority_speaker_dimm_modificator": PrioritySpeakerDimmModificator = float.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_priority_speaker_dimm_modificator": PrioritySpeakerDimmModificator = f32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
@@ -1605,7 +1620,7 @@ namespace TS3Client.Messages
 		
 		public string ReturnCode { get; set; }
 
-		public ServerGroupIdT ServerGroupId { get; set; }
+		public ServerGroupId ServerGroupId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1613,7 +1628,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": ServerGroupId = ServerGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sgid": ServerGroupId = ServerGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -1625,16 +1640,16 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupList;
 		
 
-		public ServerGroupIdT ServerGroupId { get; set; }
-		public string Name { get; set; }
+		public ServerGroupId ServerGroupId { get; set; }
+		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
-		public int IconId { get; set; }
+		public IconHash IconId { get; set; }
 		public bool IsPermanent { get; set; }
-		public int SortId { get; set; }
+		public i32 SortId { get; set; }
 		public GroupNamingMode NamingMode { get; set; }
-		public int NeededModifyPower { get; set; }
-		public int NeededMemberAddPower { get; set; }
-		public int NeededMemberRemovePower { get; set; }
+		public i32 NeededModifyPower { get; set; }
+		public i32 NeededMemberAddPower { get; set; }
+		public i32 NeededMemberRemovePower { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1642,16 +1657,16 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": ServerGroupId = ServerGroupIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sgid": ServerGroupId = ServerGroupId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "type": { if (!Enum.TryParse(value.NewString(), out GroupType val)) throw new FormatException(); GroupType = val; } break;
 			case "iconid": IconId = unchecked((int)long.Parse(value.NewString(), CultureInfo.InvariantCulture)); break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "sortid": SortId = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "sortid": SortId = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "namemode": { if (!Enum.TryParse(value.NewString(), out GroupNamingMode val)) throw new FormatException(); NamingMode = val; } break;
-			case "n_modifyp": NeededModifyPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "n_member_addp": NeededMemberAddPower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "n_member_remove_p": NeededMemberRemovePower = int.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_modifyp": NeededModifyPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_member_addp": NeededMemberAddPower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "n_member_remove_p": NeededMemberRemovePower = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -1664,11 +1679,11 @@ namespace TS3Client.Messages
 		
 
 		public TextMessageTargetMode Target { get; set; }
-		public string Message { get; set; }
-		public ClientIdT TargetClientId { get; set; }
-		public ClientIdT InvokerId { get; set; }
-		public string InvokerName { get; set; }
-		public UidT InvokerUid { get; set; }
+		public str Message { get; set; }
+		public ClientId TargetClientId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1678,8 +1693,8 @@ namespace TS3Client.Messages
 
 			case "targetmode": { if (!Enum.TryParse(value.NewString(), out TextMessageTargetMode val)) throw new FormatException(); Target = val; } break;
 			case "msg": Message = Ts3String.Unescape(value); break;
-			case "target": TargetClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "invokerid": InvokerId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "target": TargetClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			
@@ -1693,13 +1708,13 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.TokenUsed;
 		
 
-		public string UsedToken { get; set; }
-		public string TokenCustomSet { get; set; }
-		public string Token1 { get; set; }
-		public string Token2 { get; set; }
-		public ClientIdT ClientId { get; set; }
-		public ClientDbIdT ClientDbId { get; set; }
-		public UidT ClientUid { get; set; }
+		public str UsedToken { get; set; }
+		public str TokenCustomSet { get; set; }
+		public str Token1 { get; set; }
+		public str Token2 { get; set; }
+		public ClientId ClientId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public Uid ClientUid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1711,8 +1726,8 @@ namespace TS3Client.Messages
 			case "tokencustomset": TokenCustomSet = Ts3String.Unescape(value); break;
 			case "token1": Token1 = Ts3String.Unescape(value); break;
 			case "token2": Token2 = Ts3String.Unescape(value); break;
-			case "clid": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "cldbid": ClientDbId = ClientDbIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "cldbid": ClientDbId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			
 			}
@@ -1725,17 +1740,17 @@ namespace TS3Client.Messages
 		
 		public string ReturnCode { get; set; }
 
-		public ClientIdT ClientId { get; set; }
-		public ChannelIdT ChannelId { get; set; }
-		public string Name { get; set; }
-		public ClientDbIdT DatabaseId { get; set; }
-		public string LoginName { get; set; }
-		public ulong OriginServerId { get; set; }
-		public ulong VirtualServerId { get; set; }
-		public UidT VirtualServerUid { get; set; }
-		public ushort VirtualServerPort { get; set; }
-		public string VirtualServerStatus { get; set; }
-		public UidT Uid { get; set; }
+		public ClientId ClientId { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str Name { get; set; }
+		public ClientDbId DatabaseId { get; set; }
+		public str LoginName { get; set; }
+		public u64 OriginServerId { get; set; }
+		public u64 VirtualServerId { get; set; }
+		public Uid VirtualServerUid { get; set; }
+		public u16 VirtualServerPort { get; set; }
+		public str VirtualServerStatus { get; set; }
+		public Uid Uid { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<char> value)
 		{
@@ -1743,15 +1758,15 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_id": ClientId = ClientIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "client_channel_id": ChannelId = ChannelIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_id": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_channel_id": ChannelId = ChannelId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_database_id": DatabaseId = ClientDbIdT.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_database_id": DatabaseId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
-			case "client_origin_server_id": OriginServerId = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
-			case "virtualserver_id": VirtualServerId = ulong.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_origin_server_id": OriginServerId = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_id": VirtualServerId = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_unique_identifier": VirtualServerUid = Ts3String.Unescape(value); break;
-			case "virtualserver_port": VirtualServerPort = ushort.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "virtualserver_port": VirtualServerPort = u16.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "virtualserver_status": VirtualServerStatus = Ts3String.Unescape(value); break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;

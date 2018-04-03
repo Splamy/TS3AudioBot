@@ -1,165 +1,90 @@
 <#@ assembly name="System.Core" #>
 <#@ import namespace="System.Linq" #>
-<#@ import namespace="System.IO" #>
-<#@ import namespace="System.Text" #>
-<#@ import namespace="System.Text.RegularExpressions" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ include file="Util.ttinclude" once="true" #>
-<#
-GenMessages ParseMessages()
+<#+
+public class Messages
 {
-	Regex msgRegex = new Regex(@"^\s*(?<msg>\w+)\s*(;" + attribList + @"(\s*;\s*(?<flds>[\w\s?,]*))?)?\s*$");
-	string declFilePath = Host.ResolvePath("../Declarations/Messages.txt");
-	string[] declLines = File.ReadAllLines(declFilePath);
-
-	var _gen = new GenMessages();
-
-	var defaults = new Dictionary<string, string>()
+	public static Messages Parse(string file)
 	{
-		{"notify", null}
-	};
+		var toml = Nett.Toml.ReadFile<Messages>(file);
 
-	foreach(var line in declLines)
+		// transfer all optional get/set confs
+		/*foreach (var struc in toml.@struct)
+		{
+			foreach (var prop in struc.properties)
+			{
+				prop.get = prop.get ?? struc.accessor.get;
+				prop.set = prop.set ?? struc.accessor.set;
+			}
+		}*/
+
+		return toml;
+	}
+
+	public IEnumerable<Msg> GetOrderedMsg()
 	{
-		if(string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#"))
-			continue;
+		foreach(var (grp, msg) in msg_group.SelectMany(group => group.msg.Select(msg => (group:group, msg:msg))).OrderBy(x => x.msg.name))
+		{
+			// transfer all default confs
+			msg.s2c = msg.s2c ?? grp.@default.s2c;
+			msg.c2s = msg.c2s ?? grp.@default.s2c;
+			msg.response = msg.response ?? grp.@default.response;
+			msg.low = msg.low ?? grp.@default.low;
+			msg.np = msg.np ?? grp.@default.np;
 
-		var parts = line.Split(new [] {':'}, 2);
-		if(parts.Length < 2 || string.IsNullOrWhiteSpace(parts[0]))
-			continue;
-
-		parts[0] = parts[0].Trim().ToUpper();
-		switch(parts[0]) {
-		case "MSG": {
-			var mat =  msgRegex.Match(parts[1]);
-			if(!mat.Success) { Warn("Invalid MSG: " + line); continue; }
-
-			// Fixed param
-			var msg = new GenMsg
-			{
-				ClassName = mat.Groups["msg"].Value,
-				Attributes = new Dictionary<string, string>(defaults),
-			};
-
-			// Attributes
-			msg.Attributes = ParseProps(mat, msg.Attributes);
-
-			if (msg.Attributes.TryGetValue("notify", out var _value) && _value != null)
-				_gen.Notifies.Add(_value, msg);
-
-			// Fields
-			if (mat.Groups["flds"].Success)
-			{
-				var flds = mat.Groups["flds"].Value.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0);
-				foreach (var fld in flds)
-				{
-					var fldName = fld;
-					bool option = false;
-					if (fldName.EndsWith("?"))
-					{
-						fldName = fldName.Remove(fld.Length - 1);
-						option = true;
-					}
-
-					if(_gen.Fields.TryGetValue(fldName, out var _fld))
-						msg.Fields.Add(fldName, new GenMsgField { Field = _fld, Optional = option});
-					else
-						Warn($"Invalid MSG (missing field: {_fld}): {line}");
-				}
-			}
-
-			try {
-				var s2c = msg.S2C;
-				var c2s = msg.C2S;
-				var low = msg.Low;
-				var np = msg.Np;
-				var response = msg.Response;
-			} catch (Exception ex) { Warn($"Invalid MSG (missing attributes: {ex.Message}): {line}"); }
-
-			_gen.Messages.Add(msg.ClassName, msg);
-		} break;
-
-		case "FIELD": {
-			var param = parts[1].Replace(" ", "").Split(',');
-			if(param.Length < 4) { Warn("Invalid FIELD: " + line); continue; }
-			var fld = new GenField { tsName=param[1], fldName=param[2], fldType=param[3], isArray = false };
-			if(fld.fldType.EndsWith("[]"))
-			{
-				fld.isArray = true;
-				fld.fldType = fld.fldType.Substring(0, fld.fldType.Length - 2);
-			}
-			fld.genType = GenerateType(fld);
-			_gen.Fields.Add(param[0], fld );
-		} break;
-
-		case "TYPE": {
-			var param = parts[1].Replace(" ", "").Split(',');
-			if(param.Length != 1 && param.Length != 2) { Warn("Invalid TYPE: " + line); continue; }
-			_gen.Types.Add(param[0], new GenType { typeName = param[0], backingType = param.Length > 1 ? param[1] : null });
-		} break;
-
-		case "DEFAULT": {
-			ParsePropsStr(parts[1], defaults);
-		} break;
-
-		case "BREAK":
-			return _gen;
-
-		default:
-			Warn($"Unknown declaration: {parts[0]}");
-			break;
+			yield return msg;
 		}
 	}
 
-	return _gen;
-}
-#><#+
-class GenMessages
-{
-	public Dictionary<string, GenField> Fields { get; set; } = new Dictionary<string, GenField>();
-	// msg class name -> Msg
-	public Dictionary<string, GenMsg> Messages { get; set; } = new Dictionary<string, GenMsg>();
-	public IEnumerable<GenMsg> MessagesSorted => Messages.Values.OrderBy(x => x.ClassName);
-	// ts3notifyname -> Msg
-	public Dictionary<string, GenMsg> Notifies { get; set; } = new Dictionary<string, GenMsg>();
-	public IEnumerable<GenMsg> NotifiesSorted => Notifies.Values.OrderBy(x => x.ClassName);
-	public Dictionary<string, GenType> Types { get; set; } = new Dictionary<string, GenType>();
-}
-class GenMsgField
-{
-	public GenField Field { get; set; }
-	public bool Optional { get; set; }
-}
-class GenField
-{
-	public string tsName;
-	public string fldName; // propety name
-	public string fldType; // single type
-	public string genType; // final property Type
-	public bool isArray;
-}
-class GenMsg
-{
-	public string ClassName { get; set; }
-	public Dictionary<string,GenMsgField> Fields { get; set; } = new Dictionary<string,GenMsgField>();
-	public Dictionary<string,string> Attributes { get; set; } = new Dictionary<string,string>();
+	public IEnumerable<Msg> NotifiesSorted => GetOrderedMsg().Where(x => x.notify != null);
 
-	public string Notify { get => Attributes.TryGetValue("notify", out var val) ? val : null;
-	                       set => Attributes["notify"] = value; }
-	public bool S2C { get => bool.Parse(Attributes["s2c"]);
-	                  set => Attributes["s2c"] = value.ToString(); }
-	public bool C2S { get => bool.Parse(Attributes["c2s"]);
-	                  set => Attributes["c2s"] = value.ToString(); }
-	public bool Response { get => bool.Parse(Attributes["response"]);
-	                       set => Attributes["response"] = value.ToString(); }
-	public bool Low { get => bool.Parse(Attributes["low"]);
-	                  set => Attributes["low"] = value.ToString(); }
-	public bool Np { get => bool.Parse(Attributes["np"]);
-	                 set => Attributes["np"] = value.ToString(); }
-}
-class GenType
-{
-	public string typeName;
-	public string backingType;
+	public (Field fld, bool optional) GetField(string name) => (fld:fields.First(x => x.map == name.Trim('?')), optional:name.EndsWith("?"));
+
+	public Field[] fields { get; set; }
+	public MsgGroup[] msg_group { get; set; }
+
+	public class Field
+	{
+		public string map { get; set; }
+		public string ts { get; set; }
+		public string pretty { get; set; }
+		public string type { get; set; }
+
+		public string mod { get; set; }
+		public string doc { get; set; }
+
+		public bool isArray => mod == "array";
+		public string prettyClean => pretty.Trim('?');
+		public string typeFin => type + (isArray ? "[]" : "");
+	}
+
+	public class MsgGroup
+	{
+		public Default @default { get; set; }
+		public Msg[] msg { get; set; }
+	}
+
+	public class Default
+	{
+		public bool s2c { get; set; }
+		public bool c2s { get; set; }
+		public bool response { get; set; }
+		public bool low { get; set; }
+		public bool np { get; set; }
+	}
+
+	public class Msg
+	{
+		public string name { get; set; }
+		public string notify { get; set; }
+		public string[] attributes { get; set; }
+
+		public bool? s2c { get; set; }
+		public bool? c2s { get; set; }
+		public bool? response { get; set; }
+		public bool? low { get; set; }
+		public bool? np { get; set; }
+	}
 }
 #>

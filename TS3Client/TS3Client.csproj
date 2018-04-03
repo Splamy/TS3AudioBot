@@ -159,6 +159,8 @@
     <Compile Include="WaitBlock.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Declarations\BookDeclarations.toml" />
+    <None Include="Declarations\Messages.toml" />
     <None Include="Declarations\Versions.csv" />
     <None Include="Audio\Opus\LICENSE" />
     <None Include="Audio\Opus\OPUS_LICENSE" />
@@ -175,7 +177,6 @@
     <Content Include="Declarations\Errors.csv" />
     <Content Include="Declarations\MessagesToBook.txt" />
     <Content Include="Declarations\Permissions.csv" />
-    <Content Include="Declarations\BookDeclarations.txt" />
     <Content Include="Declarations\Messages.txt" />
     <None Include="Generated\ErrorParser.ttinclude" />
     <Content Include="Generated\Book.tt">

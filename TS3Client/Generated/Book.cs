@@ -41,6 +41,8 @@ namespace TS3Client.Full.Book
 	using str = System.String;
 
 	using Duration = System.TimeSpan;
+	using DurationSeconds = System.TimeSpan;
+	using DurationMilliseconds = System.TimeSpan;
 	using SocketAddr = System.Net.IPAddress;
 
 	using Uid = System.String;
