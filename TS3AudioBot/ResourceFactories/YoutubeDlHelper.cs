@@ -79,6 +79,7 @@ namespace TS3AudioBot.ResourceFactories
 					tmproc.StartInfo.CreateNoWindow = true;
 					tmproc.StartInfo.RedirectStandardOutput = true;
 					tmproc.StartInfo.RedirectStandardError = true;
+					tmproc.EnableRaisingEvents = true;
 					tmproc.Start();
 					tmproc.WaitForExit(10000);
 

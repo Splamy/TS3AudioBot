@@ -177,7 +177,6 @@
     <Content Include="Declarations\Errors.csv" />
     <Content Include="Declarations\MessagesToBook.txt" />
     <Content Include="Declarations\Permissions.csv" />
-    <Content Include="Declarations\Messages.txt" />
     <None Include="Generated\ErrorParser.ttinclude" />
     <Content Include="Generated\Book.tt">
       <Generator>TextTemplatingFileGenerator</Generator>

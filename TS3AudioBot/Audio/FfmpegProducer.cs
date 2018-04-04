@@ -145,7 +145,8 @@ namespace TS3AudioBot.Audio
 							RedirectStandardError = true,
 							UseShellExecute = false,
 							CreateNoWindow = true,
-						}
+						},
+						EnableRaisingEvents = true,
 					};
 					Log.Trace("Starting with {0}", ffmpegProcess.StartInfo.Arguments);
 					ffmpegProcess.ErrorDataReceived += FfmpegProcess_ErrorDataReceived;

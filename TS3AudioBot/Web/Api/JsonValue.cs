@@ -48,6 +48,12 @@ namespace TS3AudioBot.Web.Api
 
 	public class JsonValueBase : JsonObject
 	{
+		static JsonValueBase()
+		{
+			JsonValue<BotCommand>.AsString = cmd => cmd.GetHelp();
+			JsonValue<BotCommand>.AsJson = cmd => cmd.AsJsonObj;
+		}
+
 		protected object Value { get; }
 
 		public JsonValueBase(object value) : base(null) { Value = value; }

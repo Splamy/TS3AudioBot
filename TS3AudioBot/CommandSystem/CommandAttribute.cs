@@ -40,6 +40,7 @@ namespace TS3AudioBot.CommandSystem
 			UsageSyntax = syntax;
 			UsageHelp = help;
 		}
+
 		public string UsageSyntax { get; }
 		public string UsageHelp { get; }
 	}
