@@ -501,8 +501,8 @@ namespace TS3Client.Full
 
 		private void SendPing()
 		{
-			AddOutgoingPacket(Array.Empty<byte>(), PacketType.Ping);
 			pingTimer.Restart();
+			AddOutgoingPacket(Array.Empty<byte>(), PacketType.Ping);
 		}
 
 		private void ReceivePing(S2CPacket packet)

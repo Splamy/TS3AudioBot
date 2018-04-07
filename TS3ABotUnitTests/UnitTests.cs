@@ -202,7 +202,7 @@ namespace TS3ABotUnitTests
 				{ "ply", null }
 			};
 
-			var filter = Filter.Default;
+			var filter = Filter.GetFilterByName("ic3").Unwrap();
 
 			// Exact match
 			var result = filter.Filter(filterList, "help");
