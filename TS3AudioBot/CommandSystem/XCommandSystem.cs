@@ -44,44 +44,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			RootCommand = new RootCommand();
 		}
-
-		public static IEnumerable<KeyValuePair<string, T>> FilterList<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
-		{
-			// Convert result to list because it can be enumerated multiple times
-			var possibilities = list.Select(t => new FilterItem<T>(t.Key, t.Value, 0)).ToList();
-			// Filter matching commands
-			foreach (var c in filter.ToLowerInvariant())
-			{
-				var newPossibilities = (from p in possibilities
-										let pos = p.Name.ToLowerInvariant().IndexOf(c, p.Index)
-										where pos != -1
-										select new FilterItem<T>(p.Name, p.Value, pos + 1)).ToList();
-				if (newPossibilities.Count > 0)
-					possibilities = newPossibilities;
-			}
-			// Take command with lowest index
-			int minIndex = possibilities.Min(t => t.Index);
-			var cmds = possibilities.Where(t => t.Index == minIndex).ToArray();
-			// Take the smallest command
-			int minLength = cmds.Min(c => c.Name.Length);
-
-			return cmds.Where(c => c.Name.Length == minLength).Select(fi => new KeyValuePair<string, T>(fi.Name, fi.Value));
-		}
-
-		private sealed class FilterItem<T>
-		{
-			public readonly string Name;
-			public readonly T Value;
-			public readonly int Index;
-
-			public FilterItem(string n, T v, int i)
-			{
-				Name = n;
-				Value = v;
-				Index = i;
-			}
-		}
-
+		
 		internal ICommand AstToCommandResult(AstNode node)
 		{
 			switch (node.Type)

@@ -34,7 +34,7 @@ namespace TS3Client
 	{
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		undefined = -1,<# foreach (var line in data.Skip(1)) { #>
-		<#= line[0] #> = <#= line[2] #>,<# } #>
+		<#= line[1] #> = <#= line[0] #>,<# } #>
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
@@ -45,7 +45,7 @@ namespace TS3Client
 			switch (permid)
 			{
 			case PermissionId.undefined: return "Undefined permission";<# foreach (var line in data.Skip(1)) { #>
-			case PermissionId.<#= line[0] #> : return "<#= line[1] #>";<# } #>
+			case PermissionId.<#= line[1] #> : return "<#= line[2] #>";<# } #>
 			default: throw Util.UnhandledDefault(permid);
 			}
 		}

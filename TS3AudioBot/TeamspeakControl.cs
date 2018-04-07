@@ -162,7 +162,7 @@ namespace TS3AudioBot
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
 				return refreshResult.Error;
-			var clients = CommandSystem.XCommandSystem.FilterList(
+			var clients = Algorithm.Filter.DefaultAlgorithm.Filter(
 				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.Name, cb)), name).ToArray();
 			if (clients.Length <= 0)
 				return "No client found";
@@ -373,7 +373,7 @@ namespace TS3AudioBot
 
 	namespace RExtensions
 	{
-		static class RExtentions
+		internal static class RExtentions
 		{
 			public static R ToR<TE>(this E<TE> result, string message)
 			{

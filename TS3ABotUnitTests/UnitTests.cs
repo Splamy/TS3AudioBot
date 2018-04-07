@@ -202,35 +202,37 @@ namespace TS3ABotUnitTests
 				{ "ply", null }
 			};
 
+			var filter = Filter.Default;
+
 			// Exact match
-			var result = XCommandSystem.FilterList(filterList, "help");
+			var result = filter.Filter(filterList, "help");
 			Assert.AreEqual(1, result.Count());
 			Assert.AreEqual("help", result.First().Key);
 
 			// The first occurence of y
-			result = XCommandSystem.FilterList(filterList, "y");
+			result = filter.Filter(filterList, "y");
 			Assert.AreEqual(1, result.Count());
 			Assert.AreEqual("ply", result.First().Key);
 
 			// The smallest word
-			result = XCommandSystem.FilterList(filterList, "zorn");
+			result = filter.Filter(filterList, "zorn");
 			Assert.AreEqual(1, result.Count());
 			Assert.AreEqual("ply", result.First().Key);
 
 			// First letter match
-			result = XCommandSystem.FilterList(filterList, "q");
+			result = filter.Filter(filterList, "q");
 			Assert.AreEqual(1, result.Count());
 			Assert.AreEqual("quit", result.First().Key);
 
 			// Ignore other letters
-			result = XCommandSystem.FilterList(filterList, "palyndrom");
+			result = filter.Filter(filterList, "palyndrom");
 			Assert.AreEqual(1, result.Count());
 			Assert.AreEqual("play", result.First().Key);
 
 			filterList.Add("pla", null);
 
 			// Ambiguous command
-			result = XCommandSystem.FilterList(filterList, "p");
+			result = filter.Filter(filterList, "p");
 			Assert.AreEqual(2, result.Count());
 			Assert.IsTrue(result.Any(r => r.Key == "ply"));
 			Assert.IsTrue(result.Any(r => r.Key == "pla"));

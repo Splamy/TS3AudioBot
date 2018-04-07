@@ -81,6 +81,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public R<object[], CommandException> FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
+			var filterLazy = new Lazy<Algorithm.Filter>(() =>info.TryGet<Algorithm.Filter>(out var filter) ? filter : Algorithm.Filter.DefaultFilter, false);
 
 			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
@@ -117,7 +118,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
 					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-					try { parameters[p] = ConvertParam(argResultP, arg); }
+					try { parameters[p] = ConvertParam(argResultP, arg, filterLazy.Value.Current); }
 					catch (FormatException ex) { return new CommandException("Could not convert to " + UnwrapParamType(arg).Name, ex, CommandExceptionReason.CommandError); }
 					catch (OverflowException ex) { return new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
@@ -134,7 +135,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 						for (int i = 0; i < args.Length; i++, takenArguments++)
 						{
 							var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-							var convResult = ConvertParam(argResultA, typeArr);
+							var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value.Current);
 							args.SetValue(convResult, i);
 						}
 					}
@@ -155,7 +156,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 			return parameters;
 		}
-
+		
 		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
@@ -273,14 +274,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return type;
 		}
 
-		private static object ConvertParam(string value, Type targetType)
+		private static object ConvertParam(string value, Type targetType, Algorithm.IFilterAlgorithm filter)
 		{
 			if (targetType == typeof(string))
 				return value;
 			if (targetType.IsEnum)
 			{
 				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
-				var result = XCommandSystem.FilterList(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), value).Select(x => x.Value).FirstOrDefault();
+				var result = filter.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), value).Select(x => x.Value).FirstOrDefault();
 				if (result == null)
 					throw new CommandException($"Invalid parameter \"{value}\"", CommandExceptionReason.MissingParameter);
 				return result;

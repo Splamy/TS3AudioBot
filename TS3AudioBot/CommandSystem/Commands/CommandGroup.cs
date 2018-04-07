@@ -42,7 +42,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 				result = ((StringCommandResult)comResult).Content;
 			}
 
-			var commandResults = XCommandSystem.FilterList(commands, result).ToArray();
+			if (!info.TryGet<Algorithm.Filter>(out var filter))
+				filter = Algorithm.Filter.DefaultFilter;
+			var commandResults = filter.Current.Filter(commands, result).ToArray();
 			if (commandResults.Length > 1)
 				throw new CommandException("Ambiguous call, possible subcommands: " + string.Join(", ", commandResults.Select(g => g.Key)), CommandExceptionReason.AmbiguousCall);
 			if (commandResults.Length == 0)

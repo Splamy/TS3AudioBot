@@ -101,7 +101,7 @@ namespace TS3AudioBot.Rights
 			case TomlObjectType.Float: strb.Append(((TomlFloat) obj).Value); break;
 			case TomlObjectType.String: strb.Append(((TomlString) obj).Value); break;
 			case TomlObjectType.DateTime: strb.Append(((TomlDateTime) obj).Value); break;
-			case TomlObjectType.TimeSpan: strb.Append(((TomlTimeSpan) obj).Value); break;
+			case TomlObjectType.TimeSpan: strb.Append(((TomlDuration) obj).Value); break;
 			case TomlObjectType.Array:
 				strb.Append("[ ")
 					.Append(string.Join(", ", ((TomlArray)obj).Items.Select(ToString)))

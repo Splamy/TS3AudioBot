@@ -240,7 +240,7 @@ namespace TS3AudioBot
 
 		[Command("help", "Shows all commands or detailed help about a specific command.")]
 		[Usage("[<command>]", "Any currently accepted command")]
-		public static JsonObject CommandHelp(CommandManager commandManager, CallerInfo caller, params string[] parameter)
+		public static JsonObject CommandHelp(CommandManager commandManager, CallerInfo caller, Algorithm.Filter filter = null, params string[] parameter)
 		{
 			if (parameter.Length == 0 && !caller.ApiCall)
 			{
@@ -259,7 +259,8 @@ namespace TS3AudioBot
 			ICommand target = group;
 			for (int i = 0; i < parameter.Length; i++)
 			{
-				var possibilities = XCommandSystem.FilterList(group.Commands, parameter[i]).ToList();
+				filter = filter ?? Algorithm.Filter.DefaultFilter;
+				var possibilities = filter.Current.Filter(group.Commands, parameter[i]).ToList();
 				if (possibilities.Count <= 0)
 					throw new CommandException("No matching command found! Try !help to get a list of all commands.", CommandExceptionReason.CommandError);
 				if (possibilities.Count > 1)
@@ -1035,7 +1036,7 @@ namespace TS3AudioBot
 				throw new CommandException("Please specify a key like: \n  " + string.Join("\n  ", configMap.Take(3).Select(kvp => kvp.Key)),
 					CommandExceptionReason.MissingParameter);
 
-			var filtered = XCommandSystem.FilterList(configMap, key);
+			var filtered = Algorithm.SubstringFilter.Instance.Filter(configMap, key);
 			var filteredArr = filtered.ToArray();
 
 			if (filteredArr.Length == 0)

@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot
 {
+	using Algorithm;
 	using CommandSystem;
 	using CommandSystem.CommandResults;
 	using Dependency;
@@ -54,6 +55,7 @@ namespace TS3AudioBot
 		public PlayManager PlayManager { get; set; }
 		public ITargetManager TargetManager { get; private set; }
 		public IPlayerConnection PlayerConnection { get; private set; }
+		public Filter Filter { get; private set; }
 
 		public R InitializeBot()
 		{
@@ -65,6 +67,7 @@ namespace TS3AudioBot
 			var hmd = Config.GetDataStruct<HistoryManagerData>("HistoryManager", true);
 			var pld = Config.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
 			mainBotData = Config.GetDataStruct<MainBotData>("MainBot", true);
+			mainBotData.PropertyChanged += OnConfigUpdate;
 
 			AudioValues.audioFrameworkData = afd;
 
@@ -78,6 +81,7 @@ namespace TS3AudioBot
 			Injector.RegisterType<IPlayerConnection>();
 			Injector.RegisterType<ITargetManager>();
 			Injector.RegisterType<Ts3BaseFunctions>();
+			Injector.RegisterType<Filter>();
 
 			Injector.RegisterModule(this);
 			Injector.RegisterModule(Injector);
@@ -91,6 +95,10 @@ namespace TS3AudioBot
 				Injector.RegisterModule(historyManager = new HistoryManager(hmd), x => x.Initialize());
 			Injector.RegisterModule(new PlayManager());
 			Injector.RegisterModule(teamspeakClient.TargetPipe);
+
+			var filter = Filter.GetFilterByName(mainBotData.CommandMatching);
+			Injector.RegisterModule(new Filter { Current = filter.OkOr(Filter.DefaultAlgorithm) });
+			if (!filter.Ok) Log.Warn("Unknown CommandMatching config. Using default.");
 
 			if (!Injector.AllResolved())
 			{
@@ -354,6 +362,16 @@ namespace TS3AudioBot
 
 		public BotInfo GetInfo() => new BotInfo { Id = Id, NickName = QueryConnection.GetSelf().OkOr(null)?.Name };
 
+		private void OnConfigUpdate(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == nameof(MainBotData.CommandMatching))
+			{
+				var newMatcher = Filter.GetFilterByName(mainBotData.CommandMatching);
+				if (newMatcher.Ok)
+					Filter.Current = newMatcher.Value;
+			}
+		}
+
 		public void Dispose()
 		{
 			BotManager.RemoveBot(this);
@@ -394,6 +412,9 @@ namespace TS3AudioBot
 		public ulong BotGroupId { get; set; }
 		[Info("Generate fancy status images as avatar", "true")]
 		public bool GenerateStatusAvatar { get; set; }
+		[Info("Defines how the bot tries to match your !commands.\n" +
+			"# Possible types: exact, substring, ic3, hamming", "ic3")]
+		public string CommandMatching { get; set; }
 	}
 #pragma warning restore CS0649
 }
