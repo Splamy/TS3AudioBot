@@ -142,6 +142,7 @@ namespace TS3AudioBot
 
 		private void OnBotConnected(object sender, EventArgs e)
 		{
+			Log.Info("Bot connected.");
 			QueryConnection.ChangeBadges(BadgesString);
 		}
 

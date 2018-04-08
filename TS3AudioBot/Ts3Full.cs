@@ -39,6 +39,10 @@ namespace TS3AudioBot
 			"Notice me, senpai", ":wq"
 		};
 
+		private bool connecting = false;
+		public bool HasConnection => tsFullClient.Connected || tsFullClient.Connecting || connecting;
+
+		public override event EventHandler<EventArgs> OnBotConnected;
 		public override event EventHandler OnBotDisconnect;
 
 		private readonly Ts3FullClientData ts3FullClientData;
@@ -121,19 +125,9 @@ namespace TS3AudioBot
 			// check required security level
 			if (ts3FullClientData.IdentityLevel == "auto") { }
 			else if (int.TryParse(ts3FullClientData.IdentityLevel, out int targetLevel))
-			{
-				if (Ts3Crypt.GetSecurityLevel(identity) < targetLevel)
-				{
-					Log.Info("Calculating up to required security level: {0}", targetLevel);
-					Ts3Crypt.ImproveSecurity(identity, targetLevel);
-					ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
-				}
-			}
+				UpdateIndentityToSecurityLevel(targetLevel);
 			else
-			{
 				Log.Warn("Invalid value for QueryConnection::IdentityLevel, enter a number or \"auto\".");
-			}
-
 
 			// get or compute password
 			if (!string.IsNullOrEmpty(ts3FullClientData.ServerPassword)
@@ -146,6 +140,7 @@ namespace TS3AudioBot
 
 			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
+			tsFullClient.OnConnected += TsFullClient_OnConnected;
 			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
 			ConnectClient();
 		}
@@ -179,6 +174,7 @@ namespace TS3AudioBot
 			else
 				verionSign = VersionSign.VER_WIN_3_1_8;
 
+			connecting = true;
 			tsFullClient.Connect(new ConnectionDataFull
 			{
 				Username = ts3FullClientData.DefaultNickname,
@@ -217,10 +213,7 @@ namespace TS3AudioBot
 					if (ts3FullClientData.IdentityLevel == "auto")
 					{
 						int targetSecLevel = int.Parse(error.ExtraMessage);
-						Log.Info("Calculating up to required security level: {0}", targetSecLevel);
-						Ts3Crypt.ImproveSecurity(identity, targetSecLevel);
-						ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
-
+						UpdateIndentityToSecurityLevel(targetSecLevel);
 						ConnectClient();
 						return; // skip triggering event, we want to reconnect
 					}
@@ -241,7 +234,24 @@ namespace TS3AudioBot
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 			}
 
+			connecting = false;
 			OnBotDisconnect?.Invoke(this, EventArgs.Empty);
+		}
+
+		private void TsFullClient_OnConnected(object sender, EventArgs e)
+		{
+			connecting = false;
+			OnBotConnected?.Invoke(this, EventArgs.Empty);
+		}
+
+		private void UpdateIndentityToSecurityLevel(int targetLevel)
+		{
+			if (Ts3Crypt.GetSecurityLevel(identity) < targetLevel)
+			{
+				Log.Info("Calculating up to required security level: {0}", targetLevel);
+				Ts3Crypt.ImproveSecurity(identity, targetLevel);
+				ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
+			}
 		}
 
 		public override R<ClientData> GetSelf()

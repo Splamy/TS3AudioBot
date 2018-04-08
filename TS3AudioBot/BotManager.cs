@@ -59,8 +59,8 @@ namespace TS3AudioBot
 			{
 				foreach (var bot in activeBots)
 				{
-					var client = bot.QueryConnection.GetLowLibrary<TS3Client.Full.Ts3FullClient>();
-					if (!client.Connected && !client.Connecting)
+					var botFull = bot.QueryConnection as Ts3Full;
+					if (!botFull.HasConnection)
 					{
 						Log.Warn("Cleaning up stray bot.");
 						strayList = strayList ?? new List<Bot>();
