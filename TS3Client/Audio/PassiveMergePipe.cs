@@ -11,6 +11,7 @@ namespace TS3Client.Audio
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Runtime.InteropServices;
 
 	public class PassiveMergePipe : IAudioPassiveProducer
 	{
@@ -66,7 +67,7 @@ namespace TS3Client.Audio
 			if (safeProducerList.Count == 1)
 				return safeProducerList[0].Read(buffer, offset, length, out meta);
 
-			var pcmBuffer = buffer.AsSpan().NonPortableCast<byte, short>();
+			var pcmBuffer = MemoryMarshal.Cast<byte, short>(buffer);
 			var acc = new int[pcmBuffer.Length];
 			int read = 0;
 

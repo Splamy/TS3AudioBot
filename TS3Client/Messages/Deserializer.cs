@@ -66,10 +66,10 @@ namespace TS3Client.Messages
 				{
 					var param = ss.Trim(lineSpan);
 					var kvpSplitIndex = param.IndexOf('=');
-					var skey = kvpSplitIndex >= 0 ? param.Slice(0, kvpSplitIndex) : ReadOnlySpan<char>.Empty;
+					key = kvpSplitIndex >= 0 ? param.Slice(0, kvpSplitIndex) : ReadOnlySpan<char>.Empty;
 					value = kvpSplitIndex <= param.Length - 1 ? param.Slice(kvpSplitIndex + 1) : ReadOnlySpan<char>.Empty;
 
-					qm.SetField(skey.NewString(), value);
+					qm.SetField(key.NewString(), value);
 
 					if (!ss.HasNext)
 						break;

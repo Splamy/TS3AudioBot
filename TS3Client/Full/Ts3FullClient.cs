@@ -49,6 +49,7 @@ namespace TS3Client.Full
 		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
 		public override bool Connecting { get { lock (statusLock) return status == Ts3ClientStatus.Connecting; } }
 		private ConnectionDataFull connectionDataFull;
+		public Book.Connection Book { get; set; } //= new Book.Connection();
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
@@ -163,15 +164,11 @@ namespace TS3Client.Full
 
 		private void InvokeEvent(LazyNotification lazyNotification)
 		{
+			Book?.Update(lazyNotification);
+
 			var notification = lazyNotification.Notifications;
 			switch (lazyNotification.NotifyType)
 			{
-			case NotificationType.ChannelCreated: break;
-			case NotificationType.ChannelDeleted: break;
-			case NotificationType.ChannelChanged: break;
-			case NotificationType.ChannelEdited: break;
-			case NotificationType.ChannelMoved: break;
-			case NotificationType.ChannelPasswordChanged: break;
 			case NotificationType.ClientEnterView: OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>()); break;
 			case NotificationType.ClientLeftView:
 				var clientLeftArr = notification.Cast<ClientLeftView>().ToArray();
@@ -186,59 +183,41 @@ namespace TS3Client.Full
 				break;
 
 			case NotificationType.ClientMoved: OnClientMoved?.Invoke(this, notification.Cast<ClientMoved>()); break;
-			case NotificationType.ServerEdited: break;
 			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
-			case NotificationType.TokenUsed: break;
 			// full client events
 			case NotificationType.InitIvExpand: { var result = lazyNotification.WrapSingle<InitIvExpand>(); if (result.Ok) ProcessInitIvExpand(result.Value); } break;
 			case NotificationType.InitIvExpand2: { var result = lazyNotification.WrapSingle<InitIvExpand2>(); if (result.Ok) ProcessInitIvExpand2(result.Value); } break;
 			case NotificationType.InitServer: { var result = lazyNotification.WrapSingle<InitServer>(); if (result.Ok) ProcessInitServer(result.Value); } break;
-			case NotificationType.ChannelList: break;
 			case NotificationType.ChannelListFinished: ChannelSubscribeAll(); break;
-			case NotificationType.ClientNeededPermissions: break;
-			case NotificationType.ClientChannelGroupChanged: break;
-			case NotificationType.ClientServerGroupAdded: break;
-			case NotificationType.ConnectionInfo: break;
 			case NotificationType.ConnectionInfoRequest: ProcessConnectionInfoRequest(); break;
-			case NotificationType.ChannelSubscribed: break;
-			case NotificationType.ChannelUnsubscribed: break;
-			case NotificationType.ClientChatComposing: break;
-			case NotificationType.ServerGroupList: break;
-			case NotificationType.ClientServerGroup: break;
-			case NotificationType.FileUpload: break;
-			case NotificationType.FileDownload: break;
-			case NotificationType.FileTransfer: break;
-			case NotificationType.FileTransferStatus: break;
-			case NotificationType.FileList: break;
-			case NotificationType.FileListFinished: break;
-			case NotificationType.FileInfoTs: break;
-			case NotificationType.ChannelGroupList: break;
 			case NotificationType.PluginCommand: { var result = lazyNotification.WrapSingle<PluginCommand>(); if (result.Ok) ProcessPluginRequest(result.Value); } break;
 			// special
 			case NotificationType.CommandError:
+				CommandError error;
 				{
 					var result = lazyNotification.WrapSingle<CommandError>();
-					var error = result.Ok ? result.Value : Util.CustomError("Got empty error while connecting.");
-
-					bool skipError = false;
-					bool disconnect = false;
-					lock (statusLock)
-					{
-						if (status == Ts3ClientStatus.Connecting)
-						{
-							disconnect = true;
-							skipError = true;
-						}
-					}
-
-					if (disconnect)
-						DisconnectInternal(context, error, Ts3ClientStatus.Disconnected);
-					if (!skipError)
-						OnErrorEvent?.Invoke(this, error);
+					error = result.Ok ? result.Value : Util.CustomError("Got empty error while connecting.");
 				}
+
+				bool skipError = false;
+				bool disconnect = false;
+				lock (statusLock)
+				{
+					if (status == Ts3ClientStatus.Connecting)
+					{
+						disconnect = true;
+						skipError = true;
+					}
+				}
+
+				if (disconnect)
+					DisconnectInternal(context, error, Ts3ClientStatus.Disconnected);
+				if (!skipError)
+					OnErrorEvent?.Invoke(this, error);
 				break;
+
 			case NotificationType.Unknown:
-			default: throw Util.UnhandledDefault(lazyNotification.NotifyType);
+				throw Util.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
 
@@ -289,7 +268,7 @@ namespace TS3Client.Full
 						// Init error
 						if (packet.Data.Length == 5 && packet.Data[0] == 1)
 						{
-							var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsReadOnlySpan().Slice(1));
+							var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsSpan().Slice(1));
 							if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
 								Log.Info("Got init error: {0}", (Ts3ErrorCode)errorNum);
 							else

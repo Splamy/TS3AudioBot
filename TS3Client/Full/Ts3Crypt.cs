@@ -401,7 +401,7 @@ namespace TS3Client.Full
 					Array.Copy(data, 1, sendData, versionLen + initTypeLen, 20);
 					return sendData;
 				case 5:
-					var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(data.AsReadOnlySpan().Slice(1));
+					var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan().Slice(1));
 					if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
 						return $"Got Init1(1) error: {(Ts3ErrorCode)errorNum}";
 					return $"Got Init1(1) undefined error code: {errorNum}";
@@ -422,7 +422,7 @@ namespace TS3Client.Full
 				var textBytes = Util.Encoder.GetBytes(initAdd);
 
 				// Prepare solution
-				int level = BinaryPrimitives.ReadInt32BigEndian(data.AsReadOnlySpan().Slice(initTypeLen + 128));
+				int level = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan().Slice(initTypeLen + 128));
 				var y = SolveRsaChallange(data, initTypeLen, level);
 				if (!y.Ok)
 					return y;
@@ -545,7 +545,7 @@ namespace TS3Client.Full
 			return new S2CPacket(data)
 			{
 				PacketTypeFlagged = data[MacLen + 2],
-				PacketId = BinaryPrimitives.ReadUInt16BigEndian(data.AsReadOnlySpan().Slice(MacLen)),
+				PacketId = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan().Slice(MacLen)),
 			};
 		}
 
@@ -558,7 +558,7 @@ namespace TS3Client.Full
 			{
 				Raw = data,
 				PacketTypeFlagged = data[MacLen + 4],
-				PacketId = BinaryPrimitives.ReadUInt16BigEndian(data.AsReadOnlySpan().Slice(MacLen)),
+				PacketId = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan().Slice(MacLen)),
 			};
 		}
 

@@ -6,17 +6,20 @@
 //
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+
 namespace TS3Client.Full.Book
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
-	using System.Threading.Tasks;
-
 	public struct MaxFamilyClients
 	{
+		public ushort MaxFamiliyClients { get; internal set; }
+		public MaxFamilyClientsKind LimitKind { get; internal set; }
+	}
 
+	public enum MaxFamilyClientsKind
+	{
+		Unlimited,
+		Inherited,
+		Limited,
 	}
 
 	public enum ChannelType

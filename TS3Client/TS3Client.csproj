@@ -62,12 +62,15 @@
       <HintPath>..\packages\NLog.4.5.2\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.5.0-preview2-26406-04\lib\netstandard1.1\System.Buffers.dll</HintPath>
+    </Reference>
     <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Memory.4.5.0-preview1-26216-02\lib\netstandard1.1\System.Memory.dll</HintPath>
+      <HintPath>..\packages\System.Memory.4.5.0-preview2-26406-04\lib\netstandard1.1\System.Memory.dll</HintPath>
     </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0-preview1-26216-02\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0-preview2-26406-04\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
@@ -88,6 +91,7 @@
     <Compile Include="Audio\AudioPipeExtensions.cs" />
     <Compile Include="Audio\EncoderPipe.cs" />
     <Compile Include="Audio\Opus\NativeMethods.cs" />
+    <Compile Include="Full\Book\Book.cs" />
     <Compile Include="Full\Book\SpecialTypes.cs" />
     <Compile Include="Full\License.cs" />
     <Compile Include="Generated\Book.cs">
@@ -99,6 +103,11 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Errors.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Generated\M2B.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>M2B.tt</DependentUpon>
     </Compile>
     <Compile Include="Generated\Permissions.cs">
       <AutoGen>True</AutoGen>
@@ -160,10 +169,12 @@
   <ItemGroup>
     <None Include="Declarations\BookDeclarations.toml" />
     <None Include="Declarations\Messages.toml" />
+    <None Include="Declarations\MessagesToBook.toml" />
     <None Include="Declarations\Versions.csv" />
     <None Include="Audio\Opus\LICENSE" />
     <None Include="Audio\Opus\OPUS_LICENSE" />
     <None Include="Audio\Opus\README" />
+    <None Include="Generated\M2BParser.ttinclude" />
     <None Include="Generated\BookParser.ttinclude" />
     <None Include="Generated\MessageParser.ttinclude" />
     <None Include="Generated\Util.ttinclude" />
@@ -174,7 +185,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Declarations\Errors.csv" />
-    <Content Include="Declarations\MessagesToBook.txt" />
     <Content Include="Declarations\Permissions.csv" />
     <None Include="Generated\ErrorParser.ttinclude" />
     <Content Include="Generated\Book.tt">
@@ -184,6 +194,10 @@
     <Content Include="Generated\Errors.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Errors.cs</LastGenOutput>
+    </Content>
+    <Content Include="Generated\M2B.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>M2B.cs</LastGenOutput>
     </Content>
     <Content Include="Generated\Messages.tt">
       <Generator>TextTemplatingFileGenerator</Generator>

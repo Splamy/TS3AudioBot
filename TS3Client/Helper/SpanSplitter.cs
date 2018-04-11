@@ -22,7 +22,7 @@ namespace TS3Client.Helper
 		public ReadOnlySpan<char> First(string str, char split)
 		{
 			splitchar = split;
-			var span = str.AsReadOnlySpan();
+			var span = str.AsSpan();
 			NextIndex = span.IndexOf(split);
 			return span;
 		}

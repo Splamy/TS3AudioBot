@@ -29,13 +29,13 @@ var gen = Messages.Parse(Host.ResolvePath("../Declarations/Messages.toml"));
 string GenerateDeserializer(Messages.Field fld)
 {
 	if(fld.isArray)
-		return $"{{ if(value.Length == 0) {fld.prettyClean} = Array.Empty<{fld.type}>(); else {{"
+		return $"{{ if(value.Length == 0) {fld.pretty} = Array.Empty<{fld.type}>(); else {{"
 			 + $" var ss = new SpanSplitter(); ss.First(value, ',');"
 			 + $" int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++;"
-			 + $" {fld.prettyClean} = new {fld.type}[cnt + 1];"
-			 + $" for(int i = 0; i < cnt + 1; i++) {{ {GenerateSingleDeserializer(fld, "ss.Trim(value)", fld.prettyClean + "[i]")} if (i < cnt) value = ss.Next(value); }} }} }}";
+			 + $" {fld.pretty} = new {fld.type}[cnt + 1];"
+			 + $" for(int i = 0; i < cnt + 1; i++) {{ {GenerateSingleDeserializer(fld, "ss.Trim(value)", fld.pretty + "[i]")} if (i < cnt) value = ss.Next(value); }} }} }}";
 	else
-		return GenerateSingleDeserializer(fld, "value", fld.prettyClean);
+		return GenerateSingleDeserializer(fld, "value", fld.pretty);
 }
 
 Dictionary<string, string> BackingTypes = new Dictionary<string, string>() {

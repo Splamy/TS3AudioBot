@@ -55,7 +55,6 @@ public class Messages
 		public string doc { get; set; }
 
 		public bool isArray => mod == "array";
-		public string prettyClean => pretty.Trim('?');
 		public string typeFin => type + (isArray ? "[]" : "");
 	}
 
