@@ -19,13 +19,11 @@ namespace TS3Client
 	using System.Net;
 
 	using CmdR = E<Messages.CommandError>;
-
-	using ClientUidT = System.String;
+	
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
 	using ChannelIdT = System.UInt64;
 	using ServerGroupIdT = System.UInt64;
-	using ChannelGroupIdT = System.UInt64;
 
 	public delegate void NotifyEventHandler<in TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
 

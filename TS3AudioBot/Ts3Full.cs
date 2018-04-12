@@ -39,11 +39,16 @@ namespace TS3AudioBot
 			"Notice me, senpai", ":wq"
 		};
 
-		private bool connecting = false;
-		public bool HasConnection => tsFullClient.Connected || tsFullClient.Connecting || connecting;
+		private TickWorker reconnectTick = null;
+		public static readonly TimeSpan TooManyClonesReconnectDelay = TimeSpan.FromSeconds(30);
+		private int reconnectCounter;
+		private static readonly TimeSpan[] LostConnectionReconnectDelay = new[] {
+			TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10),
+			TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5) };
+		private static int MaxReconnects { get; } = LostConnectionReconnectDelay.Length;
 
 		public override event EventHandler<EventArgs> OnBotConnected;
-		public override event EventHandler OnBotDisconnect;
+		public override event EventHandler<DisconnectEventArgs> OnBotDisconnect;
 
 		private readonly Ts3FullClientData ts3FullClientData;
 
@@ -60,6 +65,9 @@ namespace TS3AudioBot
 		public Ts3Full(Ts3FullClientData tfcd) : base(ClientType.Full)
 		{
 			tsFullClient = (Ts3FullClient)tsBaseClient;
+			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
+			tsFullClient.OnConnected += TsFullClient_OnConnected;
+			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
 
 			ts3FullClientData = tfcd;
 			tfcd.PropertyChanged += Tfcd_PropertyChanged;
@@ -98,7 +106,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public override void Connect()
+		public override R Connect()
 		{
 			// get or compute identity
 			if (string.IsNullOrEmpty(ts3FullClientData.Identity))
@@ -113,7 +121,7 @@ namespace TS3AudioBot
 				if (!identityResult.Ok)
 				{
 					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it.");
-					return;
+					return "Corrupted identity";
 				}
 				identity = identityResult.Value;
 				if (ts3FullClientData.Identity != identity.PrivateKeyString)
@@ -139,14 +147,13 @@ namespace TS3AudioBot
 			}
 
 			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
-			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
-			tsFullClient.OnConnected += TsFullClient_OnConnected;
-			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
-			ConnectClient();
+			return ConnectClient();
 		}
 
-		private void ConnectClient()
+		private R ConnectClient()
 		{
+			StopReconnectTickWorker();
+
 			VersionSign verionSign = null;
 			if (!string.IsNullOrEmpty(ts3FullClientData.ClientVersion))
 			{
@@ -174,18 +181,26 @@ namespace TS3AudioBot
 			else
 				verionSign = VersionSign.VER_WIN_3_1_8;
 
-			connecting = true;
-			tsFullClient.Connect(new ConnectionDataFull
+			try
 			{
-				Username = ts3FullClientData.DefaultNickname,
-				ServerPassword = ts3FullClientData.ServerPasswordIsHashed
+				tsFullClient.Connect(new ConnectionDataFull
+				{
+					Username = ts3FullClientData.DefaultNickname,
+					ServerPassword = ts3FullClientData.ServerPasswordIsHashed
 					? Password.FromHash(ts3FullClientData.ServerPassword)
 					: Password.FromPlain(ts3FullClientData.ServerPassword),
-				Address = ts3FullClientData.Address,
-				Identity = identity,
-				VersionSign = verionSign,
-				DefaultChannel = ts3FullClientData.DefaultChannel,
-			});
+					Address = ts3FullClientData.Address,
+					Identity = identity,
+					VersionSign = verionSign,
+					DefaultChannel = ts3FullClientData.DefaultChannel,
+				});
+				return R.OkR;
+			}
+			catch (Ts3Exception qcex)
+			{
+				Log.Info(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
+				return "Connect error";
+			}
 		}
 
 		private void TsFullClient_OnErrorEvent(object sender, CommandError error)
@@ -220,7 +235,17 @@ namespace TS3AudioBot
 					else
 					{
 						Log.Warn("The server reported that the security level you set is not high enough." +
-								"Increase the value to \"{0}\" or set it to \"auto\" to generate it on demand when connecting.", error.ExtraMessage);
+							"Increase the value to \"{0}\" or set it to \"auto\" to generate it on demand when connecting.", error.ExtraMessage);
+					}
+					break;
+
+				case Ts3ErrorCode.client_too_many_clones_connected:
+					if (reconnectCounter++ < MaxReconnects)
+					{
+						Log.Warn("Seems like another client with the same identity is already connected. Waiting {0:0} seconds to reconnect.",
+							TooManyClonesReconnectDelay.TotalSeconds);
+						reconnectTick = TickPool.RegisterTickOnce(() => ConnectClient(), TooManyClonesReconnectDelay);
+						return; // skip triggering event, we want to reconnect
 					}
 					break;
 
@@ -232,15 +257,27 @@ namespace TS3AudioBot
 			else
 			{
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
+
+				if (reconnectCounter < LostConnectionReconnectDelay.Length)
+				{
+					var delay = LostConnectionReconnectDelay[reconnectCounter++];
+					Log.Info("Trying to reconnect. Delaying reconnect for {0:0} seconds", delay.TotalSeconds);
+					reconnectTick = TickPool.RegisterTickOnce(() => ConnectClient(), delay);
+					return;
+				}
 			}
 
-			connecting = false;
-			OnBotDisconnect?.Invoke(this, EventArgs.Empty);
+			if (reconnectCounter >= LostConnectionReconnectDelay.Length)
+			{
+				Log.Warn("Could not (re)connect after {0} tries. Giving up.", reconnectCounter);
+			}
+			OnBotDisconnect?.Invoke(this, e);
 		}
 
 		private void TsFullClient_OnConnected(object sender, EventArgs e)
 		{
-			connecting = false;
+			StopReconnectTickWorker();
+			reconnectCounter = 0;
 			OnBotConnected?.Invoke(this, EventArgs.Empty);
 		}
 
@@ -252,6 +289,14 @@ namespace TS3AudioBot
 				Ts3Crypt.ImproveSecurity(identity, targetLevel);
 				ts3FullClientData.IdentityOffset = identity.ValidKeyOffset;
 			}
+		}
+
+		private void StopReconnectTickWorker()
+		{
+			var reconnectTickLocal = reconnectTick;
+			reconnectTick = null;
+			if (reconnectTickLocal != null)
+				TickPool.UnregisterTicker(reconnectTickLocal);
 		}
 
 		public override R<ClientData> GetSelf()
@@ -346,6 +391,7 @@ namespace TS3AudioBot
 
 		public override void Dispose()
 		{
+			StopReconnectTickWorker();
 			timePipe?.Dispose();
 			ffmpegProducer?.Dispose();
 			encoderPipe?.Dispose();

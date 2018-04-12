@@ -63,7 +63,7 @@ namespace TS3AudioBot
 		}
 
 		public abstract event EventHandler<EventArgs> OnBotConnected;
-		public abstract event EventHandler OnBotDisconnect;
+		public abstract event EventHandler<DisconnectEventArgs> OnBotDisconnect;
 
 		private List<ClientData> clientbuffer;
 		private bool clientbufferOutdated = true;
@@ -93,7 +93,7 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		public abstract void Connect();
+		public abstract R Connect();
 
 		public R SendMessage(string message, ushort clientId)
 		{

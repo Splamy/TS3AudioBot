@@ -126,24 +126,23 @@ namespace TS3AudioBot
 			QueryConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
 			QueryConnection.OnClientDisconnect += OnClientDisconnect;
-			QueryConnection.OnBotDisconnect += (s, e) => Dispose();
 			QueryConnection.OnBotConnected += OnBotConnected;
+			QueryConnection.OnBotDisconnect += OnBotDisconnect;
 			BadgesString = tfcd.ClientBadges;
 
 			// Connect the query after everyting is set up
-			try { QueryConnection.Connect(); }
-			catch (Ts3Exception qcex)
-			{
-				Log.Info(qcex, "There is either a problem with your connection configuration, or the query has not all permissions it needs.");
-				return "Query error";
-			}
-			return R.OkR;
+			return QueryConnection.Connect();
 		}
 
 		private void OnBotConnected(object sender, EventArgs e)
 		{
 			Log.Info("Bot connected.");
-			QueryConnection.ChangeBadges(BadgesString);
+			QueryConnection?.ChangeBadges(BadgesString);
+		}
+
+		private void OnBotDisconnect(object sender, DisconnectEventArgs e)
+		{
+			Dispose();
 		}
 
 		private void TextCallback(object sender, TextMessage textMessage)

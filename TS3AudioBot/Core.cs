@@ -218,7 +218,7 @@ namespace TS3AudioBot
 
 		private void Run()
 		{
-			Bots.WatchBots();
+			Bots.RunBots();
 		}
 
 		public void ExceptionHandler(object sender, UnhandledExceptionEventArgs e)

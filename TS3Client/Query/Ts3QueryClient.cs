@@ -17,13 +17,8 @@ namespace TS3Client.Query
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Net.Sockets;
-
-	using ClientUidT = System.String;
-	using ClientDbIdT = System.UInt64;
-	using ClientIdT = System.UInt16;
+	
 	using ChannelIdT = System.UInt64;
-	using ServerGroupIdT = System.UInt64;
-	using ChannelGroupIdT = System.UInt64;
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{

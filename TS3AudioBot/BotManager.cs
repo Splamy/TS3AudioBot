@@ -32,46 +32,13 @@ namespace TS3AudioBot
 			Util.Init(out activeBots);
 		}
 
-		public void WatchBots()
+		public void RunBots()
 		{
-			while (isRunning)
+			// TODO Rework with new config
+			if (CreateBot() == null)
 			{
-				bool createBot;
-				lock (lockObj)
-				{
-					createBot = activeBots.Count == 0;
-				}
-
-				if (createBot && CreateBot() != null)
-				{
-					Thread.Sleep(1000);
-				}
-
-				CleanStrayBots();
-				Thread.Sleep(1000);
+				Log.Error("Default bot could not connect.");
 			}
-		}
-
-		private void CleanStrayBots()
-		{
-			List<Bot> strayList = null;
-			lock (lockObj)
-			{
-				foreach (var bot in activeBots)
-				{
-					var botFull = bot.QueryConnection as Ts3Full;
-					if (!botFull.HasConnection)
-					{
-						Log.Warn("Cleaning up stray bot.");
-						strayList = strayList ?? new List<Bot>();
-						strayList.Add(bot);
-					}
-				}
-			}
-
-			if (strayList != null)
-				foreach (var bot in strayList)
-					StopBot(bot);
 		}
 
 		public BotInfo CreateBot(/*Ts3FullClientData bot*/)
