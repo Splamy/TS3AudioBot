@@ -113,6 +113,7 @@ namespace TS3AudioBot.History
 						Log.Warn("AudioLogEntry could not be created! ({0})", createResult.Error);
 						return R.Err;
 					}
+					ale = createResult.Value;
 				}
 				else
 				{
