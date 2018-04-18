@@ -126,18 +126,18 @@ namespace TS3AudioBot.Helper
 			return unchecked((int)uval);
 		}
 
-		public static void UnwrapThrow(this R r)
+		public static void UnwrapThrow(this E<Localization.LocalStr> r)
 		{
 			if (!r.Ok)
-				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
-		public static T UnwrapThrow<T>(this R<T> r)
+		public static T UnwrapThrow<T>(this R<T, Localization.LocalStr> r)
 		{
 			if (r.Ok)
 				return r.Value;
 			else
-				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
 		public static string UnrollException(this Exception ex)
@@ -162,12 +162,12 @@ namespace TS3AudioBot.Helper
 		public static R<T> TryCast<T>(this JToken token, string key)
 		{
 			if (token == null)
-				return "No json token";
+				return R.Err;
 			var value = token.SelectToken(key);
 			if (value == null)
-				return "Key not found";
+				return R.Err;
 			try { return value.ToObject<T>(); }
-			catch (JsonReaderException) { return "Invalid type"; }
+			catch (JsonReaderException) { return R.Err; }
 		}
 	}
 

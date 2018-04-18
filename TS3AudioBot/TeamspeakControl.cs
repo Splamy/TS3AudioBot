@@ -9,8 +9,9 @@
 
 namespace TS3AudioBot
 {
-	using RExtensions;
 	using Helper;
+	using Localization;
+	using RExtensions;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -29,9 +30,9 @@ namespace TS3AudioBot
 		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)
 		{
 			if (OnMessageReceived == null) return;
+			var me = GetSelf();
 			foreach (var evData in eventArgs)
 			{
-				var me = GetSelf();
 				if (me.Ok && evData.InvokerId == me.Value.ClientId)
 					continue;
 				OnMessageReceived?.Invoke(sender, evData);
@@ -93,70 +94,69 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		public abstract R Connect();
+		public abstract E<string> Connect();
 
-		public R SendMessage(string message, ushort clientId)
+		public E<LocalStr> SendMessage(string message, ushort clientId)
 		{
 			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
-				return "The message to send is longer than the maximum of " + Ts3Const.MaxSizeTextMessage + " characters";
-			return tsBaseClient.SendPrivateMessage(message, clientId).ToR(Extensions.ErrorFormat);
+				return new LocalStr(strings.error_ts_msg_too_long);
+			return tsBaseClient.SendPrivateMessage(message, clientId).FormatLocal();
 		}
 
-		public R SendChannelMessage(string message)
+		public E<LocalStr> SendChannelMessage(string message)
 		{
 			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
-				return "The message to send is longer than the maximum of " + Ts3Const.MaxSizeTextMessage + " characters";
-			return tsBaseClient.SendChannelMessage(message).ToR(Extensions.ErrorFormat);
+				return new LocalStr(strings.error_ts_msg_too_long);
+			return tsBaseClient.SendChannelMessage(message).FormatLocal();
 		}
 
-		public R SendServerMessage(string message)
+		public E<LocalStr> SendServerMessage(string message)
 		{
 			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
-				return "The message to send is longer than the maximum of " + Ts3Const.MaxSizeTextMessage + " characters";
-			return tsBaseClient.SendServerMessage(message, 1).ToR(Extensions.ErrorFormat);
+				return new LocalStr(strings.error_ts_msg_too_long);
+			return tsBaseClient.SendServerMessage(message, 1).FormatLocal();
 		}
 
-		public R KickClientFromServer(ushort clientId) => tsBaseClient.KickClientFromServer(new[] { clientId }).ToR(Extensions.ErrorFormat);
-		public R KickClientFromChannel(ushort clientId) => tsBaseClient.KickClientFromChannel(new[] { clientId }).ToR(Extensions.ErrorFormat);
+		public E<LocalStr> KickClientFromServer(ushort clientId) => tsBaseClient.KickClientFromServer(new[] { clientId }).FormatLocal();
+		public E<LocalStr> KickClientFromChannel(ushort clientId) => tsBaseClient.KickClientFromChannel(new[] { clientId }).FormatLocal();
 
-		public R ChangeDescription(string description)
+		public E<LocalStr> ChangeDescription(string description)
 		{
 			var me = GetSelf();
 			if (!me.Ok)
-				return "Internal error (me==null)";
-
-			return tsBaseClient.ChangeDescription(description, me.Value.ClientId).ToR(Extensions.ErrorFormat);
+				return LocalStr.Empty;
+			return tsBaseClient.ChangeDescription(description, me.Value.ClientId).FormatLocal();
 		}
 
-		public R ChangeBadges(string badgesString) => tsBaseClient.ChangeBadges(badgesString).ToR(Extensions.ErrorFormat);
+		public E<LocalStr> ChangeBadges(string badgesString) => tsBaseClient.ChangeBadges(badgesString).FormatLocal();
 
-		public R ChangeName(string name)
+		public E<LocalStr> ChangeName(string name)
 		{
 			var result = tsBaseClient.ChangeName(name);
 			if (result.Ok)
-				return R.OkR;
+				return R.Ok;
 
 			if (result.Error.Id == Ts3ErrorCode.parameter_invalid_size)
-				return "The new name is too long or invalid";
+				return new LocalStr(strings.error_ts_invalid_name);
 			else
-				return result.Error.ErrorFormat();
+				return result.Error.FormatLocal();
 		}
 
-		public R<ClientData> GetClientById(ushort id)
+		public R<ClientData, LocalStr> GetClientById(ushort id)
 		{
 			var result = ClientBufferRequest(client => client.ClientId == id);
 			if (result.Ok) return result;
-			Log.Debug("Slow double request due to missing or wrong permission configuration!");
+			Log.Warn("Slow double request due to missing or wrong permission configuration!");
 			var result2 = tsBaseClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
 			if (!result2.Ok)
-				return "No client found";
+				return new LocalStr(strings.error_ts_no_client_found);
 			ClientData cd = result2.Value;
 			cd.ClientId = id;
 			clientbuffer.Add(cd);
 			return cd;
 		}
 
-		public R<ClientData> GetClientByName(string name)
+		public R<ClientData, LocalStr> GetClientByName(string name)
 		{
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
@@ -164,78 +164,90 @@ namespace TS3AudioBot
 			var clients = Algorithm.Filter.DefaultAlgorithm.Filter(
 				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.Name, cb)), name).ToArray();
 			if (clients.Length <= 0)
-				return "No client found";
+				return new LocalStr(strings.error_ts_no_client_found);
 			return clients[0].Value;
 		}
 
-		private R<ClientData> ClientBufferRequest(Func<ClientData, bool> pred)
+		private R<ClientData, LocalStr> ClientBufferRequest(Func<ClientData, bool> pred)
 		{
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
 				return refreshResult.Error;
 			var clientData = clientbuffer.FirstOrDefault(pred);
 			if (clientData == null)
-				return "No client found";
+				return new LocalStr(strings.error_ts_no_client_found);
 			return clientData;
 		}
 
 		public abstract R<ClientData> GetSelf();
 
-		public R RefreshClientBuffer(bool force)
+		public E<LocalStr> RefreshClientBuffer(bool force)
 		{
 			if (clientbufferOutdated || force)
 			{
 				var result = tsBaseClient.ClientList(ClientListOptions.uid);
 				if (!result)
-					return $"Clientlist failed ({result.Error.ErrorFormat()})";
+				{
+					Log.Debug("Clientlist failed ({0})", result.Error.ErrorFormat());
+					return result.Error.FormatLocal();
+				}
 				clientbuffer = result.Value.ToList();
 				clientbufferOutdated = false;
 			}
-			return R.OkR;
+			return R.Ok;
 		}
 
-		public R<ulong[]> GetClientServerGroups(ulong dbId)
+		public R<ulong[], LocalStr> GetClientServerGroups(ulong dbId)
 		{
 			var result = tsBaseClient.ServerGroupsByClientDbId(dbId);
 			if (!result.Ok)
-				return "No client found.";
+				return new LocalStr(strings.error_ts_no_client_found);
 			return result.Value.Select(csg => csg.ServerGroupId).ToArray();
 		}
 
-		public R<ClientDbData> GetDbClientByDbId(ulong clientDbId)
+		public R<ClientDbData, LocalStr> GetDbClientByDbId(ulong clientDbId)
 		{
 			if (clientDbNames.TryGetValue(clientDbId, out var clientData))
 				return clientData;
 
 			var result = tsBaseClient.ClientDbInfo(clientDbId);
 			if (!result.Ok)
-				return "No client found.";
+				return new LocalStr(strings.error_ts_no_client_found);
 			clientData = result.Value;
 			clientDbNames.Store(clientDbId, clientData);
 			return clientData;
 		}
 
-		public R<ClientInfo> GetClientInfoById(ushort id) => tsBaseClient.ClientInfo(id).ToR("No client found.");
+		public R<ClientInfo, LocalStr> GetClientInfoById(ushort id) => tsBaseClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
 
-		internal R SetupRights(string key, MainBotData mainBotData)
+		internal bool SetupRights(string key, MainBotData mainBotData)
 		{
-			var me = GetSelf();
-			if (!me.Ok)
-				return me.Error;
+			// TODO get own dbid !!!
+			var me = GetSelf().Unwrap();
 
 			// Check all own server groups
-			var result = GetClientServerGroups(me.Value.DatabaseId);
-			var groups = result.Ok ? result.Value : Array.Empty<ulong>();
+			var getGroupResult = GetClientServerGroups(me.DatabaseId);
+			var groups = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ulong>();
 
 			// Add self to master group (via token)
 			if (!string.IsNullOrEmpty(key))
-				tsBaseClient.PrivilegeKeyUse(key);
+			{
+				var privKeyUseResult = tsBaseClient.PrivilegeKeyUse(key);
+				if (!privKeyUseResult.Ok)
+				{
+					Log.Error("Using privilege key failed ({0})", privKeyUseResult.Error.ErrorFormat());
+					return false;
+				}
+			}
 
 			// Remember new group (or check if in new group at all)
-			if (result.Ok)
-				result = GetClientServerGroups(me.Value.DatabaseId);
-			var groupsNew = result.Ok ? result.Value : Array.Empty<ulong>();
-			var groupDiff = groupsNew.Except(groups).ToArray();
+			var groupDiff = Array.Empty<ulong>();
+			if (getGroupResult.Ok)
+			{
+				getGroupResult = GetClientServerGroups(me.DatabaseId);
+				var groupsNew = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ulong>();
+				groupDiff = groupsNew.Except(groups).ToArray();
+			}
 
 			if (mainBotData.BotGroupId == 0)
 			{
@@ -246,7 +258,9 @@ namespace TS3AudioBot
 					mainBotData.BotGroupId = botGroup.Value.ServerGroupId;
 
 					// Add self to new group
-					tsBaseClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, me.Value.DatabaseId);
+					var grpresult = tsBaseClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, me.DatabaseId);
+					if (!grpresult.Ok)
+						Log.Error("Adding group failed ({0})", grpresult.Error.ErrorFormat());
 				}
 			}
 
@@ -291,11 +305,11 @@ namespace TS3AudioBot
 				},
 				new[] {
 					max, max,   1,   1,
-						1,   1,   1,   1,
+					  1,   1,   1,   1,
 					max,   1, max,   1,
-						1, max, max,   4,
-						1,   1,   1,   1,
-						1,   1, max,   1,
+					  1, max, max,   4,
+					  1,   1,   1,   1,
+					  1,   1, max,   1,
 					ava,   1,
 				},
 				new[] {
@@ -317,43 +331,44 @@ namespace TS3AudioBot
 					false, false,
 				});
 
+			if (!permresult)
+				Log.Error("Adding permissions failed ({0})", permresult.Error.ErrorFormat());
+
 			// Leave master group again
 			if (groupDiff.Length > 0)
 			{
 				foreach (var grp in groupDiff)
-					tsBaseClient.ServerGroupDelClient(grp, me.Value.DatabaseId);
+				{
+					var grpresult = tsBaseClient.ServerGroupDelClient(grp, me.DatabaseId);
+					if (!grpresult.Ok)
+						Log.Error("Removing group failed ({0})", grpresult.Error.ErrorFormat());
+				}
 			}
 
-			if (!result)
-			{
-				Log.Warn(permresult.Error.ErrorFormat());
-				return "Auto setup failed! (See logs for more details)";
-			}
-
-			return R.OkR;
+			return true;
 		}
 
-		public R UploadAvatar(System.IO.Stream stream) => tsBaseClient.UploadAvatar(stream).ToR(Extensions.ErrorFormat);
+		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => tsBaseClient.UploadAvatar(stream).FormatLocal();
 
-		public R MoveTo(ulong channelId, string password = null)
+		public E<LocalStr> MoveTo(ulong channelId, string password = null)
 		{
 			var me = GetSelf();
 			if (!me.Ok)
-				return me.Error;
-			return tsBaseClient.ClientMove(me.Value.ClientId, channelId, password).ToR("Cannot move there.");
+				return LocalStr.Empty;
+			return tsBaseClient.ClientMove(me.Value.ClientId, channelId, password).FormatLocal(() => strings.error_ts_cannot_move);
 		}
 
-		public R SetChannelCommander(bool isCommander)
+		public E<LocalStr> SetChannelCommander(bool isCommander)
 		{
 			if (!(tsBaseClient is Ts3FullClient tsFullClient))
-				return "Commander mode not available";
-			return tsFullClient.ChangeIsChannelCommander(isCommander).ToR("Cannot set commander mode");
+				return new LocalStr(strings.error_feature_unavailable);
+			return tsFullClient.ChangeIsChannelCommander(isCommander).FormatLocal(() => strings.error_ts_cannot_set_commander);
 		}
-		public R<bool> IsChannelCommander()
+		public R<bool, LocalStr> IsChannelCommander()
 		{
 			var me = GetSelf();
 			if (!me.Ok)
-				return me.Error;
+				return LocalStr.Empty;
 			var getInfoResult = GetClientInfoById(me.Value.ClientId);
 			if (!getInfoResult.Ok)
 				return getInfoResult.Error;
@@ -374,36 +389,29 @@ namespace TS3AudioBot
 	{
 		internal static class RExtentions
 		{
-			public static R ToR<TE>(this E<TE> result, string message)
+			public static R<T, LocalStr> FormatLocal<T>(this R<T, CommandError> cmdErr, Func<string> prefix = null)
 			{
-				if (!result.Ok)
-					return R.Err(message);
-				else
-					return R.OkR;
+				if (cmdErr.Ok)
+					return cmdErr.Value;
+				return cmdErr.Error.FormatLocal(prefix);
 			}
 
-			public static R ToR<TE>(this E<TE> result, Func<TE, string> fromError)
+			public static E<LocalStr> FormatLocal(this E<CommandError> cmdErr, Func<string> prefix = null)
 			{
-				if (!result.Ok)
-					return R.Err(fromError(result.Error));
-				else
-					return R.OkR;
+				if (cmdErr.Ok)
+					return R.Ok;
+				return cmdErr.Error.FormatLocal(prefix);
 			}
 
-			public static R<T> ToR<T, TE>(this R<T, TE> result, string message)
+			public static LocalStr FormatLocal(this CommandError err, Func<string> prefix = null)
 			{
-				if (!result.Ok)
-					return R<T>.Err(message);
-				else
-					return R<T>.OkR(result.Value);
-			}
+				var str = LocalizationManager.GetString("error_ts_code_" + (uint)err.Id);
+				if (str == null)
+					str = $"{strings.error_ts_unknown_error} ({err.Message})";
 
-			public static R<T> ToR<T, TE>(this R<T, TE> result, Func<TE, string> fromError)
-			{
-				if (!result.Ok)
-					return R<T>.Err(fromError(result.Error));
-				else
-					return R<T>.OkR(result.Value);
+				if (prefix != null)
+					str = $"{prefix()} ({str})";
+				return new LocalStr(str);
 			}
 		}
 	}

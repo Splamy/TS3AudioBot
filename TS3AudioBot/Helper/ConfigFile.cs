@@ -9,14 +9,15 @@
 
 namespace TS3AudioBot.Helper
 {
+	using Localization;
 	using PropertyChanged;
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
 	using System.Globalization;
 	using System.IO;
-	using System.Reflection;
 	using System.Linq;
+	using System.Reflection;
 
 	public abstract class ConfigFile
 	{
@@ -117,14 +118,14 @@ namespace TS3AudioBot.Helper
 			confObjects.Add(obj.AssociatedClass, obj);
 		}
 
-		public R SetSetting(string key, string value)
+		public E<LocalStr> SetSetting(string key, string value)
 		{
 			if (string.IsNullOrEmpty(value))
 				throw new ArgumentNullException(nameof(value));
 
 			string[] keyParam = key.Split(new[] { NameSeperator }, StringSplitOptions.None);
 			if (!confObjects.TryGetValue(keyParam[0], out var co))
-				return "No active entries found for this key";
+				return new LocalStr(strings.error_config_no_key_found);
 
 			object convertedValue;
 			PropertyInfo prop = co.GetType().GetProperty(keyParam[1], BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
@@ -134,11 +135,11 @@ namespace TS3AudioBot.Helper
 			}
 			catch (Exception ex) when (ex is FormatException || ex is OverflowException)
 			{
-				return "The value could not be parsed";
+				return new LocalStr(strings.error_config_value_parse_error);
 			}
 			prop.SetValue(co, convertedValue);
 			WriteValueToConfig(key, convertedValue);
-			return R.OkR;
+			return R.Ok;
 		}
 
 		protected void WriteValueToConfig(string entryName, object value)

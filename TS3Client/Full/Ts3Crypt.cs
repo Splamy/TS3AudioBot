@@ -85,7 +85,7 @@ namespace TS3Client.Full
 		/// <param name="keyOffset">A number which determines the security level of an identity.</param>
 		/// <param name="lastCheckedKeyOffset">The last brute forced number. Default 0: will take the current keyOffset.</param>
 		/// <returns>The identity information.</returns>
-		public static R<IdentityData> LoadIdentityDynamic(string key, ulong keyOffset = 0, ulong lastCheckedKeyOffset = 0)
+		public static R<IdentityData, string> LoadIdentityDynamic(string key, ulong keyOffset = 0, ulong lastCheckedKeyOffset = 0)
 		{
 			var ts3identity = DeobfuscateAndImportTs3Identity(key);
 			if (ts3identity.Ok)
@@ -99,7 +99,7 @@ namespace TS3Client.Full
 		/// <param name="keyOffset">A number which determines the security level of an identity.</param>
 		/// <param name="lastCheckedKeyOffset">The last brute forced number. Default 0: will take the current keyOffset.</param>
 		/// <returns>The identity information.</returns>
-		public static R<IdentityData> LoadIdentity(string key, ulong keyOffset, ulong lastCheckedKeyOffset = 0)
+		public static R<IdentityData, string> LoadIdentity(string key, ulong keyOffset, ulong lastCheckedKeyOffset = 0)
 		{
 			// Note: libtomcrypt stores the private AND public key when exporting a private key
 			// This makes importing very convenient :)
@@ -124,7 +124,7 @@ namespace TS3Client.Full
 
 		private static readonly ECKeyGenerationParameters KeyGenParams = new ECKeyGenerationParameters(X9ObjectIdentifiers.Prime256v1, new SecureRandom());
 
-		private static R<ECPoint> ImportPublicKey(byte[] asnByteArray)
+		private static R<ECPoint, string> ImportPublicKey(byte[] asnByteArray)
 		{
 			try
 			{
@@ -138,7 +138,7 @@ namespace TS3Client.Full
 			catch (Exception) { return "Could not import public key"; }
 		}
 
-		private static R<(ECPoint publicKey, BigInteger privateKey)> ImportKeyDynamic(byte[] asnByteArray)
+		private static R<(ECPoint publicKey, BigInteger privateKey), string> ImportKeyDynamic(byte[] asnByteArray)
 		{
 			BigInteger privateKey = null;
 			ECPoint publicKey = null;
@@ -211,7 +211,7 @@ namespace TS3Client.Full
 
 		private static readonly byte[] Ts3IdentityObfuscationKey = Encoding.ASCII.GetBytes("b9dfaa7bee6ac57ac7b65f1094a1c155e747327bc2fe5d51c512023fe54a280201004e90ad1daaae1075d53b7d571c30e063b5a62a4a017bb394833aa0983e6e");
 
-		public static R<IdentityData> DeobfuscateAndImportTs3Identity(string identity)
+		public static R<IdentityData, string> DeobfuscateAndImportTs3Identity(string identity)
 		{
 			var match = IdentityRegex.Match(identity);
 			if (!match.Success)
@@ -253,7 +253,7 @@ namespace TS3Client.Full
 		/// <param name="alpha">The alpha key from clientinit encoded in base64.</param>
 		/// <param name="beta">The beta key from clientinit encoded in base64.</param>
 		/// <param name="omega">The omega key from clientinit encoded in base64.</param>
-		internal R CryptoInit(string alpha, string beta, string omega)
+		internal E<string> CryptoInit(string alpha, string beta, string omega)
 		{
 			if (Identity == null)
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
@@ -292,7 +292,7 @@ namespace TS3Client.Full
 		/// <param name="alpha">The alpha key from clientinit.</param>
 		/// <param name="beta">The beta key from clientinit.</param>
 		/// <param name="sharedKey">The omega key from clientinit.</param>
-		private R SetSharedSecret(ReadOnlySpan<byte> alpha, ReadOnlySpan<byte> beta, ReadOnlySpan<byte> sharedKey)
+		private E<string> SetSharedSecret(ReadOnlySpan<byte> alpha, ReadOnlySpan<byte> beta, ReadOnlySpan<byte> sharedKey)
 		{
 			if (beta.Length != 10 && beta.Length != 54)
 				return $"Invalid beta size ({beta.Length})";
@@ -310,10 +310,10 @@ namespace TS3Client.Full
 
 			alphaTmp = null;
 			CryptoInitComplete = true;
-			return R.OkR;
+			return R.Ok;
 		}
 
-		internal R CryptoInit2(string license, string omega, string proof, string beta, byte[] privateKey)
+		internal E<string> CryptoInit2(string license, string omega, string proof, string beta, byte[] privateKey)
 		{
 			var licenseBytes = Base64Decode(license);
 			if (!licenseBytes.Ok) return "license parameter is invalid";
@@ -363,7 +363,7 @@ namespace TS3Client.Full
 			return bytes;
 		}
 
-		internal R<byte[]> ProcessInit1(byte[] data)
+		internal R<byte[], string> ProcessInit1(byte[] data)
 		{
 			const int versionLen = 4;
 			const int initTypeLen = 1;
@@ -425,7 +425,7 @@ namespace TS3Client.Full
 				int level = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan().Slice(initTypeLen + 128));
 				var y = SolveRsaChallange(data, initTypeLen, level);
 				if (!y.Ok)
-					return y;
+					return y.Error;
 
 				// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
 				sendData = new byte[versionLen + initTypeLen + 232 + 64 + textBytes.Length];
@@ -451,7 +451,7 @@ namespace TS3Client.Full
 		/// <param name="offset">The offset of x and n in the data array.</param>
 		/// <param name="level">The exponent to x.</param>
 		/// <returns>The y value, unsigned, as a BigInteger bytearray.</returns>
-		private static R<byte[]> SolveRsaChallange(byte[] data, int offset, int level)
+		private static R<byte[], string> SolveRsaChallange(byte[] data, int offset, int level)
 		{
 			if (level < 0 || level > 1_000_000)
 				return "RSA challange level is not within an acceptable range";
@@ -750,7 +750,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private static R<byte[]> Base64Decode(string str)
+		private static R<byte[], string> Base64Decode(string str)
 		{
 			try { return Convert.FromBase64String(str); }
 			catch (FormatException) { return "Malformed base64 string"; }

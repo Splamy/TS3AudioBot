@@ -182,7 +182,7 @@ namespace TS3AudioBot.CommandSystem
 				GenerateError(result.Error, com as BotCommand);
 		}
 
-		private R<CommandGroup> BuildAndGet(IEnumerable<string> comPath)
+		private R<CommandGroup, string> BuildAndGet(IEnumerable<string> comPath)
 		{
 			CommandGroup group = CommandSystem.RootCommand;
 			// this for loop iterates through the seperate names of
@@ -222,7 +222,7 @@ namespace TS3AudioBot.CommandSystem
 			return group;
 		}
 
-		private static R InsertInto(CommandGroup group, ICommand com, string name)
+		private static E<string> InsertInto(CommandGroup group, ICommand com, string name)
 		{
 			var subCommand = group.GetCommand(name);
 
@@ -232,7 +232,7 @@ namespace TS3AudioBot.CommandSystem
 				// the group we are trying to insert has no element with the current
 				// name, so just insert it
 				group.AddCommand(name, com);
-				return R.OkR;
+				return R.Ok;
 
 			case CommandGroup insertCommand:
 				// to add a command to CommandGroup will have to treat it as a subcommand
@@ -243,7 +243,7 @@ namespace TS3AudioBot.CommandSystem
 					insertCommand.AddCommand(string.Empty, com);
 					if (com is BotCommand botCom && botCom.NormalParameters > 0)
 						Log.Warn("\"{0}\" has at least one parameter and won't be reachable due to an overloading function.", botCom.FullQualifiedName);
-					return R.OkR;
+					return R.Ok;
 				}
 				else
 					return "An empty named function under a group cannot be overloaded.";
@@ -273,7 +273,7 @@ namespace TS3AudioBot.CommandSystem
 				return "Unknown node to insert to.";
 			}
 
-			return R.OkR;
+			return R.Ok;
 		}
 
 		private static void GenerateError(string msg, BotCommand involvedCom)

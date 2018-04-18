@@ -23,7 +23,7 @@ namespace TS3AudioBot
 		TimeSpan Length { get; }
 		bool Playing { get; }
 
-		R AudioStart(string url);
-		R AudioStop();
+		E<string> AudioStart(string url);
+		E<string> AudioStop();
 	}
 }

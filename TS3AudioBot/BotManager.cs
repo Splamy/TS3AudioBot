@@ -66,7 +66,7 @@ namespace TS3AudioBot
 					return null;
 				}
 			}
-			return bot.GetInfo();
+			return new BotInfo { Id = bot.Id };
 		}
 
 		public BotLock GetBotLock(int id)

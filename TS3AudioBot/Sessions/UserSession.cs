@@ -47,13 +47,13 @@ namespace TS3AudioBot.Sessions
 			VerifyLock();
 
 			if (assocMap == null)
-				return "Value not set";
+				return R.Err;
 
 			if (!assocMap.TryGetValue(typeof(TAssoc), out object value))
-				return "Value not set";
+				return R.Err;
 
 			if (value?.GetType() != typeof(TData))
-				return "Invalid request type";
+				return R.Err;
 
 			return (TData)value;
 		}

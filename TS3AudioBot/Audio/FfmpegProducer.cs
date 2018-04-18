@@ -46,13 +46,13 @@ namespace TS3AudioBot.Audio
 			audioTimer = new PreciseAudioTimer(this);
 		}
 
-		public R AudioStart(string url) => StartFfmpegProcess(url);
+		public E<string> AudioStart(string url) => StartFfmpegProcess(url);
 
-		public R AudioStop()
+		public E<string> AudioStop()
 		{
 			audioTimer.Stop();
 			StopFfmpegProcess();
-			return R.OkR;
+			return R.Ok;
 		}
 
 		public TimeSpan Length => GetCurrentSongLength();
@@ -125,7 +125,7 @@ namespace TS3AudioBot.Audio
 			return read;
 		}
 
-		public R StartFfmpegProcess(string url, string extraPreParam = null, string extraPostParam = null)
+		public E<string> StartFfmpegProcess(string url, string extraPreParam = null, string extraPostParam = null)
 		{
 			Log.Trace("Start request {0}", url);
 			try
@@ -158,7 +158,7 @@ namespace TS3AudioBot.Audio
 
 					audioTimer.SongPositionOffset = TimeSpan.Zero;
 					audioTimer.Start();
-					return R.OkR;
+					return R.Ok;
 				}
 			}
 			catch (Win32Exception ex) { return $"Ffmpeg could not be found ({ex.Message})"; }

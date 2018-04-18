@@ -218,7 +218,7 @@ namespace TS3AudioBot.Rights
 			}
 		}
 
-		public R<string> ReadText(string text)
+		public R<string, string> ReadText(string text)
 		{
 			try
 			{
@@ -233,7 +233,7 @@ namespace TS3AudioBot.Rights
 					strb.Append(string.Join("\n", rules.Select(x => x.ToString())));
 					if (strb.Length > 900)
 						strb.Length = 900;
-					return R<string>.OkR(strb.ToString());
+					return R<string, string>.OkR(strb.ToString());
 				}
 				else
 				{
@@ -241,12 +241,12 @@ namespace TS3AudioBot.Rights
 						strb.Append("ERR: ").AppendLine(err);
 					if (strb.Length > 900)
 						strb.Length = 900;
-					return R<string>.Err(strb.ToString());
+					return R<string, string>.Err(strb.ToString());
 				}
 			}
 			catch (Exception ex)
 			{
-				return R<string>.Err("The rights file could not be parsed: " + ex.Message);
+				return R<string, string>.Err("The rights file could not be parsed: " + ex.Message);
 			}
 		}
 

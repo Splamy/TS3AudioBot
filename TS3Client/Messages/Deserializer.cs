@@ -54,7 +54,7 @@ namespace TS3Client.Messages
 		private static R<T> ParseKeyValueLine<T>(T qm, string line) where T : IQueryMessage
 		{
 			if (string.IsNullOrWhiteSpace(line))
-				return R<T>.Err("Empty");
+				return R.Err;
 
 			var ss = new SpanSplitter();
 			var lineSpan = ss.First(line, ' ');
@@ -78,7 +78,7 @@ namespace TS3Client.Messages
 				return R<T>.OkR(qm);
 			}
 			catch (Exception ex) { OnError?.Invoke(null, new Error(qm.GetType().Name, line, key.NewString(), value.NewString(), ex)); }
-			return R<T>.Err("Error");
+			return R.Err;
 		}
 
 		public class Error : EventArgs

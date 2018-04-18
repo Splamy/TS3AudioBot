@@ -18,7 +18,7 @@ namespace TS3AudioBot.Helper.AudioTags
 	{
 		const int MaxLineLength = 4096;
 
-		public static R<IReadOnlyList<PlaylistItem>> TryGetData(Stream stream)
+		public static R<IReadOnlyList<PlaylistItem>, string> TryGetData(Stream stream)
 		{
 			var br = new BinaryReader(stream);
 			int read = 1;

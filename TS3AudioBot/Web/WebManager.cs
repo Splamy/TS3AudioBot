@@ -144,6 +144,8 @@ namespace TS3AudioBot.Web
 				return;
 			} // TODO
 
+			Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+
 			while (webListener?.IsListening ?? false)
 			{
 				try

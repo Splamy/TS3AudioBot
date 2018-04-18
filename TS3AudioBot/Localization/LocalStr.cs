@@ -7,14 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.Localization
 {
-	using Localization;
-
-	public interface IPlaylistFactory : IFactory
+	/// <summary>
+	/// Represents a localizable string
+	/// </summary>
+	public struct LocalStr
 	{
-		MatchCertainty MatchPlaylist(string uri);
+		public static readonly LocalStr Empty = new LocalStr(string.Empty);
 
-		R<Playlist, LocalStr> GetPlaylist(string url);
+		public string Str { get; }
+
+		public LocalStr(string str)
+		{
+			Str = str;
+		}
+
+		public override string ToString() => Str;
 	}
 }

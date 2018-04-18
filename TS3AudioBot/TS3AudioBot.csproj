@@ -45,7 +45,7 @@
     <CodeAnalysisRuleSet />
     <DocumentationFile>
     </DocumentationFile>
-    <LangVersion>7</LangVersion>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -97,6 +97,13 @@
     <Compile Include="Audio\StallCheckPipe.cs" />
     <Compile Include="BotManager.cs" />
     <Compile Include="Helper\AttributeStrings.cs" />
+    <Compile Include="Localization\LocalizationManager.cs" />
+    <Compile Include="Localization\LocalStr.cs" />
+    <Compile Include="Localization\strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>strings.resx</DependentUpon>
+    </Compile>
     <Compile Include="MainCommands.cs" />
     <Compile Include="CommandSystem\Ast\AstCommand.cs" />
     <Compile Include="CommandSystem\Ast\AstError.cs" />
@@ -208,6 +215,10 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Media\favicon.ico" />
+    <EmbeddedResource Include="Localization\strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="NLog.config">

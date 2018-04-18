@@ -39,6 +39,7 @@ namespace TS3AudioBot
 			"Notice me, senpai", ":wq"
 		};
 
+		private bool closed = false;
 		private TickWorker reconnectTick = null;
 		public static readonly TimeSpan TooManyClonesReconnectDelay = TimeSpan.FromSeconds(30);
 		private int reconnectCounter;
@@ -106,7 +107,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public override R Connect()
+		public override E<string> Connect()
 		{
 			// get or compute identity
 			if (string.IsNullOrEmpty(ts3FullClientData.Identity))
@@ -150,9 +151,11 @@ namespace TS3AudioBot
 			return ConnectClient();
 		}
 
-		private R ConnectClient()
+		private E<string> ConnectClient()
 		{
 			StopReconnectTickWorker();
+			if (closed)
+				return "Bot disposed";
 
 			VersionSign verionSign = null;
 			if (!string.IsNullOrEmpty(ts3FullClientData.ClientVersion))
@@ -194,7 +197,7 @@ namespace TS3AudioBot
 					VersionSign = verionSign,
 					DefaultChannel = ts3FullClientData.DefaultChannel,
 				});
-				return R.OkR;
+				return R.Ok;
 			}
 			catch (Ts3Exception qcex)
 			{
@@ -258,7 +261,7 @@ namespace TS3AudioBot
 			{
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 
-				if (reconnectCounter < LostConnectionReconnectDelay.Length)
+				if (reconnectCounter < LostConnectionReconnectDelay.Length && !closed)
 				{
 					var delay = LostConnectionReconnectDelay[reconnectCounter++];
 					Log.Info("Trying to reconnect. Delaying reconnect for {0:0} seconds", delay.TotalSeconds);
@@ -306,7 +309,7 @@ namespace TS3AudioBot
 
 			var result = tsBaseClient.WhoAmI();
 			if (!result.Ok)
-				return $"Could not get self ({result.Error.ErrorFormat()})";
+				return R.Err;
 			var data = result.Value;
 			var cd = new ClientData
 			{
@@ -343,7 +346,7 @@ namespace TS3AudioBot
 			remove => ffmpegProducer.OnSongEnd -= value;
 		}
 
-		public R AudioStart(string url)
+		public E<string> AudioStart(string url)
 		{
 			var result = ffmpegProducer.AudioStart(url);
 			if (result)
@@ -351,7 +354,7 @@ namespace TS3AudioBot
 			return result;
 		}
 
-		public R AudioStop()
+		public E<string> AudioStop()
 		{
 			// TODO clean up all mixins
 			timePipe.Paused = true;
@@ -391,6 +394,7 @@ namespace TS3AudioBot
 
 		public override void Dispose()
 		{
+			closed = true;
 			StopReconnectTickWorker();
 			timePipe?.Dispose();
 			ffmpegProducer?.Dispose();

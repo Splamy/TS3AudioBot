@@ -11,6 +11,7 @@ namespace TS3AudioBot
 {
 	using Algorithm;
 	using Helper;
+	using Localization;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -141,7 +142,7 @@ namespace TS3AudioBot
 		public void ClearFreelist() => freeList.Clear();
 		public void ClearTrash() => trashList.Clear();
 
-		public R<Playlist> LoadPlaylist(string name, bool headOnly = false)
+		public R<Playlist, LocalStr> LoadPlaylist(string name, bool headOnly = false)
 		{
 			if (name.StartsWith(".", StringComparison.Ordinal))
 			{
@@ -151,7 +152,7 @@ namespace TS3AudioBot
 			}
 			var fi = GetFileInfo(name);
 			if (!fi.Exists)
-				return "Playlist not found";
+				return new LocalStr(strings.error_playlist_not_found);
 
 			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
 			{
@@ -182,11 +183,19 @@ namespace TS3AudioBot
 
 					case "owner":
 						if (plist.CreatorDbId != null)
-							return "Invalid playlist file: duplicate userid";
+						{
+							Log.Warn("Invalid playlist file: duplicate userid");
+							return new LocalStr(strings.error_playlist_broken_file);
+						}
 						if (ulong.TryParse(value, out var userid))
+						{
 							plist.CreatorDbId = userid;
+						}
 						else
-							return "Broken playlist header";
+						{
+							Log.Warn("Invalid playlist file: invalid userid \"{0}\"", value);
+							return new LocalStr(strings.error_playlist_broken_file);
+						}
 						break;
 					}
 				}
@@ -241,26 +250,27 @@ namespace TS3AudioBot
 			}
 		}
 
-		public R SavePlaylist(Playlist plist)
+		public E<LocalStr> SavePlaylist(Playlist plist)
 		{
 			if (plist == null)
 				throw new ArgumentNullException(nameof(plist));
 
-			if (!IsNameValid(plist.Name))
-				return "Invalid playlist name.";
+			var nameCheck = IsNameValid(plist.Name);
+			if (!nameCheck)
+				return nameCheck.Error;
 
 			var di = new DirectoryInfo(data.PlaylistPath);
 			if (!di.Exists)
-				return "No playlist directory has been set up.";
+				return new LocalStr(strings.error_playlist_no_store_directory);
 
 			var fi = GetFileInfo(plist.Name);
 			if (fi.Exists)
 			{
 				var tempList = LoadPlaylist(plist.Name, true);
 				if (!tempList)
-					return "Existing playlist is corrupted, please use another name or repair the existing.";
+					return new LocalStr(strings.error_playlist_broken_file);
 				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != plist.CreatorDbId)
-					return "You cannot overwrite a playlist which you dont own.";
+					return new LocalStr(strings.error_playlist_cannot_access_not_owned);
 			}
 
 			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
@@ -293,43 +303,43 @@ namespace TS3AudioBot
 				}
 			}
 
-			return R.OkR;
+			return R.Ok;
 		}
 
 		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(data.PlaylistPath, name ?? string.Empty));
 
-		public R DeletePlaylist(string name, ulong requestingClientDbId, bool force = false)
+		public E<LocalStr> DeletePlaylist(string name, ulong requestingClientDbId, bool force = false)
 		{
 			var fi = GetFileInfo(name);
 			if (!fi.Exists)
-				return "Playlist not found";
+				return new LocalStr(strings.error_playlist_not_found);
 			else if (!force)
 			{
 				var tempList = LoadPlaylist(name, true);
 				if (!tempList)
-					return "Existing playlist is corrupted, please use another name or repair the existing.";
+					return new LocalStr(strings.error_playlist_broken_file);
 				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != requestingClientDbId)
-					return "You cannot delete a playlist which you dont own.";
+					return new LocalStr(strings.error_playlist_cannot_access_not_owned);
 			}
 
 			try
 			{
 				fi.Delete();
-				return R.OkR;
+				return R.Ok;
 			}
-			catch (IOException) { return "File still in use"; }
-			catch (System.Security.SecurityException) { return "Missing rights to delete this file"; }
+			catch (IOException) { return new LocalStr(strings.error_io_in_use); }
+			catch (System.Security.SecurityException) { return new LocalStr(strings.error_io_missing_permission); }
 		}
 
-		public static R IsNameValid(string name)
+		public static E<LocalStr> IsNameValid(string name)
 		{
 			if (string.IsNullOrEmpty(name))
-				return "An empty playlist name is not valid";
+				return new LocalStr(strings.error_playlist_name_invalid_empty);
 			if (name.Length >= 64)
-				return "Length must be <64";
+				return new LocalStr(strings.error_playlist_name_invalid_too_long);
 			if (!ValidPlistName.IsMatch(name))
-				return "The new name is invalid please only use [a-zA-Z0-9_-]";
-			return R.OkR;
+				return new LocalStr(strings.error_playlist_name_invalid_character);
+			return R.Ok;
 		}
 
 		public static string CleanseName(string name)
@@ -360,16 +370,16 @@ namespace TS3AudioBot
 			return fileEnu.Select(fi => fi.Name);
 		}
 
-		private R<Playlist> GetSpecialPlaylist(string name)
+		private R<Playlist, LocalStr> GetSpecialPlaylist(string name)
 		{
 			if (!name.StartsWith(".", StringComparison.Ordinal))
-				return "Not a reserved list type.";
+				throw new ArgumentException("Not a reserved list type.", nameof(name));
 
 			switch (name)
 			{
 			case ".queue": return freeList;
 			case ".trash": return trashList;
-			default: return "Special list not found";
+			default: return new LocalStr(strings.error_playlist_special_not_found);
 			}
 		}
 	}

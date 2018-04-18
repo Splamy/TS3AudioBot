@@ -16,25 +16,14 @@ using System;
 /// Provides a safe alternative to Exceptions for error and result wrapping.
 /// This type represents either success or an error + message.
 /// </summary>
-public struct R
+public static class R
 {
-	public static readonly R OkR = new R();
-
-	public bool Ok => Error == null;
-	public string Error { get; }
-
-	private R(string error) { Error = error ?? throw new ArgumentNullException(nameof(error), "Error must not be null."); }
-	/// <summary>Creates a new failed result with a message</summary>
-	/// <param name="error">The message</param>
-	public static R Err(string error) => new R(error);
-
-	public static implicit operator bool(R result) => result.Ok;
-	public static implicit operator string(R result) => result.Error;
-
-	public static implicit operator R(string error) => new R(error);
-
-	public override string ToString() => Error;
+	public static readonly _Ok Ok = new _Ok();
+	public static readonly _Error Err = new _Error();
 }
+
+public struct _Ok { }
+public struct _Error { }
 
 /// <summary>
 /// Provides a safe alternative to Exceptions for error and result wrapping.
@@ -44,33 +33,28 @@ public struct R
 /// <typeparam name="TSuccess">The type of the success value.</typeparam>
 public struct R<TSuccess>
 {
-	private readonly bool isError;
-	public bool Ok => !isError;
-	public string Error { get; }
+	public static readonly R<TSuccess> ErrR = new R<TSuccess>();
+
+	private readonly bool isOk;
+	public bool Ok => isOk;
 	public TSuccess Value { get; }
 
-	private R(TSuccess value) { isError = false; Error = null; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
-	private R(string error) { isError = true; Error = error ?? throw new ArgumentNullException(nameof(error), "Error must not be null."); Value = default; }
-	//internal R(bool isError, TSuccess value)
+	private R(TSuccess value) { isOk = true; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
 
-	/// <summary>Creates a new failed result with a message</summary>
-	/// <param name="error">The message</param>
-	public static R<TSuccess> Err(string error) => new R<TSuccess>(error);
 	/// <summary>Creates a new successful result with a value</summary>
 	/// <param name="value">The value</param>
 	public static R<TSuccess> OkR(TSuccess value) => new R<TSuccess>(value);
 
 	public static implicit operator bool(R<TSuccess> result) => result.Ok;
-	public static implicit operator string(R<TSuccess> result) => result.Error;
 
 	public static implicit operator R<TSuccess>(TSuccess result) => new R<TSuccess>(result);
-	public static implicit operator R<TSuccess>(string error) => new R<TSuccess>(error);
+
+	// Convenience casting
+	public static implicit operator R<TSuccess>(_Error error) => ErrR;
 
 	// Unwrapping
 	public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;
 	public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
-
-	public override string ToString() => Error;
 }
 
 /// <summary>
@@ -130,14 +114,17 @@ public struct E<TError>
 	private E(TError error) { isError = true; if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
 	internal E(bool isError, TError error) { this.isError = isError; Error = error; } // No null check here, we already check cosistently.
 
-	/// <summary>Creates a new failed result with a message</summary>
-	/// <param name="error">The message</param>
+	/// <summary>Creates a new failed result with a error object.</summary>
+	/// <param name="error">The error object.</param>
 	public static E<TError> Err(TError error) => new E<TError>(error);
 
 	public static implicit operator bool(E<TError> result) => result.Ok;
 	public static implicit operator TError(E<TError> result) => result.Error;
 
 	public static implicit operator E<TError>(TError result) => new E<TError>(result);
+
+	// Convenience casting
+	public static implicit operator E<TError>(_Ok error) => OkR;
 
 	// Upwrapping
 	public R<TSuccess, TError> WithValue<TSuccess>(TSuccess value)
@@ -153,7 +140,7 @@ public static class RExtensions
 	{
 		if (obj != null)
 			return R<T>.OkR(obj);
-		return R<T>.Err("Result is empty");
+		return R<T>.ErrR;
 	}
 }
 

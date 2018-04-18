@@ -10,6 +10,8 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Helper;
+	using Localization;
+	using Newtonsoft.Json;
 	using System;
 	using System.Collections.Generic;
 	using System.Collections.Specialized;
@@ -19,7 +21,6 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Web;
-	using Newtonsoft.Json;
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
@@ -46,27 +47,27 @@ namespace TS3AudioBot.ResourceFactories
 
 		MatchCertainty IPlaylistFactory.MatchPlaylist(string link) => ListMatch.IsMatch(link) ? MatchCertainty.Probably : MatchCertainty.Never;
 
-		public R<PlayResource> GetResource(string ytLink)
+		public R<PlayResource, LocalStr> GetResource(string ytLink)
 		{
 			Match matchYtId = IdMatch.Match(ytLink);
 			if (!matchYtId.Success)
-				return "The youtube id could not get parsed.";
+				return new LocalStr(strings.error_media_failed_to_parse_id);
 			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, FactoryFor));
 		}
 
-		public R<PlayResource> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
 		{
 			var result = ResolveResourceInternal(resource);
 			if (result.Ok)
 				return result;
-			
+
 			return YoutubeDlWrapped(resource);
 		}
 
-		private R<PlayResource> ResolveResourceInternal(AudioResource resource)
+		private R<PlayResource, LocalStr> ResolveResourceInternal(AudioResource resource)
 		{
 			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
-				return "No connection to the youtube api could be established";
+				return new LocalStr(strings.error_net_no_connection);
 
 			var videoTypes = new List<VideoData>();
 			NameValueCollection dataParse = HttpUtility.ParseQueryString(resulthtml);
@@ -142,11 +143,11 @@ namespace TS3AudioBot.ResourceFactories
 			// Validation Process
 
 			if (videoTypes.Count <= 0)
-				return "No video streams extracted.";
+				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			int codec = SelectStream(videoTypes);
 			if (codec < 0)
-				return "No playable codec found";
+				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			var result = ValidateMedia(videoTypes[codec]);
 			if (!result.Ok)
@@ -175,19 +176,7 @@ namespace TS3AudioBot.ResourceFactories
 			return autoselectIndex;
 		}
 
-		private static R ValidateMedia(VideoData media)
-		{
-			var vcode = WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(3));
-
-			switch (vcode)
-			{
-			case ValidateCode.Ok: return R.OkR;
-			case ValidateCode.Restricted: return "The video cannot be played due to youtube restrictions.";
-			case ValidateCode.Timeout: return "No connection could be established to youtube. Please try again later.";
-			case ValidateCode.UnknownError: return "Unknown error occoured";
-			default: throw new InvalidOperationException();
-			}
-		}
+		private static E<LocalStr> ValidateMedia(VideoData media) => WebWrapper.GetResponse(new Uri(media.Link), TimeSpan.FromSeconds(3));
 
 		private static VideoCodec GetCodec(string type)
 		{
@@ -223,11 +212,11 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public R<Playlist> GetPlaylist(string url)
+		public R<Playlist, LocalStr> GetPlaylist(string url)
 		{
 			Match matchYtId = ListMatch.Match(url);
 			if (!matchYtId.Success)
-				return "Could not extract a playlist id";
+				return new LocalStr(strings.error_media_failed_to_parse_id);
 
 			string id = matchYtId.Groups[2].Value;
 			var plist = new Playlist(id);
@@ -245,10 +234,10 @@ namespace TS3AudioBot.ResourceFactories
 							+ "&key=" + data.ApiKey);
 
 				if (!WebWrapper.DownloadString(out string response, queryString))
-					return "Web response error";
+					return new LocalStr(strings.error_net_unknown);
 				var parsed = JsonConvert.DeserializeObject<JsonPlaylistItems>(response);
 				var videoItems = parsed.items;
-				YoutubePlaylistItem[] itemBuffer = new YoutubePlaylistItem[videoItems.Length];
+				var itemBuffer = new YoutubePlaylistItem[videoItems.Length];
 				for (int i = 0; i < videoItems.Length; i++)
 				{
 					itemBuffer[i] = new YoutubePlaylistItem(new AudioResource(
@@ -274,8 +263,8 @@ namespace TS3AudioBot.ResourceFactories
 
 			return plist;
 		}
-		
-		private static R<PlayResource> YoutubeDlWrapped(AudioResource resource)
+
+		private static R<PlayResource, LocalStr> YoutubeDlWrapped(AudioResource resource)
 		{
 			Log.Debug("Falling back to youtube-dl!");
 
@@ -303,17 +292,17 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
-				return "No youtube-dl response";
+				return new LocalStr(strings.error_ytdl_empty_response);
 
 			Log.Debug("youtube-dl succeeded!");
 			return new PlayResource(url, resource.WithName(title));
 		}
 
-		public R<Image> GetThumbnail(PlayResource playResource)
+		public R<Image, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			if (!WebWrapper.DownloadString(out string response,
 				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={data.ApiKey}")))
-				return "No connection";
+				return new LocalStr(strings.error_net_no_connection);
 			var parsed = JsonConvert.DeserializeObject<JsonPlaylistItems>(response);
 
 			// default: 120px/ 90px
@@ -329,8 +318,8 @@ namespace TS3AudioBot.ResourceFactories
 						img = Image.FromStream(stream);
 				}
 			});
-			if (resresult != ValidateCode.Ok)
-				return "Error while reading image";
+			if (!resresult.Ok)
+				return resresult.Error;
 			return img;
 		}
 

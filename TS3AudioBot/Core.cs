@@ -131,7 +131,7 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		private R InitializeCore()
+		private E<string> InitializeCore()
 		{
 			ConfigManager = ConfigFile.OpenOrCreate(configFilePath) ?? ConfigFile.CreateDummy();
 
@@ -213,7 +213,7 @@ namespace TS3AudioBot
 			}
 
 			Log.Info("[==================== Done ====================]");
-			return R.OkR;
+			return R.Ok;
 		}
 
 		private void Run()

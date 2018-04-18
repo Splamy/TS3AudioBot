@@ -176,7 +176,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private R<(bool anonymous, InvokerData invoker)> Authenticate(HttpListenerContext context)
+		private R<(bool anonymous, InvokerData invoker), string> Authenticate(HttpListenerContext context)
 		{
 			var identity = GetIdentity(context);
 			if (identity == null)

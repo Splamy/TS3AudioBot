@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Helper
 {
+	using Localization;
 	using System;
 	using System.IO;
 	using System.Net;
@@ -48,12 +49,10 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		//if (request.Method == "GET")
-		//	request.Method = "HEAD";
-		public static ValidateCode GetResponse(Uri link) => GetResponse(link, null);
-		public static ValidateCode GetResponse(Uri link, TimeSpan timeout) => GetResponse(link, null, timeout);
-		public static ValidateCode GetResponse(Uri link, Action<WebResponse> body) => GetResponse(link, body, DefaultTimeout);
-		public static ValidateCode GetResponse(Uri link, Action<WebResponse> body, TimeSpan timeout)
+		public static E<LocalStr> GetResponse(Uri link) => GetResponse(link, null);
+		public static E<LocalStr> GetResponse(Uri link, TimeSpan timeout) => GetResponse(link, null, timeout);
+		public static E<LocalStr> GetResponse(Uri link, Action<WebResponse> body) => GetResponse(link, body, DefaultTimeout);
+		public static E<LocalStr> GetResponse(Uri link, Action<WebResponse> body, TimeSpan timeout)
 		{
 			var request = WebRequest.Create(link);
 			try
@@ -63,31 +62,16 @@ namespace TS3AudioBot.Helper
 				{
 					body?.Invoke(response);
 				}
-				return ValidateCode.Ok;
+				return R.Ok;
 			}
 			catch (WebException webEx)
 			{
-				HttpWebResponse errorResponse;
-				if (webEx.Status == WebExceptionStatus.Timeout)
-				{
-					Log.Warn("Request timed out");
-					return ValidateCode.Timeout;
-				}
-				else if ((errorResponse = webEx.Response as HttpWebResponse) != null)
-				{
-					Log.Warn("Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
-					return ValidateCode.Restricted;
-				}
-				else
-				{
-					Log.Warn("Unknown request error: {0}", webEx);
-					return ValidateCode.UnknownError;
-				}
+				return ToLoggedError(webEx);
 			}
 		}
 
-		internal static R<Stream> GetResponseUnsafe(Uri link) => GetResponseUnsafe(link, DefaultTimeout);
-		internal static R<Stream> GetResponseUnsafe(Uri link, TimeSpan timeout)
+		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link) => GetResponseUnsafe(link, DefaultTimeout);
+		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link, TimeSpan timeout)
 		{
 			var request = WebRequest.Create(link);
 			try
@@ -95,25 +79,32 @@ namespace TS3AudioBot.Helper
 				request.Timeout = (int)timeout.TotalMilliseconds;
 				var stream = request.GetResponse().GetResponseStream();
 				if (stream == null)
-					return "WEB No content";
+					return new LocalStr(strings.error_net_empty_response);
 				return stream;
 			}
 			catch (WebException webEx)
 			{
-				if (webEx.Status == WebExceptionStatus.Timeout)
-					return "WEB Request timed out";
-				if (webEx.Response is HttpWebResponse errorResponse)
-					return $"WEB error: [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}";
-				return $"WEB Unknown request error: {webEx}";
+				return ToLoggedError(webEx);
 			}
 		}
-	}
 
-	public enum ValidateCode
-	{
-		Ok,
-		UnknownError,
-		Restricted,
-		Timeout,
+		private static LocalStr ToLoggedError(WebException webEx)
+		{
+			if (webEx.Status == WebExceptionStatus.Timeout)
+			{
+				Log.Warn("Request timed out");
+				return new LocalStr(strings.error_net_timeout);
+			}
+			else if (webEx.Response is HttpWebResponse errorResponse)
+			{
+				Log.Warn("Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
+				return new LocalStr($"{strings.error_net_error_status_code} [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
+			}
+			else
+			{
+				Log.Warn("Unknown request error: {0}", webEx);
+				return new LocalStr(strings.error_net_unknown);
+			}
+		}
 	}
 }

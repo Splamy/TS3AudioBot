@@ -11,6 +11,7 @@ namespace TS3AudioBot.History
 {
 	using Helper;
 	using LiteDB;
+	using Localization;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -98,13 +99,6 @@ namespace TS3AudioBot.History
 
 		public R<AudioLogEntry> LogAudioResource(HistorySaveData saveData)
 		{
-			var entry = Store(saveData);
-			if (entry != null) return entry;
-			else return "Entry could not be stored";
-		}
-
-		private AudioLogEntry Store(HistorySaveData saveData)
-		{
 			if (saveData == null)
 				throw new ArgumentNullException(nameof(saveData));
 
@@ -113,9 +107,12 @@ namespace TS3AudioBot.History
 				var ale = FindByUniqueId(saveData.Resource.UniqueId);
 				if (ale == null)
 				{
-					ale = CreateLogEntry(saveData);
-					if (ale == null)
-						Log.Error("AudioLogEntry could not be created!");
+					var createResult = CreateLogEntry(saveData);
+					if (!createResult.Ok)
+					{
+						Log.Warn("AudioLogEntry could not be created! ({0})", createResult.Error);
+						return R.Err;
+					}
 				}
 				else
 				{
@@ -141,10 +138,10 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		private AudioLogEntry CreateLogEntry(HistorySaveData saveData)
+		private R<AudioLogEntry, string> CreateLogEntry(HistorySaveData saveData)
 		{
 			if (string.IsNullOrWhiteSpace(saveData.Resource.ResourceTitle))
-				return null;
+				return "Track name is empty";
 
 			int nextHid;
 			if (historyManagerData.FillDeletedIds && unusedIds.Count > 0)
@@ -216,11 +213,11 @@ namespace TS3AudioBot.History
 
 		/// <summary>Gets an <see cref="AudioLogEntry"/> by its history id or null if not exising.</summary>
 		/// <param name="id">The id of the AudioLogEntry</param>
-		public R<AudioLogEntry> GetEntryById(uint id)
+		public R<AudioLogEntry, LocalStr> GetEntryById(uint id)
 		{
 			var entry = audioLogEntries.FindById((long)id);
 			if (entry != null) return entry;
-			else return "Could not find track with this id";
+			else return new LocalStr(strings.error_history_could_not_find_entry);
 		}
 
 		/// <summary>Removes the <see cref="AudioLogEntry"/> from the Database.</summary>

@@ -18,14 +18,14 @@ namespace TS3AudioBot.CommandSystem
 	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
 	public sealed class CommandAttribute : Attribute
 	{
-		public CommandAttribute(string commandNameSpace, string help = null)
+		public CommandAttribute(string commandNameSpace, string overrideHelpName = null)
 		{
 			CommandNameSpace = commandNameSpace;
-			CommandHelp = help;
+			OverrideHelpName = overrideHelpName;
 		}
 
 		public string CommandNameSpace { get; }
-		public string CommandHelp { get; }
+		public string OverrideHelpName { get; }
 	}
 
 	/// <summary>

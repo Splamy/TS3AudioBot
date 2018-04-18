@@ -47,7 +47,7 @@ namespace TS3AudioBot.Sessions
 				if (openSessions.TryGetValue(id, out var session))
 					return session;
 				else
-					return "Session not found";
+					return R.Err;
 			}
 		}
 

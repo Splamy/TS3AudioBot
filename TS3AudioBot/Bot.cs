@@ -15,6 +15,7 @@ namespace TS3AudioBot
 	using Dependency;
 	using Helper;
 	using History;
+	using Localization;
 	using Plugins;
 	using Sessions;
 	using System;
@@ -47,7 +48,7 @@ namespace TS3AudioBot
 		public BotManager BotManager { get; set; }
 		public PluginManager PluginManager { get; set; }
 
-		// Onw modules
+		// Own modules
 
 		/// <summary>Connection object for the current client.</summary>
 		public TeamspeakControl QueryConnection { get; set; }
@@ -57,7 +58,7 @@ namespace TS3AudioBot
 		public IPlayerConnection PlayerConnection { get; private set; }
 		public Filter Filter { get; private set; }
 
-		public R InitializeBot()
+		public E<string> InitializeBot()
 		{
 			Log.Info("Bot connecting...");
 
@@ -147,6 +148,10 @@ namespace TS3AudioBot
 
 		private void TextCallback(object sender, TextMessage textMessage)
 		{
+			var langResult = LocalizationManager.LoadLanguage(mainBotData.Language);
+			if (!langResult.Ok)
+				Log.Error("Failed to load language file ({0})", langResult.Error);
+
 			Log.Debug("Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
 
 			textMessage.Message = textMessage.Message.TrimStart(' ');
@@ -155,7 +160,7 @@ namespace TS3AudioBot
 
 			var refreshResult = QueryConnection.RefreshClientBuffer(true);
 			if (!refreshResult.Ok)
-				Log.Warn("Bot is not correctly set up. Some commands might not work or are slower. ({0})", refreshResult.Error);
+				Log.Warn("Bot is not correctly set up. Some commands might not work or are slower.", refreshResult.Error.Str);
 
 			var clientResult = QueryConnection.GetClientById(textMessage.InvokerId);
 
@@ -171,7 +176,7 @@ namespace TS3AudioBot
 				if (clientResult.Ok)
 					session = SessionManager.CreateSession(clientResult.Value);
 				else
-					Log.Warn("Could not create session with user, some commands might not work ({0})", clientResult.Error);
+					Log.Warn("Could not create session with user, some commands might not work ({0})", clientResult.Error.Str);
 			}
 
 			var invoker = new InvokerData(textMessage.InvokerUid)
@@ -223,10 +228,10 @@ namespace TS3AudioBot
 		{
 			var result = UpdateBotStatus();
 			if (!result)
-				Log.Warn(result.Error);
+				Log.Warn(result.Error.Str);
 		}
 
-		public R UpdateBotStatus(string overrideStr = null)
+		public E<LocalStr> UpdateBotStatus(string overrideStr = null)
 		{
 			lock (SyncRoot)
 			{
@@ -238,12 +243,12 @@ namespace TS3AudioBot
 				else if (PlayManager.IsPlaying)
 				{
 					setString = QuizMode
-						? "<Quiztime!>"
+						? strings.info_botstatus_quiztime
 						: PlayManager.CurrentPlayData.ResourceData.ResourceTitle;
 				}
 				else
 				{
-					setString = "<Sleeping>";
+					setString = strings.info_botstatus_sleeping;
 				}
 
 				return QueryConnection.ChangeDescription(setString);
@@ -370,6 +375,12 @@ namespace TS3AudioBot
 				if (newMatcher.Ok)
 					Filter.Current = newMatcher.Value;
 			}
+			else if (e.PropertyName == nameof(MainBotData.Language))
+			{
+				var langResult = LocalizationManager.LoadLanguage(mainBotData.Language);
+				if (!langResult.Ok)
+					Log.Error("Failed to load language file ({0})", langResult.Error);
+			}
 		}
 
 		public void Dispose()
@@ -402,12 +413,14 @@ namespace TS3AudioBot
 		public string NickName { get; set; }
 		public string Server { get; set; }
 
-		public override string ToString() => $"Id: {Id} Name: {NickName} Server: {Server}";
+		public override string ToString() => $"Id: {Id} Name: {NickName} Server: {Server}"; // LOC: TODO
 	}
 
 #pragma warning disable CS0649
 	internal class MainBotData : ConfigData
 	{
+		[Info("The language the bot should use to respond to users. (Make sure you have added the required language packs)", "en")]
+		public string Language { get; set; }
 		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
 		public ulong BotGroupId { get; set; }
 		[Info("Generate fancy status images as avatar", "true")]

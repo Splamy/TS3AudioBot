@@ -9,8 +9,8 @@
 
 namespace TS3AudioBot.Algorithm
 {
-	using System.Linq;
 	using System.Collections.Generic;
+	using System.Linq;
 
 	public interface IFilterAlgorithm
 	{
@@ -32,7 +32,7 @@ namespace TS3AudioBot.Algorithm
 			case "substring": return SubstringFilter.Instance.ToR();
 			case "ic3": return Ic3Filter.Instance.ToR();
 			case "hamming": return HammingFilter.Instance.ToR();
-			default: return "Unkown filter type";
+			default: return R.Err;
 			}
 		}
 	}
@@ -100,7 +100,15 @@ namespace TS3AudioBot.Algorithm
 
 		IEnumerable<KeyValuePair<string, T>> IFilterAlgorithm.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
-			return list.Where(x => x.Key.StartsWith(filter));
+			var result = list.Where(x => x.Key.StartsWith(filter));
+			var enu = result.GetEnumerator();
+			if (!enu.MoveNext())
+				yield break;
+			yield return enu.Current;
+			if (enu.Current.Key == filter)
+				yield break;
+			while (enu.MoveNext())
+				yield return enu.Current;
 		}
 	}
 }
