@@ -15,7 +15,6 @@ namespace TS3AudioBot.Helper
 	using System;
 	using System.IO;
 	using System.Reflection;
-	using System.Security.Principal;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
@@ -60,12 +59,13 @@ namespace TS3AudioBot.Helper
 		{
 			get
 			{
+#if NET46
 				try
 				{
-					using (var user = WindowsIdentity.GetCurrent())
+					using (var user = System.Security.Principal.WindowsIdentity.GetCurrent())
 					{
-						var principal = new WindowsPrincipal(user);
-						return principal.IsInRole(WindowsBuiltInRole.Administrator);
+						var principal = new System.Security.Principal.WindowsPrincipal(user);
+						return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
 					}
 				}
 				catch (UnauthorizedAccessException) { return false; }
@@ -74,6 +74,9 @@ namespace TS3AudioBot.Helper
 					Log.Warn("Uncatched admin check.");
 					return false;
 				}
+#else
+				return false;
+#endif
 			}
 		}
 

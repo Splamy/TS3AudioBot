@@ -571,6 +571,6 @@ namespace TS3AudioBot.Rights
 	public class RightsManagerData : ConfigData
 	{
 		[Info("Path to the config file", "rights.toml")]
-		public string RightsFile { get; set; }
+		public string RightsFile { get => Get<string>(); set => Set(value); }
 	}
 }

@@ -40,7 +40,7 @@ namespace TS3AudioBot.Web.Interface
 			DirectoryInfo baseDir = null;
 			if (string.IsNullOrEmpty(webData.WebinterfaceHostPath))
 			{
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < 5; i++)
 				{
 					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
 					var checkDir = Path.Combine(up, "WebInterface");

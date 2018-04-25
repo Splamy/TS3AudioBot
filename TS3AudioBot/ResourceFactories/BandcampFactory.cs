@@ -14,7 +14,7 @@ namespace TS3AudioBot.ResourceFactories
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 	using System;
-	using System.Drawing;
+	using System.IO;
 	using System.Text.RegularExpressions;
 
 	public class BandcampFactory : IResourceFactory, IThumbnailFactory
@@ -107,7 +107,7 @@ namespace TS3AudioBot.ResourceFactories
 			return webSite;
 		}
 
-		public R<Image, LocalStr> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			string artId;
 			if (playResource is BandcampPlayResource bandcampPlayResource)
@@ -144,18 +144,7 @@ namespace TS3AudioBot.ResourceFactories
 			// 16 :  700px/ 700px
 			// 42 :   50px/  50px / supporter
 			var imgurl = new Uri($"https://f4.bcbits.com/img/a{artId}_4.jpg");
-			Image img = null;
-			var resresult = WebWrapper.GetResponse(imgurl, (webresp) =>
-			{
-				using (var stream = webresp.GetResponseStream())
-				{
-					if (stream != null)
-						img = Image.FromStream(stream);
-				}
-			});
-			if (!resresult.Ok)
-				return resresult.Error;
-			return img;
+			return WebWrapper.GetResponseUnsafe(imgurl);
 		}
 
 		private static string GetTrackArtId(string site)

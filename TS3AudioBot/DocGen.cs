@@ -19,7 +19,7 @@ namespace TS3AudioBot
 	/// </summary>
 	internal static class DocGen
 	{
-		private static void Main(string[] args)
+		private static void GenerateDoc()
 		{
 			const bool writeSubCommands = false;
 

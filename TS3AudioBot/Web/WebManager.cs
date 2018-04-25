@@ -184,18 +184,18 @@ namespace TS3AudioBot.Web
 	public class WebData : ConfigData
 	{
 		[Info("A space seperated list of all urls the web api should be possible to be accessed with", "")]
-		public string HostAddress { get; set; }
+		public string HostAddress { get => Get<string>(); set => Set(value); }
 
 		[Info("The port for the api server", "8180")]
-		public ushort Port { get; set; }
+		public ushort Port { get => Get<ushort>(); set => Set(value); }
 
 		[Info("If you want to start the web api server.", "false")]
-		public bool EnableApi { get; set; }
+		public bool EnableApi { get => Get<bool>(); set => Set(value); }
 
 		[Info("If you want to start the webinterface server", "false")]
-		public bool EnableWebinterface { get; set; }
+		public bool EnableWebinterface { get => Get<bool>(); set => Set(value); }
 
 		[Info("The folder to host. Leave empty to let the bot look for default locations.", "")]
-		public string WebinterfaceHostPath { get; set; }
+		public string WebinterfaceHostPath { get => Get<string>(); set => Set(value); }
 	}
 }

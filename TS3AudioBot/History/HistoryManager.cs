@@ -274,7 +274,7 @@ namespace TS3AudioBot.History
 		/// <returns>A new list with all working items.</returns>
 		private List<AudioLogEntry> FilterList(IReadOnlyCollection<AudioLogEntry> list)
 		{
-			int userNotityCnt = 0;
+			int userNotifyCnt = 0;
 			var nextIter = new List<AudioLogEntry>(list.Count);
 			foreach (var entry in list)
 			{
@@ -285,8 +285,8 @@ namespace TS3AudioBot.History
 					nextIter.Add(entry);
 				}
 
-				if (++userNotityCnt % 100 == 0)
-					Log.Debug("Clean in progress {0}", new string('.', userNotityCnt / 100 % 10));
+				if (++userNotifyCnt % 100 == 0)
+					Log.Debug("Clean in progress {0}", new string('.', userNotifyCnt / 100 % 10));
 			}
 			return nextIter;
 		}
@@ -295,10 +295,10 @@ namespace TS3AudioBot.History
 	public class HistoryManagerData : ConfigData
 	{
 		[Info("Allows to enable or disable history features completely to save resources.", "true")]
-		public bool EnableHistory { get; set; }
+		public bool EnableHistory { get => Get<bool>(); set => Set(value); }
 		[Info("The Path to the history database file", "history.db")]
-		public string HistoryFile { get; set; }
+		public string HistoryFile { get => Get<string>(); set => Set(value); }
 		[Info("Whether or not deleted history ids should be filled up with new songs", "true")]
-		public bool FillDeletedIds { get; set; }
+		public bool FillDeletedIds { get => Get<bool>(); set => Set(value); }
 	}
 }

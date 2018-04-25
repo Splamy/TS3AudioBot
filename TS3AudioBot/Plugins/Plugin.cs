@@ -132,11 +132,23 @@ namespace TS3AudioBot.Plugins
 				Unload();
 
 				PluginResponse result;
-				if (File.Extension == ".cs")
+				switch (File.Extension)
+				{
+				case ".cs":
+#if NET46
 					result = PrepareSource();
-				else if (File.Extension == ".dll" || File.Extension == ".exe")
+#else
+					result = PluginResponse.NotSupported;
+#endif
+					break;
+
+				case ".dll":
+				case ".exe":
 					result = PrepareBinary();
-				else throw new InvalidProgramException();
+					break;
+				default:
+					throw new InvalidProgramException();
+				}
 
 				status = result == PluginResponse.Ok ? PluginStatus.Ready : PluginStatus.Error;
 				return result;
@@ -185,6 +197,7 @@ namespace TS3AudioBot.Plugins
 			return InitlializeAssembly(assembly);
 		}
 
+#if NET46
 		private static CompilerParameters GenerateCompilerParameter()
 		{
 			var cp = new CompilerParameters();
@@ -234,6 +247,7 @@ namespace TS3AudioBot.Plugins
 			}
 			return InitlializeAssembly(result.CompiledAssembly);
 		}
+#endif
 
 		private PluginResponse InitlializeAssembly(Assembly assembly)
 		{

@@ -1,226 +1,95 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0EB99E9D-87E5-4534-A100-55D231C2B6A6}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFrameworks>net46;netcoreapp2.0;netstandard2.0</TargetFrameworks>
+    <LangVersion>7.2</LangVersion>
     <RootNamespace>TS3Client</RootNamespace>
     <AssemblyName>TS3Client</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <LangVersion>7</LangVersion>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <CodeAnalysisRuleSet>TS3Client.ruleset</CodeAnalysisRuleSet>
-    <LangVersion>7.2</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>TS3Client.ruleset</CodeAnalysisRuleSet>
-    <LangVersion>7.2</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-    <TransformOnBuild>true</TransformOnBuild>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
-      <HintPath>..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Chaos.NaCl, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Splamy.Ed25519.Toolkit.1.0.2-alpha\lib\net46\Chaos.NaCl.dll</HintPath>
-    </Reference>
-    <Reference Include="Heijden.Dns, Version=2.0.0.6, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Heijden.Dns.2.0.0\lib\net35\Heijden.Dns.dll</HintPath>
-    </Reference>
-    <Reference Include="Nett, Version=0.9.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nett.0.9.0\lib\Net40\Nett.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.4.5.2\lib\net45\NLog.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Buffers.4.5.0-preview2-26406-04\lib\netstandard1.1\System.Buffers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Memory.4.5.0-preview2-26406-04\lib\netstandard1.1\System.Memory.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0-preview2-26406-04\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
+    <PackageReference Include="NLog" Version="4.5.3" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
+    <PackageReference Include="System.Memory" Version="4.5.0-preview2-26406-04" />
+    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
+    <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.2-alpha" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Audio\PassiveMergePipe.cs" />
-    <Compile Include="Commands\CommandMultiParameter.cs" />
-    <Compile Include="Commands\ICommandPart.cs" />
-    <Compile Include="Commands\Ts3Const.cs" />
-    <Compile Include="ConnectionData.cs" />
-    <Compile Include="DisconnectEventArgs.cs" />
-    <Compile Include="Audio\ActiveCheckPipe.cs" />
-    <Compile Include="FileTransferManager.cs" />
-    <Compile Include="Audio\AudioMeta.cs" />
-    <Compile Include="Audio\AudioInterfaces.cs" />
-    <Compile Include="Audio\AudioPacketReader.cs" />
-    <Compile Include="Audio\AudioPipeExtensions.cs" />
-    <Compile Include="Audio\EncoderPipe.cs" />
-    <Compile Include="Audio\Opus\NativeMethods.cs" />
-    <Compile Include="Full\Book\Book.cs" />
-    <Compile Include="Full\Book\SpecialTypes.cs" />
-    <Compile Include="Full\License.cs" />
-    <Compile Include="Generated\Book.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Book.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Generated\Errors.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Errors.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Generated\M2B.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>M2B.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Generated\Permissions.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Permissions.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Generated\Versions.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Versions.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Helper\Extensions.cs" />
-    <Compile Include="Helper\NativeWinDllLoader.cs" />
-    <Compile Include="Audio\Opus\OpusDecoder.cs" />
-    <Compile Include="Audio\Opus\OpusEncoder.cs" />
-    <Compile Include="Audio\PreciseAudioTimer.cs" />
-    <Compile Include="Audio\PreciseTimedPipe.cs" />
-    <Compile Include="Audio\PassiveSplitterPipe.cs" />
-    <Compile Include="Audio\StaticMetaPipe.cs" />
-    <Compile Include="Audio\StreamAudioProducer.cs" />
-    <Compile Include="Audio\VolumePipe.cs" />
-    <Compile Include="Full\BasePacket.cs" />
-    <Compile Include="Full\QuickerLz.cs" />
-    <Compile Include="Full\IdentityData.cs" />
-    <Compile Include="Full\NetworkStats.cs" />
-    <Compile Include="Full\PacketHandler.cs" />
-    <Compile Include="Full\S2CPacket.cs" />
-    <Compile Include="Full\C2SPacket.cs" />
-    <Compile Include="Full\PacketType.cs" />
-    <Compile Include="Full\RingQueue.cs" />
-    <Compile Include="Full\Ts3Crypt.cs" />
-    <Compile Include="Full\Ts3FullClient.cs" />
-    <Compile Include="Helper\SpanSplitter.cs" />
-    <Compile Include="Messages\Deserializer.cs" />
-    <Compile Include="Commands\Ts3Command.cs" />
-    <Compile Include="LazyNotification.cs" />
-    <Compile Include="MessageProcessor.cs" />
-    <Compile Include="Generated\Messages.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Messages.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Helper\R.cs" />
-    <Compile Include="Ts3BaseClient.cs" />
-    <Compile Include="TsDnsResolver.cs" />
-    <Compile Include="Helper\Util.cs" />
-    <Compile Include="Ts3Enums.cs" />
-    <Compile Include="Messages\BaseTypes.cs" />
-    <Compile Include="Messages\ResponseDictionary.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="EventDispatcher.cs" />
-    <Compile Include="Query\Ts3QueryClient.cs" />
-    <Compile Include="Commands\CommandOption.cs" />
-    <Compile Include="Commands\CommandParameter.cs" />
-    <Compile Include="Ts3Exceptions.cs" />
-    <Compile Include="Commands\Ts3String.cs" />
-    <Compile Include="WaitBlock.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Declarations\BookDeclarations.toml" />
-    <None Include="Declarations\Messages.toml" />
-    <None Include="Declarations\MessagesToBook.toml" />
-    <None Include="Declarations\Versions.csv" />
-    <None Include="Audio\Opus\LICENSE" />
-    <None Include="Audio\Opus\OPUS_LICENSE" />
-    <None Include="Audio\Opus\README" />
-    <None Include="Generated\M2BParser.ttinclude" />
     <None Include="Generated\BookParser.ttinclude" />
+    <None Include="Generated\ErrorParser.ttinclude" />
+    <None Include="Generated\M2BParser.ttinclude" />
     <None Include="Generated\MessageParser.ttinclude" />
     <None Include="Generated\Util.ttinclude" />
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="TS3Client.ruleset" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Declarations\Errors.csv" />
-    <Content Include="Declarations\Permissions.csv" />
-    <None Include="Generated\ErrorParser.ttinclude" />
-    <Content Include="Generated\Book.tt">
+    <None Update="Generated\Book.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Book.cs</LastGenOutput>
-    </Content>
-    <Content Include="Generated\Errors.tt">
+    </None>
+    <None Update="Generated\Errors.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Errors.cs</LastGenOutput>
-    </Content>
-    <Content Include="Generated\M2B.tt">
+    </None>
+    <None Update="Generated\M2B.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>M2B.cs</LastGenOutput>
-    </Content>
-    <Content Include="Generated\Messages.tt">
+    </None>
+    <None Update="Generated\Messages.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Messages.cs</LastGenOutput>
-    </Content>
-    <Content Include="Generated\Permissions.tt">
+    </None>
+    <None Update="Generated\Permissions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Permissions.cs</LastGenOutput>
-    </Content>
-    <Content Include="Generated\Versions.tt">
+    </None>
+    <None Update="Generated\Versions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Versions.cs</LastGenOutput>
-    </Content>
+    </None>
   </ItemGroup>
+
   <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+    <Compile Update="Generated\Book.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Book.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Generated\Errors.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Errors.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Generated\M2B.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>M2B.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Generated\Messages.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Messages.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Generated\Permissions.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Permissions.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Generated\Versions.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Versions.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
 </Project>

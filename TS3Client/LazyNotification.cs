@@ -10,7 +10,6 @@
 namespace TS3Client
 {
 	using Messages;
-	using Helper;
 	using System.Collections.Generic;
 	using System.Linq;
 
@@ -25,12 +24,12 @@ namespace TS3Client
 			NotifyType = notifyType;
 		}
 
-		public R<T, CommandError> WrapSingle<T>() where T : INotification
+		public R<T> WrapSingle<T>() where T : INotification
 		{
 			var first = Notifications.FirstOrDefault();
 			if (first == null)
-				return R<T, CommandError>.Err(Util.NoResultCommandError);
-			return R<T, CommandError>.OkR((T)first);
+				return R<T>.ErrR;
+			return R<T>.OkR((T)first);
 		}
 	}
 }

@@ -443,12 +443,10 @@ namespace TS3AudioBot
 
 		public PlaylistItem GetResource(int index) => resources[index];
 	}
-
-#pragma warning disable CS0649
+	
 	public class PlaylistManagerData : ConfigData
 	{
 		[Info("Path the playlist folder", "Playlists")]
-		public string PlaylistPath { get; set; }
+		public string PlaylistPath { get => Get<string>(); set => Set(value); }
 	}
-#pragma warning restore CS0649
 }

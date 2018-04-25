@@ -291,10 +291,10 @@ namespace TS3AudioBot
 	public class AudioFrameworkData : ConfigData
 	{
 		[Info("The default volume a song should start with", "10")]
-		public float DefaultVolume { get; set; }
+		public float DefaultVolume { get => Get<float>(); set => Set(value); }
 		[Info("The maximum volume a normal user can request", "30")]
-		public float MaxUserVolume { get; set; }
+		public float MaxUserVolume { get => Get<float>(); set => Set(value); }
 		[Info("How the bot should play music. Options are: whisper, voice, (!...)", "whisper")]
-		public string AudioMode { get; set; }
+		public string AudioMode { get => Get<string>(); set => Set(value); }
 	}
 }

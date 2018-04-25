@@ -10,10 +10,10 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Localization;
-	using System.Drawing;
+	using System.IO;
 
 	public interface IThumbnailFactory : IFactory
 	{
-		R<Image, LocalStr> GetThumbnail(PlayResource playResource);
+		R<Stream, LocalStr> GetThumbnail(PlayResource playResource);
 	}
 }

@@ -229,9 +229,9 @@ namespace TS3AudioBot.Plugins
 	public class PluginManagerData : ConfigData
 	{
 		[Info("The absolute or relative path to the plugins folder", "Plugins")]
-		public string PluginPath { get; set; }
+		public string PluginPath { get => Get<string>(); set => Set(value); }
 
 		[Info("Write to .status files to store a plugin enable status persistently and restart them on launch.", "false")]
-		public bool WriteStatusFiles { get; set; }
+		public bool WriteStatusFiles { get => Get<bool>(); set => Set(value); }
 	}
 }

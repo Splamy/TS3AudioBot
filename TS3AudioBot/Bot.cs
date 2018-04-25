@@ -262,11 +262,25 @@ namespace TS3AudioBot
 
 			if (e is PlayInfoEventArgs startEvent)
 			{
+#if NET46
 				var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
 				if (!thumresult.Ok)
 					return;
 
-				using (var bmp = ImageUtil.BuildStringImage("Now playing: " + startEvent.ResourceData.ResourceTitle, thumresult.Value))
+				System.Drawing.Image bmpOrig;
+				try
+				{
+					using(var stream = thumresult.Value)
+						bmpOrig = System.Drawing.Image.FromStream(stream);
+				}
+				catch (ArgumentException)
+				{
+					Log.Warn("Inavlid image data");
+					return;
+				}
+
+				// TODO: remove 'now playing' text and use better imaging lib
+				using (var bmp = ImageUtil.BuildStringImage("Now playing: " + startEvent.ResourceData.ResourceTitle, bmpOrig))
 				{
 					using (var mem = new MemoryStream())
 					{
@@ -276,6 +290,7 @@ namespace TS3AudioBot
 							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
 				}
+#endif
 			}
 			else
 			{
@@ -415,19 +430,17 @@ namespace TS3AudioBot
 
 		public override string ToString() => $"Id: {Id} Name: {NickName} Server: {Server}"; // LOC: TODO
 	}
-
-#pragma warning disable CS0649
+	
 	internal class MainBotData : ConfigData
 	{
 		[Info("The language the bot should use to respond to users. (Make sure you have added the required language packs)", "en")]
-		public string Language { get; set; }
+		public string Language { get => Get<string>(); set => Set(value); }
 		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
-		public ulong BotGroupId { get; set; }
+		public ulong BotGroupId { get => Get<ulong>(); set => Set(value); }
 		[Info("Generate fancy status images as avatar", "true")]
-		public bool GenerateStatusAvatar { get; set; }
+		public bool GenerateStatusAvatar { get => Get<bool>(); set => Set(value); }
 		[Info("Defines how the bot tries to match your !commands.\n" +
 			"# Possible types: exact, substring, ic3, hamming", "ic3")]
-		public string CommandMatching { get; set; }
+		public string CommandMatching { get => Get<string>(); set => Set(value); }
 	}
-#pragma warning restore CS0649
 }

@@ -151,7 +151,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Gets the id of the current bot..
+        ///   Looks up a localized string similar to Gets a list of all active bots..
         /// </summary>
         internal static string cmd_bot_list_help {
             get {

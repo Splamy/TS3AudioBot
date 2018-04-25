@@ -7,15 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Text;
-
 namespace TS3Client
 {
+	using Heijden.Dns.Portable;
 	using Heijden.DNS;
 	using System;
+	using System.Collections.Generic;
 	using System.Net;
+	using System.Net.Sockets;
+	using System.Text;
 	using System.Text.RegularExpressions;
 
 	/// <summary>Provides methods to resolve TSDNS, SRV redirects and nicknames</summary>
@@ -67,9 +67,9 @@ namespace TS3Client
 			{
 				Recursion = true,
 				Retries = 3,
-				TimeOut = (int)LookupTimeout.TotalMilliseconds,
+				//TimeOut = 1000, XXX
 				UseCache = true,
-				DnsServer = "8.8.8.8",
+				//DnsServer = "8.8.8.8", XXX
 				TransportType = Heijden.DNS.TransportType.Udp,
 			};
 
@@ -134,7 +134,7 @@ namespace TS3Client
 		private static IPEndPoint ResolveSrv(Resolver resolver, string domain)
 		{
 			Log.Trace("Resolving srv record '{0}'", domain);
-			var response = resolver.Query(domain, QType.SRV, QClass.IN);
+			var response = resolver.Query(domain, QType.SRV, QClass.IN).ConfigureAwait(false).GetAwaiter().GetResult();
 
 			if (response.RecordsSRV.Length > 0)
 			{

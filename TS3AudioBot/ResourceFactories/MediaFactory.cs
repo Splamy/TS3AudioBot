@@ -14,7 +14,6 @@ namespace TS3AudioBot.ResourceFactories
 	using Localization;
 	using System;
 	using System.Collections.Generic;
-	using System.Drawing;
 	using System.IO;
 	using System.Linq;
 
@@ -215,7 +214,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new LocalStr(strings.error_media_invalid_uri);
 		}
 
-		public R<Image, LocalStr> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			byte[] rawImgData;
 
@@ -239,17 +238,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (rawImgData == null)
 				return new LocalStr(strings.error_media_image_not_found);
 
-			using (var memStream = new MemoryStream(rawImgData))
-			{
-				try
-				{
-					return new Bitmap(memStream);
-				}
-				catch (ArgumentException)
-				{
-					return new LocalStr(strings.error_media_invalid_image);
-				}
-			}
+			return new MemoryStream(rawImgData);
 		}
 	}
 
@@ -279,6 +268,6 @@ namespace TS3AudioBot.ResourceFactories
 	public class MediaFactoryData : ConfigData
 	{
 		[Info("The default path to look for local resources.", "")]
-		public string DefaultPath { get; set; }
+		public string DefaultPath { get => Get<string>(); set => Set(value); }
 	}
 }

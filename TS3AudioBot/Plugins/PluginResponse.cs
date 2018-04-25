@@ -22,5 +22,6 @@ namespace TS3AudioBot.Plugins
 		PluginNotFound,
 		CompileError,
 		Disabled,
+		NotSupported,
 	}
 }

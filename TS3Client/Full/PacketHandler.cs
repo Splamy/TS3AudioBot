@@ -641,11 +641,18 @@ namespace TS3Client.Full
 			packet.LastSendTime = Util.Now;
 			NetworkStats.LogOutPacket(packet);
 			LoggerRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
-			udpClient.Send(packet.Raw, packet.Raw.Length);
+			try
+			{
+				udpClient.Send(packet.Raw, packet.Raw.Length);
+			}
+			catch (SocketException ex)
+			{
+				LoggerRaw.Warn(ex, "Failes to deliver packet (Err:{0})", ex.SocketErrorCode);
+			}
 		}
 	}
 
-	internal struct IdTuple
+	internal readonly struct IdTuple
 	{
 		public ushort Id { get; }
 		public uint Generation { get; }

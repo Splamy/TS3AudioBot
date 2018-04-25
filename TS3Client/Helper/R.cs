@@ -31,7 +31,7 @@ public struct _Error { }
 /// The value is guaranteed to be non-null when successful.
 /// </summary>
 /// <typeparam name="TSuccess">The type of the success value.</typeparam>
-public struct R<TSuccess>
+public readonly struct R<TSuccess>
 {
 	public static readonly R<TSuccess> ErrR = new R<TSuccess>();
 
@@ -64,7 +64,7 @@ public struct R<TSuccess>
 /// </summary>
 /// <typeparam name="TSuccess">The type of the success value.</typeparam>
 /// <typeparam name="TError">The error type.</typeparam>
-public struct R<TSuccess, TError>
+public readonly struct R<TSuccess, TError>
 {
 	private readonly bool isError;
 	public bool Ok => !isError;
@@ -102,7 +102,7 @@ public struct R<TSuccess, TError>
 /// This type represents either success or an error + error object.
 /// </summary>
 /// <typeparam name="TError">The type of the error value.</typeparam>
-public struct E<TError>
+public readonly struct E<TError>
 {
 	/// <summary>Represents a successful state.</summary>
 	public static E<TError> OkR { get; } = new E<TError>();

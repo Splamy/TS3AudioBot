@@ -27,7 +27,6 @@ namespace TS3Client.Full
 	using System.Buffers.Binary;
 	using System.Diagnostics;
 	using System.Linq;
-	using System.Security.Cryptography;
 	using System.Text;
 	using System.Text.RegularExpressions;
 
@@ -465,7 +464,7 @@ namespace TS3Client.Full
 		internal static (byte[] publicKey, byte[] privateKey) GenerateTemporaryKey()
 		{
 			var privateKey = new byte[32];
-			using (var rng = RandomNumberGenerator.Create())
+			using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
 				rng.GetBytes(privateKey);
 			ScalarOperations.sc_clamp(privateKey);
 
@@ -678,13 +677,13 @@ namespace TS3Client.Full
 				outBuf[i] = (byte)(a[i] ^ b[i]);
 		}
 
-		private static readonly SHA1Managed Sha1HashInternal = new SHA1Managed();
+		private static readonly System.Security.Cryptography.SHA1Managed Sha1HashInternal = new System.Security.Cryptography.SHA1Managed();
 		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
 		private static readonly Sha512Digest Sha512Hash = new Sha512Digest();
 		internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
 		internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
 		internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha512Hash, data, offset, len);
-		private static byte[] HashItInternal(HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
+		private static byte[] HashItInternal(System.Security.Cryptography.HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			lock (hashAlgo)
 			{

@@ -145,7 +145,7 @@
     <value>Gets the id of the current bot.</value>
   </data>
   <data name="cmd_bot_list_help" xml:space="preserve">
-    <value>Gets the id of the current bot.</value>
+    <value>Gets a list of all active bots.</value>
   </data>
   <data name="cmd_bot_move_help" xml:space="preserve">
     <value>Moves the bot to you or a specified channel.</value>
