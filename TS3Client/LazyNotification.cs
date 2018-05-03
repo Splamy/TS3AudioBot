@@ -13,7 +13,7 @@ namespace TS3Client
 	using System.Collections.Generic;
 	using System.Linq;
 
-	public struct LazyNotification
+	public readonly struct LazyNotification
 	{
 		public readonly IEnumerable<INotification> Notifications;
 		public readonly NotificationType NotifyType;

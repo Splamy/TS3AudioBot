@@ -101,7 +101,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 
 foreach(var msg in gen.GetOrderedMsg())
 {
-	if(!msg.s2c.Value) continue;
+	//if(!msg.s2c.Value) continue;
 #>
 	public sealed class <#= msg.name #><#
 		bool isNotify = msg.notify != null;
@@ -140,7 +140,7 @@ foreach(var msg in gen.GetOrderedMsg())
 	{
 		Unknown,<#
 	foreach(var ntfy in gen.NotifiesSorted) {
-		if(!ntfy.s2c.Value) continue; #>
+		/*if(!ntfy.s2c.Value) continue;*/ #>
 		<#= ntfy.name #>,<#
 	}
 #>
@@ -153,7 +153,7 @@ foreach(var msg in gen.GetOrderedMsg())
 			switch(name)
 			{<#
 	foreach(var ntfy in gen.NotifiesSorted) { 
-		if(!ntfy.s2c.Value) continue; #>
+		/*if(!ntfy.s2c.Value) continue;*/ #>
 			case "<#= ntfy.notify #>": return NotificationType.<#= ntfy.name #>;<#
 	}
 #>
@@ -167,7 +167,7 @@ foreach(var msg in gen.GetOrderedMsg())
 			{<#
 	foreach(var ntfy in gen.NotifiesSorted)
 	{
-		if(!ntfy.s2c.Value) continue;
+		/*if(!ntfy.s2c.Value) continue;*/
 #>
 			case NotificationType.<#= ntfy.name #>: return new <#= ntfy.name #>();<#
 	}

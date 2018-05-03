@@ -25,7 +25,7 @@ namespace TS3Client.Helper
 				return $"{error.Id}: the command failed to execute: {error.Message}";
 		}
 
-		public static R<T, CommandError> WrapSingle<T>(this R<IEnumerable<T>, CommandError> result) where T : class
+		public static R<T, CommandError> WrapSingle<T>(in this R<IEnumerable<T>, CommandError> result) where T : class
 		{
 			if (result.Ok)
 				return WrapSingle(result.Value);
@@ -40,13 +40,13 @@ namespace TS3Client.Helper
 			return R<T, CommandError>.Err(Util.NoResultCommandError);
 		}
 
-		internal static R<IEnumerable<T>, CommandError> UnwrapNotification<T>(this R<LazyNotification, CommandError> result) where T : class
+		internal static R<IEnumerable<T>, CommandError> UnwrapNotification<T>(in this R<LazyNotification, CommandError> result) where T : class
 		{
 			if (!result.Ok)
 				return result.Error;
 			return R<IEnumerable<T>, CommandError>.OkR(result.Value.Notifications.Cast<T>());
 		}
 
-		internal static string NewString(this ReadOnlySpan<char> span) => new string(span.ToArray());
+		internal static string NewString(in this ReadOnlySpan<char> span) => new string(span.ToArray());
 	}
 }

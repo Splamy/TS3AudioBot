@@ -10,6 +10,7 @@
 namespace TS3Client.Full
 {
 	using System;
+	using System.Buffers.Binary;
 	using System.IO;
 	using System.Runtime.CompilerServices;
 
@@ -20,10 +21,10 @@ namespace TS3Client.Full
 		private const uint SetControl = 0x8000_0000;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static int GetCompressedSize(byte[] data) => (data[0] & 0x02) != 0 ? ReadI32(data, 1) : data[1];
+		public static int GetCompressedSize(ReadOnlySpan<byte> data) => (data[0] & 0x02) != 0 ? BinaryPrimitives.ReadInt32LittleEndian(data.Slice(1)) : data[1];
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static int GetDecompressedSize(byte[] data) => (data[0] & 0x02) != 0 ? ReadI32(data, 5) : data[2];
+		public static int GetDecompressedSize(ReadOnlySpan<byte> data) => (data[0] & 0x02) != 0 ? BinaryPrimitives.ReadInt32LittleEndian(data.Slice(5)) : data[2];
 
 		[ThreadStatic]
 		private static int[] hashtable;
@@ -35,12 +36,13 @@ namespace TS3Client.Full
 		public static Span<byte> Compress(ReadOnlySpan<byte> data, int level)
 		{
 			if (level != 1) // && level != 3
-				throw new ArgumentException("This QuickLZ implementation supports only level 1 and 3 compress");
+				throw new ArgumentException("This QuickLZ implementation supports only level 1 compress"); // (and 3)
 			if (data.Length >= int.MaxValue)
 				throw new ArgumentException($"This QuickLZ can only compress up to {int.MaxValue}");
 
 			int headerlen = data.Length < 216 ? 3 : 9;
 			var dest = new byte[data.Length + 400];
+			var destSpan = dest.AsSpan();
 			int destPos = headerlen + 4;
 
 			uint control = SetControl;
@@ -64,14 +66,13 @@ namespace TS3Client.Full
 					{
 						if (sourcePos > data.Length / 2 && destPos > sourcePos - (sourcePos / 32))
 						{
-							var destSpan = dest.AsSpan();
 							data.CopyTo(destSpan.Slice(headerlen));
-							//Array.Copy(data, 0, dest, headerlen, data.Length);
 							destPos = headerlen + data.Length;
-							WriteHeader(dest, destPos, data.Length, level, headerlen, false);
-							return destSpan.Slice(0, destPos);
+							destSpan = destSpan.Slice(0, destPos);
+							WriteHeader(destSpan, data.Length, level, headerlen, false);
+							return destSpan;
 						}
-						WriteU32(dest, controlPos, (control >> 1) | SetControl); // C
+						BinaryPrimitives.WriteUInt32LittleEndian(destSpan.Slice(controlPos), (control >> 1) | SetControl); // C
 						controlPos = destPos;
 						destPos += 4;
 						control = SetControl;
@@ -90,7 +91,7 @@ namespace TS3Client.Full
 							|| sourcePos == offset + 1
 							&& unmatched >= 3
 							&& sourcePos > 3
-							&& Is6Same(data, sourcePos - 3)))
+							&& Is6Same(data.Slice(sourcePos - 3))))
 					{
 						control = (control >> 1) | SetControl;
 						int matchlen = 3;
@@ -99,7 +100,7 @@ namespace TS3Client.Full
 							matchlen++;
 						if (matchlen < 18)
 						{
-							WriteU16(dest, destPos, hash << 4 | (matchlen - 2));
+							BinaryPrimitives.WriteUInt16LittleEndian(destSpan.Slice(destPos), (ushort)(hash << 4 | (matchlen - 2)));
 							destPos += 2;
 						}
 						else
@@ -125,7 +126,7 @@ namespace TS3Client.Full
 			{
 				if ((control & 1) != 0)
 				{
-					WriteU32(dest, controlPos, (control >> 1) | SetControl); // C
+					BinaryPrimitives.WriteUInt32LittleEndian(destSpan.Slice(controlPos), (control >> 1) | SetControl); // C
 					controlPos = destPos;
 					destPos += 4;
 					control = SetControl;
@@ -136,19 +137,20 @@ namespace TS3Client.Full
 
 			while ((control & 1) == 0)
 				control >>= 1;
-			WriteU32(dest, controlPos, (control >> 1) | SetControl); // C
+			BinaryPrimitives.WriteUInt32LittleEndian(destSpan.Slice(controlPos), (control >> 1) | SetControl); // C
 
-			WriteHeader(dest, destPos, data.Length, level, headerlen, true);
-			return new Span<byte>(dest, 0, destPos);
+			destSpan = destSpan.Slice(0, destPos);
+			WriteHeader(destSpan, data.Length, level, headerlen, true);
+			return destSpan;
 		}
 
-		public static byte[] Decompress(byte[] data, int maxSize)
+		public static byte[] Decompress(ReadOnlySpan<byte> data, int maxSize)
 		{
 			// Read header
 			byte flags = data[0];
 			int level = (flags >> 2) & 0b11;
-			if (level != 3 && level != 1)
-				throw new NotSupportedException("This QuickLZ implementation supports only level 1 and 3 decompress");
+			if (level != 1) // && level != 3
+				throw new NotSupportedException("This QuickLZ implementation supports only level 1 decompress"); // (and 3)
 
 			int headerlen = (flags & 0x02) != 0 ? 9 : 3;
 			int compressedSize = GetCompressedSize(data);
@@ -164,7 +166,7 @@ namespace TS3Client.Full
 				// Uncompressed
 				if (compressedSize - headerlen != decompressedSize)
 					throw new InvalidDataException("Compressed and uncompressed size of uncompressed data do not match");
-				Array.Copy(data, headerlen, dest, 0, decompressedSize);
+				data.Slice(headerlen).CopyTo(dest.AsSpan(0, decompressedSize));
 				return dest;
 			}
 
@@ -174,7 +176,7 @@ namespace TS3Client.Full
 				int sourcePos = headerlen;
 				int destPos = 0;
 				int nextHashed = 0;
-
+				
 				if (hashtable == null) hashtable = new int[TableSize];
 				Array.Clear(hashtable, 0, TableSize);
 
@@ -182,7 +184,7 @@ namespace TS3Client.Full
 				{
 					if (control == 1)
 					{
-						control = ReadU32(data, sourcePos);
+						control = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(sourcePos));
 						sourcePos += 4;
 					}
 
@@ -231,7 +233,7 @@ namespace TS3Client.Full
 			return dest;
 		}
 
-		private static void WriteHeader(byte[] dest, int destLen, int srcLen, int level, int headerlen, bool compressed)
+		private static void WriteHeader(Span<byte> dest, int srcLen, int level, int headerlen, bool compressed)
 		{
 			byte flags;
 			if (compressed)
@@ -243,15 +245,15 @@ namespace TS3Client.Full
 			{
 				// short header
 				dest[0] = flags;
-				dest[1] = (byte)destLen;
+				dest[1] = (byte)dest.Length;
 				dest[2] = (byte)srcLen;
 			}
 			else if (headerlen == 9)
 			{
 				// long header
 				dest[0] = (byte)(flags | 0x02);
-				WriteI32(dest, 1, destLen);
-				WriteI32(dest, 5, srcLen);
+				BinaryPrimitives.WriteInt32LittleEndian(dest.Slice(1), dest.Length);
+				BinaryPrimitives.WriteInt32LittleEndian(dest.Slice(5), srcLen);
 			}
 			else
 			{
@@ -259,12 +261,6 @@ namespace TS3Client.Full
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void WriteU16(byte[] outArr, int outOff, int value)
-		{
-			outArr[outOff + 0] = unchecked((byte)(value >> 0));
-			outArr[outOff + 1] = unchecked((byte)(value >> 8));
-		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Write24(byte[] outArr, int outOff, int value)
@@ -275,46 +271,20 @@ namespace TS3Client.Full
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void WriteI32(byte[] outArr, int outOff, int value)
-		{
-			outArr[outOff + 0] = unchecked((byte)(value >> 00));
-			outArr[outOff + 1] = unchecked((byte)(value >> 08));
-			outArr[outOff + 2] = unchecked((byte)(value >> 16));
-			outArr[outOff + 3] = unchecked((byte)(value >> 24));
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void WriteU32(byte[] outArr, int outOff, uint value)
-		{
-			outArr[outOff + 0] = unchecked((byte)(value >> 00));
-			outArr[outOff + 1] = unchecked((byte)(value >> 08));
-			outArr[outOff + 2] = unchecked((byte)(value >> 16));
-			outArr[outOff + 3] = unchecked((byte)(value >> 24));
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Read24(ReadOnlySpan<byte> intArr, int inOff)
 			=> unchecked(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static int ReadI32(byte[] intArr, int inOff)
-			=> unchecked(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static uint ReadU32(byte[] intArr, int inOff)
-			=> unchecked((uint)(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16) | (intArr[inOff + 3] << 24)));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Hash(int value) => ((value >> 12) ^ value) & 0xfff;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static bool Is6Same(ReadOnlySpan<byte> arr, int i)
+		private static bool Is6Same(ReadOnlySpan<byte> arr)
 		{
-			return arr[i + 0] == arr[i + 1]
-				&& arr[i + 1] == arr[i + 2]
-				&& arr[i + 2] == arr[i + 3]
-				&& arr[i + 3] == arr[i + 4]
-				&& arr[i + 4] == arr[i + 5];
+			return arr[0] == arr[1]
+				&& arr[1] == arr[2]
+				&& arr[2] == arr[3]
+				&& arr[3] == arr[4]
+				&& arr[4] == arr[5];
 		}
 
 		/// <summary>Copy <code>[start; start + length)</code> bytes from `data` to the end of `data`</summary>

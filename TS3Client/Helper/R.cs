@@ -22,8 +22,8 @@ public static class R
 	public static readonly _Error Err = new _Error();
 }
 
-public struct _Ok { }
-public struct _Error { }
+public readonly struct _Ok { }
+public readonly struct _Error { }
 
 /// <summary>
 /// Provides a safe alternative to Exceptions for error and result wrapping.

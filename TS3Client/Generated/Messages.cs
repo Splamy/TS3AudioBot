@@ -892,6 +892,76 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientInit : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientInit;
+		
+
+		public str Name { get; set; }
+		public str ClientVersion { get; set; }
+		public str ClientPlattform { get; set; }
+		public bool InputHardwareEnabled { get; set; }
+		public bool OutputHardwareEnabled { get; set; }
+		public str DefaultChannel { get; set; }
+		public str DefaultChannelPassword { get; set; }
+		public str ServerPassword { get; set; }
+		public str Metadata { get; set; }
+		public str ClientVersionSign { get; set; }
+		public u64 ClientKeyOffset { get; set; }
+		public str PhoneticName { get; set; }
+		public str DefaultToken { get; set; }
+		public str HardwareId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlattform = Ts3String.Unescape(value); break;
+			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_default_channel": DefaultChannel = Ts3String.Unescape(value); break;
+			case "client_default_channel_password": DefaultChannelPassword = Ts3String.Unescape(value); break;
+			case "client_server_password": ServerPassword = Ts3String.Unescape(value); break;
+			case "client_meta_data": Metadata = Ts3String.Unescape(value); break;
+			case "client_version_sign": ClientVersionSign = Ts3String.Unescape(value); break;
+			case "client_key_offset": ClientKeyOffset = u64.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "client_default_token": DefaultToken = Ts3String.Unescape(value); break;
+			case "hwid": HardwareId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class ClientInitIv : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientInitIv;
+		
+
+		public str Alpha { get; set; }
+		public str Omega { get; set; }
+		public str Ip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "alpha": Alpha = Ts3String.Unescape(value); break;
+			case "omega": Omega = Ts3String.Unescape(value); break;
+			case "ip": Ip = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class ClientLeftView : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientLeftView;
@@ -1384,6 +1454,26 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class GetClientIds : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.GetClientIds;
+		
+
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class InitIvExpand : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand;
@@ -1534,6 +1624,30 @@ namespace TS3Client.Messages
 
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "data": Data = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+	}
+
+	public sealed class PluginCommandRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PluginCommandRequest;
+		
+
+		public str Name { get; set; }
+		public str Data { get; set; }
+		public i32 Target { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "data": Data = Ts3String.Unescape(value); break;
+			case "targetmode": Target = i32.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			
 			}
 
@@ -1814,6 +1928,8 @@ namespace TS3Client.Messages
 		ClientChatComposing,
 		ClientEnterView,
 		ClientIds,
+		ClientInit,
+		ClientInitIv,
 		ClientLeftView,
 		ClientMoved,
 		ClientNeededPermissions,
@@ -1829,10 +1945,12 @@ namespace TS3Client.Messages
 		FileTransfer,
 		FileTransferStatus,
 		FileUpload,
+		GetClientIds,
 		InitIvExpand,
 		InitIvExpand2,
 		InitServer,
 		PluginCommand,
+		PluginCommandRequest,
 		ServerEdited,
 		ServerGroupList,
 		TextMessage,
@@ -1860,6 +1978,8 @@ namespace TS3Client.Messages
 			case "notifyclientchatcomposing": return NotificationType.ClientChatComposing;
 			case "notifycliententerview": return NotificationType.ClientEnterView;
 			case "notifyclientids": return NotificationType.ClientIds;
+			case "clientinit": return NotificationType.ClientInit;
+			case "clientinitiv": return NotificationType.ClientInitIv;
 			case "notifyclientleftview": return NotificationType.ClientLeftView;
 			case "notifyclientmoved": return NotificationType.ClientMoved;
 			case "notifyclientneededpermissions": return NotificationType.ClientNeededPermissions;
@@ -1875,10 +1995,12 @@ namespace TS3Client.Messages
 			case "notifyfiletransferlist": return NotificationType.FileTransfer;
 			case "notifystatusfiletransfer": return NotificationType.FileTransferStatus;
 			case "notifystartupload": return NotificationType.FileUpload;
+			case "clientgetids": return NotificationType.GetClientIds;
 			case "initivexpand": return NotificationType.InitIvExpand;
 			case "initivexpand2": return NotificationType.InitIvExpand2;
 			case "initserver": return NotificationType.InitServer;
 			case "notifyplugincmd": return NotificationType.PluginCommand;
+			case "plugincmd": return NotificationType.PluginCommandRequest;
 			case "notifyserveredited": return NotificationType.ServerEdited;
 			case "notifyservergrouplist": return NotificationType.ServerGroupList;
 			case "notifytextmessage": return NotificationType.TextMessage;
@@ -1906,6 +2028,8 @@ namespace TS3Client.Messages
 			case NotificationType.ClientChatComposing: return new ClientChatComposing();
 			case NotificationType.ClientEnterView: return new ClientEnterView();
 			case NotificationType.ClientIds: return new ClientIds();
+			case NotificationType.ClientInit: return new ClientInit();
+			case NotificationType.ClientInitIv: return new ClientInitIv();
 			case NotificationType.ClientLeftView: return new ClientLeftView();
 			case NotificationType.ClientMoved: return new ClientMoved();
 			case NotificationType.ClientNeededPermissions: return new ClientNeededPermissions();
@@ -1921,10 +2045,12 @@ namespace TS3Client.Messages
 			case NotificationType.FileTransfer: return new FileTransfer();
 			case NotificationType.FileTransferStatus: return new FileTransferStatus();
 			case NotificationType.FileUpload: return new FileUpload();
+			case NotificationType.GetClientIds: return new GetClientIds();
 			case NotificationType.InitIvExpand: return new InitIvExpand();
 			case NotificationType.InitIvExpand2: return new InitIvExpand2();
 			case NotificationType.InitServer: return new InitServer();
 			case NotificationType.PluginCommand: return new PluginCommand();
+			case NotificationType.PluginCommandRequest: return new PluginCommandRequest();
 			case NotificationType.ServerEdited: return new ServerEdited();
 			case NotificationType.ServerGroupList: return new ServerGroupList();
 			case NotificationType.TextMessage: return new TextMessage();

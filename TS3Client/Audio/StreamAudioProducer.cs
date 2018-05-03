@@ -19,7 +19,7 @@ namespace TS3Client.Audio
 
 		public int Read(byte[] buffer, int offset, int length, out Meta meta)
 		{
-			meta = default(Meta);
+			meta = default;
 			int read = stream.Read(buffer, offset, length);
 			if (read < length)
 				HitEnd?.Invoke(this, EventArgs.Empty);

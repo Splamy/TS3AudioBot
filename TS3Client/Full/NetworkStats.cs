@@ -30,7 +30,7 @@ namespace TS3Client.Full
 		private static readonly TimeSpan TimeMinute = TimeSpan.FromMinutes(1);
 		private readonly object queueLock = new object();
 
-		internal void LogOutPacket(C2SPacket packet)
+		internal void LogOutPacket<TDir>(ref Packet<TDir> packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
 			outPackets[(int)kind]++;
@@ -42,7 +42,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		internal void LogInPacket(S2CPacket packet)
+		internal void LogInPacket<TDir>(ref Packet<TDir> packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
 			inPackets[(int)kind]++;
@@ -207,13 +207,13 @@ namespace TS3Client.Full
 			Control,
 		}
 
-		private struct PacketData
+		private readonly struct PacketData
 		{
-			public long Size { get; }
+			public int Size { get; }
 			public DateTime SendPoint { get; }
 			public PacketKind Kind { get; }
 
-			public PacketData(long size, DateTime sendPoint, PacketKind kind) { Size = size; SendPoint = sendPoint; Kind = kind; }
+			public PacketData(int size, DateTime sendPoint, PacketKind kind) { Size = size; SendPoint = sendPoint; Kind = kind; }
 		}
 	}
 }

@@ -29,7 +29,7 @@ namespace TS3Client.Full
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3Crypt ts3Crypt;
-		private readonly PacketHandler packetHandler;
+		private readonly PacketHandler<S2C, C2S> packetHandler;
 		private readonly AsyncMessageProcessor msgProc;
 
 		private readonly object statusLock = new object();
@@ -66,7 +66,7 @@ namespace TS3Client.Full
 		{
 			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
-			packetHandler = new PacketHandler(ts3Crypt);
+			packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt);
 			msgProc = new AsyncMessageProcessor();
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 			context = new ConnectionContext { WasExit = true };
@@ -220,69 +220,62 @@ namespace TS3Client.Full
 				throw Util.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
-
+		
 		private void NetworkLoop(object ctxObject)
 		{
 			var ctx = (ConnectionContext)ctxObject;
+			packetHandler.PacketEvent += (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
 
-			while (true)
-			{
-				lock (statusLock)
-				{
-					if (ctx.WasExit)
-						break;
-				}
-
-				var packet = packetHandler.FetchPacket();
-				if (packet == null)
-					break;
-
-				lock (statusLock)
-				{
-					if (ctx.WasExit)
-						break;
-
-					switch (packet.PacketType)
-					{
-					case PacketType.Command:
-					case PacketType.CommandLow:
-						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-						LogCmd.Debug("[I] {0}", message);
-						var result = msgProc.PushMessage(message);
-						if (result.HasValue)
-							dispatcher.Invoke(result.Value);
-						break;
-
-					case PacketType.Voice:
-					case PacketType.VoiceWhisper:
-						OutStream?.Write(packet.Data, new Meta
-						{
-							In = new MetaIn
-							{
-								Whisper = packet.PacketType == PacketType.VoiceWhisper
-							}
-						});
-						break;
-
-					case PacketType.Init1:
-						// Init error
-						if (packet.Data.Length == 5 && packet.Data[0] == 1)
-						{
-							var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsSpan().Slice(1));
-							if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
-								Log.Info("Got init error: {0}", (Ts3ErrorCode)errorNum);
-							else
-								Log.Warn("Got undefined init error: {0}", errorNum);
-							DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
-						}
-						break;
-					}
-				}
-			}
+			packetHandler.FetchPackets();
 
 			lock (statusLock)
 			{
 				DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
+			}
+		}
+
+		private void PacketEvent(ConnectionContext ctx, ref Packet<S2C> packet)
+		{
+			lock (statusLock)
+			{
+				if (ctx.WasExit)
+					return;
+
+				switch (packet.PacketType)
+				{
+				case PacketType.Command:
+				case PacketType.CommandLow:
+					string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
+					LogCmd.Debug("[I] {0}", message);
+					var result = msgProc.PushMessage(message);
+					if (result.HasValue)
+						dispatcher.Invoke(result.Value);
+					break;
+
+				case PacketType.Voice:
+				case PacketType.VoiceWhisper:
+					OutStream?.Write(packet.Data, new Meta
+					{
+						In = new MetaIn
+						{
+							Whisper = packet.PacketType == PacketType.VoiceWhisper
+						}
+					});
+					break;
+
+				case PacketType.Init1:
+					// Init error
+					if (packet.Data.Length == 5 && packet.Data[0] == 1)
+					{
+						var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsSpan(1));
+						if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
+							Log.Info("Got init error: {0}", (Ts3ErrorCode)errorNum);
+						else
+							Log.Warn("Got undefined init error: {0}", errorNum);
+						DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
+					}
+					break;
+				}
 			}
 		}
 
@@ -420,7 +413,7 @@ namespace TS3Client.Full
 				byte[] data = Util.Encoder.GetBytes(message);
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
-			return E<CommandError>.OkR;
+			return R.Ok;
 		}
 
 		public async Task<R<IEnumerable<T>, CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
@@ -530,9 +523,9 @@ namespace TS3Client.Full
 			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
-			var tmpBuffer = new byte[data.Length + 3];
+			var tmpBuffer = new byte[data.Length + 3]; // stackalloc
 			tmpBuffer[2] = (byte)codec;
-			data.CopyTo(tmpBuffer.AsSpan().Slice(3));
+			data.CopyTo(tmpBuffer.AsSpan(3));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
 		}

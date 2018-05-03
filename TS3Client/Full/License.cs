@@ -123,7 +123,7 @@ namespace TS3Client.Full
 
 			var allLen = MinBlockLen + read;
 			var hash = Ts3Crypt.Hash512It(data.Slice(1, allLen - 1).ToArray());
-			block.Hash = hash.AsSpan().Slice(0, 32).ToArray();
+			block.Hash = hash.AsSpan(0, 32).ToArray();
 
 			return (block, allLen);
 		}
