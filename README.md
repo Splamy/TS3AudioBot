@@ -97,7 +97,7 @@ Download the git repository with `git clone --recurse-submodules https://github.
 ### Installation
 1. Create a group for the AudioBotAdmin with no requirements (just ensure a high enough `i_group_needed_member_add_power`).
 1. Create a privilege key for the ServerAdmin group (or a group which has equivalent rights).
-1. The first time you'll need to run `mono TS3Audiobot.exe` without parameter and
+1. The first time you'll need to run `mono TS3AudioBot.exe` without parameter and
 it will ask you a few questions.
 1. Close the bot again and configure your `rights.toml` in `TS3AudioBot\bin\Release\` to your desires.
 You can use the template rules and assign your admin as suggested in the automatically generated file,
