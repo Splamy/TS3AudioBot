@@ -93,7 +93,7 @@ namespace TS3Client.Full
 		private static long[] GetWithin(Queue<PacketData> queue, TimeSpan time)
 		{
 			var now = Util.Now;
-			long[] bandwidth = new long[3];
+			var bandwidth = new long[3];
 			foreach (var pack in queue.Reverse())
 				if (now - pack.SendPoint <= time)
 					bandwidth[(int)pack.Kind] += pack.Size;

@@ -12,6 +12,7 @@ namespace TS3AudioBot.ResourceFactories
 	using Helper;
 	using Localization;
 	using Newtonsoft.Json;
+	using Playlists;
 	using System;
 	using System.Collections.Generic;
 	using System.Globalization;
@@ -19,7 +20,6 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Linq;
 	using System.Text;
 	using System.Text.RegularExpressions;
-	using System.Web;
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
@@ -27,28 +27,22 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
-
-		private readonly YoutubeFactoryData data;
-
-		public YoutubeFactory(YoutubeFactoryData yfd)
-		{
-			data = yfd;
-		}
+		private const string YoutubeProjectId = "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs";
 
 		public string FactoryFor => "youtube";
 
-		MatchCertainty IResourceFactory.MatchResource(string link) =>
-			LinkMatch.IsMatch(link)
+		MatchCertainty IResourceFactory.MatchResource(string uri) =>
+			LinkMatch.IsMatch(uri)
 				? MatchCertainty.Always
-				: IdMatch.IsMatch(link)
+				: IdMatch.IsMatch(uri)
 					? MatchCertainty.Probably
 					: MatchCertainty.Never;
 
-		MatchCertainty IPlaylistFactory.MatchPlaylist(string link) => ListMatch.IsMatch(link) ? MatchCertainty.Probably : MatchCertainty.Never;
+		MatchCertainty IPlaylistFactory.MatchPlaylist(string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Probably : MatchCertainty.Never;
 
-		public R<PlayResource, LocalStr> GetResource(string ytLink)
+		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
-			Match matchYtId = IdMatch.Match(ytLink);
+			Match matchYtId = IdMatch.Match(uri);
 			if (!matchYtId.Success)
 				return new LocalStr(strings.error_media_failed_to_parse_id);
 			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, FactoryFor));
@@ -228,7 +222,7 @@ namespace TS3AudioBot.ResourceFactories
 							+ "&playlistId=" + id
 							+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
 							+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
-							+ "&key=" + data.ApiKey);
+							+ "&key=" + YoutubeProjectId);
 
 				if (!WebWrapper.DownloadString(out string response, queryString))
 					return new LocalStr(strings.error_net_unknown);
@@ -316,7 +310,7 @@ namespace TS3AudioBot.ResourceFactories
 		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			if (!WebWrapper.DownloadString(out string response,
-				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={data.ApiKey}")))
+				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={YoutubeProjectId}")))
 				return new LocalStr(strings.error_net_no_connection);
 			var parsed = JsonConvert.DeserializeObject<JsonPlaylistItems>(response);
 
@@ -371,14 +365,6 @@ namespace TS3AudioBot.ResourceFactories
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
 #pragma warning restore CS0649, CS0169
-	}
-	
-	public class YoutubeFactoryData : ConfigData
-	{
-		[Info("A youtube apiv3 'Browser' type key", "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs")]
-		public string ApiKey { get => Get<string>(); set => Set(value); }
-		[Info("Path to the youtube-dl binary or local git repository", "")]
-		public string YoutubedlPath { get => Get<string>(); set => Set(value); }
 	}
 
 	public sealed class VideoData

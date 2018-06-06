@@ -8,7 +8,7 @@ namespace TS3Client.Full
 	using System.Diagnostics;
 	using System.IO;
 	using System.Net;
-	using CmdR = E<Messages.CommandError>;
+	using CmdR = System.E<Messages.CommandError>;
 
 	public class Ts3Server : IDisposable
 	{

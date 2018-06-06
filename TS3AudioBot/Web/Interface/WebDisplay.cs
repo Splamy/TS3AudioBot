@@ -35,10 +35,10 @@ namespace TS3AudioBot.Web.Interface
 			{ ".less", "text/css" },
 		};
 
-		public WebDisplay(WebData webData)
+		public WebDisplay(Config.ConfWebInterface webData)
 		{
 			DirectoryInfo baseDir = null;
-			if (string.IsNullOrEmpty(webData.WebinterfaceHostPath))
+			if (string.IsNullOrEmpty(webData.Path))
 			{
 				for (int i = 0; i < 5; i++)
 				{
@@ -51,8 +51,8 @@ namespace TS3AudioBot.Web.Interface
 					}
 				}
 			}
-			else if (Directory.Exists(webData.WebinterfaceHostPath))
-				baseDir = new DirectoryInfo(webData.WebinterfaceHostPath);
+			else if (Directory.Exists(webData.Path))
+				baseDir = new DirectoryInfo(webData.Path);
 
 			if (baseDir == null)
 				throw new InvalidOperationException("Can't find a WebInterface path to host. Try specifying the path to host in the config");

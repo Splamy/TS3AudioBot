@@ -234,7 +234,7 @@ namespace Ts3ClientTests
 			Console.WriteLine("End");
 			Console.ReadLine();
 		}
-		
+
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)
 		{
 			var client = (Ts3FullClient)sender;
@@ -249,8 +249,31 @@ namespace Ts3ClientTests
 			Console.WriteLine("Connected id {0}", client.ClientId);
 			var data = client.ClientInfo(client.ClientId);
 
+			//var channel = client.
+
+			var folder = client.FileTransferGetFileList(1, "/");
+			var resultDlX = client.FileTransferManager.DownloadFile(new FileInfo("test.toml"), 1, "/conf.toml");
+
+			folder = client.FileTransferGetFileList(0, "/icons");
+
+			var result = client.SendNotifyCommand(new TS3Client.Commands.Ts3Command("servergrouplist"), NotificationType.ServerGroupList).Unwrap();
+			foreach (var group in result.Notifications.Cast<ServerGroupList>())
+			{
+				var icon = group.IconId;
+				string fileName = "icon_" + icon;
+				using (var fs = new FileInfo(fileName).Open(FileMode.OpenOrCreate, FileAccess.ReadWrite))
+				{
+					var resultDl = client.FileTransferManager.DownloadFile(fs, 0, "/" + fileName);
+					if (resultDl.Ok)
+					{
+						var token = resultDl.Value;
+						token.Wait();
+					}
+				}
+			}
+
 			// warmup
-			for (int i = 0; i < 100; i++)
+			/*for (int i = 0; i < 100; i++)
 			{
 				var err = client.SendChannelMessage("Hi" + i);
 			}
@@ -264,9 +287,9 @@ namespace Ts3ClientTests
 			sw.Start();
 			var elap = (sw.ElapsedTicks / (float)Stopwatch.Frequency);
 			Console.WriteLine("{0} messages in {1}s", amnt, elap);
-			Console.WriteLine("{0:0.000}ms per message", (elap / amnt) * 1000);
+			Console.WriteLine("{0:0.000}ms per message", (elap / amnt) * 1000);*/
 
-			client.Disconnect();
+			//client.Disconnect();
 			//client.Connect(con);
 		}
 
@@ -288,7 +311,7 @@ namespace Ts3ClientTests
 				{
 					var client = (Ts3FullClient)sender;
 
-					var token = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", true);
+					var token = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", overwrite: true);
 					if (!token.Ok)
 						return;
 					token.Value.Wait();

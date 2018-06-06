@@ -118,7 +118,7 @@ namespace TS3Client.Full
 				Array.Clear(generationCounter, 0, generationCounter.Length);
 				NetworkStats.Reset();
 
-				((IDisposable)udpClient)?.Dispose();
+				udpClient?.Dispose();
 				try
 				{
 					if (connect)
@@ -144,7 +144,7 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 			lock (sendLoopLock)
 			{
-				((IDisposable)udpClient)?.Dispose();
+				udpClient?.Dispose();
 				if (!ExitReason.HasValue)
 					ExitReason = closeReason;
 				sendLoopPulse.Set();
@@ -162,7 +162,7 @@ namespace TS3Client.Full
 				{
 					// VoiceWhisper packets are for some reason excluded
 					if (packetType == PacketType.Voice)
-						return "Voice packet too big"; // Exception maybe ??? This happens when a voice packet is bigger than the allowed size
+						return "Voice packet too big"; // This happens when a voice packet is bigger than the allowed size
 
 					var tmpCompress = QuickerLz.Compress(packet, 1);
 					if (tmpCompress.Length < packet.Length)
@@ -176,8 +176,7 @@ namespace TS3Client.Full
 						return AddOutgoingSplitData(packet, packetType, addFlags);
 					}
 				}
-				SendOutgoingData(packet, packetType, addFlags);
-				return R.Ok;
+				return SendOutgoingData(packet, packetType, addFlags);
 			}
 		}
 
@@ -205,7 +204,10 @@ namespace TS3Client.Full
 					first = false;
 				}
 
-				SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags);
+				var sendResult = SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags);
+				if (!sendResult.Ok)
+					return sendResult;
+
 				pos += blockSize;
 			} while (!last);
 
@@ -351,7 +353,7 @@ namespace TS3Client.Full
 					break;
 				case PacketType.Pong:
 					LoggerRaw.Trace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
-					ReceivePong(ref packet);
+					passPacketToEvent = ReceivePong(ref packet);
 					break;
 				case PacketType.Ack:
 					LoggerRaw.Debug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
@@ -494,9 +496,8 @@ namespace TS3Client.Full
 
 		private bool ReceiveAck(ref Packet<TIn> packet)
 		{
-			if (packet.Data.Length < 2)
+			if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var packetId))
 				return false;
-			ushort packetId = BinaryPrimitives.ReadUInt16BigEndian(packet.Data);
 
 			lock (sendLoopLock)
 			{
@@ -527,9 +528,10 @@ namespace TS3Client.Full
 			AddOutgoingPacket(pongData, PacketType.Pong);
 		}
 
-		private void ReceivePong(ref Packet<TIn> packet)
+		private bool ReceivePong(ref Packet<TIn> packet)
 		{
-			ushort answerId = BinaryPrimitives.ReadUInt16BigEndian(packet.Data);
+			if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var answerId))
+				return false;
 
 			if (lastSentPingId == answerId)
 			{
@@ -537,6 +539,7 @@ namespace TS3Client.Full
 				UpdateRto(rtt);
 				NetworkStats.AddPing(rtt);
 			}
+			return true;
 		}
 
 		public void ReceivedFinalInitAck()
@@ -598,8 +601,8 @@ namespace TS3Client.Full
 					if (Closed)
 						break;
 
-					if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values)) ||
-						(initPacketCheck != null && ResendPacket(initPacketCheck)))
+					if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
+						|| (initPacketCheck != null && ResendPacket(initPacketCheck)))
 					{
 						Stop(Reason.Timeout);
 						return;

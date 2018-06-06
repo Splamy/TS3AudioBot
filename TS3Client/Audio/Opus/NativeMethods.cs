@@ -30,9 +30,22 @@ namespace TS3Client.Audio.Opus
 	/// </summary>
 	public static class NativeMethods
 	{
+		private static bool isPreloaded = false;
+		private static bool wasPreloadSuccessful = false;
+
 		static NativeMethods()
 		{
-			NativeWinDllLoader.DirectLoadLibrary("libopus");
+			PreloadLibrary();
+		}
+
+		public static bool PreloadLibrary()
+		{
+			if(!isPreloaded)
+			{
+				wasPreloadSuccessful = NativeLibraryLoader.DirectLoadLibrary("libopus");
+				isPreloaded = true;
+			}
+			return wasPreloadSuccessful;
 		}
 
 		public static string Info
@@ -41,7 +54,7 @@ namespace TS3Client.Audio.Opus
 			{
 				var verStrPtr = opus_get_version_string();
 				var verString = Marshal.PtrToStringAnsi(verStrPtr);
-				return $"{verString} ({NativeWinDllLoader.ArchFolder})";
+				return $"{verString} ({NativeLibraryLoader.ArchFolder})";
 			}
 		}
 

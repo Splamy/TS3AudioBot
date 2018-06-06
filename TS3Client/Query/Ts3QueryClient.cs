@@ -83,7 +83,7 @@ namespace TS3Client.Query
 			{
 				SendRaw("quit");
 				if (tcpClient.Connected)
-					((IDisposable)tcpClient)?.Dispose();
+					tcpClient?.Dispose();
 			}
 		}
 

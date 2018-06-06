@@ -128,7 +128,12 @@ namespace TS3AudioBot
 			return tsBaseClient.ChangeDescription(description, me.Value.ClientId).FormatLocal();
 		}
 
-		public E<LocalStr> ChangeBadges(string badgesString) => tsBaseClient.ChangeBadges(badgesString).FormatLocal();
+		public E<LocalStr> ChangeBadges(string badgesString)
+		{
+			if (!badgesString.StartsWith("overwolf=") && !badgesString.StartsWith("badges="))
+				badgesString = "overwolf=0:badges=" + badgesString;
+			return tsBaseClient.ChangeBadges(badgesString).FormatLocal();
+		}
 
 		public E<LocalStr> ChangeName(string name)
 		{
@@ -220,7 +225,7 @@ namespace TS3AudioBot
 
 		public R<ClientInfo, LocalStr> GetClientInfoById(ushort id) => tsBaseClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
 
-		internal bool SetupRights(string key, MainBotData mainBotData)
+		internal bool SetupRights(string key, Config.ConfBot confBot)
 		{
 			// TODO get own dbid !!!
 			var me = GetSelf().Unwrap();
@@ -249,13 +254,13 @@ namespace TS3AudioBot
 				groupDiff = groupsNew.Except(groups).ToArray();
 			}
 
-			if (mainBotData.BotGroupId == 0)
+			if (confBot.BotGroupId == 0)
 			{
 				// Create new Bot group
 				var botGroup = tsBaseClient.ServerGroupAdd("ServerBot");
 				if (botGroup.Ok)
 				{
-					mainBotData.BotGroupId = botGroup.Value.ServerGroupId;
+					confBot.BotGroupId.Value = (long)botGroup.Value.ServerGroupId;
 
 					// Add self to new group
 					var grpresult = tsBaseClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, me.DatabaseId);
@@ -268,7 +273,7 @@ namespace TS3AudioBot
 			const int ava = 500000; // max size in bytes for the avatar
 
 			// Add various rights to the bot group
-			var permresult = tsBaseClient.ServerGroupAddPerm(mainBotData.BotGroupId,
+			var permresult = tsBaseClient.ServerGroupAddPerm((ulong)confBot.BotGroupId.Value,
 				new[] {
 					PermissionId.i_client_whisper_power, // + Required for whisper channel playing
 					PermissionId.i_client_private_textmessage_power, // + Communication
@@ -405,9 +410,8 @@ namespace TS3AudioBot
 
 			public static LocalStr FormatLocal(this CommandError err, Func<string> prefix = null)
 			{
-				var str = LocalizationManager.GetString("error_ts_code_" + (uint)err.Id);
-				if (str == null)
-					str = $"{strings.error_ts_unknown_error} ({err.Message})";
+				var str = LocalizationManager.GetString("error_ts_code_" + (uint)err.Id)
+					?? $"{strings.error_ts_unknown_error} ({err.Message})";
 
 				if (prefix != null)
 					str = $"{prefix()} ({str})";

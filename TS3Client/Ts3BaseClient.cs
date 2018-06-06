@@ -18,8 +18,8 @@ namespace TS3Client
 	using System.Linq;
 	using System.Net;
 
-	using CmdR = E<Messages.CommandError>;
-	
+	using CmdR = System.E<Messages.CommandError>;
+
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
 	using ChannelIdT = System.UInt64;
@@ -267,15 +267,18 @@ namespace TS3Client
 
 		public CmdR UploadAvatar(System.IO.Stream image)
 		{
-			var token = FileTransferManager.UploadFile(image, 0, "/avatar", true);
+			var token = FileTransferManager.UploadFile(image, 0, "/avatar", overwrite: true);
 			if (!token.Ok)
 				return token.Error;
 			token.Value.Wait();
-			image.Seek(0, System.IO.SeekOrigin.Begin);
+			if (token.Value.Status != TransferStatus.Done)
+				return Util.CustomError("Avatar upload failed");
+			try { image.Seek(0, System.IO.SeekOrigin.Begin); }
+			catch { return Util.CustomError("Avatar upload failed"); }
 			using (var md5Dig = System.Security.Cryptography.MD5.Create())
 			{
 				var md5Bytes = md5Dig.ComputeHash(image);
-				var md5 = string.Join("", md5Bytes.Select(x => x.ToString("x2")));
+				var md5 = string.Concat(md5Bytes.Select(x => x.ToString("x2")));
 				return Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
 			}
 		}

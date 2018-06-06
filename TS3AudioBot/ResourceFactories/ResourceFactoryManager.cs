@@ -10,8 +10,10 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using CommandSystem;
+	using Config;
 	using Helper;
 	using Localization;
+	using Playlists;
 	using Sessions;
 	using System;
 	using System.Collections.Generic;
@@ -19,6 +21,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
+	using System.Diagnostics;
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
@@ -26,28 +29,26 @@ namespace TS3AudioBot.ResourceFactories
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
-		public ConfigFile Config { get; set; }
 		public CommandManager CommandManager { get; set; }
 		public Rights.RightsManager RightsManager { get; set; }
 
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
 		private readonly List<IResourceFactory> resFactories;
+		private readonly ConfFactories config;
 
-		public ResourceFactoryManager()
+		public ResourceFactoryManager(ConfFactories config)
 		{
 			Util.Init(out allFacories);
 			Util.Init(out resFactories);
 			Util.Init(out listFactories);
+			this.config = config;
 		}
 
 		public void Initialize()
 		{
-			var yfd = Config.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
-			var mfd = Config.GetDataStruct<MediaFactoryData>("MediaFactory", true);
-
-			AddFactory(new MediaFactory(mfd));
-			AddFactory(new YoutubeFactory(yfd));
+			AddFactory(new MediaFactory(config.Media));
+			AddFactory(new YoutubeFactory());
 			AddFactory(new SoundcloudFactory());
 			AddFactory(new TwitchFactory());
 			AddFactory(new BandcampFactory());
@@ -108,9 +109,11 @@ namespace TS3AudioBot.ResourceFactories
 			if (factory == null)
 				return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resource.AudioType));
 
+			var sw = Stopwatch.StartNew();
 			var result = factory.GetResourceById(resource);
 			if (!result.Ok)
 				return CouldNotLoad(result.Error.Str);
+			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 			return result.Value;
 		}
 
@@ -141,6 +144,7 @@ namespace TS3AudioBot.ResourceFactories
 				return result;
 			}
 
+			var sw = Stopwatch.StartNew();
 			var factories = FilterUsable(GetResFactoryByLink(netlinkurl));
 			List<(string, LocalStr)> errors = null;
 			foreach (var factory in factories)
@@ -151,6 +155,7 @@ namespace TS3AudioBot.ResourceFactories
 					return result;
 				(errors = errors ?? new List<(string, LocalStr)>()).Add((factory.FactoryFor, result.Error));
 			}
+			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 
 			return ToErrorString(errors);
 		}
@@ -193,7 +198,10 @@ namespace TS3AudioBot.ResourceFactories
 			if (factory == null)
 				return new LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.BaseData.AudioType));
 
-			return factory.GetThumbnail(playResource);
+			var sw = Stopwatch.StartNew();
+			var result = factory.GetThumbnail(playResource);
+			Log.Debug("Took {0}ms to load thumbnail.", sw.ElapsedMilliseconds);
+			return result;
 		}
 
 		public void AddFactory(IFactory factory)
@@ -246,7 +254,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new LocalStr(strb.ToString());
 		}
 
-		private static LocalStr ToErrorString(IReadOnlyList<(string fact, LocalStr err)> errors)
+		private static LocalStr ToErrorString(List<(string fact, LocalStr err)> errors)
 		{
 			if (errors == null || errors.Count == 0)
 				throw new ArgumentException("No errors provided", nameof(errors));

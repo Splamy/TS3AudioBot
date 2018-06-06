@@ -9,8 +9,9 @@
 
 namespace TS3AudioBot
 {
-	using Helper;
+	using Config;
 	using Localization;
+	using Playlists;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -20,6 +21,7 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
+		public ConfBot Config { get; set; }
 		public IPlayerConnection PlayerConnection { get; set; }
 		public PlaylistManager PlaylistManager { get; set; }
 		public ResourceFactoryManager ResourceFactoryManager { get; set; }
@@ -118,10 +120,8 @@ namespace TS3AudioBot
 			return R.Ok;
 		}
 
-		private E<LocalStr> StartResource(PlayResource playResource, MetaData config)
+		private E<LocalStr> StartResource(PlayResource playResource, MetaData meta)
 		{
-			//PlayerConnection.AudioStop();
-
 			if (string.IsNullOrWhiteSpace(playResource.PlayUri))
 			{
 				Log.Error("Internal resource error: link is empty (resource:{0})", playResource);
@@ -136,7 +136,8 @@ namespace TS3AudioBot
 				return new LocalStr(strings.error_playmgr_internal_error);
 			}
 
-			PlayerConnection.Volume = config.Volume ?? AudioValues.DefaultVolume;
+			PlayerConnection.Volume = meta.Volume
+				?? Math.Min(Math.Max(PlayerConnection.Volume, Config.Audio.Volume.Min), Config.Audio.Volume.Max);
 
 			return R.Ok;
 		}
@@ -281,20 +282,5 @@ namespace TS3AudioBot
 	public static class AudioValues
 	{
 		public const float MaxVolume = 100;
-
-		internal static AudioFrameworkData audioFrameworkData;
-
-		public static float MaxUserVolume => audioFrameworkData.MaxUserVolume;
-		public static float DefaultVolume => audioFrameworkData.DefaultVolume;
-	}
-
-	public class AudioFrameworkData : ConfigData
-	{
-		[Info("The default volume a song should start with", "10")]
-		public float DefaultVolume { get => Get<float>(); set => Set(value); }
-		[Info("The maximum volume a normal user can request", "30")]
-		public float MaxUserVolume { get => Get<float>(); set => Set(value); }
-		[Info("How the bot should play music. Options are: whisper, voice, (!...)", "whisper")]
-		public string AudioMode { get => Get<string>(); set => Set(value); }
 	}
 }

@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Algorithm
 {
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 
@@ -26,12 +27,13 @@ namespace TS3AudioBot.Algorithm
 
 		public static R<IFilterAlgorithm> GetFilterByName(string filter)
 		{
+			R<IFilterAlgorithm> ToR(IFilterAlgorithm obj) => R<IFilterAlgorithm>.OkR(obj);
 			switch (filter)
 			{
-			case "exact": return ExactFilter.Instance.ToR();
-			case "substring": return SubstringFilter.Instance.ToR();
-			case "ic3": return Ic3Filter.Instance.ToR();
-			case "hamming": return HammingFilter.Instance.ToR();
+			case "exact": return ToR(ExactFilter.Instance);
+			case "substring": return ToR(SubstringFilter.Instance);
+			case "ic3": return ToR(Ic3Filter.Instance);
+			case "hamming": return ToR(HammingFilter.Instance);
 			default: return R.Err;
 			}
 		}

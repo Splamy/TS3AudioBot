@@ -9,14 +9,15 @@
 
 namespace TS3AudioBot.Helper.AudioTags
 {
+	using Playlists;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
 
-	internal class M3uReader
+	internal static class M3uReader
 	{
-		const int MaxLineLength = 4096;
+		private const int MaxLineLength = 4096;
 
 		public static R<IReadOnlyList<PlaylistItem>, string> TryGetData(Stream stream)
 		{

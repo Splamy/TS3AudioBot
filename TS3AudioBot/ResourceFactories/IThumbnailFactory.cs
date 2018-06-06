@@ -10,6 +10,7 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Localization;
+	using System;
 	using System.IO;
 
 	public interface IThumbnailFactory : IFactory

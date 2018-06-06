@@ -29,6 +29,7 @@ namespace TS3ABotUnitTests
 	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.CommandSystem.CommandResults;
 	using TS3AudioBot.CommandSystem.Commands;
+	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
@@ -48,7 +49,6 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-
 			var inv1 = new ClientData { ClientId = 10, DatabaseId = 101, Name = "Invoker1" };
 			var inv2 = new ClientData { ClientId = 20, DatabaseId = 102, Name = "Invoker2" };
 
@@ -60,18 +60,18 @@ namespace TS3ABotUnitTests
 			var data2 = new HistorySaveData(ar2, inv2.DatabaseId);
 			var data3 = new HistorySaveData(ar3, 103);
 
-			var memcfg = ConfigFile.CreateDummy();
-			var hmf = memcfg.GetDataStruct<HistoryManagerData>("HistoryManager", true);
-			hmf.HistoryFile = testFile;
-			hmf.FillDeletedIds = false;
+			var confHistory = ConfigTable.CreateRoot<ConfHistory>();
+			confHistory.FillDeletedIds.Value = false;
+			var confDb = ConfigTable.CreateRoot<ConfDb>();
+			confDb.Path.Value = testFile;
 
 			DbStore db;
 			HistoryManager hf;
 
 			void CreateDbStore()
 			{
-				db = new DbStore(hmf);
-				hf = new HistoryManager(hmf) { Database = db };
+				db = new DbStore(confDb);
+				hf = new HistoryManager(confHistory) { Database = db };
 				hf.Initialize();
 			}
 
@@ -319,7 +319,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Factory_YoutubeFactoryTest()
 		{
-			using (IResourceFactory rfac = new YoutubeFactory(new YoutubeFactoryData()))
+			using (IResourceFactory rfac = new YoutubeFactory())
 			{
 				// matching links
 				Assert.AreEqual(rfac.MatchResource(@"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);

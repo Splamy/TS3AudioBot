@@ -49,7 +49,6 @@ namespace TS3Client
 				}
 			}
 
-
 			// host is specified as an IP (+ Port)
 			if ((endPoint = ParseIpEndPoint(address)) != null)
 			{
@@ -95,7 +94,7 @@ namespace TS3Client
 				return false;
 			var domainList = new List<string>();
 			for (int i = 1; i < Math.Min(domainSplit.Length, 4); i++)
-				domainList.Add(string.Join(".", domainSplit, (domainSplit.Length - (i + 1)), i + 1));
+				domainList.Add(string.Join(".", domainSplit, domainSplit.Length - (i + 1), i + 1));
 
 			// Try resolve tcp prefix
 			// Under this address we'll get the tsdns server

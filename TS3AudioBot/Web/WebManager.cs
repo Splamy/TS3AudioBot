@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Web
 {
+	using Config;
 	using Dependency;
 	using Helper;
 	using Helper.Environment;
@@ -27,17 +28,17 @@ namespace TS3AudioBot.Web
 
 		private HttpListener webListener;
 		private Thread serverThread;
-		private readonly WebData webData;
 		private bool startWebServer;
+		private readonly ConfWeb config;
 
 		public CoreInjector Injector { get; set; }
 
 		public Api.WebApi Api { get; private set; }
 		public Interface.WebDisplay Display { get; private set; }
 
-		public WebManager(WebData webData)
+		public WebManager(ConfWeb config)
 		{
-			this.webData = webData;
+			this.config = config;
 		}
 
 		public void Initialize()
@@ -47,21 +48,21 @@ namespace TS3AudioBot.Web
 
 			InitializeSubcomponents();
 
-			StartServerAsync();
+			StartServerThread();
 		}
 
 		private void InitializeSubcomponents()
 		{
 			startWebServer = false;
-			if (webData.EnableApi)
+			if (config.Api.Enabled)
 			{
 				Api = new Api.WebApi();
 				Injector.RegisterModule(Api);
 				startWebServer = true;
 			}
-			if (webData.EnableWebinterface)
+			if (config.Interface.Enabled)
 			{
-				Display = new Interface.WebDisplay(webData);
+				Display = new Interface.WebDisplay(config.Interface);
 				Injector.RegisterModule(Display);
 				startWebServer = true;
 			}
@@ -79,17 +80,17 @@ namespace TS3AudioBot.Web
 
 		private void ReloadHostPaths()
 		{
-			localhost = new Uri($"http://localhost:{webData.Port}/");
+			localhost = new Uri($"http://localhost:{config.Port.Value}/");
 
 			if (Util.IsAdmin || SystemData.IsLinux) // todo: hostlist
 			{
-				var addrs = webData.HostAddress.SplitNoEmpty(' ');
+				var addrs = config.Hosts.Value;
 				hostPaths = new Uri[addrs.Length + 1];
 				hostPaths[0] = localhost;
 
 				for (int i = 0; i < addrs.Length; i++)
 				{
-					var uriBuilder = new UriBuilder(addrs[i]) { Port = webData.Port };
+					var uriBuilder = new UriBuilder(addrs[i]) { Port = config.Port };
 					hostPaths[i + 1] = uriBuilder.Uri;
 				}
 			}
@@ -121,7 +122,7 @@ namespace TS3AudioBot.Web
 			return AuthenticationSchemes.Anonymous;
 		}
 
-		public void StartServerAsync()
+		public void StartServerThread()
 		{
 			if (!startWebServer)
 				return;
@@ -179,23 +180,5 @@ namespace TS3AudioBot.Web
 			webListener?.Stop();
 			webListener = null;
 		}
-	}
-
-	public class WebData : ConfigData
-	{
-		[Info("A space seperated list of all urls the web api should be possible to be accessed with", "")]
-		public string HostAddress { get => Get<string>(); set => Set(value); }
-
-		[Info("The port for the api server", "8180")]
-		public ushort Port { get => Get<ushort>(); set => Set(value); }
-
-		[Info("If you want to start the web api server.", "false")]
-		public bool EnableApi { get => Get<bool>(); set => Set(value); }
-
-		[Info("If you want to start the webinterface server", "false")]
-		public bool EnableWebinterface { get => Get<bool>(); set => Set(value); }
-
-		[Info("The folder to host. Leave empty to let the bot look for default locations.", "")]
-		public string WebinterfaceHostPath { get => Get<string>(); set => Set(value); }
 	}
 }

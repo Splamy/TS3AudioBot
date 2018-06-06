@@ -92,7 +92,7 @@ namespace TS3AudioBot.CommandSystem
 		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			if (!info.HasRights(requiredRights))
-				throw new CommandException($"You cannot execute \"{InvokeName}\". You are missing the \"{RequiredRight}\" right.!",
+				throw new CommandException($"You cannot execute \"{InvokeName}\". You are missing the \"{RequiredRight}\" right.!", // LOC: TODO
 					CommandExceptionReason.MissingRights);
 			return base.Execute(info, arguments, returnTypes);
 		}

@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Sessions
 {
 	using Helper;
+	using System;
 	using System.Collections.Generic;
 	using TS3Client.Messages;
 

@@ -9,9 +9,11 @@
 
 namespace TS3AudioBot.History
 {
+	using Config;
 	using Helper;
 	using LiteDB;
 	using Localization;
+	using Playlists;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -26,9 +28,9 @@ namespace TS3AudioBot.History
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
 		private LiteCollection<AudioLogEntry> audioLogEntries;
-		private readonly HistoryManagerData historyManagerData;
 		private readonly LinkedList<int> unusedIds;
 		private readonly object dbLock = new object();
+		private readonly ConfHistory config;
 
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
@@ -43,12 +45,12 @@ namespace TS3AudioBot.History
 				.Id(x => x.Id);
 		}
 
-		public HistoryManager(HistoryManagerData hmd)
+		public HistoryManager(ConfHistory config)
 		{
 			Formatter = new SmartHistoryFormatter();
-			historyManagerData = hmd;
 
 			Util.Init(out unusedIds);
+			this.config = config;
 		}
 
 		public void Initialize()
@@ -145,7 +147,7 @@ namespace TS3AudioBot.History
 				return "Track name is empty";
 
 			int nextHid;
-			if (historyManagerData.FillDeletedIds && unusedIds.Count > 0)
+			if (config.FillDeletedIds && unusedIds.Count > 0)
 			{
 				nextHid = unusedIds.First.Value;
 				unusedIds.RemoveFirst();
@@ -290,15 +292,5 @@ namespace TS3AudioBot.History
 			}
 			return nextIter;
 		}
-	}
-
-	public class HistoryManagerData : ConfigData
-	{
-		[Info("Allows to enable or disable history features completely to save resources.", "true")]
-		public bool EnableHistory { get => Get<bool>(); set => Set(value); }
-		[Info("The Path to the history database file", "history.db")]
-		public string HistoryFile { get => Get<string>(); set => Set(value); }
-		[Info("Whether or not deleted history ids should be filled up with new songs", "true")]
-		public bool FillDeletedIds { get => Get<bool>(); set => Set(value); }
 	}
 }

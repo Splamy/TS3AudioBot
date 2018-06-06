@@ -9,9 +9,11 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Config;
 	using Helper;
 	using Helper.AudioTags;
 	using Localization;
+	using Playlists;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
@@ -20,11 +22,11 @@ namespace TS3AudioBot.ResourceFactories
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly MediaFactoryData mediaFactoryData;
+		private readonly ConfPath config;
 
-		public MediaFactory(MediaFactoryData mfd)
+		public MediaFactory(ConfPath config)
 		{
-			mediaFactoryData = mfd;
+			this.config = config;
 		}
 
 		public string FactoryFor => "media";
@@ -130,14 +132,14 @@ namespace TS3AudioBot.ResourceFactories
 				return null;
 
 			if (uri.IsAbsoluteUri)
-				return File.Exists(path) || Directory.Exists(path) ? uri : null;
+				return File.Exists(uri.AbsolutePath) || Directory.Exists(uri.AbsolutePath) ? uri : null;
 
 			try
 			{
 				var fullPath = Path.GetFullPath(path);
 				if (File.Exists(fullPath) || Directory.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
-				fullPath = Path.GetFullPath(Path.Combine(mediaFactoryData.DefaultPath, path));
+				fullPath = Path.GetFullPath(Path.Combine(config.Path.Value, path));
 				if (File.Exists(fullPath) || Directory.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
 			}
@@ -263,11 +265,5 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			Image = image;
 		}
-	}
-
-	public class MediaFactoryData : ConfigData
-	{
-		[Info("The default path to look for local resources.", "")]
-		public string DefaultPath { get => Get<string>(); set => Set(value); }
 	}
 }

@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Audio
 {
+	using Config;
 	using Helper;
 	using System;
 	using System.ComponentModel;
@@ -26,7 +27,7 @@ namespace TS3AudioBot.Audio
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 		private readonly object ffmpegLock = new object();
 
-		private readonly Ts3FullClientData ts3FullClientData;
+		private readonly ConfToolsFfmpeg config;
 
 		public event EventHandler OnSongEnd;
 
@@ -40,9 +41,9 @@ namespace TS3AudioBot.Audio
 		public int Channels { get; } = 2;
 		public int BitsPerSample { get; } = 16;
 
-		public FfmpegProducer(Ts3FullClientData tfcd)
+		public FfmpegProducer(ConfToolsFfmpeg config)
 		{
-			ts3FullClientData = tfcd;
+			this.config = config;
 			audioTimer = new PreciseAudioTimer(this);
 		}
 
@@ -138,7 +139,7 @@ namespace TS3AudioBot.Audio
 					{
 						StartInfo = new ProcessStartInfo
 						{
-							FileName = ts3FullClientData.FfmpegPath,
+							FileName = config.Path.Value,
 							Arguments = string.Concat(extraPreParam, " ", PreLinkConf, url, PostLinkConf, " ", extraPostParam),
 							RedirectStandardOutput = true,
 							RedirectStandardInput = true,
@@ -217,10 +218,7 @@ namespace TS3AudioBot.Audio
 				if (ffmpegProcess == null)
 					return TimeSpan.Zero;
 
-				if (parsedSongLength.HasValue)
-					return parsedSongLength.Value;
-
-				return TimeSpan.Zero;
+				return parsedSongLength ?? TimeSpan.Zero;
 			}
 		}
 

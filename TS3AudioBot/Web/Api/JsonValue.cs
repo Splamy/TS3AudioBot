@@ -15,13 +15,18 @@ namespace TS3AudioBot.Web.Api
 
 	public class JsonValue<T> : JsonValueBase
 	{
-		public static Func<T, string> AsString { get; set; }
-		public static Func<T, object> AsJson { get; set; }
+		protected Func<T, string> AsString { get; }
+		protected Func<T, object> AsJson { get; }
 
-		public new T Value => (T)base.Value;
+		new public T Value => (T)base.Value;
 
 		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }
+		public JsonValue(T value, Func<T, string> asString = null, Func<T, object> asJson = null) : base(value)
+		{
+			AsString = asString;
+			AsJson = asJson;
+		}
 
 		public override object GetSerializeObject()
 		{
@@ -35,10 +40,10 @@ namespace TS3AudioBot.Web.Api
 		{
 			if (AsStringResult == null)
 			{
-				if (Value == null)
-					AsStringResult = string.Empty;
-				else if (AsString != null)
+				if (AsString != null)
 					AsStringResult = AsString.Invoke(Value);
+				else if (Value == null)
+					AsStringResult = string.Empty;
 				else
 					AsStringResult = Value.ToString();
 			}
@@ -48,12 +53,6 @@ namespace TS3AudioBot.Web.Api
 
 	public class JsonValueBase : JsonObject
 	{
-		static JsonValueBase()
-		{
-			JsonValue<BotCommand>.AsString = cmd => cmd.GetHelp();
-			JsonValue<BotCommand>.AsJson = cmd => cmd.AsJsonObj;
-		}
-
 		protected object Value { get; }
 
 		public JsonValueBase(object value) : base(null) { Value = value; }

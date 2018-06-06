@@ -27,9 +27,9 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
 
-		public R<PlayResource, LocalStr> GetResource(string url)
+		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
-			var match = TwitchMatch.Match(url);
+			var match = TwitchMatch.Match(uri);
 			if (!match.Success)
 				return new LocalStr(strings.error_media_invalid_uri);
 			return GetResourceById(new AudioResource(match.Groups[3].Value, null, FactoryFor));
@@ -81,10 +81,12 @@ namespace TS3AudioBot.ResourceFactories
 					case "EXT-X-MEDIA":
 						string streamInfo = reader.ReadLine();
 						Match infoMatch;
-						if (string.IsNullOrEmpty(streamInfo) ||
-							 !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success ||
-							 infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
+						if (string.IsNullOrEmpty(streamInfo)
+							|| !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success
+							|| infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
+						{
 							return new LocalStr(strings.error_media_internal_missing + " (m3uStream)");
+						}
 
 						var streamData = new StreamData();
 						// #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=128000,CODECS="mp4a.40.2",VIDEO="audio_only"
@@ -99,8 +101,8 @@ namespace TS3AudioBot.ResourceFactories
 							case "CODECS": streamData.Codec = TextUtil.StripQuotes(value); break;
 							case "VIDEO":
 								streamData.QualityType = Enum.TryParse(TextUtil.StripQuotes(value), out StreamQuality quality)
-								  ? quality
-								  : StreamQuality.unknown; break;
+								 ? quality
+								 : StreamQuality.unknown; break;
 							}
 						}
 

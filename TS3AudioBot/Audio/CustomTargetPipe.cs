@@ -17,7 +17,7 @@ namespace TS3AudioBot.Audio
 	using TS3Client.Audio;
 	using TS3Client.Full;
 
-	internal class CustomTargetPipe : ITargetManager, IAudioPassiveConsumer
+	internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 	{
 		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
 		public ulong GroupWhisperTargetId { get; private set; }

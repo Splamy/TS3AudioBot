@@ -10,6 +10,7 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Localization;
+	using System;
 
 	public interface IResourceFactory : IFactory
 	{
@@ -18,9 +19,9 @@ namespace TS3AudioBot.ResourceFactories
 		/// <returns>True if the factory thinks it can parse it, false otherwise.</returns>
 		MatchCertainty MatchResource(string uri);
 		/// <summary>The factory will try to parse the uri and create a playable resource from it.</summary>
-		/// <param name="url">Any link or something similar a user can obtain to pass it here.</param>
+		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise</returns>
-		R<PlayResource, LocalStr> GetResource(string url);
+		R<PlayResource, LocalStr> GetResource(string uri);
 		/// <summary>The factory will try to parse the unique identifier of its scope of responsibility and create a playable resource from it.</summary>
 		/// <param name="resource">A resource containing the unique id for a song this factory is responsible for.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise</returns>

@@ -13,6 +13,7 @@ namespace TS3AudioBot.ResourceFactories
 	using Localization;
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
+	using Playlists;
 	using System;
 	using System.Globalization;
 	using System.IO;
@@ -30,14 +31,14 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchPlaylist(string uri) => MatchResource(uri);
 
-		public R<PlayResource, LocalStr> GetResource(string link)
+		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
-			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
+			var uriObj = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}");
+			if (!WebWrapper.DownloadString(out string jsonResponse, uriObj))
 			{
-				if (!SoundcloudLink.IsMatch(link))
+				if (!SoundcloudLink.IsMatch(uri))
 					return new LocalStr(strings.error_media_invalid_uri);
-				return YoutubeDlWrapped(link);
+				return YoutubeDlWrapped(uri);
 			}
 			var parsedDict = ParseJson(jsonResponse);
 			var resource = ParseJObjectToResource(parsedDict);

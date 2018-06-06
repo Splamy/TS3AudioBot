@@ -7,8 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Helper
+namespace TS3AudioBot.Config.Deprecated
 {
+	using Helper;
 	using Localization;
 	using System;
 	using System.Collections.Generic;
@@ -348,7 +349,7 @@ namespace TS3AudioBot.Helper
 	public class ConfigData
 	{
 		internal string AssociatedClass { get; set; }
-		private Dictionary<string, object> Values = new Dictionary<string, object>();
+		private readonly Dictionary<string, object> Values = new Dictionary<string, object>();
 		internal event PropertyChangedEventHandler PropertyChanged;
 
 		protected T Get<T>([System.Runtime.CompilerServices.CallerMemberName] string memberName = "")

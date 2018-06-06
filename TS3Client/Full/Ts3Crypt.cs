@@ -641,14 +641,14 @@ namespace TS3Client.Full
 				return DummyKeyAndNonceTuple;
 
 			// only the lower 4 bits are used for the real packetType
-			byte packetTypeRaw = (byte)packetType;
+			var packetTypeRaw = (byte)packetType;
 
 			int cacheIndex = packetTypeRaw * (fromServer ? 1 : 2);
 			if (!cachedKeyNonces[cacheIndex].HasValue || cachedKeyNonces[cacheIndex].Value.generation != generationId)
 			{
 				// this part of the key/nonce is fixed by the message direction and packetType
 
-				byte[] tmpToHash = new byte[ivStruct.Length == 20 ? 26 : 70];
+				var tmpToHash = new byte[ivStruct.Length == 20 ? 26 : 70];
 
 				tmpToHash[0] = fromServer ? (byte)0x30 : (byte)0x31;
 				tmpToHash[1] = packetTypeRaw;
@@ -661,8 +661,8 @@ namespace TS3Client.Full
 				cachedKeyNonces[cacheIndex] = (result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
 			}
 
-			byte[] key = new byte[16];
-			byte[] nonce = new byte[16];
+			var key = new byte[16];
+			var nonce = new byte[16];
 			Array.Copy(cachedKeyNonces[cacheIndex].Value.key, 0, key, 0, 16);
 			Array.Copy(cachedKeyNonces[cacheIndex].Value.nonce, 0, nonce, 0, 16);
 
@@ -721,6 +721,12 @@ namespace TS3Client.Full
 			return result;
 		}
 
+		/// <summary>
+		/// Hashes a password like TeamSpeak.
+		/// The hash works like this: base64(sha1(password))
+		/// </summary>
+		/// <param name="password">The password to hash.</param>
+		/// <returns>The hashed password.</returns>
 		public static string HashPassword(string password)
 		{
 			if (string.IsNullOrEmpty(password))
@@ -788,8 +794,8 @@ namespace TS3Client.Full
 		/// <param name="toLevel">The targeted level.</param>
 		public static void ImproveSecurity(IdentityData identity, int toLevel)
 		{
-			byte[] hashBuffer = new byte[identity.PublicKeyString.Length + MaxUlongStringLen];
-			byte[] pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
+			var hashBuffer = new byte[identity.PublicKeyString.Length + MaxUlongStringLen];
+			var pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
 			Array.Copy(pubKeyBytes, 0, hashBuffer, 0, pubKeyBytes.Length);
 
 			identity.LastCheckedKeyOffset = Math.Max(identity.ValidKeyOffset, identity.LastCheckedKeyOffset);
@@ -810,8 +816,8 @@ namespace TS3Client.Full
 
 		public static int GetSecurityLevel(IdentityData identity)
 		{
-			byte[] hashBuffer = new byte[identity.PublicKeyString.Length + MaxUlongStringLen];
-			byte[] pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
+			var hashBuffer = new byte[identity.PublicKeyString.Length + MaxUlongStringLen];
+			var pubKeyBytes = Encoding.ASCII.GetBytes(identity.PublicKeyString);
 			Array.Copy(pubKeyBytes, 0, hashBuffer, 0, pubKeyBytes.Length);
 			return GetSecurityLevel(hashBuffer, pubKeyBytes.Length, identity.ValidKeyOffset);
 		}
@@ -898,18 +904,5 @@ namespace TS3Client.Full
 		}
 
 		#endregion
-
-		enum CryptoVer
-		{
-			Unknown,
-			/// <summary>
-			/// Supported on server &lt;3.1.
-			/// Supported on all clients.</summary>
-			Version1 = 1,
-			/// <summary>
-			/// Supported on server &gt;=3.1.
-			/// Supported on clients &gt;=3.1.6.</summary>
-			Version2 = 2,
-		}
 	}
 }

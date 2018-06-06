@@ -12,14 +12,15 @@ namespace TS3AudioBot
 	using Algorithm;
 	using CommandSystem;
 	using CommandSystem.CommandResults;
+	using Config;
 	using Dependency;
 	using Helper;
 	using History;
 	using Localization;
+	using Playlists;
 	using Plugins;
 	using Sessions;
 	using System;
-	using System.IO;
 	using System.Threading;
 	using TS3Client;
 	using TS3Client.Full;
@@ -30,7 +31,7 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private MainBotData mainBotData;
+		private readonly ConfBot config;
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
@@ -42,7 +43,7 @@ namespace TS3AudioBot
 
 		// Injected dependencies
 
-		public ConfigFile Config { get; set; }
+		public ConfRoot CoreConfig { get; set; }
 		public ResourceFactories.ResourceFactoryManager FactoryManager { get; set; }
 		public CommandManager CommandManager { get; set; }
 		public BotManager BotManager { get; set; }
@@ -51,28 +52,38 @@ namespace TS3AudioBot
 		// Own modules
 
 		/// <summary>Connection object for the current client.</summary>
-		public TeamspeakControl QueryConnection { get; set; }
+		public TeamspeakControl ClientConnection { get; set; }
 		public SessionManager SessionManager { get; set; }
 		public PlayManager PlayManager { get; set; }
-		public ITargetManager TargetManager { get; private set; }
+		public IVoiceTarget TargetManager { get; private set; }
 		public IPlayerConnection PlayerConnection { get; private set; }
 		public Filter Filter { get; private set; }
+
+		public Bot(ConfBot config)
+		{
+			this.config = config;
+		}
 
 		public E<string> InitializeBot()
 		{
 			Log.Info("Bot connecting...");
 
-			// Read Config File
-			var afd = Config.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
-			var tfcd = Config.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
-			var hmd = Config.GetDataStruct<HistoryManagerData>("HistoryManager", true);
-			var pld = Config.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
-			mainBotData = Config.GetDataStruct<MainBotData>("MainBot", true);
-			mainBotData.PropertyChanged += OnConfigUpdate;
-
-			AudioValues.audioFrameworkData = afd;
+			// Registering config changes
+			config.CommandMatcher.Changed += (s, e) =>
+			{
+				var newMatcher = Filter.GetFilterByName(e.NewValue);
+				if (newMatcher.Ok)
+					Filter.Current = newMatcher.Value;
+			};
+			config.Language.Changed += (s, e) =>
+			{
+				var langResult = LocalizationManager.LoadLanguage(e.NewValue);
+				if (!langResult.Ok)
+					Log.Error("Failed to load language file ({0})", langResult.Error);
+			};
 
 			Injector.RegisterType<Bot>();
+			Injector.RegisterType<ConfBot>();
 			Injector.RegisterType<BotInjector>();
 			Injector.RegisterType<PlaylistManager>();
 			Injector.RegisterType<TeamspeakControl>();
@@ -80,26 +91,27 @@ namespace TS3AudioBot
 			Injector.RegisterType<HistoryManager>();
 			Injector.RegisterType<PlayManager>();
 			Injector.RegisterType<IPlayerConnection>();
-			Injector.RegisterType<ITargetManager>();
+			Injector.RegisterType<IVoiceTarget>();
 			Injector.RegisterType<Ts3BaseFunctions>();
 			Injector.RegisterType<Filter>();
 
 			Injector.RegisterModule(this);
+			Injector.RegisterModule(config);
 			Injector.RegisterModule(Injector);
-			Injector.RegisterModule(new PlaylistManager(pld));
-			var teamspeakClient = new Ts3Full(tfcd);
+			Injector.RegisterModule(new PlaylistManager(config.Playlists));
+			var teamspeakClient = new Ts3Full(config);
 			Injector.RegisterModule(teamspeakClient);
 			Injector.RegisterModule(teamspeakClient.GetLowLibrary<Ts3FullClient>());
 			Injector.RegisterModule(new SessionManager());
 			HistoryManager historyManager = null;
-			if (hmd.EnableHistory)
-				Injector.RegisterModule(historyManager = new HistoryManager(hmd), x => x.Initialize());
+			if (config.History.Enabled)
+				Injector.RegisterModule(historyManager = new HistoryManager(config.History), x => x.Initialize());
 			Injector.RegisterModule(new PlayManager());
 			Injector.RegisterModule(teamspeakClient.TargetPipe);
 
-			var filter = Filter.GetFilterByName(mainBotData.CommandMatching);
+			var filter = Filter.GetFilterByName(config.CommandMatcher);
 			Injector.RegisterModule(new Filter { Current = filter.OkOr(Filter.DefaultAlgorithm) });
-			if (!filter.Ok) Log.Warn("Unknown CommandMatching config. Using default.");
+			if (!filter.Ok) Log.Warn("Unknown command_matcher config. Using default.");
 
 			if (!Injector.AllResolved())
 			{
@@ -118,27 +130,28 @@ namespace TS3AudioBot
 			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
 			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
 			// Log our resource in the history
-			if (hmd.EnableHistory)
+			if (config.History.Enabled)
 				PlayManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Owner));
 			// Update our thumbnail
 			PlayManager.AfterResourceStarted += GenerateStatusImage;
 			PlayManager.AfterResourceStopped += GenerateStatusImage;
 			// Register callback for all messages happening
-			QueryConnection.OnMessageReceived += TextCallback;
+			ClientConnection.OnMessageReceived += TextCallback;
 			// Register callback to remove open private sessions, when user disconnects
-			QueryConnection.OnClientDisconnect += OnClientDisconnect;
-			QueryConnection.OnBotConnected += OnBotConnected;
-			QueryConnection.OnBotDisconnect += OnBotDisconnect;
-			BadgesString = tfcd.ClientBadges;
+			ClientConnection.OnClientDisconnect += OnClientDisconnect;
+			ClientConnection.OnBotConnected += OnBotConnected;
+			ClientConnection.OnBotDisconnect += OnBotDisconnect;
+			BadgesString = config.Connect.Badges;
 
 			// Connect the query after everyting is set up
-			return QueryConnection.Connect();
+			return ClientConnection.Connect();
 		}
 
 		private void OnBotConnected(object sender, EventArgs e)
 		{
 			Log.Info("Bot connected.");
-			QueryConnection?.ChangeBadges(BadgesString);
+			if (!string.IsNullOrEmpty(BadgesString))
+				ClientConnection?.ChangeBadges(BadgesString);
 		}
 
 		private void OnBotDisconnect(object sender, DisconnectEventArgs e)
@@ -148,7 +161,7 @@ namespace TS3AudioBot
 
 		private void TextCallback(object sender, TextMessage textMessage)
 		{
-			var langResult = LocalizationManager.LoadLanguage(mainBotData.Language);
+			var langResult = LocalizationManager.LoadLanguage(config.Language);
 			if (!langResult.Ok)
 				Log.Error("Failed to load language file ({0})", langResult.Error);
 
@@ -158,11 +171,11 @@ namespace TS3AudioBot
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
 
-			var refreshResult = QueryConnection.RefreshClientBuffer(true);
+			var refreshResult = ClientConnection.RefreshClientBuffer(true);
 			if (!refreshResult.Ok)
 				Log.Warn("Bot is not correctly set up. Some commands might not work or are slower.", refreshResult.Error.Str);
 
-			var clientResult = QueryConnection.GetClientById(textMessage.InvokerId);
+			var clientResult = ClientConnection.GetClientById(textMessage.InvokerId);
 
 			// get the current session
 			UserSession session = null;
@@ -251,13 +264,13 @@ namespace TS3AudioBot
 					setString = strings.info_botstatus_sleeping;
 				}
 
-				return QueryConnection.ChangeDescription(setString);
+				return ClientConnection.ChangeDescription(setString);
 			}
 		}
 
 		private void GenerateStatusImage(object sender, EventArgs e)
 		{
-			if (!mainBotData.GenerateStatusAvatar)
+			if (!config.GenerateStatusAvatar)
 				return;
 
 			if (e is PlayInfoEventArgs startEvent)
@@ -270,7 +283,7 @@ namespace TS3AudioBot
 				System.Drawing.Image bmpOrig;
 				try
 				{
-					using(var stream = thumresult.Value)
+					using (var stream = thumresult.Value)
 						bmpOrig = System.Drawing.Image.FromStream(stream);
 				}
 				catch (ArgumentException)
@@ -282,10 +295,10 @@ namespace TS3AudioBot
 				// TODO: remove 'now playing' text and use better imaging lib
 				using (var bmp = ImageUtil.BuildStringImage("Now playing: " + startEvent.ResourceData.ResourceTitle, bmpOrig))
 				{
-					using (var mem = new MemoryStream())
+					using (var mem = new System.IO.MemoryStream())
 					{
 						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
-						var result = QueryConnection.UploadAvatar(mem);
+						var result = ClientConnection.UploadAvatar(mem);
 						if (!result.Ok)
 							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
@@ -296,7 +309,7 @@ namespace TS3AudioBot
 			{
 				using (var sleepPic = Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png"))
 				{
-					var result = QueryConnection.UploadAvatar(sleepPic);
+					var result = ClientConnection.UploadAvatar(sleepPic);
 					if (!result.Ok)
 						Log.Warn("Could not save avatar: {0}", result.Error);
 				}
@@ -308,7 +321,7 @@ namespace TS3AudioBot
 			const string DefaultVoiceScript = "!whisper off";
 			const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getmy channel))";
 
-			var mode = AudioValues.audioFrameworkData.AudioMode;
+			var mode = config.Audio.SendMode.Value;
 			string script;
 			if (mode.StartsWith("!", StringComparison.Ordinal))
 				script = mode;
@@ -380,23 +393,12 @@ namespace TS3AudioBot
 			return new BotLock(!IsDisposed, this);
 		}
 
-		public BotInfo GetInfo() => new BotInfo { Id = Id, NickName = QueryConnection.GetSelf().OkOr(null)?.Name };
-
-		private void OnConfigUpdate(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+		public BotInfo GetInfo() => new BotInfo
 		{
-			if (e.PropertyName == nameof(MainBotData.CommandMatching))
-			{
-				var newMatcher = Filter.GetFilterByName(mainBotData.CommandMatching);
-				if (newMatcher.Ok)
-					Filter.Current = newMatcher.Value;
-			}
-			else if (e.PropertyName == nameof(MainBotData.Language))
-			{
-				var langResult = LocalizationManager.LoadLanguage(mainBotData.Language);
-				if (!langResult.Ok)
-					Log.Error("Failed to load language file ({0})", langResult.Error);
-			}
-		}
+			Id = Id,
+			NickName = ClientConnection.GetSelf().OkOr(null)?.Name,
+			Server = config.Connect.Address,
+		};
 
 		public void Dispose()
 		{
@@ -413,11 +415,11 @@ namespace TS3AudioBot
 				PlayManager.Stop();
 				PlayManager = null;
 
-				PlayerConnection.Dispose(); // before: logStream,
+				PlayerConnection.Dispose();
 				PlayerConnection = null;
 
-				QueryConnection.Dispose(); // before: logStream,
-				QueryConnection = null;
+				ClientConnection.Dispose();
+				ClientConnection = null;
 			}
 		}
 	}
@@ -429,18 +431,5 @@ namespace TS3AudioBot
 		public string Server { get; set; }
 
 		public override string ToString() => $"Id: {Id} Name: {NickName} Server: {Server}"; // LOC: TODO
-	}
-	
-	internal class MainBotData : ConfigData
-	{
-		[Info("The language the bot should use to respond to users. (Make sure you have added the required language packs)", "en")]
-		public string Language { get => Get<string>(); set => Set(value); }
-		[Info("Teamspeak group id giving the Bot enough power to do his job", "0")]
-		public ulong BotGroupId { get => Get<ulong>(); set => Set(value); }
-		[Info("Generate fancy status images as avatar", "true")]
-		public bool GenerateStatusAvatar { get => Get<bool>(); set => Set(value); }
-		[Info("Defines how the bot tries to match your !commands.\n" +
-			"# Possible types: exact, substring, ic3, hamming", "ic3")]
-		public string CommandMatching { get => Get<string>(); set => Set(value); }
 	}
 }

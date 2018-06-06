@@ -7,9 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot
+namespace TS3AudioBot.Playlists
 {
 	using Algorithm;
+	using Config;
 	using Helper;
 	using Localization;
 	using ResourceFactories;
@@ -23,10 +24,9 @@ namespace TS3AudioBot
 	public sealed class PlaylistManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
 
-		private readonly PlaylistManagerData data;
+		private readonly ConfPlaylists config;
 		private static readonly Encoding FileEncoding = Util.Utf8Encoder;
 		private readonly Playlist freeList;
 		private readonly Playlist trashList;
@@ -66,11 +66,9 @@ namespace TS3AudioBot
 		/// <summary>Loop state for the entire playlist.</summary>
 		public bool Loop { get; set; }
 
-		// Playlistfactory related stuff
-
-		public PlaylistManager(PlaylistManagerData pmd)
+		public PlaylistManager(ConfPlaylists config)
 		{
-			data = pmd;
+			this.config = config;
 			shuffle = new LinearFeedbackShiftRegister { Seed = Util.Random.Next() };
 			freeList = new Playlist(string.Empty);
 			trashList = new Playlist(string.Empty);
@@ -255,11 +253,11 @@ namespace TS3AudioBot
 			if (plist == null)
 				throw new ArgumentNullException(nameof(plist));
 
-			var nameCheck = IsNameValid(plist.Name);
+			var nameCheck = Util.IsSafeFileName(plist.Name);
 			if (!nameCheck)
 				return nameCheck.Error;
 
-			var di = new DirectoryInfo(data.PlaylistPath);
+			var di = new DirectoryInfo(config.Path);
 			if (!di.Exists)
 				return new LocalStr(strings.error_playlist_no_store_directory);
 
@@ -306,7 +304,7 @@ namespace TS3AudioBot
 			return R.Ok;
 		}
 
-		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(data.PlaylistPath, name ?? string.Empty));
+		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(config.Path, name ?? string.Empty));
 
 		public E<LocalStr> DeletePlaylist(string name, ulong requestingClientDbId, bool force = false)
 		{
@@ -331,17 +329,6 @@ namespace TS3AudioBot
 			catch (System.Security.SecurityException) { return new LocalStr(strings.error_io_missing_permission); }
 		}
 
-		public static E<LocalStr> IsNameValid(string name)
-		{
-			if (string.IsNullOrEmpty(name))
-				return new LocalStr(strings.error_playlist_name_invalid_empty);
-			if (name.Length >= 64)
-				return new LocalStr(strings.error_playlist_name_invalid_too_long);
-			if (!ValidPlistName.IsMatch(name))
-				return new LocalStr(strings.error_playlist_name_invalid_character);
-			return R.Ok;
-		}
-
 		public static string CleanseName(string name)
 		{
 			if (string.IsNullOrEmpty(name))
@@ -349,7 +336,7 @@ namespace TS3AudioBot
 			if (name.Length >= 64)
 				name = name.Substring(0, 63);
 			name = CleansePlaylistName.Replace(name, "");
-			if (!IsNameValid(name))
+			if (!Util.IsSafeFileName(name))
 				name = "playlist";
 			return name;
 		}
@@ -357,7 +344,7 @@ namespace TS3AudioBot
 		public IEnumerable<string> GetAvailablePlaylists() => GetAvailablePlaylists(null);
 		public IEnumerable<string> GetAvailablePlaylists(string pattern)
 		{
-			var di = new DirectoryInfo(data.PlaylistPath);
+			var di = new DirectoryInfo(config.Path);
 			if (!di.Exists)
 				return Array.Empty<string>();
 
@@ -382,71 +369,5 @@ namespace TS3AudioBot
 			default: return new LocalStr(strings.error_playlist_special_not_found);
 			}
 		}
-	}
-
-	public class PlaylistItem
-	{
-		public MetaData Meta { get; }
-		//one of these:
-		// playdata holds all needed information for playing + first possibility
-		// > can be a resource
-		public AudioResource Resource { get; }
-
-		public string DisplayString => Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";
-
-		private PlaylistItem(MetaData meta) { Meta = meta ?? new MetaData(); }
-		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { Resource = resource; }
-	}
-
-	public class Playlist
-	{
-		// metainfo
-		public string Name { get; set; }
-		public ulong? CreatorDbId { get; set; }
-		// file behaviour: persistent playlist will be synced to a file
-		public bool FilePersistent { get; set; }
-		// playlist data
-		public int Count => resources.Count;
-		private readonly List<PlaylistItem> resources;
-
-		public Playlist(string name, ulong? creatorDbId = null)
-		{
-			Util.Init(out resources);
-			CreatorDbId = creatorDbId;
-			Name = name;
-		}
-
-		public int AddItem(PlaylistItem item)
-		{
-			resources.Add(item);
-			return resources.Count - 1;
-		}
-
-		public int InsertItem(PlaylistItem item, int index)
-		{
-			resources.Insert(index, item);
-			return index;
-		}
-
-		public void AddRange(IEnumerable<PlaylistItem> items) => resources.AddRange(items);
-
-		public void RemoveItemAt(int i)
-		{
-			if (i < 0 || i >= resources.Count)
-				return;
-			resources.RemoveAt(i);
-		}
-
-		public void Clear() => resources.Clear();
-
-		public IEnumerable<PlaylistItem> AsEnumerable() => resources;
-
-		public PlaylistItem GetResource(int index) => resources[index];
-	}
-	
-	public class PlaylistManagerData : ConfigData
-	{
-		[Info("Path the playlist folder", "Playlists")]
-		public string PlaylistPath { get => Get<string>(); set => Set(value); }
 	}
 }

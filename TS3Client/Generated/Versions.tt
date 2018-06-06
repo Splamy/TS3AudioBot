@@ -48,7 +48,7 @@ namespace TS3Client.Full
 	/// Describes a triple of version, platform and a cryptographical signature (usually distributed by "TeamSpeak Systems").
 	/// Each triple has to match and is not interchangeable with other triple parts.
 	/// </summary>
-	public class VersionSign
+	public sealed class VersionSign
 	{
 		private static readonly string[] Plattforms = { null, "Windows", "Linux", "OS X", "Android", "iOS" };
 
@@ -75,11 +75,24 @@ namespace TS3Client.Full
 			PlattformName = plattform;
 		}
 
-		// Many ids implemented from here: https://r4p3.net/threads/client-builds.499/
+		public bool CheckValid() => Ts3Crypt.EdCheck(this);
 
-		// ReSharper disable InconsistentNaming, UnusedMember.Global
-		<# foreach (var line in data.Skip(1)) { var ver = dict[line[1]]; #>
-		public static VersionSign VER_<#= ver.plat #>_<#= BuildToFld(line[0]) #> { get; } = new VersionSign("<#= line[0] #>", ClientPlattform.<#= ver.enu #>, "<#= line[2] #>");<# } #>
+		// ReSharper disable InconsistentNaming, UnusedMember.Global<# 
+		var header = data[0];
+		int ichan = Array.IndexOf(header, "channel");
+		int iname = Array.IndexOf(header, "version");
+		int iplat = Array.IndexOf(header, "platform");
+		int ihash = Array.IndexOf(header, "hash");
+		var duplicates = new HashSet<string>();
+
+		foreach (var line in data.Skip(1).Reverse()) {
+			var ver = dict[line[iplat]];
+			var fldName = $"VER_{ver.plat}_{BuildToFld(line[iname])}";
+			if (duplicates.Contains(fldName))
+				continue;
+			duplicates.Add(fldName);
+		#>
+		public static VersionSign <#= fldName #> { get; } = new VersionSign("<#= line[iname] #>", ClientPlattform.<#= ver.enu #>, "<#= line[ihash] #>");<# } #>
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 

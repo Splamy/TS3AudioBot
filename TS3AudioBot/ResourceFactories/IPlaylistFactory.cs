@@ -10,6 +10,8 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Localization;
+	using Playlists;
+	using System;
 
 	public interface IPlaylistFactory : IFactory
 	{

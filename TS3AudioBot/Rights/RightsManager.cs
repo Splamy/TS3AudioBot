@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Rights
 {
+	using Config;
 	using CommandSystem;
 	using Helper;
 	using Nett;
@@ -29,7 +30,7 @@ namespace TS3AudioBot.Rights
 
 		private bool needsRecalculation;
 		private readonly Cache<string, ExecuteContext> cachedRights;
-		private readonly RightsManagerData rightsManagerData;
+		private readonly ConfRights config;
 		private RightsRule rootRule;
 		private RightsRule[] rules;
 		private readonly HashSet<string> registeredRights;
@@ -42,11 +43,11 @@ namespace TS3AudioBot.Rights
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
 
-		public RightsManager(RightsManagerData rmd)
+		public RightsManager(ConfRights config)
 		{
 			Util.Init(out cachedRights);
 			Util.Init(out registeredRights);
-			rightsManagerData = rmd;
+			this.config = config;
 		}
 
 		public void Initialize()
@@ -194,15 +195,15 @@ namespace TS3AudioBot.Rights
 		{
 			try
 			{
-				if (!File.Exists(rightsManagerData.RightsFile))
+				if (!File.Exists(config.Path))
 				{
 					Log.Info("No rights file found. Creating default.");
-					using (var fs = File.OpenWrite(rightsManagerData.RightsFile))
+					using (var fs = File.OpenWrite(config.Path))
 					using (var data = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
 						data.CopyTo(fs);
 				}
 
-				var table = Toml.ReadFile(rightsManagerData.RightsFile);
+				var table = Toml.ReadFile(config.Path);
 				var ctx = new ParseContext();
 				RecalculateRights(table, ctx);
 				foreach (var err in ctx.Errors)
@@ -566,11 +567,5 @@ namespace TS3AudioBot.Rights
 			Groups = Declarations.OfType<RightsGroup>().ToArray();
 			Rules = Declarations.OfType<RightsRule>().ToArray();
 		}
-	}
-
-	public class RightsManagerData : ConfigData
-	{
-		[Info("Path to the config file", "rights.toml")]
-		public string RightsFile { get => Get<string>(); set => Set(value); }
 	}
 }

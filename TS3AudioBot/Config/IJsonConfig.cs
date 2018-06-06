@@ -7,23 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.Config
 {
-	public enum RResultCode // Resource Result Code
-	{
-		UnknowError,
-		Success,
-		MediaInvalidUri,
-		MediaUnknownUri,
-		MediaNoWebResponse,
-		MediaFileNotFound,
-		ScInvalidLink,
-		TwitchInvalidUrl,
-		TwitchMalformedM3u8File,
-		TwitchNoStreamsExtracted,
+	using Newtonsoft.Json;
+	using System;
 
-		// general errors
-		NoConnection,
-		AccessDenied,
+	public interface IJsonConfig
+	{
+		void ToJson(JsonWriter writer);
+		E<string> FromJson(JsonReader reader);
 	}
 }

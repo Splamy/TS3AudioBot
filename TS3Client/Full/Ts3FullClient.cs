@@ -22,7 +22,7 @@ namespace TS3Client.Full
 	using ChannelIdT = System.UInt64;
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
-	using CmdR = E<Messages.CommandError>;
+	using CmdR = System.E<Messages.CommandError>;
 
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
@@ -220,7 +220,7 @@ namespace TS3Client.Full
 				throw Util.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
-		
+
 		private void NetworkLoop(object ctxObject)
 		{
 			var ctx = (ConnectionContext)ctxObject;
@@ -315,7 +315,7 @@ namespace TS3Client.Full
 			var result = ts3Crypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
 			if (!result)
 			{
-				DisconnectInternal(context, Util.CustomError($@"Failed to calculate shared secret: {result.Error}"));
+				DisconnectInternal(context, Util.CustomError($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
 
@@ -424,7 +424,7 @@ namespace TS3Client.Full
 				if (!result.Ok)
 					return result.Error;
 				if (com.ExpectResponse)
-					return await wb.WaitForMessageAsync<T>();
+					return await wb.WaitForMessageAsync<T>().ConfigureAwait(false);
 				else
 					// This might not be the nicest way to return in this case
 					// but we don't know what the response is, so this acceptable.

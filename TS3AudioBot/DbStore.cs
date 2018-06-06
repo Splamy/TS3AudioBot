@@ -9,7 +9,7 @@
 
 namespace TS3AudioBot
 {
-	using History;
+	using Config;
 	using LiteDB;
 	using System;
 	using System.IO;
@@ -21,10 +21,10 @@ namespace TS3AudioBot
 		private readonly LiteDatabase database;
 		private readonly LiteCollection<DbMetaData> metaTable;
 
-		public DbStore(HistoryManagerData hmd)
+		public DbStore(ConfDb config)
 		{
-			var historyFile = new FileInfo(hmd.HistoryFile);
-			database = new LiteDatabase(historyFile.FullName);
+			var historyFile = Path.GetFullPath(config.Path);
+			database = new LiteDatabase(historyFile);
 
 			metaTable = database.GetCollection<DbMetaData>(DbMetaInformationTable);
 		}

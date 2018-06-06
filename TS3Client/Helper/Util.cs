@@ -57,7 +57,7 @@ namespace TS3Client.Helper
 		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
 		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
-	
+
 	internal static class DebugUtil
 	{
 		public static string DebugToHex(byte[] bytes) => bytes == null ? "<null>" : DebugToHex(bytes.AsSpan());
@@ -76,9 +76,9 @@ namespace TS3Client.Helper
 			}
 			return new string(c);
 		}
-		
+
 		public static byte[] DebugFromHex(string hex)
-			=> hex.Split(new []{' '}, StringSplitOptions.RemoveEmptyEntries)
+			=> hex.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
 				.Select(x => Convert.ToByte(x, 16)).ToArray();
 	}
 }

@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Rights
 {
+	using Helper;
 	using Nett;
 	using System;
 	using System.Collections.Generic;
@@ -76,41 +77,41 @@ namespace TS3AudioBot.Rights
 			switch (key)
 			{
 			case "host":
-				var host = TomlTools.GetValues<string>(tomlObj);
+				var host = tomlObj.AsValues<string>();
 				if (host == null) ctx.Errors.Add("<host> Field has invalid data.");
 				else MatchHost = new HashSet<string>(host);
 				return true;
 			case "groupid":
-				var groupid = TomlTools.GetValues<ulong>(tomlObj);
+				var groupid = tomlObj.AsValues<ulong>();
 				if (groupid == null) ctx.Errors.Add("<groupid> Field has invalid data.");
 				else MatchClientGroupId = new HashSet<ulong>(groupid);
 				return true;
 			case "channelgroupid":
-				var cgroupid = TomlTools.GetValues<ulong>(tomlObj);
+				var cgroupid = tomlObj.AsValues<ulong>();
 				if (cgroupid == null) ctx.Errors.Add("<channelgroupid> Field has invalid data.");
 				else MatchChannelGroupId = new HashSet<ulong>(cgroupid);
 				return true;
 			case "useruid":
-				var useruid = TomlTools.GetValues<string>(tomlObj);
+				var useruid = tomlObj.AsValues<string>();
 				if (useruid == null) ctx.Errors.Add("<useruid> Field has invalid data.");
 				else MatchClientUid = new HashSet<string>(useruid);
 				return true;
 			case "perm":
-				var perm = TomlTools.GetValues<string>(tomlObj);
+				var perm = tomlObj.AsValues<string>();
 				if (perm == null) ctx.Errors.Add("<perm> Field has invalid data.");
 				else MatchPermission = new HashSet<string>(perm);
 				return true;
 			case "apitoken":
-				var apitoken = TomlTools.GetValues<string>(tomlObj);
+				var apitoken = tomlObj.AsValues<string>();
 				if (apitoken == null) ctx.Errors.Add("<apitoken> Field has invalid data.");
 				else MatchToken = new HashSet<string>(apitoken);
 				return true;
 			case "isapi":
-				if (!TomlTools.TryGetValue<bool>(tomlObj, out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");
+				if (!tomlObj.TryAsValue<bool>(out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");
 				else MatchIsApi = isapi;
 				return true;
 			case "visibility":
-				var visibility = TomlTools.GetValues<TextMessageTargetMode>(tomlObj);
+				var visibility = tomlObj.AsValues<TextMessageTargetMode>();
 				if (visibility == null) ctx.Errors.Add("<visibility> Field has invalid data.");
 				else MatchVisibility = visibility;
 				return true;

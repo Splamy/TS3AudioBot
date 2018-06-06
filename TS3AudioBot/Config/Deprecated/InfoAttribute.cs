@@ -7,7 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Helper
+namespace TS3AudioBot.Config.Deprecated
 {
 	using System;
 
@@ -15,8 +15,8 @@ namespace TS3AudioBot.Helper
 	internal sealed class InfoAttribute : Attribute
 	{
 		public bool HasDefault => DefaultValue != null;
-		public string Description { get; private set; }
-		public string DefaultValue { get; private set; }
+		public string Description { get; }
+		public string DefaultValue { get; }
 
 		public InfoAttribute(string description)
 		{

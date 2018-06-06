@@ -14,7 +14,7 @@ namespace TS3AudioBot
 	using TS3Client.Audio;
 
 	/// <summary>Used to specify playing mode and active targets to send to.</summary>
-	public interface ITargetManager
+	public interface IVoiceTarget
 	{
 		TargetSendMode SendMode { get; set; }
 		ulong GroupWhisperTargetId { get; }

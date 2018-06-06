@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Rights
 {
+	using Helper;
 	using Nett;
 	using System;
 	using System.Collections.Generic;
@@ -38,15 +39,15 @@ namespace TS3AudioBot.Rights
 			switch (key)
 			{
 			case "+":
-				DeclAdd = TomlTools.GetValues<string>(tomlObj);
+				DeclAdd = tomlObj.AsValues<string>();
 				if (DeclAdd == null) ctx.Errors.Add("<+> Field has invalid data.");
 				return true;
 			case "-":
-				DeclDeny = TomlTools.GetValues<string>(tomlObj);
+				DeclDeny = tomlObj.AsValues<string>();
 				if (DeclDeny == null) ctx.Errors.Add("<-> Field has invalid data.");
 				return true;
 			case "include":
-				includeNames = TomlTools.GetValues<string>(tomlObj);
+				includeNames = tomlObj.AsValues<string>();
 				if (includeNames == null) ctx.Errors.Add("<include> Field has invalid data.");
 				return true;
 			default:
@@ -85,11 +86,13 @@ namespace TS3AudioBot.Rights
 			{
 				Includes = includeNames.Select(x => ResolveGroup(x, ctx)).ToArray();
 				for (int i = 0; i < includeNames.Length; i++)
+				{
 					if (Includes[i] == null)
 					{
 						ctx.Errors.Add($"Could not find group \"{includeNames[i]}\" to include.");
 						hasErrors = true;
 					}
+				}
 				includeNames = null;
 			}
 			return !hasErrors;

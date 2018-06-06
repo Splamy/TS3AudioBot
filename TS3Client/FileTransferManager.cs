@@ -63,12 +63,15 @@ namespace TS3Client
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the upload is finished.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = false)
+		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
 			if (!request.Ok)
+			{
+				if (closeStream) stream.Close();
 				return request.Error;
+			}
 			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length) { CloseStreamWhenDone = closeStream };
 			StartWorker(token);
 			return token;
@@ -90,12 +93,15 @@ namespace TS3Client
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the download is finished.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> DownloadFile(Stream stream, ChannelIdT channel, string path, string channelPassword = "", bool closeStream = false)
+		public R<FileTransferToken, CommandError> DownloadFile(Stream stream, ChannelIdT channel, string path, string channelPassword = "", bool closeStream = true)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
 			if (!request.Ok)
+			{
+				if (closeStream) stream.Close();
 				return request.Error;
+			}
 			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, 0) { CloseStreamWhenDone = closeStream };
 			StartWorker(token);
 			return token;
@@ -166,7 +172,7 @@ namespace TS3Client
 		{
 			lock (token)
 			{
-				if (token.Status != TransferStatus.Trasfering && token.Status != TransferStatus.Waiting)
+				if (token.Status != TransferStatus.Transfering && token.Status != TransferStatus.Waiting)
 					return;
 				parent.FileTransferStop(token.ServerTransferId, delete);
 				token.Status = TransferStatus.Cancelled;
@@ -184,7 +190,7 @@ namespace TS3Client
 		{
 			lock (token)
 			{
-				if (token.Status != TransferStatus.Trasfering)
+				if (token.Status != TransferStatus.Transfering)
 					return Util.CustomError("No transfer found");
 			}
 			var result = parent.FileTransferList();
@@ -214,7 +220,7 @@ namespace TS3Client
 					{
 						if (token.Status != TransferStatus.Waiting)
 							continue;
-						token.Status = TransferStatus.Trasfering;
+						token.Status = TransferStatus.Transfering;
 					}
 
 					Log.Trace("Creating new file transfer connection to {0}", parent.remoteAddress);
@@ -248,7 +254,7 @@ namespace TS3Client
 							}
 							lock (token)
 							{
-								if (token.Status == TransferStatus.Trasfering && token.LocalStream.Position == token.Size)
+								if (token.Status == TransferStatus.Transfering && token.LocalStream.Position == token.Size)
 								{
 									token.Status = TransferStatus.Done;
 									if (token.CloseStreamWhenDone)
@@ -323,7 +329,7 @@ namespace TS3Client
 
 		public void Wait()
 		{
-			while (Status == TransferStatus.Waiting || Status == TransferStatus.Trasfering)
+			while (Status == TransferStatus.Waiting || Status == TransferStatus.Transfering)
 				Thread.Sleep(10);
 		}
 	}
@@ -337,7 +343,7 @@ namespace TS3Client
 	public enum TransferStatus
 	{
 		Waiting,
-		Trasfering,
+		Transfering,
 		Done,
 		Cancelled,
 		Failed,

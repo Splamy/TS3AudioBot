@@ -13,12 +13,12 @@ namespace TS3AudioBot.Helper.Environment
 	using System.Diagnostics;
 	using System.Reflection;
 	using System.Text.RegularExpressions;
-	using Version = System.ValueTuple<Runtime, string, SemVer>;
+	using PlatformVersion = System.ValueTuple<Runtime, string, System.Version>;
 
 	public static class SystemData
 	{
-		private static readonly Regex PlattformRegex = new Regex(@"(\w+)=(.*)", Util.DefaultRegexConfig | RegexOptions.Multiline);
-		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){2,3}", Util.DefaultRegexConfig | RegexOptions.Multiline);
+		private static readonly Regex PlattformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
+		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){2,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 
 		public static bool IsLinux { get; }
 			= Environment.OSVersion.Platform == PlatformID.Unix
@@ -85,7 +85,7 @@ namespace TS3AudioBot.Helper.Environment
 						}
 					}
 				}
-				catch (Exception) { }
+				catch { }
 
 				if (plattform == null)
 					plattform = "Linux";
@@ -99,8 +99,8 @@ namespace TS3AudioBot.Helper.Environment
 			return $"{plattform} {version} ({bitness})";
 		}
 
-		public static (Runtime Runtime, string FullName, SemVer SemVer) RuntimeData { get; } = GenRuntimeData();
-		private static Version GenRuntimeData()
+		public static (Runtime Runtime, string FullName, Version SemVer) RuntimeData { get; } = GenRuntimeData();
+		private static PlatformVersion GenRuntimeData()
 		{
 			var ver = GetNetCoreVersion();
 			if (ver.HasValue)
@@ -117,7 +117,7 @@ namespace TS3AudioBot.Helper.Environment
 			return (Runtime.Unknown, "? (?)", null);
 		}
 
-		private static Version? GetNetCoreVersion()
+		private static PlatformVersion? GetNetCoreVersion()
 		{
 			var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
 			var assemblyPath = assembly.CodeBase.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
@@ -129,7 +129,7 @@ namespace TS3AudioBot.Helper.Environment
 			return (Runtime.Core, $".NET Core ({version})", semVer);
 		}
 
-		private static Version? GetMonoVersion()
+		private static PlatformVersion? GetMonoVersion()
 		{
 			var type = Type.GetType("Mono.Runtime");
 			if (type == null)
@@ -142,27 +142,25 @@ namespace TS3AudioBot.Helper.Environment
 			return (Runtime.Mono, $"Mono ({version})", semVer);
 		}
 
-		private static Version? GetNetFrameworkVersion()
+		private static PlatformVersion? GetNetFrameworkVersion()
 		{
 			var version = Environment.Version.ToString();
 			var semVer = ParseToSemVer(version);
 			return (Runtime.Net, $".NET Framework {version}", semVer);
 		}
 
-		private static SemVer ParseToSemVer(string version)
+		private static Version ParseToSemVer(string version)
 		{
 			var semMatch = SemVerRegex.Match(version);
 			if (!semMatch.Success)
 				return null;
 
-			var semVer = new SemVer();
-			if (int.TryParse(semMatch.Groups[1].Value, out var major)) semVer.Major = major;
-			if (int.TryParse(semMatch.Groups[2].Captures[0].Value, out var minor)) semVer.Minor = minor;
-			if (int.TryParse(semMatch.Groups[2].Captures[1].Value, out var patch)) semVer.Patch = patch;
-			if (semMatch.Groups[2].Captures.Count > 2 &&
-				int.TryParse(semMatch.Groups[2].Captures[2].Value, out var revision)) semVer.Revision = revision;
-			else semVer.Revision = null;
-			return semVer;
+			if (!int.TryParse(semMatch.Groups[1].Value, out var major)) major = 0;
+			if (!int.TryParse(semMatch.Groups[2].Captures[0].Value, out var minor)) minor = 0;
+			if (!int.TryParse(semMatch.Groups[2].Captures[1].Value, out var patch)) patch = 0;
+			if (!(semMatch.Groups[2].Captures.Count > 2
+				&& int.TryParse(semMatch.Groups[2].Captures[2].Value, out var revision))) revision = 0;
+			return new Version(major, minor, patch, revision);
 		}
 	}
 
@@ -184,15 +182,8 @@ namespace TS3AudioBot.Helper.Environment
 		public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
 	}
 
-	public class SemVer
+	public static class SemVerExtension
 	{
-		public int Major { get; set; }
-		public int Minor { get; set; }
-		public int Patch { get; set; }
-
-		// Not used in SemVer
-		public int? Revision { get; set; }
-
-		public override string ToString() => $"{Major}.{Minor}.{Patch}" + (Revision.HasValue ? $".{Revision}" : null);
+		public static string AsSemVer(this Version version) => $"{version.Major}.{version.Minor}.{version.Build}" + (version.Revision != 0 ? $".{version.Revision}" : null);
 	}
 }

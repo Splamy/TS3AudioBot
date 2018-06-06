@@ -14,7 +14,6 @@ namespace TS3AudioBot.CommandSystem
 	using Commands;
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
 
 	public class XCommandSystem
 	{
@@ -23,6 +22,7 @@ namespace TS3AudioBot.CommandSystem
 		public static readonly CommandResultType[] ReturnString = { CommandResultType.String };
 		public static readonly CommandResultType[] ReturnStringOrNothing = { CommandResultType.String, CommandResultType.Empty };
 		public static readonly CommandResultType[] ReturnCommandOrString = { CommandResultType.Command, CommandResultType.String };
+		public static readonly CommandResultType[] ReturnAnyPreferNothing = { CommandResultType.Empty, CommandResultType.String, CommandResultType.Json, CommandResultType.Command };
 
 		/// <summary>
 		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
@@ -44,7 +44,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			RootCommand = new RootCommand();
 		}
-		
+
 		internal ICommand AstToCommandResult(AstNode node)
 		{
 			switch (node.Type)

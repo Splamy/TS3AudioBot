@@ -10,6 +10,7 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Localization;
+	using Config;
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
@@ -19,8 +20,8 @@ namespace TS3AudioBot.ResourceFactories
 	internal static class YoutubeDlHelper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		public static YoutubeFactoryData DataObj { private get; set; }
-		private static string YoutubeDlPath => DataObj?.YoutubedlPath;
+		public static ConfRoot DataObj { private get; set; }
+		private static string YoutubeDlPath => DataObj?.Tools.YoutubeDl.Path.Value;
 
 		public static R<(string title, IList<string> links), LocalStr> FindAndRunYoutubeDl(string id)
 		{

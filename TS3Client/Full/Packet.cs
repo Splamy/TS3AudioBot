@@ -120,7 +120,6 @@ namespace TS3Client.Full
 			{
 				BinaryPrimitives.WriteUInt16BigEndian(into.Slice(0, 2), PacketId);
 				into[2] = PacketTypeFlagged;
-
 			}
 			else if (typeof(TDir) == typeof(C2S))
 			{
