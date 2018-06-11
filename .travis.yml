@@ -42,7 +42,7 @@ install:
 script:
   - |
     if [[ $DOTNETCORE = 1 ]]; then
-      dotnet build --framework netcoreapp2.0 TS3AudioBot.sln
+      dotnet build --framework netcoreapp2.0 --configuration Release TS3AudioBot
     else
       if command -v msbuild; then
         buildtool="msbuild"
@@ -52,7 +52,7 @@ script:
         echo "No mono build tool found!"
         false
       fi
-      "${buildtool} /p:Configuration=Release /p:TargetFramework=net46 TS3AudioBot.sln"
+      "${buildtool}" /p:Configuration=Release /p:TargetFramework=net46 TS3AudioBot.sln
       mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/net46/TS3ABotUnitTests.dll
     fi
 
