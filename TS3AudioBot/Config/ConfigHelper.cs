@@ -11,7 +11,6 @@ namespace TS3AudioBot.Config
 {
 	using Newtonsoft.Json;
 	using System;
-	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
 	using System.Text;
@@ -21,16 +20,14 @@ namespace TS3AudioBot.Config
 	{
 		public static ConfigPart[] ByPathAsArray(this ConfigPart config, string path)
 		{
-			IEnumerable<ConfigPart> enu;
 			try
 			{
-				enu = config.ByPath(path);
+				return config.ByPath(path).ToArray();
 			}
 			catch (Exception ex)
 			{
 				throw new CommandException("Invalid TomlPath expression", ex, CommandExceptionReason.CommandError);
 			}
-			return enu.ToArray();
 		}
 
 		public static E<string> FromJson(this IJsonConfig jsonConfig, string json)
