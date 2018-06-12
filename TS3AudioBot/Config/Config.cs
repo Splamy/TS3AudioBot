@@ -16,38 +16,6 @@ namespace TS3AudioBot.Config
 	using System.IO;
 	using System.Linq;
 
-	public static class ConfTest
-	{
-		// TEST
-		public static void Main()
-		{
-			Setup.VerifyAll();
-
-			var confr = ConfRoot.OpenOrCreate("ts3audiobot.toml");
-			var conf = confr.Unwrap();
-
-			//Console.WriteLine(conf.TomlObject.DumpToJson());
-
-			//Console.ReadLine();
-			//return;
-
-			//conf.Configs.RootPath.Value = "hello";
-
-			conf.Save("ts3outtest.toml", false);
-
-			var newtoml = ConfigTable.CreateRoot<ConfRoot>();
-			var splum = newtoml.Bots.CreateItem("splummi");
-
-			var botConfig = conf.GetBotTemplate("default").Unwrap();
-
-			var pathres = botConfig.ByPath("bot_group_id").ToArray();
-
-			newtoml.Save("new.toml", true);
-
-			//Console.ReadKey();
-		}
-	}
-
 	public partial class ConfRoot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

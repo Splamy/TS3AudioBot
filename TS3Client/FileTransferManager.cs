@@ -16,8 +16,10 @@ namespace TS3Client
 	using System.IO;
 	using System.Linq;
 	using System.Net.Sockets;
+	using System.Security.Cryptography;
 	using System.Text;
 	using System.Threading;
+	using System.Threading.Tasks;
 
 	using ClientUidT = System.String;
 	using ClientDbIdT = System.UInt64;
@@ -63,7 +65,7 @@ namespace TS3Client
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the upload is finished.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true)
+		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true, bool createMd5 = false)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
@@ -72,7 +74,7 @@ namespace TS3Client
 				if (closeStream) stream.Close();
 				return request.Error;
 			}
-			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length) { CloseStreamWhenDone = closeStream };
+			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length, createMd5) { CloseStreamWhenDone = closeStream };
 			StartWorker(token);
 			return token;
 		}
@@ -232,6 +234,7 @@ namespace TS3Client
 							token.Status = TransferStatus.Failed;
 							continue;
 						}
+						using (var md5Dig = token.CreateMd5 ? MD5.Create() : null)
 						using (var stream = client.GetStream())
 						{
 							byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
@@ -242,7 +245,18 @@ namespace TS3Client
 
 							if (token.Direction == TransferDirection.Upload)
 							{
-								token.LocalStream.CopyTo(stream);
+								// https://referencesource.microsoft.com/#mscorlib/system/io/stream.cs,2a0f078c2e0c0aa8,references
+								const int bufferSize = 81920;
+								var buffer = new byte[bufferSize];
+								int read;
+								md5Dig?.Initialize();
+								while ((read = token.LocalStream.Read(buffer, 0, buffer.Length)) != 0)
+								{
+									stream.Write(buffer, 0, read);
+									md5Dig?.TransformBlock(buffer, 0, read, buffer, 0);
+								}
+								md5Dig?.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+								token.Md5Sum = md5Dig?.Hash;
 							}
 							else // Download
 							{
@@ -293,24 +307,26 @@ namespace TS3Client
 		public long SeekPosition { get; internal set; }
 		public string TransferKey { get; internal set; }
 		public bool CloseStreamWhenDone { get; set; }
+		public bool CreateMd5 { get; }
+		public byte[] Md5Sum { get; internal set; }
 
 		public TransferStatus Status { get; internal set; }
 
 		public FileTransferToken(Stream localStream, FileUpload upload, ChannelIdT channelId,
-			string path, string channelPassword, long size)
+			string path, string channelPassword, long size, bool createMd5)
 			: this(localStream, upload.ClientFileTransferId, upload.ServerFileTransferId, TransferDirection.Upload,
-				channelId, path, channelPassword, upload.Port, upload.SeekPosistion, upload.FileTransferKey, size)
+				channelId, path, channelPassword, upload.Port, upload.SeekPosistion, upload.FileTransferKey, size, createMd5)
 		{ }
 
 		public FileTransferToken(Stream localStream, FileDownload download, ChannelIdT channelId,
 			string path, string channelPassword, long seekPos)
 			: this(localStream, download.ClientFileTransferId, download.ServerFileTransferId, TransferDirection.Download,
-				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, download.Size)
+				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, download.Size, false)
 		{ }
 
 		public FileTransferToken(Stream localStream, ushort cftid, ushort sftid,
 			TransferDirection dir, ChannelIdT channelId, string path, string channelPassword, ushort port, long seekPos,
-			string transferKey, long size)
+			string transferKey, long size, bool createMd5)
 		{
 			CloseStreamWhenDone = false;
 			Status = TransferStatus.Waiting;
@@ -325,12 +341,23 @@ namespace TS3Client
 			SeekPosition = seekPos;
 			TransferKey = transferKey;
 			Size = size;
+			CreateMd5 = createMd5;
 		}
 
 		public void Wait()
 		{
 			while (Status == TransferStatus.Waiting || Status == TransferStatus.Transfering)
 				Thread.Sleep(10);
+		}
+
+		public async Task WaitAsync(CancellationToken token)
+		{
+			while (Status == TransferStatus.Waiting || Status == TransferStatus.Transfering)
+			{
+				if (token.IsCancellationRequested)
+					return;
+				await Task.Delay(10).ConfigureAwait(false);
+			}
 		}
 	}
 

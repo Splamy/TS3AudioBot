@@ -120,6 +120,8 @@ namespace TS3AudioBot
 				}
 			}
 
+			YoutubeDlHelper.DataObj = config.Tools.YoutubeDl;
+
 			Bots.RunBots(interactive);
 
 			return R.Ok;

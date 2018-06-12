@@ -22,6 +22,7 @@ namespace TS3AudioBot
 	using Sessions;
 	using System;
 	using System.Threading;
+	using System.Threading.Tasks;
 	using TS3Client;
 	using TS3Client.Full;
 	using TS3Client.Messages;
@@ -276,33 +277,36 @@ namespace TS3AudioBot
 			if (e is PlayInfoEventArgs startEvent)
 			{
 #if NET46
-				var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
-				if (!thumresult.Ok)
-					return;
+				Task.Run(() =>
+				{
+					var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
+					if (!thumresult.Ok)
+						return;
 
-				System.Drawing.Image bmpOrig;
-				try
-				{
-					using (var stream = thumresult.Value)
-						bmpOrig = System.Drawing.Image.FromStream(stream);
-				}
-				catch (ArgumentException)
-				{
-					Log.Warn("Inavlid image data");
-					return;
-				}
-
-				// TODO: remove 'now playing' text and use better imaging lib
-				using (var bmp = ImageUtil.BuildStringImage("Now playing: " + startEvent.ResourceData.ResourceTitle, bmpOrig))
-				{
-					using (var mem = new System.IO.MemoryStream())
+					System.Drawing.Image bmpOrig;
+					try
 					{
-						bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
-						var result = ClientConnection.UploadAvatar(mem);
-						if (!result.Ok)
-							Log.Warn("Could not save avatar: {0}", result.Error);
+						using (var stream = thumresult.Value)
+							bmpOrig = System.Drawing.Image.FromStream(stream);
 					}
-				}
+					catch (ArgumentException)
+					{
+						Log.Warn("Inavlid image data");
+						return;
+					}
+
+					// TODO: remove 'now playing' text and use better imaging lib
+					using (var bmp = ImageUtil.BuildStringImage("Now playing: " + startEvent.ResourceData.ResourceTitle, bmpOrig))
+					{
+						using (var mem = new System.IO.MemoryStream())
+						{
+							bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
+							var result = ClientConnection.UploadAvatar(mem);
+							if (!result.Ok)
+								Log.Warn("Could not save avatar: {0}", result.Error);
+						}
+					}
+				});
 #endif
 			}
 			else

@@ -267,20 +267,14 @@ namespace TS3Client
 
 		public CmdR UploadAvatar(System.IO.Stream image)
 		{
-			var token = FileTransferManager.UploadFile(image, 0, "/avatar", overwrite: true);
+			var token = FileTransferManager.UploadFile(image, 0, "/avatar", overwrite: true, createMd5: true);
 			if (!token.Ok)
 				return token.Error;
 			token.Value.Wait();
 			if (token.Value.Status != TransferStatus.Done)
 				return Util.CustomError("Avatar upload failed");
-			try { image.Seek(0, System.IO.SeekOrigin.Begin); }
-			catch { return Util.CustomError("Avatar upload failed"); }
-			using (var md5Dig = System.Security.Cryptography.MD5.Create())
-			{
-				var md5Bytes = md5Dig.ComputeHash(image);
-				var md5 = string.Concat(md5Bytes.Select(x => x.ToString("x2")));
-				return Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
-			}
+			var md5 = string.Concat(token.Value.Md5Sum.Select(x => x.ToString("x2")));
+			return Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
 		}
 
 		public CmdR ClientMove(ClientIdT clientId, ChannelIdT channelId, string channelPassword = null)

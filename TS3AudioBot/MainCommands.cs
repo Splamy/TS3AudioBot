@@ -1104,9 +1104,15 @@ namespace TS3AudioBot
 		{
 			var setConfig = config.ByPathAsArray(path).SettingsGetSingle();
 			if (setConfig is IJsonConfig jsonConfig)
-				jsonConfig.FromJson(value);
+			{
+				var result = jsonConfig.FromJson(value);
+				if (!result.Ok)
+					throw new CommandException($"Failed to set the value ({result.Error}).", CommandExceptionReason.CommandError); // LOC: TODO
+			}
 			else
+			{
 				throw new CommandException("This value currently cannot be set.", CommandExceptionReason.CommandError); // LOC: TODO
+			}
 		}
 
 		private static ConfigPart SettingsGetSingle(this ConfigPart[] configPartsList)
