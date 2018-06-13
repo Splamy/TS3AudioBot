@@ -21,43 +21,51 @@ namespace TS3AudioBot.Helper
 	{
 		// *** Convenience method for getting values out of a toml object. ***
 
-		public static T[] AsValues<T>(this TomlObject tomlObj)
+		public static T[] TryGetValueArray<T>(this TomlObject tomlObj)
 		{
-			if (tomlObj.TryAsValue(out T retSingleVal))
-			{
-				return new[] { retSingleVal };
-			}
-			else if (tomlObj.TomlType == TomlObjectType.Array)
+			if (tomlObj.TomlType == TomlObjectType.Array)
 			{
 				var tomlArray = (TomlArray)tomlObj;
 				var retArr = new T[tomlArray.Length];
 				for (int i = 0; i < tomlArray.Length; i++)
 				{
-					if (!tomlArray.Items[i].TryAsValue(out retArr[i]))
+					if (!tomlArray.Items[i].TryGetValue(out retArr[i]))
 					{
 						return null;
 					}
 				}
 				return retArr;
 			}
+			else if (tomlObj.TryGetValue(out T retSingleVal))
+			{
+				return new[] { retSingleVal };
+			}
 			return null;
 		}
 
-		public static bool TryAsValue<T>(this TomlObject tomlObj, out T value)
+		public static bool TryGetValue<T>(this TomlObject tomlObj, out T value)
 		{
 			switch (tomlObj.TomlType)
 			{
 			case TomlObjectType.Int:
 				if (typeof(T) == typeof(long))
 				{
-					value = ((TomlValue<T>)tomlObj).Value;
+					// The base storage type for TomlInt is long, so we can simply return it.
+					value = (T)(object)((TomlInt)tomlObj).Value;
 					return true;
 				}
-				else if (typeof(T) == typeof(ulong)
-					|| typeof(T) == typeof(uint) || typeof(T) == typeof(int)
-					|| typeof(T) == typeof(ushort) || typeof(T) == typeof(short)
-					|| typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
+				else if (typeof(T) == typeof(ulong))
 				{
+					// ulong is the only type which needs to be casted so we can use it.
+					// This might not be the greatest solution, but we can express ulong.MaxValue with -1 for example.
+					value = (T)(object)(ulong)((TomlInt)tomlObj).Value;
+					return true;
+				}
+				else if (typeof(T) == typeof(uint) || typeof(T) == typeof(int)
+				  || typeof(T) == typeof(ushort) || typeof(T) == typeof(short)
+				  || typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
+				{
+					// All other types will be converted to catch overflow issues.
 					try
 					{
 						value = (T)Convert.ChangeType(((TomlInt)tomlObj).Value, typeof(T));
@@ -67,8 +75,22 @@ namespace TS3AudioBot.Helper
 				}
 				break;
 
-			case TomlObjectType.Bool:
 			case TomlObjectType.Float:
+				if (typeof(T) == typeof(double))
+				{
+					// Same here, double is the base type for TomlFloat.
+					value = (T)(object)((TomlFloat)tomlObj).Value;
+					return true;
+				}
+				else if (typeof(T) == typeof(float))
+				{
+					// double -> float cast works as we expect it.
+					value = (T)(object)(float)((TomlFloat)tomlObj).Value;
+					return true;
+				}
+				break;
+
+			case TomlObjectType.Bool:
 			case TomlObjectType.DateTime:
 			case TomlObjectType.TimeSpan:
 				if (tomlObj is TomlValue<T> tomlValue && typeof(T) == tomlValue.Value.GetType())
@@ -116,16 +138,20 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(string)) return tomlTable.Add(key, (string)(object)value);
 				else if (typeof(T) == typeof(double)) return tomlTable.Add(key, (double)(object)value);
 				else if (typeof(T) == typeof(float)) return tomlTable.Add(key, (float)(object)value);
-				else if (typeof(T) == typeof(long)) return tomlTable.Add(key, (long)(object)value);
+				else if (typeof(T) == typeof(ushort)) return tomlTable.Add(key, /*auto*/(ushort)(object)value);
 				else if (typeof(T) == typeof(int)) return tomlTable.Add(key, (int)(object)value);
+				else if (typeof(T) == typeof(long)) return tomlTable.Add(key, (long)(object)value);
+				else if (typeof(T) == typeof(ulong)) return tomlTable.Add(key, (long)(ulong)(object)value);
 				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, (TimeSpan)(object)value);
 				else if (typeof(T) == typeof(DateTime)) return tomlTable.Add(key, (DateTime)(object)value);
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Add(key, enubool);
 				else if (value is IEnumerable<string> enustring) return tomlTable.Add(key, enustring);
 				else if (value is IEnumerable<double> enudouble) return tomlTable.Add(key, enudouble);
 				else if (value is IEnumerable<float> enufloat) return tomlTable.Add(key, enufloat);
-				else if (value is IEnumerable<long> enulong) return tomlTable.Add(key, enulong);
+				else if (value is IEnumerable<ushort> enuushort) return tomlTable.Add(key, enuushort.Select(x => (int)x));
 				else if (value is IEnumerable<int> enuint) return tomlTable.Add(key, enuint);
+				else if (value is IEnumerable<long> enulong) return tomlTable.Add(key, enulong);
+				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Add(key, enuulong.Select(x => (long)x));
 				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Add(key, enuTimeSpan);
 				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Add(key, enuDateTime);
 			}
@@ -138,16 +164,20 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(string)) retobj = tomlTable.Update(key, (string)(object)value);
 				else if (typeof(T) == typeof(double)) retobj = tomlTable.Update(key, (double)(object)value);
 				else if (typeof(T) == typeof(float)) retobj = tomlTable.Update(key, (float)(object)value);
+				else if (typeof(T) == typeof(ushort)) return tomlTable.Update(key, /*auto*/(ushort)(object)value);
+				else if (typeof(T) == typeof(int)) retobj = tomlTable.Update(key, /*auto*/(int)(object)value);
 				else if (typeof(T) == typeof(long)) retobj = tomlTable.Update(key, (long)(object)value);
-				else if (typeof(T) == typeof(int)) retobj = tomlTable.Update(key, (int)(object)value);
+				else if (typeof(T) == typeof(ulong)) return tomlTable.Update(key, (long)(ulong)(object)value);
 				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, (TimeSpan)(object)value);
 				else if (typeof(T) == typeof(DateTime)) retobj = tomlTable.Update(key, (DateTime)(object)value);
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Update(key, enubool);
 				else if (value is IEnumerable<string> enustring) return tomlTable.Update(key, enustring);
 				else if (value is IEnumerable<double> enudouble) return tomlTable.Update(key, enudouble);
 				else if (value is IEnumerable<float> enufloat) return tomlTable.Update(key, enufloat);
-				else if (value is IEnumerable<long> enulong) return tomlTable.Update(key, enulong);
+				else if (value is IEnumerable<ushort> enuushort) return tomlTable.Update(key, enuushort.Select(x => (int)x));
 				else if (value is IEnumerable<int> enuint) return tomlTable.Update(key, enuint);
+				else if (value is IEnumerable<long> enulong) return tomlTable.Update(key, enulong);
+				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Update(key, enuulong.Select(x => (long)x));
 				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Update(key, enuTimeSpan);
 				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Update(key, enuDateTime);
 				else throw new NotSupportedException("The type is not supported");

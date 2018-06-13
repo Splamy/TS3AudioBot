@@ -50,5 +50,21 @@ namespace TS3AudioBot.Config
 			}
 			return sb.ToString();
 		}
+
+		public static bool TryReadValue<T>(this JsonReader reader, out T value)
+		{
+			if (reader.Read()
+				&& (reader.TokenType == JsonToken.Boolean
+				|| reader.TokenType == JsonToken.Date
+				|| reader.TokenType == JsonToken.Float
+				|| reader.TokenType == JsonToken.Integer
+				|| reader.TokenType == JsonToken.String))
+			{
+				value = (T)Convert.ChangeType(reader.Value, typeof(T));
+				return true;
+			}
+			value = default;
+			return false;
+		}
 	}
 }

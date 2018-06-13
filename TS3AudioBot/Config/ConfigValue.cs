@@ -59,10 +59,8 @@ namespace TS3AudioBot.Config
 
 		public override void FromToml(TomlObject tomlObject)
 		{
-			if (tomlObject != null && tomlObject is TomlValue<T> tomlValue)
-			{
-				Value = tomlValue.Value;
-			}
+			if (tomlObject != null && tomlObject.TryGetValue<T>(out var value))
+				Value = value;
 		}
 
 		public override void ToToml(bool writeDefaults, bool writeDocumentation)
@@ -79,7 +77,7 @@ namespace TS3AudioBot.Config
 			{
 				selfToml = Parent.TomlObject.Set(Key, Value);
 			}
-			if (writeDocumentation && !(selfToml == null))
+			if (writeDocumentation && selfToml != null)
 			{
 				CreateDocumentation(selfToml);
 			}
@@ -104,14 +102,9 @@ namespace TS3AudioBot.Config
 		{
 			try
 			{
-				if (reader.Read()
-					&& (reader.TokenType == JsonToken.Boolean
-					|| reader.TokenType == JsonToken.Date
-					|| reader.TokenType == JsonToken.Float
-					|| reader.TokenType == JsonToken.Integer
-					|| reader.TokenType == JsonToken.String))
+				if (reader.TryReadValue<T>(out var value))
 				{
-					Value = (T)reader.Value;
+					Value = value;
 					return R.Ok;
 				}
 				return $"Wrong type, expected {typeof(T).Name}, got {reader.TokenType}";

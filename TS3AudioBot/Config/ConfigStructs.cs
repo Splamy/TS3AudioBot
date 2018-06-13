@@ -97,9 +97,9 @@ namespace TS3AudioBot.Config
 
 	public class ConfWeb : ConfigTable
 	{
-		public ConfigValue<string[]> Hosts { get; } = new ConfigValue<string[]>("hosts", new[] { "localhost", "127.0.0.1" },
+		public ConfigArray<string> Hosts { get; } = new ConfigArray<string>("hosts", new[] { "localhost", "127.0.0.1" },
 			"An array of all urls the web api should be possible to be accessed with.");
-		public ConfigValue<int> Port { get; } = new ConfigValue<int>("port", 8180,
+		public ConfigValue<ushort> Port { get; } = new ConfigValue<ushort>("port", 8180,
 			"The port for the web server.");
 
 		public ConfWebApi Api { get; } = Create<ConfWebApi>("api");
@@ -122,7 +122,7 @@ namespace TS3AudioBot.Config
 
 	public partial class ConfBot : ConfigTable
 	{
-		public ConfigValue<long> BotGroupId { get; } = new ConfigValue<long>("bot_group_id", 0,
+		public ConfigValue<ulong> BotGroupId { get; } = new ConfigValue<ulong>("bot_group_id", 0,
 			"This field will be automatically set when you call '!bot setup'.\n" +
 			"The bot will use the specified group to set/update the required permissions and add himself into it.\n" +
 			"You can set this field manually if you already have a preexisting group the bot should add himself to.");
@@ -168,7 +168,7 @@ namespace TS3AudioBot.Config
 	{
 		new public ConfigValue<string> Key { get; } = new ConfigValue<string>("key", "",
 			"||| DO NOT MAKE THIS KEY PUBLIC ||| The client identity. You can import a teamspeak3 identity here too.");
-		public ConfigValue<long> Offset { get; } = new ConfigValue<long>("offset", 0,
+		public ConfigValue<ulong> Offset { get; } = new ConfigValue<ulong>("offset", 0,
 			"The client identity offset determining the security level.");
 		public ConfigValue<int> Level { get; } = new ConfigValue<int>("level", -1,
 			"The client identity security level which should be calculated before connecting\n" +

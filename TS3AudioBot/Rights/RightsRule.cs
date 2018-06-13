@@ -77,41 +77,41 @@ namespace TS3AudioBot.Rights
 			switch (key)
 			{
 			case "host":
-				var host = tomlObj.AsValues<string>();
+				var host = tomlObj.TryGetValueArray<string>();
 				if (host == null) ctx.Errors.Add("<host> Field has invalid data.");
 				else MatchHost = new HashSet<string>(host);
 				return true;
 			case "groupid":
-				var groupid = tomlObj.AsValues<ulong>();
+				var groupid = tomlObj.TryGetValueArray<ulong>();
 				if (groupid == null) ctx.Errors.Add("<groupid> Field has invalid data.");
 				else MatchClientGroupId = new HashSet<ulong>(groupid);
 				return true;
 			case "channelgroupid":
-				var cgroupid = tomlObj.AsValues<ulong>();
+				var cgroupid = tomlObj.TryGetValueArray<ulong>();
 				if (cgroupid == null) ctx.Errors.Add("<channelgroupid> Field has invalid data.");
 				else MatchChannelGroupId = new HashSet<ulong>(cgroupid);
 				return true;
 			case "useruid":
-				var useruid = tomlObj.AsValues<string>();
+				var useruid = tomlObj.TryGetValueArray<string>();
 				if (useruid == null) ctx.Errors.Add("<useruid> Field has invalid data.");
 				else MatchClientUid = new HashSet<string>(useruid);
 				return true;
 			case "perm":
-				var perm = tomlObj.AsValues<string>();
+				var perm = tomlObj.TryGetValueArray<string>();
 				if (perm == null) ctx.Errors.Add("<perm> Field has invalid data.");
 				else MatchPermission = new HashSet<string>(perm);
 				return true;
 			case "apitoken":
-				var apitoken = tomlObj.AsValues<string>();
+				var apitoken = tomlObj.TryGetValueArray<string>();
 				if (apitoken == null) ctx.Errors.Add("<apitoken> Field has invalid data.");
 				else MatchToken = new HashSet<string>(apitoken);
 				return true;
 			case "isapi":
-				if (!tomlObj.TryAsValue<bool>(out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");
+				if (!tomlObj.TryGetValue<bool>(out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");
 				else MatchIsApi = isapi;
 				return true;
 			case "visibility":
-				var visibility = tomlObj.AsValues<TextMessageTargetMode>();
+				var visibility = tomlObj.TryGetValueArray<TextMessageTargetMode>();
 				if (visibility == null) ctx.Errors.Add("<visibility> Field has invalid data.");
 				else MatchVisibility = visibility;
 				return true;

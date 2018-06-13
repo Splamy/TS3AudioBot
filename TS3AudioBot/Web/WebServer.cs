@@ -85,10 +85,10 @@ namespace TS3AudioBot.Web
 			if (Util.IsAdmin || SystemData.IsLinux) // todo: hostlist
 			{
 				var addrs = config.Hosts.Value;
-				hostPaths = new Uri[addrs.Length + 1];
+				hostPaths = new Uri[addrs.Count + 1];
 				hostPaths[0] = localhost;
 
-				for (int i = 0; i < addrs.Length; i++)
+				for (int i = 0; i < addrs.Count; i++)
 				{
 					var uriBuilder = new UriBuilder(addrs[i]) { Port = config.Port };
 					hostPaths[i + 1] = uriBuilder.Uri;

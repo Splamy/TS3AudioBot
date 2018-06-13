@@ -89,7 +89,7 @@ namespace TS3AudioBot.Config.Deprecated
 			var bot = to.CreateBot();
 
 			bot.Language.Value = mbd.Language;
-			bot.BotGroupId.Value = (long)mbd.BotGroupId;
+			bot.BotGroupId.Value = mbd.BotGroupId;
 			bot.GenerateStatusAvatar.Value = mbd.GenerateStatusAvatar;
 			bot.CommandMatcher.Value = mbd.CommandMatching;
 			bot.History.Enabled.Value = hmd.EnableHistory;
@@ -102,7 +102,7 @@ namespace TS3AudioBot.Config.Deprecated
 			bot.Connect.Address.Value = qcd.Address;
 			bot.Connect.Identity.Key.Value = qcd.Identity;
 			bot.Connect.Identity.Level.Value = qcd.IdentityLevel == "auto" ? -1 : int.Parse(qcd.IdentityLevel);
-			bot.Connect.Identity.Offset.Value = (long)qcd.IdentityOffset;
+			bot.Connect.Identity.Offset.Value = qcd.IdentityOffset;
 			bot.Connect.ServerPassword.Password.Value = qcd.ServerPassword;
 			bot.Connect.ServerPassword.AutoHash.Value = qcd.ServerPasswordAutoHash;
 			bot.Connect.ServerPassword.Hashed.Value = qcd.ServerPasswordIsHashed;

@@ -39,15 +39,15 @@ namespace TS3AudioBot.Rights
 			switch (key)
 			{
 			case "+":
-				DeclAdd = tomlObj.AsValues<string>();
+				DeclAdd = tomlObj.TryGetValueArray<string>();
 				if (DeclAdd == null) ctx.Errors.Add("<+> Field has invalid data.");
 				return true;
 			case "-":
-				DeclDeny = tomlObj.AsValues<string>();
+				DeclDeny = tomlObj.TryGetValueArray<string>();
 				if (DeclDeny == null) ctx.Errors.Add("<-> Field has invalid data.");
 				return true;
 			case "include":
-				includeNames = tomlObj.AsValues<string>();
+				includeNames = tomlObj.TryGetValueArray<string>();
 				if (includeNames == null) ctx.Errors.Add("<include> Field has invalid data.");
 				return true;
 			default:

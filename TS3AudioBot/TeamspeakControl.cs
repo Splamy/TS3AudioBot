@@ -260,7 +260,7 @@ namespace TS3AudioBot
 				var botGroup = tsBaseClient.ServerGroupAdd("ServerBot");
 				if (botGroup.Ok)
 				{
-					confBot.BotGroupId.Value = (long)botGroup.Value.ServerGroupId;
+					confBot.BotGroupId.Value = botGroup.Value.ServerGroupId;
 
 					// Add self to new group
 					var grpresult = tsBaseClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, me.DatabaseId);
@@ -273,7 +273,7 @@ namespace TS3AudioBot
 			const int ava = 500000; // max size in bytes for the avatar
 
 			// Add various rights to the bot group
-			var permresult = tsBaseClient.ServerGroupAddPerm((ulong)confBot.BotGroupId.Value,
+			var permresult = tsBaseClient.ServerGroupAddPerm(confBot.BotGroupId.Value,
 				new[] {
 					PermissionId.i_client_whisper_power, // + Required for whisper channel playing
 					PermissionId.i_client_private_textmessage_power, // + Communication
