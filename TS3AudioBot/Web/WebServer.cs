@@ -18,7 +18,7 @@ namespace TS3AudioBot.Web
 	using System.Net;
 	using System.Threading;
 
-	public sealed class WebManager : IDisposable
+	public sealed class WebServer : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const string WebRealm = "ts3ab";
@@ -36,7 +36,7 @@ namespace TS3AudioBot.Web
 		public Api.WebApi Api { get; private set; }
 		public Interface.WebDisplay Display { get; private set; }
 
-		public WebManager(ConfWeb config)
+		public WebServer(ConfWeb config)
 		{
 			this.config = config;
 		}
@@ -161,8 +161,9 @@ namespace TS3AudioBot.Web
 					}
 					catch (NullReferenceException) { return; }
 
-					Log.Info("{0} Requested: {1}", remoteAddress, context.Request.Url.PathAndQuery);
-					if (context.Request.Url.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
+					var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
+					Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
+					if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
 						Api?.DispatchCall(context);
 					else
 						Display?.DispatchCall(context);

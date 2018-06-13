@@ -340,8 +340,7 @@ namespace TS3AudioBot
 			return new JsonEmpty($"{strings.cmd_history_clean_confirm_clean} {strings.info_bot_might_be_unresponsive} {YesNoOption}");
 		}
 
-		[Command("history clean removedefective", "Cleans up the history file for better startup performance. " +
-			"Also checks for all links in the history which cannot be opened anymore")]
+		[Command("history clean removedefective")]
 		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, CallerInfo caller, UserSession session = null)
 		{
 			if (caller.ApiCall)

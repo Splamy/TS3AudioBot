@@ -17,7 +17,7 @@ namespace TS3AudioBot.Sessions
 
 	public class TokenManager
 	{
-		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
+		private const string TokenFormat = "{0}:" + Web.WebServer.WebRealm + ":{1}";
 
 		private const string ApiTokenTable = "apiToken";
 		private LiteCollection<DbApiToken> dbTokenList;

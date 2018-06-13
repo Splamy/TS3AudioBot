@@ -166,15 +166,15 @@ namespace TS3AudioBot
 			if (!langResult.Ok)
 				Log.Error("Failed to load language file ({0})", langResult.Error);
 
-			Log.Debug("Got message from {0}: {1}", textMessage.InvokerName, textMessage.Message);
-
 			textMessage.Message = textMessage.Message.TrimStart(' ');
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
 
+			Log.Info("User {0} requested: {1}", textMessage.InvokerName, textMessage.Message);
+
 			var refreshResult = ClientConnection.RefreshClientBuffer(true);
 			if (!refreshResult.Ok)
-				Log.Warn("Bot is not correctly set up. Some commands might not work or are slower.", refreshResult.Error.Str);
+				Log.Warn("Bot is not correctly set up. Some commands might not work or are slower ({0}).", refreshResult.Error.Str);
 
 			var clientResult = ClientConnection.GetClientById(textMessage.InvokerId);
 

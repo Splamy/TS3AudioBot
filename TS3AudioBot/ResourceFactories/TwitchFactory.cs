@@ -40,7 +40,7 @@ namespace TS3AudioBot.ResourceFactories
 			var channel = resource.ResourceId;
 
 			// request api token
-			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientId)))
+			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"https://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientId)))
 				return new LocalStr(strings.error_net_no_connection);
 
 			var jObj = JObject.Parse(jsonResponse);
@@ -127,7 +127,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static int SelectStream(List<StreamData> list) => list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
 
-		public string RestoreLink(string id) => "http://www.twitch.tv/" + id;
+		public string RestoreLink(string id) => "https://www.twitch.tv/" + id;
 
 		public void Dispose() { }
 	}

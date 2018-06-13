@@ -133,6 +133,24 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Connects a new bot to the given address..
+        /// </summary>
+        internal static string cmd_bot_connect_new_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_connect_new_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connects a new bot with the settings from the template name..
+        /// </summary>
+        internal static string cmd_bot_connect_to_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_connect_to_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Gets various information about the bot..
         /// </summary>
         internal static string cmd_bot_info_help {
@@ -174,6 +192,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_bot_name_help {
             get {
                 return ResourceManager.GetString("cmd_bot_name_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Saves the configuration for the newly connected bot..
+        /// </summary>
+        internal static string cmd_bot_save_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_save_help", resourceCulture);
             }
         }
         
@@ -477,6 +504,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Checks for all links in the history which cannot be opened anymore and removes them..
+        /// </summary>
+        internal static string cmd_history_clean_removedefective_help {
+            get {
+                return ResourceManager.GetString("cmd_history_clean_removedefective_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Do you really want to delete the entry &quot;{0}&quot;
         ///with the id {1}?.
         /// </summary>
@@ -618,6 +654,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_history_title_help {
             get {
                 return ResourceManager.GetString("cmd_history_title_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Conditionally executes subcommands..
+        /// </summary>
+        internal static string cmd_if_help {
+            get {
+                return ResourceManager.GetString("cmd_if_help", resourceCulture);
             }
         }
         
@@ -1180,11 +1225,56 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Changes values from the settigns. Not all changes can be applied immediately..
+        ///   Looks up a localized string similar to Gets a value from the bot settings..
+        /// </summary>
+        internal static string cmd_settings_get_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_get_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Gets a value from the core settings..
+        /// </summary>
+        internal static string cmd_settings_global_get_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_global_get_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Set a value from the core settings..
+        /// </summary>
+        internal static string cmd_settings_global_set_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_global_set_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provides get/set methods to change the settings..
         /// </summary>
         internal static string cmd_settings_help {
             get {
                 return ResourceManager.GetString("cmd_settings_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Get the desciption for a setting..
+        /// </summary>
+        internal static string cmd_settings_help_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_help_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sets a value from the bot settings..
+        /// </summary>
+        internal static string cmd_settings_set_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_set_help", resourceCulture);
             }
         }
         

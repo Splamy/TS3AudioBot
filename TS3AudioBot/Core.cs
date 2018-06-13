@@ -65,7 +65,7 @@ namespace TS3AudioBot
 		/// <summary>Manages factories which can load resources.</summary>
 		public ResourceFactoryManager FactoryManager { get; set; }
 		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
-		public WebManager WebManager { get; set; }
+		public WebServer WebManager { get; set; }
 		/// <summary>Management of conntected Bots.</summary>
 		public BotManager Bots { get; set; }
 
@@ -92,7 +92,7 @@ namespace TS3AudioBot
 			injector.RegisterType<PluginManager>();
 			injector.RegisterType<CommandManager>();
 			injector.RegisterType<ResourceFactoryManager>();
-			injector.RegisterType<WebManager>();
+			injector.RegisterType<WebServer>();
 			injector.RegisterType<RightsManager>();
 			injector.RegisterType<BotManager>();
 			injector.RegisterType<TokenManager>();
@@ -104,7 +104,7 @@ namespace TS3AudioBot
 			injector.RegisterModule(new PluginManager(config.Plugins));
 			injector.RegisterModule(new CommandManager(), x => x.Initialize());
 			injector.RegisterModule(new ResourceFactoryManager(config.Factories), x => x.Initialize());
-			injector.RegisterModule(new WebManager(config.Web), x => x.Initialize());
+			injector.RegisterModule(new WebServer(config.Web), x => x.Initialize());
 			injector.RegisterModule(new RightsManager(config.Rights), x => x.Initialize());
 			injector.RegisterModule(new BotManager());
 			injector.RegisterModule(new TokenManager(), x => x.Initialize());

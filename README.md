@@ -3,7 +3,7 @@
 |:--:|:--:|
 |[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|
 
-Nightly builds are available here: http://splamy.de/Nightly#ts3ab
+Nightly builds are available here: https://splamy.de/Nightly#ts3ab
 
 ## About
 This is our open-source TeamSpeak 3 audiobot project since
@@ -71,7 +71,7 @@ Before we start: _If you know what you are doing_ you can alternatively compile 
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Get the latest mono version by following [this tutorial](http://www.mono-project.com/download/stable/#download-lin) and install `mono-devel`
+1. Get the latest mono version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-devel`
 1. See if you have NuGet by just executing `nuget`. If not, get `nuget.exe` with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
 1. Go into the directory of the repository with `cd TS3AudioBot`
 1. Execute `nuget restore` or `mono ../nuget.exe restore` to download all dependencies

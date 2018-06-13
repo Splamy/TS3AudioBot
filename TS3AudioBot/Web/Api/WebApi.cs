@@ -208,11 +208,11 @@ namespace TS3AudioBot.Web.Api
 				if (!identityDigest.IsAuthenticated)
 				{
 					var newNonce = token.CreateNonce();
-					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{newNonce.Value}\"");
+					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{newNonce.Value}\"");
 					return InfoNonceAdded;
 				}
 
-				if (identityDigest.Realm != WebManager.WebRealm)
+				if (identityDigest.Realm != WebServer.WebRealm)
 					return ErrorUnknownRealm;
 
 				if (identityDigest.Uri != context.Request.RawUrl)
@@ -231,7 +231,7 @@ namespace TS3AudioBot.Web.Api
 				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
 				if (nextNonce == null)
 					return ErrorAuthFailure;
-				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{nextNonce.Value}\"");
+				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 
 				return (false, invoker);
 

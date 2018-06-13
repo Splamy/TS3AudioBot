@@ -402,9 +402,6 @@
   <data name="cmd_seek_help" xml:space="preserve">
     <value>Jumps to a timemark within the current song.</value>
   </data>
-  <data name="cmd_settings_help" xml:space="preserve">
-    <value>Changes values from the settigns. Not all changes can be applied immediately.</value>
-  </data>
   <data name="cmd_song_help" xml:space="preserve">
     <value>Tells you the name of the current song.</value>
   </data>
@@ -860,5 +857,38 @@ with the id {1}?</value>
   </data>
   <data name="error_ts_code_2568" xml:space="preserve">
     <value>Missing permissions.</value>
+  </data>
+  <data name="cmd_bot_connect_new_help" xml:space="preserve">
+    <value>Connects a new bot to the given address.</value>
+  </data>
+  <data name="cmd_bot_connect_to_help" xml:space="preserve">
+    <value>Connects a new bot with the settings from the template name.</value>
+  </data>
+  <data name="cmd_bot_save_help" xml:space="preserve">
+    <value>Saves the configuration for the newly connected bot.</value>
+  </data>
+  <data name="cmd_history_clean_removedefective_help" xml:space="preserve">
+    <value>Checks for all links in the history which cannot be opened anymore and removes them.</value>
+  </data>
+  <data name="cmd_if_help" xml:space="preserve">
+    <value>Conditionally executes subcommands.</value>
+  </data>
+  <data name="cmd_settings_get_help" xml:space="preserve">
+    <value>Gets a value from the bot settings.</value>
+  </data>
+  <data name="cmd_settings_global_get_help" xml:space="preserve">
+    <value>Gets a value from the core settings.</value>
+  </data>
+  <data name="cmd_settings_global_set_help" xml:space="preserve">
+    <value>Set a value from the core settings.</value>
+  </data>
+  <data name="cmd_settings_help" xml:space="preserve">
+    <value>Provides get/set methods to change the settings.</value>
+  </data>
+  <data name="cmd_settings_help_help" xml:space="preserve">
+    <value>Get the desciption for a setting.</value>
+  </data>
+  <data name="cmd_settings_set_help" xml:space="preserve">
+    <value>Sets a value from the bot settings.</value>
   </data>
 </root>

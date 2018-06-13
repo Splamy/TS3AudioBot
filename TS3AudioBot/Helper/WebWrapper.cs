@@ -19,7 +19,7 @@ namespace TS3AudioBot.Helper
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
 
-		public static bool DownloadString(out string site, Uri link, params (string name, string value)[] optionalHeaders)
+		public static E<LocalStr> DownloadString(out string site, Uri link, params (string name, string value)[] optionalHeaders)
 		{
 			var request = WebRequest.Create(link);
 			foreach (var (name, value) in optionalHeaders)
@@ -33,19 +33,19 @@ namespace TS3AudioBot.Helper
 					if (stream == null)
 					{
 						site = null;
-						return false;
+						return new LocalStr(strings.error_net_empty_response);
 					}
 					using (var reader = new StreamReader(stream))
 					{
 						site = reader.ReadToEnd();
-						return true;
+						return R.Ok;
 					}
 				}
 			}
-			catch (WebException)
+			catch (WebException webEx)
 			{
 				site = null;
-				return false;
+				return ToLoggedError(webEx);
 			}
 		}
 

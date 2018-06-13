@@ -49,13 +49,13 @@ namespace TS3AudioBot
 				{
 					Log.Warn("Could not find your running mono version!");
 					Log.Warn("This version might not work properly.");
-					Log.Warn("If you encounter any problems, try installing the latest mono version by following http://www.mono-project.com/download/");
+					Log.Warn("If you encounter any problems, try installing the latest mono version by following https://www.mono-project.com/download/");
 				}
 				else if (SystemData.RuntimeData.SemVer < new Version(5, 0, 0))
 				{
 					Log.Error("You are running a mono version below 5.0.0!");
 					Log.Error("This version is not supported and will not work properly.");
-					Log.Error("Install the latest mono version by following http://www.mono-project.com/download/");
+					Log.Error("Install the latest mono version by following https://www.mono-project.com/download/");
 					return false;
 				}
 			}

@@ -59,7 +59,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private R<PlayResource, LocalStr> ResolveResourceInternal(AudioResource resource)
 		{
-			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"http://www.youtube.com/get_video_info?video_id={resource.ResourceId}&el=info")))
+			if (!WebWrapper.DownloadString(out string resulthtml, new Uri($"https://www.youtube.com/get_video_info?video_id={resource.ResourceId}")))
 				return new LocalStr(strings.error_net_no_connection);
 
 			var videoTypes = new List<VideoData>();
@@ -296,13 +296,13 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				if (string.IsNullOrEmpty(row)) continue;
 				int index = row.IndexOf('=');
-				var param = Uri.UnescapeDataString(row.Substring(0, index));
+				var param = Uri.UnescapeDataString(row.Substring(0, index).Replace('+', ' '));
 				if (!rc.TryGetValue(param, out var list))
 				{
 					list = new List<string>();
 					rc[param] = list;
 				}
-				list.Add(Uri.UnescapeDataString(row.Substring(index + 1)));
+				list.Add(Uri.UnescapeDataString(row.Substring(index + 1).Replace('+', ' ')));
 			}
 			return rc;
 		}
