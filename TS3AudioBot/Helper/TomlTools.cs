@@ -62,8 +62,9 @@ namespace TS3AudioBot.Helper
 					return true;
 				}
 				else if (typeof(T) == typeof(uint) || typeof(T) == typeof(int)
-				  || typeof(T) == typeof(ushort) || typeof(T) == typeof(short)
-				  || typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
+					|| typeof(T) == typeof(ushort) || typeof(T) == typeof(short)
+					|| typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)
+					|| typeof(T) == typeof(float) || typeof(T) == typeof(double))
 				{
 					// All other types will be converted to catch overflow issues.
 					try

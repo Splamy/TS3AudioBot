@@ -74,7 +74,8 @@ namespace TS3AudioBot
 
 			ffmpegProducer = new FfmpegProducer(config.GetParent().Tools.Ffmpeg);
 			stallCheckPipe = new StallCheckPipe();
-			volumePipe = new VolumePipe() { Volume = config.Audio.Volume.Default };
+			volumePipe = new VolumePipe();
+			Volume = config.Audio.Volume.Default;
 			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ScaleBitrate(config.Audio.Bitrate) };
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
 			timePipe.Initialize(encoderPipe);
@@ -348,9 +349,12 @@ namespace TS3AudioBot
 			get => volumePipe.Volume * AudioValues.MaxVolume;
 			set
 			{
-				if (value < 0 || value > AudioValues.MaxVolume)
-					throw new ArgumentOutOfRangeException(nameof(value));
-				volumePipe.Volume = value / AudioValues.MaxVolume;
+				if (value < 0)
+					volumePipe.Volume = 0;
+				else if (value > AudioValues.MaxVolume)
+					volumePipe.Volume = AudioValues.MaxVolume;
+				else
+					volumePipe.Volume = value / AudioValues.MaxVolume;
 			}
 		}
 

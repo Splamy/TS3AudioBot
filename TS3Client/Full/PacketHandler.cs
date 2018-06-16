@@ -23,8 +23,9 @@ namespace TS3Client.Full
 	internal sealed class PacketHandler<TIn, TOut> : PacketHandler
 	{
 		/// <summary>Greatest allowed packet size, including the complete header.</summary>
-		private const int MaxPacketSize = 500;
-		private const int HeaderSize = 13;
+		private const int MaxOutPacketSize = 500;
+		private static readonly int OutHeaderSize = Ts3Crypt.MacLen + Packet<TOut>.HeaderLength;
+		private static readonly int MaxOutContentSize = MaxOutPacketSize - OutHeaderSize;
 		private const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
 		private const int ReceivePacketWindowSize = 128;
 
@@ -195,10 +196,9 @@ namespace TS3Client.Full
 
 			// TODO check if "packBuffer.FreeSlots >= packetSplit.Count"
 
-			const int maxContent = MaxPacketSize - HeaderSize;
 			do
 			{
-				int blockSize = Math.Min(maxContent, rawData.Length - pos);
+				int blockSize = Math.Min(MaxOutContentSize, rawData.Length - pos);
 				if (blockSize <= 0) break;
 
 				var flags = PacketFlags.None;
@@ -296,7 +296,7 @@ namespace TS3Client.Full
 				generationCounter[(int)packetType]++;
 		}
 
-		private static bool NeedsSplitting(int dataSize) => dataSize + HeaderSize > MaxPacketSize;
+		private static bool NeedsSplitting(int dataSize) => dataSize + OutHeaderSize > MaxOutPacketSize;
 
 		public void FetchPackets()
 		{

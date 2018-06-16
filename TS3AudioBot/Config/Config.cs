@@ -18,8 +18,6 @@ namespace TS3AudioBot.Config
 
 	public partial class ConfRoot
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-
 		private string fileName;
 
 		public static R<ConfRoot> Open(string file)
@@ -44,7 +42,7 @@ namespace TS3AudioBot.Config
 			var saveResult = newFile.Save(file, true);
 			if (!saveResult.Ok)
 			{
-				Log.Error(saveResult.Error, "Failed to save config file '{0}'", file);
+				Log.Error(saveResult.Error, "Failed to save config file '{0}'.", file);
 				return R.Err;
 			}
 			return newFile;
@@ -70,7 +68,7 @@ namespace TS3AudioBot.Config
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, "Could not create bot config subdirectory");
+				Log.Error(ex, "Could not create bot config subdirectory.");
 				return false;
 			}
 			return true;
@@ -112,7 +110,7 @@ namespace TS3AudioBot.Config
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, "Could not access bot config subdirectory");
+				Log.Error(ex, "Could not access bot config subdirectory.");
 				return Array.Empty<string>();
 			}
 		}
@@ -166,7 +164,10 @@ namespace TS3AudioBot.Config
 		{
 			var result = Save(file, false);
 			if (!result.Ok)
-				return new LocalStr(string.Format("An error occoured while saving: {0}", result.Error.Message)); // LOC: TODO
+			{
+				Log.Error(result.Error, "An error occoured saving the bot config.");
+				return new LocalStr(string.Format("An error occoured saving the bot config.")); // LOC: TODO
+			}
 			return R.Ok;
 		}
 

@@ -22,6 +22,8 @@ namespace TS3AudioBot.Config
 	[DebuggerDisplay("unknown:{Key}")]
 	public abstract class ConfigPart
 	{
+		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		public string Documentation { get; set; }
 		public string Key { get; set; }
 		// must be a field otherwise it will be found as a child for ConfigTable

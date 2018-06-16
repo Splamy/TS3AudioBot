@@ -59,8 +59,13 @@ namespace TS3AudioBot.Config
 
 		public override void FromToml(TomlObject tomlObject)
 		{
-			if (tomlObject != null && tomlObject.TryGetValue<T>(out var value))
-				Value = value;
+			if (tomlObject != null)
+			{
+				if (tomlObject.TryGetValue<T>(out var value))
+					Value = value;
+				else
+					Log.Warn("Failed to read '{0}', got {1} with {2}", Key, tomlObject.ReadableTypeName, tomlObject.DumpToJson());
+			}
 		}
 
 		public override void ToToml(bool writeDefaults, bool writeDocumentation)
