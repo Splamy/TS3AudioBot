@@ -68,7 +68,7 @@ namespace TS3AudioBot.Config.Deprecated
 			to.Web.Hosts.Value = web.HostAddress.Split(' ');
 			to.Web.Port.Value = web.Port;
 			to.Web.Api.Enabled.Value = web.EnableApi;
-			to.Web.Interface.Enabled.Value = web.EnableApi;
+			to.Web.Interface.Enabled.Value = web.EnableWebinterface;
 			to.Web.Interface.Path.Value = web.WebinterfaceHostPath;
 			to.Rights.Path.Value = rmd.RightsFile;
 			to.Tools.YoutubeDl.Path.Value = ytd.YoutubedlPath;
