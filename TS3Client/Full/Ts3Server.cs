@@ -136,8 +136,6 @@ namespace TS3Client.Full
 				InitIvExpand(clientInitIv.Alpha, betaStr, ts3Crypt.Identity.PublicKeyString);
 
 				ts3Crypt.CryptoInit(clientInitIv.Alpha, betaStr, clientInitIv.Omega);
-
-				packetHandler.CryptoInitDone();
 			}
 		}
 

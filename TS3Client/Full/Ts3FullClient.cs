@@ -286,11 +286,9 @@ namespace TS3Client.Full
 			var result = ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			if (!result)
 			{
-				DisconnectInternal(context, Util.CustomError($@"Failed to calculate shared secret: {result.Error}"));
+				DisconnectInternal(context, Util.CustomError($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
-
-			packetHandler.CryptoInitDone();
 
 			DefaultClientInit();
 		}
@@ -298,8 +296,6 @@ namespace TS3Client.Full
 		private void ProcessInitIvExpand2(InitIvExpand2 initIvExpand2)
 		{
 			packetHandler.ReceivedFinalInitAck();
-
-			packetHandler.IncPacketCounter(PacketType.Command);
 
 			var (publicKey, privateKey) = Ts3Crypt.GenerateTemporaryKey();
 
@@ -318,8 +314,6 @@ namespace TS3Client.Full
 				DisconnectInternal(context, Util.CustomError($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
-
-			packetHandler.CryptoInitDone();
 
 			DefaultClientInit();
 		}

@@ -535,7 +535,7 @@ namespace TS3Client.Full
 				return;
 			}
 
-			var (key, nonce) = GetKeyNonce(Packet<TDir>.FromServer, packet.PacketId, packet.GenerationId, packet.PacketType);
+			var (key, nonce) = GetKeyNonce(Packet<TDir>.FromServer, packet.PacketId, packet.GenerationId, packet.PacketType, !CryptoInitComplete);
 			packet.BuildHeader();
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(key), 8 * MacLen, nonce, packet.Header);
 
@@ -587,13 +587,34 @@ namespace TS3Client.Full
 			if (packet.UnencryptedFlag)
 				return FakeDecrypt(ref packet, fakeSignature);
 
-			return DecryptData(ref packet);
+			var decryptResult = DecryptData(ref packet, !CryptoInitComplete);
+			if (decryptResult)
+				return true;
+
+			// This is a hacky workaround for a special ack:
+			// We send these two packets simultaneously:
+			// - [Id:1] clientek    (dummy-encrypted)
+			// - [Id:2] clientinit  (session-encrypted)
+			// We get an ack for each with the same encryption scheme.
+			// We can't know for sure which ack comes first and therefore
+			//  whether the dummy or session key should be used.
+			// In case we actually picked the wrong key, try it again
+			//  with the dummy key.
+			if (packet.PacketType == PacketType.Ack && packet.PacketId <= 2)
+			{
+				Log.Debug("Using shady ack workaround.");
+				return DecryptData(ref packet, true);
+			}
+			else
+			{
+				return false;
+			}
 		}
 
-		private bool DecryptData<TDir>(ref Packet<TDir> packet)
+		private bool DecryptData<TDir>(ref Packet<TDir> packet, bool dummyEncryption)
 		{
 			Array.Copy(packet.Raw, MacLen, packet.Header, 0, Packet<TDir>.HeaderLength);
-			var (key, nonce) = GetKeyNonce(Packet<TDir>.FromServer, packet.PacketId, packet.GenerationId, packet.PacketType);
+			var (key, nonce) = GetKeyNonce(Packet<TDir>.FromServer, packet.PacketId, packet.GenerationId, packet.PacketType, dummyEncryption);
 			int dataLen = packet.Raw.Length - (MacLen + Packet<TDir>.HeaderLength);
 
 			ICipherParameters ivAndKey = new AeadParameters(new KeyParameter(key), 8 * MacLen, nonce, packet.Header);
@@ -635,9 +656,9 @@ namespace TS3Client.Full
 		/// <param name="generationId">Each time the packetId reaches 65535 the next packet will go on with 0 and the generationId will be increased by 1.</param>
 		/// <param name="packetType">The packetType.</param>
 		/// <returns>A tuple of (key, nonce)</returns>
-		private (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType)
+		private (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType, bool dummyEncryption)
 		{
-			if (!CryptoInitComplete)
+			if (dummyEncryption)
 				return DummyKeyAndNonceTuple;
 
 			// only the lower 4 bits are used for the real packetType

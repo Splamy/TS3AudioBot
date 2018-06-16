@@ -78,6 +78,13 @@ namespace TS3Client.Full
 		public void Connect(IPEndPoint address)
 		{
 			Initialize(address, true);
+			// The old client used to send 'clientinitiv' as the first message.
+			// All newer server still ack it but do not require it anymore.
+			// Therefore there is no use in seding it.
+			// We still have to increase the packet counter as if we had sent
+			//  it because the packed-ids the server expects are fixed.
+			IncPacketCounter(PacketType.Command);
+			// Send the actual new init packet.
 			AddOutgoingPacket(ts3Crypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
 		}
 
@@ -218,8 +225,7 @@ namespace TS3Client.Full
 		private E<string> SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None)
 		{
 			var ids = GetPacketCounter(packetType);
-			if (ts3Crypt.CryptoInitComplete)
-				IncPacketCounter(packetType);
+			IncPacketCounter(packetType);
 
 			var packet = new Packet<TOut>(data, packetType, ids.Id, ids.Generation) { PacketType = packetType };
 			if (typeof(TOut) == typeof(C2S)) // TODO: XXX
@@ -283,18 +289,11 @@ namespace TS3Client.Full
 				? (packetCounter[(int)packetType], generationCounter[(int)packetType])
 				: (101, 0);
 
-		public void IncPacketCounter(PacketType packetType)
+		private void IncPacketCounter(PacketType packetType)
 		{
 			unchecked { packetCounter[(int)packetType]++; }
 			if (packetCounter[(int)packetType] == 0)
 				generationCounter[(int)packetType]++;
-		}
-
-		public void CryptoInitDone()
-		{
-			if (!ts3Crypt.CryptoInitComplete)
-				throw new InvalidOperationException($"{nameof(CryptoInitDone)} was called although it isn't initialized");
-			IncPacketCounter(PacketType.Command);
 		}
 
 		private static bool NeedsSplitting(int dataSize) => dataSize + HeaderSize > MaxPacketSize;
@@ -321,14 +320,21 @@ namespace TS3Client.Full
 				// Invalid packet, ignore
 				if (optpacket == null)
 				{
-					LoggerRaw.Debug("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
+					LoggerRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 					continue;
 				}
 				var packet = optpacket.Value;
 
+				// DebubToHex is costly and allocates, precheck before logging
+				if (LoggerRaw.IsTraceEnabled)
+					LoggerRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
+
 				GenerateGenerationId(ref packet);
 				if (!ts3Crypt.Decrypt(ref packet))
+				{
+					LoggerRaw.Warn("Dropping not decryptable packet: {0}", DebugUtil.DebugToHex(packet.Raw));
 					continue;
+				}
 
 				NetworkStats.LogInPacket(ref packet);
 
@@ -609,11 +615,17 @@ namespace TS3Client.Full
 					}
 				}
 
-				var nextTest = pingCheck - now + PingInterval;
+				var nextTest = now - pingCheck - PingInterval;
 				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
-				if (nextTest < TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
+				if (nextTest > TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
 				{
-					pingCheck += PingInterval;
+					// Check that the last ping is more than PingInterval but not more than
+					// 2*PingInterval away. This might happen for e.g. when the process was
+					// suspended. If it was too long ago, reset the ping tick to now.
+					if (nextTest > PingInterval)
+						pingCheck = now;
+					else
+						pingCheck += PingInterval;
 					SendPing();
 				}
 				// TODO implement ping-timeout here
@@ -656,7 +668,11 @@ namespace TS3Client.Full
 		private E<string> SendRaw(ref Packet<TOut> packet)
 		{
 			NetworkStats.LogOutPacket(ref packet);
-			LoggerRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
+
+			// DebubToHex is costly and allocates, precheck before logging
+			if (LoggerRaw.IsTraceEnabled)
+				LoggerRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
+
 			try
 			{
 				udpClient.Send(packet.Raw, packet.Raw.Length); // , remoteAddress // TODO
@@ -664,7 +680,7 @@ namespace TS3Client.Full
 			}
 			catch (SocketException ex)
 			{
-				LoggerRaw.Warn(ex, "Failes to deliver packet (Err:{0})", ex.SocketErrorCode);
+				LoggerRaw.Warn(ex, "Failed to deliver packet (Err:{0})", ex.SocketErrorCode);
 				return "Socket send error";
 			}
 		}
@@ -678,7 +694,7 @@ namespace TS3Client.Full
 		protected static readonly Logger LoggerTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
 
 		/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
-		protected static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
+		protected static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(20);
 		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
 		protected const float AlphaSmooth = 0.125f;
 		/// <summary>Smoothing factor for the SmoothedRttDev.</summary>

@@ -174,6 +174,8 @@ namespace TS3Client.Full
 			FirstSendTime = now;
 			LastSendTime = now;
 		}
+
+		public override string ToString() => $"RS(first:{FirstSendTime},last:{LastSendTime}) => {Packet}";
 	}
 
 	internal struct C2S
