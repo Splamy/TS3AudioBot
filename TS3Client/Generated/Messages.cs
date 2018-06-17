@@ -640,6 +640,28 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientDbIdFromUid : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbIdFromUid;
+		public string ReturnCode { get; set; }
+
+		public Uid ClientUid { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cldbid": ClientDbId = ClientDbId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+	}
+
 	public sealed class ClientEnterView : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientEnterView;
@@ -1454,6 +1476,26 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class GetClientDbIdFromUid : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.GetClientDbIdFromUid;
+		
+
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class GetClientIds : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.GetClientIds;
@@ -1913,47 +1955,93 @@ namespace TS3Client.Messages
 	public enum NotificationType
 	{
 		Unknown,
+		///<summary>[S2C] ntfy:notifychannelchanged</summary>
 		ChannelChanged,
+		///<summary>[S2C] ntfy:notifychannelcreated</summary>
 		ChannelCreated,
+		///<summary>[S2C] ntfy:notifychanneldeleted</summary>
 		ChannelDeleted,
+		///<summary>[S2C] ntfy:notifychanneledited</summary>
 		ChannelEdited,
+		///<summary>[S2C] ntfy:notifychannelgrouplist</summary>
 		ChannelGroupList,
+		///<summary>[S2C] ntfy:channellist</summary>
 		ChannelList,
+		///<summary>[S2C] ntfy:channellistfinished</summary>
 		ChannelListFinished,
+		///<summary>[S2C] ntfy:notifychannelmoved</summary>
 		ChannelMoved,
+		///<summary>[S2C] ntfy:notifychannelpasswordchanged</summary>
 		ChannelPasswordChanged,
+		///<summary>[S2C] ntfy:notifychannelsubscribed</summary>
 		ChannelSubscribed,
+		///<summary>[S2C] ntfy:notifychannelunsubscribed</summary>
 		ChannelUnsubscribed,
+		///<summary>[S2C] ntfy:notifyclientchannelgroupchanged</summary>
 		ClientChannelGroupChanged,
+		///<summary>[S2C] ntfy:notifyclientchatcomposing</summary>
 		ClientChatComposing,
+		///<summary>[S2C] ntfy:notifyclientdbidfromuid</summary>
+		ClientDbIdFromUid,
+		///<summary>[S2C] ntfy:notifycliententerview</summary>
 		ClientEnterView,
+		///<summary>[S2C] ntfy:notifyclientids</summary>
 		ClientIds,
+		///<summary>[C2S] ntfy:clientinit</summary>
 		ClientInit,
+		///<summary>[C2S] ntfy:clientinitiv</summary>
 		ClientInitIv,
+		///<summary>[S2C] ntfy:notifyclientleftview</summary>
 		ClientLeftView,
+		///<summary>[S2C] ntfy:notifyclientmoved</summary>
 		ClientMoved,
+		///<summary>[S2C] ntfy:notifyclientneededpermissions</summary>
 		ClientNeededPermissions,
+		///<summary>[S2C] ntfy:notifyservergroupsbyclientid</summary>
 		ClientServerGroup,
+		///<summary>[S2C] ntfy:notifyservergroupclientadded</summary>
 		ClientServerGroupAdded,
+		///<summary>[S2C] ntfy:error</summary>
 		CommandError,
+		///<summary>[S2C] ntfy:notifyconnectioninfo</summary>
 		ConnectionInfo,
+		///<summary>[S2C] ntfy:notifyconnectioninforequest</summary>
 		ConnectionInfoRequest,
+		///<summary>[S2C] ntfy:notifystartdownload</summary>
 		FileDownload,
+		///<summary>[S2C] ntfy:notifyfileinfo</summary>
 		FileInfoTs,
+		///<summary>[S2C] ntfy:notifyfilelist</summary>
 		FileList,
+		///<summary>[S2C] ntfy:notifyfilelistfinished</summary>
 		FileListFinished,
+		///<summary>[S2C] ntfy:notifyfiletransferlist</summary>
 		FileTransfer,
+		///<summary>[S2C] ntfy:notifystatusfiletransfer</summary>
 		FileTransferStatus,
+		///<summary>[S2C] ntfy:notifystartupload</summary>
 		FileUpload,
+		///<summary>[C2S] ntfy:clientgetdbidfromuid</summary>
+		GetClientDbIdFromUid,
+		///<summary>[C2S] ntfy:clientgetids</summary>
 		GetClientIds,
+		///<summary>[S2C] ntfy:initivexpand</summary>
 		InitIvExpand,
+		///<summary>[S2C] ntfy:initivexpand2</summary>
 		InitIvExpand2,
+		///<summary>[S2C] ntfy:initserver</summary>
 		InitServer,
+		///<summary>[S2C] ntfy:notifyplugincmd</summary>
 		PluginCommand,
+		///<summary>[C2S] ntfy:plugincmd</summary>
 		PluginCommandRequest,
+		///<summary>[S2C] ntfy:notifyserveredited</summary>
 		ServerEdited,
+		///<summary>[S2C] ntfy:notifyservergrouplist</summary>
 		ServerGroupList,
+		///<summary>[S2C] ntfy:notifytextmessage</summary>
 		TextMessage,
+		///<summary>[S2C] ntfy:notifytokenused</summary>
 		TokenUsed,
 	}
 
@@ -1976,6 +2064,7 @@ namespace TS3Client.Messages
 			case "notifychannelunsubscribed": return NotificationType.ChannelUnsubscribed;
 			case "notifyclientchannelgroupchanged": return NotificationType.ClientChannelGroupChanged;
 			case "notifyclientchatcomposing": return NotificationType.ClientChatComposing;
+			case "notifyclientdbidfromuid": return NotificationType.ClientDbIdFromUid;
 			case "notifycliententerview": return NotificationType.ClientEnterView;
 			case "notifyclientids": return NotificationType.ClientIds;
 			case "clientinit": return NotificationType.ClientInit;
@@ -1995,6 +2084,7 @@ namespace TS3Client.Messages
 			case "notifyfiletransferlist": return NotificationType.FileTransfer;
 			case "notifystatusfiletransfer": return NotificationType.FileTransferStatus;
 			case "notifystartupload": return NotificationType.FileUpload;
+			case "clientgetdbidfromuid": return NotificationType.GetClientDbIdFromUid;
 			case "clientgetids": return NotificationType.GetClientIds;
 			case "initivexpand": return NotificationType.InitIvExpand;
 			case "initivexpand2": return NotificationType.InitIvExpand2;
@@ -2026,6 +2116,7 @@ namespace TS3Client.Messages
 			case NotificationType.ChannelUnsubscribed: return new ChannelUnsubscribed();
 			case NotificationType.ClientChannelGroupChanged: return new ClientChannelGroupChanged();
 			case NotificationType.ClientChatComposing: return new ClientChatComposing();
+			case NotificationType.ClientDbIdFromUid: return new ClientDbIdFromUid();
 			case NotificationType.ClientEnterView: return new ClientEnterView();
 			case NotificationType.ClientIds: return new ClientIds();
 			case NotificationType.ClientInit: return new ClientInit();
@@ -2045,6 +2136,7 @@ namespace TS3Client.Messages
 			case NotificationType.FileTransfer: return new FileTransfer();
 			case NotificationType.FileTransferStatus: return new FileTransferStatus();
 			case NotificationType.FileUpload: return new FileUpload();
+			case NotificationType.GetClientDbIdFromUid: return new GetClientDbIdFromUid();
 			case NotificationType.GetClientIds: return new GetClientIds();
 			case NotificationType.InitIvExpand: return new InitIvExpand();
 			case NotificationType.InitIvExpand2: return new InitIvExpand2();

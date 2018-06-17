@@ -17,13 +17,12 @@ namespace TS3Client
 	using System.Diagnostics;
 	using System.Linq;
 	using System.Net;
-
-	using CmdR = System.E<Messages.CommandError>;
-
+	using ChannelIdT = System.UInt64;
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
-	using ChannelIdT = System.UInt64;
+	using CmdR = System.E<Messages.CommandError>;
 	using ServerGroupIdT = System.UInt64;
+	using Uid = System.String;
 
 	public delegate void NotifyEventHandler<in TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
 
@@ -310,6 +309,7 @@ namespace TS3Client
 
 		public abstract R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
 
+		public abstract R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid);
 		#endregion
 	}
 }

@@ -23,6 +23,7 @@ namespace TS3Client.Full
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
 	using CmdR = System.E<Messages.CommandError>;
+	using Uid = System.String;
 
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
@@ -687,6 +688,20 @@ namespace TS3Client.Full
 				new CommandParameter("cpw", channelPassword),
 				new CommandMultiParameter("name", path) }),
 				NotificationType.FileInfoTs).UnwrapNotification<FileInfoTs>();
+
+		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
+		{
+			var result = SendNotifyCommand(new Ts3Command("clientgetdbidfromuid", new List<ICommandPart> {
+				new CommandParameter("cluid", clientUid) }),
+				NotificationType.ClientDbIdFromUid);
+			if (!result.Ok)
+				return result.Error;
+			return result.Value.Notifications
+				.Cast<ClientDbIdFromUid>()
+				.Where(x => x.ClientUid == clientUid)
+				.Take(1)
+				.WrapSingle();
+		}
 
 		#endregion
 

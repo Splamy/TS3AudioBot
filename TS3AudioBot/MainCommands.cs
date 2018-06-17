@@ -88,23 +88,23 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot commander")]
-		public static JsonValue<bool> CommandBotCommander(TeamspeakControl queryConnection)
+		public static JsonValue<bool> CommandBotCommander(Ts3Client ts3Client)
 		{
-			var value = queryConnection.IsChannelCommander().UnwrapThrow();
+			var value = ts3Client.IsChannelCommander().UnwrapThrow();
 			return new JsonValue<bool>(value, string.Format(strings.info_status_channelcommander, value ? strings.info_on : strings.info_off));
 		}
 		[Command("bot commander on")]
-		public static void CommandBotCommanderOn(TeamspeakControl queryConnection) => queryConnection.SetChannelCommander(true).UnwrapThrow();
+		public static void CommandBotCommanderOn(Ts3Client ts3Client) => ts3Client.SetChannelCommander(true).UnwrapThrow();
 		[Command("bot commander off")]
-		public static void CommandBotCommanderOff(TeamspeakControl queryConnection) => queryConnection.SetChannelCommander(false).UnwrapThrow();
+		public static void CommandBotCommanderOff(Ts3Client ts3Client) => ts3Client.SetChannelCommander(false).UnwrapThrow();
 
 		[Command("bot come")]
-		public static void CommandBotCome(TeamspeakControl queryConnection, InvokerData invoker, string password = null)
+		public static void CommandBotCome(Ts3Client ts3Client, InvokerData invoker, string password = null)
 		{
 			var channel = invoker?.ChannelId;
 			if (!channel.HasValue)
 				throw new CommandException(strings.error_no_target_channel, CommandExceptionReason.CommandError);
-			CommandBotMove(queryConnection, channel.Value, password);
+			CommandBotMove(ts3Client, channel.Value, password);
 		}
 
 		[Command("bot connect to")]
@@ -140,22 +140,25 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot move")]
-		public static void CommandBotMove(TeamspeakControl queryConnection, ulong channel, string password = null) => queryConnection.MoveTo(channel, password).UnwrapThrow();
+		public static void CommandBotMove(Ts3Client ts3Client, ulong channel, string password = null) => ts3Client.MoveTo(channel, password).UnwrapThrow();
 
 		[Command("bot name")]
-		public static void CommandBotName(TeamspeakControl queryConnection, string name) => queryConnection.ChangeName(name).UnwrapThrow();
+		public static void CommandBotName(Ts3Client ts3Client, string name) => ts3Client.ChangeName(name).UnwrapThrow();
 
 		[Command("bot badges")]
-		public static void CommandBotBadges(TeamspeakControl queryConnection, string badgesString) => queryConnection.ChangeBadges(badgesString).UnwrapThrow();
+		public static void CommandBotBadges(Ts3Client ts3Client, string badgesString) => ts3Client.ChangeBadges(badgesString).UnwrapThrow();
 
 		[Command("bot save")]
-		public static void CommandBotSetup(ConfBot botConfig, string name)
-			=> botConfig.SaveNew(name).UnwrapThrow();
+		public static void CommandBotSetup(Bot bot, ConfBot botConfig, string name)
+		{
+			botConfig.SaveNew(name).UnwrapThrow();
+			bot.Name = name;
+		}
 
 		[Command("bot setup")]
-		public static void CommandBotSetup(ConfBot botConfig, TeamspeakControl queryConnection, string adminToken = null)
+		public static void CommandBotSetup(Ts3Client ts3Client, string adminToken = null)
 		{
-			if (!queryConnection.SetupRights(adminToken, botConfig))
+			if (!ts3Client.SetupRights(adminToken))
 				throw new CommandException(strings.cmd_bot_setup_error, CommandExceptionReason.CommandError);
 		}
 
@@ -164,7 +167,7 @@ namespace TS3AudioBot
 		{
 			using (var botLock = bots.GetBotLock(botId))
 			{
-				if (!botLock.IsValid)
+				if (botLock == null)
 					throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
 
 				var childInfo = new ExecutionInformation(botLock.Bot.Injector.CloneRealm<BotInjector>());
@@ -229,31 +232,31 @@ namespace TS3AudioBot
 			=> new JsonValue<InvokerData>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
 
 		[Command("getuser uid byid")]
-		public static string CommandGetUidById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().Uid;
+		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().Uid;
 		[Command("getuser name byid")]
-		public static string CommandGetNameById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().Name;
+		public static string CommandGetNameById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().Name;
 		[Command("getuser dbid byid")]
-		public static ulong CommandGetDbIdById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().DatabaseId;
+		public static ulong CommandGetDbIdById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().DatabaseId;
 		[Command("getuser channel byid")]
-		public static ulong CommandGetChannelById(TeamspeakControl queryConnection, ushort id) => queryConnection.GetClientById(id).UnwrapThrow().ChannelId;
+		public static ulong CommandGetChannelById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().ChannelId;
 		[Command("getuser all byid")]
-		public static JsonValue<ClientData> CommandGetUserById(TeamspeakControl queryConnection, ushort id)
+		public static JsonValue<ClientData> CommandGetUserById(Ts3Client ts3Client, ushort id)
 		{
-			var client = queryConnection.GetClientById(id).UnwrapThrow();
+			var client = ts3Client.GetClientById(id).UnwrapThrow();
 			return new JsonValue<ClientData>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser id byname")]
-		public static ushort CommandGetIdByName(TeamspeakControl queryConnection, string username) => queryConnection.GetClientByName(username).UnwrapThrow().ClientId;
+		public static ushort CommandGetIdByName(Ts3Client ts3Client, string username) => ts3Client.GetClientByName(username).UnwrapThrow().ClientId;
 		[Command("getuser all byname")]
-		public static JsonValue<ClientData> CommandGetUserByName(TeamspeakControl queryConnection, string username)
+		public static JsonValue<ClientData> CommandGetUserByName(Ts3Client ts3Client, string username)
 		{
-			var client = queryConnection.GetClientByName(username).UnwrapThrow();
+			var client = ts3Client.GetClientByName(username).UnwrapThrow();
 			return new JsonValue<ClientData>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser name bydbid")]
-		public static string CommandGetNameByDbId(TeamspeakControl queryConnection, ulong dbId) => queryConnection.GetDbClientByDbId(dbId).UnwrapThrow().Name;
+		public static string CommandGetNameByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId(dbId).UnwrapThrow().Name;
 		[Command("getuser uid bydbid")]
-		public static string CommandGetUidByDbId(TeamspeakControl queryConnection, ulong dbId) => queryConnection.GetDbClientByDbId(dbId).UnwrapThrow().Uid;
+		public static string CommandGetUidByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId(dbId).UnwrapThrow().Uid;
 
 		[Command("help")]
 		[Usage("[<command>]", "Any currently accepted command")]
@@ -553,7 +556,7 @@ namespace TS3AudioBot
 
 		[Command("kickme")]
 		[Usage("[far]", "Optional attribute for the extra punch strength")]
-		public static void CommandKickme(TeamspeakControl queryConnection, InvokerData invoker, CallerInfo caller, string parameter = null)
+		public static void CommandKickme(Ts3Client ts3Client, InvokerData invoker, CallerInfo caller, string parameter = null)
 		{
 			if (caller.ApiCall)
 				throw new CommandException(strings.error_not_available_from_api, CommandExceptionReason.NotSupported);
@@ -562,9 +565,9 @@ namespace TS3AudioBot
 			{
 				E<LocalStr> result = R.Ok;
 				if (string.IsNullOrEmpty(parameter) || parameter == "near")
-					result = queryConnection.KickClientFromChannel(invoker.ClientId.Value);
+					result = ts3Client.KickClientFromChannel(invoker.ClientId.Value);
 				else if (parameter == "far")
-					result = queryConnection.KickClientFromServer(invoker.ClientId.Value);
+					result = ts3Client.KickClientFromServer(invoker.ClientId.Value);
 				if (!result.Ok)
 					throw new CommandException(strings.cmd_kickme_missing_permission, CommandExceptionReason.CommandError);
 			}
@@ -979,9 +982,9 @@ namespace TS3AudioBot
 		public static void CommandRepeatOff(IPlayerConnection playerConnection) => playerConnection.Repeated = false;
 
 		[Command("rights can")]
-		public static JsonArray<string> CommandRightsCan(RightsManager rightsManager, TeamspeakControl ts, CallerInfo caller, InvokerData invoker = null, params string[] rights)
+		public static JsonArray<string> CommandRightsCan(RightsManager rightsManager, Ts3Client ts3Client, CallerInfo caller, InvokerData invoker = null, params string[] rights)
 		{
-			var result = rightsManager.GetRightsSubset(caller, invoker, ts, rights);
+			var result = rightsManager.GetRightsSubset(caller, invoker, ts3Client, rights);
 			return new JsonArray<string>(result, result.Length > 0 ? string.Join(", ", result) : strings.info_empty);
 		}
 
@@ -1066,7 +1069,7 @@ namespace TS3AudioBot
 			=> SettingsGet(config, path);
 
 		[Command("settings set")]
-		public static void CommandSettingsSet(ConfBot config, string path, string value = "")
+		public static void CommandSettingsSet(ConfBot config, string path, string value)
 		{
 			SettingsSet(config, path, value);
 			if (!config.SaveWhenExists())
@@ -1081,7 +1084,7 @@ namespace TS3AudioBot
 			=> SettingsGet(config, path);
 
 		[Command("settings global set")]
-		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value = "")
+		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value)
 		{
 			SettingsSet(config, path, value);
 			if (!config.Save())
@@ -1414,13 +1417,13 @@ namespace TS3AudioBot
 			if (!info.TryGet<RightsManager>(out var rightsManager))
 				return false;
 			if (!info.TryGet<InvokerData>(out var invoker)) invoker = null;
-			if (!info.TryGet<TeamspeakControl>(out var ts)) ts = null;
+			if (!info.TryGet<Ts3Client>(out var ts)) ts = null;
 			return rightsManager.HasAllRights(caller, invoker, ts, rights);
 		}
 
 		public static E<LocalStr> Write(this ExecutionInformation info, string message)
 		{
-			if (!info.TryGet<TeamspeakControl>(out var queryConnection))
+			if (!info.TryGet<Ts3Client>(out var ts3Client))
 				return new LocalStr(strings.error_no_teamspeak_in_context);
 
 			if (!info.TryGet<InvokerData>(out var invoker))
@@ -1432,11 +1435,11 @@ namespace TS3AudioBot
 			switch (invoker.Visibiliy.Value)
 			{
 			case TextMessageTargetMode.Private:
-				return queryConnection.SendMessage(message, invoker.ClientId.Value);
+				return ts3Client.SendMessage(message, invoker.ClientId.Value);
 			case TextMessageTargetMode.Channel:
-				return queryConnection.SendChannelMessage(message);
+				return ts3Client.SendChannelMessage(message);
 			case TextMessageTargetMode.Server:
-				return queryConnection.SendServerMessage(message);
+				return ts3Client.SendServerMessage(message);
 			default:
 				throw Util.UnhandledDefault(invoker.Visibiliy.Value);
 			}

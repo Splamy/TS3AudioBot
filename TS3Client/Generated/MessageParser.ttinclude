@@ -28,7 +28,7 @@ public class Messages
 		{
 			// transfer all default confs
 			msg.s2c = msg.s2c ?? grp.@default.s2c;
-			msg.c2s = msg.c2s ?? grp.@default.s2c;
+			msg.c2s = msg.c2s ?? grp.@default.c2s;
 			msg.response = msg.response ?? grp.@default.response;
 			msg.low = msg.low ?? grp.@default.low;
 			msg.np = msg.np ?? grp.@default.np;

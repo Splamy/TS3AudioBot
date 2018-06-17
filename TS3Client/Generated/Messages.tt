@@ -141,6 +141,7 @@ foreach(var msg in gen.GetOrderedMsg())
 		Unknown,<#
 	foreach(var ntfy in gen.NotifiesSorted) {
 		/*if(!ntfy.s2c.Value) continue;*/ #>
+		///<summary><#= ntfy.s2c.Value ? "[S2C] " : "" #><#= ntfy.c2s.Value ? "[C2S] " : "" #>ntfy:<#= ntfy.notify #></summary>
 		<#= ntfy.name #>,<#
 	}
 #>

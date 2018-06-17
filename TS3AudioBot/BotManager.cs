@@ -107,16 +107,16 @@ namespace TS3AudioBot
 			var config = Config.GetBotTemplate(name);
 			if (!config.Ok)
 				return config.Error.Message;
-			var botInfo = RunBot(config.Value);
+			var botInfo = RunBot(config.Value, name);
 			if (!botInfo.Ok)
 				return botInfo.Error;
 			return botInfo.Value;
 		}
 
-		public R<BotInfo, string> RunBot(ConfBot config)
+		public R<BotInfo, string> RunBot(ConfBot config, string name = null)
 		{
 			bool removeBot = false;
-			var bot = new Bot(config) { Injector = CoreInjector.CloneRealm<BotInjector>() };
+			var bot = new Bot(config) { Injector = CoreInjector.CloneRealm<BotInjector>(), Name = name };
 			if (!CoreInjector.TryInject(bot))
 				Log.Warn("Partial bot dependency loaded only");
 
@@ -157,7 +157,7 @@ namespace TS3AudioBot
 					? activeBots[id]
 					: null;
 				if (bot == null)
-					return new BotLock(false, null);
+					return null;
 			}
 			return bot.GetBotLock();
 		}
@@ -203,23 +203,16 @@ namespace TS3AudioBot
 
 	public class BotLock : IDisposable
 	{
-		private readonly Bot bot;
-		public bool IsValid { get; private set; }
-		public Bot Bot => IsValid ? bot : throw new InvalidOperationException("The bot lock is not valid.");
+		public Bot Bot { get; }
 
-		internal BotLock(bool isValid, Bot bot)
+		internal BotLock(Bot bot)
 		{
-			IsValid = isValid;
-			this.bot = bot;
+			Bot = bot;
 		}
 
 		public void Dispose()
 		{
-			if (IsValid)
-			{
-				IsValid = false;
-				Monitor.Exit(bot.SyncRoot);
-			}
+			Monitor.Exit(Bot.SyncRoot);
 		}
 	}
 }

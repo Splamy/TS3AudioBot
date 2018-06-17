@@ -13,12 +13,12 @@ namespace TS3Client.Query
 	using Helper;
 	using Messages;
 	using System;
-	using System.Linq;
 	using System.Collections.Generic;
 	using System.IO;
+	using System.Linq;
 	using System.Net.Sockets;
-	
 	using ChannelIdT = System.UInt64;
+	using Uid = System.String;
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
@@ -223,6 +223,10 @@ namespace TS3Client.Query
 			new CommandParameter("cid", channelId),
 			new CommandParameter("cpw", channelPassword),
 			new CommandMultiParameter("name", path));
+
+		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
+			=> Send<ClientDbIdFromUid>("clientgetdbidfromuid",
+			new CommandParameter("cluid", clientUid)).WrapSingle();
 
 		#endregion
 

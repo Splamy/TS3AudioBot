@@ -15,7 +15,6 @@ namespace TS3AudioBot.Web.Interface
 	public class FileProvider : ISiteProvider
 	{
 		private byte[] rawData;
-		private bool loadedOnce = false;
 		public FileInfo LocalFile { get; }
 
 		public string MimeType { get; }
@@ -35,7 +34,7 @@ namespace TS3AudioBot.Web.Interface
 		{
 			LocalFile.Refresh();
 
-			if (!loadedOnce || LocalFile.LastWriteTime >= lastWrite)
+			if (rawData == null || LocalFile.LastWriteTime >= lastWrite)
 			{
 				rawData = File.ReadAllBytes(LocalFile.FullName);
 				lastWrite = LocalFile.LastWriteTime;

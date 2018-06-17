@@ -9,8 +9,8 @@
 
 namespace TS3AudioBot.Rights
 {
-	using Config;
 	using CommandSystem;
+	using Config;
 	using Helper;
 	using Nett;
 	using System;
@@ -76,21 +76,21 @@ namespace TS3AudioBot.Rights
 		}
 
 		// TODO: b_client_permissionoverview_view
-		public bool HasAllRights(CallerInfo caller, InvokerData invoker, TeamspeakControl ts, params string[] requestedRights)
+		public bool HasAllRights(CallerInfo caller, InvokerData invoker, Ts3Client ts, params string[] requestedRights)
 		{
 			var ctx = GetRightsContext(caller, invoker, ts);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
-		public string[] GetRightsSubset(CallerInfo caller, InvokerData invoker, TeamspeakControl ts, params string[] requestedRights)
+		public string[] GetRightsSubset(CallerInfo caller, InvokerData invoker, Ts3Client ts, params string[] requestedRights)
 		{
 			var ctx = GetRightsContext(caller, invoker, ts);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
-		private ExecuteContext GetRightsContext(CallerInfo caller, InvokerData invoker, TeamspeakControl ts)
+		private ExecuteContext GetRightsContext(CallerInfo caller, InvokerData invoker, Ts3Client ts)
 		{
 			if (needsRecalculation)
 			{
@@ -150,6 +150,7 @@ namespace TS3AudioBot.Rights
 			{
 				execCtx = new ExecuteContext();
 			}
+			// TODO: caller can be null !!
 			execCtx.IsApi = caller.ApiCall;
 
 			ProcessNode(rootRule, execCtx);

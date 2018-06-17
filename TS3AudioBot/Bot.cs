@@ -24,7 +24,6 @@ namespace TS3AudioBot
 	using System.Threading;
 	using System.Threading.Tasks;
 	using TS3Client;
-	using TS3Client.Full;
 	using TS3Client.Messages;
 
 	/// <summary>Core class managing all bots and utility modules.</summary>
@@ -39,6 +38,8 @@ namespace TS3AudioBot
 		internal BotInjector Injector { get; set; }
 
 		public int Id { get; internal set; }
+		/// <summary>This is the template name. Can be null.</summary>
+		public string Name { get; internal set; }
 		public bool QuizMode { get; set; }
 		public string BadgesString { get; set; }
 
@@ -53,7 +54,7 @@ namespace TS3AudioBot
 		// Own modules
 
 		/// <summary>Connection object for the current client.</summary>
-		public TeamspeakControl ClientConnection { get; set; }
+		public Ts3Client ClientConnection { get; set; }
 		public SessionManager SessionManager { get; set; }
 		public PlayManager PlayManager { get; set; }
 		public IVoiceTarget TargetManager { get; private set; }
@@ -87,7 +88,7 @@ namespace TS3AudioBot
 			Injector.RegisterType<ConfBot>();
 			Injector.RegisterType<BotInjector>();
 			Injector.RegisterType<PlaylistManager>();
-			Injector.RegisterType<TeamspeakControl>();
+			Injector.RegisterType<Ts3Client>();
 			Injector.RegisterType<SessionManager>();
 			Injector.RegisterType<HistoryManager>();
 			Injector.RegisterType<PlayManager>();
@@ -100,9 +101,9 @@ namespace TS3AudioBot
 			Injector.RegisterModule(config);
 			Injector.RegisterModule(Injector);
 			Injector.RegisterModule(new PlaylistManager(config.Playlists));
-			var teamspeakClient = new Ts3Full(config);
+			var teamspeakClient = new Ts3Client(config);
 			Injector.RegisterModule(teamspeakClient);
-			Injector.RegisterModule(teamspeakClient.GetLowLibrary<Ts3FullClient>());
+			Injector.RegisterModule(teamspeakClient.TsFullClient);
 			Injector.RegisterModule(new SessionManager());
 			HistoryManager historyManager = null;
 			if (config.History.Enabled)
@@ -258,7 +259,7 @@ namespace TS3AudioBot
 				{
 					setString = QuizMode
 						? strings.info_botstatus_quiztime
-						: PlayManager.CurrentPlayData.ResourceData.ResourceTitle;
+						: (PlayManager.CurrentPlayData.ResourceData.ResourceTitle ?? "");
 				}
 				else
 				{
@@ -394,13 +395,18 @@ namespace TS3AudioBot
 		public BotLock GetBotLock()
 		{
 			Monitor.Enter(SyncRoot);
-			return new BotLock(!IsDisposed, this);
+			if (IsDisposed)
+			{
+				Monitor.Exit(SyncRoot);
+				return null;
+			}
+			return new BotLock(this);
 		}
 
 		public BotInfo GetInfo() => new BotInfo
 		{
 			Id = Id,
-			NickName = ClientConnection.GetSelf().OkOr(null)?.Name,
+			Name = Name,
 			Server = config.Connect.Address,
 		};
 
@@ -431,9 +437,9 @@ namespace TS3AudioBot
 	public class BotInfo
 	{
 		public int Id { get; set; }
-		public string NickName { get; set; }
+		public string Name { get; set; }
 		public string Server { get; set; }
 
-		public override string ToString() => $"Id: {Id} Name: {NickName} Server: {Server}"; // LOC: TODO
+		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server}"; // LOC: TODO
 	}
 }
