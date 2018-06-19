@@ -1,17 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFrameworks>net46;netstandard2.0</TargetFrameworks>
     <LangVersion>7.2</LangVersion>
     <RootNamespace>TS3Client</RootNamespace>
     <AssemblyName>TS3Client</AssemblyName>
-
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
     <PackageReference Include="NLog" Version="4.5.6" />
@@ -20,7 +17,6 @@
     <PackageReference Include="System.Memory" Version="4.5.0" />
     <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="Generated\BookParser.ttinclude" />
     <None Include="Generated\ErrorParser.ttinclude" />
@@ -52,7 +48,6 @@
       <LastGenOutput>Versions.cs</LastGenOutput>
     </None>
   </ItemGroup>
-
   <ItemGroup>
     <Compile Update="Generated\Book.cs">
       <DesignTime>True</DesignTime>
@@ -85,7 +80,6 @@
       <DependentUpon>Versions.tt</DependentUpon>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>

@@ -6,6 +6,7 @@ using TS3Client;
 using TS3Client.Helper;
 using TS3Client.Full;
 using TS3Client.Messages;
+using TS3Client.Audio;
 using System.Net;
 using System.Diagnostics;
 using System.Threading;
@@ -149,7 +150,7 @@ namespace Ts3ClientTests
 		public static string ToHex(this IEnumerable<byte> seq) => string.Join(" ", seq.Select(x => x.ToString("X2")));
 		public static byte[] FromHex(this string hex) => hex.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
 
-		static void Main()
+		static void Main2()
 		{
 			/*
 			foreach (var ver in vers.Skip(0))
@@ -189,7 +190,7 @@ namespace Ts3ClientTests
 							break;
 						Thread.Sleep(1000);
 					}
-					
+
 					if (!serv.Init)
 					{
 						Console.WriteLine("ERR! {0}", ver);
@@ -233,6 +234,40 @@ namespace Ts3ClientTests
 
 			Console.WriteLine("End");
 			Console.ReadLine();
+		}
+
+		static void Main(string[] args)
+		{
+			// Initialize client
+			var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
+			var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0).Unwrap();
+			//var data = Ts3Crypt.GenerateNewIdentity();
+			con = new ConnectionDataFull() { Address = "pow.splamy.de", Username = "TestClient", Identity = data };
+
+			// Setup audio
+			client
+				// Save cpu by not processing the rest of the pipe when the
+				// output is not read.
+				.Chain<CheckActivePipe>()
+				// This reads the packet meta data, checks for packet order
+				// and manages packet merging.
+				.Chain<AudioPacketReader>()
+				// Teamspeak sends audio encoded. This pipe will decode it to
+				// simple PCM.
+				.Chain<DecoderPipe>()
+				// This will merge multiple clients talking into one audio stream
+				.Chain<ClientMixdown>()
+				// Reads from the ClientMixdown buffer with a fixed timing
+				.Into<PreciseTimedPipe>(x => x.Initialize(new SampleInfo(48_000, 2, 16)))
+				// Reencode to the codec of our choice
+				.Chain(new EncoderPipe(Codec.OpusMusic))
+				// Define where to send to.
+				.Chain<StaticMetaPipe>(x => x.SetVoice())
+				// Send it with our client.
+				.Chain(client);
+
+			// Connect
+			client.Connect(con);
 		}
 
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)

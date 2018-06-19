@@ -14,7 +14,7 @@ namespace TS3AudioBot.Config
 	using System.IO;
 	using System.Linq;
 	using System.Text;
-	using TS3AudioBot.CommandSystem;
+	using CommandSystem;
 
 	public static class ConfigHelper
 	{

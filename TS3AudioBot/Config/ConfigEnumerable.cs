@@ -16,7 +16,7 @@ namespace TS3AudioBot.Config
 
 	public abstract class ConfigEnumerable : ConfigPart
 	{
-		protected static readonly object emptyObject = new object();
+		private static readonly object EmptyObject = new object();
 
 		protected virtual TomlTable.TableTypes TableType { get => TomlTable.TableTypes.Default; }
 		public TomlTable TomlObject { get; set; }
@@ -28,7 +28,7 @@ namespace TS3AudioBot.Config
 				if (Parent == null)
 					TomlObject = Toml.Create();
 				else
-					TomlObject = Parent.TomlObject.Add(Key, emptyObject, TableType);
+					TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType);
 			}
 			else
 			{

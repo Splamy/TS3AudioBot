@@ -48,4 +48,18 @@ namespace TS3Client.Audio
 		int Channels { get; }
 		int BitsPerSample { get; }
 	}
+
+	public sealed class SampleInfo : ISampleInfo
+	{
+		public int SampleRate { get; }
+		public int Channels { get; }
+		public int BitsPerSample { get; }
+
+		public SampleInfo(int sampleRate, int channels, int bitsPerSample)
+		{
+			SampleRate = sampleRate;
+			Channels = channels;
+			BitsPerSample = bitsPerSample;
+		}
+	}
 }

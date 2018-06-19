@@ -13,7 +13,7 @@ namespace TS3AudioBot.Config
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
-	using TS3AudioBot.Helper;
+	using Helper;
 
 	[DebuggerDisplay("dyntable:{Key}")]
 	public class ConfigDynamicTable<T> : ConfigEnumerable where T : ConfigEnumerable, new()

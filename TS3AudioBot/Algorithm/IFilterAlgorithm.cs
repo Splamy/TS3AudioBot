@@ -103,14 +103,16 @@ namespace TS3AudioBot.Algorithm
 		IEnumerable<KeyValuePair<string, T>> IFilterAlgorithm.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			var result = list.Where(x => x.Key.StartsWith(filter));
-			var enu = result.GetEnumerator();
-			if (!enu.MoveNext())
-				yield break;
-			yield return enu.Current;
-			if (enu.Current.Key == filter)
-				yield break;
-			while (enu.MoveNext())
+			using (var enu = result.GetEnumerator())
+			{
+				if (!enu.MoveNext())
+					yield break;
 				yield return enu.Current;
+				if (enu.Current.Key == filter)
+					yield break;
+				while (enu.MoveNext())
+					yield return enu.Current;
+			}
 		}
 	}
 }

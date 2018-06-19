@@ -14,7 +14,7 @@ namespace TS3AudioBot.Config
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
-	using TS3AudioBot.Helper;
+	using Helper;
 
 	[DebuggerDisplay("{Key}:{Value}")]
 	public class ConfigValue<T> : ConfigPart, IJsonConfig
@@ -61,8 +61,8 @@ namespace TS3AudioBot.Config
 		{
 			if (tomlObject != null)
 			{
-				if (tomlObject.TryGetValue<T>(out var value))
-					Value = value;
+				if (tomlObject.TryGetValue<T>(out var tomlValue))
+					Value = tomlValue;
 				else
 					Log.Warn("Failed to read '{0}', got {1} with {2}", Key, tomlObject.ReadableTypeName, tomlObject.DumpToJson());
 			}
@@ -107,9 +107,9 @@ namespace TS3AudioBot.Config
 		{
 			try
 			{
-				if (reader.TryReadValue<T>(out var value))
+				if (reader.TryReadValue<T>(out var tomlValue))
 				{
-					Value = value;
+					Value = tomlValue;
 					return R.Ok;
 				}
 				return $"Wrong type, expected {typeof(T).Name}, got {reader.TokenType}";

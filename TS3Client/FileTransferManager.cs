@@ -64,6 +64,7 @@ namespace TS3Client
 		/// False will throw an exception if the file already exists.</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the upload is finished.</param>
+		/// <param name="createMd5">Will generate a md5 sum of the uploaded file.</param>
 		/// <returns>A token to track the file transfer.</returns>
 		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true, bool createMd5 = false)
 		{

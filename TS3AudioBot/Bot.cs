@@ -132,7 +132,7 @@ namespace TS3AudioBot
 			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
 			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
 			// Log our resource in the history
-			if (config.History.Enabled)
+			if (historyManager != null)
 				PlayManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Owner));
 			// Update our thumbnail
 			PlayManager.AfterResourceStarted += GenerateStatusImage;

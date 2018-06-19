@@ -80,7 +80,7 @@ namespace TS3AudioBot
 				if (!Config.Save())
 					Log.Error("Could not save root config. The bot won't start by default.");
 
-				var runResult = RunBot(newBot);
+				var runResult = RunBot(newBot); // TODO Check result
 				return;
 			}
 
@@ -115,7 +115,6 @@ namespace TS3AudioBot
 
 		public R<BotInfo, string> RunBot(ConfBot config, string name = null)
 		{
-			bool removeBot = false;
 			var bot = new Bot(config) { Injector = CoreInjector.CloneRealm<BotInjector>(), Name = name };
 			if (!CoreInjector.TryInject(bot))
 				Log.Warn("Partial bot dependency loaded only");
@@ -123,6 +122,7 @@ namespace TS3AudioBot
 			lock (bot.SyncRoot)
 			{
 				var initializeResult = bot.InitializeBot();
+				var removeBot = false;
 				if (initializeResult.Ok)
 				{
 					lock (lockObj)

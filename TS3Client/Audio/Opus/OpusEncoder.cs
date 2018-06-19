@@ -62,7 +62,6 @@ namespace TS3Client.Audio.Opus
 			InputSamplingRate = inputSamplingRate;
 			InputChannels = inputChannels;
 			Application = application;
-			MaxDataBytes = 4000;
 		}
 
 		/// <summary>
@@ -76,30 +75,28 @@ namespace TS3Client.Audio.Opus
 		{
 			if (disposed)
 				throw new ObjectDisposedException("OpusEncoder");
-			if (outputEncodedBuffer.Length < MaxDataBytes)
-				throw new ArgumentException("Array must be at least MaxDataBytes long", nameof(outputEncodedBuffer));
 
-			int frames = FrameCount(inputPcmSamples);
+			int frames = FrameCount(inputPcmSamples.Length);
 			// TODO fix hacky ref implementation once there is a good alternative with spans
 			int encodedLength = NativeMethods.opus_encode(encoder, ref inputPcmSamples[0], frames, outputEncodedBuffer, sampleLength);
 
 			if (encodedLength < 0)
 				throw new Exception("Encoding failed - " + (Errors)encodedLength);
 
-			return new Span<byte>(outputEncodedBuffer, 0, encodedLength);
+			return outputEncodedBuffer.AsSpan(0, encodedLength);
 		}
 
 		/// <summary>
 		/// Determines the number of frames in the PCM samples.
 		/// </summary>
-		/// <param name="pcmSamples"></param>
+		/// <param name="bufferSize"></param>
 		/// <returns></returns>
-		public int FrameCount(ReadOnlySpan<byte> pcmSamples)
+		public int FrameCount(int bufferSize)
 		{
 			//  seems like bitrate should be required
 			const int bitrate = 16;
 			int bytesPerSample = (bitrate / 8) * InputChannels;
-			return pcmSamples.Length / bytesPerSample;
+			return bufferSize / bytesPerSample;
 		}
 
 		/// <summary>
@@ -128,12 +125,6 @@ namespace TS3Client.Audio.Opus
 		/// Gets the coding mode of the encoder.
 		/// </summary>
 		public Application Application { get; private set; }
-
-		/// <summary>
-		/// Gets or sets the size of memory allocated for reading encoded data.
-		/// 4000 is recommended.
-		/// </summary>
-		public int MaxDataBytes { get; set; }
 
 		/// <summary>
 		/// Gets or sets the bitrate setting of the encoding.

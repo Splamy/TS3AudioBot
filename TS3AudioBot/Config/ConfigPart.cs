@@ -17,15 +17,15 @@ namespace TS3AudioBot.Config
 	using System.IO;
 	using System.Linq;
 	using System.Text;
-	using static TS3AudioBot.Helper.TomlTools;
+	using static Helper.TomlTools;
 
 	[DebuggerDisplay("unknown:{Key}")]
 	public abstract class ConfigPart
 	{
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public string Documentation { get; set; }
-		public string Key { get; set; }
+		public string Documentation { get; protected set; }
+		public string Key { get; protected set; }
 		// must be a field otherwise it will be found as a child for ConfigTable
 		public ConfigEnumerable Parent;
 
@@ -42,13 +42,11 @@ namespace TS3AudioBot.Config
 
 		protected void CreateDocumentation(TomlObject tomlObject)
 		{
-			TomlComment[] docs = tomlObject.Comments.Where(x => x.Text.StartsWith("#")).ToArray();
+			var docs = tomlObject.Comments.Where(x => x.Text.StartsWith("#")).ToArray();
 			tomlObject.ClearComments();
 			if (!string.IsNullOrEmpty(Documentation))
-			{
-				tomlObject.AddComment(Documentation, CommentLocation.UseDefault);
-			}
-			if ((docs?.Length ?? 0) > 0)
+				tomlObject.AddComment(Documentation);
+			if (docs.Length > 0)
 				tomlObject.AddComments(docs);
 		}
 
@@ -92,15 +90,15 @@ namespace TS3AudioBot.Config
 					else if (IsDot(rest.Span))
 						return GetAllSubItems().SelectMany(x => x.ProcessDot(rest));
 					else
-						throw new ArgumentException(nameof(path), "Invalid expression after wildcard");
+						throw new ArgumentException("Invalid expression after wildcard", nameof(path));
 				}
 
 			case '[':
-				throw new ArgumentException(nameof(path), "Invalid array open bracket");
+				throw new ArgumentException("Invalid array open bracket", nameof(path));
 			case ']':
-				throw new ArgumentException(nameof(path), "Invalid array close bracket");
+				throw new ArgumentException("Invalid array close bracket", nameof(path));
 			case '.':
-				throw new ArgumentException(nameof(path), "Invalid dot");
+				throw new ArgumentException("Invalid dot", nameof(path));
 
 			default:
 				{
@@ -111,7 +109,7 @@ namespace TS3AudioBot.Config
 					{
 						// todo allow in future
 						if (path[i] == '*')
-							throw new ArgumentException(nameof(path), "Invalid wildcard position");
+							throw new ArgumentException("Invalid wildcard position", nameof(path));
 
 						var currentSub = path.Slice(i);
 						if (!IsIdentifier(currentSub)) // if (!IsName)
@@ -133,7 +131,7 @@ namespace TS3AudioBot.Config
 						else if (IsDot(rest.Span))
 							return item.ProcessDot(rest);
 						else
-							throw new ArgumentException(nameof(path), "Invalid expression name identifier");
+							throw new ArgumentException("Invalid expression name identifier", nameof(path));
 					}
 					return new[] { item };
 				}
@@ -144,13 +142,13 @@ namespace TS3AudioBot.Config
 		{
 			var path = pathM.Span;
 			if (path[0] != '[')
-				throw new ArgumentException(nameof(path), "Expected array open breacket");
+				throw new ArgumentException("Expected array open breacket", nameof(path));
 			for (int i = 1; i < path.Length; i++)
 			{
 				if (path[i] == ']')
 				{
 					if (i == 0)
-						throw new ArgumentException(nameof(path), "Empty array indexer");
+						throw new ArgumentException("Empty array indexer", nameof(path));
 					var indexer = path.Slice(1, i - 1);
 					var rest = pathM.Slice(i + 1);
 					bool cont = rest.Length > 0;
@@ -166,7 +164,7 @@ namespace TS3AudioBot.Config
 							else if (IsDot(rest.Span))
 								return ret.SelectMany(x => x.ProcessDot(rest));
 							else
-								throw new ArgumentException(nameof(path), "Invalid expression after array indexer");
+								throw new ArgumentException("Invalid expression after array indexer", nameof(path));
 						}
 
 						return ret;
@@ -184,24 +182,24 @@ namespace TS3AudioBot.Config
 							else if (IsDot(rest.Span))
 								return ret.ProcessDot(rest);
 							else
-								throw new ArgumentException(nameof(path), "Invalid expression after array indexer");
+								throw new ArgumentException("Invalid expression after array indexer", nameof(path));
 						}
 						return new[] { ret };
 					}
 				}
 			}
-			throw new ArgumentException(nameof(path), "Missing array close bracket");
+			throw new ArgumentException("Missing array close bracket", nameof(path));
 		}
 
 		private IEnumerable<ConfigPart> ProcessDot(ReadOnlyMemory<char> pathM)
 		{
 			var path = pathM.Span;
 			if (!IsDot(path))
-				throw new ArgumentException(nameof(path), "Expected dot");
+				throw new ArgumentException("Expected dot", nameof(path));
 
 			var rest = pathM.Slice(1);
 			if (!IsIdentifier(rest.Span))
-				throw new ArgumentException(nameof(path), "Expected identifier after dot");
+				throw new ArgumentException("Expected identifier after dot", nameof(path));
 
 			return ProcessIdentifier(rest);
 		}

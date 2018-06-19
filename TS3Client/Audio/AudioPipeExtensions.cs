@@ -39,5 +39,13 @@ namespace TS3Client.Audio
 			init?.Invoke(addConsumer);
 			return producer.Chain(addConsumer);
 		}
+
+		public static T Into<T>(this IAudioPassiveProducer producer, Action<T> init = null) where T: IAudioActiveConsumer, new()
+		{
+			var reader = new T();
+			init?.Invoke(reader);
+			reader.InStream = producer;
+			return reader;
+		}
 	}
 }

@@ -22,7 +22,7 @@ namespace TS3AudioBot.Config
 
 		public static R<ConfRoot> Open(string file)
 		{
-			var loadResult = ConfigTable.Load<ConfRoot>(file);
+			var loadResult = Load<ConfRoot>(file);
 			if (!loadResult.Ok)
 			{
 				Log.Error(loadResult.Error, "Could not load core config.");
@@ -92,7 +92,7 @@ namespace TS3AudioBot.Config
 
 		public ConfBot CreateBot()
 		{
-			var config = ConfigTable.CreateRoot<ConfBot>();
+			var config = CreateRoot<ConfBot>();
 			return CreateBotConfig(config);
 		}
 
@@ -100,7 +100,6 @@ namespace TS3AudioBot.Config
 		{
 			try
 			{
-				int prefixLen = "bot_".Length;
 				return Directory.EnumerateFiles(Configs.BotsPath.Value, "bot_*.toml", SearchOption.TopDirectoryOnly)
 					.Select(file =>
 					{
@@ -118,7 +117,7 @@ namespace TS3AudioBot.Config
 		public R<ConfBot, Exception> GetBotTemplate(string name)
 		{
 			string botFile = NameToPath(name).UnwrapThrow();
-			var botConfResult = ConfigTable.Load<ConfBot>(botFile);
+			var botConfResult = Load<ConfBot>(botFile);
 			if (!botConfResult.Ok)
 				return botConfResult.Error;
 			var botConf = CreateBotConfig(botConfResult.Value);

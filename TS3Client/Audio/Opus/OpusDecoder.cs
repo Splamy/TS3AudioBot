@@ -1,5 +1,5 @@
 // Copyright 2012 John Carruthers
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -7,10 +7,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -60,7 +60,6 @@ namespace TS3Client.Audio.Opus
 			this.decoder = decoder;
 			OutputSamplingRate = outputSamplingRate;
 			OutputChannels = outputChannels;
-			MaxDataBytes = 4000;
 		}
 
 		/// <summary>
@@ -68,27 +67,31 @@ namespace TS3Client.Audio.Opus
 		/// </summary>
 		/// <param name="inputOpusData">Opus encoded data to decode, null for dropped packet.</param>
 		/// <param name="dataLength">Length of data to decode.</param>
-		/// <param name="decodedLength">Set to the length of the decoded sample data.</param>
+		/// <param name="outputDecodedBuffer">PCM audio samples buffer.</param>
 		/// <returns>PCM audio samples.</returns>
-		public byte[] Decode(byte[] inputOpusData, int dataLength, out int decodedLength)
+		public Span<byte> Decode(Span<byte> inputOpusData, Span<byte> outputDecodedBuffer)
 		{
 			if (disposed)
 				throw new ObjectDisposedException("OpusDecoder");
 
-			byte[] decoded = new byte[MaxDataBytes];
-			int frameCount = FrameCount(MaxDataBytes);
-			int length;
-			
-			if (inputOpusData != null)
-				length = NativeMethods.opus_decode(decoder, inputOpusData, dataLength, decoded, frameCount, 0);
-			else
-				length = NativeMethods.opus_decode(decoder, null, 0, decoded, frameCount, (ForwardErrorCorrection) ? 1 : 0);
+			if (inputOpusData.Length == 0)
+				return Span<byte>.Empty;
 
-			decodedLength = length * 2;
+			int frameSize = FrameCount(outputDecodedBuffer.Length);
+
+			// TODO fix hacky ref implementation once there is a good alternative with spans
+			int length = NativeMethods.opus_decode(decoder, ref inputOpusData[0], inputOpusData.Length, ref outputDecodedBuffer[0], frameSize, 0);
+
 			if (length < 0)
 				throw new Exception("Decoding failed - " + (Errors)length);
 
-			return decoded;
+			// TODO implement forward error corrected packet
+			//else
+			//	length = NativeMethods.opus_decode(decoder, null, 0, decoded, frameCount, (ForwardErrorCorrection) ? 1 : 0);
+
+			var decodedLength = length * 2 * OutputChannels;
+
+			return outputDecodedBuffer.Slice(0, decodedLength);
 		}
 
 		/// <summary>
@@ -113,11 +116,6 @@ namespace TS3Client.Audio.Opus
 		/// Gets the number of channels of the decoder.
 		/// </summary>
 		public int OutputChannels { get; private set; }
-
-		/// <summary>
-		/// Gets or sets the size of memory allocated for decoding data.
-		/// </summary>
-		public int MaxDataBytes { get; set; }
 
 		/// <summary>
 		/// Gets or sets whether forward error correction is enabled or not.

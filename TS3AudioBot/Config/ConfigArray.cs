@@ -13,11 +13,11 @@ namespace TS3AudioBot.Config
 	using Newtonsoft.Json;
 	using System;
 	using System.Collections.Generic;
-	using TS3AudioBot.Helper;
+	using Helper;
 
 	public class ConfigArray<T> : ConfigValue<IReadOnlyList<T>>
 	{
-		public ConfigArray(string key, T[] defaultVal, string doc = "") : base(key, defaultVal, doc) { }
+		public ConfigArray(string key, IReadOnlyList<T> defaultVal, string doc = "") : base(key, defaultVal, doc) { }
 
 		public override void FromToml(TomlObject tomlObject)
 		{

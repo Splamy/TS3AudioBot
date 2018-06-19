@@ -62,6 +62,7 @@ namespace TS3Client.Audio
 			if (OutStream == null || SendMode == TargetSendMode.None)
 				return;
 
+			meta = meta ?? new Meta();
 			meta.Out = meta.Out ?? new MetaOut();
 			meta.Out.SendMode = SendMode;
 			switch (SendMode)

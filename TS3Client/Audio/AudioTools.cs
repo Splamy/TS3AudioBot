@@ -9,19 +9,26 @@
 
 namespace TS3Client.Audio
 {
-	using System;
+	using System.Runtime.InteropServices;
 
-	public class ActiveCheckPipe : IAudioPipe
+	public static class AudioTools
 	{
-		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer OutStream { get; set; }
-
-		public void Write(Span<byte> data, Meta meta)
+		public static bool TryMonoToStereo(byte[] pcm, ref int length)
 		{
-			if (OutStream == null || data.Length == 0 || !Active)
-				return;
+			if (length / 2 >= pcm.Length)
+				return false;
 
-			OutStream?.Write(data, meta);
+			var shortArr = MemoryMarshal.Cast<byte, short>(pcm);
+
+			for (int i = (length / 2) - 1; i >= 0; i--)
+			{
+				shortArr[i * 2 + 0] = shortArr[i];
+				shortArr[i * 2 + 1] = shortArr[i];
+			}
+
+			length *= 2;
+
+			return true;
 		}
 	}
 }

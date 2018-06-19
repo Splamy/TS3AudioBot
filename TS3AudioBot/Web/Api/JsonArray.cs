@@ -17,7 +17,7 @@ namespace TS3AudioBot.Web.Api
 	{
 		public JsonArray(T[] value, string msg) : base(value, msg) { }
 		public JsonArray(T[] value, Func<T[], string> asString = null, Func<T, IEnumerable<object>> asJson = null)
-			: base(value, asString, x => x.Select(asJson))
+			: base(value, asString, asJson == null ? null : (Func<T[], object>)(x => x.Select(asJson)))
 		{ }
 	}
 }

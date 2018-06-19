@@ -24,7 +24,7 @@ namespace TS3AudioBot.Config.Deprecated
 			var oldConfig = ConfigFile.OpenOrCreate(oldFilename);
 			if (oldConfig == null)
 			{
-				Log.Error("Old config file '{0}' found but could not be read", oldConfig);
+				Log.Error("Old config file '{0}' found but could not be read", oldFilename);
 				return;
 			}
 

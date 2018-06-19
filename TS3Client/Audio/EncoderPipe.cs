@@ -32,7 +32,7 @@ namespace TS3Client.Audio
 		// todo add upper limit to buffer size and drop everying over
 		private byte[] notEncodedBuffer = Array.Empty<byte>();
 		private int notEncodedLength;
-		private readonly byte[] encodedBuffer;
+		private readonly byte[] encodedBuffer = new byte[4096];
 
 		public EncoderPipe(Codec codec)
 		{
@@ -71,7 +71,6 @@ namespace TS3Client.Audio
 
 			BitsPerSample = 16;
 			PacketSize = opusEncoder.FrameByteCount(SegmentFrames);
-			encodedBuffer = new byte[opusEncoder.MaxDataBytes];
 		}
 
 		public void Write(Span<byte> data, Meta meta)
@@ -86,10 +85,10 @@ namespace TS3Client.Audio
 				Array.Copy(notEncodedBuffer, 0, tmpSoundBuffer, 0, notEncodedLength);
 				notEncodedBuffer = tmpSoundBuffer;
 			}
-			
+
 			var soundBuffer = notEncodedBuffer.AsSpan();
 			data.CopyTo(soundBuffer.Slice(notEncodedLength));
-			
+
 			int segmentCount = newSoundBufferLength / PacketSize;
 			int segmentsEnd = segmentCount * PacketSize;
 			notEncodedLength = newSoundBufferLength - segmentsEnd;
@@ -97,8 +96,8 @@ namespace TS3Client.Audio
 			for (int i = 0; i < segmentCount; i++)
 			{
 				var encodedData = opusEncoder.Encode(soundBuffer.Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
-				if (meta != null)
-					meta.Codec = Codec; // TODO copy ?
+				meta = meta ?? new Meta();
+				meta.Codec = Codec; // TODO copy ?
 				OutStream?.Write(encodedData, meta);
 			}
 

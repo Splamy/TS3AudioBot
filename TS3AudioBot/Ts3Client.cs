@@ -101,7 +101,7 @@ namespace TS3AudioBot
 
 			mergePipe.Add(ffmpegProducer);
 			timePipe.InStream = mergePipe;
-			timePipe.Chain<ActiveCheckPipe>().Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
+			timePipe.Chain<CheckActivePipe>().Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
 
 			identity = null;
 		}
@@ -146,7 +146,7 @@ namespace TS3AudioBot
 			if (closed)
 				return "Bot disposed";
 
-			VersionSign versionSign = null;
+			VersionSign versionSign;
 			if (!string.IsNullOrEmpty(config.Connect.ClientVersion.Build.Value))
 			{
 				var versionConf = config.Connect.ClientVersion;

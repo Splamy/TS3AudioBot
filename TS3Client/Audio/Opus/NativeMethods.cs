@@ -76,7 +76,7 @@ namespace TS3Client.Audio.Opus
 		internal static extern void opus_decoder_destroy(IntPtr decoder);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_decode(IntPtr st, byte[] data, int len, byte[] pcm, int frameSize, int decodeFec);
+		internal static extern int opus_decode(IntPtr st, ref byte data, int len, ref byte pcm, int frameSize, int decodeFec);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, int value);

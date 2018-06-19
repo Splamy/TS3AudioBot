@@ -25,7 +25,7 @@ namespace TS3AudioBot
 	public sealed class Core : IDisposable
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-		private const string defaultConfigFileName = "ts3audiobot.toml";
+		private const string DefaultConfigFileName = "ts3audiobot.toml";
 		private readonly string configFilePath;
 		private bool forceNextExit;
 
@@ -72,12 +72,12 @@ namespace TS3AudioBot
 		public Core(string configFilePath = null)
 		{
 			// setting defaults
-			this.configFilePath = configFilePath ?? defaultConfigFileName;
+			this.configFilePath = configFilePath ?? DefaultConfigFileName;
 		}
 
 		private E<string> Run(bool interactive = false)
 		{
-			var configResult = ConfRoot.OpenOrCreate("ts3audiobot.toml");
+			var configResult = ConfRoot.OpenOrCreate(configFilePath);
 			if(!configResult.Ok)
 				return "Could not create config";
 			ConfRoot config = configResult.Value;

@@ -25,7 +25,7 @@ namespace TS3AudioBot.Helper
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 
-		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", Util.DefaultRegexConfig);
+		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", DefaultRegexConfig);
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
