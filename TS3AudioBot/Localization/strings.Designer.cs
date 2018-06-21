@@ -61,6 +61,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This feature is not documented..
+        /// </summary>
+        internal static string _undocumented {
+            get {
+                return ResourceManager.GetString("_undocumented", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Adds a new song to the queue..
         /// </summary>
         internal static string cmd_add_help {

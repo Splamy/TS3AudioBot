@@ -17,8 +17,11 @@ namespace TS3AudioBot.History
 	{
 		/// <summary>A unique id for each <see cref="ResourceFactories.AudioResource"/>, given by the history system.</summary>
 		public int Id { get; set; }
-		/// <summary>The dbid of the teamspeak user, who played this song first.</summary>
-		public uint UserInvokeId { get; set; }
+		/// <summary>Left for legacy reasons. The dbid of the teamspeak user, who played this song first.</summary>
+		[Obsolete]
+		public uint? UserInvokeId { get; set; }
+		/// <summary>The Uid of the teamspeak user, who played this song first.</summary>
+		public string UserUid { get; set; }
 		/// <summary>How often the song has been played.</summary>
 		public uint PlayCount { get; set; }
 		/// <summary>The last time this song has been played.</summary>
@@ -44,7 +47,7 @@ namespace TS3AudioBot.History
 
 		public override string ToString()
 		{
-			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserInvokeId, AudioResource.ResourceTitle, AudioResource);
+			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserUid, AudioResource.ResourceTitle, AudioResource);
 		}
 	}
 }

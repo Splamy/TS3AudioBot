@@ -331,7 +331,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var playlist = factoryManager.LoadPlaylistFrom(parameter, factory).UnwrapThrow();
 
-				playlist.CreatorDbId = invoker.DatabaseId;
+				playlist.OwnerUid = invoker.ClientUid;
 				session.Set<PlaylistManager, Playlist>(playlist);
 			}
 		}

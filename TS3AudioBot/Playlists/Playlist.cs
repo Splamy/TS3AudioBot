@@ -16,17 +16,17 @@ namespace TS3AudioBot.Playlists
 	{
 		// metainfo
 		public string Name { get; set; }
-		public ulong? CreatorDbId { get; set; }
+		public string OwnerUid { get; set; }
 		// file behaviour: persistent playlist will be synced to a file
 		public bool FilePersistent { get; set; }
 		// playlist data
 		public int Count => resources.Count;
 		private readonly List<PlaylistItem> resources;
 
-		public Playlist(string name, ulong? creatorDbId = null)
+		public Playlist(string name, string ownerUid = null)
 		{
 			Util.Init(out resources);
-			CreatorDbId = creatorDbId;
+			OwnerUid = ownerUid;
 			Name = name;
 		}
 

@@ -13,6 +13,7 @@ namespace TS3AudioBot.Playlists
 	using Config;
 	using Helper;
 	using Localization;
+	using Newtonsoft.Json;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -157,10 +158,11 @@ namespace TS3AudioBot.Playlists
 				var plist = new Playlist(name);
 
 				// Info: version:<num>
-				// Info: owner:<dbid>
+				// Info: owner:<uid>
 				// Line: <kind>:<data,data,..>:<opt-title>
 
 				string line;
+				int version = 1;
 
 				// read header
 				while ((line = sr.ReadLine()) != null)
@@ -176,23 +178,22 @@ namespace TS3AudioBot.Playlists
 
 					switch (key)
 					{
-					case "version": // skip, not yet needed
+					case "version":
+						version = int.Parse(value);
+						if (version > 2)
+							return new LocalStr("The file version is too new and can't be read."); // LOC: TODO
 						break;
 
 					case "owner":
-						if (plist.CreatorDbId != null)
+						if (plist.OwnerUid != null)
 						{
 							Log.Warn("Invalid playlist file: duplicate userid");
 							return new LocalStr(strings.error_playlist_broken_file);
 						}
-						if (ulong.TryParse(value, out var userid))
+
+						if (version == 2)
 						{
-							plist.CreatorDbId = userid;
-						}
-						else
-						{
-							Log.Warn("Invalid playlist file: invalid userid \"{0}\"", value);
-							return new LocalStr(strings.error_playlist_broken_file);
+							plist.OwnerUid = value;
 						}
 						break;
 					}
@@ -204,34 +205,43 @@ namespace TS3AudioBot.Playlists
 				// read content
 				while ((line = sr.ReadLine()) != null)
 				{
-					var kvp = line.Split(new[] { ':' }, 3);
-					if (kvp.Length < 3)
-					{
-						Log.Warn("Erroneus playlist split count: {0}", line);
-						continue;
-					}
-					string kind = kvp[0];
-					string optOwner = kvp[1];
-					string content = kvp[2];
+					var kvp = line.Split(new[] { ':' }, 2);
+					if (kvp.Length < 2) continue;
 
-					var meta = new MetaData();
-					if (string.IsNullOrWhiteSpace(optOwner))
-						meta.ResourceOwnerDbId = null;
-					else if (ulong.TryParse(optOwner, out var userid))
-						meta.ResourceOwnerDbId = userid;
-					else
-						Log.Warn("Erroneus playlist meta data: {0}", line);
+					string key = kvp[0];
+					string value = kvp[1];
 
-					switch (kind)
+					switch (key)
 					{
 					case "rs":
-						var rsSplit = content.Split(new[] { ',' }, 3);
-						if (rsSplit.Length < 3)
-							goto default;
-						if (!string.IsNullOrWhiteSpace(rsSplit[0]))
-							plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0]), meta));
-						else
-							goto default;
+						{
+							var rskvp = value.Split(new[] { ':' }, 2);
+							if (kvp.Length < 2)
+							{
+								Log.Warn("Erroneus playlist split count: {0}", line);
+								continue;
+							}
+							string optOwner = rskvp[0];
+							string content = rskvp[1];
+
+							var rsSplit = content.Split(new[] { ',' }, 3);
+							if (rsSplit.Length < 3)
+								goto default;
+							if (!string.IsNullOrWhiteSpace(rsSplit[0]))
+								plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0])));
+							else
+								goto default;
+							break;
+						}
+
+					case "rsj":
+						var rsjdata = JsonConvert.DeserializeAnonymousType(value, new
+						{
+							type = string.Empty,
+							resid = string.Empty,
+							title = string.Empty
+						});
+						plist.AddItem(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
 						break;
 
 					case "id":
@@ -246,6 +256,15 @@ namespace TS3AudioBot.Playlists
 				}
 				return plist;
 			}
+		}
+
+		private static R<Playlist, LocalStr> LoadChecked(R<Playlist, LocalStr> loadResult, string ownerUid)
+		{
+			if (!loadResult)
+				return new LocalStr($"{strings.error_playlist_broken_file} ({loadResult.Error.Str})");
+			if (loadResult.Value.OwnerUid != null && loadResult.Value.OwnerUid != ownerUid)
+				return new LocalStr(strings.error_playlist_cannot_access_not_owned);
+			return loadResult;
 		}
 
 		public E<LocalStr> SavePlaylist(Playlist plist)
@@ -264,40 +283,44 @@ namespace TS3AudioBot.Playlists
 			var fi = GetFileInfo(plist.Name);
 			if (fi.Exists)
 			{
-				var tempList = LoadPlaylist(plist.Name, true);
+				var tempList = LoadChecked(LoadPlaylist(plist.Name, true), plist.OwnerUid);
 				if (!tempList)
-					return new LocalStr(strings.error_playlist_broken_file);
-				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != plist.CreatorDbId)
-					return new LocalStr(strings.error_playlist_cannot_access_not_owned);
+					return tempList.OnlyError();
 			}
 
 			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
 			{
-				sw.WriteLine("version:1");
-
-				if (plist.CreatorDbId.HasValue)
+				sw.WriteLine("version:2");
+				if (plist.OwnerUid != null)
 				{
 					sw.Write("owner:");
-					sw.Write(plist.CreatorDbId.Value);
+					sw.Write(plist.OwnerUid);
 					sw.WriteLine();
 				}
 
 				sw.WriteLine();
-
-				foreach (var pli in plist.AsEnumerable())
+				
+				using (var json = new JsonTextWriter(sw))
 				{
-					sw.Write("rs:");
-					if (pli.Meta.ResourceOwnerDbId.HasValue
-						&& (!plist.CreatorDbId.HasValue || pli.Meta.ResourceOwnerDbId.Value != plist.CreatorDbId.Value))
-						sw.Write(pli.Meta.ResourceOwnerDbId.Value);
-					sw.Write(":");
-					sw.Write(pli.Resource.AudioType);
-					sw.Write(",");
-					sw.Write(Uri.EscapeDataString(pli.Resource.ResourceId));
-					sw.Write(",");
-					sw.Write(Uri.EscapeDataString(pli.Resource.ResourceTitle));
+					json.Formatting = Formatting.None;
 
-					sw.WriteLine();
+					foreach (var pli in plist.AsEnumerable())
+					{
+						sw.Write("rsj:");
+						json.WriteStartObject();
+						json.WritePropertyName("type");
+						json.WriteValue(pli.Resource.AudioType);
+						json.WritePropertyName("resid");
+						json.WriteValue(pli.Resource.ResourceId);
+						if (pli.Resource.ResourceTitle != null)
+						{
+							json.WritePropertyName("title");
+							json.WriteValue(pli.Resource.ResourceTitle);
+						}
+						json.WriteEndObject();
+						json.Flush();
+						sw.WriteLine();
+					}
 				}
 			}
 
@@ -306,18 +329,16 @@ namespace TS3AudioBot.Playlists
 
 		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(config.Path, name ?? string.Empty));
 
-		public E<LocalStr> DeletePlaylist(string name, ulong requestingClientDbId, bool force = false)
+		public E<LocalStr> DeletePlaylist(string name, string requestingClientUid, bool force = false)
 		{
 			var fi = GetFileInfo(name);
 			if (!fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);
 			else if (!force)
 			{
-				var tempList = LoadPlaylist(name, true);
+				var tempList = LoadChecked(LoadPlaylist(name, true), requestingClientUid);
 				if (!tempList)
-					return new LocalStr(strings.error_playlist_broken_file);
-				if (tempList.Value.CreatorDbId.HasValue && tempList.Value.CreatorDbId != requestingClientDbId)
-					return new LocalStr(strings.error_playlist_cannot_access_not_owned);
+					return tempList.OnlyError();
 			}
 
 			try

@@ -365,6 +365,12 @@ namespace TS3AudioBot
 			return new JsonEmpty($"{strings.cmd_history_clean_removedefective_confirm_clean} {strings.info_bot_might_be_unresponsive} {YesNoOption}");
 		}
 
+		[Command("history clean upgrade", "_undocumented")]
+		public static void CommandHistoryCleanUpgrade(HistoryManager historyManager, Ts3Client ts3Client)
+		{
+			historyManager.UpdadeDbIdToUid(ts3Client);
+		}
+
 		[Command("history delete")]
 		public static JsonEmpty CommandHistoryDelete(HistoryManager historyManager, CallerInfo caller, uint id, UserSession session = null)
 		{
@@ -394,9 +400,9 @@ namespace TS3AudioBot
 		}
 
 		[Command("history from")]
-		public static JsonArray<AudioLogEntry> CommandHistoryFrom(HistoryManager historyManager, uint userDbId, int? amount = null)
+		public static JsonArray<AudioLogEntry> CommandHistoryFrom(HistoryManager historyManager, string userUid, int? amount = null)
 		{
-			var query = new SeachQuery { UserId = userDbId };
+			var query = new SeachQuery { UserUid = userUid };
 			if (amount.HasValue)
 				query.MaxResults = amount.Value;
 
@@ -590,7 +596,7 @@ namespace TS3AudioBot
 		{
 			var plist = AutoGetPlaylist(session, invoker);
 			var playResource = factoryManager.Load(link).UnwrapThrow();
-			plist.AddItem(new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerDbId = invoker.DatabaseId }));
+			plist.AddItem(new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid }));
 		}
 
 		[Command("list add")]
@@ -598,7 +604,7 @@ namespace TS3AudioBot
 		{
 			var plist = AutoGetPlaylist(session, invoker);
 			var ale = historyManager.GetEntryById(hid).UnwrapThrow();
-			plist.AddItem(new PlaylistItem(ale.AudioResource, new MetaData { ResourceOwnerDbId = invoker.DatabaseId }));
+			plist.AddItem(new PlaylistItem(ale.AudioResource, new MetaData { ResourceOwnerUid = invoker.ClientUid }));
 		}
 
 		[Command("list clear")]
@@ -608,7 +614,7 @@ namespace TS3AudioBot
 		public static JsonEmpty CommandListDelete(ExecutionInformation info, PlaylistManager playlistManager, CallerInfo caller, InvokerData invoker, string name, UserSession session = null)
 		{
 			if (caller.ApiCall)
-				playlistManager.DeletePlaylist(name, invoker.DatabaseId ?? 0, info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
+				playlistManager.DeletePlaylist(name, invoker.ClientUid, info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
 
 			bool? canDeleteAllPlaylists = null;
 
@@ -616,7 +622,7 @@ namespace TS3AudioBot
 			{
 				if (TextUtil.GetAnswer(message) == Answer.Yes)
 				{
-					playlistManager.DeletePlaylist(name, invoker.DatabaseId ?? 0, canDeleteAllPlaylists ?? info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
+					playlistManager.DeletePlaylist(name, invoker.ClientUid, canDeleteAllPlaylists ?? info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
 				}
 				return null;
 			}
@@ -631,7 +637,7 @@ namespace TS3AudioBot
 			else
 			{
 				canDeleteAllPlaylists = info.HasRights(RightDeleteAllPlaylists);
-				if (hresult.Value.CreatorDbId != invoker.DatabaseId && !canDeleteAllPlaylists.Value)
+				if (hresult.Value.OwnerUid != invoker.ClientUid && !canDeleteAllPlaylists.Value)
 					throw new CommandException(strings.cmd_list_delete_cannot_delete_others_playlist, CommandExceptionReason.MissingRights);
 
 				session.SetResponse(ResponseListDelete);
@@ -644,7 +650,7 @@ namespace TS3AudioBot
 		{
 			var playlist = factoryManager.LoadPlaylistFrom(link).UnwrapThrow();
 
-			playlist.CreatorDbId = invoker.DatabaseId;
+			playlist.OwnerUid = invoker.ClientUid;
 			session.Set<PlaylistManager, Playlist>(playlist);
 			return new JsonEmpty(strings.info_ok);
 		}
@@ -1404,7 +1410,7 @@ namespace TS3AudioBot
 			if (result)
 				return result.Value;
 
-			var newPlist = new Playlist(invoker.NickName, invoker.DatabaseId);
+			var newPlist = new Playlist(invoker.NickName, invoker.ClientUid);
 			session.Set<PlaylistManager, Playlist>(newPlist);
 			return newPlist;
 		}

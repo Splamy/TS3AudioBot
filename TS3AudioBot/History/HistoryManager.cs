@@ -55,20 +55,33 @@ namespace TS3AudioBot.History
 
 		public void Initialize()
 		{
+			var meta = Database.GetMetaData(AudioLogEntriesTable);
+
+			if (meta.Version > CurrentHistoryVersion)
+			{
+				Log.Error("Database table \"{0}\" is higher than the current version. (table:{1}, app:{2}). " +
+					"Please download the latest TS3AudioBot to read the history.", AudioLogEntriesTable, meta.Version, CurrentHistoryVersion);
+				return;
+			}
+
 			audioLogEntries = Database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
 			audioLogEntries.EnsureIndex(x => x.Timestamp);
 			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
 				$"LOWER($.{nameof(AudioLogEntry.AudioResource)}.{nameof(AudioResource.ResourceTitle)})");
-
 			RestoreFromFile();
 
-			// Content upgrade
-
-			var meta = Database.GetMetaData(AudioLogEntriesTable);
-			if (meta.Version >= CurrentHistoryVersion)
+			if (meta.Version == CurrentHistoryVersion)
 				return;
 
+			if (audioLogEntries.Count() == 0)
+			{
+				meta.Version = CurrentHistoryVersion;
+				Database.UpdateMetaData(meta);
+				return;
+			}
+
+			// Content upgrade
 			switch (meta.Version)
 			{
 			case 0:
@@ -159,7 +172,7 @@ namespace TS3AudioBot.History
 
 			var ale = new AudioLogEntry(nextHid, saveData.Resource)
 			{
-				UserInvokeId = (uint)(saveData.OwnerDbId ?? 0),
+				UserUid = saveData.InvokerUid,
 				Timestamp = Util.GetNow(),
 				PlayCount = 1,
 			};
@@ -191,8 +204,8 @@ namespace TS3AudioBot.History
 					Query.Where(ResourceTitleQueryColumn, val => val.AsString.Contains(titleLower)));
 			}
 
-			if (search.UserId.HasValue)
-				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserInvokeId), (long)search.UserId.Value));
+			if (search.UserUid != null)
+				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserUid), search.UserUid));
 
 			if (search.LastInvokedAfter.HasValue)
 				query = Query.And(query, Query.GTE(nameof(AudioLogEntry.Timestamp), search.LastInvokedAfter.Value));
@@ -291,6 +304,49 @@ namespace TS3AudioBot.History
 					Log.Debug("Clean in progress {0}", new string('.', userNotifyCnt / 100 % 10));
 			}
 			return nextIter;
+		}
+
+		public void UpdadeDbIdToUid(Ts3Client ts3Client)
+		{
+			var upgradedEntries = new List<AudioLogEntry>();
+			var dbIdCache = new Dictionary<uint, (bool valid, string uid)>();
+
+			foreach (var audioLogEntry in audioLogEntries.FindAll())
+			{
+#pragma warning disable CS0612
+				if (!audioLogEntry.UserInvokeId.HasValue)
+					continue;
+
+				if (audioLogEntry.UserUid != null || audioLogEntry.UserInvokeId.Value == 0)
+				{
+					audioLogEntry.UserInvokeId = null;
+					upgradedEntries.Add(audioLogEntry);
+					continue;
+				}
+
+				if (!dbIdCache.TryGetValue(audioLogEntry.UserInvokeId.Value, out var data))
+				{
+					var result = ts3Client.GetDbClientByDbId(audioLogEntry.UserInvokeId.Value);
+					data.uid = (data.valid = result.Ok) ? result.Value.Uid : null;
+					if (!data.valid)
+					{
+						Log.Warn("Client DbId {0} could not be found.", audioLogEntry.UserInvokeId.Value);
+					}
+					dbIdCache.Add(audioLogEntry.UserInvokeId.Value, data);
+				}
+
+				if (!data.valid)
+					continue;
+
+				audioLogEntry.UserInvokeId = null;
+				audioLogEntry.UserUid = data.uid;
+				upgradedEntries.Add(audioLogEntry);
+#pragma warning restore CS0612
+			}
+
+			if (upgradedEntries.Count > 0)
+				audioLogEntries.Update(upgradedEntries);
+			Log.Info("Upgraded {0} entries.", upgradedEntries.Count);
 		}
 	}
 }

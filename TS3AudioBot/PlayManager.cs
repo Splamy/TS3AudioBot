@@ -50,7 +50,7 @@ namespace TS3AudioBot
 
 		private E<LocalStr> EnqueueInternal(InvokerData invoker, PlaylistItem pli)
 		{
-			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
+			pli.Meta.ResourceOwnerUid = invoker.ClientUid;
 			PlaylistManager.AddToFreelist(pli);
 			return R.Ok;
 		}
@@ -98,7 +98,7 @@ namespace TS3AudioBot
 		public E<LocalStr> Play(InvokerData invoker, PlayResource play, MetaData meta)
 		{
 			if (!meta.FromPlaylist)
-				meta.ResourceOwnerDbId = invoker.DatabaseId;
+				meta.ResourceOwnerUid = invoker.ClientUid;
 
 			var playInfo = new PlayInfoEventArgs(invoker, play, meta);
 			BeforeResourceStarted?.Invoke(this, playInfo);
@@ -203,8 +203,8 @@ namespace TS3AudioBot
 
 	public sealed class MetaData
 	{
-		/// <summary>Defaults to: invoker.DbId - Can be set if the owner of a song differs from the invoker.</summary>
-		public ulong? ResourceOwnerDbId { get; set; }
+		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
+		public string ResourceOwnerUid { get; set; }
 		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
 		public float? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
@@ -212,7 +212,7 @@ namespace TS3AudioBot
 
 		public MetaData Clone() => new MetaData
 		{
-			ResourceOwnerDbId = ResourceOwnerDbId,
+			ResourceOwnerUid = ResourceOwnerUid,
 			FromPlaylist = FromPlaylist,
 			Volume = Volume
 		};
@@ -230,7 +230,6 @@ namespace TS3AudioBot
 		public PlayResource PlayResource { get; }
 		public AudioResource ResourceData => PlayResource.BaseData;
 		public MetaData MetaData { get; }
-		public ulong? Owner => MetaData.ResourceOwnerDbId ?? Invoker.DatabaseId;
 
 		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta)
 		{

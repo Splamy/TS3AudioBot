@@ -891,4 +891,7 @@ with the id {1}?</value>
   <data name="cmd_settings_set_help" xml:space="preserve">
     <value>Sets a value from the bot settings.</value>
   </data>
+  <data name="_undocumented" xml:space="preserve">
+    <value>This feature is not documented.</value>
+  </data>
 </root>
