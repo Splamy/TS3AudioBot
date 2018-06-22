@@ -39,6 +39,7 @@ namespace TS3Client.Full
 		/// a packet is considered to be lost.</summary>
 		private TimeSpan currentRto;
 		private readonly Stopwatch pingTimer = new Stopwatch();
+		private readonly Stopwatch lastMessageTimer = new Stopwatch();
 		private ushort lastSentPingId;
 		private ushort lastReceivedPingId;
 
@@ -125,6 +126,7 @@ namespace TS3Client.Full
 				currentRto = MaxRetryInterval;
 				lastSentPingId = 0;
 				lastReceivedPingId = 0;
+				lastMessageTimer.Restart();
 
 				initPacketCheck = null;
 				packetAckManager.Clear();
@@ -346,6 +348,7 @@ namespace TS3Client.Full
 					continue;
 				}
 
+				lastMessageTimer.Restart();
 				NetworkStats.LogInPacket(ref packet);
 
 				bool passPacketToEvent = true;
@@ -646,7 +649,15 @@ namespace TS3Client.Full
 						pingCheck += PingInterval;
 					SendPing();
 				}
-				// TODO implement ping-timeout here
+
+				var elapsed = lastMessageTimer.Elapsed;
+				if (elapsed > PacketTimeout)
+				{
+					LoggerTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
+					Stop(Reason.Timeout);
+					return;
+				}
+
 				sendLoopPulse.WaitOne(ClockResolution);
 			}
 		}
