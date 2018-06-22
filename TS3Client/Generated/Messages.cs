@@ -1911,6 +1911,32 @@ namespace TS3Client.Messages
 
 		}
 	}
+	
+	public sealed class ClientPoke : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientPoke;
+
+
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public str Message { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch (name)
+			{
+
+				case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+				case "invokername": InvokerName = Ts3String.Unescape(value); break;
+				case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+				case "msg": Message = Ts3String.Unescape(value); break;
+
+			}
+
+		}
+	}
 
 	public sealed class WhoAmI : IResponse
 	{
@@ -2043,6 +2069,8 @@ namespace TS3Client.Messages
 		TextMessage,
 		///<summary>[S2C] ntfy:notifytokenused</summary>
 		TokenUsed,
+		///<summary>[S2C] ntfy:notifyclientpoke</summary>
+		ClientPoke,
 	}
 
 	public static class MessageHelper
@@ -2095,6 +2123,7 @@ namespace TS3Client.Messages
 			case "notifyservergrouplist": return NotificationType.ServerGroupList;
 			case "notifytextmessage": return NotificationType.TextMessage;
 			case "notifytokenused": return NotificationType.TokenUsed;
+			case "notifyclientpoke": return NotificationType.ClientPoke;
 			default: return NotificationType.Unknown;
 			}
 		}
@@ -2147,6 +2176,7 @@ namespace TS3Client.Messages
 			case NotificationType.ServerGroupList: return new ServerGroupList();
 			case NotificationType.TextMessage: return new TextMessage();
 			case NotificationType.TokenUsed: return new TokenUsed();
+			case NotificationType.ClientPoke: return new ClientPoke();
 			case NotificationType.Unknown:
 			default: throw Util.UnhandledDefault(name);
 			}
