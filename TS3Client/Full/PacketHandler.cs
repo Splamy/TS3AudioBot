@@ -42,12 +42,17 @@ namespace TS3Client.Full
 		private ushort lastSentPingId;
 		private ushort lastReceivedPingId;
 
+		// Out Packets
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
 		private ResendPacket<TOut> initPacketCheck;
 		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager;
-		private readonly RingQueue<Packet<TIn>> receiveQueue;
-		private readonly RingQueue<Packet<TIn>> receiveQueueLow;
+		// In Packets
+		private readonly GenerationWindow receiveWindowVoice;
+		private readonly GenerationWindow receiveWindowVoiceWhisper;
+		private readonly RingQueue<Packet<TIn>> receiveQueueCommand;
+		private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
+		// ====
 		private readonly object sendLoopLock = new object();
 		private readonly AutoResetEvent sendLoopPulse = new AutoResetEvent(false);
 		private readonly Ts3Crypt ts3Crypt;
@@ -66,12 +71,15 @@ namespace TS3Client.Full
 		public PacketHandler(Ts3Crypt ts3Crypt)
 		{
 			Util.Init(out packetAckManager);
-			receiveQueue = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
-			receiveQueueLow = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveQueueCommand = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveQueueCommandLow = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveWindowVoice = new GenerationWindow(ushort.MaxValue + 1);
+			receiveWindowVoiceWhisper = new GenerationWindow(ushort.MaxValue + 1);
+
 			NetworkStats = new NetworkStats();
 
-			packetCounter = new ushort[9];
-			generationCounter = new uint[9];
+			packetCounter = new ushort[Ts3Crypt.PacketTypeKinds];
+			generationCounter = new uint[Ts3Crypt.PacketTypeKinds];
 			this.ts3Crypt = ts3Crypt;
 			resendThreadId = -1;
 		}
@@ -120,8 +128,10 @@ namespace TS3Client.Full
 
 				initPacketCheck = null;
 				packetAckManager.Clear();
-				receiveQueue.Clear();
-				receiveQueueLow.Clear();
+				receiveQueueCommand.Clear();
+				receiveQueueCommandLow.Clear();
+				receiveWindowVoice.Reset();
+				receiveWindowVoiceWhisper.Reset();
 				Array.Clear(packetCounter, 0, packetCounter.Length);
 				Array.Clear(generationCounter, 0, generationCounter.Length);
 				NetworkStats.Reset();
@@ -329,7 +339,7 @@ namespace TS3Client.Full
 				if (LoggerRaw.IsTraceEnabled)
 					LoggerRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
 
-				GenerateGenerationId(ref packet);
+				FindIncommingGenerationId(ref packet);
 				if (!ts3Crypt.Decrypt(ref packet))
 				{
 					LoggerRaw.Warn("Dropping not decryptable packet: {0}", DebugUtil.DebugToHex(packet.Raw));
@@ -342,16 +352,20 @@ namespace TS3Client.Full
 				switch (packet.PacketType)
 				{
 				case PacketType.Voice:
+					LoggerRawVoice.Trace("[I] {0}", packet);
+					passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoice);
+					break;
 				case PacketType.VoiceWhisper:
 					LoggerRawVoice.Trace("[I] {0}", packet);
+					passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoiceWhisper);
 					break;
 				case PacketType.Command:
 					LoggerRaw.Debug("[I] {0}", packet);
-					passPacketToEvent = ReceiveCommand(ref packet, receiveQueue, PacketType.Ack);
+					passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommand, PacketType.Ack);
 					break;
 				case PacketType.CommandLow:
 					LoggerRaw.Debug("[I] {0}", packet);
-					passPacketToEvent = ReceiveCommand(ref packet, receiveQueueLow, PacketType.AckLow);
+					passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommandLow, PacketType.AckLow);
 					break;
 				case PacketType.Ping:
 					LoggerRaw.Trace("[I] Ping {0}", packet.PacketId);
@@ -383,19 +397,23 @@ namespace TS3Client.Full
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-		private void GenerateGenerationId(ref Packet<TIn> packet)
+		private void FindIncommingGenerationId(ref Packet<TIn> packet)
 		{
-			// TODO rework this for all packet types
-			RingQueue<Packet<TIn>> packetQueue;
+			GenerationWindow window;
 			switch (packet.PacketType)
 			{
-			case PacketType.Command: packetQueue = receiveQueue; break;
-			case PacketType.CommandLow: packetQueue = receiveQueueLow; break;
+			case PacketType.Voice: window = receiveWindowVoice; break;
+			case PacketType.VoiceWhisper: window = receiveWindowVoiceWhisper; break;
+			case PacketType.Command: window = receiveQueueCommand.Window; break;
+			case PacketType.CommandLow: window = receiveQueueCommandLow.Window; break;
 			default: return;
 			}
 
-			packet.GenerationId = packetQueue.GetGeneration(packet.PacketId);
+			packet.GenerationId = window.GetGeneration(packet.PacketId);
 		}
+
+		private bool ReceiveVoice(ref Packet<TIn> packet, GenerationWindow window)
+			=> window.SetAndDrag(packet.PacketId);
 
 		private bool ReceiveCommand(ref Packet<TIn> packet, RingQueue<Packet<TIn>> packetQueue, PacketType ackType)
 		{

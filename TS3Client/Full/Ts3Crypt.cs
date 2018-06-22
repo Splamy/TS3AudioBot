@@ -44,7 +44,7 @@ namespace TS3Client.Full
 		private static readonly Regex IdentityRegex = new Regex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
 
 		internal const int MacLen = 8;
-		private const int PacketTypeKinds = 9;
+		internal const int PacketTypeKinds = 9;
 
 		public IdentityData Identity { get; set; }
 

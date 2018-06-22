@@ -38,16 +38,16 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-			var inv1 = new ClientData { ClientId = 10, DatabaseId = 101, Name = "Invoker1" };
-			var inv2 = new ClientData { ClientId = 20, DatabaseId = 102, Name = "Invoker2" };
+			var inv1 = new ClientData { ClientId = 10, Uid = "Uid1", Name = "Invoker1" };
+			var inv2 = new ClientData { ClientId = 20, Uid = "Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
 			var ar3 = new AudioResource("kitty", "tw_ar3", "twitch");
 
-			var data1 = new HistorySaveData(ar1, inv1.DatabaseId);
-			var data2 = new HistorySaveData(ar2, inv2.DatabaseId);
-			var data3 = new HistorySaveData(ar3, 103);
+			var data1 = new HistorySaveData(ar1, inv1.Uid);
+			var data2 = new HistorySaveData(ar2, inv2.Uid);
+			var data3 = new HistorySaveData(ar3, "Uid3");
 
 			var confHistory = ConfigTable.CreateRoot<ConfHistory>();
 			confHistory.FillDeletedIds.Value = false;
@@ -100,7 +100,7 @@ namespace TS3ABotUnitTests
 
 			var ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 
 			db.Dispose();
@@ -114,14 +114,14 @@ namespace TS3ABotUnitTests
 
 			var ale2 = hf.FindEntryByResource(ar2);
 			hf.RenameEntry(ale2, "me_ar2_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 			hf.RenameEntry(ale2, "me_ar2_exxxxxtra_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			db.Dispose();
 
