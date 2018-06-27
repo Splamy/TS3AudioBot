@@ -60,6 +60,37 @@ namespace TS3AudioBot.Config
 			writer.WriteEndObject();
 		}
 
+		public override E<string> FromJson(JsonReader reader)
+		{
+			try
+			{
+				if (!reader.Read() || (reader.TokenType != JsonToken.StartObject))
+					return $"Wrong type, expected start of object but found {reader.TokenType}";
+
+				while (reader.Read()
+					&& (reader.TokenType == JsonToken.PropertyName))
+				{
+					var childName = (string)reader.Value;
+					var child = GetChild(childName);
+					if (child == null)
+					{
+						if (this is IDynamicTable dynTable)
+							child = dynTable.GetOrCreateChild(childName);
+						else
+							return "No child found";
+					}
+
+					child.FromJson(reader);
+				}
+
+				if (reader.TokenType != JsonToken.EndObject)
+					return $"Expected end of array but found {reader.TokenType}";
+
+				return R.Ok;
+			}
+			catch (JsonReaderException ex) { return $"Could not read value: {ex.Message}"; }
+		}
+
 		// Virtual table methods
 
 		public abstract ConfigPart GetChild(string key);

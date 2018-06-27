@@ -16,7 +16,7 @@ namespace TS3AudioBot.Config
 	using Helper;
 
 	[DebuggerDisplay("dyntable:{Key}")]
-	public class ConfigDynamicTable<T> : ConfigEnumerable where T : ConfigEnumerable, new()
+	public class ConfigDynamicTable<T> : ConfigEnumerable, IDynamicTable where T : ConfigEnumerable, new()
 	{
 		private readonly Dictionary<string, T> dynamicTables;
 
@@ -48,22 +48,29 @@ namespace TS3AudioBot.Config
 
 		public override ConfigPart GetChild(string key) => GetItem(key);
 
+		public ConfigPart GetOrCreateChild(string key) => GetOrCreateItem(key);
+
 		public override void Derive(ConfigPart derived)
 		{
 			// TODO
 		}
 
-		public T GetItem(string name) => dynamicTables.TryGetValue(name, out var item) ? item : null;
+		public T GetItem(string key) => dynamicTables.TryGetValue(key, out var item) ? item : null;
 
 		public IEnumerable<T> GetAllItems() => dynamicTables.Values;
 
-		public T CreateItem(string name)
+		public T CreateItem(string key)
 		{
-			var childConfig = Create<T>(name, this, null);
-			dynamicTables.Add(name, childConfig);
+			var childConfig = Create<T>(key, this, null);
+			dynamicTables.Add(key, childConfig);
 			return childConfig;
 		}
 
-		public T GetOrCreateItem(string name) => GetItem(name) ?? CreateItem(name);
+		public T GetOrCreateItem(string key) => GetItem(key) ?? CreateItem(key);
+	}
+
+	public interface IDynamicTable
+	{
+		ConfigPart GetOrCreateChild(string key);
 	}
 }

@@ -1071,7 +1071,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings get")]
-		public static JsonValue<ConfigPart[]> CommandSettingsGet(ConfBot config, string path)
+		public static JsonValue<ConfigPart> CommandSettingsGet(ConfBot config, string path)
 			=> SettingsGet(config, path);
 
 		[Command("settings set")]
@@ -1086,7 +1086,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings global get")]
-		public static JsonArray<ConfigPart> CommandSettingsGlobalGet(ConfRoot config, string path)
+		public static JsonValue<ConfigPart> CommandSettingsGlobalGet(ConfRoot config, string path)
 			=> SettingsGet(config, path);
 
 		[Command("settings global set")]
@@ -1100,18 +1100,16 @@ namespace TS3AudioBot
 			}
 		}
 
-		private static JsonArray<ConfigPart> SettingsGet(ConfigPart config, string path)
+		private static JsonValue<ConfigPart> SettingsGet(ConfigPart config, string path)
 		{
-			var result = config.ByPathAsArray(path);
-			if (result.Length == 0)
-				throw new CommandException(strings.error_config_no_key_found, CommandExceptionReason.CommandError);
-			return new JsonArray<ConfigPart>(result, t => string.Join("\n", t.Select(ts => ts.ToJson())));
+			var result = config.ByPathAsArray(path).SettingsGetSingle();
+			return new JsonValue<ConfigPart>(result);
 		}
 
 		private static void SettingsSet(ConfigPart config, string path, string value)
 		{
 			var setConfig = config.ByPathAsArray(path).SettingsGetSingle();
-			if (setConfig is IJsonConfig jsonConfig)
+			if (setConfig is IJsonSerializable jsonConfig)
 			{
 				var result = jsonConfig.FromJson(value);
 				if (!result.Ok)
@@ -1146,7 +1144,7 @@ namespace TS3AudioBot
 		[Command("settings help")]
 		public static string CommandSettingsHelp(ConfRoot config, string path)
 		{
-			var part = SettingsGet(config, path).Value.SettingsGetSingle();
+			var part = SettingsGet(config, path).Value;
 			return string.IsNullOrEmpty(part.Documentation) ? strings.info_empty : part.Documentation;
 		}
 

@@ -17,7 +17,7 @@ namespace TS3AudioBot.Config
 	using Helper;
 
 	[DebuggerDisplay("{Key}:{Value}")]
-	public class ConfigValue<T> : ConfigPart, IJsonConfig
+	public class ConfigValue<T> : ConfigPart
 	{
 		private ConfigValue<T> backingValue;
 		private bool hasValue = false;
@@ -103,7 +103,7 @@ namespace TS3AudioBot.Config
 			writer.WriteValue(Value);
 		}
 
-		public virtual E<string> FromJson(JsonReader reader)
+		public override E<string> FromJson(JsonReader reader)
 		{
 			try
 			{

@@ -96,9 +96,10 @@ namespace TS3AudioBot.Web.Api
 				else if (res.ResultType == CommandResultType.Json)
 				{
 					response.StatusCode = (int)HttpStatusCode.OK;
-					var sRes = (JsonCommandResult)res;
+					var returnJson = (JsonCommandResult)res;
+					var returnString = returnJson.JsonObject.Serialize();
 					using (var responseStream = new StreamWriter(response.OutputStream))
-						responseStream.Write(sRes.JsonObject.Serialize());
+						responseStream.Write(returnString);
 				}
 			}
 			catch (CommandException ex)

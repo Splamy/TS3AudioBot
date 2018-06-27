@@ -9,18 +9,17 @@
 
 namespace TS3AudioBot.Config
 {
+	using Helper;
 	using Nett;
 	using Newtonsoft.Json;
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
-	using System.IO;
 	using System.Linq;
-	using System.Text;
 	using static Helper.TomlTools;
 
 	[DebuggerDisplay("unknown:{Key}")]
-	public abstract class ConfigPart
+	public abstract class ConfigPart : IJsonSerializable
 	{
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
@@ -38,6 +37,7 @@ namespace TS3AudioBot.Config
 		public abstract void FromToml(TomlObject tomlObject);
 		public abstract void ToToml(bool writeDefaults, bool writeDocumentation);
 		public abstract void Derive(ConfigPart derived);
+		public abstract E<string> FromJson(JsonReader reader);
 		public abstract void ToJson(JsonWriter writer);
 
 		protected void CreateDocumentation(TomlObject tomlObject)
@@ -48,19 +48,6 @@ namespace TS3AudioBot.Config
 				tomlObject.AddComment(Documentation);
 			if (docs.Length > 0)
 				tomlObject.AddComments(docs);
-		}
-
-		// TODO remove when all suppor FromJson too and move IJsonConfig to here
-		public string ToJson()
-		{
-			var sb = new StringBuilder();
-			var sw = new StringWriter(sb);
-			using (var writer = new JsonTextWriter(sw))
-			{
-				writer.Formatting = Formatting.Indented;
-				ToJson(writer);
-			}
-			return sb.ToString();
 		}
 
 		// *** Path accessor ***

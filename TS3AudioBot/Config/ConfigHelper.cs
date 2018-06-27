@@ -9,12 +9,10 @@
 
 namespace TS3AudioBot.Config
 {
+	using CommandSystem;
 	using Newtonsoft.Json;
 	using System;
-	using System.IO;
 	using System.Linq;
-	using System.Text;
-	using CommandSystem;
 
 	public static class ConfigHelper
 	{
@@ -28,27 +26,6 @@ namespace TS3AudioBot.Config
 			{
 				throw new CommandException("Invalid TomlPath expression", ex, CommandExceptionReason.CommandError);
 			}
-		}
-
-		public static E<string> FromJson(this IJsonConfig jsonConfig, string json)
-		{
-			var sr = new StringReader(json);
-			using (var reader = new JsonTextReader(sr))
-			{
-				return jsonConfig.FromJson(reader);
-			}
-		}
-
-		public static string ToJson(this IJsonConfig jsonConfig)
-		{
-			var sb = new StringBuilder();
-			var sw = new StringWriter(sb);
-			using (var writer = new JsonTextWriter(sw))
-			{
-				writer.Formatting = Formatting.Indented;
-				jsonConfig.ToJson(writer);
-			}
-			return sb.ToString();
 		}
 
 		public static bool TryReadValue<T>(this JsonReader reader, out T value)
