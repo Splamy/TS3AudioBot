@@ -151,7 +151,7 @@ namespace TS3AudioBot.Rights
 			}
 			// TODO: caller can be null !!
 			execCtx.IsApi = caller.ApiCall;
-			execCtx.Bot = bot.Name;
+			execCtx.Bot = bot?.Name;
 
 			ProcessNode(rootRule, execCtx);
 
