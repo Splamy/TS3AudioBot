@@ -21,8 +21,8 @@ namespace TS3AudioBot.Rights
 	// 2) Add To Has Matches condition when empty
 	// 3) Add To FillNull when not declared
 	// 4) Add new case to ParseKey switch
-	// 5) Add match condition to RightManager.ProcessNode
-	// 6) Add Property in the ExecuteContext class
+	// 5) Add Property in the ExecuteContext class
+	// 6) Add match condition to RightManager.ProcessNode
 	// 7) Set value in RightManager.GetRightsContext
 
 	internal class RightsRule : RightsDecl
@@ -37,6 +37,7 @@ namespace TS3AudioBot.Rights
 		public HashSet<ulong> MatchChannelGroupId { get; set; }
 		public HashSet<string> MatchPermission { get; set; }
 		public HashSet<string> MatchToken { get; set; }
+		public HashSet<string> MatchBot { get; set; }
 		public bool? MatchIsApi { get; set; }
 		public TextMessageTargetMode[] MatchVisibility { get; set; }
 
@@ -53,6 +54,7 @@ namespace TS3AudioBot.Rights
 				|| MatchPermission.Count > 0
 				|| MatchChannelGroupId.Count > 0
 				|| MatchToken.Count > 0
+				|| MatchBot.Count > 0
 				|| MatchIsApi.HasValue
 				|| MatchVisibility.Length > 0;
 		}
@@ -66,6 +68,7 @@ namespace TS3AudioBot.Rights
 			if (MatchChannelGroupId == null) MatchChannelGroupId = new HashSet<ulong>();
 			if (MatchPermission == null) MatchPermission = new HashSet<string>();
 			if (MatchToken == null) MatchToken = new HashSet<string>();
+			if (MatchBot == null) MatchBot = new HashSet<string>();
 			if (MatchVisibility == null) MatchVisibility = Array.Empty<TextMessageTargetMode>();
 		}
 
@@ -105,6 +108,11 @@ namespace TS3AudioBot.Rights
 				var apitoken = tomlObj.TryGetValueArray<string>();
 				if (apitoken == null) ctx.Errors.Add("<apitoken> Field has invalid data.");
 				else MatchToken = new HashSet<string>(apitoken);
+				return true;
+			case "bot":
+				var bot = tomlObj.TryGetValueArray<string>();
+				if (bot == null) ctx.Errors.Add("<bot> Field has invalid data.");
+				else MatchBot = new HashSet<string>(bot);
 				return true;
 			case "isapi":
 				if (!tomlObj.TryGetValue<bool>(out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");

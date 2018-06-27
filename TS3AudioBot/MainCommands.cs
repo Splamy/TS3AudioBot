@@ -988,9 +988,9 @@ namespace TS3AudioBot
 		public static void CommandRepeatOff(IPlayerConnection playerConnection) => playerConnection.Repeated = false;
 
 		[Command("rights can")]
-		public static JsonArray<string> CommandRightsCan(RightsManager rightsManager, Ts3Client ts3Client, CallerInfo caller, InvokerData invoker = null, params string[] rights)
+		public static JsonArray<string> CommandRightsCan(RightsManager rightsManager, Ts3Client ts3Client, CallerInfo caller, Bot bot, InvokerData invoker = null, params string[] rights)
 		{
-			var result = rightsManager.GetRightsSubset(caller, invoker, ts3Client, rights);
+			var result = rightsManager.GetRightsSubset(caller, invoker, ts3Client, bot, rights);
 			return new JsonArray<string>(result, result.Length > 0 ? string.Join(", ", result) : strings.info_empty);
 		}
 
@@ -1422,7 +1422,8 @@ namespace TS3AudioBot
 				return false;
 			if (!info.TryGet<InvokerData>(out var invoker)) invoker = null;
 			if (!info.TryGet<Ts3Client>(out var ts)) ts = null;
-			return rightsManager.HasAllRights(caller, invoker, ts, rights);
+			if (!info.TryGet<Bot>(out var bot)) bot = null;
+			return rightsManager.HasAllRights(caller, invoker, ts, bot, rights);
 		}
 
 		public static E<LocalStr> Write(this ExecutionInformation info, string message)

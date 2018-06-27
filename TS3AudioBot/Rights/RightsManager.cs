@@ -18,7 +18,6 @@ namespace TS3AudioBot.Rights
 	using System.IO;
 	using System.Linq;
 	using System.Text;
-	using TS3Client;
 
 	/// <summary>Permission system of the bot.</summary>
 	public class RightsManager
@@ -76,21 +75,21 @@ namespace TS3AudioBot.Rights
 		}
 
 		// TODO: b_client_permissionoverview_view
-		public bool HasAllRights(CallerInfo caller, InvokerData invoker, Ts3Client ts, params string[] requestedRights)
+		public bool HasAllRights(CallerInfo caller, InvokerData invoker, Ts3Client ts, Bot bot, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(caller, invoker, ts);
+			var ctx = GetRightsContext(caller, invoker, ts, bot);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
-		public string[] GetRightsSubset(CallerInfo caller, InvokerData invoker, Ts3Client ts, params string[] requestedRights)
+		public string[] GetRightsSubset(CallerInfo caller, InvokerData invoker, Ts3Client ts, Bot bot, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(caller, invoker, ts);
+			var ctx = GetRightsContext(caller, invoker, ts, bot);
 			var normalizedRequest = ExpandRights(requestedRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
-		private ExecuteContext GetRightsContext(CallerInfo caller, InvokerData invoker, Ts3Client ts)
+		private ExecuteContext GetRightsContext(CallerInfo caller, InvokerData invoker, Ts3Client ts, Bot bot)
 		{
 			if (needsRecalculation)
 			{
@@ -152,6 +151,7 @@ namespace TS3AudioBot.Rights
 			}
 			// TODO: caller can be null !!
 			execCtx.IsApi = caller.ApiCall;
+			execCtx.Bot = bot.Name;
 
 			ProcessNode(rootRule, execCtx);
 
@@ -176,6 +176,7 @@ namespace TS3AudioBot.Rights
 				|| (ctx.AvailableGroups.Length > 0 && rule.MatchClientGroupId.Overlaps(ctx.AvailableGroups))
 				|| (ctx.ChannelGroupId.HasValue && rule.MatchChannelGroupId.Contains(ctx.ChannelGroupId.Value))
 				|| (ctx.ApiToken != null && rule.MatchToken.Contains(ctx.ApiToken))
+				|| (ctx.Bot != null && rule.MatchBot.Contains(ctx.Bot))
 				|| (ctx.IsApi == rule.MatchIsApi)
 				|| (ctx.Visibiliy.HasValue && rule.MatchVisibility.Contains(ctx.Visibiliy.Value)))
 			{
@@ -530,43 +531,6 @@ namespace TS3AudioBot.Rights
 
 			foreach (var child in root.ChildrenRules)
 				FlattenRules(child);
-		}
-	}
-
-	internal class ExecuteContext
-	{
-		public string Host { get; set; }
-		public ulong[] AvailableGroups { get; set; } = Array.Empty<ulong>();
-		public ulong? ChannelGroupId { get; set; }
-		public string ClientUid { get; set; }
-		public bool IsApi { get; set; }
-		public string ApiToken { get; set; }
-		public TextMessageTargetMode? Visibiliy { get; set; }
-
-		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
-
-		public HashSet<string> DeclAdd { get; } = new HashSet<string>();
-	}
-
-	internal class ParseContext
-	{
-		public List<RightsDecl> Declarations { get; }
-		public RightsGroup[] Groups { get; private set; }
-		public RightsRule[] Rules { get; private set; }
-		public List<string> Errors { get; }
-		public List<string> Warnings { get; }
-
-		public ParseContext()
-		{
-			Declarations = new List<RightsDecl>();
-			Errors = new List<string>();
-			Warnings = new List<string>();
-		}
-
-		public void SplitDeclarations()
-		{
-			Groups = Declarations.OfType<RightsGroup>().ToArray();
-			Rules = Declarations.OfType<RightsRule>().ToArray();
 		}
 	}
 }
