@@ -58,6 +58,7 @@ namespace TS3Client.Full
 		public static VersionSign VER_IOS_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Ios, "XrAf+Buq6Eb0ehEW/niFp06YX+nGGOS0Ke4MoUBzn+cX9q6G5C0A/d5XtgcNMe8r9jJgV/adIYVpsGS3pVlSAA==");
 		public static VersionSign VER_AND_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Android, "AWb948BY32Z7bpIyoAlQguSmxOGcmjESPceQe1DpW5IZ4+AW1KfTk2VUIYNfUPsxReDJMCtlhVKslzhR2lf0AA==");
 		public static VersionSign VER_WIN_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", ClientPlattform.Windows, "DX5NIYLvfJEUjuIbCidnoeozxIDRRkpq3I9vVMBmE9L2qnekOoBzSenkzsg2lC9CMv8K5hkEzhr2TYUYSwUXCg==");
+		public static VersionSign VER_WIN_3_2_0 { get; } = new VersionSign("3.2.0 [Build: 1530183207]", ClientPlattform.Windows, "6LYlvxFIPCVnYmmFd64H8SRmxsX+y3IZOe9ju8PbZLI5j2K7ni6Z0BfEyhVprYP9VA5o4bXVrV+uNbdGSKnjCQ==");
 		public static VersionSign VER_WIN_3_1_10 { get; } = new VersionSign("3.1.10 [Build: 1528537615]", ClientPlattform.Windows, "+/BWvueikGg4YkO1v2uuZB5vtJJgUZ5bL8cRfxAstfnCVdro2ja+4a+8rGUzDx8/vvTZOUVD6U95hnWb638MCQ==");
 		public static VersionSign VER_LIN_3_1_10 { get; } = new VersionSign("3.1.10 [Build: 1528537615]", ClientPlattform.Linux, "jEfjYy09JfbJPZ+W3fwqygOu8uuc5raYTGpbJ5F8dHLHpqUfvmCyJVKoXRieMNkmPzeiylsUc9/HiV+8bt8tDw==");
 		public static VersionSign VER_WIN_3_1_9 { get; } = new VersionSign("3.1.9 [Build: 1525442084]", ClientPlattform.Windows, "2SLjPTFXM9hQyNkeEGYIzs0fkBffyhsh5z+ZuaCcZdDfM8vgRM5lrAU6KNspFjLddcvw8cXw6gxRY73ZHsRVBg==");

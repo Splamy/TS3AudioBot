@@ -540,8 +540,8 @@ namespace TS3AudioBot
 
 			// Try to return nothing
 			if (returnTypes.Contains(CommandResultType.Empty))
-				return new EmptyCommandResult();
-			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.MissingParameter);
+				return EmptyCommandResult.Instance;
+			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
 		}
 
 		[Command("json merge")]
@@ -551,10 +551,16 @@ namespace TS3AudioBot
 				return new JsonArray<object>(Array.Empty<object>(), string.Empty);
 
 			var jsonArr = arguments
-				.Select(arg => arg.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnJson))
-				.Where(arg => arg.ResultType == CommandResultType.Json)
-				.OfType<JsonCommandResult>()
-				.Select(arg => arg.JsonObject.GetSerializeObject())
+				.Select(arg =>
+				{
+					ICommandResult res;
+					try { res = arg.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnJson); }
+					catch (CommandException) { return null; }
+					if (res.ResultType == CommandResultType.Json)
+						return ((JsonCommandResult)res).JsonObject.GetSerializeObject();
+					else
+						throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
+				})
 				.ToArray();
 
 			return new JsonArray<object>(jsonArr, string.Empty);

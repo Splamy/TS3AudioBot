@@ -196,7 +196,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case CommandResultType.Empty:
 					if (!executed)
 						ExecuteFunction(parameters);
-					return new EmptyCommandResult();
+					return EmptyCommandResult.Instance;
 				case CommandResultType.String:
 					if (!executed)
 					{

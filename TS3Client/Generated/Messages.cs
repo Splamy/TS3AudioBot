@@ -1072,6 +1072,32 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientPoke : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientPoke;
+		
+
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public str Message { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<char> value)
+		{
+
+			switch(name)
+			{
+
+			case "invokerid": InvokerId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
+			case "invokername": InvokerName = Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "msg": Message = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+	}
+
 	public sealed class ClientServerGroup : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroup;
@@ -1997,6 +2023,8 @@ namespace TS3Client.Messages
 		ClientMoved,
 		///<summary>[S2C] ntfy:notifyclientneededpermissions</summary>
 		ClientNeededPermissions,
+		///<summary>[S2C] ntfy:notifyclientpoke</summary>
+		ClientPoke,
 		///<summary>[S2C] ntfy:notifyservergroupsbyclientid</summary>
 		ClientServerGroup,
 		///<summary>[S2C] ntfy:notifyservergroupclientadded</summary>
@@ -2072,6 +2100,7 @@ namespace TS3Client.Messages
 			case "notifyclientleftview": return NotificationType.ClientLeftView;
 			case "notifyclientmoved": return NotificationType.ClientMoved;
 			case "notifyclientneededpermissions": return NotificationType.ClientNeededPermissions;
+			case "notifyclientpoke": return NotificationType.ClientPoke;
 			case "notifyservergroupsbyclientid": return NotificationType.ClientServerGroup;
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
 			case "error": return NotificationType.CommandError;
@@ -2124,6 +2153,7 @@ namespace TS3Client.Messages
 			case NotificationType.ClientLeftView: return new ClientLeftView();
 			case NotificationType.ClientMoved: return new ClientMoved();
 			case NotificationType.ClientNeededPermissions: return new ClientNeededPermissions();
+			case NotificationType.ClientPoke: return new ClientPoke();
 			case NotificationType.ClientServerGroup: return new ClientServerGroup();
 			case NotificationType.ClientServerGroupAdded: return new ClientServerGroupAdded();
 			case NotificationType.CommandError: return new CommandError();
