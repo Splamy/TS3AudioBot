@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Helper.Environment
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.Reflection;
 	using System.Text.RegularExpressions;
@@ -49,6 +50,8 @@ namespace TS3AudioBot.Helper.Environment
 
 			if (IsLinux)
 			{
+				var values = new Dictionary<string, string>();
+
 				try
 				{
 					var p = new Process()
@@ -74,21 +77,21 @@ namespace TS3AudioBot.Helper.Environment
 						if (!match.Success)
 							continue;
 
-						switch (match.Groups[1].Value.ToUpper())
-						{
-						case "DISTRIB_ID":
-							plattform = match.Groups[2].Value;
-							break;
-						case "DISTRIB_RELEASE":
-							version = match.Groups[2].Value;
-							break;
-						}
+						values[match.Groups[1].Value.ToUpper()] = TextUtil.StripQuotes(match.Groups[2].Value);
 					}
 				}
 				catch { }
 
-				if (plattform == null)
-					plattform = "Linux";
+				string value;
+				plattform = values.TryGetValue("NAME", out value) ? value
+						: values.TryGetValue("ID", out value) ? value
+						: values.TryGetValue("DISTRIB_ID", out value) ? value
+						: values.TryGetValue("PRETTY_NAME", out value) ? value
+						: "Linux";
+				version = values.TryGetValue("VERSION", out value) ? value
+						: values.TryGetValue("VERSION_ID", out value) ? value
+						: values.TryGetValue("DISTRIB_RELEASE", out value) ? value
+						: "<?>";
 			}
 			else
 			{

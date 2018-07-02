@@ -49,12 +49,17 @@ namespace TS3AudioBot.Helper
 			return ts3Link;
 		}
 
-		public static string StripQuotes(string quotedString)
+		public static string StripQuotes(string quotedString, bool throwWhenIncorrect = false)
 		{
-			if (quotedString.Length <= 1 ||
-				!quotedString.StartsWith("\"", StringComparison.Ordinal) ||
-				!quotedString.EndsWith("\"", StringComparison.Ordinal))
-				throw new ArgumentException("The string is not properly quoted");
+			if (quotedString.Length <= 1
+				|| !quotedString.StartsWith("\"", StringComparison.Ordinal)
+				|| !quotedString.EndsWith("\"", StringComparison.Ordinal))
+			{
+				if (throwWhenIncorrect)
+					throw new ArgumentException("The string is not properly quoted");
+				else
+					return quotedString;
+			}
 
 			return quotedString.Substring(1, quotedString.Length - 2);
 		}
