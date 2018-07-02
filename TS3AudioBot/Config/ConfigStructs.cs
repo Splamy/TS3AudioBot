@@ -191,7 +191,7 @@ namespace TS3AudioBot.Config
 			"How the bot should play music. Options are:\n" +
 			" - whisper : Whispers to the channel where the request came from. Other users can join with '!subscribe'.\n" +
 			" - voice : Sends via normal voice to the current channel. '!subscribe' will not work in this mode.\n" +
-			" - !... : A custom command. Use '!xecute (!play) (!stop)' for example to execute multiple commands.");
+			" - !... : A custom command. Use '!xecute (!a) (!b)' for example to execute multiple commands.");
 	}
 
 	public class ConfAudioVolume : ConfigTable

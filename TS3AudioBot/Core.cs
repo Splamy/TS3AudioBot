@@ -38,8 +38,8 @@ namespace TS3AudioBot
 			if (setup.Exit == ExitType.Immediately)
 				return;
 
-			if (!setup.SkipVerifications)
-				Setup.VerifyAll();
+			if (!setup.SkipVerifications && !Setup.VerifyAll())
+				return;
 
 			if (!setup.HideBanner)
 				Setup.LogHeader();
@@ -78,7 +78,7 @@ namespace TS3AudioBot
 		private E<string> Run(bool interactive = false)
 		{
 			var configResult = ConfRoot.OpenOrCreate(configFilePath);
-			if(!configResult.Ok)
+			if (!configResult.Ok)
 				return "Could not create config";
 			ConfRoot config = configResult.Value;
 			Config.Deprecated.UpgradeScript.CheckAndUpgrade(config);

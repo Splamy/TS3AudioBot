@@ -20,29 +20,21 @@ namespace TS3Client.Helper
 		[DllImport("kernel32.dll", SetLastError = true)]
 		private static extern IntPtr LoadLibrary(string dllToLoad);
 
-		[DllImport("libdl.so")]
-		private static extern IntPtr dlopen(string fileName, int flags);
-		[DllImport("libdl.so")]
-		private static extern IntPtr dlerror();
-
-		public static bool DirectLoadLibrary(string lib)
+		public static bool DirectLoadLibrary(string lib, Action dummyLoad = null)
 		{
 			if (Util.IsLinux)
 			{
-				Log.Debug("Loading \"{0}\"", lib);
-				dlerror();
-				var handle = dlopen(lib + ".so", 2);
-				var errorPtr = dlerror();
-				if (errorPtr != IntPtr.Zero)
+				if (dummyLoad != null)
 				{
-					var errorStr = Marshal.PtrToStringAnsi(errorPtr);
-					Log.Error("Failed to load library \"{0}\", error: {1}", lib, errorStr);
-					return false;
-				}
-				else if (handle == IntPtr.Zero)
-				{
-					Log.Error("Failed to load library \"{0}\", unknown error.", lib);
-					return false;
+					try
+					{
+						dummyLoad.Invoke();
+					}
+					catch (DllNotFoundException ex)
+					{
+						Log.Error(ex, "Failed to load library \"{0}\".", lib);
+						return false;
+					}
 				}
 			}
 			else

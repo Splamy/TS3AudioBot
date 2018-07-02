@@ -894,4 +894,7 @@ with the id {1}?</value>
   <data name="_undocumented" xml:space="preserve">
     <value>This feature is not documented.</value>
   </data>
+  <data name="cmd_bot_avatar_help" xml:space="preserve">
+    <value>Sets an avatar for the bot</value>
+  </data>
 </root>

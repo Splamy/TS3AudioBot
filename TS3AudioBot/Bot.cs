@@ -277,38 +277,21 @@ namespace TS3AudioBot
 
 			if (e is PlayInfoEventArgs startEvent)
 			{
-#if NET46
 				Task.Run(() =>
 				{
 					var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
 					if (!thumresult.Ok)
 						return;
 
-					System.Drawing.Image bmpOrig;
-					try
+					using (var image = ImageUtil.ResizeImage(thumresult.Value))
 					{
-						using (var stream = thumresult.Value)
-							bmpOrig = System.Drawing.Image.FromStream(stream);
-					}
-					catch (ArgumentException)
-					{
-						Log.Warn("Inavlid image data");
-						return;
-					}
-
-					// TODO: remove 'now playing' text and use better imaging lib
-					using (var bmp = ImageUtil.BuildStringImage("Now playing: " + startEvent.ResourceData.ResourceTitle, bmpOrig))
-					{
-						using (var mem = new System.IO.MemoryStream())
-						{
-							bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
-							var result = ClientConnection.UploadAvatar(mem);
-							if (!result.Ok)
-								Log.Warn("Could not save avatar: {0}", result.Error);
-						}
+						if (image == null)
+							return;
+						var result = ClientConnection.UploadAvatar(image);
+						if (!result.Ok)
+							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
 				});
-#endif
 			}
 			else
 			{

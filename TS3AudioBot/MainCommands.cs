@@ -87,6 +87,28 @@ namespace TS3AudioBot
 			return nonce.Value;
 		}
 
+		[Command("bot avatar")]
+		public static void CommandBotAvatar(Ts3Client ts3Client, string url)
+		{
+			url = TextUtil.ExtractUrlFromBb(url);
+			Uri uri;
+			try { uri = new Uri(url); }
+			catch (Exception ex) { throw new CommandException(strings.error_media_invalid_uri, ex, CommandExceptionReason.CommandError); }
+
+			WebWrapper.GetResponse(uri, x =>
+			{
+				var stream = x.GetResponseStream();
+				if (stream == null)
+					throw new CommandException(strings.error_net_empty_response, CommandExceptionReason.CommandError);
+				using (var image = ImageUtil.ResizeImage(stream))
+				{
+					if (image == null)
+						throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
+					ts3Client.UploadAvatar(image);
+				}
+			});
+		}
+
 		[Command("bot commander")]
 		public static JsonValue<bool> CommandBotCommander(Ts3Client ts3Client)
 		{

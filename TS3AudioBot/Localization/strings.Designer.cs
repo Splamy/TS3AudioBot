@@ -97,6 +97,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sets an avatar for the bot.
+        /// </summary>
+        internal static string cmd_bot_avatar_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_avatar_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Set your bot a badge. The badges string starts with &apos;overwolf=0:badges=&apos;.
         /// </summary>
         internal static string cmd_bot_badges_help {

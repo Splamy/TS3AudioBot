@@ -40,9 +40,9 @@ namespace TS3Client.Audio.Opus
 
 		public static bool PreloadLibrary()
 		{
-			if(!isPreloaded)
+			if (!isPreloaded)
 			{
-				wasPreloadSuccessful = NativeLibraryLoader.DirectLoadLibrary("libopus");
+				wasPreloadSuccessful = NativeLibraryLoader.DirectLoadLibrary("libopus", () => opus_get_version_string());
 				isPreloaded = true;
 			}
 			return wasPreloadSuccessful;
