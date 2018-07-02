@@ -21,7 +21,6 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private bool isRunning;
 		private List<Bot> activeBots;
 		private readonly object lockObj = new object();
 
@@ -30,7 +29,6 @@ namespace TS3AudioBot
 
 		public BotManager()
 		{
-			isRunning = true;
 			Util.Init(out activeBots);
 		}
 
@@ -127,9 +125,8 @@ namespace TS3AudioBot
 				{
 					lock (lockObj)
 					{
-						activeBots.Add(bot);
-						bot.Id = activeBots.Count - 1;
-						removeBot = !isRunning;
+						if (!InsertIntoFreeId(bot))
+							removeBot = true;
 					}
 				}
 				else
@@ -146,18 +143,46 @@ namespace TS3AudioBot
 			return bot.GetInfo();
 		}
 
+		// !! This method must be called with a lock on lockObj
+		private bool InsertIntoFreeId(Bot bot)
+		{
+			if (activeBots == null)
+				return false;
+
+			for (int i = 0; i < activeBots.Count; i++)
+			{
+				if (activeBots[i] == null)
+				{
+					activeBots[i] = bot;
+					bot.Id = i;
+					return true;
+				}
+			}
+
+			// All slots are full, get a new slot
+			activeBots.Add(bot);
+			bot.Id = activeBots.Count - 1;
+			return true;
+		}
+
+		// !! This method must be called with a lock on lockObj
+		private Bot GetBotSave(int id)
+		{
+			if (activeBots == null || id < 0 || id >= activeBots.Count)
+				return null;
+			return activeBots[id];
+		}
+
 		public BotLock GetBotLock(int id)
 		{
 			Bot bot;
 			lock (lockObj)
 			{
-				if (!isRunning)
-					return null;
-				bot = id >= 0 && id < activeBots.Count
-					? activeBots[id]
-					: null;
+				bot = GetBotSave(id);
 				if (bot == null)
 					return null;
+				if (bot.Id != id)
+					throw new Exception("Got not matching bot id");
 			}
 			return bot.GetBotLock();
 		}
@@ -172,7 +197,13 @@ namespace TS3AudioBot
 		{
 			lock (lockObj)
 			{
-				activeBots.Remove(bot);
+				Bot botInList;
+				if (activeBots != null
+					&& (botInList = GetBotSave(bot.Id)) != null
+					&& botInList == bot)
+				{
+					activeBots[bot.Id] = null;
+				}
 			}
 		}
 
@@ -180,7 +211,9 @@ namespace TS3AudioBot
 		{
 			lock (lockObj)
 			{
-				return activeBots.Select(x => x.GetInfo()).ToArray();
+				if (activeBots == null)
+					return Array.Empty<BotInfo>();
+				return activeBots.Where(x => x != null).Select(x => x.GetInfo()).ToArray();
 			}
 		}
 
@@ -189,9 +222,11 @@ namespace TS3AudioBot
 			List<Bot> disposeBots;
 			lock (lockObj)
 			{
-				isRunning = false;
+				if (activeBots == null)
+					return;
+
 				disposeBots = activeBots;
-				activeBots = new List<Bot>();
+				activeBots = null;
 			}
 
 			foreach (var bot in disposeBots)

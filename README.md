@@ -4,7 +4,7 @@
 |[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|
 
 ## About
-This is our open-source TeamSpeak 3 audiobot project since
+This is our open-source TeamSpeak 3 audio bot project since
 we haven't found any other open-source one so far.  
 The bot has come a long way is pretty stable by now, though sometimes he hangs up or needs some other maintenance.  
 
@@ -18,7 +18,7 @@ The bot has come a long way is pretty stable by now, though sometimes he hangs u
 * Web API
 * Multi-instance
 * Localization
-* Low CPU and memory self-written headless ts3 client
+* Low CPU and memory with our self-written headless ts3 client
 
 To see what's planned and in progress take a look into our [Roadmap](https://github.com/Splamy/TS3AudioBot/projects/2).
 
@@ -26,16 +26,16 @@ To see what's planned and in progress take a look into our [Roadmap](https://git
 The bot is fully operable via chat.  
 Commands can be invoked with `!command`.  
 
-For the full command list and tutorials see [here in the wiki](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
+For the full command list and tutorials see [here in the wiki](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem).
 
 ## Download
-You can download the lastest builds precompiled from our [nightly server](https://splamy.de/Nightly#ts3ab):  
+You can download the latest builds precompiled from our [nightly server](https://splamy.de/Nightly#ts3ab):  
 - [![Build Status](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master/download)
   versions are mostly considered stable but won't get bigger features as fast.
 - [![Build Status](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop/download)
   will always have the latest and greatest but might not be fully stable or have broken features.
 
-Continue with downloading the dependecies
+Continue with downloading the dependencies.
 
 ### Dependencies
 You will need to download a few things for the bot to run:
@@ -67,13 +67,13 @@ You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source 
 it will ask you a few questions.
 1. Close the bot again and configure your `rights.toml` to your desires.
 You can use the template rules and assign your admin as suggested in the automatically generated file,
-or dive into the Rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
+or dive into the rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
 1. Start the bot again.
-1. This step is optional but highly recommeded for everything to work properly.
+1. This step is optional but highly recommended for everything to work properly.
    - Create a privilege key for the ServerAdmin group (or a group which has equivalent rights).
    - Send the bot in a private message `!bot setup <privilege key>`.
 1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).  
-For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
+For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem).
 
 ## Building manually
 
@@ -93,7 +93,7 @@ Download the git repository with `git clone --recurse-submodules https://github.
 1. Make sure you have installed `Visual Studio` and `.NET Framework 4.6`
 1. Build the AudioBot with Visual Studio.
 
-### Testing and Fuzzying
+### Testing and Fuzzing
 1. Run the *TS3ABotUnitTests* project in Visual Studio or Monodevelop.
 
 ## License
