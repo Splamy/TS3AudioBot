@@ -14,7 +14,7 @@ namespace TS3AudioBot.Web.Api
 	using Newtonsoft.Json;
 	using System;
 
-	public class JsonValue<T> : JsonValueBase
+	public class JsonValue<T> : JsonValue
 	{
 		protected Func<T, string> AsString { get; }
 		protected Func<T, object> AsJson { get; }
@@ -52,12 +52,12 @@ namespace TS3AudioBot.Web.Api
 		}
 	}
 
-	public class JsonValueBase : JsonObject
+	public abstract class JsonValue : JsonObject
 	{
 		protected object Value { get; }
 
-		public JsonValueBase(object value) : base(null) { Value = value; }
-		public JsonValueBase(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
+		public JsonValue(object value) : base(null) { Value = value; }
+		public JsonValue(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
 
 		public override object GetSerializeObject() => Value;
 
@@ -77,5 +77,11 @@ namespace TS3AudioBot.Web.Api
 				AsStringResult = Value?.ToString() ?? string.Empty;
 			return AsStringResult;
 		}
+
+		// static creator methods for anonymous stuff
+
+		public static JsonValue<T> Create<T>(T anon) => new JsonValue<T>(anon);
+		public static JsonValue<T> Create<T>(T anon, string msg) => new JsonValue<T>(anon, msg);
+		public static JsonValue<T> Create<T>(T anon, Func<T, string> asString = null, Func<T, object> asJson = null) => new JsonValue<T>(anon, asString, asJson);
 	}
 }

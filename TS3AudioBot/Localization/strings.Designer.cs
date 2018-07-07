@@ -1306,6 +1306,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Gets the length and position of the current track..
+        /// </summary>
+        internal static string cmd_song_position_help {
+            get {
+                return ResourceManager.GetString("cmd_song_position_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Stops the current song..
         /// </summary>
         internal static string cmd_stop_help {

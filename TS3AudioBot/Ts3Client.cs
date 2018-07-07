@@ -491,6 +491,8 @@ namespace TS3AudioBot
 			return getInfoResult.Value.IsChannelCommander;
 		}
 
+		public R<ClientInfo, LocalStr> GetSelf() => TsFullClient.ClientInfo(TsFullClient.ClientId).FormatLocal();
+
 		#endregion
 
 		#region Event helper

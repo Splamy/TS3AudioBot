@@ -154,6 +154,10 @@ namespace TS3AudioBot
 		[Command("bot info")]
 		public static BotInfo CommandBotInfo(Bot bot) => bot.GetInfo();
 
+		[Command("bot info client", "_undocumented")]
+		public static JsonValue<ClientInfo> CommandBotInfoClient(Ts3Client ts3Client)
+			=> new JsonValue<ClientInfo>(ts3Client.GetSelf().UnwrapThrow(), string.Empty);
+
 		[Command("bot list")]
 		public static JsonArray<BotInfo> CommandBotId(BotManager bots)
 		{
@@ -1189,6 +1193,20 @@ namespace TS3AudioBot
 				$"[url={factoryManager.RestoreLink(playManager.CurrentPlayData.ResourceData)}]{playManager.CurrentPlayData.ResourceData.ResourceTitle}[/url]");
 		}
 
+		[Command("song position")]
+		public static JsonObject CommandSongPosition(IPlayerConnection playerConnection)
+		{
+			return JsonValue.Create(new
+			{
+				position = playerConnection.Position,
+				length = playerConnection.Length,
+			},
+			x => x.length.TotalHours >= 1 || x.position.TotalHours >= 1
+				? $"{x.position:hh\\:mm\\:ss}/{x.length:hh\\:mm\\:ss}"
+				: $"{x.position:mm\\:ss}/{x.length:mm\\:ss}"
+			);
+		}
+
 		[Command("stop")]
 		public static void CommandStop(PlayManager playManager) => playManager.Stop();
 
@@ -1360,58 +1378,42 @@ namespace TS3AudioBot
 		}
 
 		[Command("whisper list")]
-		public static WhisperListStruct CommandWhisperList(IVoiceTarget targetManager)
+		public static JsonObject CommandWhisperList(IVoiceTarget targetManager)
 		{
-			return new WhisperListStruct
+			return JsonValue.Create(new
 			{
 				SendMode = targetManager.SendMode,
 				GroupWhisper = targetManager.SendMode == TargetSendMode.WhisperGroup ?
-					new WhisperListStruct.GroupWhisperStruct
-					{
-						Target = targetManager.GroupWhisperTarget,
-						TargetId = targetManager.GroupWhisperTargetId,
-						Type = targetManager.GroupWhisperType,
-					}
-					: null,
+				new
+				{
+					Target = targetManager.GroupWhisperTarget,
+					TargetId = targetManager.GroupWhisperTargetId,
+					Type = targetManager.GroupWhisperType,
+				}
+				: null,
 				WhisperClients = targetManager.WhisperClients,
 				WhisperChannel = targetManager.WhisperChannel,
-			};
-		}
-
-		public class WhisperListStruct
-		{
-			public TargetSendMode SendMode { get; set; }
-			public GroupWhisperStruct GroupWhisper { get; set; }
-			public IReadOnlyCollection<ushort> WhisperClients { get; set; }
-			public IReadOnlyCollection<ulong> WhisperChannel { get; set; }
-
-			public override string ToString()
+			},
+			x =>
 			{
 				var strb = new StringBuilder(strings.cmd_whisper_list_header);
 				strb.AppendLine();
-				switch (SendMode)
+				switch (x.SendMode)
 				{
 				case TargetSendMode.None: strb.Append(strings.cmd_whisper_list_target_none); break;
 				case TargetSendMode.Voice: strb.Append(strings.cmd_whisper_list_target_voice); break;
 				case TargetSendMode.Whisper:
-					strb.Append(strings.cmd_whisper_list_target_whisper_clients).Append(": [").Append(string.Join(",", WhisperClients)).Append("]\n");
-					strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", WhisperChannel)).Append("]");
+					strb.Append(strings.cmd_whisper_list_target_whisper_clients).Append(": [").Append(string.Join(",", x.WhisperClients)).Append("]\n");
+					strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", x.WhisperChannel)).Append("]");
 					break;
 				case TargetSendMode.WhisperGroup:
-					strb.AppendFormat(strings.cmd_whisper_list_target_whispergroup, GroupWhisper.Type, GroupWhisper.Target, GroupWhisper.TargetId);
+					strb.AppendFormat(strings.cmd_whisper_list_target_whispergroup, x.GroupWhisper.Type, x.GroupWhisper.Target, x.GroupWhisper.TargetId);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
 				}
 				return strb.ToString();
-			}
-
-			public class GroupWhisperStruct
-			{
-				public ulong TargetId { get; set; }
-				public GroupWhisperType Type { get; set; }
-				public GroupWhisperTarget Target { get; set; }
-			}
+			});
 		}
 
 		[Command("whisper off")]

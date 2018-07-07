@@ -897,4 +897,7 @@ with the id {1}?</value>
   <data name="cmd_bot_avatar_help" xml:space="preserve">
     <value>Sets an avatar for the bot</value>
   </data>
+  <data name="cmd_song_position_help" xml:space="preserve">
+    <value>Gets the length and position of the current track.</value>
+  </data>
 </root>

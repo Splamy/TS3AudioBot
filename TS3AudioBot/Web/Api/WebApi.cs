@@ -138,9 +138,12 @@ namespace TS3AudioBot.Web.Api
 				response.StatusCode = (int)HttpStatusCode.Forbidden;
 				break;
 
-			case CommandExceptionReason.CommandError:
 			case CommandExceptionReason.AmbiguousCall:
 			case CommandExceptionReason.MissingParameter:
+				response.StatusCode = (int)HttpStatusCode.BadRequest;
+				break;
+
+			case CommandExceptionReason.CommandError:
 			case CommandExceptionReason.NoReturnMatch:
 			case CommandExceptionReason.MissingContext:
 				response.StatusCode = 422; // Unprocessable Entity
