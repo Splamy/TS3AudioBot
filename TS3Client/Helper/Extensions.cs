@@ -48,5 +48,24 @@ namespace TS3Client.Helper
 		}
 
 		internal static string NewString(in this ReadOnlySpan<char> span) => new string(span.ToArray());
+
+		// TODO add optional improvement when nc2.1 is available
+		internal static string NewUtf8String(this ReadOnlySpan<byte> span) => System.Text.Encoding.UTF8.GetString(span.ToArray());
+
+		internal static ReadOnlySpan<byte> TrimEnd(this ReadOnlySpan<byte> span, byte elem)
+		{
+			while (!span.IsEmpty && span[span.Length - 1] == elem)
+				span = span.Slice(0, span.Length - 1);
+			return span;
+		}
+
+		internal static ReadOnlySpan<byte> TrimStart(this ReadOnlySpan<byte> span, byte elem)
+		{
+			while (!span.IsEmpty && span[0] == elem)
+				span = span.Slice(1);
+			return span;
+		}
+
+		internal static ReadOnlySpan<byte> Trim(this ReadOnlySpan<byte> span, byte elem) => span.TrimStart(elem).TrimEnd(elem);
 	}
 }

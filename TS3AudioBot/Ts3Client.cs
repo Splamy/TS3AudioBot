@@ -79,7 +79,7 @@ namespace TS3AudioBot
 			TsFullClient = new Ts3FullClient(EventDispatchType.DoubleThread);
 			TsFullClient.OnClientLeftView += ExtendedClientLeftView;
 			TsFullClient.OnClientEnterView += ExtendedClientEnterView;
-			TsFullClient.OnTextMessageReceived += ExtendedTextMessage;
+			TsFullClient.OnTextMessage += ExtendedTextMessage;
 			TsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			TsFullClient.OnConnected += TsFullClient_OnConnected;
 			TsFullClient.OnDisconnected += TsFullClient_OnDisconnected;

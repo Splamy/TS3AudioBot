@@ -20,7 +20,9 @@ namespace TS3Client.Messages
 	using Commands;
 	using Helper;
 	using System;
+	using System.Collections.Generic;
 	using System.Globalization;
+	using System.Buffers.Text;
 
 	<#= ConversionSet #>
 <#
@@ -30,7 +32,7 @@ string GenerateDeserializer(Messages.Field fld)
 {
 	if(fld.isArray)
 		return $"{{ if(value.Length == 0) {fld.pretty} = Array.Empty<{fld.type}>(); else {{"
-			 + $" var ss = new SpanSplitter(); ss.First(value, ',');"
+			 + $" var ss = new SpanSplitter<byte>(); ss.First(value, (byte)',');"
 			 + $" int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++;"
 			 + $" {fld.pretty} = new {fld.type}[cnt + 1];"
 			 + $" for(int i = 0; i < cnt + 1; i++) {{ {GenerateSingleDeserializer(fld, "ss.Trim(value)", fld.pretty + "[i]")} if (i < cnt) value = ss.Next(value); }} }} }}";
@@ -65,13 +67,13 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "ChannelId":
 	case "ServerGroupId":
 	case "ChannelGroupId":
-		return $"{output} = {fld.type}.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
+		return $"{{ if(Utf8Parser.TryParse({input}, out {fld.type} oval, out _)) {output} = oval; }}";
 	case "DurationSeconds":
-		return $"{output} = TimeSpan.FromSeconds(double.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
+		return $"{{ if(Utf8Parser.TryParse({input}, out double oval, out _)) {output} = TimeSpan.FromSeconds(oval); }}";
 	case "DurationMilliseconds":
-		return $"{output} = TimeSpan.FromMilliseconds(double.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
+		return $"{{ if(Utf8Parser.TryParse({input}, out double oval, out _)) {output} = TimeSpan.FromMilliseconds(oval); }}";
 	case "DateTime":
-		return $"{output} = Util.UnixTimeStart.AddSeconds(double.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
+		return $"{{ if(Utf8Parser.TryParse({input}, out double oval, out _)) {output} = Util.UnixTimeStart.AddSeconds(oval); }}";
 	case "str":
 	case "Uid":
 		return $"{output} = Ts3String.Unescape({input});";
@@ -83,16 +85,15 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "TextMessageTargetMode":
 	case "GroupType":
 	case "GroupNamingMode":
-		return $"{{ if (!Enum.TryParse({input}.NewString(), out {fld.type} val)) throw new FormatException(); {output} = val; }}";
 	case "Codec":
 	case "Ts3ErrorCode":
 	case "LicenseType":
 	case "PermissionId":
 		if(!BackingTypes.TryGetValue(fld.type, out var backType))
 			backType = "i32";
-		return $"{output} = ({fld.type}){backType}.Parse({input}.NewString(), CultureInfo.InvariantCulture);";
+		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
 	case "IconHash":
-		return $"{output} = unchecked((int)long.Parse({input}.NewString(), CultureInfo.InvariantCulture));";
+		return $"{{ if(Utf8Parser.TryParse({input}, out long oval, out _)) {output} = unchecked((int)oval); }}";
 	default:
 		Warn($"Missing deserializer for {fld.type}");
 		return "";
@@ -117,9 +118,8 @@ foreach(var msg in gen.GetOrderedMsg())
 	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) { #>
 		public <#= genField.typeFin #> <#= genField.pretty #> { get; set; }<# } #>
 
-		public void SetField(string name, ReadOnlySpan<char> value)
-		{
-<#
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{<#
 		if (msg.attributes.Length > 0) { #>
 			switch(name)
 			{
@@ -130,6 +130,26 @@ foreach(var msg in gen.GetOrderedMsg())
 			}
 #>
 			<#= isResponse ? ("case \"return_code\": " + GenerateDeserializer(gen.GetField("return_code").fld) + " break;") : "" #>
+			}
+<#
+			} #>
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{<#
+		if (msg.attributes.Length > 0) { #>
+			var toc = (<#= msg.name #>[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+<#
+		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) {
+#>
+				case "<#= genField.ts #>": foreach(var toi in toc) { toi.<#= genField.pretty #> = <#= genField.pretty #>; } break;<#
+				}
+#>
+				}
 			}
 <#
 			} #>
@@ -171,6 +191,22 @@ foreach(var msg in gen.GetOrderedMsg())
 		/*if(!ntfy.s2c.Value) continue;*/
 #>
 			case NotificationType.<#= ntfy.name #>: return new <#= ntfy.name #>();<#
+	}
+#>
+			case NotificationType.Unknown:
+			default: throw Util.UnhandledDefault(name);
+			}
+		}
+
+		public static INotification[] InstatiateNotificationArray(NotificationType name, int len)
+		{
+			switch(name)
+			{<#
+	foreach(var ntfy in gen.NotifiesSorted)
+	{
+		/*if(!ntfy.s2c.Value) continue;*/
+#>
+			case NotificationType.<#= ntfy.name #>: { var arr = new <#= ntfy.name #>[len]; for (int i = 0; i < len; i++) arr[i] = new <#= ntfy.name #>(); return arr; }<#
 	}
 #>
 			case NotificationType.Unknown:

@@ -44,7 +44,8 @@ namespace TS3Client.Messages
 		public bool TryGetValue(KeyType key, out ValueType value) => data.TryGetValue(key, out value);
 		IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
 
-		public void SetField(string name, ReadOnlySpan<char> value) => data[name] = value.NewString();
+		public void SetField(string name, ReadOnlySpan<byte> value) => data[name] = value.NewUtf8String();
+		public void Expand(IMessage[] to, IEnumerable<string> flds) => throw new NotImplementedException();
 		public string ReturnCode
 		{
 			get => data.ContainsKey("return_code") ? data["return_code"] : string.Empty;
@@ -55,6 +56,7 @@ namespace TS3Client.Messages
 	public sealed class ResponseVoid : IResponse
 	{
 		public string ReturnCode { get; set; }
-		public void SetField(string name, ReadOnlySpan<char> value) { }
+		public void SetField(string name, ReadOnlySpan<byte> value) { }
+		public void Expand(IMessage[] to, IEnumerable<string> flds) { }
 	}
 }

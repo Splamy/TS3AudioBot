@@ -12,30 +12,21 @@ namespace TS3Client.Helper
 	using System;
 	using System.Runtime.CompilerServices;
 
-	internal class SpanSplitter
+	internal struct SpanSplitter<T> where T: IEquatable<T>
 	{
 		public bool HasNext => NextIndex >= 0;
 		public int NextIndex { get; private set; }
-		private char splitchar;
+		private T splitchar;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ReadOnlySpan<char> First(string str, char split)
-		{
-			splitchar = split;
-			var span = str.AsSpan();
-			NextIndex = span.IndexOf(split);
-			return span;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void First(in ReadOnlySpan<char> span, char split)
+		public void First(in ReadOnlySpan<T> span, T split)
 		{
 			splitchar = split;
 			NextIndex = span.IndexOf(split);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ReadOnlySpan<char> Next(in ReadOnlySpan<char> current)
+		public ReadOnlySpan<T> Next(in ReadOnlySpan<T> current)
 		{
 			if(!HasNext)
 				throw new InvalidOperationException("No next element in span split");
@@ -45,6 +36,6 @@ namespace TS3Client.Helper
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ReadOnlySpan<char> Trim(in ReadOnlySpan<char> current) => HasNext ? current.Slice(0, NextIndex) : current;
+		public ReadOnlySpan<T> Trim(in ReadOnlySpan<T> current) => HasNext ? current.Slice(0, NextIndex) : current;
 	}
 }

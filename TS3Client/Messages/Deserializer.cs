@@ -18,67 +18,138 @@ namespace TS3Client.Messages
 	{
 		public static event EventHandler<Error> OnError;
 
+		private const byte AsciiSpace = (byte)' ';
+		private const byte AsciiPipe = (byte)'|';
+		private const byte AsciiEquals = (byte)'=';
+
 		// data to notification
-		internal static IEnumerable<INotification> GenerateNotification(string lineDataPart, NotificationType ntfyType)
+		internal static R<INotification[]> GenerateNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
 		{
 			if (ntfyType == NotificationType.Unknown)
-				throw new ArgumentException("The NotificationType must not be unknown", nameof(lineDataPart));
+				throw new ArgumentException("The NotificationType must not be unknown", nameof(ntfyType));
 
-			if (lineDataPart == null)
-				throw new ArgumentNullException(nameof(lineDataPart));
-
-			return lineDataPart.TrimStart().Split('|').Select(msg => GenerateSingleNotification(msg, ntfyType)).Where(x => x.Ok).Select(x => x.Value);
+			var pipes = PipeList(line);
+			var arr = MessageHelper.InstatiateNotificationArray(ntfyType, (pipes?.Count ?? 0) + 1);
+			return Dersialize(arr, line, pipes);
 		}
 
-		internal static R<INotification> GenerateSingleNotification(string lineDataPart, NotificationType ntfyType)
+		private static List<int> PipeList(ReadOnlySpan<byte> line)
+		{
+			List<int> pipes = null;
+			for (int i = 0; i < line.Length; i++)
+				if (line[i] == AsciiPipe)
+					(pipes = pipes ?? new List<int>()).Add(i);
+			return pipes;
+		}
+
+		private static R<T[]> Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int> pipes) where T : IMessage
+		{
+			if (pipes == null || pipes.Count == 0)
+			{
+				if (!ParseKeyValueLine(arr[0], line, null, null))
+					return R.Err;
+				return arr;
+			}
+
+			var arrItems = new HashSet<string>();
+			var single = new List<string>();
+
+			// index using the last one
+			if (!ParseKeyValueLine(arr[arr.Length - 1], line.Slice(pipes[pipes.Count - 1] + 1).Trim(AsciiSpace), arrItems, null))
+				return R.Err;
+
+			for (int i = 1; i < pipes.Count - 1; i++)
+			{
+				if (!ParseKeyValueLine(arr[i + 1], line.Slice(pipes[i], pipes[i + 1] - pipes[i]), null, null))
+					return R.Err;
+			}
+
+			// trim with the first one
+			if (!ParseKeyValueLine(arr[0], line.Slice(0, pipes[0]), arrItems, single))
+				return R.Err;
+
+			if (arrItems.Count > 0)
+			{
+				arr[0].Expand((IMessage[])(object)arr, single);
+			}
+			return arr;
+		}
+
+		internal static R<INotification> GenerateSingleNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
 		{
 			if (ntfyType == NotificationType.Unknown)
-				throw new ArgumentException("The NotificationType must not be unknown", nameof(lineDataPart));
+				throw new ArgumentException("The NotificationType must not be unknown", nameof(ntfyType));
 
-			if (lineDataPart == null)
-				throw new ArgumentNullException(nameof(lineDataPart));
+			if (line.IsEmpty)
+				throw new ArgumentNullException(nameof(line));
 
-			var notification = MessageHelper.GenerateNotificationType(ntfyType);
-			return ParseKeyValueLine(notification, lineDataPart);
+			var result = GenerateNotification(line, ntfyType);
+			if (!result.Ok || result.Value.Length == 0)
+				return R.Err;
+			return R<INotification>.OkR(result.Value[0]);
 		}
 
 		// data to response
-		internal static IEnumerable<T> GenerateResponse<T>(string line) where T : IResponse, new()
+		internal static R<T[]> GenerateResponse<T>(ReadOnlySpan<byte> line) where T : IResponse, new()
 		{
-			if (string.IsNullOrWhiteSpace(line))
+			if (line.IsEmpty)
 				return Array.Empty<T>();
-			var messageList = line.Split('|');
-			return messageList.Select(msg => ParseKeyValueLine(new T(), msg)).Where(x => x.Ok).Select(x => x.Value);
+
+			var pipes = PipeList(line);
+			var arr = new T[(pipes?.Count ?? 0) + 1];
+			for (int i = 0; i < arr.Length; i++)
+				arr[i] = new T();
+			return Dersialize(arr, line, pipes);
 		}
 
-		private static R<T> ParseKeyValueLine<T>(T qm, string line) where T : IMessage
+		private static bool ParseKeyValueLine(IMessage qm, ReadOnlySpan<byte> line, HashSet<string> indexing, List<string> single)
 		{
-			if (string.IsNullOrWhiteSpace(line))
-				return R.Err;
+			if (line.IsEmpty)
+				return true;
 
-			var ss = new SpanSplitter();
-			var lineSpan = ss.First(line, ' ');
-			var key = ReadOnlySpan<char>.Empty;
-			var value = ReadOnlySpan<char>.Empty;
+			var ss = new SpanSplitter<byte>();
+			ss.First(line, AsciiSpace);
+			var key = ReadOnlySpan<byte>.Empty;
+			var value = ReadOnlySpan<byte>.Empty;
 			try
 			{
 				do
 				{
-					var param = ss.Trim(lineSpan);
-					var kvpSplitIndex = param.IndexOf('=');
-					key = kvpSplitIndex >= 0 ? param.Slice(0, kvpSplitIndex) : ReadOnlySpan<char>.Empty;
-					value = kvpSplitIndex <= param.Length - 1 ? param.Slice(kvpSplitIndex + 1) : ReadOnlySpan<char>.Empty;
+					var param = ss.Trim(line);
+					var kvpSplitIndex = param.IndexOf(AsciiEquals);
+					key = kvpSplitIndex >= 0 ? param.Slice(0, kvpSplitIndex) : ReadOnlySpan<byte>.Empty;
+					value = kvpSplitIndex <= param.Length - 1 ? param.Slice(kvpSplitIndex + 1) : ReadOnlySpan<byte>.Empty;
 
-					qm.SetField(key.NewString(), value);
+					if (!key.IsEmpty)
+					{
+						var keyStr = key.NewUtf8String();
+						qm.SetField(keyStr, value);
+						if (indexing != null)
+						{
+							if (single == null)
+							{
+								indexing.Add(keyStr);
+							}
+							else if (!indexing.Contains(keyStr))
+							{
+								single.Add(keyStr);
+							}
+							else
+							{
+								indexing = null;
+								single = null;
+							}
+						}
+					}
 
 					if (!ss.HasNext)
 						break;
-					lineSpan = ss.Next(lineSpan);
-				} while (lineSpan.Length > 0);
-				return R<T>.OkR(qm);
+					line = ss.Next(line);
+				} while (line.Length > 0);
+				return true;
 			}
-			catch (Exception ex) { OnError?.Invoke(null, new Error(qm.GetType().Name, line, key.NewString(), value.NewString(), ex)); }
-			return R.Err;
+			catch (Exception ex) { OnError?.Invoke(null, new Error(qm.GetType().Name, line.NewUtf8String(), key.NewUtf8String(), value.NewUtf8String(), ex)); }
+			return false;
 		}
 
 		public class Error : EventArgs

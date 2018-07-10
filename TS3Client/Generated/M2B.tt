@@ -32,90 +32,82 @@ namespace TS3Client.Full.Book
 	public partial class Connection
 	{
 #pragma warning disable IDE0017 // Ignore "Object initialization can be simplified"
-		public void Update(LazyNotification notification)
+	<# foreach (var rule in genm2b.rule) {
+		var msg = genmsg.NotifiesSorted.First(x => x.name == rule.from);
+		var bookItem = genbook.@struct.First(x => x.name == rule.to);
+	#>
+		public void Update<#= msg.name #>(<#= msg.name #> msg)
 		{
-			switch(notification.NotifyType)
-			{
-				<# foreach (var rule in genm2b.rule) {
-					var msg = genmsg.NotifiesSorted.First(x => x.name == rule.from);
-					var bookItem = genbook.@struct.First(x => x.name == rule.to);
-				#>
-				case NotificationType.<#= msg.name #>: {
-					foreach(var msg in notification.Notifications.Cast<<#= msg.name #>>())
-					{
-					<# var idStr = string.Join(", ", rule.id.Select(x => $"msg.{x}"));
+			<# var idStr = string.Join(", ", rule.id.Select(x => $"msg.{x}"));
 
-					ClearIndent();
-					PushIndent("\t\t\t\t\t\t");
-					switch (rule.operation)
-					{
-					case "add":
-					case "update":
-						if (rule.operation == "add")
-							WriteLine($"var obj = new {rule.to}();");
-						else
-							WriteLine($"var obj = Get{rule.to}({idStr});");
+		ClearIndent();
+		PushIndent("\t\t\t");
+		switch (rule.operation)
+		{
+		case "add":
+		case "update":
+			if (rule.operation == "add")
+				WriteLine($"var obj = new {rule.to}();");
+			else
+				WriteLine($"var obj = Get{rule.to}({idStr});");
 
-						foreach (var prop in rule.properties) {
-							void WriteMove(string from, string to) {
-								var bookProp = bookItem.properties.FirstOrDefault(x => x.name == to);
-								if(bookProp == null) {
-									Warn($"No property found: '{to}'");
-									return;
-								}
-
-								if (prop.operation == null) {
-									if (bookProp.mod == null) {
-										WriteLine($"obj.{to} = {from};");
-									} else if (bookProp.mod == "array") {
-										WriteLine($"{{ var tmp = {from}; if (tmp != null) obj.{to}.AddRange(tmp); }}");
-									} else {
-										throw new Exception("Unknown mod type: " + bookProp.mod);
-									}
-								} else if (prop.operation == "add") {
-									WriteLine($"obj.{to}.Add({from});");
-								} else if (prop.operation == "remove") {
-									WriteLine($"obj.{to}.Remove({from});");
-								} else
-									throw new Exception("Unknown operation: " + prop.operation);
-							}
-
-							if (prop.from != null)
-							{
-								WriteMove($"msg.{prop.from}", prop.to);
-							} else /* function */ {
-								if (prop.function == "ReturnNone")
-									WriteMove($"null", prop.tolist[0]);
-								else if (prop.function == "VoidFun") { /* Do Nothing */ }
-								else if(prop.tolist.Length == 0)
-									WriteLine($"{prop.function}(msg);");
-								else if (prop.tolist.Length == 1)
-									WriteMove($"{prop.function}(msg)", prop.tolist[0]);
-								else
-								{
-									WriteLine("{");
-									WriteLine($"var tmp = {prop.function}(msg);", prop.to);
-									for (int i = 0; i < prop.tolist.Length; i++)
-										WriteMove($"tmp.Item{(i + 1)}", prop.tolist[i]);
-									WriteLine("}");
-								}
-							}
-						}
-						if (rule.operation == "add") {
-							WriteLine($"Set{rule.to}(obj{(string.IsNullOrEmpty(idStr) ? "" : (", " + idStr))});");
-						}
-						break;
-
-					case "remove":#>
-						Remove<#=rule.to#>(<#=idStr#>);<#
-						break;
-					} #>
+			foreach (var prop in rule.properties) {
+				void WriteMove(string from, string to) {
+					var bookProp = bookItem.properties.FirstOrDefault(x => x.name == to);
+					if(bookProp == null) {
+						Warn($"No property found: '{to}'");
+						return;
 					}
-				} break;
 
-				<# } #>
+					if (prop.operation == null) {
+						if (bookProp.mod == null) {
+							WriteLine($"obj.{to} = {from};");
+						} else if (bookProp.mod == "array") {
+							WriteLine($"{{ var tmp = {from}; if (tmp != null) obj.{to}.AddRange(tmp); }}");
+						} else {
+							throw new Exception("Unknown mod type: " + bookProp.mod);
+						}
+					} else if (prop.operation == "add") {
+						WriteLine($"obj.{to}.Add({from});");
+					} else if (prop.operation == "remove") {
+						WriteLine($"obj.{to}.Remove({from});");
+					} else
+						throw new Exception("Unknown operation: " + prop.operation);
+				}
+
+				if (prop.from != null)
+				{
+					WriteMove($"msg.{prop.from}", prop.to);
+				} else /* function */ {
+					if (prop.function == "ReturnNone")
+						WriteMove($"null", prop.tolist[0]);
+					else if (prop.function == "VoidFun") { /* Do Nothing */ }
+					else if(prop.tolist.Length == 0)
+						WriteLine($"{prop.function}(msg);");
+					else if (prop.tolist.Length == 1)
+						WriteMove($"{prop.function}(msg)", prop.tolist[0]);
+					else
+					{
+						WriteLine("{");
+						WriteLine($"var tmp = {prop.function}(msg);", prop.to);
+						for (int i = 0; i < prop.tolist.Length; i++)
+							WriteMove($"tmp.Item{(i + 1)}", prop.tolist[i]);
+						WriteLine("}");
+					}
+				}
 			}
+			if (rule.operation == "add") {
+				WriteLine($"Set{rule.to}(obj{(string.IsNullOrEmpty(idStr) ? "" : (", " + idStr))});");
+			}
+			break;
+
+		case "remove":#>
+			Remove<#=rule.to#>(<#=idStr#>);<#
+			break;
+		} #>
 		}
+
+	<# } #>
 #pragma warning restore IDE0017
 	}
 }

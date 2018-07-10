@@ -48,7 +48,7 @@ namespace TS3AudioBot
 			var core = new Core(setup.ConfigFile);
 			AppDomain.CurrentDomain.UnhandledException += core.ExceptionHandler;
 			Console.CancelKeyPress += core.ConsoleInterruptHandler;
-			TS3Client.Messages.Deserializer.OnError += (s, e) => Log.Error(e.ToString());
+			TS3Client.Messages.Deserializer.OnError += (s, e) => Log.Error(e.Exception, "{0}", e);
 
 			var initResult = core.Run(!setup.NonInteractive);
 			if (!initResult)

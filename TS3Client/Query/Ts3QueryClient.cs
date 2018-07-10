@@ -35,7 +35,7 @@ namespace TS3Client.Query
 		private bool connecting;
 		public override bool Connecting => connecting && !Connected;
 
-		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
+		public override event NotifyEventHandler<TextMessage> OnTextMessage;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
 		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
 		public override event EventHandler<EventArgs> OnConnected;
@@ -98,7 +98,7 @@ namespace TS3Client.Query
 				if (string.IsNullOrWhiteSpace(line)) continue;
 
 				var message = line.Trim();
-				msgProc.PushMessage(message);
+				// msgProc.PushMessage(message); TODO !!!!!!!!!!!!!!!!! // RETURN ???!?
 			}
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
 		}
@@ -118,7 +118,7 @@ namespace TS3Client.Query
 			case NotificationType.ClientLeftView: OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>()); break;
 			case NotificationType.ClientMoved: break;
 			case NotificationType.ServerEdited: break;
-			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
+			case NotificationType.TextMessage: OnTextMessage?.Invoke(this, notification.Cast<TextMessage>()); break;
 			case NotificationType.TokenUsed: break;
 			// special
 			case NotificationType.CommandError: break;

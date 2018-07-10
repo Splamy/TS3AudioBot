@@ -31,7 +31,7 @@ namespace TS3Client
 	{
 		protected static readonly NLog.Logger LogCmd = NLog.LogManager.GetLogger("TS3Client.Cmd");
 		/// <summary>When this client receives any visible message.</summary>
-		public abstract event NotifyEventHandler<TextMessage> OnTextMessageReceived;
+		public abstract event NotifyEventHandler<TextMessage> OnTextMessage;
 		/// <summary>When another client enters visiblility.</summary>
 		public abstract event NotifyEventHandler<ClientEnterView> OnClientEnterView;
 		/// <summary>When another client leaves visiblility.</summary>

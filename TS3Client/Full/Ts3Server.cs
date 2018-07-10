@@ -71,8 +71,7 @@ namespace TS3Client.Full
 			{
 			case PacketType.Command:
 			case PacketType.CommandLow:
-				string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-				var result = msgProc.PushMessage(message);
+				var result = msgProc.PushMessage(packet.Data);
 				if (result.HasValue)
 					dispatcher.Invoke(result.Value);
 				break;
@@ -81,8 +80,7 @@ namespace TS3Client.Full
 				if (packet.Data.Length >= 301 && packet.Data[4] == 4)
 				{
 					initCheckDone = true;
-					string messageI = Util.Encoder.GetString(packet.Data, 301, packet.Data.Length - 301);
-					var resultI = msgProc.PushMessage(messageI);
+					var resultI = msgProc.PushMessage(packet.Data.AsMemory(301, packet.Data.Length - 301));
 					if (resultI.HasValue)
 						dispatcher.Invoke(resultI.Value);
 				}

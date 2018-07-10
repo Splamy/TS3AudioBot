@@ -22,7 +22,7 @@ namespace TS3Client
 		private readonly ManualResetEvent answerWaiter;
 		private readonly ManualResetEvent notificationWaiter;
 		private CommandError commandError;
-		private string commandLine;
+		private ReadOnlyMemory<byte>? commandLine;
 		public NotificationType[] DependsOn { get; }
 		private LazyNotification notification;
 		private bool isDisposed;
@@ -55,7 +55,8 @@ namespace TS3Client
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
-			return R<IEnumerable<T>, CommandError>.OkR(Deserializer.GenerateResponse<T>(commandLine));
+			// TODO
+			return Deserializer.GenerateResponse<T>(commandLine.Value.Span).OkOr(Array.Empty<T>());
 		}
 
 		public async Task<R<IEnumerable<T>, CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
@@ -63,13 +64,14 @@ namespace TS3Client
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
 			var timeOut = Task.Delay(CommandTimeout);
-			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
+			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut).ConfigureAwait(false);
 			if (res == timeOut)
 				return Util.TimeOutCommandError;
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
-			return R<IEnumerable<T>, CommandError>.OkR(Deserializer.GenerateResponse<T>(commandLine));
+			// TODO
+			return Deserializer.GenerateResponse<T>(commandLine.Value.Span).OkOr(Array.Empty<T>());
 		}
 
 		public R<LazyNotification, CommandError> WaitForNotification()
@@ -88,7 +90,7 @@ namespace TS3Client
 			return notification;
 		}
 
-		public void SetAnswer(CommandError commandError, string commandLine = null)
+		public void SetAnswer(CommandError commandError, ReadOnlyMemory<byte>? commandLine = null)
 		{
 			if (isDisposed)
 				return;

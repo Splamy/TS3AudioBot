@@ -22,6 +22,11 @@
     <None Include="Generated\ErrorParser.ttinclude" />
     <None Include="Generated\M2BParser.ttinclude" />
     <None Include="Generated\MessageParser.ttinclude" />
+    <None Include="Generated\Ts3FullEvents.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Ts3FullEvents.tt</DependentUpon>
+    </None>
     <None Include="Generated\Util.ttinclude" />
     <None Update="Generated\Book.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -42,6 +47,10 @@
     <None Update="Generated\Permissions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Permissions.cs</LastGenOutput>
+    </None>
+    <None Update="Generated\Ts3FullEvents.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Ts3FullEvents.cs</LastGenOutput>
     </None>
     <None Update="Generated\Versions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -73,6 +82,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Permissions.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Generated\Ts3FullEvents.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Ts3FullEvents.tt</DependentUpon>
     </Compile>
     <Compile Update="Generated\Versions.cs">
       <DesignTime>True</DesignTime>

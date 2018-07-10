@@ -3,6 +3,7 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ include file="Util.ttinclude" once="true" #>
 <#+
+public static IEnumerable<Messages.Msg> OnlyS2C(IEnumerable<Messages.Msg> enu) => enu.Where(x => x.s2c.Value);
 public class Messages
 {
 	public static Messages Parse(string file)

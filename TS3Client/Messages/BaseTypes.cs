@@ -10,10 +10,12 @@
 namespace TS3Client.Messages
 {
 	using System;
+	using System.Collections.Generic;
 
 	public interface IMessage
 	{
-		void SetField(string name, ReadOnlySpan<char> value);
+		void SetField(string name, ReadOnlySpan<byte> value);
+		void Expand(IMessage[] to, IEnumerable<string> flds);
 	}
 
 	public interface INotification : IMessage

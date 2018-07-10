@@ -225,7 +225,7 @@ namespace Ts3ClientTests
 				client.OnConnected += Client_OnConnected;
 				client.OnDisconnected += Client_OnDisconnected;
 				client.OnErrorEvent += Client_OnErrorEvent;
-				client.OnTextMessageReceived += Client_OnTextMessageReceived;
+				client.OnEachTextMessage += Client_OnTextMessageReceived;
 				var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0);
 				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data.Unwrap(), ServerPassword = "123", VersionSign = VersionSign.VER_WIN_3_1_8 };
 				client.Connect(con);
@@ -328,29 +328,26 @@ namespace Ts3ClientTests
 			//client.Connect(con);
 		}
 
-		private static void Client_OnTextMessageReceived(object sender, IEnumerable<TextMessage> e)
+		private static void Client_OnTextMessageReceived(object sender, TextMessage msg)
 		{
-			foreach (var msg in e)
+			if (msg.Message == "Hi")
+				Console.WriteLine("Hi" + msg.InvokerName);
+			else if (msg.Message == "Exit")
 			{
-				if (msg.Message == "Hi")
-					Console.WriteLine("Hi" + msg.InvokerName);
-				else if (msg.Message == "Exit")
-				{
-					var client = (Ts3FullClient)sender;
-					var id = client.ClientId;
-					Console.WriteLine("Exiting... {0}", id);
-					client.Disconnect();
-					Console.WriteLine("Exited... {0}", id);
-				}
-				else if (msg.Message == "upl")
-				{
-					var client = (Ts3FullClient)sender;
+				var client = (Ts3FullClient)sender;
+				var id = client.ClientId;
+				Console.WriteLine("Exiting... {0}", id);
+				client.Disconnect();
+				Console.WriteLine("Exited... {0}", id);
+			}
+			else if (msg.Message == "upl")
+			{
+				var client = (Ts3FullClient)sender;
 
-					var token = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", overwrite: true);
-					if (!token.Ok)
-						return;
-					token.Value.Wait();
-				}
+				var token = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", overwrite: true);
+				if (!token.Ok)
+					return;
+				token.Value.Wait();
 			}
 		}
 
