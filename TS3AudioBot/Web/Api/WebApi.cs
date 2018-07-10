@@ -191,10 +191,8 @@ namespace TS3AudioBot.Web.Api
 				return ErrorNoUserOrToken;
 
 			var token = result.Value;
-			var invoker = new InvokerData(identity.Name)
-			{
-				Token = token.Value,
-			};
+			var invoker = new InvokerData(identity.Name,
+				token: token.Value);
 
 			switch (identity.AuthenticationType)
 			{

@@ -51,7 +51,7 @@ namespace TS3Client.Messages
 			return messageList.Select(msg => ParseKeyValueLine(new T(), msg)).Where(x => x.Ok).Select(x => x.Value);
 		}
 
-		private static R<T> ParseKeyValueLine<T>(T qm, string line) where T : IQueryMessage
+		private static R<T> ParseKeyValueLine<T>(T qm, string line) where T : IMessage
 		{
 			if (string.IsNullOrWhiteSpace(line))
 				return R.Err;

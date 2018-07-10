@@ -104,7 +104,7 @@ namespace TS3AudioBot.Rights
 				if (cachedRights.TryGetValue(invoker.ClientUid, out execCtx))
 				{
 					// TODO check if all fields are same
-					// if yes => returen
+					// if yes => return
 					// if no => delete from cache
 					return execCtx;
 				}
@@ -117,11 +117,12 @@ namespace TS3AudioBot.Rights
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
 
-				ulong[] availableGroups = null;
+				ulong[] availableGroups = invoker.ServerGroups;
 				if (ts != null)
 				{
-					if (invoker.ClientId.HasValue &&
-						(needsAvailableGroups || needsAvailableChanGroups))
+					if (invoker.ClientId.HasValue
+						&& ((needsAvailableGroups && availableGroups == null)
+							|| needsAvailableChanGroups))
 					{
 						var result = ts.GetClientInfoById(invoker.ClientId.Value);
 						if (result.Ok)
@@ -131,7 +132,8 @@ namespace TS3AudioBot.Rights
 						}
 					}
 
-					if (needsAvailableGroups && invoker.DatabaseId.HasValue && availableGroups == null)
+					if (invoker.DatabaseId.HasValue
+						&& (needsAvailableGroups && availableGroups == null))
 					{
 						var result = ts.GetClientServerGroups(invoker.DatabaseId.Value);
 						if (result.Ok)
@@ -282,6 +284,8 @@ namespace TS3AudioBot.Rights
 			FlattenGroups(parseCtx);
 
 			FlattenRules(rootRule);
+
+			CheckRequiredCalls(parseCtx);
 
 			rules = parseCtx.Rules;
 		}
@@ -531,6 +535,27 @@ namespace TS3AudioBot.Rights
 
 			foreach (var child in root.ChildrenRules)
 				FlattenRules(child);
+		}
+
+		/// <summary>
+		/// Checks which ts3client calls need to made to get all information
+		/// for the required matcher.
+		/// </summary>
+		/// <param name="ctx">The parsing context for the current file processing.</param>
+		private void CheckRequiredCalls(ParseContext ctx)
+		{
+			needsAvailableGroups = false;
+			needsAvailableChanGroups = false;
+
+			foreach (var group in ctx.Rules)
+			{
+				if (!group.HasMatcher())
+					continue;
+				if (group.MatchClientGroupId.Count > 0)
+					needsAvailableGroups = true;
+				if (group.MatchChannelGroupId.Count > 0)
+					needsAvailableChanGroups = true;
+			}
 		}
 	}
 }

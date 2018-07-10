@@ -703,6 +703,19 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
+		public override R<IEnumerable<ClientIds>, CommandError> GetClientIds(Uid clientUid)
+		{
+			var result = SendNotifyCommand(new Ts3Command("clientgetids", new List<ICommandPart>() {
+				new CommandParameter("cluid", clientUid) }),
+				NotificationType.ClientIds);
+			if (!result.Ok)
+				return result.Error;
+			return R<IEnumerable<ClientIds>, CommandError>.OkR(
+				result.Value.Notifications
+				.Cast<ClientIds>()
+				.Where(x => x.ClientUid == clientUid));
+		}
+
 		#endregion
 
 		private enum Ts3ClientStatus

@@ -11,17 +11,17 @@ namespace TS3Client.Messages
 {
 	using System;
 
-	public interface IQueryMessage
+	public interface IMessage
 	{
 		void SetField(string name, ReadOnlySpan<char> value);
 	}
 
-	public interface INotification : IQueryMessage
+	public interface INotification : IMessage
 	{
 		NotificationType NotifyType { get; }
 	}
 
-	public interface IResponse : IQueryMessage
+	public interface IResponse : IMessage
 	{
 		string ReturnCode { get; set; }
 	}

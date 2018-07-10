@@ -173,63 +173,56 @@ namespace TS3AudioBot
 
 			Log.Info("User {0} requested: {1}", textMessage.InvokerName, textMessage.Message);
 
-			var refreshResult = ClientConnection.RefreshClientBuffer(true);
-			if (!refreshResult.Ok)
-				Log.Warn("Bot is not correctly set up. Some commands might not work or are slower ({0}).", refreshResult.Error.Str);
+			ClientConnection.InvalidateClientBuffer();
 
-			var clientResult = ClientConnection.GetClientById(textMessage.InvokerId);
-
-			// get the current session
-			UserSession session = null;
-			var result = SessionManager.GetSession(textMessage.InvokerId);
-			if (result.Ok)
+			ulong? channelId = null, databaseId = null;
+			ulong[] channelGroups = null;
+			var clientResult = ClientConnection.GetCachedClientById(textMessage.InvokerId);
+			if (clientResult.Ok)
 			{
-				session = result.Value;
+				channelId = clientResult.Value.ChannelId;
+				databaseId = clientResult.Value.DatabaseId;
 			}
 			else
 			{
+				var clientInfoResult = ClientConnection.GetClientInfoById(textMessage.InvokerId);
 				if (clientResult.Ok)
-					session = SessionManager.CreateSession(clientResult.Value);
+				{
+					channelId = clientInfoResult.Value.ChannelId;
+					databaseId = clientInfoResult.Value.DatabaseId;
+					channelGroups = clientInfoResult.Value.ServerGroups;
+				}
 				else
-					Log.Warn("Could not create session with user, some commands might not work ({0})", clientResult.Error.Str);
+				{
+					Log.Warn("Bot is not correctly set up. Some commands might not work or are slower (clientlist:{0}, clientinfo:{1}).",
+						clientResult.Error.Str, clientInfoResult.Error.Str);
+				}
 			}
 
-			var invoker = new InvokerData(textMessage.InvokerUid)
-			{
-				ClientId = textMessage.InvokerId,
-				Visibiliy = textMessage.Target,
-				NickName = textMessage.InvokerName,
-			};
-			if (clientResult.Ok)
-			{
-				invoker.ChannelId = clientResult.Value.ChannelId;
-				invoker.DatabaseId = clientResult.Value.DatabaseId;
-			}
+			var invoker = new InvokerData(textMessage.InvokerUid,
+				clientId: textMessage.InvokerId,
+				visibiliy: textMessage.Target,
+				nickName: textMessage.InvokerName,
+				channelId: channelId,
+				databaseId: databaseId)
+			{ ServerGroups = channelGroups };
 
+			var session = SessionManager.GetOrCreateSession(textMessage.InvokerId);
 			var info = CreateExecInfo(invoker, session);
 
-			UserSession.SessionToken sessionLock = null;
-			try
+			using (session.GetLock())
 			{
-				if (session != null)
+				// check if the user has an open request
+				if (session.ResponseProcessor != null)
 				{
-					sessionLock = session.GetLock();
-					// check if the user has an open request
-					if (session.ResponseProcessor != null)
-					{
-						var msg = session.ResponseProcessor(textMessage.Message);
-						session.ClearResponse();
-						if (!string.IsNullOrEmpty(msg))
-							info.Write(msg).UnwrapThrow();
-						return;
-					}
+					var msg = session.ResponseProcessor(textMessage.Message);
+					session.ClearResponse();
+					if (!string.IsNullOrEmpty(msg))
+						info.Write(msg).UnwrapThrow();
+					return;
 				}
 
 				CallScript(info, textMessage.Message, true, false);
-			}
-			finally
-			{
-				sessionLock?.Dispose();
 			}
 		}
 

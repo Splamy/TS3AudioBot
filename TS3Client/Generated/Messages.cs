@@ -754,10 +754,10 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientIds : INotification
+	public sealed class ClientIds : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientIds;
-		
+		public string ReturnCode { get; set; }
 
 		public Uid ClientUid { get; set; }
 		public ClientId ClientId { get; set; }
@@ -772,7 +772,7 @@ namespace TS3Client.Messages
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			case "clid": ClientId = ClientId.Parse(value.NewString(), CultureInfo.InvariantCulture); break;
 			case "name": Name = Ts3String.Unescape(value); break;
-			
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
 		}

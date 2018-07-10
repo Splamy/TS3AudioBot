@@ -62,7 +62,6 @@ namespace TS3Client
 
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
-		[DebuggerStepThrough]
 		public R<IEnumerable<ResponseDictionary>, CommandError> Send(string command)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command));
 
@@ -70,7 +69,6 @@ namespace TS3Client
 		/// <param name="command">The command name.</param>
 		/// <param name="parameter">The parameters to be added to this command.
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
-		[DebuggerStepThrough]
 		public R<IEnumerable<ResponseDictionary>, CommandError> Send(string command, params ICommandPart[] parameter)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command, parameter.ToList()));
 
@@ -78,7 +76,6 @@ namespace TS3Client
 		/// <typeparam name="T">The type to deserialize the response to.</typeparam>
 		/// <param name="command">The command name.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		[DebuggerStepThrough]
 		public R<IEnumerable<T>, CommandError> Send<T>(string command) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command));
 
@@ -87,7 +84,6 @@ namespace TS3Client
 		/// <param name="command">The command name.</param>
 		/// <param name="parameter">The parameters to be added to this command.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		[DebuggerStepThrough]
 		public R<IEnumerable<T>, CommandError> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
 			=> Send<T>(command, parameter.ToList());
 
@@ -96,11 +92,9 @@ namespace TS3Client
 		/// <param name="command">The command name.</param>
 		/// <param name="parameter">The parameters to be added to this command.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		[DebuggerStepThrough]
 		public R<IEnumerable<T>, CommandError> Send<T>(string command, List<ICommandPart> parameter) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command, parameter));
 
-		[DebuggerStepThrough]
 		protected CmdR SendNoResponsed(Ts3Command command)
 			=> SendCommand<ResponseVoid>(command.ExpectsResponse(false));
 
@@ -310,6 +304,8 @@ namespace TS3Client
 		public abstract R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
 
 		public abstract R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid);
+
+		public abstract R<IEnumerable<ClientIds>, CommandError> GetClientIds(Uid clientUid);
 		#endregion
 	}
 }

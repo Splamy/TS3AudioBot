@@ -25,7 +25,7 @@ namespace TS3Client.Commands
 		internal bool ExpectResponse { get; set; }
 		public string Command { get; }
 		private readonly List<ICommandPart> parameter;
-		
+
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
 		[DebuggerStepThrough]
@@ -42,12 +42,14 @@ namespace TS3Client.Commands
 			this.parameter = parameter;
 		}
 
+		[DebuggerStepThrough]
 		public Ts3Command AppendParameter(ICommandPart addParameter)
 		{
 			parameter.Add(addParameter);
 			return this;
 		}
 
+		[DebuggerStepThrough]
 		internal Ts3Command ExpectsResponse(bool expects)
 		{
 			ExpectResponse = expects;

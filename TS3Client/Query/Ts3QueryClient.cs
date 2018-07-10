@@ -228,6 +228,10 @@ namespace TS3Client.Query
 			=> Send<ClientDbIdFromUid>("clientgetdbidfromuid",
 			new CommandParameter("cluid", clientUid)).WrapSingle();
 
+		public override R<IEnumerable<ClientIds>, CommandError> GetClientIds(Uid clientUid)
+			=> Send<ClientIds>("clientgetids",
+			new CommandParameter("cluid", clientUid));
+
 		#endregion
 
 		public override void Dispose()

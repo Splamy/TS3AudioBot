@@ -104,7 +104,7 @@ namespace TS3AudioBot
 				{
 					if (image == null)
 						throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
-					ts3Client.UploadAvatar(image);
+					ts3Client.UploadAvatar(image).UnwrapThrow();
 				}
 			});
 		}
@@ -258,17 +258,17 @@ namespace TS3AudioBot
 			=> new JsonValue<InvokerData>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
 
 		[Command("getuser uid byid")]
-		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().Uid;
+		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().Uid;
 		[Command("getuser name byid")]
-		public static string CommandGetNameById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().Name;
+		public static string CommandGetNameById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().Name;
 		[Command("getuser dbid byid")]
-		public static ulong CommandGetDbIdById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().DatabaseId;
+		public static ulong CommandGetDbIdById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().DatabaseId;
 		[Command("getuser channel byid")]
-		public static ulong CommandGetChannelById(Ts3Client ts3Client, ushort id) => ts3Client.GetClientById(id).UnwrapThrow().ChannelId;
+		public static ulong CommandGetChannelById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().ChannelId;
 		[Command("getuser all byid")]
 		public static JsonValue<ClientData> CommandGetUserById(Ts3Client ts3Client, ushort id)
 		{
-			var client = ts3Client.GetClientById(id).UnwrapThrow();
+			var client = ts3Client.GetFallbackedClientById(id).UnwrapThrow();
 			return new JsonValue<ClientData>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser id byname")]

@@ -242,18 +242,20 @@ namespace TS3AudioBot
 	public sealed class InvokerData
 	{
 		public string ClientUid { get; }
-		public ulong? DatabaseId { get; internal set; }
-		public ulong? ChannelId { get; internal set; }
-		public ushort? ClientId { get; internal set; }
-		public string NickName { get; internal set; }
-		public string Token { get; internal set; }
+		public ulong? DatabaseId { get; }
+		public ulong? ChannelId { get; }
+		public ushort? ClientId { get; }
+		public string NickName { get; }
+		public string Token { get; }
 		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
+		// Lazy
+		public ulong[] ServerGroups { get; internal set; }
 
 		public InvokerData(string clientUid, ulong? databaseId = null, ulong? channelId = null,
 			ushort? clientId = null, string nickName = null, string token = null,
 			TS3Client.TextMessageTargetMode? visibiliy = null)
 		{
-			ClientUid = clientUid;
+			ClientUid = clientUid ?? throw new ArgumentNullException(nameof(ClientUid));
 			DatabaseId = databaseId;
 			ChannelId = channelId;
 			ClientId = clientId;

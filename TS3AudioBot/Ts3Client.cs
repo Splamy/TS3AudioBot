@@ -265,10 +265,13 @@ namespace TS3AudioBot
 				return result.Error.FormatLocal();
 		}
 
-		public R<ClientData, LocalStr> GetClientById(ushort id)
+		public R<ClientData, LocalStr> GetCachedClientById(ushort id) => ClientBufferRequest(client => client.ClientId == id);
+
+		public R<ClientData, LocalStr> GetFallbackedClientById(ushort id)
 		{
 			var result = ClientBufferRequest(client => client.ClientId == id);
-			if (result.Ok) return result;
+			if (result.Ok)
+				return result;
 			Log.Warn("Slow double request due to missing or wrong permission configuration!");
 			var result2 = TsFullClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
 			if (!result2.Ok)
@@ -291,12 +294,12 @@ namespace TS3AudioBot
 			return clients[0].Value;
 		}
 
-		private R<ClientData, LocalStr> ClientBufferRequest(Func<ClientData, bool> pred)
+		private R<ClientData, LocalStr> ClientBufferRequest(Predicate<ClientData> pred)
 		{
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
 				return refreshResult.Error;
-			var clientData = clientbuffer.FirstOrDefault(pred);
+			var clientData = clientbuffer.Find(pred);
 			if (clientData == null)
 				return new LocalStr(strings.error_ts_no_client_found);
 			return clientData;
@@ -492,6 +495,8 @@ namespace TS3AudioBot
 		}
 
 		public R<ClientInfo, LocalStr> GetSelf() => TsFullClient.ClientInfo(TsFullClient.ClientId).FormatLocal();
+
+		public void InvalidateClientBuffer() => clientbufferOutdated = true;
 
 		#endregion
 
