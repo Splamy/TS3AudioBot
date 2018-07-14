@@ -9,9 +9,9 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using AudioTags;
 	using Config;
 	using Helper;
-	using Helper.AudioTags;
 	using Localization;
 	using Playlists;
 	using System;
