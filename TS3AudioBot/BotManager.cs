@@ -173,6 +173,14 @@ namespace TS3AudioBot
 			return activeBots[id];
 		}
 
+		// !! This method must be called with a lock on lockObj
+		private Bot GetBotSave(string name)
+		{
+			if (activeBots == null)
+				return null;
+			return activeBots.Find(x => x.Name == name);
+		}
+
 		public BotLock GetBotLock(int id)
 		{
 			Bot bot;
@@ -183,6 +191,20 @@ namespace TS3AudioBot
 					return null;
 				if (bot.Id != id)
 					throw new Exception("Got not matching bot id");
+			}
+			return bot.GetBotLock();
+		}
+
+		public BotLock GetBotLock(string name)
+		{
+			Bot bot;
+			lock (lockObj)
+			{
+				bot = GetBotSave(name);
+				if (bot == null)
+					return null;
+				if (bot.Name != name)
+					throw new Exception("Got not matching bot name");
 			}
 			return bot.GetBotLock();
 		}

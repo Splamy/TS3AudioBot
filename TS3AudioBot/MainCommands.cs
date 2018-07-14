@@ -1117,6 +1117,45 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command("settings bot get")]
+		public static JsonValue<ConfigPart> CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path)
+		{
+			using (var botlock = bots.GetBotLock(bot))
+			{
+				var confBot = GetConf(botlock.Bot, config, bot);
+				return CommandSettingsGet(confBot, path);
+			}
+		}
+
+		[Command("settings bot set")]
+		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string value)
+		{
+			using (var botlock = bots.GetBotLock(bot))
+			{
+				var confBot = GetConf(botlock.Bot, config, bot);
+				CommandSettingsSet(confBot, path, value);
+			}
+		}
+
+		private static ConfBot GetConf(Bot bot, ConfRoot config, string name)
+		{
+			if (bot != null)
+			{
+				var mod = bot.Injector.GetModule<ConfBot>();
+				if (mod != null)
+					return mod;
+				else
+					throw new CommandException(strings.error_call_unexpected_error, CommandExceptionReason.CommandError);
+			}
+			else
+			{
+				var getTemplateResult = config.GetBotTemplate(name);
+				if (!getTemplateResult.Ok)
+					throw new CommandException(strings.error_bot_does_not_exist, getTemplateResult.Error, CommandExceptionReason.CommandError);
+				return getTemplateResult.Value;
+			}
+		}
+
 		[Command("settings global get")]
 		public static JsonValue<ConfigPart> CommandSettingsGlobalGet(ConfRoot config, string path)
 			=> SettingsGet(config, path);

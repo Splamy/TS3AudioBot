@@ -93,7 +93,7 @@ namespace TS3AudioBot.Config
 		public ConfBot CreateBot()
 		{
 			var config = CreateRoot<ConfBot>();
-			return CreateBotConfig(config);
+			return InitializeBotConfig(config);
 		}
 
 		public IEnumerable<string> ListAllBots()
@@ -120,12 +120,12 @@ namespace TS3AudioBot.Config
 			var botConfResult = Load<ConfBot>(botFile);
 			if (!botConfResult.Ok)
 				return botConfResult.Error;
-			var botConf = CreateBotConfig(botConfResult.Value);
+			var botConf = InitializeBotConfig(botConfResult.Value);
 			botConf.Name = name;
 			return botConf;
 		}
 
-		private ConfBot CreateBotConfig(ConfBot config)
+		private ConfBot InitializeBotConfig(ConfBot config)
 		{
 			Bot.Derive(config);
 			config.Parent = this;
