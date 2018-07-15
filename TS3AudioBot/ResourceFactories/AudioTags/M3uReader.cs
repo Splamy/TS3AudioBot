@@ -18,6 +18,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 
 	internal static class M3uReader
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int MaxLineLength = 4096;
 		private static readonly byte[] ExtM3uLine = Encoding.UTF8.GetBytes("#EXTM3U");
 		private static readonly byte[] ExtInfLine = Encoding.UTF8.GetBytes("#EXTINF");
@@ -75,7 +76,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 								var dataSlice = line.Slice(8);
 								var trackInfo = dataSlice.IndexOf((byte)',');
 								if (trackInfo >= 0)
-									trackTitle = AsString(dataSlice.Slice(trackInfo + 1), extm3u);
+									trackTitle = AsString(dataSlice.Slice(trackInfo + 1));
 							}
 							else if (line.StartsWith(ExtM3uLine))
 							{
@@ -85,9 +86,16 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 						}
 						else
 						{
-							var lineStr = AsString(line, extm3u);
-							data.Add(new PlaylistItem(new AudioResource(lineStr, trackTitle ?? lineStr, "media")));
-							trackTitle = null;
+							var lineStr = AsString(line);
+							if (Uri.TryCreate(lineStr, UriKind.RelativeOrAbsolute, out _))
+							{
+								data.Add(new PlaylistItem(new AudioResource(lineStr, trackTitle ?? lineStr, "media")));
+								trackTitle = null;
+							}
+							else
+							{
+								Log.Debug("Skipping invalid playlist entry ({0})", lineStr);
+							}
 						}
 					}
 
@@ -109,7 +117,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			catch { return "Unexpected m3u parsing error"; }
 		}
 
-		private static string AsString(ReadOnlySpan<byte> data, bool utf8)
+		private static string AsString(ReadOnlySpan<byte> data)
 		{
 			return Encoding.UTF8.GetString(data.ToArray());
 		}

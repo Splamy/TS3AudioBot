@@ -1117,7 +1117,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command("settings bot get")]
+		[Command("settings bot get", "cmd_settings_get_help")]
 		public static JsonValue<ConfigPart> CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path)
 		{
 			using (var botlock = bots.GetBotLock(bot))
@@ -1127,7 +1127,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command("settings bot set")]
+		[Command("settings bot set", "cmd_settings_set_help")]
 		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string value)
 		{
 			using (var botlock = bots.GetBotLock(bot))
