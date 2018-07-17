@@ -54,7 +54,10 @@ namespace TS3AudioBot.Helper
 		public static E<LocalStr> GetResponse(Uri link, Action<WebResponse> body) => GetResponse(link, body, DefaultTimeout);
 		public static E<LocalStr> GetResponse(Uri link, Action<WebResponse> body, TimeSpan timeout)
 		{
-			var request = WebRequest.Create(link);
+			WebRequest request;
+			try { request = WebRequest.Create(link); }
+			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
+
 			try
 			{
 				request.Timeout = (int)timeout.TotalMilliseconds;
@@ -73,7 +76,10 @@ namespace TS3AudioBot.Helper
 		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link) => GetResponseUnsafe(link, DefaultTimeout);
 		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link, TimeSpan timeout)
 		{
-			var request = WebRequest.Create(link);
+			WebRequest request;
+			try { request = WebRequest.Create(link); }
+			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
+
 			try
 			{
 				request.Timeout = (int)timeout.TotalMilliseconds;

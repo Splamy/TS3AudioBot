@@ -10,12 +10,14 @@ using TS3Client.Audio;
 using System.Net;
 using System.Diagnostics;
 using System.Threading;
+using TS3Client.Commands;
 
 // ReSharper disable All
 namespace Ts3ClientTests
 {
 	static class Program
 	{
+		#region versions
 		static string[] vers = new string[] {
 			"1326378143",
 			"1326794905",
@@ -144,6 +146,7 @@ namespace Ts3ClientTests
 			"1516349129",
 			"1516614607",
 		};
+		#endregion
 
 		static ConnectionDataFull con;
 
@@ -236,7 +239,7 @@ namespace Ts3ClientTests
 			Console.ReadLine();
 		}
 
-		static void Main(string[] args)
+		static void Main3(string[] args)
 		{
 			// Initialize client
 			var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
@@ -268,6 +271,40 @@ namespace Ts3ClientTests
 
 			// Connect
 			client.Connect(con);
+		}
+
+		static void Main(string[] args)
+		{
+			var query = new TS3Client.Query.Ts3QueryClient(EventDispatchType.DoubleThread);
+			var con = new ConnectionData() { Address = "127.0.0.1" };
+			query.Connect(con);
+			var use = query.UseServer(1);
+			Console.WriteLine("Use: {0}", use.Ok);
+			var who = query.WhoAmI();
+			Console.WriteLine("Who: {0}", who.Ok ? (object)who.Value : who.Error.ErrorFormat());
+
+			while (true)
+			{
+				var line = Console.ReadLine();
+				if (string.IsNullOrEmpty(line))
+					break;
+				var dict = query.SendCommand<ResponseDictionary>(new Ts3RawCommand(line));
+				if (dict.Ok)
+				{
+					foreach (var item in dict.Value)
+					{
+						foreach (var val in item)
+						{
+							Console.Write("{0}={1}", val.Key, val.Value);
+						}
+						Console.WriteLine();
+					}
+				}
+				else
+				{
+					Console.WriteLine(dict.Error.ErrorFormat());
+				}
+			}
 		}
 
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)

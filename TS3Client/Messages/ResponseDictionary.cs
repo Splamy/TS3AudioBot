@@ -45,7 +45,19 @@ namespace TS3Client.Messages
 		IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
 
 		public void SetField(string name, ReadOnlySpan<byte> value) => data[name] = value.NewUtf8String();
-		public void Expand(IMessage[] to, IEnumerable<string> flds) => throw new NotImplementedException();
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			foreach (var fld in flds)
+			{
+				if (TryGetValue(fld, out var fldval))
+				{
+					foreach (var toi in (ResponseDictionary[])to)
+					{
+						toi[fld] = fldval;
+					}
+				}
+			}
+		}
 		public string ReturnCode
 		{
 			get => data.ContainsKey("return_code") ? data["return_code"] : string.Empty;

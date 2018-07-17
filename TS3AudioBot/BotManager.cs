@@ -78,7 +78,9 @@ namespace TS3AudioBot
 				if (!Config.Save())
 					Log.Error("Could not save root config. The bot won't start by default.");
 
-				var runResult = RunBot(newBot); // TODO Check result
+				var runResult = RunBot(newBot);
+				if (!runResult.Ok)
+					Log.Error("Could not run bot ({0})", runResult.Error);
 				return;
 			}
 

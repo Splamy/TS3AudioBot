@@ -17,11 +17,13 @@ namespace TS3Client.Commands
 	using System.Text.RegularExpressions;
 
 	/// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
-	public sealed class Ts3Command
+	public class Ts3Command
 	{
 		private static readonly Regex CommandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 		public static List<ICommandPart> NoParameter => new List<ICommandPart>();
 
+		protected string raw = null;
+		protected bool cached = false;
 		internal bool ExpectResponse { get; set; }
 		public string Command { get; }
 		private readonly List<ICommandPart> parameter;
@@ -43,8 +45,9 @@ namespace TS3Client.Commands
 		}
 
 		[DebuggerStepThrough]
-		public Ts3Command AppendParameter(ICommandPart addParameter)
+		public virtual Ts3Command AppendParameter(ICommandPart addParameter)
 		{
+			cached = false;
 			parameter.Add(addParameter);
 			return this;
 		}
@@ -58,7 +61,15 @@ namespace TS3Client.Commands
 
 		/// <summary>Builds this command to the query-like command.</summary>
 		/// <returns>The formatted query-like command.</returns>
-		public override string ToString() => BuildToString(Command, parameter);
+		public override string ToString()
+		{
+			if (!cached)
+			{
+				raw = BuildToString(Command, parameter);
+				cached = true;
+			}
+			return raw;
+		}
 
 		/// <summary>Builds the command from its parameters and returns the query-like command.</summary>
 		/// <param name="command">The command name.</param>
@@ -127,6 +138,25 @@ namespace TS3Client.Commands
 			}
 
 			return strb.ToString();
+		}
+	}
+
+	public class Ts3RawCommand : Ts3Command
+	{
+		public Ts3RawCommand(string raw) : base(null)
+		{
+			this.raw = raw;
+			this.cached = true;
+		}
+
+		public override Ts3Command AppendParameter(ICommandPart addParameter)
+		{
+			throw new InvalidOperationException("Raw commands cannot be extented");
+		}
+
+		public override string ToString()
+		{
+			return raw;
 		}
 	}
 }

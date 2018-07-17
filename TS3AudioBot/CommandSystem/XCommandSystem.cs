@@ -12,6 +12,7 @@ namespace TS3AudioBot.CommandSystem
 	using Ast;
 	using CommandResults;
 	using Commands;
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 
@@ -60,7 +61,7 @@ namespace TS3AudioBot.CommandSystem
 			case AstType.Value:
 				return new StringCommand(((AstValue)node).Value);
 			default:
-				throw new NotSupportedException("Seems like there's a new NodeType, this code should not be reached");
+				throw Util.UnhandledDefault(node.Type);
 			}
 		}
 

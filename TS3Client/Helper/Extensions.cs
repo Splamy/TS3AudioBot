@@ -47,25 +47,33 @@ namespace TS3Client.Helper
 			return R<IEnumerable<T>, CommandError>.OkR(result.Value.Notifications.Cast<T>());
 		}
 
-		internal static string NewString(in this ReadOnlySpan<char> span) => new string(span.ToArray());
+		internal static string NewString(in this ReadOnlySpan<char> span) => span.ToString();
 
 		// TODO add optional improvement when nc2.1 is available
 		internal static string NewUtf8String(this ReadOnlySpan<byte> span) => System.Text.Encoding.UTF8.GetString(span.ToArray());
 
-		internal static ReadOnlySpan<byte> TrimEnd(this ReadOnlySpan<byte> span, byte elem)
-		{
-			while (!span.IsEmpty && span[span.Length - 1] == elem)
-				span = span.Slice(0, span.Length - 1);
-			return span;
-		}
+		internal static ReadOnlySpan<byte> Trim(this ReadOnlySpan<byte> span, byte elem) => span.TrimStart(elem).TrimEnd(elem);
 
 		internal static ReadOnlySpan<byte> TrimStart(this ReadOnlySpan<byte> span, byte elem)
 		{
-			while (!span.IsEmpty && span[0] == elem)
-				span = span.Slice(1);
-			return span;
+			int start = 0;
+			for (; start < span.Length; start++)
+			{
+				if (span[start] != elem)
+					break;
+			}
+			return span.Slice(start);
 		}
 
-		internal static ReadOnlySpan<byte> Trim(this ReadOnlySpan<byte> span, byte elem) => span.TrimStart(elem).TrimEnd(elem);
+		internal static ReadOnlySpan<byte> TrimEnd(this ReadOnlySpan<byte> span, byte elem)
+		{
+			int end = span.Length - 1;
+			for (; end >= 0; end--)
+			{
+				if (span[end] != elem)
+					break;
+			}
+			return span.Slice(0, end + 1);
+		}
 	}
 }

@@ -38,7 +38,6 @@ namespace TS3AudioBot.Rights
 		// This variables save whether the current rights setup has at least one rule that
 		// need a certain additional information.
 		// This will save us from making unnecessary query calls.
-		// TODO:
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
 
