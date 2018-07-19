@@ -593,7 +593,7 @@ namespace TS3AudioBot
 			return new JsonArray<object>(jsonArr, string.Empty);
 		}
 
-		[Command("json api")]
+		[Command("json api", "_undocumented")]
 		public static JsonObject CommandJsonApi(CommandManager commandManager, BotManager botManager = null)
 		{
 			var bots = botManager?.GetBotInfolist() ?? Array.Empty<BotInfo>();
