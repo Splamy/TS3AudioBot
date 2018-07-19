@@ -49,6 +49,8 @@ namespace TS3Client.Helper
 
 		public static CommandError NoResultCommandError { get; } = CustomError("Result is empty");
 
+		public static CommandError ParserCommandError { get; } = CustomError("Result could not be parsed");
+
 		public static CommandError CustomError(string message) => new CommandError { Id = Ts3ErrorCode.custom_error, Message = message };
 	}
 

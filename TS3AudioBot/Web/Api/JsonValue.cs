@@ -17,24 +17,19 @@ namespace TS3AudioBot.Web.Api
 	public class JsonValue<T> : JsonValue
 	{
 		protected Func<T, string> AsString { get; }
-		protected Func<T, object> AsJson { get; }
 
 		new public T Value => (T)base.Value;
 
 		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }
-		public JsonValue(T value, Func<T, string> asString = null, Func<T, object> asJson = null) : base(value)
+		public JsonValue(T value, Func<T, string> asString = null) : base(value)
 		{
 			AsString = asString;
-			AsJson = asJson;
 		}
 
 		public override object GetSerializeObject()
 		{
-			if (AsJson != null)
-				return AsJson(Value);
-			else
-				return Value;
+			return Value;
 		}
 
 		public override string ToString()
@@ -82,6 +77,6 @@ namespace TS3AudioBot.Web.Api
 
 		public static JsonValue<T> Create<T>(T anon) => new JsonValue<T>(anon);
 		public static JsonValue<T> Create<T>(T anon, string msg) => new JsonValue<T>(anon, msg);
-		public static JsonValue<T> Create<T>(T anon, Func<T, string> asString = null, Func<T, object> asJson = null) => new JsonValue<T>(anon, asString, asJson);
+		public static JsonValue<T> Create<T>(T anon, Func<T, string> asString = null) => new JsonValue<T>(anon, asString);
 	}
 }

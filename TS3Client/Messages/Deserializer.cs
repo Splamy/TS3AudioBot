@@ -12,7 +12,6 @@ namespace TS3Client.Messages
 	using Helper;
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
 
 	public static class Deserializer
 	{
@@ -58,9 +57,9 @@ namespace TS3Client.Messages
 			if (!ParseKeyValueLine(arr[arr.Length - 1], line.Slice(pipes[pipes.Count - 1] + 1).Trim(AsciiSpace), arrItems, null))
 				return R.Err;
 
-			for (int i = 1; i < pipes.Count - 1; i++)
+			for (int i = 0; i < pipes.Count - 1; i++)
 			{
-				if (!ParseKeyValueLine(arr[i + 1], line.Slice(pipes[i], pipes[i + 1] - pipes[i]), null, null))
+				if (!ParseKeyValueLine(arr[i + 1], line.Slice(pipes[i] + 1, pipes[i + 1] - pipes[i] - 1), null, null))
 					return R.Err;
 			}
 

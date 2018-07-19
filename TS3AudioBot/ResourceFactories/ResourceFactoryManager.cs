@@ -270,7 +270,6 @@ namespace TS3AudioBot.ResourceFactories
 			allFacories.Clear();
 		}
 
-
 		private sealed class FactoryData : ICommandBag
 		{
 			private readonly FactoryCommand[] registeredCommands;
@@ -306,9 +305,9 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public void PropagiatePlay(PlayManager playManager, InvokerData invoker, string parameter)
+			public void PropagiatePlay(PlayManager playManager, InvokerData invoker, string url)
 			{
-				playManager.Play(invoker, parameter, audioType).UnwrapThrow();
+				playManager.Play(invoker, url, audioType).UnwrapThrow();
 			}
 		}
 
@@ -327,9 +326,9 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public void PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string parameter)
+			public void PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string url)
 			{
-				var playlist = factoryManager.LoadPlaylistFrom(parameter, factory).UnwrapThrow();
+				var playlist = factoryManager.LoadPlaylistFrom(url, factory).UnwrapThrow();
 
 				playlist.OwnerUid = invoker.ClientUid;
 				session.Set<PlaylistManager, Playlist>(playlist);

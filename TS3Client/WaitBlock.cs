@@ -12,7 +12,6 @@ namespace TS3Client
 	using Helper;
 	using Messages;
 	using System;
-	using System.Collections.Generic;
 	using System.Threading;
 	using System.Threading.Tasks;
 
@@ -46,7 +45,7 @@ namespace TS3Client
 			}
 		}
 
-		public R<IEnumerable<T>, CommandError> WaitForMessage<T>() where T : IResponse, new()
+		public R<T[], CommandError> WaitForMessage<T>() where T : IResponse, new()
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
@@ -55,11 +54,14 @@ namespace TS3Client
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
-			// TODO
-			return Deserializer.GenerateResponse<T>(commandLine.Value.Span).OkOr(Array.Empty<T>());
+			var result = Deserializer.GenerateResponse<T>(commandLine.Value.Span);
+			if (result.Ok)
+				return result.Value;
+			else
+				return Util.ParserCommandError;
 		}
 
-		public async Task<R<IEnumerable<T>, CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
+		public async Task<R<T[], CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
@@ -70,8 +72,11 @@ namespace TS3Client
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
-			// TODO
-			return Deserializer.GenerateResponse<T>(commandLine.Value.Span).OkOr(Array.Empty<T>());
+			var result = Deserializer.GenerateResponse<T>(commandLine.Value.Span);
+			if (result.Ok)
+				return result.Value;
+			else
+				return Util.ParserCommandError;
 		}
 
 		public R<LazyNotification, CommandError> WaitForNotification()

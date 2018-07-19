@@ -92,7 +92,7 @@ namespace TS3Client.Full
 		protected CmdR SendNoResponsed(Ts3Command command)
 			=> SendCommand<ResponseVoid>(command.ExpectsResponse(false));
 
-		public R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com) where T : IResponse, new()
+		public R<T[], CommandError> SendCommand<T>(Ts3Command com) where T : IResponse, new()
 		{
 			using (var wb = new WaitBlock(false))
 			{

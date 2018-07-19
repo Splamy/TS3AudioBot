@@ -242,7 +242,7 @@ namespace TS3AudioBot
 	public sealed class InvokerData
 	{
 		public string ClientUid { get; }
-		public ulong? DatabaseId { get; }
+		public ulong? DatabaseId { get; internal set; }
 		public ulong? ChannelId { get; }
 		public ushort? ClientId { get; }
 		public string NickName { get; }

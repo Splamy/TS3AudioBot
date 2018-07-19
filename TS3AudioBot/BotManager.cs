@@ -253,7 +253,7 @@ namespace TS3AudioBot
 				activeBots = null;
 			}
 
-			foreach (var bot in disposeBots)
+			foreach (var bot in disposeBots.Where(x => x != null))
 			{
 				StopBot(bot);
 			}

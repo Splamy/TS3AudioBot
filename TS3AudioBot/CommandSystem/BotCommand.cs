@@ -14,10 +14,12 @@ namespace TS3AudioBot.CommandSystem
 	using Localization;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
 
+	[DebuggerDisplay("{DebuggerDisplay, nq}")]
 	public class BotCommand : FunctionCommand
 	{
 		private readonly string helpLookupName;
@@ -46,6 +48,19 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
+		public string DebuggerDisplay
+		{
+			get
+			{
+				var strb = new StringBuilder();
+				strb.Append('!').Append(InvokeName);
+				strb.Append(" : ");
+				foreach (var param in UsageList)
+					strb.Append(param.UsageSyntax).Append('/');
+				return strb.ToString();
+			}
+		}
+
 		public object AsJsonObj
 		{
 			get
@@ -64,7 +79,7 @@ namespace TS3AudioBot.CommandSystem
 			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
 		}
 
-		public string GetHelp()
+		public override string ToString()
 		{
 			var strb = new StringBuilder();
 			strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description ?? strings.error_no_help ?? "<No help found>");
@@ -79,21 +94,12 @@ namespace TS3AudioBot.CommandSystem
 			return strb.ToString();
 		}
 
-		public override string ToString()
-		{
-			var strb = new StringBuilder();
-			strb.Append('!').Append(InvokeName);
-			strb.Append(" : ");
-			foreach (var param in UsageList)
-				strb.Append(param.UsageSyntax).Append('/');
-			return strb.ToString();
-		}
-
 		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			if (!info.HasRights(requiredRights))
-				throw new CommandException($"You cannot execute \"{InvokeName}\". You are missing the \"{RequiredRight}\" right.!", // LOC: TODO
+				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight),
 					CommandExceptionReason.MissingRights);
+
 			return base.Execute(info, arguments, returnTypes);
 		}
 
@@ -119,6 +125,8 @@ namespace TS3AudioBot.CommandSystem
 					select x.type.Name + (x.optional ? "?" : "")).ToArray();
 				Return = UnwrapReturnType(botCmd.CommandReturn).Name;
 			}
+
+			public override string ToString() => botCmd.ToString();
 		}
 	}
 

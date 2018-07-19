@@ -19,6 +19,7 @@ namespace TS3AudioBot
 	using Helper.Environment;
 	using History;
 	using Localization;
+	using Newtonsoft.Json.Linq;
 	using Playlists;
 	using Plugins;
 	using ResourceFactories;
@@ -49,8 +50,8 @@ namespace TS3AudioBot
 		// ReSharper disable UnusedMember.Global
 		[Command("add")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
-		public static void CommandAdd(PlayManager playManager, InvokerData invoker, string parameter)
-			=> playManager.Enqueue(invoker, parameter).UnwrapThrow();
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, string url)
+			=> playManager.Enqueue(invoker, url).UnwrapThrow();
 
 		[Command("api token")]
 		[Usage("[<duration>]", "Optionally specifies a duration this key is valid in hours.")]
@@ -172,7 +173,7 @@ namespace TS3AudioBot
 		public static void CommandBotName(Ts3Client ts3Client, string name) => ts3Client.ChangeName(name).UnwrapThrow();
 
 		[Command("bot badges")]
-		public static void CommandBotBadges(Ts3Client ts3Client, string badgesString) => ts3Client.ChangeBadges(badgesString).UnwrapThrow();
+		public static void CommandBotBadges(Ts3Client ts3Client, string badges) => ts3Client.ChangeBadges(badges).UnwrapThrow();
 
 		[Command("bot save")]
 		public static void CommandBotSetup(Bot bot, ConfBot botConfig, string name)
@@ -286,9 +287,9 @@ namespace TS3AudioBot
 
 		[Command("help")]
 		[Usage("[<command>]", "Any currently accepted command")]
-		public static JsonObject CommandHelp(CommandManager commandManager, CallerInfo caller, Algorithm.Filter filter = null, params string[] parameter)
+		public static JsonObject CommandHelp(CommandManager commandManager, CallerInfo caller, Algorithm.Filter filter = null, params string[] command)
 		{
-			if (parameter.Length == 0 && !caller.ApiCall)
+			if (command.Length == 0 && !caller.ApiCall)
 			{
 				var botComList = commandManager.AllCommands.Select(c => c.InvokeName).OrderBy(x => x).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
 				return new JsonArray<string>(botComList, bcl =>
@@ -305,35 +306,35 @@ namespace TS3AudioBot
 
 			CommandGroup group = commandManager.CommandSystem.RootCommand;
 			ICommand target = group;
-			for (int i = 0; i < parameter.Length; i++)
+			for (int i = 0; i < command.Length; i++)
 			{
 				filter = filter ?? Algorithm.Filter.DefaultFilter;
-				var possibilities = filter.Current.Filter(group.Commands, parameter[i]).ToList();
+				var possibilities = filter.Current.Filter(group.Commands, command[i]).ToList();
 				if (possibilities.Count <= 0)
 					throw new CommandException(strings.cmd_help_error_no_matching_command, CommandExceptionReason.CommandError);
 				if (possibilities.Count > 1)
 					throw new CommandException(string.Format(strings.cmd_help_error_ambiguous_command, string.Join(", ", possibilities.Select(kvp => kvp.Key))), CommandExceptionReason.CommandError);
 
 				target = possibilities[0].Value;
-				if (i < parameter.Length - 1)
+				if (i < command.Length - 1)
 				{
 					group = target as CommandGroup;
 					if (group == null)
-						throw new CommandException(string.Format(strings.cmd_help_error_no_further_subfunctions, string.Join(" ", parameter, 0, i)), CommandExceptionReason.CommandError);
+						throw new CommandException(string.Format(strings.cmd_help_error_no_further_subfunctions, string.Join(" ", command, 0, i)), CommandExceptionReason.CommandError);
 				}
 			}
 
 			switch (target)
 			{
 			case BotCommand targetB:
-				return new JsonValue<BotCommand>(targetB, cmd => cmd?.GetHelp(), cmd => cmd?.AsJsonObj); // check if '?' is necessary
+				return new JsonValue<object>(targetB.AsJsonObj);
 			case CommandGroup targetCg:
 				var subList = targetCg.Commands.Select(g => g.Key).ToArray();
 				return new JsonArray<string>(subList, string.Format(strings.cmd_help_info_contains_subfunctions, string.Join(", ", subList)));
 			case OverloadedFunctionCommand targetOfc:
 				var strb = new StringBuilder();
 				foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
-					strb.Append(botCom.GetHelp());
+					strb.Append(botCom);
 				return new JsonValue<string>(strb.ToString());
 			default:
 				throw new CommandException(strings.cmd_help_error_unknown_error, CommandExceptionReason.CommandError);
@@ -592,9 +593,17 @@ namespace TS3AudioBot
 			return new JsonArray<object>(jsonArr, string.Empty);
 		}
 
+		[Command("json api")]
+		public static JsonObject CommandJsonApi(CommandManager commandManager, BotManager botManager = null)
+		{
+			var bots = botManager?.GetBotInfolist() ?? Array.Empty<BotInfo>();
+			var api = OpenApiGenerator.Generate(commandManager, bots);
+			return new JsonValue<JObject>(api, string.Empty);
+		}
+
 		[Command("kickme")]
 		[Usage("[far]", "Optional attribute for the extra punch strength")]
-		public static void CommandKickme(Ts3Client ts3Client, InvokerData invoker, CallerInfo caller, string parameter = null)
+		public static void CommandKickme(Ts3Client ts3Client, InvokerData invoker, CallerInfo caller, string special = null)
 		{
 			if (caller.ApiCall)
 				throw new CommandException(strings.error_not_available_from_api, CommandExceptionReason.NotSupported);
@@ -602,9 +611,9 @@ namespace TS3AudioBot
 			if (invoker.ClientId.HasValue)
 			{
 				E<LocalStr> result = R.Ok;
-				if (string.IsNullOrEmpty(parameter) || parameter == "near")
+				if (string.IsNullOrEmpty(special) || special == "near")
 					result = ts3Client.KickClientFromChannel(invoker.ClientId.Value);
-				else if (parameter == "far")
+				else if (special == "far")
 					result = ts3Client.KickClientFromServer(invoker.ClientId.Value);
 				if (!result.Ok)
 					throw new CommandException(strings.cmd_kickme_missing_permission, CommandExceptionReason.CommandError);
@@ -899,14 +908,13 @@ namespace TS3AudioBot
 		public static void CommandPause(Bot bot) => bot.PlayerConnection.Paused = true;
 
 		[Command("play")]
+		public static void CommandPlay(IPlayerConnection playerConnection)
+			=> playerConnection.Paused = false;
+
+		[Command("play")]
 		[Usage("<link>", "Youtube, Soundcloud, local path or file link")]
-		public static void CommandPlay(IPlayerConnection playerConnection, PlayManager playManager, InvokerData invoker, string parameter = null)
-		{
-			if (string.IsNullOrEmpty(parameter))
-				playerConnection.Paused = false;
-			else
-				playManager.Play(invoker, parameter).UnwrapThrow();
-		}
+		public static void CommandPlay(PlayManager playManager, InvokerData invoker, string url)
+			=> playManager.Play(invoker, url).UnwrapThrow();
 
 		[Command("plugin list")]
 		public static JsonArray<PluginStatusInfo> CommandPluginList(PluginManager pluginManager, Bot bot = null)
@@ -1020,9 +1028,9 @@ namespace TS3AudioBot
 		public static void CommandRepeatOff(IPlayerConnection playerConnection) => playerConnection.Repeated = false;
 
 		[Command("rights can")]
-		public static JsonArray<string> CommandRightsCan(RightsManager rightsManager, Ts3Client ts3Client, CallerInfo caller, Bot bot = null, InvokerData invoker = null, params string[] rights)
+		public static JsonArray<string> CommandRightsCan(ExecutionInformation info, RightsManager rightsManager, params string[] rights)
 		{
-			var result = rightsManager.GetRightsSubset(caller, invoker, ts3Client, bot, rights);
+			var result = rightsManager.GetRightsSubset(info, rights);
 			return new JsonArray<string>(result, result.Length > 0 ? string.Join(", ", result) : strings.info_empty);
 		}
 
@@ -1061,13 +1069,13 @@ namespace TS3AudioBot
 		[Command("seek")]
 		[Usage("<sec>", "Time in seconds")]
 		[Usage("<min:sec>", "Time in Minutes:Seconds")]
-		public static void CommandSeek(IPlayerConnection playerConnection, string parameter)
+		public static void CommandSeek(IPlayerConnection playerConnection, string position)
 		{
 			TimeSpan span;
 			bool parsed = false;
-			if (parameter.Contains(":"))
+			if (position.Contains(":"))
 			{
-				string[] splittime = parameter.Split(':');
+				string[] splittime = position.Split(':');
 
 				if (splittime.Length == 2
 					&& int.TryParse(splittime[0], out int minutes)
@@ -1083,7 +1091,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				parsed = int.TryParse(parameter, out int seconds);
+				parsed = int.TryParse(position, out int seconds);
 				span = TimeSpan.FromSeconds(seconds);
 			}
 
@@ -1103,7 +1111,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings get")]
-		public static JsonValue<ConfigPart> CommandSettingsGet(ConfBot config, string path)
+		public static ConfigPart CommandSettingsGet(ConfBot config, string path)
 			=> SettingsGet(config, path);
 
 		[Command("settings set")]
@@ -1118,7 +1126,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings bot get", "cmd_settings_get_help")]
-		public static JsonValue<ConfigPart> CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path)
+		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path)
 		{
 			using (var botlock = bots.GetBotLock(bot))
 			{
@@ -1157,7 +1165,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings global get")]
-		public static JsonValue<ConfigPart> CommandSettingsGlobalGet(ConfRoot config, string path)
+		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path)
 			=> SettingsGet(config, path);
 
 		[Command("settings global set")]
@@ -1171,11 +1179,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private static JsonValue<ConfigPart> SettingsGet(ConfigPart config, string path)
-		{
-			var result = config.ByPathAsArray(path).SettingsGetSingle();
-			return new JsonValue<ConfigPart>(result);
-		}
+		private static ConfigPart SettingsGet(ConfigPart config, string path) => config.ByPathAsArray(path).SettingsGetSingle();
 
 		private static void SettingsSet(ConfigPart config, string path, string value)
 		{
@@ -1215,7 +1219,7 @@ namespace TS3AudioBot
 		[Command("settings help")]
 		public static string CommandSettingsHelp(ConfRoot config, string path)
 		{
-			var part = SettingsGet(config, path).Value;
+			var part = SettingsGet(config, path);
 			return string.IsNullOrEmpty(part.Documentation) ? strings.info_empty : part.Documentation;
 		}
 
@@ -1350,22 +1354,22 @@ namespace TS3AudioBot
 		[Command("volume")]
 		[Usage("<level>", "A new volume level between 0 and 100.")]
 		[Usage("+/-<level>", "Adds or subtracts a value from the current volume.")]
-		public static JsonValue<float> CommandVolume(ExecutionInformation info, IPlayerConnection playerConnection, CallerInfo caller, ConfBot config, UserSession session = null, string parameter = null)
+		public static JsonValue<float> CommandVolume(ExecutionInformation info, IPlayerConnection playerConnection, CallerInfo caller, ConfBot config, UserSession session = null, string volume = null)
 		{
-			if (string.IsNullOrEmpty(parameter))
+			if (string.IsNullOrEmpty(volume))
 				return new JsonValue<float>(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume));
 
-			bool relPos = parameter.StartsWith("+", StringComparison.Ordinal);
-			bool relNeg = parameter.StartsWith("-", StringComparison.Ordinal);
-			string numberString = (relPos || relNeg) ? parameter.Remove(0, 1) : parameter;
+			bool relPos = volume.StartsWith("+", StringComparison.Ordinal);
+			bool relNeg = volume.StartsWith("-", StringComparison.Ordinal);
+			string numberString = (relPos || relNeg) ? volume.Remove(0, 1) : volume;
 
-			if (!float.TryParse(numberString, NumberStyles.Float, CultureInfo.InvariantCulture, out var volume))
+			if (!float.TryParse(numberString, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedVolume))
 				throw new CommandException(strings.cmd_volume_parse_error, CommandExceptionReason.CommandError);
 
 			float newVolume;
-			if (relPos) newVolume = playerConnection.Volume + volume;
-			else if (relNeg) newVolume = playerConnection.Volume - volume;
-			else newVolume = volume;
+			if (relPos) newVolume = playerConnection.Volume + parsedVolume;
+			else if (relNeg) newVolume = playerConnection.Volume - parsedVolume;
+			else newVolume = parsedVolume;
 
 			if (newVolume < 0 || newVolume > AudioValues.MaxVolume)
 				throw new CommandException(string.Format(strings.cmd_volume_is_limited, 0, AudioValues.MaxVolume), CommandExceptionReason.CommandError);
@@ -1489,10 +1493,7 @@ namespace TS3AudioBot
 				return true;
 			if (!info.TryGet<RightsManager>(out var rightsManager))
 				return false;
-			if (!info.TryGet<InvokerData>(out var invoker)) invoker = null;
-			if (!info.TryGet<Ts3Client>(out var ts)) ts = null;
-			if (!info.TryGet<Bot>(out var bot)) bot = null;
-			return rightsManager.HasAllRights(caller, invoker, ts, bot, rights);
+			return rightsManager.HasAllRights(info, rights);
 		}
 
 		public static E<LocalStr> Write(this ExecutionInformation info, string message)

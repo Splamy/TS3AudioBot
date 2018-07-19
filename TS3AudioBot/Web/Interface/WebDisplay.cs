@@ -60,6 +60,7 @@ namespace TS3AudioBot.Web.Interface
 			var dir = new FolderProvider(baseDir);
 			map.Map("/", dir);
 			map.Map("/site/", dir);
+			map.Map("/openapi/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "openapi"))));
 
 			Site404 = map.TryGetSite(new Uri("http://localhost/404.html"));
 			map.Map("/", map.TryGetSite(new Uri("http://localhost/index.html")));

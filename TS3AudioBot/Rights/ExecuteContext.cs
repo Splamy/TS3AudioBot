@@ -16,7 +16,7 @@ namespace TS3AudioBot.Rights
 	internal class ExecuteContext
 	{
 		public string Host { get; set; }
-		public ulong[] AvailableGroups { get; set; } = Array.Empty<ulong>();
+		public ulong[] ServerGroups { get; set; } = Array.Empty<ulong>();
 		public ulong? ChannelGroupId { get; set; }
 		public string ClientUid { get; set; }
 		public bool IsApi { get; set; }

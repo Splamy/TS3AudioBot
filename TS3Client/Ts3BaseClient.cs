@@ -14,7 +14,6 @@ namespace TS3Client
 	using Messages;
 	using System;
 	using System.Collections.Generic;
-	using System.Diagnostics;
 	using System.Linq;
 	using System.Net;
 	using ChannelIdT = System.UInt64;
@@ -62,21 +61,21 @@ namespace TS3Client
 
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
-		public R<IEnumerable<ResponseDictionary>, CommandError> Send(string command)
+		public R<ResponseDictionary[], CommandError> Send(string command)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command));
 
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
 		/// <param name="parameter">The parameters to be added to this command.
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
-		public R<IEnumerable<ResponseDictionary>, CommandError> Send(string command, params ICommandPart[] parameter)
+		public R<ResponseDictionary[], CommandError> Send(string command, params ICommandPart[] parameter)
 			=> SendCommand<ResponseDictionary>(new Ts3Command(command, parameter.ToList()));
 
 		/// <summary>Creates a new command.</summary>
 		/// <typeparam name="T">The type to deserialize the response to.</typeparam>
 		/// <param name="command">The command name.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		public R<IEnumerable<T>, CommandError> Send<T>(string command) where T : IResponse, new()
+		public R<T[], CommandError> Send<T>(string command) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command));
 
 		/// <summary>Creates a new command.</summary>
@@ -84,7 +83,7 @@ namespace TS3Client
 		/// <param name="command">The command name.</param>
 		/// <param name="parameter">The parameters to be added to this command.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		public R<IEnumerable<T>, CommandError> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
+		public R<T[], CommandError> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
 			=> Send<T>(command, parameter.ToList());
 
 		/// <summary>Creates a new command.</summary>
@@ -92,7 +91,7 @@ namespace TS3Client
 		/// <param name="command">The command name.</param>
 		/// <param name="parameter">The parameters to be added to this command.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		public R<IEnumerable<T>, CommandError> Send<T>(string command, List<ICommandPart> parameter) where T : IResponse, new()
+		public R<T[], CommandError> Send<T>(string command, List<ICommandPart> parameter) where T : IResponse, new()
 			=> SendCommand<T>(new Ts3Command(command, parameter));
 
 		protected CmdR SendNoResponsed(Ts3Command command)
@@ -102,7 +101,7 @@ namespace TS3Client
 		/// <typeparam name="T">The type to deserialize the response to. Use <see cref="ResponseDictionary"/> for unknown response data.</typeparam>
 		/// <param name="com">The raw command to send.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		public abstract R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com) where T : IResponse, new();
+		public abstract R<T[], CommandError> SendCommand<T>(Ts3Command com) where T : IResponse, new();
 
 		#endregion
 
@@ -170,7 +169,7 @@ namespace TS3Client
 		/// <summary>Displays a list of clients online on a virtual server including their ID, nickname, status flags, etc.
 		/// The output can be modified using several command options.
 		/// Please note that the output will only contain clients which are currently in channels you're able to subscribe to.</summary>
-		public R<IEnumerable<ClientData>, CommandError> ClientList(ClientListOptions options = 0)
+		public R<ClientData[], CommandError> ClientList(ClientListOptions options = 0)
 			=> Send<ClientData>("clientlist",
 			new CommandOption(options));
 
@@ -289,7 +288,7 @@ namespace TS3Client
 		public abstract R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null);
 
 		/// <summary>Displays all server groups the client specified with <paramref name="clDbId"/> is currently residing in.</summary>
-		public abstract R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);
+		public abstract R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);
 
 		public abstract R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume);
@@ -297,15 +296,15 @@ namespace TS3Client
 		public abstract R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek);
 
-		public abstract R<IEnumerable<FileTransfer>, CommandError> FileTransferList();
+		public abstract R<FileTransfer[], CommandError> FileTransferList();
 
-		public abstract R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "");
+		public abstract R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "");
 
-		public abstract R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
+		public abstract R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
 
 		public abstract R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid);
 
-		public abstract R<IEnumerable<ClientIds>, CommandError> GetClientIds(Uid clientUid);
+		public abstract R<ClientIds[], CommandError> GetClientIds(Uid clientUid);
 		#endregion
 	}
 }

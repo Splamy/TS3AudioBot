@@ -186,7 +186,7 @@ namespace TS3AudioBot
 			else
 			{
 				var clientInfoResult = ClientConnection.GetClientInfoById(textMessage.InvokerId);
-				if (clientResult.Ok)
+				if (clientInfoResult.Ok)
 				{
 					channelId = clientInfoResult.Value.ChannelId;
 					databaseId = clientInfoResult.Value.DatabaseId;
@@ -252,14 +252,14 @@ namespace TS3AudioBot
 				{
 					setString = QuizMode
 						? strings.info_botstatus_quiztime
-						: (PlayManager.CurrentPlayData.ResourceData.ResourceTitle ?? "");
+						: (PlayManager.CurrentPlayData.ResourceData.ResourceTitle);
 				}
 				else
 				{
 					setString = strings.info_botstatus_sleeping;
 				}
 
-				return ClientConnection.ChangeDescription(setString);
+				return ClientConnection.ChangeDescription(setString ?? "");
 			}
 		}
 

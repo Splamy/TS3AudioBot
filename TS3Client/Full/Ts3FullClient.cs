@@ -331,7 +331,7 @@ namespace TS3Client.Full
 		/// if the client hangs after a special command (<see cref="SendCommand{T}"/> will return <code>null</code> instead).</para></param>
 		/// <returns>Returns <code>R(OK)</code> with an enumeration of the deserialized and split up in <see cref="T"/> objects data.
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
-		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com)
+		public override R<T[], CommandError> SendCommand<T>(Ts3Command com)
 		{
 			using (var wb = new WaitBlock(false))
 			{
@@ -384,7 +384,7 @@ namespace TS3Client.Full
 			return R.Ok;
 		}
 
-		public async Task<R<IEnumerable<T>, CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
+		public async Task<R<T[], CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
 		{
 			using (var wb = new WaitBlock(true))
 			{
@@ -583,19 +583,10 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public override R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
-		{
-			var result = SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
+		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
+			=> SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
 				new CommandParameter("cldbid", clDbId) }),
-				NotificationType.ClientServerGroup);
-			if (!result.Ok)
-				return result.Error;
-
-			return R<IEnumerable<ClientServerGroup>, CommandError>.OkR(
-				result.Value.Notifications
-				.Cast<ClientServerGroup>()
-				.Where(x => x.ClientDbId == clDbId));
-		}
+				NotificationType.ClientServerGroup).UnwrapNotification<ClientServerGroup>();
 
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
@@ -644,18 +635,18 @@ namespace TS3Client.Full
 			}
 		}
 
-		public override R<IEnumerable<FileTransfer>, CommandError> FileTransferList()
+		public override R<FileTransfer[], CommandError> FileTransferList()
 			=> SendNotifyCommand(new Ts3Command("ftlist"),
 				NotificationType.FileTransfer).UnwrapNotification<FileTransfer>();
 
-		public override R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+		public override R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
 			=> SendNotifyCommand(new Ts3Command("ftgetfilelist", new List<ICommandPart>() {
 				new CommandParameter("cid", channelId),
 				new CommandParameter("path", path),
 				new CommandParameter("cpw", channelPassword) }),
 				NotificationType.FileList).UnwrapNotification<FileList>();
 
-		public override R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> SendNotifyCommand(new Ts3Command("ftgetfileinfo", new List<ICommandPart>() {
 				new CommandParameter("cid", channelId),
 				new CommandParameter("cpw", channelPassword),
@@ -676,18 +667,10 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public override R<IEnumerable<ClientIds>, CommandError> GetClientIds(Uid clientUid)
-		{
-			var result = SendNotifyCommand(new Ts3Command("clientgetids", new List<ICommandPart>() {
+		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
+			=> SendNotifyCommand(new Ts3Command("clientgetids", new List<ICommandPart>() {
 				new CommandParameter("cluid", clientUid) }),
-				NotificationType.ClientIds);
-			if (!result.Ok)
-				return result.Error;
-			return R<IEnumerable<ClientIds>, CommandError>.OkR(
-				result.Value.Notifications
-				.Cast<ClientIds>()
-				.Where(x => x.ClientUid == clientUid));
-		}
+				NotificationType.ClientIds).UnwrapNotification<ClientIds>();
 
 		#endregion
 

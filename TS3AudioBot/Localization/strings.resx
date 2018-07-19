@@ -900,4 +900,7 @@ with the id {1}?</value>
   <data name="cmd_song_position_help" xml:space="preserve">
     <value>Gets the length and position of the current track.</value>
   </data>
+  <data name="error_missing_right" xml:space="preserve">
+    <value>You cannot execute '{0}'. You are missing the '{1}' right!</value>
+  </data>
 </root>

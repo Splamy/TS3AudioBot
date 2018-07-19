@@ -1819,6 +1819,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to You cannot execute &apos;{0}&apos;. You are missing the &apos;{1}&apos; right!.
+        /// </summary>
+        internal static string error_missing_right {
+            get {
+                return ResourceManager.GetString("error_missing_right", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Missing session context..
         /// </summary>
         internal static string error_missing_session_context {

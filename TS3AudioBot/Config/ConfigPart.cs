@@ -50,6 +50,8 @@ namespace TS3AudioBot.Config
 				tomlObject.AddComments(docs);
 		}
 
+		public override string ToString() => this.ToJson();
+
 		// *** Path accessor ***
 
 		public IEnumerable<ConfigPart> ByPath(string path)

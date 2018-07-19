@@ -193,7 +193,7 @@ namespace TS3Client.Query
 			}
 		}
 
-		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com) // Synchronous
+		public override R<T[], CommandError> SendCommand<T>(Ts3Command com) // Synchronous
 		{
 			using (var wb = new WaitBlock(false))
 			{
@@ -251,7 +251,7 @@ namespace TS3Client.Query
 				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }
 				: new List<ICommandPart> { new CommandParameter("name", name) }).WrapSingle();
 
-		public override R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ulong clDbId)
+		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
 			=> Send<ClientServerGroup>("servergroupsbyclientid",
 			new CommandParameter("cldbid", clDbId));
 
@@ -275,16 +275,16 @@ namespace TS3Client.Query
 			new CommandParameter("clientftfid", clientTransferId),
 			new CommandParameter("seekpos", seek)).WrapSingle();
 
-		public override R<IEnumerable<FileTransfer>, CommandError> FileTransferList()
+		public override R<FileTransfer[], CommandError> FileTransferList()
 			=> Send<FileTransfer>("ftlist");
 
-		public override R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+		public override R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
 			=> Send<FileList>("ftgetfilelist",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("path", path),
 			new CommandParameter("cpw", channelPassword));
 
-		public override R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> Send<FileInfoTs>("ftgetfileinfo",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("cpw", channelPassword),
@@ -294,7 +294,7 @@ namespace TS3Client.Query
 			=> Send<ClientDbIdFromUid>("clientgetdbidfromuid",
 			new CommandParameter("cluid", clientUid)).WrapSingle();
 
-		public override R<IEnumerable<ClientIds>, CommandError> GetClientIds(Uid clientUid)
+		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
 			=> Send<ClientIds>("clientgetids",
 			new CommandParameter("cluid", clientUid));
 
