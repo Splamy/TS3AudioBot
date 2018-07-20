@@ -58,7 +58,7 @@ namespace TS3AudioBot.Web.Api
 					new JArray(
 						new JObject(
 							new JProperty("url", "/api"),
-							new JProperty("description", "Your Ts3AudioBot sever")
+							new JProperty("description", "Your Ts3AudioBot server.")
 						)
 					).Chain(x =>
 					{

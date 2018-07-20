@@ -74,7 +74,7 @@ namespace TS3AudioBot.ResourceFactories
 				 || uriResult.Scheme == Uri.UriSchemeFtp)
 					return ValidateWeb(uriResult);
 				if (uriResult.Scheme == Uri.UriSchemeFile)
-					return ValidateFile(uriResult.OriginalString);
+					return ValidateFile(uri);
 
 				return new LocalStr(strings.error_media_invalid_uri);
 			}
@@ -107,6 +107,7 @@ namespace TS3AudioBot.ResourceFactories
 		private R<ResData, LocalStr> ValidateFile(string path)
 		{
 			var foundPath = FindFile(path);
+			Log.Trace("FindFile check result: '{0}'", foundPath);
 			if (foundPath == null)
 				return new LocalStr(strings.error_media_file_not_found);
 
@@ -128,11 +129,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private Uri FindFile(string path)
 		{
-			if (!Uri.TryCreate(path, UriKind.RelativeOrAbsolute, out var uri))
-				return null;
-
-			if (uri.IsAbsoluteUri)
-				return File.Exists(uri.AbsolutePath) || Directory.Exists(uri.AbsolutePath) ? uri : null;
+			Log.Trace("Finding media path: '{0}'", path);
 
 			try
 			{
@@ -145,7 +142,9 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			catch (Exception ex)
 			when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException)
-			{ }
+			{
+				Log.Trace(ex, "Couldn't load resource");
+			}
 			return null;
 		}
 
