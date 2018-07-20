@@ -152,7 +152,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 			// Check if we were able to set enough arguments
 			if (takenArguments < Math.Min(parameters.Length, RequiredParameters) && !returnTypes.Contains(CommandResultType.Command))
-				throw new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
+				return new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
 
 			return parameters;
 		}
