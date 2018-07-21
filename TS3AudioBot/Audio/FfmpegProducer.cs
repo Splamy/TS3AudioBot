@@ -23,7 +23,7 @@ namespace TS3AudioBot.Audio
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex FindDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
 		private const string PreLinkConf = "-hide_banner -nostats -i \"";
-		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
+		private const string PostLinkConf = "\" -ac 2 -ar 44100 -f s16le -acodec pcm_s16le pipe:1";
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 		private readonly object ffmpegLock = new object();
 
