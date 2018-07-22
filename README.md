@@ -83,7 +83,7 @@ Download the git repository with `git clone --recurse-submodules https://github.
 #### Linux
 1. Get the latest mono version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-devel`
 1. See if you have NuGet by just executing `nuget`.
-   If not, get it with `sudo apt install nuget` (or the packet manager or your distribution),
+   If not, get it with `sudo apt install nuget msbuild` (or the packet manager or your distribution),
    or manually with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
 1. Go into the directory of the repository with `cd TS3AudioBot`
 1. Execute `nuget restore` or `mono ../nuget.exe restore` to download all dependencies
