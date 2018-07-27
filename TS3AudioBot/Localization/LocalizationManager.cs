@@ -18,6 +18,7 @@ namespace TS3AudioBot.Localization
 
 	public static class LocalizationManager
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly HashSet<string> loadedLanguage = new HashSet<string>();
 
 		static LocalizationManager()
@@ -63,14 +64,16 @@ namespace TS3AudioBot.Localization
 			bool loadOk = false;
 			while (currentResolveCulture != CultureInfo.InvariantCulture)
 			{
+				string tryPath = Path.Combine(currentResolveCulture.Name, "TS3AudioBot.resources.dll");
 				try
 				{
-					Assembly.LoadFrom(Path.Combine(currentResolveCulture.Name, "TS3AudioBot.resources.dll"));
+					Assembly.LoadFrom(tryPath);
 					loadOk = true;
 					break;
 				}
-				catch
+				catch (Exception ex)
 				{
+					Log.Trace(ex, "Failed trying to load language from '{0}'", tryPath);
 					currentResolveCulture = currentResolveCulture.Parent;
 				}
 			}

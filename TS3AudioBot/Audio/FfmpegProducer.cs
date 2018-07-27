@@ -16,6 +16,7 @@ namespace TS3AudioBot.Audio
 	using System.Diagnostics;
 	using System.Globalization;
 	using System.Text.RegularExpressions;
+	using System.Threading;
 	using TS3Client.Audio;
 
 	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
@@ -25,17 +26,13 @@ namespace TS3AudioBot.Audio
 		private const string PreLinkConf = "-hide_banner -nostats -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
-		private readonly object ffmpegLock = new object();
 
 		private readonly ConfToolsFfmpeg config;
 
 		public event EventHandler OnSongEnd;
 
-		private readonly PreciseAudioTimer audioTimer;
 		private string lastLink;
-		private Process ffmpegProcess;
-		private TimeSpan? parsedSongLength;
-		private bool hasTriedToReconnectAudio;
+		private ActiveFfmpegInstance ffmpegInstance;
 
 		public int SampleRate { get; } = 48000;
 		public int Channels { get; } = 2;
@@ -44,14 +41,12 @@ namespace TS3AudioBot.Audio
 		public FfmpegProducer(ConfToolsFfmpeg config)
 		{
 			this.config = config;
-			audioTimer = new PreciseAudioTimer(this);
 		}
 
-		public E<string> AudioStart(string url) => StartFfmpegProcess(url);
+		public E<string> AudioStart(string url) => StartFfmpegProcess(url, TimeSpan.Zero);
 
 		public E<string> AudioStop()
 		{
-			audioTimer.Stop();
 			StopFfmpegProcess();
 			return R.Ok;
 		}
@@ -60,17 +55,8 @@ namespace TS3AudioBot.Audio
 
 		public TimeSpan Position
 		{
-			get => audioTimer.SongPosition;
-			set
-			{
-				if (value < TimeSpan.Zero || value > Length)
-					throw new ArgumentOutOfRangeException(nameof(value));
-				AudioStop();
-				StartFfmpegProcess(lastLink,
-					$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}",
-					$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}");
-				audioTimer.SongPositionOffset = value;
-			}
+			get => ffmpegInstance?.AudioTimer.SongPosition ?? TimeSpan.Zero;
+			set => SetPosition(value);
 		}
 
 		public int Read(byte[] buffer, int offset, int length, out Meta meta)
@@ -79,39 +65,48 @@ namespace TS3AudioBot.Audio
 			bool triggerEndSafe = false;
 			int read;
 
-			lock (ffmpegLock)
-			{
-				if (ffmpegProcess == null)
-					return 0;
+			var instance = ffmpegInstance;
 
-				read = ffmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
-				if (read == 0)
+			if (instance == null)
+				return 0;
+
+			read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
+
+			if (read == 0)
+			{
+				// check for premature connection drop
+				if (instance.FfmpegProcess.HasExited && !instance.hasTriedToReconnectAudio)
 				{
-					// check for premature connection drop
-					if (ffmpegProcess.HasExited && !hasTriedToReconnectAudio)
+					var expectedStopLength = GetCurrentSongLength();
+					Log.Trace("Expected song length {0}", expectedStopLength);
+					if (expectedStopLength != TimeSpan.Zero)
 					{
-						var expectedStopLength = GetCurrentSongLength();
-						Log.Trace("Expected song length {0}", expectedStopLength);
-						if (expectedStopLength != TimeSpan.Zero)
+						var actualStopPosition = instance.AudioTimer.SongPosition;
+						Log.Trace("Actual song position {0}", actualStopPosition);
+						if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
 						{
-							var actualStopPosition = audioTimer.SongPosition;
-							Log.Trace("Actual song position {0}", actualStopPosition);
-							if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
+							Log.Debug("Connection to song lost, retrying at {0}", actualStopPosition);
+							instance.hasTriedToReconnectAudio = true;
+							var newInstance = SetPosition(actualStopPosition);
+							if (newInstance.Ok)
 							{
-								Log.Debug("Connection to song lost, retrying at {0}", actualStopPosition);
-								hasTriedToReconnectAudio = true;
-								Position = actualStopPosition;
+								newInstance.Value.hasTriedToReconnectAudio = true;
 								return 0;
+							}
+							else
+							{
+								Log.Debug("Retry failed {0}", newInstance.Error);
+								triggerEndSafe = true;
 							}
 						}
 					}
+				}
 
-					if (ffmpegProcess.HasExited)
-					{
-						Log.Trace("Ffmpeg has exited with {0}", ffmpegProcess.ExitCode);
-						AudioStop();
-						triggerEndSafe = true;
-					}
+				if (instance.FfmpegProcess.HasExited)
+				{
+					Log.Trace("Ffmpeg has exited with {0}", instance.FfmpegProcess.ExitCode);
+					AudioStop();
+					triggerEndSafe = true;
 				}
 			}
 
@@ -121,21 +116,30 @@ namespace TS3AudioBot.Audio
 				return 0;
 			}
 
-			hasTriedToReconnectAudio = false;
-			audioTimer.PushBytes(read);
+			instance.hasTriedToReconnectAudio = false;
+			instance.AudioTimer.PushBytes(read);
 			return read;
 		}
 
-		public E<string> StartFfmpegProcess(string url, string extraPreParam = null, string extraPostParam = null)
+		private R<ActiveFfmpegInstance, string> SetPosition(TimeSpan value)
+		{
+			if (value < TimeSpan.Zero)
+				throw new ArgumentOutOfRangeException(nameof(value));
+			return StartFfmpegProcess(lastLink, value,
+				$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}",
+				$"-ss {value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}");
+		}
+
+		private R<ActiveFfmpegInstance, string> StartFfmpegProcess(string url, TimeSpan offset, string extraPreParam = null, string extraPostParam = null)
 		{
 			Log.Trace("Start request {0}", url);
 			try
 			{
-				lock (ffmpegLock)
-				{
-					StopFfmpegProcess();
+				StopFfmpegProcess();
 
-					ffmpegProcess = new Process
+				var newInstance = new ActiveFfmpegInstance()
+				{
+					FfmpegProcess = new Process
 					{
 						StartInfo = new ProcessStartInfo
 						{
@@ -148,83 +152,107 @@ namespace TS3AudioBot.Audio
 							CreateNoWindow = true,
 						},
 						EnableRaisingEvents = true,
-					};
-					Log.Trace("Starting with {0}", ffmpegProcess.StartInfo.Arguments);
-					ffmpegProcess.ErrorDataReceived += FfmpegProcess_ErrorDataReceived;
-					ffmpegProcess.Start();
-					ffmpegProcess.BeginErrorReadLine();
+					},
+					AudioTimer = new PreciseAudioTimer(this)
+					{
+						SongPositionOffset = offset,
+					}
+				};
 
-					lastLink = url;
-					parsedSongLength = null;
+				Log.Trace("Starting with {0}", newInstance.FfmpegProcess.StartInfo.Arguments);
+				newInstance.FfmpegProcess.ErrorDataReceived += newInstance.FfmpegProcess_ErrorDataReceived;
+				newInstance.FfmpegProcess.Start();
+				newInstance.FfmpegProcess.BeginErrorReadLine();
 
-					audioTimer.SongPositionOffset = TimeSpan.Zero;
-					audioTimer.Start();
-					return R.Ok;
-				}
+				lastLink = url;
+
+				newInstance.AudioTimer.Start();
+
+				var oldInstance = Interlocked.Exchange(ref ffmpegInstance, newInstance);
+				oldInstance?.Close();
+
+				return newInstance;
 			}
-			catch (Win32Exception ex) { return $"Ffmpeg could not be found ({ex.Message})"; }
-			catch (Exception ex) { return $"Unable to create stream ({ex.Message})"; }
-		}
-
-		private void FfmpegProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
-		{
-			if (e.Data == null)
-				return;
-
-			lock (ffmpegLock)
+			catch (Win32Exception ex)
 			{
-				if (parsedSongLength.HasValue)
-					return;
-
-				var match = FindDurationMatch.Match(e.Data);
-				if (!match.Success)
-					return;
-
-				if (sender != ffmpegProcess)
-					return;
-
-				int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-				int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-				int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-				int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
-				parsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
+				var error = $"Ffmpeg could not be found ({ex.Message})";
+				Log.Warn(ex, error);
+				return error;
+			}
+			catch (Exception ex)
+			{
+				var error = $"Unable to create stream ({ex.Message})";
+				Log.Warn(ex, error);
+				return error;
 			}
 		}
 
 		private void StopFfmpegProcess()
 		{
-			// TODO somehow bypass lock
-			lock (ffmpegLock)
-			{
-				if (ffmpegProcess == null)
-					return;
-
-				try
-				{
-					if (!ffmpegProcess.HasExited)
-						ffmpegProcess.Kill();
-					else
-						ffmpegProcess.Close();
-				}
-				catch (InvalidOperationException) { }
-				ffmpegProcess = null;
-			}
+			var oldInstance = Interlocked.Exchange(ref ffmpegInstance, null);
+			oldInstance?.Close();
 		}
 
 		private TimeSpan GetCurrentSongLength()
 		{
-			lock (ffmpegLock)
-			{
-				if (ffmpegProcess == null)
-					return TimeSpan.Zero;
+			var instance = ffmpegInstance;
+			if (instance == null)
+				return TimeSpan.Zero;
 
-				return parsedSongLength ?? TimeSpan.Zero;
-			}
+			return instance.ParsedSongLength ?? TimeSpan.Zero;
 		}
 
 		public void Dispose()
 		{
-			// TODO close ffmpeg if open
+			StopFfmpegProcess();
+		}
+
+		private class ActiveFfmpegInstance
+		{
+			public Process FfmpegProcess { get; set; }
+			public bool HasIcyTag { get; private set; } = false;
+			public bool hasTriedToReconnectAudio;
+			public PreciseAudioTimer AudioTimer { get; set; }
+			public TimeSpan? ParsedSongLength { get; set; } = null;
+
+			public void Close()
+			{
+				try
+				{
+					if (!FfmpegProcess.HasExited)
+						FfmpegProcess.Kill();
+					else
+						FfmpegProcess.Close();
+				}
+				catch (InvalidOperationException) { }
+			}
+
+			public void FfmpegProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+			{
+				if (e.Data == null)
+					return;
+
+				if (sender != FfmpegProcess)
+					throw new InvalidOperationException("Wrong process associated to event");
+
+				if (!ParsedSongLength.HasValue)
+				{
+					var match = FindDurationMatch.Match(e.Data);
+					if (!match.Success)
+						return;
+
+					int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+					int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+					int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
+					int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
+					ParsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
+				}
+
+				if (!HasIcyTag && e.Data.AsSpan().TrimStart().StartsWith("icy-".AsSpan()))
+				{
+					HasIcyTag = true;
+				}
+			}
 		}
 	}
 }

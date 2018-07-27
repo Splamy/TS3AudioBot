@@ -327,7 +327,7 @@ namespace TS3Client.Full
 
 			// Verify that our connection isn't tampered with
 			if (!VerifySign(serverPublicKey.Value, licenseBytes.Value, proofBytes.Value))
-				return "The init proof is not valid. Your connection might be tampered with or the sever is an idiot.";
+				return "The init proof is not valid. Your connection might be tampered with or the server is an idiot.";
 
 			var sw = Stopwatch.StartNew();
 			var licenseChainR = Licenses.Parse(licenseBytes.Value);

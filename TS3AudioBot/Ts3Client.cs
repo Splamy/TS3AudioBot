@@ -100,8 +100,7 @@ namespace TS3AudioBot
 			mergePipe = new PassiveMergePipe();
 
 			mergePipe.Add(ffmpegProducer);
-			timePipe.InStream = mergePipe;
-			timePipe.Chain<CheckActivePipe>().Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
+			mergePipe.Into(timePipe).Chain<CheckActivePipe>().Chain(stallCheckPipe).Chain<FfprobePipe>().Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
 
 			identity = null;
 		}

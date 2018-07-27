@@ -53,7 +53,7 @@ namespace TS3Client.Messages
 				{
 					foreach (var toi in (ResponseDictionary[])to)
 					{
-						toi[fld] = fldval;
+						toi.data[fld] = fldval;
 					}
 				}
 			}
