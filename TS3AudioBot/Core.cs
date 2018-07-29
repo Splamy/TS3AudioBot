@@ -105,7 +105,7 @@ namespace TS3AudioBot
 			injector.RegisterModule(new CommandManager(), x => x.Initialize());
 			injector.RegisterModule(new ResourceFactoryManager(config.Factories), x => x.Initialize());
 			injector.RegisterModule(new WebServer(config.Web), x => x.Initialize());
-			injector.RegisterModule(new RightsManager(config.Rights), x => x.Initialize());
+			injector.RegisterModule(new RightsManager(config.Rights));
 			injector.RegisterModule(new BotManager());
 			injector.RegisterModule(new TokenManager(), x => x.Initialize());
 

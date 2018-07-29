@@ -25,8 +25,6 @@ namespace TS3AudioBot.Rights
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int RuleLevelSize = 2;
 
-		public CommandManager CommandManager { get; set; }
-
 		private bool needsRecalculation;
 		private readonly ConfRights config;
 		private RightsRule rootRule;
@@ -44,30 +42,14 @@ namespace TS3AudioBot.Rights
 		{
 			Util.Init(out registeredRights);
 			this.config = config;
-		}
-
-		public void Initialize()
-		{
-			RegisterRights(CommandManager.AllRights);
-			RegisterRights(MainCommands.RightHighVolume, MainCommands.RightDeleteAllPlaylists);
-			if (!ReadFile())
-				Log.Error("Could not read Permission file.");
-		}
-
-		public void RegisterRights(params string[] rights) => RegisterRights((IEnumerable<string>)rights);
-		public void RegisterRights(IEnumerable<string> rights)
-		{
-			// TODO validate right names
-			registeredRights.UnionWith(rights);
 			needsRecalculation = true;
 		}
 
-		public void UnregisterRights(params string[] rights) => UnregisterRights((IEnumerable<string>)rights);
-		public void UnregisterRights(IEnumerable<string> rights)
+		public void SetRightsList(IEnumerable<string> rights)
 		{
 			// TODO validate right names
-			// optionally expand
-			registeredRights.ExceptWith(rights);
+			registeredRights.Clear();
+			registeredRights.UnionWith(rights);
 			needsRecalculation = true;
 		}
 
@@ -155,7 +137,7 @@ namespace TS3AudioBot.Rights
 			{
 				execCtx = new ExecuteContext();
 			}
-			
+
 			if (info.TryGet<CallerInfo>(out var caller))
 				execCtx.IsApi = caller.ApiCall;
 			if (info.TryGet<Bot>(out var bot))
@@ -348,7 +330,7 @@ namespace TS3AudioBot.Rights
 					.Concat(rule.DeclDeny.Except(registeredRights));
 				foreach (var right in undeclared)
 				{
-					ctx.Errors.Add($"Right \"{right}\" is not registered.");
+					ctx.Warnings.Add($"Right \"{right}\" is not registered.");
 					hasErrors = true;
 				}
 			}

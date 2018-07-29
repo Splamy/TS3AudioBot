@@ -37,6 +37,19 @@ namespace TS3AudioBot
 
 	public static class MainCommands
 	{
+		internal static ICommandBag Bag { get; } = new MainCommandsBag();
+
+		internal class MainCommandsBag : ICommandBag
+		{
+			public IReadOnlyCollection<BotCommand> BagCommands { get; }
+			public IReadOnlyCollection<string> AdditionalRights { get; } = new string[] { RightHighVolume, RightDeleteAllPlaylists };
+
+			public MainCommandsBag()
+			{
+				BagCommands = CommandManager.GetBotCommands(null, typeof(MainCommands)).ToArray();
+			}
+		}
+
 		public const string RightHighVolume = "ts3ab.admin.volume";
 		public const string RightDeleteAllPlaylists = "ts3ab.admin.list";
 

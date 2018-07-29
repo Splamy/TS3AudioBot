@@ -30,7 +30,7 @@ namespace TS3ABotUnitTests
 		public BotCommandTests()
 		{
 			cmdMgr = new CommandManager();
-			cmdMgr.RegisterMain();
+			cmdMgr.RegisterCollection(MainCommands.Bag);
 			Utils.ExecInfo.AddDynamicObject(cmdMgr);
 		}
 

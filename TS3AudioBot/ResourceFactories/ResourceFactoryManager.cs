@@ -30,7 +30,6 @@ namespace TS3AudioBot.ResourceFactories
 		private const string CmdListPrepath = "list from ";
 
 		public CommandManager CommandManager { get; set; }
-		public Rights.RightsManager RightsManager { get; set; }
 
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
@@ -226,7 +225,6 @@ namespace TS3AudioBot.ResourceFactories
 			var factoryInfo = new FactoryData(factory, commands.ToArray());
 			allFacories.Add(factory.FactoryFor, factoryInfo);
 			CommandManager.RegisterCollection(factoryInfo);
-			RightsManager.RegisterRights(factoryInfo.ExposedRights);
 		}
 
 		public void RemoveFactory(IFactory factory)
@@ -242,7 +240,6 @@ namespace TS3AudioBot.ResourceFactories
 				listFactories.Remove(listFactory);
 
 			CommandManager.UnregisterCollection(factoryInfo);
-			RightsManager.UnregisterRights(factoryInfo.ExposedRights);
 		}
 
 		private static LocalStr CouldNotLoad(string reason = null)
@@ -274,15 +271,16 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			private readonly FactoryCommand[] registeredCommands;
 
+			public IFactory Factory { get; }
+			public IReadOnlyCollection<BotCommand> BagCommands { get; }
+			public IReadOnlyCollection<string> AdditionalRights => Array.Empty<string>();
+
 			public FactoryData(IFactory factory, FactoryCommand[] commands)
 			{
 				Factory = factory;
 				registeredCommands = commands;
+				BagCommands = registeredCommands.Select(x => x.Command).ToArray();
 			}
-
-			public IFactory Factory { get; }
-			public IEnumerable<BotCommand> ExposedCommands => registeredCommands.Select(x => x.Command);
-			public IEnumerable<string> ExposedRights => ExposedCommands.Select(x => x.RequiredRight);
 		}
 
 		private abstract class FactoryCommand

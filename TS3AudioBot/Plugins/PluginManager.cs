@@ -27,7 +27,6 @@ namespace TS3AudioBot.Plugins
 	//   - 0/1 Factory
 	//     - Facory name conflict
 	// - [ Instantiate plugin (Depending on type) ]
-	// - Add commands to rights system
 	// - Add commands to command manager
 	// - Start config to system?
 
