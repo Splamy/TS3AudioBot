@@ -22,7 +22,7 @@ namespace TS3AudioBot.CommandSystem
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex CommandNamespaceValidator =
-			new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
+			new Regex("^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
 		private readonly HashSet<string> commandPaths;
 		private readonly HashSet<ICommandBag> baggedCommands;
@@ -96,18 +96,22 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (obj == null && type == null)
 				throw new ArgumentNullException(nameof(type), "No type information given.");
-			var objType = type ?? obj.GetType();
-
-			foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
+			return GetCommandMethodsIterator();
+			IEnumerable<CommandBuildInfo> GetCommandMethodsIterator()
 			{
-				var comAtt = method.GetCustomAttribute<CommandAttribute>();
-				if (comAtt == null) continue;
-				if (obj == null && !method.IsStatic)
+				var objType = type ?? obj.GetType();
+
+				foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
 				{
-					Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
-					continue;
+					var comAtt = method.GetCustomAttribute<CommandAttribute>();
+					if (comAtt == null) continue;
+					if (obj == null && !method.IsStatic)
+					{
+						Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
+						continue;
+					}
+					yield return new CommandBuildInfo(obj, method, comAtt);
 				}
-				yield return new CommandBuildInfo(obj, method, comAtt);
 			}
 		}
 
