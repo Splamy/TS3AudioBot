@@ -1143,7 +1143,7 @@ namespace TS3AudioBot
 		{
 			using (var botlock = bots.GetBotLock(bot))
 			{
-				var confBot = GetConf(botlock.Bot, config, bot);
+				var confBot = GetConf(botlock?.Bot, config, bot);
 				return CommandSettingsGet(confBot, path);
 			}
 		}
@@ -1153,7 +1153,7 @@ namespace TS3AudioBot
 		{
 			using (var botlock = bots.GetBotLock(bot))
 			{
-				var confBot = GetConf(botlock.Bot, config, bot);
+				var confBot = GetConf(botlock?.Bot, config, bot);
 				CommandSettingsSet(confBot, path, value);
 			}
 		}
