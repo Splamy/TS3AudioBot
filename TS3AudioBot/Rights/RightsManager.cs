@@ -17,7 +17,6 @@ namespace TS3AudioBot.Rights
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using System.Text;
 
 	/// <summary>Permission system of the bot.</summary>
 	public class RightsManager
@@ -28,8 +27,8 @@ namespace TS3AudioBot.Rights
 		private bool needsRecalculation;
 		private readonly ConfRights config;
 		private RightsRule rootRule;
-		private RightsRule[] rules;
 		private readonly HashSet<string> registeredRights;
+		private readonly object rootRuleLock = new object();
 
 		// Required Matcher Data:
 		// This variables save whether the current rights setup has at least one rule that
@@ -57,24 +56,20 @@ namespace TS3AudioBot.Rights
 		public bool HasAllRights(ExecutionInformation info, params string[] requestedRights)
 		{
 			var ctx = GetRightsContext(info);
-			var normalizedRequest = ExpandRights(requestedRights);
+			var normalizedRequest = ExpandRights(requestedRights, registeredRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
 		public string[] GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
 		{
 			var ctx = GetRightsContext(info);
-			var normalizedRequest = ExpandRights(requestedRights);
+			var normalizedRequest = ExpandRights(requestedRights, registeredRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
 		private ExecuteContext GetRightsContext(ExecutionInformation info)
 		{
-			if (needsRecalculation)
-			{
-				needsRecalculation = false;
-				ReadFile();
-			}
+			var localRootRule = TryGetRootSafe();
 
 			if (info.TryGet<ExecuteContext>(out var execCtx))
 				return execCtx;
@@ -143,7 +138,8 @@ namespace TS3AudioBot.Rights
 			if (info.TryGet<Bot>(out var bot))
 				execCtx.Bot = bot.Name;
 
-			ProcessNode(rootRule, execCtx);
+			if (localRootRule != null)
+				ProcessNode(localRootRule, execCtx);
 
 			if (execCtx.MatchingRules.Count == 0)
 				return execCtx;
@@ -154,6 +150,22 @@ namespace TS3AudioBot.Rights
 			info.AddDynamicObject(execCtx);
 
 			return execCtx;
+		}
+
+		private RightsRule TryGetRootSafe()
+		{
+			var localRootRule = rootRule;
+			if (localRootRule != null && !needsRecalculation)
+				return localRootRule;
+
+			lock (rootRuleLock)
+			{
+				if (rootRule != null && !needsRecalculation)
+					return rootRule;
+
+				rootRule = ReadFile();
+				return rootRule;
+			}
 		}
 
 		private static bool ProcessNode(RightsRule rule, ExecuteContext ctx)
@@ -180,9 +192,15 @@ namespace TS3AudioBot.Rights
 			return false;
 		}
 
+		public bool Reload()
+		{
+			needsRecalculation = true;
+			return TryGetRootSafe() != null;
+		}
+
 		// Loading and Parsing
 
-		public bool ReadFile()
+		private RightsRule ReadFile()
 		{
 			try
 			{
@@ -195,59 +213,33 @@ namespace TS3AudioBot.Rights
 				}
 
 				var table = Toml.ReadFile(config.Path);
-				var ctx = new ParseContext();
+				var ctx = new ParseContext(registeredRights);
 				RecalculateRights(table, ctx);
 				foreach (var err in ctx.Errors)
 					Log.Error(err);
 				foreach (var warn in ctx.Warnings)
 					Log.Warn(warn);
-				return ctx.Errors.Count == 0;
+
+				if (ctx.Errors.Count == 0)
+				{
+					needsAvailableChanGroups = ctx.NeedsAvailableChanGroups;
+					needsAvailableGroups = ctx.NeedsAvailableGroups;
+					needsRecalculation = false;
+					return ctx.RootRule;
+				}
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "The rights file could not be parsed");
-				return false;
 			}
+			return null;
 		}
 
-		public R<string, string> ReadText(string text)
+		private static void RecalculateRights(TomlTable table, ParseContext parseCtx)
 		{
-			try
-			{
-				var table = Toml.ReadString(text);
-				var ctx = new ParseContext();
-				RecalculateRights(table, ctx);
-				var strb = new StringBuilder();
-				foreach (var warn in ctx.Warnings)
-					strb.Append("WRN: ").AppendLine(warn);
-				if (ctx.Errors.Count == 0)
-				{
-					strb.Append(string.Join("\n", rules.Select(x => x.ToString())));
-					if (strb.Length > 900)
-						strb.Length = 900;
-					return R<string, string>.OkR(strb.ToString());
-				}
-				else
-				{
-					foreach (var err in ctx.Errors)
-						strb.Append("ERR: ").AppendLine(err);
-					if (strb.Length > 900)
-						strb.Length = 900;
-					return R<string, string>.Err(strb.ToString());
-				}
-			}
-			catch (Exception ex)
-			{
-				return R<string, string>.Err("The rights file could not be parsed: " + ex.Message);
-			}
-		}
+			var localRules = Array.Empty<RightsRule>();
 
-		private void RecalculateRights(TomlTable table, ParseContext parseCtx)
-		{
-			rules = Array.Empty<RightsRule>();
-
-			rootRule = new RightsRule();
-			if (!rootRule.ParseChilden(table, parseCtx))
+			if (!parseCtx.RootRule.ParseChilden(table, parseCtx))
 				return;
 
 			parseCtx.SplitDeclarations();
@@ -261,7 +253,7 @@ namespace TS3AudioBot.Rights
 			if (!CheckCyclicGroupDependencies(parseCtx))
 				return;
 
-			BuildLevel(rootRule);
+			BuildLevel(parseCtx.RootRule);
 
 			LintDeclarations(parseCtx);
 
@@ -270,14 +262,12 @@ namespace TS3AudioBot.Rights
 
 			FlattenGroups(parseCtx);
 
-			FlattenRules(rootRule);
+			FlattenRules(parseCtx.RootRule);
 
 			CheckRequiredCalls(parseCtx);
-
-			rules = parseCtx.Rules;
 		}
 
-		private HashSet<string> ExpandRights(IEnumerable<string> rights)
+		private static HashSet<string> ExpandRights(IEnumerable<string> rights, ICollection<string> registeredRights)
 		{
 			var rightsExpanded = new HashSet<string>();
 			foreach (var right in rights)
@@ -314,20 +304,20 @@ namespace TS3AudioBot.Rights
 		/// Expands wildcard declarations to all explicit declarations.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private bool NormalizeRule(ParseContext ctx)
+		private static bool NormalizeRule(ParseContext ctx)
 		{
 			bool hasErrors = false;
 
 			foreach (var rule in ctx.Rules)
 			{
-				var denyNormalized = ExpandRights(rule.DeclDeny);
+				var denyNormalized = ExpandRights(rule.DeclDeny, ctx.RegisteredRights);
 				rule.DeclDeny = denyNormalized.ToArray();
-				var addNormalized = ExpandRights(rule.DeclAdd);
+				var addNormalized = ExpandRights(rule.DeclAdd, ctx.RegisteredRights);
 				addNormalized.ExceptWith(rule.DeclDeny);
 				rule.DeclAdd = addNormalized.ToArray();
 
-				var undeclared = rule.DeclAdd.Except(registeredRights)
-					.Concat(rule.DeclDeny.Except(registeredRights));
+				var undeclared = rule.DeclAdd.Except(ctx.RegisteredRights)
+					.Concat(rule.DeclDeny.Except(ctx.RegisteredRights));
 				foreach (var right in undeclared)
 				{
 					ctx.Warnings.Add($"Right \"{right}\" is not registered.");
@@ -428,8 +418,12 @@ namespace TS3AudioBot.Rights
 		{
 			root.Level = level;
 			if (root is RightsRule rootRule)
+			{
 				foreach (var child in rootRule.Children)
+				{
 					BuildLevel(child, level + RuleLevelSize);
+				}
+			}
 		}
 
 		/// <summary>
@@ -529,19 +523,16 @@ namespace TS3AudioBot.Rights
 		/// for the required matcher.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private void CheckRequiredCalls(ParseContext ctx)
+		private static void CheckRequiredCalls(ParseContext ctx)
 		{
-			needsAvailableGroups = false;
-			needsAvailableChanGroups = false;
-
 			foreach (var group in ctx.Rules)
 			{
 				if (!group.HasMatcher())
 					continue;
 				if (group.MatchClientGroupId.Count > 0)
-					needsAvailableGroups = true;
+					ctx.NeedsAvailableGroups = true;
 				if (group.MatchChannelGroupId.Count > 0)
-					needsAvailableChanGroups = true;
+					ctx.NeedsAvailableChanGroups = true;
 			}
 		}
 	}

@@ -48,11 +48,11 @@ namespace TS3AudioBot.Rights
 
 		public bool HasMatcher()
 		{
-			return MatchClientGroupId.Count > 0
+			return MatchHost.Count > 0
 				|| MatchClientUid.Count > 0
-				|| MatchHost.Count > 0
-				|| MatchPermission.Count > 0
+				|| MatchClientGroupId.Count > 0
 				|| MatchChannelGroupId.Count > 0
+				|| MatchPermission.Count > 0
 				|| MatchToken.Count > 0
 				|| MatchBot.Count > 0
 				|| MatchIsApi.HasValue

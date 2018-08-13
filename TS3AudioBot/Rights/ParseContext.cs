@@ -11,6 +11,7 @@ namespace TS3AudioBot.Rights
 {
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Text;
 
 	internal class ParseContext
 	{
@@ -19,18 +20,47 @@ namespace TS3AudioBot.Rights
 		public RightsRule[] Rules { get; private set; }
 		public List<string> Errors { get; }
 		public List<string> Warnings { get; }
+		public ISet<string> RegisteredRights { get; }
 
-		public ParseContext()
+		public RightsRule RootRule { get; }
+		public bool NeedsAvailableGroups { get; set; } = false;
+		public bool NeedsAvailableChanGroups { get; set; } = false;
+
+		public ParseContext(ISet<string> registeredRights)
 		{
 			Declarations = new List<RightsDecl>();
+			RootRule = new RightsRule();
 			Errors = new List<string>();
 			Warnings = new List<string>();
+			RegisteredRights = registeredRights;
 		}
 
 		public void SplitDeclarations()
 		{
 			Groups = Declarations.OfType<RightsGroup>().ToArray();
 			Rules = Declarations.OfType<RightsRule>().ToArray();
+		}
+
+		public (bool hasErrors, string info) AsResult()
+		{
+			var strb = new StringBuilder();
+			foreach (var warn in Warnings)
+				strb.Append("WRN: ").AppendLine(warn);
+			if (Errors.Count == 0)
+			{
+				strb.Append(string.Join("\n", Rules.Select(x => x.ToString())));
+				if (strb.Length > 900)
+					strb.Length = 900;
+				return (true, strb.ToString());
+			}
+			else
+			{
+				foreach (var err in Errors)
+					strb.Append("ERR: ").AppendLine(err);
+				if (strb.Length > 900)
+					strb.Length = 900;
+				return (false, strb.ToString());
+			}
 		}
 	}
 }

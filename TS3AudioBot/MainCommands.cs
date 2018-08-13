@@ -1050,7 +1050,7 @@ namespace TS3AudioBot
 		[Command("rights reload")]
 		public static JsonEmpty CommandRightsReload(RightsManager rightsManager)
 		{
-			if (rightsManager.ReadFile())
+			if (rightsManager.Reload())
 				return new JsonEmpty(strings.info_ok);
 
 			// TODO: this can be done nicer by returning the errors and warnings from parsing

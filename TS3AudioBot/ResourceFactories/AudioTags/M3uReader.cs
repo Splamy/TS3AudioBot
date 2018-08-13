@@ -30,7 +30,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			var buffer = new byte[MaxLineLength];
 			var data = new List<PlaylistItem>();
 			string trackTitle = null;
-			bool extm3u = false;
+			//bool extm3u = false;
 
 			try
 			{
@@ -80,7 +80,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 							}
 							else if (line.StartsWith(ExtM3uLine))
 							{
-								extm3u = true;
+								//extm3u = true; ???
 							}
 							// else: unsupported m3u tag
 						}
