@@ -139,12 +139,14 @@ namespace TS3AudioBot
 			{
 				if (!forceNextExit)
 				{
+					Log.Info("Got interrupt signal, trying to soft-exit.");
 					e.Cancel = true;
 					forceNextExit = true;
 					Dispose();
 				}
 				else
 				{
+					Log.Info("Got multiple interrupt signals, trying to force-exit.");
 					Environment.Exit(0);
 				}
 			}

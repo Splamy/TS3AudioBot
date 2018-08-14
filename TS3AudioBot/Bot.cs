@@ -68,7 +68,7 @@ namespace TS3AudioBot
 
 		public E<string> InitializeBot()
 		{
-			Log.Info("Bot connecting...");
+			Log.Info("Bot ({0}) connecting to \"{1}\"", Id, config.Connect.Address);
 
 			// Registering config changes
 			config.CommandMatcher.Changed += (s, e) =>
@@ -151,7 +151,7 @@ namespace TS3AudioBot
 
 		private void OnBotConnected(object sender, EventArgs e)
 		{
-			Log.Info("Bot connected.");
+			Log.Info("Bot ({0}) connected.", Id);
 			if (!string.IsNullOrEmpty(BadgesString))
 				ClientConnection?.ChangeBadges(BadgesString);
 		}
@@ -394,7 +394,7 @@ namespace TS3AudioBot
 			{
 				if (!IsDisposed) IsDisposed = true;
 				else return;
-				Log.Info("Bot disconnecting.");
+				Log.Info("Bot ({0}) disconnecting.", Id);
 
 				PluginManager.StopPlugins(this);
 
