@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -165,10 +165,7 @@
   <data name="cmd_clear_help" xml:space="preserve">
     <value>Removes all songs from the current playlist.</value>
   </data>
-  <data name="cmd_connect_help" xml:space="preserve">
-    <value>Start a new bot instance.</value>
-  </data>
-  <data name="cmd_disconnect_help" xml:space="preserve">
+  <data name="cmd_bot_disconnect_help" xml:space="preserve">
     <value>Stop this bot instance.</value>
   </data>
   <data name="cmd_eval_help" xml:space="preserve">
@@ -858,10 +855,10 @@ with the id {1}?</value>
   <data name="error_ts_code_2568" xml:space="preserve">
     <value>Missing permissions.</value>
   </data>
-  <data name="cmd_bot_connect_new_help" xml:space="preserve">
+  <data name="cmd_bot_connect_to_help" xml:space="preserve">
     <value>Connects a new bot to the given address.</value>
   </data>
-  <data name="cmd_bot_connect_to_help" xml:space="preserve">
+  <data name="cmd_bot_connect_template_help" xml:space="preserve">
     <value>Connects a new bot with the settings from the template name.</value>
   </data>
   <data name="cmd_bot_save_help" xml:space="preserve">

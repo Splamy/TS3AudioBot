@@ -151,20 +151,29 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Connects a new bot to the given address..
+        ///   Looks up a localized string similar to Connects a new bot with the settings from the template name..
         /// </summary>
-        internal static string cmd_bot_connect_new_help {
+        internal static string cmd_bot_connect_template_help {
             get {
-                return ResourceManager.GetString("cmd_bot_connect_new_help", resourceCulture);
+                return ResourceManager.GetString("cmd_bot_connect_template_help", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Connects a new bot with the settings from the template name..
+        ///   Looks up a localized string similar to Connects a new bot to the given address..
         /// </summary>
         internal static string cmd_bot_connect_to_help {
             get {
                 return ResourceManager.GetString("cmd_bot_connect_to_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stop this bot instance..
+        /// </summary>
+        internal static string cmd_bot_disconnect_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_disconnect_help", resourceCulture);
             }
         }
         
@@ -255,24 +264,6 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_clear_help {
             get {
                 return ResourceManager.GetString("cmd_clear_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Start a new bot instance..
-        /// </summary>
-        internal static string cmd_connect_help {
-            get {
-                return ResourceManager.GetString("cmd_connect_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Stop this bot instance..
-        /// </summary>
-        internal static string cmd_disconnect_help {
-            get {
-                return ResourceManager.GetString("cmd_disconnect_help", resourceCulture);
             }
         }
         

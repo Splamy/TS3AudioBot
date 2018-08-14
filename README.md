@@ -1,7 +1,8 @@
 # TS3AudioBot
-|master|develop|
-|:--:|:--:|
-|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|
+
+|master|develop|Questions/Discussions|License|
+|:--:|:--:|:--:|:--:|
+|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Join Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link)|[![License: OSL-3.0](https://img.shields.io/badge/License-OSL%203.0-blue.svg)](https://opensource.org/licenses/OSL-3.0)|
 
 ## About
 This is our open-source TeamSpeak 3 audio bot project since
@@ -30,9 +31,9 @@ For the full command list and tutorials see [here in the wiki](https://github.co
 
 ## Download
 You can download the latest builds precompiled from our [nightly server](https://splamy.de/Nightly#ts3ab):  
-- [![Build Status](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master/download)
+- [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master/download)
   versions are mostly considered stable but won't get bigger features as fast.
-- [![Build Status](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop/download)
+- [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop/download)
   will always have the latest and greatest but might not be fully stable or have broken features.
 
 Continue with downloading the dependencies.

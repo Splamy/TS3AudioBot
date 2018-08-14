@@ -123,6 +123,9 @@ namespace TS3AudioBot
 			});
 		}
 
+		[Command("bot disconnect")]
+		public static void CommandBotDisconnect(BotManager bots, Bot bot) => bots.StopBot(bot);
+
 		[Command("bot commander")]
 		public static JsonValue<bool> CommandBotCommander(Ts3Client ts3Client)
 		{
@@ -143,7 +146,7 @@ namespace TS3AudioBot
 			CommandBotMove(ts3Client, channel.Value, password);
 		}
 
-		[Command("bot connect to")]
+		[Command("bot connect template")]
 		public static BotInfo CommandBotConnectTo(BotManager bots, string name)
 		{
 			var botInfo = bots.RunBotTemplate(name);
@@ -152,7 +155,7 @@ namespace TS3AudioBot
 			return botInfo.Value; // TODO check value/object
 		}
 
-		[Command("bot connect new")]
+		[Command("bot connect to")]
 		public static BotInfo CommandBotConnectNew(BotManager bots, string address, string password = null)
 		{
 			var botConf = bots.CreateNewBot();
@@ -224,9 +227,6 @@ namespace TS3AudioBot
 
 		[Command("clear")]
 		public static void CommandClear(PlaylistManager playlistManager) => playlistManager.ClearFreelist();
-
-		[Command("disconnect")]
-		public static void CommandDisconnect(BotManager bots, Bot bot) => bots.StopBot(bot);
 
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
@@ -931,10 +931,7 @@ namespace TS3AudioBot
 
 		[Command("plugin list")]
 		public static JsonArray<PluginStatusInfo> CommandPluginList(PluginManager pluginManager, Bot bot = null)
-		{
-			var overview = pluginManager.GetPluginOverview(bot);
-			return new JsonArray<PluginStatusInfo>(overview, PluginManager.FormatOverview);
-		}
+			=> new JsonArray<PluginStatusInfo>(pluginManager.GetPluginOverview(bot), PluginManager.FormatOverview);
 
 		[Command("plugin unload")]
 		public static void CommandPluginUnload(PluginManager pluginManager, string identifier, Bot bot = null)
@@ -1042,10 +1039,7 @@ namespace TS3AudioBot
 
 		[Command("rights can")]
 		public static JsonArray<string> CommandRightsCan(ExecutionInformation info, RightsManager rightsManager, params string[] rights)
-		{
-			var result = rightsManager.GetRightsSubset(info, rights);
-			return new JsonArray<string>(result, result.Length > 0 ? string.Join(", ", result) : strings.info_empty);
-		}
+			=> new JsonArray<string>(rightsManager.GetRightsSubset(info, rights), r => r.Length > 0 ? string.Join(", ", r) : strings.info_empty);
 
 		[Command("rights reload")]
 		public static JsonEmpty CommandRightsReload(RightsManager rightsManager)
@@ -1118,10 +1112,7 @@ namespace TS3AudioBot
 
 		[Command("settings")]
 		public static void CommandSettings()
-		{
-			throw new CommandException(string.Format(strings.cmd_settings_empty_usage, "'rights.path', 'web.api.enabled', 'tools.*'"),
-				CommandExceptionReason.MissingParameter);
-		}
+			=> throw new CommandException(string.Format(strings.cmd_settings_empty_usage, "'rights.path', 'web.api.enabled', 'tools.*'"), CommandExceptionReason.MissingParameter);
 
 		[Command("settings get")]
 		public static ConfigPart CommandSettingsGet(ConfBot config, string path)
@@ -1158,6 +1149,21 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command("settings global get")]
+		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path)
+			=> SettingsGet(config, path);
+
+		[Command("settings global set")]
+		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value)
+		{
+			SettingsSet(config, path, value);
+			if (!config.Save())
+			{
+				throw new CommandException("Value was set but could not be saved to file. All changes are temporary and will be lost when the bot restarts.",
+					CommandExceptionReason.CommandError);
+			}
+		}
+
 		private static ConfBot GetConf(Bot bot, ConfRoot config, string name)
 		{
 			if (bot != null)
@@ -1174,21 +1180,6 @@ namespace TS3AudioBot
 				if (!getTemplateResult.Ok)
 					throw new CommandException(strings.error_bot_does_not_exist, getTemplateResult.Error, CommandExceptionReason.CommandError);
 				return getTemplateResult.Value;
-			}
-		}
-
-		[Command("settings global get")]
-		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path)
-			=> SettingsGet(config, path);
-
-		[Command("settings global set")]
-		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value)
-		{
-			SettingsSet(config, path, value);
-			if (!config.Save())
-			{
-				throw new CommandException("Value was set but could not be saved to file. All changes are temporary and will be lost when the bot restarts.",
-					CommandExceptionReason.CommandError);
 			}
 		}
 
