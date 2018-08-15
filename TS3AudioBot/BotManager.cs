@@ -178,9 +178,11 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private Bot GetBotSave(string name)
 		{
+			if (name == null)
+				throw new ArgumentNullException(nameof(name));
 			if (activeBots == null)
 				return null;
-			return activeBots.Find(x => x.Name == name);
+			return activeBots.Find(x => x?.Name == name);
 		}
 
 		public BotLock GetBotLock(int id)

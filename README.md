@@ -104,6 +104,7 @@ Why OSL-3.0:
 - OSL allows you to link to our libraries without needing to disclose your own project, which might be useful if you want to use the TS3Client as a library.
 - If you create plugins you do not have to make them public like in GPL. (Although we would be happier if you shared them :)
 - With OSL we want to allow you providing the TS3AB as a service (even commercially). We do not want the software to be sold but the service. We want this software to be free for everyone.
+- TL; DR? https://tldrlegal.com/license/open-software-licence-3.0
 
 ---
 [![forthebadge](http://forthebadge.com/images/badges/60-percent-of-the-time-works-every-time.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/built-with-love.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/contains-cat-gifs.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/made-with-c-sharp.svg)](http://forthebadge.com)
