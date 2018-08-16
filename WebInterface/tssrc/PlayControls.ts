@@ -1,5 +1,5 @@
 class PlayControls {
-	private currentSong: string | null = null;
+	private currentSong: CmdSong | null = null;
 	private playing: PlayState = PlayState.Off;
 	private repeat: RepeatKind = RepeatKind.Off;
 	private random: boolean = false;
@@ -105,7 +105,7 @@ class PlayControls {
 		}
 
 		this.divPlay.onclick = async () => {
-			let songRet: ErrorObject | [void, string | null];
+			let songRet: ErrorObject | [void, CmdSong | null];
 			switch (this.playing) {
 				case PlayState.Off:
 					return;
@@ -114,7 +114,7 @@ class PlayControls {
 					Util.setIcon(this.divPlay, "cog-work");
 					songRet = await bot(jmerge(
 						cmd<void>("stop"),
-						cmd<string | null>("song"), // TODO update when better method
+						cmd<CmdSong | null>("song"), // TODO update when better method
 					)).get() as any/*TODO:iter*/;
 					break;
 
@@ -122,7 +122,7 @@ class PlayControls {
 					Util.setIcon(this.divPlay, "cog-work");
 					songRet = await bot(jmerge(
 						cmd<void>("play"),
-						cmd<string | null>("song"), // TODO update when better method
+						cmd<CmdSong | null>("song"), // TODO update when better method
 					)).get() as any/*TODO:iter*/;
 					break;
 
@@ -182,8 +182,8 @@ class PlayControls {
 
 	public async refresh() {
 		const botInfo = await bot(jmerge(
-			cmd<string | null>("song"),
-			cmd<ISongLengths>("song", "position"),
+			cmd<CmdSong | null>("song"),
+			cmd<CmdSongPosition>("song", "position"),
 			cmd<RepeatKind>("repeat"),
 			cmd<boolean>("random"),
 			cmd<number>("volume"),
@@ -195,7 +195,7 @@ class PlayControls {
 		this.showState(botInfo as any /*TODO:iter*/);
 	}
 
-	public showState(botInfo: [string | null, ISongLengths, RepeatKind, boolean, number]) {
+	public showState(botInfo: [CmdSong | null, CmdSongPosition, RepeatKind, boolean, number]) {
 		this.showStatePlaying(botInfo[0]);
 		this.showStateLength(Util.parseTimeToSeconds(botInfo[1].length));
 		this.showStatePosition(Util.parseTimeToSeconds(botInfo[1].position));
@@ -284,10 +284,15 @@ class PlayControls {
 		this.divPositionSlider.value = position.toString();
 	}
 
-	public showStatePlaying(song: string | null, playing: PlayState = song ? PlayState.Playing : PlayState.Off) {
-		this.currentSong = song;
+	public showStatePlaying(song: CmdSong | null, playing: PlayState = song ? PlayState.Playing : PlayState.Off) {
+		if(song !== null) {
+			this.currentSong = song;
+			this.divNowPlaying.innerText = this.currentSong.title;
+		} else {
+			this.currentSong = null;
+			this.divNowPlaying.innerText =  "Nothing...";
+		}
 		this.playing = playing;
-		this.divNowPlaying.innerText = song || "Nothing...";
 		switch (playing) {
 			case PlayState.Off:
 				this.showStateLength(0);
@@ -310,7 +315,7 @@ class PlayControls {
 
 	private static check<T>(result: T | ErrorObject): result is T {
 		if (result instanceof ErrorObject) {
-			Bot.displayLoadError("Call error", result);
+			DisplayError.push("Call error", result);
 			return false;
 		}
 		return true;

@@ -1,14 +1,19 @@
-type IBotInfo = {
+type CmdBotInfo = {
     Id: number;
     Name: string;
     Server: string;
 }
 
-type IBotsSettings = {
+type CmdBotsSettings = {
     run: boolean;
 }
 
-type ISongLengths = {
+type CmdSongPosition = {
     length: string;
     position: string;
+}
+
+type CmdSong = {
+    title: string;
+    source: string;
 }

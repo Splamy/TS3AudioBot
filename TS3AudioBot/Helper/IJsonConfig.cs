@@ -47,4 +47,26 @@ namespace TS3AudioBot.Helper
 			return sb.ToString();
 		}
 	}
+
+	public class IJsonSerializableConverter : JsonConverter
+	{
+		public override bool CanRead => false;
+		public override bool CanWrite => true;
+
+		public override bool CanConvert(Type objectType)
+		{
+			return typeof(IJsonSerializable).IsAssignableFrom(objectType);
+		}
+
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			var obj = (IJsonSerializable)value;
+			obj.ToJson(writer);
+		}
+	}
 }

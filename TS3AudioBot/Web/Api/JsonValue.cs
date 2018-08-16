@@ -10,7 +10,6 @@
 namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
-	using Helper;
 	using Newtonsoft.Json;
 	using System;
 
@@ -61,8 +60,6 @@ namespace TS3AudioBot.Web.Api
 			var seriObj = GetSerializeObject();
 			if (seriObj != null && XCommandSystem.BasicTypes.Contains(seriObj.GetType()))
 				return JsonConvert.SerializeObject(this);
-			if (seriObj is IJsonSerializable jsonSerializable)
-				return jsonSerializable.ToJson();
 			return base.Serialize();
 		}
 

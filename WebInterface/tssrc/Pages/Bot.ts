@@ -13,7 +13,7 @@ class Bot implements IPage {
 				const res = await bot(cmd("play", divPlayNew.value)).get();
 				Util.setIcon(btnPlayNew, "media-play");
 				if (res instanceof ErrorObject)
-					return;
+					return DisplayError.push(res);
 
 				const playCtrl = PlayControls.get();
 				if (playCtrl !== undefined)
@@ -35,16 +35,16 @@ class Bot implements IPage {
 
 	public async refresh() {
 		const botInfo = await bot(jmerge(
-			cmd<string | null>("song"),
-			cmd<ISongLengths>("song", "position"),
+			cmd<CmdSong | null>("song"),
+			cmd<CmdSongPosition>("song", "position"),
 			cmd<RepeatKind>("repeat"),
 			cmd<boolean>("random"),
 			cmd<number>("volume"),
-			cmd<IBotInfo>("bot", "info"),
+			cmd<CmdBotInfo>("bot", "info"),
 		)).get();
 
 		if (botInfo instanceof ErrorObject)
-			return Bot.displayLoadError("Failed to get bot information", botInfo);
+			return DisplayError.push("Failed to get bot information", botInfo);
 
 		// Fill 'Info' Block
 		const divTemplate = Util.getElementByIdSafe("data_template");
@@ -57,16 +57,8 @@ class Bot implements IPage {
 
 		const playCtrl = PlayControls.get();
 		if (!playCtrl)
-			return Bot.displayLoadError("Could not find play-controls");
+			return DisplayError.push("Could not find play-controls");
 
 		playCtrl.showState(botInfo as any /*TODO:iter*/);
-	}
-
-	public static displayLoadError(msg: string, err?: ErrorObject) {
-		let errorData = undefined;
-		if (err)
-			errorData = err.obj;
-		console.log(msg, errorData);
-		// add somewhere a status bar or something
 	}
 }

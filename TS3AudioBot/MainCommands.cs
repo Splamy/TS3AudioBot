@@ -636,17 +636,6 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command("link")]
-		public static string CommandLink(ResourceFactoryManager factoryManager, PlayManager playManager, Bot bot, CallerInfo caller, InvokerData invoker = null)
-		{
-			if (playManager.CurrentPlayData == null)
-				throw new CommandException(strings.info_currently_not_playing, CommandExceptionReason.CommandError);
-			if (bot.QuizMode && !caller.ApiCall && (invoker == null || playManager.CurrentPlayData.Invoker.ClientId != invoker.ClientId))
-				throw new CommandException(strings.info_quizmode_is_active, CommandExceptionReason.CommandError);
-
-			return factoryManager.RestoreLink(playManager.CurrentPlayData.ResourceData);
-		}
-
 		[Command("list add")]
 		[Usage("<link>", "Any link that is also recognized by !play")]
 		public static void CommandListAdd(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string link)
@@ -1224,16 +1213,21 @@ namespace TS3AudioBot
 		}
 
 		[Command("song")]
-		public static JsonValue<string> CommandSong(PlayManager playManager, ResourceFactoryManager factoryManager, Bot bot, CallerInfo caller, InvokerData invoker = null)
+		public static JsonObject CommandSong(PlayManager playManager, ResourceFactoryManager factoryManager, Bot bot, CallerInfo caller, InvokerData invoker = null)
 		{
 			if (playManager.CurrentPlayData == null)
 				throw new CommandException(strings.info_currently_not_playing, CommandExceptionReason.CommandError);
 			if (bot.QuizMode && !caller.ApiCall && (invoker == null || playManager.CurrentPlayData.Invoker.ClientId != invoker.ClientId))
 				throw new CommandException(strings.info_quizmode_is_active, CommandExceptionReason.CommandError);
 
-			return new JsonValue<string>(
-				playManager.CurrentPlayData.ResourceData.ResourceTitle,
-				$"[url={factoryManager.RestoreLink(playManager.CurrentPlayData.ResourceData)}]{playManager.CurrentPlayData.ResourceData.ResourceTitle}[/url]");
+			return JsonValue.Create(
+				new
+				{
+					title = playManager.CurrentPlayData.ResourceData.ResourceTitle,
+					source = factoryManager.RestoreLink(playManager.CurrentPlayData.ResourceData),
+				},
+				x => $"[url={x.source}]{x.title}[/url]"
+			);
 		}
 
 		[Command("song position")]
