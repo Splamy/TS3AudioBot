@@ -16,6 +16,11 @@ namespace TS3AudioBot.CommandSystem.Ast
 		public override AstType Type => AstType.Value;
 		public string Value { get; set; }
 
+		public void BuildValue()
+		{
+			Value = FullRequest.Substring(Position, Length);
+		}
+
 		public override void Write(StringBuilder strb, int depth) => strb.Space(depth).Append(Value);
 	}
 }

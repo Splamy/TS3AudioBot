@@ -269,7 +269,7 @@ namespace TS3Client.Full
 		partial void ProcessEachPluginCommand(PluginCommand cmd)
 		{
 			if (cmd.Name == "cliententerview" && cmd.Data == "version")
-				SendPluginCommand("cliententerview", "TAB", PluginTargetMode.Client);
+				SendPluginCommand("cliententerview", "TAB", PluginTargetMode.Server);
 		}
 
 		partial void ProcessEachCommandError(CommandError error)

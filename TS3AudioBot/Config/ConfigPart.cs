@@ -34,6 +34,7 @@ namespace TS3AudioBot.Config
 			Key = key;
 		}
 
+		public abstract bool ExpectsString { get; }
 		public abstract void FromToml(TomlObject tomlObject);
 		public abstract void ToToml(bool writeDefaults, bool writeDocumentation);
 		public abstract void Derive(ConfigPart derived);

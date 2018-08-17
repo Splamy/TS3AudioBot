@@ -16,6 +16,7 @@ namespace TS3AudioBot.Helper
 
 	public interface IJsonSerializable
 	{
+		bool ExpectsString { get; }
 		void ToJson(JsonWriter writer);
 		E<string> FromJson(JsonReader reader);
 	}
@@ -24,6 +25,9 @@ namespace TS3AudioBot.Helper
 	{
 		public static E<string> FromJson(this IJsonSerializable jsonConfig, string json)
 		{
+			if (jsonConfig.ExpectsString)
+				json = JsonConvert.SerializeObject(json);
+
 			var sr = new StringReader(json);
 			using (var reader = new JsonTextReader(sr))
 			{

@@ -817,15 +817,11 @@ namespace TS3AudioBot
 		{
 			var plist = AutoGetPlaylist(session, invoker);
 
-			if (!index.HasValue || (index.Value >= 0 && index.Value < plist.Count))
-			{
-				playlistManager.PlayFreelist(plist);
-				playlistManager.Index = index ?? 0;
-			}
-			else
-			{
+			if (index.HasValue && (index.Value < 0 || index.Value >= plist.Count))
 				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
-			}
+
+			playlistManager.PlayFreelist(plist);
+			playlistManager.Index = index ?? 0;
 
 			var item = playlistManager.Current();
 			if (item != null)
@@ -891,9 +887,7 @@ namespace TS3AudioBot
 
 		[Command("next")]
 		public static void CommandNext(PlayManager playManager, InvokerData invoker)
-		{
-			playManager.Next(invoker).UnwrapThrow();
-		}
+			=> playManager.Next(invoker).UnwrapThrow();
 
 		[Command("pm")]
 		public static string CommandPm(CallerInfo caller, InvokerData invoker)
@@ -1340,20 +1334,16 @@ namespace TS3AudioBot
 		[Command("unsubscribe channel")]
 		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, InvokerData invoker, ulong? channel = null)
 		{
-			var subChan = channel ?? invoker.ChannelId ?? 0;
-			if (subChan != 0)
-				targetManager.WhisperChannelUnsubscribe(subChan, false);
+			var subChan = channel ?? invoker.ChannelId;
+			if (subChan.HasValue)
+				targetManager.WhisperChannelUnsubscribe(subChan.Value, false);
 		}
 
 		[Command("unsubscribe temporary")]
 		public static void CommandUnsubscribeTemporary(IVoiceTarget targetManager) => targetManager.ClearTemporary();
 
 		[Command("version")]
-		public static JsonValue<BuildData> CommandVersion()
-		{
-			var data = SystemData.AssemblyData;
-			return new JsonValue<BuildData>(data, data.ToLongString());
-		}
+		public static JsonValue<BuildData> CommandVersion() => new JsonValue<BuildData>(SystemData.AssemblyData, d => d.ToLongString());
 
 		[Command("volume")]
 		[Usage("<level>", "A new volume level between 0 and 100.")]

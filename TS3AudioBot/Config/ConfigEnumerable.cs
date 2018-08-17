@@ -20,6 +20,7 @@ namespace TS3AudioBot.Config
 
 		protected virtual TomlTable.TableTypes TableType { get => TomlTable.TableTypes.Default; }
 		public TomlTable TomlObject { get; set; }
+		public override bool ExpectsString => false;
 
 		public override void FromToml(TomlObject tomlObject)
 		{

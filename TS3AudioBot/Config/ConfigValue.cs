@@ -19,6 +19,7 @@ namespace TS3AudioBot.Config
 	[DebuggerDisplay("{Key}:{Value}")]
 	public class ConfigValue<T> : ConfigPart
 	{
+		public override bool ExpectsString => typeof(T) == typeof(string);
 		private ConfigValue<T> backingValue;
 		private bool hasValue = false;
 		public T Default { get; }
