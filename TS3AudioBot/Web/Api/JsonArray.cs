@@ -9,8 +9,13 @@
 
 namespace TS3AudioBot.Web.Api
 {
+	using System;
+
 	public class JsonArray<T> : JsonValue<T[]>
 	{
 		public JsonArray(T[] value, string msg) : base(value, msg) { }
+		public JsonArray(T[] value, Func<T[], string> asString = null)
+			: base(value, asString)
+		{ }
 	}
 }

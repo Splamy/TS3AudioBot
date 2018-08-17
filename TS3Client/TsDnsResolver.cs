@@ -7,22 +7,23 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Text;
-
 namespace TS3Client
 {
+	using Heijden.Dns.Portable;
 	using Heijden.DNS;
 	using System;
+	using System.Collections.Generic;
 	using System.Net;
+	using System.Net.Sockets;
+	using System.Text;
 	using System.Text.RegularExpressions;
 
 	/// <summary>Provides methods to resolve TSDNS, SRV redirects and nicknames</summary>
 	public static class TsDnsResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private const ushort Ts3DefaultPort = 9987;
+		public const ushort Ts3VoiceDefaultPort = 9987;
+		public const ushort Ts3QueryDefaultPort = 10011;
 		private const ushort TsDnsDefaultPort = 41144;
 		private const string DnsPrefixTcp = "_tsdns._tcp.";
 		private const string DnsPrefixUdp = "_ts3._udp.";
@@ -33,7 +34,7 @@ namespace TS3Client
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
 		/// <param name="endPoint">The ip address if successfully resolved. Otherwise a dummy.</param>
 		/// <returns>Whether the resolve was succesful.</returns>
-		public static bool TryResolve(string address, out IPEndPoint endPoint)
+		public static bool TryResolve(string address, out IPEndPoint endPoint, ushort defaultPort = Ts3VoiceDefaultPort)
 		{
 			Log.Debug("Trying to look up '{0}'", address);
 
@@ -49,9 +50,8 @@ namespace TS3Client
 				}
 			}
 
-
 			// host is specified as an IP (+ Port)
-			if ((endPoint = ParseIpEndPoint(address)) != null)
+			if ((endPoint = ParseIpEndPoint(address, defaultPort)) != null)
 			{
 				Log.Trace("Address is an ip: '{0}'", endPoint);
 				return true;
@@ -67,9 +67,9 @@ namespace TS3Client
 			{
 				Recursion = true,
 				Retries = 3,
-				TimeOut = (int)LookupTimeout.TotalMilliseconds,
+				//TimeOut = 1000, XXX
 				UseCache = true,
-				DnsServer = "8.8.8.8",
+				//DnsServer = "8.8.8.8", XXX
 				TransportType = Heijden.DNS.TransportType.Udp,
 			};
 
@@ -95,7 +95,7 @@ namespace TS3Client
 				return false;
 			var domainList = new List<string>();
 			for (int i = 1; i < Math.Min(domainSplit.Length, 4); i++)
-				domainList.Add(string.Join(".", domainSplit, (domainSplit.Length - (i + 1)), i + 1));
+				domainList.Add(string.Join(".", domainSplit, domainSplit.Length - (i + 1), i + 1));
 
 			// Try resolve tcp prefix
 			// Under this address we'll get the tsdns server
@@ -105,7 +105,7 @@ namespace TS3Client
 				if (srvEndPoint == null)
 					continue;
 
-				endPoint = ResolveTsDns(srvEndPoint, uri.Host);
+				endPoint = ResolveTsDns(srvEndPoint, uri.Host, defaultPort);
 				if (endPoint != null)
 					return true;
 			}
@@ -113,7 +113,7 @@ namespace TS3Client
 			// Try resolve to the tsdns service directly
 			foreach (var domain in domainList)
 			{
-				endPoint = ResolveTsDns(domain, TsDnsDefaultPort, uri.Host);
+				endPoint = ResolveTsDns(domain, TsDnsDefaultPort, uri.Host, defaultPort);
 				if (endPoint != null)
 					return true;
 			}
@@ -124,7 +124,7 @@ namespace TS3Client
 				return false;
 
 			var port = string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped))
-				? Ts3DefaultPort
+				? defaultPort
 				: uri.Port;
 
 			endPoint = new IPEndPoint(hostAddress, port);
@@ -134,7 +134,7 @@ namespace TS3Client
 		private static IPEndPoint ResolveSrv(Resolver resolver, string domain)
 		{
 			Log.Trace("Resolving srv record '{0}'", domain);
-			var response = resolver.Query(domain, QType.SRV, QClass.IN);
+			var response = resolver.Query(domain, QType.SRV, QClass.IN).ConfigureAwait(false).GetAwaiter().GetResult();
 
 			if (response.RecordsSRV.Length > 0)
 			{
@@ -147,17 +147,17 @@ namespace TS3Client
 			return null;
 		}
 
-		private static IPEndPoint ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress)
+		private static IPEndPoint ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress, ushort defaultPort)
 		{
 			Log.Trace("Looking for the tsdns under '{0}'", tsDnsAddress);
 			var hostAddress = ResolveDns(tsDnsAddress);
 			if (hostAddress == null)
 				return null;
 
-			return ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress);
+			return ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress, defaultPort);
 		}
 
-		private static IPEndPoint ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress)
+		private static IPEndPoint ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress, ushort defaultPort)
 		{
 			Log.Trace("Looking up tsdns address '{0}'", resolveAddress);
 			string returnString;
@@ -188,7 +188,7 @@ namespace TS3Client
 				return null;
 			}
 
-			return ParseIpEndPoint(returnString);
+			return ParseIpEndPoint(returnString, defaultPort);
 		}
 
 		private static IPAddress ResolveDns(string hostOrNameAddress)
@@ -206,7 +206,7 @@ namespace TS3Client
 
 		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|localhost)(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
-		private static IPEndPoint ParseIpEndPoint(string address)
+		private static IPEndPoint ParseIpEndPoint(string address, ushort defaultPort)
 		{
 			var match = IpRegex.Match(address);
 			if (!match.Success)
@@ -219,7 +219,7 @@ namespace TS3Client
 				return null;
 
 			if (!match.Groups["port"].Success)
-				return new IPEndPoint(ipAddr, Ts3DefaultPort);
+				return new IPEndPoint(ipAddr, defaultPort);
 
 			if (!ushort.TryParse(match.Groups["port"].Value, out ushort port))
 				return null;

@@ -10,35 +10,36 @@
 namespace TS3AudioBot.Helper
 {
 	using CommandSystem;
+	using Localization;
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 	using System;
 	using System.IO;
 	using System.Reflection;
-	using System.Security.Principal;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
 
-	[Serializable]
 	public static class Util
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
+
+		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", DefaultRegexConfig);
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
 		/// <param name="timeout">Timeout in milliseconds.</param>
 		public static void WaitOrTimeout(Func<bool> predicate, TimeSpan timeout)
 		{
-			int msTimeout = (int)timeout.TotalSeconds;
+			var msTimeout = (int)timeout.TotalMilliseconds;
 			while (!predicate() && msTimeout-- > 0)
 				Thread.Sleep(1);
 		}
 
 		public static void WaitForThreadEnd(Thread thread, TimeSpan timeout)
 		{
-			if (thread != null && thread.IsAlive)
+			if (thread?.IsAlive == true)
 			{
 				WaitOrTimeout(() => thread.IsAlive, timeout);
 				if (thread.IsAlive)
@@ -60,12 +61,13 @@ namespace TS3AudioBot.Helper
 		{
 			get
 			{
+#if NET46
 				try
 				{
-					using (var user = WindowsIdentity.GetCurrent())
+					using (var user = System.Security.Principal.WindowsIdentity.GetCurrent())
 					{
-						var principal = new WindowsPrincipal(user);
-						return principal.IsInRole(WindowsBuiltInRole.Administrator);
+						var principal = new System.Security.Principal.WindowsPrincipal(user);
+						return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
 					}
 				}
 				catch (UnauthorizedAccessException) { return false; }
@@ -74,6 +76,9 @@ namespace TS3AudioBot.Helper
 					Log.Warn("Uncatched admin check.");
 					return false;
 				}
+#else
+				return false;
+#endif
 			}
 		}
 
@@ -94,7 +99,7 @@ namespace TS3AudioBot.Helper
 
 		public static string FromSeed(int seed)
 		{
-			char[] seedstr = new char[7];
+			var seedstr = new char[7];
 			uint plainseed = unchecked((uint)seed);
 			for (int i = 0; i < 7; i++)
 			{
@@ -102,12 +107,13 @@ namespace TS3AudioBot.Helper
 				{
 					plainseed--;
 					var remainder = plainseed % 26;
-					char digit = (char)(remainder + 'a');
-					seedstr[i] = digit;
+					seedstr[i] = (char)(remainder + 'a');
 					plainseed = (plainseed - remainder) / 26;
 				}
 				else
+				{
 					seedstr[i] = '\0';
+				}
 			}
 			return new string(seedstr).TrimEnd('\0');
 		}
@@ -122,22 +128,22 @@ namespace TS3AudioBot.Helper
 				finalValue += powVal;
 				finalValue %= ((long)uint.MaxValue + 1);
 			}
-			uint uval = (uint)finalValue;
+			var uval = (uint)finalValue;
 			return unchecked((int)uval);
 		}
 
-		public static void UnwrapThrow(this R r)
+		public static void UnwrapThrow(this E<LocalStr> r)
 		{
 			if (!r.Ok)
-				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
-		public static T UnwrapThrow<T>(this R<T> r)
+		public static T UnwrapThrow<T>(this R<T, LocalStr> r)
 		{
 			if (r.Ok)
 				return r.Value;
 			else
-				throw new CommandException(r.Error, CommandExceptionReason.CommandError);
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
 		public static string UnrollException(this Exception ex)
@@ -162,12 +168,23 @@ namespace TS3AudioBot.Helper
 		public static R<T> TryCast<T>(this JToken token, string key)
 		{
 			if (token == null)
-				return "No json token";
+				return R.Err;
 			var value = token.SelectToken(key);
 			if (value == null)
-				return "Key not found";
+				return R.Err;
 			try { return value.ToObject<T>(); }
-			catch (JsonReaderException) { return "Invalid type"; }
+			catch (JsonReaderException) { return R.Err; }
+		}
+
+		public static E<LocalStr> IsSafeFileName(string name)
+		{
+			if (string.IsNullOrWhiteSpace(name))
+				return new LocalStr(strings.error_playlist_name_invalid_empty); // TODO change to more generic error
+			if (name.Length >= 64)
+				return new LocalStr(strings.error_playlist_name_invalid_too_long);
+			if (!ValidPlistName.IsMatch(name))
+				return new LocalStr(strings.error_playlist_name_invalid_character);
+			return R.Ok;
 		}
 	}
 

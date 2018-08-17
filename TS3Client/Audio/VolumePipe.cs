@@ -10,6 +10,7 @@
 namespace TS3Client.Audio
 {
 	using System;
+	using System.Runtime.InteropServices;
 
 	public class VolumePipe : IAudioPipe
 	{
@@ -27,13 +28,13 @@ namespace TS3Client.Audio
 			else if (IsAbout(volume, 0.5f))
 			{
 				// fast calculation for *0.5 volume
-				var shortArr = audioSamples.NonPortableCast<byte, short>();
+				var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
 				for (int i = 0; i < shortArr.Length; i++)
 					shortArr[i] = (short)(shortArr[i] >> 1);
 			}
 			else
 			{
-				var shortArr = audioSamples.NonPortableCast<byte, short>();
+				var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
 				for (int i = 0; i < shortArr.Length; i++)
 					shortArr[i] = (short)Math.Max(Math.Min(shortArr[i] * volume, short.MaxValue), short.MinValue);
 			}

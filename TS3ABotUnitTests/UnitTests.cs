@@ -1,18 +1,11 @@
 // TS3AudioBot - An advanced Musicbot for Teamspeak 3
-// Copyright (C) 2016  TS3AudioBot contributors
-// 
+// Copyright (C) 2017  TS3AudioBot contributors
+//
 // This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-// 
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 namespace TS3ABotUnitTests
 {
@@ -22,13 +15,10 @@ namespace TS3ABotUnitTests
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using System.Reflection;
 	using System.Text.RegularExpressions;
 	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
-	using TS3AudioBot.CommandSystem;
-	using TS3AudioBot.CommandSystem.CommandResults;
-	using TS3AudioBot.CommandSystem.Commands;
+	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
 	using TS3AudioBot.ResourceFactories;
@@ -48,30 +38,29 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-
-			var inv1 = new ClientData { ClientId = 10, DatabaseId = 101, Name = "Invoker1" };
-			var inv2 = new ClientData { ClientId = 20, DatabaseId = 102, Name = "Invoker2" };
+			var inv1 = new ClientData { ClientId = 10, Uid = "Uid1", Name = "Invoker1" };
+			var inv2 = new ClientData { ClientId = 20, Uid = "Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
 			var ar3 = new AudioResource("kitty", "tw_ar3", "twitch");
 
-			var data1 = new HistorySaveData(ar1, inv1.DatabaseId);
-			var data2 = new HistorySaveData(ar2, inv2.DatabaseId);
-			var data3 = new HistorySaveData(ar3, 103);
+			var data1 = new HistorySaveData(ar1, inv1.Uid);
+			var data2 = new HistorySaveData(ar2, inv2.Uid);
+			var data3 = new HistorySaveData(ar3, "Uid3");
 
-			var memcfg = ConfigFile.CreateDummy();
-			var hmf = memcfg.GetDataStruct<HistoryManagerData>("HistoryManager", true);
-			hmf.HistoryFile = testFile;
-			hmf.FillDeletedIds = false;
+			var confHistory = ConfigTable.CreateRoot<ConfHistory>();
+			confHistory.FillDeletedIds.Value = false;
+			var confDb = ConfigTable.CreateRoot<ConfDb>();
+			confDb.Path.Value = testFile;
 
 			DbStore db;
 			HistoryManager hf;
 
 			void CreateDbStore()
 			{
-				db = new DbStore(hmf);
-				hf = new HistoryManager(hmf) { Database = db };
+				db = new DbStore(confDb);
+				hf = new HistoryManager(confHistory) { Database = db };
 				hf.Initialize();
 			}
 
@@ -111,7 +100,7 @@ namespace TS3ABotUnitTests
 
 			var ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 
 			db.Dispose();
@@ -125,14 +114,14 @@ namespace TS3ABotUnitTests
 
 			var ale2 = hf.FindEntryByResource(ar2);
 			hf.RenameEntry(ale2, "me_ar2_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 			hf.RenameEntry(ale2, "me_ar2_exxxxxtra_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, 42));
+			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			db.Dispose();
 
@@ -192,97 +181,6 @@ namespace TS3ABotUnitTests
 		/* ====================== Algorithm Tests =========================*/
 
 		[Test]
-		public void XCommandSystemFilterTest()
-		{
-			var filterList = new Dictionary<string, object>
-			{
-				{ "help", null },
-				{ "quit", null },
-				{ "play", null },
-				{ "ply", null }
-			};
-
-			var filter = Filter.GetFilterByName("ic3").Unwrap();
-
-			// Exact match
-			var result = filter.Filter(filterList, "help");
-			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("help", result.First().Key);
-
-			// The first occurence of y
-			result = filter.Filter(filterList, "y");
-			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("ply", result.First().Key);
-
-			// The smallest word
-			result = filter.Filter(filterList, "zorn");
-			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("ply", result.First().Key);
-
-			// First letter match
-			result = filter.Filter(filterList, "q");
-			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("quit", result.First().Key);
-
-			// Ignore other letters
-			result = filter.Filter(filterList, "palyndrom");
-			Assert.AreEqual(1, result.Count());
-			Assert.AreEqual("play", result.First().Key);
-
-			filterList.Add("pla", null);
-
-			// Ambiguous command
-			result = filter.Filter(filterList, "p");
-			Assert.AreEqual(2, result.Count());
-			Assert.IsTrue(result.Any(r => r.Key == "ply"));
-			Assert.IsTrue(result.Any(r => r.Key == "pla"));
-		}
-
-		private static string OptionalFunc(string s = null) => s == null ? "NULL" : "NOT NULL";
-
-		[Test]
-		public void XCommandSystemTest()
-		{
-			var commandSystem = new XCommandSystem();
-			var group = commandSystem.RootCommand;
-			group.AddCommand("one", new FunctionCommand(() => "ONE"));
-			group.AddCommand("two", new FunctionCommand(() => "TWO"));
-			group.AddCommand("echo", new FunctionCommand(s => s));
-			group.AddCommand("optional", new FunctionCommand(typeof(UnitTests).GetMethod(nameof(OptionalFunc), BindingFlags.NonPublic | BindingFlags.Static)));
-
-			// Basic tests
-			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(Utils.ExecInfo,
-				 new ICommand[] { new StringCommand("one") })).Content);
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!one"));
-			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(Utils.ExecInfo, "!t"));
-			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e TEST"));
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!o"));
-
-			// Optional parameters
-			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!e"));
-			Assert.AreEqual("NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op"));
-			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op 1"));
-
-			// Command chaining
-			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e (!e TEST)"));
-			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(Utils.ExecInfo, "!e (!t)"));
-			Assert.AreEqual("NOT NULL", commandSystem.ExecuteCommand(Utils.ExecInfo, "!op (!e TEST)"));
-			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(Utils.ExecInfo, "!(!e on)"));
-
-			// Command overloading
-			var intCom = new Func<int, string>(i => "INT");
-			var strCom = new Func<string, string>(s => "STRING");
-			group.AddCommand("overlord", new OverloadedFunctionCommand(new[] {
-				new FunctionCommand(intCom.Method, intCom.Target),
-				new FunctionCommand(strCom.Method, strCom.Target)
-			}));
-
-			Assert.AreEqual("INT", commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord 1"));
-			Assert.AreEqual("STRING", commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord a"));
-			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!overlord"));
-		}
-
-		[Test]
 		public void ListedShuffleTest()
 		{
 			TestShuffleAlgorithm(new ListedShuffle());
@@ -319,7 +217,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Factory_YoutubeFactoryTest()
 		{
-			using (IResourceFactory rfac = new YoutubeFactory(new YoutubeFactoryData()))
+			using (IResourceFactory rfac = new YoutubeFactory())
 			{
 				// matching links
 				Assert.AreEqual(rfac.MatchResource(@"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
@@ -335,132 +233,13 @@ namespace TS3ABotUnitTests
 		/* ======================= TS3Client Tests ========================*/
 
 		[Test]
-		public void Ts3Client_RingQueueTest()
-		{
-			var q = new RingQueue<int>(3, 5);
-
-			q.Set(0, 42);
-
-			Assert.True(q.TryPeekStart(0, out int ov));
-			Assert.AreEqual(ov, 42);
-
-			q.Set(1, 43);
-
-			// already set
-			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(1, 99));
-
-			Assert.True(q.TryPeekStart(0, out ov));
-			Assert.AreEqual(ov, 42);
-			Assert.True(q.TryPeekStart(1, out ov));
-			Assert.AreEqual(ov, 43);
-
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 42);
-
-			Assert.True(q.TryPeekStart(0, out ov));
-			Assert.AreEqual(ov, 43);
-			Assert.False(q.TryPeekStart(1, out ov));
-
-			q.Set(3, 45);
-			q.Set(2, 44);
-
-			// buffer overfull
-			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(4, 99));
-
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 43);
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 44);
-
-			q.Set(4, 46);
-
-			// out of mod range
-			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(5, 99));
-
-			q.Set(0, 47);
-
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 45);
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 46);
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 47);
-
-			q.Set(2, 49);
-
-			Assert.False(q.TryDequeue(out ov));
-
-			q.Set(1, 48);
-
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 48);
-			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 49);
-		}
-
-		[Test]
-		public void Ts3Client_RingQueueTest2()
-		{
-			var q = new RingQueue<int>(50, ushort.MaxValue + 1);
-
-			for (int i = 0; i < ushort.MaxValue - 10; i++)
-			{
-				q.Set(i, i);
-				Assert.True(q.TryDequeue(out var iCheck));
-				Assert.AreEqual(iCheck, i);
-			}
-
-			var setStatus = q.IsSet(ushort.MaxValue - 20);
-			Assert.True(setStatus.HasFlag(ItemSetStatus.Set));
-
-			for (int i = ushort.MaxValue - 10; i < ushort.MaxValue + 10; i++)
-			{
-				q.Set(i % (ushort.MaxValue + 1), 42);
-			}
-		}
-
-		[Test]
-		public void Ts3Client_RingQueueTest3()
-		{
-			var q = new RingQueue<int>(100, ushort.MaxValue + 1);
-
-			int iSet = 0;
-			for (int blockSize = 1; blockSize < 100; blockSize++)
-			{
-				for (int i = 0; i < blockSize; i++)
-				{
-					q.Set(iSet++, i);
-				}
-				for (int i = 0; i < blockSize; i++)
-				{
-					Assert.True(q.TryDequeue(out var iCheck));
-					Assert.AreEqual(i, iCheck);
-				}
-			}
-
-			for (int blockSize = 1; blockSize < 100; blockSize++)
-			{
-				q = new RingQueue<int>(100, ushort.MaxValue + 1);
-				for (int i = 0; i < blockSize; i++)
-				{
-					q.Set(i, i);
-				}
-				for (int i = 0; i < blockSize; i++)
-				{
-					Assert.True(q.TryDequeue(out var iCheck));
-					Assert.AreEqual(i, iCheck);
-				}
-			}
-		}
-
-		[Test]
 		public void VersionSelfCheck()
 		{
 			Ts3Crypt.VersionSelfCheck();
 		}
 	}
 
-	static class Extensions
+	internal static class Extensions
 	{
 		public static IEnumerable<AudioLogEntry> GetLastXEntrys(this HistoryManager hf, int num)
 		{

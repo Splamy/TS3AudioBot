@@ -28,7 +28,24 @@ foreach (var struc in gen.@struct)
 {
 #>
 	public sealed partial class <#= struc.name #>
-	{<# foreach(var prop in struc.properties) { 
+	{
+		public <#= struc.name #>()
+		{
+			<# ClearIndent();
+			PushIndent("\t\t\t");
+			foreach(var prop in struc.properties) {
+				switch(prop.mod) {
+				case "array":
+					WriteLine($"{prop.name} = new List<{prop.type}>();");
+					break;
+				case "map":
+					WriteLine($"{prop.name} = new Dictionary<{prop.key},{prop.type}>();");
+					break;
+				}
+			} #>
+		}
+
+	<# foreach(var prop in struc.properties) {
 			if (!prop.get.Value && !prop.set.Value) continue;
 		#>
 		public <#
@@ -43,7 +60,7 @@ foreach (var struc in gen.@struct)
 				Write(prop.type);
 				break;
 			}
-		#> <#= prop.name #> { <#= prop.get.Value?"get;":""#> <#= prop.set.Value?"set;":""#> }<# } #>
+		#> <#= prop.name #> { <#= prop.get.Value?"":"internal " #>get; <#= prop.set.Value?"":"internal " #>set; }<# } #>
 	}
 <#
 }

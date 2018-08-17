@@ -15,8 +15,6 @@
 	"cmd.song",
 	"cmd.loop",
 	"cmd.random",
-	"cmd.random.seed",
-	"cmd.volume",
 
 	# Conditionals and basic scripting
 	"cmd.if",

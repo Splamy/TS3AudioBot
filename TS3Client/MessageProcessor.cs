@@ -20,22 +20,25 @@ namespace TS3Client
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		protected readonly List<WaitBlock>[] dependingBlocks;
 
-		protected string cmdLineBuffer;
+		protected ReadOnlyMemory<byte> cmdLineBuffer;
 		protected readonly object waitBlockLock = new object();
+
+		const byte AsciiSpace = (byte)' ';
 
 		public BaseMessageProcessor()
 		{
 			dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
 		}
 
-		public LazyNotification? PushMessage(string message)
+		public LazyNotification? PushMessage(ReadOnlyMemory<byte> message)
 		{
+			var msgSpan = message.Span;
 			string notifyname;
-			int splitindex = message.IndexOf(' ');
+			int splitindex = msgSpan.IndexOf(AsciiSpace);
 			if (splitindex < 0)
-				notifyname = message.TrimEnd();
+				notifyname = msgSpan.TrimEnd(AsciiSpace).NewUtf8String();
 			else
-				notifyname = message.Substring(0, splitindex);
+				notifyname = msgSpan.Slice(0, splitindex).NewUtf8String();
 
 			bool hasEqual;
 			NotificationType ntfyType;
@@ -48,13 +51,19 @@ namespace TS3Client
 				return null;
 			}
 
-			var lineDataPart = splitindex < 0 ? "" : message.Substring(splitindex);
+			var lineDataPart = splitindex < 0 ? ReadOnlySpan<byte>.Empty : msgSpan.Slice(splitindex);
 
 			// if it's not an error it is a notification
 			if (ntfyType != NotificationType.CommandError)
 			{
 				var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
-				var lazyNotification = new LazyNotification(notification, ntfyType);
+				if (!notification.Ok)
+				{
+					Log.Warn("Got unparsable message. ({0})", msgSpan.NewUtf8String());
+					return null;
+				}
+
+				var lazyNotification = new LazyNotification(notification.Value, ntfyType);
 				lock (waitBlockLock)
 				{
 					var dependantList = dependingBlocks[(int)ntfyType];

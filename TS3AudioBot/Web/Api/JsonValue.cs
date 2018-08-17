@@ -10,35 +10,36 @@
 namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
+	using Helper;
 	using Newtonsoft.Json;
 	using System;
 
-	public class JsonValue<T> : JsonValueBase
+	public class JsonValue<T> : JsonValue
 	{
-		public static Func<T, string> AsString { get; set; }
-		public static Func<T, object> AsJson { get; set; }
+		protected Func<T, string> AsString { get; }
 
-		public new T Value => (T)base.Value;
+		new public T Value => (T)base.Value;
 
 		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }
+		public JsonValue(T value, Func<T, string> asString = null) : base(value)
+		{
+			AsString = asString;
+		}
 
 		public override object GetSerializeObject()
 		{
-			if (AsJson != null)
-				return AsJson(Value);
-			else
-				return Value;
+			return Value;
 		}
 
 		public override string ToString()
 		{
 			if (AsStringResult == null)
 			{
-				if (Value == null)
-					AsStringResult = string.Empty;
-				else if (AsString != null)
+				if (AsString != null)
 					AsStringResult = AsString.Invoke(Value);
+				else if (Value == null)
+					AsStringResult = string.Empty;
 				else
 					AsStringResult = Value.ToString();
 			}
@@ -46,18 +47,12 @@ namespace TS3AudioBot.Web.Api
 		}
 	}
 
-	public class JsonValueBase : JsonObject
+	public abstract class JsonValue : JsonObject
 	{
-		static JsonValueBase()
-		{
-			JsonValue<BotCommand>.AsString = cmd => cmd.GetHelp();
-			JsonValue<BotCommand>.AsJson = cmd => cmd.AsJsonObj;
-		}
-
 		protected object Value { get; }
 
-		public JsonValueBase(object value) : base(null) { Value = value; }
-		public JsonValueBase(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
+		public JsonValue(object value) : base(null) { Value = value; }
+		public JsonValue(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
 
 		public override object GetSerializeObject() => Value;
 
@@ -66,6 +61,8 @@ namespace TS3AudioBot.Web.Api
 			var seriObj = GetSerializeObject();
 			if (seriObj != null && XCommandSystem.BasicTypes.Contains(seriObj.GetType()))
 				return JsonConvert.SerializeObject(this);
+			if (seriObj is IJsonSerializable jsonSerializable)
+				return jsonSerializable.ToJson();
 			return base.Serialize();
 		}
 
@@ -75,5 +72,11 @@ namespace TS3AudioBot.Web.Api
 				AsStringResult = Value?.ToString() ?? string.Empty;
 			return AsStringResult;
 		}
+
+		// static creator methods for anonymous stuff
+
+		public static JsonValue<T> Create<T>(T anon) => new JsonValue<T>(anon);
+		public static JsonValue<T> Create<T>(T anon, string msg) => new JsonValue<T>(anon, msg);
+		public static JsonValue<T> Create<T>(T anon, Func<T, string> asString = null) => new JsonValue<T>(anon, asString);
 	}
 }

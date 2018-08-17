@@ -9,10 +9,14 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Localization;
+	using Playlists;
+	using System;
+
 	public interface IPlaylistFactory : IFactory
 	{
 		MatchCertainty MatchPlaylist(string uri);
 
-		R<Playlist> GetPlaylist(string url);
+		R<Playlist, LocalStr> GetPlaylist(string url);
 	}
 }

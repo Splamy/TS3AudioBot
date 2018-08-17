@@ -26,7 +26,7 @@ namespace TS3Client.Full
 
 		public List<LicenseBlock> Blocks { get; set; }
 
-		public static R<Licenses> Parse(ReadOnlySpan<byte> data)
+		public static R<Licenses, string> Parse(ReadOnlySpan<byte> data)
 		{
 			if (data.Length < 1)
 				return "License too short";
@@ -72,7 +72,7 @@ namespace TS3Client.Full
 		public DateTime NotValidAfter { get; set; }
 		public byte[] Hash { get; set; }
 
-		public static R<(LicenseBlock block, int read)> Parse(ReadOnlySpan<byte> data)
+		public static R<(LicenseBlock block, int read), string> Parse(ReadOnlySpan<byte> data)
 		{
 			if (data.Length < MinBlockLen)
 			{
@@ -123,12 +123,12 @@ namespace TS3Client.Full
 
 			var allLen = MinBlockLen + read;
 			var hash = Ts3Crypt.Hash512It(data.Slice(1, allLen - 1).ToArray());
-			block.Hash = hash.AsSpan().Slice(0, 32).ToArray();
+			block.Hash = hash.AsSpan(0, 32).ToArray();
 
 			return (block, allLen);
 		}
 
-		private static R<(string str, int read)> ReadNullString(ReadOnlySpan<byte> data)
+		private static R<(string str, int read), string> ReadNullString(ReadOnlySpan<byte> data)
 		{
 			var termIndex = data.IndexOf((byte)0); // C# what?
 			if (termIndex >= 0)

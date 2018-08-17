@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Plugins
 {
+	using Config;
 	using Helper;
 	using System;
 	using System.Collections.Generic;
@@ -26,7 +27,6 @@ namespace TS3AudioBot.Plugins
 	//   - 0/1 Factory
 	//     - Facory name conflict
 	// - [ Instantiate plugin (Depending on type) ]
-	// - Add commands to rights system
 	// - Add commands to command manager
 	// - Start config to system?
 
@@ -36,15 +36,15 @@ namespace TS3AudioBot.Plugins
 
 		public Dependency.CoreInjector CoreInjector { get; set; }
 
-		private readonly PluginManagerData pluginManagerData;
+		private readonly ConfPlugins config;
 		private readonly Dictionary<string, Plugin> plugins;
 		private readonly HashSet<int> usedIds;
 
-		public PluginManager(PluginManagerData pmd)
+		public PluginManager(ConfPlugins config)
 		{
 			Util.Init(out plugins);
 			Util.Init(out usedIds);
-			pluginManagerData = pmd;
+			this.config = config;
 		}
 
 		private void CheckAndClearPlugins(Bot bot)
@@ -56,7 +56,7 @@ namespace TS3AudioBot.Plugins
 		/// <summary>Updates the plugin dictionary with new and changed plugins.</summary>
 		private void CheckLocalPlugins(Bot bot)
 		{
-			var dir = new DirectoryInfo(pluginManagerData.PluginPath);
+			var dir = new DirectoryInfo(config.Path);
 			if (!dir.Exists)
 				return;
 
@@ -84,7 +84,7 @@ namespace TS3AudioBot.Plugins
 					if (IsIgnored(file))
 						continue;
 
-					plugin = new Plugin(file, GetFreeId(), pluginManagerData.WriteStatusFiles);
+					plugin = new Plugin(file, GetFreeId(), config.WriteStatusFiles);
 
 					if (plugin.Load() == PluginResponse.Disabled)
 					{
@@ -224,14 +224,5 @@ namespace TS3AudioBot.Plugins
 			Status = status;
 			Type = type;
 		}
-	}
-
-	public class PluginManagerData : ConfigData
-	{
-		[Info("The absolute or relative path to the plugins folder", "Plugins")]
-		public string PluginPath { get; set; }
-
-		[Info("Write to .status files to store a plugin enable status persistently and restart them on launch.", "false")]
-		public bool WriteStatusFiles { get; set; }
 	}
 }

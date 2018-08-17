@@ -10,10 +10,11 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Helper;
+	using Localization;
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 	using System;
-	using System.Drawing;
+	using System.IO;
 	using System.Text.RegularExpressions;
 
 	public class BandcampFactory : IResourceFactory, IThumbnailFactory
@@ -29,41 +30,41 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(string uri) => BandcampUrlRegex.IsMatch(uri).ToMatchCertainty();
 
-		public R<PlayResource> GetResource(string url)
+		public R<PlayResource, LocalStr> GetResource(string url)
 		{
 			var match = BandcampUrlRegex.Match(url);
 			if (!match.Success)
-				return "Not a valid bandcamp link. Please pass the full link";
+				return new LocalStr(strings.error_media_invalid_uri);
 
 			var artistName = match.Groups[1].Value;
 			var trackName = match.Groups[2].Value;
 
 			var uri = new Uri($"https://{artistName}.bandcamp.com/track/{trackName}");
 			if (!WebWrapper.DownloadString(out string webSite, uri))
-				return "Could not connect to bandcamp";
+				return new LocalStr(strings.error_net_no_connection);
 
 			match = TrackMainJsonRegex.Match(webSite);
 			if (!match.Success)
-				return "Could not extract track data";
+				return new LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex)");
 
 			JToken jobj;
 			try { jobj = JToken.Parse(match.Groups[1].Value); }
-			catch (JsonReaderException) { return "Could not parse tack data"; }
+			catch (JsonReaderException) { return new LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex.JToken)"); }
 
 			if (!(jobj is JArray jarr) || jarr.Count == 0)
-				return "No tracks";
+				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			var firstTrack = jarr[0];
 			var id = firstTrack.TryCast<string>("track_id").OkOr(null);
 			var title = firstTrack.TryCast<string>("title").OkOr(null);
 			var trackObj = firstTrack["file"]?.TryCast<string>("mp3-128").OkOr("");
 			if (id == null || title == null || trackObj == null)
-				return "No track";
+				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			return new BandcampPlayResource(trackObj, new AudioResource(id, title, FactoryFor), GetTrackArtId(webSite));
 		}
 
-		public R<PlayResource> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
 		{
 			var result = DownloadEmbeddedSite(resource.ResourceId);
 			if (!result.Ok) return result.Error;
@@ -79,7 +80,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			var match = TrackLinkRegex.Match(webSite);
 			if (!match.Success)
-				return "Could not extract track link";
+				return new LocalStr(strings.error_media_internal_missing + " (TrackLinkRegex)");
 
 			return new BandcampPlayResource(match.Groups[1].Value, resource, GetTrackArtId(webSite));
 		}
@@ -87,24 +88,26 @@ namespace TS3AudioBot.ResourceFactories
 		public string RestoreLink(string id)
 		{
 			var result = DownloadEmbeddedSite(id);
-			if (!result.Ok) return result.Error;
-			var webSite = result.Value;
-
-			var match = TrackRestoreRegex.Match(webSite);
-			return match.Success
-				? match.Groups[1].Value
-				: "https://bandcamp.com/EmbeddedPlayer/v=2/track={id}"; // backup when something's wrong with the website
+			if (result.Ok)
+			{
+				var webSite = result.Value;
+				var match = TrackRestoreRegex.Match(webSite);
+				if (match.Success)
+					return match.Groups[1].Value;
+			}
+			// backup when something's wrong with the website
+			return "https://bandcamp.com/EmbeddedPlayer/v=2/track={id}";
 		}
 
-		private static R<string> DownloadEmbeddedSite(string id)
+		private static R<string, LocalStr> DownloadEmbeddedSite(string id)
 		{
 			var uri = new Uri($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}");
 			if (!WebWrapper.DownloadString(out string webSite, uri))
-				return R<string>.Err("Could not connect to bandcamp");
-			return R<string>.OkR(webSite);
+				return new LocalStr(strings.error_net_no_connection);
+			return webSite;
 		}
 
-		public R<Image> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			string artId;
 			if (playResource is BandcampPlayResource bandcampPlayResource)
@@ -121,7 +124,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			if (string.IsNullOrEmpty(artId))
-				return "No image found";
+				return new LocalStr(strings.error_media_image_not_found);
 
 			//  1 : 1600px/1600px
 			//  2 :  350px/ 350px
@@ -141,18 +144,7 @@ namespace TS3AudioBot.ResourceFactories
 			// 16 :  700px/ 700px
 			// 42 :   50px/  50px / supporter
 			var imgurl = new Uri($"https://f4.bcbits.com/img/a{artId}_4.jpg");
-			Image img = null;
-			var resresult = WebWrapper.GetResponse(imgurl, (webresp) =>
-			{
-				using (var stream = webresp.GetResponseStream())
-				{
-					if (stream != null)
-						img = Image.FromStream(stream);
-				}
-			});
-			if (resresult != ValidateCode.Ok)
-				return "Error while reading image";
-			return img;
+			return WebWrapper.GetResponseUnsafe(imgurl);
 		}
 
 		private static string GetTrackArtId(string site)

@@ -9,21 +9,24 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using AudioTags;
+	using Config;
 	using Helper;
-	using Helper.AudioTags;
+	using Localization;
+	using Playlists;
 	using System;
 	using System.Collections.Generic;
-	using System.Drawing;
 	using System.IO;
 	using System.Linq;
 
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
-		private readonly MediaFactoryData mediaFactoryData;
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		private readonly ConfPath config;
 
-		public MediaFactory(MediaFactoryData mfd)
+		public MediaFactory(ConfPath config)
 		{
-			mediaFactoryData = mfd;
+			this.config = config;
 		}
 
 		public string FactoryFor => "media";
@@ -38,12 +41,12 @@ namespace TS3AudioBot.ResourceFactories
 			File.Exists(uri) ? MatchCertainty.Maybe
 			: MatchCertainty.OnlyIfLast;
 
-		public R<PlayResource> GetResource(string uri)
+		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
 			return GetResourceById(new AudioResource(uri, null, FactoryFor));
 		}
 
-		public R<PlayResource> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
 		{
 			var result = ValidateUri(resource.ResourceId);
 			if (!result)
@@ -62,7 +65,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(string id) => id;
 
-		private R<ResData> ValidateUri(string uri)
+		private R<ResData, LocalStr> ValidateUri(string uri)
 		{
 			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri uriResult))
 			{
@@ -71,9 +74,9 @@ namespace TS3AudioBot.ResourceFactories
 				 || uriResult.Scheme == Uri.UriSchemeFtp)
 					return ValidateWeb(uriResult);
 				if (uriResult.Scheme == Uri.UriSchemeFile)
-					return ValidateFile(uriResult.OriginalString);
+					return ValidateFile(uri);
 
-				return R<ResData>.Err(RResultCode.MediaUnknownUri.ToString());
+				return new LocalStr(strings.error_media_invalid_uri);
 			}
 			else
 			{
@@ -88,7 +91,7 @@ namespace TS3AudioBot.ResourceFactories
 			return headerData;
 		}
 
-		private static R<ResData> ValidateWeb(Uri link)
+		private static R<ResData, LocalStr> ValidateWeb(Uri link)
 		{
 			var result = WebWrapper.GetResponseUnsafe(link);
 			if (!result.Ok)
@@ -101,55 +104,53 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private R<ResData> ValidateFile(string path)
+		private R<ResData, LocalStr> ValidateFile(string path)
 		{
 			var foundPath = FindFile(path);
+			Log.Trace("FindFile check result: '{0}'", foundPath);
 			if (foundPath == null)
-				return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString());
+				return new LocalStr(strings.error_media_file_not_found);
 
 			try
 			{
 				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read))
 				{
 					var headerData = GetStreamHeaderData(stream);
-					return R<ResData>.OkR(new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture });
+					return new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture };
 				}
 			}
-			// TODO: correct errors
-			catch (PathTooLongException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
-			catch (DirectoryNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
-			catch (FileNotFoundException) { return R<ResData>.Err(RResultCode.MediaFileNotFound.ToString()); }
-			catch (IOException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
-			catch (UnauthorizedAccessException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
-			catch (NotSupportedException) { return R<ResData>.Err(RResultCode.AccessDenied.ToString()); }
+			catch (UnauthorizedAccessException) { return new LocalStr(strings.error_io_missing_permission); }
+			catch (Exception ex)
+			{
+				Log.Warn("Failed to load song \"{0}\", because {1}", path, ex.Message);
+				return new LocalStr(strings.error_io_unknown_error);
+			}
 		}
 
 		private Uri FindFile(string path)
 		{
-			if (!Uri.TryCreate(path, UriKind.RelativeOrAbsolute, out var uri))
-				return null;
-
-			if (uri.IsAbsoluteUri)
-				return File.Exists(path) || Directory.Exists(path) ? uri : null;
+			Log.Trace("Finding media path: '{0}'", path);
 
 			try
 			{
 				var fullPath = Path.GetFullPath(path);
 				if (File.Exists(fullPath) || Directory.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
-				fullPath = Path.GetFullPath(Path.Combine(mediaFactoryData.DefaultPath, path));
+				fullPath = Path.GetFullPath(Path.Combine(config.Path.Value, path));
 				if (File.Exists(fullPath) || Directory.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
 			}
 			catch (Exception ex)
 			when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException)
-			{ }
+			{
+				Log.Trace(ex, "Couldn't load resource");
+			}
 			return null;
 		}
 
 		public void Dispose() { }
 
-		public R<Playlist> GetPlaylist(string url)
+		public R<Playlist, LocalStr> GetPlaylist(string url)
 		{
 			var foundUri = FindFile(url);
 
@@ -169,12 +170,14 @@ namespace TS3AudioBot.ResourceFactories
 
 					return plist;
 				}
-				// TODO: correct errors
-				catch (PathTooLongException) { return R<Playlist>.Err(RResultCode.AccessDenied.ToString()); }
-				catch (ArgumentException) { return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString()); }
+				catch (Exception ex)
+				{
+					Log.Warn("Failed to load playlist \"{0}\", because {1}", url, ex.Message);
+					return new LocalStr(strings.error_io_unknown_error);
+				}
 			}
 
-			var m3uResult = R<IReadOnlyList<PlaylistItem>>.Err(string.Empty);
+			var m3uResult = R<IReadOnlyList<PlaylistItem>, string>.Err(string.Empty);
 			if (foundUri != null && File.Exists(foundUri.OriginalString))
 			{
 				using (var stream = File.OpenRead(foundUri.OriginalString))
@@ -197,10 +200,10 @@ namespace TS3AudioBot.ResourceFactories
 				return m3uList;
 			}
 
-			return R<Playlist>.Err(RResultCode.MediaFileNotFound.ToString());
+			return new LocalStr(strings.error_media_file_not_found);
 		}
 
-		private static R<Stream> GetStreamFromUriUnsafe(Uri uri)
+		private static R<Stream, LocalStr> GetStreamFromUriUnsafe(Uri uri)
 		{
 			if (uri.Scheme == Uri.UriSchemeHttp
 				|| uri.Scheme == Uri.UriSchemeHttps
@@ -209,10 +212,10 @@ namespace TS3AudioBot.ResourceFactories
 			if (uri.Scheme == Uri.UriSchemeFile)
 				return File.OpenRead(uri.LocalPath);
 
-			return RResultCode.MediaUnknownUri.ToString();
+			return new LocalStr(strings.error_media_invalid_uri);
 		}
 
-		public R<Image> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			byte[] rawImgData;
 
@@ -234,19 +237,9 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			if (rawImgData == null)
-				return "No image found";
+				return new LocalStr(strings.error_media_image_not_found);
 
-			using (var memStream = new MemoryStream(rawImgData))
-			{
-				try
-				{
-					return new Bitmap(memStream);
-				}
-				catch (ArgumentException)
-				{
-					return "Inavlid image data";
-				}
-			}
+			return new MemoryStream(rawImgData);
 		}
 	}
 
@@ -271,11 +264,5 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			Image = image;
 		}
-	}
-
-	public class MediaFactoryData : ConfigData
-	{
-		[Info("The default path to look for local resources.", "")]
-		public string DefaultPath { get; set; }
 	}
 }

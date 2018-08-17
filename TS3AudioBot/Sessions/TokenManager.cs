@@ -11,12 +11,13 @@ namespace TS3AudioBot.Sessions
 {
 	using Helper;
 	using LiteDB;
+	using Localization;
 	using System;
 	using System.Collections.Generic;
 
 	public class TokenManager
 	{
-		private const string TokenFormat = "{0}:" + Web.WebManager.WebRealm + ":{1}";
+		private const string TokenFormat = "{0}:" + Web.WebServer.WebRealm + ":{1}";
 
 		private const string ApiTokenTable = "apiToken";
 		private LiteCollection<DbApiToken> dbTokenList;
@@ -39,7 +40,7 @@ namespace TS3AudioBot.Sessions
 			Database.GetMetaData(ApiTokenTable);
 		}
 
-		public R<string> GenerateToken(string uid, TimeSpan? timeout = null)
+		public string GenerateToken(string uid, TimeSpan? timeout = null)
 		{
 			if (string.IsNullOrEmpty(uid))
 				throw new ArgumentNullException(nameof(uid));
@@ -65,7 +66,7 @@ namespace TS3AudioBot.Sessions
 				ValidUntil = token.Timeout
 			});
 
-			return R<string>.OkR(string.Format(TokenFormat, uid, token.Value));
+			return string.Format(TokenFormat, uid, token.Value);
 		}
 
 		private static DateTime AddTimeSpanSafe(DateTime dateTime, TimeSpan addSpan)
@@ -84,7 +85,7 @@ namespace TS3AudioBot.Sessions
 			}
 		}
 
-		internal R<ApiToken> GetToken(string uid)
+		internal R<ApiToken, LocalStr> GetToken(string uid)
 		{
 			if (liveTokenList.TryGetValue(uid, out var token)
 				&& token.ApiTokenActive)
@@ -92,12 +93,12 @@ namespace TS3AudioBot.Sessions
 
 			var dbToken = dbTokenList.FindById(uid);
 			if (dbToken == null)
-				return "No active Token";
+				return new LocalStr(strings.error_no_active_token);
 
 			if (dbToken.ValidUntil < Util.GetNow())
 			{
 				dbTokenList.Delete(uid);
-				return "No active Token";
+				return new LocalStr(strings.error_no_active_token);
 			}
 
 			token = new ApiToken { Value = dbToken.Token };

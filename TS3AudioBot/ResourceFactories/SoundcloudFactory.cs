@@ -10,11 +10,13 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Helper;
+	using Localization;
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
+	using Playlists;
 	using System;
-	using System.Drawing;
 	using System.Globalization;
+	using System.IO;
 	using System.Text.RegularExpressions;
 
 	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
@@ -29,34 +31,34 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchPlaylist(string uri) => MatchResource(uri);
 
-		public R<PlayResource> GetResource(string link)
+		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
-			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(link)}&client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
+			var uriObj = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}");
+			if (!WebWrapper.DownloadString(out string jsonResponse, uriObj))
 			{
-				if (!SoundcloudLink.IsMatch(link))
-					return "Not a valid soundcloud link. Please pass the full link";
-				return YoutubeDlWrapped(link);
+				if (!SoundcloudLink.IsMatch(uri))
+					return new LocalStr(strings.error_media_invalid_uri);
+				return YoutubeDlWrapped(uri);
 			}
 			var parsedDict = ParseJson(jsonResponse);
 			var resource = ParseJObjectToResource(parsedDict);
 			if (resource == null)
-				return "Empty or missing response parts (parsedDict)";
+				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 			return GetResourceById(resource, false);
 		}
 
-		public R<PlayResource> GetResourceById(AudioResource resource) => GetResourceById(resource, true);
+		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource) => GetResourceById(resource, true);
 
-		private R<PlayResource> GetResourceById(AudioResource resource, bool allowNullName)
+		private R<PlayResource, LocalStr> GetResourceById(AudioResource resource, bool allowNullName)
 		{
 			if (SoundcloudLink.IsMatch(resource.ResourceId))
 				return GetResource(resource.ResourceId);
 
 			if (resource.ResourceTitle == null)
 			{
-				if (!allowNullName) return "Could not restore null title.";
+				if (!allowNullName) return new LocalStr(strings.error_media_internal_missing + " (title)");
 				string link = RestoreLink(resource.ResourceId);
-				if (link == null) return "Could not restore link from id";
+				if (link == null) return new LocalStr(strings.error_media_internal_missing + " (link)");
 				return GetResource(link);
 			}
 
@@ -92,7 +94,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new AudioResource(id.Value.ToString(CultureInfo.InvariantCulture), title.Value, FactoryFor);
 		}
 
-		private R<PlayResource> YoutubeDlWrapped(string link)
+		private R<PlayResource, LocalStr> YoutubeDlWrapped(string link)
 		{
 			Log.Debug("Falling back to youtube-dl!");
 
@@ -102,29 +104,29 @@ namespace TS3AudioBot.ResourceFactories
 
 			var (title, urls) = result.Value;
 			if (urls.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(urls[0]))
-				return "No youtube-dl response";
+				return new LocalStr(strings.error_ytdl_empty_response);
 
 			Log.Debug("youtube-dl succeeded!");
 
 			return new PlayResource(urls[0], new AudioResource(link, title, FactoryFor));
 		}
 
-		public R<Playlist> GetPlaylist(string url)
+		public R<Playlist, LocalStr> GetPlaylist(string url)
 		{
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
-				return RResultCode.ScInvalidLink.ToString();
+			if (!WebWrapper.DownloadString(out string jsonResponse, uri)) // todo: a bit janky (no response <-> error response)
+				return new LocalStr(strings.error_net_no_connection);
 
 			var parsedDict = ParseJson(jsonResponse);
 			if (parsedDict == null)
-				return "Empty or missing response parts (parsedDict)";
+				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 
 			string name = PlaylistManager.CleanseName(parsedDict.TryCast<string>("title").OkOr(null));
 			var plist = new Playlist(name);
 
 			var tracksJobj = parsedDict["tracks"];
 			if (tracksJobj == null)
-				return "Empty or missing response parts (tracks)";
+				return new LocalStr(strings.error_media_internal_missing + "(tracks)");
 
 			foreach (var track in tracksJobj)
 			{
@@ -138,19 +140,19 @@ namespace TS3AudioBot.ResourceFactories
 			return plist;
 		}
 
-		public R<Image> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			var uri = new Uri($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
-				return "Error or no response by soundcloud";
+				return new LocalStr(strings.error_net_no_connection);
 
 			var parsedDict = ParseJson(jsonResponse);
 			if (parsedDict == null)
-				return "Empty or missing response parts (parsedDict)";
+				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 
 			var imgUrl = parsedDict.TryCast<string>("artwork_url").OkOr(null);
 			if (imgUrl == null)
-				return "Empty or missing response parts (artwork_url)";
+				return new LocalStr(strings.error_media_internal_missing + " (artwork_url)");
 
 			// t500x500: 500px×500px
 			// crop    : 400px×400px
@@ -159,18 +161,7 @@ namespace TS3AudioBot.ResourceFactories
 			imgUrl = imgUrl.Replace("-large", "-t300x300");
 
 			var imgurl = new Uri(imgUrl);
-			Image img = null;
-			var resresult = WebWrapper.GetResponse(imgurl, (webresp) =>
-			{
-				using (var stream = webresp.GetResponseStream())
-				{
-					if (stream != null)
-						img = Image.FromStream(stream);
-				}
-			});
-			if (resresult != ValidateCode.Ok)
-				return "Error while reading image";
-			return img;
+			return WebWrapper.GetResponseUnsafe(imgurl);
 		}
 
 		public void Dispose() { }

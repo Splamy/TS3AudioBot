@@ -13,17 +13,16 @@ namespace TS3Client.Query
 	using Helper;
 	using Messages;
 	using System;
-	using System.Linq;
+	using System.Buffers;
 	using System.Collections.Generic;
 	using System.IO;
+	using System.IO.Pipelines;
+	using System.Linq;
 	using System.Net.Sockets;
-
-	using ClientUidT = System.String;
-	using ClientDbIdT = System.UInt64;
-	using ClientIdT = System.UInt16;
+	using System.Threading.Tasks;
 	using ChannelIdT = System.UInt64;
-	using ServerGroupIdT = System.UInt64;
-	using ChannelGroupIdT = System.UInt64;
+	using CmdR = System.E<Messages.CommandError>;
+	using Uid = System.String;
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
@@ -34,13 +33,14 @@ namespace TS3Client.Query
 		private StreamWriter tcpWriter;
 		private readonly SyncMessageProcessor msgProc;
 		private readonly IEventDispatcher dispatcher;
+		private Pipe dataPipe = new Pipe();
 
 		public override ClientType ClientType => ClientType.Query;
 		public override bool Connected => tcpClient.Connected;
 		private bool connecting;
 		public override bool Connecting => connecting && !Connected;
 
-		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
+		public override event NotifyEventHandler<TextMessage> OnTextMessage;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
 		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
 		public override event EventHandler<EventArgs> OnConnected;
@@ -56,7 +56,7 @@ namespace TS3Client.Query
 
 		public override void Connect(ConnectionData conData)
 		{
-			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
+			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress, TsDnsResolver.Ts3QueryDefaultPort))
 				throw new Ts3Exception("Could not read or resolve address.");
 
 			try
@@ -88,24 +88,85 @@ namespace TS3Client.Query
 			{
 				SendRaw("quit");
 				if (tcpClient.Connected)
-					((IDisposable)tcpClient)?.Dispose();
+					tcpClient?.Dispose();
 			}
 		}
 
 		private void NetworkLoop(object ctx)
 		{
+			Task.WhenAll(ReadLoopAsync(tcpStream, dataPipe.Writer), WriteLoopAsync(tcpStream, dataPipe.Reader)).ConfigureAwait(false).GetAwaiter().GetResult();
+			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
+		}
+
+		private async Task ReadLoopAsync(NetworkStream stream, PipeWriter writer)
+		{
+			const int minimumBufferSize = 4096;
+			var dataReadBuffer = new byte[4096];
+
 			while (true)
 			{
-				string line;
-				try { line = tcpReader.ReadLine(); }
-				catch (IOException) { line = null; }
-				if (line == null) break;
-				if (string.IsNullOrWhiteSpace(line)) continue;
+				try
+				{
+					var mem = writer.GetMemory(minimumBufferSize);
+					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length);
+					if (bytesRead == 0)
+					{
+						break;
+					}
 
-				var message = line.Trim();
-				msgProc.PushMessage(message);
+					dataReadBuffer.CopyTo(mem);
+					//await writer.WriteAsync(dataReadBuffer.AsMemory(0, bytesRead));
+					//await writer.FlushAsync();
+					writer.Advance(bytesRead);
+				}
+				catch (IOException) { break; }
+
+				FlushResult result = await writer.FlushAsync();
+
+				if (result.IsCompleted)
+				{
+					break;
+				}
 			}
-			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
+			writer.Complete();
+		}
+
+		private async Task WriteLoopAsync(NetworkStream stream, PipeReader reader)
+		{
+			var dataWriteBuffer = new byte[4096];
+			while (true)
+			{
+				var result = await reader.ReadAsync();
+
+				ReadOnlySequence<byte> buffer = result.Buffer;
+				SequencePosition? position = null;
+
+				do
+				{
+					position = buffer.PositionOf((byte)'\n');
+
+					if (position != null)
+					{
+						var notif = msgProc.PushMessage(buffer.Slice(0, position.Value).ToArray());
+						if (notif.HasValue)
+						{
+							dispatcher.Invoke(notif.Value);
+						}
+
+						// +2 = skipping \n\r
+						buffer = buffer.Slice(buffer.GetPosition(2, position.Value));
+					}
+				} while (position != null);
+
+				reader.AdvanceTo(buffer.Start, buffer.End);
+
+				if (result.IsCompleted)
+				{
+					break;
+				}
+			}
+
+			reader.Complete();
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -123,7 +184,7 @@ namespace TS3Client.Query
 			case NotificationType.ClientLeftView: OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>()); break;
 			case NotificationType.ClientMoved: break;
 			case NotificationType.ServerEdited: break;
-			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
+			case NotificationType.TextMessage: OnTextMessage?.Invoke(this, notification.Cast<TextMessage>()); break;
 			case NotificationType.TokenUsed: break;
 			// special
 			case NotificationType.CommandError: break;
@@ -132,7 +193,7 @@ namespace TS3Client.Query
 			}
 		}
 
-		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com) // Synchronous
+		public override R<T[], CommandError> SendCommand<T>(Ts3Command com) // Synchronous
 		{
 			using (var wb = new WaitBlock(false))
 			{
@@ -158,28 +219,28 @@ namespace TS3Client.Query
 
 		private static readonly string[] TargetTypeString = { "textprivate", "textchannel", "textserver", "channel", "server" };
 
-		public void RegisterNotification(TextMessageTargetMode target, ChannelIdT channel)
+		public CmdR RegisterNotification(TextMessageTargetMode target, ChannelIdT channel)
 			=> RegisterNotification(TargetTypeString[(int)target], channel);
 
-		public void RegisterNotification(ReasonIdentifier target, ChannelIdT channel)
+		public CmdR RegisterNotification(ReasonIdentifier target, ChannelIdT channel)
 			=> RegisterNotification(TargetTypeString[(int)target], channel);
 
-		private void RegisterNotification(string target, ChannelIdT channel)
+		private CmdR RegisterNotification(string target, ChannelIdT channel)
 		{
 			var ev = new CommandParameter("event", target.ToLowerInvariant());
 			if (target == "channel")
-				Send("servernotifyregister", ev, new CommandParameter("id", channel));
+				return Send<ResponseVoid>("servernotifyregister", ev, new CommandParameter("id", channel));
 			else
-				Send("servernotifyregister", ev);
+				return Send<ResponseVoid>("servernotifyregister", ev);
 		}
 
-		public void Login(string username, string password)
-			=> Send("login",
+		public CmdR Login(string username, string password)
+			=> Send<ResponseVoid>("login",
 			new CommandParameter("client_login_name", username),
 			new CommandParameter("client_login_password", password));
 
-		public void UseServer(int serverId)
-			=> Send("use",
+		public CmdR UseServer(int serverId)
+			=> Send<ResponseVoid>("use",
 			new CommandParameter("sid", serverId));
 
 		// Splitted base commands
@@ -190,7 +251,7 @@ namespace TS3Client.Query
 				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }
 				: new List<ICommandPart> { new CommandParameter("name", name) }).WrapSingle();
 
-		public override R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ulong clDbId)
+		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
 			=> Send<ClientServerGroup>("servergroupsbyclientid",
 			new CommandParameter("cldbid", clDbId));
 
@@ -214,20 +275,28 @@ namespace TS3Client.Query
 			new CommandParameter("clientftfid", clientTransferId),
 			new CommandParameter("seekpos", seek)).WrapSingle();
 
-		public override R<IEnumerable<FileTransfer>, CommandError> FileTransferList()
+		public override R<FileTransfer[], CommandError> FileTransferList()
 			=> Send<FileTransfer>("ftlist");
 
-		public override R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+		public override R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
 			=> Send<FileList>("ftgetfilelist",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("path", path),
 			new CommandParameter("cpw", channelPassword));
 
-		public override R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> Send<FileInfoTs>("ftgetfileinfo",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("cpw", channelPassword),
 			new CommandMultiParameter("name", path));
+
+		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
+			=> Send<ClientDbIdFromUid>("clientgetdbidfromuid",
+			new CommandParameter("cluid", clientUid)).WrapSingle();
+
+		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
+			=> Send<ClientIds>("clientgetids",
+			new CommandParameter("cluid", clientUid));
 
 		#endregion
 

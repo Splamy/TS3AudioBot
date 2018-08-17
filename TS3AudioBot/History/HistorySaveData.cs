@@ -15,12 +15,12 @@ namespace TS3AudioBot.History
 	public class HistorySaveData
 	{
 		public AudioResource Resource { get; }
-		public ulong? OwnerDbId { get; }
+		public string InvokerUid { get; }
 
-		public HistorySaveData(AudioResource resource, ulong? ownerDbId)
+		public HistorySaveData(AudioResource resource, string invokerUid)
 		{
 			Resource = resource ?? throw new ArgumentNullException(nameof(resource));
-			OwnerDbId = ownerDbId;
+			InvokerUid = invokerUid;
 		}
 	}
 }

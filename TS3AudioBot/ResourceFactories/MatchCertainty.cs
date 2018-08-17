@@ -11,7 +11,7 @@ namespace TS3AudioBot.ResourceFactories
 {
 	public enum MatchCertainty
 	{
-		/// <summary>"Never" sais this factory cannot use this link.</summary>
+		/// <summary>"Never" denotes that this factory cannot use this link.</summary>
 		Never = 0,
 		/// <summary>"OnlyIfLast" Only gets selected if no higher match was found.</summary>
 		OnlyIfLast,

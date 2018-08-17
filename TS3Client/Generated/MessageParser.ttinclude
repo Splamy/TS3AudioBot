@@ -3,6 +3,7 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ include file="Util.ttinclude" once="true" #>
 <#+
+public static IEnumerable<Messages.Msg> OnlyS2C(IEnumerable<Messages.Msg> enu) => enu.Where(x => x.s2c.Value);
 public class Messages
 {
 	public static Messages Parse(string file)
@@ -28,7 +29,7 @@ public class Messages
 		{
 			// transfer all default confs
 			msg.s2c = msg.s2c ?? grp.@default.s2c;
-			msg.c2s = msg.c2s ?? grp.@default.s2c;
+			msg.c2s = msg.c2s ?? grp.@default.c2s;
 			msg.response = msg.response ?? grp.@default.response;
 			msg.low = msg.low ?? grp.@default.low;
 			msg.np = msg.np ?? grp.@default.np;
@@ -55,7 +56,6 @@ public class Messages
 		public string doc { get; set; }
 
 		public bool isArray => mod == "array";
-		public string prettyClean => pretty.Trim('?');
 		public string typeFin => type + (isArray ? "[]" : "");
 	}
 

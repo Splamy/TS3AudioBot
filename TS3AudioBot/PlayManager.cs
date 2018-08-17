@@ -9,7 +9,9 @@
 
 namespace TS3AudioBot
 {
-	using Helper;
+	using Config;
+	using Localization;
+	using Playlists;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -19,6 +21,7 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
+		public ConfBot Config { get; set; }
 		public IPlayerConnection PlayerConnection { get; set; }
 		public PlaylistManager PlaylistManager { get; set; }
 		public ResourceFactoryManager ResourceFactoryManager { get; set; }
@@ -31,29 +34,28 @@ namespace TS3AudioBot
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
-		public R Enqueue(InvokerData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
-		public R Enqueue(InvokerData invoker, string message, string audioType = null)
+		public E<LocalStr> Enqueue(InvokerData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
+		public E<LocalStr> Enqueue(InvokerData invoker, string message, string audioType = null)
 		{
 			var result = ResourceFactoryManager.Load(message, audioType);
 			if (!result)
 				return result.Error;
 			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
 		}
-		public R Enqueue(IEnumerable<PlaylistItem> pli)
+		public E<LocalStr> Enqueue(IEnumerable<PlaylistItem> pli)
 		{
 			PlaylistManager.AddToFreelist(pli);
-			return R.OkR;
+			return R.Ok;
 		}
 
-		private R EnqueueInternal(InvokerData invoker, PlaylistItem pli)
+		private E<LocalStr> EnqueueInternal(InvokerData invoker, PlaylistItem pli)
 		{
-			pli.Meta.ResourceOwnerDbId = invoker.DatabaseId;
+			pli.Meta.ResourceOwnerUid = invoker.ClientUid;
 			PlaylistManager.AddToFreelist(pli);
-
-			return R.OkR;
+			return R.Ok;
 		}
 
-		public R Play(InvokerData invoker, PlaylistItem item)
+		public E<LocalStr> Play(InvokerData invoker, PlaylistItem item)
 		{
 			if (item == null)
 				throw new ArgumentNullException(nameof(item));
@@ -65,7 +67,7 @@ namespace TS3AudioBot
 		/// <param name="ar">The resource to load and play.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(InvokerData invoker, AudioResource ar, MetaData meta = null)
+		public E<LocalStr> Play(InvokerData invoker, AudioResource ar, MetaData meta = null)
 		{
 			if (ar == null)
 				throw new ArgumentNullException(nameof(ar));
@@ -81,7 +83,7 @@ namespace TS3AudioBot
 		/// <param name="audioType">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(InvokerData invoker, string link, string audioType = null, MetaData meta = null)
+		public E<LocalStr> Play(InvokerData invoker, string link, string audioType = null, MetaData meta = null)
 		{
 			var result = ResourceFactoryManager.Load(link, audioType);
 			if (!result)
@@ -93,10 +95,10 @@ namespace TS3AudioBot
 		/// <param name="play">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public R Play(InvokerData invoker, PlayResource play, MetaData meta)
+		public E<LocalStr> Play(InvokerData invoker, PlayResource play, MetaData meta)
 		{
 			if (!meta.FromPlaylist)
-				meta.ResourceOwnerDbId = invoker.DatabaseId;
+				meta.ResourceOwnerUid = invoker.ClientUid;
 
 			var playInfo = new PlayInfoEventArgs(invoker, play, meta);
 			BeforeResourceStarted?.Invoke(this, playInfo);
@@ -115,30 +117,32 @@ namespace TS3AudioBot
 			CurrentPlayData = playInfo; // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, CurrentPlayData);
 
-			return R.OkR;
+			return R.Ok;
 		}
 
-		private R StartResource(PlayResource playResource, MetaData config)
+		private E<LocalStr> StartResource(PlayResource playResource, MetaData meta)
 		{
-			//PlayerConnection.AudioStop();
-
 			if (string.IsNullOrWhiteSpace(playResource.PlayUri))
-				return "Internal resource error: link is empty";
+			{
+				Log.Error("Internal resource error: link is empty (resource:{0})", playResource);
+				return new LocalStr(strings.error_playmgr_internal_error);
+			}
 
 			Log.Debug("AudioResource start: {0}", playResource);
 			var result = PlayerConnection.AudioStart(playResource.PlayUri);
 			if (!result)
 			{
 				Log.Error("Error return from player: {0}", result.Error);
-				return $"Internal player error ({result.Error})";
+				return new LocalStr(strings.error_playmgr_internal_error);
 			}
 
-			PlayerConnection.Volume = config.Volume ?? AudioValues.DefaultVolume;
+			PlayerConnection.Volume = meta.Volume
+				?? Math.Min(Math.Max(PlayerConnection.Volume, Config.Audio.Volume.Min), Config.Audio.Volume.Max);
 
-			return R.OkR;
+			return R.Ok;
 		}
 
-		public R Next(InvokerData invoker)
+		public E<LocalStr> Next(InvokerData invoker)
 		{
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
@@ -147,27 +151,29 @@ namespace TS3AudioBot
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
-				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error);
+				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
 			}
 			if (pli == null)
-				return "No next song could be played";
+				return new LocalStr(strings.info_playmgr_no_next_song);
 			else
-				return "A few songs failed to start, use !next to continue";
+				return new LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!next"));
 		}
-		public R Previous(InvokerData invoker)
+
+		public E<LocalStr> Previous(InvokerData invoker)
 		{
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
 				if ((pli = PlaylistManager.Previous()) == null) break;
-				if (Play(invoker, pli))
-					return R.OkR;
-				// optional message here that playlist entry has been skipped
+				var result = Play(invoker, pli);
+				if (result.Ok)
+					return result;
+				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
 			}
 			if (pli == null)
-				return "No previous song could be played";
+				return new LocalStr(strings.info_playmgr_no_previous_song);
 			else
-				return "A few songs failed to start, use !previous to continue";
+				return new LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!previous"));
 		}
 
 		public void SongStoppedHook(object sender, EventArgs e) => StopInternal(true);
@@ -197,8 +203,8 @@ namespace TS3AudioBot
 
 	public sealed class MetaData
 	{
-		/// <summary>Defaults to: invoker.DbId - Can be set if the owner of a song differs from the invoker.</summary>
-		public ulong? ResourceOwnerDbId { get; set; }
+		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
+		public string ResourceOwnerUid { get; set; }
 		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
 		public float? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
@@ -206,7 +212,7 @@ namespace TS3AudioBot
 
 		public MetaData Clone() => new MetaData
 		{
-			ResourceOwnerDbId = ResourceOwnerDbId,
+			ResourceOwnerUid = ResourceOwnerUid,
 			FromPlaylist = FromPlaylist,
 			Volume = Volume
 		};
@@ -224,7 +230,6 @@ namespace TS3AudioBot
 		public PlayResource PlayResource { get; }
 		public AudioResource ResourceData => PlayResource.BaseData;
 		public MetaData MetaData { get; }
-		public ulong? Owner => MetaData.ResourceOwnerDbId ?? Invoker.DatabaseId;
 
 		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta)
 		{
@@ -238,17 +243,19 @@ namespace TS3AudioBot
 	{
 		public string ClientUid { get; }
 		public ulong? DatabaseId { get; internal set; }
-		public ulong? ChannelId { get; internal set; }
-		public ushort? ClientId { get; internal set; }
-		public string NickName { get; internal set; }
-		public string Token { get; internal set; }
+		public ulong? ChannelId { get; }
+		public ushort? ClientId { get; }
+		public string NickName { get; }
+		public string Token { get; }
 		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
+		// Lazy
+		public ulong[] ServerGroups { get; internal set; }
 
 		public InvokerData(string clientUid, ulong? databaseId = null, ulong? channelId = null,
 			ushort? clientId = null, string nickName = null, string token = null,
 			TS3Client.TextMessageTargetMode? visibiliy = null)
 		{
-			ClientUid = clientUid;
+			ClientUid = clientUid ?? throw new ArgumentNullException(nameof(ClientUid));
 			DatabaseId = databaseId;
 			ChannelId = channelId;
 			ClientId = clientId;
@@ -276,20 +283,5 @@ namespace TS3AudioBot
 	public static class AudioValues
 	{
 		public const float MaxVolume = 100;
-
-		internal static AudioFrameworkData audioFrameworkData;
-
-		public static float MaxUserVolume => audioFrameworkData.MaxUserVolume;
-		public static float DefaultVolume => audioFrameworkData.DefaultVolume;
-	}
-
-	public class AudioFrameworkData : ConfigData
-	{
-		[Info("The default volume a song should start with", "10")]
-		public float DefaultVolume { get; set; }
-		[Info("The maximum volume a normal user can request", "30")]
-		public float MaxUserVolume { get; set; }
-		[Info("How the bot should play music. Options are: whisper, voice, (!...)", "whisper")]
-		public string AudioMode { get; set; }
 	}
 }

@@ -36,7 +36,7 @@ namespace TS3Client
 		/// <summary>The display username.</summary>
 		public string Username { get; set; }
 		/// <summary>The server password. Leave null if none.</summary>
-		public Password ServerPassword { get; set; } = new Password();
+		public Password ServerPassword { get; set; } = Password.Empty;
 		/// <summary>
 		/// <para>The default channel this client should try to join when connecting.</para>
 		/// <para>The channel can be specified with either the channel name path, example: "Lobby/Home".
@@ -44,40 +44,18 @@ namespace TS3Client
 		/// </summary>
 		public string DefaultChannel { get; set; } = string.Empty;
 		/// <summary>Password for the default channel. Leave null if none.</summary>
-		public Password DefaultChannelPassword { get; set; } = new Password();
+		public Password DefaultChannelPassword { get; set; } = Password.Empty;
 	}
 
-	public class Password
+	public readonly struct Password
 	{
-		private string hashedPassword;
-		private string plainPassword;
-		/// <summary>
-		/// This can be set to true, when the password is already hashed.
-		/// The hash works like this: base64(sha1(password))
-		/// </summary>
-		private bool isHashed;
-		public string HashedPassword
-		{
-			get
-			{
-				if (isHashed && hashedPassword == null)
-					return string.Empty;
-				if (!isHashed)
-					HashedPassword = Ts3Crypt.HashPassword(plainPassword);
-				return hashedPassword;
-			}
-			set
-			{
-				hashedPassword = value;
-				plainPassword = null;
-				isHashed = true;
-			}
-		}
-		public string PlainPassword { set { plainPassword = value; isHashed = false; } }
+		public static readonly Password Empty = FromHash(string.Empty);
 
-		public Password() { }
-		public static Password FromHash(string hash) => new Password() { HashedPassword = hash };
-		public static Password FromPlain(string pass) => new Password() { PlainPassword = pass };
+		public string HashedPassword { get; }
+
+		private Password(string hashed) { HashedPassword = hashed; }
+		public static Password FromHash(string hash) => new Password(hash);
+		public static Password FromPlain(string pass) => new Password(Ts3Crypt.HashPassword(pass));
 
 		public static implicit operator Password(string pass) => FromPlain(pass);
 	}

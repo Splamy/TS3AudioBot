@@ -2,7 +2,7 @@
 
 baseDir=`pwd`
 
-OpusBaseName="opus-1.1.3"
+OpusBaseName="opus-1.2.1"
 OpusFileName="$OpusBaseName.tar.gz"
 
 # Download the Opus library
@@ -21,15 +21,13 @@ tar -vxf "$OpusFileName"
 cd "$OpusBaseName"
 
 # Build the library
-./configure && make
+./configure && make && sudo make install
 
-# Go back
-cd "$baseDir"
-
-# Copy the required libopus.so to the local folder
-cp "$OpusBaseName/.libs/libopus.so" "./"
-
-# Copy the libopus.so to the folder we need
-cp "./libopus.so" "$baseDir/TS3AudioBot/bin/Release/libopus.so"
+# Move to global folder
+if [ ! -f /usr/lib/libopus.so ]; then
+    sudo cp ".libs/libopus.so" "/usr/lib/"
+else
+    echo "'/urs/lib/libopus.so' already exists, will not be overwritten"
+fi
 
 echo "Done"

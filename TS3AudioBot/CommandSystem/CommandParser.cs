@@ -57,7 +57,9 @@ namespace TS3AudioBot.CommandSystem
 					strPtr.SkipChar(delimeterChar);
 
 					if (strPtr.End)
+					{
 						build = BuildStatus.End;
+					}
 					else
 					{
 						switch (strPtr.Char)
@@ -66,20 +68,28 @@ namespace TS3AudioBot.CommandSystem
 							build = BuildStatus.ParseQuotedString;
 							//goto case BuildStatus.ParseQuotedString;
 							break;
+
 						case '(':
 							if (!strPtr.HasNext)
+							{
 								build = BuildStatus.ParseFreeString;
+							}
 							else if (strPtr.IsNext(commandChar))
 							{
 								strPtr.Next('(');
 								build = BuildStatus.ParseCommand;
 							}
 							else
+							{
 								build = BuildStatus.ParseFreeString;
+							}
 							break;
+
 						case ')':
 							if (comAst.Count <= 0)
+							{
 								build = BuildStatus.End;
+							}
 							else
 							{
 								comAst.Pop();
@@ -88,6 +98,7 @@ namespace TS3AudioBot.CommandSystem
 							}
 							strPtr.Next();
 							break;
+
 						default:
 							build = BuildStatus.ParseFreeString;
 							break;
@@ -96,8 +107,6 @@ namespace TS3AudioBot.CommandSystem
 					break;
 
 				case BuildStatus.ParseFreeString:
-					strb.Clear();
-
 					var valFreeAst = new AstValue();
 					using (strPtr.TrackNode(valFreeAst))
 					{
@@ -106,11 +115,12 @@ namespace TS3AudioBot.CommandSystem
 							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext(commandChar))
 								|| strPtr.Char == ')'
 								|| strPtr.Char == delimeterChar)
+							{
 								break;
-							strb.Append(strPtr.Char);
+							}
 						}
 					}
-					valFreeAst.Value = strb.ToString();
+					valFreeAst.BuildValue();
 					buildCom = comAst.Peek();
 					buildCom.Parameter.Add(valFreeAst);
 					build = BuildStatus.SelectParam;
@@ -127,14 +137,21 @@ namespace TS3AudioBot.CommandSystem
 						bool escaped = false;
 						for (; !strPtr.End; strPtr.Next())
 						{
-							if (strPtr.Char == '\\') escaped = true;
+							if (strPtr.Char == '\\')
+							{
+								escaped = true;
+							}
 							else if (strPtr.Char == '"')
 							{
-								if (escaped) strb.Length--;
+								if (escaped) { strb.Length--; }
 								else { strPtr.Next(); break; }
 								escaped = false;
 							}
-							else escaped = false;
+							else
+							{
+								escaped = false;
+							}
+
 							strb.Append(strPtr.Char);
 						}
 					}
@@ -208,7 +225,7 @@ namespace TS3AudioBot.CommandSystem
 					astnode.Position = index;
 					astnode.Length = 0;
 				}
-				return (curTrack = new NodeTracker(this));
+				return curTrack = new NodeTracker(this);
 			}
 
 			private void UntrackNode()

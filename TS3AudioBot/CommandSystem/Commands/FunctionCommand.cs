@@ -25,7 +25,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private readonly MethodInfo internCommand;
 
 		/// <summary>All parameter types, including special types.</summary>
-		public (Type type, ParamKind kind, bool optional)[] CommandParameter { get; }
+		public ParamInfo[] CommandParameter { get; }
 		/// <summary>Return type of method.</summary>
 		public Type CommandReturn { get; }
 		/// <summary>Count of parameter, without special types.</summary>
@@ -39,7 +39,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public FunctionCommand(MethodInfo command, object obj = null, int? requiredParameters = null)
 		{
 			internCommand = command;
-			CommandParameter = command.GetParameters().Select(p => (p.ParameterType, ParamKind.Unknown, p.IsOptional || p.GetCustomAttribute<ParamArrayAttribute>() != null)).ToArray();
+			CommandParameter = command.GetParameters().Select(p => new ParamInfo(p, ParamKind.Unknown, p.IsOptional || p.GetCustomAttribute<ParamArrayAttribute>() != null)).ToArray();
 			PrecomputeTypes();
 			CommandReturn = command.ReturnType;
 
@@ -81,7 +81,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public R<object[], CommandException> FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
-			var filterLazy = new Lazy<Algorithm.Filter>(() =>info.TryGet<Algorithm.Filter>(out var filter) ? filter : Algorithm.Filter.DefaultFilter, false);
+			var filterLazy = new Lazy<Algorithm.Filter>(() => info.TryGet<Algorithm.Filter>(out var filter) ? filter : Algorithm.Filter.DefaultFilter, false);
 
 			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
@@ -152,11 +152,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 			// Check if we were able to set enough arguments
 			if (takenArguments < Math.Min(parameters.Length, RequiredParameters) && !returnTypes.Contains(CommandResultType.Command))
-				throw new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
+				return new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
 
 			return parameters;
 		}
-		
+
 		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
@@ -196,7 +196,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case CommandResultType.Empty:
 					if (!executed)
 						ExecuteFunction(parameters);
-					return new EmptyCommandResult();
+					return EmptyCommandResult.Instance;
 				case CommandResultType.String:
 					if (!executed)
 					{
@@ -236,21 +236,22 @@ namespace TS3AudioBot.CommandSystem.Commands
 		{
 			for (int i = 0; i < CommandParameter.Length; i++)
 			{
-				var arg = CommandParameter[i].type;
+				ref var paramInfo = ref CommandParameter[i];
+				var arg = paramInfo.type;
 				if (arg == typeof(IReadOnlyList<ICommand>))
-					CommandParameter[i].kind = ParamKind.SpecialArguments;
+					paramInfo.kind = ParamKind.SpecialArguments;
 				else if (arg == typeof(IReadOnlyList<CommandResultType>))
-					CommandParameter[i].kind = ParamKind.SpecialReturns;
+					paramInfo.kind = ParamKind.SpecialReturns;
 				else if (arg == typeof(ICommand))
-					CommandParameter[i].kind = ParamKind.NormalCommand;
+					paramInfo.kind = ParamKind.NormalCommand;
 				else if (arg.IsArray)
-					CommandParameter[i].kind = ParamKind.NormalArray;
+					paramInfo.kind = ParamKind.NormalArray;
 				else if (arg.IsEnum
 					|| XCommandSystem.BasicTypes.Contains(arg)
 					|| XCommandSystem.BasicTypes.Contains(UnwrapParamType(arg)))
-					CommandParameter[i].kind = ParamKind.NormalParam;
+					paramInfo.kind = ParamKind.NormalParam;
 				else
-					CommandParameter[i].kind = ParamKind.Dependency;
+					paramInfo.kind = ParamKind.Dependency;
 			}
 		}
 
@@ -270,6 +271,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 					return type.GenericTypeArguments[0];
 				if (genDef == typeof(JsonValue<>))
 					return type.GenericTypeArguments[0];
+				if (genDef == typeof(JsonArray<>))
+					return type.GenericTypeArguments[0].MakeArrayType();
 			}
 			return type;
 		}
@@ -316,6 +319,21 @@ namespace TS3AudioBot.CommandSystem.Commands
 		NormalCommand,
 		NormalParam,
 		NormalArray,
+	}
+
+	public struct ParamInfo
+	{
+		public ParameterInfo param;
+		public Type type => param.ParameterType;
+		public ParamKind kind;
+		public bool optional;
+
+		public ParamInfo(ParameterInfo param, ParamKind kind, bool optional)
+		{
+			this.param = param;
+			this.kind = kind;
+			this.optional = optional;
+		}
 	}
 
 	public static class FunctionCommandExtensions

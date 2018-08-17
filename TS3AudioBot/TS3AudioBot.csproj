@@ -1,273 +1,79 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0ECC38F3-DE6E-4D7F-81EB-58B15F584635}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFrameworks>net46;netcoreapp2.0;netstandard2.0</TargetFrameworks>
+    <LangVersion>7.2</LangVersion>
     <RootNamespace>TS3AudioBot</RootNamespace>
     <AssemblyName>TS3AudioBot</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-    <LangVersion>7</LangVersion>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup>
+
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+
     <ApplicationIcon>Media\favicon.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup>
+
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <NeutralLanguage>en</NeutralLanguage>
+
     <StartupObject>TS3AudioBot.Core</StartupObject>
+    <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
-    <CodeAnalysisRuleSet />
-    <DocumentationFile>
-    </DocumentationFile>
-    <LangVersion>7</LangVersion>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='net46'">
+    <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
-    <CodeAnalysisRuleSet />
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="LiteDB, Version=4.1.2.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiteDB.4.1.2\lib\net40\LiteDB.dll</HintPath>
-    </Reference>
-    <Reference Include="Nett, Version=0.9.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nett.0.9.0\lib\Net40\Nett.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.4.5.2\lib\net45\NLog.dll</HintPath>
-    </Reference>
-    <Reference Include="PropertyChanged, Version=2.2.1.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
-      <HintPath>..\packages\PropertyChanged.Fody.2.2.1.0\lib\net452\PropertyChanged.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Memory.4.5.0-preview1-26216-02\lib\netstandard1.1\System.Memory.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0-preview1-26216-02\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Web" />
+    <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="GitVersionTask" Version="4.0.0-beta0012" />
+    <PackageReference Include="LiteDB" Version="4.1.4" />
+    <PackageReference Include="NLog" Version="4.5.8" />
+    <PackageReference Include="Nett" Version="0.9.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
+    <PackageReference Include="System.Memory" Version="4.5.1" />
+    <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Algorithm\IFilterAlgorithm.cs" />
-    <Compile Include="Algorithm\LinearFeedbackShiftRegister.cs" />
-    <Compile Include="Audio\CustomTargetPipe.cs" />
-    <Compile Include="Audio\FfmpegProducer.cs" />
-    <Compile Include="Audio\StallCheckPipe.cs" />
-    <Compile Include="BotManager.cs" />
-    <Compile Include="Helper\AttributeStrings.cs" />
-    <Compile Include="MainCommands.cs" />
-    <Compile Include="CommandSystem\Ast\AstCommand.cs" />
-    <Compile Include="CommandSystem\Ast\AstError.cs" />
-    <Compile Include="CommandSystem\Ast\AstNode.cs" />
-    <Compile Include="CommandSystem\Ast\AstType.cs" />
-    <Compile Include="CommandSystem\Ast\AstValue.cs" />
-    <Compile Include="CommandSystem\BasicInjector.cs" />
-    <Compile Include="CommandSystem\BotCommand.cs" />
-    <Compile Include="CommandSystem\CallerInfo.cs" />
-    <Compile Include="CommandSystem\CommandManager.cs" />
-    <Compile Include="CommandSystem\CommandResults\JsonCommandResult.cs" />
-    <Compile Include="CommandSystem\CommandResults\StringCommandResult.cs" />
-    <Compile Include="CommandSystem\ICommandBag.cs" />
-    <Compile Include="CommandSystem\StaticList.cs" />
-    <Compile Include="Core.cs" />
-    <Compile Include="DbStore.cs" />
-    <Compile Include="Dependency\DependencyRealm.cs" />
-    <Compile Include="Dependency\Module.cs" />
-    <Compile Include="Helper\AudioTags\M3uReader.cs" />
-    <Compile Include="Helper\Cache.cs" />
-    <Compile Include="Helper\ImageUtil.cs" />
-    <Compile Include="Helper\Environment\SystemData.cs" />
-    <Compile Include="Plugins\ITabPlugin.cs" />
-    <Compile Include="Plugins\Plugin.cs" />
-    <Compile Include="Plugins\PluginResponse.cs" />
-    <Compile Include="Plugins\PluginStatus.cs" />
-    <Compile Include="ResourceFactories\BandcampFactory.cs" />
-    <Compile Include="ResourceFactories\IFactory.cs" />
-    <Compile Include="ResourceFactories\IThumbnailFactory.cs" />
-    <Compile Include="ResourceFactories\MatchCertainty.cs" />
-    <Compile Include="ResourceFactories\YoutubeDlHelper.cs" />
-    <Compile Include="Rights\RightsDecl.cs" />
-    <Compile Include="Rights\RightsGroup.cs" />
-    <Compile Include="Rights\RightsManager.cs" />
-    <Compile Include="Rights\RightsRule.cs" />
-    <Compile Include="Rights\TomlTools.cs" />
-    <Compile Include="Sessions\ApiNonce.cs" />
-    <Compile Include="Sessions\TokenManager.cs" />
-    <Compile Include="Sessions\UserSession.cs" />
-    <Compile Include="CommandSystem\CommandException.cs" />
-    <Compile Include="CommandSystem\CommandResults\CommandCommandResult.cs" />
-    <Compile Include="CommandSystem\CommandResults\CommandResultType.cs" />
-    <Compile Include="CommandSystem\CommandResults\EmptyCommandResult.cs" />
-    <Compile Include="CommandSystem\CommandResults\ICommandResult.cs" />
-    <Compile Include="CommandSystem\Commands\AppliedCommand.cs" />
-    <Compile Include="CommandSystem\CommandAttribute.cs" />
-    <Compile Include="CommandSystem\Commands\CommandGroup.cs" />
-    <Compile Include="CommandSystem\ExecutionInformation.cs" />
-    <Compile Include="CommandSystem\Commands\FunctionCommand.cs" />
-    <Compile Include="CommandSystem\Commands\ICommand.cs" />
-    <Compile Include="CommandSystem\Commands\RootCommand.cs" />
-    <Compile Include="CommandSystem\Commands\StringCommand.cs" />
-    <Compile Include="CommandSystem\XCommandSystem.cs" />
-    <Compile Include="DocGen.cs" />
-    <Compile Include="History\AudioLogEntry.cs" />
-    <Compile Include="History\HistorySaveData.cs" />
-    <Compile Include="History\IHistoryFormatter.cs" />
-    <Compile Include="History\SmartHistoryFormatter.cs" />
-    <Compile Include="Helper\InfoAttribute.cs" />
-    <Compile Include="IPlayerConnection.cs" />
-    <Compile Include="ITargetManager.cs" />
-    <Compile Include="Sessions\ApiToken.cs" />
-    <Compile Include="TeamspeakControl.cs" />
-    <Compile Include="Bot.cs" />
-    <Compile Include="PlaylistManager.cs" />
-    <Compile Include="PlayManager.cs" />
-    <Compile Include="Plugins\PluginManager.cs" />
-    <Compile Include="ResourceFactories\IPlaylistFactory.cs" />
-    <Compile Include="Sessions\SessionManager.cs" />
-    <Compile Include="CommandSystem\CommandParser.cs" />
-    <Compile Include="Algorithm\IShuffleAlgorithm.cs" />
-    <Compile Include="Algorithm\ListedShuffle.cs" />
-    <Compile Include="Helper\AudioTags\AudioTagReader.cs" />
-    <Compile Include="Helper\AudioTags\BinaryReaderBigEndianExtensions.cs" />
-    <Compile Include="Helper\ConfigFile.cs" />
-    <Compile Include="Helper\TextUtil.cs" />
-    <Compile Include="Helper\TickPool.cs" />
-    <Compile Include="Helper\Util.cs" />
-    <Compile Include="Helper\WebWrapper.cs" />
-    <Compile Include="History\HistoryManager.cs" />
-    <Compile Include="History\SearchQuery.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResourceFactories\AudioResource.cs" />
-    <Compile Include="ResourceFactories\IResourceFactory.cs" />
-    <Compile Include="ResourceFactories\MediaFactory.cs" />
-    <Compile Include="ResourceFactories\ResourceFactoryManager.cs" />
-    <Compile Include="ResourceFactories\RResultCode.cs" />
-    <Compile Include="ResourceFactories\SoundcloudFactory.cs" />
-    <Compile Include="ResourceFactories\TwitchFactory.cs" />
-    <Compile Include="ResourceFactories\YoutubeFactory.cs" />
-    <Compile Include="Ts3Full.cs" />
-    <Compile Include="CommandSystem\Commands\OverloadedFunctionCommand.cs" />
-    <Compile Include="CommandSystem\Commands\LazyCommand.cs" />
-    <Compile Include="Web\Api\JsonArray.cs" />
-    <Compile Include="Web\Api\JsonEmpty.cs" />
-    <Compile Include="Web\Api\JsonError.cs" />
-    <Compile Include="Web\Api\JsonObject.cs" />
-    <Compile Include="Web\Api\JsonValue.cs" />
-    <Compile Include="Web\Api\WebApi.cs" />
-    <Compile Include="Web\HttpListenerDigestIdentity.cs" />
-    <Compile Include="Web\Interface\FileProvider.cs" />
-    <Compile Include="Web\Interface\FolderProvider.cs" />
-    <Compile Include="Web\Interface\IProvider.cs" />
-    <Compile Include="Web\Interface\SiteMapper.cs" />
-    <Compile Include="Web\Interface\WebDisplay.cs" />
-    <Compile Include="Web\UriExt.cs" />
-    <Compile Include="Web\WebComponent.cs" />
-    <Compile Include="Web\WebManager.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Media\favicon.ico" />
-  </ItemGroup>
+
   <ItemGroup>
     <None Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
     <EmbeddedResource Include="Rights\DefaultRights.toml" />
-    <None Include="FodyWeavers.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\TS3Client\TS3Client.csproj">
-      <Project>{0eb99e9d-87e5-4534-a100-55d231c2b6a6}</Project>
-      <Name>TS3Client</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.5 %28x86 and x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Media\SleepingKitty.svg" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Media\SleepingKitty.png" />
-  </ItemGroup>
-  <ItemGroup>
+
     <CopyLibs32 Include="lib\x86\*.*" />
     <CopyLibs64 Include="lib\x64\*.*" />
   </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\GitVersionTask.3.6.5\build\dotnet\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.3.6.5\build\dotnet\GitVersionTask.targets'))" />
-    <Error Condition="!Exists('..\packages\Fody.2.1.3\build\netstandard1.2\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.2.1.3\build\netstandard1.2\Fody.targets'))" />
-  </Target>
-  <Import Project="..\packages\GitVersionTask.3.6.5\build\dotnet\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.3.6.5\build\dotnet\GitVersionTask.targets')" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target> 
-  -->
-  <Target Name="AfterBuild">
+
+  <ItemGroup>
+    <ProjectReference Include="..\TS3Client\TS3Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Localization\strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Localization\strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Target Name="CopyWindowsNativeLibs" AfterTargets="AfterBuild">
     <Copy SourceFiles="@(CopyLibs32)" DestinationFolder="$(OutputPath)\x86\" />
     <Copy SourceFiles="@(CopyLibs64)" DestinationFolder="$(OutputPath)\x64\" />
   </Target>
-  <Import Project="..\packages\Fody.2.1.3\build\netstandard1.2\Fody.targets" Condition="Exists('..\packages\Fody.2.1.3\build\netstandard1.2\Fody.targets')" />
+
 </Project>

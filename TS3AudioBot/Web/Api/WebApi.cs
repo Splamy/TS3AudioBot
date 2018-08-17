@@ -96,9 +96,10 @@ namespace TS3AudioBot.Web.Api
 				else if (res.ResultType == CommandResultType.Json)
 				{
 					response.StatusCode = (int)HttpStatusCode.OK;
-					var sRes = (JsonCommandResult)res;
+					var returnJson = (JsonCommandResult)res;
+					var returnString = returnJson.JsonObject.Serialize();
 					using (var responseStream = new StreamWriter(response.OutputStream))
-						responseStream.Write(sRes.JsonObject.Serialize());
+						responseStream.Write(returnString);
 				}
 			}
 			catch (CommandException ex)
@@ -137,9 +138,12 @@ namespace TS3AudioBot.Web.Api
 				response.StatusCode = (int)HttpStatusCode.Forbidden;
 				break;
 
-			case CommandExceptionReason.CommandError:
 			case CommandExceptionReason.AmbiguousCall:
 			case CommandExceptionReason.MissingParameter:
+				response.StatusCode = (int)HttpStatusCode.BadRequest;
+				break;
+
+			case CommandExceptionReason.CommandError:
 			case CommandExceptionReason.NoReturnMatch:
 			case CommandExceptionReason.MissingContext:
 				response.StatusCode = 422; // Unprocessable Entity
@@ -176,7 +180,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private R<(bool anonymous, InvokerData invoker)> Authenticate(HttpListenerContext context)
+		private R<(bool anonymous, InvokerData invoker), string> Authenticate(HttpListenerContext context)
 		{
 			var identity = GetIdentity(context);
 			if (identity == null)
@@ -187,10 +191,8 @@ namespace TS3AudioBot.Web.Api
 				return ErrorNoUserOrToken;
 
 			var token = result.Value;
-			var invoker = new InvokerData(identity.Name)
-			{
-				Token = token.Value,
-			};
+			var invoker = new InvokerData(identity.Name,
+				token: token.Value);
 
 			switch (identity.AuthenticationType)
 			{
@@ -208,11 +210,11 @@ namespace TS3AudioBot.Web.Api
 				if (!identityDigest.IsAuthenticated)
 				{
 					var newNonce = token.CreateNonce();
-					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{newNonce.Value}\"");
+					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{newNonce.Value}\"");
 					return InfoNonceAdded;
 				}
 
-				if (identityDigest.Realm != WebManager.WebRealm)
+				if (identityDigest.Realm != WebServer.WebRealm)
 					return ErrorUnknownRealm;
 
 				if (identityDigest.Uri != context.Request.RawUrl)
@@ -231,7 +233,7 @@ namespace TS3AudioBot.Web.Api
 				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
 				if (nextNonce == null)
 					return ErrorAuthFailure;
-				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebManager.WebRealm}\", nonce=\"{nextNonce.Value}\"");
+				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 
 				return (false, invoker);
 

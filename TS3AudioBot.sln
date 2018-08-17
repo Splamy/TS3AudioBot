@@ -2,20 +2,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3AudioBot", "TS3AudioBot\TS3AudioBot.csproj", "{0ECC38F3-DE6E-4D7F-81EB-58B15F584635}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TS3AudioBot", "TS3AudioBot\TS3AudioBot.csproj", "{0ECC38F3-DE6E-4D7F-81EB-58B15F584635}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3ABotUnitTests", "TS3ABotUnitTests\TS3ABotUnitTests.csproj", "{20B6F767-5396-41D9-83D8-98B5730C6E2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TS3ABotUnitTests", "TS3ABotUnitTests\TS3ABotUnitTests.csproj", "{20B6F767-5396-41D9-83D8-98B5730C6E2E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TS3Client", "TS3Client\TS3Client.csproj", "{0EB99E9D-87E5-4534-A100-55D231C2B6A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TS3Client", "TS3Client\TS3Client.csproj", "{0EB99E9D-87E5-4534-A100-55D231C2B6A6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{ADAA5A65-0CE1-45FA-91F4-3D8D39073AB0}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.travis.yml = .travis.yml
 		README.md = README.md
+		TS3AudioBot.ruleset = TS3AudioBot.ruleset
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ts3ClientTests", "Ts3ClientTests\Ts3ClientTests.csproj", "{3F6F11F0-C0DE-4C24-B39F-4A5B5B150376}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ts3ClientTests", "Ts3ClientTests\Ts3ClientTests.csproj", "{3F6F11F0-C0DE-4C24-B39F-4A5B5B150376}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,5 +46,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {15C2EA96-9126-41B1-A7A1-B02663F50EE3}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

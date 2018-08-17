@@ -10,27 +10,26 @@
 namespace TS3Client
 {
 	using Messages;
-	using Helper;
-	using System.Collections.Generic;
+	using System;
 	using System.Linq;
 
-	public struct LazyNotification
+	public readonly struct LazyNotification
 	{
-		public readonly IEnumerable<INotification> Notifications;
+		public readonly INotification[] Notifications;
 		public readonly NotificationType NotifyType;
 
-		public LazyNotification(IEnumerable<INotification> notifications, NotificationType notifyType)
+		public LazyNotification(INotification[] notifications, NotificationType notifyType)
 		{
 			Notifications = notifications;
 			NotifyType = notifyType;
 		}
 
-		public R<T, CommandError> WrapSingle<T>() where T : INotification
+		public R<T> WrapSingle<T>() where T : INotification
 		{
 			var first = Notifications.FirstOrDefault();
 			if (first == null)
-				return R<T, CommandError>.Err(Util.NoResultCommandError);
-			return R<T, CommandError>.OkR((T)first);
+				return R<T>.ErrR;
+			return R<T>.OkR((T)first);
 		}
 	}
 }

@@ -11,6 +11,7 @@ namespace TS3Client.Audio
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Runtime.InteropServices;
 
 	public class PassiveMergePipe : IAudioPassiveProducer
 	{
@@ -18,6 +19,7 @@ namespace TS3Client.Audio
 		private readonly List<IAudioPassiveProducer> producerList = new List<IAudioPassiveProducer>();
 		private readonly object listLock = new object();
 		private bool changed;
+		private readonly int[] accBuffer = new int[4096];
 
 		public void Add(IAudioPassiveProducer addProducer)
 		{
@@ -66,23 +68,25 @@ namespace TS3Client.Audio
 			if (safeProducerList.Count == 1)
 				return safeProducerList[0].Read(buffer, offset, length, out meta);
 
-			var pcmBuffer = buffer.AsSpan().NonPortableCast<byte, short>();
-			var acc = new int[pcmBuffer.Length];
+			int maxReadLength = Math.Min(accBuffer.Length, length);
+			Array.Clear(accBuffer, 0, maxReadLength);
+
+			var pcmBuffer = MemoryMarshal.Cast<byte, short>(buffer);
 			int read = 0;
 
 			foreach (var producer in safeProducerList)
 			{
-				int ppread = producer.Read(buffer, 0, length, out meta);
+				int ppread = producer.Read(buffer, offset, maxReadLength, out meta);
 				if (ppread == 0)
 					continue;
 
 				read = Math.Max(read, ppread);
 				for (int i = 0; i < ppread / 2; i++)
-					acc[i] += pcmBuffer[i];
+					accBuffer[i] += pcmBuffer[i];
 			}
 
 			for (int i = 0; i < read / 2; i++)
-				pcmBuffer[i] = (short)Math.Max(Math.Min(acc[i], short.MaxValue), short.MinValue);
+				pcmBuffer[i] = (short)Math.Max(Math.Min(accBuffer[i], short.MaxValue), short.MinValue);
 
 			return read;
 		}

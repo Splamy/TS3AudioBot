@@ -47,13 +47,13 @@ namespace TS3AudioBot.Sessions
 			VerifyLock();
 
 			if (assocMap == null)
-				return "Value not set";
+				return R.Err;
 
 			if (!assocMap.TryGetValue(typeof(TAssoc), out object value))
-				return "Value not set";
+				return R.Err;
 
 			if (value?.GetType() != typeof(TData))
-				return "Invalid request type";
+				return R.Err;
 
 			return (TData)value;
 		}
@@ -71,9 +71,9 @@ namespace TS3AudioBot.Sessions
 				assocMap.Add(typeof(TAssoc), data);
 		}
 
-		public SessionToken GetLock()
+		public SessionLock GetLock()
 		{
-			var sessionToken = new SessionToken(this);
+			var sessionToken = new SessionLock(this);
 			sessionToken.Take();
 			return sessionToken;
 		}
@@ -84,10 +84,10 @@ namespace TS3AudioBot.Sessions
 				throw new InvalidOperationException("No access lock is currently active");
 		}
 
-		public sealed class SessionToken : IDisposable
+		public sealed class SessionLock : IDisposable
 		{
 			private readonly UserSession session;
-			public SessionToken(UserSession session) { this.session = session; }
+			public SessionLock(UserSession session) { this.session = session; }
 
 			public void Take() { Monitor.Enter(session); session.lockToken = true; }
 			public void Free() { Monitor.Exit(session); session.lockToken = false; }

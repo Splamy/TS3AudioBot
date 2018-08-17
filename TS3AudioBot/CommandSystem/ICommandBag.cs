@@ -11,9 +11,9 @@ namespace TS3AudioBot.CommandSystem
 {
 	using System.Collections.Generic;
 
-	internal interface ICommandBag
+	public interface ICommandBag
 	{
-		IEnumerable<BotCommand> ExposedCommands { get; }
-		IEnumerable<string> ExposedRights { get; }
+		IReadOnlyCollection<BotCommand> BagCommands { get; }
+		IReadOnlyCollection<string> AdditionalRights { get; }
 	}
 }

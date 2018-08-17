@@ -52,7 +52,6 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (commandResults.Length == 1 && result == string.Empty && commandResults[0].Key != string.Empty)
 				throw new CommandException("Ambiguous call, possible subcommands: " + string.Join(", ", commands.Keys.Take(4)) + ", ...", CommandExceptionReason.AmbiguousCall);
 
-
 			var argSubList = arguments.TrySegment(1);
 			return commandResults[0].Value.Execute(info, argSubList, returnTypes);
 		}

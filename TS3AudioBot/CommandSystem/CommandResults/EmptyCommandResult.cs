@@ -9,8 +9,12 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	public class EmptyCommandResult : ICommandResult
+	public sealed class EmptyCommandResult : ICommandResult
 	{
+		public static EmptyCommandResult Instance { get; } = new EmptyCommandResult();
+
+		private EmptyCommandResult() { }
+
 		public CommandResultType ResultType => CommandResultType.Empty;
 		public override string ToString() => string.Empty;
 	}

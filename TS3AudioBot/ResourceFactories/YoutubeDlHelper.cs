@@ -9,6 +9,8 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Localization;
+	using Config;
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
@@ -18,14 +20,14 @@ namespace TS3AudioBot.ResourceFactories
 	internal static class YoutubeDlHelper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		public static YoutubeFactoryData DataObj { private get; set; }
-		private static string YoutubeDlPath => DataObj?.YoutubedlPath;
+		public static ConfPath DataObj { private get; set; }
+		private static string YoutubeDlPath => DataObj?.Path.Value;
 
-		public static R<(string title, IList<string> links)> FindAndRunYoutubeDl(string id)
+		public static R<(string title, IList<string> links), LocalStr> FindAndRunYoutubeDl(string id)
 		{
 			var ytdlPath = FindYoutubeDl(id);
 			if (ytdlPath == null)
-				return "Youtube-Dl could not be found. The song/video cannot be played due to restrictions";
+				return new LocalStr(strings.error_ytdl_not_found);
 
 			return RunYoutubeDl(ytdlPath.Value.ytdlpath, ytdlPath.Value.param);
 		}
@@ -41,7 +43,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			if (YoutubeDlPath == null)
 				return null;
-			
+
 			string fullCustomPath;
 			try { fullCustomPath = Path.GetFullPath(YoutubeDlPath); }
 			catch (ArgumentException)
@@ -67,7 +69,7 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public static R<(string title, IList<string> links)> RunYoutubeDl(string path, string args)
+		public static R<(string title, IList<string> links), LocalStr> RunYoutubeDl(string path, string args)
 		{
 			try
 			{
@@ -89,14 +91,14 @@ namespace TS3AudioBot.ResourceFactories
 						if (!string.IsNullOrEmpty(result))
 						{
 							Log.Error("youtube-dl failed to load the resource:\n{0}", result);
-							return "youtube-dl failed to load the resource";
+							return new LocalStr(strings.error_ytdl_song_failed_to_load);
 						}
 					}
 
 					return ParseResponse(tmproc.StandardOutput);
 				}
 			}
-			catch (Win32Exception) { return "Failed to run youtube-dl"; }
+			catch (Win32Exception) { return new LocalStr(strings.error_ytdl_failed_to_run); }
 		}
 
 		public static (string title, IList<string> links) ParseResponse(StreamReader stream)

@@ -1,16 +1,12 @@
 <#@ assembly name="System.Core" #>
-<#@ import namespace="System.Linq" #>
-<#@ import namespace="System.IO" #>
-<#@ import namespace="System.Text" #>
-<#@ import namespace="System.Text.RegularExpressions" #>
-<#@ import namespace="System.Collections.Generic" #>
-<#@ assembly name="$(SolutionDir)\packages\Nett.0.9.0\lib\Net40\Nett.dll" #>
+<#@ assembly name="%userprofile%/.nuget/packages/nett/0.9.0/lib/Net40/Nett.dll" #>
 <#
 void Warn(string _warn) { WriteLine($"#warning {_warn}"); }
 
 const string ConversionSet = 
-	@"using i8  = System.Byte;
-	using u8  = System.SByte;
+@"#pragma warning disable CS8019 // Ignore unused imports
+	using i8  = System.SByte;
+	using u8  = System.Byte;
 	using i16 = System.Int16;
 	using u16 = System.UInt16;
 	using i32 = System.Int32;
@@ -33,5 +29,6 @@ const string ConversionSet =
 	using ServerGroupId = System.UInt64;
 	using ChannelGroupId = System.UInt64;
 	using IconHash = System.Int32;
-	using ConnectionId = System.UInt32;";
+	using ConnectionId = System.UInt32;
+#pragma warning restore CS8019";
 #>

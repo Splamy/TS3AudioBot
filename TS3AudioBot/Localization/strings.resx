@@ -1,0 +1,903 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="cmd_add_help" xml:space="preserve">
+    <value>Adds a new song to the queue.</value>
+  </data>
+  <data name="cmd_api_token_help" xml:space="preserve">
+    <value>Generates an api token.</value>
+  </data>
+  <data name="cmd_api_nonce_help" xml:space="preserve">
+    <value>Generates an api nonce.</value>
+  </data>
+  <data name="cmd_bot_commander_help" xml:space="preserve">
+    <value>Gets the status of the channel commander mode.</value>
+  </data>
+  <data name="cmd_bot_commander_on_help" xml:space="preserve">
+    <value>Enables channel commander.</value>
+  </data>
+  <data name="cmd_bot_commander_off_help" xml:space="preserve">
+    <value>Disables channel commander.</value>
+  </data>
+  <data name="cmd_bot_come_help" xml:space="preserve">
+    <value>Moves the bot to your channel.</value>
+  </data>
+  <data name="cmd_bot_info_help" xml:space="preserve">
+    <value>Gets various information about the bot.</value>
+  </data>
+  <data name="cmd_bot_info_id_help" xml:space="preserve">
+    <value>Gets the id of the current bot.</value>
+  </data>
+  <data name="cmd_bot_list_help" xml:space="preserve">
+    <value>Gets a list of all active bots.</value>
+  </data>
+  <data name="cmd_bot_move_help" xml:space="preserve">
+    <value>Moves the bot to you or a specified channel.</value>
+  </data>
+  <data name="cmd_bot_name_help" xml:space="preserve">
+    <value>Gives the bot a new name.</value>
+  </data>
+  <data name="cmd_bot_badges_help" xml:space="preserve">
+    <value>Set your bot a badge. The badges string starts with 'overwolf=0:badges='</value>
+  </data>
+  <data name="cmd_bot_setup_help" xml:space="preserve">
+    <value>Sets all teamspeak rights for the bot to be fully functional.</value>
+  </data>
+  <data name="cmd_bot_use_help" xml:space="preserve">
+    <value>Switches the conetext to the requested bot.</value>
+  </data>
+  <data name="cmd_clear_help" xml:space="preserve">
+    <value>Removes all songs from the current playlist.</value>
+  </data>
+  <data name="cmd_bot_disconnect_help" xml:space="preserve">
+    <value>Stop this bot instance.</value>
+  </data>
+  <data name="cmd_eval_help" xml:space="preserve">
+    <value>Executes a given command or string</value>
+  </data>
+  <data name="cmd_getmy_id_help" xml:space="preserve">
+    <value>Gets your id.</value>
+  </data>
+  <data name="cmd_getmy_uid_help" xml:space="preserve">
+    <value>Gets your unique id.</value>
+  </data>
+  <data name="cmd_getmy_name_help" xml:space="preserve">
+    <value>Gets your nickname.</value>
+  </data>
+  <data name="cmd_getmy_dbid_help" xml:space="preserve">
+    <value>Gets your database id.</value>
+  </data>
+  <data name="cmd_getmy_channel_help" xml:space="preserve">
+    <value>Gets your channel id you are currently in.</value>
+  </data>
+  <data name="cmd_getmy_all_help" xml:space="preserve">
+    <value>Gets all information about you.</value>
+  </data>
+  <data name="cmd_getuser_uid_byid_help" xml:space="preserve">
+    <value>Gets the unique id of a user, searching with his id.</value>
+  </data>
+  <data name="cmd_getuser_name_byid_help" xml:space="preserve">
+    <value>Gets the nickname of a user, searching with his id.</value>
+  </data>
+  <data name="cmd_getuser_dbid_byid_help" xml:space="preserve">
+    <value>Gets the database id of a user, searching with his id.</value>
+  </data>
+  <data name="cmd_getuser_channel_byid_help" xml:space="preserve">
+    <value>Gets the channel id a user is currently in, searching with his id.</value>
+  </data>
+  <data name="cmd_getuser_all_byid_help" xml:space="preserve">
+    <value>Gets all information about a user, searching with his id.</value>
+  </data>
+  <data name="cmd_getuser_id_byname_help" xml:space="preserve">
+    <value>Gets the id of a user, searching with his name.</value>
+  </data>
+  <data name="cmd_getuser_all_byname_help" xml:space="preserve">
+    <value>Gets all information of a user, searching with his name.</value>
+  </data>
+  <data name="cmd_getuser_name_bydbid_help" xml:space="preserve">
+    <value>Gets the user name by dbid, searching with his database id.</value>
+  </data>
+  <data name="cmd_getuser_uid_bydbid_help" xml:space="preserve">
+    <value>Gets the unique id of a user, searching with his database id.</value>
+  </data>
+  <data name="cmd_help_help" xml:space="preserve">
+    <value>Shows all commands or detailed help about a specific command.</value>
+  </data>
+  <data name="cmd_history_add_help" xml:space="preserve">
+    <value>&lt;id&gt; Adds the song with &lt;id&gt; to the queue</value>
+  </data>
+  <data name="cmd_history_clean_help" xml:space="preserve">
+    <value>Cleans up the history file for better startup performance.</value>
+  </data>
+  <data name="cmd_history_delete_help" xml:space="preserve">
+    <value>&lt;id&gt; Removes the entry with &lt;id&gt; from the history</value>
+  </data>
+  <data name="cmd_history_from_help" xml:space="preserve">
+    <value>Gets the last &lt;count&gt; songs from the user with the given &lt;user-dbid&gt;</value>
+  </data>
+  <data name="cmd_history_id_uint_help" xml:space="preserve">
+    <value>&lt;id&gt; Displays all saved informations about the song with &lt;id&gt;</value>
+  </data>
+  <data name="cmd_history_id_string_help" xml:space="preserve">
+    <value>(last|next) Gets the highest|next song id</value>
+  </data>
+  <data name="cmd_history_last_int_help" xml:space="preserve">
+    <value>&lt;count&gt; Gets the last &lt;count&gt; played songs.</value>
+  </data>
+  <data name="cmd_history_last_help" xml:space="preserve">
+    <value>Plays the last song again</value>
+  </data>
+  <data name="cmd_history_play_help" xml:space="preserve">
+    <value>&lt;id&gt; Playes the song with &lt;id&gt;</value>
+  </data>
+  <data name="cmd_history_rename_help" xml:space="preserve">
+    <value>&lt;id&gt; &lt;name&gt; Sets the name of the song with &lt;id&gt; to &lt;name&gt;</value>
+  </data>
+  <data name="cmd_history_till_DateTime_help" xml:space="preserve">
+    <value>&lt;date&gt; Gets all songs played until &lt;date&gt;.</value>
+  </data>
+  <data name="cmd_history_till_string_help" xml:space="preserve">
+    <value>&lt;name&gt; Any of those desciptors: (hour|today|yesterday|week)</value>
+  </data>
+  <data name="cmd_history_title_help" xml:space="preserve">
+    <value>Gets all songs which title contains &lt;string&gt;</value>
+  </data>
+  <data name="cmd_json_merge_help" xml:space="preserve">
+    <value>Allows you to combine multiple JsonResults into one</value>
+  </data>
+  <data name="cmd_kickme_help" xml:space="preserve">
+    <value>Guess what?</value>
+  </data>
+  <data name="cmd_link_help" xml:space="preserve">
+    <value>Gets a link to the origin of the current song.</value>
+  </data>
+  <data name="cmd_list_add_help" xml:space="preserve">
+    <value>&lt;id&gt; Adds a link to your private playlist from the history by &lt;id&gt;.</value>
+  </data>
+  <data name="cmd_list_clear_help" xml:space="preserve">
+    <value>Clears your private playlist.</value>
+  </data>
+  <data name="cmd_list_delete_help" xml:space="preserve">
+    <value>&lt;name&gt; Deletes the playlist with the name &lt;name&gt;. You can only delete playlists which you also have created. Admins can delete every playlist.</value>
+  </data>
+  <data name="cmd_list_get_help" xml:space="preserve">
+    <value>&lt;link&gt; Imports a playlist form an other plattform like youtube etc.</value>
+  </data>
+  <data name="cmd_list_item_move_help" xml:space="preserve">
+    <value>&lt;from&gt; &lt;to&gt; Moves a item in a playlist &lt;from&gt; &lt;to&gt; position.</value>
+  </data>
+  <data name="cmd_list_item_delete_help" xml:space="preserve">
+    <value>&lt;index&gt; Removes the item at &lt;index&gt;.</value>
+  </data>
+  <data name="cmd_list_list_help" xml:space="preserve">
+    <value>Displays all available playlists from all users.</value>
+  </data>
+  <data name="cmd_list_load_help" xml:space="preserve">
+    <value>Opens a playlist to be editable for you. This replaces your current worklist with the opened playlist.</value>
+  </data>
+  <data name="cmd_list_merge_help" xml:space="preserve">
+    <value>Appends another playlist to yours.</value>
+  </data>
+  <data name="cmd_list_name_help" xml:space="preserve">
+    <value>Displays the name of the playlist you are currently working on.</value>
+  </data>
+  <data name="cmd_list_play_help" xml:space="preserve">
+    <value>Replaces the current freelist with your workinglist and plays from the beginning.</value>
+  </data>
+  <data name="cmd_list_queue_help" xml:space="preserve">
+    <value>Appends your playlist to the freelist.</value>
+  </data>
+  <data name="cmd_list_save_help" xml:space="preserve">
+    <value>Stores your current workinglist to disk.</value>
+  </data>
+  <data name="cmd_list_show_help" xml:space="preserve">
+    <value>&lt;name&gt; Displays all songs currently in the playlists with the name &lt;name&gt;</value>
+  </data>
+  <data name="cmd_loop_help" xml:space="preserve">
+    <value>Gets whether or not to loop the entire playlist.</value>
+  </data>
+  <data name="cmd_loop_on_help" xml:space="preserve">
+    <value>Enables looping the entire playlist.</value>
+  </data>
+  <data name="cmd_loop_off_help" xml:space="preserve">
+    <value>Disables looping the entire playlist.</value>
+  </data>
+  <data name="cmd_next_help" xml:space="preserve">
+    <value>Plays the next song in the playlist.</value>
+  </data>
+  <data name="cmd_pm_help" xml:space="preserve">
+    <value>Requests a private session with the ServerBot so you can be intimate.</value>
+  </data>
+  <data name="cmd_parse_command_help" xml:space="preserve">
+    <value>Displays the AST of the requested command.</value>
+  </data>
+  <data name="cmd_pause_help" xml:space="preserve">
+    <value>Well, pauses the song. Undo with !play.</value>
+  </data>
+  <data name="cmd_play_help" xml:space="preserve">
+    <value>Automatically tries to decide whether the link is a special resource (like youtube) or a direct resource (like ./hello.mp3) and starts it.</value>
+  </data>
+  <data name="cmd_plugin_list_help" xml:space="preserve">
+    <value>Lists all found plugins.</value>
+  </data>
+  <data name="cmd_plugin_unload_help" xml:space="preserve">
+    <value>Unloads a plugin.</value>
+  </data>
+  <data name="cmd_plugin_load_help" xml:space="preserve">
+    <value>Unloads a plugin.</value>
+  </data>
+  <data name="cmd_previous_help" xml:space="preserve">
+    <value>Plays the previous song in the playlist.</value>
+  </data>
+  <data name="cmd_print_help" xml:space="preserve">
+    <value>Lets you format multiple parameter to one.</value>
+  </data>
+  <data name="cmd_quit_help" xml:space="preserve">
+    <value>Closes the TS3AudioBot application.</value>
+  </data>
+  <data name="cmd_quiz_help" xml:space="preserve">
+    <value>Shows the quizmode status.</value>
+  </data>
+  <data name="cmd_quiz_on_help" xml:space="preserve">
+    <value>Enable to hide the songnames and let your friends guess the title.</value>
+  </data>
+  <data name="cmd_quiz_off_help" xml:space="preserve">
+    <value>Disable to show the songnames again.</value>
+  </data>
+  <data name="cmd_random_help" xml:space="preserve">
+    <value>Gets whether or not to play playlists in random order.</value>
+  </data>
+  <data name="cmd_random_on_help" xml:space="preserve">
+    <value>Enables random playlist playback</value>
+  </data>
+  <data name="cmd_random_off_help" xml:space="preserve">
+    <value>Disables random playlist playback</value>
+  </data>
+  <data name="cmd_random_seed_help" xml:space="preserve">
+    <value>Gets the unique seed for a certain playback order</value>
+  </data>
+  <data name="cmd_random_seed_string_help" xml:space="preserve">
+    <value>Sets the unique seed for a certain playback order</value>
+  </data>
+  <data name="cmd_random_seed_int_help" xml:space="preserve">
+    <value>Sets the unique seed for a certain playback order</value>
+  </data>
+  <data name="cmd_repeat_help" xml:space="preserve">
+    <value>Gets whether or not to loop a single song.</value>
+  </data>
+  <data name="cmd_repeat_on_help" xml:space="preserve">
+    <value>Enables single song repeat.</value>
+  </data>
+  <data name="cmd_repeat_off_help" xml:space="preserve">
+    <value>Disables single song repeat.</value>
+  </data>
+  <data name="cmd_rights_can_help" xml:space="preserve">
+    <value>Returns the subset of allowed commands the caller (you) can execute.</value>
+  </data>
+  <data name="cmd_rights_reload_help" xml:space="preserve">
+    <value>Reloads the rights configuration from file.</value>
+  </data>
+  <data name="cmd_rng_help" xml:space="preserve">
+    <value>Gets a random number.</value>
+  </data>
+  <data name="cmd_seek_help" xml:space="preserve">
+    <value>Jumps to a timemark within the current song.</value>
+  </data>
+  <data name="cmd_song_help" xml:space="preserve">
+    <value>Tells you the name of the current song.</value>
+  </data>
+  <data name="cmd_stop_help" xml:space="preserve">
+    <value>Stops the current song.</value>
+  </data>
+  <data name="cmd_subscribe_help" xml:space="preserve">
+    <value>Lets you hear the music independent from the channel you are in.</value>
+  </data>
+  <data name="cmd_subscribe_tempchannel_help" xml:space="preserve">
+    <value>Adds your current channel to the music playback.</value>
+  </data>
+  <data name="cmd_subscribe_channel_help" xml:space="preserve">
+    <value>Adds your current channel to the music playback.</value>
+  </data>
+  <data name="cmd_take_help" xml:space="preserve">
+    <value>Take a substring from a string.</value>
+  </data>
+  <data name="cmd_unsubscribe_help" xml:space="preserve">
+    <value>Only lets you hear the music in active channels again.</value>
+  </data>
+  <data name="cmd_unsubscribe_channel_help" xml:space="preserve">
+    <value>Removes your current channel from the music playback.</value>
+  </data>
+  <data name="cmd_unsubscribe_temporary_help" xml:space="preserve">
+    <value>Clears all temporary targets.</value>
+  </data>
+  <data name="cmd_version_help" xml:space="preserve">
+    <value>Gets the current build version.</value>
+  </data>
+  <data name="cmd_volume_help" xml:space="preserve">
+    <value>Sets the volume level of the music.</value>
+  </data>
+  <data name="cmd_whisper_all_help" xml:space="preserve">
+    <value>Set how to send music.</value>
+  </data>
+  <data name="cmd_whisper_group_help" xml:space="preserve">
+    <value>Set a specific teamspeak whisper group.</value>
+  </data>
+  <data name="cmd_whisper_list_help" xml:space="preserve">
+    <value>Set how to send music.</value>
+  </data>
+  <data name="cmd_whisper_off_help" xml:space="preserve">
+    <value>Enables normal voice mode.</value>
+  </data>
+  <data name="cmd_whisper_subscription_help" xml:space="preserve">
+    <value>Enables default whisper subscription mode.</value>
+  </data>
+  <data name="cmd_xecute_help" xml:space="preserve">
+    <value>Evaluates all parameter.</value>
+  </data>
+  <data name="cmd_help_error_ambiguous_command" xml:space="preserve">
+    <value>Requested command is ambiguous between: {0}</value>
+  </data>
+  <data name="cmd_help_error_no_further_subfunctions" xml:space="preserve">
+    <value>The command has no further subfunctions after {0}</value>
+  </data>
+  <data name="cmd_help_error_no_matching_command" xml:space="preserve">
+    <value>No matching command found! Try !help to get a list of all commands.</value>
+  </data>
+  <data name="cmd_help_error_unknown_error" xml:space="preserve">
+    <value>Seems like something went wrong. No help can be shown for this command path.</value>
+  </data>
+  <data name="cmd_help_header" xml:space="preserve">
+    <value>========= Welcome to the TS3AudioBot =========
+If you need any help with a special command use !help &lt;commandName&gt;.
+Here are all possible commands:</value>
+  </data>
+  <data name="cmd_help_info_contains_subfunctions" xml:space="preserve">
+    <value>The command contains the following subfunctions: {0}</value>
+  </data>
+  <data name="cmd_history_clean_confirm_clean" xml:space="preserve">
+    <value>Do want to clean the history file now? </value>
+  </data>
+  <data name="cmd_history_clean_removedefective_confirm_clean" xml:space="preserve">
+    <value>Do want to remove all defective links file now?</value>
+  </data>
+  <data name="cmd_history_delete_confirm" xml:space="preserve">
+    <value>Do you really want to delete the entry "{0}"
+with the id {1}?</value>
+  </data>
+  <data name="cmd_history_id_last" xml:space="preserve">
+    <value>{0} is the currently highest song id.</value>
+  </data>
+  <data name="cmd_history_id_next" xml:space="preserve">
+    <value>{0} will be the next song id.</value>
+  </data>
+  <data name="cmd_history_last_is_empty" xml:space="preserve">
+    <value>There is no song in the history.</value>
+  </data>
+  <data name="cmd_history_rename_invalid_name" xml:space="preserve">
+    <value>The new name must not be empty or only whitespaces.</value>
+  </data>
+  <data name="cmd_if_unknown_operator" xml:space="preserve">
+    <value>Unknown comparison operator.</value>
+  </data>
+  <data name="cmd_kickme_missing_permission" xml:space="preserve">
+    <value>I'm not strong enough, master!</value>
+  </data>
+  <data name="cmd_list_delete_cannot_delete_others_playlist" xml:space="preserve">
+    <value>You are not allowed to delete others playlists.</value>
+  </data>
+  <data name="cmd_list_delete_confirm" xml:space="preserve">
+    <value>Do you really want to delete the playlist "{0}"</value>
+  </data>
+  <data name="cmd_list_load_response" xml:space="preserve">
+    <value>Loaded "{0}" with {1} songs.</value>
+  </data>
+  <data name="cmd_list_show_header" xml:space="preserve">
+    <value>Playlist: "{0}" with {1} songs.</value>
+  </data>
+  <data name="cmd_pm_hi" xml:space="preserve">
+    <value>Hi {0}</value>
+  </data>
+  <data name="cmd_quit_confirm" xml:space="preserve">
+    <value>Do you really want to quit?</value>
+  </data>
+  <data name="cmd_quiz_off_no_cheating" xml:space="preserve">
+    <value>No cheating! Everybody has to see it!</value>
+  </data>
+  <data name="cmd_random_seed_only_letters_allowed" xml:space="preserve">
+    <value>Only letters allowed.</value>
+  </data>
+  <data name="cmd_rights_reload_error_parsing_file" xml:space="preserve">
+    <value>Error while parsing file, see log for more details.</value>
+  </data>
+  <data name="cmd_rng_value_must_be_positive" xml:space="preserve">
+    <value>Value must be 0 or positive.</value>
+  </data>
+  <data name="cmd_seek_invalid_format" xml:space="preserve">
+    <value>The time was not in a correct format, see !help seek for more information.</value>
+  </data>
+  <data name="cmd_seek_out_of_range" xml:space="preserve">
+    <value>The point of time is not within the song length.</value>
+  </data>
+  <data name="cmd_settings_empty_usage" xml:space="preserve">
+    <value>Please specify a key. E.g {0}</value>
+  </data>
+  <data name="error_config_multiple_keys_found" xml:space="preserve">
+    <value>Found more than one matching key: {0}</value>
+  </data>
+  <data name="error_config_no_key_found" xml:space="preserve">
+    <value>No config key matching the pattern found.</value>
+  </data>
+  <data name="cmd_take_not_enough_arguements" xml:space="preserve">
+    <value>Not enough arguments to take.</value>
+  </data>
+  <data name="cmd_volume_current" xml:space="preserve">
+    <value>Current volume: {0}</value>
+  </data>
+  <data name="cmd_volume_high_volume_confirm" xml:space="preserve">
+    <value>Careful you are requesting a very high volume! Do you want to apply this?</value>
+  </data>
+  <data name="cmd_volume_is_limited" xml:space="preserve">
+    <value>The volume level must be between {0} and {1}</value>
+  </data>
+  <data name="cmd_volume_missing_high_volume_permission" xml:space="preserve">
+    <value>You are not allowed to set higher volumes.</value>
+  </data>
+  <data name="cmd_volume_parse_error" xml:space="preserve">
+    <value>The new volume could not be parsed</value>
+  </data>
+  <data name="cmd_whisper_group_missing_target" xml:space="preserve">
+    <value>This type requires an additional target.</value>
+  </data>
+  <data name="cmd_whisper_group_superfluous_target" xml:space="preserve">
+    <value>This type does not take an additional target.</value>
+  </data>
+  <data name="cmd_whisper_list_header" xml:space="preserve">
+    <value>Currently targeting:</value>
+  </data>
+  <data name="cmd_whisper_list_target_none" xml:space="preserve">
+    <value>Nowhere!</value>
+  </data>
+  <data name="cmd_whisper_list_target_voice" xml:space="preserve">
+    <value>This channel via voice!</value>
+  </data>
+  <data name="cmd_whisper_list_target_whispergroup" xml:space="preserve">
+    <value>A whisper group {0} {1} ({2})!</value>
+  </data>
+  <data name="cmd_whisper_list_target_whisper_channel" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="cmd_whisper_list_target_whisper_clients" xml:space="preserve">
+    <value>Clients</value>
+  </data>
+  <data name="error_bot_does_not_exist" xml:space="preserve">
+    <value>This bot does not exists.</value>
+  </data>
+  <data name="error_call_error" xml:space="preserve">
+    <value>Error: {0}</value>
+  </data>
+  <data name="error_call_unexpected_error" xml:space="preserve">
+    <value>An unexpected error occured: {0}</value>
+  </data>
+  <data name="error_cmd_at_least_four_argument" xml:space="preserve">
+    <value>Need at least four arguments to evaluate.</value>
+  </data>
+  <data name="error_cmd_at_least_one_argument" xml:space="preserve">
+    <value>Need at least one argument to evaluate.</value>
+  </data>
+  <data name="error_cmd_at_least_two_argument" xml:space="preserve">
+    <value>Need at least two arguments to evaluate.</value>
+  </data>
+  <data name="error_could_not_create_bot" xml:space="preserve">
+    <value>Could not create new instance.</value>
+  </data>
+  <data name="error_invalid_token_duration" xml:space="preserve">
+    <value>Invalid token-valid duration.</value>
+  </data>
+  <data name="error_invoker_not_visible" xml:space="preserve">
+    <value>Invoker casted Ghost Walk.</value>
+  </data>
+  <data name="error_missing_session_context" xml:space="preserve">
+    <value>Missing session context.</value>
+  </data>
+  <data name="error_nothing_to_return" xml:space="preserve">
+    <value>Can't find a fitting return type to return.</value>
+  </data>
+  <data name="error_not_available_from_api" xml:space="preserve">
+    <value>This command is not available as API.</value>
+  </data>
+  <data name="error_not_found" xml:space="preserve">
+    <value>Not found.</value>
+  </data>
+  <data name="error_no_active_token" xml:space="preserve">
+    <value>No active token found.</value>
+  </data>
+  <data name="error_no_invoker_in_context" xml:space="preserve">
+    <value>No invoker in context.</value>
+  </data>
+  <data name="error_no_target_channel" xml:space="preserve">
+    <value>No target channel found.</value>
+  </data>
+  <data name="error_no_teamspeak_in_context" xml:space="preserve">
+    <value>No teamspeak connection in context.</value>
+  </data>
+  <data name="error_no_uid_found" xml:space="preserve">
+    <value>No Uid found to register token for.</value>
+  </data>
+  <data name="error_playlist_is_empty" xml:space="preserve">
+    <value>Nothing to play...</value>
+  </data>
+  <data name="error_playlist_item_index_out_of_range" xml:space="preserve">
+    <value>Index must be within playlist length.</value>
+  </data>
+  <data name="error_playlist_not_found" xml:space="preserve">
+    <value>The playlist could not be found.</value>
+  </data>
+  <data name="error_plugin_error" xml:space="preserve">
+    <value>Plugin error: {0}</value>
+  </data>
+  <data name="error_unrecognized_descriptor" xml:space="preserve">
+    <value>Unrecognized descriptor.</value>
+  </data>
+  <data name="error_use_private" xml:space="preserve">
+    <value>Please use this command in a private session.</value>
+  </data>
+  <data name="info_bot_might_be_unresponsive" xml:space="preserve">
+    <value>This might take a while and make the bot unresponsive in meanwhile.</value>
+  </data>
+  <data name="info_status_channelcommander" xml:space="preserve">
+    <value>Channel commander is {0}</value>
+  </data>
+  <data name="info_cleanup_done" xml:space="preserve">
+    <value>Cleanup done!</value>
+  </data>
+  <data name="info_currently_not_playing" xml:space="preserve">
+    <value>There is nothing on right now...</value>
+  </data>
+  <data name="info_currently_playing" xml:space="preserve">
+    <value>Now playing: {0}</value>
+  </data>
+  <data name="info_empty" xml:space="preserve">
+    <value>&lt;empty&gt;</value>
+  </data>
+  <data name="info_ok" xml:space="preserve">
+    <value>Ok</value>
+  </data>
+  <data name="info_quizmode_is_active" xml:space="preserve">
+    <value>Sorry, you have to guess!</value>
+  </data>
+  <data name="info_removed" xml:space="preserve">
+    <value>Removed "{0}"</value>
+  </data>
+  <data name="info_botstatus_quiztime" xml:space="preserve">
+    <value>&lt;Quiztime!&gt;</value>
+  </data>
+  <data name="info_botstatus_sleeping" xml:space="preserve">
+    <value>&lt;Sleeping&gt;</value>
+  </data>
+  <data name="cmd_bot_setup_error" xml:space="preserve">
+    <value>Bot setup failed. See logs for more details.</value>
+  </data>
+  <data name="error_feature_unavailable" xml:space="preserve">
+    <value>This feature is currently unavailable.</value>
+  </data>
+  <data name="error_history_could_not_create_entry" xml:space="preserve">
+    <value>Entry could not be stored.</value>
+  </data>
+  <data name="error_history_could_not_find_entry" xml:space="preserve">
+    <value>Could not find entry with this id.</value>
+  </data>
+  <data name="error_playlist_broken_file" xml:space="preserve">
+    <value>The playlist file is corrupted. Only admins can modify it until fixed.</value>
+  </data>
+  <data name="error_ts_cannot_move" xml:space="preserve">
+    <value>Cannot move there.</value>
+  </data>
+  <data name="error_ts_cannot_set_commander" xml:space="preserve">
+    <value>Cannot set commander mode.</value>
+  </data>
+  <data name="error_ts_error" xml:space="preserve">
+    <value>Teamspeak Error: {0}</value>
+  </data>
+  <data name="error_ts_invalid_name" xml:space="preserve">
+    <value>The new name is too long or invalid.</value>
+  </data>
+  <data name="error_ts_msg_too_long" xml:space="preserve">
+    <value>The message to send is longer than the allowed maximum.</value>
+  </data>
+  <data name="error_ts_no_client_found" xml:space="preserve">
+    <value>No client found.</value>
+  </data>
+  <data name="error_ts_unknown_error" xml:space="preserve">
+    <value>Unknown Teamspeak Error.</value>
+  </data>
+  <data name="info_off" xml:space="preserve">
+    <value>off</value>
+  </data>
+  <data name="info_on" xml:space="preserve">
+    <value>on</value>
+  </data>
+  <data name="info_status_loop" xml:space="preserve">
+    <value>Loop is {0}</value>
+  </data>
+  <data name="info_status_quizmode" xml:space="preserve">
+    <value>Quizmode is {0}</value>
+  </data>
+  <data name="info_status_random" xml:space="preserve">
+    <value>Random is {0}</value>
+  </data>
+  <data name="info_status_repeat" xml:space="preserve">
+    <value>Repeat is {0}</value>
+  </data>
+  <data name="error_config_value_parse_error" xml:space="preserve">
+    <value>The value could not be parsed.</value>
+  </data>
+  <data name="error_io_in_use" xml:space="preserve">
+    <value>The file still in use.</value>
+  </data>
+  <data name="error_io_missing_permission" xml:space="preserve">
+    <value>The bot does not have the required system permission.</value>
+  </data>
+  <data name="error_io_unknown_error" xml:space="preserve">
+    <value>An unknown error occoured.</value>
+  </data>
+  <data name="error_media_failed_to_parse_id" xml:space="preserve">
+    <value>The id could not get parsed.</value>
+  </data>
+  <data name="error_media_file_not_found" xml:space="preserve">
+    <value>The resource could not be found.</value>
+  </data>
+  <data name="error_media_image_not_found" xml:space="preserve">
+    <value>No image could not be found.</value>
+  </data>
+  <data name="error_media_internal_invalid" xml:space="preserve">
+    <value>Invalid or malformed response parts.</value>
+  </data>
+  <data name="error_media_internal_missing" xml:space="preserve">
+    <value>Empty or missing response parts.</value>
+  </data>
+  <data name="error_media_invalid_image" xml:space="preserve">
+    <value>The image is invalid.</value>
+  </data>
+  <data name="error_media_invalid_uri" xml:space="preserve">
+    <value>Invalid uri.</value>
+  </data>
+  <data name="error_media_no_stream_extracted" xml:space="preserve">
+    <value>No stream extracted.</value>
+  </data>
+  <data name="error_net_empty_response" xml:space="preserve">
+    <value>Request got empty response.</value>
+  </data>
+  <data name="error_net_error_status_code" xml:space="preserve">
+    <value>Got error status code.</value>
+  </data>
+  <data name="error_net_no_connection" xml:space="preserve">
+    <value>No connection could be established.</value>
+  </data>
+  <data name="error_net_timeout" xml:space="preserve">
+    <value>Request timed out.</value>
+  </data>
+  <data name="error_net_unknown" xml:space="preserve">
+    <value>Unknown request error.</value>
+  </data>
+  <data name="error_playlist_cannot_access_not_owned" xml:space="preserve">
+    <value>You cannot access a playlist which you dont own.</value>
+  </data>
+  <data name="error_playlist_name_invalid_character" xml:space="preserve">
+    <value>The playlist name contains invalid characters; please only use [a-zA-Z0-9_-].</value>
+  </data>
+  <data name="error_playlist_name_invalid_empty" xml:space="preserve">
+    <value>An empty playlist name is not valid.</value>
+  </data>
+  <data name="error_playlist_name_invalid_too_long" xml:space="preserve">
+    <value>The playlist name length must be &lt;64.</value>
+  </data>
+  <data name="error_playlist_no_store_directory" xml:space="preserve">
+    <value>No playlist directory has been set up.</value>
+  </data>
+  <data name="error_playlist_special_not_found" xml:space="preserve">
+    <value>Special list not found.</value>
+  </data>
+  <data name="error_playmgr_internal_error" xml:space="preserve">
+    <value>Internal error.</value>
+  </data>
+  <data name="error_playmgr_many_songs_failed" xml:space="preserve">
+    <value>A few songs failed to start, use {0} to continue.</value>
+  </data>
+  <data name="error_resfac_could_not_load" xml:space="preserve">
+    <value>Could not load.</value>
+  </data>
+  <data name="error_resfac_multiple_factories_failed" xml:space="preserve">
+    <value>Considered multiple factories but all failed.</value>
+  </data>
+  <data name="error_resfac_no_registered_factory" xml:space="preserve">
+    <value>No registered factory for "{0}" found.</value>
+  </data>
+  <data name="error_ytdl_empty_response" xml:space="preserve">
+    <value>No youtube-dl response</value>
+  </data>
+  <data name="error_ytdl_failed_to_run" xml:space="preserve">
+    <value>Failed to run youtube-dl.</value>
+  </data>
+  <data name="error_ytdl_not_found" xml:space="preserve">
+    <value>Youtube-Dl could not be found. The song/video cannot be played due to restrictions.</value>
+  </data>
+  <data name="error_ytdl_song_failed_to_load" xml:space="preserve">
+    <value>youtube-dl failed to load the resource.</value>
+  </data>
+  <data name="info_playmgr_no_next_song" xml:space="preserve">
+    <value>No next song could be played.</value>
+  </data>
+  <data name="info_playmgr_no_previous_song" xml:space="preserve">
+    <value>No previous song could be played.</value>
+  </data>
+  <data name="error_no_help" xml:space="preserve">
+    <value>No help found.</value>
+  </data>
+  <data name="error_no_session_in_context" xml:space="preserve">
+    <value>Missing session context.</value>
+  </data>
+  <data name="error_ts_code_2568" xml:space="preserve">
+    <value>Missing permissions.</value>
+  </data>
+  <data name="cmd_bot_connect_to_help" xml:space="preserve">
+    <value>Connects a new bot to the given address.</value>
+  </data>
+  <data name="cmd_bot_connect_template_help" xml:space="preserve">
+    <value>Connects a new bot with the settings from the template name.</value>
+  </data>
+  <data name="cmd_bot_save_help" xml:space="preserve">
+    <value>Saves the configuration for the newly connected bot.</value>
+  </data>
+  <data name="cmd_history_clean_removedefective_help" xml:space="preserve">
+    <value>Checks for all links in the history which cannot be opened anymore and removes them.</value>
+  </data>
+  <data name="cmd_if_help" xml:space="preserve">
+    <value>Conditionally executes subcommands.</value>
+  </data>
+  <data name="cmd_settings_get_help" xml:space="preserve">
+    <value>Gets a value from the bot settings.</value>
+  </data>
+  <data name="cmd_settings_global_get_help" xml:space="preserve">
+    <value>Gets a value from the core settings.</value>
+  </data>
+  <data name="cmd_settings_global_set_help" xml:space="preserve">
+    <value>Set a value from the core settings.</value>
+  </data>
+  <data name="cmd_settings_help" xml:space="preserve">
+    <value>Provides get/set methods to change the settings.</value>
+  </data>
+  <data name="cmd_settings_help_help" xml:space="preserve">
+    <value>Get the desciption for a setting.</value>
+  </data>
+  <data name="cmd_settings_set_help" xml:space="preserve">
+    <value>Sets a value from the bot settings.</value>
+  </data>
+  <data name="_undocumented" xml:space="preserve">
+    <value>This feature is not documented.</value>
+  </data>
+  <data name="cmd_bot_avatar_help" xml:space="preserve">
+    <value>Sets an avatar for the bot</value>
+  </data>
+  <data name="cmd_song_position_help" xml:space="preserve">
+    <value>Gets the length and position of the current track.</value>
+  </data>
+  <data name="error_missing_right" xml:space="preserve">
+    <value>You cannot execute '{0}'. You are missing the '{1}' right!</value>
+  </data>
+</root>

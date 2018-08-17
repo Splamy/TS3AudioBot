@@ -10,6 +10,7 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using Helper;
+	using Localization;
 	using Newtonsoft.Json.Linq;
 	using System;
 	using System.Collections.Generic;
@@ -26,21 +27,21 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
 
-		public R<PlayResource> GetResource(string url)
+		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
-			var match = TwitchMatch.Match(url);
+			var match = TwitchMatch.Match(uri);
 			if (!match.Success)
-				return RResultCode.TwitchInvalidUrl.ToString();
+				return new LocalStr(strings.error_media_invalid_uri);
 			return GetResourceById(new AudioResource(match.Groups[3].Value, null, FactoryFor));
 		}
 
-		public R<PlayResource> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
 		{
 			var channel = resource.ResourceId;
 
 			// request api token
-			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"http://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientId)))
-				return RResultCode.NoConnection.ToString();
+			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"https://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientId)))
+				return new LocalStr(strings.error_net_no_connection);
 
 			var jObj = JObject.Parse(jsonResponse);
 
@@ -48,13 +49,13 @@ namespace TS3AudioBot.ResourceFactories
 			var tokenResult = jObj.TryCast<string>("token");
 			var sigResult = jObj.TryCast<string>("sig");
 			if (!tokenResult.Ok || !sigResult.Ok)
-				return "Invalid api response";
+				return new LocalStr(strings.error_media_internal_invalid + " (tokenResult|sigResult)");
 			var token = Uri.EscapeUriString(tokenResult.Value);
 			var sig = sigResult.Value;
 			// guaranteed to be random, chosen by fair dice roll.
 			const int random = 4;
 			if (!WebWrapper.DownloadString(out string m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))
-				return RResultCode.NoConnection.ToString();
+				return new LocalStr(strings.error_net_no_connection);
 
 			// parse m3u8 file
 			var dataList = new List<StreamData>();
@@ -62,7 +63,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var header = reader.ReadLine();
 				if (string.IsNullOrEmpty(header) || header != "#EXTM3U")
-					return RResultCode.TwitchMalformedM3u8File.ToString();
+					return new LocalStr(strings.error_media_internal_missing + " (m3uHeader)");
 
 				while (true)
 				{
@@ -80,10 +81,12 @@ namespace TS3AudioBot.ResourceFactories
 					case "EXT-X-MEDIA":
 						string streamInfo = reader.ReadLine();
 						Match infoMatch;
-						if (string.IsNullOrEmpty(streamInfo) ||
-							 !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success ||
-							 infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
-							return RResultCode.TwitchMalformedM3u8File.ToString();
+						if (string.IsNullOrEmpty(streamInfo)
+							|| !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success
+							|| infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
+						{
+							return new LocalStr(strings.error_media_internal_missing + " (m3uStream)");
+						}
 
 						var streamData = new StreamData();
 						// #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=128000,CODECS="mp4a.40.2",VIDEO="audio_only"
@@ -98,8 +101,8 @@ namespace TS3AudioBot.ResourceFactories
 							case "CODECS": streamData.Codec = TextUtil.StripQuotes(value); break;
 							case "VIDEO":
 								streamData.QualityType = Enum.TryParse(TextUtil.StripQuotes(value), out StreamQuality quality)
-								  ? quality
-								  : StreamQuality.unknown; break;
+								 ? quality
+								 : StreamQuality.unknown; break;
 							}
 						}
 
@@ -113,18 +116,18 @@ namespace TS3AudioBot.ResourceFactories
 			// Validation Process
 
 			if (dataList.Count <= 0)
-				return RResultCode.TwitchNoStreamsExtracted.ToString();
+				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			int codec = SelectStream(dataList);
 			if (codec < 0)
-				return "The stream has no audio_only version.";
+				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			return new PlayResource(dataList[codec].Url, resource.ResourceTitle != null ? resource : resource.WithName($"Twitch channel: {channel}"));
 		}
 
 		private static int SelectStream(List<StreamData> list) => list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
 
-		public string RestoreLink(string id) => "http://www.twitch.tv/" + id;
+		public string RestoreLink(string id) => "https://www.twitch.tv/" + id;
 
 		public void Dispose() { }
 	}

@@ -30,9 +30,22 @@ namespace TS3Client.Audio.Opus
 	/// </summary>
 	public static class NativeMethods
 	{
+		private static bool isPreloaded = false;
+		private static bool wasPreloadSuccessful = false;
+
 		static NativeMethods()
 		{
-			NativeWinDllLoader.DirectLoadLibrary("libopus");
+			PreloadLibrary();
+		}
+
+		public static bool PreloadLibrary()
+		{
+			if (!isPreloaded)
+			{
+				wasPreloadSuccessful = NativeLibraryLoader.DirectLoadLibrary("libopus", () => opus_get_version_string());
+				isPreloaded = true;
+			}
+			return wasPreloadSuccessful;
 		}
 
 		public static string Info
@@ -41,7 +54,7 @@ namespace TS3Client.Audio.Opus
 			{
 				var verStrPtr = opus_get_version_string();
 				var verString = Marshal.PtrToStringAnsi(verStrPtr);
-				return $"{verString} ({NativeWinDllLoader.ArchFolder})";
+				return $"{verString} ({NativeLibraryLoader.ArchFolder})";
 			}
 		}
 
@@ -63,7 +76,7 @@ namespace TS3Client.Audio.Opus
 		internal static extern void opus_decoder_destroy(IntPtr decoder);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_decode(IntPtr st, byte[] data, int len, byte[] pcm, int frameSize, int decodeFec);
+		internal static extern int opus_decode(IntPtr st, ref byte data, int len, ref byte pcm, int frameSize, int decodeFec);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, int value);

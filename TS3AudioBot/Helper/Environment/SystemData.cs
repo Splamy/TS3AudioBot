@@ -10,15 +10,17 @@
 namespace TS3AudioBot.Helper.Environment
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.IO;
 	using System.Reflection;
 	using System.Text.RegularExpressions;
-	using Version = System.ValueTuple<Runtime, string, SemVer>;
+	using PlatformVersion = System.ValueTuple<Runtime, string, System.Version>;
 
 	public static class SystemData
 	{
-		private static readonly Regex PlattformRegex = new Regex(@"(\w+)=(.*)", Util.DefaultRegexConfig | RegexOptions.Multiline);
-		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){2,3}", Util.DefaultRegexConfig | RegexOptions.Multiline);
+		private static readonly Regex PlattformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
+		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 
 		public static bool IsLinux { get; }
 			= Environment.OSVersion.Platform == PlatformID.Unix
@@ -44,51 +46,56 @@ namespace TS3AudioBot.Helper.Environment
 		private static string GenPlattformDat()
 		{
 			string plattform = null;
-			string version = "<?>";
+			string version = null;
 			string bitness = Environment.Is64BitProcess ? "64bit" : "32bit";
 
 			if (IsLinux)
 			{
-				try
-				{
-					var p = new Process()
-					{
-						StartInfo = new ProcessStartInfo()
-						{
-							FileName = "bash",
-							Arguments = "-c \"cat /etc/*[_-]release\"",
-							CreateNoWindow = true,
-							UseShellExecute = false,
-							RedirectStandardOutput = true,
-						}
-					};
-					p.Start();
-					p.WaitForExit(100);
+				var values = new Dictionary<string, string>();
 
-					while (p.StandardOutput.Peek() > -1)
+				RunBash("cat /etc/*[_-][Rr]elease", x =>
+				{
+					var lines = x.ReadToEnd().Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+					foreach (var line in lines)
 					{
-						var infoLine = p.StandardOutput.ReadLine();
-						if (string.IsNullOrEmpty(infoLine))
-							continue;
-						var match = PlattformRegex.Match(infoLine);
+						var match = PlattformRegex.Match(line);
 						if (!match.Success)
 							continue;
 
-						switch (match.Groups[1].Value.ToUpper())
+						values[match.Groups[1].Value.ToUpper()] = TextUtil.StripQuotes(match.Groups[2].Value);
+					}
+
+					if (values.Count > 0)
+					{
+						string value;
+						plattform = values.TryGetValue("NAME", out value) ? value
+								: values.TryGetValue("ID", out value) ? value
+								: values.TryGetValue("DISTRIB_ID", out value) ? value
+								: values.TryGetValue("PRETTY_NAME", out value) ? value
+								: null;
+
+						version = values.TryGetValue("VERSION", out value) ? value
+								: values.TryGetValue("VERSION_ID", out value) ? value
+								: values.TryGetValue("DISTRIB_RELEASE", out value) ? value
+								: null;
+					}
+
+					if (plattform == null && version == null)
+					{
+						foreach (var line in lines)
 						{
-						case "DISTRIB_ID":
-							plattform = match.Groups[2].Value;
-							break;
-						case "DISTRIB_RELEASE":
-							version = match.Groups[2].Value;
-							break;
+							var match = SemVerRegex.Match(line);
+							if (match.Success)
+							{
+								version = line;
+								break;
+							}
 						}
 					}
-				}
-				catch (Exception) { }
 
-				if (plattform == null)
-					plattform = "Linux";
+					plattform = plattform ?? "Linux";
+					version = version ?? "<?>";
+				});
 			}
 			else
 			{
@@ -99,8 +106,33 @@ namespace TS3AudioBot.Helper.Environment
 			return $"{plattform} {version} ({bitness})";
 		}
 
-		public static (Runtime Runtime, string FullName, SemVer SemVer) RuntimeData { get; } = GenRuntimeData();
-		private static Version GenRuntimeData()
+		private static void RunBash(string param, Action<StreamReader> action)
+		{
+			try
+			{
+				using (var p = new Process
+				{
+					StartInfo = new ProcessStartInfo
+					{
+						FileName = "bash",
+						Arguments = $"-c \"{param}\"",
+						CreateNoWindow = true,
+						UseShellExecute = false,
+						RedirectStandardOutput = true,
+					}
+				})
+				{
+					p.Start();
+					p.WaitForExit(200);
+
+					action.Invoke(p.StandardOutput);
+				}
+			}
+			catch { }
+		}
+
+		public static (Runtime Runtime, string FullName, Version SemVer) RuntimeData { get; } = GenRuntimeData();
+		private static PlatformVersion GenRuntimeData()
 		{
 			var ver = GetNetCoreVersion();
 			if (ver.HasValue)
@@ -117,7 +149,7 @@ namespace TS3AudioBot.Helper.Environment
 			return (Runtime.Unknown, "? (?)", null);
 		}
 
-		private static Version? GetNetCoreVersion()
+		private static PlatformVersion? GetNetCoreVersion()
 		{
 			var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
 			var assemblyPath = assembly.CodeBase.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
@@ -129,7 +161,7 @@ namespace TS3AudioBot.Helper.Environment
 			return (Runtime.Core, $".NET Core ({version})", semVer);
 		}
 
-		private static Version? GetMonoVersion()
+		private static PlatformVersion? GetMonoVersion()
 		{
 			var type = Type.GetType("Mono.Runtime");
 			if (type == null)
@@ -142,27 +174,26 @@ namespace TS3AudioBot.Helper.Environment
 			return (Runtime.Mono, $"Mono ({version})", semVer);
 		}
 
-		private static Version? GetNetFrameworkVersion()
+		private static PlatformVersion? GetNetFrameworkVersion()
 		{
 			var version = Environment.Version.ToString();
 			var semVer = ParseToSemVer(version);
 			return (Runtime.Net, $".NET Framework {version}", semVer);
 		}
 
-		private static SemVer ParseToSemVer(string version)
+		private static Version ParseToSemVer(string version)
 		{
 			var semMatch = SemVerRegex.Match(version);
 			if (!semMatch.Success)
 				return null;
 
-			var semVer = new SemVer();
-			if (int.TryParse(semMatch.Groups[1].Value, out var major)) semVer.Major = major;
-			if (int.TryParse(semMatch.Groups[2].Captures[0].Value, out var minor)) semVer.Minor = minor;
-			if (int.TryParse(semMatch.Groups[2].Captures[1].Value, out var patch)) semVer.Patch = patch;
-			if (semMatch.Groups[2].Captures.Count > 2 &&
-				int.TryParse(semMatch.Groups[2].Captures[2].Value, out var revision)) semVer.Revision = revision;
-			else semVer.Revision = null;
-			return semVer;
+			if (!int.TryParse(semMatch.Groups[1].Value, out var major)) major = 0;
+			if (!int.TryParse(semMatch.Groups[2].Captures[0].Value, out var minor)) minor = 0;
+			if (semMatch.Groups[2].Captures.Count <= 1
+				|| !int.TryParse(semMatch.Groups[2].Captures[1].Value, out var patch)) patch = 0;
+			if (semMatch.Groups[2].Captures.Count <= 2
+				|| int.TryParse(semMatch.Groups[2].Captures[2].Value, out var revision)) revision = 0;
+			return new Version(major, minor, patch, revision);
 		}
 	}
 
@@ -184,15 +215,8 @@ namespace TS3AudioBot.Helper.Environment
 		public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
 	}
 
-	public class SemVer
+	public static class SemVerExtension
 	{
-		public int Major { get; set; }
-		public int Minor { get; set; }
-		public int Patch { get; set; }
-
-		// Not used in SemVer
-		public int? Revision { get; set; }
-
-		public override string ToString() => $"{Major}.{Minor}.{Patch}" + (Revision.HasValue ? $".{Revision}" : null);
+		public static string AsSemVer(this Version version) => $"{version.Major}.{version.Minor}.{version.Build}" + (version.Revision != 0 ? $".{version.Revision}" : null);
 	}
 }

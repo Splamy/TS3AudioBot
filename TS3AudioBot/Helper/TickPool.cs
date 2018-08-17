@@ -29,12 +29,16 @@ namespace TS3AudioBot.Helper
 		{
 			run = false;
 			Util.Init(out workList);
-			tickThread = new Thread(Tick) {Name = "TickPool"};
+			tickThread = new Thread(Tick) { Name = "TickPool" };
 		}
 
-		public static void RegisterTickOnce(Action method)
+		public static TickWorker RegisterTickOnce(Action method, TimeSpan? delay = null)
 		{
-			AddWorker(new TickWorker(method, TimeSpan.Zero) { Active = true, TickOnce = true });
+			if (method == null) throw new ArgumentNullException(nameof(method));
+			if (delay.HasValue && delay.Value <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(delay));
+			var worker = new TickWorker(method, delay ?? TimeSpan.Zero) { Active = true, TickOnce = true };
+			AddWorker(worker);
+			return worker;
 		}
 
 		public static TickWorker RegisterTick(Action method, TimeSpan interval, bool active)
@@ -104,7 +108,8 @@ namespace TS3AudioBot.Helper
 					}
 				}
 
-				tickLoopPulse.WaitOne(curSleep);
+				if (curSleep >= TimeSpan.Zero)
+					tickLoopPulse.WaitOne(curSleep);
 			}
 		}
 

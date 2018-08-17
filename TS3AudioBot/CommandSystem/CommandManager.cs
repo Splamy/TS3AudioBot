@@ -22,100 +22,66 @@ namespace TS3AudioBot.CommandSystem
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex CommandNamespaceValidator =
-			new Regex(@"^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
+			new Regex("^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
-		private readonly List<BotCommand> baseCommands;
 		private readonly HashSet<string> commandPaths;
-		private readonly List<BotCommand> dynamicCommands;
-		private readonly Dictionary<ICommandBag, IReadOnlyList<BotCommand>> pluginCommands;
+		private readonly HashSet<ICommandBag> baggedCommands;
+
+		public Rights.RightsManager RightsManager { get; set; }
 
 		public CommandManager()
 		{
 			CommandSystem = new XCommandSystem();
-			Util.Init(out baseCommands);
 			Util.Init(out commandPaths);
-			Util.Init(out dynamicCommands);
-			Util.Init(out pluginCommands);
+			Util.Init(out baggedCommands);
 		}
 
 		public void Initialize()
 		{
-			RegisterMain();
+			RegisterCollection(MainCommands.Bag);
 		}
 
 		public XCommandSystem CommandSystem { get; }
 
-		public IEnumerable<BotCommand> AllCommands
+		public IEnumerable<BotCommand> AllCommands => baggedCommands.SelectMany(x => x.BagCommands);
+
+		public IEnumerable<string> AllRights => AllCommands.Select(x => x.RequiredRight).Concat(baggedCommands.SelectMany(x => x.AdditionalRights));
+
+		public void RegisterCollection(ICommandBag bag)
 		{
-			get
-			{
-				foreach (var com in baseCommands)
-					yield return com;
-				foreach (var com in dynamicCommands)
-					yield return com;
-				foreach (var comArr in pluginCommands.Values)
-					foreach (var com in comArr)
-						yield return com;
-				// todo alias
-			}
-		}
-
-		public IEnumerable<string> AllRights => AllCommands.Select(x => x.RequiredRight);
-
-		public void RegisterMain()
-		{
-			if (baseCommands.Count > 0)
-				throw new InvalidOperationException("Operation can only be executed once.");
-
-			foreach (var com in GetBotCommands(GetCommandMethods(null, typeof(MainCommands))))
-			{
-				LoadCommand(com);
-				baseCommands.Add(com);
-			}
-		}
-
-		public void RegisterCommand(BotCommand command)
-		{
-			LoadCommand(command);
-			dynamicCommands.Add(command);
-		}
-
-		internal void RegisterCollection(ICommandBag bag)
-		{
-			if (pluginCommands.ContainsKey(bag))
+			if (baggedCommands.Contains(bag))
 				throw new InvalidOperationException("This bag is already loaded.");
 
-			var comList = bag.ExposedCommands.ToList();
+			CheckDistinct(bag.BagCommands);
+			baggedCommands.Add(bag);
 
-			CheckDistinct(comList);
-
-			pluginCommands.Add(bag, comList.AsReadOnly());
-
-			int loaded = 0;
 			try
 			{
-				for (; loaded < comList.Count; loaded++)
-					LoadCommand(comList[loaded]);
+				foreach (var command in bag.BagCommands)
+					LoadCommand(command);
+				RightsManager?.SetRightsList(AllRights);
 			}
-			catch // TODO test
+			catch (Exception ex)
 			{
-				for (int i = 0; i <= loaded && i < comList.Count; i++)
-					UnloadCommand(comList[i]);
+				Log.Error(ex, "Failed to load command bag.");
+				UnregisterCollection(bag);
 				throw;
 			}
 		}
 
-		internal void UnregisterCollection(ICommandBag bag)
+		public void UnregisterCollection(ICommandBag bag)
 		{
-			if (pluginCommands.TryGetValue(bag, out var commands))
+			if (baggedCommands.Remove(bag))
 			{
-				pluginCommands.Remove(bag);
-				foreach (var com in commands)
+				foreach (var com in bag.BagCommands)
 				{
 					UnloadCommand(com);
 				}
+				RightsManager?.SetRightsList(AllRights);
 			}
 		}
+
+		public static IEnumerable<BotCommand> GetBotCommands(object obj, Type type = null) => GetBotCommands(GetCommandMethods(obj, type));
 
 		public static IEnumerable<BotCommand> GetBotCommands(IEnumerable<CommandBuildInfo> methods)
 		{
@@ -130,26 +96,30 @@ namespace TS3AudioBot.CommandSystem
 		{
 			if (obj == null && type == null)
 				throw new ArgumentNullException(nameof(type), "No type information given.");
-			var objType = type ?? obj.GetType();
-
-			foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
+			return GetCommandMethodsIterator();
+			IEnumerable<CommandBuildInfo> GetCommandMethodsIterator()
 			{
-				var comAtt = method.GetCustomAttribute<CommandAttribute>();
-				if (comAtt == null) continue;
-				if (obj == null && !method.IsStatic)
+				var objType = type ?? obj.GetType();
+
+				foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
 				{
-					Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
-					continue;
+					var comAtt = method.GetCustomAttribute<CommandAttribute>();
+					if (comAtt == null) continue;
+					if (obj == null && !method.IsStatic)
+					{
+						Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
+						continue;
+					}
+					yield return new CommandBuildInfo(obj, method, comAtt);
 				}
-				yield return new CommandBuildInfo(obj, method, comAtt);
 			}
 		}
 
-		private static void CheckDistinct(ICollection<BotCommand> list) // TODO test
+		private static void CheckDistinct(IReadOnlyCollection<BotCommand> list)
 		{
-			if (list.Select(c => c.InvokeName).Distinct().Count() < list.Count)
+			if (list.Select(c => c.FullQualifiedName).Distinct().Count() < list.Count)
 			{
-				var duplicates = list.GroupBy(c => c.InvokeName).Where(g => g.Count() > 1).Select(g => g.Key);
+				var duplicates = list.GroupBy(c => c.FullQualifiedName).Where(g => g.Count() > 1).Select(g => g.Key);
 				throw new InvalidOperationException("The object contains duplicates: " + string.Join(", ", duplicates));
 			}
 		}
@@ -164,8 +134,8 @@ namespace TS3AudioBot.CommandSystem
 				throw new InvalidOperationException("BotCommand has an invalid invoke name: " + com.InvokeName);
 			if (commandPaths.Contains(com.FullQualifiedName))
 				throw new InvalidOperationException("Command already exists: " + com.InvokeName);
-			commandPaths.Add(com.FullQualifiedName);
 
+			commandPaths.Add(com.FullQualifiedName);
 			LoadICommand(com, com.InvokeName);
 		}
 
@@ -182,7 +152,7 @@ namespace TS3AudioBot.CommandSystem
 				GenerateError(result.Error, com as BotCommand);
 		}
 
-		private R<CommandGroup> BuildAndGet(IEnumerable<string> comPath)
+		private R<CommandGroup, string> BuildAndGet(IEnumerable<string> comPath)
 		{
 			CommandGroup group = CommandSystem.RootCommand;
 			// this for loop iterates through the seperate names of
@@ -222,7 +192,7 @@ namespace TS3AudioBot.CommandSystem
 			return group;
 		}
 
-		private static R InsertInto(CommandGroup group, ICommand com, string name)
+		private static E<string> InsertInto(CommandGroup group, ICommand com, string name)
 		{
 			var subCommand = group.GetCommand(name);
 
@@ -232,7 +202,7 @@ namespace TS3AudioBot.CommandSystem
 				// the group we are trying to insert has no element with the current
 				// name, so just insert it
 				group.AddCommand(name, com);
-				return R.OkR;
+				return R.Ok;
 
 			case CommandGroup insertCommand:
 				// to add a command to CommandGroup will have to treat it as a subcommand
@@ -243,7 +213,7 @@ namespace TS3AudioBot.CommandSystem
 					insertCommand.AddCommand(string.Empty, com);
 					if (com is BotCommand botCom && botCom.NormalParameters > 0)
 						Log.Warn("\"{0}\" has at least one parameter and won't be reachable due to an overloading function.", botCom.FullQualifiedName);
-					return R.OkR;
+					return R.Ok;
 				}
 				else
 					return "An empty named function under a group cannot be overloaded.";
@@ -273,7 +243,7 @@ namespace TS3AudioBot.CommandSystem
 				return "Unknown node to insert to.";
 			}
 
-			return R.OkR;
+			return R.Ok;
 		}
 
 		private static void GenerateError(string msg, BotCommand involvedCom)
@@ -286,9 +256,8 @@ namespace TS3AudioBot.CommandSystem
 
 		private void UnloadCommand(BotCommand com)
 		{
-			if (!commandPaths.Contains(com.FullQualifiedName))
+			if (!commandPaths.Remove(com.FullQualifiedName))
 				return;
-			commandPaths.Remove(com.FullQualifiedName);
 
 			var comPath = com.InvokeName.Split(' ');
 

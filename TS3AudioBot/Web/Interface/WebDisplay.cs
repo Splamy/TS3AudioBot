@@ -35,12 +35,12 @@ namespace TS3AudioBot.Web.Interface
 			{ ".less", "text/css" },
 		};
 
-		public WebDisplay(WebData webData)
+		public WebDisplay(Config.ConfWebInterface webData)
 		{
 			DirectoryInfo baseDir = null;
-			if (string.IsNullOrEmpty(webData.WebinterfaceHostPath))
+			if (string.IsNullOrEmpty(webData.Path))
 			{
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < 5; i++)
 				{
 					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
 					var checkDir = Path.Combine(up, "WebInterface");
@@ -51,8 +51,8 @@ namespace TS3AudioBot.Web.Interface
 					}
 				}
 			}
-			else if (Directory.Exists(webData.WebinterfaceHostPath))
-				baseDir = new DirectoryInfo(webData.WebinterfaceHostPath);
+			else if (Directory.Exists(webData.Path))
+				baseDir = new DirectoryInfo(webData.Path);
 
 			if (baseDir == null)
 				throw new InvalidOperationException("Can't find a WebInterface path to host. Try specifying the path to host in the config");
@@ -60,6 +60,7 @@ namespace TS3AudioBot.Web.Interface
 			var dir = new FolderProvider(baseDir);
 			map.Map("/", dir);
 			map.Map("/site/", dir);
+			map.Map("/openapi/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "openapi"))));
 
 			Site404 = map.TryGetSite(new Uri("http://localhost/404.html"));
 			map.Map("/", map.TryGetSite(new Uri("http://localhost/index.html")));

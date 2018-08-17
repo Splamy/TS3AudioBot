@@ -11,22 +11,25 @@ namespace TS3AudioBot.CommandSystem
 {
 	using CommandResults;
 	using Commands;
+	using Localization;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
 
+	[DebuggerDisplay("{DebuggerDisplay, nq}")]
 	public class BotCommand : FunctionCommand
 	{
-		private string cachedHelp;
+		private readonly string helpLookupName;
 		private string cachedFullQualifiedName;
 		private object cachedAsJsonObj;
 
 		public string InvokeName { get; }
 		private readonly string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
-		public string Description { get; }
+		public string Description => LocalizationManager.GetString(helpLookupName);
 		public UsageAttribute[] UsageList { get; }
 		public string FullQualifiedName
 		{
@@ -45,6 +48,19 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
+		public string DebuggerDisplay
+		{
+			get
+			{
+				var strb = new StringBuilder();
+				strb.Append('!').Append(InvokeName);
+				strb.Append(" : ");
+				foreach (var param in UsageList)
+					strb.Append(param.UsageSyntax).Append('/');
+				return strb.ToString();
+			}
+		}
+
 		public object AsJsonObj
 		{
 			get
@@ -58,46 +74,32 @@ namespace TS3AudioBot.CommandSystem
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{
 			InvokeName = buildInfo.CommandData.CommandNameSpace;
-			Description = buildInfo.CommandData.CommandHelp;
+			helpLookupName = buildInfo.CommandData.OverrideHelpName ?? ("cmd_" + InvokeName.Replace(" ", "_") + "_help");
 			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
-		}
-
-		public string GetHelp()
-		{
-			if (cachedHelp == null)
-			{
-				var strb = new StringBuilder();
-				if (!string.IsNullOrEmpty(Description))
-					strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description);
-
-				if (UsageList.Length > 0)
-				{
-					int longest = UsageList.Max(p => p.UsageSyntax.Length) + 1;
-					foreach (var para in UsageList)
-						strb.Append("\n!").Append(InvokeName).Append(" ").Append(para.UsageSyntax)
-							.Append(' ', longest - para.UsageSyntax.Length).Append(para.UsageHelp);
-				}
-				cachedHelp = strb.ToString();
-			}
-			return cachedHelp;
 		}
 
 		public override string ToString()
 		{
 			var strb = new StringBuilder();
-			strb.Append('!').Append(InvokeName);
-			strb.Append(" : ");
-			foreach (var param in UsageList)
-				strb.Append(param.UsageSyntax).Append('/');
+			strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description ?? strings.error_no_help ?? "<No help found>");
+
+			if (UsageList.Length > 0)
+			{
+				int longest = UsageList.Max(p => p.UsageSyntax.Length) + 1;
+				foreach (var para in UsageList)
+					strb.Append("\n!").Append(InvokeName).Append(" ").Append(para.UsageSyntax)
+						.Append(' ', longest - para.UsageSyntax.Length).Append(para.UsageHelp);
+			}
 			return strb.ToString();
 		}
 
 		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			if (!info.HasRights(requiredRights))
-				throw new CommandException($"You cannot execute \"{InvokeName}\". You are missing the \"{RequiredRight}\" right.!",
+				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight),
 					CommandExceptionReason.MissingRights);
+
 			return base.Execute(info, arguments, returnTypes);
 		}
 
@@ -123,6 +125,8 @@ namespace TS3AudioBot.CommandSystem
 					select x.type.Name + (x.optional ? "?" : "")).ToArray();
 				Return = UnwrapReturnType(botCmd.CommandReturn).Name;
 			}
+
+			public override string ToString() => botCmd.ToString();
 		}
 	}
 

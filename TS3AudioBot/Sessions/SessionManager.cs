@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Sessions
 {
 	using Helper;
+	using System;
 	using System.Collections.Generic;
 	using TS3Client.Messages;
 
@@ -26,16 +27,16 @@ namespace TS3AudioBot.Sessions
 			Util.Init(out openSessions);
 		}
 
-		public UserSession CreateSession(ClientData client)
+		public UserSession GetOrCreateSession(ushort clientId)
 		{
 			lock (openSessions)
 			{
-				if (openSessions.TryGetValue(client.ClientId, out var session))
+				if (openSessions.TryGetValue(clientId, out var session))
 					return session;
 
-				Log.Debug("User {0} created session with the bot", client.Name);
+				Log.Debug("ClientId {0} created session with the bot", clientId);
 				session = new UserSession();
-				openSessions.Add(client.ClientId, session);
+				openSessions.Add(clientId, session);
 				return session;
 			}
 		}
@@ -47,7 +48,7 @@ namespace TS3AudioBot.Sessions
 				if (openSessions.TryGetValue(id, out var session))
 					return session;
 				else
-					return "Session not found";
+					return R.Err;
 			}
 		}
 

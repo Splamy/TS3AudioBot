@@ -9,8 +9,9 @@
 
 namespace TS3AudioBot.Algorithm
 {
-	using System.Linq;
+	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 
 	public interface IFilterAlgorithm
 	{
@@ -26,13 +27,14 @@ namespace TS3AudioBot.Algorithm
 
 		public static R<IFilterAlgorithm> GetFilterByName(string filter)
 		{
+			R<IFilterAlgorithm> ToR(IFilterAlgorithm obj) => R<IFilterAlgorithm>.OkR(obj);
 			switch (filter)
 			{
-			case "exact": return ExactFilter.Instance.ToR();
-			case "substring": return SubstringFilter.Instance.ToR();
-			case "ic3": return Ic3Filter.Instance.ToR();
-			case "hamming": return HammingFilter.Instance.ToR();
-			default: return "Unkown filter type";
+			case "exact": return ToR(ExactFilter.Instance);
+			case "substring": return ToR(SubstringFilter.Instance);
+			case "ic3": return ToR(Ic3Filter.Instance);
+			case "hamming": return ToR(HammingFilter.Instance);
+			default: return R.Err;
 			}
 		}
 	}
@@ -100,7 +102,17 @@ namespace TS3AudioBot.Algorithm
 
 		IEnumerable<KeyValuePair<string, T>> IFilterAlgorithm.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
-			return list.Where(x => x.Key.StartsWith(filter));
+			var result = list.Where(x => x.Key.StartsWith(filter));
+			using (var enu = result.GetEnumerator())
+			{
+				if (!enu.MoveNext())
+					yield break;
+				yield return enu.Current;
+				if (enu.Current.Key == filter)
+					yield break;
+				while (enu.MoveNext())
+					yield return enu.Current;
+			}
 		}
 	}
 }

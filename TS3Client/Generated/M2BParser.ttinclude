@@ -1,0 +1,59 @@
+<#@ include file="Util.ttinclude" once="true" #>
+<#+
+public class M2BDeclarations
+{
+	public static M2BDeclarations Parse(string file, Messages msgs, BookDeclarations book)
+	{
+		var toml = Nett.Toml.ReadFile<M2BDeclarations>(file);
+
+		foreach (var rule in toml.rule)
+		{
+			rule.properties = rule.properties ?? new List<M2BPropMove>();
+			
+			// Add implicit move operations
+			var msg = msgs.GetOrderedMsg().First(x => x.name == rule.from);
+			var msgProps = msg.attributes.Select(x => msgs.GetField(x).fld);
+			var bookItem = book.@struct.First(x => x.name == rule.to);
+			var funcResults = new HashSet<string>(rule.properties.Where(x => x.tolist != null).SelectMany(x => x.tolist));
+
+			foreach (var prop in msgProps)
+			{
+				if (funcResults.Contains(prop.pretty))
+					continue;
+
+				if (bookItem.properties.Any(x => x.name == prop.pretty))
+				{
+					// chek already exists
+
+					rule.properties.Add(new M2BPropMove {
+						from = prop.pretty,
+						to = prop.pretty,
+					});
+				}
+			}
+		}
+
+		return toml;
+	}
+
+	public M2BRule[] rule { get; set; }
+
+	public class M2BRule
+	{
+		public string from { get; set; }
+		public string[] id { get; set; }
+		public string to { get; set; }
+		public string operation { get; set; }
+		public List<M2BPropMove> properties { get; set; }
+	}
+
+	public class M2BPropMove
+	{
+		public string from { get; set; }
+		public string to { get; set; }
+		public string function { get; set; }
+		public string[] tolist { get; set; }
+		public string operation { get; set; }
+	}
+}
+#>

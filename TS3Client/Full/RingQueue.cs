@@ -13,38 +13,27 @@ namespace TS3Client.Full
 
 	/// <summary>Provides a ring queue with packet offset and direct item access functionality.</summary>
 	/// <typeparam name="T">Item type</typeparam>
-	public class RingQueue<T>
+	public sealed class RingQueue<T>
 	{
 		private const int InitialBufferSize = 16;
 
 		private int currentStart;
-		private int currentLength;
 		private T[] ringBuffer;
 		private bool[] ringBufferSet;
 
-		private int mappedBaseOffset;
-		private readonly int mappedMod;
-		private uint generation;
-
+		public int Count { get; private set; } // = currentLength
 		public int MaxBufferSize { get; }
-		public int Count => currentLength;
+		public GenerationWindow Window { get; }
 
 		public RingQueue(int maxBufferSize, int mod)
 		{
-			if (maxBufferSize == -1)
-			{
-				MaxBufferSize = (mod / 2) - 1;
-			}
-			else
-			{
-				if (maxBufferSize >= mod)
-					throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be bigger than buffer size");
-				MaxBufferSize = maxBufferSize;
-			}
-			var setBufferSize = Math.Min(InitialBufferSize, maxBufferSize);
+			if (maxBufferSize >= mod)
+				throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be bigger than buffer size");
+			MaxBufferSize = maxBufferSize;
+			var setBufferSize = Math.Min(InitialBufferSize, MaxBufferSize);
 			ringBuffer = new T[setBufferSize];
 			ringBufferSet = new bool[setBufferSize];
-			mappedMod = mod;
+			Window = new GenerationWindow(mod, MaxBufferSize);
 			Clear();
 		}
 
@@ -55,16 +44,16 @@ namespace TS3Client.Full
 			BufferExtend(index);
 			int local = IndexToLocal(index);
 			int newLength = local - currentStart + 1 + (local >= currentStart ? 0 : ringBuffer.Length);
-			currentLength = Math.Max(currentLength, newLength);
+			Count = Math.Max(Count, newLength);
 			ringBuffer[local] = value;
 			ringBufferSet[local] = true;
 		}
 
-		private T BufferGet(int index)
+		private ref T BufferGet(int index)
 		{
 			BufferExtend(index);
 			int local = IndexToLocal(index);
-			return ringBuffer[local];
+			return ref ringBuffer[local];
 		}
 
 		private bool StateGet(int index)
@@ -80,10 +69,10 @@ namespace TS3Client.Full
 			// clear data to allow them to be collected by gc
 			// when in debug it might be nice to see what was there
 #if !DEBUG
-			ringBuffer[currentStart] = default(T);
+			ringBuffer[currentStart] = default;
 #endif
 			currentStart = (currentStart + 1) % ringBuffer.Length;
-			currentLength--;
+			Count--;
 		}
 
 		private void BufferExtend(int index)
@@ -112,35 +101,16 @@ namespace TS3Client.Full
 
 		public void Set(int mappedValue, T value)
 		{
-			int index = MappedToIndex(mappedValue);
+			int index = Window.MappedToIndex(mappedValue);
 			if (IsSetIndex(index) != ItemSetStatus.InWindowNotSet)
 				throw new ArgumentOutOfRangeException(nameof(mappedValue), "Object cannot be set.");
 
 			BufferSet(index, value);
 		}
 
-		private int MappedToIndex(int mappedValue)
-		{
-			if (mappedValue >= mappedMod)
-				throw new ArgumentOutOfRangeException(nameof(mappedValue));
-
-			if (IsNextGen(mappedValue))
-			{
-				// | XX             X>    | <= The part from BaseOffset to MappedMod is small enough to consider packets with wrapped numbers again
-				//   /\ NewValue    /\ BaseOffset
-				return (mappedValue + mappedMod) - mappedBaseOffset;
-			}
-			else
-			{
-				// |  X>             XX   |
-				//    /\ BaseOffset  /\ NewValue    // normal case
-				return mappedValue - mappedBaseOffset;
-			}
-		}
-
 		public ItemSetStatus IsSet(int mappedValue)
 		{
-			int index = MappedToIndex(mappedValue);
+			int index = Window.MappedToIndex(mappedValue);
 			return IsSetIndex(index);
 		}
 
@@ -148,24 +118,18 @@ namespace TS3Client.Full
 		{
 			if (index < 0)
 				return ItemSetStatus.OutOfWindowSet;
-			if (index > currentLength && index < MaxBufferSize)
+			if (index > Count && index < MaxBufferSize)
 				return ItemSetStatus.InWindowNotSet;
 			if (index >= MaxBufferSize)
 				return ItemSetStatus.OutOfWindowNotSet;
 			return StateGet(index) ? ItemSetStatus.InWindowSet : ItemSetStatus.InWindowNotSet;
 		}
 
-		public bool IsNextGen(int mappedValue) => mappedBaseOffset > mappedMod - MaxBufferSize && mappedValue < MaxBufferSize;
-
-		public uint GetGeneration(int mappedValue) => (uint)(generation + (IsNextGen(mappedValue) ? 1 : 0));
-
 		public bool TryDequeue(out T value)
 		{
 			if (!TryPeekStart(0, out value)) return false;
 			BufferPop();
-			mappedBaseOffset = (mappedBaseOffset + 1) % mappedMod;
-			if (mappedBaseOffset == 0)
-				generation++;
+			Window.Advance(1);
 			return true;
 		}
 
@@ -174,9 +138,9 @@ namespace TS3Client.Full
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index));
 
-			if (index >= Count || currentLength <= 0 || !StateGet(index))
+			if (index >= Count || Count <= 0 || !StateGet(index))
 			{
-				value = default(T);
+				value = default;
 				return false;
 			}
 			else
@@ -189,10 +153,9 @@ namespace TS3Client.Full
 		public void Clear()
 		{
 			currentStart = 0;
-			currentLength = 0;
+			Count = 0;
 			Array.Clear(ringBufferSet, 0, ringBufferSet.Length);
-			mappedBaseOffset = 0;
-			generation = 0;
+			Window.Reset();
 		}
 	}
 

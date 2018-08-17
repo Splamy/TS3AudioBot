@@ -22,14 +22,15 @@ namespace TS3Client.Full
 	using ChannelIdT = System.UInt64;
 	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
-	using CmdR = E<Messages.CommandError>;
+	using CmdR = System.E<Messages.CommandError>;
+	using Uid = System.String;
 
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
-	public sealed class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
+	public sealed partial class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3Crypt ts3Crypt;
-		private readonly PacketHandler packetHandler;
+		private readonly PacketHandler<S2C, C2S> packetHandler;
 		private readonly AsyncMessageProcessor msgProc;
 
 		private readonly object statusLock = new object();
@@ -49,11 +50,8 @@ namespace TS3Client.Full
 		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
 		public override bool Connecting { get { lock (statusLock) return status == Ts3ClientStatus.Connecting; } }
 		private ConnectionDataFull connectionDataFull;
+		public Book.Connection Book { get; set; } //= new Book.Connection();
 
-		public override event NotifyEventHandler<TextMessage> OnTextMessageReceived;
-		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
-		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
-		public event NotifyEventHandler<ClientMoved> OnClientMoved;
 		public override event EventHandler<EventArgs> OnConnected;
 		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
 		public event EventHandler<CommandError> OnErrorEvent;
@@ -65,7 +63,7 @@ namespace TS3Client.Full
 		{
 			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
-			packetHandler = new PacketHandler(ts3Crypt);
+			packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt);
 			msgProc = new AsyncMessageProcessor();
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 			context = new ConnectionContext { WasExit = true };
@@ -161,145 +159,12 @@ namespace TS3Client.Full
 				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? Reason.LeftServer, error));
 		}
 
-		private void InvokeEvent(LazyNotification lazyNotification)
-		{
-			var notification = lazyNotification.Notifications;
-			switch (lazyNotification.NotifyType)
-			{
-			case NotificationType.ChannelCreated: break;
-			case NotificationType.ChannelDeleted: break;
-			case NotificationType.ChannelChanged: break;
-			case NotificationType.ChannelEdited: break;
-			case NotificationType.ChannelMoved: break;
-			case NotificationType.ChannelPasswordChanged: break;
-			case NotificationType.ClientEnterView: OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>()); break;
-			case NotificationType.ClientLeftView:
-				var clientLeftArr = notification.Cast<ClientLeftView>().ToArray();
-				var leftViewEvent = clientLeftArr.FirstOrDefault(clv => clv.ClientId == packetHandler.ClientId);
-				if (leftViewEvent != null)
-				{
-					packetHandler.ExitReason = leftViewEvent.Reason;
-					DisconnectInternal(context, setStatus: Ts3ClientStatus.Disconnected);
-					break;
-				}
-				OnClientLeftView?.Invoke(this, clientLeftArr);
-				break;
-
-			case NotificationType.ClientMoved: OnClientMoved?.Invoke(this, notification.Cast<ClientMoved>()); break;
-			case NotificationType.ServerEdited: break;
-			case NotificationType.TextMessage: OnTextMessageReceived?.Invoke(this, notification.Cast<TextMessage>()); break;
-			case NotificationType.TokenUsed: break;
-			// full client events
-			case NotificationType.InitIvExpand: { var result = lazyNotification.WrapSingle<InitIvExpand>(); if (result.Ok) ProcessInitIvExpand(result.Value); } break;
-			case NotificationType.InitIvExpand2: { var result = lazyNotification.WrapSingle<InitIvExpand2>(); if (result.Ok) ProcessInitIvExpand2(result.Value); } break;
-			case NotificationType.InitServer: { var result = lazyNotification.WrapSingle<InitServer>(); if (result.Ok) ProcessInitServer(result.Value); } break;
-			case NotificationType.ChannelList: break;
-			case NotificationType.ChannelListFinished: ChannelSubscribeAll(); break;
-			case NotificationType.ClientNeededPermissions: break;
-			case NotificationType.ClientChannelGroupChanged: break;
-			case NotificationType.ClientServerGroupAdded: break;
-			case NotificationType.ConnectionInfo: break;
-			case NotificationType.ConnectionInfoRequest: ProcessConnectionInfoRequest(); break;
-			case NotificationType.ChannelSubscribed: break;
-			case NotificationType.ChannelUnsubscribed: break;
-			case NotificationType.ClientChatComposing: break;
-			case NotificationType.ServerGroupList: break;
-			case NotificationType.ClientServerGroup: break;
-			case NotificationType.FileUpload: break;
-			case NotificationType.FileDownload: break;
-			case NotificationType.FileTransfer: break;
-			case NotificationType.FileTransferStatus: break;
-			case NotificationType.FileList: break;
-			case NotificationType.FileListFinished: break;
-			case NotificationType.FileInfoTs: break;
-			case NotificationType.ChannelGroupList: break;
-			case NotificationType.PluginCommand: { var result = lazyNotification.WrapSingle<PluginCommand>(); if (result.Ok) ProcessPluginRequest(result.Value); } break;
-			// special
-			case NotificationType.CommandError:
-				{
-					var result = lazyNotification.WrapSingle<CommandError>();
-					var error = result.Ok ? result.Value : Util.CustomError("Got empty error while connecting.");
-
-					bool skipError = false;
-					bool disconnect = false;
-					lock (statusLock)
-					{
-						if (status == Ts3ClientStatus.Connecting)
-						{
-							disconnect = true;
-							skipError = true;
-						}
-					}
-
-					if (disconnect)
-						DisconnectInternal(context, error, Ts3ClientStatus.Disconnected);
-					if (!skipError)
-						OnErrorEvent?.Invoke(this, error);
-				}
-				break;
-			case NotificationType.Unknown:
-			default: throw Util.UnhandledDefault(lazyNotification.NotifyType);
-			}
-		}
-
 		private void NetworkLoop(object ctxObject)
 		{
 			var ctx = (ConnectionContext)ctxObject;
+			packetHandler.PacketEvent += (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
 
-			while (true)
-			{
-				lock (statusLock)
-				{
-					if (ctx.WasExit)
-						break;
-				}
-
-				var packet = packetHandler.FetchPacket();
-				if (packet == null)
-					break;
-
-				lock (statusLock)
-				{
-					if (ctx.WasExit)
-						break;
-
-					switch (packet.PacketType)
-					{
-					case PacketType.Command:
-					case PacketType.CommandLow:
-						string message = Util.Encoder.GetString(packet.Data, 0, packet.Data.Length);
-						LogCmd.Debug("[I] {0}", message);
-						var result = msgProc.PushMessage(message);
-						if (result.HasValue)
-							dispatcher.Invoke(result.Value);
-						break;
-
-					case PacketType.Voice:
-					case PacketType.VoiceWhisper:
-						OutStream?.Write(packet.Data, new Meta
-						{
-							In = new MetaIn
-							{
-								Whisper = packet.PacketType == PacketType.VoiceWhisper
-							}
-						});
-						break;
-
-					case PacketType.Init1:
-						// Init error
-						if (packet.Data.Length == 5 && packet.Data[0] == 1)
-						{
-							var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsReadOnlySpan().Slice(1));
-							if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
-								Log.Info("Got init error: {0}", (Ts3ErrorCode)errorNum);
-							else
-								Log.Warn("Got undefined init error: {0}", errorNum);
-							DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
-						}
-						break;
-					}
-				}
-			}
+			packetHandler.FetchPackets();
 
 			lock (statusLock)
 			{
@@ -307,27 +172,69 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void ProcessInitIvExpand(InitIvExpand initIvExpand)
+		private void PacketEvent(ConnectionContext ctx, ref Packet<S2C> packet)
+		{
+			lock (statusLock)
+			{
+				if (ctx.WasExit)
+					return;
+
+				switch (packet.PacketType)
+				{
+				case PacketType.Command:
+				case PacketType.CommandLow:
+					LogCmd.ConditionalDebug("[I] {0}", Util.Encoder.GetString(packet.Data));
+					var result = msgProc.PushMessage(packet.Data);
+					if (result.HasValue)
+						dispatcher.Invoke(result.Value);
+					break;
+
+				case PacketType.Voice:
+				case PacketType.VoiceWhisper:
+					OutStream?.Write(packet.Data, new Meta
+					{
+						In = new MetaIn
+						{
+							Whisper = packet.PacketType == PacketType.VoiceWhisper
+						}
+					});
+					break;
+
+				case PacketType.Init1:
+					// Init error
+					if (packet.Data.Length == 5 && packet.Data[0] == 1)
+					{
+						var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsSpan(1));
+						if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
+							Log.Info("Got init error: {0}", (Ts3ErrorCode)errorNum);
+						else
+							Log.Warn("Got undefined init error: {0}", errorNum);
+						DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
+					}
+					break;
+				}
+			}
+		}
+
+		// Local event processing
+
+		partial void ProcessEachInitIvExpand(InitIvExpand initIvExpand)
 		{
 			packetHandler.ReceivedFinalInitAck();
 
 			var result = ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			if (!result)
 			{
-				DisconnectInternal(context, Util.CustomError($@"Failed to calculate shared secret: {result.Error}"));
+				DisconnectInternal(context, Util.CustomError($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
-
-			packetHandler.CryptoInitDone();
 
 			DefaultClientInit();
 		}
 
-		private void ProcessInitIvExpand2(InitIvExpand2 initIvExpand2)
+		partial void ProcessEachInitIvExpand2(InitIvExpand2 initIvExpand2)
 		{
 			packetHandler.ReceivedFinalInitAck();
-
-			packetHandler.IncPacketCounter(PacketType.Command);
 
 			var (publicKey, privateKey) = Ts3Crypt.GenerateTemporaryKey();
 
@@ -343,14 +250,67 @@ namespace TS3Client.Full
 			var result = ts3Crypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
 			if (!result)
 			{
-				DisconnectInternal(context, Util.CustomError($@"Failed to calculate shared secret: {result.Error}"));
+				DisconnectInternal(context, Util.CustomError($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
 
-			packetHandler.CryptoInitDone();
-
 			DefaultClientInit();
 		}
+
+		partial void ProcessEachInitServer(InitServer initServer)
+		{
+			packetHandler.ClientId = initServer.ClientId;
+
+			lock (statusLock)
+				status = Ts3ClientStatus.Connected;
+			OnConnected?.Invoke(this, EventArgs.Empty);
+		}
+
+		partial void ProcessEachPluginCommand(PluginCommand cmd)
+		{
+			if (cmd.Name == "cliententerview" && cmd.Data == "version")
+				SendPluginCommand("cliententerview", "TAB", PluginTargetMode.Server);
+		}
+
+		partial void ProcessEachCommandError(CommandError error)
+		{
+			bool skipError = false;
+			bool disconnect = false;
+			lock (statusLock)
+			{
+				if (status == Ts3ClientStatus.Connecting)
+				{
+					disconnect = true;
+					skipError = true;
+				}
+			}
+
+			if (disconnect)
+				DisconnectInternal(context, error, Ts3ClientStatus.Disconnected);
+			if (!skipError)
+				OnErrorEvent?.Invoke(this, error);
+		}
+
+		partial void ProcessEachClientLeftView(ClientLeftView clientLeftView)
+		{
+			if (clientLeftView.ClientId == packetHandler.ClientId)
+			{
+				packetHandler.ExitReason = clientLeftView.Reason;
+				DisconnectInternal(context, setStatus: Ts3ClientStatus.Disconnected);
+			}
+		}
+
+		partial void ProcessEachChannelListFinished(ChannelListFinished _)
+		{
+			ChannelSubscribeAll();
+		}
+
+		partial void ProcessEachConnectionInfoRequest(ConnectionInfoRequest _)
+		{
+			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+		}
+
+		// ***
 
 		private CmdR DefaultClientInit() => ClientInit(
 			connectionDataFull.Username,
@@ -360,26 +320,6 @@ namespace TS3Client.Full
 			connectionDataFull.ServerPassword.HashedPassword,
 			string.Empty, string.Empty, string.Empty,
 			connectionDataFull.Identity.ClientUid, VersionSign);
-
-		private void ProcessInitServer(InitServer initServer)
-		{
-			packetHandler.ClientId = initServer.ClientId;
-
-			lock (statusLock)
-				status = Ts3ClientStatus.Connected;
-			OnConnected?.Invoke(this, EventArgs.Empty);
-		}
-
-		private void ProcessConnectionInfoRequest()
-		{
-			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
-		}
-
-		private void ProcessPluginRequest(PluginCommand cmd)
-		{
-			if (cmd.Name == "cliententerview" && cmd.Data == "version")
-				SendPluginCommand("cliententerview", "TAB", PluginTargetMode.Client);
-		}
 
 		/// <summary>
 		/// Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.
@@ -391,7 +331,7 @@ namespace TS3Client.Full
 		/// if the client hangs after a special command (<see cref="SendCommand{T}"/> will return <code>null</code> instead).</para></param>
 		/// <returns>Returns <code>R(OK)</code> with an enumeration of the deserialized and split up in <see cref="T"/> objects data.
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
-		public override R<IEnumerable<T>, CommandError> SendCommand<T>(Ts3Command com)
+		public override R<T[], CommandError> SendCommand<T>(Ts3Command com)
 		{
 			using (var wb = new WaitBlock(false))
 			{
@@ -441,10 +381,10 @@ namespace TS3Client.Full
 				byte[] data = Util.Encoder.GetBytes(message);
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
-			return E<CommandError>.OkR;
+			return R.Ok;
 		}
 
-		public async Task<R<IEnumerable<T>, CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
+		public async Task<R<T[], CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
 		{
 			using (var wb = new WaitBlock(true))
 			{
@@ -452,7 +392,7 @@ namespace TS3Client.Full
 				if (!result.Ok)
 					return result.Error;
 				if (com.ExpectResponse)
-					return await wb.WaitForMessageAsync<T>();
+					return await wb.WaitForMessageAsync<T>().ConfigureAwait(false);
 				else
 					// This might not be the nicest way to return in this case
 					// but we don't know what the response is, so this acceptable.
@@ -551,9 +491,9 @@ namespace TS3Client.Full
 			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
-			var tmpBuffer = new byte[data.Length + 3];
+			var tmpBuffer = new byte[data.Length + 3]; // stackalloc
 			tmpBuffer[2] = (byte)codec;
-			data.CopyTo(tmpBuffer.AsSpan().Slice(3));
+			data.CopyTo(tmpBuffer.AsSpan(3));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
 		}
@@ -643,19 +583,10 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public override R<IEnumerable<ClientServerGroup>, CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
-		{
-			var result = SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
+		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
+			=> SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
 				new CommandParameter("cldbid", clDbId) }),
-				NotificationType.ClientServerGroup);
-			if (!result.Ok)
-				return result.Error;
-
-			return R<IEnumerable<ClientServerGroup>, CommandError>.OkR(
-				result.Value.Notifications
-				.Cast<ClientServerGroup>()
-				.Where(x => x.ClientDbId == clDbId));
-		}
+				NotificationType.ClientServerGroup).UnwrapNotification<ClientServerGroup>();
 
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
@@ -704,23 +635,42 @@ namespace TS3Client.Full
 			}
 		}
 
-		public override R<IEnumerable<FileTransfer>, CommandError> FileTransferList()
+		public override R<FileTransfer[], CommandError> FileTransferList()
 			=> SendNotifyCommand(new Ts3Command("ftlist"),
 				NotificationType.FileTransfer).UnwrapNotification<FileTransfer>();
 
-		public override R<IEnumerable<FileList>, CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+		public override R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
 			=> SendNotifyCommand(new Ts3Command("ftgetfilelist", new List<ICommandPart>() {
 				new CommandParameter("cid", channelId),
 				new CommandParameter("path", path),
 				new CommandParameter("cpw", channelPassword) }),
 				NotificationType.FileList).UnwrapNotification<FileList>();
 
-		public override R<IEnumerable<FileInfoTs>, CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> SendNotifyCommand(new Ts3Command("ftgetfileinfo", new List<ICommandPart>() {
 				new CommandParameter("cid", channelId),
 				new CommandParameter("cpw", channelPassword),
 				new CommandMultiParameter("name", path) }),
 				NotificationType.FileInfoTs).UnwrapNotification<FileInfoTs>();
+
+		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
+		{
+			var result = SendNotifyCommand(new Ts3Command("clientgetdbidfromuid", new List<ICommandPart> {
+				new CommandParameter("cluid", clientUid) }),
+				NotificationType.ClientDbIdFromUid);
+			if (!result.Ok)
+				return result.Error;
+			return result.Value.Notifications
+				.Cast<ClientDbIdFromUid>()
+				.Where(x => x.ClientUid == clientUid)
+				.Take(1)
+				.WrapSingle();
+		}
+
+		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
+			=> SendNotifyCommand(new Ts3Command("clientgetids", new List<ICommandPart>() {
+				new CommandParameter("cluid", clientUid) }),
+				NotificationType.ClientIds).UnwrapNotification<ClientIds>();
 
 		#endregion
 

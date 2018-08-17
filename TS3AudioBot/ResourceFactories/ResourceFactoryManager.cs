@@ -10,13 +10,18 @@
 namespace TS3AudioBot.ResourceFactories
 {
 	using CommandSystem;
+	using Config;
 	using Helper;
+	using Localization;
+	using Playlists;
 	using Sessions;
 	using System;
 	using System.Collections.Generic;
-	using System.Drawing;
+	using System.IO;
 	using System.Linq;
 	using System.Reflection;
+	using System.Text;
+	using System.Diagnostics;
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
@@ -24,28 +29,25 @@ namespace TS3AudioBot.ResourceFactories
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
-		public ConfigFile Config { get; set; }
 		public CommandManager CommandManager { get; set; }
-		public Rights.RightsManager RightsManager { get; set; }
 
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
 		private readonly List<IResourceFactory> resFactories;
+		private readonly ConfFactories config;
 
-		public ResourceFactoryManager()
+		public ResourceFactoryManager(ConfFactories config)
 		{
 			Util.Init(out allFacories);
 			Util.Init(out resFactories);
 			Util.Init(out listFactories);
+			this.config = config;
 		}
 
 		public void Initialize()
 		{
-			var yfd = Config.GetDataStruct<YoutubeFactoryData>("YoutubeFactory", true);
-			var mfd = Config.GetDataStruct<MediaFactoryData>("MediaFactory", true);
-
-			AddFactory(new MediaFactory(mfd));
-			AddFactory(new YoutubeFactory(yfd));
+			AddFactory(new MediaFactory(config.Media));
+			AddFactory(new YoutubeFactory());
 			AddFactory(new SoundcloudFactory());
 			AddFactory(new TwitchFactory());
 			AddFactory(new BandcampFactory());
@@ -97,19 +99,21 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="resource">An <see cref="AudioResource"/> with at least
 		/// <see cref="AudioResource.AudioType"/> and<see cref="AudioResource.ResourceId"/> set.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource> Load(AudioResource resource)
+		public R<PlayResource, LocalStr> Load(AudioResource resource)
 		{
 			if (resource == null)
 				throw new ArgumentNullException(nameof(resource));
 
 			var factory = GetFactoryByType<IResourceFactory>(resource.AudioType);
 			if (factory == null)
-				return $"Could not load (No registered factory for \"{resource.AudioType}\" found)";
+				return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resource.AudioType));
 
+			var sw = Stopwatch.StartNew();
 			var result = factory.GetResourceById(resource);
-			if (!result)
-				return $"Could not load ({result.Error})";
-			return result;
+			if (!result.Ok)
+				return CouldNotLoad(result.Error.Str);
+			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
+			return result.Value;
 		}
 
 		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.
@@ -120,7 +124,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="audioType">The associated resource type string to a factory.
 		/// Leave null to let it detect automatically.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource> Load(string message, string audioType = null)
+		public R<PlayResource, LocalStr> Load(string message, string audioType = null)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -131,31 +135,33 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var factory = GetFactoryByType<IResourceFactory>(audioType);
 				if (factory == null)
-					return $"Could not load (No registered factory for \"{audioType}\" found)";
+					return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
 
 				var result = factory.GetResource(netlinkurl);
-				if (!result)
-					return $"Could not load ({result.Error})";
+				if (!result.Ok)
+					return CouldNotLoad(result.Error.Str);
 				return result;
 			}
 
+			var sw = Stopwatch.StartNew();
 			var factories = FilterUsable(GetResFactoryByLink(netlinkurl));
-			List<(string, string)> errors = null;
+			List<(string, LocalStr)> errors = null;
 			foreach (var factory in factories)
 			{
 				var result = factory.GetResource(netlinkurl);
-				Log.Trace("ResFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error);
+				Log.Trace("ResFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error.Str);
 				if (result)
 					return result;
-				(errors = errors ?? new List<(string, string)>()).Add((factory.FactoryFor, result.Error));
+				(errors = errors ?? new List<(string, LocalStr)>()).Add((factory.FactoryFor, result.Error));
 			}
+			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 
 			return ToErrorString(errors);
 		}
 
-		public R<Playlist> LoadPlaylistFrom(string message) => LoadPlaylistFrom(message, null);
+		public R<Playlist, LocalStr> LoadPlaylistFrom(string message) => LoadPlaylistFrom(message, null);
 
-		private R<Playlist> LoadPlaylistFrom(string message, IPlaylistFactory listFactory)
+		private R<Playlist, LocalStr> LoadPlaylistFrom(string message, IPlaylistFactory listFactory)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -166,14 +172,14 @@ namespace TS3AudioBot.ResourceFactories
 				return listFactory.GetPlaylist(netlinkurl);
 
 			var factories = FilterUsable(GetListFactoryByLink(netlinkurl));
-			List<(string, string)> errors = null;
+			List<(string, LocalStr)> errors = null;
 			foreach (var factory in factories)
 			{
 				var result = factory.GetPlaylist(netlinkurl);
-				Log.Trace("ListFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error);
+				Log.Trace("ListFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error.Str);
 				if (result)
 					return result;
-				(errors = errors ?? new List<(string, string)>()).Add((factory.FactoryFor, result.Error));
+				(errors = errors ?? new List<(string, LocalStr)>()).Add((factory.FactoryFor, result.Error));
 			}
 
 			return ToErrorString(errors);
@@ -185,13 +191,16 @@ namespace TS3AudioBot.ResourceFactories
 			return factory.RestoreLink(res.ResourceId);
 		}
 
-		public R<Image> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			var factory = GetFactoryByType<IThumbnailFactory>(playResource.BaseData.AudioType);
 			if (factory == null)
-				return "No thumbnail factory found";
+				return new LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.BaseData.AudioType));
 
-			return factory.GetThumbnail(playResource);
+			var sw = Stopwatch.StartNew();
+			var result = factory.GetThumbnail(playResource);
+			Log.Debug("Took {0}ms to load thumbnail.", sw.ElapsedMilliseconds);
+			return result;
 		}
 
 		public void AddFactory(IFactory factory)
@@ -216,7 +225,6 @@ namespace TS3AudioBot.ResourceFactories
 			var factoryInfo = new FactoryData(factory, commands.ToArray());
 			allFacories.Add(factory.FactoryFor, factoryInfo);
 			CommandManager.RegisterCollection(factoryInfo);
-			RightsManager.RegisterRights(factoryInfo.ExposedRights);
 		}
 
 		public void RemoveFactory(IFactory factory)
@@ -232,16 +240,24 @@ namespace TS3AudioBot.ResourceFactories
 				listFactories.Remove(listFactory);
 
 			CommandManager.UnregisterCollection(factoryInfo);
-			RightsManager.UnregisterRights(factoryInfo.ExposedRights);
 		}
 
-		private static string ToErrorString(IReadOnlyList<(string fact, string err)> errors)
+		private static LocalStr CouldNotLoad(string reason = null)
 		{
-			if (errors.Count == 0)
-				return "Could not load (The bot is stupid)";
+			if (reason == null)
+				return new LocalStr(strings.error_resfac_could_not_load);
+			var strb = new StringBuilder(strings.error_resfac_could_not_load);
+			strb.Append(" (").Append(reason).Append(")");
+			return new LocalStr(strb.ToString());
+		}
+
+		private static LocalStr ToErrorString(List<(string fact, LocalStr err)> errors)
+		{
+			if (errors == null || errors.Count == 0)
+				throw new ArgumentException("No errors provided", nameof(errors));
 			if (errors.Count == 1)
-				return $"Could not load ({errors[0].fact}: {errors[0].err})";
-			return "Could not load (Considered multiple factories but all failed. Try selecting one manually with !from <factory> <link>)";
+				return CouldNotLoad($"{errors[0].fact}: {errors[0].err}");
+			return CouldNotLoad(strings.error_resfac_multiple_factories_failed);
 		}
 
 		public void Dispose()
@@ -251,20 +267,20 @@ namespace TS3AudioBot.ResourceFactories
 			allFacories.Clear();
 		}
 
-
 		private sealed class FactoryData : ICommandBag
 		{
 			private readonly FactoryCommand[] registeredCommands;
+
+			public IFactory Factory { get; }
+			public IReadOnlyCollection<BotCommand> BagCommands { get; }
+			public IReadOnlyCollection<string> AdditionalRights => Array.Empty<string>();
 
 			public FactoryData(IFactory factory, FactoryCommand[] commands)
 			{
 				Factory = factory;
 				registeredCommands = commands;
+				BagCommands = registeredCommands.Select(x => x.Command).ToArray();
 			}
-
-			public IFactory Factory { get; }
-			public IEnumerable<BotCommand> ExposedCommands => registeredCommands.Select(x => x.Command);
-			public IEnumerable<string> ExposedRights => ExposedCommands.Select(x => x.RequiredRight);
 		}
 
 		private abstract class FactoryCommand
@@ -287,9 +303,9 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiatePlay(PlayManager playManager, InvokerData invoker, string parameter)
+			public void PropagiatePlay(PlayManager playManager, InvokerData invoker, string url)
 			{
-				return playManager.Play(invoker, parameter, audioType);
+				playManager.Play(invoker, url, audioType).UnwrapThrow();
 			}
 		}
 
@@ -308,16 +324,12 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public string PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string parameter)
+			public void PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string url)
 			{
-				var result = factoryManager.LoadPlaylistFrom(parameter, factory);
+				var playlist = factoryManager.LoadPlaylistFrom(url, factory).UnwrapThrow();
 
-				if (!result)
-					return result;
-
-				result.Value.CreatorDbId = invoker.DatabaseId;
-				session.Set<PlaylistManager, Playlist>(result.Value);
-				return "Ok";
+				playlist.OwnerUid = invoker.ClientUid;
+				session.Set<PlaylistManager, Playlist>(playlist);
 			}
 		}
 	}
