@@ -58,7 +58,10 @@ namespace TS3Client
 			}
 
 			if (!Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
+			{
+				Log.Trace("Could not parse address as uri");
 				return false;
+			}
 
 			var hasUriPort = !string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped));
 
@@ -107,7 +110,12 @@ namespace TS3Client
 
 				endPoint = ResolveTsDns(srvEndPoint, uri.Host, defaultPort);
 				if (endPoint != null)
+				{
+					if (hasUriPort)
+						endPoint.Port = uri.Port;
+					Log.Trace("Address found using _tcp prefix '{0}'", endPoint);
 					return true;
+				}
 			}
 
 			// Try resolve to the tsdns service directly
@@ -123,10 +131,7 @@ namespace TS3Client
 			if (hostAddress == null)
 				return false;
 
-			var port = string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped))
-				? defaultPort
-				: uri.Port;
-
+			var port = hasUriPort ? uri.Port : defaultPort;
 			endPoint = new IPEndPoint(hostAddress, port);
 			return true;
 		}
@@ -184,7 +189,7 @@ namespace TS3Client
 			}
 			catch (Exception ex)
 			{
-				Log.Trace("Socket forcibly closed when checking '{0}', reason {1}", resolveAddress, ex.Message);
+				Log.Trace(ex, "Socket forcibly closed when checking '{0}', reason {1}", resolveAddress, ex.Message);
 				return null;
 			}
 
