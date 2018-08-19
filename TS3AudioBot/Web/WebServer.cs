@@ -159,6 +159,7 @@ namespace TS3AudioBot.Web
 						if (remoteAddress == null)
 							return;
 					}
+					// NRE catch handler is needed due to a strange mono race condition bug.
 					catch (NullReferenceException) { return; }
 
 					var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
@@ -171,6 +172,8 @@ namespace TS3AudioBot.Web
 				catch (HttpListenerException) { break; }
 				catch (InvalidOperationException) { break; }
 			}
+
+			Log.Info("WebServer has closed");
 		}
 
 		public void Dispose()

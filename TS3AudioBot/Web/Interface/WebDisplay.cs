@@ -18,8 +18,10 @@ namespace TS3AudioBot.Web.Interface
 
 	public sealed class WebDisplay : WebComponent, IDisposable
 	{
-		public ISiteProvider Site404 { get; }
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly SiteMapper map = new SiteMapper();
+
+		public ISiteProvider Site404 { get; }
 
 		public static readonly Dictionary<string, string> MimeTypes = new Dictionary<string, string>
 		{
@@ -55,7 +57,10 @@ namespace TS3AudioBot.Web.Interface
 				baseDir = new DirectoryInfo(webData.Path);
 
 			if (baseDir == null)
-				throw new InvalidOperationException("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+			{
+				Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+				return;
+			}
 
 			var dir = new FolderProvider(baseDir);
 			map.Map("/", dir);
@@ -70,8 +75,18 @@ namespace TS3AudioBot.Web.Interface
 		{
 			// GetWebsite will always return either the found website or the default 404
 			var site = GetWebsite(context.Request.Url);
+			if (site == null)
+			{
+				Log.Error("No site found");
+				return;
+			}
 
 			var data = site.GetData();
+			if (data == null)
+			{
+				Log.Error("Site has not data");
+				return;
+			}
 
 			// Prepare Header
 			var response = context.Response;
@@ -80,23 +95,20 @@ namespace TS3AudioBot.Web.Interface
 			response.ContentEncoding = Encoding.UTF8;
 			response.ContentType = site.MimeType ?? "text/plain";
 
-			// Write Data
-			context.Response.OutputStream.Write(data, 0, data.Length);
-
-			// Close Stream
-			context.Response.OutputStream.Flush();
-			context.Response.OutputStream.Dispose();
+			try
+			{
+				// Write Data
+				using (var responseStream = response.OutputStream)
+					responseStream.Write(data, 0, data.Length);
+			}
+			catch (IOException) { }
+			catch (Exception ex) { Log.Warn(ex, "Problem handling web request: {0}", ex.Message); }
 		}
 
 		private ISiteProvider GetWebsite(Uri url)
 		{
 			if (url == null) return Site404;
-
-			var site = map.TryGetSite(url);
-			if (site != null)
-				return site;
-
-			return Site404;
+			return map.TryGetSite(url) ?? Site404;
 		}
 
 		public void Dispose()
