@@ -277,7 +277,7 @@
     <value>&lt;name&gt; Deletes the playlist with the name &lt;name&gt;. You can only delete playlists which you also have created. Admins can delete every playlist.</value>
   </data>
   <data name="cmd_list_get_help" xml:space="preserve">
-    <value>&lt;link&gt; Imports a playlist form an other plattform like youtube etc.</value>
+    <value>&lt;link&gt; Imports a playlist form an other platform like youtube etc.</value>
   </data>
   <data name="cmd_list_item_move_help" xml:space="preserve">
     <value>&lt;from&gt; &lt;to&gt; Moves a item in a playlist &lt;from&gt; &lt;to&gt; position.</value>

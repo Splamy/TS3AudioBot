@@ -68,7 +68,7 @@ namespace TS3AudioBot
 
 		public E<string> InitializeBot()
 		{
-			Log.Info("Bot ({0}) connecting to \"{1}\"", Id, config.Connect.Address);
+			Log.Info("Bot \"{0}\" connecting to \"{1}\"", config.Name, config.Connect.Address);
 
 			// Registering config changes
 			config.CommandMatcher.Changed += (s, e) =>

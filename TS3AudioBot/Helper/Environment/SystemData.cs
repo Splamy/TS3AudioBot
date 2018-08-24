@@ -19,7 +19,7 @@ namespace TS3AudioBot.Helper.Environment
 
 	public static class SystemData
 	{
-		private static readonly Regex PlattformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
+		private static readonly Regex PlatformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 
 		public static bool IsLinux { get; }
@@ -42,10 +42,10 @@ namespace TS3AudioBot.Helper.Environment
 			};
 		}
 
-		public static string PlattformData { get; } = GenPlattformDat();
-		private static string GenPlattformDat()
+		public static string PlatformData { get; } = GenPlatformDat();
+		private static string GenPlatformDat()
 		{
-			string plattform = null;
+			string platform = null;
 			string version = null;
 			string bitness = Environment.Is64BitProcess ? "64bit" : "32bit";
 
@@ -58,7 +58,7 @@ namespace TS3AudioBot.Helper.Environment
 					var lines = x.ReadToEnd().Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 					foreach (var line in lines)
 					{
-						var match = PlattformRegex.Match(line);
+						var match = PlatformRegex.Match(line);
 						if (!match.Success)
 							continue;
 
@@ -68,7 +68,7 @@ namespace TS3AudioBot.Helper.Environment
 					if (values.Count > 0)
 					{
 						string value;
-						plattform = values.TryGetValue("NAME", out value) ? value
+						platform = values.TryGetValue("NAME", out value) ? value
 								: values.TryGetValue("ID", out value) ? value
 								: values.TryGetValue("DISTRIB_ID", out value) ? value
 								: values.TryGetValue("PRETTY_NAME", out value) ? value
@@ -80,7 +80,7 @@ namespace TS3AudioBot.Helper.Environment
 								: null;
 					}
 
-					if (plattform == null && version == null)
+					if (platform == null && version == null)
 					{
 						foreach (var line in lines)
 						{
@@ -93,17 +93,17 @@ namespace TS3AudioBot.Helper.Environment
 						}
 					}
 
-					plattform = plattform ?? "Linux";
+					platform = platform ?? "Linux";
 					version = version ?? "<?>";
 				});
 			}
 			else
 			{
-				plattform = "Windows";
+				platform = "Windows";
 				version = Environment.OSVersion.Version.ToString();
 			}
 
-			return $"{plattform} {version} ({bitness})";
+			return $"{platform} {version} ({bitness})";
 		}
 
 		private static void RunBash(string param, Action<StreamReader> action)

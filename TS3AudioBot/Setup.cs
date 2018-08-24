@@ -145,7 +145,7 @@ namespace TS3AudioBot
 			Log.Info("[============ TS3AudioBot started =============]");
 			Log.Info("[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
 			Log.Info("[=== Version: {0}", SystemData.AssemblyData);
-			Log.Info("[=== Platform: {0}", SystemData.PlattformData);
+			Log.Info("[=== Platform: {0}", SystemData.PlatformData);
 			Log.Info("[=== Runtime: {0}", SystemData.RuntimeData.FullName);
 			Log.Info("[=== Opus: {0}", TS3Client.Audio.Opus.NativeMethods.Info);
 			// ffmpeg

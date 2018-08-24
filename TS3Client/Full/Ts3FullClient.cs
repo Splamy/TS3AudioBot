@@ -460,7 +460,7 @@ namespace TS3Client.Full
 				new Ts3Command("clientinit", new List<ICommandPart> {
 					new CommandParameter("client_nickname", nickname),
 					new CommandParameter("client_version", versionSign.Name),
-					new CommandParameter("client_platform", versionSign.PlattformName),
+					new CommandParameter("client_platform", versionSign.PlatformName),
 					new CommandParameter("client_input_hardware", inputHardware),
 					new CommandParameter("client_output_hardware", outputHardware),
 					new CommandParameter("client_default_channel", defaultChannel),

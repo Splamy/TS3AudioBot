@@ -50,29 +50,29 @@ namespace TS3Client.Full
 	/// </summary>
 	public sealed class VersionSign
 	{
-		private static readonly string[] Plattforms = { null, "Windows", "Linux", "OS X", "Android", "iOS" };
+		private static readonly string[] Platforms = { null, "Windows", "Linux", "OS X", "Android", "iOS" };
 
 		public string Sign { get; }
 		public string Name { get; }
-		public ClientPlattform Plattform { get; }
-		public string PlattformName { get; }
+		public ClientPlatform Platform { get; }
+		public string PlatformName { get; }
 
-		public VersionSign(string name, ClientPlattform plattform, string sign)
+		public VersionSign(string name, ClientPlatform platform, string sign)
 		{
-			if (plattform == ClientPlattform.Other)
-				throw new ArgumentException(nameof(plattform));
+			if (platform == ClientPlatform.Other)
+				throw new ArgumentException(nameof(platform));
 			Name = name;
 			Sign = sign;
-			Plattform = plattform;
-			PlattformName = Plattforms[(int)plattform];
+			Platform = platform;
+			PlatformName = Platforms[(int)platform];
 		}
 
-		public VersionSign(string name, string plattform, string sign)
+		public VersionSign(string name, string platform, string sign)
 		{
 			Name = name;
 			Sign = sign;
-			Plattform = ClientPlattform.Other;
-			PlattformName = plattform;
+			Platform = ClientPlatform.Other;
+			PlatformName = platform;
 		}
 
 		public bool CheckValid() => Ts3Crypt.EdCheck(this);
@@ -92,11 +92,11 @@ namespace TS3Client.Full
 				continue;
 			duplicates.Add(fldName);
 		#>
-		public static VersionSign <#= fldName #> { get; } = new VersionSign("<#= line[iname] #>", ClientPlattform.<#= ver.enu #>, "<#= line[ihash] #>");<# } #>
+		public static VersionSign <#= fldName #> { get; } = new VersionSign("<#= line[iname] #>", ClientPlatform.<#= ver.enu #>, "<#= line[ihash] #>");<# } #>
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
-	public enum ClientPlattform
+	public enum ClientPlatform
 	{
 		Other = 0,
 		Windows,

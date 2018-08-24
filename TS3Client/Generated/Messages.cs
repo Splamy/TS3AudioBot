@@ -1200,7 +1200,7 @@ namespace TS3Client.Messages
 		public DurationMilliseconds ClientIdleTime { get; set; }
 		public str ClientVersion { get; set; }
 		public str ClientVersionSign { get; set; }
-		public str ClientPlattform { get; set; }
+		public str ClientPlatform { get; set; }
 		public str DefaultChannel { get; set; }
 		public str SecurityHash { get; set; }
 		public str LoginName { get; set; }
@@ -1265,7 +1265,7 @@ namespace TS3Client.Messages
 			case "client_idle_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ClientIdleTime = TimeSpan.FromMilliseconds(oval); } break;
 			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
 			case "client_version_sign": ClientVersionSign = Ts3String.Unescape(value); break;
-			case "client_platform": ClientPlattform = Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
 			case "client_default_channel": DefaultChannel = Ts3String.Unescape(value); break;
 			case "client_security_hash": SecurityHash = Ts3String.Unescape(value); break;
 			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
@@ -1337,7 +1337,7 @@ namespace TS3Client.Messages
 				case "client_idle_time": foreach(var toi in toc) { toi.ClientIdleTime = ClientIdleTime; } break;
 				case "client_version": foreach(var toi in toc) { toi.ClientVersion = ClientVersion; } break;
 				case "client_version_sign": foreach(var toi in toc) { toi.ClientVersionSign = ClientVersionSign; } break;
-				case "client_platform": foreach(var toi in toc) { toi.ClientPlattform = ClientPlattform; } break;
+				case "client_platform": foreach(var toi in toc) { toi.ClientPlatform = ClientPlatform; } break;
 				case "client_default_channel": foreach(var toi in toc) { toi.DefaultChannel = DefaultChannel; } break;
 				case "client_security_hash": foreach(var toi in toc) { toi.SecurityHash = SecurityHash; } break;
 				case "client_login_name": foreach(var toi in toc) { toi.LoginName = LoginName; } break;
@@ -1406,7 +1406,7 @@ namespace TS3Client.Messages
 
 		public str Name { get; set; }
 		public str ClientVersion { get; set; }
-		public str ClientPlattform { get; set; }
+		public str ClientPlatform { get; set; }
 		public bool InputHardwareEnabled { get; set; }
 		public bool OutputHardwareEnabled { get; set; }
 		public str DefaultChannel { get; set; }
@@ -1426,7 +1426,7 @@ namespace TS3Client.Messages
 
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
 			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
-			case "client_platform": ClientPlattform = Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_default_channel": DefaultChannel = Ts3String.Unescape(value); break;
@@ -1453,7 +1453,7 @@ namespace TS3Client.Messages
 
 				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
 				case "client_version": foreach(var toi in toc) { toi.ClientVersion = ClientVersion; } break;
-				case "client_platform": foreach(var toi in toc) { toi.ClientPlattform = ClientPlattform; } break;
+				case "client_platform": foreach(var toi in toc) { toi.ClientPlatform = ClientPlatform; } break;
 				case "client_input_hardware": foreach(var toi in toc) { toi.InputHardwareEnabled = InputHardwareEnabled; } break;
 				case "client_output_hardware": foreach(var toi in toc) { toi.OutputHardwareEnabled = OutputHardwareEnabled; } break;
 				case "client_default_channel": foreach(var toi in toc) { toi.DefaultChannel = DefaultChannel; } break;

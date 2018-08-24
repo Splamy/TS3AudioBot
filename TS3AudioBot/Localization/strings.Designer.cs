@@ -766,7 +766,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &lt;link&gt; Imports a playlist form an other plattform like youtube etc..
+        ///   Looks up a localized string similar to &lt;link&gt; Imports a playlist form an other platform like youtube etc..
         /// </summary>
         internal static string cmd_list_get_help {
             get {

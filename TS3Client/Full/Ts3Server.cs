@@ -141,7 +141,7 @@ namespace TS3Client.Full
 		{
 			Init = true;
 			Console.WriteLine("init!");
-			File.AppendAllText("sign.out", $"{clientInit.ClientVersion},{clientInit.ClientPlattform},{clientInit.ClientVersionSign}\n");
+			File.AppendAllText("sign.out", $"{clientInit.ClientVersion},{clientInit.ClientPlatform},{clientInit.ClientVersionSign}\n");
 		}
 
 		public CmdR InitIvExpand(string alpha, string beta, string omega)

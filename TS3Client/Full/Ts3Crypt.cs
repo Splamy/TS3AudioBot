@@ -779,7 +779,7 @@ namespace TS3Client.Full
 
 		public static bool EdCheck(VersionSign sign)
 		{
-			var ver = Encoding.ASCII.GetBytes(sign.PlattformName + sign.Name);
+			var ver = Encoding.ASCII.GetBytes(sign.PlatformName + sign.Name);
 			return Chaos.NaCl.Ed25519.Verify(Convert.FromBase64String(sign.Sign), ver, Ts3VerionSignPublicKey);
 		}
 
