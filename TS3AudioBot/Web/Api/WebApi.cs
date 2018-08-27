@@ -58,16 +58,15 @@ namespace TS3AudioBot.Web.Api
 					ReturnError(CommandExceptionReason.Unauthorized, authResult.Error, context.Response);
 					return;
 				}
-				if (!AllowAnonymousRequest && authResult.Value.anonymous)
+				if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
 				{
 					Log.Debug("Unauthorized request!");
 					ReturnError(CommandExceptionReason.Unauthorized, ErrorAnonymousDisabled, context.Response);
 					return;
 				}
-				//AllowAnonymousRequest && invoker == null 
 
 				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
-				ProcessApiV1Call(requestUrl, context.Response, authResult.Value.invoker);
+				ProcessApiV1Call(requestUrl, context.Response, authResult.Value);
 			}
 		}
 
@@ -82,7 +81,7 @@ namespace TS3AudioBot.Web.Api
 
 			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
 			execInfo.AddDynamicObject(new CallerInfo(apirequest, true));
-			if (invoker != null) execInfo.AddDynamicObject(invoker);
+			execInfo.AddDynamicObject(invoker);
 			// todo creating token usersessions is now possible
 
 			try
@@ -180,11 +179,11 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private R<(bool anonymous, InvokerData invoker), string> Authenticate(HttpListenerContext context)
+		private R<InvokerData, string> Authenticate(HttpListenerContext context)
 		{
 			var identity = GetIdentity(context);
 			if (identity == null)
-				return (true, null);
+				return InvokerData.Anonymous;
 
 			var result = TokenManager.GetToken(identity.Name);
 			if (!result.Ok)
@@ -202,7 +201,7 @@ namespace TS3AudioBot.Web.Api
 				if (token.Value != identityBasic.Password)
 					return ErrorAuthFailure;
 
-				return (false, invoker);
+				return invoker;
 
 			case "Digest":
 				var identityDigest = (HttpListenerDigestIdentity)identity;
@@ -235,7 +234,7 @@ namespace TS3AudioBot.Web.Api
 					return ErrorAuthFailure;
 				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 
-				return (false, invoker);
+				return invoker;
 
 			default:
 				return ErrorUnsupportedScheme;

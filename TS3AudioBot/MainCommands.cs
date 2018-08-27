@@ -72,7 +72,7 @@ namespace TS3AudioBot
 		{
 			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
-			if (invoker.ClientUid == null)
+			if (invoker.IsAnonymous)
 				throw new CommandException(strings.error_no_uid_found, CommandExceptionReason.CommandError);
 
 			TimeSpan? validSpan = null;
@@ -93,7 +93,7 @@ namespace TS3AudioBot
 		{
 			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
-			if (invoker.ClientUid == null)
+			if (invoker.IsAnonymous)
 				throw new CommandException(strings.error_no_uid_found, CommandExceptionReason.CommandError);
 			var result = tokenManager.GetToken(invoker.ClientUid).UnwrapThrow();
 

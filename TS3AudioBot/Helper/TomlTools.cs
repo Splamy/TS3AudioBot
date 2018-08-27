@@ -16,6 +16,7 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Linq;
 	using System.Text;
+	using System.Xml;
 
 	public static class TomlTools
 	{
@@ -117,6 +118,15 @@ namespace TS3AudioBot.Helper
 					value = ((TomlValue<T>)tomlObj).Value;
 					return true;
 				}
+				else if (typeof(T) == typeof(TimeSpan))
+				{
+					try
+					{
+						value = (T)(object)XmlConvert.ToTimeSpan(((TomlString)tomlObj).Value);
+						return true;
+					}
+					catch (FormatException) { }
+				}
 				break;
 			}
 			value = default;
@@ -132,6 +142,8 @@ namespace TS3AudioBot.Helper
 
 			// I literally have no idea how to write it better with this toml library.
 
+			// Note for TimeSpan: since TimeSpan as Nett (de)serializes it is not standartized we have to cast it manually
+
 			TomlObject retobj = tomlTable.TryGetValue(key);
 			if (retobj == null)
 			{
@@ -143,7 +155,7 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(int)) return tomlTable.Add(key, (int)(object)value);
 				else if (typeof(T) == typeof(long)) return tomlTable.Add(key, (long)(object)value);
 				else if (typeof(T) == typeof(ulong)) return tomlTable.Add(key, (long)(ulong)(object)value);
-				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, (TimeSpan)(object)value);
+				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, XmlConvert.ToString((TimeSpan)(object)value));
 				else if (typeof(T) == typeof(DateTime)) return tomlTable.Add(key, (DateTime)(object)value);
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Add(key, enubool);
 				else if (value is IEnumerable<string> enustring) return tomlTable.Add(key, enustring);
@@ -153,7 +165,7 @@ namespace TS3AudioBot.Helper
 				else if (value is IEnumerable<int> enuint) return tomlTable.Add(key, enuint);
 				else if (value is IEnumerable<long> enulong) return tomlTable.Add(key, enulong);
 				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Add(key, enuulong.Select(x => (long)x));
-				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Add(key, enuTimeSpan);
+				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Add(key, enuTimeSpan.Select(XmlConvert.ToString));
 				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Add(key, enuDateTime);
 			}
 			else
@@ -169,7 +181,7 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(int)) retobj = tomlTable.Update(key, /*auto*/(int)(object)value);
 				else if (typeof(T) == typeof(long)) retobj = tomlTable.Update(key, (long)(object)value);
 				else if (typeof(T) == typeof(ulong)) return tomlTable.Update(key, (long)(ulong)(object)value);
-				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, (TimeSpan)(object)value);
+				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, XmlConvert.ToString((TimeSpan)(object)value));
 				else if (typeof(T) == typeof(DateTime)) retobj = tomlTable.Update(key, (DateTime)(object)value);
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Update(key, enubool);
 				else if (value is IEnumerable<string> enustring) return tomlTable.Update(key, enustring);
@@ -179,7 +191,7 @@ namespace TS3AudioBot.Helper
 				else if (value is IEnumerable<int> enuint) return tomlTable.Update(key, enuint);
 				else if (value is IEnumerable<long> enulong) return tomlTable.Update(key, enulong);
 				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Update(key, enuulong.Select(x => (long)x));
-				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Update(key, enuTimeSpan);
+				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Update(key, enuTimeSpan.Select(XmlConvert.ToString));
 				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Update(key, enuDateTime);
 				else throw new NotSupportedException("The type is not supported");
 				if (docs != null)
@@ -392,7 +404,7 @@ namespace TS3AudioBot.Helper
 			var sw = new StringWriter(sb);
 			using (var writer = new JsonTextWriter(sw))
 			{
-				writer.Formatting = Formatting.Indented;
+				writer.Formatting = Newtonsoft.Json.Formatting.Indented;
 				DumpToJson(obj, writer);
 			}
 			return sb.ToString();

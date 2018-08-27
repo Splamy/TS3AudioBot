@@ -13,6 +13,7 @@ namespace TS3AudioBot.Config
 	using Newtonsoft.Json;
 	using System;
 	using System.Linq;
+	using System.Xml;
 
 	public static class ConfigHelper
 	{
@@ -28,7 +29,7 @@ namespace TS3AudioBot.Config
 			}
 		}
 
-		public static bool TryReadValue<T>(this JsonReader reader, out T value)
+		public static E<string> TryReadValue<T>(this JsonReader reader, out T value)
 		{
 			if (reader.Read()
 				&& (reader.TokenType == JsonToken.Boolean
@@ -37,11 +38,38 @@ namespace TS3AudioBot.Config
 				|| reader.TokenType == JsonToken.Integer
 				|| reader.TokenType == JsonToken.String))
 			{
-				value = (T)Convert.ChangeType(reader.Value, typeof(T));
-				return true;
+				try
+				{
+					if (typeof(T) == typeof(TimeSpan))
+					{
+						if (reader.TokenType == JsonToken.String)
+						{
+							var timeStr = ((string)reader.Value).ToUpperInvariant();
+							if (!timeStr.StartsWith("P"))
+							{
+								if (!timeStr.Contains("T"))
+									timeStr = "PT" + timeStr;
+								else
+									timeStr = "P" + timeStr;
+							}
+							value = (T)(object)XmlConvert.ToTimeSpan(timeStr);
+							return R.Ok;
+						}
+					}
+					else
+					{
+						value = (T)Convert.ChangeType(reader.Value, typeof(T));
+						return R.Ok;
+					}
+				}
+				catch (Exception ex) when
+					(ex is InvalidCastException
+					|| ex is OverflowException
+					|| ex is FormatException)
+				{ /* TODO */ }
 			}
 			value = default;
-			return false;
+			return $"Wrong type, expected {typeof(T).Name}, got {reader.TokenType}";
 		}
 	}
 }

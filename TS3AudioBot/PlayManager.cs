@@ -250,6 +250,10 @@ namespace TS3AudioBot
 		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
 		// Lazy
 		public ulong[] ServerGroups { get; internal set; }
+		public bool IsAnonymous => ClientUid == AnonymousUid;
+
+		private const string AnonymousUid = "Anonymous";
+		public static readonly InvokerData Anonymous = new InvokerData(AnonymousUid);
 
 		public InvokerData(string clientUid, ulong? databaseId = null, ulong? channelId = null,
 			ushort? clientId = null, string nickName = null, string token = null,
@@ -264,16 +268,11 @@ namespace TS3AudioBot
 			Visibiliy = visibiliy;
 		}
 
-		public override int GetHashCode()
-		{
-			return ClientUid?.GetHashCode() ?? 0;
-		}
+		public override int GetHashCode() => ClientUid.GetHashCode();
 
 		public override bool Equals(object obj)
 		{
-			if (ClientUid == null)
-				return false;
-			if (!(obj is InvokerData other) || other.ClientUid == null)
+			if (!(obj is InvokerData other))
 				return false;
 
 			return ClientUid == other.ClientUid;

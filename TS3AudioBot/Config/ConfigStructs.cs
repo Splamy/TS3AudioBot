@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Config
 {
 	using Nett;
+	using System;
 
 	public partial class ConfRoot : ConfigTable
 	{
@@ -141,6 +142,7 @@ namespace TS3AudioBot.Config
 		public ConfAudio Audio { get; } = Create<ConfAudio>("audio");
 		public ConfPlaylists Playlists { get; } = Create<ConfPlaylists>("playlists");
 		public ConfHistory History { get; } = Create<ConfHistory>("history");
+		public ConfEvents Events { get; } = Create<ConfEvents>("events");
 	}
 
 	public class ConfConnect : ConfigTable
@@ -217,6 +219,19 @@ namespace TS3AudioBot.Config
 			"Enable or disable history features completely to save resources.");
 		public ConfigValue<bool> FillDeletedIds { get; } = new ConfigValue<bool>("fill_deleted_ids", true,
 			"Whether or not deleted history ids should be filled up with new songs.");
+	}
+
+	public class ConfEvents : ConfigTable
+	{
+		public ConfigValue<string> OnConnect { get; } = new ConfigValue<string>("onconnect", "",
+			"Called when the bot is connected.");
+		public ConfigValue<string> OnDisconnect { get; } = new ConfigValue<string>("ondisconnect", "",
+			"Called when the bot gets disconnected.");
+		public ConfigValue<string> OnIdle { get; } = new ConfigValue<string>("onidle", "",
+			"Called when the bot does not play anything for a certain amount of time.");
+		public ConfigValue<TimeSpan> IdleTime { get; } = new ConfigValue<TimeSpan>("idletime", TimeSpan.FromMinutes(5),
+			"Specifies how long the bot has to be idle until the 'onidle' event gets fired.\n" +
+			"You can specify the time in the ISO-8601 format with qutotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
 	}
 
 	// Utility config structs

@@ -19,7 +19,7 @@ namespace TS3AudioBot.Config
 	[DebuggerDisplay("{Key}:{Value}")]
 	public class ConfigValue<T> : ConfigPart
 	{
-		public override bool ExpectsString => typeof(T) == typeof(string);
+		public override bool ExpectsString => typeof(T) == typeof(string) || typeof(T) == typeof(TimeSpan);
 		private ConfigValue<T> backingValue;
 		private bool hasValue = false;
 		public T Default { get; }
@@ -108,12 +108,13 @@ namespace TS3AudioBot.Config
 		{
 			try
 			{
-				if (reader.TryReadValue<T>(out var tomlValue))
+				var err = reader.TryReadValue<T>(out var tomlValue);
+				if (err.Ok)
 				{
 					Value = tomlValue;
 					return R.Ok;
 				}
-				return $"Wrong type, expected {typeof(T).Name}, got {reader.TokenType}";
+				return err;
 			}
 			catch (JsonReaderException ex) { return $"Could not read value: {ex.Message}"; }
 		}

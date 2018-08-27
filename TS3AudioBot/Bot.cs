@@ -32,6 +32,7 @@ namespace TS3AudioBot
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		private readonly ConfBot config;
+		private TickWorker idleTickWorker;
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
@@ -41,7 +42,6 @@ namespace TS3AudioBot
 		/// <summary>This is the template name. Can be null.</summary>
 		public string Name { get; internal set; }
 		public bool QuizMode { get; set; }
-		public string BadgesString { get; set; }
 
 		// Injected dependencies
 
@@ -127,8 +127,12 @@ namespace TS3AudioBot
 			}
 
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
+			// Update idle status events
+			PlayManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();
+			PlayManager.AfterResourceStopped += (s, e) => EnableIdleTickWorker();
+			// Used for the voice_mode script
 			PlayManager.BeforeResourceStarted += BeforeResourceStarted;
-			// In own favor update the own status text to the current song title
+			// Update the own status text to the current song title
 			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
 			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
 			// Log our resource in the history
@@ -143,7 +147,6 @@ namespace TS3AudioBot
 			ClientConnection.OnClientDisconnect += OnClientDisconnect;
 			ClientConnection.OnBotConnected += OnBotConnected;
 			ClientConnection.OnBotDisconnect += OnBotDisconnect;
-			BadgesString = config.Connect.Badges;
 
 			// Connect the query after everyting is set up
 			return ClientConnection.Connect();
@@ -152,12 +155,32 @@ namespace TS3AudioBot
 		private void OnBotConnected(object sender, EventArgs e)
 		{
 			Log.Info("Bot ({0}) connected.", Id);
-			if (!string.IsNullOrEmpty(BadgesString))
-				ClientConnection?.ChangeBadges(BadgesString);
+
+			EnableIdleTickWorker();
+
+			var badges = config.Connect.Badges.Value;
+			if (!string.IsNullOrEmpty(badges))
+				ClientConnection?.ChangeBadges(badges);
+
+			var onStart = config.Events.OnConnect.Value;
+			if (!string.IsNullOrEmpty(onStart))
+			{
+				var info = CreateExecInfo();
+				CallScript(info, onStart, false, true);
+			}
 		}
 
 		private void OnBotDisconnect(object sender, DisconnectEventArgs e)
 		{
+			DisableIdleTickWorker();
+
+			var onStop = config.Events.OnDisconnect.Value;
+			if (!string.IsNullOrEmpty(onStop))
+			{
+				var info = CreateExecInfo();
+				CallScript(info, onStop, false, true);
+			}
+
 			Dispose();
 		}
 
@@ -322,6 +345,8 @@ namespace TS3AudioBot
 
 		private void CallScript(ExecutionInformation info, string command, bool answer, bool skipRights)
 		{
+			Log.Debug("Calling script (skipRights:{0}, answer:{1}): {2}", skipRights, answer, command);
+
 			info.AddDynamicObject(new CallerInfo(command, false) { SkipRightsChecks = skipRights });
 
 			try
@@ -349,23 +374,55 @@ namespace TS3AudioBot
 			catch (CommandException ex)
 			{
 				Log.Debug(ex, "Command Error ({0})", ex.Message);
-				if (answer) info.Write("Error: " + ex.Message); // XXX check return
+				if (answer) info.Write(string.Format(strings.error_call_error, ex.Message)); // XXX check return
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-				if (answer) info.Write("An unexpected error occured: " + ex.Message); // XXX check return
+				if (answer) info.Write(string.Format(strings.error_call_unexpected_error, ex.Message)); // XXX check return
 			}
 		}
 
 		private ExecutionInformation CreateExecInfo(InvokerData invoker = null, UserSession session = null)
 		{
 			var info = new ExecutionInformation(Injector.CloneRealm<DependencyRealm>());
-			if (invoker != null)
-				info.AddDynamicObject(invoker);
+			info.AddDynamicObject(invoker ?? InvokerData.Anonymous);
 			if (session != null)
 				info.AddDynamicObject(session);
 			return info;
+		}
+
+		private void OnIdle()
+		{
+			// DisableIdleTickWorker(); // fire once only ??
+
+			var onIdle = config.Events.OnIdle.Value;
+			if (!string.IsNullOrEmpty(onIdle))
+			{
+				var info = CreateExecInfo();
+				CallScript(info, onIdle, false, true);
+			}
+		}
+
+		private void EnableIdleTickWorker()
+		{
+			var idleTime = config.Events.IdleTime.Value;
+			if (idleTime <= TimeSpan.Zero || string.IsNullOrEmpty(config.Events.OnIdle.Value))
+				return;
+			var newWorker = TickPool.RegisterTick(OnIdle, idleTime, false);
+			SetIdleTickWorker(newWorker);
+			newWorker.Active = true;
+		}
+
+		private void DisableIdleTickWorker() => SetIdleTickWorker(null);
+
+		private void SetIdleTickWorker(TickWorker worker)
+		{
+			var oldWoker = Interlocked.Exchange(ref idleTickWorker, worker);
+			if (oldWoker != null)
+			{
+				TickPool.UnregisterTicker(oldWoker);
+			}
 		}
 
 		public BotLock GetBotLock()
@@ -394,7 +451,10 @@ namespace TS3AudioBot
 			{
 				if (!IsDisposed) IsDisposed = true;
 				else return;
+
 				Log.Info("Bot ({0}) disconnecting.", Id);
+
+				DisableIdleTickWorker();
 
 				PluginManager.StopPlugins(this);
 
