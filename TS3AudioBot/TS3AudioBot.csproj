@@ -18,6 +18,10 @@
 
     <StartupObject>TS3AudioBot.Core</StartupObject>
     <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
+
+    <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='net46'">

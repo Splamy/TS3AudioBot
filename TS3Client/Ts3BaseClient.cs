@@ -195,7 +195,7 @@ namespace TS3Client
 				bool permissionNegated, bool permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandParameter("permid", (int)permissionId),
+			new CommandParameter("permsid", permissionId.ToString()),
 			new CommandParameter("permvalue", permissionValue),
 			new CommandParameter("permnegated", permissionNegated),
 			new CommandParameter("permskip", permissionSkip));
@@ -206,7 +206,7 @@ namespace TS3Client
 				bool[] permissionNegated, bool[] permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandMultiParameter("permid", permissionId.Cast<int>()),
+			new CommandMultiParameter("permsid", permissionId.Select(x => x.ToString())),
 			new CommandMultiParameter("permvalue", permissionValue),
 			new CommandMultiParameter("permnegated", permissionNegated),
 			new CommandMultiParameter("permskip", permissionSkip));

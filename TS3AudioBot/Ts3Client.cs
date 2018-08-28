@@ -402,7 +402,7 @@ namespace TS3AudioBot
 					PermissionId.i_client_whisper_power, // + Required for whisper channel playing
 					PermissionId.i_client_private_textmessage_power, // + Communication
 					PermissionId.b_client_server_textmessage_send, // + Communication
-					PermissionId.b_client_channel_textmessage_send, // + Communication, could be used but not yet
+					PermissionId.b_client_channel_textmessage_send, // + Communication
 
 					PermissionId.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
 					PermissionId.b_client_modify_description, // + Used to change the description of our bot
@@ -431,6 +431,7 @@ namespace TS3AudioBot
 
 					PermissionId.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
 					PermissionId.b_client_use_channel_commander, // + Enable channel commander
+					PermissionId.b_client_ignore_bans, // + The bot should be resistent to bans
 				},
 				new[] {
 					max, max,   1,   1,
@@ -439,7 +440,7 @@ namespace TS3AudioBot
 					  1, max, max,   4,
 					  1,   1,   1,   1,
 					  1,   1, max,   1,
-					ava,   1,
+					ava,   1,   1,
 				},
 				new[] {
 					false, false, false, false,
@@ -448,7 +449,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
-					false, false,
+					false, false, false,
 				},
 				new[] {
 					false, false, false, false,
@@ -457,7 +458,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
-					false, false,
+					false, false, false,
 				});
 
 			if (!permresult)

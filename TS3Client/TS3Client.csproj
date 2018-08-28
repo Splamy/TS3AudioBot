@@ -8,6 +8,10 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
+
+    <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
