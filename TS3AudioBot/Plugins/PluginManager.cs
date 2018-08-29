@@ -54,6 +54,7 @@ namespace TS3AudioBot.Plugins
 		}
 
 		/// <summary>Updates the plugin dictionary with new and changed plugins.</summary>
+		/// <param name="bot">A bot instance when the plugin is a bot local plugin.</param>
 		private void CheckLocalPlugins(Bot bot)
 		{
 			var dir = new DirectoryInfo(config.Path);
@@ -184,7 +185,7 @@ namespace TS3AudioBot.Plugins
 
 			var strb = new StringBuilder();
 			strb.AppendLine("All available plugins:");
-			int digits = (int)Math.Floor(Math.Log10(pluginList.Count) + 1);
+			var digits = (int)Math.Floor(Math.Log10(pluginList.Count) + 1);
 			foreach (var plugin in pluginList)
 			{
 				strb.Append("#").Append(plugin.Id.ToString("D" + digits, CultureInfo.InvariantCulture)).Append('|');

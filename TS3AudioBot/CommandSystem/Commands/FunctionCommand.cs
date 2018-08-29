@@ -105,7 +105,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					else if (CommandParameter[p].optional)
 						parameters[p] = null;
 					else
-						return new CommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", CommandExceptionReason.MissingContext);
+						return new MissingContextCommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", arg);
 					break;
 
 				case ParamKind.NormalCommand:

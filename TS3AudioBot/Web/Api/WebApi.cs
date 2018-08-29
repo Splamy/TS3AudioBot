@@ -44,6 +44,11 @@ namespace TS3AudioBot.Web.Api
 		public CommandManager CommandManager { get; set; }
 		public TokenManager TokenManager { get; set; }
 
+		private static readonly JsonSerializerSettings ErrorSerializeSettings = new JsonSerializerSettings
+		{
+			NullValueHandling = NullValueHandling.Ignore,
+		};
+
 		public override void DispatchCall(HttpListenerContext context)
 		{
 			using (var response = context.Response)
@@ -55,13 +60,13 @@ namespace TS3AudioBot.Web.Api
 				if (!authResult.Ok)
 				{
 					Log.Debug("Authorization failed!");
-					ReturnError(CommandExceptionReason.Unauthorized, authResult.Error, context.Response);
+					ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), context.Response);
 					return;
 				}
 				if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
 				{
 					Log.Debug("Unauthorized request!");
-					ReturnError(CommandExceptionReason.Unauthorized, ErrorAnonymousDisabled, context.Response);
+					ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), context.Response);
 					return;
 				}
 
@@ -117,11 +122,11 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private static void ReturnError(CommandException ex, HttpListenerResponse response) => ReturnError(ex.Reason, ex.Message, response);
-
-		private static void ReturnError(CommandExceptionReason reason, string message, HttpListenerResponse response)
+		private static void ReturnError(CommandException ex, HttpListenerResponse response)
 		{
-			switch (reason)
+			var jsonError = new JsonError(ex.Message, ex.Reason);
+
+			switch (ex.Reason)
 			{
 			case CommandExceptionReason.Unknown:
 			case CommandExceptionReason.InternalError:
@@ -133,18 +138,41 @@ namespace TS3AudioBot.Web.Api
 				break;
 
 			case CommandExceptionReason.MissingRights:
-			case CommandExceptionReason.NotSupported:
+				jsonError.HelpLink = "https://github.com/Splamy/TS3AudioBot/wiki/FAQ#missing-rights";
 				response.StatusCode = (int)HttpStatusCode.Forbidden;
 				break;
 
 			case CommandExceptionReason.AmbiguousCall:
 			case CommandExceptionReason.MissingParameter:
+			case CommandExceptionReason.NotSupported:
 				response.StatusCode = (int)HttpStatusCode.BadRequest;
 				break;
 
+			case CommandExceptionReason.MissingContext:
+				if (ex is MissingContextCommandException mcex)
+				{
+					if (mcex.MissingType == typeof(InvokerData))
+					{
+						jsonError.HelpMessage += "You have to authenticate yourself to call this method.";
+						jsonError.HelpLink = "https://github.com/Splamy/TS3AudioBot/wiki/WebAPI#authentication";
+					}
+					else if (mcex.MissingType == typeof(UserSession))
+					{
+						jsonError.HelpMessage += "Creating UserSessions via api is currently not implemented yet.";
+					}
+					else if (mcex.MissingType == typeof(Bot) || mcex.MissingType == typeof(IPlayerConnection)
+						|| mcex.MissingType == typeof(PlayManager) || mcex.MissingType == typeof(Ts3Client)
+						|| mcex.MissingType == typeof(IVoiceTarget) || mcex.MissingType == typeof(IVoiceTarget))
+					{
+						jsonError.HelpMessage += "You are trying to call a command which is specific to a bot. " +
+							"Use '!bot use' to switch to a bot instance";
+						jsonError.HelpLink = "https://github.com/Splamy/TS3AudioBot/wiki/FAQ#api-missing-context";
+					}
+				}
+				goto case CommandExceptionReason.CommandError;
+
 			case CommandExceptionReason.CommandError:
 			case CommandExceptionReason.NoReturnMatch:
-			case CommandExceptionReason.MissingContext:
 				response.StatusCode = 422; // Unprocessable Entity
 				break;
 
@@ -153,11 +181,11 @@ namespace TS3AudioBot.Web.Api
 				break;
 
 			default:
-				throw Util.UnhandledDefault(reason);
+				throw Util.UnhandledDefault(ex.Reason);
 			}
 
 			using (var responseStream = new StreamWriter(response.OutputStream))
-				responseStream.Write(JsonConvert.SerializeObject(new JsonError(message, reason)));
+				responseStream.Write(JsonConvert.SerializeObject(jsonError, ErrorSerializeSettings));
 		}
 
 		private static void UnescapeAstTree(AstNode node)

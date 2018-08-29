@@ -17,6 +17,8 @@ namespace TS3AudioBot.Web.Api
 		public int ErrorCode => (int)reason;
 		public string ErrorName => reason.ToString();
 		public string ErrorMessage { get; }
+		public string HelpMessage { get; set; }
+		public string HelpLink { get; set; }
 
 		public JsonError(string msg, CommandExceptionReason reason) : base(msg)
 		{

@@ -17,19 +17,42 @@ namespace TS3AudioBot.CommandSystem
 	{
 		public CommandExceptionReason Reason { get; }
 
-		protected CommandException() : this(CommandExceptionReason.Unknown) { }
-		protected CommandException(CommandExceptionReason reason) { Reason = reason; }
+		protected CommandException()
+			: this(CommandExceptionReason.Unknown)
+		{ }
+
+		protected CommandException(CommandExceptionReason reason)
+		{ Reason = reason; }
 
 		public CommandException(string message, CommandExceptionReason reason)
-			: base(message) { Reason = reason; }
+			: base(message)
+		{ Reason = reason; }
 
 		public CommandException(string message, Exception inner, CommandExceptionReason reason)
-			: base(message, inner) { Reason = reason; }
+			: base(message, inner)
+		{ Reason = reason; }
 
-		protected CommandException(
-		  SerializationInfo info,
-		  StreamingContext context) : base(info, context)
+		protected CommandException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
 		{ }
+	}
+
+	[Serializable]
+	public class MissingContextCommandException : CommandException
+	{
+		public Type MissingType { get; }
+
+		protected MissingContextCommandException(Type missingType)
+			: base(CommandExceptionReason.MissingContext)
+		{ MissingType = missingType; }
+
+		public MissingContextCommandException(string message, Type missingType)
+			: base(message, CommandExceptionReason.MissingContext)
+		{ MissingType = missingType; }
+
+		public MissingContextCommandException(string message, Exception inner, Type missingType)
+			: base(message, inner, CommandExceptionReason.MissingContext)
+		{ MissingType = missingType; }
 	}
 
 	public enum CommandExceptionReason

@@ -73,7 +73,7 @@ namespace TS3AudioBot
 			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
 			if (invoker.IsAnonymous)
-				throw new CommandException(strings.error_no_uid_found, CommandExceptionReason.CommandError);
+				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(InvokerData));
 
 			TimeSpan? validSpan = null;
 			try
@@ -94,10 +94,10 @@ namespace TS3AudioBot
 			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
 			if (invoker.IsAnonymous)
-				throw new CommandException(strings.error_no_uid_found, CommandExceptionReason.CommandError);
-			var result = tokenManager.GetToken(invoker.ClientUid).UnwrapThrow();
+				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(InvokerData));
 
-			var nonce = result.CreateNonce();
+			var token = tokenManager.GetToken(invoker.ClientUid).UnwrapThrow();
+			var nonce = token.CreateNonce();
 			return nonce.Value;
 		}
 
@@ -1470,7 +1470,7 @@ namespace TS3AudioBot
 		private static Playlist AutoGetPlaylist(UserSession session, InvokerData invoker)
 		{
 			if (session == null)
-				throw new CommandException(strings.error_no_session_in_context, CommandExceptionReason.MissingContext);
+				throw new MissingContextCommandException(strings.error_no_session_in_context, typeof(UserSession));
 			var result = session.Get<PlaylistManager, Playlist>();
 			if (result)
 				return result.Value;

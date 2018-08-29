@@ -89,10 +89,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 				if (fitresult.Error.Reason == CommandExceptionReason.MissingContext)
 					throw fitresult.Error;
-
 			}
 			throw new CommandException("No matching function overload could be found", CommandExceptionReason.FunctionNotFound);
 		}
-
 	}
 }
