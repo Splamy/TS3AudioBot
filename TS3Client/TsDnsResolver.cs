@@ -29,10 +29,12 @@ namespace TS3Client
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 		private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
+		private static readonly WebClient WebClient = new WebClient();
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
 		/// <param name="endPoint">The ip address if successfully resolved. Otherwise a dummy.</param>
+		/// <param name="defaultPort">The default port when no port is specified with the address or the resolved address.</param>
 		/// <returns>Whether the resolve was succesful.</returns>
 		public static bool TryResolve(string address, out IPEndPoint endPoint, ushort defaultPort = Ts3VoiceDefaultPort)
 		{
@@ -235,14 +237,18 @@ namespace TS3Client
 		private static string ResolveNickname(string nickname)
 		{
 			string result;
-			using (var webClient = new WebClient())
+			try { result = WebClient.DownloadString(NicknameLookup + Uri.EscapeDataString(nickname)); }
+			catch (WebException ex)
 			{
-				try { result = webClient.DownloadString(NicknameLookup + Uri.EscapeDataString(nickname)); }
-				catch (WebException) { return null; }
+				Log.Debug(ex, "Failed to resolve nickname \"{0}\"", nickname);
+				return null;
 			}
 			var splits = result.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 			if (splits.Length == 0)
+			{
+				Log.Debug("Nickname \"{0}\" has no address entries");
 				return null;
+			}
 
 			return splits[0];
 		}

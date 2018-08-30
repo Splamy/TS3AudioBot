@@ -878,13 +878,6 @@ namespace TS3AudioBot
 			});
 		}
 
-		[Command("loop")]
-		public static JsonValue<bool> CommandLoop(PlaylistManager playlistManager) => new JsonValue<bool>(playlistManager.Loop, string.Format(strings.info_status_loop, playlistManager.Loop ? strings.info_on : strings.info_off));
-		[Command("loop on")]
-		public static void CommandLoopOn(PlaylistManager playlistManager) => playlistManager.Loop = true;
-		[Command("loop off")]
-		public static void CommandLoopOff(PlaylistManager playlistManager) => playlistManager.Loop = false;
-
 		[Command("next")]
 		public static void CommandNext(PlayManager playManager, InvokerData invoker)
 			=> playManager.Next(invoker).UnwrapThrow();
@@ -1025,11 +1018,17 @@ namespace TS3AudioBot
 		public static void CommandRandomSeed(PlaylistManager playlistManager, int newSeed) => playlistManager.Seed = newSeed;
 
 		[Command("repeat")]
-		public static JsonValue<bool> CommandRepeat(IPlayerConnection playerConnection) => new JsonValue<bool>(playerConnection.Repeated, string.Format(strings.info_status_repeat, playerConnection.Repeated ? strings.info_on : strings.info_off));
-		[Command("repeat on")]
-		public static void CommandRepeatOn(IPlayerConnection playerConnection) => playerConnection.Repeated = true;
+		public static JsonValue<LoopMode> CommandRepeat(PlaylistManager playlistManager)
+			=> new JsonValue<LoopMode>(playlistManager.Loop, x =>
+				x == LoopMode.Off ? strings.cmd_repeat_info_off :
+				x == LoopMode.One ? strings.cmd_repeat_info_one :
+				x == LoopMode.All ? strings.cmd_repeat_info_all : throw Util.UnhandledDefault(playlistManager.Loop));
 		[Command("repeat off")]
-		public static void CommandRepeatOff(IPlayerConnection playerConnection) => playerConnection.Repeated = false;
+		public static void CommandRepeatOff(PlaylistManager playlistManager) => playlistManager.Loop = LoopMode.Off;
+		[Command("repeat one")]
+		public static void CommandRepeatOne(PlaylistManager playlistManager) => playlistManager.Loop = LoopMode.One;
+		[Command("repeat all")]
+		public static void CommandRepeatAll(PlaylistManager playlistManager) => playlistManager.Loop = LoopMode.All;
 
 		[Command("rights can")]
 		public static JsonArray<string> CommandRightsCan(ExecutionInformation info, RightsManager rightsManager, params string[] rights)

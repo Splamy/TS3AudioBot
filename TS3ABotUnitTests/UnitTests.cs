@@ -17,10 +17,10 @@ namespace TS3ABotUnitTests
 	using System.Linq;
 	using System.Text.RegularExpressions;
 	using TS3AudioBot;
-	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.History;
+	using TS3AudioBot.Playlists.Shuffle;
 	using TS3AudioBot.ResourceFactories;
 	using TS3Client.Full;
 	using TS3Client.Messages;
@@ -179,6 +179,12 @@ namespace TS3ABotUnitTests
 		}
 
 		/* ====================== Algorithm Tests =========================*/
+
+		[Test]
+		public void NormalOrderTest()
+		{
+			TestShuffleAlgorithm(new NormalOrder());
+		}
 
 		[Test]
 		public void ListedShuffleTest()

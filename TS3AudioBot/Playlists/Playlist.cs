@@ -55,6 +55,6 @@ namespace TS3AudioBot.Playlists
 
 		public IEnumerable<PlaylistItem> AsEnumerable() => resources;
 
-		public PlaylistItem GetResource(int index) => resources[index];
+		public PlaylistItem GetResource(int index) => index >= 0 && index < resources.Count ? resources[index] : null;
 	}
 }

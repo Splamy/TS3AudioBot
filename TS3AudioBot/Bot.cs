@@ -154,7 +154,7 @@ namespace TS3AudioBot
 
 		private void OnBotConnected(object sender, EventArgs e)
 		{
-			Log.Info("Bot ({0}) connected.", Id);
+			Log.Info("Bot \"{0}\"({1}) connected.", config.Name, Id);
 
 			EnableIdleTickWorker();
 

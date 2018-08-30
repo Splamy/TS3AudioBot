@@ -9,8 +9,8 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using Localization;
 	using Config;
+	using Localization;
 	using System;
 	using System.Collections.Generic;
 	using System.ComponentModel;
@@ -98,7 +98,11 @@ namespace TS3AudioBot.ResourceFactories
 					return ParseResponse(tmproc.StandardOutput);
 				}
 			}
-			catch (Win32Exception) { return new LocalStr(strings.error_ytdl_failed_to_run); }
+			catch (Win32Exception ex)
+			{
+				Log.Error(ex, "Failed to run youtube-dl: {0}", ex.Message);
+				return new LocalStr(strings.error_ytdl_failed_to_run);
+			}
 		}
 
 		public static (string title, IList<string> links) ParseResponse(StreamReader stream)

@@ -9,12 +9,12 @@
 
 namespace TS3AudioBot.Playlists
 {
-	using Algorithm;
 	using Config;
 	using Helper;
 	using Localization;
 	using Newtonsoft.Json;
 	using ResourceFactories;
+	using Shuffle;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
@@ -32,26 +32,17 @@ namespace TS3AudioBot.Playlists
 		private readonly Playlist freeList;
 		private readonly Playlist trashList;
 
-		private int indexCount = 0;
 		private IShuffleAlgorithm shuffle;
-		private int dataSetLength = -1;
+
+		private static readonly IShuffleAlgorithm NormalOrder = new NormalOrder();
+		private static readonly IShuffleAlgorithm RandomOrder = new LinearFeedbackShiftRegister();
 
 		public int Index
 		{
-			get => Random ? shuffle.Index : indexCount;
-			set
-			{
-				if (Random)
-				{
-					shuffle.Index = value;
-					indexCount = 0;
-				}
-				else
-				{
-					indexCount = value;
-				}
-			}
+			get => shuffle.Index;
+			set => shuffle.Index = value;
 		}
+
 		private bool random;
 		public bool Random
 		{
@@ -59,57 +50,70 @@ namespace TS3AudioBot.Playlists
 			set
 			{
 				random = value;
-				if (random) shuffle.Index = indexCount;
-				else indexCount = shuffle.Index;
+				var index = shuffle.Index;
+				if (random)
+					shuffle = RandomOrder;
+				else
+					shuffle = NormalOrder;
+				shuffle.Length = freeList.Count;
+				shuffle.Index = index;
 			}
 		}
+
 		public int Seed { get => shuffle.Seed; set => shuffle.Seed = value; }
-		/// <summary>Loop state for the entire playlist.</summary>
-		public bool Loop { get; set; }
+
+		/// <summary>Loop mode for the current playlist.</summary>
+		public LoopMode Loop { get; set; } = LoopMode.Off;
 
 		public PlaylistManager(ConfPlaylists config)
 		{
 			this.config = config;
-			shuffle = new LinearFeedbackShiftRegister { Seed = Util.Random.Next() };
 			freeList = new Playlist(string.Empty);
 			trashList = new Playlist(string.Empty);
+			shuffle = NormalOrder;
 		}
 
-		public PlaylistItem Current() => NpMove(0);
-
-		public PlaylistItem Next() => NpMove(+1);
-
-		public PlaylistItem Previous() => NpMove(-1);
-
-		private PlaylistItem NpMove(sbyte off)
+		public PlaylistItem Current()
 		{
-			if (freeList.Count == 0) return null;
-			indexCount += Math.Sign(off);
-
-			if (Loop)
-				indexCount = Util.MathMod(indexCount, freeList.Count);
-			else if (indexCount < 0 || indexCount >= freeList.Count)
-			{
-				indexCount = Math.Max(indexCount, 0);
-				indexCount = Math.Min(indexCount, freeList.Count);
+			if (!NormalizeValues())
 				return null;
-			}
+			return freeList.GetResource(Index);
+		}
 
-			if (Random)
-			{
-				if (dataSetLength != freeList.Count)
-				{
-					dataSetLength = freeList.Count;
-					shuffle.Length = dataSetLength;
-				}
-				if (off > 0) shuffle.Next();
-				if (off < 0) shuffle.Prev();
-			}
+		public PlaylistItem Next(bool manually = true) => MoveIndex(forward: true, manually);
 
-			if (Index < 0) return null;
+		public PlaylistItem Previous(bool manually = true) => MoveIndex(forward: false, manually);
+
+		private PlaylistItem MoveIndex(bool forward, bool manually)
+		{
+			if (!NormalizeValues())
+				return null;
+
+			// When next/prev was requested manually (via command) we ignore the loop one
+			// mode and instead move the index.
+			if (Loop == LoopMode.One && !manually)
+				return freeList.GetResource(Index);
+
+			bool listEnded;
+			if (forward)
+				listEnded = shuffle.Next();
+			else
+				listEnded = shuffle.Prev();
+
+			// Get a new seed when one play-though ended.
+			if (listEnded && Random)
+				SetRandomSeed();
+
+			// If a next/prev request goes over the bounds of the list while loop mode is off
+			// but was requested manually we act as if the list was looped.
+			// This will give a more intuitive behaviour when the list is shuffeled (and also if not)
+			// as the end might not be clear or visible.
+			if (Loop == LoopMode.Off && listEnded && !manually)
+				return null;
+
 			var entry = freeList.GetResource(Index);
-			if (entry == null) return null;
-			entry.Meta.FromPlaylist = true;
+			if (entry != null)
+				entry.Meta.FromPlaylist = true;
 			return entry;
 		}
 
@@ -120,18 +124,35 @@ namespace TS3AudioBot.Playlists
 
 			freeList.Clear();
 			freeList.AddRange(plist.AsEnumerable());
-			Reset();
+
+			NormalizeValues();
+			SetRandomSeed();
+			Index = 0;
 		}
 
-		private void Reset()
+		private void SetRandomSeed()
 		{
-			indexCount = 0;
-			dataSetLength = -1;
-			Index = 0;
+			shuffle.Seed = Util.Random.Next();
+		}
+
+		// Returns true if all values are normalized
+		private bool NormalizeValues()
+		{
+			if (freeList.Count == 0)
+				return false;
+
+			if (shuffle.Length != freeList.Count)
+				shuffle.Length = freeList.Count;
+
+			if (Index < 0 || Index >= freeList.Count)
+				Index = Util.MathMod(Index, freeList.Count);
+
+			return true;
 		}
 
 		public int AddToFreelist(PlaylistItem item) => freeList.AddItem(item);
 		public void AddToFreelist(IEnumerable<PlaylistItem> items) => freeList.AddRange(items);
+
 		public int AddToTrash(PlaylistItem item) => trashList.AddItem(item);
 		public void AddToTrash(IEnumerable<PlaylistItem> items) => trashList.AddRange(items);
 
@@ -299,7 +320,7 @@ namespace TS3AudioBot.Playlists
 				}
 
 				sw.WriteLine();
-				
+
 				using (var json = new JsonTextWriter(sw))
 				{
 					json.Formatting = Formatting.None;
@@ -333,7 +354,9 @@ namespace TS3AudioBot.Playlists
 		{
 			var fi = GetFileInfo(name);
 			if (!fi.Exists)
+			{
 				return new LocalStr(strings.error_playlist_not_found);
+			}
 			else if (!force)
 			{
 				var tempList = LoadChecked(LoadPlaylist(name, true), requestingClientUid);

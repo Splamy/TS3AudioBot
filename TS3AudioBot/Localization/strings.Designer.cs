@@ -883,33 +883,6 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Gets whether or not to loop the entire playlist..
-        /// </summary>
-        internal static string cmd_loop_help {
-            get {
-                return ResourceManager.GetString("cmd_loop_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Disables looping the entire playlist..
-        /// </summary>
-        internal static string cmd_loop_off_help {
-            get {
-                return ResourceManager.GetString("cmd_loop_off_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Enables looping the entire playlist..
-        /// </summary>
-        internal static string cmd_loop_on_help {
-            get {
-                return ResourceManager.GetString("cmd_loop_on_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Plays the next song in the playlist..
         /// </summary>
         internal static string cmd_next_help {
@@ -1126,7 +1099,16 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Gets whether or not to loop a single song..
+        ///   Looks up a localized string similar to Repeats the entire playlist..
+        /// </summary>
+        internal static string cmd_repeat_all_help {
+            get {
+                return ResourceManager.GetString("cmd_repeat_all_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Gets the current repeat mode..
         /// </summary>
         internal static string cmd_repeat_help {
             get {
@@ -1135,7 +1117,34 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Disables single song repeat..
+        ///   Looks up a localized string similar to Repeating the playlist..
+        /// </summary>
+        internal static string cmd_repeat_info_all {
+            get {
+                return ResourceManager.GetString("cmd_repeat_info_all", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Not repeating..
+        /// </summary>
+        internal static string cmd_repeat_info_off {
+            get {
+                return ResourceManager.GetString("cmd_repeat_info_off", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Repeating a single song..
+        /// </summary>
+        internal static string cmd_repeat_info_one {
+            get {
+                return ResourceManager.GetString("cmd_repeat_info_one", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Disables repeating..
         /// </summary>
         internal static string cmd_repeat_off_help {
             get {
@@ -1144,11 +1153,11 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Enables single song repeat..
+        ///   Looks up a localized string similar to Repeats a single song..
         /// </summary>
-        internal static string cmd_repeat_on_help {
+        internal static string cmd_repeat_one_help {
             get {
-                return ResourceManager.GetString("cmd_repeat_on_help", resourceCulture);
+                return ResourceManager.GetString("cmd_repeat_one_help", resourceCulture);
             }
         }
         
@@ -2368,15 +2377,6 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Loop is {0}.
-        /// </summary>
-        internal static string info_status_loop {
-            get {
-                return ResourceManager.GetString("info_status_loop", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Quizmode is {0}.
         /// </summary>
         internal static string info_status_quizmode {
@@ -2391,15 +2391,6 @@ namespace TS3AudioBot.Localization {
         internal static string info_status_random {
             get {
                 return ResourceManager.GetString("info_status_random", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Repeat is {0}.
-        /// </summary>
-        internal static string info_status_repeat {
-            get {
-                return ResourceManager.GetString("info_status_repeat", resourceCulture);
             }
         }
     }

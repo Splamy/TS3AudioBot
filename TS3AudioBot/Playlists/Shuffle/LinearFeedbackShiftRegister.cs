@@ -7,61 +7,82 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Algorithm
+namespace TS3AudioBot.Playlists.Shuffle
 {
-	using System;
 	using Helper;
+	using System;
 
 	public class LinearFeedbackShiftRegister : IShuffleAlgorithm
 	{
 		private int register = 1; // aka index
 		private int mask;
+		private int maskLength;
 		private int seed;
 		private int length;
-		private bool needsRefresh = true;
+		private int startRegister;
+		private bool needsRecalc = true;
 
-		public int Seed { get => seed; set { needsRefresh = true; seed = value; } }
-		public int Length { get => length; set { needsRefresh = true; length = value; } }
+		public int Seed { get => seed; set { needsRecalc |= seed != value; seed = value; } }
+		public int Length { get => length; set { needsRecalc |= length != value; length = value; } }
 		public int Index
 		{
-			get { if (Length <= 0) return -1; return Util.MathMod(register + Seed, Length); }
-			set { if (Length <= 0) return; Recalc(); register = Util.MathMod(value - Seed, Length); }
+			get
+			{
+				if (Length <= 0)
+					return -1;
+				return Util.MathMod(register + Seed, Length);
+			}
+			set
+			{
+				if (Length <= 0)
+					return;
+				Recalc();
+				register = Util.MathMod(value - Seed, Length);
+				startRegister = register;
+			}
 		}
 
 		private void Recalc()
 		{
-			if (!needsRefresh) return;
-			needsRefresh = false;
+			if (!needsRecalc) return;
+			needsRecalc = false;
 
 			if (Length <= 0) return;
 			register = (register % Length) + 1;
 
 			// get the highest set bit (+1) to hold at least all values with a power of 2
 			int maxPow = 31;
-			while (((1 << maxPow) & Length) == 0 && maxPow >= 0) maxPow--;
-			mask = GenerateGaloisMask(maxPow + 1, seed);
+			while (((1 << maxPow) & Length) == 0 && maxPow >= 0)
+				maxPow--;
+			maxPow++;
+			mask = GenerateGaloisMask(maxPow, seed);
+			maskLength = 1 << maxPow;
 		}
 
-		public void Next()
+		public bool Next()
 		{
-			if (Length <= 0) return;
+			if (Length <= 0) return false;
 			Recalc();
 			do
 			{
 				register = NextOf(register);
 			} while ((uint)register > Length);
+			return register == startRegister;
 		}
 
-		public void Prev()
+		public bool Prev()
 		{
-			if (Length <= 0) return;
+			if (Length <= 0) return false;
 			Recalc();
-			for (int i = 0; i < Length; i++)
+			for (int i = 0; i < maskLength; i++)
+			{
 				if (NextOf(i) == register)
 				{
 					register = i;
-					return;
+					return register == startRegister;
 				}
+			}
+
 			throw new InvalidOperationException();
 		}
 

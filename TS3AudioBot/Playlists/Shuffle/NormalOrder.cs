@@ -7,22 +7,24 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot
+namespace TS3AudioBot.Playlists.Shuffle
 {
-	using System;
-
-	/// <summary>Slim interface to control the audio player.</summary>
-	public interface IPlayerConnection : IDisposable
+	public class NormalOrder : IShuffleAlgorithm
 	{
-		event EventHandler OnSongEnd;
+		public int Seed { get; set; }
+		public int Length { get; set; }
+		public int Index { get; set; }
 
-		float Volume { get; set; }
-		TimeSpan Position { get; set; }
-		bool Paused { get; set; }
-		TimeSpan Length { get; }
-		bool Playing { get; }
+		public bool Next()
+		{
+			Index = Helper.Util.MathMod(Index + 1, Length);
+			return Index == 0;
+		}
 
-		E<string> AudioStart(string url);
-		E<string> AudioStop();
+		public bool Prev()
+		{
+			Index = Helper.Util.MathMod(Index - 1, Length);
+			return Index == Length - 1;
+		}
 	}
 }

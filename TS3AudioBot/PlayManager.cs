@@ -142,12 +142,12 @@ namespace TS3AudioBot
 			return R.Ok;
 		}
 
-		public E<LocalStr> Next(InvokerData invoker)
+		public E<LocalStr> Next(InvokerData invoker, bool manually = true)
 		{
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = PlaylistManager.Next()) == null) break;
+				if ((pli = PlaylistManager.Next(manually)) == null) break;
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
@@ -159,12 +159,12 @@ namespace TS3AudioBot
 				return new LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!next"));
 		}
 
-		public E<LocalStr> Previous(InvokerData invoker)
+		public E<LocalStr> Previous(InvokerData invoker, bool manually = true)
 		{
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = PlaylistManager.Previous()) == null) break;
+				if ((pli = PlaylistManager.Previous(manually)) == null) break;
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
@@ -186,7 +186,7 @@ namespace TS3AudioBot
 
 			if (songEndedByCallback && CurrentPlayData != null)
 			{
-				var result = Next(CurrentPlayData.Invoker);
+				var result = Next(CurrentPlayData.Invoker, false);
 				if (result)
 					return;
 				Log.Info("Song queue ended: {0}", result.Error);

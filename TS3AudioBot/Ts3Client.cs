@@ -669,8 +669,6 @@ namespace TS3AudioBot
 
 		public bool Playing => !timePipe.Paused;
 
-		public bool Repeated { get => false; set { } }
-
 		#endregion
 
 		public void Dispose()

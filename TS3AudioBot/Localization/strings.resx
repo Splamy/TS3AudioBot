@@ -309,15 +309,6 @@
   <data name="cmd_list_show_help" xml:space="preserve">
     <value>&lt;name&gt; Displays all songs currently in the playlists with the name &lt;name&gt;</value>
   </data>
-  <data name="cmd_loop_help" xml:space="preserve">
-    <value>Gets whether or not to loop the entire playlist.</value>
-  </data>
-  <data name="cmd_loop_on_help" xml:space="preserve">
-    <value>Enables looping the entire playlist.</value>
-  </data>
-  <data name="cmd_loop_off_help" xml:space="preserve">
-    <value>Disables looping the entire playlist.</value>
-  </data>
   <data name="cmd_next_help" xml:space="preserve">
     <value>Plays the next song in the playlist.</value>
   </data>
@@ -379,13 +370,13 @@
     <value>Sets the unique seed for a certain playback order</value>
   </data>
   <data name="cmd_repeat_help" xml:space="preserve">
-    <value>Gets whether or not to loop a single song.</value>
+    <value>Gets the current repeat mode.</value>
   </data>
-  <data name="cmd_repeat_on_help" xml:space="preserve">
-    <value>Enables single song repeat.</value>
+  <data name="cmd_repeat_one_help" xml:space="preserve">
+    <value>Repeats a single song.</value>
   </data>
   <data name="cmd_repeat_off_help" xml:space="preserve">
-    <value>Disables single song repeat.</value>
+    <value>Disables repeating.</value>
   </data>
   <data name="cmd_rights_can_help" xml:space="preserve">
     <value>Returns the subset of allowed commands the caller (you) can execute.</value>
@@ -732,17 +723,11 @@ with the id {1}?</value>
   <data name="info_on" xml:space="preserve">
     <value>on</value>
   </data>
-  <data name="info_status_loop" xml:space="preserve">
-    <value>Loop is {0}</value>
-  </data>
   <data name="info_status_quizmode" xml:space="preserve">
     <value>Quizmode is {0}</value>
   </data>
   <data name="info_status_random" xml:space="preserve">
     <value>Random is {0}</value>
-  </data>
-  <data name="info_status_repeat" xml:space="preserve">
-    <value>Repeat is {0}</value>
   </data>
   <data name="error_config_value_parse_error" xml:space="preserve">
     <value>The value could not be parsed.</value>
@@ -899,5 +884,17 @@ with the id {1}?</value>
   </data>
   <data name="error_missing_right" xml:space="preserve">
     <value>You cannot execute '{0}'. You are missing the '{1}' right!</value>
+  </data>
+  <data name="cmd_repeat_all_help" xml:space="preserve">
+    <value>Repeats the entire playlist.</value>
+  </data>
+  <data name="cmd_repeat_info_all" xml:space="preserve">
+    <value>Repeating the playlist.</value>
+  </data>
+  <data name="cmd_repeat_info_off" xml:space="preserve">
+    <value>Not repeating.</value>
+  </data>
+  <data name="cmd_repeat_info_one" xml:space="preserve">
+    <value>Repeating a single song.</value>
   </data>
 </root>

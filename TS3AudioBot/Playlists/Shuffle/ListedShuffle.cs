@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Algorithm
+namespace TS3AudioBot.Playlists.Shuffle
 {
+	using Helper;
 	using System;
 	using System.Linq;
-	using Helper;
 
 	public class ListedShuffle : IShuffleAlgorithm
 	{
@@ -25,12 +25,12 @@ namespace TS3AudioBot.Algorithm
 		public int Seed
 		{
 			get => seed;
-			set { needsRecalc = true; seed = value; }
+			set { needsRecalc |= seed != value; seed = value; }
 		}
 		public int Length
 		{
 			get => length;
-			set { needsRecalc = true; length = value; }
+			set { needsRecalc |= length != value; length = value; }
 		}
 		public int Index
 		{
@@ -56,11 +56,25 @@ namespace TS3AudioBot.Algorithm
 			if (Length <= 0) return;
 
 			var rngeesus = new Random(seed);
-			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(x => rngeesus.Next()).ToArray();
+			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(_ => rngeesus.Next()).ToArray();
 			index %= Length;
 		}
 
-		public void Next() { if (Length <= 0) return; GenList(); index = (index + 1) % permutation.Length; }
-		public void Prev() { if (Length <= 0) return; GenList(); index = (index - 1) % permutation.Length; }
+		public bool Next()
+		{
+			if (Length <= 0)
+				return false;
+			GenList();
+			index = (index + 1) % permutation.Length;
+			return index == 0;
+		}
+		public bool Prev()
+		{
+			if (Length <= 0)
+				return false;
+			GenList();
+			index = (index - 1) % permutation.Length;
+			return index == permutation.Length - 1;
+		}
 	}
 }
