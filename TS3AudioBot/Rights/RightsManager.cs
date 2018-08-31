@@ -257,8 +257,7 @@ namespace TS3AudioBot.Rights
 
 			LintDeclarations(parseCtx);
 
-			if (!NormalizeRule(parseCtx))
-				return;
+			NormalizeRules(parseCtx);
 
 			FlattenGroups(parseCtx);
 
@@ -304,10 +303,8 @@ namespace TS3AudioBot.Rights
 		/// Expands wildcard declarations to all explicit declarations.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static bool NormalizeRule(ParseContext ctx)
+		private static void NormalizeRules(ParseContext ctx)
 		{
-			bool hasErrors = false;
-
 			foreach (var rule in ctx.Rules)
 			{
 				var denyNormalized = ExpandRights(rule.DeclDeny, ctx.RegisteredRights);
@@ -321,11 +318,8 @@ namespace TS3AudioBot.Rights
 				foreach (var right in undeclared)
 				{
 					ctx.Warnings.Add($"Right \"{right}\" is not registered.");
-					hasErrors = true;
 				}
 			}
-
-			return !hasErrors;
 		}
 
 		/// <summary>
@@ -455,7 +449,7 @@ namespace TS3AudioBot.Rights
 			foreach (var rule in ctx.Rules)
 			{
 				if (!rule.HasMatcher() && rule.Parent != null)
-					ctx.Warnings.Add("Rule has no matcher");
+					ctx.Warnings.Add("Rule has no matcher and will always match");
 			}
 
 			// check for impossible combinations uid + uid, server + server, perm + perm ?
@@ -476,7 +470,7 @@ namespace TS3AudioBot.Rights
 		}
 
 		/// <summary>
-		/// Summs up all includes for each group and includes them directly into the
+		/// Sums up all includes for each group and includes them directly into the
 		/// <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
 		/// </summary>
 		/// <param name="ctx">The parsing context for the current file processing.</param>
@@ -503,7 +497,7 @@ namespace TS3AudioBot.Rights
 		}
 
 		/// <summary>
-		/// Summs up all includes and parent rule declarations for each rule and includes them
+		/// Sums up all includes and parent rule declarations for each rule and includes them
 		/// directly into the <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
 		/// </summary>
 		/// <param name="root">The root element of the hierarchy tree.</param>
