@@ -46,9 +46,9 @@ namespace TS3AudioBot.ResourceFactories
 
 			string fullCustomPath;
 			try { fullCustomPath = Path.GetFullPath(YoutubeDlPath); }
-			catch (ArgumentException)
+			catch (ArgumentException ex)
 			{
-				Log.Warn("Your youtube-dl path contains invalid characters");
+				Log.Warn(ex, "Your youtube-dl path contains invalid characters");
 				return null;
 			}
 

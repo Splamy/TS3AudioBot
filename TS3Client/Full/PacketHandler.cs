@@ -502,9 +502,9 @@ namespace TS3Client.Full
 				{
 					packet.Data = QuickerLz.Decompress(packet.Data, MaxDecompressedSize);
 				}
-				catch (Exception)
+				catch (Exception ex)
 				{
-					Debug.WriteLine("Got invalid compressed data.");
+					LoggerRaw.Warn(ex, "Got invalid compressed data.");
 					return false;
 				}
 			}

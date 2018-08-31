@@ -122,7 +122,7 @@ namespace TS3AudioBot.ResourceFactories
 			catch (UnauthorizedAccessException) { return new LocalStr(strings.error_io_missing_permission); }
 			catch (Exception ex)
 			{
-				Log.Warn("Failed to load song \"{0}\", because {1}", path, ex.Message);
+				Log.Warn(ex, "Failed to load song \"{0}\", because {1}", path, ex.Message);
 				return new LocalStr(strings.error_io_unknown_error);
 			}
 		}

@@ -27,7 +27,8 @@ To see what's planned and in progress take a look into our [Roadmap](https://git
 The bot is fully operable via chat.  
 Commands can be invoked with `!command`.  
 
-For the full command list and tutorials see [here in the wiki](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem).
+For the full command list and tutorials see [here in the wiki](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
+or our live [OpenApiV3 generator](http://splamy.de:8181/openapi/index.html).
 
 ## Download
 You can download the latest builds precompiled from our [nightly server](https://splamy.de/Nightly#ts3ab):  
@@ -91,11 +92,21 @@ Download the git repository with `git clone --recurse-submodules https://github.
 1. Execute `msbuild /p:Configuration=Release /p:TargetFramework=net46 TS3AudioBot.sln` to build the AudioBot
 
 #### Windows
-1. Make sure you have installed `Visual Studio` and `.NET Framework 4.6`
+1. Make sure you have installed `Visual Studio` and `.NET Framework 4.6` and the latest `dotnet core`
 1. Build the AudioBot with Visual Studio.
 
 ### Testing and Fuzzing
 1. Run the *TS3ABotUnitTests* project in Visual Studio or Monodevelop.
+
+## Community
+
+### Localization
+:speech_balloon: *Want to help translate or improve translation?*  
+Join us on [Transifex](https://www.transifex.com/respeak/ts3audiobot/) to help translate  
+or in our [Gitter](https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link) to discuss or ask anything!  
+All help is appreciated :heart:
+
+Translations need to be manually approved and will then be automatically built and deployed to [our nightly server here](https://splamy.de/TS3AudioBot).
 
 ## License
 This project is licensed under OSL-3.0.

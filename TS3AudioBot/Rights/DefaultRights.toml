@@ -13,7 +13,7 @@
 	# Getting song info
 	"cmd.link",
 	"cmd.song",
-	"cmd.loop",
+	"cmd.repeat",
 	"cmd.random",
 
 	# Conditionals and basic scripting
@@ -28,6 +28,7 @@
 
 	# Changing bot context in the api
 	"cmd.bot.use",
+	"cmd.json.api",
 ]
 
 # Admin rule
@@ -63,7 +64,6 @@
 		"cmd.next",
 		"cmd.random.*",
 		"cmd.repeat.*",
-		"cmd.loop.*",
 
 		# History features
 		"cmd.history.add",

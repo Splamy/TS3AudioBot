@@ -182,6 +182,7 @@ namespace TS3AudioBot.Web
 			Display = null;
 
 			webListener?.Stop();
+			webListener?.Close();
 			webListener = null;
 		}
 	}
