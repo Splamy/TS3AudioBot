@@ -16,6 +16,7 @@ namespace TS3AudioBot.Web
 	using System;
 	using System.Globalization;
 	using System.Net;
+	using System.Net.Sockets;
 	using System.Threading;
 
 	public sealed class WebServer : IDisposable
@@ -169,7 +170,8 @@ namespace TS3AudioBot.Web
 					else
 						Display?.DispatchCall(context);
 				}
-				catch (HttpListenerException) { break; }
+				catch (SocketException ex) { Log.Debug(ex, "WebListener error"); }
+				catch (HttpListenerException ex) { Log.Debug(ex, "WebListener error"); }
 				catch (InvalidOperationException) { break; }
 			}
 

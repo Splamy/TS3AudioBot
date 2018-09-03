@@ -6,14 +6,15 @@
     <meta charset="utf-8" />
     <link rel="stylesheet" href="styles.css">
     <title>TS3AudioBot</title>
-    <script src="md5.js"></script>
     <script src="script.js"></script>
 </head>
 
 <body>
     <header class="split3 unselectable">
         <div class="split3bit"></div>
-        <h1 class="split3max">TS3AudioBot</h1>
+        <div class="split3max">
+            <h1>TS3AudioBot</h1>
+        </div>
         <div class="split3bit flowright maxheight">
             <label class="authbox" style="width:40px; height:40px">
                 <input type="checkbox" />
@@ -24,20 +25,23 @@
             </label>
         </div>
     </header>
-    <nav>
-        <a class="button" href="index.html?page=main.html">Menu</a>
-        <a class="button" href="index.html?page=styles.css">Commands</a>
-        <a class="button" href="index.html?page=playcontrols.html">Audio</a>
-        <a class="button" href="index.html?page=playlist.html">Playlist</a>
-        <a class="button" href="index.html?page=history.html">History</a>
-    </nav>
-    <div id="devupdate"> </div>
-    <section id="content">
-        <div data-jqload> </div>
-    </section>
+    <div style="display:flex">
+        <nav>
+            <a class="button navButton" href="index.html?page=main.html">Menu</a>
+            <a class="button navButton" href="index.html?page=styles.css">Commands</a>
+            <a class="button navButton" href="index.html?page=playcontrols.html">Audio</a>
+            <a class="button navButton" href="index.html?page=playlist.html">Playlist</a>
+            <a class="button navButton" href="index.html?page=history.html">History</a>
+            <a class="button navButton" href="index.html?page=bots.html">Bots</a>
+            <a class="button navButton" href="index.html?page=bot.html&bot_id=0">Bot</a>
+        </nav>
+        <section id="content">
+            <div data-jqload></div>
+        </section>
+    </div>
     <footer class="split3 unselectable">
         <div class="split3bit"></div>
-        <div class="split3max">Written by Flakebi &amp; Splamy</div>
+        <div class="split3max"></div>
         <div class="split3bit flowright maxheight">
             <a class="maxheight" href="https://github.com/Splamy/TS3AudioBot" target="_blank">
                 <img class="maxheight" src="media/ghicon.png" alt="Github Project Page">

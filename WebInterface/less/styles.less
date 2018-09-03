@@ -2,20 +2,22 @@
 /* <pre> */
 /* ReSharper disable All */
 
+@import "styles_authbox";
 @import "styles_button";
+@import "styles_formbox";
+@import "styles_history";
 @import "styles_playcontrols";
 @import "styles_slider";
-@import "styles_history";
-@import "styles_authbox";
 
-@backgroundcolor1: #050505;
-@backgroundcolor2: #202020;
+@backgroundcolor1: #000a12;
+@backgroundcolor2: #263238;
 @foregroundcolor1: #B0171F;
 @foregroundcolor2: #FF6103;
 @contrastcolor1: #B2B2B2;
 @top-off: 40px;
 @left-off: 150px;
 @bot-off: 25px;
+@defautl-border-radius: 8px;
 @shadow: 3px 3px 3px 0px @backgroundcolor1;
 
 html, body {
@@ -43,10 +45,9 @@ header {
 
 nav {
 	top: @top-off;
-	bottom: @bot-off; 
+	bottom: @bot-off;
 	width: @left-off;
 	position: fixed;
-	line-height: 2em;
 	background-color: @backgroundcolor1;
 }
 

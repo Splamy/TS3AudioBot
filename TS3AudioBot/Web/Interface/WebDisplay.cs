@@ -90,7 +90,7 @@ namespace TS3AudioBot.Web.Interface
 
 			// Prepare Header
 			var response = context.Response;
-			response.StatusCode = (int)HttpStatusCode.OK;
+			response.StatusCode = (site == Site404) ? (int)HttpStatusCode.NotFound : (int)HttpStatusCode.OK;
 			response.ContentLength64 = data.Length;
 			response.ContentEncoding = Encoding.UTF8;
 			response.ContentType = site.MimeType ?? "text/plain";

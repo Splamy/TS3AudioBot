@@ -1,175 +1,246 @@
 "use strict";
-var ApiAuth = (function () {
-    function ApiAuth(UserUid, Token) {
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class Api {
+    constructor(buildAddr) {
+        this.buildAddr = buildAddr;
+    }
+    static call(...params) {
+        let buildStr = "";
+        for (const param of params) {
+            if (typeof param === "string") {
+                buildStr += "/" + encodeURIComponent(param);
+            }
+            else {
+                buildStr += "/(" + param.done() + ")";
+            }
+        }
+        return new Api(buildStr);
+    }
+    done() {
+        return this.buildAddr;
+    }
+}
+class ApiAuth {
+    constructor(UserUid, Token) {
         this.UserUid = UserUid;
         this.Token = Token;
     }
-    ApiAuth.prototype.hasValidNonce = function () {
-        return this.CachedNonce !== undefined;
-    };
-    ApiAuth.prototype.generateResponse = function (url, realm) {
-        if (realm === void 0) { realm = this.CachedRealm; }
-        if (!this.hasValidNonce())
-            throw new Error("Cannot generate response without nonce");
-        if (this.ha1 === undefined || this.CachedRealm !== realm) {
-            this.CachedRealm = realm;
-            this.ha1 = md5(this.UserUid + ":" + realm + ":" + this.Token);
+    get IsAnonymous() { return this.UserUid.length === 0 && this.Token.length === 0; }
+    static Create(fullTokenString) {
+        if (fullTokenString.length === 0)
+            return ApiAuth.Anonymous;
+        const split = fullTokenString.split(/:/g);
+        if (split.length === 2) {
+            return new ApiAuth(split[0], split[1]);
         }
-        var ha2 = md5("GET" + ":" + url);
-        return md5(this.ha1 + ":" + this.CachedNonce + ":" + ha2);
-    };
-    return ApiAuth;
-}());
-var AuthStatus;
-(function (AuthStatus) {
-    AuthStatus[AuthStatus["None"] = 0] = "None";
-    AuthStatus[AuthStatus["FirstTry"] = 1] = "FirstTry";
-    AuthStatus[AuthStatus["Failed"] = 2] = "Failed";
-})(AuthStatus || (AuthStatus = {}));
-var Get = (function () {
-    function Get() {
+        else if (split.length === 3) {
+            return new ApiAuth(split[0], split[2]);
+        }
+        else {
+            throw new Error("Invalid token");
+        }
     }
-    Get.site = function (site, callback) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", site, true);
-        if (callback !== undefined) {
-            xhr.onload = function (ev) { return callback(xhr.responseText); };
-            xhr.onerror = function (ev) { return callback(undefined); };
+    getBasic() {
+        return `Basic ${btoa(this.UserUid + ":" + this.Token)}`;
+    }
+}
+ApiAuth.Anonymous = new ApiAuth("", "");
+class Get {
+    static site(site) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", site, true);
+            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            xhr.onload = (_) => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(xhr.responseText);
+                }
+                else {
+                    reject(xhr.responseText);
+                }
+            };
+            xhr.onerror = (_) => {
+                reject(xhr.responseText);
+            };
+            xhr.send();
+        });
+    }
+    static api(site, login = Main.AuthData) {
+        if (site instanceof Api) {
+            site = site.done();
         }
-        xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-        xhr.send();
-    };
-    Get.api = function (site, callback, login, status) {
-        if (status === void 0) { status = AuthStatus.None; }
-        if (login === undefined)
-            throw new Error("Anonymous api call not supported yet");
-        if (status === AuthStatus.Failed)
-            throw new Error("Auth failed");
-        if (!login.hasValidNonce() && status === AuthStatus.None) {
-            Get.getNonce(login, function (ok) {
-                if (ok)
-                    Get.api(site, callback, login, AuthStatus.FirstTry);
-                else if (callback !== undefined)
-                    callback(undefined);
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            if (!login.IsAnonymous) {
+                xhr.setRequestHeader("Authorization", login.getBasic());
+            }
+            const apiSite = "/api" + site;
+            xhr.open("GET", apiSite);
+            xhr.onload = (_) => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(JSON.parse(xhr.responseText));
+                }
+                else {
+                    const error = JSON.parse(xhr.responseText);
+                    error.statusCode = xhr.status;
+                    reject(error);
+                }
+            };
+            xhr.onerror = (_) => {
+                const error = JSON.parse(xhr.responseText);
+                error.statusCode = xhr.status;
+                reject(error);
+            };
+            xhr.send();
+        });
+    }
+}
+class Bot {
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const divBotInfo = Util.getElementByIdSafe("bot_info");
+            const botId = Main.state["bot_id"];
+            if (!botId)
+                return;
+            const botInfo = yield Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("bot", "info", "client"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"))));
+            console.log(botInfo);
+        });
+    }
+}
+class Bots {
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const bots = Util.getElementByIdSafe("bots");
+            const list = yield Get.api(Api.call("bot", "list"));
+            Util.clearChildren(bots);
+            for (const botInfo of list) {
+                bots.innerHTML +=
+                    `<li>
+                    <div>${botInfo.Id}</div>
+                    <div>${botInfo.Name}</div>
+                    <div>${botInfo.Server}</div>
+                    <div><a href="index.html?page=bot.html&bot_id=${botInfo.Id}">Go to</a></div>
+                </li>`;
+            }
+        });
+    }
+}
+class Main {
+    static init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            Main.contentDiv = Util.getElementByIdSafe("content");
+            Main.readStateFromUrl();
+            Main.initEvents();
+            const page = Main.state.page;
+            if (page !== undefined) {
+                yield Main.setSite(page);
+            }
+        });
+    }
+    static initEvents() {
+        const list = document.querySelectorAll("nav a");
+        for (const link of list) {
+            const query = Util.parseUrlQuery(link.href);
+            const page = query.page;
+            link.onclick = (ev) => __awaiter(this, void 0, void 0, function* () {
+                ev.preventDefault();
+                yield Main.setSite(page);
             });
         }
-        else if (status === AuthStatus.None || status === AuthStatus.FirstTry) {
-            var xhr_1 = new XMLHttpRequest();
-            var apiSite = "/api/" + site;
-            xhr_1.open("GET", apiSite, true);
-            if (callback !== undefined) {
-                xhr_1.onload = function (ev) {
-                    var ret = Get.extractNonce(xhr_1);
-                    login.CachedNonce = ret.nonce;
-                    login.CachedRealm = ret.realm;
-                    callback(xhr_1.responseText);
-                };
-                xhr_1.onerror = function (ev) { return callback(undefined); };
+    }
+    static readStateFromUrl() {
+        const currentSite = window.location.href;
+        const query = Util.parseUrlQuery(currentSite);
+        for (const key in query) {
+            Main.state[key] = query[key];
+        }
+    }
+    static setSite(site) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const content = yield Get.site(site);
+            Main.contentDiv.innerHTML = content;
+            Main.state.page = site;
+            yield Main.registerHooks();
+        });
+    }
+    static registerHooks() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const authElem = document.getElementById("authtoken");
+            if (authElem) {
+                authElem.oninput = Main.authChanged;
             }
-            var response = login.generateResponse(apiSite);
-            xhr_1.setRequestHeader("Authorization", "Digest username=\"" + login.UserUid +
-                "\", realm=\"" + login.CachedRealm +
-                "\", nonce=\"" + login.CachedNonce +
-                "\", uri=\"" + apiSite +
-                "\", response=\"" + response + "\"");
-            login.CachedNonce = undefined;
-            xhr_1.send();
-        }
-    };
-    Get.getNonce = function (login, callback) {
-        var initReq = new XMLHttpRequest();
-        initReq.open("GET", "/api/", true);
-        initReq.setRequestHeader("Authorization", "Digest username=\"" + login.UserUid + "\"");
-        initReq.onload = function (ev) {
-            var ret = Get.extractNonce(initReq);
-            login.CachedNonce = ret.nonce;
-            login.CachedRealm = ret.realm;
-            if (callback !== undefined)
-                callback(true);
-        };
-        initReq.onerror = function (ev) { return callback(false); };
-        initReq.send();
-    };
-    Get.extractNonce = function (request) {
-        var digResponse = request.getResponseHeader("WWW-Authenticate");
-        if (digResponse === null)
-            throw new Error("No auth extracted");
-        var digData = digResponse.match(/(realm|nonce)=\"\w+\"*/g);
-        if (digData === null)
-            throw new Error("No auth extracted");
-        var realm;
-        var nonce;
-        for (var _i = 0, digData_1 = digData; _i < digData_1.length; _i++) {
-            var param = digData_1[_i];
-            var split = param.match(/([^=]*)=\"([^\"]*)\"/);
-            if (split[1] === "nonce")
-                nonce = split[2];
-            else if (split[1] === "realm")
-                realm = split[2];
-        }
-        if (realm === undefined || nonce === undefined)
-            throw new Error("Invalid auth data");
-        return { nonce: nonce, realm: realm };
-    };
-    return Get;
-}());
-var Main = (function () {
-    function Main() {
+            const page = Main.state.page;
+            if (page !== undefined) {
+                const thispage = Main.pages[page];
+                if (thispage !== undefined) {
+                    yield thispage.init();
+                }
+            }
+        });
     }
-    Main.init = function () {
-        Main.contentDiv = document.getElementById("content");
-        Main.initEvents();
-        Main.registerHooks();
-        var currentSite = window.location.href;
-        var query = Util.parseQuery(currentSite.substr(currentSite.indexOf("?") + 1));
-        var page = query.page;
-        if (page !== undefined) {
-            Get.site("/" + page, Main.setContent);
+    static authChanged(ev) {
+        const thisinput = this;
+        Main.AuthData = ApiAuth.Create(thisinput.value);
+    }
+    static initPureCss() {
+        const layout = document.getElementById("layout");
+        const menu = document.getElementById("menu");
+        const menuLink = document.getElementById("menuLink");
+        const content = document.getElementById("main");
+        function toggleClass(element, className) {
+            const classes = element.className.split(/\s+/);
+            const length = classes.length;
+            for (let i = 0; i < length; i++) {
+                if (classes[i] === className) {
+                    classes.splice(i, 1);
+                    break;
+                }
+            }
+            if (length === classes.length) {
+                classes.push(className);
+            }
+            element.className = classes.join(" ");
         }
-    };
-    Main.initEvents = function () {
-        var list = document.querySelectorAll("nav a");
-        var _loop_1 = function (link) {
-            var query = Util.parseQuery(link.href.substr(link.href.indexOf("?") + 1));
-            var page = query.page;
-            link.onclick = function (ev) {
-                ev.preventDefault();
-                Get.site(page, Main.setContent);
-            };
+        function toggleAll(e) {
+            const active = "active";
+            e.preventDefault();
+            toggleClass(layout, active);
+            toggleClass(menu, active);
+            toggleClass(menuLink, active);
+        }
+        menuLink.onclick = (e) => {
+            toggleAll(e);
         };
-        for (var _i = 0, list_1 = list; _i < list_1.length; _i++) {
-            var link = list_1[_i];
-            _loop_1(link);
-        }
-    };
-    Main.setContent = function (content) {
-        Main.contentDiv.innerHTML = content;
-        Main.registerHooks();
-    };
-    Main.registerHooks = function () {
-        var authElem = document.getElementById("authtoken");
-        if (authElem !== null) {
-            authElem.oninput = Main.authChanged;
-        }
-    };
-    Main.authChanged = function (ev) {
-        var thisinput = this;
-        var parts = thisinput.value.split(/:/g, 3);
-        if (parts.length !== 3)
-            return;
-        Main.authData = new ApiAuth(parts[0], parts[2]);
-    };
-    return Main;
-}());
+        content.onclick = (e) => {
+            if (menu.className.indexOf("active") !== -1) {
+                toggleAll(e);
+            }
+        };
+    }
+}
+Main.AuthData = ApiAuth.Anonymous;
+Main.pages = {
+    "bot.html": new Bot(),
+    "bots.html": new Bots(),
+};
+Main.state = {};
+function cmd(...params) {
+    return Api.call(...params);
+}
 window.onload = Main.init;
-var Util = (function () {
-    function Util() {
-    }
-    Util.parseQuery = function (query) {
-        var search = /([^&=]+)=?([^&]*)/g;
-        var decode = function (s) { return decodeURIComponent(s.replace(/\+/g, " ")); };
-        var urlParams = {};
-        var match = null;
+class Util {
+    static parseQuery(query) {
+        const search = /([^&=]+)=?([^&]*)/g;
+        const decode = (s) => decodeURIComponent(s.replace(/\+/g, " "));
+        const urlParams = {};
+        let match = null;
         do {
             match = search.exec(query);
             if (match === null)
@@ -177,29 +248,47 @@ var Util = (function () {
             urlParams[decode(match[1])] = decode(match[2]);
         } while (match !== null);
         return urlParams;
-    };
-    Util.value_to_logarithmic = function (val) {
+    }
+    static parseUrlQuery(url) {
+        return Util.parseQuery(url.substr(url.indexOf("?") + 1));
+    }
+    static getUrlQuery() {
+        return Util.parseUrlQuery(window.location.href);
+    }
+    static value_to_logarithmic(val) {
         if (val < 0)
             val = 0;
         else if (val > Util.slmax)
             val = Util.slmax;
         return (1.0 / Util.log10(10 - val) - 1) * (Util.scale / (1.0 / Util.log10(10 - Util.slmax) - 1));
-    };
-    Util.logarithmic_to_value = function (val) {
+    }
+    static logarithmic_to_value(val) {
         if (val < 0)
             val = 0;
         else if (val > Util.scale)
             val = Util.scale;
         return 10 - Math.pow(10, 1.0 / (val / (Util.scale / (1.0 / Util.log10(10 - Util.slmax) - 1)) + 1));
-    };
-    Util.log10 = function (val) {
+    }
+    static log10(val) {
         if (Math.log10 !== undefined)
             return Math.log10(val);
         else
             return Math.log(val) / Math.LN10;
-    };
-    return Util;
-}());
+    }
+    static getElementByIdSafe(elementId) {
+        return Util.nonNull(document.getElementById(elementId));
+    }
+    static nonNull(elem) {
+        if (elem === null)
+            throw new Error("Missing html element");
+        return elem;
+    }
+    static clearChildren(elem) {
+        while (elem.firstChild) {
+            elem.removeChild(elem.firstChild);
+        }
+    }
+}
 Util.slmax = 7.0;
 Util.scale = 100.0;
 //# sourceMappingURL=script.js.map

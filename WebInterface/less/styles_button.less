@@ -7,13 +7,11 @@
     text-decoration: none;
     text-align: center;
     font-size: 16px;
-    border-radius: 8px;
+    border-radius: @defautl-border-radius;
     box-shadow: @shadow;
-    padding: 10px 0px;
-    width: 90%;
-    display: inline-block;
-    margin: 0px 5% 0.4em;
+    display: block;
     cursor: pointer;
+    //transition: transform 1s;
 
     &:active {
         box-shadow: 0px 0px 2px 0px #050505;
@@ -22,5 +20,11 @@
     &:hover {
         background-color: lighten(@foregroundcolor1, 20%);
         color: black;
+        //transform: rotate(420deg); // R E S P O N S I V E   D E S I G N
     }
+}
+
+.navButton {
+    padding: 10px 0px;
+    margin: 0px 5% 0.4em;
 }

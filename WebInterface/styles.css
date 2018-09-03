@@ -1,5 +1,67 @@
 /* <pre> */
 /* ReSharper disable All */
+.authbox {
+  cursor: pointer;
+}
+.authbox > input {
+  display: none;
+}
+.authbox .authboxform {
+  background-color: #263238;
+  top: 40px;
+  right: 5px;
+  display: none;
+  position: absolute;
+  min-width: 480px;
+  min-height: 1em;
+  box-shadow: -2px 2px 8px 0px #B2B2B2;
+  padding: 8px 12px;
+  z-index: 1;
+  pointer-events: none;
+}
+.authbox .authboxform * {
+  pointer-events: all;
+}
+.authbox .authboxform input {
+  width: 100%;
+}
+.authbox input:checked ~ .authboxform {
+  display: flex;
+}
+@keyframes openauth {
+  from {
+    background-color: #000a12;
+    border-radius: 0;
+  }
+  to {
+    background-color: yellow;
+    border-radius: 10px;
+  }
+}
+@keyframes closeauth {
+  from {
+    background-color: yellow;
+    border-radius: 10px;
+  }
+  to {
+    background-color: #000a12;
+    border-radius: 0;
+  }
+}
+.authbox input:not(:checked) ~ img {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  background-color: #000a12;
+  border-radius: 0;
+  animation-name: closeauth;
+}
+.authbox input:checked ~ img {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  background-color: yellow;
+  border-radius: 10px;
+  animation-name: openauth;
+}
 .button {
   background-color: #B0171F;
   border: none;
@@ -8,11 +70,8 @@
   text-align: center;
   font-size: 16px;
   border-radius: 8px;
-  box-shadow: 3px 3px 3px 0px #050505;
-  padding: 10px 0px;
-  width: 90%;
-  display: inline-block;
-  margin: 0px 5% 0.4em;
+  box-shadow: 3px 3px 3px 0px #000a12;
+  display: block;
   cursor: pointer;
 }
 .button:active {
@@ -22,90 +81,16 @@
   background-color: #e7464f;
   color: black;
 }
-#playhandler {
-  display: inline-block;
-  min-width: 24em;
-  width: 100%;
+.navButton {
+  padding: 10px 0px;
+  margin: 0px 5% 0.4em;
 }
-.linebox {
-  display: inline-block;
-  align-items: center;
-  height: 3em;
-  width: 33%;
-  min-width: 12em;
-  text-align: center;
-  padding: 0px;
-  margin: auto;
-}
-.rightbox {
-  text-align: right;
-}
-.leftbox {
-  text-align: left;
-}
-.fillbox {
-  display: inline-block;
-  width: 100%;
-  text-align: left;
-}
-.fillline {
-  width: 80%;
-  padding: 0em 10%;
-  margin: 0em;
-}
-.playctrlbtn {
-  padding: 0.3em 0.5em;
-  display: inline;
-  margin: 0em;
-}
-.playctrlplay {
-  padding: 1em 1em;
-  width: 1em;
-  height: 1em;
-  display: inline-block;
-  margin: 0em;
-  border-radius: 50%;
-}
-input[type=range] {
-  -webkit-appearance: none;
-  background: transparent;
-}
-input[type=range]:focus {
-  outline: none;
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  border: none;
-  height: 16px;
-  width: 16px;
-  margin-top: -4px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 3px 3px 3px 0px #050505;
-  cursor: pointer;
-}
-input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 6px;
-  margin-bottom: 4px;
-  border-radius: 3px;
-  box-shadow: 3px 3px 3px 0px #050505;
-  background: #B0171F;
-}
-input[type=range]::-moz-range-thumb {
-  border: none;
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  box-shadow: 3px 3px 3px 0px #050505;
-  cursor: pointer;
-}
-input[type=range]::-moz-range-track {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  box-shadow: 3px 3px 3px 0px #050505;
-  background: #B0171F;
+.formbox {
+  border-radius: 8px;
+  padding: 10px;
+  margin: 10px;
+  border: 1px black solid;
+  box-shadow: 3px 3px 3px 0px #000a12;
 }
 .splitbox {
   display: flex;
@@ -165,71 +150,87 @@ td:not(:last-child):not(:first-child) {
 #historylist > tbody > tr > td:nth-child(2) {
   text-align: right;
 }
-.authbox {
-  cursor: pointer;
+input[type="range"] {
+  margin: 0;
 }
-.authbox > input {
-  display: none;
+.playctrlbtn {
+  margin: 3px;
+  padding: 0.3em 0.5em;
+  width: 2em;
 }
-.authbox .authboxform {
-  background-color: #202020;
-  top: 40px;
-  right: 5px;
-  display: none;
-  position: absolute;
-  min-width: 480px;
-  min-height: 1em;
-  box-shadow: -2px 2px 8px 0px #B2B2B2;
-  padding: 8px 12px;
-  z-index: 1;
-  pointer-events: none;
-}
-.authbox .authboxform * {
-  pointer-events: all;
-}
-.authbox .authboxform input {
-  width: 100%;
-}
-.authbox input:checked ~ .authboxform {
+.flex {
   display: flex;
 }
-@keyframes openauth {
-  from {
-    background-color: #050505;
-    border-radius: 0;
-  }
-  to {
-    background-color: yellow;
-    border-radius: 10px;
-  }
+.playblock1 {
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
-@keyframes closeauth {
-  from {
-    background-color: yellow;
-    border-radius: 10px;
-  }
-  to {
-    background-color: #050505;
-    border-radius: 0;
-  }
+.playblock2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.authbox input:not(:checked) ~ img {
-  animation-duration: 0.3s;
-  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
-  background-color: #050505;
-  border-radius: 0;
-  animation-name: closeauth;
+.playblock3 {
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
-.authbox input:checked ~ img {
-  animation-duration: 0.3s;
-  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
-  background-color: yellow;
-  border-radius: 10px;
-  animation-name: openauth;
+.playctrlplay {
+  padding: 1em 1em;
+  width: 1em;
+  height: 1em;
+  margin: 0em;
+  border-radius: 50%;
+  line-height: 100%;
+}
+.playslider {
+  flex: 1;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  background: transparent;
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border: none;
+  height: 16px;
+  width: 16px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 3px 3px 3px 0px #000a12;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  margin-bottom: 4px;
+  border-radius: 3px;
+  box-shadow: 3px 3px 3px 0px #000a12;
+  background: #B0171F;
+}
+input[type=range]::-moz-range-thumb {
+  border: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  box-shadow: 3px 3px 3px 0px #000a12;
+  cursor: pointer;
+}
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  box-shadow: 3px 3px 3px 0px #000a12;
+  background: #B0171F;
 }
 html,
 body {
-  background-color: #050505;
+  background-color: #000a12;
   color: #FF6103;
   margin: 0;
   font-family: Verdana;
@@ -252,8 +253,7 @@ nav {
   bottom: 25px;
   width: 150px;
   position: fixed;
-  line-height: 2em;
-  background-color: #050505;
+  background-color: #000a12;
 }
 section {
   top: 40px;
@@ -261,7 +261,7 @@ section {
   bottom: 25px;
   right: 0;
   position: fixed;
-  background-color: #202020;
+  background-color: #263238;
   overflow-y: auto;
   overflow-x: auto;
   z-index: -1;

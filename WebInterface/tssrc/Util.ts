@@ -16,6 +16,14 @@ class Util {
     }
     // tslint:enable no-null-keyword
 
+    public static parseUrlQuery(url: string): any {
+        return Util.parseQuery(url.substr(url.indexOf("?") + 1));
+    }
+
+    public static getUrlQuery(): any {
+        return Util.parseUrlQuery(window.location.href);
+    }
+
     private static readonly slmax: number = 7.0;
     private static readonly scale: number = 100.0;
 
@@ -38,5 +46,21 @@ class Util {
             return (Math as any).log10(val);
         else
             return Math.log(val) / Math.LN10;
+    }
+
+    public static getElementByIdSafe(elementId: string): HTMLElement {
+        return Util.nonNull(document.getElementById(elementId));
+    }
+
+    public static nonNull<T>(elem: T | null): T {
+        if (elem === null) // tslint:disable-line no-null-keyword
+            throw new Error("Missing html element");
+        return elem;
+    }
+
+    public static clearChildren(elem: HTMLElement) {
+        while (elem.firstChild) {
+            elem.removeChild(elem.firstChild);
+        }
     }
 }

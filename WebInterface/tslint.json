@@ -43,6 +43,7 @@
         "unified-signatures": true,
         "prefer-switch": true,
         "prefer-function-over-method": true,
-        "member-ordering": [ false ]
+        "member-ordering": [ false ],
+        "forin": false, // Usually for my state vaiable
     }
 }
