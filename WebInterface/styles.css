@@ -91,6 +91,8 @@
   margin: 10px;
   border: 1px black solid;
   box-shadow: 3px 3px 3px 0px #000a12;
+  color: white;
+  background-color: #4f5b62;
 }
 .splitbox {
   display: flex;
@@ -105,7 +107,7 @@
   }
 }
 .searchform legend {
-  border: 1px solid #B0171F;
+  border: 1px solid #E95147;
 }
 .searchform label {
   display: inline-block;
@@ -120,13 +122,13 @@
 }
 fieldset {
   border-radius: 8px;
-  border: 2px #B0171F;
+  border: 2px #E95147;
   border-style: solid none solid none;
   cursor: default;
 }
 table {
   border-collapse: collapse;
-  border: 1px #B0171F;
+  border: 1px #E95147;
   overflow: auto;
 }
 th,
@@ -136,8 +138,8 @@ td {
 }
 th:not(:last-child):not(:first-child),
 td:not(:last-child):not(:first-child) {
-  border-left: 1px solid #B0171F;
-  border-right: 1px solid #B0171F;
+  border-left: 1px solid #E95147;
+  border-right: 1px solid #E95147;
 }
 .fillwrap {
   width: 100%;
@@ -211,7 +213,7 @@ input[type=range]::-webkit-slider-runnable-track {
   margin-bottom: 4px;
   border-radius: 3px;
   box-shadow: 3px 3px 3px 0px #000a12;
-  background: #B0171F;
+  background: #E95147;
 }
 input[type=range]::-moz-range-thumb {
   border: none;
@@ -226,12 +228,12 @@ input[type=range]::-moz-range-track {
   height: 6px;
   border-radius: 3px;
   box-shadow: 3px 3px 3px 0px #000a12;
-  background: #B0171F;
+  background: #E95147;
 }
 html,
 body {
   background-color: #000a12;
-  color: #FF6103;
+  color: #E95147;
   margin: 0;
   font-family: Verdana;
 }
