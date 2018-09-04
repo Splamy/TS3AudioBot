@@ -22,13 +22,11 @@
 	"cmd.rng",
 	"cmd.eval",
 	"cmd.take",
-	"cmd.json.merge",
 	"cmd.xecute",
 	"cmd.getmy.*",
-
-	# Changing bot context in the api
+	"cmd.json.*",
 	"cmd.bot.use",
-	"cmd.json.api",
+	"cmd.rights.can",
 ]
 
 # Admin rule
