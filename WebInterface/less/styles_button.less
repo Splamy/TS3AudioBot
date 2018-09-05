@@ -6,8 +6,7 @@
     color: white;
     text-decoration: none;
     text-align: center;
-    font-size: 16px;
-    border-radius: @defautl-border-radius;
+    //border-radius: @default-border-radius;
     box-shadow: @shadow;
     display: block;
     cursor: pointer;
@@ -24,7 +23,18 @@
     }
 }
 
+.navTitle {
+    font-weight: bold;
+    font-size: (@default-font-size * 1.2);
+    background-color: @foregroundcolor3;
+}
+
 .navButton {
     padding: 10px 0px;
-    margin: 0px 5% 0.4em;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.navButtonSelected {
+    background-color: lighten(@foregroundcolor2, 10%);
 }

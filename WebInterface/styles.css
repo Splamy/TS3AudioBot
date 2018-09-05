@@ -68,9 +68,7 @@
   color: white;
   text-decoration: none;
   text-align: center;
-  font-size: 16px;
-  border-radius: 8px;
-  box-shadow: 3px 3px 3px 0px #000a12;
+  box-shadow: 1px 1px 8px 0px #000a12;
   display: block;
   cursor: pointer;
 }
@@ -81,16 +79,24 @@
   background-color: #e7464f;
   color: black;
 }
+.navTitle {
+  font-weight: bold;
+  font-size: 120%;
+  background-color: #790000;
+}
 .navButton {
   padding: 10px 0px;
-  margin: 0px 5% 0.4em;
+  box-shadow: none;
+  border-radius: 0;
+}
+.navButtonSelected {
+  background-color: #dd1d27;
 }
 .formbox {
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 10px;
   margin: 10px;
-  border: 1px black solid;
-  box-shadow: 3px 3px 3px 0px #000a12;
+  box-shadow: 1px 1px 8px 0px #000a12;
   color: white;
   background-color: #4f5b62;
 }
@@ -204,7 +210,7 @@ input[type=range]::-webkit-slider-thumb {
   margin-top: -4px;
   border-radius: 50%;
   background: white;
-  box-shadow: 3px 3px 3px 0px #000a12;
+  box-shadow: 1px 1px 8px 0px #000a12;
   cursor: pointer;
 }
 input[type=range]::-webkit-slider-runnable-track {
@@ -212,7 +218,7 @@ input[type=range]::-webkit-slider-runnable-track {
   height: 6px;
   margin-bottom: 4px;
   border-radius: 3px;
-  box-shadow: 3px 3px 3px 0px #000a12;
+  box-shadow: 1px 1px 8px 0px #000a12;
   background: #E95147;
 }
 input[type=range]::-moz-range-thumb {
@@ -220,14 +226,14 @@ input[type=range]::-moz-range-thumb {
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  box-shadow: 3px 3px 3px 0px #000a12;
+  box-shadow: 1px 1px 8px 0px #000a12;
   cursor: pointer;
 }
 input[type=range]::-moz-range-track {
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  box-shadow: 3px 3px 3px 0px #000a12;
+  box-shadow: 1px 1px 8px 0px #000a12;
   background: #E95147;
 }
 html,
@@ -236,6 +242,7 @@ body {
   color: #E95147;
   margin: 0;
   font-family: Verdana;
+  font-size: 100%;
 }
 h1 {
   text-align: center;
@@ -249,13 +256,15 @@ header {
   position: fixed;
   width: 100%;
   height: 40px;
+  z-index: 1;
+  box-shadow: 0 0 10px 0 #000a12;
 }
 nav {
-  top: 40px;
+  top: 0;
   bottom: 25px;
   width: 150px;
   position: fixed;
-  background-color: #000a12;
+  background-color: #B0171F;
 }
 section {
   top: 40px;
@@ -275,6 +284,7 @@ footer {
   color: white;
   text-align: center;
   position: fixed;
+  box-shadow: 0 0 10px 0 #000a12;
 }
 .maxheight {
   height: 100%;

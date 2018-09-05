@@ -17,6 +17,7 @@ class Bot implements IPage {
             )
         );
 
+        divBotInfo.innerText = JSON.stringify(botInfo);
         console.log(botInfo);
     }
 }

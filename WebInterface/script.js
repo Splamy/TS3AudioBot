@@ -110,6 +110,7 @@ class Bot {
             if (!botId)
                 return;
             const botInfo = yield Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("bot", "info", "client"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"))));
+            divBotInfo.innerText = JSON.stringify(botInfo);
             console.log(botInfo);
         });
     }

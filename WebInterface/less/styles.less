@@ -19,14 +19,16 @@
 @top-off: 40px;
 @left-off: 150px;
 @bot-off: 25px;
-@defautl-border-radius: 8px;
-@shadow: 3px 3px 3px 0px @backgroundcolor1;
+@default-border-radius: 3px;
+@shadow: 1px 1px 8px 0px @backgroundcolor1;
+@default-font-size: 100%;
 
 html, body {
 	background-color: @backgroundcolor1;
 	color: @foregroundcolor1;
 	margin: 0;
 	font-family: Verdana;
+	font-size: @default-font-size;
 }
 
 h1 {
@@ -43,14 +45,16 @@ header {
 	position: fixed;
 	width: 100%;
 	height: @top-off;
+	z-index: 1;
+	box-shadow: 0 0 10px 0 @backgroundcolor1;
 }
 
 nav {
-	top: @top-off;
+	top: 0;
 	bottom: @bot-off;
 	width: @left-off;
 	position: fixed;
-	background-color: @backgroundcolor1;
+	background-color: @foregroundcolor2;
 }
 
 section {
@@ -72,6 +76,7 @@ footer {
 	color: white;
 	text-align: center;
 	position: fixed;
+	box-shadow: 0 0 10px 0 @backgroundcolor1;
 }
 
 .maxheight {
