@@ -1,11 +1,10 @@
 ﻿// out: ../styles.css
-/* <pre> */
-/* ReSharper disable All */
 
 @import "styles_authbox";
 @import "styles_button";
 @import "styles_formbox";
 @import "styles_history";
+@import "styles_input";
 @import "styles_playcontrols";
 @import "styles_slider";
 
@@ -17,18 +16,20 @@
 @foregroundcolor3: #790000;
 @contrastcolor1: #B2B2B2;
 @top-off: 40px;
-@left-off: 150px;
+@left-off: 10em;
 @bot-off: 25px;
 @default-border-radius: 3px;
 @shadow: 1px 1px 8px 0px @backgroundcolor1;
-@default-font-size: 100%;
+@shadow-weak: 1px 1px 4px 0px @backgroundcolor1;
+@font-size1: 100%;
+@font-size2: @font-size1 * 1.2;
 
 html, body {
 	background-color: @backgroundcolor1;
 	color: @foregroundcolor1;
 	margin: 0;
 	font-family: Verdana;
-	font-size: @default-font-size;
+	font-size: @font-size1;
 }
 
 h1 {
@@ -50,7 +51,7 @@ header {
 }
 
 nav {
-	top: 0;
+	top: @top-off;
 	bottom: @bot-off;
 	width: @left-off;
 	position: fixed;
@@ -77,6 +78,15 @@ footer {
 	text-align: center;
 	position: fixed;
 	box-shadow: 0 0 10px 0 @backgroundcolor1;
+}
+
+hr {
+	display: block;
+	height: 1px;
+	border: 0;
+	border-top: 1px solid #ccc;
+	margin: 0.3em 0;
+	padding: 0;
 }
 
 .maxheight {
@@ -106,7 +116,7 @@ footer {
 	}
 }
 
-.unselectable, nav > a {
+.unselectable() {
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
 	-khtml-user-select: none;
@@ -115,5 +125,3 @@ footer {
 	user-select: none;
 	cursor: default;
 }
-
-/* </pre> */

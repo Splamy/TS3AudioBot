@@ -1,5 +1,12 @@
 class Bot implements IPage {
     public async init() {
+        Get.site("playcontrols.html").then(playCtrl => {
+            const divPlayBlock = Util.getElementByIdSafe("playblock");
+            divPlayBlock.innerHTML = playCtrl;
+            PlayControls.enable();
+        });
+
+        // get information
         const divBotInfo = Util.getElementByIdSafe("bot_info");
         const botId = Main.state["bot_id"];
         if (!botId)
@@ -13,11 +20,10 @@ class Bot implements IPage {
                     cmd("song", "position"),
                     cmd("repeat"),
                     cmd("random"),
+                    cmd("volume"),
                 )
             )
         );
-
-        divBotInfo.innerText = JSON.stringify(botInfo);
         console.log(botInfo);
     }
 }

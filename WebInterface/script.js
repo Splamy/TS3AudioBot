@@ -105,12 +105,16 @@ class Get {
 class Bot {
     init() {
         return __awaiter(this, void 0, void 0, function* () {
+            Get.site("playcontrols.html").then(playCtrl => {
+                const divPlayBlock = Util.getElementByIdSafe("playblock");
+                divPlayBlock.innerHTML = playCtrl;
+                PlayControls.enable();
+            });
             const divBotInfo = Util.getElementByIdSafe("bot_info");
             const botId = Main.state["bot_id"];
             if (!botId)
                 return;
             const botInfo = yield Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("bot", "info", "client"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"))));
-            divBotInfo.innerText = JSON.stringify(botInfo);
             console.log(botInfo);
         });
     }
@@ -236,6 +240,16 @@ function cmd(...params) {
     return Api.call(...params);
 }
 window.onload = Main.init;
+class PlayControls {
+    static enable() {
+        const divPlayCtrl = Util.getElementByIdSafe("playblock");
+        divPlayCtrl.classList.remove("playdisabled");
+    }
+    static disable() {
+        const divPlayCtrl = Util.getElementByIdSafe("playblock");
+        divPlayCtrl.classList.add("playdisabled");
+    }
+}
 class Util {
     static parseQuery(query) {
         const search = /([^&=]+)=?([^&]*)/g;

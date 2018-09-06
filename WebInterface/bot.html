@@ -1,17 +1,53 @@
-<a id="refresh" href="#">Refresh</a>
-<br/>
 <div id="bot_info" class="pure-g">
     <div class="pure-u-xl-1-3 pure-u-lg-1-2 pure-u-1">
-        <div class="formbox"> test </div>
+        <div class="formbox">
+            <div class="formheader">Info</div>
+            <div class="formcontent">
+                <div class="formdatablock">
+                    <div>Template Name:</div>
+                    <div id="data_template">cool_name</div>
+                </div>
+                <div class="formdatablock">
+                    <div>Current ID:</div>
+                    <div id="data_id">42</div>
+                </div>
+                <hr />
+                <div class="formdatablock">
+                    <div>Server:</div>
+                    <div id="data_server" class="formdatablock_fill">splamy.de</div>
+                    <div class="button button_round">🖉</div>
+                </div>
+                <hr />
+                <div class="button">connect/disconnect</div>
+            </div>
+        </div>
     </div>
     <div class="pure-u-xl-1-3 pure-u-lg-1-2 pure-u-1">
-        <div class="formbox"> test dsfgklsdjfh gjdafhg kjdhfg kdsfg ot4rh aeiourghaioudfhg nkdsjfng aeiurht odfgh klejart
-            kjaher fklajsdhr uaweh</div>
+        <div class="formbox ">
+            <div class="formheader">Settings</div>
+            <div class="formcontent">
+                stuff
+                <hr />
+            </div>
+        </div>
     </div>
     <div class="pure-u-xl-1-3 pure-u-lg-1-2 pure-u-1">
-        <div class="formbox"> test </div>
+        <div class="formbox ">
+            <div class="formheader">Play</div>
+            <div class="formcontent">
+                <div class="formdatablock">
+                    <div>Currently Playing:</div>
+                    <div id="data_now_playing">Never Gonna Give You Up.mp3</div>
+                </div>
+                <div class="formdatablock">
+                    <div>Play:</div>
+                    <input id="data_play_new" type="text" class="formdatablock_fill" />
+                    <div class="button button_round">&#9658;</div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="pure-u-xl-1-3 pure-u-lg-1-2 pure-u-1">
-        <div class="formbox"> test </div>
+    <div class="pure-u-1">
+        <div class="formbox formcontent playdisabled" id="playblock"></div>
     </div>
 </div>

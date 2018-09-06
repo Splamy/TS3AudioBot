@@ -1,19 +1,22 @@
 // main: styles.less
 
 .button {
+    .unselectable();
     background-color: @foregroundcolor2;
     border: none;
     color: white;
     text-decoration: none;
     text-align: center;
     //border-radius: @default-border-radius;
-    box-shadow: @shadow;
-    display: block;
+    box-shadow: @shadow-weak;
+    display: inline-block;
     cursor: pointer;
+    margin: 0.3em;
+    padding: 0.5em;
     //transition: transform 1s;
 
     &:active {
-        box-shadow: 0px 0px 2px 0px #050505;
+        box-shadow: 0px 0px 4px 0px lighten(@backgroundcolor1, 20%);
     }
 
     &:hover {
@@ -23,14 +26,20 @@
     }
 }
 
+.button_round {
+    border-radius: 100%;
+}
+
 .navTitle {
     font-weight: bold;
-    font-size: (@default-font-size * 1.2);
+    font-size: @font-size2;
     background-color: @foregroundcolor3;
 }
 
 .navButton {
-    padding: 10px 0px;
+    display: block;
+    margin: 0;
+    padding: 0.7em 0;
     box-shadow: none;
     border-radius: 0;
 }

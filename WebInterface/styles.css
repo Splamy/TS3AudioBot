@@ -1,5 +1,3 @@
-/* <pre> */
-/* ReSharper disable All */
 .authbox {
   cursor: pointer;
 }
@@ -63,21 +61,33 @@
   animation-name: openauth;
 }
 .button {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
   background-color: #B0171F;
   border: none;
   color: white;
   text-decoration: none;
   text-align: center;
-  box-shadow: 1px 1px 8px 0px #000a12;
-  display: block;
+  box-shadow: 1px 1px 4px 0px #000a12;
+  display: inline-block;
   cursor: pointer;
+  margin: 0.3em;
+  padding: 0.5em;
 }
 .button:active {
-  box-shadow: 0px 0px 2px 0px #050505;
+  box-shadow: 0px 0px 4px 0px #004378;
 }
 .button:hover {
   background-color: #e7464f;
   color: black;
+}
+.button_round {
+  border-radius: 100%;
 }
 .navTitle {
   font-weight: bold;
@@ -85,7 +95,9 @@
   background-color: #790000;
 }
 .navButton {
-  padding: 10px 0px;
+  display: block;
+  margin: 0;
+  padding: 0.7em 0;
   box-shadow: none;
   border-radius: 0;
 }
@@ -94,11 +106,42 @@
 }
 .formbox {
   border-radius: 3px;
-  padding: 10px;
-  margin: 10px;
+  padding: 0;
+  margin: 1em;
   box-shadow: 1px 1px 8px 0px #000a12;
   color: white;
   background-color: #4f5b62;
+}
+.formheader {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+  padding: 0.5em;
+  margin: 0;
+  background-color: #000a12;
+  border-radius: 3px 3px 0 0;
+  font-weight: bold;
+  font-size: 120%;
+}
+.formcontent {
+  padding: 0.5em;
+}
+.formdatablock {
+  display: flex;
+  align-items: center;
+}
+.formdatablock > * {
+  margin: 0.3em 0.2em;
+}
+.formdatablock > *:first-child {
+  font-weight: bold;
+}
+.formdatablock_fill {
+  flex-grow: 1;
 }
 .splitbox {
   display: flex;
@@ -172,6 +215,7 @@ input[type="range"] {
 .playblock1 {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   flex: 1;
 }
 .playblock2 {
@@ -182,6 +226,7 @@ input[type="range"] {
 .playblock3 {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   flex: 1;
 }
 .playctrlplay {
@@ -194,6 +239,19 @@ input[type="range"] {
 }
 .playslider {
   flex: 1;
+}
+.timelabel {
+  margin: 0em 1em;
+}
+.playdisabled .button {
+  pointer-events: none;
+  background-color: gray;
+}
+.playdisabled input[type=range] {
+  pointer-events: none;
+}
+.playdisabled input[type=range]::-moz-range-track {
+  background: gray;
 }
 input[type=range] {
   -webkit-appearance: none;
@@ -260,15 +318,15 @@ header {
   box-shadow: 0 0 10px 0 #000a12;
 }
 nav {
-  top: 0;
+  top: 40px;
   bottom: 25px;
-  width: 150px;
+  width: 10em;
   position: fixed;
   background-color: #B0171F;
 }
 section {
   top: 40px;
-  left: 150px;
+  left: 10em;
   bottom: 25px;
   right: 0;
   position: fixed;
@@ -285,6 +343,14 @@ footer {
   text-align: center;
   position: fixed;
   box-shadow: 0 0 10px 0 #000a12;
+}
+hr {
+  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #ccc;
+  margin: 0.3em 0;
+  padding: 0;
 }
 .maxheight {
   height: 100%;
@@ -307,14 +373,3 @@ footer {
 .flowright > * {
   margin-right: 0.5em;
 }
-.unselectable,
-nav > a {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  cursor: default;
-}
-/* </pre> */

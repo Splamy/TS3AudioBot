@@ -1,8 +1,7 @@
-<div class="unselectable" class="flex">
+<div>
     <div class="flex">
         <div class="playblock1">
-            <div id="playctrlmute" class="button playctrlbtn">&#128266;</div>
-            <input value="0" type="range" name="volume" min="0" max="7" step="0.1">
+            <div id="playctrlloop" class="button playctrlbtn">&#10226;</div>
         </div>
         <div class="playblock2">
             <div id="playctrlprev" class="button playctrlbtn">&#9668;&#9668;</div>
@@ -10,12 +9,15 @@
             <div id="playctrlnext" class="button playctrlbtn">&#9658;&#9658;</div>
         </div>
         <div class="playblock3">
-            <div id="playctrlloop" class="button playctrlbtn">&#10226;</div>
+            <div id="playctrlmute" class="button playctrlbtn">&#128266;</div>
+            <input value="0" type="range" name="volume" min="0" max="7" step="0.1">
         </div>
     </div>
-    
+
     <!-- pausex2 9646 , right 9658 &#9658;, left 9668 -->
     <div class="flex">
+        <div class="timelabel">00:00</div>
         <input class="playslider" value="0" type="range" name="position" min="0" max="0" step="0.1">
+        <div class="timelabel">04:20</div>
     </div>
 </div>
