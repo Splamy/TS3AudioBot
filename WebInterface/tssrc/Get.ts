@@ -19,15 +19,15 @@ class Get {
         });
     }
 
-    public static api(
+    public static api<T extends {}>(
         site: string | Api,
-        login: ApiAuth = Main.AuthData): Promise<any> {
+        login: ApiAuth = Main.AuthData) : Promise<T> {
 
         if (site instanceof Api) {
             site = site.done();
         }
 
-        return new Promise<string>((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             if (!login.IsAnonymous) {
                 xhr.setRequestHeader("Authorization", login.getBasic());

@@ -8,10 +8,10 @@ class Util {
         let match: RegExpExecArray | null = null;
         do {
             match = search.exec(query);
-            if (match === null)
+            if (!match)
                 break;
             urlParams[decode(match[1])] = decode(match[2]);
-        } while (match !== null);
+        } while (match);
         return urlParams;
     }
     // tslint:enable no-null-keyword
@@ -60,4 +60,45 @@ class Util {
     public static setIcon(elem: HTMLElement, icon: string) {
         elem.style.backgroundImage = `url(/media/icons/${icon}.svg)`;
     }
+
+    public static asError(err: any): ErrorObject {
+        return new ErrorObject(err);
+    }
+
+    public static parseTimeToSeconds(time: string): number {
+        const result = /(\d+):(\d+):(\d+)(?:\.(\d+))?/g.exec(time);
+        if (result) {
+            let num: number = 0;
+            num += Number(result[1]) * 3600;
+            num += Number(result[2]) * 60;
+            num += Number(result[3]);
+            if (result[4]) {
+                num += Number(result[4]) / Math.pow(10, result[4].length);
+            }
+            return num;
+        }
+        return -1;
+    }
+
+    public static formatSecondsToTime(seconds: number): string {
+        let str: string = "";
+        const h = Math.floor(seconds / 3600);
+        if (h > 0) {
+            str += h.toString() + ":";
+            seconds -= h * 3600;
+        }
+
+        const m = Math.floor(seconds / 60);
+        str += ("00" + m).slice(-2) + ":";
+        seconds -= m * 60;
+
+        const s = Math.floor(seconds);
+        str += ("00" + s).slice(-2);
+
+        return str;
+    }
+}
+
+class ErrorObject {
+    constructor(public obj: any) { }
 }

@@ -105,44 +105,44 @@ class Get {
 class Bot {
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield Get.site("playcontrols.html").then(playCtrlText => {
-                const divPlayBlock = Util.getElementByIdSafe("playblock");
-                divPlayBlock.innerHTML = playCtrlText;
-                const playCtrl = PlayControls.get();
-                if (playCtrl) {
-                    playCtrl.enable();
-                }
-            }).catch(err => {
-                console.log("Error loading play controls");
-            });
             const botId = Main.state["bot_id"];
             if (!botId) {
-                Bot.displayLoadError();
+                Bot.displayLoadError("No bot id requested");
                 return;
             }
-            yield Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("bot", "info", "client"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"), cmd("volume")))).then(botInfo => {
-                console.log(botInfo);
-                const divTemplate = Util.getElementByIdSafe("data_template");
-                const divId = Util.getElementByIdSafe("data_id");
-                const divServer = Util.getElementByIdSafe("data_server");
-                divTemplate.innerText = botInfo[0].Name;
-                divId.innerText = botInfo[0].Id;
-                divServer.innerText = botInfo[0].Server;
-                const divNowPlaying = Util.getElementByIdSafe("data_now_playing");
-                const divPlayNew = Util.getElementByIdSafe("data_play_new");
-                const btnPlayNew = Util.getElementByIdSafe("post_play_new");
-                divNowPlaying.innerText = botInfo[2] ? botInfo[2] : "Nothing...";
-                btnPlayNew.onclick = () => __awaiter(this, void 0, void 0, function* () {
+            const promiseBotInfo = Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"), cmd("volume")))).catch(Util.asError);
+            const playCtrl = PlayControls.get();
+            if (!playCtrl)
+                return Bot.displayLoadError("Could not find play-controls");
+            playCtrl.enable();
+            let botInfo = yield promiseBotInfo;
+            if (botInfo instanceof ErrorObject)
+                return Bot.displayLoadError("Failed to get bot information", botInfo);
+            console.log(botInfo);
+            const divTemplate = Util.getElementByIdSafe("data_template");
+            const divId = Util.getElementByIdSafe("data_id");
+            const divServer = Util.getElementByIdSafe("data_server");
+            divTemplate.innerText = botInfo[0].Name;
+            divId.innerText = botInfo[0].Id;
+            divServer.innerText = botInfo[0].Server;
+            const divNowPlaying = Util.getElementByIdSafe("data_now_playing");
+            const divPlayNew = Util.getElementByIdSafe("data_play_new");
+            const btnPlayNew = Util.getElementByIdSafe("post_play_new");
+            divNowPlaying.innerText = botInfo[1] || "Nothing...";
+            btnPlayNew.onclick = () => __awaiter(this, void 0, void 0, function* () {
+                if (divPlayNew.value)
                     yield Get.api(cmd("bot", "use", botId, cmd("play", divPlayNew.value)));
-                });
-            }).catch(err => {
-                console.log("Could not get bot data: " + JSON.stringify(err));
             });
+            playCtrl.showStateLength(Util.parseTimeToSeconds(botInfo[2].length));
+            playCtrl.showStatePosition(Util.parseTimeToSeconds(botInfo[2].position));
+            playCtrl.showStateVolume(botInfo[5]);
         });
     }
-    static displayLoadError(obj) {
-        console.log("Could not get bot data: " +
-            (obj !== undefined ? JSON.stringify(obj) : "{}"));
+    static displayLoadError(msg, err) {
+        let errorData = undefined;
+        if (err)
+            errorData = err.obj;
+        console.log(msg, errorData);
     }
 }
 class Bots {
@@ -220,41 +220,6 @@ class Main {
         const thisinput = this;
         Main.AuthData = ApiAuth.Create(thisinput.value);
     }
-    static initPureCss() {
-        const layout = document.getElementById("layout");
-        const menu = document.getElementById("menu");
-        const menuLink = document.getElementById("menuLink");
-        const content = document.getElementById("main");
-        function toggleClass(element, className) {
-            const classes = element.className.split(/\s+/);
-            const length = classes.length;
-            for (let i = 0; i < length; i++) {
-                if (classes[i] === className) {
-                    classes.splice(i, 1);
-                    break;
-                }
-            }
-            if (length === classes.length) {
-                classes.push(className);
-            }
-            element.className = classes.join(" ");
-        }
-        function toggleAll(e) {
-            const active = "active";
-            e.preventDefault();
-            toggleClass(layout, active);
-            toggleClass(menu, active);
-            toggleClass(menuLink, active);
-        }
-        menuLink.onclick = (e) => {
-            toggleAll(e);
-        };
-        content.onclick = (e) => {
-            if (menu.className.indexOf("active") !== -1) {
-                toggleAll(e);
-            }
-        };
-    }
 }
 Main.AuthData = ApiAuth.Anonymous;
 Main.pages = {
@@ -282,13 +247,22 @@ class PlayControls {
         if (this.initialized)
             return;
         this.divLoop = Util.getElementByIdSafe("playctrlloop");
+        this.divRandom = Util.getElementByIdSafe("playctrlrandom");
         this.divPlay = Util.getElementByIdSafe("playctrlplay");
         this.divPrev = Util.getElementByIdSafe("playctrlprev");
         this.divNext = Util.getElementByIdSafe("playctrlnext");
+        this.divVolumeMute = Util.getElementByIdSafe("playctrlmute");
         this.divVolumeSlider = Util.getElementByIdSafe("playctrlvolume");
         this.divPositionSlider = Util.getElementByIdSafe("playctrlposition");
         this.divPosition = Util.getElementByIdSafe("data_track_position");
         this.divLength = Util.getElementByIdSafe("data_track_length");
+        this.divVolumeSlider.onchange = () => this.showStateVolumeLoga(Number(this.divVolumeSlider.value), false);
+        this.playTick = setInterval(() => {
+            if (this.trackPosition < this.trackLength) {
+                this.trackPosition += 0.1;
+                this.showStatePosition(this.trackPosition);
+            }
+        }, 100);
         this.initialized = true;
     }
     static get() {
@@ -304,7 +278,64 @@ class PlayControls {
         }
         return playCtrl;
     }
+    showStateLoop(state) {
+    }
+    showStateRandom(state) {
+    }
+    showStateVolume(volume, applySlider = true) {
+        const logaVolume = Util.logarithmic_to_value(volume);
+        this.showStateVolumeLoga(logaVolume, applySlider);
+    }
+    showStateVolumeLoga(logaVolume, applySlider = true) {
+        if (applySlider)
+            this.divVolumeSlider.value = logaVolume.toString();
+        if (logaVolume <= 0.001)
+            Util.setIcon(this.divVolumeMute, "volume-off");
+        else if (logaVolume <= 7.0 / 2)
+            Util.setIcon(this.divVolumeMute, "volume-low");
+        else
+            Util.setIcon(this.divVolumeMute, "volume-high");
+    }
+    showStateLength(length) {
+        this.trackLength = length;
+        const displayTime = Util.formatSecondsToTime(length);
+        this.divLength.innerText = displayTime;
+        this.divPositionSlider.max = length.toString();
+    }
+    showStatePosition(position) {
+        this.trackPosition = position;
+        const displayTime = Util.formatSecondsToTime(position);
+        this.divPosition.innerText = displayTime;
+        this.divPositionSlider.value = position.toString();
+    }
+    showStatePlaying(playing) {
+        switch (playing) {
+            case PlayState.Off:
+                Util.setIcon(this.divPlay, "media-stop");
+                break;
+            case PlayState.Playing:
+                Util.setIcon(this.divPlay, "media-pause");
+                break;
+            case PlayState.Paused:
+                Util.setIcon(this.divPlay, "media-play");
+                break;
+            default:
+                break;
+        }
+    }
 }
+var LoopKind;
+(function (LoopKind) {
+    LoopKind[LoopKind["Off"] = 0] = "Off";
+    LoopKind[LoopKind["One"] = 1] = "One";
+    LoopKind[LoopKind["All"] = 2] = "All";
+})(LoopKind || (LoopKind = {}));
+var PlayState;
+(function (PlayState) {
+    PlayState[PlayState["Off"] = 0] = "Off";
+    PlayState[PlayState["Playing"] = 1] = "Playing";
+    PlayState[PlayState["Paused"] = 2] = "Paused";
+})(PlayState || (PlayState = {}));
 class Util {
     static parseQuery(query) {
         const search = /([^&=]+)=?([^&]*)/g;
@@ -313,10 +344,10 @@ class Util {
         let match = null;
         do {
             match = search.exec(query);
-            if (match === null)
+            if (!match)
                 break;
             urlParams[decode(match[1])] = decode(match[2]);
-        } while (match !== null);
+        } while (match);
         return urlParams;
     }
     static parseUrlQuery(url) {
@@ -330,20 +361,14 @@ class Util {
             val = 0;
         else if (val > Util.slmax)
             val = Util.slmax;
-        return (1.0 / Util.log10(10 - val) - 1) * (Util.scale / (1.0 / Util.log10(10 - Util.slmax) - 1));
+        return (1.0 / Math.log10(10 - val) - 1) * (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1));
     }
     static logarithmic_to_value(val) {
         if (val < 0)
             val = 0;
         else if (val > Util.scale)
             val = Util.scale;
-        return 10 - Math.pow(10, 1.0 / (val / (Util.scale / (1.0 / Util.log10(10 - Util.slmax) - 1)) + 1));
-    }
-    static log10(val) {
-        if (Math.log10 !== undefined)
-            return Math.log10(val);
-        else
-            return Math.log(val) / Math.LN10;
+        return 10 - Math.pow(10, 1.0 / (val / (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1)) + 1));
     }
     static getElementByIdSafe(elementId) {
         return Util.nonNull(document.getElementById(elementId));
@@ -358,7 +383,46 @@ class Util {
             elem.removeChild(elem.firstChild);
         }
     }
+    static setIcon(elem, icon) {
+        elem.style.backgroundImage = `url(/media/icons/${icon}.svg)`;
+    }
+    static asError(err) {
+        return new ErrorObject(err);
+    }
+    static parseTimeToSeconds(time) {
+        const result = /(\d+):(\d+):(\d+)(?:\.(\d+))?/g.exec(time);
+        if (result) {
+            let num = 0;
+            num += Number(result[1]) * 3600;
+            num += Number(result[2]) * 60;
+            num += Number(result[3]);
+            if (result[4]) {
+                num += Number(result[4]) / Math.pow(10, result[4].length);
+            }
+            return num;
+        }
+        return -1;
+    }
+    static formatSecondsToTime(seconds) {
+        let str = "";
+        const h = Math.floor(seconds / 3600);
+        if (h > 0) {
+            str += h.toString() + ":";
+            seconds -= h * 3600;
+        }
+        const m = Math.floor(seconds / 60);
+        str += ("00" + m).slice(-2) + ":";
+        seconds -= m * 60;
+        const s = Math.floor(seconds);
+        str += ("00" + s).slice(-2);
+        return str;
+    }
 }
 Util.slmax = 7.0;
 Util.scale = 100.0;
+class ErrorObject {
+    constructor(obj) {
+        this.obj = obj;
+    }
+}
 //# sourceMappingURL=script.js.map

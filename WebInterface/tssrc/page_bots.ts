@@ -1,7 +1,7 @@
 class Bots implements IPage {
     public async init() {
         const bots = Util.getElementByIdSafe("bots");
-        const list = await Get.api(Api.call("bot", "list"));
+        const list = await Get.api<any[]>(Api.call("bot", "list"));
 
         Util.clearChildren(bots);
 
