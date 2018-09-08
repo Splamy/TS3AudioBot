@@ -1,49 +1,70 @@
 // main: styles.less
 
 .button {
-    .unselectable();
-    background-color: @foregroundcolor2;
-    border: none;
-    color: white;
-    text-decoration: none;
-    text-align: center;
-    //border-radius: @default-border-radius;
-    box-shadow: @shadow-weak;
-    display: inline-block;
-    cursor: pointer;
-    margin: 0.3em;
-    padding: 0.5em;
-    //transition: transform 1s;
+	.unselectable();
+	background-color: @foregroundcolor2;
+	border: none;
+	color: white;
+	text-decoration: none;
+	text-align: center;
+	//border-radius: @default-border-radius;
+	box-shadow: @shadow-weak;
+	display: inline-block;
+	cursor: pointer;
+	margin: 0.3em;
+	padding: 0.5em;
+	//transition: transform 1s;
 
-    &:active {
-        box-shadow: 0px 0px 4px 0px lighten(@backgroundcolor1, 20%);
-    }
+	&:active {
+		box-shadow: 0px 0px 4px 0px lighten(@backgroundcolor1, 20%);
+	}
 
-    &:hover {
-        background-color: lighten(@foregroundcolor2, 20%);
-        color: black;
-        //transform: rotate(420deg); // R E S P O N S I V E   D E S I G N
-    }
+	&:hover {
+		background-color: lighten(@foregroundcolor2, 20%);
+		color: black;
+		//transform: rotate(420deg); // R E S P O N S I V E   D E S I G N
+	}
 }
 
-.button_round {
-    border-radius: 100%;
+.buttonSmall {
+	width: 1em;
+	height: 1em;
+}
+
+.buttonMedium {
+	width: 1.5em;
+	height: 1.5em;
+}
+
+.buttonBig {
+	width: 2.5em;
+	height: 2.5em;
+}
+
+.buttonIcon {
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 50%;
+}
+
+.buttonRound {
+	border-radius: 50%;
 }
 
 .navTitle {
-    font-weight: bold;
-    font-size: @font-size2;
-    background-color: @foregroundcolor3;
+	font-weight: bold;
+	font-size: @font-size2;
+	background-color: @foregroundcolor3;
 }
 
 .navButton {
-    display: block;
-    margin: 0;
-    padding: 0.7em 0;
-    box-shadow: none;
-    border-radius: 0;
+	display: block;
+	margin: 0;
+	padding: 0.7em 0;
+	box-shadow: none;
+	border-radius: 0;
 }
 
-.navButtonSelected {
-    background-color: lighten(@foregroundcolor2, 10%);
+.navSelected {
+	background-color: lighten(@foregroundcolor2, 10%);
 }

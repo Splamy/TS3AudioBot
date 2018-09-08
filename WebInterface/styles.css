@@ -86,8 +86,25 @@
   background-color: #e7464f;
   color: black;
 }
-.button_round {
-  border-radius: 100%;
+.buttonSmall {
+  width: 1em;
+  height: 1em;
+}
+.buttonMedium {
+  width: 1.5em;
+  height: 1.5em;
+}
+.buttonBig {
+  width: 2.5em;
+  height: 2.5em;
+}
+.buttonIcon {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 50%;
+}
+.buttonRound {
+  border-radius: 50%;
 }
 .navTitle {
   font-weight: bold;
@@ -101,7 +118,7 @@
   box-shadow: none;
   border-radius: 0;
 }
-.navButtonSelected {
+.navSelected {
   background-color: #dd1d27;
 }
 .formbox {
@@ -204,11 +221,6 @@ td:not(:last-child):not(:first-child) {
 input[type="range"] {
   margin: 0;
 }
-.playctrlbtn {
-  margin: 3px;
-  padding: 0.3em 0.5em;
-  width: 2em;
-}
 .flex {
   display: flex;
 }
@@ -228,14 +240,6 @@ input[type="range"] {
   align-items: center;
   justify-content: flex-start;
   flex: 1;
-}
-.playctrlplay {
-  padding: 1em 1em;
-  width: 1em;
-  height: 1em;
-  margin: 0em;
-  border-radius: 50%;
-  line-height: 100%;
 }
 .playslider {
   flex: 1;

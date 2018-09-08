@@ -105,18 +105,44 @@ class Get {
 class Bot {
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            Get.site("playcontrols.html").then(playCtrl => {
+            yield Get.site("playcontrols.html").then(playCtrlText => {
                 const divPlayBlock = Util.getElementByIdSafe("playblock");
-                divPlayBlock.innerHTML = playCtrl;
-                PlayControls.enable();
+                divPlayBlock.innerHTML = playCtrlText;
+                const playCtrl = PlayControls.get();
+                if (playCtrl) {
+                    playCtrl.enable();
+                }
+            }).catch(err => {
+                console.log("Error loading play controls");
             });
-            const divBotInfo = Util.getElementByIdSafe("bot_info");
             const botId = Main.state["bot_id"];
-            if (!botId)
+            if (!botId) {
+                Bot.displayLoadError();
                 return;
-            const botInfo = yield Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("bot", "info", "client"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"))));
-            console.log(botInfo);
+            }
+            yield Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("bot", "info", "client"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"), cmd("volume")))).then(botInfo => {
+                console.log(botInfo);
+                const divTemplate = Util.getElementByIdSafe("data_template");
+                const divId = Util.getElementByIdSafe("data_id");
+                const divServer = Util.getElementByIdSafe("data_server");
+                divTemplate.innerText = botInfo[0].Name;
+                divId.innerText = botInfo[0].Id;
+                divServer.innerText = botInfo[0].Server;
+                const divNowPlaying = Util.getElementByIdSafe("data_now_playing");
+                const divPlayNew = Util.getElementByIdSafe("data_play_new");
+                const btnPlayNew = Util.getElementByIdSafe("post_play_new");
+                divNowPlaying.innerText = botInfo[2] ? botInfo[2] : "Nothing...";
+                btnPlayNew.onclick = () => __awaiter(this, void 0, void 0, function* () {
+                    yield Get.api(cmd("bot", "use", botId, cmd("play", divPlayNew.value)));
+                });
+            }).catch(err => {
+                console.log("Could not get bot data: " + JSON.stringify(err));
+            });
         });
+    }
+    static displayLoadError(obj) {
+        console.log("Could not get bot data: " +
+            (obj !== undefined ? JSON.stringify(obj) : "{}"));
     }
 }
 class Bots {
@@ -241,13 +267,42 @@ function cmd(...params) {
 }
 window.onload = Main.init;
 class PlayControls {
-    static enable() {
+    constructor() {
+        this.initialized = false;
+    }
+    enable() {
         const divPlayCtrl = Util.getElementByIdSafe("playblock");
         divPlayCtrl.classList.remove("playdisabled");
     }
-    static disable() {
+    disable() {
         const divPlayCtrl = Util.getElementByIdSafe("playblock");
         divPlayCtrl.classList.add("playdisabled");
+    }
+    initialize() {
+        if (this.initialized)
+            return;
+        this.divLoop = Util.getElementByIdSafe("playctrlloop");
+        this.divPlay = Util.getElementByIdSafe("playctrlplay");
+        this.divPrev = Util.getElementByIdSafe("playctrlprev");
+        this.divNext = Util.getElementByIdSafe("playctrlnext");
+        this.divVolumeSlider = Util.getElementByIdSafe("playctrlvolume");
+        this.divPositionSlider = Util.getElementByIdSafe("playctrlposition");
+        this.divPosition = Util.getElementByIdSafe("data_track_position");
+        this.divLength = Util.getElementByIdSafe("data_track_length");
+        this.initialized = true;
+    }
+    static get() {
+        const elem = document.getElementById("playblock");
+        if (!elem)
+            return undefined;
+        let playCtrl = elem.playControls;
+        if (!playCtrl) {
+            playCtrl = new PlayControls();
+            playCtrl.divPlayBlock = elem;
+            playCtrl.initialize();
+            elem.playControls = playCtrl;
+        }
+        return playCtrl;
     }
 }
 class Util {

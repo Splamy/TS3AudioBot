@@ -49,7 +49,6 @@ class Main {
 
     public static async setSite(site: string) {
         //console.log("calling " + site);
-
         const content = await Get.site(site);
 
         //console.log("got " + site);

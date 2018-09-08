@@ -31,21 +31,14 @@ class Util {
         if (val < 0) val = 0;
         else if (val > Util.slmax) val = Util.slmax;
 
-        return (1.0 / Util.log10(10 - val) - 1) * (Util.scale / (1.0 / Util.log10(10 - Util.slmax) - 1));
+        return (1.0 / Math.log10(10 - val) - 1) * (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1));
     }
 
     public static logarithmic_to_value(val: number) {
         if (val < 0) val = 0;
         else if (val > Util.scale) val = Util.scale;
 
-        return 10 - Math.pow(10, 1.0 / (val / (Util.scale / (1.0 / Util.log10(10 - Util.slmax) - 1)) + 1));
-    }
-
-    private static log10(val: number) {
-        if ((Math as any).log10 !== undefined)
-            return (Math as any).log10(val);
-        else
-            return Math.log(val) / Math.LN10;
+        return 10 - Math.pow(10, 1.0 / (val / (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1)) + 1));
     }
 
     public static getElementByIdSafe(elementId: string): HTMLElement {
@@ -62,5 +55,9 @@ class Util {
         while (elem.firstChild) {
             elem.removeChild(elem.firstChild);
         }
+    }
+
+    public static setIcon(elem: HTMLElement, icon: string) {
+        elem.style.backgroundImage = `url(/media/icons/${icon}.svg)`;
     }
 }
