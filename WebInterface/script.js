@@ -27,6 +27,12 @@ class Api {
         return this.buildAddr;
     }
 }
+function cmd(...params) {
+    return Api.call(...params);
+}
+function bot(param, id = Main.state["bot_id"]) {
+    return Api.call("bot", "use", id.toString(), param);
+}
 class ApiAuth {
     constructor(UserUid, Token) {
         this.UserUid = UserUid;
@@ -54,51 +60,48 @@ class ApiAuth {
 ApiAuth.Anonymous = new ApiAuth("", "");
 class Get {
     static site(site) {
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open("GET", site, true);
-            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-            xhr.onload = (_) => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(xhr.responseText);
-                }
-                else {
-                    reject(xhr.responseText);
-                }
-            };
-            xhr.onerror = (_) => {
-                reject(xhr.responseText);
-            };
-            xhr.send();
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield fetch(site);
+            return response.text();
         });
     }
     static api(site, login = Main.AuthData) {
-        if (site instanceof Api) {
-            site = site.done();
-        }
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
+        return __awaiter(this, void 0, void 0, function* () {
+            let requestData = {
+                cache: "no-cache",
+            };
             if (!login.IsAnonymous) {
-                xhr.setRequestHeader("Authorization", login.getBasic());
+                requestData.headers = {
+                    "Authorization": login.getBasic(),
+                };
             }
-            const apiSite = "/api" + site;
-            xhr.open("GET", apiSite);
-            xhr.onload = (_) => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(JSON.parse(xhr.responseText));
+            const apiSite = "/api" + site.done();
+            let response;
+            try {
+                response = yield fetch(apiSite, requestData);
+            }
+            catch (err) {
+                return new ErrorObject(err);
+            }
+            let json;
+            if (response.status === 204) {
+                json = {};
+            }
+            else {
+                try {
+                    json = yield response.json();
                 }
-                else {
-                    const error = JSON.parse(xhr.responseText);
-                    error.statusCode = xhr.status;
-                    reject(error);
+                catch (err) {
+                    return new ErrorObject(err);
                 }
-            };
-            xhr.onerror = (_) => {
-                const error = JSON.parse(xhr.responseText);
-                error.statusCode = xhr.status;
-                reject(error);
-            };
-            xhr.send();
+            }
+            if (!response.ok) {
+                json._httpStatusCode = response.status;
+                return new ErrorObject(json);
+            }
+            else {
+                return json;
+            }
         });
     }
 }
@@ -110,7 +113,7 @@ class Bot {
                 Bot.displayLoadError("No bot id requested");
                 return;
             }
-            const promiseBotInfo = Get.api(cmd("bot", "use", botId, cmd("json", "merge", cmd("bot", "info"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"), cmd("volume")))).catch(Util.asError);
+            const promiseBotInfo = Get.api(bot(cmd("json", "merge", cmd("bot", "info"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"), cmd("volume")), botId)).catch(Util.asError);
             const playCtrl = PlayControls.get();
             if (!playCtrl)
                 return Bot.displayLoadError("Could not find play-controls");
@@ -130,11 +133,19 @@ class Bot {
             const btnPlayNew = Util.getElementByIdSafe("post_play_new");
             divNowPlaying.innerText = botInfo[1] || "Nothing...";
             btnPlayNew.onclick = () => __awaiter(this, void 0, void 0, function* () {
-                if (divPlayNew.value)
-                    yield Get.api(cmd("bot", "use", botId, cmd("play", divPlayNew.value)));
+                if (divPlayNew.value) {
+                    Util.setIcon(btnPlayNew, "cog-work");
+                    const res = yield Get.api(cmd("bot", "use", botId, cmd("play", divPlayNew.value)));
+                    Util.setIcon(btnPlayNew, "media-play");
+                    if (res instanceof ErrorObject)
+                        return;
+                    divPlayNew.value = "";
+                }
             });
             playCtrl.showStateLength(Util.parseTimeToSeconds(botInfo[2].length));
             playCtrl.showStatePosition(Util.parseTimeToSeconds(botInfo[2].position));
+            playCtrl.showStateRepeat(botInfo[3]);
+            playCtrl.showStateRandom(botInfo[4]);
             playCtrl.showStateVolume(botInfo[5]);
         });
     }
@@ -149,8 +160,10 @@ class Bots {
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             const bots = Util.getElementByIdSafe("bots");
-            const list = yield Get.api(Api.call("bot", "list"));
             Util.clearChildren(bots);
+            const list = yield Get.api(cmd("bot", "list"));
+            if (list instanceof ErrorObject)
+                return console.log("Error getting bot list", list);
             for (const botInfo of list) {
                 bots.innerHTML +=
                     `<li>
@@ -227,12 +240,15 @@ Main.pages = {
     "bots.html": new Bots(),
 };
 Main.state = {};
-function cmd(...params) {
-    return Api.call(...params);
-}
 window.onload = Main.init;
 class PlayControls {
     constructor() {
+        this.repeat = RepeatKind.Off;
+        this.random = false;
+        this.trackPosition = 0;
+        this.trackLength = 0;
+        this.volume = 0;
+        this.muteToggleVolume = 0;
         this.initialized = false;
     }
     enable() {
@@ -246,7 +262,7 @@ class PlayControls {
     initialize() {
         if (this.initialized)
             return;
-        this.divLoop = Util.getElementByIdSafe("playctrlloop");
+        this.divRepeat = Util.getElementByIdSafe("playctrlrepeat");
         this.divRandom = Util.getElementByIdSafe("playctrlrandom");
         this.divPlay = Util.getElementByIdSafe("playctrlplay");
         this.divPrev = Util.getElementByIdSafe("playctrlprev");
@@ -256,13 +272,57 @@ class PlayControls {
         this.divPositionSlider = Util.getElementByIdSafe("playctrlposition");
         this.divPosition = Util.getElementByIdSafe("data_track_position");
         this.divLength = Util.getElementByIdSafe("data_track_length");
-        this.divVolumeSlider.onchange = () => this.showStateVolumeLoga(Number(this.divVolumeSlider.value), false);
-        this.playTick = setInterval(() => {
+        this.divRepeat.onclick = () => __awaiter(this, void 0, void 0, function* () {
+            Util.setIcon(this.divRepeat, "cog-work");
+            const res = yield Get.api(bot(cmd("json", "merge", cmd("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()), cmd("repeat"))));
+            if (res instanceof ErrorObject)
+                return this.showStateRepeat(this.repeat);
+            this.showStateRepeat(res[1]);
+        });
+        this.divRandom.onclick = () => __awaiter(this, void 0, void 0, function* () {
+            Util.setIcon(this.divRandom, "cog-work");
+            const res = yield Get.api(bot(cmd("json", "merge", cmd("random", (!this.random) ? "on" : "off"), cmd("random"))));
+            if (res instanceof ErrorObject)
+                return this.showStateRandom(this.random);
+            this.showStateRandom(res[1]);
+        });
+        const setVolume = (volume, applySlider) => __awaiter(this, void 0, void 0, function* () {
+            const res = yield Get.api(bot(cmd("json", "merge", cmd("volume", volume.toString()), cmd("volume"))));
+            if (res instanceof ErrorObject)
+                return this.showStateVolume(this.volume, applySlider);
+            this.showStateVolume(Number(res[1]), applySlider);
+        });
+        this.divVolumeMute.onclick = () => __awaiter(this, void 0, void 0, function* () {
+            if (this.muteToggleVolume !== 0 && this.volume === 0) {
+                yield setVolume(this.muteToggleVolume, true);
+                this.muteToggleVolume = 0;
+            }
+            else {
+                this.muteToggleVolume = this.volume;
+                yield setVolume(0, true);
+            }
+        });
+        this.divVolumeSlider.onchange = () => __awaiter(this, void 0, void 0, function* () {
+            this.muteToggleVolume = 0;
+            yield setVolume(Util.slider_to_volume(Number(this.divVolumeSlider.value)), false);
+        });
+        this.divNext.onclick = () => __awaiter(this, void 0, void 0, function* () {
+            const res = yield Get.api(bot(cmd("next")));
+            if (res instanceof ErrorObject)
+                return;
+        });
+        this.divPrev.onclick = () => __awaiter(this, void 0, void 0, function* () {
+            const res = yield Get.api(bot(cmd("previous")));
+            if (res instanceof ErrorObject)
+                return;
+        });
+        this.playTick = new Timer(() => {
             if (this.trackPosition < this.trackLength) {
-                this.trackPosition += 0.1;
+                this.trackPosition += 1;
                 this.showStatePosition(this.trackPosition);
             }
-        }, 100);
+        }, 1000);
+        this.playTick.start();
         this.initialized = true;
     }
     static get() {
@@ -278,15 +338,30 @@ class PlayControls {
         }
         return playCtrl;
     }
-    showStateLoop(state) {
+    showStateRepeat(state) {
+        this.repeat = state;
+        switch (state) {
+            case RepeatKind.Off:
+                this.divRepeat.innerText = "off";
+                break;
+            case RepeatKind.One:
+                this.divRepeat.innerText = "one";
+                break;
+            case RepeatKind.All:
+                this.divRepeat.innerText = "all";
+                break;
+            default:
+                break;
+        }
+        Util.setIcon(this.divRepeat, "loop-square");
     }
     showStateRandom(state) {
+        this.random = state;
+        Util.setIcon(this.divRandom, (state ? "random" : "random-off"));
     }
     showStateVolume(volume, applySlider = true) {
-        const logaVolume = Util.logarithmic_to_value(volume);
-        this.showStateVolumeLoga(logaVolume, applySlider);
-    }
-    showStateVolumeLoga(logaVolume, applySlider = true) {
+        this.volume = volume;
+        const logaVolume = Util.volume_to_slider(volume);
         if (applySlider)
             this.divVolumeSlider.value = logaVolume.toString();
         if (logaVolume <= 0.001)
@@ -324,18 +399,37 @@ class PlayControls {
         }
     }
 }
-var LoopKind;
-(function (LoopKind) {
-    LoopKind[LoopKind["Off"] = 0] = "Off";
-    LoopKind[LoopKind["One"] = 1] = "One";
-    LoopKind[LoopKind["All"] = 2] = "All";
-})(LoopKind || (LoopKind = {}));
+var RepeatKind;
+(function (RepeatKind) {
+    RepeatKind[RepeatKind["Off"] = 0] = "Off";
+    RepeatKind[RepeatKind["One"] = 1] = "One";
+    RepeatKind[RepeatKind["All"] = 2] = "All";
+})(RepeatKind || (RepeatKind = {}));
 var PlayState;
 (function (PlayState) {
     PlayState[PlayState["Off"] = 0] = "Off";
     PlayState[PlayState["Playing"] = 1] = "Playing";
     PlayState[PlayState["Paused"] = 2] = "Paused";
 })(PlayState || (PlayState = {}));
+class Timer {
+    constructor(func, interval) {
+        this.func = func;
+        this.interval = interval;
+        this.running = false;
+    }
+    start() {
+        if (this.running)
+            return;
+        this.running = true;
+        this.timerId = window.setInterval(this.func, this.interval);
+    }
+    stop() {
+        if (!this.running)
+            return;
+        this.running = false;
+        window.clearInterval(this.timerId);
+    }
+}
 class Util {
     static parseQuery(query) {
         const search = /([^&=]+)=?([^&]*)/g;
@@ -356,14 +450,14 @@ class Util {
     static getUrlQuery() {
         return Util.parseUrlQuery(window.location.href);
     }
-    static value_to_logarithmic(val) {
+    static slider_to_volume(val) {
         if (val < 0)
             val = 0;
         else if (val > Util.slmax)
             val = Util.slmax;
         return (1.0 / Math.log10(10 - val) - 1) * (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1));
     }
-    static logarithmic_to_value(val) {
+    static volume_to_slider(val) {
         if (val < 0)
             val = 0;
         else if (val > Util.scale)

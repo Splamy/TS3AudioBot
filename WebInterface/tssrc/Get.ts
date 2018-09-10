@@ -1,55 +1,48 @@
 class Get {
-    public static site(site: string): Promise<string> {
-        return new Promise<string>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-
-            xhr.open("GET", site, true);
-            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-            xhr.onload = (_) => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(xhr.responseText);
-                } else {
-                    reject(xhr.responseText);
-                }
-            };
-            xhr.onerror = (_) => {
-                reject(xhr.responseText);
-            };
-            xhr.send();
-        });
+    public static async site(site: string): Promise<string> {
+        const response = await fetch(site);
+        return response.text();
     }
 
-    public static api<T extends {}>(
-        site: string | Api,
-        login: ApiAuth = Main.AuthData) : Promise<T> {
+    public static async api<T extends {}>(
+        site: Api<T>,
+        login: ApiAuth = Main.AuthData): Promise<T | ErrorObject> {
 
-        if (site instanceof Api) {
-            site = site.done();
+        let requestData: RequestInit = {
+            cache: "no-cache",
+        };
+
+        if (!login.IsAnonymous) {
+            requestData.headers = {
+                "Authorization": login.getBasic(),
+            };
         }
 
-        return new Promise<any>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            if (!login.IsAnonymous) {
-                xhr.setRequestHeader("Authorization", login.getBasic());
-            }
+        const apiSite = "/api" + site.done();
+        let response: Response;
+        try {
+            response = await fetch(apiSite, requestData);
+        } catch (err) {
+            return new ErrorObject(err);
+        }
 
-            const apiSite = "/api" + site;
-            xhr.open("GET", apiSite);
-            xhr.onload = (_) => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(JSON.parse(xhr.responseText));
-                } else {
-                    const error = JSON.parse(xhr.responseText);
-                    error.statusCode = xhr.status;
-                    reject(error);
-                }
-            };
-            xhr.onerror = (_) => {
-                const error = JSON.parse(xhr.responseText);
-                error.statusCode = xhr.status;
-                reject(error);
-            };
-            xhr.send();
-        });
+        let json;
+        if (response.status === 204) { // || response.headers.get("Content-Length") === "0"
+            json = {};
+        }
+        else {
+            try {
+                json = await response.json();
+            } catch (err) {
+                return new ErrorObject(err);
+            }
+        }
+
+        if (!response.ok) {
+            json._httpStatusCode = response.status;
+            return new ErrorObject(json);
+        } else {
+            return json as T;
+        }
     }
 }

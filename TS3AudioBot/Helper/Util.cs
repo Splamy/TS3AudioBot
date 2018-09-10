@@ -51,6 +51,10 @@ namespace TS3AudioBot.Helper
 
 		public static DateTime GetNow() => DateTime.Now;
 
+		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+		public static uint ToUnix(this DateTime dateTime) => (uint)(dateTime - UnixTimeStart).TotalSeconds;
+
 		public static void Init<T>(out T obj) where T : new() => obj = new T();
 
 		public static Random Random { get; } = new Random();

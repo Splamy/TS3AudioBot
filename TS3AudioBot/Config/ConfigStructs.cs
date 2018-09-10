@@ -188,7 +188,7 @@ namespace TS3AudioBot.Config
 		public ConfigValue<int> Bitrate { get; } = new ConfigValue<int>("bitrate", 48,
 			"Specifies the bitrate (in kbps) for sending audio.\n" +
 			"Values between 8 and 98 are supported, more or less can work but without guarantees.\n" +
-			"Reference values: 16 - poor (~3KiB/s), 24 - okay (~4KiB/s), 32 - good (~5KiB/s), 48 - very good (~7KiB/s), 64 - not noticeably better than 48, stop wasting your bandwith, go back (~9KiB/s)");
+			"Reference values: 16 - very poor (~3KiB/s), 24 - poor (~4KiB/s), 32 - okay (~5KiB/s), 48 - good (~7KiB/s), 64 - very good (~9KiB/s), 96 - deluxe (~13KiB/s)");
 		public ConfigValue<string> SendMode { get; } = new ConfigValue<string>("send_mode", "voice",
 			"How the bot should play music. Options are:\n" +
 			" - whisper : Whispers to the channel where the request came from. Other users can join with '!subscribe'.\n" +

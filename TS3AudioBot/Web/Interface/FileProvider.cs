@@ -9,8 +9,11 @@
 
 namespace TS3AudioBot.Web.Interface
 {
+	using Helper;
 	using System;
 	using System.IO;
+	using System.Net;
+	using System.Text;
 
 	public class FileProvider : ISiteProvider
 	{
@@ -30,17 +33,51 @@ namespace TS3AudioBot.Web.Interface
 				MimeType = null;
 		}
 
-		public byte[] GetData()
+		public byte[] GetData(HttpListenerRequest request, HttpListenerResponse response)
 		{
 			LocalFile.Refresh();
 
-			if (rawData == null || LocalFile.LastWriteTime >= lastWrite)
+			if (!LocalFile.Exists)
+				return null;
+
+			if (rawData == null || LocalFile.LastWriteTime > lastWrite)
 			{
 				rawData = File.ReadAllBytes(LocalFile.FullName);
 				lastWrite = LocalFile.LastWriteTime;
 			}
 
-			return rawData;
+			byte[] returnData;
+			if (DateTime.TryParse(request.Headers["If-Modified-Since"], out var cachedDate) && cachedDate.AddSeconds(1) >= lastWrite)
+			{
+				response.StatusCode = (int)HttpStatusCode.NotModified;
+				returnData = Array.Empty<byte>();
+			}
+			else
+			{
+				response.StatusCode = (int)HttpStatusCode.OK;
+				returnData = rawData;
+			}
+
+			switch (MimeType)
+			{
+			case "image/svg+xml":
+			case "image/png":
+			case "image/x-icon":
+				// Cache static files
+				response.Headers[HttpResponseHeader.CacheControl] = "max-age=86400,public,immutable";
+				response.Headers[HttpResponseHeader.Expires]
+					= Util.GetNow().AddDays(1).ToUniversalTime().ToString("r");
+				response.Headers[HttpResponseHeader.LastModified]
+					= lastWrite.ToUniversalTime().ToString("r");
+				response.Headers[HttpResponseHeader.ETag] = $"\"{lastWrite.ToUnix()}\"";
+				break;
+			}
+
+			response.ContentLength64 = returnData.Length;
+			response.ContentEncoding = Encoding.UTF8;
+			response.ContentType = MimeType ?? "text/plain";
+
+			return returnData;
 		}
 	}
 }

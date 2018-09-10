@@ -93,25 +93,11 @@ hr {
 	height: 100%;
 }
 
-.split3 {
-	display: flex;
-}
-
-.split3bit {
-	width: 33.3%;
-	min-width: 0%;
-}
-
-.split3max {
-	width: 100.0%;
-	min-width: 0%;
-}
-
 .flowright {
 	display: flex;
 	justify-content: flex-end;
 
-	> * {
+	> * :last-child {
 		margin-right: 0.5em;
 	}
 }
@@ -124,4 +110,12 @@ hr {
 	-ms-user-select: none;
 	user-select: none;
 	cursor: default;
+}
+
+.flex {
+	display: flex;
+}
+
+.flexmax {
+	flex: 1;
 }

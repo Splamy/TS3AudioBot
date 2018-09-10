@@ -1,10 +1,16 @@
 class PlayControls {
-    private playTick: number;
-    private trackPosition: number;
-    private trackLength: number;
+
+    private repeat: RepeatKind = RepeatKind.Off;
+    private random: boolean = false;
+    private trackPosition: number = 0;
+    private trackLength: number = 0;
+    private volume: number = 0;
+    private muteToggleVolume: number = 0;
+
+    private playTick: Timer;
     private initialized: boolean;
     private divPlayBlock: HTMLElement;
-    private divLoop: HTMLElement;
+    private divRepeat: HTMLElement;
     private divRandom: HTMLElement;
     private divPlay: HTMLElement;
     private divPrev: HTMLElement;
@@ -34,7 +40,7 @@ class PlayControls {
         if (this.initialized)
             return;
 
-        this.divLoop = Util.getElementByIdSafe("playctrlloop");
+        this.divRepeat = Util.getElementByIdSafe("playctrlrepeat");
         this.divRandom = Util.getElementByIdSafe("playctrlrandom");
         this.divPlay = Util.getElementByIdSafe("playctrlplay");
         this.divPrev = Util.getElementByIdSafe("playctrlprev");
@@ -46,14 +52,70 @@ class PlayControls {
         this.divPosition = Util.getElementByIdSafe("data_track_position");
         this.divLength = Util.getElementByIdSafe("data_track_length");
 
-        this.divVolumeSlider.onchange = () => this.showStateVolumeLoga(Number(this.divVolumeSlider.value), false);
+        this.divRepeat.onclick = async () => {
+            Util.setIcon(this.divRepeat, "cog-work");
+            const res = await Get.api(bot(cmd<[void, RepeatKind]>("json", "merge",
+                cmd("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()),
+                cmd("repeat"),
+            )));
+            if (res instanceof ErrorObject)
+                return this.showStateRepeat(this.repeat);
+            this.showStateRepeat(res[1]);
+        };
 
-        this.playTick = setInterval(() => {
+        this.divRandom.onclick = async () => {
+            Util.setIcon(this.divRandom, "cog-work");
+            const res = await Get.api(bot(cmd<[void, boolean]>("json", "merge",
+                cmd("random", (!this.random) ? "on" : "off"),
+                cmd("random"),
+            )));
+            if (res instanceof ErrorObject)
+                return this.showStateRandom(this.random);
+            this.showStateRandom(res[1]);
+        };
+
+        const setVolume = async (volume: number, applySlider: boolean) => {
+            const res = await Get.api(bot(cmd<[void, boolean]>("json", "merge",
+                cmd("volume", volume.toString()),
+                cmd("volume"),
+            )));
+            if (res instanceof ErrorObject)
+                return this.showStateVolume(this.volume, applySlider);
+            this.showStateVolume(Number(res[1]), applySlider);
+        }
+        this.divVolumeMute.onclick = async () => {
+            if (this.muteToggleVolume !== 0 && this.volume === 0) {
+                await setVolume(this.muteToggleVolume, true);
+                this.muteToggleVolume = 0;
+            } else {
+                this.muteToggleVolume = this.volume;
+                await setVolume(0, true);
+            }
+        }
+        this.divVolumeSlider.onchange = async () => {
+            this.muteToggleVolume = 0;
+            await setVolume(Util.slider_to_volume(Number(this.divVolumeSlider.value)), false);
+        }
+
+        this.divNext.onclick = async () => {
+            const res = await Get.api(bot(cmd<void>("next")));
+            if (res instanceof ErrorObject)
+                return;
+        }
+
+        this.divPrev.onclick = async () => {
+            const res = await Get.api(bot(cmd<void>("previous")));
+            if (res instanceof ErrorObject)
+                return;
+        }
+
+        this.playTick = new Timer(() => {
             if (this.trackPosition < this.trackLength) {
-                this.trackPosition += 0.1;
+                this.trackPosition += 1;
                 this.showStatePosition(this.trackPosition);
             }
-        }, 100);
+        }, 1000);
+        this.playTick.start();
 
         this.initialized = true;
     }
@@ -75,20 +137,32 @@ class PlayControls {
         return playCtrl;
     }
 
-    public showStateLoop(state: boolean) {
-
+    public showStateRepeat(state: RepeatKind) {
+        this.repeat = state;
+        switch (state) {
+            case RepeatKind.Off:
+                this.divRepeat.innerText = "off";
+                break;
+            case RepeatKind.One:
+                this.divRepeat.innerText = "one";
+                break;
+            case RepeatKind.All:
+                this.divRepeat.innerText = "all";
+                break;
+            default:
+                break;
+        }
+        Util.setIcon(this.divRepeat, "loop-square");
     }
 
-    public showStateRandom(state: LoopKind) {
-
+    public showStateRandom(state: boolean) {
+        this.random = state;
+        Util.setIcon(this.divRandom, (state ? "random" : "random-off"));
     }
 
     public showStateVolume(volume: number, applySlider: boolean = true) {
-        const logaVolume = Util.logarithmic_to_value(volume);
-        this.showStateVolumeLoga(logaVolume, applySlider);
-    }
-
-    private showStateVolumeLoga(logaVolume: number, applySlider: boolean = true) {
+        this.volume = volume;
+        const logaVolume = Util.volume_to_slider(volume);
         if (applySlider)
             this.divVolumeSlider.value = logaVolume.toString();
         if (logaVolume <= 0.001)
@@ -132,8 +206,8 @@ class PlayControls {
     }
 }
 
-enum LoopKind {
-    Off,
+enum RepeatKind {
+    Off = 0,
     One,
     All,
 }

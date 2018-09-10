@@ -94,8 +94,4 @@ class Main {
     }
 }
 
-function cmd(...params: (string | Api)[]): Api {
-    return Api.call(...params);
-}
-
 window.onload = Main.init;

@@ -221,9 +221,6 @@ td:not(:last-child):not(:first-child) {
 input[type="range"] {
   margin: 0;
 }
-.flex {
-  display: flex;
-}
 .playblock1 {
   display: flex;
   align-items: center;
@@ -239,9 +236,6 @@ input[type="range"] {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  flex: 1;
-}
-.playslider {
   flex: 1;
 }
 .timelabel {
@@ -359,21 +353,16 @@ hr {
 .maxheight {
   height: 100%;
 }
-.split3 {
-  display: flex;
-}
-.split3bit {
-  width: 33.3%;
-  min-width: 0%;
-}
-.split3max {
-  width: 100.0%;
-  min-width: 0%;
-}
 .flowright {
   display: flex;
   justify-content: flex-end;
 }
-.flowright > * {
+.flowright > * :last-child {
   margin-right: 0.5em;
+}
+.flex {
+  display: flex;
+}
+.flexmax {
+  flex: 1;
 }

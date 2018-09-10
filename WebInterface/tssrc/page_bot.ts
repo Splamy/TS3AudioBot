@@ -8,16 +8,17 @@ class Bot implements IPage {
         }
 
         // Set up all asynchronous calls
-        const promiseBotInfo = Get.api<any[]>(
-            cmd("bot", "use", botId,
+        const promiseBotInfo = Get.api<[any, string | undefined, any, RepeatKind, boolean, number]>(
+            bot(
                 cmd("json", "merge",
-                    /*0*/ cmd("bot", "info"),
-                    /*1*/ cmd("song"),
-                    /*2*/ cmd("song", "position"),
-                    /*3*/ cmd("repeat"),
-                    /*4*/ cmd("random"),
-                    /*5*/ cmd("volume"),
-                )
+                /*0*/ cmd("bot", "info"),
+                /*1*/ cmd("song"),
+                /*2*/ cmd("song", "position"),
+                /*3*/ cmd("repeat"),
+                /*4*/ cmd("random"),
+                /*5*/ cmd("volume"),
+                ),
+                botId
             )
         ).catch(Util.asError);
 
@@ -48,12 +49,20 @@ class Bot implements IPage {
 
         divNowPlaying.innerText = botInfo[1] || "Nothing...";
         btnPlayNew.onclick = async () => {
-            if (divPlayNew.value)
-                await Get.api(cmd("bot", "use", botId, cmd("play", divPlayNew.value)));
+            if (divPlayNew.value) {
+                Util.setIcon(btnPlayNew, "cog-work");
+                const res = await Get.api(cmd("bot", "use", botId, cmd("play", divPlayNew.value)));
+                Util.setIcon(btnPlayNew, "media-play");
+                if (res instanceof ErrorObject)
+                    return;
+                divPlayNew.value = "";
+            }
         };
 
         playCtrl.showStateLength(Util.parseTimeToSeconds(botInfo[2].length));
         playCtrl.showStatePosition(Util.parseTimeToSeconds(botInfo[2].position));
+        playCtrl.showStateRepeat(botInfo[3]);
+        playCtrl.showStateRandom(botInfo[4]);
         playCtrl.showStateVolume(botInfo[5]);
     }
 

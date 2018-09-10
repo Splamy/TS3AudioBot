@@ -9,14 +9,19 @@
 
 namespace TS3AudioBot.Web.Interface
 {
+	using System.Collections.Generic;
 	using System.IO;
+	using TS3AudioBot.Helper;
 
 	public class FolderProvider : IFolderProvider
 	{
+		private readonly Dictionary<string, FileProvider> fileCache;
+
 		public DirectoryInfo LocalDirectory { get; }
 
 		public FolderProvider(DirectoryInfo directory)
 		{
+			Util.Init(out fileCache);
 			LocalDirectory = directory;
 		}
 
@@ -26,9 +31,18 @@ namespace TS3AudioBot.Web.Interface
 			// directory escaping prevention
 			if (!requestedFile.FullName.StartsWith(LocalDirectory.FullName))
 				return null;
-			if (requestedFile.Exists)
-				return new FileProvider(requestedFile);
-			return null;
+
+			if (!requestedFile.Exists)
+				return null;
+
+			var normalizedSubPath = requestedFile.FullName.Substring(LocalDirectory.FullName.Length);
+
+			if (!fileCache.TryGetValue(normalizedSubPath, out var file))
+			{
+				file = new FileProvider(requestedFile);
+				fileCache[normalizedSubPath] = file;
+			}
+			return file;
 		}
 	}
 }

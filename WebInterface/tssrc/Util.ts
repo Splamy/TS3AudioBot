@@ -27,14 +27,14 @@ class Util {
     private static readonly slmax: number = 7.0;
     private static readonly scale: number = 100.0;
 
-    public static value_to_logarithmic(val: number) {
+    public static slider_to_volume(val: number): number {
         if (val < 0) val = 0;
         else if (val > Util.slmax) val = Util.slmax;
 
         return (1.0 / Math.log10(10 - val) - 1) * (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1));
     }
 
-    public static logarithmic_to_value(val: number) {
+    public static volume_to_slider(val: number): number {
         if (val < 0) val = 0;
         else if (val > Util.scale) val = Util.scale;
 
@@ -57,7 +57,7 @@ class Util {
         }
     }
 
-    public static setIcon(elem: HTMLElement, icon: string) {
+    public static setIcon(elem: HTMLElement, icon: icons) {
         elem.style.backgroundImage = `url(/media/icons/${icon}.svg)`;
     }
 
@@ -98,6 +98,13 @@ class Util {
         return str;
     }
 }
+
+type icons
+    = "cog-work"
+    | "loop-square"
+    | "media-pause" | "media-play" | "media-stop"
+    | "random" | "random-off"
+    | "volume-off" | "volume-low" | "volume-high";
 
 class ErrorObject {
     constructor(public obj: any) { }

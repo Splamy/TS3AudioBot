@@ -9,12 +9,14 @@
 
 namespace TS3AudioBot.Web.Interface
 {
+	using System.Net;
+
 	public interface IProvider { }
 
 	public interface ISiteProvider : IProvider
 	{
 		string MimeType { get; }
-		byte[] GetData();
+		byte[] GetData(HttpListenerRequest request, HttpListenerResponse response);
 	}
 
 	public interface IFolderProvider : IProvider

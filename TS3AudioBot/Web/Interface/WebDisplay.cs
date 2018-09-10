@@ -14,7 +14,6 @@ namespace TS3AudioBot.Web.Interface
 	using System.IO;
 	using System.Linq;
 	using System.Net;
-	using System.Text;
 
 	public sealed class WebDisplay : WebComponent, IDisposable
 	{
@@ -31,7 +30,7 @@ namespace TS3AudioBot.Web.Interface
 			{ ".css", "text/css" },
 			{ ".ico", "image/x-icon" },
 			{ ".png", "image/png" },
-			{ ".svg", "	image/svg+xml" },
+			{ ".svg", "image/svg+xml" },
 			// Custom
 			{ ".map", "text/plain" },
 			{ ".less", "text/css" },
@@ -54,7 +53,9 @@ namespace TS3AudioBot.Web.Interface
 				}
 			}
 			else if (Directory.Exists(webData.Path))
+			{
 				baseDir = new DirectoryInfo(webData.Path);
+			}
 
 			if (baseDir == null)
 			{
@@ -68,7 +69,9 @@ namespace TS3AudioBot.Web.Interface
 			map.Map("/openapi/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "openapi"))));
 
 			Site404 = map.TryGetSite(new Uri("http://localhost/404.html"));
-			map.Map("/", map.TryGetSite(new Uri("http://localhost/index.html")));
+			var index = map.TryGetSite(new Uri("http://localhost/index.html"));
+			if (index != null)
+				map.Map("/", index);
 		}
 
 		public override void DispatchCall(HttpListenerContext context)
@@ -81,19 +84,20 @@ namespace TS3AudioBot.Web.Interface
 				return;
 			}
 
-			var data = site.GetData();
+			var request = context.Request;
+			var response = context.Response;
+
+			var data = site.GetData(request, response);
 			if (data == null)
 			{
-				Log.Error("Site has not data");
+				Log.Error("Site has no data");
 				return;
 			}
 
 			// Prepare Header
-			var response = context.Response;
-			response.StatusCode = (site == Site404) ? (int)HttpStatusCode.NotFound : (int)HttpStatusCode.OK;
-			response.ContentLength64 = data.Length;
-			response.ContentEncoding = Encoding.UTF8;
-			response.ContentType = site.MimeType ?? "text/plain";
+			if (site == Site404)
+				response.StatusCode = (int)HttpStatusCode.NotFound;
+			response.KeepAlive = true;
 
 			try
 			{
