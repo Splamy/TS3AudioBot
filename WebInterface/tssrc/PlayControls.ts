@@ -8,8 +8,6 @@ class PlayControls {
     private muteToggleVolume: number = 0;
 
     private playTick: Timer;
-    private initialized: boolean;
-    private divPlayBlock: HTMLElement;
     private divRepeat: HTMLElement;
     private divRandom: HTMLElement;
     private divPlay: HTMLElement;
@@ -22,24 +20,7 @@ class PlayControls {
     private divPosition: HTMLElement;
     private divLength: HTMLElement;
 
-    constructor() {
-        this.initialized = false;
-    }
-
-    public enable() {
-        const divPlayCtrl = Util.getElementByIdSafe("playblock");
-        divPlayCtrl.classList.remove("playdisabled");
-    }
-
-    public disable() {
-        const divPlayCtrl = Util.getElementByIdSafe("playblock");
-        divPlayCtrl.classList.add("playdisabled");
-    }
-
-    private initialize() {
-        if (this.initialized)
-            return;
-
+    private constructor() {
         this.divRepeat = Util.getElementByIdSafe("playctrlrepeat");
         this.divRandom = Util.getElementByIdSafe("playctrlrandom");
         this.divPlay = Util.getElementByIdSafe("playctrlplay");
@@ -54,9 +35,9 @@ class PlayControls {
 
         this.divRepeat.onclick = async () => {
             Util.setIcon(this.divRepeat, "cog-work");
-            const res = await Get.api(bot(cmd<[void, RepeatKind]>("json", "merge",
-                cmd("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()),
-                cmd("repeat"),
+            const res = await Get.api(bot(jmerge(
+                cmd<void>("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()),
+                cmd<RepeatKind>("repeat"),
             )));
             if (res instanceof ErrorObject)
                 return this.showStateRepeat(this.repeat);
@@ -65,9 +46,9 @@ class PlayControls {
 
         this.divRandom.onclick = async () => {
             Util.setIcon(this.divRandom, "cog-work");
-            const res = await Get.api(bot(cmd<[void, boolean]>("json", "merge",
-                cmd("random", (!this.random) ? "on" : "off"),
-                cmd("random"),
+            const res = await Get.api(bot(jmerge(
+                cmd<void>("random", (!this.random) ? "on" : "off"),
+                cmd<boolean>("random"),
             )));
             if (res instanceof ErrorObject)
                 return this.showStateRandom(this.random);
@@ -75,13 +56,13 @@ class PlayControls {
         };
 
         const setVolume = async (volume: number, applySlider: boolean) => {
-            const res = await Get.api(bot(cmd<[void, boolean]>("json", "merge",
-                cmd("volume", volume.toString()),
-                cmd("volume"),
+            const res = await Get.api(bot(jmerge(
+                cmd<void>("volume", volume.toString()),
+                cmd<number>("volume"),
             )));
             if (res instanceof ErrorObject)
                 return this.showStateVolume(this.volume, applySlider);
-            this.showStateVolume(Number(res[1]), applySlider);
+            this.showStateVolume(res[1], applySlider);
         }
         this.divVolumeMute.onclick = async () => {
             if (this.muteToggleVolume !== 0 && this.volume === 0) {
@@ -116,8 +97,16 @@ class PlayControls {
             }
         }, 1000);
         this.playTick.start();
+    }
 
-        this.initialized = true;
+    public enable() {
+        const divPlayCtrl = Util.getElementByIdSafe("playblock");
+        divPlayCtrl.classList.remove("playdisabled");
+    }
+
+    public disable() {
+        const divPlayCtrl = Util.getElementByIdSafe("playblock");
+        divPlayCtrl.classList.add("playdisabled");
     }
 
     public static get(): PlayControls | undefined {
@@ -128,9 +117,6 @@ class PlayControls {
         let playCtrl: PlayControls | undefined = (elem as any).playControls;
         if (!playCtrl) {
             playCtrl = new PlayControls();
-            playCtrl.divPlayBlock = elem;
-
-            playCtrl.initialize();
 
             (elem as any).playControls = playCtrl;
         }

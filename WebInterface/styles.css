@@ -86,6 +86,11 @@
   background-color: #e7464f;
   color: black;
 }
+.buttonIcon {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 70%;
+}
 .buttonSmall {
   width: 1em;
   height: 1em;
@@ -98,13 +103,9 @@
   width: 2.5em;
   height: 2.5em;
 }
-.buttonIcon {
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 50%;
-}
 .buttonRound {
   border-radius: 50%;
+  background-size: 50%;
 }
 .navTitle {
   font-weight: bold;
@@ -292,6 +293,22 @@ input[type=range]::-moz-range-track {
   box-shadow: 1px 1px 8px 0px #000a12;
   background: #E95147;
 }
+.botFlex {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+}
+.botCard {
+  min-width: 20em;
+  height: 8em;
+}
+.botCard:hover {
+  background-color: #66757e;
+}
+.botRunning .formheader {
+  color: lime;
+}
 html,
 body {
   background-color: #000a12;
@@ -365,4 +382,11 @@ hr {
 }
 .flexmax {
   flex: 1;
+}
+.flex2 {
+  display: flex;
+}
+.flex2 > *:first-child {
+  flex: 1;
+  padding-right: 0.5em;
 }

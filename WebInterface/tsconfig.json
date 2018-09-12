@@ -6,6 +6,7 @@
         "watch": false,
         "rootDir": "tssrc",
         "outFile": "./script.js",
+
         "removeComments": true,
         "noImplicitAny": true,
         "strictNullChecks": true,
@@ -13,7 +14,13 @@
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
-        "noUnusedLocals": true
+        "noUnusedLocals": true,
         //,"noUnusedParameters": true
+        "strictPropertyInitialization": true,
+        "strictFunctionTypes": true,
+        "strict": true,
+
+        "jsx": "react",
+        "jsxFactory": "createElement"
     }
 }

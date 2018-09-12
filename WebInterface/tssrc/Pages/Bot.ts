@@ -8,19 +8,15 @@ class Bot implements IPage {
         }
 
         // Set up all asynchronous calls
-        const promiseBotInfo = Get.api<[any, string | undefined, any, RepeatKind, boolean, number]>(
-            bot(
-                cmd("json", "merge",
-                /*0*/ cmd("bot", "info"),
-                /*1*/ cmd("song"),
-                /*2*/ cmd("song", "position"),
-                /*3*/ cmd("repeat"),
-                /*4*/ cmd("random"),
-                /*5*/ cmd("volume"),
-                ),
-                botId
-            )
-        ).catch(Util.asError);
+        //[IBotInfo, string | undefined, any, RepeatKind, boolean, number]
+        const promiseBotInfo = Get.api(bot(jmerge(
+            /*0*/ cmd<IBotInfo>("bot", "info"),
+            /*1*/ cmd<string | undefined>("song"),
+            /*2*/ cmd<any>("song", "position"),
+            /*3*/ cmd<RepeatKind>("repeat"),
+            /*4*/ cmd<boolean>("random"),
+            /*5*/ cmd<number>("volume"),
+        ))).catch(Util.asError);
 
         // Initialize Play-Controls
         const playCtrl = PlayControls.get();
@@ -39,7 +35,7 @@ class Bot implements IPage {
         const divServer = Util.getElementByIdSafe("data_server");
 
         divTemplate.innerText = botInfo[0].Name;
-        divId.innerText = botInfo[0].Id;
+        divId.innerText = botInfo[0].Id.toString();
         divServer.innerText = botInfo[0].Server;
 
         // Fill 'Play' Block and assign Play-Controls data
@@ -58,6 +54,14 @@ class Bot implements IPage {
                 divPlayNew.value = "";
             }
         };
+        divPlayNew.onkeypress = async (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                btnPlayNew.click();
+                return false;
+            }
+            return true;
+        }
 
         playCtrl.showStateLength(Util.parseTimeToSeconds(botInfo[2].length));
         playCtrl.showStatePosition(Util.parseTimeToSeconds(botInfo[2].position));
@@ -65,6 +69,14 @@ class Bot implements IPage {
         playCtrl.showStateRandom(botInfo[4]);
         playCtrl.showStateVolume(botInfo[5]);
     }
+
+    // private refreshData() {
+
+    //     let botInfo = await promiseBotInfo;
+    //     if (botInfo instanceof ErrorObject)
+    //         return Bot.displayLoadError("Failed to get bot information", botInfo);
+    //     console.log(botInfo);
+    // }
 
     public static displayLoadError(msg: string, err?: ErrorObject) {
         let errorData = undefined;

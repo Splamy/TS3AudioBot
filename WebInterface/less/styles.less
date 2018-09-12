@@ -7,6 +7,7 @@
 @import "styles_input";
 @import "styles_playcontrols";
 @import "styles_slider";
+@import "page_bots";
 
 @backgroundcolor1: #000a12;
 @backgroundcolor2: #263238;
@@ -89,6 +90,8 @@ hr {
 	padding: 0;
 }
 
+.jslink {}
+
 .maxheight {
 	height: 100%;
 }
@@ -119,3 +122,13 @@ hr {
 .flexmax {
 	flex: 1;
 }
+
+.flex2 {
+	.flex();
+
+	&>*:first-child {
+		.flexmax();
+		padding-right: 0.5em;
+	}
+}
+

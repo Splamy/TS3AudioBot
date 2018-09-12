@@ -1,7 +1,7 @@
 class Util {
 
     // tslint:disable no-null-keyword
-    public static parseQuery(query: string): any {
+    public static parseQuery(query: string): Dict<string> {
         const search = /([^&=]+)=?([^&]*)/g;
         const decode = (s: string) => decodeURIComponent(s.replace(/\+/g, " "));
         const urlParams: any = {};
@@ -16,11 +16,11 @@ class Util {
     }
     // tslint:enable no-null-keyword
 
-    public static parseUrlQuery(url: string): any {
+    public static parseUrlQuery(url: string): Dict<string> {
         return Util.parseQuery(url.substr(url.indexOf("?") + 1));
     }
 
-    public static getUrlQuery(): any {
+    public static getUrlQuery(): Dict<string> {
         return Util.parseUrlQuery(window.location.href);
     }
 
@@ -59,6 +59,10 @@ class Util {
 
     public static setIcon(elem: HTMLElement, icon: icons) {
         elem.style.backgroundImage = `url(/media/icons/${icon}.svg)`;
+    }
+
+    public static clearIcon(elem: HTMLElement) {
+        elem.style.backgroundImage = "none";
     }
 
     public static asError(err: any): ErrorObject {
@@ -109,3 +113,5 @@ type icons
 class ErrorObject {
     constructor(public obj: any) { }
 }
+
+type Dict<T = any> = { [key: string]: T; };

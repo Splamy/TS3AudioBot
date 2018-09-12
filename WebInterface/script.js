@@ -7,57 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class Api {
-    constructor(buildAddr) {
-        this.buildAddr = buildAddr;
-    }
-    static call(...params) {
-        let buildStr = "";
-        for (const param of params) {
-            if (typeof param === "string") {
-                buildStr += "/" + encodeURIComponent(param);
-            }
-            else {
-                buildStr += "/(" + param.done() + ")";
-            }
-        }
-        return new Api(buildStr);
-    }
-    done() {
-        return this.buildAddr;
-    }
-}
-function cmd(...params) {
-    return Api.call(...params);
-}
-function bot(param, id = Main.state["bot_id"]) {
-    return Api.call("bot", "use", id.toString(), param);
-}
-class ApiAuth {
-    constructor(UserUid, Token) {
-        this.UserUid = UserUid;
-        this.Token = Token;
-    }
-    get IsAnonymous() { return this.UserUid.length === 0 && this.Token.length === 0; }
-    static Create(fullTokenString) {
-        if (fullTokenString.length === 0)
-            return ApiAuth.Anonymous;
-        const split = fullTokenString.split(/:/g);
-        if (split.length === 2) {
-            return new ApiAuth(split[0], split[1]);
-        }
-        else if (split.length === 3) {
-            return new ApiAuth(split[0], split[2]);
-        }
-        else {
-            throw new Error("Invalid token");
-        }
-    }
-    getBasic() {
-        return `Basic ${btoa(this.UserUid + ":" + this.Token)}`;
-    }
-}
-ApiAuth.Anonymous = new ApiAuth("", "");
 class Get {
     static site(site) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -105,6 +54,60 @@ class Get {
         });
     }
 }
+class Api {
+    constructor(buildAddr) {
+        this.buildAddr = buildAddr;
+    }
+    static call(...params) {
+        let buildStr = "";
+        for (const param of params) {
+            if (typeof param === "string") {
+                buildStr += "/" + encodeURIComponent(param);
+            }
+            else {
+                buildStr += "/(" + param.done() + ")";
+            }
+        }
+        return new Api(buildStr);
+    }
+    done() {
+        return this.buildAddr;
+    }
+}
+function cmd(...params) {
+    return Api.call(...params);
+}
+function bot(param, id = Number(Main.state["bot_id"])) {
+    return Api.call("bot", "use", id.toString(), param);
+}
+function jmerge(...param) {
+    return Api.call("json", "merge", ...param);
+}
+class ApiAuth {
+    constructor(UserUid, Token) {
+        this.UserUid = UserUid;
+        this.Token = Token;
+    }
+    get IsAnonymous() { return this.UserUid.length === 0 && this.Token.length === 0; }
+    static Create(fullTokenString) {
+        if (fullTokenString.length === 0)
+            return ApiAuth.Anonymous;
+        const split = fullTokenString.split(/:/g);
+        if (split.length === 2) {
+            return new ApiAuth(split[0], split[1]);
+        }
+        else if (split.length === 3) {
+            return new ApiAuth(split[0], split[2]);
+        }
+        else {
+            throw new Error("Invalid token");
+        }
+    }
+    getBasic() {
+        return `Basic ${btoa(this.UserUid + ":" + this.Token)}`;
+    }
+}
+ApiAuth.Anonymous = new ApiAuth("", "");
 class Bot {
     init() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -113,7 +116,7 @@ class Bot {
                 Bot.displayLoadError("No bot id requested");
                 return;
             }
-            const promiseBotInfo = Get.api(bot(cmd("json", "merge", cmd("bot", "info"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"), cmd("volume")), botId)).catch(Util.asError);
+            const promiseBotInfo = Get.api(bot(jmerge(cmd("bot", "info"), cmd("song"), cmd("song", "position"), cmd("repeat"), cmd("random"), cmd("volume")))).catch(Util.asError);
             const playCtrl = PlayControls.get();
             if (!playCtrl)
                 return Bot.displayLoadError("Could not find play-controls");
@@ -126,7 +129,7 @@ class Bot {
             const divId = Util.getElementByIdSafe("data_id");
             const divServer = Util.getElementByIdSafe("data_server");
             divTemplate.innerText = botInfo[0].Name;
-            divId.innerText = botInfo[0].Id;
+            divId.innerText = botInfo[0].Id.toString();
             divServer.innerText = botInfo[0].Server;
             const divNowPlaying = Util.getElementByIdSafe("data_now_playing");
             const divPlayNew = Util.getElementByIdSafe("data_play_new");
@@ -141,6 +144,14 @@ class Bot {
                         return;
                     divPlayNew.value = "";
                 }
+            });
+            divPlayNew.onkeypress = (e) => __awaiter(this, void 0, void 0, function* () {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    btnPlayNew.click();
+                    return false;
+                }
+                return true;
             });
             playCtrl.showStateLength(Util.parseTimeToSeconds(botInfo[2].length));
             playCtrl.showStatePosition(Util.parseTimeToSeconds(botInfo[2].position));
@@ -157,23 +168,106 @@ class Bot {
     }
 }
 class Bots {
+    constructor() {
+        this.bots = {};
+    }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            const bots = Util.getElementByIdSafe("bots");
-            Util.clearChildren(bots);
-            const list = yield Get.api(cmd("bot", "list"));
-            if (list instanceof ErrorObject)
-                return console.log("Error getting bot list", list);
-            for (const botInfo of list) {
-                bots.innerHTML +=
-                    `<li>
-                    <div>${botInfo.Id}</div>
-                    <div>${botInfo.Name}</div>
-                    <div>${botInfo.Server}</div>
-                    <div><a href="index.html?page=bot.html&bot_id=${botInfo.Id}">Go to</a></div>
-                </li>`;
+            this.divBots = Util.getElementByIdSafe("bots");
+            yield this.refresh();
+        });
+    }
+    refresh() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const res0 = yield Get.api(cmd("bot", "list"));
+            const res1 = yield Get.api(cmd("settings", "global", "get", "bots"));
+            Util.clearChildren(this.divBots);
+            if (res0 instanceof ErrorObject)
+                return console.log("Error getting bot list", res0);
+            if (res1 instanceof ErrorObject)
+                return console.log("Error getting bot list", res1);
+            this.bots = {};
+            for (const botInfo of res0) {
+                let bot = botInfo;
+                bot.Running = true;
+                this.bots[botInfo.Name] = bot;
+            }
+            for (const botName in res1) {
+                let bot = this.bots[botName];
+                if (bot === undefined) {
+                    bot = this.bots[botName] = {
+                        Name: botName,
+                        Running: false,
+                    };
+                }
+                bot.Autostart = res1[botName].run;
+            }
+            for (const botInfoName in this.bots) {
+                this.refreshBot(this.bots[botInfoName]);
             }
         });
+    }
+    refreshBot(botInfo) {
+        const botCard = this.botCard(botInfo);
+        if (botCard !== undefined) {
+            let oldInfo = this.bots[botInfo.Name];
+            if (oldInfo !== undefined && oldInfo.Div !== undefined) {
+                const oldDiv = oldInfo.Div;
+                this.divBots.replaceChild(botCard, oldDiv);
+            }
+            else {
+                this.divBots.appendChild(botCard);
+            }
+            botInfo.Div = botCard;
+        }
+    }
+    botCard(botInfo) {
+        let divStartStopButton = {};
+        let div = createElement("div", { class: "botCard formbox" + (botInfo.Running ? " botRunning" : "") },
+            createElement("div", { class: "formheader flex2" },
+                createElement("div", null, botInfo.Name),
+                createElement("div", { when: botInfo.Id !== undefined },
+                    "[ID:",
+                    botInfo.Id,
+                    "]")),
+            createElement("div", { class: "formcontent" },
+                createElement("div", { class: "formdatablock" },
+                    createElement("div", null, "Server:"),
+                    createElement("div", null, botInfo.Server)),
+                createElement("div", { class: "flex2" },
+                    createElement("div", null,
+                        createElement("a", { when: botInfo.Running, class: "jslink button", href: "index.html?page=bot.html&bot_id=" + botInfo.Id }, "Panel")),
+                    createElement("div", { class: "button buttonIcon", set: divStartStopButton }, botInfo.Running ? "Stop" : "Start"))));
+        if (divStartStopButton.element !== undefined) {
+            const divSs = divStartStopButton.element;
+            divSs.onclick = (_) => __awaiter(this, void 0, void 0, function* () {
+                Util.setIcon(divSs, "cog-work");
+                divSs.style.color = "transparent";
+                if (!botInfo.Running) {
+                    const res = yield Get.api(cmd("bot", "connect", "template", botInfo.Name));
+                    if (res instanceof ErrorObject) {
+                        Util.clearIcon(divSs);
+                        divSs.style.color = null;
+                        return console.log("Error starting bot", res);
+                    }
+                    Object.assign(botInfo, res);
+                    botInfo.Running = true;
+                }
+                else {
+                    const res = yield Get.api(bot(cmd("bot", "disconnect"), botInfo.Id));
+                    if (res instanceof ErrorObject) {
+                        Util.clearIcon(divSs);
+                        divSs.style.color = null;
+                        return console.log("Error starting bot", res);
+                    }
+                    botInfo.Id = undefined;
+                    botInfo.Server = undefined;
+                    botInfo.Running = false;
+                }
+                this.refreshBot(botInfo);
+            });
+        }
+        return div;
     }
 }
 class Main {
@@ -181,45 +275,45 @@ class Main {
         return __awaiter(this, void 0, void 0, function* () {
             Main.contentDiv = Util.getElementByIdSafe("content");
             Main.readStateFromUrl();
-            Main.initEvents();
+            Main.generateLinks();
+            const authElem = document.getElementById("authtoken");
+            if (authElem) {
+                authElem.oninput = Main.authChanged;
+            }
             const page = Main.state.page;
             if (page !== undefined) {
                 yield Main.setSite(page);
             }
         });
     }
-    static initEvents() {
-        const list = document.querySelectorAll("nav a");
-        for (const link of list) {
-            const query = Util.parseUrlQuery(link.href);
+    static generateLinks() {
+        const list = document.querySelectorAll(".jslink");
+        for (const divLink of list) {
+            const query = Util.parseUrlQuery(divLink.href);
             const page = query.page;
-            link.onclick = (ev) => __awaiter(this, void 0, void 0, function* () {
+            divLink.classList.remove("jslink");
+            divLink.onclick = (ev) => __awaiter(this, void 0, void 0, function* () {
                 ev.preventDefault();
-                yield Main.setSite(page);
+                yield Main.setSite(page, query);
             });
         }
     }
     static readStateFromUrl() {
-        const currentSite = window.location.href;
-        const query = Util.parseUrlQuery(currentSite);
-        for (const key in query) {
-            Main.state[key] = query[key];
-        }
+        const query = Util.getUrlQuery();
+        Object.assign(Main.state, query);
     }
-    static setSite(site) {
+    static setSite(site, data) {
         return __awaiter(this, void 0, void 0, function* () {
             const content = yield Get.site(site);
             Main.contentDiv.innerHTML = content;
+            Object.assign(Main.state, data);
             Main.state.page = site;
-            yield Main.registerHooks();
+            yield Main.initContentPage();
+            Main.generateLinks();
         });
     }
-    static registerHooks() {
+    static initContentPage() {
         return __awaiter(this, void 0, void 0, function* () {
-            const authElem = document.getElementById("authtoken");
-            if (authElem) {
-                authElem.oninput = Main.authChanged;
-            }
             const page = Main.state.page;
             if (page !== undefined) {
                 const thispage = Main.pages[page];
@@ -249,19 +343,6 @@ class PlayControls {
         this.trackLength = 0;
         this.volume = 0;
         this.muteToggleVolume = 0;
-        this.initialized = false;
-    }
-    enable() {
-        const divPlayCtrl = Util.getElementByIdSafe("playblock");
-        divPlayCtrl.classList.remove("playdisabled");
-    }
-    disable() {
-        const divPlayCtrl = Util.getElementByIdSafe("playblock");
-        divPlayCtrl.classList.add("playdisabled");
-    }
-    initialize() {
-        if (this.initialized)
-            return;
         this.divRepeat = Util.getElementByIdSafe("playctrlrepeat");
         this.divRandom = Util.getElementByIdSafe("playctrlrandom");
         this.divPlay = Util.getElementByIdSafe("playctrlplay");
@@ -274,23 +355,23 @@ class PlayControls {
         this.divLength = Util.getElementByIdSafe("data_track_length");
         this.divRepeat.onclick = () => __awaiter(this, void 0, void 0, function* () {
             Util.setIcon(this.divRepeat, "cog-work");
-            const res = yield Get.api(bot(cmd("json", "merge", cmd("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()), cmd("repeat"))));
+            const res = yield Get.api(bot(jmerge(cmd("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()), cmd("repeat"))));
             if (res instanceof ErrorObject)
                 return this.showStateRepeat(this.repeat);
             this.showStateRepeat(res[1]);
         });
         this.divRandom.onclick = () => __awaiter(this, void 0, void 0, function* () {
             Util.setIcon(this.divRandom, "cog-work");
-            const res = yield Get.api(bot(cmd("json", "merge", cmd("random", (!this.random) ? "on" : "off"), cmd("random"))));
+            const res = yield Get.api(bot(jmerge(cmd("random", (!this.random) ? "on" : "off"), cmd("random"))));
             if (res instanceof ErrorObject)
                 return this.showStateRandom(this.random);
             this.showStateRandom(res[1]);
         });
         const setVolume = (volume, applySlider) => __awaiter(this, void 0, void 0, function* () {
-            const res = yield Get.api(bot(cmd("json", "merge", cmd("volume", volume.toString()), cmd("volume"))));
+            const res = yield Get.api(bot(jmerge(cmd("volume", volume.toString()), cmd("volume"))));
             if (res instanceof ErrorObject)
                 return this.showStateVolume(this.volume, applySlider);
-            this.showStateVolume(Number(res[1]), applySlider);
+            this.showStateVolume(res[1], applySlider);
         });
         this.divVolumeMute.onclick = () => __awaiter(this, void 0, void 0, function* () {
             if (this.muteToggleVolume !== 0 && this.volume === 0) {
@@ -323,7 +404,14 @@ class PlayControls {
             }
         }, 1000);
         this.playTick.start();
-        this.initialized = true;
+    }
+    enable() {
+        const divPlayCtrl = Util.getElementByIdSafe("playblock");
+        divPlayCtrl.classList.remove("playdisabled");
+    }
+    disable() {
+        const divPlayCtrl = Util.getElementByIdSafe("playblock");
+        divPlayCtrl.classList.add("playdisabled");
     }
     static get() {
         const elem = document.getElementById("playblock");
@@ -332,8 +420,6 @@ class PlayControls {
         let playCtrl = elem.playControls;
         if (!playCtrl) {
             playCtrl = new PlayControls();
-            playCtrl.divPlayBlock = elem;
-            playCtrl.initialize();
             elem.playControls = playCtrl;
         }
         return playCtrl;
@@ -415,19 +501,17 @@ class Timer {
     constructor(func, interval) {
         this.func = func;
         this.interval = interval;
-        this.running = false;
     }
     start() {
-        if (this.running)
+        if (this.timerId !== undefined)
             return;
-        this.running = true;
         this.timerId = window.setInterval(this.func, this.interval);
     }
     stop() {
-        if (!this.running)
+        if (this.timerId === undefined)
             return;
-        this.running = false;
         window.clearInterval(this.timerId);
+        this.timerId = undefined;
     }
 }
 class Util {
@@ -480,6 +564,9 @@ class Util {
     static setIcon(elem, icon) {
         elem.style.backgroundImage = `url(/media/icons/${icon}.svg)`;
     }
+    static clearIcon(elem) {
+        elem.style.backgroundImage = "none";
+    }
     static asError(err) {
         return new ErrorObject(err);
     }
@@ -518,5 +605,56 @@ class ErrorObject {
     constructor(obj) {
         this.obj = obj;
     }
+}
+function createElement(tag, attrs, ...children) {
+    if (attrs && attrs["when"] === false)
+        return undefined;
+    const el = document.createElement(tag);
+    if (attrs && attrs["set"])
+        attrs["set"].element = el;
+    for (let name in attrs) {
+        if (name && attrs.hasOwnProperty(name)) {
+            let value = attrs[name];
+            if (name === 'className' && value !== void 0) {
+                el.setAttribute('class', value.toString());
+            }
+            else if (value === false || value === null || value === undefined || value === true) {
+                el[name] = value;
+            }
+            else if (typeof value === 'function') {
+                el[name.toLowerCase()] = value;
+            }
+            else if (typeof value === 'object') {
+                el.setAttribute(name, value);
+            }
+            else {
+                el.setAttribute(name, value.toString());
+            }
+        }
+    }
+    if (children && children.length > 0) {
+        appendChildren(el, children);
+    }
+    return el;
+}
+function isElement(el) {
+    return !!el.nodeType;
+}
+function addChild(parentElement, child) {
+    if (child === null || child === undefined) {
+        return;
+    }
+    else if (Array.isArray(child)) {
+        appendChildren(parentElement, child);
+    }
+    else if (isElement(child)) {
+        parentElement.appendChild(child);
+    }
+    else {
+        parentElement.appendChild(document.createTextNode(child.toString()));
+    }
+}
+function appendChildren(parentElement, children) {
+    children.forEach(child => addChild(parentElement, child));
 }
 //# sourceMappingURL=script.js.map
