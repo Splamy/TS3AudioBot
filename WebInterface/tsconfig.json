@@ -5,7 +5,7 @@
         "sourceMap": true,
         "watch": false,
         "rootDir": "tssrc",
-        "outFile": "./script.js",
+        "outFile": "out/script.js",
 
         "removeComments": true,
         "noImplicitAny": true,

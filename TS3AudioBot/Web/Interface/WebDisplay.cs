@@ -65,13 +65,18 @@ namespace TS3AudioBot.Web.Interface
 
 			var dir = new FolderProvider(baseDir);
 			map.Map("/", dir);
-			map.Map("/site/", dir);
+			// include debug out folder
+#if DEBUG
+			var dirHtml = new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "html")));
+			map.Map("/", dirHtml);
+			var dirOut = new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "out")));
+			map.Map("/", dirOut);
+#endif
+
 			map.Map("/openapi/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "openapi"))));
 
 			Site404 = map.TryGetSite(new Uri("http://localhost/404.html"));
-			var index = map.TryGetSite(new Uri("http://localhost/index.html"));
-			if (index != null)
-				map.Map("/", index);
+			map.Map("/", new FileRedirect(map, "", "index.html"));
 		}
 
 		public override void DispatchCall(HttpListenerContext context)

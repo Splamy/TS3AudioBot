@@ -1,0 +1,24 @@
+<h2>History</h2>
+<div class="splitbox">
+    <form id="searchquery" action="/?page=history" onsubmit="history_search_click(event);" method="get">
+        <fieldset class="unselectable searchform">
+            <legend>Search for Entries</legend>
+            <label>Title contains:   </label><input type="text" name="title">
+            <label>From UserId:      </label><input type="number" name="userid">
+            <label>Last called after:</label><input type="date" name="lastinvoked">
+            <label>Max results:      </label><input type="number" name="max" value="10">
+            <button class="button" type="submit" form="searchquery" value="Search">Search</button>
+        </fieldset>
+    </form>
+    <table id="historylist">
+        <caption>Query results</caption>
+        <tbody>
+        <tr>
+            <th>Id</th>
+            <th>UserId</th>
+            <th>Title</th>
+            <th>Options</th>
+        </tr>
+        </tbody>
+    </table>
+</div>

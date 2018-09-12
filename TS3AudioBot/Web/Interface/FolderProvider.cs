@@ -27,7 +27,13 @@ namespace TS3AudioBot.Web.Interface
 
 		public ISiteProvider GetFile(string subPath)
 		{
-			var requestedFile = new FileInfo(Path.Combine(LocalDirectory.FullName, subPath.TrimStart('/')));
+			FileInfo requestedFile;
+			try
+			{
+				requestedFile = new FileInfo(Path.Combine(LocalDirectory.FullName, subPath.TrimStart('/')));
+			}
+			catch { return null; }
+
 			// directory escaping prevention
 			if (!requestedFile.FullName.StartsWith(LocalDirectory.FullName))
 				return null;
