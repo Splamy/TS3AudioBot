@@ -104,7 +104,7 @@ class Util {
 }
 
 type icons
-    = "cog-work"
+    = "cog-work" | "heart"
     | "loop-square"
     | "media-pause" | "media-play" | "media-stop"
     | "random" | "random-off"

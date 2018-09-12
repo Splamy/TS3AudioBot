@@ -33,13 +33,13 @@
   }
   to {
     background-color: yellow;
-    border-radius: 10px;
+    border-radius: 0;
   }
 }
 @keyframes closeauth {
   from {
     background-color: yellow;
-    border-radius: 10px;
+    border-radius: 0;
   }
   to {
     background-color: #000a12;
@@ -57,7 +57,7 @@
   animation-duration: 0.3s;
   animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
   background-color: yellow;
-  border-radius: 10px;
+  border-radius: 0;
   animation-name: openauth;
 }
 .button {
@@ -117,7 +117,7 @@
   margin: 0;
   padding: 0.7em 0;
   box-shadow: none;
-  border-radius: 0;
+  border-bottom: 1px #831117 solid;
 }
 .navSelected {
   background-color: #dd1d27;
@@ -219,6 +219,21 @@ td:not(:last-child):not(:first-child) {
 #historylist > tbody > tr > td:nth-child(2) {
   text-align: right;
 }
+input[type="text"] {
+  padding: 0.3em;
+  font-size: 100%;
+  display: block;
+  border: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px solid #FFFFFF;
+  color: #FFFFFF;
+  transition: 0.2s ease all;
+}
+input[type="text"]:focus {
+  outline: none;
+  border: 1px solid #E95147;
+}
 input[type="range"] {
   margin: 0;
 }
@@ -311,11 +326,15 @@ input[type=range]::-moz-range-track {
 }
 html,
 body {
-  background-color: #000a12;
+  background-color: #263238;
   color: #E95147;
   margin: 0;
+  padding: 0;
   font-family: Verdana;
   font-size: 100%;
+  width: 100%;
+  height: 100%;
+  overflow-y: hidden;
 }
 h1 {
   text-align: center;
@@ -326,38 +345,26 @@ h2 {
 }
 header {
   color: white;
-  position: fixed;
-  width: 100%;
-  height: 40px;
   z-index: 1;
-  box-shadow: 0 0 10px 0 #000a12;
+  background-color: #000a12;
 }
 nav {
-  top: 40px;
-  bottom: 25px;
-  width: 10em;
-  position: fixed;
   background-color: #B0171F;
+  height: 100%;
+  width: 12em;
+  overflow-y: auto;
+  overflow-x: auto;
+  border-right: 1px #831117 solid;
 }
 section {
-  top: 40px;
-  left: 10em;
-  bottom: 25px;
-  right: 0;
-  position: fixed;
   background-color: #263238;
   overflow-y: auto;
   overflow-x: auto;
-  z-index: -1;
+  flex-grow: 1;
 }
 footer {
-  bottom: 0;
-  height: 25px;
-  width: 100%;
   color: white;
-  text-align: center;
-  position: fixed;
-  box-shadow: 0 0 10px 0 #000a12;
+  background-color: #000a12;
 }
 hr {
   display: block;
@@ -367,6 +374,10 @@ hr {
   margin: 0.3em 0;
   padding: 0;
 }
+.mainframe {
+  flex-direction: column;
+  width: 100%;
+}
 .maxheight {
   height: 100%;
 }
@@ -374,8 +385,12 @@ hr {
   display: flex;
   justify-content: flex-end;
 }
-.flowright > * :last-child {
+.flowright > *:last-child {
   margin-right: 0.5em;
+}
+.stretchmax {
+  width: 100%;
+  height: 100%;
 }
 .flex {
   display: flex;

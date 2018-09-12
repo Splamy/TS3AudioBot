@@ -153,6 +153,7 @@ class Bot {
                 }
                 return true;
             });
+            playCtrl.showStatePlaying(botInfo[1] ? PlayState.Playing : PlayState.Off);
             playCtrl.showStateLength(Util.parseTimeToSeconds(botInfo[2].length));
             playCtrl.showStatePosition(Util.parseTimeToSeconds(botInfo[2].position));
             playCtrl.showStateRepeat(botInfo[3]);
@@ -337,6 +338,7 @@ Main.state = {};
 window.onload = Main.init;
 class PlayControls {
     constructor() {
+        this.playing = PlayState.Off;
         this.repeat = RepeatKind.Off;
         this.random = false;
         this.trackPosition = 0;
@@ -397,13 +399,32 @@ class PlayControls {
             if (res instanceof ErrorObject)
                 return;
         });
+        this.divPlay.onclick = () => __awaiter(this, void 0, void 0, function* () {
+            switch (this.playing) {
+                case PlayState.Off:
+                    return;
+                case PlayState.Playing:
+                    let res0 = yield Get.api(bot(jmerge(cmd("stop"), cmd("song"))));
+                    if (res0 instanceof ErrorObject)
+                        return;
+                    this.showStatePlaying(res0[1] ? PlayState.Playing : PlayState.Off);
+                    break;
+                case PlayState.Paused:
+                    let res1 = yield Get.api(bot(jmerge(cmd("play"), cmd("song"))));
+                    if (res1 instanceof ErrorObject)
+                        return;
+                    this.showStatePlaying(res1[1] ? PlayState.Playing : PlayState.Off);
+                    break;
+                default:
+                    break;
+            }
+        });
         this.playTick = new Timer(() => {
             if (this.trackPosition < this.trackLength) {
                 this.trackPosition += 1;
                 this.showStatePosition(this.trackPosition);
             }
         }, 1000);
-        this.playTick.start();
     }
     enable() {
         const divPlayCtrl = Util.getElementByIdSafe("playblock");
@@ -470,14 +491,18 @@ class PlayControls {
         this.divPositionSlider.value = position.toString();
     }
     showStatePlaying(playing) {
+        this.playing = playing;
         switch (playing) {
             case PlayState.Off:
-                Util.setIcon(this.divPlay, "media-stop");
+                this.playTick.stop();
+                Util.setIcon(this.divPlay, "heart");
                 break;
             case PlayState.Playing:
-                Util.setIcon(this.divPlay, "media-pause");
+                this.playTick.start();
+                Util.setIcon(this.divPlay, "media-stop");
                 break;
             case PlayState.Paused:
+                this.playTick.stop();
                 Util.setIcon(this.divPlay, "media-play");
                 break;
             default:

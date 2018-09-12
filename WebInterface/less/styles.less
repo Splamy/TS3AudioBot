@@ -16,9 +16,6 @@
 @foregroundcolor2: #B0171F;
 @foregroundcolor3: #790000;
 @contrastcolor1: #B2B2B2;
-@top-off: 40px;
-@left-off: 10em;
-@bot-off: 25px;
 @default-border-radius: 3px;
 @shadow: 1px 1px 8px 0px @backgroundcolor1;
 @shadow-weak: 1px 1px 4px 0px @backgroundcolor1;
@@ -26,11 +23,16 @@
 @font-size2: @font-size1 * 1.2;
 
 html, body {
-	background-color: @backgroundcolor1;
+	.stretchmax();
+	background-color: @backgroundcolor2;
 	color: @foregroundcolor1;
 	margin: 0;
+	padding: 0;
 	font-family: Verdana;
 	font-size: @font-size1;
+	width: 100%;
+	height: 100%;
+	overflow-y: hidden;
 }
 
 h1 {
@@ -44,41 +46,31 @@ h2 {
 
 header {
 	color: white;
-	position: fixed;
-	width: 100%;
-	height: @top-off;
 	z-index: 1;
-	box-shadow: 0 0 10px 0 @backgroundcolor1;
+	background-color: @backgroundcolor1;
+	//box-shadow: 0 0 10px 0 @backgroundcolor1;
 }
 
 nav {
-	top: @top-off;
-	bottom: @bot-off;
-	width: @left-off;
-	position: fixed;
 	background-color: @foregroundcolor2;
+	height: 100%;
+	width: 12em;
+	overflow-y: auto;
+	overflow-x: auto;
+	border-right: 1px darken(@foregroundcolor2, 10%) solid;
 }
 
 section {
-	top: @top-off;
-	left: @left-off;
-	bottom: @bot-off;
-	right: 0;
-	position: fixed;
 	background-color: @backgroundcolor2;
 	overflow-y: auto;
 	overflow-x: auto;
-	z-index: -1;
+	flex-grow: 1;
 }
 
 footer {
-	bottom: 0;
-	height: @bot-off;
-	width: 100%;
 	color: white;
-	text-align: center;
-	position: fixed;
-	box-shadow: 0 0 10px 0 @backgroundcolor1;
+	background-color: @backgroundcolor1;
+	//box-shadow: 0 0 10px 0 @backgroundcolor1;
 }
 
 hr {
@@ -88,6 +80,11 @@ hr {
 	border-top: 1px solid #ccc;
 	margin: 0.3em 0;
 	padding: 0;
+}
+
+.mainframe {
+	flex-direction: column;
+	width: 100%;
 }
 
 .jslink {}
@@ -100,7 +97,7 @@ hr {
 	display: flex;
 	justify-content: flex-end;
 
-	> * :last-child {
+	> *:last-child {
 		margin-right: 0.5em;
 	}
 }
@@ -113,6 +110,11 @@ hr {
 	-ms-user-select: none;
 	user-select: none;
 	cursor: default;
+}
+
+.stretchmax {
+	width: 100%;
+	height: 100%;
 }
 
 .flex {

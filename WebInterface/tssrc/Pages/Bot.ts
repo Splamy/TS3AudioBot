@@ -11,7 +11,7 @@ class Bot implements IPage {
         //[IBotInfo, string | undefined, any, RepeatKind, boolean, number]
         const promiseBotInfo = Get.api(bot(jmerge(
             /*0*/ cmd<IBotInfo>("bot", "info"),
-            /*1*/ cmd<string | undefined>("song"),
+            /*1*/ cmd<string | null>("song"),
             /*2*/ cmd<any>("song", "position"),
             /*3*/ cmd<RepeatKind>("repeat"),
             /*4*/ cmd<boolean>("random"),
@@ -63,6 +63,7 @@ class Bot implements IPage {
             return true;
         }
 
+        playCtrl.showStatePlaying(botInfo[1] ? PlayState.Playing : PlayState.Off);
         playCtrl.showStateLength(Util.parseTimeToSeconds(botInfo[2].length));
         playCtrl.showStatePosition(Util.parseTimeToSeconds(botInfo[2].position));
         playCtrl.showStateRepeat(botInfo[3]);

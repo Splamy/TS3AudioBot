@@ -12,35 +12,38 @@
 </head>
 
 <body>
-    <header class="flex unselectable">
-        <div class="flexmax flowright maxheight">
-            <label class="authbox" style="width:40px; height:40px">
-                <input type="checkbox" />
-                <span class="authboxform">
-                    <label>AuthString:</label> <input id="authtoken" type="text" />
-                </span>
-                <div class="button buttonIcon buttonRound buttonSmall" style="background-image: url(/media/icons/key.svg)"></div>
-            </label>
+    <div class="flex stretchmax">
+        <div>
+            <nav>
+                <a class="jslink button navButton navTitle" href="index.html?page=main.html">TS3AudioBot</a>
+                <a class="jslink button navButton" href="index.html?page=styles.css">[In development] Commands</a>
+                <a class="jslink button navButton" href="index.html?page=playlist.html">[In development] Playlist</a>
+                <a class="jslink button navButton" href="index.html?page=history.html">[In development] History</a>
+                <a class="jslink button navButton" href="index.html?page=bots.html">Bots</a>
+                <a class="jslink button navButton" href="index.html?page=bot.html&bot_id=0">Bot</a>
+            </nav>
         </div>
-    </header>
-    <div style="display:flex">
-        <nav>
-            <a class="jslink button navButton navTitle" href="index.html?page=main.html">TS3AudioBot</a>
-            <a class="jslink button navButton" href="index.html?page=styles.css">Commands [In development]</a>
-            <a class="jslink button navButton" href="index.html?page=playlist.html">Playlist [In development]</a>
-            <a class="jslink button navButton" href="index.html?page=history.html">History [In development]</a>
-            <a class="jslink button navButton" href="index.html?page=bots.html">Bots</a>
-            <a class="jslink button navButton" href="index.html?page=bot.html&bot_id=0">Bot</a>
-        </nav>
-        <section id="content"></section>
+        <div class="mainframe flex">
+            <header class="flex unselectable">
+                <div class="flexmax flowright maxheight">
+                    <label class="authbox">
+                        <input type="checkbox" />
+                        <span class="authboxform">
+                            <label>AuthString:</label> <input id="authtoken" type="text" />
+                        </span>
+                        <div class="button buttonIcon buttonRound buttonSmall" style="background-image: url(/media/icons/key.svg)"></div>
+                    </label>
+                </div>
+            </header>
+            <section id="content"></section>
+            <footer class="flex flowright unselectable">
+                <a class="maxheight" href="https://github.com/Splamy/TS3AudioBot" target="_blank">
+                    <img class="maxheight" src="media/github.svg" style="width: 1em;height: 1em;" alt="Github Project Page">
+                </a>
+            </footer>
+        </div>
     </div>
-    <footer class="flex unselectable">
-        <div class="flexmax flowright maxheight">
-            <a class="maxheight" href="https://github.com/Splamy/TS3AudioBot" target="_blank">
-                <img class="maxheight" src="media/github.svg" alt="Github Project Page">
-            </a>
-        </div>
-    </footer>
+
     <!-- Preload data -->
     <div style="width: 0; height: 0;">
         <div style="background: url(/media/icons/cog-work.svg) no-repeat"></div>

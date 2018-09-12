@@ -27,18 +27,35 @@
 //         font: 700 $width/25 Roboto;
 //         color: $secondary-color;
 //       }
-      
-        
+	  
+		
 //       ~ .bar:before {
 //       transform: translateX(0);
 //       }
 //     }
   
 //     // Stop Chrome's hideous pale yellow background on auto-fill
-    
+	
 //     &:-webkit-autofill {
 //       -webkit-box-shadow: 0 0 0px 1000px $main-color inset;
 //       -webkit-text-fill-color: white !important;
 //       // border-bottom-color: rgba(white, .5);
 //     }
 //   }
+
+input[type="text"] {
+	padding: 0.3em;
+	font-size: @font-size1;
+	display: block;
+	border: none;
+	background-color: transparent;
+	border: 1px solid transparent;
+	border-bottom: 1px solid #FFFFFF;
+	color: #FFFFFF;
+	transition: 0.2s ease all;
+
+	&:focus {
+		outline:none;
+		border: 1px solid @foregroundcolor1;
+	}
+}
