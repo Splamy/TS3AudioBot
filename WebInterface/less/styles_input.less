@@ -1,48 +1,5 @@
 // main: styles.less
 
-// input {
-//     display: block;
-//     width: 100%;
-//     padding-top: $width/15;
-//     border: none;
-//     border-radius: 0; // For iOS
-//     // border-bottom: solid $width/150 rgba(white, .5);
-//     color: white;
-//     background: $main-color;
-//     font-size: $width/15;
-//     transition: .3s ease;
-//     &:valid {
-//       // border-bottom-color: rgba(white, .5);
-//       ~label {
-//         top: 0;
-//         font: 700 $width/25 Roboto;
-//         color: rgba(white, .5);
-//       }
-//     }
-//     &:focus {
-//       outline: none;
-//       // border-bottom-color: $secondary-color;
-//       ~label {
-//         top: 0;
-//         font: 700 $width/25 Roboto;
-//         color: $secondary-color;
-//       }
-	  
-		
-//       ~ .bar:before {
-//       transform: translateX(0);
-//       }
-//     }
-  
-//     // Stop Chrome's hideous pale yellow background on auto-fill
-	
-//     &:-webkit-autofill {
-//       -webkit-box-shadow: 0 0 0px 1000px $main-color inset;
-//       -webkit-text-fill-color: white !important;
-//       // border-bottom-color: rgba(white, .5);
-//     }
-//   }
-
 input[type="text"] {
 	padding: 0.3em;
 	font-size: @font-size1;
@@ -57,5 +14,115 @@ input[type="text"] {
 	&:focus {
 		outline:none;
 		border: 1px solid @foregroundcolor1;
+	}
+}
+
+input[type=range] {
+	-webkit-appearance: none;
+	background: transparent;
+
+	&:focus {
+		outline: none;
+	}
+	// should remove focus border from the slider but doesn't work
+	// compare here: http://jsfiddle.net/n2dsc/1/
+	&:-moz-focus-outer {
+		border: 0;
+		outline: none;
+	}
+
+	// Thumb Button: Chrome
+	&::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		border: none;
+		height: 16px;
+		width: 16px;
+		margin-top: -4px;
+		border-radius: 50%;
+		background: white;
+		box-shadow: @shadow;
+		cursor: pointer;
+	}
+
+	// Thumb Button: Firefox
+	&::-moz-range-thumb {
+		border: none;
+		height: 16px;
+		width: 16px;
+		border-radius: 50%;
+		box-shadow: @shadow;
+		cursor: pointer;
+	}
+
+	// Thumb Button: Edge
+	&::-ms-thumb {
+		margin-top: 0;
+		box-sizing: border-box;
+		border: none;
+		height: 16px;
+		width: 16px;
+		border-radius: 50%;
+		background: white;
+		box-shadow: @shadow;
+		cursor: pointer;
+	}
+
+	// Slider: Chrome
+	&::-webkit-slider-runnable-track {
+		width: 100%;
+		height: 6px;
+		margin-bottom: 4px;
+		border-radius: 3px;
+		box-shadow: @shadow;
+		background: @foregroundcolor1;
+	}
+
+	// Slider: Firefox
+	&::-moz-range-track {
+		width: 100%;
+		height: 6px;
+		border-radius: 3px;
+		box-shadow: @shadow;
+		background: @foregroundcolor1;
+	}
+
+	// Slider: Edge
+	&::-ms-track {
+		box-sizing: border-box;
+		border: none;
+		width: 100%;
+		height: 6px;
+		border-radius: 3px;
+		box-shadow: @shadow;
+		background: @foregroundcolor1;
+	}
+
+	&.loading {
+		&::-webkit-slider-runnable-track { .loading_func(); }
+		&::-moz-range-track { .loading_func(); }
+		&::-ms-track { .loading_func(); }
+	}
+
+	// Only works on firefox
+	.loading_func() {
+		@stripe-size: 1em;
+		@stripe-size-diag: sqrt(2 * @stripe-size) * 2;
+		animation: stipes 0.25s linear infinite;
+		
+		background: repeating-linear-gradient(
+				45deg,
+				@foregroundcolor2,
+				@foregroundcolor2 @stripe-size,
+				lighten(@foregroundcolor2, 20%) @stripe-size,
+				lighten(@foregroundcolor2, 20%) (2 * @stripe-size));
+		// 'background-size' *MUST* be after 'background'
+		background-size: @stripe-size-diag;
+		background-repeat: repeat;
+		background-position-x: 0;
+
+		@keyframes stipes {
+			from { background-position-x: 0; }
+			to { background-position-x: @stripe-size-diag; }
+		}
 	}
 }

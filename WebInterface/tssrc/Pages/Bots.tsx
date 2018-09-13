@@ -13,8 +13,8 @@ class Bots implements IPage {
         //     cmd<IBotInfo[]>("bot", "list"),
         //     cmd<{ [key: string]: IBotsSettings }>("settings", "global", "get", "bots"),
         // ));
-        const res0 = await Get.api(cmd<IBotInfo[]>("bot", "list"));
-        const res1 = await Get.api(cmd<{ [key: string]: IBotsSettings }>("settings", "global", "get", "bots"));
+        const res0 = await cmd<IBotInfo[]>("bot", "list").get();
+        const res1 = await cmd<{ [key: string]: IBotsSettings }>("settings", "global", "get", "bots").get();
 
         Util.clearChildren(this.divBots);
 
@@ -75,6 +75,10 @@ class Bots implements IPage {
                     <div>Server:</div>
                     <div>{botInfo.Server}</div>
                 </div>
+                {/* <div class="formdatablock">
+                    <div>Autostart:</div>
+                    <div><input type="checkbox" value="Autostart" /></div>
+                </div> */}
                 <div class="flex2">
                     <div>
                         <a when={botInfo.Running} class="jslink button buttonMedium buttonIcon"
@@ -83,7 +87,8 @@ class Bots implements IPage {
                     </div>
                     <div class={"button buttonRound buttonMedium buttonIcon " + (botInfo.Running ? "buttonRed" : "buttonGreen")}
                         set={divStartStopButton}
-                        style={"background-image: url(/media/icons/" + (botInfo.Running ? "power-standby" : "play-circle") + ".svg)"}></div>
+                        style={"background-image: url(/media/icons/" + (botInfo.Running ? "power-standby" : "play-circle") + ".svg)"}>
+                    </div>
                 </div>
             </div>
         </div>;
@@ -94,7 +99,7 @@ class Bots implements IPage {
                 Util.setIcon(divSs, "cog-work");
                 divSs.style.color = "transparent";
                 if (!botInfo.Running) {
-                    const res = await Get.api(cmd<IBotInfo>("bot", "connect", "template", botInfo.Name));
+                    const res = await cmd<IBotInfo>("bot", "connect", "template", botInfo.Name).get();
                     if (res instanceof ErrorObject) {
                         Util.clearIcon(divSs);
                         divSs.style.color = null;
@@ -103,7 +108,7 @@ class Bots implements IPage {
                     Object.assign(botInfo, res);
                     botInfo.Running = true;
                 } else {
-                    const res = await Get.api(bot(cmd("bot", "disconnect"), botInfo.Id));
+                    const res = await bot(cmd("bot", "disconnect"), botInfo.Id).get();
                     if (res instanceof ErrorObject) {
                         Util.clearIcon(divSs);
                         divSs.style.color = null;

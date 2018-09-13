@@ -1,5 +1,5 @@
 class PlayControls {
-
+	private currentSong: string | null = null;
 	private playing: PlayState = PlayState.Off;
 	private repeat: RepeatKind = RepeatKind.Off;
 	private random: boolean = false;
@@ -9,6 +9,9 @@ class PlayControls {
 	private muteToggleVolume: number = 0;
 
 	private playTick: Timer;
+	private echoCounter: number = 0;
+	private echoTick: Timer;
+
 	private divRepeat: HTMLElement;
 	private divRandom: HTMLElement;
 	private divPlay: HTMLElement;
@@ -20,6 +23,7 @@ class PlayControls {
 	private divPositionSlider: HTMLInputElement;
 	private divPosition: HTMLElement;
 	private divLength: HTMLElement;
+	private divNowPlaying: HTMLElement;
 
 	private constructor() {
 		this.divRepeat = Util.getElementByIdSafe("playctrlrepeat");
@@ -33,34 +37,35 @@ class PlayControls {
 		this.divPositionSlider = Util.getElementByIdSafe("playctrlposition") as HTMLInputElement;
 		this.divPosition = Util.getElementByIdSafe("data_track_position");
 		this.divLength = Util.getElementByIdSafe("data_track_length");
+		this.divNowPlaying = Util.getElementByIdSafe("data_now_playing");
 
 		this.divRepeat.onclick = async () => {
 			Util.setIcon(this.divRepeat, "cog-work");
-			const res = await Get.api(bot(jmerge(
+			const res = await bot(jmerge(
 				cmd<void>("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()),
 				cmd<RepeatKind>("repeat"),
-			)));
-			if (res instanceof ErrorObject)
+			)).get();
+			if (!PlayControls.check(res))
 				return this.showStateRepeat(this.repeat);
 			this.showStateRepeat(res[1]);
 		};
 
 		this.divRandom.onclick = async () => {
 			Util.setIcon(this.divRandom, "cog-work");
-			const res = await Get.api(bot(jmerge(
+			const res = await bot(jmerge(
 				cmd<void>("random", (!this.random) ? "on" : "off"),
 				cmd<boolean>("random"),
-			)));
+			)).get();
 			if (res instanceof ErrorObject)
 				return this.showStateRandom(this.random);
 			this.showStateRandom(res[1]);
 		};
 
 		const setVolume = async (volume: number, applySlider: boolean) => {
-			const res = await Get.api(bot(jmerge(
+			const res = await bot(jmerge(
 				cmd<void>("volume", volume.toString()),
 				cmd<number>("volume"),
-			)));
+			)).get();
 			if (res instanceof ErrorObject)
 				return this.showStateVolume(this.volume, applySlider);
 			this.showStateVolume(res[1], applySlider);
@@ -82,56 +87,74 @@ class PlayControls {
 		}
 
 		this.divNext.onclick = async () => {
-			const res = await Get.api(bot(cmd<void>("next")));
+			Util.setIcon(this.divNext, "cog-work");
+			const res = await bot(cmd<void>("next")).get();
+			Util.setIcon(this.divNext, "media-skip-forward");
 			if (res instanceof ErrorObject)
 				return;
+			this.startEcho();
 		}
 
 		this.divPrev.onclick = async () => {
-			const res = await Get.api(bot(cmd<void>("previous")));
+			Util.setIcon(this.divPrev, "cog-work");
+			const res = await bot(cmd<void>("previous")).get();
+			Util.setIcon(this.divPrev, "media-skip-backward");
 			if (res instanceof ErrorObject)
 				return;
+			this.startEcho();
 		}
 
 		this.divPlay.onclick = async () => {
+			let songRet: ErrorObject | [void, string | null];
 			switch (this.playing) {
 				case PlayState.Off:
 					return;
+
 				case PlayState.Playing:
-					let res0 = await Get.api(bot(jmerge(
+					Util.setIcon(this.divPlay, "cog-work");
+					songRet = await bot(jmerge(
 						cmd<void>("stop"),
 						cmd<string | null>("song"), // TODO update when better method
-					)));
-					if (res0 instanceof ErrorObject)
-						return;
-					this.showStatePlaying(res0[1] ? PlayState.Playing : PlayState.Off);
+					)).get() as any/*TODO:iter*/;
 					break;
+
 				case PlayState.Paused:
-					let res1 = await Get.api(bot(jmerge(
+					Util.setIcon(this.divPlay, "cog-work");
+					songRet = await bot(jmerge(
 						cmd<void>("play"),
 						cmd<string | null>("song"), // TODO update when better method
-					)));
-					if (res1 instanceof ErrorObject)
-						return;
-					this.showStatePlaying(res1[1] ? PlayState.Playing : PlayState.Off);
+					)).get() as any/*TODO:iter*/;
 					break;
+
 				default:
-					break;
+					throw new Error();
 			}
+
+			if (songRet instanceof ErrorObject)
+				return this.showStatePlaying(this.currentSong, this.playing);
+
+			this.startEcho();
+			this.showStatePlaying(songRet[1]);
 		}
 
 		this.divPositionSlider.onchange = async () => {
 			if (this.playing === PlayState.Off)
 				return;
 
+			const wasRunning = this.playTick.isRunning;
+			this.playTick.stop();
 			this.divPositionSlider.classList.add("loading");
-			let res = await Get.api(bot(
-				cmd<void>("seek", Math.floor(Number(this.divPositionSlider.value)).toString())
-			));
+			const targetSeconds = Math.floor(Number(this.divPositionSlider.value));
+			let res = await bot(
+				cmd<void>("seek", targetSeconds.toString())
+			).get();
 			this.divPositionSlider.classList.remove("loading");
 
 			if (res instanceof ErrorObject)
 				return;
+
+			if (wasRunning) this.playTick.start();
+			this.showStatePosition(targetSeconds);
 		}
 
 		this.playTick = new Timer(() => {
@@ -140,6 +163,42 @@ class PlayControls {
 				this.showStatePosition(this.trackPosition);
 			}
 		}, 1000);
+
+		this.echoTick = new Timer(async () => {
+			this.echoCounter += 1;
+			if (this.echoCounter === 1 || this.echoCounter === 3 || this.echoCounter === 6) {
+				await this.refresh();
+			}
+			if (this.echoCounter >= 6) {
+				this.echoTick.stop();
+			}
+		}, 1000);
+
+		this.enable();
+	}
+
+	public async refresh() {
+		const botInfo = await bot(jmerge(
+			cmd<string | null>("song"),
+			cmd<ISongLengths>("song", "position"),
+			cmd<RepeatKind>("repeat"),
+			cmd<boolean>("random"),
+			cmd<number>("volume"),
+		)).get();
+
+		if (!PlayControls.check(botInfo))
+			return;
+
+		this.showState(botInfo as any /*TODO:iter*/);
+	}
+
+	public showState(botInfo: [string | null, ISongLengths, RepeatKind, boolean, number]) {
+		this.showStatePlaying(botInfo[0]);
+		this.showStateLength(Util.parseTimeToSeconds(botInfo[1].length));
+		this.showStatePosition(Util.parseTimeToSeconds(botInfo[1].position));
+		this.showStateRepeat(botInfo[2]);
+		this.showStateRandom(botInfo[3]);
+		this.showStateVolume(botInfo[4]);
 	}
 
 	public enable() {
@@ -164,6 +223,11 @@ class PlayControls {
 			(elem as any).playControls = playCtrl;
 		}
 		return playCtrl;
+	}
+
+	public startEcho() {
+		this.echoCounter = 0;
+		this.echoTick.start();
 	}
 
 	public showStateRepeat(state: RepeatKind) {
@@ -217,8 +281,10 @@ class PlayControls {
 		this.divPositionSlider.value = position.toString();
 	}
 
-	public showStatePlaying(playing: PlayState) {
+	public showStatePlaying(song: string | null, playing: PlayState = song ? PlayState.Playing : PlayState.Off) {
+		this.currentSong = song;
 		this.playing = playing;
+		this.divNowPlaying.innerText = song || "Nothing...";
 		switch (playing) {
 			case PlayState.Off:
 				this.showStateLength(0);
@@ -237,6 +303,14 @@ class PlayControls {
 			default:
 				break;
 		}
+	}
+
+	private static check<T>(result: T | ErrorObject): result is T {
+		if (result instanceof ErrorObject) {
+			Bot.displayLoadError("Call error", result);
+			return false;
+		}
+		return true;
 	}
 }
 

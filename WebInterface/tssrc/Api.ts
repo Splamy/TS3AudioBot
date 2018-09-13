@@ -1,6 +1,6 @@
 /// <reference path="Get.ts"/>
 
-class Api<T = any> {
+class Api<T extends ApiRet = ApiRet> {
     public constructor(private buildAddr: string) { }
 
     public static call<T>(...params: (string | Api)[]): Api<T> {
@@ -15,16 +15,20 @@ class Api<T = any> {
         return new Api<T>(buildStr);
     }
 
+    public async get(): Promise<T | ErrorObject> {
+        return Get.api<T>(this);
+    }
+
     public done(): string {
         return this.buildAddr;
     }
 }
 
-function cmd<T = any>(...params: (string | Api)[]): Api<T> {
+function cmd<T = ApiRet>(...params: (string | Api)[]): Api<T> {
     return Api.call(...params);
 }
 
-function bot<T = any>(param: Api<T>, id: number = Number(Main.state["bot_id"])): Api<T> {
+function bot<T = ApiRet>(param: Api<T>, id: number | string = Main.state["bot_id"]): Api<T> {
     return Api.call("bot", "use", id.toString(), param);
 }
 

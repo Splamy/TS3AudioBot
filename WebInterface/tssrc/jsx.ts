@@ -4,6 +4,7 @@ declare namespace JSX {
     interface IntrinsicElements {
         div: HTMLJsxBase<HTMLDivElement>,
         a: HTMLJsxBase<HTMLAnchorElement & HTMLHyperlinkElementUtils>,
+        input: HTMLJsxBase<HTMLInputElement>,
     }
 
     interface Element extends HTMLElement { }

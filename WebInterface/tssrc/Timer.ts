@@ -2,6 +2,9 @@ class Timer {
     public interval: number;
     private readonly func: () => void;
     private timerId: number | undefined;
+    public get isRunning(): boolean {
+        return this.timerId !== undefined;
+    }
 
     constructor(func: () => void, interval: number) {
         this.func = func;

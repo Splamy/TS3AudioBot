@@ -1078,8 +1078,8 @@ namespace TS3AudioBot
 				string[] splittime = position.Split(':');
 
 				if (splittime.Length == 2
-					&& int.TryParse(splittime[0], out int minutes)
-					&& int.TryParse(splittime[1], out int seconds))
+					&& int.TryParse(splittime[0], out var minutes)
+					&& float.TryParse(splittime[1], NumberStyles.Integer | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var seconds))
 				{
 					parsed = true;
 					span = TimeSpan.FromSeconds(seconds) + TimeSpan.FromMinutes(minutes);
@@ -1091,7 +1091,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				parsed = int.TryParse(position, out int seconds);
+				parsed = float.TryParse(position, NumberStyles.Integer | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var seconds);
 				span = TimeSpan.FromSeconds(seconds);
 			}
 

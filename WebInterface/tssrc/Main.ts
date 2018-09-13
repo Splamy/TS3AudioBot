@@ -9,21 +9,31 @@
 class Main {
     private static contentDiv: HTMLElement;
     public static AuthData: ApiAuth = ApiAuth.Anonymous;
+    private static currentPage: IPage | undefined;
     private static pages: Dict<IPage> = {
         "bot.html": new Bot(),
         "bots.html": new Bots(),
     };
-    public static state: Dict<string> = { };
+    public static state: Dict<string> = {};
 
     public static async init() {
         Main.contentDiv = Util.getElementByIdSafe("content")!;
-        // Main.initPureCss();
         Main.readStateFromUrl();
         Main.generateLinks();
 
         const authElem = document.getElementById("authtoken");
         if (authElem) {
             authElem.oninput = Main.authChanged;
+        }
+        const divRefresh = document.getElementById("refreshContent");
+        if (divRefresh) {
+            divRefresh.onclick = async () => {
+                if (Main.currentPage !== undefined) {
+                    Util.setIcon(divRefresh, "reload-work");
+                    await Main.currentPage.refresh();
+                    Util.setIcon(divRefresh, "reload");
+                }
+            };
         }
 
         const page = Main.state.page as string | undefined;
@@ -80,6 +90,7 @@ class Main {
         const page = Main.state.page as string | undefined;
         if (page !== undefined) {
             const thispage: IPage = Main.pages[page];
+            Main.currentPage = thispage;
             if (thispage !== undefined) {
                 await thispage.init();
             }

@@ -4,7 +4,7 @@ class Util {
     public static parseQuery(query: string): Dict<string> {
         const search = /([^&=]+)=?([^&]*)/g;
         const decode = (s: string) => decodeURIComponent(s.replace(/\+/g, " "));
-        const urlParams: any = {};
+        const urlParams: Dict<string> = {};
         let match: RegExpExecArray | null = null;
         do {
             match = search.exec(query);
@@ -107,7 +107,9 @@ type icons
     = "cog-work" | "heart"
     | "loop-all" | "loop-off" | "loop-one"
     | "media-pause" | "media-play" | "media-stop"
+    | "media-skip-backward" | "media-skip-forward"
     | "random" | "random-off"
+    | "reload" | "reload-work"
     | "volume-off" | "volume-low" | "volume-high";
 
 class ErrorObject {

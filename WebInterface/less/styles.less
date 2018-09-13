@@ -6,7 +6,6 @@
 @import "styles_history";
 @import "styles_input";
 @import "styles_playcontrols";
-@import "styles_slider";
 @import "page_bots";
 @import (inline) "pure/grids.css";
 @import (inline) "pure/grids-responsive.css";
@@ -73,6 +72,15 @@ footer {
 	color: white;
 	background-color: @backgroundcolor1;
 	//box-shadow: 0 0 10px 0 @backgroundcolor1;
+
+	> * {
+		padding-left: 0.3em;
+	}
+
+	.footerIcon {
+		width: 1em;
+		height: 1em;
+	}
 }
 
 hr {

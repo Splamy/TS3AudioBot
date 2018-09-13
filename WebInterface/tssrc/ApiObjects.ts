@@ -7,3 +7,8 @@ type IBotInfo = {
 type IBotsSettings = {
     run: boolean;
 }
+
+type ISongLengths = {
+    length: string;
+    position: string;
+}

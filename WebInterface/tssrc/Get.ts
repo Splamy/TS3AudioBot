@@ -4,7 +4,7 @@ class Get {
         return response.text();
     }
 
-    public static async api<T extends {}>(
+    public static async api<T extends ApiRet = ApiRet>(
         site: Api<T>,
         login: ApiAuth = Main.AuthData): Promise<T | ErrorObject> {
 
@@ -46,3 +46,5 @@ class Get {
         }
     }
 }
+
+type ApiRet = ({} | null | void);
