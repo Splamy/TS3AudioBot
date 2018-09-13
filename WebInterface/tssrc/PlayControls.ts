@@ -76,7 +76,9 @@ class PlayControls {
 		}
 		this.divVolumeSlider.onchange = async () => {
 			this.muteToggleVolume = 0;
+			this.divVolumeSlider.classList.add("loading");
 			await setVolume(Util.slider_to_volume(Number(this.divVolumeSlider.value)), false);
+			this.divVolumeSlider.classList.remove("loading");
 		}
 
 		this.divNext.onclick = async () => {
@@ -118,6 +120,20 @@ class PlayControls {
 			}
 		}
 
+		this.divPositionSlider.onchange = async () => {
+			if (this.playing === PlayState.Off)
+				return;
+
+			this.divPositionSlider.classList.add("loading");
+			let res = await Get.api(bot(
+				cmd<void>("seek", Math.floor(Number(this.divPositionSlider.value)).toString())
+			));
+			this.divPositionSlider.classList.remove("loading");
+
+			if (res instanceof ErrorObject)
+				return;
+		}
+
 		this.playTick = new Timer(() => {
 			if (this.trackPosition < this.trackLength) {
 				this.trackPosition += 1;
@@ -154,18 +170,17 @@ class PlayControls {
 		this.repeat = state;
 		switch (state) {
 			case RepeatKind.Off:
-				this.divRepeat.innerText = "off";
+				Util.setIcon(this.divRepeat, "loop-off");
 				break;
 			case RepeatKind.One:
-				this.divRepeat.innerText = "one";
+				Util.setIcon(this.divRepeat, "loop-one");
 				break;
 			case RepeatKind.All:
-				this.divRepeat.innerText = "all";
+				Util.setIcon(this.divRepeat, "loop-all");
 				break;
 			default:
 				break;
 		}
-		Util.setIcon(this.divRepeat, "loop-square");
 	}
 
 	public showStateRandom(state: boolean) {
@@ -206,6 +221,8 @@ class PlayControls {
 		this.playing = playing;
 		switch (playing) {
 			case PlayState.Off:
+				this.showStateLength(0);
+				this.showStatePosition(0);
 				this.playTick.stop();
 				Util.setIcon(this.divPlay, "heart");
 				break;

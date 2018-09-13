@@ -4,20 +4,19 @@
 	.flex();
 
 	flex-wrap: wrap;
-	//flex-direction: row;
-	//align-content: stretch;
 	align-items: stretch;
 	justify-content: center;
 }
 
 .botCard {
 	min-width: 20em;
-	//padding: 1em;
-	height: 8em;
-	//flex-grow: 1;
 
 	&:hover {
 		background-color: lighten(@backgroundcolor3, 10%);
+	}
+
+	> .formcontent {
+		flex-direction: column;
 	}
 }
 

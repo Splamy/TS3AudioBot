@@ -1,5 +1,5 @@
 declare namespace JSX {
-    type HTMLJsxBase<T extends HTMLElement> = Partial<{ [K in keyof T]: T[K] } & { class: string, when: boolean, set: IJsxGet }>
+    type HTMLJsxBase<T extends HTMLElement> = Partial<{ [K in keyof T]: T[K] } & { class: string, when: boolean, set: IJsxGet, style: any }>
 
     interface IntrinsicElements {
         div: HTMLJsxBase<HTMLDivElement>,

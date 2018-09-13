@@ -7,7 +7,14 @@ input[type=range] {
 	&:focus {
 		outline: none;
 	}
+	// should remove focus border from the slider but doesn't work
+	// compare here: http://jsfiddle.net/n2dsc/1/
+	&:-moz-focus-outer {
+		border: 0;
+		outline: none;
+	}
 
+	// Thumb Button: Chrome
 	&::-webkit-slider-thumb {
 		-webkit-appearance: none;
 		border: none;
@@ -20,15 +27,7 @@ input[type=range] {
 		cursor: pointer;
 	}
 
-	&::-webkit-slider-runnable-track {
-		width: 100%;
-		height: 6px;
-		margin-bottom: 4px;
-		border-radius: 3px;
-		box-shadow: @shadow;
-		background: @foregroundcolor1;
-	}
-
+	// Thumb Button: Firefox
 	&::-moz-range-thumb {
 		border: none;
 		height: 16px;
@@ -38,11 +37,77 @@ input[type=range] {
 		cursor: pointer;
 	}
 
+	// Thumb Button: Edge
+	&::-ms-thumb {
+		margin-top: 0;
+		box-sizing: border-box;
+		border: none;
+		height: 16px;
+		width: 16px;
+		border-radius: 50%;
+		background: white;
+		box-shadow: @shadow;
+		cursor: pointer;
+	}
+
+	// Slider: Chrome
+	&::-webkit-slider-runnable-track {
+		width: 100%;
+		height: 6px;
+		margin-bottom: 4px;
+		border-radius: 3px;
+		box-shadow: @shadow;
+		background: @foregroundcolor1;
+	}
+
+	// Slider: Firefox
 	&::-moz-range-track {
 		width: 100%;
 		height: 6px;
 		border-radius: 3px;
 		box-shadow: @shadow;
 		background: @foregroundcolor1;
+	}
+
+	// Slider: Edge
+	&::-ms-track {
+		box-sizing: border-box;
+		border: none;
+		width: 100%;
+		height: 6px;
+		border-radius: 3px;
+		box-shadow: @shadow;
+		background: @foregroundcolor1;
+	}
+
+	&.loading {
+		&::-webkit-slider-runnable-track { .loading_func(); }
+		&::-moz-range-track { .loading_func(); }
+		&::-ms-track { .loading_func(); }
+	}
+}
+
+.loading_func() {
+	@stripe-size: 1em;
+	@stripe-size-diag: sqrt(2 * @stripe-size) * 2;
+	transition: all .7s linear;
+	animation: stipes 0.25s linear infinite;
+	-moz-animation: stipes 0.25s linear infinite;
+	-webkit-animation: stipes 0.25s linear infinite;
+	
+	background: repeating-linear-gradient(
+			45deg,
+			@foregroundcolor2,
+			@foregroundcolor2 @stripe-size,
+			lighten(@foregroundcolor2, 20%) @stripe-size,
+			lighten(@foregroundcolor2, 20%) (2 * @stripe-size));
+	// 'background-size' *MUST* be after 'background'
+	background-size: @stripe-size-diag;
+	background-repeat: repeat;
+	background-position-x: 0;
+
+	@keyframes stipes {
+		from { background-position-x: 0; }
+		to { background-position-x: @stripe-size-diag; }
 	}
 }

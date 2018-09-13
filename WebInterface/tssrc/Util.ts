@@ -105,7 +105,7 @@ class Util {
 
 type icons
     = "cog-work" | "heart"
-    | "loop-square"
+    | "loop-all" | "loop-off" | "loop-one"
     | "media-pause" | "media-play" | "media-stop"
     | "random" | "random-off"
     | "volume-off" | "volume-low" | "volume-high";

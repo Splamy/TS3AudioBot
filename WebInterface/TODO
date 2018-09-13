@@ -1,8 +1,8 @@
 Bot:
     - slider -> time
     - play button behaviour
+    - Refresh information
 
 Bots:
     - Create Bot
-    - Connect bot
     - Autostart on/off ?
