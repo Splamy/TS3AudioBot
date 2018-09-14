@@ -36,8 +36,7 @@
     "del-cli": "^1.1.0",
     "less": "^3.8.1",
     "onchange": "^4.1.0",
-    "parallelshell": "^3.0.1",
-    "replace": "^1.0.0",
+    "parallelshell": "^3.0.2",
     "typescript": "^3.0.3",
     "uglify-es": "^3.3.9"
   }

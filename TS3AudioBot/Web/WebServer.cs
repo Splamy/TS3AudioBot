@@ -158,10 +158,16 @@ namespace TS3AudioBot.Web
 					{
 						remoteAddress = context.Request.RemoteEndPoint?.Address;
 						if (remoteAddress == null)
-							return;
+							continue;
+						if(context.Request.IsLocal
+							&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
+							&& IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
+						{
+							remoteAddress = realIp;
+						}
 					}
 					// NRE catch handler is needed due to a strange mono race condition bug.
-					catch (NullReferenceException) { return; }
+					catch (NullReferenceException) { continue; }
 
 					var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
 					Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);

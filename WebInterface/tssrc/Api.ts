@@ -29,8 +29,13 @@ function cmd<T = ApiRet>(...params: (string | Api)[]): Api<T> {
 }
 
 // TODO: fix ! hack for bot_id
-function bot<T = ApiRet>(param: Api<T>, id: number | string = Main.state["bot_id"]!): Api<T> {
-    return Api.call("bot", "use", id.toString(), param);
+function bot<T = ApiRet>(param: Api<T>, id: number | string | undefined = Main.state["bot_id"]): Api<T> {
+    if(id === undefined) {
+        throw new Error("The bot id was not set");
+    } else if (typeof id === "number") {
+        id = id.toString();
+    }
+    return Api.call("bot", "use", id, param);
 }
 
 function jmerge<T extends Api[]>(...param: T): Api<UnwrapApi<T>> {
