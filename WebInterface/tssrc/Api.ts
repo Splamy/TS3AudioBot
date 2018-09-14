@@ -28,7 +28,8 @@ function cmd<T = ApiRet>(...params: (string | Api)[]): Api<T> {
     return Api.call(...params);
 }
 
-function bot<T = ApiRet>(param: Api<T>, id: number | string = Main.state["bot_id"]): Api<T> {
+// TODO: fix ! hack for bot_id
+function bot<T = ApiRet>(param: Api<T>, id: number | string = Main.state["bot_id"]!): Api<T> {
     return Api.call("bot", "use", id.toString(), param);
 }
 

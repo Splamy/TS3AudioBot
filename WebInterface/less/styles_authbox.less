@@ -7,66 +7,27 @@
 		display: none;
 	}
 
-	.authboxform {
-		background-color: @backgroundcolor2;
-		top: 40px;
-		right: 5px;
-		display: none;
-		position: absolute;
-		min-width: 480px;
-		min-height: 1em;
-		box-shadow: -2px 2px 8px 0px @contrastcolor1;
-		padding: 8px 12px;
-		z-index: 1;
-		pointer-events: none;
-
-		* {
-			pointer-events: all;
-		}
-
-		input {
-			width: 100%;
-		}
+	// open style
+	#authtoken {
+		width: 40em;
+		transition-duration: 0.5s;
+		transition-timing-function: cubic-bezier(.23,1,.32,1);
 	}
 
-	input:checked ~ .authboxform {
-		display: flex;
+	.buttonIcon {
+		background-image: url(/media/icons/eye-no.svg);
 	}
 
-	.closestate() {
-		background-color: @backgroundcolor1;
-		border-radius: 0;
+	// closed style
+	input:checked ~ #authtoken {
+		margin: 0;
+		padding: 0;
+		width: 0;
+		visibility: hidden;
+		opacity: 0;
 	}
 
-	.openstate() {
-		background-color: yellow;
-		border-radius: 0;
-	}
-
-	.animation() {
-		animation-duration: 0.3s;
-		animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
-	}
-
-	@keyframes openauth {
-		from { .closestate() }
-		to { .openstate(); }
-	}
-
-	@keyframes closeauth {
-		from { .openstate(); }
-		to { .closestate(); }
-	}
-
-	input:not(:checked) ~ img {
-		.animation();
-		.closestate();
-		animation-name: closeauth;
-	}
-
-	input:checked ~ img {
-		.animation();
-		.openstate();
-		animation-name: openauth;
+	input:checked ~ .buttonIcon {
+		background-image: url(/media/icons/key.svg);
 	}
 }

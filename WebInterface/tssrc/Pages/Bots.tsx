@@ -59,6 +59,7 @@ class Bots implements IPage {
             }
             botInfo.Div = botCard;
         }
+        Main.generateLinks();
     }
 
     private botCard(botInfo: IPlusInfo): HTMLElement | undefined {

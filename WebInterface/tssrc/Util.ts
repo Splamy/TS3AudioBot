@@ -1,8 +1,7 @@
 class Util {
 
-    // tslint:disable no-null-keyword
     public static parseQuery(query: string): Dict<string> {
-        const search = /([^&=]+)=?([^&]*)/g;
+        const search = /(?:[?&])([^&=]+)=([^&]*)/g;
         const decode = (s: string) => decodeURIComponent(s.replace(/\+/g, " "));
         const urlParams: Dict<string> = {};
         let match: RegExpExecArray | null = null;
@@ -14,14 +13,21 @@ class Util {
         } while (match);
         return urlParams;
     }
-    // tslint:enable no-null-keyword
-
-    public static parseUrlQuery(url: string): Dict<string> {
-        return Util.parseQuery(url.substr(url.indexOf("?") + 1));
-    }
 
     public static getUrlQuery(): Dict<string> {
-        return Util.parseUrlQuery(window.location.href);
+        return Util.parseQuery(window.location.href);
+    }
+
+    public static buildQuery(data: Dict<string>): string {
+        let str = "";
+        let hasOne = false;
+        for (const dat in data) {
+            if (!data[dat])
+                continue;
+            str += (hasOne ? "&" : "?") + dat + "=" + data[dat];
+            hasOne = true;
+        }
+        return str;
     }
 
     private static readonly slmax: number = 7.0;
@@ -116,4 +122,4 @@ class ErrorObject {
     constructor(public obj: any) { }
 }
 
-type Dict<T = any> = { [key: string]: T; };
+type Dict<T = any> = { [key: string]: T | undefined; };

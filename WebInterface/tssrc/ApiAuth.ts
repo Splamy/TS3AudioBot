@@ -13,7 +13,7 @@ class ApiAuth {
         if (fullTokenString.length === 0)
             return ApiAuth.Anonymous;
 
-        const split = fullTokenString.split(/:/g);
+        const split = fullTokenString.split(/:/);
         if (split.length === 2) {
             return new ApiAuth(split[0], split[1]);
         } else if (split.length === 3) {
@@ -25,5 +25,9 @@ class ApiAuth {
 
     public getBasic(): string {
         return `Basic ${btoa(this.UserUid + ":" + this.Token)}`;
+    }
+
+    public getFullAuth() {
+        return this.UserUid + ":" + this.Token;
     }
 }

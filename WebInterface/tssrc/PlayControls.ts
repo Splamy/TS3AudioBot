@@ -161,6 +161,9 @@ class PlayControls {
 			if (this.trackPosition < this.trackLength) {
 				this.trackPosition += 1;
 				this.showStatePosition(this.trackPosition);
+			} else {
+				this.playTick.stop();
+				this.startEcho();
 			}
 		}, 1000);
 

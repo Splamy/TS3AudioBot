@@ -7,7 +7,8 @@
 // python -m SimpleHTTPServer 8000
 
 class Main {
-    private static contentDiv: HTMLElement;
+    private static divAuthToken: HTMLInputElement;
+    private static divContent: HTMLElement;
     public static AuthData: ApiAuth = ApiAuth.Anonymous;
     private static currentPage: IPage | undefined;
     private static pages: Dict<IPage> = {
@@ -17,14 +18,14 @@ class Main {
     public static state: Dict<string> = {};
 
     public static async init() {
-        Main.contentDiv = Util.getElementByIdSafe("content")!;
+        Main.divContent = Util.getElementByIdSafe("content")!;
         Main.readStateFromUrl();
         Main.generateLinks();
 
-        const authElem = document.getElementById("authtoken");
-        if (authElem) {
-            authElem.oninput = Main.authChanged;
-        }
+        Main.divAuthToken = Util.getElementByIdSafe("authtoken") as HTMLInputElement;
+        Main.divAuthToken.oninput = Main.authChanged;
+        Main.loadAuth();
+
         const divRefresh = document.getElementById("refreshContent");
         if (divRefresh) {
             divRefresh.onclick = async () => {
@@ -36,21 +37,17 @@ class Main {
             };
         }
 
-        const page = Main.state.page as string | undefined;
-        if (page !== undefined) {
-            await Main.setSite(page);
-        }
+        await Main.setSite(Main.state);
     }
 
-    private static generateLinks() {
+    public static generateLinks() {
         const list = document.querySelectorAll(".jslink") as NodeListOf<HTMLLinkElement>;
         for (const divLink of list) {
-            const query = Util.parseUrlQuery(divLink.href);
-            const page = query.page as string;
+            const query = Util.parseQuery(divLink.href);
             divLink.classList.remove("jslink");
             divLink.onclick = async (ev) => {
                 ev.preventDefault();
-                await Main.setSite(page, query);
+                await Main.setSite(query);
             };
         }
     }
@@ -60,36 +57,27 @@ class Main {
         Object.assign(Main.state, query);
     }
 
-    public static async setSite(site: string, data?: Dict) {
-        //console.log("calling " + site);
+    public static async setSite(data: Dict<string> = Main.state) {
+        const site = data.page
+        if(site === undefined) {
+            return;
+        }
+
         const content = await Get.site(site);
+        Main.divContent.innerHTML = content;
 
-        //console.log("got " + site);
+        // Update state and url
+        Main.state = data;
+        window.history.pushState(Main.state, undefined, "/index.html" + Util.buildQuery(Main.state));
 
-        // Update url
-        // let str = "http://splamy.de:50581/index.html";
-        // let hasOne = false;
-        // for (const dat in Main.state) {
-        //     str += (hasOne ? "&" : "?") + dat + "=" + Main.state[dat];
-        //     hasOne = false;
-        // }
-        // console.log("before push " + site);
-
-        // window.history.replaceState({}, undefined, str);
-        //location.href = str;
-        //console.log("content " + site);
-        Main.contentDiv.innerHTML = content;
-        Object.assign(Main.state, data);
-        Main.state.page = site;
         await Main.initContentPage();
         Main.generateLinks();
-        //console.log("registered " + site);
     }
 
     private static async initContentPage() {
         const page = Main.state.page as string | undefined;
         if (page !== undefined) {
-            const thispage: IPage = Main.pages[page];
+            const thispage = Main.pages[page];
             Main.currentPage = thispage;
             if (thispage !== undefined) {
                 await thispage.init();
@@ -97,10 +85,17 @@ class Main {
         }
     }
 
-    private static authChanged(this: HTMLElement, ev: Event) {
-        const thisinput = this as HTMLInputElement;
-        Main.AuthData = ApiAuth.Create(thisinput.value);
+    private static loadAuth() {
+        const auth = window.localStorage.getItem("api_auth");
+        if (auth) {
+            Main.AuthData = ApiAuth.Create(auth);
+            Main.divAuthToken.value = auth;
+        }
+    }
 
+    private static authChanged() {
+        Main.AuthData = ApiAuth.Create(Main.divAuthToken.value);
+        window.localStorage.setItem("api_auth", Main.AuthData.getFullAuth());
         // todo do test auth
     }
 }

@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8" />
     <title>TS3AudioBot</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link href="styles.css" rel="stylesheet" />
     <script src="script.js"></script>
 </head>
 
@@ -25,15 +25,11 @@
                 <div>
                     <div id="refreshContent" class="button buttonIcon buttonRound buttonSmall" style="background-image: url(/media/icons/reload.svg)"></div>
                 </div>
-                <div class="flexmax flowright">
-                    <label class="authbox">
-                        <input type="checkbox" />
-                        <span class="authboxform">
-                            <label>AuthString:</label> <input id="authtoken" type="text" />
-                        </span>
-                        <div class="button buttonIcon buttonRound buttonSmall" style="background-image: url(/media/icons/key.svg)"></div>
-                    </label>
-                </div>
+                <label class="authbox flex">
+                    <input type="checkbox" checked/>
+                    <div class="button buttonIcon buttonRound buttonSmall"></div>
+                    <input id="authtoken" type="text" placeholder="Enter your API Key here. You can get one with !api token" />
+                </label>
             </header>
             <section id="content"></section>
             <footer class="flex flowright unselectable">
