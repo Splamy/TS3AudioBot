@@ -1,0 +1,16 @@
+version: appveyor-{branch}-{build}
+
+branches:
+  only:
+  - master
+  - develop
+
+image: Visual Studio 2017
+
+configuration: Release
+
+clone_depth: 99999
+
+build:
+  parallel: true
+  verbosity: minimal

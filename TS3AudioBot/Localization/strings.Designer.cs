@@ -97,11 +97,20 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Clears the avatar of the bot..
+        /// </summary>
+        internal static string cmd_bot_avatar_clear_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_avatar_clear_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Sets an avatar for the bot.
         /// </summary>
-        internal static string cmd_bot_avatar_help {
+        internal static string cmd_bot_avatar_set_help {
             get {
-                return ResourceManager.GetString("cmd_bot_avatar_help", resourceCulture);
+                return ResourceManager.GetString("cmd_bot_avatar_set_help", resourceCulture);
             }
         }
         
