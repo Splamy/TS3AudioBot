@@ -28,7 +28,7 @@ The bot is fully operable via chat.
 Commands can be invoked with `!command`.  
 
 For the full command list and tutorials see [here in the wiki](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem)
-or our live [OpenApiV3 generator](http://splamy.de:8181/openapi/index.html).
+or our live [OpenApiV3 generator](http://tab.splamy.de/openapi/index.html).
 
 ## Download
 You can download the latest builds precompiled from our [nightly server](https://splamy.de/Nightly#ts3ab):  

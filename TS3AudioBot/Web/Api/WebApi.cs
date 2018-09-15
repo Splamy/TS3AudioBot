@@ -54,7 +54,8 @@ namespace TS3AudioBot.Web.Api
 			using (var response = context.Response)
 			{
 				response.ContentType = "application/json";
-				response.AddHeader("Access-Control-Allow-Origin", "*");
+				response.Headers["Access-Control-Allow-Origin"] = "*";
+				response.Headers[HttpResponseHeader.CacheControl] = "no-cache, no-store, must-revalidate";
 
 				var authResult = Authenticate(context);
 				if (!authResult.Ok)

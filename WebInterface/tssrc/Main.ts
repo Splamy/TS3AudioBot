@@ -2,6 +2,8 @@
 /// <reference path="Pages/IPage.ts"/>
 /// <reference path="Pages/Bot.ts"/>
 /// <reference path="Pages/Bots.tsx"/>
+/// <reference path="Pages/Dummy.ts"/>
+/// <reference path="Pages/Commands.tsx"/>
 
 // Python webhost:
 // python -m SimpleHTTPServer 8000
@@ -11,9 +13,13 @@ class Main {
     private static divContent: HTMLElement;
     public static AuthData: ApiAuth = ApiAuth.Anonymous;
     private static currentPage: IPage | undefined;
-    private static pages: Dict<IPage> = {
+    private static pages: Dict<(IPage)> = {
+        "main.html": new Bot(),
         "bot.html": new Bot(),
         "bots.html": new Bots(),
+        "commands.html": new Commands(),
+        "playlist.html": new Dummy(),
+        "history.html": new Dummy(),
     };
     public static state: Dict<string> = {};
 
@@ -35,6 +41,17 @@ class Main {
                     Util.setIcon(divRefresh, "reload");
                 }
             };
+        }
+
+        const list = document.querySelectorAll("nav a") as NodeListOf<HTMLLinkElement>;
+        for (const divLink of list) {
+            const query = Util.parseQuery(divLink.href);
+            if (query.page) {
+                const pageEntry = Main.pages[query.page];
+                if (pageEntry) {
+                    pageEntry.divNav = divLink;
+                }
+            }
         }
 
         await Main.setSite(Main.state);
@@ -59,7 +76,7 @@ class Main {
 
     public static async setSite(data: Dict<string> = Main.state) {
         const site = data.page
-        if(site === undefined) {
+        if (site === undefined) {
             return;
         }
 
@@ -70,19 +87,21 @@ class Main {
         Main.state = data;
         window.history.pushState(Main.state, undefined, "/index.html" + Util.buildQuery(Main.state));
 
-        await Main.initContentPage();
-        Main.generateLinks();
-    }
-
-    private static async initContentPage() {
-        const page = Main.state.page as string | undefined;
-        if (page !== undefined) {
-            const thispage = Main.pages[page];
-            Main.currentPage = thispage;
-            if (thispage !== undefined) {
-                await thispage.init();
-            }
+        const oldPage = Main.currentPage;
+        if (oldPage && oldPage.divNav) {
+            oldPage.divNav.classList.remove("navSelected");
         }
+
+        const newPage = Main.pages[site];
+        Main.currentPage = newPage;
+        if (newPage !== undefined) {
+            if (newPage.divNav) {
+                newPage.divNav.classList.add("navSelected");
+            }
+            await newPage.init();
+        }
+
+        Main.generateLinks();
     }
 
     private static loadAuth() {

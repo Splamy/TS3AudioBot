@@ -257,6 +257,8 @@ namespace TS3AudioBot
 
 		private void LoggedUpdateBotStatus(object sender, EventArgs e)
 		{
+			if (IsDisposed)
+				return;
 			var result = UpdateBotStatus();
 			if (!result)
 				Log.Warn(result.Error.Str);
@@ -288,7 +290,7 @@ namespace TS3AudioBot
 
 		private void GenerateStatusImage(object sender, EventArgs e)
 		{
-			if (!config.GenerateStatusAvatar)
+			if (!config.GenerateStatusAvatar || IsDisposed)
 				return;
 
 			if (e is PlayInfoEventArgs startEvent)

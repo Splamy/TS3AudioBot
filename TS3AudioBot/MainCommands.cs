@@ -101,8 +101,8 @@ namespace TS3AudioBot
 			return nonce.Value;
 		}
 
-		[Command("bot avatar")]
-		public static void CommandBotAvatar(Ts3Client ts3Client, string url)
+		[Command("bot avatar set")]
+		public static void CommandBotAvatarSet(Ts3Client ts3Client, string url)
 		{
 			url = TextUtil.ExtractUrlFromBb(url);
 			Uri uri;
@@ -122,6 +122,9 @@ namespace TS3AudioBot
 				}
 			});
 		}
+
+		[Command("bot avatar clear")]
+		public static void CommandBotAvatarClear(Ts3Client ts3Client) => ts3Client.DeleteAvatar().UnwrapThrow();
 
 		[Command("bot disconnect")]
 		public static void CommandBotDisconnect(BotManager bots, Bot bot) => bots.StopBot(bot);

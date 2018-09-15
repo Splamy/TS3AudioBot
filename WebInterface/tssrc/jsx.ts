@@ -5,6 +5,8 @@ declare namespace JSX {
         div: HTMLJsxBase<HTMLDivElement>,
         a: HTMLJsxBase<HTMLAnchorElement & HTMLHyperlinkElementUtils>,
         input: HTMLJsxBase<HTMLInputElement>,
+        script: HTMLJsxBase<HTMLScriptElement>,
+        link: HTMLJsxBase<HTMLLinkElement>,
     }
 
     interface Element extends HTMLElement { }

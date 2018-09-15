@@ -269,6 +269,15 @@ namespace TS3Client
 			return Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
 		}
 
+		/// <summary>Deletes the avatar of a user.
+		/// Can be called without uid to delete own avatar.</summary>
+		/// <param name="clientUid">The client uid where the avatar should be deleted.</param>
+		public CmdR DeleteAvatar(string clientUid = null)
+		{
+			string path = "/avatar_" + clientUid;
+			return FileTransferDeleteFile(0, new[] { path });
+		}
+
 		public CmdR ClientMove(ClientIdT clientId, ChannelIdT channelId, string channelPassword = null)
 		{
 			var cmd = new Ts3Command("clientmove", new List<ICommandPart> {

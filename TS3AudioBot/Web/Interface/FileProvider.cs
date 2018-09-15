@@ -65,20 +65,19 @@ namespace TS3AudioBot.Web.Interface
 			case "text/html":
 			case "text/css":
 				addCache = 86400; // 1 day
-				response.Headers[HttpResponseHeader.CacheControl] = $"max-age={addCache},public";
 				break;
 
 			case "image/svg+xml":
 			case "image/png":
 			case "image/x-icon":
 				addCache = 86400 * 7; // 1 week
-				response.Headers[HttpResponseHeader.CacheControl] = $"max-age={addCache},public,immutable";
 				break;
 			}
 
 			if (addCache > 0)
 			{
 				// Cache static files
+				response.Headers[HttpResponseHeader.CacheControl] = $"max-age={addCache},public";
 				response.Headers[HttpResponseHeader.Expires]
 					= Util.GetNow().AddSeconds(addCache).ToUniversalTime().ToString("r");
 				response.Headers[HttpResponseHeader.LastModified]

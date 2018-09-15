@@ -480,6 +480,8 @@ namespace TS3AudioBot
 
 		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => TsFullClient.UploadAvatar(stream).FormatLocal();
 
+		public E<LocalStr> DeleteAvatar() => TsFullClient.DeleteAvatar().FormatLocal();
+
 		public E<LocalStr> MoveTo(ulong channelId, string password = null)
 			=> TsFullClient.ClientMove(TsFullClient.ClientId, channelId, password).FormatLocal(() => strings.error_ts_cannot_move);
 
