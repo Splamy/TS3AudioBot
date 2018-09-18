@@ -17,3 +17,10 @@ type CmdSong = {
     title: string;
     source: string;
 }
+
+type ApiError = {
+    ErrorCode: number;
+    ErrorMessage: string;
+    ErrorName: string;
+    HelpLink?: string;
+}

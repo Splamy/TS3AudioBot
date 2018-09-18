@@ -26,12 +26,15 @@
                     <div id="refreshContent" class="button buttonIcon buttonRound buttonSmall" style="background-image: url(/media/icons/reload.svg)"></div>
                 </div>
                 <label class="authbox flex">
-                    <input type="checkbox" checked/>
+                    <input type="checkbox" checked />
                     <div class="button buttonIcon buttonRound buttonSmall"></div>
                     <input id="authtoken" type="text" placeholder="Enter your API Key here. You can get one with !api token" />
                 </label>
             </header>
-            <section id="content"></section>
+            <section>
+                <div id="errors"></div>
+                <div id="content"></div>
+            </section>
             <footer class="flex flowright unselectable">
                 <a href="https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link"
                     target="_blank">

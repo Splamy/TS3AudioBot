@@ -12,8 +12,8 @@ class Bot implements IPage {
 				Util.setIcon(btnPlayNew, "cog-work");
 				const res = await bot(cmd("play", divPlayNew.value)).get();
 				Util.setIcon(btnPlayNew, "media-play");
-				if (res instanceof ErrorObject)
-					return DisplayError.push(res);
+				if (!DisplayError.check(res, "Failed to start a new song"))
+					return;
 
 				const playCtrl = PlayControls.get();
 				if (playCtrl !== undefined)
@@ -43,8 +43,8 @@ class Bot implements IPage {
 			cmd<CmdBotInfo>("bot", "info"),
 		)).get();
 
-		if (botInfo instanceof ErrorObject)
-			return DisplayError.push("Failed to get bot information", botInfo);
+		if (!DisplayError.check(botInfo, "Failed to get bot information"))
+			return;
 
 		// Fill 'Info' Block
 		const divTemplate = Util.getElementByIdSafe("data_template");
@@ -56,8 +56,8 @@ class Bot implements IPage {
 		divServer.innerText = botInfo[5].Server;
 
 		const playCtrl = PlayControls.get();
-		if (!playCtrl)
-			return DisplayError.push("Could not find play-controls");
+		if (playCtrl === undefined)
+			throw new Error("Could not find play-controls");
 
 		playCtrl.showState(botInfo as any /*TODO:iter*/);
 	}

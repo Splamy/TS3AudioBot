@@ -45,7 +45,7 @@ class PlayControls {
 				cmd<void>("repeat", RepeatKind[(this.repeat + 1) % 3].toLowerCase()),
 				cmd<RepeatKind>("repeat"),
 			)).get();
-			if (!PlayControls.check(res))
+			if (!DisplayError.check(res, "Failed to apply repeat mode"))
 				return this.showStateRepeat(this.repeat);
 			this.showStateRepeat(res[1]);
 		};
@@ -56,7 +56,7 @@ class PlayControls {
 				cmd<void>("random", (!this.random) ? "on" : "off"),
 				cmd<boolean>("random"),
 			)).get();
-			if (res instanceof ErrorObject)
+			if (!DisplayError.check(res, "Failed to apply random mode"))
 				return this.showStateRandom(this.random);
 			this.showStateRandom(res[1]);
 		};
@@ -66,8 +66,8 @@ class PlayControls {
 				cmd<void>("volume", volume.toString()),
 				cmd<number>("volume"),
 			)).get();
-			if (res instanceof ErrorObject)
-				return this.showStateVolume(this.volume, applySlider);
+			if (!DisplayError.check(res, "Failed to apply volume"))
+				return this.showStateVolume(this.volume, true);
 			this.showStateVolume(res[1], applySlider);
 		}
 		this.divVolumeMute.onclick = async () => {
@@ -90,7 +90,7 @@ class PlayControls {
 			Util.setIcon(this.divNext, "cog-work");
 			const res = await bot(cmd<void>("next")).get();
 			Util.setIcon(this.divNext, "media-skip-forward");
-			if (res instanceof ErrorObject)
+			if (!DisplayError.check(res, "Failed to skip forward"))
 				return;
 			this.startEcho();
 		}
@@ -99,13 +99,13 @@ class PlayControls {
 			Util.setIcon(this.divPrev, "cog-work");
 			const res = await bot(cmd<void>("previous")).get();
 			Util.setIcon(this.divPrev, "media-skip-backward");
-			if (res instanceof ErrorObject)
+			if (!DisplayError.check(res, "Failed to skip backward"))
 				return;
 			this.startEcho();
 		}
 
 		this.divPlay.onclick = async () => {
-			let songRet: ErrorObject | [void, CmdSong | null];
+			let songRet: ApiErr | [void, CmdSong | null];
 			switch (this.playing) {
 				case PlayState.Off:
 					return;
@@ -130,7 +130,7 @@ class PlayControls {
 					throw new Error();
 			}
 
-			if (songRet instanceof ErrorObject)
+			if (!DisplayError.check(songRet))
 				return this.showStatePlaying(this.currentSong, this.playing);
 
 			this.startEcho();
@@ -150,7 +150,7 @@ class PlayControls {
 			).get();
 			this.divPositionSlider.classList.remove("loading");
 
-			if (res instanceof ErrorObject)
+			if (!DisplayError.check(res, "Failed to seek"))
 				return;
 
 			if (wasRunning) this.playTick.start();
@@ -189,7 +189,7 @@ class PlayControls {
 			cmd<number>("volume"),
 		)).get();
 
-		if (!PlayControls.check(botInfo))
+		if (!DisplayError.check(botInfo))
 			return;
 
 		this.showState(botInfo as any /*TODO:iter*/);
@@ -311,14 +311,6 @@ class PlayControls {
 			default:
 				break;
 		}
-	}
-
-	private static check<T>(result: T | ErrorObject): result is T {
-		if (result instanceof ErrorObject) {
-			DisplayError.push("Call error", result);
-			return false;
-		}
-		return true;
 	}
 }
 

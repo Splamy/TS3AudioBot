@@ -13,11 +13,10 @@ class Bots implements IPage {
 			cmd<{ [key: string]: CmdBotsSettings }>("settings", "global", "get", "bots"),
 		).get();
 
+		if (!DisplayError.check(res, "Error getting bot list"))
+			return;
+
 		Util.clearChildren(this.divBots);
-
-		if (res instanceof ErrorObject)
-			return DisplayError.push("Error getting bot list", res);
-
 		this.bots = {};
 
 		for (const botInfo of res[0]) {
@@ -97,19 +96,19 @@ class Bots implements IPage {
 				divSs.style.color = "transparent";
 				if (!botInfo.Running) {
 					const res = await cmd<CmdBotInfo>("bot", "connect", "template", botInfo.Name).get();
-					if (res instanceof ErrorObject) {
+					if (!DisplayError.check(res, "Error starting bot")) {
 						Util.clearIcon(divSs);
 						divSs.style.color = null;
-						return DisplayError.push("Error starting bot", res);
+						return;
 					}
 					Object.assign(botInfo, res);
 					botInfo.Running = true;
 				} else {
 					const res = await bot(cmd("bot", "disconnect"), botInfo.Id).get();
-					if (res instanceof ErrorObject) {
+					if (!DisplayError.check(res, "Error stopping bot")) {
 						Util.clearIcon(divSs);
 						divSs.style.color = null;
-						return DisplayError.push("Error starting bot", res);
+						return;
 					}
 					botInfo.Id = undefined;
 					botInfo.Server = undefined;

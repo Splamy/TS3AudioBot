@@ -4,9 +4,9 @@ class Get {
         return response.text();
     }
 
-    public static async api<T extends ApiRet = ApiRet>(
+    public static async api<T extends ApiRet>(
         site: Api<T>,
-        login: ApiAuth = Main.AuthData): Promise<T | ErrorObject> {
+        login: ApiAuth = Main.AuthData): Promise<T | ApiErr> {
 
         let requestData: RequestInit = {
             cache: "no-cache",
@@ -48,3 +48,4 @@ class Get {
 }
 
 type ApiRet = ({} | null | void);
+type ApiErr = ErrorObject<ApiError>;

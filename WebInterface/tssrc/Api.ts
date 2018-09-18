@@ -3,7 +3,7 @@
 class Api<T extends ApiRet = ApiRet> {
 	public constructor(private buildAddr: string) { }
 
-	public static call<T>(...params: (string | Api)[]): Api<T> {
+	public static call<T>(...params: (string | Api)[]) {
 		let buildStr = "";
 		for (const param of params) {
 			if (typeof param === "string") {
@@ -15,26 +15,26 @@ class Api<T extends ApiRet = ApiRet> {
 		return new Api<T>(buildStr);
 	}
 
-	public async get(): Promise<T | ErrorObject> {
+	public async get(): Promise<T | ApiErr> {
 		return Get.api<T>(this);
 	}
 
-	public done(): string {
+	public done() {
 		return this.buildAddr;
 	}
 }
 
-function cmd<T = ApiRet>(...params: (string | Api)[]): Api<T> {
-	return Api.call(...params);
+function cmd<T extends ApiRet>(...params: (string | Api)[]) {
+	return Api.call<T>(...params);
 }
 
-function bot<T = ApiRet>(param: Api<T>, id: number | string | undefined = Main.state["bot_id"]): Api<T> {
+function bot<T extends ApiRet>(param: Api<T>, id: number | string | undefined = Main.state["bot_id"]) {
 	if(id === undefined) {
 		throw new Error("The bot id was not set");
 	} else if (typeof id === "number") {
 		id = id.toString();
 	}
-	return Api.call("bot", "use", id, param);
+	return Api.call<T>("bot", "use", id, param);
 }
 
 function jmerge<T extends Api[]>(...param: T): Api<UnwrapApi<T>> {
