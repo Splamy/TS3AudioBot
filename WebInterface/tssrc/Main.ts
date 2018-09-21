@@ -85,7 +85,7 @@ class Main {
 
         // Update state and url
         Main.state = data;
-        window.history.pushState(Main.state, undefined, "/index.html" + Util.buildQuery(Main.state));
+        window.history.pushState(Main.state, undefined, "index.html" + Util.buildQuery(Main.state));
 
         const oldPage = Main.currentPage;
         if (oldPage && oldPage.divNav) {

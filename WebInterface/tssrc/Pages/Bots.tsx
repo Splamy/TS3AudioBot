@@ -79,11 +79,11 @@ class Bots implements IPage {
 					<div>
 						<a when={botInfo.Running} class="jslink button buttonMedium buttonIcon"
 							href={"index.html?page=bot.html&bot_id=" + botInfo.Id}
-							style="background-image: url(/media/icons/list-rich.svg)"></a>
+							style="background-image: url(media/icons/list-rich.svg)"></a>
 					</div>
 					<div class={"button buttonRound buttonMedium buttonIcon " + (botInfo.Running ? "buttonRed" : "buttonGreen")}
 						set={divStartStopButton}
-						style={"background-image: url(/media/icons/" + (botInfo.Running ? "power-standby" : "play-circle") + ".svg)"}>
+						style={"background-image: url(media/icons/" + (botInfo.Running ? "power-standby" : "play-circle") + ".svg)"}>
 					</div>
 				</div>
 			</div>

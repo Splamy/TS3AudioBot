@@ -64,7 +64,7 @@ class Util {
 	}
 
 	public static setIcon(elem: HTMLElement, icon: icons) {
-		elem.style.backgroundImage = `url(/media/icons/${icon}.svg)`;
+		elem.style.backgroundImage = `url(media/icons/${icon}.svg)`;
 	}
 
 	public static clearIcon(elem: HTMLElement) {

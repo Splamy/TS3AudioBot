@@ -64,8 +64,7 @@ lb=$'\n'
 EscTS "Commit $commitLink in branch $TRAVIS_BRANCH ($buildLink) $ok.$lb Summary: $gitTitle"
 
 nc -q 2 splamy.de 10011 <<EOF
-use 1
-clientupdate client_nickname=TravisCI
+use sid=1 client_nickname=TravisCI
 sendtextmessage targetmode=3 target=1 msg=$escTS
 quit
 EOF
