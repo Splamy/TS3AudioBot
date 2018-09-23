@@ -128,9 +128,9 @@ namespace TS3AudioBot.Config
 	{
 		public T NewValue { get; }
 
-		public ConfigChangedEventArgs(T newV)
+		public ConfigChangedEventArgs(T newValue)
 		{
-			NewValue = newV;
+			NewValue = newValue;
 		}
 	}
 }

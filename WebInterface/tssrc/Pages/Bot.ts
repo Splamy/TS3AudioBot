@@ -34,7 +34,7 @@ class Bot implements IPage {
 	}
 
 	public async refresh() {
-		const botInfo = await bot(jmerge(
+		const res = await bot(jmerge(
 			cmd<CmdSong | null>("song"),
 			cmd<CmdSongPosition>("song", "position"),
 			cmd<RepeatKind>("repeat"),
@@ -43,7 +43,7 @@ class Bot implements IPage {
 			cmd<CmdBotInfo>("bot", "info"),
 		)).get();
 
-		if (!DisplayError.check(botInfo, "Failed to get bot information"))
+		if (!DisplayError.check(res, "Failed to get bot information"))
 			return;
 
 		// Fill 'Info' Block
@@ -51,14 +51,16 @@ class Bot implements IPage {
 		const divId = Util.getElementByIdSafe("data_id");
 		const divServer = Util.getElementByIdSafe("data_server");
 
-		divTemplate.innerText = botInfo[5].Name;
-		divId.innerText = botInfo[5].Id.toString();
-		divServer.innerText = botInfo[5].Server;
+		let botInfo = res[5];
+		divTemplate.innerText = botInfo.Name === null ? "<temporary>" : botInfo.Name;
+		divId.innerText = botInfo.Id + "";
+		divServer.innerText = botInfo.Server;
 
+		// Fill all control elements
 		const playCtrl = PlayControls.get();
 		if (playCtrl === undefined)
 			throw new Error("Could not find play-controls");
 
-		playCtrl.showState(botInfo as any /*TODO:iter*/);
+		playCtrl.showState(res as any /*TODO:iter*/);
 	}
 }

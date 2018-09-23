@@ -18,9 +18,6 @@ namespace TS3AudioBot.Config
 			"! IMPORTANT !\n" +
 			"All config tables here starting with 'bot.*' will only be used as default values for each bot.\n" +
 			"To make bot-instance specific changes go to the 'Bots' folder (configs.bots_path) and set your configuration values in the desired bot config.");
-		public ConfBots Bots { get; } = Create<ConfBots>("bots",
-			"You can create new subtables matching the bot config name to configure meta-settings for each bot.\n" +
-			"Current layout: { run:bool }");
 		public ConfConfigs Configs { get; } = Create<ConfConfigs>("configs");
 		public ConfDb Db { get; } = Create<ConfDb>("db");
 		public ConfFactories Factories { get; } = Create<ConfFactories>("factories");
@@ -30,15 +27,6 @@ namespace TS3AudioBot.Config
 		public ConfWeb Web { get; } = Create<ConfWeb>("web");
 
 		//public ConfigValue<bool> ActiveDocumentation { get; } = new ConfigValue<bool>("_active_doc", true);
-	}
-
-	public class ConfBots : ConfigDynamicTable<BotTemplate> { }
-
-	public class BotTemplate : ConfigTable
-	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
-
-		public ConfigValue<bool> Run { get; } = new ConfigValue<bool>("run", false);
 	}
 
 	public class ConfConfigs : ConfigTable
@@ -137,6 +125,8 @@ namespace TS3AudioBot.Config
 			" - substring : The shortest command starting with the given prefix.\n" +
 			" - ic3 : 'interleaved continuous character chain' A fuzzy algorithm similar to hamming distance but preferring characters at the start."
 			/* "hamming : " */);
+		public ConfigValue<bool> Run { get; } = new ConfigValue<bool>("run", false,
+			"Starts the instance when the TS3AudioBot is launched.");
 
 		public ConfConnect Connect { get; } = Create<ConfConnect>("connect");
 		public ConfAudio Audio { get; } = Create<ConfAudio>("audio");
@@ -168,7 +158,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfIdentity : ConfigTable
 	{
-		new public ConfigValue<string> Key { get; } = new ConfigValue<string>("key", "",
+		public ConfigValue<string> PrivateKey { get; } = new ConfigValue<string>("key", "",
 			"||| DO NOT MAKE THIS KEY PUBLIC ||| The client identity. You can import a teamspeak3 identity here too.");
 		public ConfigValue<ulong> Offset { get; } = new ConfigValue<ulong>("offset", 0,
 			"The client identity offset determining the security level.");
@@ -231,7 +221,7 @@ namespace TS3AudioBot.Config
 			"Called when the bot does not play anything for a certain amount of time.");
 		public ConfigValue<TimeSpan> IdleTime { get; } = new ConfigValue<TimeSpan>("idletime", TimeSpan.FromMinutes(5),
 			"Specifies how long the bot has to be idle until the 'onidle' event gets fired.\n" +
-			"You can specify the time in the ISO-8601 format with qutotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
+			"You can specify the time in the ISO-8601 format with quotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
 	}
 
 	// Utility config structs

@@ -17,6 +17,8 @@ namespace TS3AudioBot.Config
 
 	public static class ConfigHelper
 	{
+		public const string DefaultBotName = "default";
+
 		public static ConfigPart[] ByPathAsArray(this ConfigPart config, string path)
 		{
 			try

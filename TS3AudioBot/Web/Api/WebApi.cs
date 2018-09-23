@@ -13,6 +13,7 @@ namespace TS3AudioBot.Web.Api
 	using CommandSystem.Ast;
 	using CommandSystem.CommandResults;
 	using CommandSystem.Commands;
+	using Config;
 	using Dependency;
 	using Helper;
 	using Newtonsoft.Json;
@@ -163,7 +164,8 @@ namespace TS3AudioBot.Web.Api
 					}
 					else if (mcex.MissingType == typeof(Bot) || mcex.MissingType == typeof(IPlayerConnection)
 						|| mcex.MissingType == typeof(PlayManager) || mcex.MissingType == typeof(Ts3Client)
-						|| mcex.MissingType == typeof(IVoiceTarget) || mcex.MissingType == typeof(IVoiceTarget))
+						|| mcex.MissingType == typeof(IVoiceTarget) || mcex.MissingType == typeof(IVoiceTarget)
+						|| mcex.MissingType == typeof(ConfBot))
 					{
 						jsonError.HelpMessage += "You are trying to call a command which is specific to a bot. " +
 							"Use '!bot use' to switch to a bot instance";

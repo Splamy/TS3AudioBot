@@ -36,11 +36,11 @@ namespace TS3AudioBot
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
-		internal BotInjector Injector { get; set; }
+		internal BotInjector Injector { get; }
 
 		public int Id { get; internal set; }
 		/// <summary>This is the template name. Can be null.</summary>
-		public string Name { get; internal set; }
+		public string Name => config.Name;
 		public bool QuizMode { get; set; }
 
 		// Injected dependencies
@@ -61,9 +61,10 @@ namespace TS3AudioBot
 		public IPlayerConnection PlayerConnection { get; private set; }
 		public Filter Filter { get; private set; }
 
-		public Bot(ConfBot config)
+		public Bot(ConfBot config, BotInjector injector)
 		{
 			this.config = config;
+			this.Injector = injector;
 		}
 
 		public E<string> InitializeBot()
@@ -441,8 +442,9 @@ namespace TS3AudioBot
 		public BotInfo GetInfo() => new BotInfo
 		{
 			Id = Id,
-			Name = Name,
-			Server = config.Connect.Address,
+			Name = config.Name,
+			Server = ClientConnection.TsFullClient.ConnectionData.Address,
+			Status = ClientConnection.TsFullClient.Connected ? BotStatus.Connected : BotStatus.Connecting,
 		};
 
 		public void Dispose()
@@ -474,10 +476,18 @@ namespace TS3AudioBot
 
 	public class BotInfo
 	{
-		public int Id { get; set; }
+		public int? Id { get; set; }
 		public string Name { get; set; }
 		public string Server { get; set; }
+		public BotStatus Status { get; set; }
 
-		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server}"; // LOC: TODO
+		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server} Status: {Status.ToString()}"; // LOC: TODO
+	}
+
+	public enum BotStatus
+	{
+		Offline,
+		Connecting,
+		Connected,
 	}
 }

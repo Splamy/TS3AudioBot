@@ -10,7 +10,7 @@
     "tool:copy-webdata": "copyfiles -u 1 \"html/**/*\" build",
     "optimize:all": "npm run optimize:tsc && npm run optimize:less",
     "optimize:tsc": "uglifyjs out/script.js -c -o build/script.js",
-    "optimize:less": "cleancss out/styles.css -o build/styles.css -O2",
+    "optimize:less": "cleancss out/styles.css -o build/styles.css -O2 --skip-rebase",
     "watch:all": "parallelshell \"npm run watch:tsc\" \"npm run watch:less\"",
     "watch:tsc": "tsc --watch",
     "watch:less": "onchange \"less/**/*.less\" -- npm run build:less",

@@ -2017,7 +2017,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The playlist name contains invalid characters; please only use [a-zA-Z0-9_-]..
+        ///   Looks up a localized string similar to The name contains invalid characters; please only use [a-zA-Z0-9_-]..
         /// </summary>
         internal static string error_playlist_name_invalid_character {
             get {
@@ -2026,7 +2026,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An empty playlist name is not valid..
+        ///   Looks up a localized string similar to An empty name is not valid..
         /// </summary>
         internal static string error_playlist_name_invalid_empty {
             get {
@@ -2035,7 +2035,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The playlist name length must be &lt;64..
+        ///   Looks up a localized string similar to The name length must be &lt;64..
         /// </summary>
         internal static string error_playlist_name_invalid_too_long {
             get {

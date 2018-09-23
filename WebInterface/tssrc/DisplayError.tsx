@@ -13,14 +13,19 @@ class DisplayError {
 	}
 
 	//public static push(msg: string): void;
-	public static push(err: ApiErr, msg?: string): void {
+	public static push(err?: ApiErr, msg?: string): void {
 		let additional: string | undefined = undefined;
 		let hasAdditional = false;
 		if (msg !== undefined) {
-			hasAdditional = true;
-			additional = err.obj.ErrorMessage;
-		} else {
+			if (err !== undefined) {
+				hasAdditional = true;
+				additional = err.obj.ErrorMessage;
+			}
+		} else if (err !== undefined) {
 			msg = err.obj.ErrorMessage;
+		} else {
+			console.log("Got nothing to show");
+			return;
 		}
 
 		const divErrors = document.getElementById("errors");

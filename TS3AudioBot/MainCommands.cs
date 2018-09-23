@@ -41,13 +41,8 @@ namespace TS3AudioBot
 
 		internal class MainCommandsBag : ICommandBag
 		{
-			public IReadOnlyCollection<BotCommand> BagCommands { get; }
+			public IReadOnlyCollection<BotCommand> BagCommands { get; } = CommandManager.GetBotCommands(null, typeof(MainCommands)).ToArray();
 			public IReadOnlyCollection<string> AdditionalRights { get; } = new string[] { RightHighVolume, RightDeleteAllPlaylists };
-
-			public MainCommandsBag()
-			{
-				BagCommands = CommandManager.GetBotCommands(null, typeof(MainCommands)).ToArray();
-			}
 		}
 
 		public const string RightHighVolume = "ts3ab.admin.volume";
@@ -179,10 +174,26 @@ namespace TS3AudioBot
 			=> new JsonValue<ClientInfo>(ts3Client.GetSelf().UnwrapThrow(), string.Empty);
 
 		[Command("bot list")]
-		public static JsonArray<BotInfo> CommandBotId(BotManager bots)
+		public static JsonArray<BotInfo> CommandBotId(BotManager bots, ConfRoot config)
 		{
-			var botlist = bots.GetBotInfolist();
-			return new JsonArray<BotInfo>(botlist, bl => string.Join("\n", bl.Select(x => x.ToString())));
+			var botInfoList = bots.GetBotInfolist();
+			var botConfigList = config.GetAllBots();
+			var infoList = new Dictionary<string, BotInfo>();
+			foreach (var botInfo in botInfoList)
+				infoList[botInfo.Name] = botInfo;
+			foreach (var botConfig in botConfigList)
+			{
+				if (infoList.ContainsKey(botConfig.Name))
+					continue;
+				infoList[botConfig.Name] = new BotInfo
+				{
+					Id = null,
+					Name = botConfig.Name,
+					Server = botConfig.Connect.Address,
+					Status = BotStatus.Offline,
+				};
+			}
+			return new JsonArray<BotInfo>(infoList.Values.ToArray(), bl => string.Join("\n", bl.Select(x => x.ToString())));
 		}
 
 		[Command("bot move")]
@@ -195,10 +206,9 @@ namespace TS3AudioBot
 		public static void CommandBotBadges(Ts3Client ts3Client, string badges) => ts3Client.ChangeBadges(badges).UnwrapThrow();
 
 		[Command("bot save")]
-		public static void CommandBotSetup(Bot bot, ConfBot botConfig, string name)
+		public static void CommandBotSetup(ConfBot botConfig, string name)
 		{
 			botConfig.SaveNew(name).UnwrapThrow();
-			bot.Name = name;
 		}
 
 		[Command("bot setup")]
@@ -1104,7 +1114,7 @@ namespace TS3AudioBot
 			=> SettingsGet(config, path);
 
 		[Command("settings set")]
-		public static void CommandSettingsSet(ConfBot config, string path, string value)
+		public static void CommandSettingsSet(ConfBot config, string path, string value = "")
 		{
 			SettingsSet(config, path, value);
 			if (!config.SaveWhenExists())
@@ -1125,7 +1135,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings bot set", "cmd_settings_set_help")]
-		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string value)
+		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string value = "")
 		{
 			using (var botlock = bots.GetBotLock(bot))
 			{
@@ -1139,7 +1149,7 @@ namespace TS3AudioBot
 			=> SettingsGet(config, path);
 
 		[Command("settings global set")]
-		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value)
+		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value = "")
 		{
 			SettingsSet(config, path, value);
 			if (!config.Save())
@@ -1161,7 +1171,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				var getTemplateResult = config.GetBotTemplate(name);
+				var getTemplateResult = config.GetBotConfig(name);
 				if (!getTemplateResult.Ok)
 					throw new CommandException(strings.error_bot_does_not_exist, getTemplateResult.Error, CommandExceptionReason.CommandError);
 				return getTemplateResult.Value;
@@ -1255,17 +1265,17 @@ namespace TS3AudioBot
 		}
 
 		[Command("subscribe tempchannel")]
-		public static void CommandSubscribeTempChannel(IVoiceTarget targetManager, InvokerData invoker, ulong? channel = null)
+		public static void CommandSubscribeTempChannel(IVoiceTarget targetManager, InvokerData invoker = null, ulong? channel = null)
 		{
-			var subChan = channel ?? invoker.ChannelId ?? 0;
+			var subChan = channel ?? invoker?.ChannelId ?? 0;
 			if (subChan != 0)
 				targetManager.WhisperChannelSubscribe(subChan, true);
 		}
 
 		[Command("subscribe channel")]
-		public static void CommandSubscribeChannel(IVoiceTarget targetManager, InvokerData invoker, ulong? channel = null)
+		public static void CommandSubscribeChannel(IVoiceTarget targetManager, InvokerData invoker = null, ulong? channel = null)
 		{
-			var subChan = channel ?? invoker.ChannelId ?? 0;
+			var subChan = channel ?? invoker?.ChannelId ?? 0;
 			if (subChan != 0)
 				targetManager.WhisperChannelSubscribe(subChan, false);
 		}
@@ -1328,9 +1338,9 @@ namespace TS3AudioBot
 		}
 
 		[Command("unsubscribe channel")]
-		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, InvokerData invoker, ulong? channel = null)
+		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, InvokerData invoker = null, ulong? channel = null)
 		{
-			var subChan = channel ?? invoker.ChannelId;
+			var subChan = channel ?? invoker?.ChannelId;
 			if (subChan.HasValue)
 				targetManager.WhisperChannelUnsubscribe(subChan.Value, false);
 		}

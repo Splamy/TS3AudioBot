@@ -1,11 +1,8 @@
 type CmdBotInfo = {
-    Id: number;
-    Name: string;
+    Id: number | null;
+    Name: string | null;
     Server: string;
-}
-
-type CmdBotsSettings = {
-    run: boolean;
+	Status: BotStatus;
 }
 
 type CmdSongPosition = {

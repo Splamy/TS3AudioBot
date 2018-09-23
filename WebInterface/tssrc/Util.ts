@@ -114,6 +114,7 @@ type icons
 	| "loop-all" | "loop-off" | "loop-one"
 	| "media-pause" | "media-play" | "media-stop"
 	| "media-skip-backward" | "media-skip-forward"
+	| "play-circle" | "power-standby"
 	| "random" | "random-off"
 	| "reload" | "reload-work"
 	| "volume-off" | "volume-low" | "volume-high";

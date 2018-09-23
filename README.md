@@ -1,8 +1,8 @@
 # TS3AudioBot
 
-|master|develop|Questions/Discussions|License|
-|:--:|:--:|:--:|:--:|
-|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Join Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link)|[![License: OSL-3.0](https://img.shields.io/badge/License-OSL%203.0-blue.svg)](https://opensource.org/licenses/OSL-3.0)|
+|master|develop|Questions/Discussions|License|Support me|
+|:--:|:--:|:--:|:--:|:--:|
+|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=master)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Build Status](https://travis-ci.org/Splamy/TS3AudioBot.svg?branch=develop)](https://travis-ci.org/Splamy/TS3AudioBot)|[![Join Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link)|[![License: OSL-3.0](https://img.shields.io/badge/License-OSL%203.0-blue.svg)](https://opensource.org/licenses/OSL-3.0)|[![Patreon](https://img.shields.io/badge/Patreon-Become%20a%20Patron-F96854.svg)](https://www.patreon.com/bePatron?u=11604963)|
 
 ## About
 This is our open-source TeamSpeak 3 audio bot project since

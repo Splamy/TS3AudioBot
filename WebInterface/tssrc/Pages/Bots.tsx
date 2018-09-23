@@ -1,6 +1,15 @@
 class Bots implements IPage {
 	private divBots!: HTMLElement;
-	private bots: { [key: string]: IPlusInfo } = {};
+	private hasConnectingBots: boolean = false;
+	private readonly connectCheckTicker = new Timer(async () => {
+		if (!this.hasConnectingBots) {
+			this.connectCheckTicker.stop();
+			return;
+		}
+		await this.refresh();
+		if (!this.hasConnectingBots)
+			this.connectCheckTicker.stop();
+	}, 1000);
 
 	public async init() {
 		this.divBots = Util.getElementByIdSafe("bots");
@@ -8,61 +17,44 @@ class Bots implements IPage {
 	}
 
 	public async refresh() {
-		const res = await jmerge(
-			cmd<CmdBotInfo[]>("bot", "list"),
-			cmd<{ [key: string]: CmdBotsSettings }>("settings", "global", "get", "bots"),
-		).get();
+		const res = await cmd<CmdBotInfo[]>("bot", "list").get();
 
 		if (!DisplayError.check(res, "Error getting bot list"))
 			return;
 
 		Util.clearChildren(this.divBots);
-		this.bots = {};
 
-		for (const botInfo of res[0]) {
-			let bot: IPlusInfo = botInfo as IPlusInfo;
-			bot.Running = true;
-			this.bots[botInfo.Name] = bot;
-		}
-
-		const botSettList = res[1];
-		for (const botName in botSettList) {
-			let bot = this.bots[botName];
-			if (bot === undefined) {
-				bot = this.bots[botName] = {
-					Name: botName,
-					Running: false,
-				}
+		res.sort((a, b) => {
+			if (a.Name === null) {
+				if (b.Name === null)
+					return 0;
+				return 1;
+			} else if (b.Name === null) {
+				return -1;
 			}
-			bot.Autostart = botSettList[botName].run;
+			return a.Name.localeCompare(b.Name);
+		});
+
+		this.hasConnectingBots = false;
+		for (const botInfo of res) {
+			if (botInfo.Status === BotStatus.Connecting)
+				this.hasConnectingBots = true;
+			this.showBotCard(botInfo);
 		}
 
-		for (const botInfoName in this.bots) {
-			this.refreshBot(this.bots[botInfoName]);
-		}
+		if (this.hasConnectingBots)
+			this.connectCheckTicker.start();
 	}
 
-	public refreshBot(botInfo: IPlusInfo) {
-		const botCard = this.botCard(botInfo);
-		if (botCard !== undefined) {
-			let oldInfo = this.bots[botInfo.Name];
-			if (oldInfo !== undefined && oldInfo.Div !== undefined) {
-				const oldDiv = oldInfo.Div;
-				this.divBots.replaceChild(botCard, oldDiv);
-			} else {
-				this.divBots.appendChild(botCard);
-			}
-			botInfo.Div = botCard;
-		}
-		Main.generateLinks();
-	}
-
-	private botCard(botInfo: IPlusInfo): HTMLElement | undefined {
+	private showBotCard(botInfo: CmdBotInfo, oldDiv?: HTMLElement) {
 		let divStartStopButton: IJsxGet = {};
-		let div = <div class={"botCard formbox" + (botInfo.Running ? " botRunning" : "")}>
+		const statusIndicator = botInfo.Status === BotStatus.Connected ? " botConnected"
+			: botInfo.Status === BotStatus.Connecting ? " botConnecting" : "";
+
+		let div = <div class={"botCard formbox" + statusIndicator}>
 			<div class="formheader flex2">
 				<div>{botInfo.Name}</div>
-				<div when={botInfo.Id !== undefined}>
+				<div when={botInfo.Id !== null}>
 					[ID:{botInfo.Id}]
 				</div>
 			</div>
@@ -71,60 +63,78 @@ class Bots implements IPage {
 					<div>Server:</div>
 					<div>{botInfo.Server}</div>
 				</div>
-				{/* <div class="formdatablock">
-					<div>Autostart:</div>
-					<div><input type="checkbox" value="Autostart" /></div>
-				</div> */}
+				<div class="formdatablock">
+					<div>Status:</div>
+					<div class="statusName">{BotStatus[botInfo.Status]}</div>
+				</div>
 				<div class="flex2">
 					<div>
-						<a when={botInfo.Running} class="jslink button buttonMedium buttonIcon"
+						<a when={botInfo.Status === BotStatus.Connected} class="jslink button buttonMedium buttonIcon"
 							href={"index.html?page=bot.html&bot_id=" + botInfo.Id}
 							style="background-image: url(media/icons/list-rich.svg)"></a>
 					</div>
-					<div class={"button buttonRound buttonMedium buttonIcon " + (botInfo.Running ? "buttonRed" : "buttonGreen")}
+					<div class={"button buttonRound buttonMedium buttonIcon " + (botInfo.Status === BotStatus.Connected ? "buttonRed" : "buttonGreen")}
 						set={divStartStopButton}
-						style={"background-image: url(media/icons/" + (botInfo.Running ? "power-standby" : "play-circle") + ".svg)"}>
+						style={"background-image: url(media/icons/" + (botInfo.Status === BotStatus.Connected ? "power-standby" : "play-circle") + ".svg)"}>
 					</div>
 				</div>
 			</div>
-		</div>;
+		</div>
 
-		if (divStartStopButton.element !== undefined) {
-			const divSs = divStartStopButton.element;
-			divSs.onclick = async (_) => {
-				Util.setIcon(divSs, "cog-work");
-				divSs.style.color = "transparent";
-				if (!botInfo.Running) {
-					const res = await cmd<CmdBotInfo>("bot", "connect", "template", botInfo.Name).get();
-					if (!DisplayError.check(res, "Error starting bot")) {
-						Util.clearIcon(divSs);
-						divSs.style.color = null;
-						return;
-					}
-					Object.assign(botInfo, res);
-					botInfo.Running = true;
-				} else {
-					const res = await bot(cmd("bot", "disconnect"), botInfo.Id).get();
-					if (!DisplayError.check(res, "Error stopping bot")) {
-						Util.clearIcon(divSs);
-						divSs.style.color = null;
-						return;
-					}
-					botInfo.Id = undefined;
-					botInfo.Server = undefined;
-					botInfo.Running = false;
-				}
-				this.refreshBot(botInfo);
-			};
+		if (oldDiv !== undefined) {
+			this.divBots.replaceChild(div, oldDiv);
+			oldDiv = div;
+		} else {
+			oldDiv = this.divBots.appendChild(div);
 		}
 
-		return div;
+		if (divStartStopButton.element === undefined)
+			throw new Error("Bot card was built wrong");
+
+		const divSs = divStartStopButton.element;
+		divSs.onclick = async (_) => {
+			Util.setIcon(divSs, "cog-work");
+			if (botInfo.Status === BotStatus.Offline) {
+				if (botInfo.Name === null)
+					return;
+				const tmpBotName = botInfo.Name;
+				botInfo.Name = null;
+				const res = await cmd<CmdBotInfo>("bot", "connect", "template", tmpBotName).get();
+				if (!DisplayError.check(res, "Error starting bot")) {
+					botInfo.Name = tmpBotName;
+					Util.setIcon(divSs, "play-circle");
+					return;
+				}
+				Object.assign(botInfo, res);
+				this.hasConnectingBots = true;
+				this.connectCheckTicker.start();
+			} else {
+				if (botInfo.Id === null)
+					return;
+				const tmpBotId = botInfo.Id;
+				botInfo.Id = null;
+				const res = await bot(cmd<void>("bot", "disconnect"), tmpBotId).get();
+				if (!DisplayError.check(res, "Error stopping bot")) {
+					botInfo.Id = tmpBotId;
+					Util.setIcon(divSs, "power-standby");
+					return;
+				}
+				botInfo.Id = null;
+				botInfo.Status = BotStatus.Offline;
+			}
+			this.showBotCard(botInfo, oldDiv);
+		};
+
+		Main.generateLinks();
+	}
+
+	public async close() {
+		this.connectCheckTicker.stop();
 	}
 }
 
-type IPlusInfo = Partial<CmdBotInfo> & {
-	Name: string;
-	Running: boolean;
-	Autostart?: boolean;
-	Div?: HTMLElement;
-};
+enum BotStatus {
+	Offline,
+	Connecting,
+	Connected,
+}

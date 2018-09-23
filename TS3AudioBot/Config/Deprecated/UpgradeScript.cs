@@ -78,16 +78,13 @@ namespace TS3AudioBot.Config.Deprecated
 			to.Factories.Media.Path.Value = mfd.DefaultPath;
 			to.Db.Path.Value = hmd.HistoryFile;
 
-			const string defaultBotName = "default";
-			var botMetaConfig = to.Bots.GetOrCreateItem(defaultBotName);
-			botMetaConfig.Run.Value = true;
-
 			to.Save();
 
 			// Create a default client for all bot instance relate stuff and save
 
 			var bot = to.CreateBot();
 
+			bot.Run.Value = true;
 			bot.Language.Value = mbd.Language;
 			bot.BotGroupId.Value = mbd.BotGroupId;
 			bot.GenerateStatusAvatar.Value = mbd.GenerateStatusAvatar;
@@ -100,7 +97,7 @@ namespace TS3AudioBot.Config.Deprecated
 			bot.Audio.SendMode.Value = afd.AudioMode;
 			bot.Audio.Bitrate.Value = qcd.AudioBitrate;
 			bot.Connect.Address.Value = qcd.Address;
-			bot.Connect.Identity.Key.Value = qcd.Identity;
+			bot.Connect.Identity.PrivateKey.Value = qcd.Identity;
 			bot.Connect.Identity.Level.Value = qcd.IdentityLevel == "auto" ? -1 : int.Parse(qcd.IdentityLevel);
 			bot.Connect.Identity.Offset.Value = qcd.IdentityOffset;
 			bot.Connect.ServerPassword.Password.Value = qcd.ServerPassword;
@@ -118,7 +115,7 @@ namespace TS3AudioBot.Config.Deprecated
 			bot.Connect.ChannelPassword.Password.Value = qcd.DefaultChannelPassword;
 			bot.Connect.Badges.Value = qcd.ClientBadges == "overwolf=0:badges=" ? "" : qcd.ClientBadges;
 
-			bot.SaveNew(defaultBotName);
+			bot.SaveNew(ConfigHelper.DefaultBotName);
 		}
 	}
 }

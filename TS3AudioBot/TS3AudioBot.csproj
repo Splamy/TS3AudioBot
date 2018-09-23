@@ -38,12 +38,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="LiteDB" Version="4.1.4" />
-    <PackageReference Include="NLog" Version="4.5.9" />
     <PackageReference Include="Nett" Version="0.9.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
-    <PackageReference Include="System.Memory" Version="4.5.1" />
-    <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>

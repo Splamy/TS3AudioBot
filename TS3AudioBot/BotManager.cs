@@ -34,9 +34,11 @@ namespace TS3AudioBot
 
 		public void RunBots(bool interactive)
 		{
-			var templates = Config.ListAllBots().ToArray();
+			var botConfigList = Config.GetAllBots();
+			if (botConfigList == null)
+				return;
 
-			if (templates.Length == 0)
+			if (botConfigList.Length == 0)
 			{
 				if (!interactive)
 				{
@@ -48,11 +50,15 @@ namespace TS3AudioBot
 				Log.Info("Fill out this quick setup to get started.");
 
 				var newBot = CreateNewBot();
+				newBot.Run.Value = true;
+
 				string address;
 				while (true)
 				{
 					Console.WriteLine("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:");
 					address = Console.ReadLine();
+					if (address == null)
+						return;
 					if (TS3Client.TsDnsResolver.TryResolve(address, out var _))
 						break;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
@@ -64,16 +70,11 @@ namespace TS3AudioBot
 				Console.WriteLine("Please enter the server password (or leave empty for none):");
 				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine();
 
-				const string defaultBotName = "default";
-
-				if (!newBot.SaveNew(defaultBotName))
+				if (!newBot.SaveNew(ConfigHelper.DefaultBotName))
 				{
 					Log.Error("Could not save new bot. Ensure that the bot has access to the directory.");
 					return;
 				}
-
-				var botMetaConfig = Config.Bots.GetOrCreateItem(defaultBotName);
-				botMetaConfig.Run.Value = true;
 
 				if (!Config.Save())
 					Log.Error("Could not save root config. The bot won't start by default.");
@@ -84,9 +85,11 @@ namespace TS3AudioBot
 				return;
 			}
 
-			foreach (var template in Config.Bots.GetAllItems().Where(t => t.Run))
+			foreach (var instance in botConfigList)
 			{
-				var result = RunBotTemplate(template.Key);
+				if (!instance.Run)
+					continue;
+				var result = RunBot(instance);
 				if (!result.Ok)
 				{
 					Log.Error("Could not instantiate bot: {0}", result.Error);
@@ -104,18 +107,15 @@ namespace TS3AudioBot
 
 		public R<BotInfo, string> RunBotTemplate(string name)
 		{
-			var config = Config.GetBotTemplate(name);
+			var config = Config.GetBotConfig(name);
 			if (!config.Ok)
 				return config.Error.Message;
-			var botInfo = RunBot(config.Value, name);
-			if (!botInfo.Ok)
-				return botInfo.Error;
-			return botInfo.Value;
+			return RunBot(config.Value);
 		}
 
-		public R<BotInfo, string> RunBot(ConfBot config, string name = null)
+		public R<BotInfo, string> RunBot(ConfBot config)
 		{
-			var bot = new Bot(config) { Injector = CoreInjector.CloneRealm<BotInjector>(), Name = name };
+			var bot = new Bot(config, CoreInjector.CloneRealm<BotInjector>());
 			if (!CoreInjector.TryInject(bot))
 				Log.Warn("Partial bot dependency loaded only");
 

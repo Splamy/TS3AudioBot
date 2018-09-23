@@ -38,6 +38,8 @@ namespace TS3Client
 		/// <returns>Whether the resolve was succesful.</returns>
 		public static bool TryResolve(string address, out IPEndPoint endPoint, ushort defaultPort = Ts3VoiceDefaultPort)
 		{
+			if (address == null) throw new ArgumentNullException(nameof(address));
+
 			Log.Debug("Trying to look up '{0}'", address);
 
 			// if this address does not look like a domain it might be a nickname

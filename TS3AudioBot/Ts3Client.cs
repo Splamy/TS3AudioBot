@@ -109,22 +109,22 @@ namespace TS3AudioBot
 		{
 			// get or compute identity
 			var identityConf = config.Connect.Identity;
-			if (string.IsNullOrEmpty(identityConf.Key))
+			if (string.IsNullOrEmpty(identityConf.PrivateKey))
 			{
 				identity = Ts3Crypt.GenerateNewIdentity();
-				identityConf.Key.Value = identity.PrivateKeyString;
+				identityConf.PrivateKey.Value = identity.PrivateKeyString;
 				identityConf.Offset.Value = identity.ValidKeyOffset;
 			}
 			else
 			{
-				var identityResult = Ts3Crypt.LoadIdentityDynamic(identityConf.Key.Value, identityConf.Offset.Value);
+				var identityResult = Ts3Crypt.LoadIdentityDynamic(identityConf.PrivateKey.Value, identityConf.Offset.Value);
 				if (!identityResult.Ok)
 				{
 					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it.");
 					return "Corrupted identity";
 				}
 				identity = identityResult.Value;
-				identityConf.Key.Value = identity.PrivateKeyString;
+				identityConf.PrivateKey.Value = identity.PrivateKeyString;
 				identityConf.Offset.Value = identity.ValidKeyOffset;
 			}
 
@@ -159,11 +159,11 @@ namespace TS3AudioBot
 			}
 			else if (SystemData.IsLinux)
 			{
-				versionSign = VersionSign.VER_LIN_3_1_10;
+				versionSign = VersionSign.VER_LIN_3_2_2;
 			}
 			else
 			{
-				versionSign = VersionSign.VER_WIN_3_1_10;
+				versionSign = VersionSign.VER_WIN_3_2_2;
 			}
 
 			try
@@ -185,7 +185,7 @@ namespace TS3AudioBot
 			}
 			catch (Ts3Exception qcex)
 			{
-				Log.Info(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
+				Log.Error(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
 				return "Connect error";
 			}
 		}

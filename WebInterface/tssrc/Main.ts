@@ -88,8 +88,11 @@ class Main {
         window.history.pushState(Main.state, undefined, "index.html" + Util.buildQuery(Main.state));
 
         const oldPage = Main.currentPage;
-        if (oldPage && oldPage.divNav) {
-            oldPage.divNav.classList.remove("navSelected");
+        if (oldPage) {
+            if (oldPage.close)
+                await oldPage.close();
+            if (oldPage.divNav)
+                oldPage.divNav.classList.remove("navSelected");
         }
 
         const newPage = Main.pages[site];

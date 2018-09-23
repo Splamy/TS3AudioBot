@@ -784,13 +784,13 @@ with the id {1}?</value>
     <value>You cannot access a playlist which you dont own.</value>
   </data>
   <data name="error_playlist_name_invalid_character" xml:space="preserve">
-    <value>The playlist name contains invalid characters; please only use [a-zA-Z0-9_-].</value>
+    <value>The name contains invalid characters; please only use [a-zA-Z0-9_-].</value>
   </data>
   <data name="error_playlist_name_invalid_empty" xml:space="preserve">
-    <value>An empty playlist name is not valid.</value>
+    <value>An empty name is not valid.</value>
   </data>
   <data name="error_playlist_name_invalid_too_long" xml:space="preserve">
-    <value>The playlist name length must be &lt;64.</value>
+    <value>The name length must be &lt;64.</value>
   </data>
   <data name="error_playlist_no_store_directory" xml:space="preserve">
     <value>No playlist directory has been set up.</value>

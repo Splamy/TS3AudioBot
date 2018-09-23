@@ -15,10 +15,14 @@ namespace TS3AudioBot.Config
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
+	using System.Text.RegularExpressions;
 
 	public partial class ConfRoot
 	{
+		private static readonly Regex BotFileMatcher = new Regex(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
+
 		private string fileName;
+		private readonly Dictionary<string, ConfBot> botConfCaches = new Dictionary<string, ConfBot>();
 
 		public static R<ConfRoot> Open(string file)
 		{
@@ -77,7 +81,7 @@ namespace TS3AudioBot.Config
 		public bool Save() => Save(fileName, false);
 
 		// apply root_path to input path
-		public string GetFilePath(string path)
+		public string GetFilePath(string file)
 		{
 			throw new NotImplementedException();
 		}
@@ -96,25 +100,39 @@ namespace TS3AudioBot.Config
 			return InitializeBotConfig(config);
 		}
 
-		public IEnumerable<string> ListAllBots()
+		public ConfBot[] GetAllBots()
 		{
 			try
 			{
 				return Directory.EnumerateFiles(Configs.BotsPath.Value, "bot_*.toml", SearchOption.TopDirectoryOnly)
-					.Select(file =>
+					.Select(filePath =>
 					{
-						var fi = new FileInfo(file);
-						return fi.Name;
-					});
+						var fileInfo = new FileInfo(filePath);
+						var botName = ExtractNameFromFile(fileInfo.Name);
+						return GetBotConfig(botName);
+					})
+					.Where(x => x.Ok)
+					.Select(x => x.Value)
+					.ToArray();
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Could not access bot config subdirectory.");
-				return Array.Empty<string>();
+				return null;
 			}
 		}
 
-		public R<ConfBot, Exception> GetBotTemplate(string name)
+		private static string ExtractNameFromFile(string file)
+		{
+			var match = BotFileMatcher.Match(file);
+			if (match.Success && Util.IsSafeFileName(match.Groups[1].Value))
+				return match.Groups[1].Value;
+			if (Util.IsSafeFileName(file))
+				return file;
+			throw new ArgumentException("Invalid name");
+		}
+
+		public R<ConfBot, Exception> GetBotConfig(string name)
 		{
 			string botFile = NameToPath(name).UnwrapThrow();
 			var botConfResult = Load<ConfBot>(botFile);
@@ -139,10 +157,12 @@ namespace TS3AudioBot.Config
 
 		public E<LocalStr> SaveNew(string name)
 		{
-			var file = GetParent().NameToPath(name).UnwrapThrow();
-			if (File.Exists(file))
+			var file = GetParent().NameToPath(name);
+			if (!file.Ok)
+				return file.Error;
+			if (File.Exists(file.Value))
 				return new LocalStr("The file already exists."); // LOC: TODO
-			var result = SaveInternal(file);
+			var result = SaveInternal(file.Value);
 			if (result.Ok)
 				Name = name;
 			return result;
