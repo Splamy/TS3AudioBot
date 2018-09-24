@@ -116,7 +116,7 @@ namespace TS3Client
 			{
 				transferQueue.Enqueue(token);
 
-				if (threadEnd || workerThread == null || !workerThread.IsAlive)
+				if (threadEnd || workerThread is null || !workerThread.IsAlive)
 				{
 					threadEnd = false;
 					workerThread = new Thread(TransferLoop);

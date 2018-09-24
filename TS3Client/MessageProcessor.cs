@@ -142,7 +142,7 @@ namespace TS3Client
 					foreach (var dependantType in waitBlock.DependsOn)
 					{
 						var depentantList = dependingBlocks[(int)dependantType];
-						if (depentantList == null)
+						if (depentantList is null)
 							dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
 
 						depentantList.Add(waitBlock);

@@ -26,7 +26,7 @@ namespace TS3AudioBot.ResourceFactories
 		public static R<(string title, IList<string> links), LocalStr> FindAndRunYoutubeDl(string id)
 		{
 			var ytdlPath = FindYoutubeDl(id);
-			if (ytdlPath == null)
+			if (ytdlPath is null)
 				return new LocalStr(strings.error_ytdl_not_found);
 
 			return RunYoutubeDl(ytdlPath.Value.ytdlpath, ytdlPath.Value.param);
@@ -41,7 +41,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (File.Exists(defaultYtDlPath))
 				return (defaultYtDlPath, param);
 
-			if (YoutubeDlPath == null)
+			if (YoutubeDlPath is null)
 				return null;
 
 			string fullCustomPath;

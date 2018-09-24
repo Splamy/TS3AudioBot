@@ -92,7 +92,7 @@ namespace TS3AudioBot.Sessions
 				return token;
 
 			var dbToken = dbTokenList.FindById(uid);
-			if (dbToken == null)
+			if (dbToken is null)
 				return new LocalStr(strings.error_no_active_token);
 
 			if (dbToken.ValidUntil < Util.GetNow())

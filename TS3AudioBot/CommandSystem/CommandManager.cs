@@ -94,7 +94,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj, Type type = null)
 		{
-			if (obj == null && type == null)
+			if (obj is null && type is null)
 				throw new ArgumentNullException(nameof(type), "No type information given.");
 			return GetCommandMethodsIterator();
 			IEnumerable<CommandBuildInfo> GetCommandMethodsIterator()
@@ -104,8 +104,8 @@ namespace TS3AudioBot.CommandSystem
 				foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
 				{
 					var comAtt = method.GetCustomAttribute<CommandAttribute>();
-					if (comAtt == null) continue;
-					if (obj == null && !method.IsStatic)
+					if (comAtt is null) continue;
+					if (obj is null && !method.IsStatic)
 					{
 						Log.Warn("Method '{0}' needs an instance, but no instance was provided. It will be ignored.", method.Name);
 						continue;
@@ -163,7 +163,7 @@ namespace TS3AudioBot.CommandSystem
 
 				// if a group to hold the next level command doesn't exist
 				// it will be created here
-				if (currentCommand == null)
+				if (currentCommand is null)
 				{
 					var nextGroup = new CommandGroup();
 					group.AddCommand(comPathPart, nextGroup);
@@ -208,7 +208,7 @@ namespace TS3AudioBot.CommandSystem
 				// to add a command to CommandGroup will have to treat it as a subcommand
 				// with an empty string as a name
 				var noparamCommand = insertCommand.GetCommand(string.Empty);
-				if (noparamCommand == null)
+				if (noparamCommand is null)
 				{
 					insertCommand.AddCommand(string.Empty, com);
 					if (com is BotCommand botCom && botCom.NormalParameters > 0)
@@ -281,7 +281,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 			var subGroup = node.Self.GetCommand(comPath.Last());
 			// nothing to remove
-			if (subGroup == null)
+			if (subGroup is null)
 				return;
 			// if the subnode is a plain FunctionCommand then we found our command to delete
 			else if (subGroup is FunctionCommand)

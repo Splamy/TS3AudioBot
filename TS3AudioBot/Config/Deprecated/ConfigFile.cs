@@ -321,7 +321,7 @@ namespace TS3AudioBot.Config.Deprecated
 					Value = value;
 					Comment = IsComment(key);
 
-					if (!Comment && value == null)
+					if (!Comment && value is null)
 						throw new ArgumentNullException(nameof(value));
 				}
 				public override string ToString() => Comment ? Value : Key + SplitChar + Value;

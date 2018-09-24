@@ -75,7 +75,7 @@ namespace TS3Client.Audio
 
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (OutStream == null)
+			if (OutStream is null)
 				return;
 
 			int newSoundBufferLength = data.Length + notEncodedLength;

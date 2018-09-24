@@ -31,7 +31,7 @@ namespace TS3AudioBot.Helper.Environment
 		private static BuildData GenAssemblyData()
 		{
 			var gitInfoType = Assembly.GetExecutingAssembly().GetType(nameof(TS3AudioBot) + ".GitVersionInformation");
-			if (gitInfoType == null)
+			if (gitInfoType is null)
 				return new BuildData();
 
 			return new BuildData
@@ -80,7 +80,7 @@ namespace TS3AudioBot.Helper.Environment
 								: null;
 					}
 
-					if (platform == null && version == null)
+					if (platform is null && version is null)
 					{
 						foreach (var line in lines)
 						{
@@ -164,10 +164,10 @@ namespace TS3AudioBot.Helper.Environment
 		private static PlatformVersion? GetMonoVersion()
 		{
 			var type = Type.GetType("Mono.Runtime");
-			if (type == null)
+			if (type is null)
 				return null;
 			var displayName = type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
-			if (displayName == null)
+			if (displayName is null)
 				return (Runtime.Mono, "Mono (?)", null);
 			var version = displayName.Invoke(null, null) as string;
 			var semVer = ParseToSemVer(version);

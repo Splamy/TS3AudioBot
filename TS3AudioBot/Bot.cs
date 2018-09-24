@@ -304,7 +304,7 @@ namespace TS3AudioBot
 
 					using (var image = ImageUtil.ResizeImage(thumresult.Value))
 					{
-						if (image == null)
+						if (image is null)
 							return;
 						var result = ClientConnection.UploadAvatar(image);
 						if (!result.Ok)

@@ -137,7 +137,7 @@ namespace TS3ABotUnitTests
 			Assert.IsTrue(result.Any(r => r.Key == "pla"));
 		}
 
-		private static string OptionalFunc(string s = null) => s == null ? "NULL" : "NOT NULL";
+		private static string OptionalFunc(string s = null) => s is null ? "NULL" : "NOT NULL";
 
 		[Test]
 		public void XCommandSystemTest()

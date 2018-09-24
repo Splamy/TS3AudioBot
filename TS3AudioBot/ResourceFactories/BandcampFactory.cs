@@ -58,7 +58,7 @@ namespace TS3AudioBot.ResourceFactories
 			var id = firstTrack.TryCast<string>("track_id").OkOr(null);
 			var title = firstTrack.TryCast<string>("title").OkOr(null);
 			var trackObj = firstTrack["file"]?.TryCast<string>("mp3-128").OkOr("");
-			if (id == null || title == null || trackObj == null)
+			if (id is null || title is null || trackObj is null)
 				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			return new BandcampPlayResource(trackObj, new AudioResource(id, title, FactoryFor), GetTrackArtId(webSite));

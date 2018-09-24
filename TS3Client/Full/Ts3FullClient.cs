@@ -77,8 +77,8 @@ namespace TS3Client.Full
 		public override void Connect(ConnectionData conData)
 		{
 			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
-			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
-			if (conDataFull.VersionSign == null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
+			if (conDataFull.Identity is null) throw new ArgumentNullException(nameof(conDataFull.Identity));
+			if (conDataFull.VersionSign is null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
 			connectionDataFull = conDataFull;
 			ConnectionData = conData;
 
@@ -418,7 +418,7 @@ namespace TS3Client.Full
 		/// <param name="meta">The metadata where to send the packet.</param>
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (meta.Out == null
+			if (meta.Out is null
 				|| meta.Out.SendMode == TargetSendMode.None
 				|| !meta.Codec.HasValue
 				|| meta.Codec.Value == Codec.Raw)

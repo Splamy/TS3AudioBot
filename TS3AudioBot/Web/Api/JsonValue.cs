@@ -33,7 +33,7 @@ namespace TS3AudioBot.Web.Api
 
 		public override string ToString()
 		{
-			if (AsStringResult == null)
+			if (AsStringResult is null)
 			{
 				if (AsString != null)
 					AsStringResult = AsString.Invoke(Value);
@@ -50,8 +50,8 @@ namespace TS3AudioBot.Web.Api
 	{
 		protected object Value { get; }
 
-		public JsonValue(object value) : base(null) { Value = value; }
-		public JsonValue(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
+		protected JsonValue(object value) : base(null) { Value = value; }
+		protected JsonValue(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
 
 		public override object GetSerializeObject() => Value;
 
@@ -65,7 +65,7 @@ namespace TS3AudioBot.Web.Api
 
 		public override string ToString()
 		{
-			if (AsStringResult == null)
+			if (AsStringResult is null)
 				AsStringResult = Value?.ToString() ?? string.Empty;
 			return AsStringResult;
 		}

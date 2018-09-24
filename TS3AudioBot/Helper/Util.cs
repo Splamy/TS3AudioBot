@@ -171,10 +171,10 @@ namespace TS3AudioBot.Helper
 
 		public static R<T> TryCast<T>(this JToken token, string key)
 		{
-			if (token == null)
+			if (token is null)
 				return R.Err;
 			var value = token.SelectToken(key);
-			if (value == null)
+			if (value is null)
 				return R.Err;
 			try { return value.ToObject<T>(); }
 			catch (JsonReaderException) { return R.Err; }

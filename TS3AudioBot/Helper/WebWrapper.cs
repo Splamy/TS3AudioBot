@@ -30,7 +30,7 @@ namespace TS3AudioBot.Helper
 				using (var response = request.GetResponse())
 				{
 					var stream = response.GetResponseStream();
-					if (stream == null)
+					if (stream is null)
 					{
 						site = null;
 						return new LocalStr(strings.error_net_empty_response);
@@ -84,7 +84,7 @@ namespace TS3AudioBot.Helper
 			{
 				request.Timeout = (int)timeout.TotalMilliseconds;
 				var stream = request.GetResponse().GetResponseStream();
-				if (stream == null)
+				if (stream is null)
 					return new LocalStr(strings.error_net_empty_response);
 				return stream;
 			}

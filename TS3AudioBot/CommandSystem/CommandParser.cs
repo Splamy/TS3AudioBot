@@ -47,7 +47,7 @@ namespace TS3AudioBot.CommandSystem
 					if (strPtr.Char == commandChar)
 						strPtr.Next(commandChar);
 
-					if (root == null) root = buildCom;
+					if (root is null) root = buildCom;
 					else comAst.Peek().Parameter.Add(buildCom);
 					comAst.Push(buildCom);
 					build = BuildStatus.SelectParam;

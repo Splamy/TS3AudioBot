@@ -35,11 +35,10 @@ namespace System
 	{
 		public static readonly R<TSuccess> ErrR = new R<TSuccess>();
 
-		private readonly bool isOk;
-		public bool Ok => isOk;
+		public bool Ok { get; }
 		public TSuccess Value { get; }
 
-		private R(TSuccess value) { isOk = true; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
+		private R(TSuccess value) { Ok = true; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
 
 		/// <summary>Creates a new successful result with a value</summary>
 		/// <param name="value">The value</param>

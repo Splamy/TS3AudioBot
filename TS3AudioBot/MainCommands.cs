@@ -107,11 +107,11 @@ namespace TS3AudioBot
 			WebWrapper.GetResponse(uri, x =>
 			{
 				var stream = x.GetResponseStream();
-				if (stream == null)
+				if (stream is null)
 					throw new CommandException(strings.error_net_empty_response, CommandExceptionReason.CommandError);
 				using (var image = ImageUtil.ResizeImage(stream))
 				{
-					if (image == null)
+					if (image is null)
 						throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
 					ts3Client.UploadAvatar(image).UnwrapThrow();
 				}
@@ -223,7 +223,7 @@ namespace TS3AudioBot
 		{
 			using (var botLock = bots.GetBotLock(botId))
 			{
-				if (botLock == null)
+				if (botLock is null)
 					throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
 
 				var childInfo = new ExecutionInformation(botLock.Bot.Injector.CloneRealm<BotInjector>());
@@ -345,7 +345,7 @@ namespace TS3AudioBot
 				if (i < command.Length - 1)
 				{
 					group = target as CommandGroup;
-					if (group == null)
+					if (group is null)
 						throw new CommandException(string.Format(strings.cmd_help_error_no_further_subfunctions, string.Join(" ", command, 0, i)), CommandExceptionReason.CommandError);
 				}
 			}
@@ -493,7 +493,7 @@ namespace TS3AudioBot
 		public static void CommandHistoryLast(HistoryManager historyManager, PlayManager playManager, InvokerData invoker)
 		{
 			var ale = historyManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
-			if (ale == null)
+			if (ale is null)
 				throw new CommandException(strings.cmd_history_last_is_empty, CommandExceptionReason.CommandError);
 			playManager.Play(invoker, ale.AudioResource).UnwrapThrow();
 		}
@@ -1225,9 +1225,9 @@ namespace TS3AudioBot
 		[Command("song")]
 		public static JsonObject CommandSong(PlayManager playManager, ResourceFactoryManager factoryManager, Bot bot, CallerInfo caller, InvokerData invoker = null)
 		{
-			if (playManager.CurrentPlayData == null)
+			if (playManager.CurrentPlayData is null)
 				throw new CommandException(strings.info_currently_not_playing, CommandExceptionReason.CommandError);
-			if (bot.QuizMode && !caller.ApiCall && (invoker == null || playManager.CurrentPlayData.Invoker.ClientId != invoker.ClientId))
+			if (bot.QuizMode && !caller.ApiCall && (invoker is null || playManager.CurrentPlayData.Invoker.ClientId != invoker.ClientId))
 				throw new CommandException(strings.info_quizmode_is_active, CommandExceptionReason.CommandError);
 
 			return JsonValue.Create(
@@ -1312,7 +1312,7 @@ namespace TS3AudioBot
 			string text = ((StringCommandResult)arguments[Math.Min(arguments.Count - 1, 3)]
 				.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
 
-			var splitted = delimiter == null
+			var splitted = delimiter is null
 				? text.Split()
 				: text.Split(new[] { delimiter }, StringSplitOptions.None);
 			if (splitted.Length < start + count)
@@ -1475,7 +1475,7 @@ namespace TS3AudioBot
 
 		private static Playlist AutoGetPlaylist(UserSession session, InvokerData invoker)
 		{
-			if (session == null)
+			if (session is null)
 				throw new MissingContextCommandException(strings.error_no_session_in_context, typeof(UserSession));
 			var result = session.Get<PlaylistManager, Playlist>();
 			if (result)

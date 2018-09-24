@@ -38,7 +38,7 @@ namespace TS3Client
 		/// <returns>Whether the resolve was succesful.</returns>
 		public static bool TryResolve(string address, out IPEndPoint endPoint, ushort defaultPort = Ts3VoiceDefaultPort)
 		{
-			if (address == null) throw new ArgumentNullException(nameof(address));
+			if (address is null) throw new ArgumentNullException(nameof(address));
 
 			Log.Debug("Trying to look up '{0}'", address);
 
@@ -109,7 +109,7 @@ namespace TS3Client
 			foreach (var domain in domainList)
 			{
 				srvEndPoint = ResolveSrv(resolver, DnsPrefixTcp + domain);
-				if (srvEndPoint == null)
+				if (srvEndPoint is null)
 					continue;
 
 				endPoint = ResolveTsDns(srvEndPoint, uri.Host, defaultPort);
@@ -132,7 +132,7 @@ namespace TS3Client
 
 			// Try to normally resolve server address
 			var hostAddress = ResolveDns(uri.Host);
-			if (hostAddress == null)
+			if (hostAddress is null)
 				return false;
 
 			var port = hasUriPort ? uri.Port : defaultPort;
@@ -160,7 +160,7 @@ namespace TS3Client
 		{
 			Log.Trace("Looking for the tsdns under '{0}'", tsDnsAddress);
 			var hostAddress = ResolveDns(tsDnsAddress);
-			if (hostAddress == null)
+			if (hostAddress is null)
 				return null;
 
 			return ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress, defaultPort);

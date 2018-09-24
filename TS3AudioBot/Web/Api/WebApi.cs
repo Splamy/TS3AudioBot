@@ -213,7 +213,7 @@ namespace TS3AudioBot.Web.Api
 		private R<InvokerData, string> Authenticate(HttpListenerContext context)
 		{
 			var identity = GetIdentity(context);
-			if (identity == null)
+			if (identity is null)
 				return InvokerData.Anonymous;
 
 			var result = TokenManager.GetToken(identity.Name);
@@ -261,7 +261,7 @@ namespace TS3AudioBot.Web.Api
 					return ErrorAuthFailure;
 
 				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
-				if (nextNonce == null)
+				if (nextNonce is null)
 					return ErrorAuthFailure;
 				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 

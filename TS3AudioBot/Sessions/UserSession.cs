@@ -46,7 +46,7 @@ namespace TS3AudioBot.Sessions
 		{
 			VerifyLock();
 
-			if (assocMap == null)
+			if (assocMap is null)
 				return R.Err;
 
 			if (!assocMap.TryGetValue(typeof(TAssoc), out object value))
@@ -62,7 +62,7 @@ namespace TS3AudioBot.Sessions
 		{
 			VerifyLock();
 
-			if (assocMap == null)
+			if (assocMap is null)
 				Util.Init(out assocMap);
 
 			if (assocMap.ContainsKey(typeof(TAssoc)))
@@ -99,7 +99,7 @@ namespace TS3AudioBot.Sessions
 	{
 		public static void SetResponse(this UserSession session, Response responseProcessor)
 		{
-			if (session == null)
+			if (session is null)
 				throw new CommandException("No session context", CommandExceptionReason.CommandError);
 			session.SetResponseInstance(responseProcessor);
 		}

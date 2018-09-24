@@ -101,11 +101,11 @@ namespace TS3AudioBot.ResourceFactories
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
 		public R<PlayResource, LocalStr> Load(AudioResource resource)
 		{
-			if (resource == null)
+			if (resource is null)
 				throw new ArgumentNullException(nameof(resource));
 
 			var factory = GetFactoryByType<IResourceFactory>(resource.AudioType);
-			if (factory == null)
+			if (factory is null)
 				return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resource.AudioType));
 
 			var sw = Stopwatch.StartNew();
@@ -134,7 +134,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (audioType != null)
 			{
 				var factory = GetFactoryByType<IResourceFactory>(audioType);
-				if (factory == null)
+				if (factory is null)
 					return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
 
 				var result = factory.GetResource(netlinkurl);
@@ -194,7 +194,7 @@ namespace TS3AudioBot.ResourceFactories
 		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
 			var factory = GetFactoryByType<IThumbnailFactory>(playResource.BaseData.AudioType);
-			if (factory == null)
+			if (factory is null)
 				return new LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.BaseData.AudioType));
 
 			var sw = Stopwatch.StartNew();
@@ -244,7 +244,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static LocalStr CouldNotLoad(string reason = null)
 		{
-			if (reason == null)
+			if (reason is null)
 				return new LocalStr(strings.error_resfac_could_not_load);
 			var strb = new StringBuilder(strings.error_resfac_could_not_load);
 			strb.Append(" (").Append(reason).Append(")");
@@ -253,7 +253,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static LocalStr ToErrorString(List<(string fact, LocalStr err)> errors)
 		{
-			if (errors == null || errors.Count == 0)
+			if (errors is null || errors.Count == 0)
 				throw new ArgumentException("No errors provided", nameof(errors));
 			if (errors.Count == 1)
 				return CouldNotLoad($"{errors[0].fact}: {errors[0].err}");

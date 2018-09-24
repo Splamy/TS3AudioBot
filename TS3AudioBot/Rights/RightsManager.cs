@@ -95,7 +95,7 @@ namespace TS3AudioBot.Rights
 					ulong[] serverGroups = invoker.ServerGroups;
 
 					if (invoker.ClientId.HasValue
-						&& ((needsAvailableGroups && serverGroups == null)
+						&& ((needsAvailableGroups && serverGroups is null)
 							|| needsAvailableChanGroups))
 					{
 						var result = ts.GetClientInfoById(invoker.ClientId.Value);
@@ -106,7 +106,7 @@ namespace TS3AudioBot.Rights
 						}
 					}
 
-					if (needsAvailableGroups && serverGroups == null)
+					if (needsAvailableGroups && serverGroups is null)
 					{
 						if (!invoker.DatabaseId.HasValue)
 						{
@@ -441,7 +441,7 @@ namespace TS3AudioBot.Rights
 				if (decl.Includes.Length == 0 && decl.DeclDeny.Length > 0)
 					ctx.Warnings.Add("Rule with \"-\" declaration but no include to override");
 			}
-			var root = ctx.Rules.First(x => x.Parent == null);
+			var root = ctx.Rules.First(x => x.Parent is null);
 			if (root.Includes.Length == 0 && root.DeclDeny.Length > 0)
 				ctx.Warnings.Add("Root rule \"-\" declaration has no effect");
 

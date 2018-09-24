@@ -57,7 +57,7 @@ namespace TS3AudioBot.Web.Interface
 				baseDir = new DirectoryInfo(webData.Path);
 			}
 
-			if (baseDir == null)
+			if (baseDir is null)
 			{
 				Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
 				return;
@@ -83,7 +83,7 @@ namespace TS3AudioBot.Web.Interface
 		{
 			// GetWebsite will always return either the found website or the default 404
 			var site = GetWebsite(context.Request.Url);
-			if (site == null)
+			if (site is null)
 			{
 				Log.Error("No site found");
 				return;
@@ -93,7 +93,7 @@ namespace TS3AudioBot.Web.Interface
 			var response = context.Response;
 
 			var data = site.GetData(request, response);
-			if (data == null)
+			if (data is null)
 			{
 				Log.Error("Site has no data");
 				return;
@@ -116,7 +116,7 @@ namespace TS3AudioBot.Web.Interface
 
 		private ISiteProvider GetWebsite(Uri url)
 		{
-			if (url == null) return Site404;
+			if (url is null) return Site404;
 			return map.TryGetSite(url) ?? Site404;
 		}
 

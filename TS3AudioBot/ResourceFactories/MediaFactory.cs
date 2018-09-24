@@ -108,7 +108,7 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			var foundPath = FindFile(path);
 			Log.Trace("FindFile check result: '{0}'", foundPath);
-			if (foundPath == null)
+			if (foundPath is null)
 				return new LocalStr(strings.error_media_file_not_found);
 
 			try
@@ -236,7 +236,7 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 
-			if (rawImgData == null)
+			if (rawImgData is null)
 				return new LocalStr(strings.error_media_image_not_found);
 
 			return new MemoryStream(rawImgData);

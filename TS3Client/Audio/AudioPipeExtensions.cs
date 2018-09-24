@@ -15,7 +15,7 @@ namespace TS3Client.Audio
 	{
 		public static T Chain<T>(this IAudioActiveProducer producer, T addConsumer) where T : IAudioPassiveConsumer
 		{
-			if (producer.OutStream == null)
+			if (producer.OutStream is null)
 			{
 				producer.OutStream = addConsumer;
 			}

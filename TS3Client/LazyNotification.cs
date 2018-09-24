@@ -27,7 +27,7 @@ namespace TS3Client
 		public R<T> WrapSingle<T>() where T : INotification
 		{
 			var first = Notifications.FirstOrDefault();
-			if (first == null)
+			if (first is null)
 				return R<T>.ErrR;
 			return R<T>.OkR((T)first);
 		}

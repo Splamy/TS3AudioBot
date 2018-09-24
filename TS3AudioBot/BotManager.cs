@@ -35,7 +35,7 @@ namespace TS3AudioBot
 		public void RunBots(bool interactive)
 		{
 			var botConfigList = Config.GetAllBots();
-			if (botConfigList == null)
+			if (botConfigList is null)
 				return;
 
 			if (botConfigList.Length == 0)
@@ -57,7 +57,7 @@ namespace TS3AudioBot
 				{
 					Console.WriteLine("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:");
 					address = Console.ReadLine();
-					if (address == null)
+					if (address is null)
 						return;
 					if (TS3Client.TsDnsResolver.TryResolve(address, out var _))
 						break;
@@ -148,12 +148,12 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private bool InsertIntoFreeId(Bot bot)
 		{
-			if (activeBots == null)
+			if (activeBots is null)
 				return false;
 
 			for (int i = 0; i < activeBots.Count; i++)
 			{
-				if (activeBots[i] == null)
+				if (activeBots[i] is null)
 				{
 					activeBots[i] = bot;
 					bot.Id = i;
@@ -170,7 +170,7 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private Bot GetBotSave(int id)
 		{
-			if (activeBots == null || id < 0 || id >= activeBots.Count)
+			if (activeBots is null || id < 0 || id >= activeBots.Count)
 				return null;
 			return activeBots[id];
 		}
@@ -178,9 +178,9 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private Bot GetBotSave(string name)
 		{
-			if (name == null)
+			if (name is null)
 				throw new ArgumentNullException(nameof(name));
-			if (activeBots == null)
+			if (activeBots is null)
 				return null;
 			return activeBots.Find(x => x?.Name == name);
 		}
@@ -191,7 +191,7 @@ namespace TS3AudioBot
 			lock (lockObj)
 			{
 				bot = GetBotSave(id);
-				if (bot == null)
+				if (bot is null)
 					return null;
 				if (bot.Id != id)
 					throw new Exception("Got not matching bot id");
@@ -205,7 +205,7 @@ namespace TS3AudioBot
 			lock (lockObj)
 			{
 				bot = GetBotSave(name);
-				if (bot == null)
+				if (bot is null)
 					return null;
 				if (bot.Name != name)
 					throw new Exception("Got not matching bot name");
@@ -237,7 +237,7 @@ namespace TS3AudioBot
 		{
 			lock (lockObj)
 			{
-				if (activeBots == null)
+				if (activeBots is null)
 					return Array.Empty<BotInfo>();
 				return activeBots.Where(x => x != null).Select(x => x.GetInfo()).ToArray();
 			}
@@ -248,7 +248,7 @@ namespace TS3AudioBot
 			List<Bot> disposeBots;
 			lock (lockObj)
 			{
-				if (activeBots == null)
+				if (activeBots is null)
 					return;
 
 				disposeBots = activeBots;

@@ -114,13 +114,13 @@ namespace TS3AudioBot.History
 
 		public R<AudioLogEntry> LogAudioResource(HistorySaveData saveData)
 		{
-			if (saveData == null)
+			if (saveData is null)
 				throw new ArgumentNullException(nameof(saveData));
 
 			lock (dbLock)
 			{
 				var ale = FindByUniqueId(saveData.Resource.UniqueId);
-				if (ale == null)
+				if (ale is null)
 				{
 					var createResult = CreateLogEntry(saveData);
 					if (!createResult.Ok)
@@ -143,7 +143,7 @@ namespace TS3AudioBot.History
 		/// <param name="ale">The <see cref="AudioLogEntry"/> to update.</param>
 		private void LogEntryPlay(AudioLogEntry ale)
 		{
-			if (ale == null)
+			if (ale is null)
 				throw new ArgumentNullException(nameof(ale));
 
 			// update the playtime
@@ -189,7 +189,7 @@ namespace TS3AudioBot.History
 		/// <returns>A list of all found entries.</returns>
 		public IEnumerable<AudioLogEntry> Search(SeachQuery search)
 		{
-			if (search == null)
+			if (search is null)
 				throw new ArgumentNullException(nameof(search));
 
 			if (search.MaxResults <= 0)
@@ -222,7 +222,7 @@ namespace TS3AudioBot.History
 
 		public AudioLogEntry FindEntryByResource(AudioResource resource)
 		{
-			if (resource == null)
+			if (resource is null)
 				throw new ArgumentNullException(nameof(resource));
 			return FindByUniqueId(resource.UniqueId);
 		}
@@ -240,7 +240,7 @@ namespace TS3AudioBot.History
 		/// <param name="ale">The <see cref="AudioLogEntry"/> to delete.</param>
 		public bool RemoveEntry(AudioLogEntry ale)
 		{
-			if (ale == null)
+			if (ale is null)
 				throw new ArgumentNullException(nameof(ale));
 			return audioLogEntries.Delete(ale.Id);
 		}
@@ -251,7 +251,7 @@ namespace TS3AudioBot.History
 		/// <exception cref="ArgumentNullException">When ale is null or the name is null, empty or only whitespaces</exception>
 		public void RenameEntry(AudioLogEntry ale, string newName)
 		{
-			if (ale == null)
+			if (ale is null)
 				throw new ArgumentNullException(nameof(ale));
 			if (string.IsNullOrWhiteSpace(newName))
 				throw new ArgumentNullException(nameof(newName));

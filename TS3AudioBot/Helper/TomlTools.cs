@@ -137,15 +137,15 @@ namespace TS3AudioBot.Helper
 
 		public static TomlObject Set<T>(this TomlTable tomlTable, string key, T value)
 		{
-			if (tomlTable == null) throw new ArgumentNullException(nameof(tomlTable));
-			if (key == null) throw new ArgumentNullException(nameof(key));
+			if (tomlTable is null) throw new ArgumentNullException(nameof(tomlTable));
+			if (key is null) throw new ArgumentNullException(nameof(key));
 
 			// I literally have no idea how to write it better with this toml library.
 
 			// Note for TimeSpan: since TimeSpan as Nett (de)serializes it is not standartized we have to cast it manually
 
 			TomlObject retobj = tomlTable.TryGetValue(key);
-			if (retobj == null)
+			if (retobj is null)
 			{
 				if (typeof(T) == typeof(bool)) return tomlTable.Add(key, (bool)(object)value);
 				else if (typeof(T) == typeof(string)) return tomlTable.Add(key, (string)(object)value);
@@ -259,7 +259,7 @@ namespace TS3AudioBot.Helper
 						}
 					}
 					var item = obj.GetSubItemByName(subItemName);
-					if (item == null)
+					if (item is null)
 						return Enumerable.Empty<TomlObject>();
 
 					if (cont)
@@ -310,7 +310,7 @@ namespace TS3AudioBot.Helper
 					else
 					{
 						var ret = obj.GetArrayItemByIndex(indexer);
-						if (ret == null)
+						if (ret is null)
 							return Enumerable.Empty<TomlObject>();
 
 						if (cont)

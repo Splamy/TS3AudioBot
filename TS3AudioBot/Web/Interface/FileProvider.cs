@@ -40,7 +40,7 @@ namespace TS3AudioBot.Web.Interface
 			if (!LocalFile.Exists)
 				return null;
 
-			if (rawData == null || LocalFile.LastWriteTime > lastWrite)
+			if (rawData is null || LocalFile.LastWriteTime > lastWrite)
 			{
 				rawData = File.ReadAllBytes(LocalFile.FullName);
 				lastWrite = LocalFile.LastWriteTime;

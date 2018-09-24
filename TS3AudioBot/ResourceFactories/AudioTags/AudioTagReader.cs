@@ -40,7 +40,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 				try
 				{
 					var data = tagHeader.GetData(sr);
-					if (data == null)
+					if (data is null)
 						return null;
 					data.Title = data.Title?.TrimEnd('\0');
 					return data;

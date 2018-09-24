@@ -57,7 +57,7 @@ namespace TS3AudioBot
 
 		public E<LocalStr> Play(InvokerData invoker, PlaylistItem item)
 		{
-			if (item == null)
+			if (item is null)
 				throw new ArgumentNullException(nameof(item));
 
 			return Play(invoker, item.Resource, item.Meta);
@@ -69,7 +69,7 @@ namespace TS3AudioBot
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public E<LocalStr> Play(InvokerData invoker, AudioResource ar, MetaData meta = null)
 		{
-			if (ar == null)
+			if (ar is null)
 				throw new ArgumentNullException(nameof(ar));
 
 			var result = ResourceFactoryManager.Load(ar);
@@ -147,13 +147,13 @@ namespace TS3AudioBot
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = PlaylistManager.Next(manually)) == null) break;
+				if ((pli = PlaylistManager.Next(manually)) is null) break;
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
 				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
 			}
-			if (pli == null)
+			if (pli is null)
 				return new LocalStr(strings.info_playmgr_no_next_song);
 			else
 				return new LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!next"));
@@ -164,13 +164,13 @@ namespace TS3AudioBot
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = PlaylistManager.Previous(manually)) == null) break;
+				if ((pli = PlaylistManager.Previous(manually)) is null) break;
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
 				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
 			}
-			if (pli == null)
+			if (pli is null)
 				return new LocalStr(strings.info_playmgr_no_previous_song);
 			else
 				return new LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!previous"));

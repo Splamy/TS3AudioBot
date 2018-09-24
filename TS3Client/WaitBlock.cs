@@ -83,7 +83,7 @@ namespace TS3Client
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
-			if (DependsOn == null)
+			if (DependsOn is null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			if (!answerWaiter.WaitOne(CommandTimeout))
 				return Util.TimeOutCommandError;

@@ -42,7 +42,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			var parsedDict = ParseJson(jsonResponse);
 			var resource = ParseJObjectToResource(parsedDict);
-			if (resource == null)
+			if (resource is null)
 				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 			return GetResourceById(resource, false);
 		}
@@ -54,11 +54,11 @@ namespace TS3AudioBot.ResourceFactories
 			if (SoundcloudLink.IsMatch(resource.ResourceId))
 				return GetResource(resource.ResourceId);
 
-			if (resource.ResourceTitle == null)
+			if (resource.ResourceTitle is null)
 			{
 				if (!allowNullName) return new LocalStr(strings.error_media_internal_missing + " (title)");
 				string link = RestoreLink(resource.ResourceId);
-				if (link == null) return new LocalStr(strings.error_media_internal_missing + " (link)");
+				if (link is null) return new LocalStr(strings.error_media_internal_missing + " (link)");
 				return GetResource(link);
 			}
 
@@ -86,7 +86,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private AudioResource ParseJObjectToResource(JToken jobj)
 		{
-			if (jobj == null) return null;
+			if (jobj is null) return null;
 			var id = jobj.TryCast<int>("id");
 			if (!id.Ok) return null;
 			var title = jobj.TryCast<string>("title");
@@ -118,20 +118,20 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_net_no_connection);
 
 			var parsedDict = ParseJson(jsonResponse);
-			if (parsedDict == null)
+			if (parsedDict is null)
 				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 
 			string name = PlaylistManager.CleanseName(parsedDict.TryCast<string>("title").OkOr(null));
 			var plist = new Playlist(name);
 
 			var tracksJobj = parsedDict["tracks"];
-			if (tracksJobj == null)
+			if (tracksJobj is null)
 				return new LocalStr(strings.error_media_internal_missing + "(tracks)");
 
 			foreach (var track in tracksJobj)
 			{
 				var resource = ParseJObjectToResource(track);
-				if (resource == null)
+				if (resource is null)
 					continue;
 
 				plist.AddItem(new PlaylistItem(resource));
@@ -147,11 +147,11 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_net_no_connection);
 
 			var parsedDict = ParseJson(jsonResponse);
-			if (parsedDict == null)
+			if (parsedDict is null)
 				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 
 			var imgUrl = parsedDict.TryCast<string>("artwork_url").OkOr(null);
-			if (imgUrl == null)
+			if (imgUrl is null)
 				return new LocalStr(strings.error_media_internal_missing + " (artwork_url)");
 
 			// t500x500: 500px×500px

@@ -157,7 +157,7 @@ namespace TS3AudioBot.Web
 					try
 					{
 						remoteAddress = context.Request.RemoteEndPoint?.Address;
-						if (remoteAddress == null)
+						if (remoteAddress is null)
 							continue;
 						if(context.Request.IsLocal
 							&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])

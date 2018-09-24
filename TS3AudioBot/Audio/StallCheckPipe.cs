@@ -32,7 +32,7 @@ namespace TS3AudioBot.Audio
 
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (OutStream == null) return;
+			if (OutStream is null) return;
 
 			if (isStall)
 			{

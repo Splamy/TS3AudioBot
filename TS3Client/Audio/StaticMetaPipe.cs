@@ -59,7 +59,7 @@ namespace TS3Client.Audio
 
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (OutStream == null || SendMode == TargetSendMode.None)
+			if (OutStream is null || SendMode == TargetSendMode.None)
 				return;
 
 			meta = meta ?? new Meta();

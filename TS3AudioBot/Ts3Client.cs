@@ -299,7 +299,7 @@ namespace TS3AudioBot
 			if (!refreshResult)
 				return refreshResult.Error;
 			var clientData = clientbuffer.Find(pred);
-			if (clientData == null)
+			if (clientData is null)
 				return new LocalStr(strings.error_ts_no_client_found);
 			return clientData;
 		}
@@ -584,7 +584,7 @@ namespace TS3AudioBot
 
 		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)
 		{
-			if (OnMessageReceived == null) return;
+			if (OnMessageReceived is null) return;
 			foreach (var evData in eventArgs)
 			{
 				// Prevent loopback of own textmessages
@@ -597,7 +597,7 @@ namespace TS3AudioBot
 		private void ExtendedClientEnterView(object sender, IEnumerable<ClientEnterView> eventArgs)
 		{
 			clientbufferOutdated = true;
-			if (OnClientConnect == null) return;
+			if (OnClientConnect is null) return;
 			foreach (var evData in eventArgs)
 			{
 				clientbufferOutdated = true;
@@ -608,7 +608,7 @@ namespace TS3AudioBot
 		private void ExtendedClientLeftView(object sender, IEnumerable<ClientLeftView> eventArgs)
 		{
 			clientbufferOutdated = true;
-			if (OnClientDisconnect == null) return;
+			if (OnClientDisconnect is null) return;
 			foreach (var evData in eventArgs)
 			{
 				clientbufferOutdated = true;

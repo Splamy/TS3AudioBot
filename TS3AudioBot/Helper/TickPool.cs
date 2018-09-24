@@ -34,7 +34,7 @@ namespace TS3AudioBot.Helper
 
 		public static TickWorker RegisterTickOnce(Action method, TimeSpan? delay = null)
 		{
-			if (method == null) throw new ArgumentNullException(nameof(method));
+			if (method is null) throw new ArgumentNullException(nameof(method));
 			if (delay.HasValue && delay.Value <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(delay));
 			var worker = new TickWorker(method, delay ?? TimeSpan.Zero) { Active = true, TickOnce = true };
 			AddWorker(worker);
@@ -43,7 +43,7 @@ namespace TS3AudioBot.Helper
 
 		public static TickWorker RegisterTick(Action method, TimeSpan interval, bool active)
 		{
-			if (method == null) throw new ArgumentNullException(nameof(method));
+			if (method is null) throw new ArgumentNullException(nameof(method));
 			if (interval <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(interval));
 			var worker = new TickWorker(method, interval) { Active = active };
 			AddWorker(worker);
@@ -66,7 +66,7 @@ namespace TS3AudioBot.Helper
 
 		public static void UnregisterTicker(TickWorker worker)
 		{
-			if (worker == null) throw new ArgumentNullException(nameof(worker));
+			if (worker is null) throw new ArgumentNullException(nameof(worker));
 			lock (tickLock)
 			{
 				workList.Remove(worker);

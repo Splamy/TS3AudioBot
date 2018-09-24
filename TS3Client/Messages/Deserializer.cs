@@ -43,7 +43,7 @@ namespace TS3Client.Messages
 
 		private static R<T[]> Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int> pipes) where T : IMessage
 		{
-			if (pipes == null || pipes.Count == 0)
+			if (pipes is null || pipes.Count == 0)
 			{
 				if (!ParseKeyValueLine(arr[0], line, null, null))
 					return R.Err;
@@ -125,7 +125,7 @@ namespace TS3Client.Messages
 						qm.SetField(keyStr, value);
 						if (indexing != null)
 						{
-							if (single == null)
+							if (single is null)
 							{
 								indexing.Add(keyStr);
 							}

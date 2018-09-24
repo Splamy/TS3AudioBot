@@ -62,14 +62,14 @@ namespace TS3AudioBot.Rights
 		public override void FillNull()
 		{
 			base.FillNull();
-			if (MatchHost == null) MatchHost = new HashSet<string>();
-			if (MatchClientUid == null) MatchClientUid = new HashSet<string>();
-			if (MatchClientGroupId == null) MatchClientGroupId = new HashSet<ulong>();
-			if (MatchChannelGroupId == null) MatchChannelGroupId = new HashSet<ulong>();
-			if (MatchPermission == null) MatchPermission = new HashSet<string>();
-			if (MatchToken == null) MatchToken = new HashSet<string>();
-			if (MatchBot == null) MatchBot = new HashSet<string>();
-			if (MatchVisibility == null) MatchVisibility = Array.Empty<TextMessageTargetMode>();
+			if (MatchHost is null) MatchHost = new HashSet<string>();
+			if (MatchClientUid is null) MatchClientUid = new HashSet<string>();
+			if (MatchClientGroupId is null) MatchClientGroupId = new HashSet<ulong>();
+			if (MatchChannelGroupId is null) MatchChannelGroupId = new HashSet<ulong>();
+			if (MatchPermission is null) MatchPermission = new HashSet<string>();
+			if (MatchToken is null) MatchToken = new HashSet<string>();
+			if (MatchBot is null) MatchBot = new HashSet<string>();
+			if (MatchVisibility is null) MatchVisibility = Array.Empty<TextMessageTargetMode>();
 		}
 
 		public override bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)
@@ -81,37 +81,37 @@ namespace TS3AudioBot.Rights
 			{
 			case "host":
 				var host = tomlObj.TryGetValueArray<string>();
-				if (host == null) ctx.Errors.Add("<host> Field has invalid data.");
+				if (host is null) ctx.Errors.Add("<host> Field has invalid data.");
 				else MatchHost = new HashSet<string>(host);
 				return true;
 			case "groupid":
 				var groupid = tomlObj.TryGetValueArray<ulong>();
-				if (groupid == null) ctx.Errors.Add("<groupid> Field has invalid data.");
+				if (groupid is null) ctx.Errors.Add("<groupid> Field has invalid data.");
 				else MatchClientGroupId = new HashSet<ulong>(groupid);
 				return true;
 			case "channelgroupid":
 				var cgroupid = tomlObj.TryGetValueArray<ulong>();
-				if (cgroupid == null) ctx.Errors.Add("<channelgroupid> Field has invalid data.");
+				if (cgroupid is null) ctx.Errors.Add("<channelgroupid> Field has invalid data.");
 				else MatchChannelGroupId = new HashSet<ulong>(cgroupid);
 				return true;
 			case "useruid":
 				var useruid = tomlObj.TryGetValueArray<string>();
-				if (useruid == null) ctx.Errors.Add("<useruid> Field has invalid data.");
+				if (useruid is null) ctx.Errors.Add("<useruid> Field has invalid data.");
 				else MatchClientUid = new HashSet<string>(useruid);
 				return true;
 			case "perm":
 				var perm = tomlObj.TryGetValueArray<string>();
-				if (perm == null) ctx.Errors.Add("<perm> Field has invalid data.");
+				if (perm is null) ctx.Errors.Add("<perm> Field has invalid data.");
 				else MatchPermission = new HashSet<string>(perm);
 				return true;
 			case "apitoken":
 				var apitoken = tomlObj.TryGetValueArray<string>();
-				if (apitoken == null) ctx.Errors.Add("<apitoken> Field has invalid data.");
+				if (apitoken is null) ctx.Errors.Add("<apitoken> Field has invalid data.");
 				else MatchToken = new HashSet<string>(apitoken);
 				return true;
 			case "bot":
 				var bot = tomlObj.TryGetValueArray<string>();
-				if (bot == null) ctx.Errors.Add("<bot> Field has invalid data.");
+				if (bot is null) ctx.Errors.Add("<bot> Field has invalid data.");
 				else MatchBot = new HashSet<string>(bot);
 				return true;
 			case "isapi":
@@ -120,7 +120,7 @@ namespace TS3AudioBot.Rights
 				return true;
 			case "visibility":
 				var visibility = tomlObj.TryGetValueArray<TextMessageTargetMode>();
-				if (visibility == null) ctx.Errors.Add("<visibility> Field has invalid data.");
+				if (visibility is null) ctx.Errors.Add("<visibility> Field has invalid data.");
 				else MatchVisibility = visibility;
 				return true;
 			case "rule":

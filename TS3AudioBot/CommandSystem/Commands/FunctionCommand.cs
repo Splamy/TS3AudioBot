@@ -285,7 +285,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			{
 				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
 				var result = filter.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), value).Select(x => x.Value).FirstOrDefault();
-				if (result == null)
+				if (result is null)
 					throw new CommandException($"Invalid parameter \"{value}\"", CommandExceptionReason.MissingParameter);
 				return result;
 			}

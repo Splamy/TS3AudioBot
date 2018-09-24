@@ -119,7 +119,7 @@ namespace TS3AudioBot.Playlists
 
 		public void PlayFreelist(Playlist plist)
 		{
-			if (plist == null)
+			if (plist is null)
 				throw new ArgumentNullException(nameof(plist));
 
 			freeList.Clear();
@@ -290,7 +290,7 @@ namespace TS3AudioBot.Playlists
 
 		public E<LocalStr> SavePlaylist(Playlist plist)
 		{
-			if (plist == null)
+			if (plist is null)
 				throw new ArgumentNullException(nameof(plist));
 
 			var nameCheck = Util.IsSafeFileName(plist.Name);

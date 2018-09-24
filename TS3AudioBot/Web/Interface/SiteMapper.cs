@@ -20,7 +20,7 @@ namespace TS3AudioBot.Web.Interface
 		public void Map(string target, IProvider provider)
 		{
 			if (string.IsNullOrEmpty(target)) throw new ArgumentNullException(nameof(target));
-			if (provider == null) throw new ArgumentNullException(nameof(provider));
+			if (provider is null) throw new ArgumentNullException(nameof(provider));
 
 			var nodesPath = target.Split('/');
 			var currentNode = rootNode;

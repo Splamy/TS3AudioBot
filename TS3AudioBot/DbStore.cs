@@ -32,7 +32,7 @@ namespace TS3AudioBot
 		public DbMetaData GetMetaData(string table)
 		{
 			var meta = metaTable.FindById(table);
-			if (meta == null)
+			if (meta is null)
 			{
 				meta = new DbMetaData { Id = table, Version = 0, CustomData = null };
 				metaTable.Insert(meta);

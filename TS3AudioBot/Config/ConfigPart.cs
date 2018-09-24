@@ -111,7 +111,7 @@ namespace TS3AudioBot.Config
 						}
 					}
 					var item = GetSubItemByName(subItemName);
-					if (item == null)
+					if (item is null)
 						return Enumerable.Empty<ConfigPart>();
 
 					if (cont)
@@ -162,7 +162,7 @@ namespace TS3AudioBot.Config
 					else
 					{
 						var ret = GetArrayItemByIndex(indexer);
-						if (ret == null)
+						if (ret is null)
 							return Enumerable.Empty<ConfigPart>();
 
 						if (cont)

@@ -254,7 +254,7 @@ namespace TS3Client.Full
 		/// <param name="omega">The omega key from clientinit encoded in base64.</param>
 		internal E<string> CryptoInit(string alpha, string beta, string omega)
 		{
-			if (Identity == null)
+			if (Identity is null)
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
 
 			var alphaBytes = Base64Decode(alpha);

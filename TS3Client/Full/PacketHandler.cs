@@ -330,7 +330,7 @@ namespace TS3Client.Full
 
 				var optpacket = Packet<TIn>.FromRaw(buffer);
 				// Invalid packet, ignore
-				if (optpacket == null)
+				if (optpacket is null)
 				{
 					LoggerRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 					continue;
@@ -578,7 +578,7 @@ namespace TS3Client.Full
 		{
 			lock (sendLoopLock)
 			{
-				if (initPacketCheck == null)
+				if (initPacketCheck is null)
 					return true;
 				// optional: add random number check from init data
 				var forwardData = ts3Crypt.ProcessInit1<TIn>(packet.Data);

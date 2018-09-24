@@ -97,12 +97,12 @@ namespace TS3Client.Commands
 					strb.Append(' ').Append(singleParam.Key).Append('=').Append(singleParam.Value);
 					break;
 				case CommandPartType.MultiParameter:
-					if (multiParamList == null)
+					if (multiParamList is null)
 						multiParamList = new List<CommandMultiParameter>();
 					multiParamList.Add((CommandMultiParameter)param);
 					break;
 				case CommandPartType.Option:
-					if (optionList == null)
+					if (optionList is null)
 						optionList = new List<CommandOption>();
 					optionList.Add((CommandOption)param);
 					break;

@@ -22,7 +22,7 @@ namespace TS3AudioBot.Dependency
 
 		public Module(object obj, Action<object> initializer)
 		{
-			Status = initializer == null ? InitState.SetOnly : InitState.SetAndInit;
+			Status = initializer is null ? InitState.SetOnly : InitState.SetAndInit;
 			this.initializer = initializer;
 			Obj = obj;
 		}
