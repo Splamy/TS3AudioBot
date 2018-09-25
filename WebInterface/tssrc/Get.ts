@@ -47,5 +47,5 @@ class Get {
     }
 }
 
-type ApiRet = ({} | null | void);
+type ApiRet = {} | null | void;
 type ApiErr = ErrorObject<ApiError>;

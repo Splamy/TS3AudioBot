@@ -119,4 +119,4 @@ type icons
 	| "reload" | "reload-work"
 	| "volume-off" | "volume-low" | "volume-high";
 
-type Dict<T = any> = { [key: string]: T | undefined; };
+interface Dict<T = any> { [key: string]: T | undefined; };

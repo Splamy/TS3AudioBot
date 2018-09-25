@@ -12,9 +12,11 @@ namespace TS3AudioBot.Plugins
 	using CommandSystem;
 	using Dependency;
 	using Helper;
+	using Microsoft.CodeAnalysis;
+	using Microsoft.CodeAnalysis.CSharp;
+	using Microsoft.CodeAnalysis.Text;
 	using ResourceFactories;
 	using System;
-	using System.CodeDom.Compiler;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
@@ -108,7 +110,7 @@ namespace TS3AudioBot.Plugins
 				|| status == PluginStatus.Error
 				|| status == PluginStatus.Off)
 				return status;
-			if (bot == null)
+			if (bot is null)
 				return PluginStatus.NotAvailable;
 			if (status == PluginStatus.Ready)
 				return pluginObjectList.ContainsKey(bot) ? PluginStatus.Active : PluginStatus.Ready;
@@ -125,7 +127,8 @@ namespace TS3AudioBot.Plugins
 					return PluginResponse.Disabled;
 
 				var locStatus = CheckStatus(null);
-				if (locStatus != PluginStatus.Off && Md5EqualsCache())
+				var cacheOk = Md5EqualsCache();
+				if (locStatus != PluginStatus.Off && cacheOk)
 				{
 					return locStatus == PluginStatus.Ready || locStatus == PluginStatus.Active
 						? PluginResponse.Ok
@@ -138,17 +141,14 @@ namespace TS3AudioBot.Plugins
 				switch (File.Extension)
 				{
 				case ".cs":
-#if NET46
 					result = PrepareSource();
-#else
-					result = PluginResponse.NotSupported;
-#endif
 					break;
 
 				case ".dll":
 				case ".exe":
 					result = PrepareBinary();
 					break;
+
 				default:
 					throw new InvalidProgramException();
 				}
@@ -181,7 +181,7 @@ namespace TS3AudioBot.Plugins
 				using (var stream = System.IO.File.OpenRead(File.FullName))
 				{
 					var newHashSum = md5.ComputeHash(stream);
-					if (md5CacheSum == null)
+					if (md5CacheSum is null)
 					{
 						md5CacheSum = newHashSum;
 						return false;
@@ -195,62 +195,60 @@ namespace TS3AudioBot.Plugins
 
 		private PluginResponse PrepareBinary()
 		{
+			// Do not use 'Assembly.LoadFile' as otherwise we cannot replace the dll
+			// on windows aymore after it's opened once.
 			var asmBin = System.IO.File.ReadAllBytes(File.FullName);
 			var assembly = Assembly.Load(asmBin);
 			return InitlializeAssembly(assembly);
 		}
 
-#if NET46
-		private static CompilerParameters GenerateCompilerParameter()
-		{
-			var cp = new CompilerParameters();
-			foreach (var asmb in AppDomain.CurrentDomain.GetAssemblies())
-			{
-				if (asmb.IsDynamic) continue;
-				cp.ReferencedAssemblies.Add(asmb.Location);
-			}
-			cp.ReferencedAssemblies.Add(Assembly.GetExecutingAssembly().Location);
-
-			// set preferences
-			cp.WarningLevel = 3;
-			cp.CompilerOptions = "/target:library /optimize";
-			cp.GenerateExecutable = false;
-			cp.GenerateInMemory = true;
-			return cp;
-		}
-
 		private PluginResponse PrepareSource()
 		{
-			var provider = CodeDomProvider.CreateProvider("CSharp");
-			var cp = GenerateCompilerParameter();
-			var result = provider.CompileAssemblyFromFile(cp, File.FullName);
+			var param = AppDomain.CurrentDomain.GetAssemblies()
+				.Where(asm => !asm.IsDynamic && !string.IsNullOrEmpty(asm.Location))
+				.Select(asm => MetadataReference.CreateFromFile(asm.Location))
+				.Concat(new[] { MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location) }).ToArray();
 
-			if (result.Errors.Count > 0)
+			var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(System.IO.File.OpenRead(File.FullName)));
+
+			var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Util.Random.Next()}")
+				.WithOptions(new CSharpCompilationOptions(
+					outputKind: OutputKind.DynamicallyLinkedLibrary,
+					optimizationLevel: OptimizationLevel.Release))
+				.AddReferences(param)
+				.AddSyntaxTrees(sourceTree);
+
+			using (var ms = new MemoryStream())
 			{
-				bool containsErrors = false;
-				var strb = new StringBuilder();
-				strb.AppendFormat("Plugin_{0} compiler notifications:\n", Id);
-				foreach (CompilerError error in result.Errors)
-				{
-					containsErrors |= !error.IsWarning;
-					strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
-						error.IsWarning ? "Warning" : "Error",
-						error.Line,
-						error.Column,
-						error.ErrorText);
-				}
-				strb.Length -= 1; // remove last linebreak
-				Log.Warn(strb.ToString());
+				var result = compilation.Emit(ms);
 
-				if (containsErrors)
+				if (result.Success)
 				{
-					status = PluginStatus.Error;
+					ms.Seek(0, SeekOrigin.Begin);
+					var assembly = Assembly.Load(ms.ToArray());
+					return InitlializeAssembly(assembly);
+				}
+				else
+				{
+					bool containsErrors = false;
+					var strb = new StringBuilder();
+					strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
+					foreach (var error in result.Diagnostics)
+					{
+						var position = error.Location.GetLineSpan();
+						containsErrors |= error.WarningLevel == 0;
+						strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
+							error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
+							position.StartLinePosition.Line + 1,
+							position.StartLinePosition.Character,
+							error.GetMessage());
+					}
+					strb.Length--; // remove last linebreak
+					Log.Warn(strb.ToString());
 					return PluginResponse.CompileError;
 				}
 			}
-			return InitlializeAssembly(result.CompiledAssembly);
 		}
-#endif
 
 		private PluginResponse InitlializeAssembly(Assembly assembly)
 		{
@@ -281,7 +279,9 @@ namespace TS3AudioBot.Plugins
 						Util.Init(out pluginObjectList);
 					}
 					else
+					{
 						Type = PluginType.CorePlugin;
+					}
 				}
 				else if (factoryTypes.Length == 1)
 				{
@@ -308,7 +308,7 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, nameof(InitlializeAssembly) + " failed");
+				Log.Error(ex, nameof(InitlializeAssembly) + " failed: {0}", ex.Message);
 				return PluginResponse.Crash;
 			}
 		}
@@ -318,6 +318,7 @@ namespace TS3AudioBot.Plugins
 		/// This call requires this plugin to be in the <see cref="PluginStatus.Ready"/> state.
 		/// Changes the status to <see cref="PluginStatus.Active"/> when successful or <see cref="PluginStatus.Error"/> otherwise.
 		/// </summary>
+		/// <param name="bot">The bot instance where this plugin should be started. Can be null when not required.</param>
 		public PluginResponse Start(Bot bot)
 		{
 			if (writeStatus)
@@ -364,7 +365,7 @@ namespace TS3AudioBot.Plugins
 					throw new InvalidOperationException("A 'None' plugin cannot be loaded");
 
 				case PluginType.BotPlugin:
-					if (bot == null)
+					if (bot is null)
 					{
 						Log.Error("This plugin needs to be activated on a bot instance.");
 						status = PluginStatus.Error;
@@ -439,6 +440,7 @@ namespace TS3AudioBot.Plugins
 		/// Stops the plugin and removes all its functionality available in the bot.
 		/// Changes the status from <see cref="PluginStatus.Active"/> to <see cref="PluginStatus.Ready"/> when successful or <see cref="PluginStatus.Error"/> otherwise.
 		/// </summary>
+		/// <param name="bot">The bot instance where this plugin should be stopped. Can be null when not required.</param>
 		public PluginResponse Stop(Bot bot)
 		{
 			if (writeStatus)
@@ -450,7 +452,7 @@ namespace TS3AudioBot.Plugins
 				break;
 
 			case PluginType.BotPlugin:
-				if (bot == null)
+				if (bot is null)
 				{
 					foreach (var plugin in pluginObjectList.Values)
 						plugin.Dispose();

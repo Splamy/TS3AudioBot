@@ -159,7 +159,7 @@ namespace TS3AudioBot.Web
 						remoteAddress = context.Request.RemoteEndPoint?.Address;
 						if (remoteAddress is null)
 							continue;
-						if(context.Request.IsLocal
+						if (context.Request.IsLocal
 							&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
 							&& IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
 						{
@@ -192,6 +192,12 @@ namespace TS3AudioBot.Web
 			webListener?.Stop();
 			webListener?.Close();
 			webListener = null;
+
+#if !NET46
+			// dotnet core for some reason doesn't exit the web loop
+			// when calling Stop of Close.
+			serverThread?.Abort();
+#endif
 		}
 	}
 }
