@@ -63,14 +63,12 @@ namespace TS3AudioBot.Web.Interface
 				return;
 			}
 
-			var dir = new FolderProvider(baseDir);
-			map.Map("/", dir);
-			// include debug out folder
+			map.Map("/", new FolderProvider(baseDir));
+
 #if DEBUG
-			var dirHtml = new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "html")));
-			map.Map("/", dirHtml);
-			var dirOut = new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "out")));
-			map.Map("/", dirOut);
+			// include debug out folder
+			map.Map("/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "html"))));
+			map.Map("/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "out"))));
 #endif
 
 			map.Map("/openapi/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "openapi"))));

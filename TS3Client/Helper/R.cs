@@ -48,6 +48,16 @@ namespace System
 
 		public static implicit operator R<TSuccess>(TSuccess result) => new R<TSuccess>(result);
 
+		// Fluent get
+		public bool GetOk(out TSuccess value)
+		{
+			if (Ok)
+				value = Value;
+			else
+				value = default;
+			return Ok;
+		}
+
 		// Convenience casting
 		public static implicit operator R<TSuccess>(_Error _) => ErrR;
 
@@ -87,6 +97,21 @@ namespace System
 
 		public static implicit operator R<TSuccess, TError>(TSuccess result) => new R<TSuccess, TError>(result);
 		public static implicit operator R<TSuccess, TError>(TError error) => new R<TSuccess, TError>(error);
+
+		// Fluent get
+		public E<TError> GetOk(out TSuccess value)
+		{
+			if (Ok)
+			{
+				value = Value;
+				return E<TError>.OkR;
+			}
+			else
+			{
+				value = default;
+				return OnlyError();
+			}
+		}
 
 		// Unwrapping
 		public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;

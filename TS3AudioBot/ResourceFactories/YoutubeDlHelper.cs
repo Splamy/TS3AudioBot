@@ -41,14 +41,15 @@ namespace TS3AudioBot.ResourceFactories
 			if (File.Exists(defaultYtDlPath))
 				return (defaultYtDlPath, param);
 
-			if (YoutubeDlPath is null)
-				return null;
+			var youtubeDlPath = YoutubeDlPath;
+			if (string.IsNullOrEmpty(youtubeDlPath))
+				youtubeDlPath = Directory.GetCurrentDirectory();
 
 			string fullCustomPath;
 			try { fullCustomPath = Path.GetFullPath(YoutubeDlPath); }
 			catch (ArgumentException ex)
 			{
-				Log.Warn(ex, "Your youtube-dl path contains invalid characters");
+				Log.Warn(ex, "Your youtube-dl path may contain invalid characters");
 				return null;
 			}
 

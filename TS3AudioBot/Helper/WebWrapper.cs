@@ -17,7 +17,9 @@ namespace TS3AudioBot.Helper
 	public static class WebWrapper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
+		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
+
+		public static readonly WebClient WebClientInstance = new CustomWebClient() { Timeout = DefaultTimeout };
 
 		public static E<LocalStr> DownloadString(out string site, Uri link, params (string name, string value)[] optionalHeaders)
 		{
@@ -48,6 +50,9 @@ namespace TS3AudioBot.Helper
 				return ToLoggedError(webEx);
 			}
 		}
+
+		public static R<string, LocalStr> DownloadString(Uri link, params (string name, string value)[] optionalHeaders)
+			=> DownloadString(out var str, link, optionalHeaders).WithValue(str);
 
 		public static E<LocalStr> GetResponse(Uri link) => GetResponse(link, null);
 		public static E<LocalStr> GetResponse(Uri link, TimeSpan timeout) => GetResponse(link, null, timeout);
@@ -110,6 +115,18 @@ namespace TS3AudioBot.Helper
 			{
 				Log.Warn("Unknown request error: {0}", webEx);
 				return new LocalStr(strings.error_net_unknown);
+			}
+		}
+
+		private class CustomWebClient : WebClient
+		{
+			public TimeSpan Timeout { get; set; }
+
+			protected override WebRequest GetWebRequest(Uri address)
+			{
+				WebRequest w = base.GetWebRequest(address);
+				w.Timeout = (int)Timeout.TotalMilliseconds;
+				return w;
 			}
 		}
 	}

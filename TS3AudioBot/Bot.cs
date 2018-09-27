@@ -80,7 +80,7 @@ namespace TS3AudioBot
 			};
 			config.Language.Changed += (s, e) =>
 			{
-				var langResult = LocalizationManager.LoadLanguage(e.NewValue);
+				var langResult = LocalizationManager.LoadLanguage(e.NewValue, true);
 				if (!langResult.Ok)
 					Log.Error("Failed to load language file ({0})", langResult.Error);
 			};
@@ -187,7 +187,7 @@ namespace TS3AudioBot
 
 		private void TextCallback(object sender, TextMessage textMessage)
 		{
-			var langResult = LocalizationManager.LoadLanguage(config.Language);
+			var langResult = LocalizationManager.LoadLanguage(config.Language, false);
 			if (!langResult.Ok)
 				Log.Error("Failed to load language file ({0})", langResult.Error);
 

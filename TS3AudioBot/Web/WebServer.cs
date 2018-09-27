@@ -195,7 +195,7 @@ namespace TS3AudioBot.Web
 
 #if !NET46
 			// dotnet core for some reason doesn't exit the web loop
-			// when calling Stop of Close.
+			// when calling Stop or Close.
 			serverThread?.Abort();
 #endif
 		}
