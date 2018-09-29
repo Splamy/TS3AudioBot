@@ -64,7 +64,7 @@ script:
       mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/net46/TS3ABotUnitTests.dll
     fi
   - "cd WebInterface"
-  - "npm run build:publish"
+  - "npm run publish"
   - "cd .."
 
 after_success:

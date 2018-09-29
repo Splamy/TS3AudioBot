@@ -14,7 +14,7 @@ class Main {
     public static AuthData: ApiAuth = ApiAuth.Anonymous;
     private static currentPage: IPage | undefined;
     private static pages: Dict<(IPage)> = {
-        "main.html": new Bot(),
+        "main.html": new Dummy(),
         "bot.html": new Bot(),
         "bots.html": new Bots(),
         "commands.html": new Commands(),
@@ -25,7 +25,6 @@ class Main {
 
     public static async init() {
         Main.divContent = Util.getElementByIdSafe("content")!;
-        Main.readStateFromUrl();
         Main.generateLinks();
 
         Main.divAuthToken = Util.getElementByIdSafe("authtoken") as HTMLInputElement;
@@ -54,6 +53,9 @@ class Main {
             }
         }
 
+        Main.readStateFromUrl();
+        // Set "main" as default if no page was specified
+        Main.state.page = Main.state.page || "main.html";
         await Main.setSite(Main.state);
     }
 
@@ -85,7 +87,7 @@ class Main {
 
         // Update state and url
         Main.state = data;
-        window.history.pushState(Main.state, undefined, "index.html" + Util.buildQuery(Main.state));
+        window.history.pushState(Main.state, document.title, "index.html" + Util.buildQuery(Main.state));
 
         const oldPage = Main.currentPage;
         if (oldPage) {
@@ -102,6 +104,8 @@ class Main {
                 newPage.divNav.classList.add("navSelected");
             }
             await newPage.init();
+            if (newPage.title)
+                document.title = "TS3AudioBot - " + newPage.title;
         }
 
         Main.generateLinks();

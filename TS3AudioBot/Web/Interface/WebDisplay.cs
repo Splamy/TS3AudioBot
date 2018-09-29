@@ -77,14 +77,14 @@ namespace TS3AudioBot.Web.Interface
 			map.Map("/", new FileRedirect(map, "", "index.html"));
 		}
 
-		public override void DispatchCall(HttpListenerContext context)
+		public override bool DispatchCall(HttpListenerContext context)
 		{
 			// GetWebsite will always return either the found website or the default 404
 			var site = GetWebsite(context.Request.Url);
 			if (site is null)
 			{
 				Log.Error("No site found");
-				return;
+				return false;
 			}
 
 			var request = context.Request;
@@ -94,7 +94,7 @@ namespace TS3AudioBot.Web.Interface
 			if (data is null)
 			{
 				Log.Error("Site has no data");
-				return;
+				return false;
 			}
 
 			// Prepare Header
@@ -102,14 +102,17 @@ namespace TS3AudioBot.Web.Interface
 				response.StatusCode = (int)HttpStatusCode.NotFound;
 			response.KeepAlive = true;
 
-			try
+			// Write Data
+			using (var responseStream = response.OutputStream)
 			{
-				// Write Data
-				using (var responseStream = response.OutputStream)
+				try
+				{
 					responseStream.Write(data, 0, data.Length);
+				}
+				catch (IOException) { }
+				catch (Exception ex) { Log.Warn(ex, "Problem handling web request: {0}", ex.Message); }
+				return true;
 			}
-			catch (IOException) { }
-			catch (Exception ex) { Log.Warn(ex, "Problem handling web request: {0}", ex.Message); }
 		}
 
 		private ISiteProvider GetWebsite(Uri url)

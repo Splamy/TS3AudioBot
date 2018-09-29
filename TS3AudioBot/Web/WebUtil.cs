@@ -9,16 +9,22 @@
 
 namespace TS3AudioBot.Web
 {
-	using System;
-	using System.Net;
-
-	public abstract class WebComponent
+	internal static class WebUtil
 	{
-		internal static readonly Uri Dummy = new Uri("http://dummy/");
+		public const string Default404 =
+@"<!doctype html>
 
-		/// <summary>Processes a HTTP request.</summary>
-		/// <param name="context">The HTTP context for the call.</param>
-		/// <returns>True if the request was handled.</returns>
-		public abstract bool DispatchCall(HttpListenerContext context);
+<html lang=""en"">
+	<head>
+		<meta charset = ""utf-8"">
+		<title>TS3AudioBot - 404</title>
+	</head>
+	<body>
+		<h1>Not Found</h1>
+	</body>
+</html>
+";
+
+		public static readonly byte[] Default404Data = System.Text.Encoding.UTF8.GetBytes(Default404);
 	}
 }

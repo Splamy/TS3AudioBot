@@ -115,7 +115,7 @@ class PlayControls {
 					songRet = await bot(jmerge(
 						cmd<void>("stop"),
 						cmd<CmdSong | null>("song"), // TODO update when better method
-					)).get() as any/*TODO:iter*/;
+					)).get();
 					break;
 
 				case PlayState.Paused:
@@ -123,7 +123,7 @@ class PlayControls {
 					songRet = await bot(jmerge(
 						cmd<void>("play"),
 						cmd<CmdSong | null>("song"), // TODO update when better method
-					)).get() as any/*TODO:iter*/;
+					)).get();
 					break;
 
 				default:

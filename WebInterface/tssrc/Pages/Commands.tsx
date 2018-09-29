@@ -19,12 +19,12 @@ class Commands implements IPage {
                 ],
                 layout: "StandaloneLayout"
             });
-            
+
             (window as any).ui = ui;
         }
-        document.head.appendChild(elem);
-        document.head.appendChild(<script src="openapi/swagger-ui-standalone-preset.js"> </script>);
-        document.head.appendChild(<link rel="stylesheet" type="text/css" href="openapi/swagger-ui.css" />);
+        document.head!.appendChild(elem);
+        document.head!.appendChild(<script src="openapi/swagger-ui-standalone-preset.js"> </script>);
+        document.head!.appendChild(<link rel="stylesheet" type="text/css" href="openapi/swagger-ui.css" />);
 
         return Promise.resolve();
     }

@@ -50,7 +50,7 @@ namespace TS3AudioBot.Web.Api
 			NullValueHandling = NullValueHandling.Ignore,
 		};
 
-		public override void DispatchCall(HttpListenerContext context)
+		public override bool DispatchCall(HttpListenerContext context)
 		{
 			using (var response = context.Response)
 			{
@@ -62,18 +62,19 @@ namespace TS3AudioBot.Web.Api
 				if (!authResult.Ok)
 				{
 					Log.Debug("Authorization failed!");
-					ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), context.Response);
-					return;
+					ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
+					return true;
 				}
 				if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
 				{
 					Log.Debug("Unauthorized request!");
-					ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), context.Response);
-					return;
+					ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
+					return true;
 				}
 
 				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
-				ProcessApiV1Call(requestUrl, context.Response, authResult.Value);
+				ProcessApiV1Call(requestUrl, response, authResult.Value);
+				return true;
 			}
 		}
 

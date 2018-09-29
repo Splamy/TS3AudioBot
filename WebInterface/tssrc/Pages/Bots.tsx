@@ -11,6 +11,8 @@ class Bots implements IPage {
 			this.connectCheckTicker.stop();
 	}, 1000);
 
+	public get title() { return "Bots"; }
+
 	public async init() {
 		this.divBots = Util.getElementByIdSafe("bots");
 		await this.refresh();

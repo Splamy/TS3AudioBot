@@ -7,14 +7,14 @@
     "build:all": "npm run build:tsc && npm run build:less",
     "build:tsc": "tsc --build",
     "build:less": "lessc --source-map=out/styles.css.map less/styles.less out/styles.css",
-    "tool:copy-webdata": "copyfiles -u 1 \"html/**/*\" build",
-    "optimize:all": "npm run optimize:tsc && npm run optimize:less",
-    "optimize:tsc": "uglifyjs out/script.js -c -o build/script.js",
-    "optimize:less": "cleancss out/styles.css -o build/styles.css -O2 --skip-rebase",
-    "watch:all": "parallelshell \"npm run watch:tsc\" \"npm run watch:less\"",
-    "watch:tsc": "tsc --watch",
-    "watch:less": "onchange \"less/**/*.less\" -- npm run build:less",
-    "build:publish": "npm run build:all && npm run tool:copy-webdata && npm run optimize:all"
+    "publish:webdata": "copyfiles -u 1 \"html/**/*\" build",
+    "publish:tsc": "uglifyjs out/script.js -c -o build/script.js",
+    "publish:less": "cleancss out/styles.css -o build/styles.css -O2 --skip-rebase",
+    "publish:all": "npm run publish:webdata && npm run publish:tsc && npm run publish:less",
+    "publish:tsc-raw": "cp out/script.js build/script.js",
+    "publish:less-raw": "cp out/styles.css build/styles.css",
+    "publish:all-raw": "npm run publish:webdata && npm run publish:tsc-raw && npm run publish:less-raw",
+    "publish": "npm run build:all && npm run publish:all-raw"
   },
   "repository": {
     "type": "git",
@@ -35,9 +35,7 @@
     "copyfiles": "^2.1.0",
     "del-cli": "^1.1.0",
     "less": "^3.8.1",
-    "onchange": "^4.1.0",
-    "parallelshell": "^3.0.2",
-    "typescript": "^3.0.3",
+    "typescript": "^3.1.1",
     "uglify-es": "^3.3.9"
   }
 }
