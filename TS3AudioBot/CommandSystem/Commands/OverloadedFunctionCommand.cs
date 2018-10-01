@@ -10,6 +10,7 @@
 namespace TS3AudioBot.CommandSystem.Commands
 {
 	using CommandResults;
+	using Localization;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -77,20 +78,26 @@ namespace TS3AudioBot.CommandSystem.Commands
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
+
+			CommandException contextException = null;
 			foreach (var f in Functions)
 			{
-				// Find out if this overload works
-				var fitresult = f.FitArguments(info, arguments, returnTypes, out var _);
-				if (fitresult.Ok)
+				// Try to call each overload
+				try
 				{
-					// Call this overload
 					return f.Execute(info, arguments, returnTypes);
 				}
-
-				if (fitresult.Error.Reason == CommandExceptionReason.MissingContext)
-					throw fitresult.Error;
+				// When we encounter a missing module problem we store it for later, as it is more helpful
+				// im most cases to know that some commands *could* have matched if the module were there.
+				catch (CommandException cmdEx)
+				{
+					if (cmdEx.Reason == CommandExceptionReason.MissingContext)
+						contextException = cmdEx;
+				}
 			}
-			throw new CommandException("No matching function overload could be found", CommandExceptionReason.FunctionNotFound);
+			if (contextException != null)
+				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(contextException).Throw();
+			throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.MissingParameter);
 		}
 	}
 }

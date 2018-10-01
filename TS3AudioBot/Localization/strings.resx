@@ -900,4 +900,19 @@ with the id {1}?</value>
   <data name="cmd_bot_avatar_clear_help" xml:space="preserve">
     <value>Clears the avatar of the bot.</value>
   </data>
+  <data name="error_cmd_could_not_convert_to" xml:space="preserve">
+    <value>Could not convert "{0}" to {1}.</value>
+  </data>
+  <data name="error_cmd_no_matching_overload" xml:space="preserve">
+    <value>No matching function overload could be found.</value>
+  </data>
+  <data name="error_cmd_number_too_big" xml:space="preserve">
+    <value>The number is too big.</value>
+  </data>
+  <data name="error_cmd_at_least_n_arguments" xml:space="preserve">
+    <value>Need at least {0} arguments to evaluate.</value>
+  </data>
+  <data name="error_cmd_at_least_three_argument" xml:space="preserve">
+    <value>Need at least three arguments to evaluate.</value>
+  </data>
 </root>

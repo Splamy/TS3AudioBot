@@ -42,6 +42,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void BotCommandTest()
 		{
+			Utils.FilterBy("ic3");
 			var output = CallCommand("!help");
 			Assert.AreEqual(output, CallCommand("!h"));
 			Assert.AreEqual(output, CallCommand("!eval h"));
@@ -142,6 +143,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void XCommandSystemTest()
 		{
+			Utils.FilterBy("ic3");
 			var commandSystem = new XCommandSystem();
 			var group = commandSystem.RootCommand;
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
@@ -182,6 +184,46 @@ namespace TS3ABotUnitTests
 		}
 
 		[Test]
+		public void XCommandSystemTest2()
+		{
+			Utils.FilterBy("exact");
+			var commandSystem = new XCommandSystem();
+			var group = commandSystem.RootCommand;
+
+			var o1 = new OverloadedFunctionCommand();
+			o1.AddCommand(new FunctionCommand(new Action<int>((_) => { })));
+			o1.AddCommand(new FunctionCommand(new Action<long>((_) => { })));
+			group.AddCommand("one", o1);
+
+			group.AddCommand("two", new FunctionCommand(new Action<StringSplitOptions>((_) => { })));
+
+			var o2 = new CommandGroup();
+			o2.AddCommand("a", new FunctionCommand(new Action(() => { })));
+			o2.AddCommand("b", new FunctionCommand(new Action(() => { })));
+			group.AddCommand("three", o2);
+
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!one"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!one \"\""));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!one (!print \"\")"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!one string"));
+			Assert.DoesNotThrow(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!one 42"));
+			Assert.DoesNotThrow(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!one 4200000000000"));
+
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!two"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!two \"\""));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!two (!print \"\")"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!two 42"));
+			Assert.DoesNotThrow(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!two None"));
+
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!three"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!three \"\""));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!three (!print \"\")"));
+			Assert.Throws<CommandException>(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!three c"));
+			Assert.DoesNotThrow(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!three a"));
+			Assert.DoesNotThrow(() => commandSystem.ExecuteCommand(Utils.ExecInfo, "!three b"));
+		}
+
+		[Test]
 		public void EnsureAllCommandsHaveEnglishDocumentationEntry()
 		{
 			Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en");
@@ -194,13 +236,21 @@ namespace TS3ABotUnitTests
 		}
 	}
 
-	static class Utils
+	internal static class Utils
 	{
+		private static readonly Filter filter = new Filter();
+
 		static Utils()
 		{
 			ExecInfo = new ExecutionInformation();
 			ExecInfo.AddDynamicObject(new CallerInfo(null, false) { SkipRightsChecks = true });
 			ExecInfo.AddDynamicObject(new InvokerData("InvokerUid"));
+			ExecInfo.AddDynamicObject(filter);
+		}
+
+		public static void FilterBy(string name)
+		{
+			filter.Current = Filter.GetFilterByName(name).Unwrap();
 		}
 
 		public static ExecutionInformation ExecInfo { get; }

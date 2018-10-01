@@ -10,6 +10,7 @@
 namespace TS3AudioBot.CommandSystem.Commands
 {
 	using CommandResults;
+	using Localization;
 	using System;
 	using System.Collections.Generic;
 	using System.Globalization;
@@ -78,7 +79,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// <param name="arguments">The arguments that are applied to this function.</param>
 		/// <param name="returnTypes">The possible return types.</param>
 		/// <param name="takenArguments">How many arguments could be set.</param>
-		public R<object[], CommandException> FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
+		private object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
 			var filterLazy = new Lazy<Algorithm.Filter>(() => info.TryGet<Algorithm.Filter>(out var filter) ? filter : Algorithm.Filter.DefaultFilter, false);
@@ -105,7 +106,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					else if (CommandParameter[p].optional)
 						parameters[p] = null;
 					else
-						return new MissingContextCommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", arg);
+						throw new MissingContextCommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", arg);
 					break;
 
 				case ParamKind.NormalCommand:
@@ -118,9 +119,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
 					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-					try { parameters[p] = ConvertParam(argResultP, arg, filterLazy.Value.Current); }
-					catch (FormatException ex) { return new CommandException("Could not convert to " + UnwrapParamType(arg).Name, ex, CommandExceptionReason.CommandError); }
-					catch (OverflowException ex) { return new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
+					parameters[p] = ConvertParam(argResultP, arg, filterLazy.Value.Current);
 
 					takenArguments++;
 					break;
@@ -130,17 +129,12 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 					var typeArr = arg.GetElementType();
 					var args = Array.CreateInstance(typeArr, arguments.Count - takenArguments);
-					try
+					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
-						for (int i = 0; i < args.Length; i++, takenArguments++)
-						{
-							var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-							var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value.Current);
-							args.SetValue(convResult, i);
-						}
+						var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
+						var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value.Current);
+						args.SetValue(convResult, i);
 					}
-					catch (FormatException ex) { return new CommandException("Could not convert to " + arg.Name, ex, CommandExceptionReason.CommandError); }
-					catch (OverflowException ex) { return new CommandException("The number is too big.", ex, CommandExceptionReason.CommandError); }
 
 					parameters[p] = args;
 					break;
@@ -151,8 +145,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 			}
 
 			// Check if we were able to set enough arguments
-			if (takenArguments < Math.Min(parameters.Length, RequiredParameters) && !returnTypes.Contains(CommandResultType.Command))
-				return new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
+			int wantArgumentCount = Math.Min(parameters.Length, RequiredParameters);
+			if (takenArguments < wantArgumentCount && !returnTypes.Contains(CommandResultType.Command))
+				throw ThrowAtLeastNArguments(wantArgumentCount);
 
 			return parameters;
 		}
@@ -161,13 +156,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-			var fitresult = FitArguments(info, arguments, returnTypes, out int availableArguments);
-			if (!fitresult)
-				throw fitresult.Error;
-			object[] parameters = fitresult.Value;
+			var parameters = FitArguments(info, arguments, returnTypes, out int availableArguments);
 
 			// Check if we were able to set enough arguments
-			if (availableArguments < Math.Min(parameters.Length, RequiredParameters))
+			int wantArgumentCount = Math.Min(parameters.Length, RequiredParameters);
+			if (availableArguments < wantArgumentCount)
 			{
 				if (returnTypes.Contains(CommandResultType.Command))
 				{
@@ -175,7 +168,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 						? new CommandCommandResult(new AppliedCommand(this, arguments))
 						: new CommandCommandResult(this);
 				}
-				throw new CommandException("Not enough arguments for function " + internCommand.Name, CommandExceptionReason.MissingParameter);
+				throw ThrowAtLeastNArguments(wantArgumentCount);
 			}
 
 			if (CommandReturn == typeof(ICommandResult))
@@ -277,6 +270,23 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return type;
 		}
 
+		public static CommandException ThrowAtLeastNArguments(int count)
+		{
+			if (count <= 0)
+				throw new ArgumentOutOfRangeException(nameof(count), count, "The count must be at least 1");
+
+			string throwString;
+			switch (count)
+			{
+			case 1: throwString = strings.error_cmd_at_least_one_argument; break;
+			case 2: throwString = strings.error_cmd_at_least_two_argument; break;
+			case 3: throwString = strings.error_cmd_at_least_three_argument; break;
+			case 4: throwString = strings.error_cmd_at_least_four_argument; break;
+			default: throwString = string.Format(strings.error_cmd_at_least_n_arguments, count); break;
+			}
+			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
+		}
+
 		private static object ConvertParam(string value, Type targetType, Algorithm.IFilterAlgorithm filter)
 		{
 			if (targetType == typeof(string))
@@ -286,13 +296,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
 				var result = filter.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), value).Select(x => x.Value).FirstOrDefault();
 				if (result is null)
-					throw new CommandException($"Invalid parameter \"{value}\"", CommandExceptionReason.MissingParameter);
+					throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, targetType.Name), CommandExceptionReason.MissingParameter);
 				return result;
 			}
-			if (targetType.IsConstructedGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
-				targetType = targetType.GenericTypeArguments[0];
+			var unwrappedTargetType = UnwrapParamType(targetType);
 
-			return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+			try { return Convert.ChangeType(value, unwrappedTargetType, CultureInfo.InvariantCulture); }
+			catch (FormatException ex) { throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, unwrappedTargetType.Name), ex, CommandExceptionReason.MissingParameter); }
+			catch (OverflowException ex) { throw new CommandException(strings.error_cmd_number_too_big, ex, CommandExceptionReason.MissingParameter); }
 		}
 
 		private static object GetDefault(Type type)

@@ -10,6 +10,7 @@
 namespace TS3AudioBot.CommandSystem.Commands
 {
 	using CommandResults;
+	using Localization;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -45,15 +46,35 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (!info.TryGet<Algorithm.Filter>(out var filter))
 				filter = Algorithm.Filter.DefaultFilter;
 			var commandResults = filter.Current.Filter(commands, result).ToArray();
+
+			// The special case when the command is empty and only might match because of fuzzy matching.
+			// We only allow this if the command explicitly allows an empty overload.
+			if (string.IsNullOrEmpty(result)
+				&& (commandResults.Length == 0 || commandResults.Length > 1 || (commandResults.Length == 1 && !string.IsNullOrEmpty(commandResults[0].Key))))
+			{
+				throw new CommandException(string.Format(strings.cmd_help_info_contains_subfunctions, SuggestionsJoinTrim(commands.Keys)), CommandExceptionReason.AmbiguousCall);
+			}
+
+			// We found too many matching commands
 			if (commandResults.Length > 1)
-				throw new CommandException("Ambiguous call, possible subcommands: " + string.Join(", ", commandResults.Select(g => g.Key)), CommandExceptionReason.AmbiguousCall);
+				throw new CommandException(string.Format(strings.cmd_help_error_ambiguous_command, SuggestionsJoinTrim(commandResults.Select(g => g.Key))), CommandExceptionReason.AmbiguousCall);
+			// We either found no matching command
 			if (commandResults.Length == 0)
-				throw new CommandException("No matching command", CommandExceptionReason.AmbiguousCall);
-			if (commandResults.Length == 1 && result == string.Empty && commandResults[0].Key != string.Empty)
-				throw new CommandException("Ambiguous call, possible subcommands: " + string.Join(", ", commands.Keys.Take(4)) + ", ...", CommandExceptionReason.AmbiguousCall);
+				throw new CommandException(string.Format(strings.cmd_help_info_contains_subfunctions, SuggestionsJoinTrim(commands.Keys)), CommandExceptionReason.AmbiguousCall);
 
 			var argSubList = arguments.TrySegment(1);
 			return commandResults[0].Value.Execute(info, argSubList, returnTypes);
+		}
+
+		private string SuggestionsJoinTrim(IEnumerable<string> commands)
+		{
+			var commandsArray = commands.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+			var suggestions = string.Join(", ", commandsArray.Take(4));
+			if (commandsArray.Length > 4)
+			{
+				suggestions += ", ...";
+			}
+			return suggestions;
 		}
 
 		public override string ToString() => "<group>";
