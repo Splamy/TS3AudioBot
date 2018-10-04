@@ -188,7 +188,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfAudioVolume : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<float> Default { get; } = new ConfigValue<float>("default", 10);
 		public ConfigValue<float> Min { get; } = new ConfigValue<float>("min", 10);
@@ -197,7 +197,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfPlaylists : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "Playlists",
 			"Path to the folder where playlist files will be saved.");
@@ -228,14 +228,14 @@ namespace TS3AudioBot.Config
 
 	public class ConfPath : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", string.Empty);
 	}
 
 	public class ConfPassword : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Password { get; } = new ConfigValue<string>("pw", string.Empty);
 		public ConfigValue<bool> Hashed { get; } = new ConfigValue<bool>("hashed", false);
@@ -259,7 +259,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfTsVersion : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Build { get; } = new ConfigValue<string>("build", string.Empty);
 		public ConfigValue<string> Platform { get; } = new ConfigValue<string>("platform", string.Empty);

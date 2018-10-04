@@ -29,6 +29,20 @@ namespace TS3AudioBot
 		private readonly string configFilePath;
 		private bool forceNextExit;
 
+		public DateTime StartTime { get; }
+		public Helper.Environment.SystemMonitor SystemMonitor { get; }
+
+		/// <summary>General purpose persistant storage for internal modules.</summary>
+		internal DbStore Database { get; set; }
+		/// <summary>Manages plugins, provides various loading and unloading mechanisms.</summary>
+		internal PluginManager PluginManager { get; set; }
+		/// <summary>Manages factories which can load resources.</summary>
+		public ResourceFactoryManager FactoryManager { get; set; }
+		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
+		public WebServer WebManager { get; set; }
+		/// <summary>Management of conntected Bots.</summary>
+		public BotManager Bots { get; set; }
+
 		internal static void Main(string[] args)
 		{
 			Thread.CurrentThread.Name = "TAB Main";
@@ -58,21 +72,14 @@ namespace TS3AudioBot
 			}
 		}
 
-		/// <summary>General purpose persistant storage for internal modules.</summary>
-		internal DbStore Database { get; set; }
-		/// <summary>Manages plugins, provides various loading and unloading mechanisms.</summary>
-		internal PluginManager PluginManager { get; set; }
-		/// <summary>Manages factories which can load resources.</summary>
-		public ResourceFactoryManager FactoryManager { get; set; }
-		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
-		public WebServer WebManager { get; set; }
-		/// <summary>Management of conntected Bots.</summary>
-		public BotManager Bots { get; set; }
-
 		public Core(string configFilePath = null)
 		{
 			// setting defaults
 			this.configFilePath = configFilePath ?? DefaultConfigFileName;
+
+			StartTime = Util.GetNow();
+			SystemMonitor = new Helper.Environment.SystemMonitor();
+			SystemMonitor.StartTimedSnapshots();
 		}
 
 		private E<string> Run(bool interactive = false)

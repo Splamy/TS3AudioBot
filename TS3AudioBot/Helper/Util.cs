@@ -150,6 +150,12 @@ namespace TS3AudioBot.Helper
 				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
+		public static void UnwrapToLog(this E<LocalStr> r, NLog.Logger logger)
+		{
+			if (!r.Ok)
+				logger.Warn("Could not write message: {0}", r.Error.Str);
+		}
+
 		public static string UnrollException(this Exception ex)
 		{
 			var strb = new StringBuilder();

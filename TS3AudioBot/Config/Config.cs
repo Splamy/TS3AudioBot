@@ -134,8 +134,10 @@ namespace TS3AudioBot.Config
 
 		public R<ConfBot, Exception> GetBotConfig(string name)
 		{
-			string botFile = NameToPath(name).UnwrapThrow();
-			var botConfResult = Load<ConfBot>(botFile);
+			var file = NameToPath(name);
+			if (!file.Ok)
+				return new Exception(file.Error.Str);
+			var botConfResult = Load<ConfBot>(file.Value);
 			if (!botConfResult.Ok)
 				return botConfResult.Error;
 			var botConf = InitializeBotConfig(botConfResult.Value);

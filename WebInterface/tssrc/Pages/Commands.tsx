@@ -1,7 +1,6 @@
 /// <reference path="OpenApi.d.ts"/>
 
 class Commands implements IPage {
-    divNav?: HTMLElement | undefined;
 
     init(): Promise<void> {
         let elem = <script src="openapi/swagger-ui-bundle.js"> </script>;

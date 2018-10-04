@@ -242,7 +242,7 @@ namespace TS3AudioBot
 					var msg = session.ResponseProcessor(textMessage.Message);
 					session.ClearResponse();
 					if (!string.IsNullOrEmpty(msg))
-						info.Write(msg).UnwrapThrow();
+						info.Write(msg).UnwrapToLog(Log);
 					return;
 				}
 
@@ -365,24 +365,22 @@ namespace TS3AudioBot
 				{
 					var sRes = (StringCommandResult)res;
 					if (!string.IsNullOrEmpty(sRes.Content))
-						info.Write(sRes.Content).UnwrapThrow();
+						info.Write(sRes.Content).UnwrapToLog(Log);
 				}
-				else if (res.ResultType == CommandResultType.Json)
+				else
 				{
-					var sRes = (JsonCommandResult)res;
-					info.Write("\nJson str: \n" + sRes.JsonObject).UnwrapThrow();
-					info.Write("\nJson val: \n" + sRes.JsonObject.Serialize()).UnwrapThrow();
+					Log.Warn("Got result which is not a string. Result: {0}", res.ToString());
 				}
 			}
 			catch (CommandException ex)
 			{
 				Log.Debug(ex, "Command Error ({0})", ex.Message);
-				if (answer) info.Write(string.Format(strings.error_call_error, ex.Message)); // XXX check return
+				if (answer) info.Write(string.Format(strings.error_call_error, ex.Message)).UnwrapToLog(Log);
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-				if (answer) info.Write(string.Format(strings.error_call_unexpected_error, ex.Message)); // XXX check return
+				if (answer) info.Write(string.Format(strings.error_call_unexpected_error, ex.Message)).UnwrapToLog(Log);
 			}
 		}
 

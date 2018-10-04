@@ -2,8 +2,9 @@
 /// <reference path="Pages/IPage.ts"/>
 /// <reference path="Pages/Bot.ts"/>
 /// <reference path="Pages/Bots.tsx"/>
-/// <reference path="Pages/Dummy.ts"/>
 /// <reference path="Pages/Commands.tsx"/>
+/// <reference path="Pages/Dummy.ts"/>
+/// <reference path="Pages/Home.ts"/>
 
 // Python webhost:
 // python -m SimpleHTTPServer 8000
@@ -14,7 +15,7 @@ class Main {
     public static AuthData: ApiAuth = ApiAuth.Anonymous;
     private static currentPage: IPage | undefined;
     private static pages: Dict<(IPage)> = {
-        "main.html": new Dummy(),
+        "home.html": new Home(),
         "bot.html": new Bot(),
         "bots.html": new Bots(),
         "commands.html": new Commands(),
@@ -55,7 +56,7 @@ class Main {
 
         Main.readStateFromUrl();
         // Set "main" as default if no page was specified
-        Main.state.page = Main.state.page || "main.html";
+        Main.state.page = Main.state.page || "home.html";
         await Main.setSite(Main.state);
     }
 
@@ -82,8 +83,13 @@ class Main {
             return;
         }
 
-        const content = await Get.site(site);
-        Main.divContent.innerHTML = content;
+        try {
+            const content = await Get.site(site);
+            Main.divContent.innerHTML = content;
+        } catch (ex) {
+            DisplayError.push(undefined, "Failed to get page content.");
+            return;
+        }
 
         // Update state and url
         Main.state = data;

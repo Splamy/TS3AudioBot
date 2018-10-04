@@ -952,34 +952,6 @@ namespace TS3AudioBot
 			return strb.ToString();
 		}
 
-		[Command("quit")]
-		public static JsonEmpty CommandQuit(Core core, CallerInfo caller, UserSession session = null, string param = null)
-		{
-			if (caller.ApiCall)
-			{
-				core.Dispose();
-				return new JsonEmpty(string.Empty);
-			}
-
-			if (param == "force")
-			{
-				core.Dispose();
-				return new JsonEmpty(string.Empty);
-			}
-
-			string ResponseQuit(string message)
-			{
-				if (TextUtil.GetAnswer(message) == Answer.Yes)
-				{
-					CommandQuit(core, caller, session, "force");
-				}
-				return null;
-			}
-
-			session.SetResponse(ResponseQuit);
-			return new JsonEmpty(strings.cmd_quit_confirm + YesNoOption);
-		}
-
 		[Command("quiz")]
 		public static JsonValue<bool> CommandQuiz(Bot bot) => new JsonValue<bool>(bot.QuizMode, string.Format(strings.info_status_quizmode, bot.QuizMode ? strings.info_on : strings.info_off));
 		[Command("quiz on")]
@@ -1278,6 +1250,42 @@ namespace TS3AudioBot
 			var subChan = channel ?? invoker?.ChannelId ?? 0;
 			if (subChan != 0)
 				targetManager.WhisperChannelSubscribe(subChan, false);
+		}
+
+		[Command("system info", "_undocumented")]
+		public static JsonValue CommandSystemInfo(Core core)
+		{
+			var sysInfo = core.SystemMonitor.GetReport();
+			return JsonValue.Create(new
+			{
+				memory = sysInfo.Memory,
+				cpu = sysInfo.Cpu,
+				starttime = core.StartTime,
+			});
+		}
+
+		[Command("system quit", "cmd_quit_help")]
+		public static JsonEmpty CommandSystemQuit(Core core, CallerInfo caller, UserSession session = null, string param = null)
+		{
+			const string force = "force";
+
+			if (caller.ApiCall || param == force)
+			{
+				core.Dispose();
+				return new JsonEmpty(string.Empty);
+			}
+
+			string ResponseQuit(string message)
+			{
+				if (TextUtil.GetAnswer(message) == Answer.Yes)
+				{
+					CommandSystemQuit(core, caller, session, force);
+				}
+				return null;
+			}
+
+			session.SetResponse(ResponseQuit);
+			return new JsonEmpty(strings.cmd_quit_confirm + YesNoOption);
 		}
 
 		[Command("take")]
