@@ -915,4 +915,7 @@ with the id {1}?</value>
   <data name="error_cmd_at_least_three_argument" xml:space="preserve">
     <value>Need at least three arguments to evaluate.</value>
   </data>
+  <data name="cmd_bot_description_set_help" xml:space="preserve">
+    <value>Sets the description of the bot.</value>
+  </data>
 </root>

@@ -117,6 +117,8 @@ namespace TS3AudioBot.Config
 			"You can set this field manually if you already have a preexisting group the bot should add himself to.");
 		public ConfigValue<bool> GenerateStatusAvatar { get; } = new ConfigValue<bool>("generate_status_avatar", true,
 			"Tries to fetch a cover image when playing.");
+		public ConfigValue<bool> SetStatusDescription { get; } = new ConfigValue<bool>("set_status_description", true,
+			"Sets the description of the bot to the current song title.");
 		public ConfigValue<string> Language { get; } = new ConfigValue<string>("language", "en",
 			"The language the bot should use to respond to users. (Make sure you have added the required language packs)");
 		public ConfigValue<string> CommandMatcher { get; } = new ConfigValue<string>("command_matcher", "ic3",

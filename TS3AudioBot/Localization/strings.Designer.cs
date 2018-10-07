@@ -178,6 +178,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sets the description of the bot..
+        /// </summary>
+        internal static string cmd_bot_description_set_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_description_set_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Stop this bot instance..
         /// </summary>
         internal static string cmd_bot_disconnect_help {

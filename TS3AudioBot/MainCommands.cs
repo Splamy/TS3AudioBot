@@ -121,6 +121,9 @@ namespace TS3AudioBot
 		[Command("bot avatar clear")]
 		public static void CommandBotAvatarClear(Ts3Client ts3Client) => ts3Client.DeleteAvatar().UnwrapThrow();
 
+		[Command("bot description set")]
+		public static void CommandBotDescriptionSet(Ts3Client ts3Client, string description) => ts3Client.ChangeDescription(description).UnwrapThrow();
+
 		[Command("bot disconnect")]
 		public static void CommandBotDisconnect(BotManager bots, Bot bot) => bots.StopBot(bot);
 

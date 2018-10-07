@@ -267,6 +267,9 @@ namespace TS3AudioBot
 
 		public E<LocalStr> UpdateBotStatus(string overrideStr = null)
 		{
+			if (!config.SetStatusDescription)
+				return R.Ok;
+
 			lock (SyncRoot)
 			{
 				string setString;
