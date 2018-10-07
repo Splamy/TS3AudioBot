@@ -1335,7 +1335,7 @@ namespace TS3AudioBot
 					return new JsonCommandResult(new JsonArray<string>(splittedarr, string.Join(delimiter ?? " ", splittedarr)));
 			}
 
-			throw new CommandException("Can't find a fitting return type for take", CommandExceptionReason.NoReturnMatch);
+			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
 		}
 
 		[Command("unsubscribe")]

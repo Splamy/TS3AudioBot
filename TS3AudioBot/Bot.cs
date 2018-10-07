@@ -361,15 +361,20 @@ namespace TS3AudioBot
 					return;
 
 				// Write result to user
-				if (res.ResultType == CommandResultType.String)
+				switch (res.ResultType)
 				{
+				case CommandResultType.String:
 					var sRes = (StringCommandResult)res;
 					if (!string.IsNullOrEmpty(sRes.Content))
 						info.Write(sRes.Content).UnwrapToLog(Log);
-				}
-				else
-				{
-					Log.Warn("Got result which is not a string. Result: {0}", res.ToString());
+					break;
+
+				case CommandResultType.Empty:
+					break;
+
+				default:
+					Log.Warn("Got result which is not a string/empty. Result: {0}", res.ToString());
+					break;
 				}
 			}
 			catch (CommandException ex)
