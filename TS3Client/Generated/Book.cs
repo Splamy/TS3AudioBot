@@ -374,7 +374,6 @@ namespace TS3Client.Full.Book
 		}
 
 	
-		public ConnectionId Id { get; internal set; }
 		public ClientId OwnClient { get; internal set; }
 		public Server Server { get; internal set; }
 	}

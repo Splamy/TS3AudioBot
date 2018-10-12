@@ -264,7 +264,7 @@ namespace TS3Client.Full.Book
 		}
 
 	
-		public void UpdateConnectionInfo(ConnectionInfo msg)
+		public void UpdateClientConnectionInfo(ClientConnectionInfo msg)
 		{
 			var obj = new ConnectionClientData();
 			obj.ClientAddress = AddressFun(msg);

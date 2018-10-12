@@ -25,253 +25,501 @@ namespace TS3Client
 	{
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		undefined = -1,
+		/// <summary>May occour on error returns with no associated permission</summary>
 		unknown = 0,
+		/// <summary>Retrieve information about ServerQuery commands</summary>
 		b_serverinstance_help_view = 1,
+		/// <summary>Retrieve global server version (including platform and build number)</summary>
 		b_serverinstance_version_view = 2,
+		/// <summary>Retrieve global server information</summary>
 		b_serverinstance_info_view = 3,
+		/// <summary>List virtual servers stored in the database</summary>
 		b_serverinstance_virtualserver_list = 4,
+		/// <summary>List active IP bindings on multi-homed machines</summary>
 		b_serverinstance_binding_list = 5,
+		/// <summary>List permissions available available on the server instance</summary>
 		b_serverinstance_permission_list = 6,
+		/// <summary>Search permission assignments by name or ID</summary>
 		b_serverinstance_permission_find = 7,
+		/// <summary>Create virtual servers</summary>
 		b_virtualserver_create = 8,
+		/// <summary>Delete virtual servers</summary>
 		b_virtualserver_delete = 9,
+		/// <summary>Start any virtual server in the server instance</summary>
 		b_virtualserver_start_any = 10,
+		/// <summary>Stop any virtual server in the server instance</summary>
 		b_virtualserver_stop_any = 11,
+		/// <summary>Change a virtual servers machine ID</summary>
 		b_virtualserver_change_machine_id = 12,
+		/// <summary>Edit virtual server default template values</summary>
 		b_virtualserver_change_template = 13,
+		/// <summary>Login to ServerQuery</summary>
 		b_serverquery_login = 14,
+		/// <summary>Send text messages to all virtual servers at once</summary>
 		b_serverinstance_textmessage_send = 15,
+		/// <summary>Retrieve global server log</summary>
 		b_serverinstance_log_view = 16,
+		/// <summary>Write to global server log</summary>
 		b_serverinstance_log_add = 17,
+		/// <summary>Shutdown the server process</summary>
 		b_serverinstance_stop = 18,
+		/// <summary>Edit global settings</summary>
 		b_serverinstance_modify_settings = 19,
+		/// <summary>Edit global ServerQuery groups</summary>
 		b_serverinstance_modify_querygroup = 20,
+		/// <summary>Edit global template groups</summary>
 		b_serverinstance_modify_templates = 21,
+		/// <summary>Select a virtual server</summary>
 		b_virtualserver_select = 22,
+		/// <summary>Retrieve virtual server information</summary>
 		b_virtualserver_info_view = 23,
+		/// <summary>Retrieve virtual server connection information</summary>
 		b_virtualserver_connectioninfo_view = 24,
+		/// <summary>List channels on a virtual server</summary>
 		b_virtualserver_channel_list = 25,
+		/// <summary>Search for channels on a virtual server</summary>
 		b_virtualserver_channel_search = 26,
+		/// <summary>List clients online on a virtual server</summary>
 		b_virtualserver_client_list = 27,
+		/// <summary>Search for clients online on a virtual server</summary>
 		b_virtualserver_client_search = 28,
+		/// <summary>List client identities known by the virtual server</summary>
 		b_virtualserver_client_dblist = 29,
+		/// <summary>Search for client identities known by the virtual server</summary>
 		b_virtualserver_client_dbsearch = 30,
+		/// <summary>Retrieve client information</summary>
 		b_virtualserver_client_dbinfo = 31,
+		/// <summary>Find permissions</summary>
 		b_virtualserver_permission_find = 32,
+		/// <summary>Find custom fields</summary>
 		b_virtualserver_custom_search = 33,
+		/// <summary>Start own virtual server</summary>
 		b_virtualserver_start = 34,
+		/// <summary>Stop own virtual server</summary>
 		b_virtualserver_stop = 35,
+		/// <summary>List privilege keys available</summary>
 		b_virtualserver_token_list = 36,
+		/// <summary>Create new privilege keys</summary>
 		b_virtualserver_token_add = 37,
+		/// <summary>Use a privilege keys to gain access to groups</summary>
 		b_virtualserver_token_use = 38,
+		/// <summary>Delete a privilege key</summary>
 		b_virtualserver_token_delete = 39,
+		/// <summary>Retrieve virtual server log</summary>
 		b_virtualserver_log_view = 40,
+		/// <summary>Write to virtual server log</summary>
 		b_virtualserver_log_add = 41,
+		/// <summary>Join virtual server ignoring its password</summary>
 		b_virtualserver_join_ignore_password = 42,
+		/// <summary>Register for server notifications</summary>
 		b_virtualserver_notify_register = 43,
+		/// <summary>Unregister from server notifications</summary>
 		b_virtualserver_notify_unregister = 44,
+		/// <summary>Create server snapshots</summary>
 		b_virtualserver_snapshot_create = 45,
+		/// <summary>Deploy server snapshots</summary>
 		b_virtualserver_snapshot_deploy = 46,
+		/// <summary>Reset the server permission settings to default values</summary>
 		b_virtualserver_permission_reset = 47,
+		/// <summary>Modify server name</summary>
 		b_virtualserver_modify_name = 48,
+		/// <summary>Modify welcome message</summary>
 		b_virtualserver_modify_welcomemessage = 49,
+		/// <summary>Modify servers max clients</summary>
 		b_virtualserver_modify_maxclients = 50,
+		/// <summary>Modify reserved slots</summary>
 		b_virtualserver_modify_reserved_slots = 51,
+		/// <summary>Modify server password</summary>
 		b_virtualserver_modify_password = 52,
+		/// <summary>Modify default Server Group</summary>
 		b_virtualserver_modify_default_servergroup = 53,
+		/// <summary>Modify default Channel Group</summary>
 		b_virtualserver_modify_default_channelgroup = 54,
+		/// <summary>Modify default Channel Admin Group</summary>
 		b_virtualserver_modify_default_channeladmingroup = 55,
+		/// <summary>Modify channel force silence value</summary>
 		b_virtualserver_modify_channel_forced_silence = 56,
+		/// <summary>Modify individual complain settings</summary>
 		b_virtualserver_modify_complain = 57,
+		/// <summary>Modify individual antiflood settings</summary>
 		b_virtualserver_modify_antiflood = 58,
+		/// <summary>Modify file transfer settings</summary>
 		b_virtualserver_modify_ft_settings = 59,
+		/// <summary>Modify file transfer quotas</summary>
 		b_virtualserver_modify_ft_quotas = 60,
+		/// <summary>Modify individual hostmessage settings</summary>
 		b_virtualserver_modify_hostmessage = 61,
+		/// <summary>Modify individual hostbanner settings</summary>
 		b_virtualserver_modify_hostbanner = 62,
+		/// <summary>Modify individual hostbutton settings</summary>
 		b_virtualserver_modify_hostbutton = 63,
+		/// <summary>Modify server port</summary>
 		b_virtualserver_modify_port = 64,
+		/// <summary>Modify server autostart</summary>
 		b_virtualserver_modify_autostart = 65,
+		/// <summary>Modify required identity security level</summary>
 		b_virtualserver_modify_needed_identity_security_level = 66,
+		/// <summary>Modify priority speaker dimm modificator</summary>
 		b_virtualserver_modify_priority_speaker_dimm_modificator = 67,
+		/// <summary>Modify log settings</summary>
 		b_virtualserver_modify_log_settings = 68,
+		/// <summary>Modify min client version</summary>
 		b_virtualserver_modify_min_client_version = 69,
+		/// <summary>Modify server icon</summary>
 		b_virtualserver_modify_icon_id = 70,
+		/// <summary>Modify web server list reporting settings</summary>
 		b_virtualserver_modify_weblist = 71,
+		/// <summary>Modify codec encryption mode</summary>
 		b_virtualserver_modify_codec_encryption_mode = 72,
+		/// <summary>Modify temporary serverpasswords</summary>
 		b_virtualserver_modify_temporary_passwords = 73,
+		/// <summary>Modify own temporary serverpasswords</summary>
 		b_virtualserver_modify_temporary_passwords_own = 74,
+		/// <summary>Modify default temporary channel delete delay</summary>
 		b_virtualserver_modify_channel_temp_delete_delay_default = 75,
+		/// <summary>Modify server nicknames</summary>
 		b_virtualserver_modify_nickname = 76,
+		/// <summary>Min channel creation depth in hierarchy</summary>
 		i_channel_min_depth = 77,
+		/// <summary>Max channel creation depth in hierarchy</summary>
 		i_channel_max_depth = 78,
+		/// <summary>Stop inheritance of channel group permissions</summary>
 		b_channel_group_inheritance_end = 79,
+		/// <summary>Modify channel permission power</summary>
 		i_channel_permission_modify_power = 80,
+		/// <summary>Needed modify channel permission power</summary>
 		i_channel_needed_permission_modify_power = 81,
+		/// <summary>Retrieve channel information</summary>
 		b_channel_info_view = 82,
+		/// <summary>Create sub-channels</summary>
 		b_channel_create_child = 83,
+		/// <summary>Create permanent channels</summary>
 		b_channel_create_permanent = 84,
+		/// <summary>Create semi-permanent channels</summary>
 		b_channel_create_semi_permanent = 85,
+		/// <summary>Create temporary channels</summary>
 		b_channel_create_temporary = 86,
+		/// <summary>Create private channel</summary>
 		b_channel_create_private = 87,
+		/// <summary>Create channels with a topic</summary>
 		b_channel_create_with_topic = 88,
+		/// <summary>Create channels with a description</summary>
 		b_channel_create_with_description = 89,
+		/// <summary>Create password protected channels</summary>
 		b_channel_create_with_password = 90,
+		/// <summary>Create channels using Speex Narrowband (8 kHz) codecs</summary>
 		b_channel_create_modify_with_codec_speex8 = 91,
+		/// <summary>Create channels using Speex Wideband (16 kHz) codecs</summary>
 		b_channel_create_modify_with_codec_speex16 = 92,
+		/// <summary>Create channels using Speex Ultra-Wideband (32 kHz) codecs</summary>
 		b_channel_create_modify_with_codec_speex32 = 93,
+		/// <summary>Create channels using the CELT Mono (48 kHz) codec</summary>
 		b_channel_create_modify_with_codec_celtmono48 = 94,
+		/// <summary>Create channels using OPUS (voice) codec</summary>
 		b_channel_create_modify_with_codec_opusvoice = 95,
+		/// <summary>Create channels using OPUS (music) codec</summary>
 		b_channel_create_modify_with_codec_opusmusic = 96,
+		/// <summary>Create channels with custom codec quality</summary>
 		i_channel_create_modify_with_codec_maxquality = 97,
+		/// <summary>Create channels with minimal custom codec latency factor</summary>
 		i_channel_create_modify_with_codec_latency_factor_min = 98,
+		/// <summary>Create channels with custom max clients</summary>
 		b_channel_create_with_maxclients = 99,
+		/// <summary>Create channels with custom max family clients</summary>
 		b_channel_create_with_maxfamilyclients = 100,
+		/// <summary>Create channels with custom sort order</summary>
 		b_channel_create_with_sortorder = 101,
+		/// <summary>Create default channels</summary>
 		b_channel_create_with_default = 102,
+		/// <summary>Create channels with needed talk power</summary>
 		b_channel_create_with_needed_talk_power = 103,
+		/// <summary>Create new channels only with password</summary>
 		b_channel_create_modify_with_force_password = 104,
+		/// <summary>Max delete delay for temporary channels</summary>
 		i_channel_create_modify_with_temp_delete_delay = 105,
+		/// <summary>Move channels</summary>
 		b_channel_modify_parent = 106,
+		/// <summary>Make channel default</summary>
 		b_channel_modify_make_default = 107,
+		/// <summary>Make channel permanent</summary>
 		b_channel_modify_make_permanent = 108,
+		/// <summary>Make channel semi-permanent</summary>
 		b_channel_modify_make_semi_permanent = 109,
+		/// <summary>Make channel temporary</summary>
 		b_channel_modify_make_temporary = 110,
+		/// <summary>Modify channel name</summary>
 		b_channel_modify_name = 111,
+		/// <summary>Modify channel topic</summary>
 		b_channel_modify_topic = 112,
+		/// <summary>Modify channel description</summary>
 		b_channel_modify_description = 113,
+		/// <summary>Modify channel password</summary>
 		b_channel_modify_password = 114,
+		/// <summary>Modify channel codec</summary>
 		b_channel_modify_codec = 115,
+		/// <summary>Modify channel codec quality</summary>
 		b_channel_modify_codec_quality = 116,
+		/// <summary>Modify channel codec latency factor</summary>
 		b_channel_modify_codec_latency_factor = 117,
+		/// <summary>Modify channels max clients</summary>
 		b_channel_modify_maxclients = 118,
+		/// <summary>Modify channels max family clients</summary>
 		b_channel_modify_maxfamilyclients = 119,
+		/// <summary>Modify channel sort order</summary>
 		b_channel_modify_sortorder = 120,
+		/// <summary>Change needed channel talk power</summary>
 		b_channel_modify_needed_talk_power = 121,
+		/// <summary>Channel modify power</summary>
 		i_channel_modify_power = 122,
+		/// <summary>Needed channel modify power</summary>
 		i_channel_needed_modify_power = 123,
+		/// <summary>Make channel codec encrypted</summary>
 		b_channel_modify_make_codec_encrypted = 124,
+		/// <summary>Modify temporary channel delete delay</summary>
 		b_channel_modify_temp_delete_delay = 125,
+		/// <summary>Delete permanent channels</summary>
 		b_channel_delete_permanent = 126,
+		/// <summary>Delete semi-permanent channels</summary>
 		b_channel_delete_semi_permanent = 127,
+		/// <summary>Delete temporary channels</summary>
 		b_channel_delete_temporary = 128,
+		/// <summary>Force channel delete</summary>
 		b_channel_delete_flag_force = 129,
+		/// <summary>Delete channel power</summary>
 		i_channel_delete_power = 130,
+		/// <summary>Needed delete channel power</summary>
 		i_channel_needed_delete_power = 131,
+		/// <summary>Join permanent channels</summary>
 		b_channel_join_permanent = 132,
+		/// <summary>Join semi-permanent channels</summary>
 		b_channel_join_semi_permanent = 133,
+		/// <summary>Join temporary channels</summary>
 		b_channel_join_temporary = 134,
+		/// <summary>Join channel ignoring its password</summary>
 		b_channel_join_ignore_password = 135,
+		/// <summary>Ignore channels max clients limit</summary>
 		b_channel_join_ignore_maxclients = 136,
+		/// <summary>Channel join power</summary>
 		i_channel_join_power = 137,
+		/// <summary>Needed channel join power</summary>
 		i_channel_needed_join_power = 138,
+		/// <summary>Channel subscribe power</summary>
 		i_channel_subscribe_power = 139,
+		/// <summary>Needed channel subscribe power</summary>
 		i_channel_needed_subscribe_power = 140,
+		/// <summary>Channel description view power</summary>
 		i_channel_description_view_power = 141,
+		/// <summary>Needed channel needed description view power</summary>
 		i_channel_needed_description_view_power = 142,
+		/// <summary>Group icon identifier</summary>
 		i_icon_id = 143,
+		/// <summary>Max icon filesize in bytes</summary>
 		i_max_icon_filesize = 144,
+		/// <summary>Enables icon management</summary>
 		b_icon_manage = 145,
+		/// <summary>Group is permanent</summary>
 		b_group_is_permanent = 146,
+		/// <summary>Group auto-update type</summary>
 		i_group_auto_update_type = 147,
+		/// <summary>Group auto-update max value</summary>
 		i_group_auto_update_max_value = 148,
+		/// <summary>Group sort id</summary>
 		i_group_sort_id = 149,
+		/// <summary>Show group name in tree depending on selected mode</summary>
 		i_group_show_name_in_tree = 150,
+		/// <summary>List server groups</summary>
 		b_virtualserver_servergroup_list = 151,
+		/// <summary>List server group permissions</summary>
 		b_virtualserver_servergroup_permission_list = 152,
+		/// <summary>List clients from a server group</summary>
 		b_virtualserver_servergroup_client_list = 153,
+		/// <summary>List channel groups</summary>
 		b_virtualserver_channelgroup_list = 154,
+		/// <summary>List channel group permissions</summary>
 		b_virtualserver_channelgroup_permission_list = 155,
+		/// <summary>List clients from a channel group</summary>
 		b_virtualserver_channelgroup_client_list = 156,
+		/// <summary>List client permissions</summary>
 		b_virtualserver_client_permission_list = 157,
+		/// <summary>List channel permissions</summary>
 		b_virtualserver_channel_permission_list = 158,
+		/// <summary>List channel client permissions</summary>
 		b_virtualserver_channelclient_permission_list = 159,
+		/// <summary>Create server groups</summary>
 		b_virtualserver_servergroup_create = 160,
+		/// <summary>Create channel groups</summary>
 		b_virtualserver_channelgroup_create = 161,
+		/// <summary>Group modify power</summary>
 		i_group_modify_power = 162,
+		/// <summary>Needed group modify power</summary>
 		i_group_needed_modify_power = 163,
+		/// <summary>Group member add power</summary>
 		i_group_member_add_power = 164,
+		/// <summary>Needed group member add power</summary>
 		i_group_needed_member_add_power = 165,
+		/// <summary>Group member delete power</summary>
 		i_group_member_remove_power = 166,
+		/// <summary>Needed group member delete power</summary>
 		i_group_needed_member_remove_power = 167,
+		/// <summary>Permission modify power</summary>
 		i_permission_modify_power = 168,
+		/// <summary>Ignore needed permission modify power</summary>
 		b_permission_modify_power_ignore = 169,
+		/// <summary>Delete server groups</summary>
 		b_virtualserver_servergroup_delete = 170,
+		/// <summary>Delete channel groups</summary>
 		b_virtualserver_channelgroup_delete = 171,
+		/// <summary>Client permission modify power</summary>
 		i_client_permission_modify_power = 172,
+		/// <summary>Needed client permission modify power</summary>
 		i_client_needed_permission_modify_power = 173,
+		/// <summary>Max additional connections per client identity</summary>
 		i_client_max_clones_uid = 174,
+		/// <summary>Max idle time in seconds</summary>
 		i_client_max_idletime = 175,
+		/// <summary>Max avatar filesize in bytes</summary>
 		i_client_max_avatar_filesize = 176,
+		/// <summary>Max channel subscriptions</summary>
 		i_client_max_channel_subscriptions = 177,
+		/// <summary>Client is priority speaker</summary>
 		b_client_is_priority_speaker = 178,
+		/// <summary>Ignore channel group permissions</summary>
 		b_client_skip_channelgroup_permissions = 179,
+		/// <summary>Force Push-To-Talk capture mode</summary>
 		b_client_force_push_to_talk = 180,
+		/// <summary>Ignore bans</summary>
 		b_client_ignore_bans = 181,
+		/// <summary>Ignore antiflood measurements</summary>
 		b_client_ignore_antiflood = 182,
+		/// <summary>Issue query commands from client</summary>
 		b_client_issue_client_query_command = 183,
+		/// <summary>Use an reserved slot</summary>
 		b_client_use_reserved_slot = 184,
+		/// <summary>Use channel commander</summary>
 		b_client_use_channel_commander = 185,
+		/// <summary>Allow to request talk power</summary>
 		b_client_request_talker = 186,
+		/// <summary>Allow deletion of avatars from other clients</summary>
 		b_client_avatar_delete_other = 187,
+		/// <summary>Client will be sticked to current channel</summary>
 		b_client_is_sticky = 188,
+		/// <summary>Client ignores sticky flag</summary>
 		b_client_ignore_sticky = 189,
+		/// <summary>Retrieve client information</summary>
 		b_client_info_view = 190,
+		/// <summary>Retrieve client permissions overview</summary>
 		b_client_permissionoverview_view = 191,
+		/// <summary>Retrieve clients own permissions overview</summary>
 		b_client_permissionoverview_own = 192,
+		/// <summary>View client IP address and port</summary>
 		b_client_remoteaddress_view = 193,
+		/// <summary>ServerQuery view power</summary>
 		i_client_serverquery_view_power = 194,
+		/// <summary>Needed ServerQuery view power</summary>
 		i_client_needed_serverquery_view_power = 195,
+		/// <summary>View custom fields</summary>
 		b_client_custom_info_view = 196,
+		/// <summary>Client kick power from server</summary>
 		i_client_kick_from_server_power = 197,
+		/// <summary>Needed client kick power from server</summary>
 		i_client_needed_kick_from_server_power = 198,
+		/// <summary>Client kick power from channel</summary>
 		i_client_kick_from_channel_power = 199,
+		/// <summary>Needed client kick power from channel</summary>
 		i_client_needed_kick_from_channel_power = 200,
+		/// <summary>Client ban power</summary>
 		i_client_ban_power = 201,
+		/// <summary>Needed client ban power</summary>
 		i_client_needed_ban_power = 202,
+		/// <summary>Client move power</summary>
 		i_client_move_power = 203,
+		/// <summary>Needed client move power</summary>
 		i_client_needed_move_power = 204,
+		/// <summary>Complain power</summary>
 		i_client_complain_power = 205,
+		/// <summary>Needed complain power</summary>
 		i_client_needed_complain_power = 206,
+		/// <summary>Show complain list</summary>
 		b_client_complain_list = 207,
+		/// <summary>Delete own complains</summary>
 		b_client_complain_delete_own = 208,
+		/// <summary>Delete complains</summary>
 		b_client_complain_delete = 209,
+		/// <summary>Show banlist</summary>
 		b_client_ban_list = 210,
+		/// <summary>Add a ban</summary>
 		b_client_ban_create = 211,
+		/// <summary>Delete own bans</summary>
 		b_client_ban_delete_own = 212,
+		/// <summary>Delete bans</summary>
 		b_client_ban_delete = 213,
+		/// <summary>Max bantime</summary>
 		i_client_ban_max_bantime = 214,
+		/// <summary>Client private message power</summary>
 		i_client_private_textmessage_power = 215,
+		/// <summary>Needed client private message power</summary>
 		i_client_needed_private_textmessage_power = 216,
+		/// <summary>Send text messages to virtual server</summary>
 		b_client_server_textmessage_send = 217,
+		/// <summary>Send text messages to channel</summary>
 		b_client_channel_textmessage_send = 218,
+		/// <summary>Send offline messages to clients</summary>
 		b_client_offline_textmessage_send = 219,
+		/// <summary>Client talk power</summary>
 		i_client_talk_power = 220,
+		/// <summary>Needed client talk power</summary>
 		i_client_needed_talk_power = 221,
+		/// <summary>Client poke power</summary>
 		i_client_poke_power = 222,
+		/// <summary>Needed client poke power</summary>
 		i_client_needed_poke_power = 223,
+		/// <summary>Set the talker flag for clients and allow them to speak</summary>
 		b_client_set_flag_talker = 224,
+		/// <summary>Client whisper power</summary>
 		i_client_whisper_power = 225,
+		/// <summary>Client needed whisper power</summary>
 		i_client_needed_whisper_power = 226,
+		/// <summary>Edit a clients description</summary>
 		b_client_modify_description = 227,
+		/// <summary>Allow client to edit own description</summary>
 		b_client_modify_own_description = 228,
+		/// <summary>Edit a clients properties in the database</summary>
 		b_client_modify_dbproperties = 229,
+		/// <summary>Delete a clients properties in the database</summary>
 		b_client_delete_dbproperties = 230,
+		/// <summary>Create or modify own ServerQuery account</summary>
 		b_client_create_modify_serverquery_login = 231,
+		/// <summary>Browse files without channel password</summary>
 		b_ft_ignore_password = 232,
+		/// <summary>Retrieve list of running filetransfers</summary>
 		b_ft_transfer_list = 233,
+		/// <summary>File upload power</summary>
 		i_ft_file_upload_power = 234,
+		/// <summary>Needed file upload power</summary>
 		i_ft_needed_file_upload_power = 235,
+		/// <summary>File download power</summary>
 		i_ft_file_download_power = 236,
+		/// <summary>Needed file download power</summary>
 		i_ft_needed_file_download_power = 237,
+		/// <summary>File delete power</summary>
 		i_ft_file_delete_power = 238,
+		/// <summary>Needed file delete power</summary>
 		i_ft_needed_file_delete_power = 239,
+		/// <summary>File rename power</summary>
 		i_ft_file_rename_power = 240,
+		/// <summary>Needed file rename power</summary>
 		i_ft_needed_file_rename_power = 241,
+		/// <summary>File browse power</summary>
 		i_ft_file_browse_power = 242,
+		/// <summary>Needed file browse power</summary>
 		i_ft_needed_file_browse_power = 243,
+		/// <summary>Create directory power</summary>
 		i_ft_directory_create_power = 244,
+		/// <summary>Needed create directory power</summary>
 		i_ft_needed_directory_create_power = 245,
+		/// <summary>Download quota per client in MByte</summary>
 		i_ft_quota_mb_download_per_client = 246,
+		/// <summary>Upload quota per client in MByte</summary>
 		i_ft_quota_mb_upload_per_client = 247,
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}

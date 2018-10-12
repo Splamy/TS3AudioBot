@@ -11,6 +11,8 @@ using System.Net;
 using System.Diagnostics;
 using System.Threading;
 using TS3Client.Commands;
+using TSFileInfo = TS3Client.Messages.FileInfo;
+using IOFileInfo = System.IO.FileInfo;
 
 // ReSharper disable All
 namespace Ts3ClientTests
@@ -324,16 +326,16 @@ namespace Ts3ClientTests
 			//var channel = client.
 
 			var folder = client.FileTransferGetFileList(1, "/");
-			var resultDlX = client.FileTransferManager.DownloadFile(new FileInfo("test.toml"), 1, "/conf.toml");
+			var resultDlX = client.FileTransferManager.DownloadFile(new IOFileInfo("test.toml"), 1, "/conf.toml");
 
 			folder = client.FileTransferGetFileList(0, "/icons");
 
-			var result = client.SendNotifyCommand(new TS3Client.Commands.Ts3Command("servergrouplist"), NotificationType.ServerGroupList).Unwrap();
+			var result = client.SendNotifyCommand(new Ts3Command("servergrouplist"), NotificationType.ServerGroupList).Unwrap();
 			foreach (var group in result.Notifications.Cast<ServerGroupList>())
 			{
 				var icon = group.IconId;
 				string fileName = "icon_" + icon;
-				using (var fs = new FileInfo(fileName).Open(FileMode.OpenOrCreate, FileAccess.ReadWrite))
+				using (var fs = new IOFileInfo(fileName).Open(FileMode.OpenOrCreate, FileAccess.ReadWrite))
 				{
 					var resultDl = client.FileTransferManager.DownloadFile(fs, 0, "/" + fileName);
 					if (resultDl.Ok)
@@ -381,7 +383,7 @@ namespace Ts3ClientTests
 			{
 				var client = (Ts3FullClient)sender;
 
-				var token = client.FileTransferManager.UploadFile(new FileInfo("img.png"), 0, "/avatar", overwrite: true);
+				var token = client.FileTransferManager.UploadFile(new IOFileInfo("img.png"), 0, "/avatar", overwrite: true);
 				if (!token.Ok)
 					return;
 				token.Value.Wait();

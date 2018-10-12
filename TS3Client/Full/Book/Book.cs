@@ -112,7 +112,7 @@ namespace TS3Client.Full.Book
 		private (u16, MaxFamilyClients) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
 		private (u16, MaxFamilyClients) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
 		private (u16, MaxFamilyClients) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (u16, MaxFamilyClients) MaxClientsFun(i32 MaxClients,  bool IsMaxClientsUnlimited, i32 MaxFamilyClients, bool IsMaxFamilyClientsUnlimited, bool InheritsMaxFamilyClients)
+		private (u16, MaxFamilyClients) MaxClientsFun(i32 MaxClients, bool IsMaxClientsUnlimited, i32 MaxFamilyClients, bool IsMaxFamilyClientsUnlimited, bool InheritsMaxFamilyClients)
 		{
 			u16 maxClient;
 			if (IsMaxClientsUnlimited)
@@ -138,14 +138,14 @@ namespace TS3Client.Full.Book
 		private TalkPowerRequest TalkPowerFun(ClientEnterView msg) => default; // TODO
 		private str[] BadgesFun(ClientEnterView msg) => Array.Empty<string>(); // TODO
 
-		private SocketAddr AddressFun(ConnectionInfo msg) => SocketAddr.Any; // TODO
+		private SocketAddr AddressFun(ClientConnectionInfo msg) => SocketAddr.Any; // TODO
 
 		private void SetClientDataFun(InitServer initServer)
 		{
 			OwnClient = initServer.ClientId;
 		}
 
-		private static bool ReturnFalse<T>(T msg) => false;
-		private static object ReturnNone<T>(T msg) => null;
+		private static bool ReturnFalse<T>(T _) => false;
+		private static object ReturnNone<T>(T _) => null;
 	}
 }

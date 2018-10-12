@@ -52,7 +52,7 @@ namespace TS3Client.Full
 		private byte[] alphaTmp;
 		private byte[] ivStruct;
 		private readonly byte[] fakeSignature = new byte[MacLen];
-		private readonly (byte[] key, byte[] nonce, uint generation)?[] cachedKeyNonces = new(byte[], byte[], uint)?[PacketTypeKinds * 2];
+		private readonly (byte[] key, byte[] nonce, uint generation)?[] cachedKeyNonces = new (byte[], byte[], uint)?[PacketTypeKinds * 2];
 
 		public Ts3Crypt()
 		{
@@ -780,7 +780,10 @@ namespace TS3Client.Full
 		public static bool EdCheck(VersionSign sign)
 		{
 			var ver = Encoding.ASCII.GetBytes(sign.PlatformName + sign.Name);
-			return Chaos.NaCl.Ed25519.Verify(Convert.FromBase64String(sign.Sign), ver, Ts3VerionSignPublicKey);
+			var signArr = Base64Decode(sign.Sign);
+			if (!signArr.Ok)
+				return false;
+			return Chaos.NaCl.Ed25519.Verify(signArr.Value, ver, Ts3VerionSignPublicKey);
 		}
 
 		public static void VersionSelfCheck()

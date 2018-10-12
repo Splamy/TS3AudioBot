@@ -28,7 +28,7 @@ namespace TS3Client.Full
 			ts3Crypt = new Ts3Crypt();
 			ts3Crypt.Identity = Ts3Crypt.GenerateNewIdentity(0);
 			packetHandler = new PacketHandler<C2S, S2C>(ts3Crypt);
-			msgProc = new AsyncMessageProcessor();
+			msgProc = new AsyncMessageProcessor(MessageHelper.GetToServerNotificationType);
 			dispatcher = EventDispatcherHelper.Create(EventDispatchType.AutoThreadPooled);
 		}
 

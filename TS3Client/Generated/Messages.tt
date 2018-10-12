@@ -89,6 +89,9 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "Ts3ErrorCode":
 	case "LicenseType":
 	case "PermissionId":
+	case "TokenType":
+	case "LogLevel":
+	case "PluginTargetMode":
 		if(!BackingTypes.TryGetValue(fld.type, out var backType))
 			backType = "i32";
 		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
@@ -169,12 +172,23 @@ foreach(var msg in gen.GetOrderedMsg())
 
 	public static class MessageHelper
 	{
-		public static NotificationType GetNotificationType(string name)
+		public static NotificationType GetToClientNotificationType(string name)
 		{
 			switch(name)
 			{<#
-	foreach(var ntfy in gen.NotifiesSorted) { 
-		/*if(!ntfy.s2c.Value) continue;*/ #>
+	foreach(var ntfy in gen.NotifiesSorted.Where(x => x.s2c.Value)) {#>
+			case "<#= ntfy.notify #>": return NotificationType.<#= ntfy.name #>;<#
+	}
+#>
+			default: return NotificationType.Unknown;
+			}
+		}
+
+		public static NotificationType GetToServerNotificationType(string name)
+		{
+			switch(name)
+			{<#
+	foreach(var ntfy in gen.NotifiesSorted.Where(x => x.c2s.Value)) {#>
 			case "<#= ntfy.notify #>": return NotificationType.<#= ntfy.name #>;<#
 	}
 #>

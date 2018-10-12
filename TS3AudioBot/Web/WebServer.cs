@@ -63,7 +63,7 @@ namespace TS3AudioBot.Web
 			}
 			if (config.Api.Enabled || config.Interface.Enabled)
 			{
-				if(!config.Api.Enabled)
+				if (!config.Api.Enabled)
 					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to get rid this error message.");
 
 				Api = new Api.WebApi();
@@ -146,6 +146,7 @@ namespace TS3AudioBot.Web
 			catch (HttpListenerException ex)
 			{
 				Log.Error(ex, "The webserver could not be started");
+				webListener = null;
 				return;
 			} // TODO
 
@@ -207,8 +208,12 @@ namespace TS3AudioBot.Web
 			Display?.Dispose();
 			Display = null;
 
-			webListener?.Stop();
-			webListener?.Close();
+			try
+			{
+				webListener?.Stop();
+				webListener?.Close();
+			}
+			catch (ObjectDisposedException) { }
 			webListener = null;
 
 #if !NET46

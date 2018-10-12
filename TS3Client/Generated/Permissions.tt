@@ -35,6 +35,7 @@ namespace TS3Client
 	{
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		undefined = -1,<# foreach (var line in data.Skip(1)) { #>
+		/// <summary><#= line[2] #></summary>
 		<#= line[1] #> = <#= line[0] #>,<# } #>
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}

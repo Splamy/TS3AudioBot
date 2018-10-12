@@ -11,8 +11,8 @@
     "publish:tsc": "uglifyjs out/script.js -c -o build/script.js",
     "publish:less": "cleancss out/styles.css -o build/styles.css -O2 --skip-rebase",
     "publish:all": "npm run publish:webdata && npm run publish:tsc && npm run publish:less",
-    "publish:tsc-raw": "cp out/script.js build/script.js",
-    "publish:less-raw": "cp out/styles.css build/styles.css",
+    "publish:tsc-raw": "copyfiles -u 1 out/script.js build/",
+    "publish:less-raw": "copyfiles -u 1 out/styles.css build/",
     "publish:all-raw": "npm run publish:webdata && npm run publish:tsc-raw && npm run publish:less-raw",
     "publish": "npm run build:all && npm run publish:all-raw"
   },

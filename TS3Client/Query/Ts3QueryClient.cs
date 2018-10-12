@@ -23,6 +23,7 @@ namespace TS3Client.Query
 	using ChannelIdT = System.UInt64;
 	using CmdR = System.E<Messages.CommandError>;
 	using Uid = System.String;
+	using TSFileInfo = Messages.FileInfo;
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
@@ -50,7 +51,7 @@ namespace TS3Client.Query
 		{
 			connecting = false;
 			tcpClient = new TcpClient();
-			msgProc = new SyncMessageProcessor();
+			msgProc = new SyncMessageProcessor(MessageHelper.GetToClientNotificationType);
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 		}
 
@@ -251,8 +252,8 @@ namespace TS3Client.Query
 				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }
 				: new List<ICommandPart> { new CommandParameter("name", name) }).WrapSingle();
 
-		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
-			=> Send<ClientServerGroup>("servergroupsbyclientid",
+		public override R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
+			=> Send<ServerGroupsByClientId>("servergroupsbyclientid",
 			new CommandParameter("cldbid", clDbId));
 
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
@@ -284,8 +285,8 @@ namespace TS3Client.Query
 			new CommandParameter("path", path),
 			new CommandParameter("cpw", channelPassword));
 
-		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
-			=> Send<FileInfoTs>("ftgetfileinfo",
+		public override R<TSFileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+			=> Send<TSFileInfo>("ftgetfileinfo",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("cpw", channelPassword),
 			new CommandMultiParameter("name", path));

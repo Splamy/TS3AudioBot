@@ -64,7 +64,7 @@ namespace TS3Client.Full
 			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt);
-			msgProc = new AsyncMessageProcessor();
+			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 			context = new ConnectionContext { WasExit = true };
 		}
@@ -305,7 +305,7 @@ namespace TS3Client.Full
 			ChannelSubscribeAll();
 		}
 
-		partial void ProcessEachConnectionInfoRequest(ConnectionInfoRequest _)
+		partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
 		{
 			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
 		}
@@ -543,15 +543,15 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
-		public R<ConnectionInfo, CommandError> GetClientConnectionInfo(ClientIdT clientId)
+		public R<ClientConnectionInfo, CommandError> GetClientConnectionInfo(ClientIdT clientId)
 		{
 			var result = SendNotifyCommand(new Ts3Command("getconnectioninfo", new List<ICommandPart> {
 				new CommandParameter("clid", clientId) }),
-				NotificationType.ConnectionInfo);
+				NotificationType.ClientConnectionInfo);
 			if (!result.Ok)
 				return result.Error;
 			return result.Value.Notifications
-				.Cast<ConnectionInfo>()
+				.Cast<ClientConnectionInfo>()
 				.Where(x => x.ClientId == clientId)
 				.WrapSingle();
 		}
@@ -583,10 +583,10 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
+		public override R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
 			=> SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
 				new CommandParameter("cldbid", clDbId) }),
-				NotificationType.ClientServerGroup).UnwrapNotification<ClientServerGroup>();
+				NotificationType.ServerGroupsByClientId).UnwrapNotification<ServerGroupsByClientId>();
 
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
@@ -646,12 +646,12 @@ namespace TS3Client.Full
 				new CommandParameter("cpw", channelPassword) }),
 				NotificationType.FileList).UnwrapNotification<FileList>();
 
-		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public override R<FileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> SendNotifyCommand(new Ts3Command("ftgetfileinfo", new List<ICommandPart>() {
 				new CommandParameter("cid", channelId),
 				new CommandParameter("cpw", channelPassword),
 				new CommandMultiParameter("name", path) }),
-				NotificationType.FileInfoTs).UnwrapNotification<FileInfoTs>();
+				NotificationType.FileInfo).UnwrapNotification<FileInfo>();
 
 		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
 		{

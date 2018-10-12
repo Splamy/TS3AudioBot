@@ -19,15 +19,16 @@ namespace TS3Client
 	{
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		protected readonly List<WaitBlock>[] dependingBlocks;
+		private readonly Func<string, NotificationType> findTypeOfNotification;
 
 		protected ReadOnlyMemory<byte> cmdLineBuffer;
 		protected readonly object waitBlockLock = new object();
+		private const byte AsciiSpace = (byte)' ';
 
-		const byte AsciiSpace = (byte)' ';
-
-		public BaseMessageProcessor()
+		protected BaseMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
 		{
 			dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
+			this.findTypeOfNotification = findTypeOfNotification;
 		}
 
 		public LazyNotification? PushMessage(ReadOnlyMemory<byte> message)
@@ -43,7 +44,7 @@ namespace TS3Client
 			bool hasEqual;
 			NotificationType ntfyType;
 			if ((hasEqual = notifyname.IndexOf('=') >= 0)
-				|| (ntfyType = MessageHelper.GetNotificationType(notifyname)) == NotificationType.Unknown)
+				|| (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
 			{
 				if (!hasEqual)
 					Log.Debug("Maybe unknown notification: {0}", notifyname);
@@ -104,7 +105,7 @@ namespace TS3Client
 	{
 		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
 
-		public AsyncMessageProcessor()
+		public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification)
 		{
 			requestDict = new ConcurrentDictionary<string, WaitBlock>();
 		}
@@ -138,7 +139,6 @@ namespace TS3Client
 					throw new InvalidOperationException("Trying to add already existing WaitBlock returnCode");
 				if (waitBlock.DependsOn != null)
 				{
-
 					foreach (var dependantType in waitBlock.DependsOn)
 					{
 						var depentantList = dependingBlocks[(int)dependantType];
@@ -172,7 +172,7 @@ namespace TS3Client
 	{
 		private readonly ConcurrentQueue<WaitBlock> requestQueue;
 
-		public SyncMessageProcessor()
+		public SyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification)
 		{
 			requestQueue = new ConcurrentQueue<WaitBlock>();
 		}

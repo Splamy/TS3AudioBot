@@ -40,7 +40,13 @@ public class Messages
 
 	public IEnumerable<Msg> NotifiesSorted => GetOrderedMsg().Where(x => x.notify != null);
 
-	public (Field fld, bool optional) GetField(string name) => (fld:fields.First(x => x.map == name.Trim('?')), optional:name.EndsWith("?"));
+	public (Field fld, bool optional) GetField(string name)
+	{
+		var ret = (fld:fields.FirstOrDefault(x => x.map == name.Trim('?')), optional:name.EndsWith("?"));
+		if(ret.fld == null)
+			throw new Exception($"Field declaration for \"{name}\" not found");
+		return ret;
+	}
 
 	public Field[] fields { get; set; }
 	public MsgGroup[] msg_group { get; set; }

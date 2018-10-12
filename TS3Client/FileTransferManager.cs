@@ -20,13 +20,8 @@ namespace TS3Client
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
-
-	using ClientUidT = System.String;
-	using ClientDbIdT = System.UInt64;
-	using ClientIdT = System.UInt16;
 	using ChannelIdT = System.UInt64;
-	using ServerGroupIdT = System.UInt64;
-	using ChannelGroupIdT = System.UInt64;
+	using IOFileInfo = System.IO.FileInfo;
 
 	/// <summary>Queues and manages up- and downloads.</summary>
 	public sealed class FileTransferManager
@@ -53,7 +48,7 @@ namespace TS3Client
 		/// False will throw an exception if the file already exists.</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> UploadFile(FileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
+		public R<FileTransferToken, CommandError> UploadFile(IOFileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
 			=> UploadFile(file.Open(FileMode.Open, FileAccess.Read), channel, path, overwrite, channelPassword);
 
 		/// <summary>Initiate a file upload to the server.</summary>
@@ -86,7 +81,7 @@ namespace TS3Client
 		/// <param name="path">The download path within the channel. Eg: "file.txt", "path/file.png"</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> DownloadFile(FileInfo file, ChannelIdT channel, string path, string channelPassword = "")
+		public R<FileTransferToken, CommandError> DownloadFile(IOFileInfo file, ChannelIdT channel, string path, string channelPassword = "")
 			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, channelPassword, true);
 
 		/// <summary>Initiate a file download from the server.</summary>

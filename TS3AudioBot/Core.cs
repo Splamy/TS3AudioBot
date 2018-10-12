@@ -136,8 +136,9 @@ namespace TS3AudioBot
 
 		public void ExceptionHandler(object sender, UnhandledExceptionEventArgs e)
 		{
-			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!.");
+			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!");
 			Dispose();
+			Environment.Exit(-1);
 		}
 
 		public void ConsoleInterruptHandler(object sender, ConsoleCancelEventArgs e)

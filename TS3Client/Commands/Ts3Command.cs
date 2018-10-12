@@ -52,8 +52,16 @@ namespace TS3Client.Commands
 			return this;
 		}
 
+		/// <summary>
+		/// Can be set to false when a command does not receive a error-return-code
+		/// from teamspeak.
+		/// This makes this command effectively a notification, as a response can only
+		/// be sent back as a new notification.
+		/// </summary>
+		/// <param name="expects">Whether or not to wait for the error-return-code</param>
+		/// <returns>Returns this command. Useful for fluent command building.</returns>
 		[DebuggerStepThrough]
-		internal Ts3Command ExpectsResponse(bool expects)
+		public Ts3Command ExpectsResponse(bool expects)
 		{
 			ExpectResponse = expects;
 			return this;

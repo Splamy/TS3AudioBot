@@ -58,6 +58,294 @@ namespace TS3Client.Messages
 	using ConnectionId = System.UInt32;
 #pragma warning restore CS8019
 
+	public sealed class BanAdd : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.BanAdd;
+		
+
+		public str Ip { get; set; }
+		public str Name { get; set; }
+		public Uid Uid { get; set; }
+		public DurationSeconds Time { get; set; }
+		public str BanReason { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "ip": Ip = Ts3String.Unescape(value); break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "uid": Uid = Ts3String.Unescape(value); break;
+			case "time": { if(Utf8Parser.TryParse(value, out double oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
+			case "banreason": BanReason = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (BanAdd[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "uid": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "time": foreach(var toi in toc) { toi.Time = Time; } break;
+				case "banreason": foreach(var toi in toc) { toi.BanReason = BanReason; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class BanClient : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.BanClient;
+		
+
+		public ClientId ClientId { get; set; }
+		public DurationSeconds Time { get; set; }
+		public str BanReason { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "time": { if(Utf8Parser.TryParse(value, out double oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
+			case "banreason": BanReason = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (BanClient[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "time": foreach(var toi in toc) { toi.Time = Time; } break;
+				case "banreason": foreach(var toi in toc) { toi.BanReason = BanReason; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class BanDel : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.BanDel;
+		
+
+		public u32 BanId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "banid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) BanId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (BanDel[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "banid": foreach(var toi in toc) { toi.BanId = BanId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class BanDelAll : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.BanDelAll;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class BanList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.BanList;
+		public string ReturnCode { get; set; }
+
+		public u32 BanId { get; set; }
+		public str Ip { get; set; }
+		public str Name { get; set; }
+		public Uid Uid { get; set; }
+		public str LastNickname { get; set; }
+		public DateTime Created { get; set; }
+		public DurationSeconds Duration { get; set; }
+		public ClientDbId InvokerDatabaseId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public str Reason { get; set; }
+		public str Enforcements { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "banid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) BanId = oval; } break;
+			case "ip": Ip = Ts3String.Unescape(value); break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "uid": Uid = Ts3String.Unescape(value); break;
+			case "lastnickname": LastNickname = Ts3String.Unescape(value); break;
+			case "created": { if(Utf8Parser.TryParse(value, out double oval, out _)) Created = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "duration": { if(Utf8Parser.TryParse(value, out double oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
+			case "invokercldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) InvokerDatabaseId = oval; } break;
+			case "invokername": InvokerName = Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "reason": Reason = Ts3String.Unescape(value); break;
+			case "enforcements": Enforcements = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (BanList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "banid": foreach(var toi in toc) { toi.BanId = BanId; } break;
+				case "ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "uid": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "lastnickname": foreach(var toi in toc) { toi.LastNickname = LastNickname; } break;
+				case "created": foreach(var toi in toc) { toi.Created = Created; } break;
+				case "duration": foreach(var toi in toc) { toi.Duration = Duration; } break;
+				case "invokercldbid": foreach(var toi in toc) { toi.InvokerDatabaseId = InvokerDatabaseId; } break;
+				case "invokername": foreach(var toi in toc) { toi.InvokerName = InvokerName; } break;
+				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
+				case "reason": foreach(var toi in toc) { toi.Reason = Reason; } break;
+				case "enforcements": foreach(var toi in toc) { toi.Enforcements = Enforcements; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class BanListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.BanListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class BindingList : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.BindingList;
+		
+
+		public str Subsystem { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "subsystem": Subsystem = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (BindingList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "subsystem": foreach(var toi in toc) { toi.Subsystem = Subsystem; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelAddPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelAddPerm;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelAddPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ChannelChanged : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelChanged;
@@ -91,10 +379,217 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelCreated : INotification
+	public sealed class ChannelClientAddPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelClientAddPerm;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelClientAddPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelClientDelPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelClientDelPerm;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelClientDelPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelClientPermList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelClientPermList;
+		public string ReturnCode { get; set; }
+
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelClientPermList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permnegated": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelClientPermListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelClientPermListRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelClientPermListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelCreate : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelCreate;
+		
+
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "channel_name": Name = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelCreate[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelCreated : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreated;
-		
+		public string ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ClientId InvokerId { get; set; }
@@ -152,7 +647,7 @@ namespace TS3Client.Messages
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
 			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
-			
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -283,10 +778,46 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelDeleted : INotification
+	public sealed class ChannelDelete : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelDelete;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public bool Force { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "force": Force = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelDelete[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "force": foreach(var toi in toc) { toi.Force = Force; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelDeleted : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDeleted;
-		
+		public string ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ClientId InvokerId { get; set; }
@@ -302,7 +833,7 @@ namespace TS3Client.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -325,15 +856,93 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelEdited : INotification
+	public sealed class ChannelDelPerm : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.ChannelEdited;
+		public NotificationType NotifyType { get; } = NotificationType.ChannelDelPerm;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ChannelDescriptionChanged : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelDescriptionChanged;
 		
 
 		public ChannelId ChannelId { get; set; }
-		public ClientId InvokerId { get; set; }
-		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelDescriptionChanged[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelDescriptionRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelDescriptionRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelDescriptionRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelEdit : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelEdit;
+		
+
+		public ChannelId ChannelId { get; set; }
 		public i32 Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
@@ -354,7 +963,7 @@ namespace TS3Client.Messages
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
-		public Reason Reason { get; set; }
+		public ChannelId ChannelParentId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
@@ -362,9 +971,6 @@ namespace TS3Client.Messages
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
@@ -385,7 +991,7 @@ namespace TS3Client.Messages
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
 			
 			}
 
@@ -393,16 +999,13 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
-			var toc = (ChannelEdited[])to;
+			var toc = (ChannelEdit[])to;
 			foreach (var fld in flds)
 			{
 				switch(fld)
 				{
 
 				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
-				case "invokerid": foreach(var toi in toc) { toi.InvokerId = InvokerId; } break;
-				case "invokername": foreach(var toi in toc) { toi.InvokerName = InvokerName; } break;
-				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
 				case "channel_order": foreach(var toi in toc) { toi.Order = Order; } break;
 				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
 				case "channel_topic": foreach(var toi in toc) { toi.Topic = Topic; } break;
@@ -423,17 +1026,467 @@ namespace TS3Client.Messages
 				case "channel_flag_maxfamilyclients_unlimited": foreach(var toi in toc) { toi.IsMaxFamilyClientsUnlimited = IsMaxFamilyClientsUnlimited; } break;
 				case "channel_flag_maxfamilyclients_inherited": foreach(var toi in toc) { toi.InheritsMaxFamilyClients = InheritsMaxFamilyClients; } break;
 				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
-				case "reasonid": foreach(var toi in toc) { toi.Reason = Reason; } break;
+				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
 				}
 			}
 
 		}
 	}
 
-	public sealed class ChannelGroupList : INotification
+	public sealed class ChannelEdited : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelEdited;
+		public string ReturnCode { get; set; }
+
+		public ChannelId ChannelId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public Reason Reason { get; set; }
+		public i32 Order { get; set; }
+		public str Name { get; set; }
+		public str Topic { get; set; }
+		public bool IsDefault { get; set; }
+		public bool HasPassword { get; set; }
+		public bool IsPermanent { get; set; }
+		public bool IsSemiPermanent { get; set; }
+		public Codec Codec { get; set; }
+		public u8 CodecQuality { get; set; }
+		public i32 NeededTalkPower { get; set; }
+		public IconHash IconId { get; set; }
+		public i32 MaxClients { get; set; }
+		public i32 MaxFamilyClients { get; set; }
+		public i32 CodecLatencyFactor { get; set; }
+		public bool IsUnencrypted { get; set; }
+		public DurationSeconds DeleteDelay { get; set; }
+		public bool IsMaxClientsUnlimited { get; set; }
+		public bool IsMaxFamilyClientsUnlimited { get; set; }
+		public bool InheritsMaxFamilyClients { get; set; }
+		public str PhoneticName { get; set; }
+		public ChannelId ChannelParentId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
+			case "invokername": InvokerName = Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_name": Name = Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
+			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
+			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
+			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
+			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out double oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
+			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelEdited[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "invokerid": foreach(var toi in toc) { toi.InvokerId = InvokerId; } break;
+				case "invokername": foreach(var toi in toc) { toi.InvokerName = InvokerName; } break;
+				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
+				case "reasonid": foreach(var toi in toc) { toi.Reason = Reason; } break;
+				case "channel_order": foreach(var toi in toc) { toi.Order = Order; } break;
+				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "channel_topic": foreach(var toi in toc) { toi.Topic = Topic; } break;
+				case "channel_flag_default": foreach(var toi in toc) { toi.IsDefault = IsDefault; } break;
+				case "channel_flag_password": foreach(var toi in toc) { toi.HasPassword = HasPassword; } break;
+				case "channel_flag_permanent": foreach(var toi in toc) { toi.IsPermanent = IsPermanent; } break;
+				case "channel_flag_semi_permanent": foreach(var toi in toc) { toi.IsSemiPermanent = IsSemiPermanent; } break;
+				case "channel_codec": foreach(var toi in toc) { toi.Codec = Codec; } break;
+				case "channel_codec_quality": foreach(var toi in toc) { toi.CodecQuality = CodecQuality; } break;
+				case "channel_needed_talk_power": foreach(var toi in toc) { toi.NeededTalkPower = NeededTalkPower; } break;
+				case "channel_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
+				case "channel_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
+				case "channel_maxfamilyclients": foreach(var toi in toc) { toi.MaxFamilyClients = MaxFamilyClients; } break;
+				case "channel_codec_latency_factor": foreach(var toi in toc) { toi.CodecLatencyFactor = CodecLatencyFactor; } break;
+				case "channel_codec_is_unencrypted": foreach(var toi in toc) { toi.IsUnencrypted = IsUnencrypted; } break;
+				case "channel_delete_delay": foreach(var toi in toc) { toi.DeleteDelay = DeleteDelay; } break;
+				case "channel_flag_maxclients_unlimited": foreach(var toi in toc) { toi.IsMaxClientsUnlimited = IsMaxClientsUnlimited; } break;
+				case "channel_flag_maxfamilyclients_unlimited": foreach(var toi in toc) { toi.IsMaxFamilyClientsUnlimited = IsMaxFamilyClientsUnlimited; } break;
+				case "channel_flag_maxfamilyclients_inherited": foreach(var toi in toc) { toi.InheritsMaxFamilyClients = InheritsMaxFamilyClients; } break;
+				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
+				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelFind : IResponse
+	{
+		
+		public string ReturnCode { get; set; }
+
+		public ChannelId ChannelId { get; set; }
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "channel_name": Name = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelFind[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelFindRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelFindRequest;
+		
+
+		public str Pattern { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelFindRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "pattern": foreach(var toi in toc) { toi.Pattern = Pattern; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupAdd : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupAdd;
+		
+
+		public str Name { get; set; }
+		public GroupType GroupType { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupAdd[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "type": foreach(var toi in toc) { toi.GroupType = GroupType; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupAddPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupAddPerm;
+		
+
+		public ChannelGroupId ChannelGroup { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupAddPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupClientList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupClientList;
+		public string ReturnCode { get; set; }
+
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public ChannelGroupId ChannelGroup { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupClientList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupClientListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupClientListRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public ChannelGroupId ChannelGroup { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupClientListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupCopy : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupCopy;
+		
+
+		public ChannelGroupId SourceChannelGroupId { get; set; }
+		public ChannelGroupId TargetChannelGroupId { get; set; }
+		public str Name { get; set; }
+		public GroupType GroupType { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "scgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) SourceChannelGroupId = oval; } break;
+			case "tcgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) TargetChannelGroupId = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupCopy[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "scgid": foreach(var toi in toc) { toi.SourceChannelGroupId = SourceChannelGroupId; } break;
+				case "tcgid": foreach(var toi in toc) { toi.TargetChannelGroupId = TargetChannelGroupId; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "type": foreach(var toi in toc) { toi.GroupType = GroupType; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupDel : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupDel;
+		
+
+		public ChannelGroupId ChannelGroup { get; set; }
+		public bool Force { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "force": Force = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupDel[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				case "force": foreach(var toi in toc) { toi.Force = Force; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupDelPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupDelPerm;
+		
+
+		public ChannelGroupId ChannelGroup { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupDelPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupList;
-		
+		public string ReturnCode { get; set; }
 
 		public ChannelGroupId ChannelGroup { get; set; }
 		public str Name { get; set; }
@@ -461,7 +1514,7 @@ namespace TS3Client.Messages
 			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = oval; } break;
 			case "n_member_addp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberAddPower = oval; } break;
 			case "n_member_remove_p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = oval; } break;
-			
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -484,6 +1537,171 @@ namespace TS3Client.Messages
 				case "n_modifyp": foreach(var toi in toc) { toi.NeededModifyPower = NeededModifyPower; } break;
 				case "n_member_addp": foreach(var toi in toc) { toi.NeededMemberAddPower = NeededMemberAddPower; } break;
 				case "n_member_remove_p": foreach(var toi in toc) { toi.NeededMemberRemovePower = NeededMemberRemovePower; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ChannelGroupPermList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupPermList;
+		public string ReturnCode { get; set; }
+
+		public ChannelGroupId ChannelGroup { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupPermList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permnegated": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupPermListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupPermListRequest;
+		
+
+		public ChannelGroupId ChannelGroup { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupPermListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelGroupRename : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupRename;
+		
+
+		public ChannelGroupId ChannelGroup { get; set; }
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelGroupRename[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelInfoRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelInfoRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
 				}
 			}
 
@@ -607,6 +1825,60 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ChannelListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ChannelMove : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelMove;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public ChannelId ChannelParentId { get; set; }
+		public i32 Order { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelMove[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				case "order": foreach(var toi in toc) { toi.Order = Order; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ChannelMoved : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMoved;
@@ -691,6 +1963,84 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ChannelPermList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelPermList;
+		public string ReturnCode { get; set; }
+
+		public ChannelId ChannelId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelPermList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permnegated": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelPermListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelPermListRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelPermListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ChannelSubscribed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribed;
@@ -760,6 +2110,51 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientAddPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientAddPerm;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientAddPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ClientChannelGroupChanged : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChannelGroupChanged;
@@ -808,6 +2203,78 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientChatClose : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientChatClose;
+		
+
+		public ClientId ClientId { get; set; }
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientChatClose[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientChatClosed : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientChatClosed;
+		
+
+		public ClientId ClientId { get; set; }
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientChatClosed[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ClientChatComposing : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatComposing;
@@ -841,6 +2308,207 @@ namespace TS3Client.Messages
 				}
 			}
 
+		}
+	}
+
+	public sealed class ClientConnectionInfo : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfo;
+		
+
+		public ClientId ClientId { get; set; }
+		public DurationMilliseconds Ping { get; set; }
+		public DurationMilliseconds PingDeviation { get; set; }
+		public DurationMilliseconds ConnectedTime { get; set; }
+		public str Ip { get; set; }
+		public u16 Port { get; set; }
+		public u64 PacketsSentSpeech { get; set; }
+		public u64 PacketsSentKeepalive { get; set; }
+		public u64 PacketsSentControl { get; set; }
+		public u64 BytesSentSpeech { get; set; }
+		public u64 BytesSentKeepalive { get; set; }
+		public u64 BytesSentControl { get; set; }
+		public u64 PacketsReceivedSpeech { get; set; }
+		public u64 PacketsReceivedKeepalive { get; set; }
+		public u64 PacketsReceivedControl { get; set; }
+		public u64 BytesReceivedSpeech { get; set; }
+		public u64 BytesReceivedKeepalive { get; set; }
+		public u64 BytesReceivedControl { get; set; }
+		public f32 ServerToClientPacketlossSpeech { get; set; }
+		public f32 ServerToClientPacketlossKeepalive { get; set; }
+		public f32 ServerToClientPacketlossControl { get; set; }
+		public f32 ServerToClientPacketlossTotal { get; set; }
+		public f32 ClientToServerPacketlossSpeech { get; set; }
+		public f32 ClientToServerPacketlossKeepalive { get; set; }
+		public f32 ClientToServerPacketlossControl { get; set; }
+		public f32 ClientToServerPacketlossTotal { get; set; }
+		public u64 BandwidthSentLastSecondSpeech { get; set; }
+		public u64 BandwidthSentLastSecondKeepalive { get; set; }
+		public u64 BandwidthSentLastSecondControl { get; set; }
+		public u64 BandwidthSentLastMinuteSpeech { get; set; }
+		public u64 BandwidthSentLastMinuteKeepalive { get; set; }
+		public u64 BandwidthSentLastMinuteControl { get; set; }
+		public u64 BandwidthReceivedLastSecondSpeech { get; set; }
+		public u64 BandwidthReceivedLastSecondKeepalive { get; set; }
+		public u64 BandwidthReceivedLastSecondControl { get; set; }
+		public u64 BandwidthReceivedLastMinuteSpeech { get; set; }
+		public u64 BandwidthReceivedLastMinuteKeepalive { get; set; }
+		public u64 BandwidthReceivedLastMinuteControl { get; set; }
+		public u64 FiletransferBandwidthSent { get; set; }
+		public u64 FiletransferBandwidthReceived { get; set; }
+		public DurationMilliseconds IdleTime { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "connection_ping": { if(Utf8Parser.TryParse(value, out double oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_ping_deviation": { if(Utf8Parser.TryParse(value, out double oval, out _)) PingDeviation = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
+			case "connection_client_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
+			case "connection_packets_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentSpeech = oval; } break;
+			case "connection_packets_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentKeepalive = oval; } break;
+			case "connection_packets_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentControl = oval; } break;
+			case "connection_bytes_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentSpeech = oval; } break;
+			case "connection_bytes_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentKeepalive = oval; } break;
+			case "connection_bytes_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentControl = oval; } break;
+			case "connection_packets_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedSpeech = oval; } break;
+			case "connection_packets_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedKeepalive = oval; } break;
+			case "connection_packets_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedControl = oval; } break;
+			case "connection_bytes_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedSpeech = oval; } break;
+			case "connection_bytes_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedKeepalive = oval; } break;
+			case "connection_bytes_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedControl = oval; } break;
+			case "connection_server2client_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossSpeech = oval; } break;
+			case "connection_server2client_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossKeepalive = oval; } break;
+			case "connection_server2client_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossControl = oval; } break;
+			case "connection_server2client_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossTotal = oval; } break;
+			case "connection_client2server_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossSpeech = oval; } break;
+			case "connection_client2server_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossKeepalive = oval; } break;
+			case "connection_client2server_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossControl = oval; } break;
+			case "connection_client2server_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossTotal = oval; } break;
+			case "connection_bandwidth_sent_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondSpeech = oval; } break;
+			case "connection_bandwidth_sent_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondKeepalive = oval; } break;
+			case "connection_bandwidth_sent_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondControl = oval; } break;
+			case "connection_bandwidth_sent_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteSpeech = oval; } break;
+			case "connection_bandwidth_sent_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteKeepalive = oval; } break;
+			case "connection_bandwidth_sent_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteControl = oval; } break;
+			case "connection_bandwidth_received_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondSpeech = oval; } break;
+			case "connection_bandwidth_received_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondKeepalive = oval; } break;
+			case "connection_bandwidth_received_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondControl = oval; } break;
+			case "connection_bandwidth_received_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteSpeech = oval; } break;
+			case "connection_bandwidth_received_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteKeepalive = oval; } break;
+			case "connection_bandwidth_received_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteControl = oval; } break;
+			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = oval; } break;
+			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = oval; } break;
+			case "connection_idle_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) IdleTime = TimeSpan.FromMilliseconds(oval); } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientConnectionInfo[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "connection_ping": foreach(var toi in toc) { toi.Ping = Ping; } break;
+				case "connection_ping_deviation": foreach(var toi in toc) { toi.PingDeviation = PingDeviation; } break;
+				case "connection_connected_time": foreach(var toi in toc) { toi.ConnectedTime = ConnectedTime; } break;
+				case "connection_client_ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
+				case "connection_client_port": foreach(var toi in toc) { toi.Port = Port; } break;
+				case "connection_packets_sent_speech": foreach(var toi in toc) { toi.PacketsSentSpeech = PacketsSentSpeech; } break;
+				case "connection_packets_sent_keepalive": foreach(var toi in toc) { toi.PacketsSentKeepalive = PacketsSentKeepalive; } break;
+				case "connection_packets_sent_control": foreach(var toi in toc) { toi.PacketsSentControl = PacketsSentControl; } break;
+				case "connection_bytes_sent_speech": foreach(var toi in toc) { toi.BytesSentSpeech = BytesSentSpeech; } break;
+				case "connection_bytes_sent_keepalive": foreach(var toi in toc) { toi.BytesSentKeepalive = BytesSentKeepalive; } break;
+				case "connection_bytes_sent_control": foreach(var toi in toc) { toi.BytesSentControl = BytesSentControl; } break;
+				case "connection_packets_received_speech": foreach(var toi in toc) { toi.PacketsReceivedSpeech = PacketsReceivedSpeech; } break;
+				case "connection_packets_received_keepalive": foreach(var toi in toc) { toi.PacketsReceivedKeepalive = PacketsReceivedKeepalive; } break;
+				case "connection_packets_received_control": foreach(var toi in toc) { toi.PacketsReceivedControl = PacketsReceivedControl; } break;
+				case "connection_bytes_received_speech": foreach(var toi in toc) { toi.BytesReceivedSpeech = BytesReceivedSpeech; } break;
+				case "connection_bytes_received_keepalive": foreach(var toi in toc) { toi.BytesReceivedKeepalive = BytesReceivedKeepalive; } break;
+				case "connection_bytes_received_control": foreach(var toi in toc) { toi.BytesReceivedControl = BytesReceivedControl; } break;
+				case "connection_server2client_packetloss_speech": foreach(var toi in toc) { toi.ServerToClientPacketlossSpeech = ServerToClientPacketlossSpeech; } break;
+				case "connection_server2client_packetloss_keepalive": foreach(var toi in toc) { toi.ServerToClientPacketlossKeepalive = ServerToClientPacketlossKeepalive; } break;
+				case "connection_server2client_packetloss_control": foreach(var toi in toc) { toi.ServerToClientPacketlossControl = ServerToClientPacketlossControl; } break;
+				case "connection_server2client_packetloss_total": foreach(var toi in toc) { toi.ServerToClientPacketlossTotal = ServerToClientPacketlossTotal; } break;
+				case "connection_client2server_packetloss_speech": foreach(var toi in toc) { toi.ClientToServerPacketlossSpeech = ClientToServerPacketlossSpeech; } break;
+				case "connection_client2server_packetloss_keepalive": foreach(var toi in toc) { toi.ClientToServerPacketlossKeepalive = ClientToServerPacketlossKeepalive; } break;
+				case "connection_client2server_packetloss_control": foreach(var toi in toc) { toi.ClientToServerPacketlossControl = ClientToServerPacketlossControl; } break;
+				case "connection_client2server_packetloss_total": foreach(var toi in toc) { toi.ClientToServerPacketlossTotal = ClientToServerPacketlossTotal; } break;
+				case "connection_bandwidth_sent_last_second_speech": foreach(var toi in toc) { toi.BandwidthSentLastSecondSpeech = BandwidthSentLastSecondSpeech; } break;
+				case "connection_bandwidth_sent_last_second_keepalive": foreach(var toi in toc) { toi.BandwidthSentLastSecondKeepalive = BandwidthSentLastSecondKeepalive; } break;
+				case "connection_bandwidth_sent_last_second_control": foreach(var toi in toc) { toi.BandwidthSentLastSecondControl = BandwidthSentLastSecondControl; } break;
+				case "connection_bandwidth_sent_last_minute_speech": foreach(var toi in toc) { toi.BandwidthSentLastMinuteSpeech = BandwidthSentLastMinuteSpeech; } break;
+				case "connection_bandwidth_sent_last_minute_keepalive": foreach(var toi in toc) { toi.BandwidthSentLastMinuteKeepalive = BandwidthSentLastMinuteKeepalive; } break;
+				case "connection_bandwidth_sent_last_minute_control": foreach(var toi in toc) { toi.BandwidthSentLastMinuteControl = BandwidthSentLastMinuteControl; } break;
+				case "connection_bandwidth_received_last_second_speech": foreach(var toi in toc) { toi.BandwidthReceivedLastSecondSpeech = BandwidthReceivedLastSecondSpeech; } break;
+				case "connection_bandwidth_received_last_second_keepalive": foreach(var toi in toc) { toi.BandwidthReceivedLastSecondKeepalive = BandwidthReceivedLastSecondKeepalive; } break;
+				case "connection_bandwidth_received_last_second_control": foreach(var toi in toc) { toi.BandwidthReceivedLastSecondControl = BandwidthReceivedLastSecondControl; } break;
+				case "connection_bandwidth_received_last_minute_speech": foreach(var toi in toc) { toi.BandwidthReceivedLastMinuteSpeech = BandwidthReceivedLastMinuteSpeech; } break;
+				case "connection_bandwidth_received_last_minute_keepalive": foreach(var toi in toc) { toi.BandwidthReceivedLastMinuteKeepalive = BandwidthReceivedLastMinuteKeepalive; } break;
+				case "connection_bandwidth_received_last_minute_control": foreach(var toi in toc) { toi.BandwidthReceivedLastMinuteControl = BandwidthReceivedLastMinuteControl; } break;
+				case "connection_filetransfer_bandwidth_sent": foreach(var toi in toc) { toi.FiletransferBandwidthSent = FiletransferBandwidthSent; } break;
+				case "connection_filetransfer_bandwidth_received": foreach(var toi in toc) { toi.FiletransferBandwidthReceived = FiletransferBandwidthReceived; } break;
+				case "connection_idle_time": foreach(var toi in toc) { toi.IdleTime = IdleTime; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientConnectionInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfoRequest;
+		
+
+		public ClientId ClientId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientConnectionInfoRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientConnectionInfoUpdateRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfoUpdateRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
 		}
 	}
 
@@ -976,6 +2644,150 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientDbDelete : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbDelete;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbDelete[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbEdit : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbEdit;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbEdit[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbFind : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbFind;
+		public string ReturnCode { get; set; }
+
+		public ClientDbId ClientDbId { get; set; }
+		public Uid Uid { get; set; }
+		public str Name { get; set; }
+		public DateTime LastConnected { get; set; }
+		public i32 TotalConnections { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbFind[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "client_unique_identifier": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "client_lastconnected": foreach(var toi in toc) { toi.LastConnected = LastConnected; } break;
+				case "client_totalconnections": foreach(var toi in toc) { toi.TotalConnections = TotalConnections; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbFindRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbFindRequest;
+		
+
+		public str Pattern { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbFindRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "pattern": foreach(var toi in toc) { toi.Pattern = Pattern; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ClientDbIdFromUid : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbIdFromUid;
@@ -1006,6 +2818,234 @@ namespace TS3Client.Messages
 
 				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
 				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbIdFromUidRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbIdFromUidRequest;
+		
+
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbIdFromUidRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbInfoRequest;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbInfoRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbList;
+		public string ReturnCode { get; set; }
+
+		public ClientDbId ClientDbId { get; set; }
+		public Uid Uid { get; set; }
+		public str Name { get; set; }
+		public DateTime CreationDate { get; set; }
+		public DateTime LastConnected { get; set; }
+		public i32 TotalConnections { get; set; }
+		public str Description { get; set; }
+		public str LastIp { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
+			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "client_unique_identifier": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "client_created": foreach(var toi in toc) { toi.CreationDate = CreationDate; } break;
+				case "client_lastconnected": foreach(var toi in toc) { toi.LastConnected = LastConnected; } break;
+				case "client_totalconnections": foreach(var toi in toc) { toi.TotalConnections = TotalConnections; } break;
+				case "client_description": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "client_lastip": foreach(var toi in toc) { toi.LastIp = LastIp; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDbListRequest;
+		
+
+		public u32 Offset { get; set; }
+		public u32 Limit { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "start": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Offset = oval; } break;
+			case "duration": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Limit = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "start": foreach(var toi in toc) { toi.Offset = Offset; } break;
+				case "duration": foreach(var toi in toc) { toi.Limit = Limit; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDelPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientDelPerm;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDelPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientEdit : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientEdit;
+		
+
+		public ClientId ClientId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientEdit[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
 				}
 			}
 
@@ -1153,6 +3193,39 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientFindRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientFindRequest;
+		
+
+		public str Pattern { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientFindRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "pattern": foreach(var toi in toc) { toi.Pattern = Pattern; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ClientIds : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientIds;
@@ -1186,6 +3259,39 @@ namespace TS3Client.Messages
 				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
 				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
 				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientIdsRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientIdsRequest;
+		
+
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientIdsRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
 				}
 			}
 
@@ -1256,6 +3362,8 @@ namespace TS3Client.Messages
 		public str AvatarHash { get; set; }
 		public str Description { get; set; }
 		public IconHash IconId { get; set; }
+		public str MyTeamSpeakId { get; set; }
+		public str Integrations { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
@@ -1321,6 +3429,8 @@ namespace TS3Client.Messages
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
 			case "client_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "client_myteamspeak_id": MyTeamSpeakId = Ts3String.Unescape(value); break;
+			case "client_integrations": Integrations = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -1393,6 +3503,41 @@ namespace TS3Client.Messages
 				case "client_flag_avatar": foreach(var toi in toc) { toi.AvatarHash = AvatarHash; } break;
 				case "client_description": foreach(var toi in toc) { toi.Description = Description; } break;
 				case "client_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
+				case "client_myteamspeak_id": foreach(var toi in toc) { toi.MyTeamSpeakId = MyTeamSpeakId; } break;
+				case "client_integrations": foreach(var toi in toc) { toi.Integrations = Integrations; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientInfoRequest;
+		
+
+		public ClientId ClientId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientInfoRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
 				}
 			}
 
@@ -1510,6 +3655,45 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientKick : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientKick;
+		
+
+		public ClientId ClientId { get; set; }
+		public Reason Reason { get; set; }
+		public str ReasonMessage { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientKick[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "reasonid": foreach(var toi in toc) { toi.Reason = Reason; } break;
+				case "reasonmsg": foreach(var toi in toc) { toi.ReasonMessage = ReasonMessage; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ClientLeftView : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientLeftView;
@@ -1567,6 +3751,60 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ClientMove : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientMove;
+		
+
+		public ClientId ClientId { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientMove[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ClientMoved : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientMoved;
@@ -1578,6 +3816,7 @@ namespace TS3Client.Messages
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
+		public str ReasonMessage { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
@@ -1590,6 +3829,7 @@ namespace TS3Client.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
 			
 			}
 
@@ -1609,6 +3849,151 @@ namespace TS3Client.Messages
 				case "invokerid": foreach(var toi in toc) { toi.InvokerId = InvokerId; } break;
 				case "invokername": foreach(var toi in toc) { toi.InvokerName = InvokerName; } break;
 				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
+				case "reasonmsg": foreach(var toi in toc) { toi.ReasonMessage = ReasonMessage; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientNameFromDbId : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromDbId;
+		public string ReturnCode { get; set; }
+
+		public Uid ClientUid { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientNameFromDbId[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientNameFromDbIdRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromDbIdRequest;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientNameFromDbIdRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientNameFromUid : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromUid;
+		public string ReturnCode { get; set; }
+
+		public Uid ClientUid { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientNameFromUid[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientNameFromUidRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromUidRequest;
+		
+
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientNameFromUidRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
 				}
 			}
 
@@ -1645,6 +4030,87 @@ namespace TS3Client.Messages
 
 				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
 				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientPermList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientPermList;
+		public string ReturnCode { get; set; }
+
+		public ClientDbId ClientDbId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientPermList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permnegated": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientPermListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientPermListRequest;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientPermListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
 				}
 			}
 
@@ -1693,39 +4159,36 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientServerGroup : INotification, IResponse
+	public sealed class ClientPokeRequest : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroup;
-		public string ReturnCode { get; set; }
+		public NotificationType NotifyType { get; } = NotificationType.ClientPokeRequest;
+		
 
-		public str Name { get; set; }
-		public ServerGroupId ServerGroupId { get; set; }
-		public ClientDbId ClientDbId { get; set; }
+		public ClientId ClientId { get; set; }
+		public str Message { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "msg": Message = Ts3String.Unescape(value); break;
+			
 			}
 
 		}
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
-			var toc = (ClientServerGroup[])to;
+			var toc = (ClientPokeRequest[])to;
 			foreach (var fld in flds)
 			{
 				switch(fld)
 				{
 
-				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
-				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
-				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "msg": foreach(var toi in toc) { toi.Message = Message; } break;
 				}
 			}
 
@@ -1783,6 +4246,264 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientSetServerQueryLogin : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientSetServerQueryLogin;
+		public string ReturnCode { get; set; }
+
+		public str LoginPassword { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "client_login_password": LoginPassword = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientSetServerQueryLogin[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "client_login_password": foreach(var toi in toc) { toi.LoginPassword = LoginPassword; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientSetServerQueryLoginRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientSetServerQueryLoginRequest;
+		
+
+		public str LoginName { get; set; }
+		public str LoginPassword { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
+			case "client_login_password": LoginPassword = Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientSetServerQueryLoginRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "client_login_name": foreach(var toi in toc) { toi.LoginName = LoginName; } break;
+				case "client_login_password": foreach(var toi in toc) { toi.LoginPassword = LoginPassword; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientUidFromClid : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientUidFromClid;
+		public string ReturnCode { get; set; }
+
+		public Uid ClientUid { get; set; }
+		public ClientId ClientId { get; set; }
+		public str Nickname { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "nickname": Nickname = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientUidFromClid[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "nickname": foreach(var toi in toc) { toi.Nickname = Nickname; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientUidFromClidRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientUidFromClidRequest;
+		
+
+		public ClientId ClientId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientUidFromClidRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientUpdate : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientUpdate;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ClientUpdated : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientUpdated;
+		
+
+		public ClientId ClientId { get; set; }
+		public u32 UnreadMessages { get; set; }
+		public str ClientVersion { get; set; }
+		public str ClientPlatform { get; set; }
+		public str LoginName { get; set; }
+		public DateTime CreationDate { get; set; }
+		public DateTime LastConnected { get; set; }
+		public i32 TotalConnections { get; set; }
+		public i64 MonthlyUploadQuota { get; set; }
+		public i64 MonthlyDownloadQuota { get; set; }
+		public i64 TotalUploadQuota { get; set; }
+		public i64 TotalDownloadQuota { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = oval; } break;
+			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
+			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
+			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
+			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
+			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
+			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientUpdated[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "client_unread_messages": foreach(var toi in toc) { toi.UnreadMessages = UnreadMessages; } break;
+				case "client_version": foreach(var toi in toc) { toi.ClientVersion = ClientVersion; } break;
+				case "client_platform": foreach(var toi in toc) { toi.ClientPlatform = ClientPlatform; } break;
+				case "client_login_name": foreach(var toi in toc) { toi.LoginName = LoginName; } break;
+				case "client_created": foreach(var toi in toc) { toi.CreationDate = CreationDate; } break;
+				case "client_lastconnected": foreach(var toi in toc) { toi.LastConnected = LastConnected; } break;
+				case "client_totalconnections": foreach(var toi in toc) { toi.TotalConnections = TotalConnections; } break;
+				case "client_month_bytes_uploaded": foreach(var toi in toc) { toi.MonthlyUploadQuota = MonthlyUploadQuota; } break;
+				case "client_month_bytes_downloaded": foreach(var toi in toc) { toi.MonthlyDownloadQuota = MonthlyDownloadQuota; } break;
+				case "client_total_bytes_uploaded": foreach(var toi in toc) { toi.TotalUploadQuota = TotalUploadQuota; } break;
+				case "client_total_bytes_downloaded": foreach(var toi in toc) { toi.TotalDownloadQuota = TotalDownloadQuota; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientVariablesRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientVariablesRequest;
+		
+
+		public ClientId ClientId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientVariablesRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class CommandError : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.CommandError;
@@ -1828,99 +4549,21 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ConnectionInfo : INotification
+	public sealed class ComplainAdd : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.ConnectionInfo;
+		public NotificationType NotifyType { get; } = NotificationType.ComplainAdd;
 		
 
-		public ClientId ClientId { get; set; }
-		public DurationMilliseconds Ping { get; set; }
-		public DurationMilliseconds PingDeviation { get; set; }
-		public DurationMilliseconds ConnectedTime { get; set; }
-		public str Ip { get; set; }
-		public u16 Port { get; set; }
-		public u64 PacketsSentSpeech { get; set; }
-		public u64 PacketsSentKeepalive { get; set; }
-		public u64 PacketsSentControl { get; set; }
-		public u64 BytesSentSpeech { get; set; }
-		public u64 BytesSentKeepalive { get; set; }
-		public u64 BytesSentControl { get; set; }
-		public u64 PacketsReceivedSpeech { get; set; }
-		public u64 PacketsReceivedKeepalive { get; set; }
-		public u64 PacketsReceivedControl { get; set; }
-		public u64 BytesReceivedSpeech { get; set; }
-		public u64 BytesReceivedKeepalive { get; set; }
-		public u64 BytesReceivedControl { get; set; }
-		public f32 ServerToClientPacketlossSpeech { get; set; }
-		public f32 ServerToClientPacketlossKeepalive { get; set; }
-		public f32 ServerToClientPacketlossControl { get; set; }
-		public f32 ServerToClientPacketlossTotal { get; set; }
-		public f32 ClientToServerPacketlossSpeech { get; set; }
-		public f32 ClientToServerPacketlossKeepalive { get; set; }
-		public f32 ClientToServerPacketlossControl { get; set; }
-		public f32 ClientToServerPacketlossTotal { get; set; }
-		public u64 BandwidthSentLastSecondSpeech { get; set; }
-		public u64 BandwidthSentLastSecondKeepalive { get; set; }
-		public u64 BandwidthSentLastSecondControl { get; set; }
-		public u64 BandwidthSentLastMinuteSpeech { get; set; }
-		public u64 BandwidthSentLastMinuteKeepalive { get; set; }
-		public u64 BandwidthSentLastMinuteControl { get; set; }
-		public u64 BandwidthReceivedLastSecondSpeech { get; set; }
-		public u64 BandwidthReceivedLastSecondKeepalive { get; set; }
-		public u64 BandwidthReceivedLastSecondControl { get; set; }
-		public u64 BandwidthReceivedLastMinuteSpeech { get; set; }
-		public u64 BandwidthReceivedLastMinuteKeepalive { get; set; }
-		public u64 BandwidthReceivedLastMinuteControl { get; set; }
-		public u64 FiletransferBandwidthSent { get; set; }
-		public u64 FiletransferBandwidthReceived { get; set; }
-		public DurationMilliseconds IdleTime { get; set; }
+		public ClientDbId TargetClientDbId { get; set; }
+		public str Message { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "connection_ping": { if(Utf8Parser.TryParse(value, out double oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_ping_deviation": { if(Utf8Parser.TryParse(value, out double oval, out _)) PingDeviation = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
-			case "connection_client_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
-			case "connection_packets_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentSpeech = oval; } break;
-			case "connection_packets_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentKeepalive = oval; } break;
-			case "connection_packets_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentControl = oval; } break;
-			case "connection_bytes_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentSpeech = oval; } break;
-			case "connection_bytes_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentKeepalive = oval; } break;
-			case "connection_bytes_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentControl = oval; } break;
-			case "connection_packets_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedSpeech = oval; } break;
-			case "connection_packets_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedKeepalive = oval; } break;
-			case "connection_packets_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedControl = oval; } break;
-			case "connection_bytes_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedSpeech = oval; } break;
-			case "connection_bytes_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedKeepalive = oval; } break;
-			case "connection_bytes_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedControl = oval; } break;
-			case "connection_server2client_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossSpeech = oval; } break;
-			case "connection_server2client_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossKeepalive = oval; } break;
-			case "connection_server2client_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossControl = oval; } break;
-			case "connection_server2client_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossTotal = oval; } break;
-			case "connection_client2server_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossSpeech = oval; } break;
-			case "connection_client2server_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossKeepalive = oval; } break;
-			case "connection_client2server_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossControl = oval; } break;
-			case "connection_client2server_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossTotal = oval; } break;
-			case "connection_bandwidth_sent_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondSpeech = oval; } break;
-			case "connection_bandwidth_sent_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondKeepalive = oval; } break;
-			case "connection_bandwidth_sent_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondControl = oval; } break;
-			case "connection_bandwidth_sent_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteSpeech = oval; } break;
-			case "connection_bandwidth_sent_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteKeepalive = oval; } break;
-			case "connection_bandwidth_sent_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteControl = oval; } break;
-			case "connection_bandwidth_received_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondSpeech = oval; } break;
-			case "connection_bandwidth_received_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondKeepalive = oval; } break;
-			case "connection_bandwidth_received_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondControl = oval; } break;
-			case "connection_bandwidth_received_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteSpeech = oval; } break;
-			case "connection_bandwidth_received_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteKeepalive = oval; } break;
-			case "connection_bandwidth_received_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteControl = oval; } break;
-			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = oval; } break;
-			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = oval; } break;
-			case "connection_idle_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) IdleTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
+			case "message": Message = Ts3String.Unescape(value); break;
 			
 			}
 
@@ -1928,71 +4571,311 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
-			var toc = (ConnectionInfo[])to;
+			var toc = (ComplainAdd[])to;
 			foreach (var fld in flds)
 			{
 				switch(fld)
 				{
 
-				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
-				case "connection_ping": foreach(var toi in toc) { toi.Ping = Ping; } break;
-				case "connection_ping_deviation": foreach(var toi in toc) { toi.PingDeviation = PingDeviation; } break;
-				case "connection_connected_time": foreach(var toi in toc) { toi.ConnectedTime = ConnectedTime; } break;
-				case "connection_client_ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
-				case "connection_client_port": foreach(var toi in toc) { toi.Port = Port; } break;
-				case "connection_packets_sent_speech": foreach(var toi in toc) { toi.PacketsSentSpeech = PacketsSentSpeech; } break;
-				case "connection_packets_sent_keepalive": foreach(var toi in toc) { toi.PacketsSentKeepalive = PacketsSentKeepalive; } break;
-				case "connection_packets_sent_control": foreach(var toi in toc) { toi.PacketsSentControl = PacketsSentControl; } break;
-				case "connection_bytes_sent_speech": foreach(var toi in toc) { toi.BytesSentSpeech = BytesSentSpeech; } break;
-				case "connection_bytes_sent_keepalive": foreach(var toi in toc) { toi.BytesSentKeepalive = BytesSentKeepalive; } break;
-				case "connection_bytes_sent_control": foreach(var toi in toc) { toi.BytesSentControl = BytesSentControl; } break;
-				case "connection_packets_received_speech": foreach(var toi in toc) { toi.PacketsReceivedSpeech = PacketsReceivedSpeech; } break;
-				case "connection_packets_received_keepalive": foreach(var toi in toc) { toi.PacketsReceivedKeepalive = PacketsReceivedKeepalive; } break;
-				case "connection_packets_received_control": foreach(var toi in toc) { toi.PacketsReceivedControl = PacketsReceivedControl; } break;
-				case "connection_bytes_received_speech": foreach(var toi in toc) { toi.BytesReceivedSpeech = BytesReceivedSpeech; } break;
-				case "connection_bytes_received_keepalive": foreach(var toi in toc) { toi.BytesReceivedKeepalive = BytesReceivedKeepalive; } break;
-				case "connection_bytes_received_control": foreach(var toi in toc) { toi.BytesReceivedControl = BytesReceivedControl; } break;
-				case "connection_server2client_packetloss_speech": foreach(var toi in toc) { toi.ServerToClientPacketlossSpeech = ServerToClientPacketlossSpeech; } break;
-				case "connection_server2client_packetloss_keepalive": foreach(var toi in toc) { toi.ServerToClientPacketlossKeepalive = ServerToClientPacketlossKeepalive; } break;
-				case "connection_server2client_packetloss_control": foreach(var toi in toc) { toi.ServerToClientPacketlossControl = ServerToClientPacketlossControl; } break;
-				case "connection_server2client_packetloss_total": foreach(var toi in toc) { toi.ServerToClientPacketlossTotal = ServerToClientPacketlossTotal; } break;
-				case "connection_client2server_packetloss_speech": foreach(var toi in toc) { toi.ClientToServerPacketlossSpeech = ClientToServerPacketlossSpeech; } break;
-				case "connection_client2server_packetloss_keepalive": foreach(var toi in toc) { toi.ClientToServerPacketlossKeepalive = ClientToServerPacketlossKeepalive; } break;
-				case "connection_client2server_packetloss_control": foreach(var toi in toc) { toi.ClientToServerPacketlossControl = ClientToServerPacketlossControl; } break;
-				case "connection_client2server_packetloss_total": foreach(var toi in toc) { toi.ClientToServerPacketlossTotal = ClientToServerPacketlossTotal; } break;
-				case "connection_bandwidth_sent_last_second_speech": foreach(var toi in toc) { toi.BandwidthSentLastSecondSpeech = BandwidthSentLastSecondSpeech; } break;
-				case "connection_bandwidth_sent_last_second_keepalive": foreach(var toi in toc) { toi.BandwidthSentLastSecondKeepalive = BandwidthSentLastSecondKeepalive; } break;
-				case "connection_bandwidth_sent_last_second_control": foreach(var toi in toc) { toi.BandwidthSentLastSecondControl = BandwidthSentLastSecondControl; } break;
-				case "connection_bandwidth_sent_last_minute_speech": foreach(var toi in toc) { toi.BandwidthSentLastMinuteSpeech = BandwidthSentLastMinuteSpeech; } break;
-				case "connection_bandwidth_sent_last_minute_keepalive": foreach(var toi in toc) { toi.BandwidthSentLastMinuteKeepalive = BandwidthSentLastMinuteKeepalive; } break;
-				case "connection_bandwidth_sent_last_minute_control": foreach(var toi in toc) { toi.BandwidthSentLastMinuteControl = BandwidthSentLastMinuteControl; } break;
-				case "connection_bandwidth_received_last_second_speech": foreach(var toi in toc) { toi.BandwidthReceivedLastSecondSpeech = BandwidthReceivedLastSecondSpeech; } break;
-				case "connection_bandwidth_received_last_second_keepalive": foreach(var toi in toc) { toi.BandwidthReceivedLastSecondKeepalive = BandwidthReceivedLastSecondKeepalive; } break;
-				case "connection_bandwidth_received_last_second_control": foreach(var toi in toc) { toi.BandwidthReceivedLastSecondControl = BandwidthReceivedLastSecondControl; } break;
-				case "connection_bandwidth_received_last_minute_speech": foreach(var toi in toc) { toi.BandwidthReceivedLastMinuteSpeech = BandwidthReceivedLastMinuteSpeech; } break;
-				case "connection_bandwidth_received_last_minute_keepalive": foreach(var toi in toc) { toi.BandwidthReceivedLastMinuteKeepalive = BandwidthReceivedLastMinuteKeepalive; } break;
-				case "connection_bandwidth_received_last_minute_control": foreach(var toi in toc) { toi.BandwidthReceivedLastMinuteControl = BandwidthReceivedLastMinuteControl; } break;
-				case "connection_filetransfer_bandwidth_sent": foreach(var toi in toc) { toi.FiletransferBandwidthSent = FiletransferBandwidthSent; } break;
-				case "connection_filetransfer_bandwidth_received": foreach(var toi in toc) { toi.FiletransferBandwidthReceived = FiletransferBandwidthReceived; } break;
-				case "connection_idle_time": foreach(var toi in toc) { toi.IdleTime = IdleTime; } break;
+				case "tcldbid": foreach(var toi in toc) { toi.TargetClientDbId = TargetClientDbId; } break;
+				case "message": foreach(var toi in toc) { toi.Message = Message; } break;
 				}
 			}
 
 		}
 	}
 
-	public sealed class ConnectionInfoRequest : INotification
+	public sealed class ComplainDel : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.ConnectionInfoRequest;
+		public NotificationType NotifyType { get; } = NotificationType.ComplainDel;
 		
 
+		public ClientDbId TargetClientDbId { get; set; }
+		public ClientDbId FromClientDbId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
+			switch(name)
+			{
+
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
+			case "fcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) FromClientDbId = oval; } break;
+			
+			}
+
 		}
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
+			var toc = (ComplainDel[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "tcldbid": foreach(var toi in toc) { toi.TargetClientDbId = TargetClientDbId; } break;
+				case "fcldbid": foreach(var toi in toc) { toi.FromClientDbId = FromClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ComplainDelAll : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ComplainDelAll;
+		
+
+		public ClientDbId TargetClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ComplainDelAll[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "tcldbid": foreach(var toi in toc) { toi.TargetClientDbId = TargetClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ComplainList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ComplainList;
+		public string ReturnCode { get; set; }
+
+		public ClientDbId TargetClientDbId { get; set; }
+		public str TargetName { get; set; }
+		public ClientDbId FromClientDbId { get; set; }
+		public str FromName { get; set; }
+		public str Message { get; set; }
+		public DateTime Timestamp { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
+			case "tname": TargetName = Ts3String.Unescape(value); break;
+			case "fcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) FromClientDbId = oval; } break;
+			case "fname": FromName = Ts3String.Unescape(value); break;
+			case "message": Message = Ts3String.Unescape(value); break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out double oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ComplainList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "tcldbid": foreach(var toi in toc) { toi.TargetClientDbId = TargetClientDbId; } break;
+				case "tname": foreach(var toi in toc) { toi.TargetName = TargetName; } break;
+				case "fcldbid": foreach(var toi in toc) { toi.FromClientDbId = FromClientDbId; } break;
+				case "fname": foreach(var toi in toc) { toi.FromName = FromName; } break;
+				case "message": foreach(var toi in toc) { toi.Message = Message; } break;
+				case "timestamp": foreach(var toi in toc) { toi.Timestamp = Timestamp; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ComplainListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ComplainListRequest;
+		
+
+		public ClientDbId TargetClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ComplainListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "tcldbid": foreach(var toi in toc) { toi.TargetClientDbId = TargetClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class CustomDelete : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.CustomDelete;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+		public str ExternalIdentity { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "ident": ExternalIdentity = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (CustomDelete[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "ident": foreach(var toi in toc) { toi.ExternalIdentity = ExternalIdentity; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class CustomInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.CustomInfoRequest;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (CustomInfoRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class CustomSearch : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.CustomSearch;
+		
+
+		public str ExternalIdentity { get; set; }
+		public str Pattern { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "ident": ExternalIdentity = Ts3String.Unescape(value); break;
+			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (CustomSearch[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "ident": foreach(var toi in toc) { toi.ExternalIdentity = ExternalIdentity; } break;
+				case "pattern": foreach(var toi in toc) { toi.Pattern = Pattern; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class CustomSet : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.CustomSet;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+		public str ExternalIdentity { get; set; }
+		public str Value { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "ident": ExternalIdentity = Ts3String.Unescape(value); break;
+			case "value": Value = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (CustomSet[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "ident": foreach(var toi in toc) { toi.ExternalIdentity = ExternalIdentity; } break;
+				case "value": foreach(var toi in toc) { toi.Value = Value; } break;
+				}
+			}
+
 		}
 	}
 
@@ -2044,9 +4927,9 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileInfoTs : INotification, IResponse
+	public sealed class FileInfo : INotification, IResponse
 	{
-		public NotificationType NotifyType { get; } = NotificationType.FileInfoTs;
+		public NotificationType NotifyType { get; } = NotificationType.FileInfo;
 		public string ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
@@ -2072,7 +4955,7 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
-			var toc = (FileInfoTs[])to;
+			var toc = (FileInfo[])to;
 			foreach (var fld in flds)
 			{
 				switch(fld)
@@ -2329,19 +5212,23 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class GetClientDbIdFromUid : INotification
+	public sealed class FtCreateDir : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.GetClientDbIdFromUid;
+		public NotificationType NotifyType { get; } = NotificationType.FtCreateDir;
 		
 
-		public Uid ClientUid { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+		public str DirectoryName { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "dirname": DirectoryName = Ts3String.Unescape(value); break;
 			
 			}
 
@@ -2349,32 +5236,38 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
-			var toc = (GetClientDbIdFromUid[])to;
+			var toc = (FtCreateDir[])to;
 			foreach (var fld in flds)
 			{
 				switch(fld)
 				{
 
-				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				case "dirname": foreach(var toi in toc) { toi.DirectoryName = DirectoryName; } break;
 				}
 			}
 
 		}
 	}
 
-	public sealed class GetClientIds : INotification
+	public sealed class FtDeleteFile : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.GetClientIds;
+		public NotificationType NotifyType { get; } = NotificationType.FtDeleteFile;
 		
 
-		public Uid ClientUid { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+		public str Name { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "name": Name = Ts3String.Unescape(value); break;
 			
 			}
 
@@ -2382,16 +5275,339 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
-			var toc = (GetClientIds[])to;
+			var toc = (FtDeleteFile[])to;
 			foreach (var fld in flds)
 			{
 				switch(fld)
 				{
 
-				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
 				}
 			}
 
+		}
+	}
+
+	public sealed class FtFileInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FtFileInfoRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (FtFileInfoRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class FtFileListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FtFileListRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+		public str Path { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "path": Path = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (FtFileListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				case "path": foreach(var toi in toc) { toi.Path = Path; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class FtInitDownload : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FtInitDownload;
+		
+
+		public u16 ClientFileTransferId { get; set; }
+		public str Name { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+		public i64 SeekPosistion { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "seekpos": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) SeekPosistion = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (FtInitDownload[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clientftfid": foreach(var toi in toc) { toi.ClientFileTransferId = ClientFileTransferId; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				case "seekpos": foreach(var toi in toc) { toi.SeekPosistion = SeekPosistion; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class FtInitUpload : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FtInitUpload;
+		
+
+		public u16 ClientFileTransferId { get; set; }
+		public str Name { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+		public i64 Size { get; set; }
+		public bool Overwrite { get; set; }
+		public bool Resume { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
+			case "overwrite": Overwrite = value.Length > 0 && value[0] != '0'; break;
+			case "resume": Resume = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (FtInitUpload[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clientftfid": foreach(var toi in toc) { toi.ClientFileTransferId = ClientFileTransferId; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				case "size": foreach(var toi in toc) { toi.Size = Size; } break;
+				case "overwrite": foreach(var toi in toc) { toi.Overwrite = Overwrite; } break;
+				case "resume": foreach(var toi in toc) { toi.Resume = Resume; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class FtList : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FtList;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class FtRenameFile : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FtRenameFile;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public str ChannelPassword { get; set; }
+		public ChannelId TargetChannelId { get; set; }
+		public str TargetChannelPassword { get; set; }
+		public str OldName { get; set; }
+		public str NewName { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
+			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
+			case "oldname": OldName = Ts3String.Unescape(value); break;
+			case "newname": NewName = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (FtRenameFile[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
+				case "tcid": foreach(var toi in toc) { toi.TargetChannelId = TargetChannelId; } break;
+				case "tcpw": foreach(var toi in toc) { toi.TargetChannelPassword = TargetChannelPassword; } break;
+				case "oldname": foreach(var toi in toc) { toi.OldName = OldName; } break;
+				case "newname": foreach(var toi in toc) { toi.NewName = NewName; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class FtStop : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.FtStop;
+		
+
+		public u16 ServerFileTransferId { get; set; }
+		public bool Delete { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
+			case "delete": Delete = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (FtStop[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "serverftfid": foreach(var toi in toc) { toi.ServerFileTransferId = ServerFileTransferId; } break;
+				case "delete": foreach(var toi in toc) { toi.Delete = Delete; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class GlobalMessage : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.GlobalMessage;
+		
+
+		public str Message { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "msg": Message = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (GlobalMessage[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "msg": foreach(var toi in toc) { toi.Message = Message; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class HostInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.HostInfoRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
 		}
 	}
 
@@ -2605,6 +5821,726 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class InstanceEdit : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.InstanceEdit;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class InstanceInfo : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.InstanceInfo;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class LogAdd : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.LogAdd;
+		
+
+		public LogLevel LogLevel { get; set; }
+		public str LogMessage { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "loglevel": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) LogLevel = (LogLevel)oval; } break;
+			case "logmsg": LogMessage = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (LogAdd[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "loglevel": foreach(var toi in toc) { toi.LogLevel = LogLevel; } break;
+				case "logmsg": foreach(var toi in toc) { toi.LogMessage = LogMessage; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class Login : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.Login;
+		
+
+		public str LoginName { get; set; }
+		public str LoginPassword { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
+			case "client_login_password": LoginPassword = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (Login[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "client_login_name": foreach(var toi in toc) { toi.LoginName = LoginName; } break;
+				case "client_login_password": foreach(var toi in toc) { toi.LoginPassword = LoginPassword; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class Logout : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.Logout;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class LogView : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.LogView;
+		
+
+		public u32 Lines { get; set; }
+		public bool Reverse { get; set; }
+		public bool InstanceLog { get; set; }
+		public u64 Offset { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "lines": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Lines = oval; } break;
+			case "reverse": Reverse = value.Length > 0 && value[0] != '0'; break;
+			case "instance": InstanceLog = value.Length > 0 && value[0] != '0'; break;
+			case "begin_pos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Offset = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (LogView[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "lines": foreach(var toi in toc) { toi.Lines = Lines; } break;
+				case "reverse": foreach(var toi in toc) { toi.Reverse = Reverse; } break;
+				case "instance": foreach(var toi in toc) { toi.InstanceLog = InstanceLog; } break;
+				case "begin_pos": foreach(var toi in toc) { toi.Offset = Offset; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class OfflineMessage : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.OfflineMessage;
+		public string ReturnCode { get; set; }
+
+		public u32 MessageId { get; set; }
+		public Uid ClientUid { get; set; }
+		public str Subject { get; set; }
+		public str Message { get; set; }
+		public DateTime Timestamp { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "subject": Subject = Ts3String.Unescape(value); break;
+			case "message": Message = Ts3String.Unescape(value); break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out double oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (OfflineMessage[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "msgid": foreach(var toi in toc) { toi.MessageId = MessageId; } break;
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "subject": foreach(var toi in toc) { toi.Subject = Subject; } break;
+				case "message": foreach(var toi in toc) { toi.Message = Message; } break;
+				case "timestamp": foreach(var toi in toc) { toi.Timestamp = Timestamp; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class OfflineMessageAdd : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageAdd;
+		
+
+		public Uid ClientUid { get; set; }
+		public str Subject { get; set; }
+		public str Message { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "subject": Subject = Ts3String.Unescape(value); break;
+			case "message": Message = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (OfflineMessageAdd[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "subject": foreach(var toi in toc) { toi.Subject = Subject; } break;
+				case "message": foreach(var toi in toc) { toi.Message = Message; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class OfflineMessageDel : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageDel;
+		
+
+		public u32 MessageId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (OfflineMessageDel[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "msgid": foreach(var toi in toc) { toi.MessageId = MessageId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class OfflineMessageGet : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageGet;
+		
+
+		public u32 MessageId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (OfflineMessageGet[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "msgid": foreach(var toi in toc) { toi.MessageId = MessageId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class OfflineMessageList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageList;
+		public string ReturnCode { get; set; }
+
+		public u32 MessageId { get; set; }
+		public Uid ClientUid { get; set; }
+		public str Subject { get; set; }
+		public DateTime Timestamp { get; set; }
+		public bool IsRead { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "subject": Subject = Ts3String.Unescape(value); break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out double oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "flag_read": IsRead = value.Length > 0 && value[0] != '0'; break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (OfflineMessageList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "msgid": foreach(var toi in toc) { toi.MessageId = MessageId; } break;
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				case "subject": foreach(var toi in toc) { toi.Subject = Subject; } break;
+				case "timestamp": foreach(var toi in toc) { toi.Timestamp = Timestamp; } break;
+				case "flag_read": foreach(var toi in toc) { toi.IsRead = IsRead; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class OfflineMessageListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class OfflineMessageUpdateFlag : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageUpdateFlag;
+		
+
+		public u32 MessageId { get; set; }
+		public bool IsRead { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			case "flag": IsRead = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (OfflineMessageUpdateFlag[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "msgid": foreach(var toi in toc) { toi.MessageId = MessageId; } break;
+				case "flag": foreach(var toi in toc) { toi.IsRead = IsRead; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermFind : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermFind;
+		public string ReturnCode { get; set; }
+
+		public str T { get; set; }
+		public u32 Id1 { get; set; }
+		public u32 Id2 { get; set; }
+		public PermissionId PermissionId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "t": T = Ts3String.Unescape(value); break;
+			case "id1": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id1 = oval; } break;
+			case "id2": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id2 = oval; } break;
+			case "p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PermFind[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "t": foreach(var toi in toc) { toi.T = T; } break;
+				case "id1": foreach(var toi in toc) { toi.Id1 = Id1; } break;
+				case "id2": foreach(var toi in toc) { toi.Id2 = Id2; } break;
+				case "p": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermFindRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermFindRequest;
+		
+
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PermFindRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermIdByNameRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermIdByNameRequest;
+		
+
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PermIdByNameRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermList;
+		public string ReturnCode { get; set; }
+
+		public u32 GroupIdEnd { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionName { get; set; }
+		public str PermissionDescription { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "group_id_end": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) GroupIdEnd = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permname": PermissionName = Ts3String.Unescape(value); break;
+			case "permdesc": PermissionDescription = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PermList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "group_id_end": foreach(var toi in toc) { toi.GroupIdEnd = GroupIdEnd; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permname": foreach(var toi in toc) { toi.PermissionName = PermissionName; } break;
+				case "permdesc": foreach(var toi in toc) { toi.PermissionDescription = PermissionDescription; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class PermOverview : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermOverview;
+		public string ReturnCode { get; set; }
+
+		public ClientDbId ClientDbId { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public str T { get; set; }
+		public u32 Id1 { get; set; }
+		public u32 Id2 { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "t": T = Ts3String.Unescape(value); break;
+			case "id1": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id1 = oval; } break;
+			case "id2": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id2 = oval; } break;
+			case "p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "v": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "n": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "s": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PermOverview[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "t": foreach(var toi in toc) { toi.T = T; } break;
+				case "id1": foreach(var toi in toc) { toi.Id1 = Id1; } break;
+				case "id2": foreach(var toi in toc) { toi.Id2 = Id2; } break;
+				case "p": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "v": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "n": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "s": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermOverviewRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermOverviewRequest;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PermOverviewRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermRequest;
+		
+
+		public PermissionId PermissionId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PermRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PermReset : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PermReset;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
 	public sealed class PluginCommand : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PluginCommand;
@@ -2648,7 +6584,7 @@ namespace TS3Client.Messages
 
 		public str Name { get; set; }
 		public str Data { get; set; }
-		public i32 Target { get; set; }
+		public PluginTargetMode Target { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value)
 		{
@@ -2657,7 +6593,7 @@ namespace TS3Client.Messages
 
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "data": Data = Ts3String.Unescape(value); break;
-			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = oval; } break;
+			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (PluginTargetMode)oval; } break;
 			
 			}
 
@@ -2680,13 +6616,316 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class PrivilegeKeyAddRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyAddRequest;
+		
+
+		public TokenType TokenType { get; set; }
+		public u64 TokenId1 { get; set; }
+		public ChannelId TokenId2 { get; set; }
+		public str TokenDescription { get; set; }
+		public str TokenCustomSet { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
+			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
+			case "tokenid2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
+			case "tokendescription": TokenDescription = Ts3String.Unescape(value); break;
+			case "tokencustomset": TokenCustomSet = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PrivilegeKeyAddRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "tokentype": foreach(var toi in toc) { toi.TokenType = TokenType; } break;
+				case "tokenid1": foreach(var toi in toc) { toi.TokenId1 = TokenId1; } break;
+				case "tokenid2": foreach(var toi in toc) { toi.TokenId2 = TokenId2; } break;
+				case "tokendescription": foreach(var toi in toc) { toi.TokenDescription = TokenDescription; } break;
+				case "tokencustomset": foreach(var toi in toc) { toi.TokenCustomSet = TokenCustomSet; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PrivilegeKeyDelete : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyDelete;
+		
+
+		public str Token { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "token": Token = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PrivilegeKeyDelete[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "token": foreach(var toi in toc) { toi.Token = Token; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class PrivilegeKeyListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class PrivilegeKeyUse : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyUse;
+		
+
+		public str Token { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "token": Token = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (PrivilegeKeyUse[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "token": foreach(var toi in toc) { toi.Token = Token; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class Quit : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.Quit;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class SendTextMessage : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.SendTextMessage;
+		
+
+		public TextMessageTargetMode Target { get; set; }
+		public ClientId TargetClientId { get; set; }
+		public str Message { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (TextMessageTargetMode)oval; } break;
+			case "target": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) TargetClientId = oval; } break;
+			case "msg": Message = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (SendTextMessage[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "targetmode": foreach(var toi in toc) { toi.Target = Target; } break;
+				case "target": foreach(var toi in toc) { toi.TargetClientId = TargetClientId; } break;
+				case "msg": foreach(var toi in toc) { toi.Message = Message; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerConnectionInfo : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerConnectionInfo;
+		public string ReturnCode { get; set; }
+
+		public u64 FiletransferBandwidthSent { get; set; }
+		public u64 FiletransferBandwidthReceived { get; set; }
+		public u64 FiletransferBytesSentTotal { get; set; }
+		public u64 FiletransferBytesReceivedTotal { get; set; }
+		public u64 PacketsSentTotal { get; set; }
+		public u64 BytesSentTotal { get; set; }
+		public u64 PacketsReceivedTotal { get; set; }
+		public u64 BytesReceivedTotal { get; set; }
+		public u64 BandwidthSentLastSecondTotal { get; set; }
+		public u64 BandwidthSentLastMinuteTotal { get; set; }
+		public u64 BandwidthReceivedLastSecondTotal { get; set; }
+		public u64 BandwidthReceivedLastMinuteTotal { get; set; }
+		public DurationMilliseconds ConnectedTime { get; set; }
+		public f32 PacketlossTotal { get; set; }
+		public DurationMilliseconds Ping { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = oval; } break;
+			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = oval; } break;
+			case "connection_filetransfer_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBytesSentTotal = oval; } break;
+			case "connection_filetransfer_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBytesReceivedTotal = oval; } break;
+			case "connection_packets_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentTotal = oval; } break;
+			case "connection_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentTotal = oval; } break;
+			case "connection_packets_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedTotal = oval; } break;
+			case "connection_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedTotal = oval; } break;
+			case "connection_bandwidth_sent_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondTotal = oval; } break;
+			case "connection_bandwidth_sent_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteTotal = oval; } break;
+			case "connection_bandwidth_received_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondTotal = oval; } break;
+			case "connection_bandwidth_received_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteTotal = oval; } break;
+			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotal = oval; } break;
+			case "connection_ping": { if(Utf8Parser.TryParse(value, out double oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerConnectionInfo[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "connection_filetransfer_bandwidth_sent": foreach(var toi in toc) { toi.FiletransferBandwidthSent = FiletransferBandwidthSent; } break;
+				case "connection_filetransfer_bandwidth_received": foreach(var toi in toc) { toi.FiletransferBandwidthReceived = FiletransferBandwidthReceived; } break;
+				case "connection_filetransfer_bytes_sent_total": foreach(var toi in toc) { toi.FiletransferBytesSentTotal = FiletransferBytesSentTotal; } break;
+				case "connection_filetransfer_bytes_received_total": foreach(var toi in toc) { toi.FiletransferBytesReceivedTotal = FiletransferBytesReceivedTotal; } break;
+				case "connection_packets_sent_total": foreach(var toi in toc) { toi.PacketsSentTotal = PacketsSentTotal; } break;
+				case "connection_bytes_sent_total": foreach(var toi in toc) { toi.BytesSentTotal = BytesSentTotal; } break;
+				case "connection_packets_received_total": foreach(var toi in toc) { toi.PacketsReceivedTotal = PacketsReceivedTotal; } break;
+				case "connection_bytes_received_total": foreach(var toi in toc) { toi.BytesReceivedTotal = BytesReceivedTotal; } break;
+				case "connection_bandwidth_sent_last_second_total": foreach(var toi in toc) { toi.BandwidthSentLastSecondTotal = BandwidthSentLastSecondTotal; } break;
+				case "connection_bandwidth_sent_last_minute_total": foreach(var toi in toc) { toi.BandwidthSentLastMinuteTotal = BandwidthSentLastMinuteTotal; } break;
+				case "connection_bandwidth_received_last_second_total": foreach(var toi in toc) { toi.BandwidthReceivedLastSecondTotal = BandwidthReceivedLastSecondTotal; } break;
+				case "connection_bandwidth_received_last_minute_total": foreach(var toi in toc) { toi.BandwidthReceivedLastMinuteTotal = BandwidthReceivedLastMinuteTotal; } break;
+				case "connection_connected_time": foreach(var toi in toc) { toi.ConnectedTime = ConnectedTime; } break;
+				case "connection_packetloss_total": foreach(var toi in toc) { toi.PacketlossTotal = PacketlossTotal; } break;
+				case "connection_ping": foreach(var toi in toc) { toi.Ping = Ping; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerConnectionInfoRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerConnectionInfoRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerCreate : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerCreate;
+		
+
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerCreate[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "virtualserver_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ServerData : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
 
-		public i32 ClientsOnline { get; set; }
-		public i32 QueriesOnline { get; set; }
+		public u16 ClientsOnline { get; set; }
+		public u16 QueriesOnline { get; set; }
 		public u16 MaxClients { get; set; }
 		public DurationSeconds Uptime { get; set; }
 		public bool Autostart { get; set; }
@@ -2702,8 +6941,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientsOnline = oval; } break;
-			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) QueriesOnline = oval; } break;
+			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = oval; } break;
+			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) QueriesOnline = oval; } break;
 			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
 			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out double oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
@@ -2740,6 +6979,54 @@ namespace TS3Client.Messages
 				}
 			}
 
+		}
+	}
+
+	public sealed class ServerDelete : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerDelete;
+		
+
+		public u32 ServerId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerDelete[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sid": foreach(var toi in toc) { toi.ServerId = ServerId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerEdit : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerEdit;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
 		}
 	}
 
@@ -2830,6 +7117,126 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ServerGroupAdd : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAdd;
+		
+
+		public str Name { get; set; }
+		public GroupType GroupType { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupAdd[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "type": foreach(var toi in toc) { toi.GroupType = GroupType; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupAddClient : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAddClient;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupAddClient[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupAddPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAddPerm;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupAddPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permnegated": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ServerGroupAddResponse : IResponse
 	{
 		
@@ -2863,10 +7270,325 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupList : INotification
+	public sealed class ServerGroupAutoAddPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAutoAddPerm;
+		
+
+		public u32 ServerGroupType { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupAutoAddPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgtype": foreach(var toi in toc) { toi.ServerGroupType = ServerGroupType; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permnegated": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupAutoDelPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAutoDelPerm;
+		
+
+		public u32 ServerGroupType { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupAutoDelPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgtype": foreach(var toi in toc) { toi.ServerGroupType = ServerGroupType; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupClientList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupClientList;
+		public string ReturnCode { get; set; }
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+		public str Name { get; set; }
+		public Uid Uid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupClientList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "client_unique_identifier": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupClientListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupClientListRequest;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupClientListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupCopy : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupCopy;
+		
+
+		public ServerGroupId SourceServerGroupId { get; set; }
+		public ServerGroupId TargetServerGroupId { get; set; }
+		public str Name { get; set; }
+		public GroupType GroupType { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "ssgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) SourceServerGroupId = oval; } break;
+			case "tsgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) TargetServerGroupId = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupCopy[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "ssgid": foreach(var toi in toc) { toi.SourceServerGroupId = SourceServerGroupId; } break;
+				case "tsgid": foreach(var toi in toc) { toi.TargetServerGroupId = TargetServerGroupId; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "type": foreach(var toi in toc) { toi.GroupType = GroupType; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupDel : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDel;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public bool Force { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "force": Force = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupDel[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "force": foreach(var toi in toc) { toi.Force = Force; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupDelClient : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDelClient;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupDelClient[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupDelPerm : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDelPerm;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupDelPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupList;
-		
+		public string ReturnCode { get; set; }
 
 		public ServerGroupId ServerGroupId { get; set; }
 		public str Name { get; set; }
@@ -2894,7 +7616,7 @@ namespace TS3Client.Messages
 			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = oval; } break;
 			case "n_member_addp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberAddPower = oval; } break;
 			case "n_member_remove_p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = oval; } break;
-			
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -2923,10 +7645,874 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TextMessage : INotification
+	public sealed class ServerGroupListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerGroupPermList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupPermList;
+		public string ReturnCode { get; set; }
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public PermissionId PermissionId { get; set; }
+		public str PermissionNameId { get; set; }
+		public i32 PermissionValue { get; set; }
+		public bool PermissionNegated { get; set; }
+		public bool PermissionSkip { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
+			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupPermList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				case "permnegated": foreach(var toi in toc) { toi.PermissionNegated = PermissionNegated; } break;
+				case "permskip": foreach(var toi in toc) { toi.PermissionSkip = PermissionSkip; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupPermListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupPermListRequest;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupPermListRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupRename : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupRename;
+		
+
+		public ServerGroupId ServerGroupId { get; set; }
+		public str Name { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "name": Name = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupRename[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupsByClientId : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientId;
+		public string ReturnCode { get; set; }
+
+		public str Name { get; set; }
+		public ServerGroupId ServerGroupId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupsByClientId[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerGroupsByClientIdRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientIdRequest;
+		
+
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerGroupsByClientIdRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerIdGetByPort : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerIdGetByPort;
+		
+
+		public u16 VirtualServerPort { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerIdGetByPort[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "virtualserver_port": foreach(var toi in toc) { toi.VirtualServerPort = VirtualServerPort; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerInfo : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerInfo;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerList : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerList;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerLog : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerLog;
+		public string ReturnCode { get; set; }
+
+		public u64 LastOffset { get; set; }
+		public u64 FileSize { get; set; }
+		public str License { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "last_pos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) LastOffset = oval; } break;
+			case "file_size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FileSize = oval; } break;
+			case "l": License = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerLog[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "last_pos": foreach(var toi in toc) { toi.LastOffset = LastOffset; } break;
+				case "file_size": foreach(var toi in toc) { toi.FileSize = FileSize; } break;
+				case "l": foreach(var toi in toc) { toi.License = License; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerNotifyRegister : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerNotifyRegister;
+		
+
+		public str EventType { get; set; }
+		public ChannelId Id { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "event": EventType = Ts3String.Unescape(value); break;
+			case "id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Id = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerNotifyRegister[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "event": foreach(var toi in toc) { toi.EventType = EventType; } break;
+				case "id": foreach(var toi in toc) { toi.Id = Id; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerNotifyUnregister : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerNotifyUnregister;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerProcessStop : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerProcessStop;
+		
+
+		public str ReasonMessage { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerProcessStop[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "reasonmsg": foreach(var toi in toc) { toi.ReasonMessage = ReasonMessage; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerSnapshotCreate : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerSnapshotCreate;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerSnapshotDeploy : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerSnapshotDeploy;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerStart : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerStart;
+		
+
+		public u32 ServerId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerStart[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sid": foreach(var toi in toc) { toi.ServerId = ServerId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerStop : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerStop;
+		
+
+		public u32 ServerId { get; set; }
+		public str ReasonMessage { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
+			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerStop[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sid": foreach(var toi in toc) { toi.ServerId = ServerId; } break;
+				case "reasonmsg": foreach(var toi in toc) { toi.ReasonMessage = ReasonMessage; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerTempPasswordAdd : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordAdd;
+		
+
+		public str Password { get; set; }
+		public str Description { get; set; }
+		public DurationSeconds Duration { get; set; }
+		public ChannelId TargetChannelId { get; set; }
+		public str TargetChannelPassword { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "pw": Password = Ts3String.Unescape(value); break;
+			case "desc": Description = Ts3String.Unescape(value); break;
+			case "duration": { if(Utf8Parser.TryParse(value, out double oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
+			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
+			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerTempPasswordAdd[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "pw": foreach(var toi in toc) { toi.Password = Password; } break;
+				case "desc": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "duration": foreach(var toi in toc) { toi.Duration = Duration; } break;
+				case "tcid": foreach(var toi in toc) { toi.TargetChannelId = TargetChannelId; } break;
+				case "tcpw": foreach(var toi in toc) { toi.TargetChannelPassword = TargetChannelPassword; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerTempPasswordDel : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordDel;
+		
+
+		public str Password { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "pw": Password = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerTempPasswordDel[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "pw": foreach(var toi in toc) { toi.Password = Password; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerTempPasswordList : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordList;
+		
+
+		public str Nickname { get; set; }
+		public Uid Uid { get; set; }
+		public str Description { get; set; }
+		public str PasswordClear { get; set; }
+		public DateTime Start { get; set; }
+		public DateTime End { get; set; }
+		public ChannelId TargetChannelId { get; set; }
+		public str TargetChannelPassword { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "nickname": Nickname = Ts3String.Unescape(value); break;
+			case "uid": Uid = Ts3String.Unescape(value); break;
+			case "desc": Description = Ts3String.Unescape(value); break;
+			case "pw_clear": PasswordClear = Ts3String.Unescape(value); break;
+			case "start": { if(Utf8Parser.TryParse(value, out double oval, out _)) Start = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "end": { if(Utf8Parser.TryParse(value, out double oval, out _)) End = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
+			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerTempPasswordList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "nickname": foreach(var toi in toc) { toi.Nickname = Nickname; } break;
+				case "uid": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "desc": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "pw_clear": foreach(var toi in toc) { toi.PasswordClear = PasswordClear; } break;
+				case "start": foreach(var toi in toc) { toi.Start = Start; } break;
+				case "end": foreach(var toi in toc) { toi.End = End; } break;
+				case "tcid": foreach(var toi in toc) { toi.TargetChannelId = TargetChannelId; } break;
+				case "tcpw": foreach(var toi in toc) { toi.TargetChannelPassword = TargetChannelPassword; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerTempPasswordListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class ServerUpdated : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerUpdated;
+		
+
+		public str WelcomeMessage { get; set; }
+		public u16 MaxClients { get; set; }
+		public u16 ClientsOnline { get; set; }
+		public u64 ChannelsOnline { get; set; }
+		public DurationSeconds Uptime { get; set; }
+		public str Hostmessage { get; set; }
+		public HostMessageMode HostmessageMode { get; set; }
+		public bool HasPassword { get; set; }
+		public ChannelGroupId DefaultChannelAdminGroup { get; set; }
+		public u64 MaxDownloadTotalBandwidth { get; set; }
+		public u64 MaxUploadTotalBandwidth { get; set; }
+		public u32 ComplainAutobanCount { get; set; }
+		public DurationSeconds ComplainAutobanTime { get; set; }
+		public DurationSeconds ComplainRemoveTime { get; set; }
+		public u32 MinClientsInChannelBeforeForcedSilence { get; set; }
+		public u32 AntifloodPointsTickReduce { get; set; }
+		public u32 AntifloodPointsToCommandBlock { get; set; }
+		public u32 AntifloodPointsToIpBlock { get; set; }
+		public u64 ClientConnections { get; set; }
+		public u64 QueryConnections { get; set; }
+		public u16 QueriesOnline { get; set; }
+		public u64 DownloadQuota { get; set; }
+		public u64 UploadQuota { get; set; }
+		public u64 BytesDownloadedMonth { get; set; }
+		public u64 BytesUploadedMonth { get; set; }
+		public u64 BytesDownloadedTotal { get; set; }
+		public u64 BytesUploadedTotal { get; set; }
+		public u16 VirtualServerPort { get; set; }
+		public bool Autostart { get; set; }
+		public str MachineId { get; set; }
+		public u8 IdentitySecurityLevel { get; set; }
+		public bool LogClient { get; set; }
+		public bool LogQuery { get; set; }
+		public bool LogChannel { get; set; }
+		public bool LogPermissions { get; set; }
+		public bool LogServer { get; set; }
+		public bool LogFileTransfer { get; set; }
+		public u32 MinClientVersion { get; set; }
+		public u16 ReservedSlots { get; set; }
+		public f32 PacketlossTotalSpeech { get; set; }
+		public f32 PacketlossTotalKeepalive { get; set; }
+		public f32 PacketlossTotalControl { get; set; }
+		public f32 PacketlossTotal { get; set; }
+		public f32 PingTotal { get; set; }
+		public bool WeblistEnabled { get; set; }
+		public u32 MinAndroidVersion { get; set; }
+		public u32 MinIosVersion { get; set; }
+		public u32 AntifloodPointsToPluginBlock { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "virtualserver_welcomemessage": WelcomeMessage = Ts3String.Unescape(value); break;
+			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
+			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = oval; } break;
+			case "virtualserver_channelsonline": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelsOnline = oval; } break;
+			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out double oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
+			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
+			case "virtualserver_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_default_channel_admin_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelAdminGroup = oval; } break;
+			case "virtualserver_max_download_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxDownloadTotalBandwidth = oval; } break;
+			case "virtualserver_max_upload_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxUploadTotalBandwidth = oval; } break;
+			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = oval; } break;
+			case "virtualserver_complain_autoban_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ComplainAutobanTime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_complain_remove_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ComplainRemoveTime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_min_clients_in_channel_before_forced_silence": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientsInChannelBeforeForcedSilence = oval; } break;
+			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = oval; } break;
+			case "virtualserver_antiflood_points_needed_command_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToCommandBlock = oval; } break;
+			case "virtualserver_antiflood_points_needed_ip_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToIpBlock = oval; } break;
+			case "virtualserver_client_connections": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientConnections = oval; } break;
+			case "virtualserver_query_client_connections": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) QueryConnections = oval; } break;
+			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) QueriesOnline = oval; } break;
+			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = oval; } break;
+			case "virtualserver_upload_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) UploadQuota = oval; } break;
+			case "virtualserver_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedMonth = oval; } break;
+			case "virtualserver_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedMonth = oval; } break;
+			case "virtualserver_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedTotal = oval; } break;
+			case "virtualserver_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedTotal = oval; } break;
+			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = oval; } break;
+			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_machine_id": MachineId = Ts3String.Unescape(value); break;
+			case "virtualserver_needed_identity_security_level": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) IdentitySecurityLevel = oval; } break;
+			case "virtualserver_log_client": LogClient = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_query": LogQuery = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_channel": LogChannel = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_permissions": LogPermissions = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_server": LogServer = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_filetransfer": LogFileTransfer = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_min_client_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientVersion = oval; } break;
+			case "virtualserver_reserved_slots": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ReservedSlots = oval; } break;
+			case "virtualserver_total_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalSpeech = oval; } break;
+			case "virtualserver_total_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalKeepalive = oval; } break;
+			case "virtualserver_total_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalControl = oval; } break;
+			case "virtualserver_total_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotal = oval; } break;
+			case "virtualserver_total_ping": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PingTotal = oval; } break;
+			case "virtualserver_weblist_enabled": WeblistEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_min_android_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinAndroidVersion = oval; } break;
+			case "virtualserver_min_ios_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinIosVersion = oval; } break;
+			case "virtualserver_antiflood_points_needed_plugin_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToPluginBlock = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerUpdated[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "virtualserver_welcomemessage": foreach(var toi in toc) { toi.WelcomeMessage = WelcomeMessage; } break;
+				case "virtualserver_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
+				case "virtualserver_clientsonline": foreach(var toi in toc) { toi.ClientsOnline = ClientsOnline; } break;
+				case "virtualserver_channelsonline": foreach(var toi in toc) { toi.ChannelsOnline = ChannelsOnline; } break;
+				case "virtualserver_uptime": foreach(var toi in toc) { toi.Uptime = Uptime; } break;
+				case "virtualserver_hostmessage": foreach(var toi in toc) { toi.Hostmessage = Hostmessage; } break;
+				case "virtualserver_hostmessage_mode": foreach(var toi in toc) { toi.HostmessageMode = HostmessageMode; } break;
+				case "virtualserver_flag_password": foreach(var toi in toc) { toi.HasPassword = HasPassword; } break;
+				case "virtualserver_default_channel_admin_group": foreach(var toi in toc) { toi.DefaultChannelAdminGroup = DefaultChannelAdminGroup; } break;
+				case "virtualserver_max_download_total_bandwidth": foreach(var toi in toc) { toi.MaxDownloadTotalBandwidth = MaxDownloadTotalBandwidth; } break;
+				case "virtualserver_max_upload_total_bandwidth": foreach(var toi in toc) { toi.MaxUploadTotalBandwidth = MaxUploadTotalBandwidth; } break;
+				case "virtualserver_complain_autoban_count": foreach(var toi in toc) { toi.ComplainAutobanCount = ComplainAutobanCount; } break;
+				case "virtualserver_complain_autoban_time": foreach(var toi in toc) { toi.ComplainAutobanTime = ComplainAutobanTime; } break;
+				case "virtualserver_complain_remove_time": foreach(var toi in toc) { toi.ComplainRemoveTime = ComplainRemoveTime; } break;
+				case "virtualserver_min_clients_in_channel_before_forced_silence": foreach(var toi in toc) { toi.MinClientsInChannelBeforeForcedSilence = MinClientsInChannelBeforeForcedSilence; } break;
+				case "virtualserver_antiflood_points_tick_reduce": foreach(var toi in toc) { toi.AntifloodPointsTickReduce = AntifloodPointsTickReduce; } break;
+				case "virtualserver_antiflood_points_needed_command_block": foreach(var toi in toc) { toi.AntifloodPointsToCommandBlock = AntifloodPointsToCommandBlock; } break;
+				case "virtualserver_antiflood_points_needed_ip_block": foreach(var toi in toc) { toi.AntifloodPointsToIpBlock = AntifloodPointsToIpBlock; } break;
+				case "virtualserver_client_connections": foreach(var toi in toc) { toi.ClientConnections = ClientConnections; } break;
+				case "virtualserver_query_client_connections": foreach(var toi in toc) { toi.QueryConnections = QueryConnections; } break;
+				case "virtualserver_queryclientsonline": foreach(var toi in toc) { toi.QueriesOnline = QueriesOnline; } break;
+				case "virtualserver_download_quota": foreach(var toi in toc) { toi.DownloadQuota = DownloadQuota; } break;
+				case "virtualserver_upload_quota": foreach(var toi in toc) { toi.UploadQuota = UploadQuota; } break;
+				case "virtualserver_month_bytes_downloaded": foreach(var toi in toc) { toi.BytesDownloadedMonth = BytesDownloadedMonth; } break;
+				case "virtualserver_month_bytes_uploaded": foreach(var toi in toc) { toi.BytesUploadedMonth = BytesUploadedMonth; } break;
+				case "virtualserver_total_bytes_downloaded": foreach(var toi in toc) { toi.BytesDownloadedTotal = BytesDownloadedTotal; } break;
+				case "virtualserver_total_bytes_uploaded": foreach(var toi in toc) { toi.BytesUploadedTotal = BytesUploadedTotal; } break;
+				case "virtualserver_port": foreach(var toi in toc) { toi.VirtualServerPort = VirtualServerPort; } break;
+				case "virtualserver_autostart": foreach(var toi in toc) { toi.Autostart = Autostart; } break;
+				case "virtualserver_machine_id": foreach(var toi in toc) { toi.MachineId = MachineId; } break;
+				case "virtualserver_needed_identity_security_level": foreach(var toi in toc) { toi.IdentitySecurityLevel = IdentitySecurityLevel; } break;
+				case "virtualserver_log_client": foreach(var toi in toc) { toi.LogClient = LogClient; } break;
+				case "virtualserver_log_query": foreach(var toi in toc) { toi.LogQuery = LogQuery; } break;
+				case "virtualserver_log_channel": foreach(var toi in toc) { toi.LogChannel = LogChannel; } break;
+				case "virtualserver_log_permissions": foreach(var toi in toc) { toi.LogPermissions = LogPermissions; } break;
+				case "virtualserver_log_server": foreach(var toi in toc) { toi.LogServer = LogServer; } break;
+				case "virtualserver_log_filetransfer": foreach(var toi in toc) { toi.LogFileTransfer = LogFileTransfer; } break;
+				case "virtualserver_min_client_version": foreach(var toi in toc) { toi.MinClientVersion = MinClientVersion; } break;
+				case "virtualserver_reserved_slots": foreach(var toi in toc) { toi.ReservedSlots = ReservedSlots; } break;
+				case "virtualserver_total_packetloss_speech": foreach(var toi in toc) { toi.PacketlossTotalSpeech = PacketlossTotalSpeech; } break;
+				case "virtualserver_total_packetloss_keepalive": foreach(var toi in toc) { toi.PacketlossTotalKeepalive = PacketlossTotalKeepalive; } break;
+				case "virtualserver_total_packetloss_control": foreach(var toi in toc) { toi.PacketlossTotalControl = PacketlossTotalControl; } break;
+				case "virtualserver_total_packetloss_total": foreach(var toi in toc) { toi.PacketlossTotal = PacketlossTotal; } break;
+				case "virtualserver_total_ping": foreach(var toi in toc) { toi.PingTotal = PingTotal; } break;
+				case "virtualserver_weblist_enabled": foreach(var toi in toc) { toi.WeblistEnabled = WeblistEnabled; } break;
+				case "virtualserver_min_android_version": foreach(var toi in toc) { toi.MinAndroidVersion = MinAndroidVersion; } break;
+				case "virtualserver_min_ios_version": foreach(var toi in toc) { toi.MinIosVersion = MinIosVersion; } break;
+				case "virtualserver_antiflood_points_needed_plugin_block": foreach(var toi in toc) { toi.AntifloodPointsToPluginBlock = AntifloodPointsToPluginBlock; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ServerVariablesRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ServerVariablesRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class setclientchannelgroup : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.setclientchannelgroup;
+		
+
+		public ChannelGroupId ChannelGroup { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId ClientDbId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (setclientchannelgroup[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class TextMessage : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TextMessage;
-		
+		public string ReturnCode { get; set; }
 
 		public TextMessageTargetMode Target { get; set; }
 		public str Message { get; set; }
@@ -2946,7 +8532,7 @@ namespace TS3Client.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -2971,12 +8557,219 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class TokenAdd : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.TokenAdd;
+		public string ReturnCode { get; set; }
+
+		public str Token { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "token": Token = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (TokenAdd[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "token": foreach(var toi in toc) { toi.Token = Token; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class TokenAddRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.TokenAddRequest;
+		
+
+		public TokenType TokenType { get; set; }
+		public u64 TokenId1 { get; set; }
+		public ChannelId TokenId2 { get; set; }
+		public str TokenDescription { get; set; }
+		public str TokenCustomSet { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
+			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
+			case "tokenid2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
+			case "tokendescription": TokenDescription = Ts3String.Unescape(value); break;
+			case "tokencustomset": TokenCustomSet = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (TokenAddRequest[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "tokentype": foreach(var toi in toc) { toi.TokenType = TokenType; } break;
+				case "tokenid1": foreach(var toi in toc) { toi.TokenId1 = TokenId1; } break;
+				case "tokenid2": foreach(var toi in toc) { toi.TokenId2 = TokenId2; } break;
+				case "tokendescription": foreach(var toi in toc) { toi.TokenDescription = TokenDescription; } break;
+				case "tokencustomset": foreach(var toi in toc) { toi.TokenCustomSet = TokenCustomSet; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class TokenDelete : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.TokenDelete;
+		
+
+		public str Token { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "token": Token = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (TokenDelete[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "token": foreach(var toi in toc) { toi.Token = Token; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class TokenList : INotification, IResponse
+	{
+		public NotificationType NotifyType { get; } = NotificationType.TokenList;
+		public string ReturnCode { get; set; }
+
+		public str Token { get; set; }
+		public TokenType TokenType { get; set; }
+		public u64 TokenId1 { get; set; }
+		public ChannelId TokenId2 { get; set; }
+		public DateTime TokenCreateTime { get; set; }
+		public str TokenDescription { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "token": Token = Ts3String.Unescape(value); break;
+			case "token_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
+			case "token_id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
+			case "token_id2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
+			case "token_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) TokenCreateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "token_description": TokenDescription = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (TokenList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "token": foreach(var toi in toc) { toi.Token = Token; } break;
+				case "token_type": foreach(var toi in toc) { toi.TokenType = TokenType; } break;
+				case "token_id1": foreach(var toi in toc) { toi.TokenId1 = TokenId1; } break;
+				case "token_id2": foreach(var toi in toc) { toi.TokenId2 = TokenId2; } break;
+				case "token_created": foreach(var toi in toc) { toi.TokenCreateTime = TokenCreateTime; } break;
+				case "token_description": foreach(var toi in toc) { toi.TokenDescription = TokenDescription; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class TokenListRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.TokenListRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
+	public sealed class TokenUse : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.TokenUse;
+		
+
+		public str Token { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "token": Token = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (TokenUse[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "token": foreach(var toi in toc) { toi.Token = Token; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class TokenUsed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenUsed;
 		
 
-		public str UsedToken { get; set; }
+		public str Token { get; set; }
 		public str TokenCustomSet { get; set; }
 		public str Token1 { get; set; }
 		public str Token2 { get; set; }
@@ -2989,7 +8782,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": UsedToken = Ts3String.Unescape(value); break;
+			case "token": Token = Ts3String.Unescape(value); break;
 			case "tokencustomset": TokenCustomSet = Ts3String.Unescape(value); break;
 			case "token1": Token1 = Ts3String.Unescape(value); break;
 			case "token2": Token2 = Ts3String.Unescape(value); break;
@@ -3009,7 +8802,7 @@ namespace TS3Client.Messages
 				switch(fld)
 				{
 
-				case "token": foreach(var toi in toc) { toi.UsedToken = UsedToken; } break;
+				case "token": foreach(var toi in toc) { toi.Token = Token; } break;
 				case "tokencustomset": foreach(var toi in toc) { toi.TokenCustomSet = TokenCustomSet; } break;
 				case "token1": foreach(var toi in toc) { toi.Token1 = Token1; } break;
 				case "token2": foreach(var toi in toc) { toi.Token2 = Token2; } break;
@@ -3019,6 +8812,57 @@ namespace TS3Client.Messages
 				}
 			}
 
+		}
+	}
+
+	public sealed class Use : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.Use;
+		
+
+		public u32 ServerId { get; set; }
+		public u16 Port { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+			switch(name)
+			{
+
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
+			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (Use[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sid": foreach(var toi in toc) { toi.ServerId = ServerId; } break;
+				case "port": foreach(var toi in toc) { toi.Port = Port; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class VersionRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.VersionRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
 		}
 	}
 
@@ -3085,67 +8929,236 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class WhoAmIRequest : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.WhoAmIRequest;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
 	public enum NotificationType
 	{
 		Unknown,
+		///<summary>[C2S] ntfy:banadd</summary>
+		BanAdd,
+		///<summary>[C2S] ntfy:banclient</summary>
+		BanClient,
+		///<summary>[C2S] ntfy:bandel</summary>
+		BanDel,
+		///<summary>[C2S] ntfy:bandelall</summary>
+		BanDelAll,
+		///<summary>[S2C] ntfy:notifybanlist</summary>
+		BanList,
+		///<summary>[C2S] ntfy:banlist</summary>
+		BanListRequest,
+		///<summary>[C2S] ntfy:bindinglist</summary>
+		BindingList,
+		///<summary>[C2S] ntfy:channeladdperm</summary>
+		ChannelAddPerm,
 		///<summary>[S2C] ntfy:notifychannelchanged</summary>
 		ChannelChanged,
+		///<summary>[C2S] ntfy:channelclientaddperm</summary>
+		ChannelClientAddPerm,
+		///<summary>[C2S] ntfy:channelclientdelperm</summary>
+		ChannelClientDelPerm,
+		///<summary>[S2C] ntfy:notifychannelclientpermlist</summary>
+		ChannelClientPermList,
+		///<summary>[C2S] ntfy:channelclientpermlist</summary>
+		ChannelClientPermListRequest,
+		///<summary>[C2S] ntfy:channelcreate</summary>
+		ChannelCreate,
 		///<summary>[S2C] ntfy:notifychannelcreated</summary>
 		ChannelCreated,
+		///<summary>[C2S] ntfy:channeldelete</summary>
+		ChannelDelete,
 		///<summary>[S2C] ntfy:notifychanneldeleted</summary>
 		ChannelDeleted,
+		///<summary>[C2S] ntfy:channeldelperm</summary>
+		ChannelDelPerm,
+		///<summary>[S2C] ntfy:notifychanneldescriptionchanged</summary>
+		ChannelDescriptionChanged,
+		///<summary>[C2S] ntfy:channelgetdescription</summary>
+		ChannelDescriptionRequest,
+		///<summary>[C2S] ntfy:channeledit</summary>
+		ChannelEdit,
 		///<summary>[S2C] ntfy:notifychanneledited</summary>
 		ChannelEdited,
+		///<summary>[C2S] ntfy:channelfind</summary>
+		ChannelFindRequest,
+		///<summary>[C2S] ntfy:channelgroupadd</summary>
+		ChannelGroupAdd,
+		///<summary>[C2S] ntfy:channelgroupaddperm</summary>
+		ChannelGroupAddPerm,
+		///<summary>[S2C] ntfy:notifychannelgroupclientlist</summary>
+		ChannelGroupClientList,
+		///<summary>[C2S] ntfy:channelgroupclientlist</summary>
+		ChannelGroupClientListRequest,
+		///<summary>[C2S] ntfy:channelgroupcopy</summary>
+		ChannelGroupCopy,
+		///<summary>[C2S] ntfy:channelgroupdel</summary>
+		ChannelGroupDel,
+		///<summary>[C2S] ntfy:channelgroupdelperm</summary>
+		ChannelGroupDelPerm,
 		///<summary>[S2C] ntfy:notifychannelgrouplist</summary>
 		ChannelGroupList,
+		///<summary>[C2S] ntfy:channelgrouplist</summary>
+		ChannelGroupListRequest,
+		///<summary>[S2C] ntfy:notifychannelgrouppermlist</summary>
+		ChannelGroupPermList,
+		///<summary>[C2S] ntfy:channelgrouppermlist</summary>
+		ChannelGroupPermListRequest,
+		///<summary>[C2S] ntfy:channelgrouprename</summary>
+		ChannelGroupRename,
+		///<summary>[C2S] ntfy:channelinfo</summary>
+		ChannelInfoRequest,
 		///<summary>[S2C] ntfy:channellist</summary>
 		ChannelList,
 		///<summary>[S2C] ntfy:channellistfinished</summary>
 		ChannelListFinished,
+		///<summary>[C2S] ntfy:channellist</summary>
+		ChannelListRequest,
+		///<summary>[C2S] ntfy:channelmove</summary>
+		ChannelMove,
 		///<summary>[S2C] ntfy:notifychannelmoved</summary>
 		ChannelMoved,
 		///<summary>[S2C] ntfy:notifychannelpasswordchanged</summary>
 		ChannelPasswordChanged,
+		///<summary>[S2C] ntfy:notifychannelpermlist</summary>
+		ChannelPermList,
+		///<summary>[C2S] ntfy:channelpermlist</summary>
+		ChannelPermListRequest,
 		///<summary>[S2C] ntfy:notifychannelsubscribed</summary>
 		ChannelSubscribed,
 		///<summary>[S2C] ntfy:notifychannelunsubscribed</summary>
 		ChannelUnsubscribed,
+		///<summary>[C2S] ntfy:clientaddperm</summary>
+		ClientAddPerm,
 		///<summary>[S2C] ntfy:notifyclientchannelgroupchanged</summary>
 		ClientChannelGroupChanged,
+		///<summary>[C2S] ntfy:clientchatclosed</summary>
+		ClientChatClose,
+		///<summary>[S2C] ntfy:notifyclientchatclosed</summary>
+		ClientChatClosed,
 		///<summary>[S2C] ntfy:notifyclientchatcomposing</summary>
 		ClientChatComposing,
+		///<summary>[S2C] ntfy:notifyconnectioninfo</summary>
+		ClientConnectionInfo,
+		///<summary>[C2S] ntfy:getconnectioninfo</summary>
+		ClientConnectionInfoRequest,
+		///<summary>[S2C] ntfy:notifyconnectioninforequest</summary>
+		ClientConnectionInfoUpdateRequest,
+		///<summary>[C2S] ntfy:clientdbdelete</summary>
+		ClientDbDelete,
+		///<summary>[C2S] ntfy:clientdbedit</summary>
+		ClientDbEdit,
+		///<summary>[S2C] ntfy:notifyclientdbfind</summary>
+		ClientDbFind,
+		///<summary>[C2S] ntfy:clientdbfind</summary>
+		ClientDbFindRequest,
 		///<summary>[S2C] ntfy:notifyclientdbidfromuid</summary>
 		ClientDbIdFromUid,
+		///<summary>[C2S] ntfy:clientgetdbidfromuid</summary>
+		ClientDbIdFromUidRequest,
+		///<summary>[C2S] ntfy:clientdbinfo</summary>
+		ClientDbInfoRequest,
+		///<summary>[S2C] ntfy:notifyclientdblist</summary>
+		ClientDbList,
+		///<summary>[C2S] ntfy:clientdblist</summary>
+		ClientDbListRequest,
+		///<summary>[C2S] ntfy:clientdelperm</summary>
+		ClientDelPerm,
+		///<summary>[C2S] ntfy:clientedit</summary>
+		ClientEdit,
 		///<summary>[S2C] ntfy:notifycliententerview</summary>
 		ClientEnterView,
+		///<summary>[C2S] ntfy:clientfind</summary>
+		ClientFindRequest,
 		///<summary>[S2C] ntfy:notifyclientids</summary>
 		ClientIds,
+		///<summary>[C2S] ntfy:clientgetids</summary>
+		ClientIdsRequest,
+		///<summary>[C2S] ntfy:clientinfo</summary>
+		ClientInfoRequest,
 		///<summary>[C2S] ntfy:clientinit</summary>
 		ClientInit,
 		///<summary>[C2S] ntfy:clientinitiv</summary>
 		ClientInitIv,
+		///<summary>[C2S] ntfy:clientkick</summary>
+		ClientKick,
 		///<summary>[S2C] ntfy:notifyclientleftview</summary>
 		ClientLeftView,
+		///<summary>[C2S] ntfy:clientlist</summary>
+		ClientListRequest,
+		///<summary>[C2S] ntfy:clientmove</summary>
+		ClientMove,
 		///<summary>[S2C] ntfy:notifyclientmoved</summary>
 		ClientMoved,
+		///<summary>[S2C] ntfy:notifyclientnamefromdbid</summary>
+		ClientNameFromDbId,
+		///<summary>[C2S] ntfy:clientgetnamefromdbid</summary>
+		ClientNameFromDbIdRequest,
+		///<summary>[S2C] ntfy:clientgetnamefromuid</summary>
+		ClientNameFromUid,
+		///<summary>[C2S] ntfy:clientgetnamefromuid</summary>
+		ClientNameFromUidRequest,
 		///<summary>[S2C] ntfy:notifyclientneededpermissions</summary>
 		ClientNeededPermissions,
+		///<summary>[S2C] ntfy:notifyclientpermlist</summary>
+		ClientPermList,
+		///<summary>[C2S] ntfy:clientpermlist</summary>
+		ClientPermListRequest,
 		///<summary>[S2C] ntfy:notifyclientpoke</summary>
 		ClientPoke,
-		///<summary>[S2C] ntfy:notifyservergroupsbyclientid</summary>
-		ClientServerGroup,
+		///<summary>[C2S] ntfy:clientpoke</summary>
+		ClientPokeRequest,
 		///<summary>[S2C] ntfy:notifyservergroupclientadded</summary>
 		ClientServerGroupAdded,
+		///<summary>[S2C] ntfy:notifyclientserverqueryloginpassword</summary>
+		ClientSetServerQueryLogin,
+		///<summary>[C2S] ntfy:clientsetserverquerylogin</summary>
+		ClientSetServerQueryLoginRequest,
+		///<summary>[S2C] ntfy:clientgetuidfromclid</summary>
+		ClientUidFromClid,
+		///<summary>[C2S] ntfy:clientgetuidfromclid</summary>
+		ClientUidFromClidRequest,
+		///<summary>[C2S] ntfy:clientupdate</summary>
+		ClientUpdate,
+		///<summary>[S2C] ntfy:notifyclientupdated</summary>
+		ClientUpdated,
+		///<summary>[C2S] ntfy:clientgetvariables</summary>
+		ClientVariablesRequest,
 		///<summary>[S2C] ntfy:error</summary>
 		CommandError,
-		///<summary>[S2C] ntfy:notifyconnectioninfo</summary>
-		ConnectionInfo,
-		///<summary>[S2C] ntfy:notifyconnectioninforequest</summary>
-		ConnectionInfoRequest,
+		///<summary>[C2S] ntfy:complainadd</summary>
+		ComplainAdd,
+		///<summary>[C2S] ntfy:complaindel</summary>
+		ComplainDel,
+		///<summary>[C2S] ntfy:complaindelall</summary>
+		ComplainDelAll,
+		///<summary>[S2C] ntfy:notifycomplainlist</summary>
+		ComplainList,
+		///<summary>[C2S] ntfy:complainlist</summary>
+		ComplainListRequest,
+		///<summary>[C2S] ntfy:customdelete</summary>
+		CustomDelete,
+		///<summary>[C2S] ntfy:custominfo</summary>
+		CustomInfoRequest,
+		///<summary>[C2S] ntfy:customsearch</summary>
+		CustomSearch,
+		///<summary>[C2S] ntfy:customset</summary>
+		CustomSet,
 		///<summary>[S2C] ntfy:notifystartdownload</summary>
 		FileDownload,
 		///<summary>[S2C] ntfy:notifyfileinfo</summary>
-		FileInfoTs,
+		FileInfo,
 		///<summary>[S2C] ntfy:notifyfilelist</summary>
 		FileList,
 		///<summary>[S2C] ntfy:notifyfilelistfinished</summary>
@@ -3156,81 +9169,424 @@ namespace TS3Client.Messages
 		FileTransferStatus,
 		///<summary>[S2C] ntfy:notifystartupload</summary>
 		FileUpload,
-		///<summary>[C2S] ntfy:clientgetdbidfromuid</summary>
-		GetClientDbIdFromUid,
-		///<summary>[C2S] ntfy:clientgetids</summary>
-		GetClientIds,
+		///<summary>[C2S] ntfy:ftcreatedir</summary>
+		FtCreateDir,
+		///<summary>[C2S] ntfy:ftdeletefile</summary>
+		FtDeleteFile,
+		///<summary>[C2S] ntfy:ftgetfileinfo</summary>
+		FtFileInfoRequest,
+		///<summary>[C2S] ntfy:ftgetfilelist</summary>
+		FtFileListRequest,
+		///<summary>[C2S] ntfy:ftinitdownload</summary>
+		FtInitDownload,
+		///<summary>[C2S] ntfy:ftinitupload</summary>
+		FtInitUpload,
+		///<summary>[C2S] ntfy:ftlist</summary>
+		FtList,
+		///<summary>[C2S] ntfy:ftrenamefile</summary>
+		FtRenameFile,
+		///<summary>[C2S] ntfy:ftstop</summary>
+		FtStop,
+		///<summary>[C2S] ntfy:gm</summary>
+		GlobalMessage,
+		///<summary>[C2S] ntfy:hostinfo</summary>
+		HostInfoRequest,
 		///<summary>[S2C] ntfy:initivexpand</summary>
 		InitIvExpand,
 		///<summary>[S2C] ntfy:initivexpand2</summary>
 		InitIvExpand2,
 		///<summary>[S2C] ntfy:initserver</summary>
 		InitServer,
+		///<summary>[C2S] ntfy:instanceedit</summary>
+		InstanceEdit,
+		///<summary>[C2S] ntfy:instanceinfo</summary>
+		InstanceInfo,
+		///<summary>[C2S] ntfy:logadd</summary>
+		LogAdd,
+		///<summary>[C2S] ntfy:login</summary>
+		Login,
+		///<summary>[C2S] ntfy:logout</summary>
+		Logout,
+		///<summary>[C2S] ntfy:logview</summary>
+		LogView,
+		///<summary>[S2C] ntfy:notifymessage</summary>
+		OfflineMessage,
+		///<summary>[C2S] ntfy:messageadd</summary>
+		OfflineMessageAdd,
+		///<summary>[C2S] ntfy:messagedel</summary>
+		OfflineMessageDel,
+		///<summary>[C2S] ntfy:messageget</summary>
+		OfflineMessageGet,
+		///<summary>[S2C] ntfy:notifymessagelist</summary>
+		OfflineMessageList,
+		///<summary>[C2S] ntfy:messagelist</summary>
+		OfflineMessageListRequest,
+		///<summary>[C2S] ntfy:messageupdateflag</summary>
+		OfflineMessageUpdateFlag,
+		///<summary>[S2C] ntfy:notifypermfind</summary>
+		PermFind,
+		///<summary>[C2S] ntfy:permfind</summary>
+		PermFindRequest,
+		///<summary>[C2S] ntfy:permidgetbyname</summary>
+		PermIdByNameRequest,
+		///<summary>[S2C] ntfy:notifypermissionlist</summary>
+		PermList,
+		///<summary>[C2S] ntfy:permissionlist</summary>
+		PermListRequest,
+		///<summary>[S2C] ntfy:notifypermoverview</summary>
+		PermOverview,
+		///<summary>[C2S] ntfy:permoverview</summary>
+		PermOverviewRequest,
+		///<summary>[C2S] ntfy:permget</summary>
+		PermRequest,
+		///<summary>[C2S] ntfy:permreset</summary>
+		PermReset,
 		///<summary>[S2C] ntfy:notifyplugincmd</summary>
 		PluginCommand,
 		///<summary>[C2S] ntfy:plugincmd</summary>
 		PluginCommandRequest,
+		///<summary>[C2S] ntfy:privilegekeyadd</summary>
+		PrivilegeKeyAddRequest,
+		///<summary>[C2S] ntfy:privilegekeydelete</summary>
+		PrivilegeKeyDelete,
+		///<summary>[C2S] ntfy:privilegekeylist</summary>
+		PrivilegeKeyListRequest,
+		///<summary>[C2S] ntfy:privilegekeyuse</summary>
+		PrivilegeKeyUse,
+		///<summary>[C2S] ntfy:quit</summary>
+		Quit,
+		///<summary>[C2S] ntfy:sendtextmessage</summary>
+		SendTextMessage,
+		///<summary>[S2C] ntfy:notifyserverconnectioninfo</summary>
+		ServerConnectionInfo,
+		///<summary>[C2S] ntfy:serverrequestconnectioninfo</summary>
+		ServerConnectionInfoRequest,
+		///<summary>[C2S] ntfy:servercreate</summary>
+		ServerCreate,
+		///<summary>[C2S] ntfy:serverdelete</summary>
+		ServerDelete,
+		///<summary>[C2S] ntfy:serveredit</summary>
+		ServerEdit,
 		///<summary>[S2C] ntfy:notifyserveredited</summary>
 		ServerEdited,
+		///<summary>[C2S] ntfy:servergroupadd</summary>
+		ServerGroupAdd,
+		///<summary>[C2S] ntfy:servergroupaddclient</summary>
+		ServerGroupAddClient,
+		///<summary>[C2S] ntfy:servergroupaddperm</summary>
+		ServerGroupAddPerm,
+		///<summary>[C2S] ntfy:servergroupautoaddperm</summary>
+		ServerGroupAutoAddPerm,
+		///<summary>[C2S] ntfy:servergroupautodelperm</summary>
+		ServerGroupAutoDelPerm,
+		///<summary>[S2C] ntfy:notifyservergroupclientlist</summary>
+		ServerGroupClientList,
+		///<summary>[C2S] ntfy:servergroupclientlist</summary>
+		ServerGroupClientListRequest,
+		///<summary>[C2S] ntfy:servergroupcopy</summary>
+		ServerGroupCopy,
+		///<summary>[C2S] ntfy:servergroupdel</summary>
+		ServerGroupDel,
+		///<summary>[C2S] ntfy:servergroupdelclient</summary>
+		ServerGroupDelClient,
+		///<summary>[C2S] ntfy:servergroupdelperm</summary>
+		ServerGroupDelPerm,
 		///<summary>[S2C] ntfy:notifyservergrouplist</summary>
 		ServerGroupList,
+		///<summary>[C2S] ntfy:servergrouplist</summary>
+		ServerGroupListRequest,
+		///<summary>[S2C] ntfy:notifyservergrouppermlist</summary>
+		ServerGroupPermList,
+		///<summary>[C2S] ntfy:servergrouppermlist</summary>
+		ServerGroupPermListRequest,
+		///<summary>[C2S] ntfy:servergrouprename</summary>
+		ServerGroupRename,
+		///<summary>[S2C] ntfy:notifyservergroupsbyclientid</summary>
+		ServerGroupsByClientId,
+		///<summary>[C2S] ntfy:servergroupsbyclientid</summary>
+		ServerGroupsByClientIdRequest,
+		///<summary>[C2S] ntfy:serveridgetbyport</summary>
+		ServerIdGetByPort,
+		///<summary>[C2S] ntfy:serverinfo</summary>
+		ServerInfo,
+		///<summary>[C2S] ntfy:serverlist</summary>
+		ServerList,
+		///<summary>[S2C] ntfy:notifyserverlog</summary>
+		ServerLog,
+		///<summary>[C2S] ntfy:servernotifyregister</summary>
+		ServerNotifyRegister,
+		///<summary>[C2S] ntfy:servernotifyunregister</summary>
+		ServerNotifyUnregister,
+		///<summary>[C2S] ntfy:serverprocessstop</summary>
+		ServerProcessStop,
+		///<summary>[C2S] ntfy:serversnapshotcreate</summary>
+		ServerSnapshotCreate,
+		///<summary>[C2S] ntfy:serversnapshotdeploy</summary>
+		ServerSnapshotDeploy,
+		///<summary>[C2S] ntfy:serverstart</summary>
+		ServerStart,
+		///<summary>[C2S] ntfy:serverstop</summary>
+		ServerStop,
+		///<summary>[C2S] ntfy:servertemppasswordadd</summary>
+		ServerTempPasswordAdd,
+		///<summary>[C2S] ntfy:servertemppassworddel</summary>
+		ServerTempPasswordDel,
+		///<summary>[S2C] ntfy:notifyservertemppasswordlist</summary>
+		ServerTempPasswordList,
+		///<summary>[C2S] ntfy:servertemppasswordlist</summary>
+		ServerTempPasswordListRequest,
+		///<summary>[S2C] ntfy:notifyserverupdated</summary>
+		ServerUpdated,
+		///<summary>[C2S] ntfy:servergetvariables</summary>
+		ServerVariablesRequest,
+		///<summary>[C2S] ntfy:setclientchannelgroup</summary>
+		setclientchannelgroup,
 		///<summary>[S2C] ntfy:notifytextmessage</summary>
 		TextMessage,
+		///<summary>[S2C] ntfy:notifytokenadd</summary>
+		TokenAdd,
+		///<summary>[C2S] ntfy:tokenadd</summary>
+		TokenAddRequest,
+		///<summary>[C2S] ntfy:tokendelete</summary>
+		TokenDelete,
+		///<summary>[S2C] ntfy:notifytokenlist</summary>
+		TokenList,
+		///<summary>[C2S] ntfy:tokenlist</summary>
+		TokenListRequest,
+		///<summary>[C2S] ntfy:tokenuse</summary>
+		TokenUse,
 		///<summary>[S2C] ntfy:notifytokenused</summary>
 		TokenUsed,
+		///<summary>[C2S] ntfy:use</summary>
+		Use,
+		///<summary>[C2S] ntfy:version</summary>
+		VersionRequest,
+		///<summary>[C2S] ntfy:whoami</summary>
+		WhoAmIRequest,
 	}
 
 	public static class MessageHelper
 	{
-		public static NotificationType GetNotificationType(string name)
+		public static NotificationType GetToClientNotificationType(string name)
 		{
 			switch(name)
 			{
+			case "notifybanlist": return NotificationType.BanList;
 			case "notifychannelchanged": return NotificationType.ChannelChanged;
+			case "notifychannelclientpermlist": return NotificationType.ChannelClientPermList;
 			case "notifychannelcreated": return NotificationType.ChannelCreated;
 			case "notifychanneldeleted": return NotificationType.ChannelDeleted;
+			case "notifychanneldescriptionchanged": return NotificationType.ChannelDescriptionChanged;
 			case "notifychanneledited": return NotificationType.ChannelEdited;
+			case "notifychannelgroupclientlist": return NotificationType.ChannelGroupClientList;
 			case "notifychannelgrouplist": return NotificationType.ChannelGroupList;
+			case "notifychannelgrouppermlist": return NotificationType.ChannelGroupPermList;
 			case "channellist": return NotificationType.ChannelList;
 			case "channellistfinished": return NotificationType.ChannelListFinished;
 			case "notifychannelmoved": return NotificationType.ChannelMoved;
 			case "notifychannelpasswordchanged": return NotificationType.ChannelPasswordChanged;
+			case "notifychannelpermlist": return NotificationType.ChannelPermList;
 			case "notifychannelsubscribed": return NotificationType.ChannelSubscribed;
 			case "notifychannelunsubscribed": return NotificationType.ChannelUnsubscribed;
 			case "notifyclientchannelgroupchanged": return NotificationType.ClientChannelGroupChanged;
+			case "notifyclientchatclosed": return NotificationType.ClientChatClosed;
 			case "notifyclientchatcomposing": return NotificationType.ClientChatComposing;
+			case "notifyconnectioninfo": return NotificationType.ClientConnectionInfo;
+			case "notifyconnectioninforequest": return NotificationType.ClientConnectionInfoUpdateRequest;
+			case "notifyclientdbfind": return NotificationType.ClientDbFind;
 			case "notifyclientdbidfromuid": return NotificationType.ClientDbIdFromUid;
+			case "notifyclientdblist": return NotificationType.ClientDbList;
 			case "notifycliententerview": return NotificationType.ClientEnterView;
 			case "notifyclientids": return NotificationType.ClientIds;
-			case "clientinit": return NotificationType.ClientInit;
-			case "clientinitiv": return NotificationType.ClientInitIv;
 			case "notifyclientleftview": return NotificationType.ClientLeftView;
 			case "notifyclientmoved": return NotificationType.ClientMoved;
+			case "notifyclientnamefromdbid": return NotificationType.ClientNameFromDbId;
+			case "clientgetnamefromuid": return NotificationType.ClientNameFromUid;
 			case "notifyclientneededpermissions": return NotificationType.ClientNeededPermissions;
+			case "notifyclientpermlist": return NotificationType.ClientPermList;
 			case "notifyclientpoke": return NotificationType.ClientPoke;
-			case "notifyservergroupsbyclientid": return NotificationType.ClientServerGroup;
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
+			case "notifyclientserverqueryloginpassword": return NotificationType.ClientSetServerQueryLogin;
+			case "clientgetuidfromclid": return NotificationType.ClientUidFromClid;
+			case "notifyclientupdated": return NotificationType.ClientUpdated;
 			case "error": return NotificationType.CommandError;
-			case "notifyconnectioninfo": return NotificationType.ConnectionInfo;
-			case "notifyconnectioninforequest": return NotificationType.ConnectionInfoRequest;
+			case "notifycomplainlist": return NotificationType.ComplainList;
 			case "notifystartdownload": return NotificationType.FileDownload;
-			case "notifyfileinfo": return NotificationType.FileInfoTs;
+			case "notifyfileinfo": return NotificationType.FileInfo;
 			case "notifyfilelist": return NotificationType.FileList;
 			case "notifyfilelistfinished": return NotificationType.FileListFinished;
 			case "notifyfiletransferlist": return NotificationType.FileTransfer;
 			case "notifystatusfiletransfer": return NotificationType.FileTransferStatus;
 			case "notifystartupload": return NotificationType.FileUpload;
-			case "clientgetdbidfromuid": return NotificationType.GetClientDbIdFromUid;
-			case "clientgetids": return NotificationType.GetClientIds;
 			case "initivexpand": return NotificationType.InitIvExpand;
 			case "initivexpand2": return NotificationType.InitIvExpand2;
 			case "initserver": return NotificationType.InitServer;
+			case "notifymessage": return NotificationType.OfflineMessage;
+			case "notifymessagelist": return NotificationType.OfflineMessageList;
+			case "notifypermfind": return NotificationType.PermFind;
+			case "notifypermissionlist": return NotificationType.PermList;
+			case "notifypermoverview": return NotificationType.PermOverview;
 			case "notifyplugincmd": return NotificationType.PluginCommand;
-			case "plugincmd": return NotificationType.PluginCommandRequest;
+			case "notifyserverconnectioninfo": return NotificationType.ServerConnectionInfo;
 			case "notifyserveredited": return NotificationType.ServerEdited;
+			case "notifyservergroupclientlist": return NotificationType.ServerGroupClientList;
 			case "notifyservergrouplist": return NotificationType.ServerGroupList;
+			case "notifyservergrouppermlist": return NotificationType.ServerGroupPermList;
+			case "notifyservergroupsbyclientid": return NotificationType.ServerGroupsByClientId;
+			case "notifyserverlog": return NotificationType.ServerLog;
+			case "notifyservertemppasswordlist": return NotificationType.ServerTempPasswordList;
+			case "notifyserverupdated": return NotificationType.ServerUpdated;
 			case "notifytextmessage": return NotificationType.TextMessage;
+			case "notifytokenadd": return NotificationType.TokenAdd;
+			case "notifytokenlist": return NotificationType.TokenList;
 			case "notifytokenused": return NotificationType.TokenUsed;
+			default: return NotificationType.Unknown;
+			}
+		}
+
+		public static NotificationType GetToServerNotificationType(string name)
+		{
+			switch(name)
+			{
+			case "banadd": return NotificationType.BanAdd;
+			case "banclient": return NotificationType.BanClient;
+			case "bandel": return NotificationType.BanDel;
+			case "bandelall": return NotificationType.BanDelAll;
+			case "banlist": return NotificationType.BanListRequest;
+			case "bindinglist": return NotificationType.BindingList;
+			case "channeladdperm": return NotificationType.ChannelAddPerm;
+			case "channelclientaddperm": return NotificationType.ChannelClientAddPerm;
+			case "channelclientdelperm": return NotificationType.ChannelClientDelPerm;
+			case "channelclientpermlist": return NotificationType.ChannelClientPermListRequest;
+			case "channelcreate": return NotificationType.ChannelCreate;
+			case "channeldelete": return NotificationType.ChannelDelete;
+			case "channeldelperm": return NotificationType.ChannelDelPerm;
+			case "channelgetdescription": return NotificationType.ChannelDescriptionRequest;
+			case "channeledit": return NotificationType.ChannelEdit;
+			case "channelfind": return NotificationType.ChannelFindRequest;
+			case "channelgroupadd": return NotificationType.ChannelGroupAdd;
+			case "channelgroupaddperm": return NotificationType.ChannelGroupAddPerm;
+			case "channelgroupclientlist": return NotificationType.ChannelGroupClientListRequest;
+			case "channelgroupcopy": return NotificationType.ChannelGroupCopy;
+			case "channelgroupdel": return NotificationType.ChannelGroupDel;
+			case "channelgroupdelperm": return NotificationType.ChannelGroupDelPerm;
+			case "channelgrouplist": return NotificationType.ChannelGroupListRequest;
+			case "channelgrouppermlist": return NotificationType.ChannelGroupPermListRequest;
+			case "channelgrouprename": return NotificationType.ChannelGroupRename;
+			case "channelinfo": return NotificationType.ChannelInfoRequest;
+			case "channellist": return NotificationType.ChannelListRequest;
+			case "channelmove": return NotificationType.ChannelMove;
+			case "channelpermlist": return NotificationType.ChannelPermListRequest;
+			case "clientaddperm": return NotificationType.ClientAddPerm;
+			case "clientchatclosed": return NotificationType.ClientChatClose;
+			case "getconnectioninfo": return NotificationType.ClientConnectionInfoRequest;
+			case "clientdbdelete": return NotificationType.ClientDbDelete;
+			case "clientdbedit": return NotificationType.ClientDbEdit;
+			case "clientdbfind": return NotificationType.ClientDbFindRequest;
+			case "clientgetdbidfromuid": return NotificationType.ClientDbIdFromUidRequest;
+			case "clientdbinfo": return NotificationType.ClientDbInfoRequest;
+			case "clientdblist": return NotificationType.ClientDbListRequest;
+			case "clientdelperm": return NotificationType.ClientDelPerm;
+			case "clientedit": return NotificationType.ClientEdit;
+			case "clientfind": return NotificationType.ClientFindRequest;
+			case "clientgetids": return NotificationType.ClientIdsRequest;
+			case "clientinfo": return NotificationType.ClientInfoRequest;
+			case "clientinit": return NotificationType.ClientInit;
+			case "clientinitiv": return NotificationType.ClientInitIv;
+			case "clientkick": return NotificationType.ClientKick;
+			case "clientlist": return NotificationType.ClientListRequest;
+			case "clientmove": return NotificationType.ClientMove;
+			case "clientgetnamefromdbid": return NotificationType.ClientNameFromDbIdRequest;
+			case "clientgetnamefromuid": return NotificationType.ClientNameFromUidRequest;
+			case "clientpermlist": return NotificationType.ClientPermListRequest;
+			case "clientpoke": return NotificationType.ClientPokeRequest;
+			case "clientsetserverquerylogin": return NotificationType.ClientSetServerQueryLoginRequest;
+			case "clientgetuidfromclid": return NotificationType.ClientUidFromClidRequest;
+			case "clientupdate": return NotificationType.ClientUpdate;
+			case "clientgetvariables": return NotificationType.ClientVariablesRequest;
+			case "complainadd": return NotificationType.ComplainAdd;
+			case "complaindel": return NotificationType.ComplainDel;
+			case "complaindelall": return NotificationType.ComplainDelAll;
+			case "complainlist": return NotificationType.ComplainListRequest;
+			case "customdelete": return NotificationType.CustomDelete;
+			case "custominfo": return NotificationType.CustomInfoRequest;
+			case "customsearch": return NotificationType.CustomSearch;
+			case "customset": return NotificationType.CustomSet;
+			case "ftcreatedir": return NotificationType.FtCreateDir;
+			case "ftdeletefile": return NotificationType.FtDeleteFile;
+			case "ftgetfileinfo": return NotificationType.FtFileInfoRequest;
+			case "ftgetfilelist": return NotificationType.FtFileListRequest;
+			case "ftinitdownload": return NotificationType.FtInitDownload;
+			case "ftinitupload": return NotificationType.FtInitUpload;
+			case "ftlist": return NotificationType.FtList;
+			case "ftrenamefile": return NotificationType.FtRenameFile;
+			case "ftstop": return NotificationType.FtStop;
+			case "gm": return NotificationType.GlobalMessage;
+			case "hostinfo": return NotificationType.HostInfoRequest;
+			case "instanceedit": return NotificationType.InstanceEdit;
+			case "instanceinfo": return NotificationType.InstanceInfo;
+			case "logadd": return NotificationType.LogAdd;
+			case "login": return NotificationType.Login;
+			case "logout": return NotificationType.Logout;
+			case "logview": return NotificationType.LogView;
+			case "messageadd": return NotificationType.OfflineMessageAdd;
+			case "messagedel": return NotificationType.OfflineMessageDel;
+			case "messageget": return NotificationType.OfflineMessageGet;
+			case "messagelist": return NotificationType.OfflineMessageListRequest;
+			case "messageupdateflag": return NotificationType.OfflineMessageUpdateFlag;
+			case "permfind": return NotificationType.PermFindRequest;
+			case "permidgetbyname": return NotificationType.PermIdByNameRequest;
+			case "permissionlist": return NotificationType.PermListRequest;
+			case "permoverview": return NotificationType.PermOverviewRequest;
+			case "permget": return NotificationType.PermRequest;
+			case "permreset": return NotificationType.PermReset;
+			case "plugincmd": return NotificationType.PluginCommandRequest;
+			case "privilegekeyadd": return NotificationType.PrivilegeKeyAddRequest;
+			case "privilegekeydelete": return NotificationType.PrivilegeKeyDelete;
+			case "privilegekeylist": return NotificationType.PrivilegeKeyListRequest;
+			case "privilegekeyuse": return NotificationType.PrivilegeKeyUse;
+			case "quit": return NotificationType.Quit;
+			case "sendtextmessage": return NotificationType.SendTextMessage;
+			case "serverrequestconnectioninfo": return NotificationType.ServerConnectionInfoRequest;
+			case "servercreate": return NotificationType.ServerCreate;
+			case "serverdelete": return NotificationType.ServerDelete;
+			case "serveredit": return NotificationType.ServerEdit;
+			case "servergroupadd": return NotificationType.ServerGroupAdd;
+			case "servergroupaddclient": return NotificationType.ServerGroupAddClient;
+			case "servergroupaddperm": return NotificationType.ServerGroupAddPerm;
+			case "servergroupautoaddperm": return NotificationType.ServerGroupAutoAddPerm;
+			case "servergroupautodelperm": return NotificationType.ServerGroupAutoDelPerm;
+			case "servergroupclientlist": return NotificationType.ServerGroupClientListRequest;
+			case "servergroupcopy": return NotificationType.ServerGroupCopy;
+			case "servergroupdel": return NotificationType.ServerGroupDel;
+			case "servergroupdelclient": return NotificationType.ServerGroupDelClient;
+			case "servergroupdelperm": return NotificationType.ServerGroupDelPerm;
+			case "servergrouplist": return NotificationType.ServerGroupListRequest;
+			case "servergrouppermlist": return NotificationType.ServerGroupPermListRequest;
+			case "servergrouprename": return NotificationType.ServerGroupRename;
+			case "servergroupsbyclientid": return NotificationType.ServerGroupsByClientIdRequest;
+			case "serveridgetbyport": return NotificationType.ServerIdGetByPort;
+			case "serverinfo": return NotificationType.ServerInfo;
+			case "serverlist": return NotificationType.ServerList;
+			case "servernotifyregister": return NotificationType.ServerNotifyRegister;
+			case "servernotifyunregister": return NotificationType.ServerNotifyUnregister;
+			case "serverprocessstop": return NotificationType.ServerProcessStop;
+			case "serversnapshotcreate": return NotificationType.ServerSnapshotCreate;
+			case "serversnapshotdeploy": return NotificationType.ServerSnapshotDeploy;
+			case "serverstart": return NotificationType.ServerStart;
+			case "serverstop": return NotificationType.ServerStop;
+			case "servertemppasswordadd": return NotificationType.ServerTempPasswordAdd;
+			case "servertemppassworddel": return NotificationType.ServerTempPasswordDel;
+			case "servertemppasswordlist": return NotificationType.ServerTempPasswordListRequest;
+			case "servergetvariables": return NotificationType.ServerVariablesRequest;
+			case "setclientchannelgroup": return NotificationType.setclientchannelgroup;
+			case "tokenadd": return NotificationType.TokenAddRequest;
+			case "tokendelete": return NotificationType.TokenDelete;
+			case "tokenlist": return NotificationType.TokenListRequest;
+			case "tokenuse": return NotificationType.TokenUse;
+			case "use": return NotificationType.Use;
+			case "version": return NotificationType.VersionRequest;
+			case "whoami": return NotificationType.WhoAmIRequest;
 			default: return NotificationType.Unknown;
 			}
 		}
@@ -3239,51 +9595,214 @@ namespace TS3Client.Messages
 		{
 			switch(name)
 			{
+			case NotificationType.BanAdd: return new BanAdd();
+			case NotificationType.BanClient: return new BanClient();
+			case NotificationType.BanDel: return new BanDel();
+			case NotificationType.BanDelAll: return new BanDelAll();
+			case NotificationType.BanList: return new BanList();
+			case NotificationType.BanListRequest: return new BanListRequest();
+			case NotificationType.BindingList: return new BindingList();
+			case NotificationType.ChannelAddPerm: return new ChannelAddPerm();
 			case NotificationType.ChannelChanged: return new ChannelChanged();
+			case NotificationType.ChannelClientAddPerm: return new ChannelClientAddPerm();
+			case NotificationType.ChannelClientDelPerm: return new ChannelClientDelPerm();
+			case NotificationType.ChannelClientPermList: return new ChannelClientPermList();
+			case NotificationType.ChannelClientPermListRequest: return new ChannelClientPermListRequest();
+			case NotificationType.ChannelCreate: return new ChannelCreate();
 			case NotificationType.ChannelCreated: return new ChannelCreated();
+			case NotificationType.ChannelDelete: return new ChannelDelete();
 			case NotificationType.ChannelDeleted: return new ChannelDeleted();
+			case NotificationType.ChannelDelPerm: return new ChannelDelPerm();
+			case NotificationType.ChannelDescriptionChanged: return new ChannelDescriptionChanged();
+			case NotificationType.ChannelDescriptionRequest: return new ChannelDescriptionRequest();
+			case NotificationType.ChannelEdit: return new ChannelEdit();
 			case NotificationType.ChannelEdited: return new ChannelEdited();
+			case NotificationType.ChannelFindRequest: return new ChannelFindRequest();
+			case NotificationType.ChannelGroupAdd: return new ChannelGroupAdd();
+			case NotificationType.ChannelGroupAddPerm: return new ChannelGroupAddPerm();
+			case NotificationType.ChannelGroupClientList: return new ChannelGroupClientList();
+			case NotificationType.ChannelGroupClientListRequest: return new ChannelGroupClientListRequest();
+			case NotificationType.ChannelGroupCopy: return new ChannelGroupCopy();
+			case NotificationType.ChannelGroupDel: return new ChannelGroupDel();
+			case NotificationType.ChannelGroupDelPerm: return new ChannelGroupDelPerm();
 			case NotificationType.ChannelGroupList: return new ChannelGroupList();
+			case NotificationType.ChannelGroupListRequest: return new ChannelGroupListRequest();
+			case NotificationType.ChannelGroupPermList: return new ChannelGroupPermList();
+			case NotificationType.ChannelGroupPermListRequest: return new ChannelGroupPermListRequest();
+			case NotificationType.ChannelGroupRename: return new ChannelGroupRename();
+			case NotificationType.ChannelInfoRequest: return new ChannelInfoRequest();
 			case NotificationType.ChannelList: return new ChannelList();
 			case NotificationType.ChannelListFinished: return new ChannelListFinished();
+			case NotificationType.ChannelListRequest: return new ChannelListRequest();
+			case NotificationType.ChannelMove: return new ChannelMove();
 			case NotificationType.ChannelMoved: return new ChannelMoved();
 			case NotificationType.ChannelPasswordChanged: return new ChannelPasswordChanged();
+			case NotificationType.ChannelPermList: return new ChannelPermList();
+			case NotificationType.ChannelPermListRequest: return new ChannelPermListRequest();
 			case NotificationType.ChannelSubscribed: return new ChannelSubscribed();
 			case NotificationType.ChannelUnsubscribed: return new ChannelUnsubscribed();
+			case NotificationType.ClientAddPerm: return new ClientAddPerm();
 			case NotificationType.ClientChannelGroupChanged: return new ClientChannelGroupChanged();
+			case NotificationType.ClientChatClose: return new ClientChatClose();
+			case NotificationType.ClientChatClosed: return new ClientChatClosed();
 			case NotificationType.ClientChatComposing: return new ClientChatComposing();
+			case NotificationType.ClientConnectionInfo: return new ClientConnectionInfo();
+			case NotificationType.ClientConnectionInfoRequest: return new ClientConnectionInfoRequest();
+			case NotificationType.ClientConnectionInfoUpdateRequest: return new ClientConnectionInfoUpdateRequest();
+			case NotificationType.ClientDbDelete: return new ClientDbDelete();
+			case NotificationType.ClientDbEdit: return new ClientDbEdit();
+			case NotificationType.ClientDbFind: return new ClientDbFind();
+			case NotificationType.ClientDbFindRequest: return new ClientDbFindRequest();
 			case NotificationType.ClientDbIdFromUid: return new ClientDbIdFromUid();
+			case NotificationType.ClientDbIdFromUidRequest: return new ClientDbIdFromUidRequest();
+			case NotificationType.ClientDbInfoRequest: return new ClientDbInfoRequest();
+			case NotificationType.ClientDbList: return new ClientDbList();
+			case NotificationType.ClientDbListRequest: return new ClientDbListRequest();
+			case NotificationType.ClientDelPerm: return new ClientDelPerm();
+			case NotificationType.ClientEdit: return new ClientEdit();
 			case NotificationType.ClientEnterView: return new ClientEnterView();
+			case NotificationType.ClientFindRequest: return new ClientFindRequest();
 			case NotificationType.ClientIds: return new ClientIds();
+			case NotificationType.ClientIdsRequest: return new ClientIdsRequest();
+			case NotificationType.ClientInfoRequest: return new ClientInfoRequest();
 			case NotificationType.ClientInit: return new ClientInit();
 			case NotificationType.ClientInitIv: return new ClientInitIv();
+			case NotificationType.ClientKick: return new ClientKick();
 			case NotificationType.ClientLeftView: return new ClientLeftView();
+			case NotificationType.ClientListRequest: return new ClientListRequest();
+			case NotificationType.ClientMove: return new ClientMove();
 			case NotificationType.ClientMoved: return new ClientMoved();
+			case NotificationType.ClientNameFromDbId: return new ClientNameFromDbId();
+			case NotificationType.ClientNameFromDbIdRequest: return new ClientNameFromDbIdRequest();
+			case NotificationType.ClientNameFromUid: return new ClientNameFromUid();
+			case NotificationType.ClientNameFromUidRequest: return new ClientNameFromUidRequest();
 			case NotificationType.ClientNeededPermissions: return new ClientNeededPermissions();
+			case NotificationType.ClientPermList: return new ClientPermList();
+			case NotificationType.ClientPermListRequest: return new ClientPermListRequest();
 			case NotificationType.ClientPoke: return new ClientPoke();
-			case NotificationType.ClientServerGroup: return new ClientServerGroup();
+			case NotificationType.ClientPokeRequest: return new ClientPokeRequest();
 			case NotificationType.ClientServerGroupAdded: return new ClientServerGroupAdded();
+			case NotificationType.ClientSetServerQueryLogin: return new ClientSetServerQueryLogin();
+			case NotificationType.ClientSetServerQueryLoginRequest: return new ClientSetServerQueryLoginRequest();
+			case NotificationType.ClientUidFromClid: return new ClientUidFromClid();
+			case NotificationType.ClientUidFromClidRequest: return new ClientUidFromClidRequest();
+			case NotificationType.ClientUpdate: return new ClientUpdate();
+			case NotificationType.ClientUpdated: return new ClientUpdated();
+			case NotificationType.ClientVariablesRequest: return new ClientVariablesRequest();
 			case NotificationType.CommandError: return new CommandError();
-			case NotificationType.ConnectionInfo: return new ConnectionInfo();
-			case NotificationType.ConnectionInfoRequest: return new ConnectionInfoRequest();
+			case NotificationType.ComplainAdd: return new ComplainAdd();
+			case NotificationType.ComplainDel: return new ComplainDel();
+			case NotificationType.ComplainDelAll: return new ComplainDelAll();
+			case NotificationType.ComplainList: return new ComplainList();
+			case NotificationType.ComplainListRequest: return new ComplainListRequest();
+			case NotificationType.CustomDelete: return new CustomDelete();
+			case NotificationType.CustomInfoRequest: return new CustomInfoRequest();
+			case NotificationType.CustomSearch: return new CustomSearch();
+			case NotificationType.CustomSet: return new CustomSet();
 			case NotificationType.FileDownload: return new FileDownload();
-			case NotificationType.FileInfoTs: return new FileInfoTs();
+			case NotificationType.FileInfo: return new FileInfo();
 			case NotificationType.FileList: return new FileList();
 			case NotificationType.FileListFinished: return new FileListFinished();
 			case NotificationType.FileTransfer: return new FileTransfer();
 			case NotificationType.FileTransferStatus: return new FileTransferStatus();
 			case NotificationType.FileUpload: return new FileUpload();
-			case NotificationType.GetClientDbIdFromUid: return new GetClientDbIdFromUid();
-			case NotificationType.GetClientIds: return new GetClientIds();
+			case NotificationType.FtCreateDir: return new FtCreateDir();
+			case NotificationType.FtDeleteFile: return new FtDeleteFile();
+			case NotificationType.FtFileInfoRequest: return new FtFileInfoRequest();
+			case NotificationType.FtFileListRequest: return new FtFileListRequest();
+			case NotificationType.FtInitDownload: return new FtInitDownload();
+			case NotificationType.FtInitUpload: return new FtInitUpload();
+			case NotificationType.FtList: return new FtList();
+			case NotificationType.FtRenameFile: return new FtRenameFile();
+			case NotificationType.FtStop: return new FtStop();
+			case NotificationType.GlobalMessage: return new GlobalMessage();
+			case NotificationType.HostInfoRequest: return new HostInfoRequest();
 			case NotificationType.InitIvExpand: return new InitIvExpand();
 			case NotificationType.InitIvExpand2: return new InitIvExpand2();
 			case NotificationType.InitServer: return new InitServer();
+			case NotificationType.InstanceEdit: return new InstanceEdit();
+			case NotificationType.InstanceInfo: return new InstanceInfo();
+			case NotificationType.LogAdd: return new LogAdd();
+			case NotificationType.Login: return new Login();
+			case NotificationType.Logout: return new Logout();
+			case NotificationType.LogView: return new LogView();
+			case NotificationType.OfflineMessage: return new OfflineMessage();
+			case NotificationType.OfflineMessageAdd: return new OfflineMessageAdd();
+			case NotificationType.OfflineMessageDel: return new OfflineMessageDel();
+			case NotificationType.OfflineMessageGet: return new OfflineMessageGet();
+			case NotificationType.OfflineMessageList: return new OfflineMessageList();
+			case NotificationType.OfflineMessageListRequest: return new OfflineMessageListRequest();
+			case NotificationType.OfflineMessageUpdateFlag: return new OfflineMessageUpdateFlag();
+			case NotificationType.PermFind: return new PermFind();
+			case NotificationType.PermFindRequest: return new PermFindRequest();
+			case NotificationType.PermIdByNameRequest: return new PermIdByNameRequest();
+			case NotificationType.PermList: return new PermList();
+			case NotificationType.PermListRequest: return new PermListRequest();
+			case NotificationType.PermOverview: return new PermOverview();
+			case NotificationType.PermOverviewRequest: return new PermOverviewRequest();
+			case NotificationType.PermRequest: return new PermRequest();
+			case NotificationType.PermReset: return new PermReset();
 			case NotificationType.PluginCommand: return new PluginCommand();
 			case NotificationType.PluginCommandRequest: return new PluginCommandRequest();
+			case NotificationType.PrivilegeKeyAddRequest: return new PrivilegeKeyAddRequest();
+			case NotificationType.PrivilegeKeyDelete: return new PrivilegeKeyDelete();
+			case NotificationType.PrivilegeKeyListRequest: return new PrivilegeKeyListRequest();
+			case NotificationType.PrivilegeKeyUse: return new PrivilegeKeyUse();
+			case NotificationType.Quit: return new Quit();
+			case NotificationType.SendTextMessage: return new SendTextMessage();
+			case NotificationType.ServerConnectionInfo: return new ServerConnectionInfo();
+			case NotificationType.ServerConnectionInfoRequest: return new ServerConnectionInfoRequest();
+			case NotificationType.ServerCreate: return new ServerCreate();
+			case NotificationType.ServerDelete: return new ServerDelete();
+			case NotificationType.ServerEdit: return new ServerEdit();
 			case NotificationType.ServerEdited: return new ServerEdited();
+			case NotificationType.ServerGroupAdd: return new ServerGroupAdd();
+			case NotificationType.ServerGroupAddClient: return new ServerGroupAddClient();
+			case NotificationType.ServerGroupAddPerm: return new ServerGroupAddPerm();
+			case NotificationType.ServerGroupAutoAddPerm: return new ServerGroupAutoAddPerm();
+			case NotificationType.ServerGroupAutoDelPerm: return new ServerGroupAutoDelPerm();
+			case NotificationType.ServerGroupClientList: return new ServerGroupClientList();
+			case NotificationType.ServerGroupClientListRequest: return new ServerGroupClientListRequest();
+			case NotificationType.ServerGroupCopy: return new ServerGroupCopy();
+			case NotificationType.ServerGroupDel: return new ServerGroupDel();
+			case NotificationType.ServerGroupDelClient: return new ServerGroupDelClient();
+			case NotificationType.ServerGroupDelPerm: return new ServerGroupDelPerm();
 			case NotificationType.ServerGroupList: return new ServerGroupList();
+			case NotificationType.ServerGroupListRequest: return new ServerGroupListRequest();
+			case NotificationType.ServerGroupPermList: return new ServerGroupPermList();
+			case NotificationType.ServerGroupPermListRequest: return new ServerGroupPermListRequest();
+			case NotificationType.ServerGroupRename: return new ServerGroupRename();
+			case NotificationType.ServerGroupsByClientId: return new ServerGroupsByClientId();
+			case NotificationType.ServerGroupsByClientIdRequest: return new ServerGroupsByClientIdRequest();
+			case NotificationType.ServerIdGetByPort: return new ServerIdGetByPort();
+			case NotificationType.ServerInfo: return new ServerInfo();
+			case NotificationType.ServerList: return new ServerList();
+			case NotificationType.ServerLog: return new ServerLog();
+			case NotificationType.ServerNotifyRegister: return new ServerNotifyRegister();
+			case NotificationType.ServerNotifyUnregister: return new ServerNotifyUnregister();
+			case NotificationType.ServerProcessStop: return new ServerProcessStop();
+			case NotificationType.ServerSnapshotCreate: return new ServerSnapshotCreate();
+			case NotificationType.ServerSnapshotDeploy: return new ServerSnapshotDeploy();
+			case NotificationType.ServerStart: return new ServerStart();
+			case NotificationType.ServerStop: return new ServerStop();
+			case NotificationType.ServerTempPasswordAdd: return new ServerTempPasswordAdd();
+			case NotificationType.ServerTempPasswordDel: return new ServerTempPasswordDel();
+			case NotificationType.ServerTempPasswordList: return new ServerTempPasswordList();
+			case NotificationType.ServerTempPasswordListRequest: return new ServerTempPasswordListRequest();
+			case NotificationType.ServerUpdated: return new ServerUpdated();
+			case NotificationType.ServerVariablesRequest: return new ServerVariablesRequest();
+			case NotificationType.setclientchannelgroup: return new setclientchannelgroup();
 			case NotificationType.TextMessage: return new TextMessage();
+			case NotificationType.TokenAdd: return new TokenAdd();
+			case NotificationType.TokenAddRequest: return new TokenAddRequest();
+			case NotificationType.TokenDelete: return new TokenDelete();
+			case NotificationType.TokenList: return new TokenList();
+			case NotificationType.TokenListRequest: return new TokenListRequest();
+			case NotificationType.TokenUse: return new TokenUse();
 			case NotificationType.TokenUsed: return new TokenUsed();
+			case NotificationType.Use: return new Use();
+			case NotificationType.VersionRequest: return new VersionRequest();
+			case NotificationType.WhoAmIRequest: return new WhoAmIRequest();
 			case NotificationType.Unknown:
 			default: throw Util.UnhandledDefault(name);
 			}
@@ -3293,51 +9812,214 @@ namespace TS3Client.Messages
 		{
 			switch(name)
 			{
+			case NotificationType.BanAdd: { var arr = new BanAdd[len]; for (int i = 0; i < len; i++) arr[i] = new BanAdd(); return arr; }
+			case NotificationType.BanClient: { var arr = new BanClient[len]; for (int i = 0; i < len; i++) arr[i] = new BanClient(); return arr; }
+			case NotificationType.BanDel: { var arr = new BanDel[len]; for (int i = 0; i < len; i++) arr[i] = new BanDel(); return arr; }
+			case NotificationType.BanDelAll: { var arr = new BanDelAll[len]; for (int i = 0; i < len; i++) arr[i] = new BanDelAll(); return arr; }
+			case NotificationType.BanList: { var arr = new BanList[len]; for (int i = 0; i < len; i++) arr[i] = new BanList(); return arr; }
+			case NotificationType.BanListRequest: { var arr = new BanListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new BanListRequest(); return arr; }
+			case NotificationType.BindingList: { var arr = new BindingList[len]; for (int i = 0; i < len; i++) arr[i] = new BindingList(); return arr; }
+			case NotificationType.ChannelAddPerm: { var arr = new ChannelAddPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelAddPerm(); return arr; }
 			case NotificationType.ChannelChanged: { var arr = new ChannelChanged[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelChanged(); return arr; }
+			case NotificationType.ChannelClientAddPerm: { var arr = new ChannelClientAddPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelClientAddPerm(); return arr; }
+			case NotificationType.ChannelClientDelPerm: { var arr = new ChannelClientDelPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelClientDelPerm(); return arr; }
+			case NotificationType.ChannelClientPermList: { var arr = new ChannelClientPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelClientPermList(); return arr; }
+			case NotificationType.ChannelClientPermListRequest: { var arr = new ChannelClientPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelClientPermListRequest(); return arr; }
+			case NotificationType.ChannelCreate: { var arr = new ChannelCreate[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelCreate(); return arr; }
 			case NotificationType.ChannelCreated: { var arr = new ChannelCreated[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelCreated(); return arr; }
+			case NotificationType.ChannelDelete: { var arr = new ChannelDelete[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelDelete(); return arr; }
 			case NotificationType.ChannelDeleted: { var arr = new ChannelDeleted[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelDeleted(); return arr; }
+			case NotificationType.ChannelDelPerm: { var arr = new ChannelDelPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelDelPerm(); return arr; }
+			case NotificationType.ChannelDescriptionChanged: { var arr = new ChannelDescriptionChanged[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelDescriptionChanged(); return arr; }
+			case NotificationType.ChannelDescriptionRequest: { var arr = new ChannelDescriptionRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelDescriptionRequest(); return arr; }
+			case NotificationType.ChannelEdit: { var arr = new ChannelEdit[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelEdit(); return arr; }
 			case NotificationType.ChannelEdited: { var arr = new ChannelEdited[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelEdited(); return arr; }
+			case NotificationType.ChannelFindRequest: { var arr = new ChannelFindRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelFindRequest(); return arr; }
+			case NotificationType.ChannelGroupAdd: { var arr = new ChannelGroupAdd[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupAdd(); return arr; }
+			case NotificationType.ChannelGroupAddPerm: { var arr = new ChannelGroupAddPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupAddPerm(); return arr; }
+			case NotificationType.ChannelGroupClientList: { var arr = new ChannelGroupClientList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupClientList(); return arr; }
+			case NotificationType.ChannelGroupClientListRequest: { var arr = new ChannelGroupClientListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupClientListRequest(); return arr; }
+			case NotificationType.ChannelGroupCopy: { var arr = new ChannelGroupCopy[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupCopy(); return arr; }
+			case NotificationType.ChannelGroupDel: { var arr = new ChannelGroupDel[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupDel(); return arr; }
+			case NotificationType.ChannelGroupDelPerm: { var arr = new ChannelGroupDelPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupDelPerm(); return arr; }
 			case NotificationType.ChannelGroupList: { var arr = new ChannelGroupList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupList(); return arr; }
+			case NotificationType.ChannelGroupListRequest: { var arr = new ChannelGroupListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupListRequest(); return arr; }
+			case NotificationType.ChannelGroupPermList: { var arr = new ChannelGroupPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupPermList(); return arr; }
+			case NotificationType.ChannelGroupPermListRequest: { var arr = new ChannelGroupPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupPermListRequest(); return arr; }
+			case NotificationType.ChannelGroupRename: { var arr = new ChannelGroupRename[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelGroupRename(); return arr; }
+			case NotificationType.ChannelInfoRequest: { var arr = new ChannelInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelInfoRequest(); return arr; }
 			case NotificationType.ChannelList: { var arr = new ChannelList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelList(); return arr; }
 			case NotificationType.ChannelListFinished: { var arr = new ChannelListFinished[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelListFinished(); return arr; }
+			case NotificationType.ChannelListRequest: { var arr = new ChannelListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelListRequest(); return arr; }
+			case NotificationType.ChannelMove: { var arr = new ChannelMove[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelMove(); return arr; }
 			case NotificationType.ChannelMoved: { var arr = new ChannelMoved[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelMoved(); return arr; }
 			case NotificationType.ChannelPasswordChanged: { var arr = new ChannelPasswordChanged[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPasswordChanged(); return arr; }
+			case NotificationType.ChannelPermList: { var arr = new ChannelPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPermList(); return arr; }
+			case NotificationType.ChannelPermListRequest: { var arr = new ChannelPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPermListRequest(); return arr; }
 			case NotificationType.ChannelSubscribed: { var arr = new ChannelSubscribed[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelSubscribed(); return arr; }
 			case NotificationType.ChannelUnsubscribed: { var arr = new ChannelUnsubscribed[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelUnsubscribed(); return arr; }
+			case NotificationType.ClientAddPerm: { var arr = new ClientAddPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ClientAddPerm(); return arr; }
 			case NotificationType.ClientChannelGroupChanged: { var arr = new ClientChannelGroupChanged[len]; for (int i = 0; i < len; i++) arr[i] = new ClientChannelGroupChanged(); return arr; }
+			case NotificationType.ClientChatClose: { var arr = new ClientChatClose[len]; for (int i = 0; i < len; i++) arr[i] = new ClientChatClose(); return arr; }
+			case NotificationType.ClientChatClosed: { var arr = new ClientChatClosed[len]; for (int i = 0; i < len; i++) arr[i] = new ClientChatClosed(); return arr; }
 			case NotificationType.ClientChatComposing: { var arr = new ClientChatComposing[len]; for (int i = 0; i < len; i++) arr[i] = new ClientChatComposing(); return arr; }
+			case NotificationType.ClientConnectionInfo: { var arr = new ClientConnectionInfo[len]; for (int i = 0; i < len; i++) arr[i] = new ClientConnectionInfo(); return arr; }
+			case NotificationType.ClientConnectionInfoRequest: { var arr = new ClientConnectionInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientConnectionInfoRequest(); return arr; }
+			case NotificationType.ClientConnectionInfoUpdateRequest: { var arr = new ClientConnectionInfoUpdateRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientConnectionInfoUpdateRequest(); return arr; }
+			case NotificationType.ClientDbDelete: { var arr = new ClientDbDelete[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbDelete(); return arr; }
+			case NotificationType.ClientDbEdit: { var arr = new ClientDbEdit[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbEdit(); return arr; }
+			case NotificationType.ClientDbFind: { var arr = new ClientDbFind[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbFind(); return arr; }
+			case NotificationType.ClientDbFindRequest: { var arr = new ClientDbFindRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbFindRequest(); return arr; }
 			case NotificationType.ClientDbIdFromUid: { var arr = new ClientDbIdFromUid[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbIdFromUid(); return arr; }
+			case NotificationType.ClientDbIdFromUidRequest: { var arr = new ClientDbIdFromUidRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbIdFromUidRequest(); return arr; }
+			case NotificationType.ClientDbInfoRequest: { var arr = new ClientDbInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbInfoRequest(); return arr; }
+			case NotificationType.ClientDbList: { var arr = new ClientDbList[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbList(); return arr; }
+			case NotificationType.ClientDbListRequest: { var arr = new ClientDbListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDbListRequest(); return arr; }
+			case NotificationType.ClientDelPerm: { var arr = new ClientDelPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ClientDelPerm(); return arr; }
+			case NotificationType.ClientEdit: { var arr = new ClientEdit[len]; for (int i = 0; i < len; i++) arr[i] = new ClientEdit(); return arr; }
 			case NotificationType.ClientEnterView: { var arr = new ClientEnterView[len]; for (int i = 0; i < len; i++) arr[i] = new ClientEnterView(); return arr; }
+			case NotificationType.ClientFindRequest: { var arr = new ClientFindRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientFindRequest(); return arr; }
 			case NotificationType.ClientIds: { var arr = new ClientIds[len]; for (int i = 0; i < len; i++) arr[i] = new ClientIds(); return arr; }
+			case NotificationType.ClientIdsRequest: { var arr = new ClientIdsRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientIdsRequest(); return arr; }
+			case NotificationType.ClientInfoRequest: { var arr = new ClientInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientInfoRequest(); return arr; }
 			case NotificationType.ClientInit: { var arr = new ClientInit[len]; for (int i = 0; i < len; i++) arr[i] = new ClientInit(); return arr; }
 			case NotificationType.ClientInitIv: { var arr = new ClientInitIv[len]; for (int i = 0; i < len; i++) arr[i] = new ClientInitIv(); return arr; }
+			case NotificationType.ClientKick: { var arr = new ClientKick[len]; for (int i = 0; i < len; i++) arr[i] = new ClientKick(); return arr; }
 			case NotificationType.ClientLeftView: { var arr = new ClientLeftView[len]; for (int i = 0; i < len; i++) arr[i] = new ClientLeftView(); return arr; }
+			case NotificationType.ClientListRequest: { var arr = new ClientListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientListRequest(); return arr; }
+			case NotificationType.ClientMove: { var arr = new ClientMove[len]; for (int i = 0; i < len; i++) arr[i] = new ClientMove(); return arr; }
 			case NotificationType.ClientMoved: { var arr = new ClientMoved[len]; for (int i = 0; i < len; i++) arr[i] = new ClientMoved(); return arr; }
+			case NotificationType.ClientNameFromDbId: { var arr = new ClientNameFromDbId[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNameFromDbId(); return arr; }
+			case NotificationType.ClientNameFromDbIdRequest: { var arr = new ClientNameFromDbIdRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNameFromDbIdRequest(); return arr; }
+			case NotificationType.ClientNameFromUid: { var arr = new ClientNameFromUid[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNameFromUid(); return arr; }
+			case NotificationType.ClientNameFromUidRequest: { var arr = new ClientNameFromUidRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNameFromUidRequest(); return arr; }
 			case NotificationType.ClientNeededPermissions: { var arr = new ClientNeededPermissions[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNeededPermissions(); return arr; }
+			case NotificationType.ClientPermList: { var arr = new ClientPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPermList(); return arr; }
+			case NotificationType.ClientPermListRequest: { var arr = new ClientPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPermListRequest(); return arr; }
 			case NotificationType.ClientPoke: { var arr = new ClientPoke[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPoke(); return arr; }
-			case NotificationType.ClientServerGroup: { var arr = new ClientServerGroup[len]; for (int i = 0; i < len; i++) arr[i] = new ClientServerGroup(); return arr; }
+			case NotificationType.ClientPokeRequest: { var arr = new ClientPokeRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPokeRequest(); return arr; }
 			case NotificationType.ClientServerGroupAdded: { var arr = new ClientServerGroupAdded[len]; for (int i = 0; i < len; i++) arr[i] = new ClientServerGroupAdded(); return arr; }
+			case NotificationType.ClientSetServerQueryLogin: { var arr = new ClientSetServerQueryLogin[len]; for (int i = 0; i < len; i++) arr[i] = new ClientSetServerQueryLogin(); return arr; }
+			case NotificationType.ClientSetServerQueryLoginRequest: { var arr = new ClientSetServerQueryLoginRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientSetServerQueryLoginRequest(); return arr; }
+			case NotificationType.ClientUidFromClid: { var arr = new ClientUidFromClid[len]; for (int i = 0; i < len; i++) arr[i] = new ClientUidFromClid(); return arr; }
+			case NotificationType.ClientUidFromClidRequest: { var arr = new ClientUidFromClidRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientUidFromClidRequest(); return arr; }
+			case NotificationType.ClientUpdate: { var arr = new ClientUpdate[len]; for (int i = 0; i < len; i++) arr[i] = new ClientUpdate(); return arr; }
+			case NotificationType.ClientUpdated: { var arr = new ClientUpdated[len]; for (int i = 0; i < len; i++) arr[i] = new ClientUpdated(); return arr; }
+			case NotificationType.ClientVariablesRequest: { var arr = new ClientVariablesRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientVariablesRequest(); return arr; }
 			case NotificationType.CommandError: { var arr = new CommandError[len]; for (int i = 0; i < len; i++) arr[i] = new CommandError(); return arr; }
-			case NotificationType.ConnectionInfo: { var arr = new ConnectionInfo[len]; for (int i = 0; i < len; i++) arr[i] = new ConnectionInfo(); return arr; }
-			case NotificationType.ConnectionInfoRequest: { var arr = new ConnectionInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ConnectionInfoRequest(); return arr; }
+			case NotificationType.ComplainAdd: { var arr = new ComplainAdd[len]; for (int i = 0; i < len; i++) arr[i] = new ComplainAdd(); return arr; }
+			case NotificationType.ComplainDel: { var arr = new ComplainDel[len]; for (int i = 0; i < len; i++) arr[i] = new ComplainDel(); return arr; }
+			case NotificationType.ComplainDelAll: { var arr = new ComplainDelAll[len]; for (int i = 0; i < len; i++) arr[i] = new ComplainDelAll(); return arr; }
+			case NotificationType.ComplainList: { var arr = new ComplainList[len]; for (int i = 0; i < len; i++) arr[i] = new ComplainList(); return arr; }
+			case NotificationType.ComplainListRequest: { var arr = new ComplainListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ComplainListRequest(); return arr; }
+			case NotificationType.CustomDelete: { var arr = new CustomDelete[len]; for (int i = 0; i < len; i++) arr[i] = new CustomDelete(); return arr; }
+			case NotificationType.CustomInfoRequest: { var arr = new CustomInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new CustomInfoRequest(); return arr; }
+			case NotificationType.CustomSearch: { var arr = new CustomSearch[len]; for (int i = 0; i < len; i++) arr[i] = new CustomSearch(); return arr; }
+			case NotificationType.CustomSet: { var arr = new CustomSet[len]; for (int i = 0; i < len; i++) arr[i] = new CustomSet(); return arr; }
 			case NotificationType.FileDownload: { var arr = new FileDownload[len]; for (int i = 0; i < len; i++) arr[i] = new FileDownload(); return arr; }
-			case NotificationType.FileInfoTs: { var arr = new FileInfoTs[len]; for (int i = 0; i < len; i++) arr[i] = new FileInfoTs(); return arr; }
+			case NotificationType.FileInfo: { var arr = new FileInfo[len]; for (int i = 0; i < len; i++) arr[i] = new FileInfo(); return arr; }
 			case NotificationType.FileList: { var arr = new FileList[len]; for (int i = 0; i < len; i++) arr[i] = new FileList(); return arr; }
 			case NotificationType.FileListFinished: { var arr = new FileListFinished[len]; for (int i = 0; i < len; i++) arr[i] = new FileListFinished(); return arr; }
 			case NotificationType.FileTransfer: { var arr = new FileTransfer[len]; for (int i = 0; i < len; i++) arr[i] = new FileTransfer(); return arr; }
 			case NotificationType.FileTransferStatus: { var arr = new FileTransferStatus[len]; for (int i = 0; i < len; i++) arr[i] = new FileTransferStatus(); return arr; }
 			case NotificationType.FileUpload: { var arr = new FileUpload[len]; for (int i = 0; i < len; i++) arr[i] = new FileUpload(); return arr; }
-			case NotificationType.GetClientDbIdFromUid: { var arr = new GetClientDbIdFromUid[len]; for (int i = 0; i < len; i++) arr[i] = new GetClientDbIdFromUid(); return arr; }
-			case NotificationType.GetClientIds: { var arr = new GetClientIds[len]; for (int i = 0; i < len; i++) arr[i] = new GetClientIds(); return arr; }
+			case NotificationType.FtCreateDir: { var arr = new FtCreateDir[len]; for (int i = 0; i < len; i++) arr[i] = new FtCreateDir(); return arr; }
+			case NotificationType.FtDeleteFile: { var arr = new FtDeleteFile[len]; for (int i = 0; i < len; i++) arr[i] = new FtDeleteFile(); return arr; }
+			case NotificationType.FtFileInfoRequest: { var arr = new FtFileInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new FtFileInfoRequest(); return arr; }
+			case NotificationType.FtFileListRequest: { var arr = new FtFileListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new FtFileListRequest(); return arr; }
+			case NotificationType.FtInitDownload: { var arr = new FtInitDownload[len]; for (int i = 0; i < len; i++) arr[i] = new FtInitDownload(); return arr; }
+			case NotificationType.FtInitUpload: { var arr = new FtInitUpload[len]; for (int i = 0; i < len; i++) arr[i] = new FtInitUpload(); return arr; }
+			case NotificationType.FtList: { var arr = new FtList[len]; for (int i = 0; i < len; i++) arr[i] = new FtList(); return arr; }
+			case NotificationType.FtRenameFile: { var arr = new FtRenameFile[len]; for (int i = 0; i < len; i++) arr[i] = new FtRenameFile(); return arr; }
+			case NotificationType.FtStop: { var arr = new FtStop[len]; for (int i = 0; i < len; i++) arr[i] = new FtStop(); return arr; }
+			case NotificationType.GlobalMessage: { var arr = new GlobalMessage[len]; for (int i = 0; i < len; i++) arr[i] = new GlobalMessage(); return arr; }
+			case NotificationType.HostInfoRequest: { var arr = new HostInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new HostInfoRequest(); return arr; }
 			case NotificationType.InitIvExpand: { var arr = new InitIvExpand[len]; for (int i = 0; i < len; i++) arr[i] = new InitIvExpand(); return arr; }
 			case NotificationType.InitIvExpand2: { var arr = new InitIvExpand2[len]; for (int i = 0; i < len; i++) arr[i] = new InitIvExpand2(); return arr; }
 			case NotificationType.InitServer: { var arr = new InitServer[len]; for (int i = 0; i < len; i++) arr[i] = new InitServer(); return arr; }
+			case NotificationType.InstanceEdit: { var arr = new InstanceEdit[len]; for (int i = 0; i < len; i++) arr[i] = new InstanceEdit(); return arr; }
+			case NotificationType.InstanceInfo: { var arr = new InstanceInfo[len]; for (int i = 0; i < len; i++) arr[i] = new InstanceInfo(); return arr; }
+			case NotificationType.LogAdd: { var arr = new LogAdd[len]; for (int i = 0; i < len; i++) arr[i] = new LogAdd(); return arr; }
+			case NotificationType.Login: { var arr = new Login[len]; for (int i = 0; i < len; i++) arr[i] = new Login(); return arr; }
+			case NotificationType.Logout: { var arr = new Logout[len]; for (int i = 0; i < len; i++) arr[i] = new Logout(); return arr; }
+			case NotificationType.LogView: { var arr = new LogView[len]; for (int i = 0; i < len; i++) arr[i] = new LogView(); return arr; }
+			case NotificationType.OfflineMessage: { var arr = new OfflineMessage[len]; for (int i = 0; i < len; i++) arr[i] = new OfflineMessage(); return arr; }
+			case NotificationType.OfflineMessageAdd: { var arr = new OfflineMessageAdd[len]; for (int i = 0; i < len; i++) arr[i] = new OfflineMessageAdd(); return arr; }
+			case NotificationType.OfflineMessageDel: { var arr = new OfflineMessageDel[len]; for (int i = 0; i < len; i++) arr[i] = new OfflineMessageDel(); return arr; }
+			case NotificationType.OfflineMessageGet: { var arr = new OfflineMessageGet[len]; for (int i = 0; i < len; i++) arr[i] = new OfflineMessageGet(); return arr; }
+			case NotificationType.OfflineMessageList: { var arr = new OfflineMessageList[len]; for (int i = 0; i < len; i++) arr[i] = new OfflineMessageList(); return arr; }
+			case NotificationType.OfflineMessageListRequest: { var arr = new OfflineMessageListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new OfflineMessageListRequest(); return arr; }
+			case NotificationType.OfflineMessageUpdateFlag: { var arr = new OfflineMessageUpdateFlag[len]; for (int i = 0; i < len; i++) arr[i] = new OfflineMessageUpdateFlag(); return arr; }
+			case NotificationType.PermFind: { var arr = new PermFind[len]; for (int i = 0; i < len; i++) arr[i] = new PermFind(); return arr; }
+			case NotificationType.PermFindRequest: { var arr = new PermFindRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PermFindRequest(); return arr; }
+			case NotificationType.PermIdByNameRequest: { var arr = new PermIdByNameRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PermIdByNameRequest(); return arr; }
+			case NotificationType.PermList: { var arr = new PermList[len]; for (int i = 0; i < len; i++) arr[i] = new PermList(); return arr; }
+			case NotificationType.PermListRequest: { var arr = new PermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PermListRequest(); return arr; }
+			case NotificationType.PermOverview: { var arr = new PermOverview[len]; for (int i = 0; i < len; i++) arr[i] = new PermOverview(); return arr; }
+			case NotificationType.PermOverviewRequest: { var arr = new PermOverviewRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PermOverviewRequest(); return arr; }
+			case NotificationType.PermRequest: { var arr = new PermRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PermRequest(); return arr; }
+			case NotificationType.PermReset: { var arr = new PermReset[len]; for (int i = 0; i < len; i++) arr[i] = new PermReset(); return arr; }
 			case NotificationType.PluginCommand: { var arr = new PluginCommand[len]; for (int i = 0; i < len; i++) arr[i] = new PluginCommand(); return arr; }
 			case NotificationType.PluginCommandRequest: { var arr = new PluginCommandRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PluginCommandRequest(); return arr; }
+			case NotificationType.PrivilegeKeyAddRequest: { var arr = new PrivilegeKeyAddRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PrivilegeKeyAddRequest(); return arr; }
+			case NotificationType.PrivilegeKeyDelete: { var arr = new PrivilegeKeyDelete[len]; for (int i = 0; i < len; i++) arr[i] = new PrivilegeKeyDelete(); return arr; }
+			case NotificationType.PrivilegeKeyListRequest: { var arr = new PrivilegeKeyListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new PrivilegeKeyListRequest(); return arr; }
+			case NotificationType.PrivilegeKeyUse: { var arr = new PrivilegeKeyUse[len]; for (int i = 0; i < len; i++) arr[i] = new PrivilegeKeyUse(); return arr; }
+			case NotificationType.Quit: { var arr = new Quit[len]; for (int i = 0; i < len; i++) arr[i] = new Quit(); return arr; }
+			case NotificationType.SendTextMessage: { var arr = new SendTextMessage[len]; for (int i = 0; i < len; i++) arr[i] = new SendTextMessage(); return arr; }
+			case NotificationType.ServerConnectionInfo: { var arr = new ServerConnectionInfo[len]; for (int i = 0; i < len; i++) arr[i] = new ServerConnectionInfo(); return arr; }
+			case NotificationType.ServerConnectionInfoRequest: { var arr = new ServerConnectionInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerConnectionInfoRequest(); return arr; }
+			case NotificationType.ServerCreate: { var arr = new ServerCreate[len]; for (int i = 0; i < len; i++) arr[i] = new ServerCreate(); return arr; }
+			case NotificationType.ServerDelete: { var arr = new ServerDelete[len]; for (int i = 0; i < len; i++) arr[i] = new ServerDelete(); return arr; }
+			case NotificationType.ServerEdit: { var arr = new ServerEdit[len]; for (int i = 0; i < len; i++) arr[i] = new ServerEdit(); return arr; }
 			case NotificationType.ServerEdited: { var arr = new ServerEdited[len]; for (int i = 0; i < len; i++) arr[i] = new ServerEdited(); return arr; }
+			case NotificationType.ServerGroupAdd: { var arr = new ServerGroupAdd[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupAdd(); return arr; }
+			case NotificationType.ServerGroupAddClient: { var arr = new ServerGroupAddClient[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupAddClient(); return arr; }
+			case NotificationType.ServerGroupAddPerm: { var arr = new ServerGroupAddPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupAddPerm(); return arr; }
+			case NotificationType.ServerGroupAutoAddPerm: { var arr = new ServerGroupAutoAddPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupAutoAddPerm(); return arr; }
+			case NotificationType.ServerGroupAutoDelPerm: { var arr = new ServerGroupAutoDelPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupAutoDelPerm(); return arr; }
+			case NotificationType.ServerGroupClientList: { var arr = new ServerGroupClientList[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupClientList(); return arr; }
+			case NotificationType.ServerGroupClientListRequest: { var arr = new ServerGroupClientListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupClientListRequest(); return arr; }
+			case NotificationType.ServerGroupCopy: { var arr = new ServerGroupCopy[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupCopy(); return arr; }
+			case NotificationType.ServerGroupDel: { var arr = new ServerGroupDel[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupDel(); return arr; }
+			case NotificationType.ServerGroupDelClient: { var arr = new ServerGroupDelClient[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupDelClient(); return arr; }
+			case NotificationType.ServerGroupDelPerm: { var arr = new ServerGroupDelPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupDelPerm(); return arr; }
 			case NotificationType.ServerGroupList: { var arr = new ServerGroupList[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupList(); return arr; }
+			case NotificationType.ServerGroupListRequest: { var arr = new ServerGroupListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupListRequest(); return arr; }
+			case NotificationType.ServerGroupPermList: { var arr = new ServerGroupPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupPermList(); return arr; }
+			case NotificationType.ServerGroupPermListRequest: { var arr = new ServerGroupPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupPermListRequest(); return arr; }
+			case NotificationType.ServerGroupRename: { var arr = new ServerGroupRename[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupRename(); return arr; }
+			case NotificationType.ServerGroupsByClientId: { var arr = new ServerGroupsByClientId[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupsByClientId(); return arr; }
+			case NotificationType.ServerGroupsByClientIdRequest: { var arr = new ServerGroupsByClientIdRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupsByClientIdRequest(); return arr; }
+			case NotificationType.ServerIdGetByPort: { var arr = new ServerIdGetByPort[len]; for (int i = 0; i < len; i++) arr[i] = new ServerIdGetByPort(); return arr; }
+			case NotificationType.ServerInfo: { var arr = new ServerInfo[len]; for (int i = 0; i < len; i++) arr[i] = new ServerInfo(); return arr; }
+			case NotificationType.ServerList: { var arr = new ServerList[len]; for (int i = 0; i < len; i++) arr[i] = new ServerList(); return arr; }
+			case NotificationType.ServerLog: { var arr = new ServerLog[len]; for (int i = 0; i < len; i++) arr[i] = new ServerLog(); return arr; }
+			case NotificationType.ServerNotifyRegister: { var arr = new ServerNotifyRegister[len]; for (int i = 0; i < len; i++) arr[i] = new ServerNotifyRegister(); return arr; }
+			case NotificationType.ServerNotifyUnregister: { var arr = new ServerNotifyUnregister[len]; for (int i = 0; i < len; i++) arr[i] = new ServerNotifyUnregister(); return arr; }
+			case NotificationType.ServerProcessStop: { var arr = new ServerProcessStop[len]; for (int i = 0; i < len; i++) arr[i] = new ServerProcessStop(); return arr; }
+			case NotificationType.ServerSnapshotCreate: { var arr = new ServerSnapshotCreate[len]; for (int i = 0; i < len; i++) arr[i] = new ServerSnapshotCreate(); return arr; }
+			case NotificationType.ServerSnapshotDeploy: { var arr = new ServerSnapshotDeploy[len]; for (int i = 0; i < len; i++) arr[i] = new ServerSnapshotDeploy(); return arr; }
+			case NotificationType.ServerStart: { var arr = new ServerStart[len]; for (int i = 0; i < len; i++) arr[i] = new ServerStart(); return arr; }
+			case NotificationType.ServerStop: { var arr = new ServerStop[len]; for (int i = 0; i < len; i++) arr[i] = new ServerStop(); return arr; }
+			case NotificationType.ServerTempPasswordAdd: { var arr = new ServerTempPasswordAdd[len]; for (int i = 0; i < len; i++) arr[i] = new ServerTempPasswordAdd(); return arr; }
+			case NotificationType.ServerTempPasswordDel: { var arr = new ServerTempPasswordDel[len]; for (int i = 0; i < len; i++) arr[i] = new ServerTempPasswordDel(); return arr; }
+			case NotificationType.ServerTempPasswordList: { var arr = new ServerTempPasswordList[len]; for (int i = 0; i < len; i++) arr[i] = new ServerTempPasswordList(); return arr; }
+			case NotificationType.ServerTempPasswordListRequest: { var arr = new ServerTempPasswordListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerTempPasswordListRequest(); return arr; }
+			case NotificationType.ServerUpdated: { var arr = new ServerUpdated[len]; for (int i = 0; i < len; i++) arr[i] = new ServerUpdated(); return arr; }
+			case NotificationType.ServerVariablesRequest: { var arr = new ServerVariablesRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerVariablesRequest(); return arr; }
+			case NotificationType.setclientchannelgroup: { var arr = new setclientchannelgroup[len]; for (int i = 0; i < len; i++) arr[i] = new setclientchannelgroup(); return arr; }
 			case NotificationType.TextMessage: { var arr = new TextMessage[len]; for (int i = 0; i < len; i++) arr[i] = new TextMessage(); return arr; }
+			case NotificationType.TokenAdd: { var arr = new TokenAdd[len]; for (int i = 0; i < len; i++) arr[i] = new TokenAdd(); return arr; }
+			case NotificationType.TokenAddRequest: { var arr = new TokenAddRequest[len]; for (int i = 0; i < len; i++) arr[i] = new TokenAddRequest(); return arr; }
+			case NotificationType.TokenDelete: { var arr = new TokenDelete[len]; for (int i = 0; i < len; i++) arr[i] = new TokenDelete(); return arr; }
+			case NotificationType.TokenList: { var arr = new TokenList[len]; for (int i = 0; i < len; i++) arr[i] = new TokenList(); return arr; }
+			case NotificationType.TokenListRequest: { var arr = new TokenListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new TokenListRequest(); return arr; }
+			case NotificationType.TokenUse: { var arr = new TokenUse[len]; for (int i = 0; i < len; i++) arr[i] = new TokenUse(); return arr; }
 			case NotificationType.TokenUsed: { var arr = new TokenUsed[len]; for (int i = 0; i < len; i++) arr[i] = new TokenUsed(); return arr; }
+			case NotificationType.Use: { var arr = new Use[len]; for (int i = 0; i < len; i++) arr[i] = new Use(); return arr; }
+			case NotificationType.VersionRequest: { var arr = new VersionRequest[len]; for (int i = 0; i < len; i++) arr[i] = new VersionRequest(); return arr; }
+			case NotificationType.WhoAmIRequest: { var arr = new WhoAmIRequest[len]; for (int i = 0; i < len; i++) arr[i] = new WhoAmIRequest(); return arr; }
 			case NotificationType.Unknown:
 			default: throw Util.UnhandledDefault(name);
 			}

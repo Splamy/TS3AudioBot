@@ -297,7 +297,7 @@ namespace TS3Client
 		public abstract R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null);
 
 		/// <summary>Displays all server groups the client specified with <paramref name="clDbId"/> is currently residing in.</summary>
-		public abstract R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);
+		public abstract R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);
 
 		public abstract R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume);
@@ -309,7 +309,7 @@ namespace TS3Client
 
 		public abstract R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "");
 
-		public abstract R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
+		public abstract R<FileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
 
 		public abstract R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid);
 

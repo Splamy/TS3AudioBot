@@ -24,7 +24,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='net46'">
+  <PropertyGroup>
     <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
@@ -33,7 +33,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="GitVersionTask" Version="4.0.0-beta0012">
+    <PackageReference Include="GitVersionTask" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
