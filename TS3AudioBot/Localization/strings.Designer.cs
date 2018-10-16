@@ -1252,6 +1252,33 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Reloads the bot template configuration from the file..
+        /// </summary>
+        internal static string cmd_settings_bot_reload_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_bot_reload_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Creates a new bot template..
+        /// </summary>
+        internal static string cmd_settings_create_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_create_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Deletes a bot template..
+        /// </summary>
+        internal static string cmd_settings_delete_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_delete_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Please specify a key. E.g {0}.
         /// </summary>
         internal static string cmd_settings_empty_usage {
@@ -1302,6 +1329,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_settings_help_help {
             get {
                 return ResourceManager.GetString("cmd_settings_help_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reloads the core configuration from the file..
+        /// </summary>
+        internal static string cmd_settings_reload_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_reload_help", resourceCulture);
             }
         }
         
@@ -1603,7 +1639,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This bot does not exists..
+        ///   Looks up a localized string similar to This bot does not exist..
         /// </summary>
         internal static string error_bot_does_not_exist {
             get {

@@ -577,7 +577,7 @@ with the id {1}?</value>
     <value>Clients</value>
   </data>
   <data name="error_bot_does_not_exist" xml:space="preserve">
-    <value>This bot does not exists.</value>
+    <value>This bot does not exist.</value>
   </data>
   <data name="error_call_error" xml:space="preserve">
     <value>Error: {0}</value>
@@ -917,5 +917,17 @@ with the id {1}?</value>
   </data>
   <data name="cmd_bot_description_set_help" xml:space="preserve">
     <value>Sets the description of the bot.</value>
+  </data>
+  <data name="cmd_settings_bot_reload_help" xml:space="preserve">
+    <value>Reloads the bot template configuration from the file.</value>
+  </data>
+  <data name="cmd_settings_create_help" xml:space="preserve">
+    <value>Creates a new bot template.</value>
+  </data>
+  <data name="cmd_settings_delete_help" xml:space="preserve">
+    <value>Deletes a bot template.</value>
+  </data>
+  <data name="cmd_settings_reload_help" xml:space="preserve">
+    <value>Reloads the core configuration from the file.</value>
   </data>
 </root>

@@ -22,7 +22,7 @@ namespace TS3AudioBot.Config
 		private static readonly Regex BotFileMatcher = new Regex(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
 
 		private string fileName;
-		private readonly Dictionary<string, ConfBot> botConfCaches = new Dictionary<string, ConfBot>();
+		private readonly Dictionary<string, ConfBot> botConfCache = new Dictionary<string, ConfBot>();
 
 		public static R<ConfRoot> Open(string file)
 		{
@@ -137,11 +137,14 @@ namespace TS3AudioBot.Config
 			var file = NameToPath(name);
 			if (!file.Ok)
 				return new Exception(file.Error.Str);
+			if (botConfCache.TryGetValue(name, out var botConf))
+				return botConf;
 			var botConfResult = Load<ConfBot>(file.Value);
 			if (!botConfResult.Ok)
 				return botConfResult.Error;
-			var botConf = InitializeBotConfig(botConfResult.Value);
+			botConf = InitializeBotConfig(botConfResult.Value);
 			botConf.Name = name;
+			botConfCache[name] = botConf;
 			return botConf;
 		}
 
@@ -150,6 +153,55 @@ namespace TS3AudioBot.Config
 			Bot.Derive(config);
 			config.Parent = this;
 			return config;
+		}
+
+		public void ClearBotConfigCache()
+		{
+			botConfCache.Clear();
+		}
+
+		public void ClearBotConfigCache(string name)
+		{
+			botConfCache.Remove(name);
+		}
+
+		public E<LocalStr> CreateBotConfig(string name)
+		{
+			var file = NameToPath(name);
+			if (!file.Ok)
+				return file.Error;
+			if (File.Exists(file.Value))
+				return new LocalStr("The file already exists."); // LOC: TODO
+			try
+			{
+				using (File.Open(file.Value, FileMode.CreateNew))
+					return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Config file could not be created");
+				return new LocalStr("Could not create config."); // LOC: TODO
+			}
+		}
+
+		public E<LocalStr> DeleteBotConfig(string name)
+		{
+			var file = NameToPath(name);
+			if (!file.Ok)
+				return file.Error;
+			botConfCache.Remove(name);
+			if (!File.Exists(file.Value))
+				return R.Ok;
+			try
+			{
+				File.Delete(file.Value);
+				return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Config file could not be deleted");
+				return new LocalStr("Could not delete config."); // LOC: TODO
+			}
 		}
 	}
 
@@ -178,6 +230,8 @@ namespace TS3AudioBot.Config
 			var file = GetParent().NameToPath(Name);
 			if (!file.Ok)
 				return file.Error;
+			if (!File.Exists(file.Value))
+				return R.Ok;
 			return SaveInternal(file.Value);
 		}
 

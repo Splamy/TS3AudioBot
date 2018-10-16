@@ -1084,6 +1084,12 @@ namespace TS3AudioBot
 		public static void CommandSettings()
 			=> throw new CommandException(string.Format(strings.cmd_settings_empty_usage, "'rights.path', 'web.api.enabled', 'tools.*'"), CommandExceptionReason.MissingParameter);
 
+		[Command("settings create")]
+		public static void CommandSettingsCreate(ConfRoot config, string name) => config.CreateBotConfig(name).UnwrapThrow();
+
+		[Command("settings delete")]
+		public static void CommandSettingsDelete(ConfRoot config, string name) => config.DeleteBotConfig(name).UnwrapThrow();
+
 		[Command("settings get")]
 		public static ConfigPart CommandSettingsGet(ConfBot config, string path)
 			=> SettingsGet(config, path);
@@ -1119,6 +1125,15 @@ namespace TS3AudioBot
 			}
 		}
 
+		[Command("settings bot reload")]
+		public static void CommandSettingsReload(ConfRoot config, string name = null)
+		{
+			if (string.IsNullOrEmpty(name))
+				config.ClearBotConfigCache();
+			else
+				config.ClearBotConfigCache(name);
+		}
+
 		[Command("settings global get")]
 		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path)
 			=> SettingsGet(config, path);
@@ -1132,6 +1147,13 @@ namespace TS3AudioBot
 				throw new CommandException("Value was set but could not be saved to file. All changes are temporary and will be lost when the bot restarts.",
 					CommandExceptionReason.CommandError);
 			}
+		}
+
+		//[Command("settings global reload")]
+		public static void CommandSettingsGlobalReload(ConfRoot config)
+		{
+			// TODO
+			throw new NotImplementedException();
 		}
 
 		private static ConfBot GetConf(Bot bot, ConfRoot config, string name)
