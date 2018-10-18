@@ -418,7 +418,7 @@ namespace TS3AudioBot.Helper
 			case TomlObjectType.Int: writer.WriteValue(((TomlInt)obj).Value); break;
 			case TomlObjectType.Float: writer.WriteValue(((TomlFloat)obj).Value); break;
 			case TomlObjectType.String: writer.WriteValue(((TomlString)obj).Value); break;
-			case TomlObjectType.DateTime: writer.WriteValue(((TomlDateTime)obj).Value); break;
+			case TomlObjectType.DateTime: writer.WriteValue(((TomlLocalDateTime)obj).Value); break;
 			case TomlObjectType.TimeSpan: writer.WriteValue(((TomlDuration)obj).Value); break;
 			case TomlObjectType.Array:
 			case TomlObjectType.ArrayOfTables:

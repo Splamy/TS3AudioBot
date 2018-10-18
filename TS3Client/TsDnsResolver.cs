@@ -14,6 +14,7 @@ namespace TS3Client
 	using System;
 	using System.Collections.Generic;
 	using System.Net;
+	using System.Net.Http;
 	using System.Net.Sockets;
 	using System.Text;
 	using System.Text.RegularExpressions;
@@ -29,7 +30,7 @@ namespace TS3Client
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 		private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
-		private static readonly WebClient WebClient = new WebClient();
+		private static readonly HttpClient WebClient = new HttpClient();
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
@@ -239,7 +240,7 @@ namespace TS3Client
 		private static string ResolveNickname(string nickname)
 		{
 			string result;
-			try { result = WebClient.DownloadString(NicknameLookup + Uri.EscapeDataString(nickname)); }
+			try { result = WebClient.GetStringAsync(NicknameLookup + Uri.EscapeDataString(nickname)).Result; }
 			catch (WebException ex)
 			{
 				Log.Debug(ex, "Failed to resolve nickname \"{0}\"", nickname);

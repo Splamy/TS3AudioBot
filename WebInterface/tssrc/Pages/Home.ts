@@ -1,16 +1,19 @@
 class Home implements IPage {
 	//private dummyOffset: number = 0;
 	private ticker: Timer = new Timer(async () => await this.refresh(), 1000);
+	private static readonly graphLen = 60;
 
 	private static readonly cpuGraphOptions: GraphOptions = {
 		color: "red",
-		max: Graph.simpleUpFloor,
+		max: Graph.plusNPerc,
 		offset: 0,
+		scale: Graph.cpuTrim,
 	};
 	private static readonly memGraphOptions: GraphOptions = {
 		color: "blue",
-		max: Graph.simpleUpFloor,
+		max: Graph.plusNPerc,
 		offset: 0,
+		scale: Graph.memTrim,
 	};
 
 	async init() {
@@ -34,17 +37,11 @@ class Home implements IPage {
 			return;
 		}
 
-		res.cpu = Home.padArray(res.cpu, 60, 0);
-		var content = "";
-		content += Graph.buildPath(res.cpu, Home.cpuGraphOptions);
-		//content += Graph.buildGrid(res.cpu.length, 5, ++this.dummyOffset);
-		Util.getElementByIdSafe("data_cpugraph").innerHTML = content;
+		res.cpu = Home.padArray(res.cpu, Home.graphLen, 0);
+		Graph.buildPath(res.cpu, Util.getElementByIdSafe("data_cpugraph"), Home.cpuGraphOptions);
 
-		res.memory = Home.padArray(res.memory, 60, 0);
-		content = "";
-		content += Graph.buildPath(res.memory, Home.memGraphOptions);
-		//content += Graph.buildGrid(res.memory.length, 5, this.dummyOffset);
-		Util.getElementByIdSafe("data_memgraph").innerHTML = content;
+		res.memory = Home.padArray(res.memory, Home.graphLen, 0);
+		Graph.buildPath(res.memory, Util.getElementByIdSafe("data_memgraph"), Home.memGraphOptions);
 
 		const timeDiff = Util.formatSecondsToTime((Date.now() - <any>new Date(res.starttime)) / 1000);
 		Util.getElementByIdSafe("data_uptime").innerText = timeDiff;
