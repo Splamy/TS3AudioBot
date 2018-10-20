@@ -31,7 +31,6 @@ class Graph {
         </svg>
         `;
     }
-    // ${Graph.buildNames(max, "%")}
 
     public static buildGrid(count: number, each: number, offset: number) {
         let path: string = "";

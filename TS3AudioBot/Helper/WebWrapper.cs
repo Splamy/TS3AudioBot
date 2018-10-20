@@ -19,8 +19,6 @@ namespace TS3AudioBot.Helper
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
 
-		public static readonly WebClient WebClientInstance = new CustomWebClient() { Timeout = DefaultTimeout };
-
 		public static E<LocalStr> DownloadString(out string site, Uri link, params (string name, string value)[] optionalHeaders)
 		{
 			var request = WebRequest.Create(link);
@@ -103,30 +101,18 @@ namespace TS3AudioBot.Helper
 		{
 			if (webEx.Status == WebExceptionStatus.Timeout)
 			{
-				Log.Warn("Request timed out");
+				Log.Warn(webEx, "Request timed out");
 				return new LocalStr(strings.error_net_timeout);
 			}
 			else if (webEx.Response is HttpWebResponse errorResponse)
 			{
-				Log.Warn("Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
+				Log.Warn(webEx, "Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
 				return new LocalStr($"{strings.error_net_error_status_code} [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
 			}
 			else
 			{
-				Log.Warn("Unknown request error: {0}", webEx);
+				Log.Warn(webEx, "Unknown request error");
 				return new LocalStr(strings.error_net_unknown);
-			}
-		}
-
-		private class CustomWebClient : WebClient
-		{
-			public TimeSpan Timeout { get; set; }
-
-			protected override WebRequest GetWebRequest(Uri address)
-			{
-				WebRequest w = base.GetWebRequest(address);
-				w.Timeout = (int)Timeout.TotalMilliseconds;
-				return w;
 			}
 		}
 	}

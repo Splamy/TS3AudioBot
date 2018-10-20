@@ -37,6 +37,10 @@ class Home implements IPage {
 			return;
 		}
 
+		if (!this.ticker.isRunning) {
+			this.ticker.start();
+		}
+
 		res.cpu = Home.padArray(res.cpu, Home.graphLen, 0);
 		Graph.buildPath(res.cpu, Util.getElementByIdSafe("data_cpugraph"), Home.cpuGraphOptions);
 
