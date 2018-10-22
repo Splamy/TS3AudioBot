@@ -29,6 +29,10 @@ namespace TS3AudioBot.Helper.Environment
 		{
 			CurrentProcess.Refresh();
 
+			//TODO: foreach (ProcessThread thread in CurrentProcess.Threads)
+			{
+			}
+
 			var currentSnapshotTime = Util.GetNow();
 			var currentCpuTime = CurrentProcess.TotalProcessorTime;
 

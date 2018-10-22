@@ -191,22 +191,22 @@ namespace TS3Client
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId permissionId, int permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId permission, int permissionValue,
 				bool permissionNegated, bool permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandParameter("permsid", permissionId.ToString()),
+			new CommandParameter("permsid", permission.ToString()),
 			new CommandParameter("permvalue", permissionValue),
 			new CommandParameter("permnegated", permissionNegated),
 			new CommandParameter("permskip", permissionSkip));
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId[] permissionId, int[] permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId[] permission, int[] permissionValue,
 				bool[] permissionNegated, bool[] permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandMultiParameter("permsid", permissionId.Select(x => x.ToString())),
+			new CommandMultiParameter("permsid", permission.Select(x => x.ToString())),
 			new CommandMultiParameter("permvalue", permissionValue),
 			new CommandMultiParameter("permnegated", permissionNegated),
 			new CommandMultiParameter("permskip", permissionSkip));
@@ -314,6 +314,8 @@ namespace TS3Client
 		public abstract R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid);
 
 		public abstract R<ClientIds[], CommandError> GetClientIds(Uid clientUid);
+
+		public abstract R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params PermissionId[] permission);
 		#endregion
 	}
 }

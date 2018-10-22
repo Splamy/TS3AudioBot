@@ -21,9 +21,10 @@ namespace TS3Client.Query
 	using System.Net.Sockets;
 	using System.Threading.Tasks;
 	using ChannelIdT = System.UInt64;
+	using ClientDbIdT = System.UInt64;
 	using CmdR = System.E<Messages.CommandError>;
-	using Uid = System.String;
 	using TSFileInfo = Messages.FileInfo;
+	using Uid = System.String;
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
@@ -298,6 +299,12 @@ namespace TS3Client.Query
 		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
 			=> Send<ClientIds>("clientgetids",
 			new CommandParameter("cluid", clientUid));
+
+		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params PermissionId[] permission)
+			=> Send<PermOverview>("permoverview",
+			new CommandParameter("cldbid", clientDbId),
+			new CommandParameter("cid", channelId),
+			new CommandMultiParameter("permsid", permission.Select(x => x.ToString())));
 
 		#endregion
 

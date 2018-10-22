@@ -672,6 +672,13 @@ namespace TS3Client.Full
 				new CommandParameter("cluid", clientUid) }),
 				NotificationType.ClientIds).UnwrapNotification<ClientIds>();
 
+		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params PermissionId[] permission)
+			=> SendNotifyCommand(new Ts3Command("permoverview", new List<ICommandPart>() {
+				new CommandParameter("cldbid", clientDbId),
+				new CommandParameter("cid", channelId),
+				new CommandMultiParameter("permsid", permission.Select(x => x.ToString())) }),
+				NotificationType.PermOverview).UnwrapNotification<PermOverview>();
+
 		#endregion
 
 		private enum Ts3ClientStatus
