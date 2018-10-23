@@ -85,7 +85,7 @@ namespace TS3AudioBot.Rights
 			case "perm":
 				var perm = tomlObj.TryGetValueArray<string>();
 				if (perm is null) ctx.Errors.Add("<perm> Field has invalid data.");
-				else Matcher.Add(new MatchPermission(perm));
+				else Matcher.Add(new MatchPermission(perm, ctx));
 				return true;
 			case "apitoken":
 				var apitoken = tomlObj.TryGetValueArray<string>();

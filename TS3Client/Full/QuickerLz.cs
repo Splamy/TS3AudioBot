@@ -176,7 +176,7 @@ namespace TS3Client.Full
 				int sourcePos = headerlen;
 				int destPos = 0;
 				int nextHashed = 0;
-				
+
 				if (hashtable is null) hashtable = new int[TableSize];
 				Array.Clear(hashtable, 0, TableSize);
 
@@ -260,7 +260,6 @@ namespace TS3Client.Full
 				throw new NotSupportedException();
 			}
 		}
-
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Write24(byte[] outArr, int outOff, int value)

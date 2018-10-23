@@ -14,7 +14,7 @@ const string ConversionSet =
 	using i64 = System.Int64;
 	using u64 = System.UInt64;
 	using f32 = System.Single;
-	using d64 = System.Double;
+	using f64 = System.Double;
 	using str = System.String;
 
 	using Duration = System.TimeSpan;

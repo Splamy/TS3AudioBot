@@ -15,7 +15,6 @@ namespace TS3AudioBot.ResourceFactories
 	using Playlists;
 	using System;
 	using System.Collections.Generic;
-	using System.Globalization;
 	using System.IO;
 	using System.Linq;
 	using System.Text;
@@ -171,11 +170,13 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static VideoCodec GetCodec(string type)
 		{
-			string lowtype = type.ToLower(CultureInfo.InvariantCulture);
+			string lowtype = type.ToLowerInvariant();
 			bool audioOnly = false;
 			string codecSubStr;
 			if (lowtype.StartsWith("video/", StringComparison.Ordinal))
+			{
 				codecSubStr = lowtype.Substring("video/".Length);
+			}
 			else if (lowtype.StartsWith("audio/", StringComparison.Ordinal))
 			{
 				codecSubStr = lowtype.Substring("audio/".Length);

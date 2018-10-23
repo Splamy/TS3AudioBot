@@ -298,7 +298,7 @@ namespace TS3AudioBot.Web.Api
 				for (var match = DigestMatch.Match(authParts[1]); match.Success; match = match.NextMatch())
 				{
 					var value = match.Groups[2].Value;
-					switch (match.Groups[1].Value.ToUpper())
+					switch (match.Groups[1].Value.ToUpperInvariant())
 					{
 					case "USERNAME": name = value; break;
 					case "REALM": realm = value; break;

@@ -399,39 +399,39 @@ namespace TS3AudioBot
 			// Add various rights to the bot group
 			var permresult = TsFullClient.ServerGroupAddPerm(config.BotGroupId.Value,
 				new[] {
-					PermissionId.i_client_whisper_power, // + Required for whisper channel playing
-					PermissionId.i_client_private_textmessage_power, // + Communication
-					PermissionId.b_client_server_textmessage_send, // + Communication
-					PermissionId.b_client_channel_textmessage_send, // + Communication
+					Ts3Permission.i_client_whisper_power, // + Required for whisper channel playing
+					Ts3Permission.i_client_private_textmessage_power, // + Communication
+					Ts3Permission.b_client_server_textmessage_send, // + Communication
+					Ts3Permission.b_client_channel_textmessage_send, // + Communication
 
-					PermissionId.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
-					PermissionId.b_client_modify_description, // + Used to change the description of our bot
-					PermissionId.b_client_info_view, // (+) only used as fallback usually
-					PermissionId.b_virtualserver_client_list, // ? Dont know but seems also required for the next one
+					Ts3Permission.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
+					Ts3Permission.b_client_modify_description, // + Used to change the description of our bot
+					Ts3Permission.b_client_info_view, // (+) only used as fallback usually
+					Ts3Permission.b_virtualserver_client_list, // ? Dont know but seems also required for the next one
 
-					PermissionId.i_channel_subscribe_power, // + Required to find user to communicate
-					PermissionId.b_virtualserver_client_dbinfo, // + Required to get basic user information for history, api, etc...
-					PermissionId.i_client_talk_power, // + Required for normal channel playing
-					PermissionId.b_client_modify_own_description, // ? not sure if this makes b_client_modify_description superfluous
+					Ts3Permission.i_channel_subscribe_power, // + Required to find user to communicate
+					Ts3Permission.b_virtualserver_client_dbinfo, // + Required to get basic user information for history, api, etc...
+					Ts3Permission.i_client_talk_power, // + Required for normal channel playing
+					Ts3Permission.b_client_modify_own_description, // ? not sure if this makes b_client_modify_description superfluous
 
-					PermissionId.b_group_is_permanent, // + Group should stay even if bot disconnects
-					PermissionId.i_client_kick_from_channel_power, // + Optional for kicking
-					PermissionId.i_client_kick_from_server_power, // + Optional for kicking
-					PermissionId.i_client_max_clones_uid, // + In case that bot times out and tries to join again
+					Ts3Permission.b_group_is_permanent, // + Group should stay even if bot disconnects
+					Ts3Permission.i_client_kick_from_channel_power, // + Optional for kicking
+					Ts3Permission.i_client_kick_from_server_power, // + Optional for kicking
+					Ts3Permission.i_client_max_clones_uid, // + In case that bot times out and tries to join again
 
-					PermissionId.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
-					PermissionId.b_channel_join_ignore_password, // + The noble bot will not abuse this power
-					PermissionId.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
-					PermissionId.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
+					Ts3Permission.b_channel_join_ignore_password, // + The noble bot will not abuse this power
+					Ts3Permission.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
 
-					PermissionId.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
-					PermissionId.b_channel_join_ignore_maxclients, // + Allow joining full channels
-					PermissionId.i_channel_join_power, // + Allow joining to all channel even on strict servers
-					PermissionId.b_client_permissionoverview_view, // + Scanning through given perms for rights system
+					Ts3Permission.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_channel_join_ignore_maxclients, // + Allow joining full channels
+					Ts3Permission.i_channel_join_power, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_client_permissionoverview_view, // + Scanning through given perms for rights system
 
-					PermissionId.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
-					PermissionId.b_client_use_channel_commander, // + Enable channel commander
-					PermissionId.b_client_ignore_bans, // + The bot should be resistent to bans
+					Ts3Permission.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
+					Ts3Permission.b_client_use_channel_commander, // + Enable channel commander
+					Ts3Permission.b_client_ignore_bans, // + The bot should be resistent to bans
 				},
 				new[] {
 					max, max,   1,   1,

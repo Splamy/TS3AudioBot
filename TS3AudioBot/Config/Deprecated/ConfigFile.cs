@@ -216,7 +216,7 @@ namespace TS3AudioBot.Config.Deprecated
 				if (!open)
 					changed = true;
 
-				string lowerKey = key.ToLower();
+				string lowerKey = key.ToLowerInvariant();
 
 				if (data.TryGetValue(lowerKey, out int line))
 				{
@@ -233,7 +233,7 @@ namespace TS3AudioBot.Config.Deprecated
 
 			protected override bool ReadKey(string key, out string value)
 			{
-				if (data.TryGetValue(key.ToLower(), out int line))
+				if (data.TryGetValue(key.ToLowerInvariant(), out int line))
 				{
 					value = fileLines[line].Value;
 					return true;
@@ -338,8 +338,8 @@ namespace TS3AudioBot.Config.Deprecated
 			}
 
 			protected override void WriteComment(string text) { }
-			protected override bool ReadKey(string key, out string value) => data.TryGetValue(key.ToLower(), out value);
-			protected override void WriteKey(string key, string value) => data[key.ToLower()] = value;
+			protected override bool ReadKey(string key, out string value) => data.TryGetValue(key.ToLowerInvariant(), out value);
+			protected override void WriteKey(string key, string value) => data[key.ToLowerInvariant()] = value;
 			public override void Close() { }
 
 			public override IEnumerable<KeyValuePair<string, string>> GetConfigMap() => data;

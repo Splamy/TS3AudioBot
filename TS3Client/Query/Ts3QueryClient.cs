@@ -41,6 +41,7 @@ namespace TS3Client.Query
 		public override bool Connected => tcpClient.Connected;
 		private bool connecting;
 		public override bool Connecting => connecting && !Connected;
+		protected override Deserializer Deserializer => msgProc.Deserializer;
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessage;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
@@ -110,7 +111,7 @@ namespace TS3Client.Query
 				try
 				{
 					var mem = writer.GetMemory(minimumBufferSize);
-					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length);
+					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length).ConfigureAwait(false);
 					if (bytesRead == 0)
 					{
 						break;
@@ -123,7 +124,7 @@ namespace TS3Client.Query
 				}
 				catch (IOException) { break; }
 
-				FlushResult result = await writer.FlushAsync();
+				FlushResult result = await writer.FlushAsync().ConfigureAwait(false);
 
 				if (result.IsCompleted)
 				{
@@ -138,7 +139,7 @@ namespace TS3Client.Query
 			var dataWriteBuffer = new byte[4096];
 			while (true)
 			{
-				var result = await reader.ReadAsync();
+				var result = await reader.ReadAsync().ConfigureAwait(false);
 
 				ReadOnlySequence<byte> buffer = result.Buffer;
 				SequencePosition? position = null;
@@ -197,7 +198,7 @@ namespace TS3Client.Query
 
 		public override R<T[], CommandError> SendCommand<T>(Ts3Command com) // Synchronous
 		{
-			using (var wb = new WaitBlock(false))
+			using (var wb = new WaitBlock(msgProc.Deserializer, false))
 			{
 				lock (sendQueueLock)
 				{
@@ -300,11 +301,14 @@ namespace TS3Client.Query
 			=> Send<ClientIds>("clientgetids",
 			new CommandParameter("cluid", clientUid));
 
-		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params PermissionId[] permission)
+		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission)
 			=> Send<PermOverview>("permoverview",
 			new CommandParameter("cldbid", clientDbId),
 			new CommandParameter("cid", channelId),
-			new CommandMultiParameter("permsid", permission.Select(x => x.ToString())));
+			Ts3PermissionHelper.GetAsMultiParameter(msgProc.Deserializer.PermissionTransform, permission));
+
+		public override R<PermList[], CommandError> PermissionList()
+			=> Send<PermList>("permissionlist");
 
 		#endregion
 

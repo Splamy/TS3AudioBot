@@ -62,7 +62,7 @@ namespace TS3AudioBot.Helper.Environment
 						if (!match.Success)
 							continue;
 
-						values[match.Groups[1].Value.ToUpper()] = TextUtil.StripQuotes(match.Groups[2].Value);
+						values[match.Groups[1].Value.ToUpperInvariant()] = TextUtil.StripQuotes(match.Groups[2].Value);
 					}
 
 					if (values.Count > 0)

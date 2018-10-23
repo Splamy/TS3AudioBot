@@ -27,7 +27,7 @@ namespace TS3AudioBot.Rights
 		public RightsRule RootRule { get; }
 		public bool NeedsAvailableGroups { get; set; } = false;
 		public bool NeedsAvailableChanGroups { get; set; } = false;
-		public PermissionId[] NeedsPermOverview { get; set; } = Array.Empty<PermissionId>();
+		public Ts3Permission[] NeedsPermOverview { get; set; } = Array.Empty<Ts3Permission>();
 
 		public ParseContext(ISet<string> registeredRights)
 		{

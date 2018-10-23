@@ -156,7 +156,11 @@ namespace TS3Client.Full
 				catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
 			}
 
-			resendThread.Start();
+			try
+			{
+				resendThread.Start();
+			}
+			catch (SystemException ex) { throw new Ts3Exception("Error initializing internal stuctures", ex); }
 		}
 
 		public void Stop(Reason closeReason = Reason.LeftServer)

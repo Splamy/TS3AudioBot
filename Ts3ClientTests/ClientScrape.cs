@@ -1,26 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using TS3Client;
-using TS3Client.Helper;
-using TS3Client.Full;
-using TS3Client.Messages;
-using TS3Client.Audio;
 using System.Net;
-using System.Diagnostics;
 using System.Threading;
+using TS3Client;
 using TS3Client.Commands;
-using TSFileInfo = TS3Client.Messages.FileInfo;
+using TS3Client.Full;
+using TS3Client.Helper;
+using TS3Client.Messages;
 using IOFileInfo = System.IO.FileInfo;
 
-// ReSharper disable All
 namespace Ts3ClientTests
 {
-	static class Program
+	public static class ClientScrape
 	{
 		#region versions
-		static string[] vers = new string[] {
+		private static readonly string[] vers = new string[] {
 			"1326378143",
 			"1326794905",
 			"1326886516",
@@ -77,7 +74,7 @@ namespace Ts3ClientTests
 			"1382530211",
 		};
 
-		static string[] vers_new = new string[] {
+		private static readonly string[] vers_new = new string[] {
 			"1375083581",
 			"1375773286",
 			"1378199876",
@@ -150,14 +147,8 @@ namespace Ts3ClientTests
 		};
 		#endregion
 
-		static ConnectionDataFull con;
-
-		public static string ToHex(this IEnumerable<byte> seq) => string.Join(" ", seq.Select(x => x.ToString("X2")));
-		public static byte[] FromHex(this string hex) => hex.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
-
-		static void Main2()
+		public static void Main()
 		{
-			/*
 			foreach (var ver in vers.Skip(0))
 			{
 				Ts3Server serv = null;
@@ -217,7 +208,7 @@ namespace Ts3ClientTests
 					serv?.Dispose();
 				}
 			}
-			*/
+
 			//var crypt = new Ts3Crypt();
 			//crypt.Test();
 			//return;
@@ -232,81 +223,13 @@ namespace Ts3ClientTests
 				client.OnErrorEvent += Client_OnErrorEvent;
 				client.OnEachTextMessage += Client_OnTextMessageReceived;
 				var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0);
-				con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data.Unwrap(), ServerPassword = "123", VersionSign = VersionSign.VER_WIN_3_1_8 };
+				var con = new ConnectionDataFull() { Address = "127.0.0.1", Username = "TestClient", Identity = data.Unwrap(), ServerPassword = "123", VersionSign = VersionSign.VER_WIN_3_1_8 };
 				client.Connect(con);
 				clients.Add(client);
 			}
 
 			Console.WriteLine("End");
 			Console.ReadLine();
-		}
-
-		static void Main3(string[] args)
-		{
-			// Initialize client
-			var client = new Ts3FullClient(EventDispatchType.AutoThreadPooled);
-			var data = Ts3Crypt.LoadIdentity("MCkDAgbAAgEgAiBPKKMIrHtAH/FBKchbm4iRWZybdRTk/ZiehtH0gQRg+A==", 64, 0).Unwrap();
-			//var data = Ts3Crypt.GenerateNewIdentity();
-			con = new ConnectionDataFull() { Address = "pow.splamy.de", Username = "TestClient", Identity = data };
-
-			// Setup audio
-			client
-				// Save cpu by not processing the rest of the pipe when the
-				// output is not read.
-				.Chain<CheckActivePipe>()
-				// This reads the packet meta data, checks for packet order
-				// and manages packet merging.
-				.Chain<AudioPacketReader>()
-				// Teamspeak sends audio encoded. This pipe will decode it to
-				// simple PCM.
-				.Chain<DecoderPipe>()
-				// This will merge multiple clients talking into one audio stream
-				.Chain<ClientMixdown>()
-				// Reads from the ClientMixdown buffer with a fixed timing
-				.Into<PreciseTimedPipe>(x => x.Initialize(new SampleInfo(48_000, 2, 16)))
-				// Reencode to the codec of our choice
-				.Chain(new EncoderPipe(Codec.OpusMusic))
-				// Define where to send to.
-				.Chain<StaticMetaPipe>(x => x.SetVoice())
-				// Send it with our client.
-				.Chain(client);
-
-			// Connect
-			client.Connect(con);
-		}
-
-		static void Main(string[] args)
-		{
-			var query = new TS3Client.Query.Ts3QueryClient(EventDispatchType.DoubleThread);
-			var con = new ConnectionData() { Address = "127.0.0.1" };
-			query.Connect(con);
-			var use = query.UseServer(1);
-			Console.WriteLine("Use: {0}", use.Ok);
-			var who = query.WhoAmI();
-			Console.WriteLine("Who: {0}", who.Ok ? (object)who.Value : who.Error.ErrorFormat());
-
-			while (true)
-			{
-				var line = Console.ReadLine();
-				if (string.IsNullOrEmpty(line))
-					break;
-				var dict = query.SendCommand<ResponseDictionary>(new Ts3RawCommand(line));
-				if (dict.Ok)
-				{
-					foreach (var item in dict.Value)
-					{
-						foreach (var val in item)
-						{
-							Console.Write("{0}={1}", val.Key, val.Value);
-						}
-						Console.WriteLine();
-					}
-				}
-				else
-				{
-					Console.WriteLine(dict.Error.ErrorFormat());
-				}
-			}
 		}
 
 		private static void Client_OnDisconnected(object sender, DisconnectEventArgs e)

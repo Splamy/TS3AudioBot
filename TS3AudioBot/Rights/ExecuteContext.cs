@@ -12,6 +12,7 @@ namespace TS3AudioBot.Rights
 	using System;
 	using System.Collections.Generic;
 	using TS3Client;
+	using TS3Client.Messages;
 
 	internal class ExecuteContext
 	{
@@ -23,6 +24,7 @@ namespace TS3AudioBot.Rights
 		public string ApiToken { get; set; }
 		public string Bot { get; set; }
 		public TextMessageTargetMode? Visibiliy { get; set; }
+		public PermOverview[] Permissions { get; set; }
 
 		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
 

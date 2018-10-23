@@ -52,6 +52,7 @@ namespace TS3Client
 		private FileTransferManager ftm;
 		/// <summary>An instance to a <see cref="FileTransferManager"/> dedicated for this client.</summary>
 		public FileTransferManager FileTransferManager => ftm ?? (ftm = new FileTransferManager(this));
+		protected abstract Deserializer Deserializer { get; }
 
 		public abstract void Connect(ConnectionData conData);
 		public abstract void Disconnect();
@@ -191,22 +192,22 @@ namespace TS3Client
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId permission, int permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, Ts3Permission permission, int permissionValue,
 				bool permissionNegated, bool permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandParameter("permsid", permission.ToString()),
+			Ts3PermissionHelper.GetAsParameter(Deserializer.PermissionTransform, permission),
 			new CommandParameter("permvalue", permissionValue),
 			new CommandParameter("permnegated", permissionNegated),
 			new CommandParameter("permskip", permissionSkip));
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId[] permission, int[] permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, Ts3Permission[] permission, int[] permissionValue,
 				bool[] permissionNegated, bool[] permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandMultiParameter("permsid", permission.Select(x => x.ToString())),
+			Ts3PermissionHelper.GetAsMultiParameter(Deserializer.PermissionTransform, permission),
 			new CommandMultiParameter("permvalue", permissionValue),
 			new CommandMultiParameter("permnegated", permissionNegated),
 			new CommandMultiParameter("permskip", permissionSkip));
@@ -315,7 +316,9 @@ namespace TS3Client
 
 		public abstract R<ClientIds[], CommandError> GetClientIds(Uid clientUid);
 
-		public abstract R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params PermissionId[] permission);
+		public abstract R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission);
+
+		public abstract R<PermList[], CommandError> PermissionList();
 		#endregion
 	}
 }

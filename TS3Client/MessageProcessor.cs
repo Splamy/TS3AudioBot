@@ -20,6 +20,7 @@ namespace TS3Client
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		protected readonly List<WaitBlock>[] dependingBlocks;
 		private readonly Func<string, NotificationType> findTypeOfNotification;
+		public Deserializer Deserializer { get; } = new Deserializer();
 
 		protected ReadOnlyMemory<byte> cmdLineBuffer;
 		protected readonly object waitBlockLock = new object();

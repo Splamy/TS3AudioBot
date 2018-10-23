@@ -37,7 +37,7 @@ namespace TS3Client.Full
 
 		private int returnCode;
 		private ConnectionContext context;
-
+		
 		private readonly IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
 		/// <summary>The client id given to this connection by the server.</summary>
@@ -49,6 +49,7 @@ namespace TS3Client.Full
 		private Ts3ClientStatus status;
 		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
 		public override bool Connecting { get { lock (statusLock) return status == Ts3ClientStatus.Connecting; } }
+		protected override Deserializer Deserializer => msgProc.Deserializer;
 		private ConnectionDataFull connectionDataFull;
 		public Book.Connection Book { get; set; } //= new Book.Connection();
 
@@ -303,11 +304,28 @@ namespace TS3Client.Full
 		partial void ProcessEachChannelListFinished(ChannelListFinished _)
 		{
 			ChannelSubscribeAll();
+			PermissionList();
 		}
 
 		partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
 		{
 			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+		}
+
+		partial void ProcessPermList(PermList[] permList)
+		{
+			var buildPermissions = new List<Ts3Permission>(permList.Length + 1) { Ts3Permission.undefined };
+			foreach (var perm in permList)
+			{
+				if (!string.IsNullOrEmpty(perm.PermissionName))
+				{
+					if (Enum.TryParse<Ts3Permission>(perm.PermissionName, out var ts3perm))
+						buildPermissions.Add(ts3perm);
+					else
+						buildPermissions.Add(Ts3Permission.undefined);
+				}
+			}
+			msgProc.Deserializer.PermissionTransform = new TablePermissionTransform(buildPermissions.ToArray());
 		}
 
 		// ***
@@ -333,7 +351,8 @@ namespace TS3Client.Full
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
 		public override R<T[], CommandError> SendCommand<T>(Ts3Command com)
 		{
-			using (var wb = new WaitBlock(false))
+			// TODO: try using deserializer/msgproc as a factory
+			using (var wb = new WaitBlock(msgProc.Deserializer, false))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -352,7 +371,7 @@ namespace TS3Client.Full
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
 
-			using (var wb = new WaitBlock(false, dependsOn))
+			using (var wb = new WaitBlock(msgProc.Deserializer, false, dependsOn))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -386,7 +405,7 @@ namespace TS3Client.Full
 
 		public async Task<R<T[], CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
 		{
-			using (var wb = new WaitBlock(true))
+			using (var wb = new WaitBlock(msgProc.Deserializer, true))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -672,12 +691,16 @@ namespace TS3Client.Full
 				new CommandParameter("cluid", clientUid) }),
 				NotificationType.ClientIds).UnwrapNotification<ClientIds>();
 
-		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params PermissionId[] permission)
+		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission)
 			=> SendNotifyCommand(new Ts3Command("permoverview", new List<ICommandPart>() {
 				new CommandParameter("cldbid", clientDbId),
 				new CommandParameter("cid", channelId),
-				new CommandMultiParameter("permsid", permission.Select(x => x.ToString())) }),
+				Ts3PermissionHelper.GetAsMultiParameter(msgProc.Deserializer.PermissionTransform, permission) }),
 				NotificationType.PermOverview).UnwrapNotification<PermOverview>();
+
+		public override R<PermList[], CommandError> PermissionList()
+			=> SendNotifyCommand(new Ts3Command("permissionlist"),
+				NotificationType.PermList).UnwrapNotification<PermList>();
 
 		#endregion
 

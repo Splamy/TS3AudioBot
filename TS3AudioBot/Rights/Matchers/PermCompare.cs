@@ -11,8 +11,11 @@ namespace TS3AudioBot.Rights
 {
 	internal enum PermCompare
 	{
-		Greater,
 		Equal,
+		NotEqual,
+		Greater,
+		GreaterOrEqual,
 		Less,
+		LessOrEqual,
 	}
 }

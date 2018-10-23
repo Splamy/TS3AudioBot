@@ -13,16 +13,17 @@ namespace TS3Client.Messages
 	using System;
 	using System.Collections.Generic;
 
-	public static class Deserializer
+	public class Deserializer
 	{
-		public static event EventHandler<Error> OnError;
+		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		public IPermissionTransform PermissionTransform { get; set; } = DummyPermissionTransform.Instance;
 
 		private const byte AsciiSpace = (byte)' ';
 		private const byte AsciiPipe = (byte)'|';
 		private const byte AsciiEquals = (byte)'=';
 
 		// data to notification
-		internal static R<INotification[]> GenerateNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
+		public R<INotification[]> GenerateNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
 		{
 			if (ntfyType == NotificationType.Unknown)
 				throw new ArgumentException("The NotificationType must not be unknown", nameof(ntfyType));
@@ -30,6 +31,17 @@ namespace TS3Client.Messages
 			var pipes = PipeList(line);
 			var arr = MessageHelper.InstatiateNotificationArray(ntfyType, (pipes?.Count ?? 0) + 1);
 			return Dersialize(arr, line, pipes);
+		}
+
+		public R<INotification> GenerateSingleNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
+		{
+			if (line.IsEmpty)
+				throw new ArgumentNullException(nameof(line));
+
+			var result = GenerateNotification(line, ntfyType);
+			if (!result.Ok || result.Value.Length == 0)
+				return R.Err;
+			return R<INotification>.OkR(result.Value[0]);
 		}
 
 		private static List<int> PipeList(ReadOnlySpan<byte> line)
@@ -41,7 +53,7 @@ namespace TS3Client.Messages
 			return pipes;
 		}
 
-		private static R<T[]> Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int> pipes) where T : IMessage
+		private R<T[]> Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int> pipes) where T : IMessage
 		{
 			if (pipes is null || pipes.Count == 0)
 			{
@@ -53,13 +65,12 @@ namespace TS3Client.Messages
 			var arrItems = new HashSet<string>();
 			var single = new List<string>();
 
-			// index using the last one
 			if (!ParseKeyValueLine(arr[arr.Length - 1], line.Slice(pipes[pipes.Count - 1] + 1).Trim(AsciiSpace), arrItems, null))
 				return R.Err;
 
 			for (int i = 0; i < pipes.Count - 1; i++)
 			{
-				if (!ParseKeyValueLine(arr[i + 1], line.Slice(pipes[i] + 1, pipes[i + 1] - pipes[i] - 1), null, null))
+				if (!ParseKeyValueLine(arr[i + 1], line.Slice(pipes[i] + 1, pipes[i + 1] - pipes[i] - 1), arrItems, null))
 					return R.Err;
 			}
 
@@ -74,22 +85,8 @@ namespace TS3Client.Messages
 			return arr;
 		}
 
-		internal static R<INotification> GenerateSingleNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
-		{
-			if (ntfyType == NotificationType.Unknown)
-				throw new ArgumentException("The NotificationType must not be unknown", nameof(ntfyType));
-
-			if (line.IsEmpty)
-				throw new ArgumentNullException(nameof(line));
-
-			var result = GenerateNotification(line, ntfyType);
-			if (!result.Ok || result.Value.Length == 0)
-				return R.Err;
-			return R<INotification>.OkR(result.Value[0]);
-		}
-
 		// data to response
-		internal static R<T[]> GenerateResponse<T>(ReadOnlySpan<byte> line) where T : IResponse, new()
+		public R<T[]> GenerateResponse<T>(ReadOnlySpan<byte> line) where T : IResponse, new()
 		{
 			if (line.IsEmpty)
 				return Array.Empty<T>();
@@ -101,7 +98,7 @@ namespace TS3Client.Messages
 			return Dersialize(arr, line, pipes);
 		}
 
-		private static bool ParseKeyValueLine(IMessage qm, ReadOnlySpan<byte> line, HashSet<string> indexing, List<string> single)
+		private bool ParseKeyValueLine(IMessage qm, ReadOnlySpan<byte> line, HashSet<string> indexing, List<string> single)
 		{
 			if (line.IsEmpty)
 				return true;
@@ -122,7 +119,7 @@ namespace TS3Client.Messages
 					if (!key.IsEmpty)
 					{
 						var keyStr = key.NewUtf8String();
-						qm.SetField(keyStr, value);
+						qm.SetField(keyStr, value, this);
 						if (indexing != null)
 						{
 							if (single is null)
@@ -147,21 +144,11 @@ namespace TS3Client.Messages
 				} while (line.Length > 0);
 				return true;
 			}
-			catch (Exception ex) { OnError?.Invoke(null, new Error(qm.GetType().Name, line.NewUtf8String(), key.NewUtf8String(), value.NewUtf8String(), ex)); }
-			return false;
-		}
-
-		public class Error : EventArgs
-		{
-			public string Class { get; }
-			public string Message { get; }
-			public string Field { get; }
-			public string Value { get; }
-			public Exception Exception { get; }
-
-			public Error(string classname, string message, string field, string value, Exception ex = null) { Class = classname; Message = message; Field = field; Value = value; Exception = ex; }
-
-			public override string ToString() => $"Deserealization format error. Data: class:{Class} field:{Field} value:{Value} msg:{Message}";
+			catch (Exception ex)
+			{
+				Log.Error(ex, "Deserialization format error. Data: class:{0} field:{1} value:{2} msg:{3}", qm.GetType().Name, key.NewUtf8String(), value.NewUtf8String(), line.NewUtf8String());
+				return false;
+			}
 		}
 	}
 }

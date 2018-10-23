@@ -94,7 +94,7 @@ namespace TS3Client.Full
 
 		public R<T[], CommandError> SendCommand<T>(Ts3Command com) where T : IResponse, new()
 		{
-			using (var wb = new WaitBlock(false))
+			using (var wb = new WaitBlock(msgProc.Deserializer, false))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)

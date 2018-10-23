@@ -40,7 +40,7 @@ namespace TS3Client.Messages
 	using i64 = System.Int64;
 	using u64 = System.UInt64;
 	using f32 = System.Single;
-	using d64 = System.Double;
+	using f64 = System.Double;
 	using str = System.String;
 
 	using Duration = System.TimeSpan;
@@ -69,7 +69,7 @@ namespace TS3Client.Messages
 		public DurationSeconds Time { get; set; }
 		public str BanReason { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -77,7 +77,7 @@ namespace TS3Client.Messages
 			case "ip": Ip = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "uid": Uid = Ts3String.Unescape(value); break;
-			case "time": { if(Utf8Parser.TryParse(value, out double oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
+			case "time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
 			case "banreason": BanReason = Ts3String.Unescape(value); break;
 			
 			}
@@ -112,13 +112,13 @@ namespace TS3Client.Messages
 		public DurationSeconds Time { get; set; }
 		public str BanReason { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "time": { if(Utf8Parser.TryParse(value, out double oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
+			case "time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
 			case "banreason": BanReason = Ts3String.Unescape(value); break;
 			
 			}
@@ -149,7 +149,7 @@ namespace TS3Client.Messages
 
 		public u32 BanId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -181,7 +181,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -208,7 +208,7 @@ namespace TS3Client.Messages
 		public str Reason { get; set; }
 		public str Enforcements { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -218,8 +218,8 @@ namespace TS3Client.Messages
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "uid": Uid = Ts3String.Unescape(value); break;
 			case "lastnickname": LastNickname = Ts3String.Unescape(value); break;
-			case "created": { if(Utf8Parser.TryParse(value, out double oval, out _)) Created = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "duration": { if(Utf8Parser.TryParse(value, out double oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
+			case "created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Created = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "duration": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
 			case "invokercldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) InvokerDatabaseId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
@@ -262,7 +262,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -278,7 +278,7 @@ namespace TS3Client.Messages
 
 		public str Subsystem { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -310,17 +310,17 @@ namespace TS3Client.Messages
 		
 
 		public ChannelId ChannelId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			
@@ -353,7 +353,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -386,18 +386,18 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			
@@ -431,17 +431,17 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			
 			}
@@ -473,20 +473,20 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
@@ -525,7 +525,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -560,7 +560,7 @@ namespace TS3Client.Messages
 
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -617,7 +617,7 @@ namespace TS3Client.Messages
 		public str PhoneticName { get; set; }
 		public ChannelId ChannelParentId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -636,12 +636,12 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
-			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out double oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
@@ -716,14 +716,14 @@ namespace TS3Client.Messages
 		public i32 MaxClients { get; set; }
 		public i32 MaxFamilyClients { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Id = oval; } break;
 			case "pid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentChannelId = oval; } break;
-			case "seconds_empty": { if(Utf8Parser.TryParse(value, out double oval, out _)) DurationEmpty = TimeSpan.FromSeconds(oval); } break;
+			case "seconds_empty": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DurationEmpty = TimeSpan.FromSeconds(oval); } break;
 			case "total_clients_family": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalFamilyClients = oval; } break;
 			case "total_clients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalClients = oval; } break;
 			case "channel_needed_subscribe_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededSubscribePower = oval; } break;
@@ -737,7 +737,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -786,7 +786,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public bool Force { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -824,7 +824,7 @@ namespace TS3Client.Messages
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -862,7 +862,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -878,7 +878,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -911,7 +911,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -965,7 +965,7 @@ namespace TS3Client.Messages
 		public str PhoneticName { get; set; }
 		public ChannelId ChannelParentId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -981,12 +981,12 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
-			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out double oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
@@ -1065,7 +1065,7 @@ namespace TS3Client.Messages
 		public str PhoneticName { get; set; }
 		public ChannelId ChannelParentId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1085,12 +1085,12 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
-			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out double oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
@@ -1149,7 +1149,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1184,7 +1184,7 @@ namespace TS3Client.Messages
 
 		public str Pattern { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1218,7 +1218,7 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1252,17 +1252,17 @@ namespace TS3Client.Messages
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			
@@ -1297,7 +1297,7 @@ namespace TS3Client.Messages
 		public ClientDbId ClientDbId { get; set; }
 		public ChannelGroupId ChannelGroup { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1336,7 +1336,7 @@ namespace TS3Client.Messages
 		public ClientDbId ClientDbId { get; set; }
 		public ChannelGroupId ChannelGroup { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1376,7 +1376,7 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1416,7 +1416,7 @@ namespace TS3Client.Messages
 		public ChannelGroupId ChannelGroup { get; set; }
 		public bool Force { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1450,16 +1450,16 @@ namespace TS3Client.Messages
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			
 			}
@@ -1499,7 +1499,7 @@ namespace TS3Client.Messages
 		public i32 NeededMemberAddPower { get; set; }
 		public i32 NeededMemberRemovePower { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1507,7 +1507,7 @@ namespace TS3Client.Messages
 			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
-			case "iconid": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "iconid": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = oval; } break;
 			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
@@ -1549,7 +1549,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -1564,19 +1564,19 @@ namespace TS3Client.Messages
 		public string ReturnCode { get; set; }
 
 		public ChannelGroupId ChannelGroup { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
@@ -1613,7 +1613,7 @@ namespace TS3Client.Messages
 
 		public ChannelGroupId ChannelGroup { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1647,7 +1647,7 @@ namespace TS3Client.Messages
 		public ChannelGroupId ChannelGroup { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1682,7 +1682,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1738,7 +1738,7 @@ namespace TS3Client.Messages
 		public IconHash IconId { get; set; }
 		public bool IsPrivate { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1758,14 +1758,14 @@ namespace TS3Client.Messages
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
-			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out double oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
 			case "channel_forced_silence": ForcedSilence = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "channel_flag_private": IsPrivate = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -1816,7 +1816,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -1831,7 +1831,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -1849,7 +1849,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelParentId { get; set; }
 		public i32 Order { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1892,7 +1892,7 @@ namespace TS3Client.Messages
 		public Reason Reason { get; set; }
 		public ChannelId ChannelParentId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1937,7 +1937,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -1969,18 +1969,18 @@ namespace TS3Client.Messages
 		public string ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
@@ -2015,7 +2015,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2041,6 +2041,54 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ChannelSubscribe : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribe;
+		
+
+		public ChannelId ChannelId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelSubscribe[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelSubscribeAll : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribeAll;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
 	public sealed class ChannelSubscribed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribed;
@@ -2049,13 +2097,13 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public DurationSeconds EmptySince { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "es": { if(Utf8Parser.TryParse(value, out double oval, out _)) EmptySince = TimeSpan.FromSeconds(oval); } break;
+			case "es": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) EmptySince = TimeSpan.FromSeconds(oval); } break;
 			
 			}
 
@@ -2077,6 +2125,54 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ChannelUnsubscribe : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribe;
+		
+
+		public ChannelId ChannelId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelUnsubscribe[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ChannelUnsubscribeAll : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribeAll;
+		
+
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+		}
+	}
+
 	public sealed class ChannelUnsubscribed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribed;
@@ -2084,7 +2180,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2116,18 +2212,18 @@ namespace TS3Client.Messages
 		
 
 		public ClientDbId ClientDbId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
@@ -2167,7 +2263,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public ClientId ClientId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2211,7 +2307,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2247,7 +2343,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2283,7 +2379,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2358,15 +2454,15 @@ namespace TS3Client.Messages
 		public u64 FiletransferBandwidthReceived { get; set; }
 		public DurationMilliseconds IdleTime { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "connection_ping": { if(Utf8Parser.TryParse(value, out double oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_ping_deviation": { if(Utf8Parser.TryParse(value, out double oval, out _)) PingDeviation = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_ping": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_ping_deviation": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) PingDeviation = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
 			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
 			case "connection_client_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
 			case "connection_packets_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentSpeech = oval; } break;
@@ -2403,7 +2499,7 @@ namespace TS3Client.Messages
 			case "connection_bandwidth_received_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteControl = oval; } break;
 			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = oval; } break;
 			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = oval; } break;
-			case "connection_idle_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) IdleTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_idle_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) IdleTime = TimeSpan.FromMilliseconds(oval); } break;
 			
 			}
 
@@ -2471,7 +2567,7 @@ namespace TS3Client.Messages
 
 		public ClientId ClientId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2503,7 +2599,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -2524,7 +2620,7 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public ClientType ClientType { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2584,7 +2680,7 @@ namespace TS3Client.Messages
 		public i64 TotalDownloadQuota { get; set; }
 		public str Base64HashClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2598,9 +2694,9 @@ namespace TS3Client.Messages
 			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
 			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
@@ -2651,7 +2747,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2684,7 +2780,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2721,7 +2817,7 @@ namespace TS3Client.Messages
 		public DateTime LastConnected { get; set; }
 		public i32 TotalConnections { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2729,7 +2825,7 @@ namespace TS3Client.Messages
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -2762,7 +2858,7 @@ namespace TS3Client.Messages
 
 		public str Pattern { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2796,7 +2892,7 @@ namespace TS3Client.Messages
 		public Uid ClientUid { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2831,7 +2927,7 @@ namespace TS3Client.Messages
 
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2864,7 +2960,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2904,7 +3000,7 @@ namespace TS3Client.Messages
 		public str Description { get; set; }
 		public str LastIp { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2912,8 +3008,8 @@ namespace TS3Client.Messages
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
 			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
@@ -2952,7 +3048,7 @@ namespace TS3Client.Messages
 		public u32 Offset { get; set; }
 		public u32 Limit { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -2986,16 +3082,16 @@ namespace TS3Client.Messages
 		
 
 		public ClientDbId ClientDbId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			
 			}
@@ -3026,7 +3122,7 @@ namespace TS3Client.Messages
 
 		public ClientId ClientId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3095,7 +3191,7 @@ namespace TS3Client.Messages
 		public str CountryCode { get; set; }
 		public str Badges { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3113,7 +3209,7 @@ namespace TS3Client.Messages
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "client_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_outputonly_muted": OutputOnlyMuted = value.Length > 0 && value[0] != '0'; break;
@@ -3127,7 +3223,7 @@ namespace TS3Client.Messages
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
 			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
-			case "client_talk_request": { if(Utf8Parser.TryParse(value, out double oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
@@ -3200,7 +3296,7 @@ namespace TS3Client.Messages
 
 		public str Pattern { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3235,7 +3331,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3272,7 +3368,7 @@ namespace TS3Client.Messages
 
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3365,12 +3461,12 @@ namespace TS3Client.Messages
 		public str MyTeamSpeakId { get; set; }
 		public str Integrations { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
-			case "client_idle_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ClientIdleTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "client_idle_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ClientIdleTime = TimeSpan.FromMilliseconds(oval); } break;
 			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
 			case "client_version_sign": ClientVersionSign = Ts3String.Unescape(value); break;
 			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
@@ -3388,7 +3484,7 @@ namespace TS3Client.Messages
 			case "connection_bandwidth_received_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondTotal = oval; } break;
 			case "connection_bandwidth_sent_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteTotal = oval; } break;
 			case "connection_bandwidth_received_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteTotal = oval; } break;
-			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
 			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
@@ -3408,7 +3504,7 @@ namespace TS3Client.Messages
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
 			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
-			case "client_talk_request": { if(Utf8Parser.TryParse(value, out double oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
@@ -3418,8 +3514,8 @@ namespace TS3Client.Messages
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
 			case "client_country": CountryCode = Ts3String.Unescape(value); break;
 			case "client_badges": Badges = Ts3String.Unescape(value); break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
 			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
@@ -3428,7 +3524,7 @@ namespace TS3Client.Messages
 			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "client_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "client_myteamspeak_id": MyTeamSpeakId = Ts3String.Unescape(value); break;
 			case "client_integrations": Integrations = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -3518,7 +3614,7 @@ namespace TS3Client.Messages
 
 		public ClientId ClientId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3564,7 +3660,7 @@ namespace TS3Client.Messages
 		public str DefaultToken { get; set; }
 		public str HardwareId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3625,7 +3721,7 @@ namespace TS3Client.Messages
 		public str Omega { get; set; }
 		public str Ip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3664,7 +3760,7 @@ namespace TS3Client.Messages
 		public Reason Reason { get; set; }
 		public str ReasonMessage { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3709,13 +3805,13 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public ChannelId SourceChannelId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
-			case "bantime": { if(Utf8Parser.TryParse(value, out double oval, out _)) BanTime = TimeSpan.FromSeconds(oval); } break;
+			case "bantime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) BanTime = TimeSpan.FromSeconds(oval); } break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
 			case "ctid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
 			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
@@ -3757,7 +3853,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -3775,7 +3871,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3818,7 +3914,7 @@ namespace TS3Client.Messages
 		public Uid InvokerUid { get; set; }
 		public str ReasonMessage { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3865,7 +3961,7 @@ namespace TS3Client.Messages
 		public ClientDbId ClientDbId { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3902,7 +3998,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3937,7 +4033,7 @@ namespace TS3Client.Messages
 		public ClientDbId ClientDbId { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -3974,7 +4070,7 @@ namespace TS3Client.Messages
 
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4005,15 +4101,15 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientNeededPermissions;
 		
 
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public i32 PermissionValue { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			
 			}
@@ -4042,19 +4138,19 @@ namespace TS3Client.Messages
 		public string ReturnCode { get; set; }
 
 		public ClientDbId ClientDbId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
@@ -4091,7 +4187,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4127,7 +4223,7 @@ namespace TS3Client.Messages
 		public Uid InvokerUid { get; set; }
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4167,7 +4263,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4208,7 +4304,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4253,7 +4349,7 @@ namespace TS3Client.Messages
 
 		public str LoginPassword { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4288,7 +4384,7 @@ namespace TS3Client.Messages
 		public str LoginPassword { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4327,7 +4423,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public str Nickname { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4364,7 +4460,7 @@ namespace TS3Client.Messages
 
 		public ClientId ClientId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4396,7 +4492,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -4423,7 +4519,7 @@ namespace TS3Client.Messages
 		public i64 TotalUploadQuota { get; set; }
 		public i64 TotalDownloadQuota { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4433,8 +4529,8 @@ namespace TS3Client.Messages
 			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
 			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
 			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out double oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
 			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
@@ -4478,7 +4574,7 @@ namespace TS3Client.Messages
 
 		public ClientId ClientId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4511,18 +4607,18 @@ namespace TS3Client.Messages
 
 		public Ts3ErrorCode Id { get; set; }
 		public str Message { get; set; }
-		public PermissionId MissingPermissionId { get; set; }
+		public Ts3Permission MissingPermissionId { get; set; }
 		public str ReturnCode { get; set; }
 		public str ExtraMessage { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "id": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id = (Ts3ErrorCode)oval; } break;
 			case "msg": Message = Ts3String.Unescape(value); break;
-			case "failed_permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MissingPermissionId = (PermissionId)oval; } break;
+			case "failed_permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MissingPermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			case "extra_msg": ExtraMessage = Ts3String.Unescape(value); break;
 			
@@ -4557,7 +4653,7 @@ namespace TS3Client.Messages
 		public ClientDbId TargetClientDbId { get; set; }
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4593,7 +4689,7 @@ namespace TS3Client.Messages
 		public ClientDbId TargetClientDbId { get; set; }
 		public ClientDbId FromClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4628,7 +4724,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId TargetClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4666,7 +4762,7 @@ namespace TS3Client.Messages
 		public str Message { get; set; }
 		public DateTime Timestamp { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4676,7 +4772,7 @@ namespace TS3Client.Messages
 			case "fcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) FromClientDbId = oval; } break;
 			case "fname": FromName = Ts3String.Unescape(value); break;
 			case "message": Message = Ts3String.Unescape(value); break;
-			case "timestamp": { if(Utf8Parser.TryParse(value, out double oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -4709,7 +4805,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId TargetClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4743,7 +4839,7 @@ namespace TS3Client.Messages
 		public ClientDbId ClientDbId { get; set; }
 		public str ExternalIdentity { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4778,7 +4874,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4812,7 +4908,7 @@ namespace TS3Client.Messages
 		public str ExternalIdentity { get; set; }
 		public str Pattern { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4849,7 +4945,7 @@ namespace TS3Client.Messages
 		public str ExternalIdentity { get; set; }
 		public str Value { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4891,7 +4987,7 @@ namespace TS3Client.Messages
 		public i64 Size { get; set; }
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4938,7 +5034,7 @@ namespace TS3Client.Messages
 		public i64 Size { get; set; }
 		public DateTime DateTime { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4947,7 +5043,7 @@ namespace TS3Client.Messages
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
-			case "datetime": { if(Utf8Parser.TryParse(value, out double oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "datetime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -4984,7 +5080,7 @@ namespace TS3Client.Messages
 		public DateTime DateTime { get; set; }
 		public bool IsFile { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -4993,7 +5089,7 @@ namespace TS3Client.Messages
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
-			case "datetime": { if(Utf8Parser.TryParse(value, out double oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "datetime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "type": IsFile = value.Length > 0 && value[0] != '0'; break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -5028,7 +5124,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public str Path { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5074,7 +5170,7 @@ namespace TS3Client.Messages
 		public f32 AverageSpeed { get; set; }
 		public DurationSeconds Runtime { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5090,7 +5186,7 @@ namespace TS3Client.Messages
 			case "status": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Status = oval; } break;
 			case "current_speed": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) CurrentSpeed = oval; } break;
 			case "average_speed": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) AverageSpeed = oval; } break;
-			case "runtime": { if(Utf8Parser.TryParse(value, out double oval, out _)) Runtime = TimeSpan.FromSeconds(oval); } break;
+			case "runtime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Runtime = TimeSpan.FromSeconds(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -5132,7 +5228,7 @@ namespace TS3Client.Messages
 		public str Message { get; set; }
 		public i64 Size { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5176,7 +5272,7 @@ namespace TS3Client.Messages
 		public i64 SeekPosistion { get; set; }
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5221,7 +5317,7 @@ namespace TS3Client.Messages
 		public str ChannelPassword { get; set; }
 		public str DirectoryName { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5260,7 +5356,7 @@ namespace TS3Client.Messages
 		public str ChannelPassword { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5299,7 +5395,7 @@ namespace TS3Client.Messages
 		public str ChannelPassword { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5338,7 +5434,7 @@ namespace TS3Client.Messages
 		public str ChannelPassword { get; set; }
 		public str Path { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5379,7 +5475,7 @@ namespace TS3Client.Messages
 		public str ChannelPassword { get; set; }
 		public i64 SeekPosistion { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5426,7 +5522,7 @@ namespace TS3Client.Messages
 		public bool Overwrite { get; set; }
 		public bool Resume { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5470,7 +5566,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -5491,7 +5587,7 @@ namespace TS3Client.Messages
 		public str OldName { get; set; }
 		public str NewName { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5535,7 +5631,7 @@ namespace TS3Client.Messages
 		public u16 ServerFileTransferId { get; set; }
 		public bool Delete { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5570,7 +5666,7 @@ namespace TS3Client.Messages
 
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5602,7 +5698,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -5620,7 +5716,7 @@ namespace TS3Client.Messages
 		public str Beta { get; set; }
 		public str Omega { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5662,7 +5758,7 @@ namespace TS3Client.Messages
 		public str Proof { get; set; }
 		public str Tvd { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5735,7 +5831,7 @@ namespace TS3Client.Messages
 		public HostBannerMode HostbannerMode { get; set; }
 		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5744,7 +5840,7 @@ namespace TS3Client.Messages
 			case "virtualserver_platform": ServerPlatform = Ts3String.Unescape(value); break;
 			case "virtualserver_version": ServerVersion = Ts3String.Unescape(value); break;
 			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
-			case "virtualserver_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) ServerCreated = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "virtualserver_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ServerCreated = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = oval; } break;
@@ -5762,15 +5858,15 @@ namespace TS3Client.Messages
 			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelGroup = oval; } break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out double oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = oval; } break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "virtualserver_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "virtualserver_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
-			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out double oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			
 			}
 
@@ -5827,7 +5923,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -5842,7 +5938,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -5859,7 +5955,7 @@ namespace TS3Client.Messages
 		public LogLevel LogLevel { get; set; }
 		public str LogMessage { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5895,7 +5991,7 @@ namespace TS3Client.Messages
 		public str LoginName { get; set; }
 		public str LoginPassword { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5929,7 +6025,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -5948,7 +6044,7 @@ namespace TS3Client.Messages
 		public bool InstanceLog { get; set; }
 		public u64 Offset { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -5991,7 +6087,7 @@ namespace TS3Client.Messages
 		public str Message { get; set; }
 		public DateTime Timestamp { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6000,7 +6096,7 @@ namespace TS3Client.Messages
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			case "subject": Subject = Ts3String.Unescape(value); break;
 			case "message": Message = Ts3String.Unescape(value); break;
-			case "timestamp": { if(Utf8Parser.TryParse(value, out double oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -6034,7 +6130,7 @@ namespace TS3Client.Messages
 		public str Subject { get; set; }
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6071,7 +6167,7 @@ namespace TS3Client.Messages
 
 		public u32 MessageId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6104,7 +6200,7 @@ namespace TS3Client.Messages
 
 		public u32 MessageId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6141,7 +6237,7 @@ namespace TS3Client.Messages
 		public DateTime Timestamp { get; set; }
 		public bool IsRead { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6149,7 +6245,7 @@ namespace TS3Client.Messages
 			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			case "subject": Subject = Ts3String.Unescape(value); break;
-			case "timestamp": { if(Utf8Parser.TryParse(value, out double oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "flag_read": IsRead = value.Length > 0 && value[0] != '0'; break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -6181,7 +6277,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -6198,7 +6294,7 @@ namespace TS3Client.Messages
 		public u32 MessageId { get; set; }
 		public bool IsRead { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6231,20 +6327,20 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.PermFind;
 		public string ReturnCode { get; set; }
 
-		public str T { get; set; }
-		public u32 Id1 { get; set; }
-		public u32 Id2 { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public PermissionType PermissionType { get; set; }
+		public u64 Id1 { get; set; }
+		public u64 Id2 { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
-			case "t": T = Ts3String.Unescape(value); break;
-			case "id1": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id1 = oval; } break;
-			case "id2": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id2 = oval; } break;
-			case "p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionType = (PermissionType)oval; } break;
+			case "id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id1 = oval; } break;
+			case "id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id2 = oval; } break;
+			case "p": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -6258,7 +6354,7 @@ namespace TS3Client.Messages
 				switch(fld)
 				{
 
-				case "t": foreach(var toi in toc) { toi.T = T; } break;
+				case "t": foreach(var toi in toc) { toi.PermissionType = PermissionType; } break;
 				case "id1": foreach(var toi in toc) { toi.Id1 = Id1; } break;
 				case "id2": foreach(var toi in toc) { toi.Id2 = Id2; } break;
 				case "p": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
@@ -6273,15 +6369,15 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.PermFindRequest;
 		
 
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			
 			}
@@ -6311,7 +6407,7 @@ namespace TS3Client.Messages
 
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6342,18 +6438,18 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.PermList;
 		public string ReturnCode { get; set; }
 
-		public u32 GroupIdEnd { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission GroupIdEnd { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionName { get; set; }
 		public str PermissionDescription { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
-			case "group_id_end": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) GroupIdEnd = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "group_id_end": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) GroupIdEnd = ser.PermissionTransform.GetName(oval); } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permname": PermissionName = Ts3String.Unescape(value); break;
 			case "permdesc": PermissionDescription = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -6385,7 +6481,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -6401,25 +6497,25 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 		public ChannelId ChannelId { get; set; }
-		public str T { get; set; }
-		public u32 Id1 { get; set; }
-		public u32 Id2 { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public PermissionType PermissionType { get; set; }
+		public u64 Id1 { get; set; }
+		public u64 Id2 { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "t": T = Ts3String.Unescape(value); break;
-			case "id1": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id1 = oval; } break;
-			case "id2": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id2 = oval; } break;
-			case "p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionType = (PermissionType)oval; } break;
+			case "id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id1 = oval; } break;
+			case "id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id2 = oval; } break;
+			case "p": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "v": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "n": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "s": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
@@ -6438,7 +6534,7 @@ namespace TS3Client.Messages
 
 				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
 				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
-				case "t": foreach(var toi in toc) { toi.T = T; } break;
+				case "t": foreach(var toi in toc) { toi.PermissionType = PermissionType; } break;
 				case "id1": foreach(var toi in toc) { toi.Id1 = Id1; } break;
 				case "id2": foreach(var toi in toc) { toi.Id2 = Id2; } break;
 				case "p": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
@@ -6458,17 +6554,17 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			
 			}
@@ -6498,14 +6594,14 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.PermRequest;
 		
 
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			
 			}
 
@@ -6532,7 +6628,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -6549,7 +6645,7 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public str Data { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6586,7 +6682,7 @@ namespace TS3Client.Messages
 		public str Data { get; set; }
 		public PluginTargetMode Target { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6627,7 +6723,7 @@ namespace TS3Client.Messages
 		public str TokenDescription { get; set; }
 		public str TokenCustomSet { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6668,7 +6764,7 @@ namespace TS3Client.Messages
 
 		public str Token { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6700,7 +6796,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -6716,7 +6812,7 @@ namespace TS3Client.Messages
 
 		public str Token { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6748,7 +6844,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -6766,7 +6862,7 @@ namespace TS3Client.Messages
 		public ClientId TargetClientId { get; set; }
 		public str Message { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6817,7 +6913,7 @@ namespace TS3Client.Messages
 		public f32 PacketlossTotal { get; set; }
 		public DurationMilliseconds Ping { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6834,9 +6930,9 @@ namespace TS3Client.Messages
 			case "connection_bandwidth_sent_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteTotal = oval; } break;
 			case "connection_bandwidth_received_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondTotal = oval; } break;
 			case "connection_bandwidth_received_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteTotal = oval; } break;
-			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
 			case "connection_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotal = oval; } break;
-			case "connection_ping": { if(Utf8Parser.TryParse(value, out double oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
+			case "connection_ping": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -6877,7 +6973,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -6893,7 +6989,7 @@ namespace TS3Client.Messages
 
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6936,7 +7032,7 @@ namespace TS3Client.Messages
 		public u16 VirtualServerPort { get; set; }
 		public str VirtualServerStatus { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -6944,7 +7040,7 @@ namespace TS3Client.Messages
 			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = oval; } break;
 			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) QueriesOnline = oval; } break;
 			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
-			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out double oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_machine_id": MachineId = Ts3String.Unescape(value); break;
 			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
@@ -6989,7 +7085,7 @@ namespace TS3Client.Messages
 
 		public u32 ServerId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7021,7 +7117,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -7055,7 +7151,7 @@ namespace TS3Client.Messages
 		public HostBannerMode HostbannerMode { get; set; }
 		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7070,15 +7166,15 @@ namespace TS3Client.Messages
 			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelGroup = oval; } break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out double oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = oval; } break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "virtualserver_icon_id": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "virtualserver_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
-			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out double oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			
 			}
 
@@ -7125,7 +7221,7 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7161,7 +7257,7 @@ namespace TS3Client.Messages
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7195,19 +7291,19 @@ namespace TS3Client.Messages
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
@@ -7244,7 +7340,7 @@ namespace TS3Client.Messages
 
 		public ServerGroupId ServerGroupId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7276,19 +7372,19 @@ namespace TS3Client.Messages
 		
 
 		public u32 ServerGroupType { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
@@ -7324,16 +7420,16 @@ namespace TS3Client.Messages
 		
 
 		public u32 ServerGroupType { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			
 			}
@@ -7367,7 +7463,7 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public Uid Uid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7406,7 +7502,7 @@ namespace TS3Client.Messages
 
 		public ServerGroupId ServerGroupId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7442,7 +7538,7 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7482,7 +7578,7 @@ namespace TS3Client.Messages
 		public ServerGroupId ServerGroupId { get; set; }
 		public bool Force { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7518,7 +7614,7 @@ namespace TS3Client.Messages
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7552,16 +7648,16 @@ namespace TS3Client.Messages
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			
 			}
@@ -7601,7 +7697,7 @@ namespace TS3Client.Messages
 		public i32 NeededMemberAddPower { get; set; }
 		public i32 NeededMemberRemovePower { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7609,7 +7705,7 @@ namespace TS3Client.Messages
 			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
-			case "iconid": { if(Utf8Parser.TryParse(value, out long oval, out _)) IconId = unchecked((int)oval); } break;
+			case "iconid": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = oval; } break;
 			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
@@ -7651,7 +7747,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -7666,19 +7762,19 @@ namespace TS3Client.Messages
 		public string ReturnCode { get; set; }
 
 		public ServerGroupId ServerGroupId { get; set; }
-		public PermissionId PermissionId { get; set; }
+		public Ts3Permission PermissionId { get; set; }
 		public str PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "permid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionId = (PermissionId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
 			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
@@ -7715,7 +7811,7 @@ namespace TS3Client.Messages
 
 		public ServerGroupId ServerGroupId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7749,7 +7845,7 @@ namespace TS3Client.Messages
 		public ServerGroupId ServerGroupId { get; set; }
 		public str Name { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7786,7 +7882,7 @@ namespace TS3Client.Messages
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7823,7 +7919,7 @@ namespace TS3Client.Messages
 
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7856,7 +7952,7 @@ namespace TS3Client.Messages
 
 		public u16 VirtualServerPort { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7888,7 +7984,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -7903,7 +7999,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -7921,7 +8017,7 @@ namespace TS3Client.Messages
 		public u64 FileSize { get; set; }
 		public str License { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7959,7 +8055,7 @@ namespace TS3Client.Messages
 		public str EventType { get; set; }
 		public ChannelId Id { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -7993,7 +8089,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -8009,7 +8105,7 @@ namespace TS3Client.Messages
 
 		public str ReasonMessage { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8041,7 +8137,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -8056,7 +8152,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -8072,7 +8168,7 @@ namespace TS3Client.Messages
 
 		public u32 ServerId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8106,7 +8202,7 @@ namespace TS3Client.Messages
 		public u32 ServerId { get; set; }
 		public str ReasonMessage { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8145,14 +8241,14 @@ namespace TS3Client.Messages
 		public ChannelId TargetChannelId { get; set; }
 		public str TargetChannelPassword { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
 			case "pw": Password = Ts3String.Unescape(value); break;
 			case "desc": Description = Ts3String.Unescape(value); break;
-			case "duration": { if(Utf8Parser.TryParse(value, out double oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
+			case "duration": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
 			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
 			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
 			
@@ -8186,7 +8282,7 @@ namespace TS3Client.Messages
 
 		public str Password { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8226,7 +8322,7 @@ namespace TS3Client.Messages
 		public ChannelId TargetChannelId { get; set; }
 		public str TargetChannelPassword { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8235,8 +8331,8 @@ namespace TS3Client.Messages
 			case "uid": Uid = Ts3String.Unescape(value); break;
 			case "desc": Description = Ts3String.Unescape(value); break;
 			case "pw_clear": PasswordClear = Ts3String.Unescape(value); break;
-			case "start": { if(Utf8Parser.TryParse(value, out double oval, out _)) Start = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "end": { if(Utf8Parser.TryParse(value, out double oval, out _)) End = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "start": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Start = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "end": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) End = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
 			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
 			
@@ -8272,7 +8368,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -8335,7 +8431,7 @@ namespace TS3Client.Messages
 		public u32 MinIosVersion { get; set; }
 		public u32 AntifloodPointsToPluginBlock { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8344,7 +8440,7 @@ namespace TS3Client.Messages
 			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
 			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = oval; } break;
 			case "virtualserver_channelsonline": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelsOnline = oval; } break;
-			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out double oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
@@ -8352,8 +8448,8 @@ namespace TS3Client.Messages
 			case "virtualserver_max_download_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxDownloadTotalBandwidth = oval; } break;
 			case "virtualserver_max_upload_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxUploadTotalBandwidth = oval; } break;
 			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = oval; } break;
-			case "virtualserver_complain_autoban_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ComplainAutobanTime = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_complain_remove_time": { if(Utf8Parser.TryParse(value, out double oval, out _)) ComplainRemoveTime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_complain_autoban_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainAutobanTime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_complain_remove_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainRemoveTime = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_min_clients_in_channel_before_forced_silence": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientsInChannelBeforeForcedSilence = oval; } break;
 			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = oval; } break;
 			case "virtualserver_antiflood_points_needed_command_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToCommandBlock = oval; } break;
@@ -8461,7 +8557,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -8470,16 +8566,16 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class setclientchannelgroup : INotification
+	public sealed class SetClientChannelGroup : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.setclientchannelgroup;
+		public NotificationType NotifyType { get; } = NotificationType.SetClientChannelGroup;
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8494,7 +8590,7 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
-			var toc = (setclientchannelgroup[])to;
+			var toc = (SetClientChannelGroup[])to;
 			foreach (var fld in flds)
 			{
 				switch(fld)
@@ -8521,7 +8617,7 @@ namespace TS3Client.Messages
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8564,7 +8660,7 @@ namespace TS3Client.Messages
 
 		public str Token { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8601,7 +8697,7 @@ namespace TS3Client.Messages
 		public str TokenDescription { get; set; }
 		public str TokenCustomSet { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8642,7 +8738,7 @@ namespace TS3Client.Messages
 
 		public str Token { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8680,7 +8776,7 @@ namespace TS3Client.Messages
 		public DateTime TokenCreateTime { get; set; }
 		public str TokenDescription { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8689,7 +8785,7 @@ namespace TS3Client.Messages
 			case "token_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
 			case "token_id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
 			case "token_id2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
-			case "token_created": { if(Utf8Parser.TryParse(value, out double oval, out _)) TokenCreateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "token_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TokenCreateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "token_description": TokenDescription = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -8722,7 +8818,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -8738,7 +8834,7 @@ namespace TS3Client.Messages
 
 		public str Token { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8777,7 +8873,7 @@ namespace TS3Client.Messages
 		public ClientDbId ClientDbId { get; set; }
 		public Uid ClientUid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8823,7 +8919,7 @@ namespace TS3Client.Messages
 		public u32 ServerId { get; set; }
 		public u16 Port { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8857,7 +8953,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -8883,7 +8979,7 @@ namespace TS3Client.Messages
 		public str VirtualServerStatus { get; set; }
 		public Uid Uid { get; set; }
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
@@ -8935,7 +9031,7 @@ namespace TS3Client.Messages
 		
 
 
-		public void SetField(string name, ReadOnlySpan<byte> value)
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 		}
 
@@ -9035,8 +9131,16 @@ namespace TS3Client.Messages
 		ChannelPermList,
 		///<summary>[C2S] ntfy:channelpermlist</summary>
 		ChannelPermListRequest,
+		///<summary>[C2S] ntfy:channelsubscribe</summary>
+		ChannelSubscribe,
+		///<summary>[C2S] ntfy:channelsubscribeall</summary>
+		ChannelSubscribeAll,
 		///<summary>[S2C] ntfy:notifychannelsubscribed</summary>
 		ChannelSubscribed,
+		///<summary>[C2S] ntfy:channelunsubscribe</summary>
+		ChannelUnsubscribe,
+		///<summary>[C2S] ntfy:channelunsubscribeall</summary>
+		ChannelUnsubscribeAll,
 		///<summary>[S2C] ntfy:notifychannelunsubscribed</summary>
 		ChannelUnsubscribed,
 		///<summary>[C2S] ntfy:clientaddperm</summary>
@@ -9340,7 +9444,7 @@ namespace TS3Client.Messages
 		///<summary>[C2S] ntfy:servergetvariables</summary>
 		ServerVariablesRequest,
 		///<summary>[C2S] ntfy:setclientchannelgroup</summary>
-		setclientchannelgroup,
+		SetClientChannelGroup,
 		///<summary>[S2C] ntfy:notifytextmessage</summary>
 		TextMessage,
 		///<summary>[S2C] ntfy:notifytokenadd</summary>
@@ -9477,6 +9581,10 @@ namespace TS3Client.Messages
 			case "channellist": return NotificationType.ChannelListRequest;
 			case "channelmove": return NotificationType.ChannelMove;
 			case "channelpermlist": return NotificationType.ChannelPermListRequest;
+			case "channelsubscribe": return NotificationType.ChannelSubscribe;
+			case "channelsubscribeall": return NotificationType.ChannelSubscribeAll;
+			case "channelunsubscribe": return NotificationType.ChannelUnsubscribe;
+			case "channelunsubscribeall": return NotificationType.ChannelUnsubscribeAll;
 			case "clientaddperm": return NotificationType.ClientAddPerm;
 			case "clientchatclosed": return NotificationType.ClientChatClose;
 			case "getconnectioninfo": return NotificationType.ClientConnectionInfoRequest;
@@ -9579,7 +9687,7 @@ namespace TS3Client.Messages
 			case "servertemppassworddel": return NotificationType.ServerTempPasswordDel;
 			case "servertemppasswordlist": return NotificationType.ServerTempPasswordListRequest;
 			case "servergetvariables": return NotificationType.ServerVariablesRequest;
-			case "setclientchannelgroup": return NotificationType.setclientchannelgroup;
+			case "setclientchannelgroup": return NotificationType.SetClientChannelGroup;
 			case "tokenadd": return NotificationType.TokenAddRequest;
 			case "tokendelete": return NotificationType.TokenDelete;
 			case "tokenlist": return NotificationType.TokenListRequest;
@@ -9639,7 +9747,11 @@ namespace TS3Client.Messages
 			case NotificationType.ChannelPasswordChanged: return new ChannelPasswordChanged();
 			case NotificationType.ChannelPermList: return new ChannelPermList();
 			case NotificationType.ChannelPermListRequest: return new ChannelPermListRequest();
+			case NotificationType.ChannelSubscribe: return new ChannelSubscribe();
+			case NotificationType.ChannelSubscribeAll: return new ChannelSubscribeAll();
 			case NotificationType.ChannelSubscribed: return new ChannelSubscribed();
+			case NotificationType.ChannelUnsubscribe: return new ChannelUnsubscribe();
+			case NotificationType.ChannelUnsubscribeAll: return new ChannelUnsubscribeAll();
 			case NotificationType.ChannelUnsubscribed: return new ChannelUnsubscribed();
 			case NotificationType.ClientAddPerm: return new ClientAddPerm();
 			case NotificationType.ClientChannelGroupChanged: return new ClientChannelGroupChanged();
@@ -9791,7 +9903,7 @@ namespace TS3Client.Messages
 			case NotificationType.ServerTempPasswordListRequest: return new ServerTempPasswordListRequest();
 			case NotificationType.ServerUpdated: return new ServerUpdated();
 			case NotificationType.ServerVariablesRequest: return new ServerVariablesRequest();
-			case NotificationType.setclientchannelgroup: return new setclientchannelgroup();
+			case NotificationType.SetClientChannelGroup: return new SetClientChannelGroup();
 			case NotificationType.TextMessage: return new TextMessage();
 			case NotificationType.TokenAdd: return new TokenAdd();
 			case NotificationType.TokenAddRequest: return new TokenAddRequest();
@@ -9856,7 +9968,11 @@ namespace TS3Client.Messages
 			case NotificationType.ChannelPasswordChanged: { var arr = new ChannelPasswordChanged[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPasswordChanged(); return arr; }
 			case NotificationType.ChannelPermList: { var arr = new ChannelPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPermList(); return arr; }
 			case NotificationType.ChannelPermListRequest: { var arr = new ChannelPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPermListRequest(); return arr; }
+			case NotificationType.ChannelSubscribe: { var arr = new ChannelSubscribe[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelSubscribe(); return arr; }
+			case NotificationType.ChannelSubscribeAll: { var arr = new ChannelSubscribeAll[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelSubscribeAll(); return arr; }
 			case NotificationType.ChannelSubscribed: { var arr = new ChannelSubscribed[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelSubscribed(); return arr; }
+			case NotificationType.ChannelUnsubscribe: { var arr = new ChannelUnsubscribe[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelUnsubscribe(); return arr; }
+			case NotificationType.ChannelUnsubscribeAll: { var arr = new ChannelUnsubscribeAll[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelUnsubscribeAll(); return arr; }
 			case NotificationType.ChannelUnsubscribed: { var arr = new ChannelUnsubscribed[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelUnsubscribed(); return arr; }
 			case NotificationType.ClientAddPerm: { var arr = new ClientAddPerm[len]; for (int i = 0; i < len; i++) arr[i] = new ClientAddPerm(); return arr; }
 			case NotificationType.ClientChannelGroupChanged: { var arr = new ClientChannelGroupChanged[len]; for (int i = 0; i < len; i++) arr[i] = new ClientChannelGroupChanged(); return arr; }
@@ -10008,7 +10124,7 @@ namespace TS3Client.Messages
 			case NotificationType.ServerTempPasswordListRequest: { var arr = new ServerTempPasswordListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerTempPasswordListRequest(); return arr; }
 			case NotificationType.ServerUpdated: { var arr = new ServerUpdated[len]; for (int i = 0; i < len; i++) arr[i] = new ServerUpdated(); return arr; }
 			case NotificationType.ServerVariablesRequest: { var arr = new ServerVariablesRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerVariablesRequest(); return arr; }
-			case NotificationType.setclientchannelgroup: { var arr = new setclientchannelgroup[len]; for (int i = 0; i < len; i++) arr[i] = new setclientchannelgroup(); return arr; }
+			case NotificationType.SetClientChannelGroup: { var arr = new SetClientChannelGroup[len]; for (int i = 0; i < len; i++) arr[i] = new SetClientChannelGroup(); return arr; }
 			case NotificationType.TextMessage: { var arr = new TextMessage[len]; for (int i = 0; i < len; i++) arr[i] = new TextMessage(); return arr; }
 			case NotificationType.TokenAdd: { var arr = new TokenAdd[len]; for (int i = 0; i < len; i++) arr[i] = new TokenAdd(); return arr; }
 			case NotificationType.TokenAddRequest: { var arr = new TokenAddRequest[len]; for (int i = 0; i < len; i++) arr[i] = new TokenAddRequest(); return arr; }

@@ -531,7 +531,7 @@ namespace TS3AudioBot
 		public static JsonArray<AudioLogEntry> CommandHistoryTill(HistoryManager historyManager, string time)
 		{
 			DateTime tillTime;
-			switch (time.ToLower(CultureInfo.InvariantCulture))
+			switch (time.ToLowerInvariant())
 			{
 			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
 			case "today": tillTime = DateTime.Today; break;

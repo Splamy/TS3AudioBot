@@ -62,7 +62,19 @@ public class Messages
 		public string doc { get; set; }
 
 		public bool isArray => mod == "array";
-		public string typeFin => type + (isArray ? "[]" : "");
+		public string typeFin 
+		{
+			get
+			{
+				string ltype;
+				switch(type)
+				{
+					case "PermissionId": ltype = "Ts3Permission"; break;
+					default: ltype = type; break;
+				}
+				return ltype + (isArray ? "[]" : "");
+			}
+		}
 	}
 
 	public class MsgGroup
