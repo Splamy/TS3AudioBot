@@ -243,7 +243,7 @@ namespace TS3Client.Query
 			=> Send<ResponseVoid>("use",
 			new CommandParameter("sid", serverId));
 
-		public CmdR UseServerPort(int port)
+		public CmdR UseServerPort(ushort port)
 			=> Send<ResponseVoid>("use",
 			new CommandParameter("port", port));
 
