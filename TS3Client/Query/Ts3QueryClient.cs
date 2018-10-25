@@ -243,6 +243,10 @@ namespace TS3Client.Query
 			=> Send<ResponseVoid>("use",
 			new CommandParameter("sid", serverId));
 
+		public CmdR UseServerPort(int port)
+			=> Send<ResponseVoid>("use",
+			new CommandParameter("port", port));
+
 		// Splitted base commands
 
 		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
