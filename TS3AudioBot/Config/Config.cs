@@ -203,6 +203,32 @@ namespace TS3AudioBot.Config
 				return new LocalStr("Could not delete config."); // LOC: TODO
 			}
 		}
+
+		public E<LocalStr> CopyBotConfig(string from, string to)
+		{
+			var fileFrom = NameToPath(from);
+			if (!fileFrom.Ok)
+				return fileFrom.Error;
+			var fileTo = NameToPath(to);
+			if (!fileTo.Ok)
+				return fileTo.Error;
+
+			if (!File.Exists(fileFrom.Value))
+				return new LocalStr("The source bot does not exist.");
+			if (File.Exists(fileTo.Value))
+				return new LocalStr("The target bot already exists, delete it before to overwrite.");
+
+			try
+			{
+				File.Copy(fileFrom.Value, fileTo.Value, false);
+				return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Config file could not be copied");
+				return new LocalStr("Could not copy config."); // LOC: TODO
+			}
+		}
 	}
 
 	public partial class ConfBot

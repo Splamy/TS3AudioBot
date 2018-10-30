@@ -1084,6 +1084,9 @@ namespace TS3AudioBot
 		public static void CommandSettings()
 			=> throw new CommandException(string.Format(strings.cmd_settings_empty_usage, "'rights.path', 'web.api.enabled', 'tools.*'"), CommandExceptionReason.MissingParameter);
 
+		[Command("settings copy")]
+		public static void CommandSettingsCopy(ConfRoot config, string from, string to) => config.CopyBotConfig(from, to).UnwrapThrow();
+
 		[Command("settings create")]
 		public static void CommandSettingsCreate(ConfRoot config, string name) => config.CreateBotConfig(name).UnwrapThrow();
 

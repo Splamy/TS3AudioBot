@@ -241,7 +241,7 @@ namespace TS3Client
 		{
 			string result;
 			try { result = WebClient.GetStringAsync(NicknameLookup + Uri.EscapeDataString(nickname)).Result; }
-			catch (WebException ex)
+			catch (Exception ex) when (ex is WebException || ex is AggregateException agg && agg.InnerException is WebException)
 			{
 				Log.Debug(ex, "Failed to resolve nickname \"{0}\"", nickname);
 				return null;
