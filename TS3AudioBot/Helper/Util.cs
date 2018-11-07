@@ -14,7 +14,9 @@ namespace TS3AudioBot.Helper
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 	using System;
+	using System.Collections.Generic;
 	using System.IO;
+	using System.Linq;
 	using System.Reflection;
 	using System.Text;
 	using System.Text.RegularExpressions;
@@ -197,6 +199,9 @@ namespace TS3AudioBot.Helper
 				return new LocalStr(strings.error_playlist_name_invalid_character);
 			return R.Ok;
 		}
+
+		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector)
+			=> source.Select(selector).Where(x => x.Ok).Select(x => x.Value);
 	}
 
 	public class MissingEnumCaseException : Exception

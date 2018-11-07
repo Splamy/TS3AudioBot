@@ -241,7 +241,7 @@ namespace TS3Client
 		{
 			string result;
 			try { result = WebClient.GetStringAsync(NicknameLookup + Uri.EscapeDataString(nickname)).Result; }
-			catch (Exception ex) when (ex is WebException || ex is AggregateException agg && agg.InnerException is WebException)
+			catch (AggregateException ex)
 			{
 				Log.Debug(ex, "Failed to resolve nickname \"{0}\"", nickname);
 				return null;
@@ -249,7 +249,7 @@ namespace TS3Client
 			var splits = result.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 			if (splits.Length == 0)
 			{
-				Log.Debug("Nickname \"{0}\" has no address entries");
+				Log.Debug("Nickname \"{0}\" has no address entries", nickname);
 				return null;
 			}
 

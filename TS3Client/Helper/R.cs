@@ -153,6 +153,13 @@ namespace System
 		public static implicit operator E<TError>(_Ok _) => OkR;
 
 		// Upwrapping
+		/// <summary>
+		/// Adds a success value to the result.
+		/// This will not change the success state of the result.
+		/// Therefore the value may only be null when the state is an error.
+		/// </summary>
+		/// <param name="value">The success value. Can be null when the current state is an error.</param>
+		/// <returns>A new combined result.</returns>
 		public R<TSuccess, TError> WithValue<TSuccess>(TSuccess value)
 		{
 			if (!isError && value == null) throw new ArgumentNullException(nameof(value), "Value must not be null.");

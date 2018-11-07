@@ -111,7 +111,8 @@ namespace TS3AudioBot.Web.Api
 			}
 			catch (CommandException ex)
 			{
-				ReturnError(ex, response);
+				try { ReturnError(ex, response); }
+				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
 			}
 			catch (Exception ex)
 			{
@@ -120,8 +121,12 @@ namespace TS3AudioBot.Web.Api
 				else
 					response.StatusCode = (int)HttpStatusCode.InternalServerError;
 				Log.Error(ex, "Unexpected command error");
-				using (var responseStream = new StreamWriter(response.OutputStream))
-					responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
+				try
+				{
+					using (var responseStream = new StreamWriter(response.OutputStream))
+						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
+				}
+				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
 			}
 		}
 

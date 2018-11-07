@@ -177,12 +177,12 @@ namespace TS3AudioBot
 			=> new JsonValue<ClientInfo>(ts3Client.GetSelf().UnwrapThrow(), string.Empty);
 
 		[Command("bot list")]
-		public static JsonArray<BotInfo> CommandBotId(BotManager bots, ConfRoot config)
+		public static JsonArray<BotInfo> CommandBotList(BotManager bots, ConfRoot config)
 		{
 			var botInfoList = bots.GetBotInfolist();
 			var botConfigList = config.GetAllBots();
 			var infoList = new Dictionary<string, BotInfo>();
-			foreach (var botInfo in botInfoList)
+			foreach (var botInfo in botInfoList.Where(x => !string.IsNullOrEmpty(x.Name)))
 				infoList[botInfo.Name] = botInfo;
 			foreach (var botConfig in botConfigList)
 			{
@@ -196,7 +196,8 @@ namespace TS3AudioBot
 					Status = BotStatus.Offline,
 				};
 			}
-			return new JsonArray<BotInfo>(infoList.Values.ToArray(), bl => string.Join("\n", bl.Select(x => x.ToString())));
+			return new JsonArray<BotInfo>(infoList.Values.Concat(botInfoList.Where(x => string.IsNullOrEmpty(x.Name))).ToArray(),
+				bl => string.Join("\n", bl.Select(x => x.ToString())));
 		}
 
 		[Command("bot move")]
@@ -1091,7 +1092,7 @@ namespace TS3AudioBot
 		public static void CommandSettingsCreate(ConfRoot config, string name) => config.CreateBotConfig(name).UnwrapThrow();
 
 		[Command("settings delete")]
-		public static void CommandSettingsDelete(ConfRoot config, string name) => config.DeleteBotConfig(name).UnwrapThrow();
+		public static void CommandSettingsDelete(ConfRoot config, string name, BotManager bots) => config.DeleteBotConfig(name).UnwrapThrow();
 
 		[Command("settings get")]
 		public static ConfigPart CommandSettingsGet(ConfBot config, string path)

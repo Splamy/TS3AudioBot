@@ -110,13 +110,16 @@ class Util {
 }
 
 type icons
-	= "cog-work" | "heart"
+	= "bolt" | "cog-work" | "fork"
+	| "heart"
 	| "loop-all" | "loop-off" | "loop-one"
 	| "media-pause" | "media-play" | "media-stop"
 	| "media-skip-backward" | "media-skip-forward"
+	| "plus"
 	| "play-circle" | "power-standby"
 	| "random" | "random-off"
 	| "reload" | "reload-work"
+	| "trash"
 	| "volume-off" | "volume-low" | "volume-high";
 
 interface Dict<T = any> { [key: string]: T | undefined; };
