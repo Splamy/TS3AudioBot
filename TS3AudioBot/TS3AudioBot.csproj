@@ -33,15 +33,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitVersionTask" Version="4.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    <PackageReference  Condition="'$(TargetFramework)' == 'net46'" Include="GitVersionTask" Version="4.0.0-beta0012" />
+    <PackageReference  Condition="'$(TargetFramework)' != 'net46'" Include="GitVersionTask" Version="4.0.0" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.9.0" />
     <PackageReference Include="Nett" Version="0.10.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
+
+    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp2.0'" Include="System.Runtime.Loader" Version="4.3.0" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -74,18 +75,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.Runtime.Loader">
-      <Version>4.3.0</Version>
-    </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
-    <PackageReference Include="System.Runtime.Loader">
-      <Version>4.3.0</Version>
-    </PackageReference>
   </ItemGroup>
 
   <Target Name="CopyWindowsNativeLibs" AfterTargets="AfterBuild">

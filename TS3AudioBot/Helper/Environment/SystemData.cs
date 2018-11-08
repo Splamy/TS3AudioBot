@@ -30,7 +30,10 @@ namespace TS3AudioBot.Helper.Environment
 		public static BuildData AssemblyData { get; } = GenAssemblyData();
 		private static BuildData GenAssemblyData()
 		{
+			// Path for GVT <=4.0.0-beta14
 			var gitInfoType = Assembly.GetExecutingAssembly().GetType(nameof(TS3AudioBot) + ".GitVersionInformation");
+			// Path for GVT >=4.0.0
+			gitInfoType = gitInfoType ?? Assembly.GetExecutingAssembly().GetType("GitVersionInformation");
 			if (gitInfoType is null)
 				return new BuildData();
 
