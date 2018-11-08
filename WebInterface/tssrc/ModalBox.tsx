@@ -4,13 +4,13 @@ class ModalBox {
 	public static show<T extends IModalInput = IModalInput>(msg: string, head: string, options: IModalOptions<T>, ...buttons: IModalButton<T>[]): Promise<void> {
 		ModalBox.close();
 
-		// TODO: set focus on first input
 		// TODO: listen for enter/esc
 
 		return new Promise(resolve => {
 			const inputElem = [];
 			const outputs: IModalOutput = {};
 			const inputs = options.inputs;
+			let firstInput: HTMLInputElement | undefined;
 			if (inputs) {
 				for (const input in inputs) {
 					const inputBox: IJsxGet = {};
@@ -19,24 +19,46 @@ class ModalBox {
 						<input set={inputBox} name={input} type="text" class="formdatablock_fill" placeholder="" />
 					</div>);
 					if (inputBox.element) {
-						outputs[input] = inputBox.element as HTMLInputElement;
+						let inputElem = inputBox.element as HTMLInputElement;
+						firstInput = firstInput || inputElem;
+						outputs[input] = inputElem;
 					}
 				}
 			}
 
-			const btnElem = buttons.map(x => <div class="button"
-				onclick={() => {
-					if (x.action)
-						x.action(ModalBox.transformOutput(outputs) as T);
+			const btnElem = [];
+			let buttonOk: () => void | undefined;
+			for (const addButton of buttons) {
+				const doClick = () => {
+					if (addButton.action) {
+						addButton.action(ModalBox.transformOutput(outputs) as T);
+					}
 					ModalBox.close(resolve);
-				}}>{x.text}</div>);
+				};
+				btnElem.push(<div class="button" onclick={doClick}>{addButton.text}</div>);
+				if (addButton.default === true) {
+					buttonOk = doClick;
+				}
+			}
 
-			const box = <div class="formbox">
+			const doCancel = () => { if (options.onCancel) options.onCancel(); ModalBox.close(resolve); };
+
+			const checkKeyPress = (e: KeyboardEvent) =>  {
+				if(e.keyCode === 13 && buttonOk) {
+					buttonOk();
+				} else if(e.keyCode === 27) {
+					doCancel();
+				}
+			}
+
+			document.onkeydown = checkKeyPress;
+
+			const box = <div class="formbox" onkeypress={checkKeyPress} >
 				<div class="formheader flex2">
 					<div class="flexmax">{head}</div>
 					<div>
 						<div class="button buttonRound buttonTiny buttonNoSpace"
-							onclick={() => ModalBox.close(resolve)}
+							onclick={doCancel}
 							style="background-image: url(media/icons/x.svg)"></div>
 					</div>
 				</div>
@@ -52,10 +74,13 @@ class ModalBox {
 
 			document.getElementsByTagName("body")[0].appendChild(
 				<div id={ModalBox.ModBoxId} class="modal_main">
-					<div class="modal_background" onclick={() => { if (options.onCancel) options.onCancel(); ModalBox.close(resolve); }}></div>
+					<div class="modal_background" onclick={doCancel}></div>
 					<div class="modal_content">{box}</div>
 				</div>
 			);
+
+			if (firstInput)
+				firstInput.focus();
 		});
 	}
 
@@ -68,6 +93,7 @@ class ModalBox {
 	}
 
 	private static close(resolve?: () => void) {
+		document.onkeydown = null;
 		const modElem = document.getElementById(ModalBox.ModBoxId);
 		if (modElem && modElem.parentNode) {
 			modElem.parentNode.removeChild(modElem);
@@ -80,7 +106,7 @@ class ModalBox {
 interface IModalButton<T extends IModalInput> {
 	text: string;
 	action?: (input: T) => void;
-	default?: ModalAction;
+	default?: boolean;
 }
 
 interface IModalOptions<T extends IModalInput> {
@@ -90,11 +116,3 @@ interface IModalOptions<T extends IModalInput> {
 
 interface IModalInput { [name: string]: string }
 interface IModalOutput { [name: string]: HTMLInputElement }
-
-enum ModalAction
-{
-	/// The default action when pressing 'Enter'
-	Ok,
-	/// The default action when pressing 'Escape'
-	Cancel,
-}

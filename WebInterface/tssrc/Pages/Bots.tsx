@@ -167,7 +167,7 @@ class Bots implements IPage {
 		await ModalBox.show("Do you really want to delete the bot?", "Delete bot: " + name, {},
 			{
 				text: "Yes",
-				default: ModalAction.Ok,
+				default: true,
 				action: async () => {
 					const res = await cmd<void>("settings", "delete", name).get();
 					if (DisplayError.check(res, "Error deleting bot")) {
@@ -177,7 +177,6 @@ class Bots implements IPage {
 			},
 			{
 				text: "Abort",
-				default: ModalAction.Cancel,
 			});
 	}
 
@@ -187,7 +186,7 @@ class Bots implements IPage {
 		},
 			{
 				text: "Ok",
-				default: ModalAction.Ok,
+				default: true,
 				action: async (i) => {
 					const res = await cmd<void>("settings", "copy", name, i.target).get();
 					if (DisplayError.check(res, "Error copying bot")) {
@@ -197,7 +196,6 @@ class Bots implements IPage {
 			},
 			{
 				text: "Abort",
-				default: ModalAction.Cancel,
 			});
 	}
 
@@ -207,7 +205,7 @@ class Bots implements IPage {
 		},
 			{
 				text: "Ok",
-				default: ModalAction.Ok,
+				default: true,
 				action: async (i) => {
 					const res = await cmd<void>("settings", "create", i.name).get();
 					if (DisplayError.check(res, "Error creating bot")) {
@@ -217,7 +215,6 @@ class Bots implements IPage {
 			},
 			{
 				text: "Abort",
-				default: ModalAction.Cancel,
 			});
 	}
 
@@ -227,7 +224,7 @@ class Bots implements IPage {
 		},
 			{
 				text: "Ok",
-				default: ModalAction.Ok,
+				default: true,
 				action: async (i) => {
 					const res = await cmd<void>("bot", "connect", "to", i.address).get();
 					if (DisplayError.check(res, "Error connecting bot")) {
@@ -237,7 +234,6 @@ class Bots implements IPage {
 			},
 			{
 				text: "Abort",
-				default: ModalAction.Cancel,
 			});
 	}
 
@@ -247,7 +243,7 @@ class Bots implements IPage {
 		},
 			{
 				text: "Ok",
-				default: ModalAction.Ok,
+				default: true,
 				action: async (i) => {
 					const res = await bot(cmd<void>("bot", "save", i.name), botId).get();
 					if (DisplayError.check(res, "Error saving bot")) {
@@ -257,7 +253,6 @@ class Bots implements IPage {
 			},
 			{
 				text: "Abort",
-				default: ModalAction.Cancel,
 			});
 	}
 

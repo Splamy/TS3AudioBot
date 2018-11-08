@@ -1092,7 +1092,7 @@ namespace TS3AudioBot
 		public static void CommandSettingsCreate(ConfRoot config, string name) => config.CreateBotConfig(name).UnwrapThrow();
 
 		[Command("settings delete")]
-		public static void CommandSettingsDelete(ConfRoot config, string name, BotManager bots) => config.DeleteBotConfig(name).UnwrapThrow();
+		public static void CommandSettingsDelete(ConfRoot config, string name) => config.DeleteBotConfig(name).UnwrapThrow();
 
 		[Command("settings get")]
 		public static ConfigPart CommandSettingsGet(ConfBot config, string path)
