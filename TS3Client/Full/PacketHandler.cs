@@ -281,8 +281,12 @@ namespace TS3Client.Full
 				break;
 
 			case PacketType.Ack:
+				LoggerRaw.Debug("[O] Acking Ack: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+				break;
+
 			case PacketType.AckLow:
-				LoggerRaw.Debug("[O] Acking {1}: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data), packet.PacketType);
+				packet.PacketFlags |= PacketFlags.Unencrypted;
+				LoggerRaw.Debug("[O] Acking AckLow: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 				break;
 
 			case PacketType.Init1:
