@@ -39,6 +39,7 @@ namespace TS3AudioBot.Plugins
 		private readonly ConfPlugins config;
 		private readonly Dictionary<string, Plugin> plugins;
 		private readonly HashSet<int> usedIds;
+		private readonly object pluginsLock = new object();
 
 		public PluginManager(ConfPlugins config)
 		{
@@ -65,7 +66,8 @@ namespace TS3AudioBot.Plugins
 			{
 				if (plugins.TryGetValue(file.Name, out var plugin))
 				{
-					switch (plugin.CheckStatus(bot))
+					var status = plugin.CheckStatus(bot);
+					switch (status)
 					{
 					case PluginStatus.Disabled:
 					case PluginStatus.Active:
@@ -77,7 +79,7 @@ namespace TS3AudioBot.Plugins
 						plugin.Load();
 						break;
 					default:
-						throw new ArgumentOutOfRangeException();
+						throw Util.UnhandledDefault(status);
 					}
 				}
 				else
@@ -140,13 +142,21 @@ namespace TS3AudioBot.Plugins
 
 		public PluginResponse StartPlugin(string identifier, Bot bot)
 		{
-			CheckLocalPlugins(bot);
+			lock (pluginsLock)
+			{
+				CheckLocalPlugins(bot);
 
-			return TryGetPlugin(identifier)?.Start(bot) ?? PluginResponse.PluginNotFound;
+				return TryGetPlugin(identifier)?.Start(bot) ?? PluginResponse.PluginNotFound;
+			}
 		}
 
 		public PluginResponse StopPlugin(string identifier, Bot bot)
-			=> TryGetPlugin(identifier)?.Stop(bot) ?? PluginResponse.PluginNotFound;
+		{
+			lock (pluginsLock)
+			{
+				return TryGetPlugin(identifier)?.Stop(bot) ?? PluginResponse.PluginNotFound;
+			}
+		}
 
 		internal void StopPlugins(Bot bot)
 		{
@@ -166,16 +176,19 @@ namespace TS3AudioBot.Plugins
 
 		public PluginStatusInfo[] GetPluginOverview(Bot bot)
 		{
-			CheckAndClearPlugins(bot);
+			lock (pluginsLock)
+			{
+				CheckAndClearPlugins(bot);
 
-			return plugins.Values.Select(plugin =>
-				new PluginStatusInfo(
-					plugin.Id,
-					plugin.Name,
-					plugin.CheckStatus(bot),
-					plugin.Type
-				)
-			).ToArray();
+				return plugins.Values.Select(plugin =>
+					new PluginStatusInfo(
+						plugin.Id,
+						plugin.Name,
+						plugin.CheckStatus(bot),
+						plugin.Type
+					)
+				).ToArray();
+			}
 		}
 
 		public static string FormatOverview(ICollection<PluginStatusInfo> pluginList)
