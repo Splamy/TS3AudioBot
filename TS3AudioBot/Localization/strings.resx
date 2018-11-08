@@ -930,4 +930,7 @@ with the id {1}?</value>
   <data name="cmd_settings_reload_help" xml:space="preserve">
     <value>Reloads the core configuration from the file.</value>
   </data>
+  <data name="cmd_settings_copy_help" xml:space="preserve">
+    <value>Duplicates a bot template with a new name.</value>
+  </data>
 </root>

@@ -1261,6 +1261,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Duplicates a bot template with a new name..
+        /// </summary>
+        internal static string cmd_settings_copy_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_copy_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Creates a new bot template..
         /// </summary>
         internal static string cmd_settings_create_help {

@@ -143,7 +143,7 @@ namespace TS3AudioBot.Web
 			ReloadHostPaths();
 
 			try { webListener.Start(); }
-			catch (HttpListenerException ex)
+			catch (Exception ex)
 			{
 				Log.Error(ex, "The webserver could not be started");
 				webListener = null;

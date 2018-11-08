@@ -134,7 +134,10 @@ namespace TS3AudioBot.Config
 			{
 				var botConfResult = Load<ConfBot>(file.Value);
 				if (!botConfResult.Ok)
+				{
+					Log.Warn(botConfResult.Error, "Failed to load bot config \"{0}\"", name);
 					return botConfResult.Error;
+				}
 				botConf = botConfResult.Value;
 				InitializeBotConfig(botConf);
 				botConf.Name = name;
