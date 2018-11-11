@@ -396,8 +396,7 @@ namespace TS3AudioBot
 		{
 			var info = new ExecutionInformation(Injector.CloneRealm<DependencyRealm>());
 			info.AddDynamicObject(invoker ?? InvokerData.Anonymous);
-			if (session != null)
-				info.AddDynamicObject(session);
+			info.AddDynamicObject(session ?? new AnonymousSession());
 			return info;
 		}
 
