@@ -46,7 +46,7 @@ namespace TS3Client.Full
 		internal const int MacLen = 8;
 		internal const int PacketTypeKinds = 9;
 
-		public IdentityData Identity { get; set; }
+		internal IdentityData Identity { get; set; }
 
 		internal bool CryptoInitComplete { get; private set; }
 		private byte[] alphaTmp;
@@ -775,7 +775,7 @@ namespace TS3Client.Full
 			return signer.VerifySignature(proof);
 		}
 
-		public static readonly byte[] Ts3VerionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
+		public static readonly byte[] Ts3VersionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
 
 		public static bool EdCheck(VersionSign sign)
 		{
@@ -783,7 +783,7 @@ namespace TS3Client.Full
 			var signArr = Base64Decode(sign.Sign);
 			if (!signArr.Ok)
 				return false;
-			return Chaos.NaCl.Ed25519.Verify(signArr.Value, ver, Ts3VerionSignPublicKey);
+			return Chaos.NaCl.Ed25519.Verify(signArr.Value, ver, Ts3VersionSignPublicKey);
 		}
 
 		public static void VersionSelfCheck()

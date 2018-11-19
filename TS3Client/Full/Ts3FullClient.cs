@@ -37,7 +37,7 @@ namespace TS3Client.Full
 
 		private int returnCode;
 		private ConnectionContext context;
-		
+
 		private readonly IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
 		/// <summary>The client id given to this connection by the server.</summary>
@@ -46,6 +46,8 @@ namespace TS3Client.Full
 		public string QuitMessage { get; set; } = "Disconnected";
 		/// <summary>The <see cref="Full.VersionSign"/> used to connect.</summary>
 		public VersionSign VersionSign { get; private set; }
+		/// <summary>The <see cref="Full.IdentityData"/> used to connect.</summary>
+		public IdentityData Identity => ts3Crypt.Identity;
 		private Ts3ClientStatus status;
 		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
 		public override bool Connecting { get { lock (statusLock) return status == Ts3ClientStatus.Connecting; } }
@@ -487,7 +489,7 @@ namespace TS3Client.Full
 					new CommandParameter("client_server_password", serverPassword), // base64(sha1(pass))
 					new CommandParameter("client_meta_data", metaData),
 					new CommandParameter("client_version_sign", versionSign.Sign),
-					new CommandParameter("client_key_offset", ts3Crypt.Identity.ValidKeyOffset),
+					new CommandParameter("client_key_offset", Identity.ValidKeyOffset),
 					new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
 					new CommandParameter("client_default_token", defaultToken),
 					new CommandParameter("hwid", hwid) }));
