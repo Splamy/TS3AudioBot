@@ -87,10 +87,13 @@ namespace TS3AudioBot.CommandSystem.Commands
 				{
 					return f.Execute(info, arguments, returnTypes);
 				}
-				// When we encounter a missing module problem we store it for later, as it is more helpful
-				// im most cases to know that some commands *could* have matched if the module were there.
 				catch (CommandException cmdEx)
+					when (cmdEx.Reason == CommandExceptionReason.MissingParameter
+						|| cmdEx.Reason == CommandExceptionReason.MissingContext
+						|| cmdEx.Reason == CommandExceptionReason.NoReturnMatch)
 				{
+					// When we encounter a missing module problem we store it for later, as it is more helpful
+					// im most cases to know that some commands *could* have matched if the module were there.
 					if (cmdEx.Reason == CommandExceptionReason.MissingContext)
 						contextException = cmdEx;
 				}

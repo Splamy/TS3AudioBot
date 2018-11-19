@@ -12,6 +12,7 @@ namespace TS3AudioBot
 	using Algorithm;
 	using CommandSystem;
 	using CommandSystem.CommandResults;
+	using CommandSystem.Text;
 	using Config;
 	using Dependency;
 	using Helper;
@@ -72,7 +73,7 @@ namespace TS3AudioBot
 			Log.Info("Bot \"{0}\" connecting to \"{1}\"", config.Name, config.Connect.Address);
 
 			// Registering config changes
-			config.CommandMatcher.Changed += (s, e) =>
+			config.Commands.Matcher.Changed += (s, e) =>
 			{
 				var newMatcher = Filter.GetFilterByName(e.NewValue);
 				if (newMatcher.Ok)
@@ -112,7 +113,7 @@ namespace TS3AudioBot
 			Injector.RegisterModule(new PlayManager());
 			Injector.RegisterModule(teamspeakClient.TargetPipe);
 
-			var filter = Filter.GetFilterByName(config.CommandMatcher);
+			var filter = Filter.GetFilterByName(config.Commands.Matcher);
 			Injector.RegisterModule(new Filter { Current = filter.OkOr(Filter.DefaultAlgorithm) });
 			if (!filter.Ok) Log.Warn("Unknown command_matcher config. Using default.");
 
@@ -383,12 +384,20 @@ namespace TS3AudioBot
 			catch (CommandException ex)
 			{
 				Log.Debug(ex, "Command Error ({0})", ex.Message);
-				if (answer) info.Write(string.Format(strings.error_call_error, ex.Message)).UnwrapToLog(Log);
+				if (answer)
+				{
+					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.UnwrapToLog(Log);
+				}
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-				if (answer) info.Write(string.Format(strings.error_call_unexpected_error, ex.Message)).UnwrapToLog(Log);
+				if (answer)
+				{
+					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.UnwrapToLog(Log);
+				}
 			}
 		}
 

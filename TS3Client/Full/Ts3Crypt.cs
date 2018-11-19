@@ -775,7 +775,7 @@ namespace TS3Client.Full
 			return signer.VerifySignature(proof);
 		}
 
-		public static readonly byte[] Ts3VersionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
+		private static readonly byte[] Ts3VersionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
 
 		public static bool EdCheck(VersionSign sign)
 		{

@@ -34,25 +34,38 @@ namespace TS3AudioBot
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
-		public E<LocalStr> Enqueue(InvokerData invoker, AudioResource ar) => EnqueueInternal(invoker, new PlaylistItem(ar));
+		public E<LocalStr> Enqueue(InvokerData invoker, AudioResource ar) => Enqueue(invoker, new PlaylistItem(ar));
 		public E<LocalStr> Enqueue(InvokerData invoker, string message, string audioType = null)
 		{
 			var result = ResourceFactoryManager.Load(message, audioType);
 			if (!result)
 				return result.Error;
-			return EnqueueInternal(invoker, new PlaylistItem(result.Value.BaseData));
+			return Enqueue(invoker, new PlaylistItem(result.Value.BaseData));
 		}
-		public E<LocalStr> Enqueue(IEnumerable<PlaylistItem> pli)
+		public E<LocalStr> Enqueue(InvokerData invoker, IEnumerable<PlaylistItem> pli)
 		{
-			PlaylistManager.AddToFreelist(pli);
-			return R.Ok;
+			foreach (var item in pli)
+				EnqueueInternal(invoker, item);
+			return PostEnqueue(invoker);
+		}
+		public E<LocalStr> Enqueue(InvokerData invoker, PlaylistItem item)
+		{
+			EnqueueInternal(invoker, item);
+			return PostEnqueue(invoker);
 		}
 
-		private E<LocalStr> EnqueueInternal(InvokerData invoker, PlaylistItem pli)
+		private void EnqueueInternal(InvokerData invoker, PlaylistItem item)
 		{
-			pli.Meta.ResourceOwnerUid = invoker.ClientUid;
-			PlaylistManager.AddToFreelist(pli);
-			return R.Ok;
+			item.Meta.ResourceOwnerUid = invoker.ClientUid;
+			item.Meta.From = PlaySource.FromQueue;
+			PlaylistManager.QueueItem(item);
+		}
+
+		private E<LocalStr> PostEnqueue(InvokerData invoker)
+		{
+			if (IsPlaying)
+				return R.Ok;
+			return Next(invoker);
 		}
 
 		public E<LocalStr> Play(InvokerData invoker, PlaylistItem item)
@@ -97,25 +110,17 @@ namespace TS3AudioBot
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public E<LocalStr> Play(InvokerData invoker, PlayResource play, MetaData meta)
 		{
-			if (!meta.FromPlaylist)
+			if (meta.From != PlaySource.FromPlaylist)
 				meta.ResourceOwnerUid = invoker.ClientUid;
 
 			var playInfo = new PlayInfoEventArgs(invoker, play, meta);
 			BeforeResourceStarted?.Invoke(this, playInfo);
 
-			// pass the song to the AF to start it
 			var result = StartResource(play, meta);
 			if (!result) return result;
 
-			// add it to our freelist for comfort
-			if (!meta.FromPlaylist)
-			{
-				int index = PlaylistManager.InsertToFreelist(new PlaylistItem(play.BaseData, meta));
-				PlaylistManager.Index = index;
-			}
-
 			CurrentPlayData = playInfo; // TODO meta as readonly
-			AfterResourceStarted?.Invoke(this, CurrentPlayData);
+			AfterResourceStarted?.Invoke(this, playInfo);
 
 			return R.Ok;
 		}
@@ -184,10 +189,10 @@ namespace TS3AudioBot
 		{
 			BeforeResourceStopped?.Invoke(this, new SongEndEventArgs(songEndedByCallback));
 
-			if (songEndedByCallback && CurrentPlayData != null)
+			if (songEndedByCallback)
 			{
-				var result = Next(CurrentPlayData.Invoker, false);
-				if (result)
+				var result = Next(CurrentPlayData?.Invoker ?? InvokerData.Anonymous, false);
+				if (result.Ok)
 					return;
 				Log.Info("Song queue ended: {0}", result.Error);
 			}
@@ -208,12 +213,12 @@ namespace TS3AudioBot
 		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
 		public float? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
-		public bool FromPlaylist { get; set; }
+		public PlaySource From { get; set; } = PlaySource.PlayRequest;
 
 		public MetaData Clone() => new MetaData
 		{
 			ResourceOwnerUid = ResourceOwnerUid,
-			FromPlaylist = FromPlaylist,
+			From = From,
 			Volume = Volume
 		};
 	}
@@ -282,5 +287,12 @@ namespace TS3AudioBot
 	public static class AudioValues
 	{
 		public const float MaxVolume = 100;
+	}
+
+	public enum PlaySource
+	{
+		PlayRequest,
+		FromQueue,
+		FromPlaylist,
 	}
 }

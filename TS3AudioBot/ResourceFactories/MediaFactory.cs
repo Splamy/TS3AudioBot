@@ -166,7 +166,7 @@ namespace TS3AudioBot.ResourceFactories
 									select result.Value into val
 									select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, FactoryFor) into res
 									select new PlaylistItem(res);
-					plist.AddRange(resources);
+					plist.Items.AddRange(resources);
 
 					return plist;
 				}
@@ -196,7 +196,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (m3uResult)
 			{
 				var m3uList = new Playlist(PlaylistManager.CleanseName(url));
-				m3uList.AddRange(m3uResult.Value);
+				m3uList.Items.AddRange(m3uResult.Value);
 				return m3uList;
 			}
 

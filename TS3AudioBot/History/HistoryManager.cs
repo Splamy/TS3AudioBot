@@ -13,7 +13,6 @@ namespace TS3AudioBot.History
 	using Helper;
 	using LiteDB;
 	using Localization;
-	using Playlists;
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
@@ -36,8 +35,6 @@ namespace TS3AudioBot.History
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
 
 		public DbStore Database { get; set; }
-		public ResourceFactoryManager FactoryManager { get; set; }
-		public PlaylistManager PlaylistManager { get; set; }
 
 		static HistoryManager()
 		{
@@ -260,7 +257,7 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void RemoveBrokenLinks()
+		public void RemoveBrokenLinks(ResourceFactoryManager resourceFactory)
 		{
 			const int iterations = 3;
 			var currentIter = audioLogEntries.FindAll().ToList();
@@ -268,14 +265,13 @@ namespace TS3AudioBot.History
 			for (int i = 0; i < iterations; i++)
 			{
 				Log.Info("Filter iteration {0}", i);
-				currentIter = FilterList(currentIter);
+				currentIter = FilterList(resourceFactory, currentIter);
 			}
 
 			foreach (var entry in currentIter)
 			{
 				if (RemoveEntry(entry))
 				{
-					PlaylistManager.AddToTrash(new PlaylistItem(entry.AudioResource));
 					Log.Info("Removed: {0} - {1}", entry.Id, entry.AudioResource.ResourceTitle);
 				}
 			}
@@ -287,13 +283,13 @@ namespace TS3AudioBot.History
 		/// </summary>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private List<AudioLogEntry> FilterList(IReadOnlyCollection<AudioLogEntry> list)
+		private List<AudioLogEntry> FilterList(ResourceFactoryManager resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotifyCnt = 0;
 			var nextIter = new List<AudioLogEntry>(list.Count);
 			foreach (var entry in list)
 			{
-				var result = FactoryManager.Load(entry.AudioResource);
+				var result = resourceFactory.Load(entry.AudioResource);
 				if (!result)
 				{
 					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, result.Error);

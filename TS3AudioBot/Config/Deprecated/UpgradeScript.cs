@@ -88,7 +88,7 @@ namespace TS3AudioBot.Config.Deprecated
 			bot.Language.Value = mbd.Language;
 			bot.BotGroupId.Value = mbd.BotGroupId;
 			bot.GenerateStatusAvatar.Value = mbd.GenerateStatusAvatar;
-			bot.CommandMatcher.Value = mbd.CommandMatching;
+			bot.Commands.Matcher.Value = mbd.CommandMatching;
 			bot.History.Enabled.Value = hmd.EnableHistory;
 			bot.History.FillDeletedIds.Value = hmd.FillDeletedIds;
 			bot.Playlists.Path.Value = pld.PlaylistPath;

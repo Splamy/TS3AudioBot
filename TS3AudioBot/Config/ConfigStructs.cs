@@ -121,20 +121,31 @@ namespace TS3AudioBot.Config
 			"Sets the description of the bot to the current song title.");
 		public ConfigValue<string> Language { get; } = new ConfigValue<string>("language", "en",
 			"The language the bot should use to respond to users. (Make sure you have added the required language packs)");
-		public ConfigValue<string> CommandMatcher { get; } = new ConfigValue<string>("command_matcher", "ic3",
-			"Defines how the bot tries to match your !commands. Possible types:\n" +
-			" - exact : Only when the command matches exactly.\n" +
-			" - substring : The shortest command starting with the given prefix.\n" +
-			" - ic3 : 'interleaved continuous character chain' A fuzzy algorithm similar to hamming distance but preferring characters at the start."
-			/* "hamming : " */);
 		public ConfigValue<bool> Run { get; } = new ConfigValue<bool>("run", false,
 			"Starts the instance when the TS3AudioBot is launched.");
 
+		public ConfCommands Commands { get; } = Create<ConfCommands>("commands");
 		public ConfConnect Connect { get; } = Create<ConfConnect>("connect");
 		public ConfAudio Audio { get; } = Create<ConfAudio>("audio");
 		public ConfPlaylists Playlists { get; } = Create<ConfPlaylists>("playlists");
 		public ConfHistory History { get; } = Create<ConfHistory>("history");
 		public ConfEvents Events { get; } = Create<ConfEvents>("events");
+	}
+
+	public class ConfCommands : ConfigTable
+	{
+		public ConfigValue<string> Matcher { get; } = new ConfigValue<string>("matcher", "ic3",
+			"Defines how the bot tries to match your !commands. Possible types:\n" +
+			" - exact : Only when the command matches exactly.\n" +
+			" - substring : The shortest command starting with the given prefix.\n" +
+			" - ic3 : 'interleaved continuous character chain' A fuzzy algorithm similar to hamming distance but preferring characters at the start."
+			/* "hamming : " */);
+		public ConfigValue<string> LongMessage { get; } = new ConfigValue<string>("long_message", "trim",
+			"Defines how the bot handles messages which are too long for a single ts3 message. Options are:\n" +
+			" - trim : The message will be trimmed at the ts3 limit.\n" +
+			" - split : The message will be split up into multiple messages.");
+		public ConfigValue<bool> Color { get; } = new ConfigValue<bool>("color", true,
+			"Enables colors and text highlights for respones.");
 	}
 
 	public class ConfConnect : ConfigTable

@@ -248,7 +248,7 @@ namespace TS3AudioBot.ResourceFactories
 					itemBuffer[i].Length = XmlConvert.ToTimeSpan((string)(((Dictionary<string, object>)videoDicts[i]["contentDetails"])["duration"]));
 #endif
 
-				plist.AddRange(itemBuffer);
+				plist.Items.AddRange(itemBuffer);
 
 				nextToken = parsed.nextPageToken;
 			} while (nextToken != null);

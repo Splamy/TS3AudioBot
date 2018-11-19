@@ -134,7 +134,7 @@ namespace TS3AudioBot.ResourceFactories
 				if (resource is null)
 					continue;
 
-				plist.AddItem(new PlaylistItem(resource));
+				plist.Items.Add(new PlaylistItem(resource));
 			}
 
 			return plist;
