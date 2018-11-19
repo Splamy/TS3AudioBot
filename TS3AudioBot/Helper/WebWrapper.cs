@@ -42,10 +42,10 @@ namespace TS3AudioBot.Helper
 					}
 				}
 			}
-			catch (WebException webEx)
+			catch (Exception ex)
 			{
 				site = null;
-				return ToLoggedError(webEx);
+				return ToLoggedError(ex);
 			}
 		}
 
@@ -70,9 +70,9 @@ namespace TS3AudioBot.Helper
 				}
 				return R.Ok;
 			}
-			catch (WebException webEx)
+			catch (Exception ex)
 			{
-				return ToLoggedError(webEx);
+				return ToLoggedError(ex);
 			}
 		}
 
@@ -91,29 +91,30 @@ namespace TS3AudioBot.Helper
 					return new LocalStr(strings.error_net_empty_response);
 				return stream;
 			}
-			catch (WebException webEx)
+			catch (Exception ex)
 			{
-				return ToLoggedError(webEx);
+				return ToLoggedError(ex);
 			}
 		}
 
-		private static LocalStr ToLoggedError(WebException webEx)
+		private static LocalStr ToLoggedError(Exception ex)
 		{
-			if (webEx.Status == WebExceptionStatus.Timeout)
+			if (ex is WebException webEx)
 			{
-				Log.Warn(webEx, "Request timed out");
-				return new LocalStr(strings.error_net_timeout);
+				if (webEx.Status == WebExceptionStatus.Timeout)
+				{
+					Log.Warn(webEx, "Request timed out");
+					return new LocalStr(strings.error_net_timeout);
+				}
+				else if (webEx.Response is HttpWebResponse errorResponse)
+				{
+					Log.Warn(webEx, "Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
+					return new LocalStr($"{strings.error_net_error_status_code} [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
+				}
 			}
-			else if (webEx.Response is HttpWebResponse errorResponse)
-			{
-				Log.Warn(webEx, "Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
-				return new LocalStr($"{strings.error_net_error_status_code} [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
-			}
-			else
-			{
-				Log.Warn(webEx, "Unknown request error");
-				return new LocalStr(strings.error_net_unknown);
-			}
+
+			Log.Warn(ex, "Unknown request error");
+			return new LocalStr(strings.error_net_unknown);
 		}
 	}
 }
