@@ -58,6 +58,14 @@ namespace TS3AudioBot.Config
 							return R.Ok;
 						}
 					}
+					else if (typeof(T).IsEnum)
+					{
+						if (reader.TokenType == JsonToken.String)
+						{
+							value = (T)Enum.Parse(typeof(T), (string)reader.Value, true);
+							return R.Ok;
+						}
+					}
 					else
 					{
 						value = (T)Convert.ChangeType(reader.Value, typeof(T));

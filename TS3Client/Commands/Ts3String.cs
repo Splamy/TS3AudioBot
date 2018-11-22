@@ -99,7 +99,7 @@ namespace TS3Client.Commands
 			return Encoding.UTF8.GetString(strb, 0, writepos);
 		}
 
-		public static int TokenLength(string str) => str.Length + str.Count(IsDoubleChar);
+		public static int TokenLength(string str) => Encoding.UTF8.GetByteCount(str) + str.Count(IsDoubleChar);
 
 		public static bool IsDoubleChar(char c)
 		{

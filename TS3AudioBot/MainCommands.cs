@@ -659,13 +659,13 @@ namespace TS3AudioBot
 		private static readonly TextMod SongCurrent = new TextMod(TextModFlag.Bold);
 
 		[Command("list")]
-		public static string CommandList(PlayManager playManager, PlaylistManager playlistManager)
+		public static string CommandList(PlayManager playManager, PlaylistManager playlistManager, ConfBot confBot = null)
 		{
 			var curPlay = playManager.CurrentPlayData;
 			var queue = playlistManager.GetQueue();
 			var curList = playlistManager.CurrentList;
 
-			var tmb = new TextModBuilder();
+			var tmb = new TextModBuilder(confBot?.Commands.Color);
 
 			int plIndex = Math.Max(0, playlistManager.Index - 1);
 			int plUpper = Math.Min(curList?.Items.Count ?? 0 - 1, playlistManager.Index + 1);
@@ -675,7 +675,7 @@ namespace TS3AudioBot
 			if (curList?.Items.Count > 0)
 			{
 				tmb.Append("From playlist ").Append(curList.Name.Mod().Bold()).Append(":\n");
-				
+
 				for (; plIndex <= plUpper; plIndex++)
 				{
 					var line = CurLine();
@@ -798,7 +798,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list item delete")]
-		public static string CommandListRemove(UserSession session, InvokerData invoker, int index)
+		public static JsonEmpty CommandListRemove(UserSession session, InvokerData invoker, int index)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
 
@@ -807,10 +807,19 @@ namespace TS3AudioBot
 
 			var deletedItem = plist.GetResource(index);
 			plist.Items.RemoveAt(index);
-			return string.Format(strings.info_removed, deletedItem.DisplayString);
+			return new JsonEmpty(string.Format(strings.info_removed, deletedItem.DisplayString));
 		}
 
-		// add list item rename
+		[Command("list item delete")]
+		public static void CommandListRemove(UserSession session, InvokerData invoker, int index, string title)
+		{
+			var plist = AutoGetPlaylist(session, invoker);
+
+			if (index < 0 || index >= plist.Items.Count)
+				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
+			
+			plist.Items[index].Resource.ResourceTitle = title;
+		}
 
 		[Command("list list")]
 		[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
@@ -862,7 +871,6 @@ namespace TS3AudioBot
 		}
 
 		[Command("list name")]
-		[Usage("<name>", "Changes the playlist name to <name>.")]
 		public static string CommandListName(UserSession session, InvokerData invoker, string name)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
@@ -877,11 +885,15 @@ namespace TS3AudioBot
 		}
 
 		[Command("list play")]
-		[Usage("<index>", "Lets you specify the starting song index.")]
-		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, UserSession session, InvokerData invoker, int? index = null)
-		{
-			var plist = AutoGetPlaylist(session, invoker);
+		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name, int? index = null)
+			=> CommandListPlay(playlistManager, playManager, invoker, playlistManager.LoadPlaylist(name).UnwrapThrow(), index);
 
+		[Command("list play")]
+		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, UserSession session, int? index = null)
+			=> CommandListPlay(playlistManager, playManager, invoker, AutoGetPlaylist(session, invoker), index);
+
+		private static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, Playlist plist, int? index)
+		{
 			if (index.HasValue && (index.Value < 0 || index.Value >= plist.Items.Count))
 				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
@@ -893,8 +905,6 @@ namespace TS3AudioBot
 
 			playManager.Play(invoker, item).UnwrapThrow();
 		}
-
-		// TODO add list play <name> <index?>
 
 		[Command("list queue")]
 		public static void CommandListQueue(PlayManager playManager, UserSession session, InvokerData invoker)
@@ -934,7 +944,7 @@ namespace TS3AudioBot
 			{
 				var strb = new StringBuilder();
 				strb.AppendFormat(strings.cmd_list_show_header, plist.Name, plist.Items.Count).AppendLine();
-				foreach (var plitem in it.Take(10))
+				foreach (var plitem in it)
 					strb.Append(from++).Append(": ").AppendLine(plitem.DisplayString);
 				return strb.ToString();
 			});
@@ -1615,17 +1625,36 @@ namespace TS3AudioBot
 			if (!invoker.Visibiliy.HasValue || !invoker.ClientId.HasValue)
 				return new LocalStr(strings.error_invoker_not_visible);
 
-			switch (invoker.Visibiliy.Value)
+			var behaviour = LongTextBehaviour.Split;
+			var limit = 1;
+			if (info.TryGet<ConfBot>(out var config))
 			{
-			case TextMessageTargetMode.Private:
-				return ts3Client.SendMessage(message, invoker.ClientId.Value);
-			case TextMessageTargetMode.Channel:
-				return ts3Client.SendChannelMessage(message);
-			case TextMessageTargetMode.Server:
-				return ts3Client.SendServerMessage(message);
-			default:
-				throw Util.UnhandledDefault(invoker.Visibiliy.Value);
+				behaviour = config.Commands.LongMessage;
+				limit = config.Commands.LongMessageSplitLimit;
 			}
+
+			foreach (var msgPart in LongTextTransform.Transform(message, behaviour, limit))
+			{
+				E<LocalStr> result;
+				switch (invoker.Visibiliy.Value)
+				{
+				case TextMessageTargetMode.Private:
+					result = ts3Client.SendMessage(msgPart, invoker.ClientId.Value);
+					break;
+				case TextMessageTargetMode.Channel:
+					result = ts3Client.SendChannelMessage(msgPart);
+					break;
+				case TextMessageTargetMode.Server:
+					result = ts3Client.SendServerMessage(msgPart);
+					break;
+				default:
+					throw Util.UnhandledDefault(invoker.Visibiliy.Value);
+				}
+
+				if (!result.Ok)
+					return result;
+			}
+			return R.Ok;
 		}
 	}
 }

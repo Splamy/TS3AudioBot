@@ -157,6 +157,7 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(ulong)) return tomlTable.Add(key, (long)(ulong)(object)value);
 				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, XmlConvert.ToString((TimeSpan)(object)value));
 				else if (typeof(T) == typeof(DateTime)) return tomlTable.Add(key, (DateTime)(object)value);
+				else if (typeof(T).IsEnum) return tomlTable.Add(key, value.ToString());
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Add(key, enubool);
 				else if (value is IEnumerable<string> enustring) return tomlTable.Add(key, enustring);
 				else if (value is IEnumerable<double> enudouble) return tomlTable.Add(key, enudouble);
@@ -177,12 +178,13 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(string)) retobj = tomlTable.Update(key, (string)(object)value);
 				else if (typeof(T) == typeof(double)) retobj = tomlTable.Update(key, (double)(object)value);
 				else if (typeof(T) == typeof(float)) retobj = tomlTable.Update(key, (float)(object)value);
-				else if (typeof(T) == typeof(ushort)) return tomlTable.Update(key, /*auto*/(ushort)(object)value);
+				else if (typeof(T) == typeof(ushort)) retobj = tomlTable.Update(key, /*auto*/(ushort)(object)value);
 				else if (typeof(T) == typeof(int)) retobj = tomlTable.Update(key, /*auto*/(int)(object)value);
 				else if (typeof(T) == typeof(long)) retobj = tomlTable.Update(key, (long)(object)value);
-				else if (typeof(T) == typeof(ulong)) return tomlTable.Update(key, (long)(ulong)(object)value);
+				else if (typeof(T) == typeof(ulong)) retobj = tomlTable.Update(key, (long)(ulong)(object)value);
 				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, XmlConvert.ToString((TimeSpan)(object)value));
 				else if (typeof(T) == typeof(DateTime)) retobj = tomlTable.Update(key, (DateTime)(object)value);
+				else if (typeof(T).IsEnum) retobj = tomlTable.Update(key, value.ToString());
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Update(key, enubool);
 				else if (value is IEnumerable<string> enustring) return tomlTable.Update(key, enustring);
 				else if (value is IEnumerable<double> enudouble) return tomlTable.Update(key, enudouble);
