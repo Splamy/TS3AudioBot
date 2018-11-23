@@ -136,7 +136,7 @@ namespace TS3AudioBot.Helper
 	public class TickWorker
 	{
 		public Action Method { get; }
-		public TimeSpan Interval { get; }
+		public TimeSpan Interval { get; set; }
 		public Stopwatch Timer { get; set; } = new Stopwatch();
 		public bool Active { get; set; } = false;
 		public bool TickOnce { get; set; } = false;
