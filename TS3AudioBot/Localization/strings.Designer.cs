@@ -703,6 +703,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Show&apos;s a small summary of the current playlist and queue status..
+        /// </summary>
+        internal static string cmd_info_help {
+            get {
+                return ResourceManager.GetString("cmd_info_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Allows you to combine multiple JsonResults into one.
         /// </summary>
         internal static string cmd_json_merge_help {
@@ -807,6 +816,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_list_item_move_help {
             get {
                 return ResourceManager.GetString("cmd_list_item_move_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Renames an item..
+        /// </summary>
+        internal static string cmd_list_item_name_help {
+            get {
+                return ResourceManager.GetString("cmd_list_item_name_help", resourceCulture);
             }
         }
         
@@ -996,6 +1014,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_print_help {
             get {
                 return ResourceManager.GetString("cmd_print_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Displays the current play queue..
+        /// </summary>
+        internal static string cmd_queue_help {
+            get {
+                return ResourceManager.GetString("cmd_queue_help", resourceCulture);
             }
         }
         

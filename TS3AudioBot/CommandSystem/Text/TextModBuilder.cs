@@ -10,13 +10,17 @@
 namespace TS3AudioBot.CommandSystem.Text
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Text;
+	using System.Text.RegularExpressions;
 
 	public class TextModBuilder
 	{
 		private readonly bool color;
 		private readonly StringBuilder strb;
 		private TextModFlag cur = 0;
+
+		public int Length { get => strb.Length; set => strb.Length = value; }
 
 		public TextModBuilder(bool color = true)
 			: this(new StringBuilder(), color) { }
@@ -35,6 +39,29 @@ namespace TS3AudioBot.CommandSystem.Text
 				StartText(strb, text, ref cur, mod.Flags, mod.HasColor);
 			else
 				strb.Append(text);
+			return this;
+		}
+
+		public TextModBuilder AppendFormat(AppliedTextMod format, params AppliedTextMod[] para)
+		{
+			var mods = new Stack<TextModFlag>();
+
+			if (para.Length == 0)
+			{
+				Append(format);
+			}
+			else
+			{
+				var parts = Regex.Split(format.Text, @"{\d+}");
+
+				for (int i = 0; i < parts.Length - 1; i++)
+				{
+					Append(parts[i], format.Mod);
+					Append(para[i]);
+				}
+				Append(parts[parts.Length - 1], format.Mod);
+			}
+
 			return this;
 		}
 

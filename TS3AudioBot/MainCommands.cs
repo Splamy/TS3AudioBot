@@ -602,6 +602,65 @@ namespace TS3AudioBot
 			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
 		}
 
+		private static readonly TextMod SongDone = new TextMod(TextModFlag.Color, Color.Gray);
+		private static readonly TextMod SongCurrent = new TextMod(TextModFlag.Bold);
+
+		[Command("info")]
+		public static string CommandInfo(PlayManager playManager, PlaylistManager playlistManager, ConfBot confBot = null)
+		{
+			var curPlay = playManager.CurrentPlayData;
+			var queue = playlistManager.GetQueue();
+			var curList = playlistManager.CurrentList;
+			
+			var tmb = new TextModBuilder(confBot?.Commands.Color);
+
+			int plIndex = Math.Max(0, playlistManager.Index - 1);
+			int plUpper = Math.Min((curList?.Items.Count ?? 0) - 1, playlistManager.Index + 1);
+
+			string CurLine() => $"{plIndex}: {curList.Items[plIndex].DisplayString} \n";
+
+			if (curList?.Items.Count > 0)
+			{
+				tmb.AppendFormat(strings.cmd_list_show_header + "\n", curList.Name.Mod().Bold(), curList.Items.Count.ToString());
+
+				for (; plIndex <= plUpper; plIndex++)
+				{
+					var line = CurLine();
+					if (plIndex == playlistManager.Index && curPlay?.MetaData.From == PlaySource.FromPlaylist)
+						tmb.Append("> " + line, SongCurrent);
+					else if (plIndex <= playlistManager.Index)
+						tmb.Append(line, SongDone);
+					else
+						break;
+				}
+			}
+
+			if (curPlay != null && (curPlay.MetaData.From == PlaySource.PlayRequest || curPlay.MetaData.From == PlaySource.FromQueue))
+			{
+				tmb.Append("> " + curPlay.ResourceData.ResourceTitle + "\n", SongCurrent);
+			}
+
+			if (queue.Length > 0)
+			{
+				foreach (var pli in queue.Take(3))
+				{
+					tmb.Append("   " + pli.DisplayString + "\n");
+				}
+
+				if (queue.Length > 3)
+					tmb.Append("...");
+			}
+
+			if (curList?.Items.Count > 0)
+				for (; plIndex <= plUpper; plIndex++)
+					tmb.Append(CurLine());
+
+			if (tmb.Length == 0)
+				return strings.info_currently_not_playing;
+
+			return tmb.ToString();
+		}
+
 		[Command("json merge")]
 		public static JsonArray<object> CommandJsonMerge(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
@@ -653,64 +712,6 @@ namespace TS3AudioBot
 				: ts3Client.KickClientFromChannel(invoker.ClientId.Value);
 			if (!result.Ok)
 				throw new CommandException(strings.cmd_kickme_missing_permission, CommandExceptionReason.CommandError);
-		}
-
-		private static readonly TextMod SongDone = new TextMod(0, Color.Gray);
-		private static readonly TextMod SongCurrent = new TextMod(TextModFlag.Bold);
-
-		[Command("list")]
-		public static string CommandList(PlayManager playManager, PlaylistManager playlistManager, ConfBot confBot = null)
-		{
-			var curPlay = playManager.CurrentPlayData;
-			var queue = playlistManager.GetQueue();
-			var curList = playlistManager.CurrentList;
-
-			var tmb = new TextModBuilder(confBot?.Commands.Color);
-
-			int plIndex = Math.Max(0, playlistManager.Index - 1);
-			int plUpper = Math.Min(curList?.Items.Count ?? 0 - 1, playlistManager.Index + 1);
-
-			string CurLine() => $"{plIndex}: {curList.Items[plIndex].DisplayString} \n";
-
-			if (curList?.Items.Count > 0)
-			{
-				tmb.Append("From playlist ").Append(curList.Name.Mod().Bold()).Append(":\n");
-
-				for (; plIndex <= plUpper; plIndex++)
-				{
-					var line = CurLine();
-					if (plIndex == playlistManager.Index && curPlay?.MetaData.From == PlaySource.FromPlaylist)
-						tmb.Append("> " + line, SongCurrent);
-					else if (plIndex <= playlistManager.Index)
-						tmb.Append(line, SongDone);
-					else
-						break;
-				}
-			}
-
-			if (curPlay != null && (curPlay.MetaData.From == PlaySource.PlayRequest || curPlay.MetaData.From == PlaySource.FromQueue))
-			{
-				tmb.Append("> " + curPlay.ResourceData.ResourceTitle + "\n", SongCurrent);
-			}
-
-			if (queue.Length > 0)
-			{
-				tmb.Append("Queued:\n");
-
-				foreach (var pli in queue.Take(3))
-				{
-					tmb.Append(pli.DisplayString + "\n");
-				}
-
-				if (queue.Length > 3)
-					tmb.Append("...");
-			}
-
-			if (curList?.Items.Count > 0)
-				for (; plIndex <= plUpper; plIndex++)
-					tmb.Append(CurLine());
-
-			return tmb.ToString();
 		}
 
 		[Command("list add")]
@@ -779,7 +780,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list item move")]
-		public static void CommandListMove(UserSession session, InvokerData invoker, int from, int to)
+		public static void CommandListItemMove(UserSession session, InvokerData invoker, int from, int to)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
 
@@ -798,7 +799,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list item delete")]
-		public static JsonEmpty CommandListRemove(UserSession session, InvokerData invoker, int index)
+		public static JsonEmpty CommandListItemDelete(UserSession session, InvokerData invoker, int index)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
 
@@ -810,8 +811,8 @@ namespace TS3AudioBot
 			return new JsonEmpty(string.Format(strings.info_removed, deletedItem.DisplayString));
 		}
 
-		[Command("list item delete")]
-		public static void CommandListRemove(UserSession session, InvokerData invoker, int index, string title)
+		[Command("list item name")]
+		public static void CommandListItemName(UserSession session, InvokerData invoker, int index, string title)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
 
@@ -977,14 +978,13 @@ namespace TS3AudioBot
 		}
 
 		[Command("pause")]
-		public static void CommandPause(Bot bot) => bot.PlayerConnection.Paused = true;
+		public static void CommandPause(Bot bot) => bot.PlayerConnection.Paused = !bot.PlayerConnection.Paused;
 
 		[Command("play")]
 		public static void CommandPlay(IPlayerConnection playerConnection)
 			=> playerConnection.Paused = false;
 
 		[Command("play")]
-		[Usage("<link>", "Youtube, Soundcloud, local path or file link")]
 		public static void CommandPlay(PlayManager playManager, InvokerData invoker, string url)
 			=> playManager.Play(invoker, url).UnwrapThrow();
 
@@ -1303,7 +1303,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("song")]
-		public static JsonObject CommandSong(PlayManager playManager, ResourceFactoryManager factoryManager, Bot bot, CallerInfo caller, InvokerData invoker = null)
+		public static JsonObject CommandSong(PlayManager playManager, IPlayerConnection playerConnection, Bot bot, CallerInfo caller, InvokerData invoker = null)
 		{
 			if (playManager.CurrentPlayData is null)
 				throw new CommandException(strings.info_currently_not_playing, CommandExceptionReason.CommandError);
@@ -1314,23 +1314,23 @@ namespace TS3AudioBot
 				new
 				{
 					title = playManager.CurrentPlayData.ResourceData.ResourceTitle,
-					source = factoryManager.RestoreLink(playManager.CurrentPlayData.ResourceData),
+					source = playManager.CurrentPlayData.SourceLink,
+					position = playerConnection.Position,
+					length = playerConnection.Length,
+					paused = playerConnection.Paused,
 				},
-				x => $"[url={x.source}]{x.title}[/url]"
-			);
-		}
-
-		[Command("song position")]
-		public static JsonObject CommandSongPosition(IPlayerConnection playerConnection)
-		{
-			return JsonValue.Create(new
-			{
-				position = playerConnection.Position,
-				length = playerConnection.Length,
-			},
-			x => x.length.TotalHours >= 1 || x.position.TotalHours >= 1
-				? $"{x.position:hh\\:mm\\:ss}/{x.length:hh\\:mm\\:ss}"
-				: $"{x.position:mm\\:ss}/{x.length:mm\\:ss}"
+				x =>
+				{
+					var tmb = new StringBuilder();
+					tmb.Append(x.paused ? "⏸ " : "► ");
+					tmb.Append($"[url={x.source}]{x.title}[/url]");
+					tmb.Append(" [");
+					tmb.Append(x.length.TotalHours >= 1 || x.position.TotalHours >= 1
+						? $"{x.position:hh\\:mm\\:ss}/{x.length:hh\\:mm\\:ss}"
+						: $"{x.position:mm\\:ss}/{x.length:mm\\:ss}");
+					tmb.Append("]");
+					return tmb.ToString();
+				}
 			);
 		}
 

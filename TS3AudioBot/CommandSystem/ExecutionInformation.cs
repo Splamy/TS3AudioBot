@@ -30,7 +30,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			var ok = TryGet(typeof(T), out var oobj);
 			if (ok) obj = (T)oobj;
-			else obj = default(T);
+			else obj = default;
 			return ok;
 		}
 		public bool TryGet(Type t, out object obj)

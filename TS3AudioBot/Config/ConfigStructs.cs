@@ -9,9 +9,9 @@
 
 namespace TS3AudioBot.Config
 {
+	using CommandSystem.Text;
 	using Nett;
 	using System;
-	using TS3AudioBot.CommandSystem.Text;
 
 	public partial class ConfRoot : ConfigTable
 	{

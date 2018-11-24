@@ -113,7 +113,8 @@ namespace TS3AudioBot
 			if (meta.From != PlaySource.FromPlaylist)
 				meta.ResourceOwnerUid = invoker.ClientUid;
 
-			var playInfo = new PlayInfoEventArgs(invoker, play, meta);
+			var sourceLink = ResourceFactoryManager.RestoreLink(play.BaseData);
+			var playInfo = new PlayInfoEventArgs(invoker, play, meta, sourceLink);
 			BeforeResourceStarted?.Invoke(this, playInfo);
 
 			var result = StartResource(play, meta);
@@ -166,10 +167,21 @@ namespace TS3AudioBot
 
 		public E<LocalStr> Previous(InvokerData invoker, bool manually = true)
 		{
+			bool skipPrev = CurrentPlayData?.MetaData.From != PlaySource.FromPlaylist;
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = PlaylistManager.Previous(manually)) is null) break;
+				if (skipPrev)
+				{
+					pli = PlaylistManager.Current;
+					skipPrev = false;
+				}
+				else
+				{
+					pli = PlaylistManager.Previous(manually);
+				}
+				if (pli is null) break;
+
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
@@ -235,12 +247,14 @@ namespace TS3AudioBot
 		public PlayResource PlayResource { get; }
 		public AudioResource ResourceData => PlayResource.BaseData;
 		public MetaData MetaData { get; }
+		public string SourceLink { get; }
 
-		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta)
+		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta, string sourceLink)
 		{
 			Invoker = invoker;
 			PlayResource = playResource;
 			MetaData = meta;
+			SourceLink = sourceLink;
 		}
 	}
 

@@ -9,9 +9,6 @@
 
 namespace TS3AudioBot.CommandSystem.Text
 {
-	using System.Collections.Generic;
-	using System.Text.RegularExpressions;
-
 	public readonly struct TextMod
 	{
 		public static readonly TextMod None = new TextMod(0, null);
@@ -32,28 +29,7 @@ namespace TS3AudioBot.CommandSystem.Text
 		public TextMod Underline() => new TextMod(Flags | TextModFlag.Underline, HasColor);
 
 		public static string Format(AppliedTextMod format, params AppliedTextMod[] para)
-		{
-			var mods = new Stack<TextModFlag>();
-			var tmb = new TextModBuilder();
-
-			if (para.Length == 0)
-			{
-				tmb.Append(format);
-			}
-			else
-			{
-				var parts = Regex.Split(format.Text, @"{\d+}");
-
-				for (int i = 0; i < parts.Length - 1; i++)
-				{
-					tmb.Append(parts[i], format.Mod);
-					tmb.Append(para[i]);
-				}
-				tmb.Append(parts[parts.Length - 1], format.Mod);
-			}
-
-			return tmb.ToString();
-		}
+			=> new TextModBuilder().AppendFormat(format, para).ToString();
 
 		public static string Format(bool color, AppliedTextMod format, params AppliedTextMod[] para)
 		{

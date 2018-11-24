@@ -933,4 +933,13 @@ with the id {1}?</value>
   <data name="cmd_settings_copy_help" xml:space="preserve">
     <value>Duplicates a bot template with a new name.</value>
   </data>
+  <data name="cmd_queue_help" xml:space="preserve">
+    <value>Displays the current play queue.</value>
+  </data>
+  <data name="cmd_info_help" xml:space="preserve">
+    <value>Show's a small summary of the current playlist and queue status.</value>
+  </data>
+  <data name="cmd_list_item_name_help" xml:space="preserve">
+    <value>Renames an item.</value>
+  </data>
 </root>
