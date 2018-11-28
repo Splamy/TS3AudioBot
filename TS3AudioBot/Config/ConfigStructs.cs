@@ -157,7 +157,7 @@ namespace TS3AudioBot.Config
 			"The address, ip or nickname (and port; default: 9987) of the TeamSpeak3 server");
 		public ConfigValue<string> Channel { get; } = new ConfigValue<string>("channel", "",
 			"Default channel when connecting. Use a channel path or '/<id>'.\n" +
-			"Examples: 'Home/Lobby', '/5', 'Home/Afk \\/ Not Here'.");
+			"Examples: 'Home/Lobby', '/5', 'Home/Afk \\\\/ Not Here'.");
 		public ConfigValue<string> Badges { get; } = new ConfigValue<string>("badges", "",
 			"The client badges. You can set a comma seperated string with max three GUID's. Here is a list: http://yat.qa/ressourcen/abzeichen-badges/");
 		public ConfigValue<string> Name { get; } = new ConfigValue<string>("name",

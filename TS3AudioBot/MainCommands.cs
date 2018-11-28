@@ -1029,7 +1029,7 @@ namespace TS3AudioBot
 				x =>
 				{
 					if (x.Length > 0)
-						return "Queue:\n" + string.Join(",\n,", x.Select(pli => pli.DisplayString));
+						return "\n" + string.Join("\n", x.Select(pli => pli.DisplayString));
 					else
 						return strings.info_empty;
 				});
