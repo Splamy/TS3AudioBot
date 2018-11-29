@@ -124,10 +124,6 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		// TODO: prevent stupid behaviour like:
-		// string A(int b)
-		// string A(ExecutionInformation i, int b)
-		// since the CommandManager can't distinguish these two, when calling
 		private void LoadCommand(BotCommand com) // TODO test
 		{
 			if (!CommandNamespaceValidator.IsMatch(com.InvokeName))

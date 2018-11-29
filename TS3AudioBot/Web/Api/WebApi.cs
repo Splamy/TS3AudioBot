@@ -31,6 +31,7 @@ namespace TS3AudioBot.Web.Api
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
 		private static readonly MD5 Md5Hash = MD5.Create();
+		private static readonly ApiCall apiCallDummy = new ApiCall();
 
 		private const string InfoNonceAdded = "Added a nonce to your request";
 		private const string ErrorUnknownRealm = "Unknown realm";
@@ -90,6 +91,7 @@ namespace TS3AudioBot.Web.Api
 			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
 			execInfo.AddDynamicObject(new CallerInfo(apirequest, true));
 			execInfo.AddDynamicObject(invoker);
+			execInfo.AddDynamicObject(apiCallDummy);
 			// todo creating token usersessions is now possible
 
 			try

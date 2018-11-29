@@ -40,6 +40,8 @@ namespace TS3AudioBot.CommandSystem
 					var strb = new StringBuilder();
 					strb.Append(InvokeName);
 					strb.Append(" (");
+					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.kind.IsNormal()).Select(p => p.type.FullName).OrderBy(p => p)));
+					strb.Append("|");
 					strb.Append(string.Join(", ", CommandParameter.Where(p => p.kind.IsNormal()).Select(p => p.type.FullName)));
 					strb.Append(")");
 					cachedFullQualifiedName = strb.ToString();
@@ -61,15 +63,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public object AsJsonObj
-		{
-			get
-			{
-				if (cachedAsJsonObj is null)
-					cachedAsJsonObj = new CommadSerializeObj(this);
-				return cachedAsJsonObj;
-			}
-		}
+		public object AsJsonObj => cachedAsJsonObj ?? (cachedAsJsonObj = new CommadSerializeObj(this));
 
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{

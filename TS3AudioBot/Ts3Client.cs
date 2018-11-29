@@ -432,6 +432,7 @@ namespace TS3AudioBot
 					Ts3Permission.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
 					Ts3Permission.b_client_use_channel_commander, // + Enable channel commander
 					Ts3Permission.b_client_ignore_bans, // + The bot should be resistent to bans
+					Ts3Permission.b_client_ignore_sticky, // + Should skip weird movement restrictions
 				},
 				new[] {
 					max, max,   1,   1,
@@ -440,7 +441,7 @@ namespace TS3AudioBot
 					  1, max, max,   4,
 					  1,   1,   1,   1,
 					  1,   1, max,   1,
-					ava,   1,   1,
+					ava,   1,   1,   1,
 				},
 				new[] {
 					false, false, false, false,
@@ -449,7 +450,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
-					false, false, false,
+					false, false, false, false,
 				},
 				new[] {
 					false, false, false, false,
@@ -458,7 +459,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
-					false, false, false,
+					false, false, false, false,
 				});
 
 			if (!permresult)

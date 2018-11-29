@@ -12,8 +12,6 @@ namespace TS3AudioBot.Playlists
 	using Config;
 	using Helper;
 	using Localization;
-	using Newtonsoft.Json;
-	using ResourceFactories;
 	using Shuffle;
 	using System;
 	using System.Collections.Concurrent;
@@ -24,8 +22,9 @@ namespace TS3AudioBot.Playlists
 
 	public sealed class PlaylistManager
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
+
+		public PlaylistPool PlaylistPool { get; set; }
 
 		private readonly ConfPlaylists config;
 		private readonly ConcurrentQueue<PlaylistItem> playQueue;
@@ -154,127 +153,13 @@ namespace TS3AudioBot.Playlists
 			return (list, index);
 		}
 
-		public R<Playlist, LocalStr> LoadPlaylist(string name, bool headOnly = false)
+		public R<Playlist, LocalStr> LoadPlaylist(string name)
 		{
 			if (name.StartsWith(".", StringComparison.Ordinal))
 				return GetSpecialPlaylist(name);
 
 			var fi = GetFileInfo(name);
-			if (!fi.Exists)
-				return new LocalStr(strings.error_playlist_not_found);
-
-			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Util.Utf8Encoder))
-			{
-				var plist = new Playlist(name);
-
-				// Info: version:<num>
-				// Info: owner:<uid>
-				// Line: <kind>:<data,data,..>:<opt-title>
-
-				string line;
-				int version = 1;
-
-				// read header
-				while ((line = sr.ReadLine()) != null)
-				{
-					if (string.IsNullOrEmpty(line))
-						break;
-
-					var kvp = line.Split(new[] { ':' }, 2);
-					if (kvp.Length < 2) continue;
-
-					string key = kvp[0];
-					string value = kvp[1];
-
-					switch (key)
-					{
-					case "version":
-						version = int.Parse(value);
-						if (version > 2)
-							return new LocalStr("The file version is too new and can't be read."); // LOC: TODO
-						break;
-
-					case "owner":
-						if (plist.OwnerUid != null)
-						{
-							Log.Warn("Invalid playlist file: duplicate userid");
-							return new LocalStr(strings.error_playlist_broken_file);
-						}
-
-						if (version == 2)
-						{
-							plist.OwnerUid = value;
-						}
-						break;
-					}
-				}
-
-				if (headOnly)
-					return plist;
-
-				// read content
-				while ((line = sr.ReadLine()) != null)
-				{
-					var kvp = line.Split(new[] { ':' }, 2);
-					if (kvp.Length < 2) continue;
-
-					string key = kvp[0];
-					string value = kvp[1];
-
-					switch (key)
-					{
-					case "rs":
-						{
-							var rskvp = value.Split(new[] { ':' }, 2);
-							if (kvp.Length < 2)
-							{
-								Log.Warn("Erroneus playlist split count: {0}", line);
-								continue;
-							}
-							string optOwner = rskvp[0];
-							string content = rskvp[1];
-
-							var rsSplit = content.Split(new[] { ',' }, 3);
-							if (rsSplit.Length < 3)
-								goto default;
-							if (!string.IsNullOrWhiteSpace(rsSplit[0]))
-								plist.Items.Add(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0])));
-							else
-								goto default;
-							break;
-						}
-
-					case "rsj":
-						var rsjdata = JsonConvert.DeserializeAnonymousType(value, new
-						{
-							type = string.Empty,
-							resid = string.Empty,
-							title = string.Empty
-						});
-						plist.Items.Add(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
-						break;
-
-					case "id":
-					case "ln":
-						Log.Warn("Deprecated playlist data block: {0}", line);
-						break;
-
-					default:
-						Log.Warn("Erroneus playlist data block: {0}", line);
-						break;
-					}
-				}
-				return plist;
-			}
-		}
-
-		private static R<Playlist, LocalStr> LoadChecked(R<Playlist, LocalStr> loadResult, string ownerUid)
-		{
-			if (!loadResult)
-				return new LocalStr($"{strings.error_playlist_broken_file} ({loadResult.Error.Str})");
-			if (loadResult.Value.OwnerUid != null && loadResult.Value.OwnerUid != ownerUid)
-				return new LocalStr(strings.error_playlist_cannot_access_not_owned);
-			return loadResult;
+			return PlaylistPool.Read(fi);
 		}
 
 		public E<LocalStr> SavePlaylist(Playlist plist)
@@ -291,75 +176,18 @@ namespace TS3AudioBot.Playlists
 				return new LocalStr(strings.error_playlist_no_store_directory);
 
 			var fi = GetFileInfo(plist.Name);
-			if (fi.Exists)
-			{
-				var tempList = LoadChecked(LoadPlaylist(plist.Name, true), plist.OwnerUid);
-				if (!tempList)
-					return tempList.OnlyError();
-			}
-
-			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Util.Utf8Encoder))
-			{
-				sw.WriteLine("version:2");
-				if (plist.OwnerUid != null)
-				{
-					sw.Write("owner:");
-					sw.Write(plist.OwnerUid);
-					sw.WriteLine();
-				}
-
-				sw.WriteLine();
-
-				using (var json = new JsonTextWriter(sw))
-				{
-					json.Formatting = Formatting.None;
-
-					foreach (var pli in plist.Items)
-					{
-						sw.Write("rsj:");
-						json.WriteStartObject();
-						json.WritePropertyName("type");
-						json.WriteValue(pli.Resource.AudioType);
-						json.WritePropertyName("resid");
-						json.WriteValue(pli.Resource.ResourceId);
-						if (pli.Resource.ResourceTitle != null)
-						{
-							json.WritePropertyName("title");
-							json.WriteValue(pli.Resource.ResourceTitle);
-						}
-						json.WriteEndObject();
-						json.Flush();
-						sw.WriteLine();
-					}
-				}
-			}
+			PlaylistPool.Write(plist, fi);
 
 			return R.Ok;
 		}
 
+		// todo local/shared_server/shared_global
 		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(config.Path, name ?? string.Empty));
 
 		public E<LocalStr> DeletePlaylist(string name, string requestingClientUid, bool force = false)
 		{
 			var fi = GetFileInfo(name);
-			if (!fi.Exists)
-			{
-				return new LocalStr(strings.error_playlist_not_found);
-			}
-			else if (!force)
-			{
-				var tempList = LoadChecked(LoadPlaylist(name, true), requestingClientUid);
-				if (!tempList)
-					return tempList.OnlyError();
-			}
-
-			try
-			{
-				fi.Delete();
-				return R.Ok;
-			}
-			catch (IOException) { return new LocalStr(strings.error_io_in_use); }
-			catch (System.Security.SecurityException) { return new LocalStr(strings.error_io_missing_permission); }
+			return PlaylistPool.Delete(fi, requestingClientUid, force);
 		}
 
 		public static string CleanseName(string name)
@@ -374,6 +202,7 @@ namespace TS3AudioBot.Playlists
 			return name;
 		}
 
+		// todo local/shared_server/shared_global
 		public IEnumerable<string> GetAvailablePlaylists() => GetAvailablePlaylists(null);
 		public IEnumerable<string> GetAvailablePlaylists(string pattern)
 		{
