@@ -12,7 +12,6 @@ namespace TS3AudioBot.Sessions
 	using Helper;
 	using System;
 	using System.Collections.Generic;
-	using TS3Client.Messages;
 
 	/// <summary>Management for clients talking with the bot.</summary>
 	public class SessionManager

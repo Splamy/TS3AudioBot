@@ -15,11 +15,10 @@ namespace TS3AudioBot.Config
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using System.Text.RegularExpressions;
 
 	public partial class ConfRoot
 	{
-		private static readonly Regex BotFileMatcher = new Regex(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
+		private const string BotFileName = "bot.toml";
 
 		private string fileName;
 		private readonly Dictionary<string, ConfBot> botConfCache = new Dictionary<string, ConfBot>();
@@ -91,7 +90,7 @@ namespace TS3AudioBot.Config
 			var nameResult = Util.IsSafeFileName(name);
 			if (!nameResult.Ok)
 				return nameResult.Error;
-			return Path.Combine(Configs.BotsPath.Value, $"bot_{name}.toml");
+			return Path.Combine(Configs.BotsPath.Value, name, BotFileName);
 		}
 
 		public ConfBot CreateBot()
@@ -105,8 +104,8 @@ namespace TS3AudioBot.Config
 		{
 			try
 			{
-				return Directory.EnumerateFiles(Configs.BotsPath.Value, "bot_*.toml", SearchOption.TopDirectoryOnly)
-					.SelectOk(filePath => ExtractNameFromFile(new FileInfo(filePath).Name))
+				return Directory.EnumerateDirectories(Configs.BotsPath.Value)
+					.Select(filePath => new DirectoryInfo(filePath).Name)
 					.SelectOk(GetBotConfig)
 					.ToArray();
 			}
@@ -115,14 +114,6 @@ namespace TS3AudioBot.Config
 				Log.Error(ex, "Could not access bot config subdirectory.");
 				return null;
 			}
-		}
-
-		private static R<string, LocalStr> ExtractNameFromFile(string file)
-		{
-			var match = BotFileMatcher.Match(file);
-			if (match.Success && Util.IsSafeFileName(match.Groups[1].Value))
-				return match.Groups[1].Value;
-			return Util.IsSafeFileName(file).WithValue(file);
 		}
 
 		public R<ConfBot, Exception> GetBotConfig(string name)
@@ -240,6 +231,8 @@ namespace TS3AudioBot.Config
 	public partial class ConfBot
 	{
 		public string Name { get; set; }
+
+		public string LocalConfigDir => Path.Combine(GetParent().Configs.BotsPath.Value, Name);
 
 		public E<LocalStr> SaveNew(string name)
 		{

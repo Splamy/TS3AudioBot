@@ -54,7 +54,7 @@ namespace TS3AudioBot.Helper
 			var now = Util.GetNow() - Timeout;
 			foreach (var item in cachedData.Where(kvp => now > kvp.Value.Timestamp).ToList())
 			{
-				cachedData.TryRemove(item.Key, out var _);
+				cachedData.TryRemove(item.Key, out _);
 			}
 		}
 

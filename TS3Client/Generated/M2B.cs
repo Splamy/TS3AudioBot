@@ -110,6 +110,7 @@ namespace TS3Client.Full.Book
 			obj.ChannelType = ChannelTypeCcFun(msg);
 			obj.ForcedSilence = ReturnFalse(msg);
 			obj.IsPrivate = ReturnFalse(msg);
+			obj.Subscribed = ReturnFalse(msg);
 			obj.OptionalData = null;
 			obj.Order = msg.Order;
 			obj.Name = msg.Name;
@@ -172,6 +173,7 @@ namespace TS3Client.Full.Book
 			obj.MaxFamilyClients = tmp.Item2;
 			}
 			obj.ChannelType = ChannelTypeClFun(msg);
+			obj.Subscribed = ReturnFalse(msg);
 			obj.OptionalData = null;
 			obj.Name = msg.Name;
 			obj.Topic = msg.Topic;
@@ -202,6 +204,22 @@ namespace TS3Client.Full.Book
 		}
 
 	
+		public void UpdateChannelSubscribed(ChannelSubscribed msg)
+		{
+			var obj = GetChannel(msg.ChannelId);
+			obj.Subscribed = ChannelSubscribeFun(msg);
+			
+		}
+
+	
+		public void UpdateChannelUnsubscribed(ChannelUnsubscribed msg)
+		{
+			var obj = GetChannel(msg.ChannelId);
+			obj.Subscribed = ChannelUnsubscribeFun(msg);
+			
+		}
+
+	
 		public void UpdateClientChannelGroupChanged(ClientChannelGroupChanged msg)
 		{
 			var obj = GetClient(msg.ClientId);
@@ -218,7 +236,6 @@ namespace TS3Client.Full.Book
 			obj.TalkPowerRequest = TalkPowerFun(msg);
 			obj.OptionalData = null;
 			obj.ConnectionData = null;
-			{ var tmp = BadgesFun(msg); if (tmp != null) obj.Badges.AddRange(tmp); }
 			obj.DatabaseId = msg.DatabaseId;
 			obj.Name = msg.Name;
 			obj.ClientType = msg.ClientType;
@@ -244,6 +261,7 @@ namespace TS3Client.Full.Book
 			obj.NeededServerqueryViewPower = msg.NeededServerqueryViewPower;
 			obj.IsChannelCommander = msg.IsChannelCommander;
 			obj.CountryCode = msg.CountryCode;
+			obj.Badges = msg.Badges;
 			SetClient(obj, msg.ClientId);
 			
 		}
@@ -315,6 +333,16 @@ namespace TS3Client.Full.Book
 		{
 			var obj = GetClient(msg.ClientId);
 			obj.ServerGroups.Add(msg.ServerGroupId);
+			
+		}
+
+	
+		public void UpdateClientUpdated(ClientUpdated msg)
+		{
+			var obj = GetClient(msg.ClientId);
+			obj.Name = msg.Name;
+			obj.UnreadMessages = msg.UnreadMessages;
+			obj.InputMuted = msg.InputMuted;
 			
 		}
 

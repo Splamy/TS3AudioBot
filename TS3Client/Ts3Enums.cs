@@ -44,6 +44,19 @@ namespace TS3Client
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
+	[Flags]
+	public enum ChannelListOptions
+	{
+		// ReSharper disable InconsistentNaming, UnusedMember.Global
+		topic = 1 << 0,
+		flags = 1 << 1,
+		voice = 1 << 2,
+		limits = 1 << 3,
+		icon = 1 << 4,
+		secondsempty = 1 << 5,
+		// ReSharper restore InconsistentNaming, UnusedMember.Global
+	}
+
 	public enum GroupNamingMode
 	{
 		/// <summary>No group name is displayed.</summary>

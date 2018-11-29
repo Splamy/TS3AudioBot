@@ -126,6 +126,7 @@ namespace TS3Client.Full.Book
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; set; }
 		public bool IsPrivate { get; set; }
+		public bool Subscribed { get; set; }
 		public OptionalChannelData OptionalData { get; internal set; }
 	}
 
@@ -203,7 +204,6 @@ namespace TS3Client.Full.Book
 		public Client()
 		{
 			ServerGroups = new List<ServerGroupId>();
-			Badges = new List<str>();
 			
 		}
 
@@ -237,7 +237,7 @@ namespace TS3Client.Full.Book
 		public bool IsChannelCommander { get; set; }
 		public str CountryCode { get; internal set; }
 		public ChannelId InheritedChannelGroupFromChannel { get; internal set; }
-		public List<str> Badges { get; set; }
+		public str Badges { get; set; }
 		public OptionalClientData OptionalData { get; internal set; }
 		public ConnectionClientData ConnectionData { get; internal set; }
 	}

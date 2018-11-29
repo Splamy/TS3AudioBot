@@ -20,6 +20,7 @@ namespace TS3AudioBot
 	using Sessions;
 	using System;
 	using System.Threading;
+	using TS3AudioBot.Playlists;
 	using Web;
 
 	public sealed class Core : IDisposable
@@ -88,6 +89,7 @@ namespace TS3AudioBot
 				return "Could not create config";
 			ConfRoot config = configResult.Value;
 			Config.Deprecated.UpgradeScript.CheckAndUpgrade(config);
+			ConfigUpgrade2.Upgrade(config.Configs.BotsPath.Value);
 
 			var injector = new CoreInjector();
 
@@ -102,6 +104,7 @@ namespace TS3AudioBot
 			injector.RegisterType<RightsManager>();
 			injector.RegisterType<BotManager>();
 			injector.RegisterType<TokenManager>();
+			injector.RegisterType<PlaylistPool>();
 
 			injector.RegisterModule(this);
 			injector.RegisterModule(config);
@@ -114,6 +117,7 @@ namespace TS3AudioBot
 			injector.RegisterModule(new RightsManager(config.Rights));
 			injector.RegisterModule(new BotManager());
 			injector.RegisterModule(new TokenManager(), x => x.Initialize());
+			injector.RegisterModule(new PlaylistPool());
 
 			if (!injector.AllResolved())
 			{

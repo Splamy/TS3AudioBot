@@ -11,6 +11,7 @@ namespace TS3AudioBot.Config
 {
 	using CommandSystem.Text;
 	using Nett;
+	using Playlists;
 	using System;
 
 	public partial class ConfRoot : ConfigTable
@@ -33,7 +34,7 @@ namespace TS3AudioBot.Config
 	public class ConfConfigs : ConfigTable
 	{
 		//public ConfigValue<string> RootPath { get; } = new ConfigValue<string>("root_path", "."); // TODO enable when done
-		public ConfigValue<string> BotsPath { get; } = new ConfigValue<string>("bots_path", "Bots",
+		public ConfigValue<string> BotsPath { get; } = new ConfigValue<string>("bots_path", "bots",
 			"Path to a folder where the configuration files for each bot template will be stored.");
 	}
 
@@ -72,7 +73,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfPlugins : ConfigTable
 	{
-		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "Plugins",
+		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "plugins",
 			"The path to the plugins folder.");
 		public ConfigValue<bool> WriteStatusFiles { get; } = new ConfigValue<bool>("write_status_files", false,
 			"Write to .status files to store a plugin enable status persistently and restart them on launch."); // TODO deprecate
@@ -215,8 +216,12 @@ namespace TS3AudioBot.Config
 	{
 		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
-		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "Playlists",
+		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "playlists",
 			"Path to the folder where playlist files will be saved.");
+		public ConfigValue<PlaylistLocation> Share { get; } = new ConfigValue<PlaylistLocation>("share", PlaylistLocation.Bot,
+			" - Bot : Playlists per bot." +
+			" - Global : Playlists across all." +
+			" (- Server)");
 	}
 
 	public class ConfHistory : ConfigTable

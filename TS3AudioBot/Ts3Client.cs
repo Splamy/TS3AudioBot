@@ -59,9 +59,9 @@ namespace TS3AudioBot
 		private readonly ConfBot config;
 		internal Ts3FullClient TsFullClient { get; }
 		private IdentityData identity;
-		private List<ClientData> clientbuffer;
+		private List<ClientList> clientbuffer;
 		private bool clientbufferOutdated = true;
-		private readonly Cache<ulong, ClientDbData> clientDbNames;
+		private readonly Cache<ulong, ClientDbInfo> clientDbNames;
 
 		private readonly StallCheckPipe stallCheckPipe;
 		private readonly VolumePipe volumePipe;
@@ -264,36 +264,36 @@ namespace TS3AudioBot
 				return result.Error.FormatLocal();
 		}
 
-		public R<ClientData, LocalStr> GetCachedClientById(ushort id) => ClientBufferRequest(client => client.ClientId == id);
+		public R<ClientList, LocalStr> GetCachedClientById(ushort id) => ClientBufferRequest(client => client.ClientId == id);
 
-		public R<ClientData, LocalStr> GetFallbackedClientById(ushort id)
+		public R<ClientList, LocalStr> GetFallbackedClientById(ushort id)
 		{
 			var result = ClientBufferRequest(client => client.ClientId == id);
 			if (result.Ok)
 				return result;
 			Log.Warn("Slow double request due to missing or wrong permission configuration!");
-			var result2 = TsFullClient.Send<ClientData>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
+			var result2 = TsFullClient.Send<ClientList>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
 			if (!result2.Ok)
 				return new LocalStr(strings.error_ts_no_client_found);
-			ClientData cd = result2.Value;
+			ClientList cd = result2.Value;
 			cd.ClientId = id;
 			clientbuffer.Add(cd);
 			return cd;
 		}
 
-		public R<ClientData, LocalStr> GetClientByName(string name)
+		public R<ClientList, LocalStr> GetClientByName(string name)
 		{
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
 				return refreshResult.Error;
 			var clients = Algorithm.Filter.DefaultAlgorithm.Filter(
-				clientbuffer.Select(cb => new KeyValuePair<string, ClientData>(cb.Name, cb)), name).ToArray();
+				clientbuffer.Select(cb => new KeyValuePair<string, ClientList>(cb.Name, cb)), name).ToArray();
 			if (clients.Length <= 0)
 				return new LocalStr(strings.error_ts_no_client_found);
 			return clients[0].Value;
 		}
 
-		private R<ClientData, LocalStr> ClientBufferRequest(Predicate<ClientData> pred)
+		private R<ClientList, LocalStr> ClientBufferRequest(Predicate<ClientList> pred)
 		{
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
@@ -328,7 +328,7 @@ namespace TS3AudioBot
 			return result.Value.Select(csg => csg.ServerGroupId).ToArray();
 		}
 
-		public R<ClientDbData, LocalStr> GetDbClientByDbId(ulong clientDbId)
+		public R<ClientDbInfo, LocalStr> GetDbClientByDbId(ulong clientDbId)
 		{
 			if (clientDbNames.TryGetValue(clientDbId, out var clientData))
 				return clientData;
@@ -432,6 +432,7 @@ namespace TS3AudioBot
 					Ts3Permission.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
 					Ts3Permission.b_client_use_channel_commander, // + Enable channel commander
 					Ts3Permission.b_client_ignore_bans, // + The bot should be resistent to bans
+					Ts3Permission.b_client_ignore_sticky, // + Should skip weird movement restrictions
 				},
 				new[] {
 					max, max,   1,   1,
@@ -440,7 +441,7 @@ namespace TS3AudioBot
 					  1, max, max,   4,
 					  1,   1,   1,   1,
 					  1,   1, max,   1,
-					ava,   1,   1,
+					ava,   1,   1,   1,
 				},
 				new[] {
 					false, false, false, false,
@@ -449,7 +450,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
-					false, false, false,
+					false, false, false, false,
 				},
 				new[] {
 					false, false, false, false,
@@ -458,7 +459,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
-					false, false, false,
+					false, false, false, false,
 				});
 
 			if (!permresult)
