@@ -1,0 +1,41 @@
+{
+  "name": "ts3abweb",
+  "version": "0.1.0",
+  "description": "Provides a ui to control the TS3AudioBot",
+  "main": "script.js",
+  "scripts": {
+    "build:all": "npm run build:tsc && npm run build:less",
+    "build:tsc": "tsc --build",
+    "build:less": "lessc --source-map=out/styles.css.map less/styles.less out/styles.css",
+    "publish:webdata": "copyfiles -u 1 \"html/**/*\" build",
+    "publish:tsc": "uglifyjs out/script.js -c -o build/script.js",
+    "publish:less": "cleancss out/styles.css -o build/styles.css -O2 --skip-rebase",
+    "publish:all": "npm run publish:webdata && npm run publish:tsc && npm run publish:less",
+    "publish:tsc-raw": "copyfiles -u 1 out/script.js build/",
+    "publish:less-raw": "copyfiles -u 1 out/styles.css build/",
+    "publish:all-raw": "npm run publish:webdata && npm run publish:tsc-raw && npm run publish:less-raw",
+    "publish": "npm run build:all && npm run publish:all-raw"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Splamy/TS3AudioBot"
+  },
+  "keywords": [
+    "ts3",
+    "ts3ab",
+    "interface",
+    "ui",
+    "audio",
+    "bot"
+  ],
+  "author": "Splamy",
+  "license": "OSL-3.0",
+  "devDependencies": {
+    "clean-css-cli": "^4.2.1",
+    "copyfiles": "^2.1.0",
+    "del-cli": "^1.1.0",
+    "less": "^3.8.1",
+    "typescript": "^3.1.1",
+    "uglify-es": "^3.3.9"
+  }
+}

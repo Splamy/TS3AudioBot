@@ -67,7 +67,7 @@ namespace TS3AudioBot.Audio
 
 			var instance = ffmpegInstance;
 
-			if (instance == null)
+			if (instance is null)
 				return 0;
 
 			read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
@@ -196,7 +196,7 @@ namespace TS3AudioBot.Audio
 		private TimeSpan GetCurrentSongLength()
 		{
 			var instance = ffmpegInstance;
-			if (instance == null)
+			if (instance is null)
 				return TimeSpan.Zero;
 
 			return instance.ParsedSongLength ?? TimeSpan.Zero;
@@ -229,7 +229,7 @@ namespace TS3AudioBot.Audio
 
 			public void FfmpegProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
 			{
-				if (e.Data == null)
+				if (e.Data is null)
 					return;
 
 				if (sender != FfmpegProcess)

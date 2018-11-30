@@ -24,7 +24,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='net46'">
+  <PropertyGroup>
     <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
@@ -33,17 +33,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="GitVersionTask" Version="4.0.0-beta0012">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    <PackageReference Condition="'$(TargetFramework)' == 'net46'" Include="GitVersionTask" Version="3.6.5" />
+    <PackageReference Condition="'$(TargetFramework)' != 'net46'" Include="GitVersionTask" Version="4.0.0" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
-    <PackageReference Include="NLog" Version="4.5.9" />
-    <PackageReference Include="Nett" Version="0.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
+    <PackageReference Include="Nett" Version="0.10.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
-    <PackageReference Include="System.Memory" Version="4.5.1" />
-    <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="System.ValueTuple" Version="4.5.0" />
+
+    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp2.0'" Include="System.Runtime.Loader" Version="4.3.0" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

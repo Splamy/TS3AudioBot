@@ -21,7 +21,9 @@ namespace TS3Client.Query
 	using System.Net.Sockets;
 	using System.Threading.Tasks;
 	using ChannelIdT = System.UInt64;
+	using ClientDbIdT = System.UInt64;
 	using CmdR = System.E<Messages.CommandError>;
+	using TSFileInfo = Messages.FileInfo;
 	using Uid = System.String;
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
@@ -39,6 +41,7 @@ namespace TS3Client.Query
 		public override bool Connected => tcpClient.Connected;
 		private bool connecting;
 		public override bool Connecting => connecting && !Connected;
+		protected override Deserializer Deserializer => msgProc.Deserializer;
 
 		public override event NotifyEventHandler<TextMessage> OnTextMessage;
 		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
@@ -50,7 +53,7 @@ namespace TS3Client.Query
 		{
 			connecting = false;
 			tcpClient = new TcpClient();
-			msgProc = new SyncMessageProcessor();
+			msgProc = new SyncMessageProcessor(MessageHelper.GetToClientNotificationType);
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 		}
 
@@ -108,7 +111,7 @@ namespace TS3Client.Query
 				try
 				{
 					var mem = writer.GetMemory(minimumBufferSize);
-					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length);
+					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length).ConfigureAwait(false);
 					if (bytesRead == 0)
 					{
 						break;
@@ -121,7 +124,7 @@ namespace TS3Client.Query
 				}
 				catch (IOException) { break; }
 
-				FlushResult result = await writer.FlushAsync();
+				FlushResult result = await writer.FlushAsync().ConfigureAwait(false);
 
 				if (result.IsCompleted)
 				{
@@ -136,7 +139,7 @@ namespace TS3Client.Query
 			var dataWriteBuffer = new byte[4096];
 			while (true)
 			{
-				var result = await reader.ReadAsync();
+				var result = await reader.ReadAsync().ConfigureAwait(false);
 
 				ReadOnlySequence<byte> buffer = result.Buffer;
 				SequencePosition? position = null;
@@ -195,7 +198,7 @@ namespace TS3Client.Query
 
 		public override R<T[], CommandError> SendCommand<T>(Ts3Command com) // Synchronous
 		{
-			using (var wb = new WaitBlock(false))
+			using (var wb = new WaitBlock(msgProc.Deserializer, false))
 			{
 				lock (sendQueueLock)
 				{
@@ -255,8 +258,8 @@ namespace TS3Client.Query
 				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }
 				: new List<ICommandPart> { new CommandParameter("name", name) }).WrapSingle();
 
-		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
-			=> Send<ClientServerGroup>("servergroupsbyclientid",
+		public override R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
+			=> Send<ServerGroupsByClientId>("servergroupsbyclientid",
 			new CommandParameter("cldbid", clDbId));
 
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
@@ -288,8 +291,8 @@ namespace TS3Client.Query
 			new CommandParameter("path", path),
 			new CommandParameter("cpw", channelPassword));
 
-		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
-			=> Send<FileInfoTs>("ftgetfileinfo",
+		public override R<TSFileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+			=> Send<TSFileInfo>("ftgetfileinfo",
 			new CommandParameter("cid", channelId),
 			new CommandParameter("cpw", channelPassword),
 			new CommandMultiParameter("name", path));
@@ -301,6 +304,15 @@ namespace TS3Client.Query
 		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
 			=> Send<ClientIds>("clientgetids",
 			new CommandParameter("cluid", clientUid));
+
+		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission)
+			=> Send<PermOverview>("permoverview",
+			new CommandParameter("cldbid", clientDbId),
+			new CommandParameter("cid", channelId),
+			Ts3PermissionHelper.GetAsMultiParameter(msgProc.Deserializer.PermissionTransform, permission));
+
+		public override R<PermList[], CommandError> PermissionList()
+			=> Send<PermList>("permissionlist");
 
 		#endregion
 

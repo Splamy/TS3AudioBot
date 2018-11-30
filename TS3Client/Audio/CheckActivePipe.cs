@@ -18,7 +18,7 @@ namespace TS3Client.Audio
 
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (OutStream == null || data.IsEmpty || !Active)
+			if (OutStream is null || data.IsEmpty || !Active)
 				return;
 
 			OutStream?.Write(data, meta);

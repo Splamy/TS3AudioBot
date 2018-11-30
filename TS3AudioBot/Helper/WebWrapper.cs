@@ -17,7 +17,7 @@ namespace TS3AudioBot.Helper
 	public static class WebWrapper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
+		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
 
 		public static E<LocalStr> DownloadString(out string site, Uri link, params (string name, string value)[] optionalHeaders)
 		{
@@ -30,7 +30,7 @@ namespace TS3AudioBot.Helper
 				using (var response = request.GetResponse())
 				{
 					var stream = response.GetResponseStream();
-					if (stream == null)
+					if (stream is null)
 					{
 						site = null;
 						return new LocalStr(strings.error_net_empty_response);
@@ -42,12 +42,15 @@ namespace TS3AudioBot.Helper
 					}
 				}
 			}
-			catch (WebException webEx)
+			catch (Exception ex)
 			{
 				site = null;
-				return ToLoggedError(webEx);
+				return ToLoggedError(ex);
 			}
 		}
+
+		public static R<string, LocalStr> DownloadString(Uri link, params (string name, string value)[] optionalHeaders)
+			=> DownloadString(out var str, link, optionalHeaders).WithValue(str);
 
 		public static E<LocalStr> GetResponse(Uri link) => GetResponse(link, null);
 		public static E<LocalStr> GetResponse(Uri link, TimeSpan timeout) => GetResponse(link, null, timeout);
@@ -67,9 +70,9 @@ namespace TS3AudioBot.Helper
 				}
 				return R.Ok;
 			}
-			catch (WebException webEx)
+			catch (Exception ex)
 			{
-				return ToLoggedError(webEx);
+				return ToLoggedError(ex);
 			}
 		}
 
@@ -84,33 +87,34 @@ namespace TS3AudioBot.Helper
 			{
 				request.Timeout = (int)timeout.TotalMilliseconds;
 				var stream = request.GetResponse().GetResponseStream();
-				if (stream == null)
+				if (stream is null)
 					return new LocalStr(strings.error_net_empty_response);
 				return stream;
 			}
-			catch (WebException webEx)
+			catch (Exception ex)
 			{
-				return ToLoggedError(webEx);
+				return ToLoggedError(ex);
 			}
 		}
 
-		private static LocalStr ToLoggedError(WebException webEx)
+		private static LocalStr ToLoggedError(Exception ex)
 		{
-			if (webEx.Status == WebExceptionStatus.Timeout)
+			if (ex is WebException webEx)
 			{
-				Log.Warn("Request timed out");
-				return new LocalStr(strings.error_net_timeout);
+				if (webEx.Status == WebExceptionStatus.Timeout)
+				{
+					Log.Warn(webEx, "Request timed out");
+					return new LocalStr(strings.error_net_timeout);
+				}
+				else if (webEx.Response is HttpWebResponse errorResponse)
+				{
+					Log.Warn(webEx, "Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
+					return new LocalStr($"{strings.error_net_error_status_code} [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
+				}
 			}
-			else if (webEx.Response is HttpWebResponse errorResponse)
-			{
-				Log.Warn("Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
-				return new LocalStr($"{strings.error_net_error_status_code} [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}");
-			}
-			else
-			{
-				Log.Warn("Unknown request error: {0}", webEx);
-				return new LocalStr(strings.error_net_unknown);
-			}
+
+			Log.Warn(ex, "Unknown request error");
+			return new LocalStr(strings.error_net_unknown);
 		}
 	}
 }

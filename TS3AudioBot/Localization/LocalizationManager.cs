@@ -9,84 +9,173 @@
 
 namespace TS3AudioBot.Localization
 {
+	using Helper;
 	using System;
 	using System.Collections.Generic;
 	using System.Globalization;
 	using System.IO;
 	using System.Reflection;
+	using System.Resources;
 	using System.Threading;
 
 	public static class LocalizationManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly HashSet<string> loadedLanguage = new HashSet<string>();
+		private static readonly Dictionary<string, LanguageData> loadedLanguage = new Dictionary<string, LanguageData>();
+		private static readonly DynamicResourceManager dynResMan;
 
 		static LocalizationManager()
 		{
-			loadedLanguage.Add("en");
+			loadedLanguage.Add("en", new LanguageData
+			{
+				IsIntenal = true,
+				LoadedSuccessfully = true,
+			});
+
+			var resManField = typeof(strings).GetField("resourceMan", BindingFlags.NonPublic | BindingFlags.Static);
+			var currentResMan = resManField.GetValue(null);
+			(currentResMan as ResourceManager)?.ReleaseAllResources();
+			dynResMan = new DynamicResourceManager("TS3AudioBot.Localization.strings", typeof(strings).Assembly);
+			resManField.SetValue(null, dynResMan);
 		}
 
-		public static E<string> LoadLanguage(string lang)
+		public static E<string> LoadLanguage(string lang, bool forceDownload)
 		{
 			CultureInfo culture;
-			try { culture = new CultureInfo(lang); }
+			try { culture = CultureInfo.GetCultureInfo(lang); }
 			catch (CultureNotFoundException) { return "Language not found"; }
 
-			if (!loadedLanguage.Contains(culture.Name))
+			if (!loadedLanguage.TryGetValue(culture.Name, out var languageDataInfo))
+				loadedLanguage[culture.Name] = languageDataInfo = new LanguageData();
+
+			if (!languageDataInfo.LoadedSuccessfully)
 			{
-				var result = LoadLanguageAssembly(culture);
+				var result = LoadLanguageAssembly(languageDataInfo, culture, forceDownload);
 				if (!result.Ok)
 				{
 					Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 					return result.Error;
 				}
-				loadedLanguage.Add(culture.Name);
+				languageDataInfo.LoadedSuccessfully = true;
 			}
 
 			Thread.CurrentThread.CurrentUICulture = culture;
 			return R.Ok;
 		}
 
-		private static E<string> LoadLanguageAssembly(CultureInfo culture)
+		private static E<string> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)
 		{
-			if (strings.ResourceManager.GetResourceSet(culture, true, false) != null)
-				return R.Ok;
-
-			CultureInfo currentResolveCulture = culture;
-			while (currentResolveCulture != CultureInfo.InvariantCulture)
+			var avaliableToDownload = new Lazy<HashSet<string>>(() =>
 			{
+				var arr = DownloadAvaliableLanguages();
+				return arr != null ? new HashSet<string>(arr) : null;
+			});
+			var triedDownloading = languageDataInfo.TriedDownloading;
+
+			foreach (var currentResolveCulture in GetWithFallbackCultures(culture))
+			{
+				// Try loading the resource set from memory
 				if (strings.ResourceManager.GetResourceSet(currentResolveCulture, true, false) != null)
 					return R.Ok;
-				currentResolveCulture = currentResolveCulture.Parent;
-			}
 
-			currentResolveCulture = culture;
-			bool loadOk = false;
-			while (currentResolveCulture != CultureInfo.InvariantCulture)
-			{
-				string tryPath = Path.Combine(currentResolveCulture.Name, "TS3AudioBot.resources.dll");
+				// Do not attempt to download or load integrated languages
+				if (languageDataInfo.IsIntenal)
+					continue;
+
+				var tryFile = GetCultureFileInfo(currentResolveCulture);
+
+				// Check if we need to download the resource
+				if (forceDownload || (!tryFile.Exists && !triedDownloading))
+				{
+					var list = avaliableToDownload.Value;
+					if (list is null || !list.Contains(currentResolveCulture.Name))
+					{
+						if (list != null)
+							Log.Info("Language \"{0}\" is not available on the server", currentResolveCulture.Name);
+						continue;
+					}
+
+					try
+					{
+						languageDataInfo.TriedDownloading = true;
+						Directory.CreateDirectory(tryFile.DirectoryName);
+						Log.Info("Downloading the resource pack for the language '{0}'", currentResolveCulture.Name);
+						if (WebWrapper.GetResponseUnsafe(new Uri($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll")).GetOk(out var dataStream).UnwrapToLog(Log))
+						{
+							using (dataStream)
+							using (var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None))
+							{
+								dataStream.CopyTo(fs);
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						Log.Warn(ex, "Failed trying to download language '{0}'", currentResolveCulture.Name);
+					}
+				}
+
+				// Try loading the resource set from file
 				try
 				{
-					Assembly.LoadFrom(tryPath);
-					loadOk = true;
-					break;
+					var asm = Assembly.LoadFrom(tryFile.FullName);
+					var resStream = asm.GetManifestResourceStream($"TS3AudioBot.Localization.strings.{currentResolveCulture.Name}.resources");
+					var rr = new ResourceReader(resStream);
+					var set = new ResourceSet(rr);
+					dynResMan.SetResourceSet(currentResolveCulture, set);
+
+					if (strings.ResourceManager.GetResourceSet(currentResolveCulture, true, false) != null)
+						return R.Ok;
+
+					Log.Error("The resource set was not found after initialization");
 				}
 				catch (Exception ex)
 				{
-					Log.Trace(ex, "Failed trying to load language from '{0}'", tryPath);
-					currentResolveCulture = currentResolveCulture.Parent;
+					Log.Warn(ex, "Failed to load language file '{0}'", tryFile.FullName);
 				}
 			}
 
-			if (loadOk)
-				return R.Ok;
-			else
-				return "Could not find language file";
+			return "Could not find language file";
+		}
+
+		private static IEnumerable<CultureInfo> GetWithFallbackCultures(CultureInfo culture)
+		{
+			CultureInfo currentResolveCulture = culture;
+			while (currentResolveCulture != CultureInfo.InvariantCulture)
+			{
+				yield return currentResolveCulture;
+				currentResolveCulture = currentResolveCulture.Parent;
+			}
+		}
+
+		private static FileInfo GetCultureFileInfo(CultureInfo culture)
+			=> new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), culture.Name, "TS3AudioBot.resources.dll"));
+
+		private static string[] DownloadAvaliableLanguages()
+		{
+			try
+			{
+				Log.Info("Checking for requested language online");
+				if (WebWrapper.DownloadString(new Uri("https://splamy.de/api/language/project/ts3ab/languages")).GetOk(out var data))
+					return Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
+			}
+			catch (Exception ex)
+			{
+				Log.Warn(ex, "Failed to download language overview list");
+			}
+			return null;
 		}
 
 		public static string GetString(string name)
 		{
 			return strings.ResourceManager.GetString(name);
+		}
+
+		private class LanguageData
+		{
+			public bool IsIntenal { get; set; } = false;
+			public bool LoadedSuccessfully { get; set; } = false;
+			public bool TriedDownloading { get; set; } = false;
 		}
 	}
 }

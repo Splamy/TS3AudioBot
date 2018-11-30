@@ -15,11 +15,13 @@ namespace TS3Client
 	using System.Threading;
 	using System.Threading.Tasks;
 
+	// TODO check maybe splittable into 'WaitBlockSync' and 'WaitBlockAsync'
 	internal sealed class WaitBlock : IDisposable
 	{
 		private readonly TaskCompletionSource<bool> answerWaiterAsync;
 		private readonly ManualResetEvent answerWaiter;
 		private readonly ManualResetEvent notificationWaiter;
+		private readonly Deserializer deserializer;
 		private CommandError commandError;
 		private ReadOnlyMemory<byte>? commandLine;
 		public NotificationType[] DependsOn { get; }
@@ -28,8 +30,9 @@ namespace TS3Client
 		private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(15);
 		private readonly bool async;
 
-		public WaitBlock(bool async, NotificationType[] dependsOn = null)
+		public WaitBlock(Deserializer deserializer, bool async, NotificationType[] dependsOn = null)
 		{
+			this.deserializer = deserializer;
 			this.async = async;
 			isDisposed = false;
 			if (async)
@@ -54,7 +57,7 @@ namespace TS3Client
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
-			var result = Deserializer.GenerateResponse<T>(commandLine.Value.Span);
+			var result = deserializer.GenerateResponse<T>(commandLine.Value.Span);
 			if (result.Ok)
 				return result.Value;
 			else
@@ -72,7 +75,7 @@ namespace TS3Client
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
-			var result = Deserializer.GenerateResponse<T>(commandLine.Value.Span);
+			var result = deserializer.GenerateResponse<T>(commandLine.Value.Span);
 			if (result.Ok)
 				return result.Value;
 			else
@@ -83,7 +86,7 @@ namespace TS3Client
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
-			if (DependsOn == null)
+			if (DependsOn is null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			if (!answerWaiter.WaitOne(CommandTimeout))
 				return Util.TimeOutCommandError;

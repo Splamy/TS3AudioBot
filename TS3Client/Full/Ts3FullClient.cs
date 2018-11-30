@@ -46,9 +46,12 @@ namespace TS3Client.Full
 		public string QuitMessage { get; set; } = "Disconnected";
 		/// <summary>The <see cref="Full.VersionSign"/> used to connect.</summary>
 		public VersionSign VersionSign { get; private set; }
+		/// <summary>The <see cref="Full.IdentityData"/> used to connect.</summary>
+		public IdentityData Identity => ts3Crypt.Identity;
 		private Ts3ClientStatus status;
 		public override bool Connected { get { lock (statusLock) return status == Ts3ClientStatus.Connected; } }
 		public override bool Connecting { get { lock (statusLock) return status == Ts3ClientStatus.Connecting; } }
+		protected override Deserializer Deserializer => msgProc.Deserializer;
 		private ConnectionDataFull connectionDataFull;
 		public Book.Connection Book { get; set; } //= new Book.Connection();
 
@@ -64,7 +67,7 @@ namespace TS3Client.Full
 			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt);
-			msgProc = new AsyncMessageProcessor();
+			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
 			dispatcher = EventDispatcherHelper.Create(dispatcherType);
 			context = new ConnectionContext { WasExit = true };
 		}
@@ -77,8 +80,8 @@ namespace TS3Client.Full
 		public override void Connect(ConnectionData conData)
 		{
 			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
-			if (conDataFull.Identity == null) throw new ArgumentNullException(nameof(conDataFull.Identity));
-			if (conDataFull.VersionSign == null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
+			if (conDataFull.Identity is null) throw new ArgumentNullException(nameof(conDataFull.Identity));
+			if (conDataFull.VersionSign is null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
 			connectionDataFull = conDataFull;
 			ConnectionData = conData;
 
@@ -303,11 +306,28 @@ namespace TS3Client.Full
 		partial void ProcessEachChannelListFinished(ChannelListFinished _)
 		{
 			ChannelSubscribeAll();
+			PermissionList();
 		}
 
-		partial void ProcessEachConnectionInfoRequest(ConnectionInfoRequest _)
+		partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
 		{
 			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+		}
+
+		partial void ProcessPermList(PermList[] permList)
+		{
+			var buildPermissions = new List<Ts3Permission>(permList.Length + 1) { Ts3Permission.undefined };
+			foreach (var perm in permList)
+			{
+				if (!string.IsNullOrEmpty(perm.PermissionName))
+				{
+					if (Enum.TryParse<Ts3Permission>(perm.PermissionName, out var ts3perm))
+						buildPermissions.Add(ts3perm);
+					else
+						buildPermissions.Add(Ts3Permission.undefined);
+				}
+			}
+			msgProc.Deserializer.PermissionTransform = new TablePermissionTransform(buildPermissions.ToArray());
 		}
 
 		// ***
@@ -333,7 +353,8 @@ namespace TS3Client.Full
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
 		public override R<T[], CommandError> SendCommand<T>(Ts3Command com)
 		{
-			using (var wb = new WaitBlock(false))
+			// TODO: try using deserializer/msgproc as a factory
+			using (var wb = new WaitBlock(msgProc.Deserializer, false))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -352,7 +373,7 @@ namespace TS3Client.Full
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
 
-			using (var wb = new WaitBlock(false, dependsOn))
+			using (var wb = new WaitBlock(msgProc.Deserializer, false, dependsOn))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -386,7 +407,7 @@ namespace TS3Client.Full
 
 		public async Task<R<T[], CommandError>> SendCommandAsync<T>(Ts3Command com) where T : IResponse, new()
 		{
-			using (var wb = new WaitBlock(true))
+			using (var wb = new WaitBlock(msgProc.Deserializer, true))
 			{
 				var result = SendCommandBase(wb, com);
 				if (!result.Ok)
@@ -418,7 +439,7 @@ namespace TS3Client.Full
 		/// <param name="meta">The metadata where to send the packet.</param>
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (meta.Out == null
+			if (meta.Out is null
 				|| meta.Out.SendMode == TargetSendMode.None
 				|| !meta.Codec.HasValue
 				|| meta.Codec.Value == Codec.Raw)
@@ -468,7 +489,7 @@ namespace TS3Client.Full
 					new CommandParameter("client_server_password", serverPassword), // base64(sha1(pass))
 					new CommandParameter("client_meta_data", metaData),
 					new CommandParameter("client_version_sign", versionSign.Sign),
-					new CommandParameter("client_key_offset", ts3Crypt.Identity.ValidKeyOffset),
+					new CommandParameter("client_key_offset", Identity.ValidKeyOffset),
 					new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
 					new CommandParameter("client_default_token", defaultToken),
 					new CommandParameter("hwid", hwid) }));
@@ -543,15 +564,15 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
-		public R<ConnectionInfo, CommandError> GetClientConnectionInfo(ClientIdT clientId)
+		public R<ClientConnectionInfo, CommandError> GetClientConnectionInfo(ClientIdT clientId)
 		{
 			var result = SendNotifyCommand(new Ts3Command("getconnectioninfo", new List<ICommandPart> {
 				new CommandParameter("clid", clientId) }),
-				NotificationType.ConnectionInfo);
+				NotificationType.ClientConnectionInfo);
 			if (!result.Ok)
 				return result.Error;
 			return result.Value.Notifications
-				.Cast<ConnectionInfo>()
+				.Cast<ClientConnectionInfo>()
 				.Where(x => x.ClientId == clientId)
 				.WrapSingle();
 		}
@@ -583,10 +604,10 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public override R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
+		public override R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
 			=> SendNotifyCommand(new Ts3Command("servergroupsbyclientid", new List<ICommandPart> {
 				new CommandParameter("cldbid", clDbId) }),
-				NotificationType.ClientServerGroup).UnwrapNotification<ClientServerGroup>();
+				NotificationType.ServerGroupsByClientId).UnwrapNotification<ServerGroupsByClientId>();
 
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
@@ -646,12 +667,12 @@ namespace TS3Client.Full
 				new CommandParameter("cpw", channelPassword) }),
 				NotificationType.FileList).UnwrapNotification<FileList>();
 
-		public override R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public override R<FileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
 			=> SendNotifyCommand(new Ts3Command("ftgetfileinfo", new List<ICommandPart>() {
 				new CommandParameter("cid", channelId),
 				new CommandParameter("cpw", channelPassword),
 				new CommandMultiParameter("name", path) }),
-				NotificationType.FileInfoTs).UnwrapNotification<FileInfoTs>();
+				NotificationType.FileInfo).UnwrapNotification<FileInfo>();
 
 		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
 		{
@@ -671,6 +692,17 @@ namespace TS3Client.Full
 			=> SendNotifyCommand(new Ts3Command("clientgetids", new List<ICommandPart>() {
 				new CommandParameter("cluid", clientUid) }),
 				NotificationType.ClientIds).UnwrapNotification<ClientIds>();
+
+		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission)
+			=> SendNotifyCommand(new Ts3Command("permoverview", new List<ICommandPart>() {
+				new CommandParameter("cldbid", clientDbId),
+				new CommandParameter("cid", channelId),
+				Ts3PermissionHelper.GetAsMultiParameter(msgProc.Deserializer.PermissionTransform, permission) }),
+				NotificationType.PermOverview).UnwrapNotification<PermOverview>();
+
+		public override R<PermList[], CommandError> PermissionList()
+			=> SendNotifyCommand(new Ts3Command("permissionlist"),
+				NotificationType.PermList).UnwrapNotification<PermList>();
 
 		#endregion
 

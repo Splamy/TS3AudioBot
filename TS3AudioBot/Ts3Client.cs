@@ -109,22 +109,22 @@ namespace TS3AudioBot
 		{
 			// get or compute identity
 			var identityConf = config.Connect.Identity;
-			if (string.IsNullOrEmpty(identityConf.Key))
+			if (string.IsNullOrEmpty(identityConf.PrivateKey))
 			{
 				identity = Ts3Crypt.GenerateNewIdentity();
-				identityConf.Key.Value = identity.PrivateKeyString;
+				identityConf.PrivateKey.Value = identity.PrivateKeyString;
 				identityConf.Offset.Value = identity.ValidKeyOffset;
 			}
 			else
 			{
-				var identityResult = Ts3Crypt.LoadIdentityDynamic(identityConf.Key.Value, identityConf.Offset.Value);
+				var identityResult = Ts3Crypt.LoadIdentityDynamic(identityConf.PrivateKey.Value, identityConf.Offset.Value);
 				if (!identityResult.Ok)
 				{
 					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it.");
 					return "Corrupted identity";
 				}
 				identity = identityResult.Value;
-				identityConf.Key.Value = identity.PrivateKeyString;
+				identityConf.PrivateKey.Value = identity.PrivateKeyString;
 				identityConf.Offset.Value = identity.ValidKeyOffset;
 			}
 
@@ -159,11 +159,11 @@ namespace TS3AudioBot
 			}
 			else if (SystemData.IsLinux)
 			{
-				versionSign = VersionSign.VER_LIN_3_1_10;
+				versionSign = VersionSign.VER_LIN_3_2_2;
 			}
 			else
 			{
-				versionSign = VersionSign.VER_WIN_3_1_10;
+				versionSign = VersionSign.VER_WIN_3_2_2;
 			}
 
 			try
@@ -185,7 +185,7 @@ namespace TS3AudioBot
 			}
 			catch (Ts3Exception qcex)
 			{
-				Log.Info(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
+				Log.Error(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
 				return "Connect error";
 			}
 		}
@@ -299,7 +299,7 @@ namespace TS3AudioBot
 			if (!refreshResult)
 				return refreshResult.Error;
 			var clientData = clientbuffer.Find(pred);
-			if (clientData == null)
+			if (clientData is null)
 				return new LocalStr(strings.error_ts_no_client_found);
 			return clientData;
 		}
@@ -399,39 +399,39 @@ namespace TS3AudioBot
 			// Add various rights to the bot group
 			var permresult = TsFullClient.ServerGroupAddPerm(config.BotGroupId.Value,
 				new[] {
-					PermissionId.i_client_whisper_power, // + Required for whisper channel playing
-					PermissionId.i_client_private_textmessage_power, // + Communication
-					PermissionId.b_client_server_textmessage_send, // + Communication
-					PermissionId.b_client_channel_textmessage_send, // + Communication
+					Ts3Permission.i_client_whisper_power, // + Required for whisper channel playing
+					Ts3Permission.i_client_private_textmessage_power, // + Communication
+					Ts3Permission.b_client_server_textmessage_send, // + Communication
+					Ts3Permission.b_client_channel_textmessage_send, // + Communication
 
-					PermissionId.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
-					PermissionId.b_client_modify_description, // + Used to change the description of our bot
-					PermissionId.b_client_info_view, // (+) only used as fallback usually
-					PermissionId.b_virtualserver_client_list, // ? Dont know but seems also required for the next one
+					Ts3Permission.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
+					Ts3Permission.b_client_modify_description, // + Used to change the description of our bot
+					Ts3Permission.b_client_info_view, // (+) only used as fallback usually
+					Ts3Permission.b_virtualserver_client_list, // ? Dont know but seems also required for the next one
 
-					PermissionId.i_channel_subscribe_power, // + Required to find user to communicate
-					PermissionId.b_virtualserver_client_dbinfo, // + Required to get basic user information for history, api, etc...
-					PermissionId.i_client_talk_power, // + Required for normal channel playing
-					PermissionId.b_client_modify_own_description, // ? not sure if this makes b_client_modify_description superfluous
+					Ts3Permission.i_channel_subscribe_power, // + Required to find user to communicate
+					Ts3Permission.b_virtualserver_client_dbinfo, // + Required to get basic user information for history, api, etc...
+					Ts3Permission.i_client_talk_power, // + Required for normal channel playing
+					Ts3Permission.b_client_modify_own_description, // ? not sure if this makes b_client_modify_description superfluous
 
-					PermissionId.b_group_is_permanent, // + Group should stay even if bot disconnects
-					PermissionId.i_client_kick_from_channel_power, // + Optional for kicking
-					PermissionId.i_client_kick_from_server_power, // + Optional for kicking
-					PermissionId.i_client_max_clones_uid, // + In case that bot times out and tries to join again
+					Ts3Permission.b_group_is_permanent, // + Group should stay even if bot disconnects
+					Ts3Permission.i_client_kick_from_channel_power, // + Optional for kicking
+					Ts3Permission.i_client_kick_from_server_power, // + Optional for kicking
+					Ts3Permission.i_client_max_clones_uid, // + In case that bot times out and tries to join again
 
-					PermissionId.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
-					PermissionId.b_channel_join_ignore_password, // + The noble bot will not abuse this power
-					PermissionId.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
-					PermissionId.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
+					Ts3Permission.b_channel_join_ignore_password, // + The noble bot will not abuse this power
+					Ts3Permission.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
 
-					PermissionId.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
-					PermissionId.b_channel_join_ignore_maxclients, // + Allow joining full channels
-					PermissionId.i_channel_join_power, // + Allow joining to all channel even on strict servers
-					PermissionId.b_client_permissionoverview_view, // + Scanning through given perms for rights system
+					Ts3Permission.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_channel_join_ignore_maxclients, // + Allow joining full channels
+					Ts3Permission.i_channel_join_power, // + Allow joining to all channel even on strict servers
+					Ts3Permission.b_client_permissionoverview_view, // + Scanning through given perms for rights system
 
-					PermissionId.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
-					PermissionId.b_client_use_channel_commander, // + Enable channel commander
-					PermissionId.b_client_ignore_bans, // + The bot should be resistent to bans
+					Ts3Permission.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
+					Ts3Permission.b_client_use_channel_commander, // + Enable channel commander
+					Ts3Permission.b_client_ignore_bans, // + The bot should be resistent to bans
 				},
 				new[] {
 					max, max,   1,   1,
@@ -479,6 +479,8 @@ namespace TS3AudioBot
 		}
 
 		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => TsFullClient.UploadAvatar(stream).FormatLocal();
+
+		public E<LocalStr> DeleteAvatar() => TsFullClient.DeleteAvatar().FormatLocal();
 
 		public E<LocalStr> MoveTo(ulong channelId, string password = null)
 			=> TsFullClient.ClientMove(TsFullClient.ClientId, channelId, password).FormatLocal(() => strings.error_ts_cannot_move);
@@ -582,7 +584,7 @@ namespace TS3AudioBot
 
 		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)
 		{
-			if (OnMessageReceived == null) return;
+			if (OnMessageReceived is null) return;
 			foreach (var evData in eventArgs)
 			{
 				// Prevent loopback of own textmessages
@@ -595,7 +597,7 @@ namespace TS3AudioBot
 		private void ExtendedClientEnterView(object sender, IEnumerable<ClientEnterView> eventArgs)
 		{
 			clientbufferOutdated = true;
-			if (OnClientConnect == null) return;
+			if (OnClientConnect is null) return;
 			foreach (var evData in eventArgs)
 			{
 				clientbufferOutdated = true;
@@ -606,7 +608,7 @@ namespace TS3AudioBot
 		private void ExtendedClientLeftView(object sender, IEnumerable<ClientLeftView> eventArgs)
 		{
 			clientbufferOutdated = true;
-			if (OnClientDisconnect == null) return;
+			if (OnClientDisconnect is null) return;
 			foreach (var evData in eventArgs)
 			{
 				clientbufferOutdated = true;

@@ -16,10 +16,10 @@ namespace TS3AudioBot.Playlists
 	using ResourceFactories;
 	using Shuffle;
 	using System;
+	using System.Collections.Concurrent;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using System.Text;
 	using System.Text.RegularExpressions;
 
 	public sealed class PlaylistManager
@@ -28,20 +28,18 @@ namespace TS3AudioBot.Playlists
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
 
 		private readonly ConfPlaylists config;
-		private static readonly Encoding FileEncoding = Util.Utf8Encoder;
-		private readonly Playlist freeList;
-		private readonly Playlist trashList;
+		private readonly ConcurrentQueue<PlaylistItem> playQueue;
+		private readonly Playlist mixList = new Playlist(".mix");
+		public Playlist CurrentList { get; private set; }
 
 		private IShuffleAlgorithm shuffle;
 
-		private static readonly IShuffleAlgorithm NormalOrder = new NormalOrder();
-		private static readonly IShuffleAlgorithm RandomOrder = new LinearFeedbackShiftRegister();
+		private readonly IShuffleAlgorithm NormalOrder = new NormalOrder();
+		private readonly IShuffleAlgorithm RandomOrder = new LinearFeedbackShiftRegister();
 
-		public int Index
-		{
-			get => shuffle.Index;
-			set => shuffle.Index = value;
-		}
+		public int Index => shuffle.Index;
+
+		public PlaylistItem Current => MoveIndex(null, true);
 
 		private bool random;
 		public bool Random
@@ -55,7 +53,6 @@ namespace TS3AudioBot.Playlists
 					shuffle = RandomOrder;
 				else
 					shuffle = NormalOrder;
-				shuffle.Length = freeList.Count;
 				shuffle.Index = index;
 			}
 		}
@@ -68,39 +65,37 @@ namespace TS3AudioBot.Playlists
 		public PlaylistManager(ConfPlaylists config)
 		{
 			this.config = config;
-			freeList = new Playlist(string.Empty);
-			trashList = new Playlist(string.Empty);
 			shuffle = NormalOrder;
-		}
-
-		public PlaylistItem Current()
-		{
-			if (!NormalizeValues())
-				return null;
-			return freeList.GetResource(Index);
+			Util.Init(out playQueue);
 		}
 
 		public PlaylistItem Next(bool manually = true) => MoveIndex(forward: true, manually);
 
 		public PlaylistItem Previous(bool manually = true) => MoveIndex(forward: false, manually);
 
-		private PlaylistItem MoveIndex(bool forward, bool manually)
+		private PlaylistItem MoveIndex(bool? forward, bool manually)
 		{
-			if (!NormalizeValues())
+			if (forward == true && playQueue.TryDequeue(out var pli))
+				return pli;
+
+			var (list, index) = NormalizeValues(CurrentList, shuffle.Index);
+			if (list == null)
 				return null;
 
 			// When next/prev was requested manually (via command) we ignore the loop one
 			// mode and instead move the index.
-			if (Loop == LoopMode.One && !manually)
-				return freeList.GetResource(Index);
+			if ((Loop == LoopMode.One && !manually) || !forward.HasValue)
+				return list.GetResource(index);
 
 			bool listEnded;
-			if (forward)
+			if (forward == true)
 				listEnded = shuffle.Next();
-			else
+			else if (forward == false)
 				listEnded = shuffle.Prev();
+			else
+				listEnded = false;
 
-			// Get a new seed when one play-though ended.
+			// Get a new seed when one play-through ended.
 			if (listEnded && Random)
 				SetRandomSeed();
 
@@ -111,24 +106,30 @@ namespace TS3AudioBot.Playlists
 			if (Loop == LoopMode.Off && listEnded && !manually)
 				return null;
 
-			var entry = freeList.GetResource(Index);
-			if (entry != null)
-				entry.Meta.FromPlaylist = true;
-			return entry;
+			(list, index) = NormalizeValues(list, shuffle.Index);
+			return list.GetResource(index);
 		}
 
-		public void PlayFreelist(Playlist plist)
+		public void StartPlaylist(Playlist plist, int index = 0)
 		{
-			if (plist == null)
+			if (plist is null)
 				throw new ArgumentNullException(nameof(plist));
 
-			freeList.Clear();
-			freeList.AddRange(plist.AsEnumerable());
-
-			NormalizeValues();
+			(CurrentList, _) = NormalizeValues(plist, index);
 			SetRandomSeed();
-			Index = 0;
 		}
+
+		public void QueueItem(PlaylistItem item) => playQueue.Enqueue(item);
+
+		public void ClearQueue()
+		{
+			// Starting with dotnet core 2.1 available
+			// playQueue.Clear();
+
+			while (playQueue.TryDequeue(out var _)) ;
+		}
+
+		public PlaylistItem[] GetQueue() => playQueue.ToArray();
 
 		private void SetRandomSeed()
 		{
@@ -136,45 +137,33 @@ namespace TS3AudioBot.Playlists
 		}
 
 		// Returns true if all values are normalized
-		private bool NormalizeValues()
+		private (Playlist list, int index) NormalizeValues(Playlist list, int index)
 		{
-			if (freeList.Count == 0)
-				return false;
+			if (list == null || list.Items.Count == 0)
+				return (null, 0);
 
-			if (shuffle.Length != freeList.Count)
-				shuffle.Length = freeList.Count;
+			if (shuffle.Length != list.Items.Count)
+				shuffle.Length = list.Items.Count;
 
-			if (Index < 0 || Index >= freeList.Count)
-				Index = Util.MathMod(Index, freeList.Count);
+			if (index < 0 || index >= list.Items.Count)
+				index = Util.MathMod(index, list.Items.Count);
 
-			return true;
+			if (shuffle.Index != index)
+				shuffle.Index = index;
+
+			return (list, index);
 		}
-
-		public int AddToFreelist(PlaylistItem item) => freeList.AddItem(item);
-		public void AddToFreelist(IEnumerable<PlaylistItem> items) => freeList.AddRange(items);
-
-		public int AddToTrash(PlaylistItem item) => trashList.AddItem(item);
-		public void AddToTrash(IEnumerable<PlaylistItem> items) => trashList.AddRange(items);
-
-		public int InsertToFreelist(PlaylistItem item) => freeList.InsertItem(item, Math.Min(Index + 1, freeList.Count));
-
-		/// <summary>Clears the current playlist</summary>
-		public void ClearFreelist() => freeList.Clear();
-		public void ClearTrash() => trashList.Clear();
 
 		public R<Playlist, LocalStr> LoadPlaylist(string name, bool headOnly = false)
 		{
 			if (name.StartsWith(".", StringComparison.Ordinal))
-			{
-				var result = GetSpecialPlaylist(name);
-				if (result)
-					return result;
-			}
+				return GetSpecialPlaylist(name);
+
 			var fi = GetFileInfo(name);
 			if (!fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);
 
-			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), FileEncoding))
+			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Util.Utf8Encoder))
 			{
 				var plist = new Playlist(name);
 
@@ -249,7 +238,7 @@ namespace TS3AudioBot.Playlists
 							if (rsSplit.Length < 3)
 								goto default;
 							if (!string.IsNullOrWhiteSpace(rsSplit[0]))
-								plist.AddItem(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0])));
+								plist.Items.Add(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0])));
 							else
 								goto default;
 							break;
@@ -262,7 +251,7 @@ namespace TS3AudioBot.Playlists
 							resid = string.Empty,
 							title = string.Empty
 						});
-						plist.AddItem(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
+						plist.Items.Add(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
 						break;
 
 					case "id":
@@ -290,7 +279,7 @@ namespace TS3AudioBot.Playlists
 
 		public E<LocalStr> SavePlaylist(Playlist plist)
 		{
-			if (plist == null)
+			if (plist is null)
 				throw new ArgumentNullException(nameof(plist));
 
 			var nameCheck = Util.IsSafeFileName(plist.Name);
@@ -309,7 +298,7 @@ namespace TS3AudioBot.Playlists
 					return tempList.OnlyError();
 			}
 
-			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), FileEncoding))
+			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Util.Utf8Encoder))
 			{
 				sw.WriteLine("version:2");
 				if (plist.OwnerUid != null)
@@ -325,7 +314,7 @@ namespace TS3AudioBot.Playlists
 				{
 					json.Formatting = Formatting.None;
 
-					foreach (var pli in plist.AsEnumerable())
+					foreach (var pli in plist.Items)
 					{
 						sw.Write("rsj:");
 						json.WriteStartObject();
@@ -408,8 +397,8 @@ namespace TS3AudioBot.Playlists
 
 			switch (name)
 			{
-			case ".queue": return freeList;
-			case ".trash": return trashList;
+			case ".queue": return new Playlist(".queue", new List<PlaylistItem>(playQueue));
+			case ".mix": return mixList;
 			default: return new LocalStr(strings.error_playlist_special_not_found);
 			}
 		}

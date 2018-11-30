@@ -78,7 +78,7 @@ namespace TS3Client.Audio
 		private void ReadTick()
 		{
 			var inStream = InStream;
-			if (inStream == null)
+			if (inStream is null)
 				return;
 
 			if (readBuffer.Length < ReadBufferSize)

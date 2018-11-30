@@ -17,14 +17,14 @@ namespace TS3AudioBot
 
 		public static bool VerifyLogSetup()
 		{
-			if (LogManager.Configuration == null || LogManager.Configuration.AllTargets.Count == 0)
+			if (LogManager.Configuration is null || LogManager.Configuration.AllTargets.Count == 0)
 			{
 				Console.WriteLine("No or empty NLog config found.\n" +
 								  "You can copy the default config from TS3AudioBot/NLog.config.\n" +
 								  "Please refer to https://github.com/NLog/NLog/wiki/Configuration-file " +
 								  "to learn more how to set up your own logging configuration.");
 
-				if (LogManager.Configuration == null)
+				if (LogManager.Configuration is null)
 				{
 					Console.WriteLine("Create a default config to prevent this step.");
 					Console.WriteLine("Do you want to continue? [Y/N]");
@@ -45,7 +45,7 @@ namespace TS3AudioBot
 		{
 			if (SystemData.RuntimeData.Runtime == Runtime.Mono)
 			{
-				if (SystemData.RuntimeData.SemVer == null)
+				if (SystemData.RuntimeData.SemVer is null)
 				{
 					Log.Warn("Could not find your running mono version!");
 					Log.Warn("This version might not work properly.");

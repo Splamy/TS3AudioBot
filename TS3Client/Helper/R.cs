@@ -35,11 +35,10 @@ namespace System
 	{
 		public static readonly R<TSuccess> ErrR = new R<TSuccess>();
 
-		private readonly bool isOk;
-		public bool Ok => isOk;
+		public bool Ok { get; }
 		public TSuccess Value { get; }
 
-		private R(TSuccess value) { isOk = true; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
+		private R(TSuccess value) { Ok = true; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
 
 		/// <summary>Creates a new successful result with a value</summary>
 		/// <param name="value">The value</param>
@@ -48,6 +47,16 @@ namespace System
 		public static implicit operator bool(R<TSuccess> result) => result.Ok;
 
 		public static implicit operator R<TSuccess>(TSuccess result) => new R<TSuccess>(result);
+
+		// Fluent get
+		public bool GetOk(out TSuccess value)
+		{
+			if (Ok)
+				value = Value;
+			else
+				value = default;
+			return Ok;
+		}
 
 		// Convenience casting
 		public static implicit operator R<TSuccess>(_Error _) => ErrR;
@@ -89,6 +98,21 @@ namespace System
 		public static implicit operator R<TSuccess, TError>(TSuccess result) => new R<TSuccess, TError>(result);
 		public static implicit operator R<TSuccess, TError>(TError error) => new R<TSuccess, TError>(error);
 
+		// Fluent get
+		public E<TError> GetOk(out TSuccess value)
+		{
+			if (Ok)
+			{
+				value = Value;
+				return E<TError>.OkR;
+			}
+			else
+			{
+				value = default;
+				return OnlyError();
+			}
+		}
+
 		// Unwrapping
 		public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;
 		public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
@@ -129,6 +153,13 @@ namespace System
 		public static implicit operator E<TError>(_Ok _) => OkR;
 
 		// Upwrapping
+		/// <summary>
+		/// Adds a success value to the result.
+		/// This will not change the success state of the result.
+		/// Therefore the value may only be null when the state is an error.
+		/// </summary>
+		/// <param name="value">The success value. Can be null when the current state is an error.</param>
+		/// <returns>A new combined result.</returns>
 		public R<TSuccess, TError> WithValue<TSuccess>(TSuccess value)
 		{
 			if (!isError && value == null) throw new ArgumentNullException(nameof(value), "Value must not be null.");

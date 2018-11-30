@@ -1,0 +1,47 @@
+// main: styles.less
+
+.botFlex {
+	.flex();
+
+	flex-wrap: wrap;
+	align-items: stretch;
+	justify-content: center;
+}
+
+.botCard {
+	min-width: 20em;
+
+	&:hover {
+		background-color: lighten(@backgroundcolor3, 10%);
+	}
+
+	> .formcontent {
+		flex-direction: column;
+	}
+}
+
+.botConnected {
+	.formheader, .statusName {
+		color: lime;
+	}
+}
+
+.botConnecting {
+	.formheader, .statusName {
+		color: yellow;
+	}
+}
+
+.imageCard {
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 70%;
+
+	&:hover {
+		background-color: lighten(@backgroundcolor3, 10%);
+	}
+}
+
+.centerText {
+	text-align: center;
+}

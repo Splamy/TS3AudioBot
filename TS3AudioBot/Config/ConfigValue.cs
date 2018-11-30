@@ -19,7 +19,7 @@ namespace TS3AudioBot.Config
 	[DebuggerDisplay("{Key}:{Value}")]
 	public class ConfigValue<T> : ConfigPart
 	{
-		public override bool ExpectsString => typeof(T) == typeof(string) || typeof(T) == typeof(TimeSpan);
+		public override bool ExpectsString => typeof(T) == typeof(string) || typeof(T) == typeof(TimeSpan) || typeof(T).IsEnum;
 		private ConfigValue<T> backingValue;
 		private bool hasValue = false;
 		public T Default { get; }
@@ -79,7 +79,7 @@ namespace TS3AudioBot.Config
 			// - this value is set
 			// - or we explicitely want to write out default values
 			var selfToml = Parent.TomlObject.TryGetValue(Key);
-			if (hasValue || (writeDefaults && selfToml == null)) // TODO optimize: check if existing value is same as Own.Value
+			if (hasValue || (writeDefaults && selfToml is null)) // TODO optimize: check if existing value is same as Own.Value
 			{
 				selfToml = Parent.TomlObject.Set(Key, Value);
 			}
@@ -128,9 +128,9 @@ namespace TS3AudioBot.Config
 	{
 		public T NewValue { get; }
 
-		public ConfigChangedEventArgs(T newV)
+		public ConfigChangedEventArgs(T newValue)
 		{
-			NewValue = newV;
+			NewValue = newValue;
 		}
 	}
 }

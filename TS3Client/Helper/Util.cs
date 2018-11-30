@@ -62,7 +62,7 @@ namespace TS3Client.Helper
 
 	internal static class DebugUtil
 	{
-		public static string DebugToHex(byte[] bytes) => bytes == null ? "<null>" : DebugToHex(bytes.AsSpan());
+		public static string DebugToHex(byte[] bytes) => bytes is null ? "<null>" : DebugToHex(bytes.AsSpan());
 
 		public static string DebugToHex(ReadOnlySpan<byte> bytes)
 		{

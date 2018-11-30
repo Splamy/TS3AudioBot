@@ -1,28 +1,41 @@
-﻿// out: ../styles.css
-/* <pre> */
-/* ReSharper disable All */
+﻿// out: ../out/styles.css
 
-@import "styles_button";
-@import "styles_playcontrols";
-@import "styles_slider";
-@import "styles_history";
 @import "styles_authbox";
+@import "styles_button";
+@import "styles_error";
+@import "styles_formbox";
+@import "styles_history";
+@import "styles_input";
+@import "styles_modalbox";
+@import "styles_playcontrols";
+@import "page_bots";
+@import (inline) "pure/grids.css";
+@import (inline) "pure/grids-responsive.css";
 
-@backgroundcolor1: #050505;
-@backgroundcolor2: #202020;
-@foregroundcolor1: #B0171F;
-@foregroundcolor2: #FF6103;
+@backgroundcolor1: #000a12;
+@backgroundcolor2: #263238;
+@backgroundcolor3: #4f5b62;
+@foregroundcolor1: #E95147;
+@foregroundcolor2: #B0171F;
+@foregroundcolor3: #790000;
 @contrastcolor1: #B2B2B2;
-@top-off: 40px;
-@left-off: 150px;
-@bot-off: 25px;
-@shadow: 3px 3px 3px 0px @backgroundcolor1;
+@default-border-radius: 3px;
+@shadow: 1px 1px 8px 0px @backgroundcolor1;
+@shadow-weak: 1px 1px 4px 0px @backgroundcolor1;
+@font-size1: 100%;
+@font-size2: @font-size1 * 1.2;
 
 html, body {
-	background-color: @backgroundcolor1;
-	color: @foregroundcolor2;
+	.stretchmax();
+	background-color: @backgroundcolor2;
+	color: @foregroundcolor1;
 	margin: 0;
-	font-family: Verdana;
+	padding: 0;
+	font-family: Verdana, FreeSans, Arimo, "Droid Sans", Helvetica, Arial, sans-serif;
+	font-size: @font-size1;
+	width: 100%;
+	height: 100%;
+	overflow-y: hidden;
 }
 
 h1 {
@@ -36,69 +49,72 @@ h2 {
 
 header {
 	color: white;
-	position: fixed;
-	width: 100%;
-	height: @top-off;
+	z-index: 1;
+	background-color: @backgroundcolor1;
+	//box-shadow: 0 0 10px 0 @backgroundcolor1;
 }
 
 nav {
-	top: @top-off;
-	bottom: @bot-off; 
-	width: @left-off;
-	position: fixed;
-	line-height: 2em;
-	background-color: @backgroundcolor1;
+	background-color: @foregroundcolor2;
+	height: 100%;
+	width: 12em;
+	overflow-y: auto;
+	overflow-x: auto;
+	border-right: 1px darken(@foregroundcolor2, 10%) solid;
 }
 
 section {
-	top: @top-off;
-	left: @left-off;
-	bottom: @bot-off;
-	right: 0;
-	position: fixed;
-	background-color: @backgroundcolor2;
 	overflow-y: auto;
 	overflow-x: auto;
-	z-index: -1;
+	flex-grow: 1;
+	position: relative;
 }
 
 footer {
-	bottom: 0;
-	height: @bot-off;
-	width: 100%;
 	color: white;
-	text-align: center;
-	position: fixed;
+	background-color: @backgroundcolor1;
+	//box-shadow: 0 0 10px 0 @backgroundcolor1;
+
+	> * {
+		padding-left: 0.3em;
+	}
+
+	.footerIcon {
+		width: 1em;
+		height: 1em;
+	}
 }
 
-.maxheight {
-	height: 100%;
+hr {
+	display: block;
+	height: 1px;
+	border: 0;
+	border-top: 1px solid #ccc;
+	margin: 0.3em 0;
+	padding: 0;
 }
 
-.split3 {
-	display: flex;
+a, a:hover, a:active, a:focus {
+	outline: none;
 }
 
-.split3bit {
-	width: 33.3%;
-	min-width: 0%;
+.mainframe {
+	flex-direction: column;
+	width: 100%;
 }
 
-.split3max {
-	width: 100.0%;
-	min-width: 0%;
-}
+.jslink {}
 
 .flowright {
 	display: flex;
 	justify-content: flex-end;
 
-	> * {
+	> *:last-child {
 		margin-right: 0.5em;
 	}
 }
 
-.unselectable, nav > a {
+.unselectable() {
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
 	-khtml-user-select: none;
@@ -108,4 +124,36 @@ footer {
 	cursor: default;
 }
 
-/* </pre> */
+.stretchmax {
+	width: 100%;
+	height: 100%;
+}
+
+.flex {
+	display: flex;
+}
+
+.flexmax {
+	flex: 1;
+}
+
+.flex2 {
+	.flex();
+
+	&>*:first-child {
+		.flexmax();
+		padding-right: 0.5em;
+	}
+}
+
+.flexhorizontal {
+	flex-direction: row;
+}
+
+.flexvertical {
+	flex-direction: column;
+}
+
+.hidden {
+	display: none;
+}

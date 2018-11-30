@@ -16,6 +16,7 @@ namespace TS3AudioBot.Web
 	using System;
 	using System.Globalization;
 	using System.Net;
+	using System.Net.Sockets;
 	using System.Threading;
 
 	public sealed class WebServer : IDisposable
@@ -54,16 +55,19 @@ namespace TS3AudioBot.Web
 		private void InitializeSubcomponents()
 		{
 			startWebServer = false;
-			if (config.Api.Enabled)
-			{
-				Api = new Api.WebApi();
-				Injector.RegisterModule(Api);
-				startWebServer = true;
-			}
 			if (config.Interface.Enabled)
 			{
 				Display = new Interface.WebDisplay(config.Interface);
 				Injector.RegisterModule(Display);
+				startWebServer = true;
+			}
+			if (config.Api.Enabled || config.Interface.Enabled)
+			{
+				if (!config.Api.Enabled)
+					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to get rid this error message.");
+
+				Api = new Api.WebApi();
+				Injector.RegisterModule(Api);
 				startWebServer = true;
 			}
 
@@ -115,7 +119,7 @@ namespace TS3AudioBot.Web
 			if (authParts.Length < 2)
 				return AuthenticationSchemes.Anonymous;
 
-			var authType = authParts[0].ToUpper();
+			var authType = authParts[0].ToUpperInvariant();
 			if (authType == "BASIC")
 				return AuthenticationSchemes.Basic;
 
@@ -139,9 +143,10 @@ namespace TS3AudioBot.Web
 			ReloadHostPaths();
 
 			try { webListener.Start(); }
-			catch (HttpListenerException ex)
+			catch (Exception ex)
 			{
 				Log.Error(ex, "The webserver could not be started");
+				webListener = null;
 				return;
 			} // TODO
 
@@ -152,25 +157,47 @@ namespace TS3AudioBot.Web
 				try
 				{
 					var context = webListener.GetContext();
-					IPAddress remoteAddress;
-					try
+					using (var response = context.Response)
 					{
-						remoteAddress = context.Request.RemoteEndPoint?.Address;
-						if (remoteAddress == null)
-							return;
-					}
-					// NRE catch handler is needed due to a strange mono race condition bug.
-					catch (NullReferenceException) { return; }
+						IPAddress remoteAddress;
+						try
+						{
+							remoteAddress = context.Request.RemoteEndPoint?.Address;
+							if (remoteAddress is null)
+								continue;
+							if (context.Request.IsLocal
+								&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
+								&& IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
+							{
+								remoteAddress = realIp;
+							}
+						}
+						// NRE catch handler is needed due to a strange mono race condition bug.
+						catch (NullReferenceException) { continue; }
 
-					var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
-					Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
-					if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
-						Api?.DispatchCall(context);
-					else
-						Display?.DispatchCall(context);
+						var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
+						Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
+
+						bool handled = false;
+						if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
+							handled |= Api?.DispatchCall(context) ?? false;
+						else
+							handled |= Display?.DispatchCall(context) ?? false;
+
+						if (!handled)
+						{
+							response.ContentLength64 = WebUtil.Default404Data.Length;
+							response.StatusCode = (int)HttpStatusCode.NotFound;
+							response.OutputStream.Write(WebUtil.Default404Data, 0, WebUtil.Default404Data.Length);
+						}
+					}
 				}
-				catch (HttpListenerException) { break; }
-				catch (InvalidOperationException) { break; }
+				// These can be raised when the webserver has been closed/disposed.
+				catch (Exception ex) when (ex is InvalidOperationException || ex is ObjectDisposedException) { Log.Debug(ex, "WebListener exception"); break; }
+				// These seem to happen on connections which are closed too fast or failed to open correctly.
+				catch (Exception ex) when (ex is SocketException || ex is HttpListenerException || ex is System.IO.IOException) { Log.Debug(ex, "WebListener exception"); }
+				// Catch everything else to keep the webserver running, but print a warning.
+				catch (Exception ex) { Log.Warn(ex, "WebListener error"); }
 			}
 
 			Log.Info("WebServer has closed");
@@ -181,9 +208,19 @@ namespace TS3AudioBot.Web
 			Display?.Dispose();
 			Display = null;
 
-			webListener?.Stop();
-			webListener?.Close();
+			try
+			{
+				webListener?.Stop();
+				webListener?.Close();
+			}
+			catch (ObjectDisposedException) { }
 			webListener = null;
+
+#if !NET46
+			// dotnet core for some reason doesn't exit the web loop
+			// when calling Stop or Close.
+			serverThread?.Abort();
+#endif
 		}
 	}
 }

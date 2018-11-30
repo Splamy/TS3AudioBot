@@ -17,6 +17,8 @@ namespace TS3AudioBot.Config
 
 	public static class ConfigHelper
 	{
+		public const string DefaultBotName = "default";
+
 		public static ConfigPart[] ByPathAsArray(this ConfigPart config, string path)
 		{
 			try
@@ -53,6 +55,14 @@ namespace TS3AudioBot.Config
 									timeStr = "P" + timeStr;
 							}
 							value = (T)(object)XmlConvert.ToTimeSpan(timeStr);
+							return R.Ok;
+						}
+					}
+					else if (typeof(T).IsEnum)
+					{
+						if (reader.TokenType == JsonToken.String)
+						{
+							value = (T)Enum.Parse(typeof(T), (string)reader.Value, true);
 							return R.Ok;
 						}
 					}

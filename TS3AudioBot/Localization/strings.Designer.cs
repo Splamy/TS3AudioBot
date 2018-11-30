@@ -97,11 +97,20 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Clears the avatar of the bot..
+        /// </summary>
+        internal static string cmd_bot_avatar_clear_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_avatar_clear_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Sets an avatar for the bot.
         /// </summary>
-        internal static string cmd_bot_avatar_help {
+        internal static string cmd_bot_avatar_set_help {
             get {
-                return ResourceManager.GetString("cmd_bot_avatar_help", resourceCulture);
+                return ResourceManager.GetString("cmd_bot_avatar_set_help", resourceCulture);
             }
         }
         
@@ -165,6 +174,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_bot_connect_to_help {
             get {
                 return ResourceManager.GetString("cmd_bot_connect_to_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sets the description of the bot..
+        /// </summary>
+        internal static string cmd_bot_description_set_help {
+            get {
+                return ResourceManager.GetString("cmd_bot_description_set_help", resourceCulture);
             }
         }
         
@@ -685,6 +703,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Show&apos;s a small summary of the current playlist and queue status..
+        /// </summary>
+        internal static string cmd_info_help {
+            get {
+                return ResourceManager.GetString("cmd_info_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Allows you to combine multiple JsonResults into one.
         /// </summary>
         internal static string cmd_json_merge_help {
@@ -789,6 +816,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_list_item_move_help {
             get {
                 return ResourceManager.GetString("cmd_list_item_move_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Renames an item..
+        /// </summary>
+        internal static string cmd_list_item_name_help {
+            get {
+                return ResourceManager.GetString("cmd_list_item_name_help", resourceCulture);
             }
         }
         
@@ -978,6 +1014,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_print_help {
             get {
                 return ResourceManager.GetString("cmd_print_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Displays the current play queue..
+        /// </summary>
+        internal static string cmd_queue_help {
+            get {
+                return ResourceManager.GetString("cmd_queue_help", resourceCulture);
             }
         }
         
@@ -1234,6 +1279,42 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Reloads the bot template configuration from the file..
+        /// </summary>
+        internal static string cmd_settings_bot_reload_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_bot_reload_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Duplicates a bot template with a new name..
+        /// </summary>
+        internal static string cmd_settings_copy_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_copy_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Creates a new bot template..
+        /// </summary>
+        internal static string cmd_settings_create_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_create_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Deletes a bot template..
+        /// </summary>
+        internal static string cmd_settings_delete_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_delete_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Please specify a key. E.g {0}.
         /// </summary>
         internal static string cmd_settings_empty_usage {
@@ -1284,6 +1365,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_settings_help_help {
             get {
                 return ResourceManager.GetString("cmd_settings_help_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reloads the core configuration from the file..
+        /// </summary>
+        internal static string cmd_settings_reload_help {
+            get {
+                return ResourceManager.GetString("cmd_settings_reload_help", resourceCulture);
             }
         }
         
@@ -1585,7 +1675,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This bot does not exists..
+        ///   Looks up a localized string similar to This bot does not exist..
         /// </summary>
         internal static string error_bot_does_not_exist {
             get {
@@ -1621,6 +1711,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Need at least {0} arguments to evaluate..
+        /// </summary>
+        internal static string error_cmd_at_least_n_arguments {
+            get {
+                return ResourceManager.GetString("error_cmd_at_least_n_arguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Need at least one argument to evaluate..
         /// </summary>
         internal static string error_cmd_at_least_one_argument {
@@ -1630,11 +1729,47 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Need at least three arguments to evaluate..
+        /// </summary>
+        internal static string error_cmd_at_least_three_argument {
+            get {
+                return ResourceManager.GetString("error_cmd_at_least_three_argument", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Need at least two arguments to evaluate..
         /// </summary>
         internal static string error_cmd_at_least_two_argument {
             get {
                 return ResourceManager.GetString("error_cmd_at_least_two_argument", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not convert &quot;{0}&quot; to {1}..
+        /// </summary>
+        internal static string error_cmd_could_not_convert_to {
+            get {
+                return ResourceManager.GetString("error_cmd_could_not_convert_to", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No matching function overload could be found..
+        /// </summary>
+        internal static string error_cmd_no_matching_overload {
+            get {
+                return ResourceManager.GetString("error_cmd_no_matching_overload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The number is too big..
+        /// </summary>
+        internal static string error_cmd_number_too_big {
+            get {
+                return ResourceManager.GetString("error_cmd_number_too_big", resourceCulture);
             }
         }
         
@@ -2008,7 +2143,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The playlist name contains invalid characters; please only use [a-zA-Z0-9_-]..
+        ///   Looks up a localized string similar to The name contains invalid characters; please only use [a-zA-Z0-9_-]..
         /// </summary>
         internal static string error_playlist_name_invalid_character {
             get {
@@ -2017,7 +2152,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An empty playlist name is not valid..
+        ///   Looks up a localized string similar to An empty name is not valid..
         /// </summary>
         internal static string error_playlist_name_invalid_empty {
             get {
@@ -2026,7 +2161,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The playlist name length must be &lt;64..
+        ///   Looks up a localized string similar to The name length must be &lt;64..
         /// </summary>
         internal static string error_playlist_name_invalid_too_long {
             get {

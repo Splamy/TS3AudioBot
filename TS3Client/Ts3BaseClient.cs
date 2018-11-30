@@ -52,6 +52,7 @@ namespace TS3Client
 		private FileTransferManager ftm;
 		/// <summary>An instance to a <see cref="FileTransferManager"/> dedicated for this client.</summary>
 		public FileTransferManager FileTransferManager => ftm ?? (ftm = new FileTransferManager(this));
+		protected abstract Deserializer Deserializer { get; }
 
 		public abstract void Connect(ConnectionData conData);
 		public abstract void Disconnect();
@@ -191,22 +192,22 @@ namespace TS3Client
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId permissionId, int permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, Ts3Permission permission, int permissionValue,
 				bool permissionNegated, bool permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandParameter("permsid", permissionId.ToString()),
+			Ts3PermissionHelper.GetAsParameter(Deserializer.PermissionTransform, permission),
 			new CommandParameter("permvalue", permissionValue),
 			new CommandParameter("permnegated", permissionNegated),
 			new CommandParameter("permskip", permissionSkip));
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, PermissionId[] permissionId, int[] permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, Ts3Permission[] permission, int[] permissionValue,
 				bool[] permissionNegated, bool[] permissionSkip)
 			=> Send("servergroupaddperm",
 			new CommandParameter("sgid", serverGroupId),
-			new CommandMultiParameter("permsid", permissionId.Select(x => x.ToString())),
+			Ts3PermissionHelper.GetAsMultiParameter(Deserializer.PermissionTransform, permission),
 			new CommandMultiParameter("permvalue", permissionValue),
 			new CommandMultiParameter("permnegated", permissionNegated),
 			new CommandMultiParameter("permskip", permissionSkip));
@@ -269,6 +270,15 @@ namespace TS3Client
 			return Send("clientupdate", new CommandParameter("client_flag_avatar", md5));
 		}
 
+		/// <summary>Deletes the avatar of a user.
+		/// Can be called without uid to delete own avatar.</summary>
+		/// <param name="clientUid">The client uid where the avatar should be deleted.</param>
+		public CmdR DeleteAvatar(string clientUid = null)
+		{
+			string path = "/avatar_" + clientUid;
+			return FileTransferDeleteFile(0, new[] { path });
+		}
+
 		public CmdR ClientMove(ClientIdT clientId, ChannelIdT channelId, string channelPassword = null)
 		{
 			var cmd = new Ts3Command("clientmove", new List<ICommandPart> {
@@ -288,7 +298,7 @@ namespace TS3Client
 		public abstract R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null);
 
 		/// <summary>Displays all server groups the client specified with <paramref name="clDbId"/> is currently residing in.</summary>
-		public abstract R<ClientServerGroup[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);
+		public abstract R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId);
 
 		public abstract R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume);
@@ -300,11 +310,15 @@ namespace TS3Client
 
 		public abstract R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "");
 
-		public abstract R<FileInfoTs[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
+		public abstract R<FileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "");
 
 		public abstract R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid);
 
 		public abstract R<ClientIds[], CommandError> GetClientIds(Uid clientUid);
+
+		public abstract R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission);
+
+		public abstract R<PermList[], CommandError> PermissionList();
 		#endregion
 	}
 }

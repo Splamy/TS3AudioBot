@@ -14,7 +14,6 @@ namespace TS3AudioBot.Web.Interface
 	using System.IO;
 	using System.Linq;
 	using System.Net;
-	using System.Text;
 
 	public sealed class WebDisplay : WebComponent, IDisposable
 	{
@@ -31,7 +30,7 @@ namespace TS3AudioBot.Web.Interface
 			{ ".css", "text/css" },
 			{ ".ico", "image/x-icon" },
 			{ ".png", "image/png" },
-			{ ".svg", "	image/svg+xml" },
+			{ ".svg", "image/svg+xml" },
 			// Custom
 			{ ".map", "text/plain" },
 			{ ".less", "text/css" },
@@ -54,60 +53,71 @@ namespace TS3AudioBot.Web.Interface
 				}
 			}
 			else if (Directory.Exists(webData.Path))
+			{
 				baseDir = new DirectoryInfo(webData.Path);
+			}
 
-			if (baseDir == null)
+			if (baseDir is null)
 			{
 				Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
 				return;
 			}
 
-			var dir = new FolderProvider(baseDir);
-			map.Map("/", dir);
-			map.Map("/site/", dir);
+			map.Map("/", new FolderProvider(baseDir));
+
+#if DEBUG
+			// include debug out folder
+			map.Map("/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "html"))));
+			map.Map("/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "out"))));
+#endif
+
 			map.Map("/openapi/", new FolderProvider(new DirectoryInfo(Path.Combine(baseDir.FullName, "openapi"))));
 
 			Site404 = map.TryGetSite(new Uri("http://localhost/404.html"));
-			map.Map("/", map.TryGetSite(new Uri("http://localhost/index.html")));
+			map.Map("/", new FileRedirect(map, "", "index.html"));
 		}
 
-		public override void DispatchCall(HttpListenerContext context)
+		public override bool DispatchCall(HttpListenerContext context)
 		{
 			// GetWebsite will always return either the found website or the default 404
 			var site = GetWebsite(context.Request.Url);
-			if (site == null)
+			if (site is null)
 			{
 				Log.Error("No site found");
-				return;
+				return false;
 			}
 
-			var data = site.GetData();
-			if (data == null)
+			var request = context.Request;
+			var response = context.Response;
+
+			var data = site.GetData(request, response);
+			if (data is null)
 			{
-				Log.Error("Site has not data");
-				return;
+				Log.Error("Site has no data");
+				return false;
 			}
 
 			// Prepare Header
-			var response = context.Response;
-			response.StatusCode = (int)HttpStatusCode.OK;
-			response.ContentLength64 = data.Length;
-			response.ContentEncoding = Encoding.UTF8;
-			response.ContentType = site.MimeType ?? "text/plain";
+			if (site == Site404)
+				response.StatusCode = (int)HttpStatusCode.NotFound;
+			response.KeepAlive = true;
 
-			try
+			// Write Data
+			using (var responseStream = response.OutputStream)
 			{
-				// Write Data
-				using (var responseStream = response.OutputStream)
+				try
+				{
 					responseStream.Write(data, 0, data.Length);
+				}
+				catch (IOException) { }
+				catch (Exception ex) { Log.Warn(ex, "Problem handling web request: {0}", ex.Message); }
+				return true;
 			}
-			catch (IOException) { }
-			catch (Exception ex) { Log.Warn(ex, "Problem handling web request: {0}", ex.Message); }
 		}
 
 		private ISiteProvider GetWebsite(Uri url)
 		{
-			if (url == null) return Site404;
+			if (url is null) return Site404;
 			return map.TryGetSite(url) ?? Site404;
 		}
 

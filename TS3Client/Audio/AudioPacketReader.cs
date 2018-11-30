@@ -19,7 +19,7 @@ namespace TS3Client.Audio
 
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (OutStream == null)
+			if (OutStream is null)
 				return;
 
 			if (data.Length < 5) // Invalid packet

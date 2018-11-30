@@ -10,7 +10,6 @@
 namespace TS3AudioBot.Helper
 {
 	using System;
-	using System.Globalization;
 	using System.Security.Cryptography;
 	using System.Text;
 	using System.Text.RegularExpressions;
@@ -27,10 +26,9 @@ namespace TS3AudioBot.Helper
 		{
 			if (string.IsNullOrEmpty(answer))
 				return Answer.Unknown;
-			string lowAnswer = answer.ToLower(CultureInfo.InvariantCulture);
-			if (lowAnswer.StartsWith("!y", StringComparison.Ordinal))
+			if (answer.StartsWith("!y", StringComparison.OrdinalIgnoreCase))
 				return Answer.Yes;
-			else if (lowAnswer.StartsWith("!n", StringComparison.Ordinal))
+			else if (answer.StartsWith("!n", StringComparison.OrdinalIgnoreCase))
 				return Answer.No;
 			else
 				return Answer.Unknown;

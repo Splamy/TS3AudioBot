@@ -35,7 +35,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			get
 			{
-				if (cachedFullQualifiedName == null)
+				if (cachedFullQualifiedName is null)
 				{
 					var strb = new StringBuilder();
 					strb.Append(InvokeName);
@@ -65,7 +65,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			get
 			{
-				if (cachedAsJsonObj == null)
+				if (cachedAsJsonObj is null)
 					cachedAsJsonObj = new CommadSerializeObj(this);
 				return cachedAsJsonObj;
 			}
@@ -141,7 +141,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			Parent = p;
 			Method = m;
-			if (!m.IsStatic && p == null)
+			if (!m.IsStatic && p is null)
 				throw new ArgumentException("Got instance method without accociated object");
 			CommandData = comAtt;
 		}

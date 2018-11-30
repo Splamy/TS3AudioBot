@@ -16,10 +16,10 @@ namespace TS3AudioBot.Sessions
 	using System.Threading;
 	using Response = System.Func<string, string>;
 
-	public sealed class UserSession
+	public class UserSession
 	{
 		private Dictionary<Type, object> assocMap;
-		private bool lockToken;
+		protected bool lockToken;
 
 		public Response ResponseProcessor { get; private set; }
 
@@ -46,7 +46,7 @@ namespace TS3AudioBot.Sessions
 		{
 			VerifyLock();
 
-			if (assocMap == null)
+			if (assocMap is null)
 				return R.Err;
 
 			if (!assocMap.TryGetValue(typeof(TAssoc), out object value))
@@ -62,7 +62,7 @@ namespace TS3AudioBot.Sessions
 		{
 			VerifyLock();
 
-			if (assocMap == null)
+			if (assocMap is null)
 				Util.Init(out assocMap);
 
 			if (assocMap.ContainsKey(typeof(TAssoc)))
@@ -71,26 +71,26 @@ namespace TS3AudioBot.Sessions
 				assocMap.Add(typeof(TAssoc), data);
 		}
 
-		public SessionLock GetLock()
+		public virtual SessionLock GetLock()
 		{
 			var sessionToken = new SessionLock(this);
 			sessionToken.Take();
 			return sessionToken;
 		}
 
-		private void VerifyLock()
+		protected void VerifyLock()
 		{
 			if (!lockToken)
 				throw new InvalidOperationException("No access lock is currently active");
 		}
 
-		public sealed class SessionLock : IDisposable
+		public class SessionLock : IDisposable
 		{
 			private readonly UserSession session;
 			public SessionLock(UserSession session) { this.session = session; }
 
-			public void Take() { Monitor.Enter(session); session.lockToken = true; }
-			public void Free() { Monitor.Exit(session); session.lockToken = false; }
+			public virtual void Take() { Monitor.Enter(session); session.lockToken = true; }
+			public virtual void Free() { Monitor.Exit(session); session.lockToken = false; }
 			public void Dispose() => Free();
 		}
 	}
@@ -99,7 +99,7 @@ namespace TS3AudioBot.Sessions
 	{
 		public static void SetResponse(this UserSession session, Response responseProcessor)
 		{
-			if (session == null)
+			if (session is null)
 				throw new CommandException("No session context", CommandExceptionReason.CommandError);
 			session.SetResponseInstance(responseProcessor);
 		}

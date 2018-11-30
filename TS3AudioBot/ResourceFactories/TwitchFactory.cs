@@ -92,7 +92,7 @@ namespace TS3AudioBot.ResourceFactories
 						// #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=128000,CODECS="mp4a.40.2",VIDEO="audio_only"
 						for (int i = 0; i < infoMatch.Groups[3].Captures.Count; i++)
 						{
-							string key = infoMatch.Groups[4].Captures[i].Value.ToUpper(CultureInfo.InvariantCulture);
+							string key = infoMatch.Groups[4].Captures[i].Value.ToUpperInvariant();
 							string value = infoMatch.Groups[5].Captures[i].Value;
 
 							switch (key)

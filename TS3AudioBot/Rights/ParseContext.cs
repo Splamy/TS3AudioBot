@@ -9,9 +9,11 @@
 
 namespace TS3AudioBot.Rights
 {
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Text;
+	using TS3Client;
 
 	internal class ParseContext
 	{
@@ -25,6 +27,7 @@ namespace TS3AudioBot.Rights
 		public RightsRule RootRule { get; }
 		public bool NeedsAvailableGroups { get; set; } = false;
 		public bool NeedsAvailableChanGroups { get; set; } = false;
+		public Ts3Permission[] NeedsPermOverview { get; set; } = Array.Empty<Ts3Permission>();
 
 		public ParseContext(ISet<string> registeredRights)
 		{

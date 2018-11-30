@@ -9,17 +9,17 @@
 
 namespace TS3Client.Helper
 {
+	using Messages;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using Messages;
 
 	/// <summary>Provides useful extension methods and error formatting.</summary>
 	public static class Extensions
 	{
 		public static string ErrorFormat(this CommandError error)
 		{
-			if (error.MissingPermissionId > PermissionId.unknown)
+			if (error.MissingPermissionId != Ts3Permission.unknown && error.MissingPermissionId != Ts3Permission.undefined)
 				return $"{error.Id}: the command failed to execute: {error.Message} (missing permission:{error.MissingPermissionId})";
 			else
 				return $"{error.Id}: the command failed to execute: {error.Message}";

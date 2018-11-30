@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>TS3AudioBot</title>
+    <script src="script.js"></script>
+    <link href="styles.css" rel="stylesheet" />
+    <link href="favicon.ico" rel="icon" type="image/x-icon" />
+</head>
+
+<body>
+    <div class="flex stretchmax">
+        <div>
+            <nav>
+                <a class="jslink button navButton navTitle" href="index.html?page=home.html">TS3AudioBot</a>
+                <a class="jslink button navButton" href="index.html?page=bots.html">Bots</a>
+                <a class="jslink button navButton" href="index.html?page=commands.html">[In development] Commands</a>
+                <a class="jslink button navButton" href="index.html?page=playlist.html">[In development] Playlist</a>
+                <a class="jslink button navButton" href="index.html?page=history.html">[In development] History</a>
+            </nav>
+        </div>
+        <div class="mainframe flex">
+            <header class="flex unselectable">
+                <div>
+                    <div id="refreshContent" class="button buttonRound buttonSmall" style="background-image: url(media/icons/reload.svg)"></div>
+                </div>
+                <label class="authbox flex">
+                    <input type="checkbox" checked />
+                    <div id="authbutton" class="button buttonRound buttonSmall"></div>
+                    <input id="authtoken" type="text" placeholder="Enter your API Key here. You can get one with !api token" />
+                </label>
+            </header>
+            <section>
+                <div id="errors"></div>
+                <div id="content"></div>
+            </section>
+            <footer class="flex flowright unselectable">
+                <a href="https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link"
+                    target="_blank">
+                    <img class="footerIcon" src="media/icons/people.svg" alt="Gitter discussion">
+                </a>
+                <a href="https://github.com/Splamy/TS3AudioBot/issues/new/choose" target="_blank">
+                    <img class="footerIcon" src="media/icons/bug.svg" alt="Github Issues">
+                </a>
+                <a href="https://github.com/Splamy/TS3AudioBot" target="_blank">
+                    <img class="footerIcon" src="media/github.svg" alt="Github Project Page">
+                </a>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Preload data -->
+    <div style="width: 0; height: 0;">
+        <div style="background: url(media/icons/cog-work.svg) no-repeat"></div>
+    </div>
+</body>
+
+</html>

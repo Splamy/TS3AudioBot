@@ -156,7 +156,11 @@ namespace TS3Client.Full
 				catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
 			}
 
-			resendThread.Start();
+			try
+			{
+				resendThread.Start();
+			}
+			catch (SystemException ex) { throw new Ts3Exception("Error initializing internal stuctures", ex); }
 		}
 
 		public void Stop(Reason closeReason = Reason.LeftServer)
@@ -277,8 +281,12 @@ namespace TS3Client.Full
 				break;
 
 			case PacketType.Ack:
+				LoggerRaw.Debug("[O] Acking Ack: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+				break;
+
 			case PacketType.AckLow:
-				LoggerRaw.Debug("[O] Acking {1}: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data), packet.PacketType);
+				packet.PacketFlags |= PacketFlags.Unencrypted;
+				LoggerRaw.Debug("[O] Acking AckLow: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 				break;
 
 			case PacketType.Init1:
@@ -330,7 +338,7 @@ namespace TS3Client.Full
 
 				var optpacket = Packet<TIn>.FromRaw(buffer);
 				// Invalid packet, ignore
-				if (optpacket == null)
+				if (optpacket is null)
 				{
 					LoggerRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 					continue;
@@ -578,7 +586,7 @@ namespace TS3Client.Full
 		{
 			lock (sendLoopLock)
 			{
-				if (initPacketCheck == null)
+				if (initPacketCheck is null)
 					return true;
 				// optional: add random number check from init data
 				var forwardData = ts3Crypt.ProcessInit1<TIn>(packet.Data);

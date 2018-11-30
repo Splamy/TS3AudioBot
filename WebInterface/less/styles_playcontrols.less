@@ -1,53 +1,44 @@
 // main: styles.less
 
-#playhandler {
-    display: inline-block;
-    min-width: 24em;
-    width: 100%;
+input[type="range"] {
+    margin: 0;
 }
 
-.linebox {
-    display: inline-block;
+.playblock1 {
+    display: flex;
     align-items: center;
-    height: 3em;
-    width: 33%;
-    min-width: 12em;
-    text-align: center;
-    padding: 0px;
-    margin: auto;
+    justify-content: flex-end;
+    flex: 1;
 }
 
-.rightbox {
-    text-align: right;
+.playblock2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.leftbox {
-    text-align: left;
+.playblock3 {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1;
 }
 
-.fillbox {
-    display: inline-block;
-    width: 100%;
-    text-align: left;
+.timelabel {
+    margin: 0em 1em;
 }
 
-.fillline {
-    width: 80%;
-    padding: 0em 10%;
-    margin: 0em;
-}
+.playdisabled {
+    .button {
+        pointer-events: none;
+        background-color: gray;
+    }
 
-.playctrlbtn {
-    padding: 0.3em 0.5em;
-    display: inline;
-    margin: 0em;
-}
+    input[type=range] {
+        pointer-events: none;
+    }
 
-.playctrlplay {
-    padding: 1em 1em;
-    width: 1em;
-    height: 1em;
-    display: inline-block;
-    margin: 0em;
-    border-radius: 50%;
+    input[type=range]::-moz-range-track {
+        background: gray;
+    }
 }

@@ -15,12 +15,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
-    <PackageReference Include="NLog" Version="4.5.9" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.4" />
     <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
-    <PackageReference Include="System.IO.Pipelines" Version="4.5.0" />
-    <PackageReference Include="System.Memory" Version="4.5.1" />
-    <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="System.ValueTuple" Version="4.5.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="4.5.2" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Generated\BookParser.ttinclude" />

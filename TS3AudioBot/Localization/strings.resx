@@ -577,7 +577,7 @@ with the id {1}?</value>
     <value>Clients</value>
   </data>
   <data name="error_bot_does_not_exist" xml:space="preserve">
-    <value>This bot does not exists.</value>
+    <value>This bot does not exist.</value>
   </data>
   <data name="error_call_error" xml:space="preserve">
     <value>Error: {0}</value>
@@ -784,13 +784,13 @@ with the id {1}?</value>
     <value>You cannot access a playlist which you dont own.</value>
   </data>
   <data name="error_playlist_name_invalid_character" xml:space="preserve">
-    <value>The playlist name contains invalid characters; please only use [a-zA-Z0-9_-].</value>
+    <value>The name contains invalid characters; please only use [a-zA-Z0-9_-].</value>
   </data>
   <data name="error_playlist_name_invalid_empty" xml:space="preserve">
-    <value>An empty playlist name is not valid.</value>
+    <value>An empty name is not valid.</value>
   </data>
   <data name="error_playlist_name_invalid_too_long" xml:space="preserve">
-    <value>The playlist name length must be &lt;64.</value>
+    <value>The name length must be &lt;64.</value>
   </data>
   <data name="error_playlist_no_store_directory" xml:space="preserve">
     <value>No playlist directory has been set up.</value>
@@ -876,7 +876,7 @@ with the id {1}?</value>
   <data name="_undocumented" xml:space="preserve">
     <value>This feature is not documented.</value>
   </data>
-  <data name="cmd_bot_avatar_help" xml:space="preserve">
+  <data name="cmd_bot_avatar_set_help" xml:space="preserve">
     <value>Sets an avatar for the bot</value>
   </data>
   <data name="cmd_song_position_help" xml:space="preserve">
@@ -896,5 +896,50 @@ with the id {1}?</value>
   </data>
   <data name="cmd_repeat_info_one" xml:space="preserve">
     <value>Repeating a single song.</value>
+  </data>
+  <data name="cmd_bot_avatar_clear_help" xml:space="preserve">
+    <value>Clears the avatar of the bot.</value>
+  </data>
+  <data name="error_cmd_could_not_convert_to" xml:space="preserve">
+    <value>Could not convert "{0}" to {1}.</value>
+  </data>
+  <data name="error_cmd_no_matching_overload" xml:space="preserve">
+    <value>No matching function overload could be found.</value>
+  </data>
+  <data name="error_cmd_number_too_big" xml:space="preserve">
+    <value>The number is too big.</value>
+  </data>
+  <data name="error_cmd_at_least_n_arguments" xml:space="preserve">
+    <value>Need at least {0} arguments to evaluate.</value>
+  </data>
+  <data name="error_cmd_at_least_three_argument" xml:space="preserve">
+    <value>Need at least three arguments to evaluate.</value>
+  </data>
+  <data name="cmd_bot_description_set_help" xml:space="preserve">
+    <value>Sets the description of the bot.</value>
+  </data>
+  <data name="cmd_settings_bot_reload_help" xml:space="preserve">
+    <value>Reloads the bot template configuration from the file.</value>
+  </data>
+  <data name="cmd_settings_create_help" xml:space="preserve">
+    <value>Creates a new bot template.</value>
+  </data>
+  <data name="cmd_settings_delete_help" xml:space="preserve">
+    <value>Deletes a bot template.</value>
+  </data>
+  <data name="cmd_settings_reload_help" xml:space="preserve">
+    <value>Reloads the core configuration from the file.</value>
+  </data>
+  <data name="cmd_settings_copy_help" xml:space="preserve">
+    <value>Duplicates a bot template with a new name.</value>
+  </data>
+  <data name="cmd_queue_help" xml:space="preserve">
+    <value>Displays the current play queue.</value>
+  </data>
+  <data name="cmd_info_help" xml:space="preserve">
+    <value>Show's a small summary of the current playlist and queue status.</value>
+  </data>
+  <data name="cmd_list_item_name_help" xml:space="preserve">
+    <value>Renames an item.</value>
   </data>
 </root>

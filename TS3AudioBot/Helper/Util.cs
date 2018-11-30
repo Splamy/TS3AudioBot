@@ -14,7 +14,9 @@ namespace TS3AudioBot.Helper
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 	using System;
+	using System.Collections.Generic;
 	using System.IO;
+	using System.Linq;
 	using System.Reflection;
 	using System.Text;
 	using System.Text.RegularExpressions;
@@ -25,7 +27,7 @@ namespace TS3AudioBot.Helper
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 
-		private static readonly Regex ValidPlistName = new Regex(@"^[\w-]+$", DefaultRegexConfig);
+		private static readonly Regex SafeFileNameMatcher = new Regex(@"^[\w-]+$", DefaultRegexConfig);
 
 		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
 		/// <param name="predicate">Check function that will be called every millisecond.</param>
@@ -50,6 +52,10 @@ namespace TS3AudioBot.Helper
 		}
 
 		public static DateTime GetNow() => DateTime.Now;
+
+		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+		public static uint ToUnix(this DateTime dateTime) => (uint)(dateTime - UnixTimeStart).TotalSeconds;
 
 		public static void Init<T>(out T obj) where T : new() => obj = new T();
 
@@ -146,6 +152,13 @@ namespace TS3AudioBot.Helper
 				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
+		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger)
+		{
+			if (!r.Ok)
+				logger.Warn("Could not write message: {0}", r.Error.Str);
+			return r.Ok;
+		}
+
 		public static string UnrollException(this Exception ex)
 		{
 			var strb = new StringBuilder();
@@ -167,10 +180,10 @@ namespace TS3AudioBot.Helper
 
 		public static R<T> TryCast<T>(this JToken token, string key)
 		{
-			if (token == null)
+			if (token is null)
 				return R.Err;
 			var value = token.SelectToken(key);
-			if (value == null)
+			if (value is null)
 				return R.Err;
 			try { return value.ToObject<T>(); }
 			catch (JsonReaderException) { return R.Err; }
@@ -182,10 +195,13 @@ namespace TS3AudioBot.Helper
 				return new LocalStr(strings.error_playlist_name_invalid_empty); // TODO change to more generic error
 			if (name.Length >= 64)
 				return new LocalStr(strings.error_playlist_name_invalid_too_long);
-			if (!ValidPlistName.IsMatch(name))
+			if (!SafeFileNameMatcher.IsMatch(name))
 				return new LocalStr(strings.error_playlist_name_invalid_character);
 			return R.Ok;
 		}
+
+		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector)
+			=> source.Select(selector).Where(x => x.Ok).Select(x => x.Value);
 	}
 
 	public class MissingEnumCaseException : Exception

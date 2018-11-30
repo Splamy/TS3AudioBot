@@ -37,7 +37,7 @@ namespace TS3Client.Audio
 
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (OutStream == null || !meta.Codec.HasValue)
+			if (OutStream is null || !meta.Codec.HasValue)
 				return;
 
 			switch (meta.Codec.Value)

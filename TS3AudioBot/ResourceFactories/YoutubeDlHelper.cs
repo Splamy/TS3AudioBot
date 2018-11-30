@@ -26,7 +26,7 @@ namespace TS3AudioBot.ResourceFactories
 		public static R<(string title, IList<string> links), LocalStr> FindAndRunYoutubeDl(string id)
 		{
 			var ytdlPath = FindYoutubeDl(id);
-			if (ytdlPath == null)
+			if (ytdlPath is null)
 				return new LocalStr(strings.error_ytdl_not_found);
 
 			return RunYoutubeDl(ytdlPath.Value.ytdlpath, ytdlPath.Value.param);
@@ -36,19 +36,22 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			string param = $"--no-warnings --get-title --get-url --format bestaudio/best --id -- {id}";
 
-			// Default path youtube-dl is suggesting to install
-			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
-			if (File.Exists(defaultYtDlPath))
-				return (defaultYtDlPath, param);
+			var youtubeDlPath = YoutubeDlPath;
+			if (string.IsNullOrEmpty(youtubeDlPath))
+			{
+				// Default path youtube-dl is suggesting to install
+				const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
+				if (File.Exists(defaultYtDlPath))
+					return (defaultYtDlPath, param);
 
-			if (YoutubeDlPath == null)
-				return null;
+				youtubeDlPath = Directory.GetCurrentDirectory();
+			}
 
 			string fullCustomPath;
-			try { fullCustomPath = Path.GetFullPath(YoutubeDlPath); }
+			try { fullCustomPath = Path.GetFullPath(youtubeDlPath); }
 			catch (ArgumentException ex)
 			{
-				Log.Warn(ex, "Your youtube-dl path contains invalid characters");
+				Log.Warn(ex, "Your youtube-dl path may contain invalid characters");
 				return null;
 			}
 

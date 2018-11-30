@@ -1,33 +1,33 @@
 class ApiAuth {
-    public CachedRealm?: string;
-    public CachedNonce?: string;
-    public AuthStatus: AuthStatus;
-    private ha1?: string;
+
+    public get IsAnonymous(): boolean { return this.UserUid.length === 0 && this.Token.length === 0; }
+
+    public static readonly Anonymous: ApiAuth = new ApiAuth("", "");
 
     constructor(
         public readonly UserUid: string,
         public readonly Token: string) {
     }
 
-    public hasValidNonce() {
-        return this.CachedNonce !== undefined;
-    }
+    public static Create(fullTokenString: string): ApiAuth {
+        if (fullTokenString.length === 0)
+            return ApiAuth.Anonymous;
 
-    public generateResponse(url: string, realm: string | undefined = this.CachedRealm): string {
-        if (!this.hasValidNonce())
-            throw new Error("Cannot generate response without nonce");
-
-        if (this.ha1 === undefined || this.CachedRealm !== realm) {
-            this.CachedRealm = realm;
-            this.ha1 = md5(this.UserUid + ":" + realm + ":" + this.Token);
+        const split = fullTokenString.split(/:/);
+        if (split.length === 2) {
+            return new ApiAuth(split[0], split[1]);
+        } else if (split.length === 3) {
+            return new ApiAuth(split[0], split[2]);
+        } else {
+            throw new Error("Invalid token");
         }
-        const ha2 = md5("GET" + ":" + url);
-        return md5(this.ha1 + ":" + this.CachedNonce + ":" + ha2);
     }
-}
 
-enum AuthStatus {
-    None,
-    FirstTry,
-    Failed,
+    public getBasic(): string {
+        return `Basic ${btoa(this.UserUid + ":" + this.Token)}`;
+    }
+
+    public getFullAuth() {
+        return this.UserUid + ":" + this.Token;
+    }
 }

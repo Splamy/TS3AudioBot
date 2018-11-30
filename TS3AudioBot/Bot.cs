@@ -12,6 +12,7 @@ namespace TS3AudioBot
 	using Algorithm;
 	using CommandSystem;
 	using CommandSystem.CommandResults;
+	using CommandSystem.Text;
 	using Config;
 	using Dependency;
 	using Helper;
@@ -36,11 +37,11 @@ namespace TS3AudioBot
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
-		internal BotInjector Injector { get; set; }
+		internal BotInjector Injector { get; }
 
 		public int Id { get; internal set; }
 		/// <summary>This is the template name. Can be null.</summary>
-		public string Name { get; internal set; }
+		public string Name => config.Name;
 		public bool QuizMode { get; set; }
 
 		// Injected dependencies
@@ -61,9 +62,10 @@ namespace TS3AudioBot
 		public IPlayerConnection PlayerConnection { get; private set; }
 		public Filter Filter { get; private set; }
 
-		public Bot(ConfBot config)
+		public Bot(ConfBot config, BotInjector injector)
 		{
 			this.config = config;
+			this.Injector = injector;
 		}
 
 		public E<string> InitializeBot()
@@ -71,7 +73,7 @@ namespace TS3AudioBot
 			Log.Info("Bot \"{0}\" connecting to \"{1}\"", config.Name, config.Connect.Address);
 
 			// Registering config changes
-			config.CommandMatcher.Changed += (s, e) =>
+			config.Commands.Matcher.Changed += (s, e) =>
 			{
 				var newMatcher = Filter.GetFilterByName(e.NewValue);
 				if (newMatcher.Ok)
@@ -79,7 +81,7 @@ namespace TS3AudioBot
 			};
 			config.Language.Changed += (s, e) =>
 			{
-				var langResult = LocalizationManager.LoadLanguage(e.NewValue);
+				var langResult = LocalizationManager.LoadLanguage(e.NewValue, true);
 				if (!langResult.Ok)
 					Log.Error("Failed to load language file ({0})", langResult.Error);
 			};
@@ -111,7 +113,7 @@ namespace TS3AudioBot
 			Injector.RegisterModule(new PlayManager());
 			Injector.RegisterModule(teamspeakClient.TargetPipe);
 
-			var filter = Filter.GetFilterByName(config.CommandMatcher);
+			var filter = Filter.GetFilterByName(config.Commands.Matcher);
 			Injector.RegisterModule(new Filter { Current = filter.OkOr(Filter.DefaultAlgorithm) });
 			if (!filter.Ok) Log.Warn("Unknown command_matcher config. Using default.");
 
@@ -186,7 +188,7 @@ namespace TS3AudioBot
 
 		private void TextCallback(object sender, TextMessage textMessage)
 		{
-			var langResult = LocalizationManager.LoadLanguage(config.Language);
+			var langResult = LocalizationManager.LoadLanguage(config.Language, false);
 			if (!langResult.Ok)
 				Log.Error("Failed to load language file ({0})", langResult.Error);
 
@@ -241,7 +243,7 @@ namespace TS3AudioBot
 					var msg = session.ResponseProcessor(textMessage.Message);
 					session.ClearResponse();
 					if (!string.IsNullOrEmpty(msg))
-						info.Write(msg).UnwrapThrow();
+						info.Write(msg).UnwrapToLog(Log);
 					return;
 				}
 
@@ -257,6 +259,8 @@ namespace TS3AudioBot
 
 		private void LoggedUpdateBotStatus(object sender, EventArgs e)
 		{
+			if (IsDisposed)
+				return;
 			var result = UpdateBotStatus();
 			if (!result)
 				Log.Warn(result.Error.Str);
@@ -264,6 +268,9 @@ namespace TS3AudioBot
 
 		public E<LocalStr> UpdateBotStatus(string overrideStr = null)
 		{
+			if (!config.SetStatusDescription)
+				return R.Ok;
+
 			lock (SyncRoot)
 			{
 				string setString;
@@ -288,7 +295,7 @@ namespace TS3AudioBot
 
 		private void GenerateStatusImage(object sender, EventArgs e)
 		{
-			if (!config.GenerateStatusAvatar)
+			if (!config.GenerateStatusAvatar || IsDisposed)
 				return;
 
 			if (e is PlayInfoEventArgs startEvent)
@@ -301,7 +308,7 @@ namespace TS3AudioBot
 
 					using (var image = ImageUtil.ResizeImage(thumresult.Value))
 					{
-						if (image == null)
+						if (image is null)
 							return;
 						var result = ClientConnection.UploadAvatar(image);
 						if (!result.Ok)
@@ -358,28 +365,39 @@ namespace TS3AudioBot
 					return;
 
 				// Write result to user
-				if (res.ResultType == CommandResultType.String)
+				switch (res.ResultType)
 				{
+				case CommandResultType.String:
 					var sRes = (StringCommandResult)res;
 					if (!string.IsNullOrEmpty(sRes.Content))
-						info.Write(sRes.Content).UnwrapThrow();
-				}
-				else if (res.ResultType == CommandResultType.Json)
-				{
-					var sRes = (JsonCommandResult)res;
-					info.Write("\nJson str: \n" + sRes.JsonObject).UnwrapThrow();
-					info.Write("\nJson val: \n" + sRes.JsonObject.Serialize()).UnwrapThrow();
+						info.Write(sRes.Content).UnwrapToLog(Log);
+					break;
+
+				case CommandResultType.Empty:
+					break;
+
+				default:
+					Log.Warn("Got result which is not a string/empty. Result: {0}", res.ToString());
+					break;
 				}
 			}
 			catch (CommandException ex)
 			{
 				Log.Debug(ex, "Command Error ({0})", ex.Message);
-				if (answer) info.Write(string.Format(strings.error_call_error, ex.Message)); // XXX check return
+				if (answer)
+				{
+					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.UnwrapToLog(Log);
+				}
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-				if (answer) info.Write(string.Format(strings.error_call_unexpected_error, ex.Message)); // XXX check return
+				if (answer)
+				{
+					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.UnwrapToLog(Log);
+				}
 			}
 		}
 
@@ -387,8 +405,7 @@ namespace TS3AudioBot
 		{
 			var info = new ExecutionInformation(Injector.CloneRealm<DependencyRealm>());
 			info.AddDynamicObject(invoker ?? InvokerData.Anonymous);
-			if (session != null)
-				info.AddDynamicObject(session);
+			info.AddDynamicObject(session ?? new AnonymousSession());
 			return info;
 		}
 
@@ -439,8 +456,9 @@ namespace TS3AudioBot
 		public BotInfo GetInfo() => new BotInfo
 		{
 			Id = Id,
-			Name = Name,
-			Server = config.Connect.Address,
+			Name = config.Name,
+			Server = ClientConnection.TsFullClient.ConnectionData.Address,
+			Status = ClientConnection.TsFullClient.Connected ? BotStatus.Connected : BotStatus.Connecting,
 		};
 
 		public void Dispose()
@@ -472,10 +490,18 @@ namespace TS3AudioBot
 
 	public class BotInfo
 	{
-		public int Id { get; set; }
+		public int? Id { get; set; }
 		public string Name { get; set; }
 		public string Server { get; set; }
+		public BotStatus Status { get; set; }
 
-		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server}"; // LOC: TODO
+		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server} Status: {Status.ToString()}"; // LOC: TODO
+	}
+
+	public enum BotStatus
+	{
+		Offline,
+		Connecting,
+		Connected,
 	}
 }

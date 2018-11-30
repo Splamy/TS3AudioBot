@@ -28,7 +28,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
-			if (result == null)
+			if (result is null)
 			{
 				result = innerCommand.Execute(info, arguments, returnTypes);
 				return result;

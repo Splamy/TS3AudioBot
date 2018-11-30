@@ -205,25 +205,25 @@ namespace TS3Client
 		Query
 	}
 
-	public enum PermissionGroupType
+	public enum PermissionType
 	{
-		///<summary>Server group permission.</summary>
+		///<summary>Server group permission. (id1: ServerGroupId, id2: 0)</summary>
 		ServerGroup = 0,
-		///<summary>Client specific permission.</summary>
+		///<summary>Client specific permission. (id1: ClientDbId, id2: 0)</summary>
 		GlobalClient,
-		///<summary>Channel specific permission.</summary>
+		///<summary>Channel specific permission. (id1: ChannelId, id2: 0)</summary>
 		Channel,
-		///<summary>Channel group permission.</summary>
+		///<summary>Channel group permission. (id1: ChannelId, id2: ChannelGroupId)</summary>
 		ChannelGroup,
-		///<summary>Channel-client specific permission.</summary>
+		///<summary>Channel-client specific permission. (id1: ChannelId, id2: ClientDbId)</summary>
 		ChannelClient
 	}
 
 	public enum TokenType
 	{
-		///<summary>Server group token (id1={groupID} id2=0).</summary>
+		///<summary>Server group token (id1: ServerGroupId, id2: 0).</summary>
 		ServerGroup = 0,
-		///<summary>Channel group token (id1={groupID} id2={channelID}).</summary>
+		///<summary>Channel group token (id1: ServerGroupId, id2: ChannelId).</summary>
 		ChannelGroup
 	}
 

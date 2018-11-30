@@ -7,6 +7,7 @@ matrix:
       mono: none
       env: DOTNETCORE=1
     - mono: latest
+      node_js: node
 
 notifications:
   email: false
@@ -24,6 +25,10 @@ addons:
     - tar
     - curl
 
+cache:
+  directories:
+    - "WebInterface/node_modules"
+
 git:
   depth: 9999999
 
@@ -38,6 +43,9 @@ install:
       nuget restore TS3AudioBot.sln
       nuget install NUnit.Runners -OutputDirectory nunit
     fi
+  - "cd WebInterface"
+  - "npm install"
+  - "cd .."
 
 script:
   - |
@@ -55,6 +63,9 @@ script:
       "${buildtool}" /p:Configuration=Release /p:TargetFramework=net46 TS3AudioBot.sln
       mono ./nunit/NUnit.ConsoleRunner.*.*.*/tools/nunit3-console.exe ./TS3ABotUnitTests/bin/Release/net46/TS3ABotUnitTests.dll
     fi
+  - "cd WebInterface"
+  - "npm run publish"
+  - "cd .."
 
 after_success:
   - |
@@ -63,8 +74,9 @@ after_success:
     else
       export MAIN_DIR=`pwd`
       cd ./TS3AudioBot/bin/Release/net46
+      cp -r "${MAIN_DIR}/WebInterface/build" "./WebInterface"
       ls
-      zip TS3AudioBot.zip NLog.config *.exe *.dll x64/* x86/*
+      zip -r TS3AudioBot.zip NLog.config *.exe *.dll x64 x86 WebInterface
       export version=`mono TS3AudioBot.exe --version | grep "Version: "`
       curl -I -H "Content-Type: application/zip" -X PUT "https://splamy.de/api/nightly/ts3ab/${TRAVIS_BRANCH}?token=${uploadkey}&filename=TS3AudioBot.zip&commit=${TRAVIS_COMMIT}&version=${version:9}" --upload-file ./TS3AudioBot.zip
       cd "$MAIN_DIR"

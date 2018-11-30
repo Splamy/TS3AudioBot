@@ -46,13 +46,13 @@ namespace TS3Client.Full
 		internal const int MacLen = 8;
 		internal const int PacketTypeKinds = 9;
 
-		public IdentityData Identity { get; set; }
+		internal IdentityData Identity { get; set; }
 
 		internal bool CryptoInitComplete { get; private set; }
 		private byte[] alphaTmp;
 		private byte[] ivStruct;
 		private readonly byte[] fakeSignature = new byte[MacLen];
-		private readonly (byte[] key, byte[] nonce, uint generation)?[] cachedKeyNonces = new(byte[], byte[], uint)?[PacketTypeKinds * 2];
+		private readonly (byte[] key, byte[] nonce, uint generation)?[] cachedKeyNonces = new (byte[], byte[], uint)?[PacketTypeKinds * 2];
 
 		public Ts3Crypt()
 		{
@@ -254,7 +254,7 @@ namespace TS3Client.Full
 		/// <param name="omega">The omega key from clientinit encoded in base64.</param>
 		internal E<string> CryptoInit(string alpha, string beta, string omega)
 		{
-			if (Identity == null)
+			if (Identity is null)
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
 
 			var alphaBytes = Base64Decode(alpha);
@@ -775,12 +775,15 @@ namespace TS3Client.Full
 			return signer.VerifySignature(proof);
 		}
 
-		public static readonly byte[] Ts3VerionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
+		private static readonly byte[] Ts3VersionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
 
 		public static bool EdCheck(VersionSign sign)
 		{
 			var ver = Encoding.ASCII.GetBytes(sign.PlatformName + sign.Name);
-			return Chaos.NaCl.Ed25519.Verify(Convert.FromBase64String(sign.Sign), ver, Ts3VerionSignPublicKey);
+			var signArr = Base64Decode(sign.Sign);
+			if (!signArr.Ok)
+				return false;
+			return Chaos.NaCl.Ed25519.Verify(signArr.Value, ver, Ts3VersionSignPublicKey);
 		}
 
 		public static void VersionSelfCheck()

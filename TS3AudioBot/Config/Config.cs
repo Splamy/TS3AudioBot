@@ -15,10 +15,14 @@ namespace TS3AudioBot.Config
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
+	using System.Text.RegularExpressions;
 
 	public partial class ConfRoot
 	{
+		private static readonly Regex BotFileMatcher = new Regex(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
+
 		private string fileName;
+		private readonly Dictionary<string, ConfBot> botConfCache = new Dictionary<string, ConfBot>();
 
 		public static R<ConfRoot> Open(string file)
 		{
@@ -77,7 +81,7 @@ namespace TS3AudioBot.Config
 		public bool Save() => Save(fileName, false);
 
 		// apply root_path to input path
-		public string GetFilePath(string path)
+		public string GetFilePath(string file)
 		{
 			throw new NotImplementedException();
 		}
@@ -93,43 +97,143 @@ namespace TS3AudioBot.Config
 		public ConfBot CreateBot()
 		{
 			var config = CreateRoot<ConfBot>();
-			return InitializeBotConfig(config);
+			InitializeBotConfig(config);
+			return config;
 		}
 
-		public IEnumerable<string> ListAllBots()
+		public ConfBot[] GetAllBots()
 		{
 			try
 			{
 				return Directory.EnumerateFiles(Configs.BotsPath.Value, "bot_*.toml", SearchOption.TopDirectoryOnly)
-					.Select(file =>
-					{
-						var fi = new FileInfo(file);
-						return fi.Name;
-					});
+					.SelectOk(filePath => ExtractNameFromFile(new FileInfo(filePath).Name))
+					.SelectOk(GetBotConfig)
+					.ToArray();
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Could not access bot config subdirectory.");
-				return Array.Empty<string>();
+				return null;
 			}
 		}
 
-		public R<ConfBot, Exception> GetBotTemplate(string name)
+		private static R<string, LocalStr> ExtractNameFromFile(string file)
 		{
-			string botFile = NameToPath(name).UnwrapThrow();
-			var botConfResult = Load<ConfBot>(botFile);
-			if (!botConfResult.Ok)
-				return botConfResult.Error;
-			var botConf = InitializeBotConfig(botConfResult.Value);
-			botConf.Name = name;
+			var match = BotFileMatcher.Match(file);
+			if (match.Success && Util.IsSafeFileName(match.Groups[1].Value))
+				return match.Groups[1].Value;
+			return Util.IsSafeFileName(file).WithValue(file);
+		}
+
+		public R<ConfBot, Exception> GetBotConfig(string name)
+		{
+			var file = NameToPath(name);
+			if (!file.Ok)
+				return new Exception(file.Error.Str);
+			if (!botConfCache.TryGetValue(name, out var botConf))
+			{
+				var botConfResult = Load<ConfBot>(file.Value);
+				if (!botConfResult.Ok)
+				{
+					Log.Warn(botConfResult.Error, "Failed to load bot config \"{0}\"", name);
+					return botConfResult.Error;
+				}
+				botConf = botConfResult.Value;
+				InitializeBotConfig(botConf);
+				botConf.Name = name;
+				botConfCache[name] = botConf;
+			}
 			return botConf;
 		}
 
-		private ConfBot InitializeBotConfig(ConfBot config)
+		private void InitializeBotConfig(ConfBot config)
 		{
 			Bot.Derive(config);
 			config.Parent = this;
-			return config;
+		}
+
+		public void ClearBotConfigCache()
+		{
+			botConfCache.Clear();
+		}
+
+		public void ClearBotConfigCache(string name)
+		{
+			botConfCache.Remove(name);
+		}
+
+		internal void AddToConfigCache(ConfBot config)
+		{
+			var name = config.Name;
+			if (!string.IsNullOrEmpty(name) && !botConfCache.ContainsKey(name))
+				botConfCache[name] = config;
+		}
+
+		public E<LocalStr> CreateBotConfig(string name)
+		{
+			var file = NameToPath(name);
+			if (!file.Ok)
+				return file.Error;
+			if (File.Exists(file.Value))
+				return new LocalStr("The file already exists."); // LOC: TODO
+			try
+			{
+				using (File.Open(file.Value, FileMode.CreateNew))
+					return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Config file could not be created");
+				return new LocalStr("Could not create config."); // LOC: TODO
+			}
+		}
+
+		public E<LocalStr> DeleteBotConfig(string name)
+		{
+			var file = NameToPath(name);
+			if (!file.Ok)
+				return file.Error;
+			if (botConfCache.TryGetValue(name, out var conf))
+				conf.Name = null;
+			botConfCache.Remove(name);
+			if (!File.Exists(file.Value))
+				return R.Ok;
+			try
+			{
+				File.Delete(file.Value);
+				return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Config file could not be deleted");
+				return new LocalStr("Could not delete config."); // LOC: TODO
+			}
+		}
+
+		public E<LocalStr> CopyBotConfig(string from, string to)
+		{
+			var fileFrom = NameToPath(from);
+			if (!fileFrom.Ok)
+				return fileFrom.Error;
+			var fileTo = NameToPath(to);
+			if (!fileTo.Ok)
+				return fileTo.Error;
+
+			if (!File.Exists(fileFrom.Value))
+				return new LocalStr("The source bot does not exist.");
+			if (File.Exists(fileTo.Value))
+				return new LocalStr("The target bot already exists, delete it before to overwrite.");
+
+			try
+			{
+				File.Copy(fileFrom.Value, fileTo.Value, false);
+				return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Config file could not be copied");
+				return new LocalStr("Could not copy config."); // LOC: TODO
+			}
 		}
 	}
 
@@ -139,13 +243,18 @@ namespace TS3AudioBot.Config
 
 		public E<LocalStr> SaveNew(string name)
 		{
-			var file = GetParent().NameToPath(name).UnwrapThrow();
-			if (File.Exists(file))
+			var parent = GetParent();
+			var file = parent.NameToPath(name);
+			if (!file.Ok)
+				return file.Error;
+			if (File.Exists(file.Value))
 				return new LocalStr("The file already exists."); // LOC: TODO
-			var result = SaveInternal(file);
-			if (result.Ok)
-				Name = name;
-			return result;
+			var result = SaveInternal(file.Value);
+			if (!result.Ok)
+				return result;
+			Name = name;
+			parent.AddToConfigCache(this);
+			return R.Ok;
 		}
 
 		public E<LocalStr> SaveWhenExists()
@@ -156,6 +265,8 @@ namespace TS3AudioBot.Config
 			var file = GetParent().NameToPath(Name);
 			if (!file.Ok)
 				return file.Error;
+			if (!File.Exists(file.Value))
+				return R.Ok;
 			return SaveInternal(file.Value);
 		}
 

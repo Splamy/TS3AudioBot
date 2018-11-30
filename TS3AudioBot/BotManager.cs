@@ -34,9 +34,11 @@ namespace TS3AudioBot
 
 		public void RunBots(bool interactive)
 		{
-			var templates = Config.ListAllBots().ToArray();
+			var botConfigList = Config.GetAllBots();
+			if (botConfigList is null)
+				return;
 
-			if (templates.Length == 0)
+			if (botConfigList.Length == 0)
 			{
 				if (!interactive)
 				{
@@ -48,11 +50,15 @@ namespace TS3AudioBot
 				Log.Info("Fill out this quick setup to get started.");
 
 				var newBot = CreateNewBot();
+				newBot.Run.Value = true;
+
 				string address;
 				while (true)
 				{
 					Console.WriteLine("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:");
 					address = Console.ReadLine();
+					if (address is null)
+						return;
 					if (TS3Client.TsDnsResolver.TryResolve(address, out var _))
 						break;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
@@ -64,16 +70,11 @@ namespace TS3AudioBot
 				Console.WriteLine("Please enter the server password (or leave empty for none):");
 				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine();
 
-				const string defaultBotName = "default";
-
-				if (!newBot.SaveNew(defaultBotName))
+				if (!newBot.SaveNew(ConfigHelper.DefaultBotName))
 				{
 					Log.Error("Could not save new bot. Ensure that the bot has access to the directory.");
 					return;
 				}
-
-				var botMetaConfig = Config.Bots.GetOrCreateItem(defaultBotName);
-				botMetaConfig.Run.Value = true;
 
 				if (!Config.Save())
 					Log.Error("Could not save root config. The bot won't start by default.");
@@ -84,9 +85,11 @@ namespace TS3AudioBot
 				return;
 			}
 
-			foreach (var template in Config.Bots.GetAllItems().Where(t => t.Run))
+			foreach (var instance in botConfigList)
 			{
-				var result = RunBotTemplate(template.Key);
+				if (!instance.Run)
+					continue;
+				var result = RunBot(instance);
 				if (!result.Ok)
 				{
 					Log.Error("Could not instantiate bot: {0}", result.Error);
@@ -104,18 +107,15 @@ namespace TS3AudioBot
 
 		public R<BotInfo, string> RunBotTemplate(string name)
 		{
-			var config = Config.GetBotTemplate(name);
+			var config = Config.GetBotConfig(name);
 			if (!config.Ok)
 				return config.Error.Message;
-			var botInfo = RunBot(config.Value, name);
-			if (!botInfo.Ok)
-				return botInfo.Error;
-			return botInfo.Value;
+			return RunBot(config.Value);
 		}
 
-		public R<BotInfo, string> RunBot(ConfBot config, string name = null)
+		public R<BotInfo, string> RunBot(ConfBot config)
 		{
-			var bot = new Bot(config) { Injector = CoreInjector.CloneRealm<BotInjector>(), Name = name };
+			var bot = new Bot(config, CoreInjector.CloneRealm<BotInjector>());
 			if (!CoreInjector.TryInject(bot))
 				Log.Warn("Partial bot dependency loaded only");
 
@@ -148,12 +148,12 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private bool InsertIntoFreeId(Bot bot)
 		{
-			if (activeBots == null)
+			if (activeBots is null)
 				return false;
 
 			for (int i = 0; i < activeBots.Count; i++)
 			{
-				if (activeBots[i] == null)
+				if (activeBots[i] is null)
 				{
 					activeBots[i] = bot;
 					bot.Id = i;
@@ -170,7 +170,7 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private Bot GetBotSave(int id)
 		{
-			if (activeBots == null || id < 0 || id >= activeBots.Count)
+			if (activeBots is null || id < 0 || id >= activeBots.Count)
 				return null;
 			return activeBots[id];
 		}
@@ -178,9 +178,9 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private Bot GetBotSave(string name)
 		{
-			if (name == null)
+			if (name is null)
 				throw new ArgumentNullException(nameof(name));
-			if (activeBots == null)
+			if (activeBots is null)
 				return null;
 			return activeBots.Find(x => x?.Name == name);
 		}
@@ -191,7 +191,7 @@ namespace TS3AudioBot
 			lock (lockObj)
 			{
 				bot = GetBotSave(id);
-				if (bot == null)
+				if (bot is null)
 					return null;
 				if (bot.Id != id)
 					throw new Exception("Got not matching bot id");
@@ -205,7 +205,7 @@ namespace TS3AudioBot
 			lock (lockObj)
 			{
 				bot = GetBotSave(name);
-				if (bot == null)
+				if (bot is null)
 					return null;
 				if (bot.Name != name)
 					throw new Exception("Got not matching bot name");
@@ -237,7 +237,7 @@ namespace TS3AudioBot
 		{
 			lock (lockObj)
 			{
-				if (activeBots == null)
+				if (activeBots is null)
 					return Array.Empty<BotInfo>();
 				return activeBots.Where(x => x != null).Select(x => x.GetInfo()).ToArray();
 			}
@@ -248,7 +248,7 @@ namespace TS3AudioBot
 			List<Bot> disposeBots;
 			lock (lockObj)
 			{
-				if (activeBots == null)
+				if (activeBots is null)
 					return;
 
 				disposeBots = activeBots;

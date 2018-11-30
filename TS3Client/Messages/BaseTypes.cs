@@ -14,7 +14,7 @@ namespace TS3Client.Messages
 
 	public interface IMessage
 	{
-		void SetField(string name, ReadOnlySpan<byte> value);
+		void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser);
 		void Expand(IMessage[] to, IEnumerable<string> flds);
 	}
 

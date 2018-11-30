@@ -110,7 +110,7 @@ namespace TS3AudioBot.Dependency
 				.Where(p => p.CanRead && p.CanWrite && registeredTypes.Any(x => x.IsAssignableFrom(p.PropertyType)));
 
 		private IEnumerable<Type> GetUnresolvedResolvable(Module module)
-			=> GetDependants(module).Where(dep => FindInjectableModule(dep, module.Status) == null);
+			=> GetDependants(module).Where(dep => FindInjectableModule(dep, module.Status) is null);
 
 		private Module FindInjectableModule(Type type, InitState? state)
 			=> modules.FirstOrDefault(

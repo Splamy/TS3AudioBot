@@ -13,6 +13,7 @@ namespace TS3Client
 	using Heijden.DNS;
 	using System;
 	using System.Collections.Generic;
+	using System.IO;
 	using System.Net;
 	using System.Net.Sockets;
 	using System.Text;
@@ -29,7 +30,6 @@ namespace TS3Client
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 		private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
-		private static readonly WebClient WebClient = new WebClient();
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
@@ -38,6 +38,8 @@ namespace TS3Client
 		/// <returns>Whether the resolve was succesful.</returns>
 		public static bool TryResolve(string address, out IPEndPoint endPoint, ushort defaultPort = Ts3VoiceDefaultPort)
 		{
+			if (address is null) throw new ArgumentNullException(nameof(address));
+
 			Log.Debug("Trying to look up '{0}'", address);
 
 			// if this address does not look like a domain it might be a nickname
@@ -107,7 +109,7 @@ namespace TS3Client
 			foreach (var domain in domainList)
 			{
 				srvEndPoint = ResolveSrv(resolver, DnsPrefixTcp + domain);
-				if (srvEndPoint == null)
+				if (srvEndPoint is null)
 					continue;
 
 				endPoint = ResolveTsDns(srvEndPoint, uri.Host, defaultPort);
@@ -130,7 +132,7 @@ namespace TS3Client
 
 			// Try to normally resolve server address
 			var hostAddress = ResolveDns(uri.Host);
-			if (hostAddress == null)
+			if (hostAddress is null)
 				return false;
 
 			var port = hasUriPort ? uri.Port : defaultPort;
@@ -158,7 +160,7 @@ namespace TS3Client
 		{
 			Log.Trace("Looking for the tsdns under '{0}'", tsDnsAddress);
 			var hostAddress = ResolveDns(tsDnsAddress);
-			if (hostAddress == null)
+			if (hostAddress is null)
 				return null;
 
 			return ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress, defaultPort);
@@ -237,8 +239,17 @@ namespace TS3Client
 		private static string ResolveNickname(string nickname)
 		{
 			string result;
-			try { result = WebClient.DownloadString(NicknameLookup + Uri.EscapeDataString(nickname)); }
-			catch (WebException ex)
+			try
+			{
+				var request = WebRequest.Create(NicknameLookup + Uri.EscapeDataString(nickname));
+				using (var respose = request.GetResponse())
+				using (var stream = respose.GetResponseStream())
+				using (var reader = new StreamReader(stream, Encoding.UTF8, false, (int)respose.ContentLength))
+				{
+					result = reader.ReadToEnd();
+				}
+			}
+			catch (Exception ex)
 			{
 				Log.Debug(ex, "Failed to resolve nickname \"{0}\"", nickname);
 				return null;
@@ -246,7 +257,7 @@ namespace TS3Client
 			var splits = result.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 			if (splits.Length == 0)
 			{
-				Log.Debug("Nickname \"{0}\" has no address entries");
+				Log.Debug("Nickname \"{0}\" has no address entries", nickname);
 				return null;
 			}
 

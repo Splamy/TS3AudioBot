@@ -52,8 +52,16 @@ namespace TS3Client.Commands
 			return this;
 		}
 
+		/// <summary>
+		/// Can be set to false when a command does not receive a error-return-code
+		/// from teamspeak.
+		/// This makes this command effectively a notification, as a response can only
+		/// be sent back as a new notification.
+		/// </summary>
+		/// <param name="expects">Whether or not to wait for the error-return-code</param>
+		/// <returns>Returns this command. Useful for fluent command building.</returns>
 		[DebuggerStepThrough]
-		internal Ts3Command ExpectsResponse(bool expects)
+		public Ts3Command ExpectsResponse(bool expects)
 		{
 			ExpectResponse = expects;
 			return this;
@@ -97,12 +105,12 @@ namespace TS3Client.Commands
 					strb.Append(' ').Append(singleParam.Key).Append('=').Append(singleParam.Value);
 					break;
 				case CommandPartType.MultiParameter:
-					if (multiParamList == null)
+					if (multiParamList is null)
 						multiParamList = new List<CommandMultiParameter>();
 					multiParamList.Add((CommandMultiParameter)param);
 					break;
 				case CommandPartType.Option:
-					if (optionList == null)
+					if (optionList is null)
 						optionList = new List<CommandOption>();
 					optionList.Add((CommandOption)param);
 					break;

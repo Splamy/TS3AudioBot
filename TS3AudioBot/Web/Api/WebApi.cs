@@ -13,6 +13,7 @@ namespace TS3AudioBot.Web.Api
 	using CommandSystem.Ast;
 	using CommandSystem.CommandResults;
 	using CommandSystem.Commands;
+	using Config;
 	using Dependency;
 	using Helper;
 	using Newtonsoft.Json;
@@ -49,29 +50,31 @@ namespace TS3AudioBot.Web.Api
 			NullValueHandling = NullValueHandling.Ignore,
 		};
 
-		public override void DispatchCall(HttpListenerContext context)
+		public override bool DispatchCall(HttpListenerContext context)
 		{
 			using (var response = context.Response)
 			{
 				response.ContentType = "application/json";
-				response.AddHeader("Access-Control-Allow-Origin", "*");
+				response.Headers["Access-Control-Allow-Origin"] = "*";
+				response.Headers[HttpResponseHeader.CacheControl] = "no-cache, no-store, must-revalidate";
 
 				var authResult = Authenticate(context);
 				if (!authResult.Ok)
 				{
 					Log.Debug("Authorization failed!");
-					ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), context.Response);
-					return;
+					ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
+					return true;
 				}
 				if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
 				{
 					Log.Debug("Unauthorized request!");
-					ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), context.Response);
-					return;
+					ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
+					return true;
 				}
 
 				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
-				ProcessApiV1Call(requestUrl, context.Response, authResult.Value);
+				ProcessApiV1Call(requestUrl, response, authResult.Value);
+				return true;
 			}
 		}
 
@@ -108,7 +111,8 @@ namespace TS3AudioBot.Web.Api
 			}
 			catch (CommandException ex)
 			{
-				ReturnError(ex, response);
+				try { ReturnError(ex, response); }
+				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
 			}
 			catch (Exception ex)
 			{
@@ -117,8 +121,12 @@ namespace TS3AudioBot.Web.Api
 				else
 					response.StatusCode = (int)HttpStatusCode.InternalServerError;
 				Log.Error(ex, "Unexpected command error");
-				using (var responseStream = new StreamWriter(response.OutputStream))
-					responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
+				try
+				{
+					using (var responseStream = new StreamWriter(response.OutputStream))
+						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
+				}
+				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
 			}
 		}
 
@@ -162,7 +170,8 @@ namespace TS3AudioBot.Web.Api
 					}
 					else if (mcex.MissingType == typeof(Bot) || mcex.MissingType == typeof(IPlayerConnection)
 						|| mcex.MissingType == typeof(PlayManager) || mcex.MissingType == typeof(Ts3Client)
-						|| mcex.MissingType == typeof(IVoiceTarget) || mcex.MissingType == typeof(IVoiceTarget))
+						|| mcex.MissingType == typeof(IVoiceTarget) || mcex.MissingType == typeof(IVoiceTarget)
+						|| mcex.MissingType == typeof(ConfBot))
 					{
 						jsonError.HelpMessage += "You are trying to call a command which is specific to a bot. " +
 							"Use '!bot use' to switch to a bot instance";
@@ -210,7 +219,7 @@ namespace TS3AudioBot.Web.Api
 		private R<InvokerData, string> Authenticate(HttpListenerContext context)
 		{
 			var identity = GetIdentity(context);
-			if (identity == null)
+			if (identity is null)
 				return InvokerData.Anonymous;
 
 			var result = TokenManager.GetToken(identity.Name);
@@ -258,7 +267,7 @@ namespace TS3AudioBot.Web.Api
 					return ErrorAuthFailure;
 
 				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
-				if (nextNonce == null)
+				if (nextNonce is null)
 					return ErrorAuthFailure;
 				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{nextNonce.Value}\"");
 
@@ -294,7 +303,7 @@ namespace TS3AudioBot.Web.Api
 				for (var match = DigestMatch.Match(authParts[1]); match.Success; match = match.NextMatch())
 				{
 					var value = match.Groups[2].Value;
-					switch (match.Groups[1].Value.ToUpper())
+					switch (match.Groups[1].Value.ToUpperInvariant())
 					{
 					case "USERNAME": name = value; break;
 					case "REALM": realm = value; break;

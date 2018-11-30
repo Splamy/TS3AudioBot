@@ -1,0 +1,44 @@
+// main: styles.less
+
+.formbox {
+    border-radius: @default-border-radius;
+    padding: 0;
+    margin: 1em;
+    box-shadow: @shadow;
+    color: white;
+    background-color: @backgroundcolor3;
+}
+
+.formheader {
+    .unselectable();
+    padding: 0.5em;
+    margin: 0;
+    background-color: @backgroundcolor1;
+    border-radius: @default-border-radius @default-border-radius 0 0;
+    // Useful to autocenter when flex is applied
+    align-items: center;
+
+    font-weight: bold;
+    font-size: @font-size2;
+}
+
+.formcontent {
+    padding: 0.5em;
+}
+
+.formdatablock {
+    display: flex;
+    align-items: center;
+}
+
+.formdatablock > * {
+    margin: 0.3em 0.2em;
+}
+
+.formdatablock > *:first-child {
+    font-weight: bold;
+}
+
+.formdatablock_fill {
+    flex-grow: 1;
+}

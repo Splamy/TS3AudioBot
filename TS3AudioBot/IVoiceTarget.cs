@@ -29,14 +29,14 @@ namespace TS3AudioBot
 		/// <param name="channel">The id of the channel.</param>
 		/// <param name="temp">When set to true this channel will be cleared with
 		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-		void WhisperChannelSubscribe(ulong channel, bool temp);
+		void WhisperChannelSubscribe(bool temp, params ulong[] channel);
 		/// <summary>Removes a channel from the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
 		/// <param name="temp">When set to true this channel will be cleared with
 		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-		void WhisperChannelUnsubscribe(ulong channel, bool temp);
+		void WhisperChannelUnsubscribe(bool temp, params ulong[] channel);
 		void ClearTemporary();
-		void WhisperClientSubscribe(ushort userId);
-		void WhisperClientUnsubscribe(ushort userId);
+		void WhisperClientSubscribe(params ushort[] userId);
+		void WhisperClientUnsubscribe(params ushort[] userId);
 	}
 }

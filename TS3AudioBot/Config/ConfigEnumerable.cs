@@ -24,9 +24,9 @@ namespace TS3AudioBot.Config
 
 		public override void FromToml(TomlObject tomlObject)
 		{
-			if (tomlObject == null)
+			if (tomlObject is null)
 			{
-				if (Parent == null)
+				if (Parent is null)
 					TomlObject = Toml.Create();
 				else
 					TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType);
@@ -73,7 +73,7 @@ namespace TS3AudioBot.Config
 				{
 					var childName = (string)reader.Value;
 					var child = GetChild(childName);
-					if (child == null)
+					if (child is null)
 					{
 						if (this is IDynamicTable dynTable)
 							child = dynTable.GetOrCreateChild(childName);

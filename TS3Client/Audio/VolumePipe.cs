@@ -44,7 +44,7 @@ namespace TS3Client.Audio
 
 		public void Write(Span<byte> data, Meta meta)
 		{
-			if (OutStream == null) return;
+			if (OutStream is null) return;
 
 			AdjustVolume(data, Volume);
 

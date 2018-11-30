@@ -16,6 +16,9 @@ namespace TS3AudioBot.Web
 	{
 		internal static readonly Uri Dummy = new Uri("http://dummy/");
 
-		public abstract void DispatchCall(HttpListenerContext context);
+		/// <summary>Processes a HTTP request.</summary>
+		/// <param name="context">The HTTP context for the call.</param>
+		/// <returns>True if the request was handled.</returns>
+		public abstract bool DispatchCall(HttpListenerContext context);
 	}
 }

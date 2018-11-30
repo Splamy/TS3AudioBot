@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Config
 {
+	using CommandSystem.Text;
 	using Nett;
 	using System;
 
@@ -18,9 +19,6 @@ namespace TS3AudioBot.Config
 			"! IMPORTANT !\n" +
 			"All config tables here starting with 'bot.*' will only be used as default values for each bot.\n" +
 			"To make bot-instance specific changes go to the 'Bots' folder (configs.bots_path) and set your configuration values in the desired bot config.");
-		public ConfBots Bots { get; } = Create<ConfBots>("bots",
-			"You can create new subtables matching the bot config name to configure meta-settings for each bot.\n" +
-			"Current layout: { run:bool }");
 		public ConfConfigs Configs { get; } = Create<ConfConfigs>("configs");
 		public ConfDb Db { get; } = Create<ConfDb>("db");
 		public ConfFactories Factories { get; } = Create<ConfFactories>("factories");
@@ -30,15 +28,6 @@ namespace TS3AudioBot.Config
 		public ConfWeb Web { get; } = Create<ConfWeb>("web");
 
 		//public ConfigValue<bool> ActiveDocumentation { get; } = new ConfigValue<bool>("_active_doc", true);
-	}
-
-	public class ConfBots : ConfigDynamicTable<BotTemplate> { }
-
-	public class BotTemplate : ConfigTable
-	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
-
-		public ConfigValue<bool> Run { get; } = new ConfigValue<bool>("run", false);
 	}
 
 	public class ConfConfigs : ConfigTable
@@ -100,7 +89,7 @@ namespace TS3AudioBot.Config
 	{
 		public ConfigArray<string> Hosts { get; } = new ConfigArray<string>("hosts", new[] { "localhost", "127.0.0.1" },
 			"An array of all urls the web api should be possible to be accessed with.");
-		public ConfigValue<ushort> Port { get; } = new ConfigValue<ushort>("port", 8180,
+		public ConfigValue<ushort> Port { get; } = new ConfigValue<ushort>("port", 58913,
 			"The port for the web server.");
 
 		public ConfWebApi Api { get; } = Create<ConfWebApi>("api");
@@ -129,20 +118,37 @@ namespace TS3AudioBot.Config
 			"You can set this field manually if you already have a preexisting group the bot should add himself to.");
 		public ConfigValue<bool> GenerateStatusAvatar { get; } = new ConfigValue<bool>("generate_status_avatar", true,
 			"Tries to fetch a cover image when playing.");
+		public ConfigValue<bool> SetStatusDescription { get; } = new ConfigValue<bool>("set_status_description", true,
+			"Sets the description of the bot to the current song title.");
 		public ConfigValue<string> Language { get; } = new ConfigValue<string>("language", "en",
 			"The language the bot should use to respond to users. (Make sure you have added the required language packs)");
-		public ConfigValue<string> CommandMatcher { get; } = new ConfigValue<string>("command_matcher", "ic3",
-			"Defines how the bot tries to match your !commands. Possible types:\n" +
-			" - exact : Only when the command matches exactly.\n" +
-			" - substring : The shortest command starting with the given prefix.\n" +
-			" - ic3 : 'interleaved continuous character chain' A fuzzy algorithm similar to hamming distance but preferring characters at the start."
-			/* "hamming : " */);
+		public ConfigValue<bool> Run { get; } = new ConfigValue<bool>("run", false,
+			"Starts the instance when the TS3AudioBot is launched.");
 
+		public ConfCommands Commands { get; } = Create<ConfCommands>("commands");
 		public ConfConnect Connect { get; } = Create<ConfConnect>("connect");
 		public ConfAudio Audio { get; } = Create<ConfAudio>("audio");
 		public ConfPlaylists Playlists { get; } = Create<ConfPlaylists>("playlists");
 		public ConfHistory History { get; } = Create<ConfHistory>("history");
 		public ConfEvents Events { get; } = Create<ConfEvents>("events");
+	}
+
+	public class ConfCommands : ConfigTable
+	{
+		public ConfigValue<string> Matcher { get; } = new ConfigValue<string>("matcher", "ic3",
+			"Defines how the bot tries to match your !commands. Possible types:\n" +
+			" - exact : Only when the command matches exactly.\n" +
+			" - substring : The shortest command starting with the given prefix.\n" +
+			" - ic3 : 'interleaved continuous character chain' A fuzzy algorithm similar to hamming distance but preferring characters at the start."
+			/* "hamming : " */);
+		public ConfigValue<LongTextBehaviour> LongMessage { get; } = new ConfigValue<LongTextBehaviour>("long_message", LongTextBehaviour.Split,
+			"Defines how the bot handles messages which are too long for a single ts3 message. Options are:\n" +
+			" - split : The message will be split up into multiple messages.\n" +
+			" - drop : Does not send the message.");
+		public ConfigValue<int> LongMessageSplitLimit { get; } = new ConfigValue<int>("long_message_split_limit", 1,
+			"Limits the split count for long messages. When for example set to 1 the message will simply be trimmed to one message.");
+		public ConfigValue<bool> Color { get; } = new ConfigValue<bool>("color", true,
+			"Enables colors and text highlights for respones.");
 	}
 
 	public class ConfConnect : ConfigTable
@@ -151,7 +157,7 @@ namespace TS3AudioBot.Config
 			"The address, ip or nickname (and port; default: 9987) of the TeamSpeak3 server");
 		public ConfigValue<string> Channel { get; } = new ConfigValue<string>("channel", "",
 			"Default channel when connecting. Use a channel path or '/<id>'.\n" +
-			"Examples: 'Home/Lobby', '/5', 'Home/Afk \\/ Not Here'.");
+			"Examples: 'Home/Lobby', '/5', 'Home/Afk \\\\/ Not Here'.");
 		public ConfigValue<string> Badges { get; } = new ConfigValue<string>("badges", "",
 			"The client badges. You can set a comma seperated string with max three GUID's. Here is a list: http://yat.qa/ressourcen/abzeichen-badges/");
 		public ConfigValue<string> Name { get; } = new ConfigValue<string>("name",
@@ -168,7 +174,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfIdentity : ConfigTable
 	{
-		new public ConfigValue<string> Key { get; } = new ConfigValue<string>("key", "",
+		public ConfigValue<string> PrivateKey { get; } = new ConfigValue<string>("key", "",
 			"||| DO NOT MAKE THIS KEY PUBLIC ||| The client identity. You can import a teamspeak3 identity here too.");
 		public ConfigValue<ulong> Offset { get; } = new ConfigValue<ulong>("offset", 0,
 			"The client identity offset determining the security level.");
@@ -188,7 +194,7 @@ namespace TS3AudioBot.Config
 		public ConfigValue<int> Bitrate { get; } = new ConfigValue<int>("bitrate", 48,
 			"Specifies the bitrate (in kbps) for sending audio.\n" +
 			"Values between 8 and 98 are supported, more or less can work but without guarantees.\n" +
-			"Reference values: 16 - poor (~3KiB/s), 24 - okay (~4KiB/s), 32 - good (~5KiB/s), 48 - very good (~7KiB/s), 64 - not noticeably better than 48, stop wasting your bandwith, go back (~9KiB/s)");
+			"Reference values: 16 - very poor (~3KiB/s), 24 - poor (~4KiB/s), 32 - okay (~5KiB/s), 48 - good (~7KiB/s), 64 - very good (~9KiB/s), 96 - deluxe (~13KiB/s)");
 		public ConfigValue<string> SendMode { get; } = new ConfigValue<string>("send_mode", "voice",
 			"How the bot should play music. Options are:\n" +
 			" - whisper : Whispers to the channel where the request came from. Other users can join with '!subscribe'.\n" +
@@ -198,7 +204,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfAudioVolume : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<float> Default { get; } = new ConfigValue<float>("default", 10);
 		public ConfigValue<float> Min { get; } = new ConfigValue<float>("min", 10);
@@ -207,7 +213,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfPlaylists : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "Playlists",
 			"Path to the folder where playlist files will be saved.");
@@ -231,21 +237,21 @@ namespace TS3AudioBot.Config
 			"Called when the bot does not play anything for a certain amount of time.");
 		public ConfigValue<TimeSpan> IdleTime { get; } = new ConfigValue<TimeSpan>("idletime", TimeSpan.FromMinutes(5),
 			"Specifies how long the bot has to be idle until the 'onidle' event gets fired.\n" +
-			"You can specify the time in the ISO-8601 format with qutotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
+			"You can specify the time in the ISO-8601 format with quotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
 	}
 
 	// Utility config structs
 
 	public class ConfPath : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", string.Empty);
 	}
 
 	public class ConfPassword : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Password { get; } = new ConfigValue<string>("pw", string.Empty);
 		public ConfigValue<bool> Hashed { get; } = new ConfigValue<bool>("hashed", false);
@@ -269,7 +275,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfTsVersion : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Default;  // TODO inline when Nett has fixed the inline bug.
+		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
 		public ConfigValue<string> Build { get; } = new ConfigValue<string>("build", string.Empty);
 		public ConfigValue<string> Platform { get; } = new ConfigValue<string>("platform", string.Empty);

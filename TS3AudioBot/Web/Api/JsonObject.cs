@@ -10,10 +10,18 @@
 namespace TS3AudioBot.Web.Api
 {
 	using Newtonsoft.Json;
+	using TS3AudioBot.Helper;
 
 	public abstract class JsonObject
 	{
+		private static readonly JsonSerializerSettings DefaultSettigs = new JsonSerializerSettings();
+
 		protected string AsStringResult { get; set; }
+
+		static JsonObject()
+		{
+			DefaultSettigs.Converters.Add(new IJsonSerializableConverter());
+		}
 
 		protected JsonObject(string stringResult)
 		{
@@ -23,6 +31,6 @@ namespace TS3AudioBot.Web.Api
 		public override string ToString() => AsStringResult;
 
 		public virtual object GetSerializeObject() => this;
-		public virtual string Serialize() => JsonConvert.SerializeObject(GetSerializeObject());
+		public virtual string Serialize() => JsonConvert.SerializeObject(GetSerializeObject(), DefaultSettigs);
 	}
 }

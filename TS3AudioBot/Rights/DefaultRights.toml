@@ -8,10 +8,10 @@
 	"cmd.pm",
 	"cmd.subscribe",
 	"cmd.unsubscribe",
-	"cmd.kickme",
+	"cmd.kickme.*",
+	"cmd.version",
 	
 	# Getting song info
-	"cmd.link",
 	"cmd.song",
 	"cmd.repeat",
 	"cmd.random",

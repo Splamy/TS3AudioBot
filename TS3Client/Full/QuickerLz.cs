@@ -53,10 +53,10 @@ namespace TS3Client.Full
 			{
 				int unmatched = 0;
 
-				if (hashtable == null) hashtable = new int[TableSize];
-				if (hashCounter == null) hashCounter = new bool[TableSize];
+				if (hashtable is null) hashtable = new int[TableSize];
+				if (hashCounter is null) hashCounter = new bool[TableSize];
 				else Array.Clear(hashCounter, 0, TableSize);
-				if (cachetable == null) cachetable = new int[TableSize];
+				if (cachetable is null) cachetable = new int[TableSize];
 				else Array.Clear(cachetable, 0, TableSize);
 
 				int sourceLimit = data.Length - 10;
@@ -176,8 +176,8 @@ namespace TS3Client.Full
 				int sourcePos = headerlen;
 				int destPos = 0;
 				int nextHashed = 0;
-				
-				if (hashtable == null) hashtable = new int[TableSize];
+
+				if (hashtable is null) hashtable = new int[TableSize];
 				Array.Clear(hashtable, 0, TableSize);
 
 				while (true)
@@ -260,7 +260,6 @@ namespace TS3Client.Full
 				throw new NotSupportedException();
 			}
 		}
-
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Write24(byte[] outArr, int outOff, int value)

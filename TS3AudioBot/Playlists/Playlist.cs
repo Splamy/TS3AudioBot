@@ -9,7 +9,6 @@
 
 namespace TS3AudioBot.Playlists
 {
-	using Helper;
 	using System.Collections.Generic;
 
 	public class Playlist
@@ -17,44 +16,28 @@ namespace TS3AudioBot.Playlists
 		// metainfo
 		public string Name { get; set; }
 		public string OwnerUid { get; set; }
-		// file behaviour: persistent playlist will be synced to a file
-		public bool FilePersistent { get; set; }
-		// playlist data
-		public int Count => resources.Count;
-		private readonly List<PlaylistItem> resources;
+		public List<PlaylistItem> Items { get; }
 
-		public Playlist(string name, string ownerUid = null)
+		public Playlist(string name, string ownerUid = null) :
+			this(name, new List<PlaylistItem>(), ownerUid)
+		{ }
+
+		public Playlist(string name, List<PlaylistItem> items, string ownerUid = null)
 		{
-			Util.Init(out resources);
 			OwnerUid = ownerUid;
 			Name = name;
+			Items = new List<PlaylistItem>();
 		}
 
-		public int AddItem(PlaylistItem item)
+		public PlaylistItem GetResource(int index)
 		{
-			resources.Add(item);
-			return resources.Count - 1;
+			PlaylistItem item = null;
+			if (index >= 0 && index < Items.Count)
+			{
+				item = Items[index];
+				item.Meta.From = PlaySource.FromPlaylist;
+			}
+			return item;
 		}
-
-		public int InsertItem(PlaylistItem item, int index)
-		{
-			resources.Insert(index, item);
-			return index;
-		}
-
-		public void AddRange(IEnumerable<PlaylistItem> items) => resources.AddRange(items);
-
-		public void RemoveItemAt(int i)
-		{
-			if (i < 0 || i >= resources.Count)
-				return;
-			resources.RemoveAt(i);
-		}
-
-		public void Clear() => resources.Clear();
-
-		public IEnumerable<PlaylistItem> AsEnumerable() => resources;
-
-		public PlaylistItem GetResource(int index) => index >= 0 && index < resources.Count ? resources[index] : null;
 	}
 }

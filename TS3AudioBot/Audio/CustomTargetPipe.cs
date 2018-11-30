@@ -51,7 +51,7 @@ namespace TS3AudioBot.Audio
 		}
 
 		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup;
-		private readonly List<ushort> clientSubscriptionsSetup;
+		private readonly HashSet<ushort> clientSubscriptionsSetup;
 		private ulong[] channelSubscriptionsCache;
 		private ushort[] clientSubscriptionsCache;
 		private bool subscriptionSetupChanged;
@@ -99,54 +99,61 @@ namespace TS3AudioBot.Audio
 			GroupWhisperTargetId = targetId;
 		}
 
-		public void WhisperChannelSubscribe(ulong channel, bool temp)
+		public void WhisperChannelSubscribe(bool temp, params ulong[] channels)
 		{
 			lock (subscriptionLockObj)
 			{
-				if (channelSubscriptionsSetup.TryGetValue(channel, out var subscriptionTemp))
-					channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
-				else
+				foreach (var channel in channels)
 				{
-					channelSubscriptionsSetup[channel] = !temp;
-					subscriptionSetupChanged = true;
-				}
-			}
-		}
-
-		public void WhisperChannelUnsubscribe(ulong channel, bool temp)
-		{
-			lock (subscriptionLockObj)
-			{
-				if (!temp)
-				{
-					subscriptionSetupChanged |= channelSubscriptionsSetup.Remove(channel);
-				}
-				else
-				{
-					if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp) && subscriptionTemp)
+					if (channelSubscriptionsSetup.TryGetValue(channel, out var subscriptionTemp))
 					{
-						channelSubscriptionsSetup.Remove(channel);
+						channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
+					}
+					else
+					{
+						channelSubscriptionsSetup[channel] = !temp;
 						subscriptionSetupChanged = true;
 					}
 				}
 			}
 		}
 
-		public void WhisperClientSubscribe(ushort userId)
+		public void WhisperChannelUnsubscribe(bool temp, params ulong[] channels)
 		{
 			lock (subscriptionLockObj)
 			{
-				if (!clientSubscriptionsSetup.Contains(userId))
-					clientSubscriptionsSetup.Add(userId);
+				foreach (var channel in channels)
+				{
+					if (!temp)
+					{
+						subscriptionSetupChanged |= channelSubscriptionsSetup.Remove(channel);
+					}
+					else
+					{
+						if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp) && subscriptionTemp)
+						{
+							channelSubscriptionsSetup.Remove(channel);
+							subscriptionSetupChanged = true;
+						}
+					}
+				}
+			}
+		}
+
+		public void WhisperClientSubscribe(params ushort[] userId)
+		{
+			lock (subscriptionLockObj)
+			{
+				clientSubscriptionsSetup.UnionWith(userId);
 				subscriptionSetupChanged = true;
 			}
 		}
 
-		public void WhisperClientUnsubscribe(ushort userId)
+		public void WhisperClientUnsubscribe(params ushort[] userId)
 		{
 			lock (subscriptionLockObj)
 			{
-				clientSubscriptionsSetup.Remove(userId);
+				clientSubscriptionsSetup.ExceptWith(userId);
 				subscriptionSetupChanged = true;
 			}
 		}

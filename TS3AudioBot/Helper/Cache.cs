@@ -32,7 +32,7 @@ namespace TS3AudioBot.Helper
 				|| Util.GetNow() - Timeout > data.Timestamp)
 			{
 				CleanCache();
-				value = default(TV);
+				value = default;
 				return false;
 			}
 			value = data.Data;

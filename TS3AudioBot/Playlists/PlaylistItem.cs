@@ -14,9 +14,6 @@ namespace TS3AudioBot.Playlists
 	public class PlaylistItem
 	{
 		public MetaData Meta { get; }
-		//one of these:
-		// playdata holds all needed information for playing + first possibility
-		// > can be a resource
 		public AudioResource Resource { get; }
 
 		public string DisplayString => Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";

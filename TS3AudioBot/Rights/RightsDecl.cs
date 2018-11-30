@@ -29,9 +29,9 @@ namespace TS3AudioBot.Rights
 
 		public virtual void FillNull()
 		{
-			if (includeNames == null) includeNames = Array.Empty<string>();
-			if (DeclAdd == null) DeclAdd = Array.Empty<string>();
-			if (DeclDeny == null) DeclDeny = Array.Empty<string>();
+			if (includeNames is null) includeNames = Array.Empty<string>();
+			if (DeclAdd is null) DeclAdd = Array.Empty<string>();
+			if (DeclDeny is null) DeclDeny = Array.Empty<string>();
 		}
 
 		public virtual bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)
@@ -40,15 +40,15 @@ namespace TS3AudioBot.Rights
 			{
 			case "+":
 				DeclAdd = tomlObj.TryGetValueArray<string>();
-				if (DeclAdd == null) ctx.Errors.Add("<+> Field has invalid data.");
+				if (DeclAdd is null) ctx.Errors.Add("<+> Field has invalid data.");
 				return true;
 			case "-":
 				DeclDeny = tomlObj.TryGetValueArray<string>();
-				if (DeclDeny == null) ctx.Errors.Add("<-> Field has invalid data.");
+				if (DeclDeny is null) ctx.Errors.Add("<-> Field has invalid data.");
 				return true;
 			case "include":
 				includeNames = tomlObj.TryGetValueArray<string>();
-				if (includeNames == null) ctx.Errors.Add("<include> Field has invalid data.");
+				if (includeNames is null) ctx.Errors.Add("<include> Field has invalid data.");
 				return true;
 			default:
 				return false;
@@ -87,7 +87,7 @@ namespace TS3AudioBot.Rights
 				Includes = includeNames.Select(x => ResolveGroup(x, ctx)).ToArray();
 				for (int i = 0; i < includeNames.Length; i++)
 				{
-					if (Includes[i] == null)
+					if (Includes[i] is null)
 					{
 						ctx.Errors.Add($"Could not find group \"{includeNames[i]}\" to include.");
 						hasErrors = true;
