@@ -14,6 +14,7 @@ namespace TS3AudioBot.Playlists
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Threading;
+	using System.Threading.Tasks;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.Localization;
 	using TS3AudioBot.ResourceFactories;
@@ -22,11 +23,14 @@ namespace TS3AudioBot.Playlists
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Dictionary<string, Playlist> playlistCache;
+		private readonly Dictionary<string, FileInfo> dirtyList;
 		private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
+		private readonly TimeSpan FlushDelay = TimeSpan.FromSeconds(30);
 
 		public PlaylistPool()
 		{
 			Util.Init(out playlistCache);
+			Util.Init(out dirtyList);
 		}
 
 		public R<Playlist, LocalStr> Read(FileInfo fi) => ReadInternal(fi, false, false);
@@ -194,7 +198,9 @@ namespace TS3AudioBot.Playlists
 
 				// todo flush cache
 
-				return WriteToFile(list, fi);
+				var result = WriteToFile(list, fi);
+				dirtyList.Remove(fi.FullName);
+				return result;
 			}
 			finally
 			{
@@ -294,6 +300,7 @@ namespace TS3AudioBot.Playlists
 			}
 
 			playlistCache.Remove(fi.FullName);
+			dirtyList.Remove(fi.FullName);
 
 			try
 			{
@@ -302,6 +309,46 @@ namespace TS3AudioBot.Playlists
 			}
 			catch (IOException) { return new LocalStr(strings.error_io_in_use); }
 			catch (System.Security.SecurityException) { return new LocalStr(strings.error_io_missing_permission); }
+		}
+
+		public void Dirty(FileInfo fi)
+		{
+			if (FlushDelay == TimeSpan.Zero)
+			{
+				Flush();
+				return;
+			}
+
+			try
+			{
+				rwLock.EnterWriteLock();
+
+				Task.Delay(FlushDelay).ContinueWith(t => Flush());
+			}
+			finally
+			{
+				rwLock.ExitWriteLock();
+			}
+		}
+
+		public void Flush()
+		{
+			try
+			{
+				rwLock.EnterWriteLock();
+
+				foreach (var kvp in dirtyList)
+				{
+					var plist = playlistCache[kvp.Key];
+					WriteToFile(plist, kvp.Value);
+				}
+
+				dirtyList.Clear();
+			}
+			finally
+			{
+				rwLock.ExitWriteLock();
+			}
 		}
 
 		public void Dispose()
