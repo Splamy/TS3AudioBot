@@ -59,8 +59,8 @@ namespace TS3AudioBot
 		private readonly ConfBot config;
 		internal Ts3FullClient TsFullClient { get; }
 		private IdentityData identity;
-		private List<ClientData> clientbuffer;
-		private bool clientbufferOutdated = true;
+		public List<ClientData> clientbuffer;
+		public bool clientbufferOutdated = true;
 		private readonly Cache<ulong, ClientDbData> clientDbNames;
 
 		private readonly StallCheckPipe stallCheckPipe;
