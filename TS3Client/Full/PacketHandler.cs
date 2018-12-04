@@ -373,7 +373,7 @@ namespace TS3Client.Full
 				case PacketType.Command:
 					LoggerRaw.Debug("[I] {0}", packet);
 					passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommand, PacketType.Ack);
-						break;
+					break;
 				case PacketType.CommandLow:
 					LoggerRaw.Debug("[I] {0}", packet);
 					passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommandLow, PacketType.AckLow);
