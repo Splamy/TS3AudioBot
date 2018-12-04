@@ -258,7 +258,7 @@ namespace TS3Client.Full
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
 
 			var alphaBytes = Base64Decode(alpha);
-			if (!alphaBytes.Ok) return "alpha parameter is invalid";
+			if (!alphaBytes.Ok) return "alphaBytes parameter is invalid";
 			var betaBytes = Base64Decode(beta);
 			if (!alphaBytes.Ok) return "betaBytes parameter is invalid";
 			var omegaBytes = Base64Decode(omega);
@@ -327,7 +327,7 @@ namespace TS3Client.Full
 
 			// Verify that our connection isn't tampered with
 			if (!VerifySign(serverPublicKey.Value, licenseBytes.Value, proofBytes.Value))
-				return "The init proof is not valid. Your connection might be tampered with or the server is an idiot.";
+				return "The init proof is not valid. Your connection might be tampered with or the server is an idiot."; // TODO: Do we really need this insult?
 
 			var sw = Stopwatch.StartNew();
 			var licenseChainR = Licenses.Parse(licenseBytes.Value);
