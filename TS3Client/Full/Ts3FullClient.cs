@@ -174,7 +174,8 @@ namespace TS3Client.Full
 				DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
 			}
 		}
-
+		// private const string[] cmdServerIgnore = ["per"]
+		private static string lastnotify = "";
 		private void PacketEvent(ConnectionContext ctx, ref Packet<S2C> packet)
 		{
 			lock (statusLock)
@@ -186,7 +187,17 @@ namespace TS3Client.Full
 				{
 				case PacketType.Command:
 				case PacketType.CommandLow:
-					LogCmd.ConditionalDebug("[I] {0}", Util.Encoder.GetString(packet.Data));
+					var str = Util.Encoder.GetString(packet.Data);
+					LogCmdIn.Trace("[I] {0}", str);
+					if (str.StartsWith("notify")) {
+							if (str != lastnotify)
+							{
+								lastnotify = str;
+								LogCmdServer.Debug(str);
+							} else {
+								LogCmdServer.Debug("+1");
+							}
+						}
 					var result = msgProc.PushMessage(packet.Data);
 					if (result.HasValue)
 						dispatcher.Invoke(result.Value);
@@ -398,7 +409,7 @@ namespace TS3Client.Full
 				}
 
 				var message = com.ToString();
-				LogCmd.Debug("[O] {0}", message);
+				LogCmdOut.Trace("[O] {0}", message);
 				byte[] data = Util.Encoder.GetBytes(message);
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}

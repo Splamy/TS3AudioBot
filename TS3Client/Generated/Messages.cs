@@ -9467,6 +9467,8 @@ namespace TS3Client.Messages
 		VersionRequest,
 		///<summary>[C2S] ntfy:whoami</summary>
 		WhoAmIRequest,
+		///<summary>[S2C] ntfy:any</summary>
+		RawCommand,
 	}
 
 	public static class MessageHelper

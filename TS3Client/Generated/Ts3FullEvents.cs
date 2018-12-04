@@ -170,6 +170,8 @@ namespace TS3Client.Full
 		public event EventHandler<TokenList> OnEachTokenList;
 		public event NotifyEventHandler<TokenUsed> OnTokenUsed;
 		public event EventHandler<TokenUsed> OnEachTokenUsed;
+		public event EventHandler<INotification[]> OnRawCommand;
+		public event EventHandler<INotification> OnEachRawCommand;
 
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -1088,6 +1090,20 @@ namespace TS3Client.Full
 				}
 				break;
 			}
+
+			case NotificationType.RawCommand: {
+				var ntfc = (INotification[])ntf;
+				ProcessRawCommand(ntfc);
+				OnRawCommand?.Invoke(this, ntfc);
+				var ev = OnEachRawCommand;
+				var book = Book;
+				foreach (var that in ntfc)
+				{
+					ev?.Invoke(this, that);
+					ProcessEachRawCommand(that);
+				}
+				break;
+			}
 			
 			case NotificationType.Unknown:
 			default:
@@ -1233,6 +1249,9 @@ namespace TS3Client.Full
 		partial void ProcessEachTokenList(TokenList notifies);
 		partial void ProcessTokenUsed(TokenUsed[] notifies);
 		partial void ProcessEachTokenUsed(TokenUsed notifies);
-		
+		partial void ProcessRawCommand(INotification[] notifies);
+		partial void ProcessEachRawCommand(INotification notifies);
+
+
 	}
 }
