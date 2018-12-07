@@ -153,6 +153,7 @@ namespace TS3Client.Full
 
 					if (bitInfo == 0b1000_0000)
 					{
+						privateKey = ((DerInteger)asnKeyData[4]).Value;
 					}
 				}
 				else if (bitInfo == 0b1100_0000)
