@@ -261,12 +261,12 @@ namespace TS3AudioBot.Plugins
 
 				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length > 1)
 				{
-					Log.Warn("{}: Any source or binary plugin file may contain one plugin or factory at most.", assembly.FullName);
+					Log.Warn("Any source or binary plugin file may contain one plugin or factory at most. ({})", Name);
 					return PluginResponse.TooManyPlugins;
 				}
 				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length == 0)
 				{
-					Log.Warn("{}: Any source or binary plugin file must contain at least one plugin or factory.", assembly.FullName);
+					Log.Warn("Any source or binary plugin file must contain at least one plugin or factory. ({})", Name);
 					return PluginResponse.NoTypeMatch;
 				}
 
