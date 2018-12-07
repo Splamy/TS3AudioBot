@@ -261,7 +261,7 @@ namespace TS3Client
 				return null;
 			}
 
-			return splits[0]; // TODO: Maybe return all and try the next if one fails?
+			return splits[0];
 		}
 	}
 }
