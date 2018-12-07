@@ -258,7 +258,7 @@ namespace TS3Client.Full
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
 
 			var alphaBytes = Base64Decode(alpha);
-			if (!alphaBytes.Ok) return "alpha parameter is invalid";
+			if (!alphaBytes.Ok) return "alphaBytes parameter is invalid";
 			var betaBytes = Base64Decode(beta);
 			if (!alphaBytes.Ok) return "betaBytes parameter is invalid";
 			var omegaBytes = Base64Decode(omega);

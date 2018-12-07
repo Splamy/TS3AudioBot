@@ -89,8 +89,8 @@ namespace TS3Client.Full
 		{
 			Initialize(address, true);
 			// The old client used to send 'clientinitiv' as the first message.
-			// All newer server still ack it but do not require it anymore.
-			// Therefore there is no use in seding it.
+			// All newer servers still ack it but do not require it anymore.
+			// Therefore there is no use in sending it.
 			// We still have to increase the packet counter as if we had sent
 			//  it because the packed-ids the server expects are fixed.
 			IncPacketCounter(PacketType.Command);
@@ -184,7 +184,7 @@ namespace TS3Client.Full
 
 				if (NeedsSplitting(packet.Length) && packetType != PacketType.VoiceWhisper)
 				{
-					// VoiceWhisper packets are for some reason excluded
+					// VoiceWhisper packets are excluded for some reason
 					if (packetType == PacketType.Voice)
 						return "Voice packet too big"; // This happens when a voice packet is bigger than the allowed size
 
@@ -345,7 +345,7 @@ namespace TS3Client.Full
 				}
 				var packet = optpacket.Value;
 
-				// DebubToHex is costly and allocates, precheck before logging
+				// DebugToHex is costly and allocates, precheck before logging
 				if (LoggerRaw.IsTraceEnabled)
 					LoggerRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
 
@@ -706,7 +706,7 @@ namespace TS3Client.Full
 		{
 			NetworkStats.LogOutPacket(ref packet);
 
-			// DebubToHex is costly and allocates, precheck before logging
+			// DebugToHex is costly and allocates, precheck before logging
 			if (LoggerRaw.IsTraceEnabled)
 				LoggerRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
 
