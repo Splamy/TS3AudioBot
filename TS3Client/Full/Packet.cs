@@ -103,7 +103,7 @@ namespace TS3Client.Full
 
 		public override string ToString()
 		{
-			return $"Type: {PacketType}\tFlags: [ " + // TODO: Maybe use stringbuilder?
+			return $"Type: {PacketType}\tFlags: [ " +
 				$"{(FragmentedFlag ? "F" : "_")} {(NewProtocolFlag ? "N" : "_")} " +
 				$"{(CompressedFlag ? "C" : "_")} {(UnencryptedFlag ? "U" : "_")} ]\t" +
 				$"Id: {PacketId}\n" +
