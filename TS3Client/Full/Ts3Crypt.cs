@@ -153,7 +153,6 @@ namespace TS3Client.Full
 
 					if (bitInfo == 0b1000_0000)
 					{
-						privateKey = ((DerInteger)asnKeyData[4]).Value;
 					}
 				}
 				else if (bitInfo == 0b1100_0000)
@@ -327,7 +326,7 @@ namespace TS3Client.Full
 
 			// Verify that our connection isn't tampered with
 			if (!VerifySign(serverPublicKey.Value, licenseBytes.Value, proofBytes.Value))
-				return "The init proof is not valid. Your connection might be tampered with or the server is an idiot."; // TODO: Do we really need this insult?
+				return "The init proof is not valid. Your connection might be tampered with or the server is an idiot.";
 
 			var sw = Stopwatch.StartNew();
 			var licenseChainR = Licenses.Parse(licenseBytes.Value);
