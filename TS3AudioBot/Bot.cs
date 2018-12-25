@@ -240,14 +240,17 @@ namespace TS3AudioBot
 				// check if the user has an open request
 				if (session.ResponseProcessor != null)
 				{
-					var msg = session.ResponseProcessor(textMessage.Message);
-					session.ClearResponse();
-					if (!string.IsNullOrEmpty(msg))
-						info.Write(msg).UnwrapToLog(Log);
+					TryCatchCommand(info, answer: true, () =>
+					{
+						var msg = session.ResponseProcessor(textMessage.Message);
+						session.ClearResponse();
+						if (!string.IsNullOrEmpty(msg))
+							info.Write(msg).UnwrapToLog(Log);
+					});
 					return;
 				}
 
-				CallScript(info, textMessage.Message, true, false);
+				CallScript(info, textMessage.Message, answer: true, false);
 			}
 		}
 
@@ -356,7 +359,7 @@ namespace TS3AudioBot
 
 			info.AddDynamicObject(new CallerInfo(command, false) { SkipRightsChecks = skipRights });
 
-			try
+			TryCatchCommand(info, answer, () =>
 			{
 				// parse (and execute) the command
 				var res = CommandManager.CommandSystem.Execute(info, command);
@@ -380,25 +383,7 @@ namespace TS3AudioBot
 					Log.Warn("Got result which is not a string/empty. Result: {0}", res.ToString());
 					break;
 				}
-			}
-			catch (CommandException ex)
-			{
-				Log.Debug(ex, "Command Error ({0})", ex.Message);
-				if (answer)
-				{
-					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
-						.UnwrapToLog(Log);
-				}
-			}
-			catch (Exception ex)
-			{
-				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
-				if (answer)
-				{
-					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
-						.UnwrapToLog(Log);
-				}
-			}
+			});
 		}
 
 		private ExecutionInformation CreateExecInfo(InvokerData invoker = null, UserSession session = null)
@@ -439,6 +424,32 @@ namespace TS3AudioBot
 			if (oldWoker != null)
 			{
 				TickPool.UnregisterTicker(oldWoker);
+			}
+		}
+
+		private void TryCatchCommand(ExecutionInformation info, bool answer, Action action)
+		{
+			try
+			{
+				action.Invoke();
+			}
+			catch (CommandException ex)
+			{
+				Log.Debug(ex, "Command Error ({0})", ex.Message);
+				if (answer)
+				{
+					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.UnwrapToLog(Log);
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
+				if (answer)
+				{
+					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.UnwrapToLog(Log);
+				}
 			}
 		}
 
