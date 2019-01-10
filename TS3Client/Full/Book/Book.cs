@@ -109,25 +109,28 @@ namespace TS3Client.Full.Book
 
 		// Manual move functions
 
-		private (u16, MaxFamilyClients) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (u16, MaxFamilyClients) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (u16, MaxFamilyClients) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (u16, MaxFamilyClients) MaxClientsFun(i32 MaxClients, bool IsMaxClientsUnlimited, i32 MaxFamilyClients, bool IsMaxFamilyClientsUnlimited, bool InheritsMaxFamilyClients)
+		private (MaxClients, MaxClients) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private (MaxClients, MaxClients) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private (MaxClients, MaxClients) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private (MaxClients, MaxClients) MaxClientsFun(i32 MaxClients, bool IsMaxClientsUnlimited, i32 MaxFamilyClients, bool IsMaxFamilyClientsUnlimited, bool InheritsMaxFamilyClients)
 		{
-			u16 maxClient;
-			if (IsMaxClientsUnlimited)
-				maxClient = u16.MaxValue; // TODO to optional
-			else
-				maxClient = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxClients), 0);
-			var fam = new MaxFamilyClients();
-			if (IsMaxFamilyClientsUnlimited) fam.LimitKind = MaxFamilyClientsKind.Unlimited;
-			else if (InheritsMaxFamilyClients) fam.LimitKind = MaxFamilyClientsKind.Inherited;
+			var chn = new MaxClients();
+			if (IsMaxClientsUnlimited) chn.LimitKind = MaxClientsKind.Unlimited;
 			else
 			{
-				fam.LimitKind = MaxFamilyClientsKind.Limited;
-				fam.MaxFamiliyClients = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxFamilyClients), 0);
+				chn.LimitKind = MaxClientsKind.Limited;
+				chn.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxClients), 0);
 			}
-			return (maxClient, fam);
+
+			var fam = new MaxClients();
+			if (IsMaxFamilyClientsUnlimited) fam.LimitKind = MaxClientsKind.Unlimited;
+			else if (InheritsMaxFamilyClients) fam.LimitKind = MaxClientsKind.Inherited;
+			else
+			{
+				fam.LimitKind = MaxClientsKind.Limited;
+				fam.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxFamilyClients), 0);
+			}
+			return (chn, fam);
 		}
 
 		private ChannelType ChannelTypeCcFun(ChannelCreated msg) => default; // TODO

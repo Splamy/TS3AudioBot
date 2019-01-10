@@ -34,7 +34,7 @@ namespace TS3Client.Full.Book
 	using i64 = System.Int64;
 	using u64 = System.UInt64;
 	using f32 = System.Single;
-	using d64 = System.Double;
+	using f64 = System.Double;
 	using str = System.String;
 
 	using Duration = System.TimeSpan;
@@ -112,8 +112,8 @@ namespace TS3Client.Full.Book
 		public str Topic { get; set; }
 		public Codec Codec { get; set; }
 		public u8 CodecQuality { get; set; }
-		public u16 MaxClients { get; set; }
-		public MaxFamilyClients MaxFamilyClients { get; set; }
+		public MaxClients MaxClients { get; set; }
+		public MaxClients MaxFamilyClients { get; set; }
 		public i32 Order { get; set; }
 		public ChannelType ChannelType { get; set; }
 		public bool IsDefault { get; set; }

@@ -3121,6 +3121,8 @@ namespace TS3Client.Messages
 		
 
 		public ClientId ClientId { get; set; }
+		public str Description { get; set; }
+		public bool TalkPowerGranted { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3128,6 +3130,8 @@ namespace TS3Client.Messages
 			{
 
 			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			
 			}
 
@@ -3142,6 +3146,8 @@ namespace TS3Client.Messages
 				{
 
 				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "client_description": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "client_is_talker": foreach(var toi in toc) { toi.TalkPowerGranted = TalkPowerGranted; } break;
 				}
 			}
 
@@ -4342,6 +4348,57 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ClientServerGroupRemoved : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroupRemoved;
+		
+
+		public str Name { get; set; }
+		public ServerGroupId ServerGroupId { get; set; }
+		public ClientId InvokerId { get; set; }
+		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
+		public ClientId ClientId { get; set; }
+		public Uid ClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "name": Name = Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
+			case "invokername": InvokerName = Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientServerGroupRemoved[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "sgid": foreach(var toi in toc) { toi.ServerGroupId = ServerGroupId; } break;
+				case "invokerid": foreach(var toi in toc) { toi.InvokerId = InvokerId; } break;
+				case "invokername": foreach(var toi in toc) { toi.InvokerName = InvokerName; } break;
+				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ClientSetServerQueryLogin : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientSetServerQueryLogin;
@@ -4491,13 +4548,43 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientUpdate;
 		
 
+		public str Name { get; set; }
+		public bool InputMuted { get; set; }
+		public bool OutputMuted { get; set; }
+		public bool IsAway { get; set; }
+		public str AwayMessage { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
+			switch(name)
+			{
+
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
+			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
+			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
+			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
+			
+			}
+
 		}
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
+			var toc = (ClientUpdate[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "client_input_muted": foreach(var toi in toc) { toi.InputMuted = InputMuted; } break;
+				case "client_output_muted": foreach(var toi in toc) { toi.OutputMuted = OutputMuted; } break;
+				case "client_away": foreach(var toi in toc) { toi.IsAway = IsAway; } break;
+				case "client_away_message": foreach(var toi in toc) { toi.AwayMessage = AwayMessage; } break;
+				}
+			}
+
 		}
 	}
 
@@ -4969,6 +5056,42 @@ namespace TS3Client.Messages
 				case "cldbid": foreach(var toi in toc) { toi.ClientDbId = ClientDbId; } break;
 				case "ident": foreach(var toi in toc) { toi.ExternalIdentity = ExternalIdentity; } break;
 				case "value": foreach(var toi in toc) { toi.Value = Value; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class Disconnect : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.Disconnect;
+		
+
+		public Reason Reason { get; set; }
+		public str ReasonMessage { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (Disconnect[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "reasonid": foreach(var toi in toc) { toi.Reason = Reason; } break;
+				case "reasonmsg": foreach(var toi in toc) { toi.ReasonMessage = ReasonMessage; } break;
 				}
 			}
 
@@ -9225,6 +9348,8 @@ namespace TS3Client.Messages
 		ClientPokeRequest,
 		///<summary>[S2C] ntfy:notifyservergroupclientadded</summary>
 		ClientServerGroupAdded,
+		///<summary>[S2C] ntfy:notifyservergroupclientdeleted</summary>
+		ClientServerGroupRemoved,
 		///<summary>[S2C] ntfy:notifyclientserverqueryloginpassword</summary>
 		ClientSetServerQueryLogin,
 		///<summary>[C2S] ntfy:clientsetserverquerylogin</summary>
@@ -9259,6 +9384,8 @@ namespace TS3Client.Messages
 		CustomSearch,
 		///<summary>[C2S] ntfy:customset</summary>
 		CustomSet,
+		///<summary>[C2S] ntfy:clientdisconnect</summary>
+		Disconnect,
 		///<summary>[S2C] ntfy:notifystartdownload</summary>
 		FileDownload,
 		///<summary>[S2C] ntfy:notifyfileinfo</summary>
@@ -9510,6 +9637,7 @@ namespace TS3Client.Messages
 			case "notifyclientpermlist": return NotificationType.ClientPermList;
 			case "notifyclientpoke": return NotificationType.ClientPoke;
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
+			case "notifyservergroupclientdeleted": return NotificationType.ClientServerGroupRemoved;
 			case "notifyclientserverqueryloginpassword": return NotificationType.ClientSetServerQueryLogin;
 			case "clientgetuidfromclid": return NotificationType.ClientUidFromClid;
 			case "notifyclientupdated": return NotificationType.ClientUpdated;
@@ -9620,6 +9748,7 @@ namespace TS3Client.Messages
 			case "custominfo": return NotificationType.CustomInfoRequest;
 			case "customsearch": return NotificationType.CustomSearch;
 			case "customset": return NotificationType.CustomSet;
+			case "clientdisconnect": return NotificationType.Disconnect;
 			case "ftcreatedir": return NotificationType.FtCreateDir;
 			case "ftdeletefile": return NotificationType.FtDeleteFile;
 			case "ftgetfileinfo": return NotificationType.FtFileInfoRequest;
@@ -9794,6 +9923,7 @@ namespace TS3Client.Messages
 			case NotificationType.ClientPoke: return new ClientPoke();
 			case NotificationType.ClientPokeRequest: return new ClientPokeRequest();
 			case NotificationType.ClientServerGroupAdded: return new ClientServerGroupAdded();
+			case NotificationType.ClientServerGroupRemoved: return new ClientServerGroupRemoved();
 			case NotificationType.ClientSetServerQueryLogin: return new ClientSetServerQueryLogin();
 			case NotificationType.ClientSetServerQueryLoginRequest: return new ClientSetServerQueryLoginRequest();
 			case NotificationType.ClientUidFromClid: return new ClientUidFromClid();
@@ -9811,6 +9941,7 @@ namespace TS3Client.Messages
 			case NotificationType.CustomInfoRequest: return new CustomInfoRequest();
 			case NotificationType.CustomSearch: return new CustomSearch();
 			case NotificationType.CustomSet: return new CustomSet();
+			case NotificationType.Disconnect: return new Disconnect();
 			case NotificationType.FileDownload: return new FileDownload();
 			case NotificationType.FileInfo: return new FileInfo();
 			case NotificationType.FileList: return new FileList();
@@ -10015,6 +10146,7 @@ namespace TS3Client.Messages
 			case NotificationType.ClientPoke: { var arr = new ClientPoke[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPoke(); return arr; }
 			case NotificationType.ClientPokeRequest: { var arr = new ClientPokeRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPokeRequest(); return arr; }
 			case NotificationType.ClientServerGroupAdded: { var arr = new ClientServerGroupAdded[len]; for (int i = 0; i < len; i++) arr[i] = new ClientServerGroupAdded(); return arr; }
+			case NotificationType.ClientServerGroupRemoved: { var arr = new ClientServerGroupRemoved[len]; for (int i = 0; i < len; i++) arr[i] = new ClientServerGroupRemoved(); return arr; }
 			case NotificationType.ClientSetServerQueryLogin: { var arr = new ClientSetServerQueryLogin[len]; for (int i = 0; i < len; i++) arr[i] = new ClientSetServerQueryLogin(); return arr; }
 			case NotificationType.ClientSetServerQueryLoginRequest: { var arr = new ClientSetServerQueryLoginRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientSetServerQueryLoginRequest(); return arr; }
 			case NotificationType.ClientUidFromClid: { var arr = new ClientUidFromClid[len]; for (int i = 0; i < len; i++) arr[i] = new ClientUidFromClid(); return arr; }
@@ -10032,6 +10164,7 @@ namespace TS3Client.Messages
 			case NotificationType.CustomInfoRequest: { var arr = new CustomInfoRequest[len]; for (int i = 0; i < len; i++) arr[i] = new CustomInfoRequest(); return arr; }
 			case NotificationType.CustomSearch: { var arr = new CustomSearch[len]; for (int i = 0; i < len; i++) arr[i] = new CustomSearch(); return arr; }
 			case NotificationType.CustomSet: { var arr = new CustomSet[len]; for (int i = 0; i < len; i++) arr[i] = new CustomSet(); return arr; }
+			case NotificationType.Disconnect: { var arr = new Disconnect[len]; for (int i = 0; i < len; i++) arr[i] = new Disconnect(); return arr; }
 			case NotificationType.FileDownload: { var arr = new FileDownload[len]; for (int i = 0; i < len; i++) arr[i] = new FileDownload(); return arr; }
 			case NotificationType.FileInfo: { var arr = new FileInfo[len]; for (int i = 0; i < len; i++) arr[i] = new FileInfo(); return arr; }
 			case NotificationType.FileList: { var arr = new FileList[len]; for (int i = 0; i < len; i++) arr[i] = new FileList(); return arr; }

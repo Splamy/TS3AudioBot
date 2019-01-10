@@ -9,13 +9,13 @@
 
 namespace TS3Client.Full.Book
 {
-	public struct MaxFamilyClients
+	public struct MaxClients
 	{
-		public ushort MaxFamiliyClients { get; internal set; }
-		public MaxFamilyClientsKind LimitKind { get; internal set; }
+		public ushort Count { get; internal set; }
+		public MaxClientsKind LimitKind { get; internal set; }
 	}
 
-	public enum MaxFamilyClientsKind
+	public enum MaxClientsKind
 	{
 		Unlimited,
 		Inherited,
@@ -29,6 +29,5 @@ namespace TS3Client.Full.Book
 
 	public struct TalkPowerRequest
 	{
-
 	}
 }

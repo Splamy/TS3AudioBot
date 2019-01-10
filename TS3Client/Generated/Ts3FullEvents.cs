@@ -102,6 +102,8 @@ namespace TS3Client.Full
 		public event EventHandler<ClientPoke> OnEachClientPoke;
 		public event NotifyEventHandler<ClientServerGroupAdded> OnClientServerGroupAdded;
 		public event EventHandler<ClientServerGroupAdded> OnEachClientServerGroupAdded;
+		public event NotifyEventHandler<ClientServerGroupRemoved> OnClientServerGroupRemoved;
+		public event EventHandler<ClientServerGroupRemoved> OnEachClientServerGroupRemoved;
 		public event NotifyEventHandler<ClientSetServerQueryLogin> OnClientSetServerQueryLogin;
 		public event EventHandler<ClientSetServerQueryLogin> OnEachClientSetServerQueryLogin;
 		public event NotifyEventHandler<ClientUidFromClid> OnClientUidFromClid;
@@ -644,6 +646,19 @@ namespace TS3Client.Full
 				break;
 			}
 			
+			case NotificationType.ClientServerGroupRemoved: {
+				var ntfc = (ClientServerGroupRemoved[])ntf;
+				ProcessClientServerGroupRemoved(ntfc);
+				OnClientServerGroupRemoved?.Invoke(this, ntfc);
+				var ev = OnEachClientServerGroupRemoved;
+				var book = Book;
+				foreach(var that in ntfc) {
+					ev?.Invoke(this, that);
+					ProcessEachClientServerGroupRemoved(that);
+				}
+				break;
+			}
+			
 			case NotificationType.ClientSetServerQueryLogin: {
 				var ntfc = (ClientSetServerQueryLogin[])ntf;
 				ProcessClientSetServerQueryLogin(ntfc);
@@ -1165,6 +1180,8 @@ namespace TS3Client.Full
 		partial void ProcessEachClientPoke(ClientPoke notifies);
 		partial void ProcessClientServerGroupAdded(ClientServerGroupAdded[] notifies);
 		partial void ProcessEachClientServerGroupAdded(ClientServerGroupAdded notifies);
+		partial void ProcessClientServerGroupRemoved(ClientServerGroupRemoved[] notifies);
+		partial void ProcessEachClientServerGroupRemoved(ClientServerGroupRemoved notifies);
 		partial void ProcessClientSetServerQueryLogin(ClientSetServerQueryLogin[] notifies);
 		partial void ProcessEachClientSetServerQueryLogin(ClientSetServerQueryLogin notifies);
 		partial void ProcessClientUidFromClid(ClientUidFromClid[] notifies);
