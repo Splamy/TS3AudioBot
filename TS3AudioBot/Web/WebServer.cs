@@ -152,11 +152,24 @@ namespace TS3AudioBot.Web
 
 			Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
-			while (webListener?.IsListening ?? false)
+			while (true)
 			{
+				HttpListenerContext context;
 				try
 				{
-					var context = webListener.GetContext();
+					if (!(webListener?.IsListening ?? false))
+						break;
+
+					context = webListener.GetContext();
+				}
+				catch (Exception ex)
+				{
+					Log.Debug(ex, "WebListener exception");
+					break;
+				}
+
+				try
+				{
 					using (var response = context.Response)
 					{
 						IPAddress remoteAddress;
@@ -192,12 +205,10 @@ namespace TS3AudioBot.Web
 						}
 					}
 				}
-				// These can be raised when the webserver has been closed/disposed.
-				catch (Exception ex) when (ex is InvalidOperationException || ex is ObjectDisposedException) { Log.Debug(ex, "WebListener exception"); break; }
 				// These seem to happen on connections which are closed too fast or failed to open correctly.
-				catch (Exception ex) when (ex is SocketException || ex is HttpListenerException || ex is System.IO.IOException) { Log.Debug(ex, "WebListener exception"); }
-				// Catch everything else to keep the webserver running, but print a warning.
-				catch (Exception ex) { Log.Warn(ex, "WebListener error"); }
+				catch (Exception ex) when (ex is SocketException || ex is System.IO.IOException) { Log.Debug(ex, "WebListener exception"); }
+				// Catch everything to keep the webserver running, but print a warning.
+				catch (Exception ex) { Log.Warn(ex, "WebListener exception"); }
 			}
 
 			Log.Info("WebServer has closed");

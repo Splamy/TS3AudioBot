@@ -116,13 +116,14 @@ namespace TS3AudioBot.Web.Api
 			}
 			catch (Exception ex)
 			{
-				if (ex is NotImplementedException)
-					response.StatusCode = (int)HttpStatusCode.NotImplemented;
-				else
-					response.StatusCode = (int)HttpStatusCode.InternalServerError;
 				Log.Error(ex, "Unexpected command error");
 				try
 				{
+					if (ex is NotImplementedException)
+						response.StatusCode = (int)HttpStatusCode.NotImplemented;
+					else
+						response.StatusCode = (int)HttpStatusCode.InternalServerError;
+
 					using (var responseStream = new StreamWriter(response.OutputStream))
 						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
 				}
