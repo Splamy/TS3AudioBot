@@ -97,7 +97,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 			backType = "i32";
 		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
 	case "IconHash":
-		return $"{{ if(Utf8Parser.TryParse({input}, out i64 oval, out _)) {output} = unchecked((i32)oval); }}";
+		return $"{{ if(!{input}.IsEmpty && {input}[0] == (u8)'-') {{ if(Utf8Parser.TryParse({input}, out i32 oval, out _)) {output} = oval; }} else {{ if(Utf8Parser.TryParse({input}, out u64 oval, out _)) {output} = unchecked((i32)oval); }} }}";
 	case "PermissionId":
 		return $"{{ if(Utf8Parser.TryParse({input}, out u16 oval, out _)) {output} = ser.PermissionTransform.GetName(oval); }}";
 	default:

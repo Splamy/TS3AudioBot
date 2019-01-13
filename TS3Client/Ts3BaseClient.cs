@@ -153,26 +153,33 @@ namespace TS3Client
 			=> Send("gm",
 			new CommandParameter("msg", message));
 
-		public CmdR KickClientFromServer(ClientIdT[] clientIds)
-			=> KickClient(clientIds, ReasonIdentifier.Server);
+		public CmdR KickClientFromServer(ClientIdT[] clientIds, string reasonMsg = null)
+			=> KickClient(clientIds, ReasonIdentifier.Server, reasonMsg);
 
-		public CmdR KickClientFromChannel(ClientIdT[] clientIds)
-			=> KickClient(clientIds, ReasonIdentifier.Channel);
+		public CmdR KickClientFromChannel(ClientIdT[] clientIds, string reasonMsg = null)
+			=> KickClient(clientIds, ReasonIdentifier.Channel, reasonMsg);
 
 		/// <summary>Kicks one or more clients specified with clid from their currently joined channel or from the server, depending on <paramref name="reasonId"/>.
 		/// The reasonmsg parameter specifies a text message sent to the kicked clients.
 		/// This parameter is optional and may only have a maximum of 40 characters.</summary>
 		public CmdR KickClient(ClientIdT[] clientIds, ReasonIdentifier reasonId, string reasonMsg = null)
-			=> Send("clientkick",
-			new CommandParameter("reasonid", (int)reasonId),
-			new CommandMultiParameter("clid", clientIds));
+		{
+			var cmd = new Ts3Command("clientkick", new List<ICommandPart> {
+				new CommandParameter("reasonid", (int)reasonId),
+				new CommandMultiParameter("clid", clientIds) });
+			if (reasonMsg != null)
+			{
+				cmd.AppendParameter(new CommandParameter("reasonmsg", reasonMsg));
+			}
+			return SendCommand<ResponseVoid>(cmd);
+		}
 
 		/// <summary>Displays a list of clients online on a virtual server including their ID, nickname, status flags, etc.
 		/// The output can be modified using several command options.
 		/// Please note that the output will only contain clients which are currently in channels you're able to subscribe to.</summary>
 		public R<ClientData[], CommandError> ClientList(ClientListOptions options = 0)
-			=> Send<ClientData>("clientlist",
-			new CommandOption(options));
+					=> Send<ClientData>("clientlist",
+					new CommandOption(options));
 
 		/// <summary>Displays detailed database information about a client including unique ID, creation date, etc.</summary>
 		public R<ClientDbData, CommandError> ClientDbInfo(ClientDbIdT clDbId)

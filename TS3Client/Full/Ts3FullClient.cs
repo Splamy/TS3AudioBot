@@ -506,6 +506,11 @@ namespace TS3Client.Full
 		public CmdR ChannelUnsubscribeAll()
 			=> Send("channelunsubscribeall");
 
+		public CmdR PokeClient(ClientIdT clientId, string msg)
+			=> SendNoResponsed(new Ts3Command("clientpoke", new List<ICommandPart> {
+				new CommandParameter("clid", clientId),
+				new CommandParameter("msg", msg) }));
+
 		public void SendAudio(ReadOnlySpan<byte> data, Codec codec)
 		{
 			// [X,X,Y,DATA]

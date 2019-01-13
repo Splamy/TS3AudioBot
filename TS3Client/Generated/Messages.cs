@@ -636,7 +636,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
@@ -737,7 +737,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -981,7 +981,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
@@ -1085,7 +1085,7 @@ namespace TS3Client.Messages
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
@@ -1507,7 +1507,7 @@ namespace TS3Client.Messages
 			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
-			case "iconid": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "iconid": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = oval; } break;
 			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
@@ -1765,7 +1765,7 @@ namespace TS3Client.Messages
 			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
 			case "channel_forced_silence": ForcedSilence = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "channel_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "channel_flag_private": IsPrivate = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -2694,7 +2694,7 @@ namespace TS3Client.Messages
 			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
@@ -3215,7 +3215,7 @@ namespace TS3Client.Messages
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_outputonly_muted": OutputOnlyMuted = value.Length > 0 && value[0] != '0'; break;
@@ -3530,7 +3530,7 @@ namespace TS3Client.Messages
 			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "client_myteamspeak_id": MyTeamSpeakId = Ts3String.Unescape(value); break;
 			case "client_integrations": Integrations = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -5987,7 +5987,7 @@ namespace TS3Client.Messages
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "virtualserver_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			
@@ -7295,7 +7295,7 @@ namespace TS3Client.Messages
 			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
 			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "virtualserver_icon_id": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			
@@ -7828,7 +7828,7 @@ namespace TS3Client.Messages
 			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
-			case "iconid": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) IconId = unchecked((i32)oval); } break;
+			case "iconid": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = oval; } break;
 			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
