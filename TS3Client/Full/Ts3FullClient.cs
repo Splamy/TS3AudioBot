@@ -471,28 +471,27 @@ namespace TS3Client.Full
 
 		public CmdR ClientEk(string ek, string proof)
 			=> SendNoResponsed(new Ts3Command("clientek", new List<ICommandPart> {
-				new CommandParameter("ek", ek),
-				new CommandParameter("proof", proof) }));
+			new CommandParameter("ek", ek),
+			new CommandParameter("proof", proof) }));
 
 		public CmdR ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
-			=> SendNoResponsed(
-				new Ts3Command("clientinit", new List<ICommandPart> {
-					new CommandParameter("client_nickname", nickname),
-					new CommandParameter("client_version", versionSign.Name),
-					new CommandParameter("client_platform", versionSign.PlatformName),
-					new CommandParameter("client_input_hardware", inputHardware),
-					new CommandParameter("client_output_hardware", outputHardware),
-					new CommandParameter("client_default_channel", defaultChannel),
-					new CommandParameter("client_default_channel_password", defaultChannelPassword), // base64(sha1(pass))
-					new CommandParameter("client_server_password", serverPassword), // base64(sha1(pass))
-					new CommandParameter("client_meta_data", metaData),
-					new CommandParameter("client_version_sign", versionSign.Sign),
-					new CommandParameter("client_key_offset", Identity.ValidKeyOffset),
-					new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
-					new CommandParameter("client_default_token", defaultToken),
-					new CommandParameter("hwid", hwid) }));
+			=> SendNoResponsed(new Ts3Command("clientinit", new List<ICommandPart> {
+			new CommandParameter("client_nickname", nickname),
+			new CommandParameter("client_version", versionSign.Name),
+			new CommandParameter("client_platform", versionSign.PlatformName),
+			new CommandParameter("client_input_hardware", inputHardware),
+			new CommandParameter("client_output_hardware", outputHardware),
+			new CommandParameter("client_default_channel", defaultChannel),
+			new CommandParameter("client_default_channel_password", defaultChannelPassword), // base64(sha1(pass))
+			new CommandParameter("client_server_password", serverPassword), // base64(sha1(pass))
+			new CommandParameter("client_meta_data", metaData),
+			new CommandParameter("client_version_sign", versionSign.Sign),
+			new CommandParameter("client_key_offset", Identity.ValidKeyOffset),
+			new CommandParameter("client_nickname_phonetic", nicknamePhonetic),
+			new CommandParameter("client_default_token", defaultToken),
+			new CommandParameter("hwid", hwid) }));
 
 		public CmdR ClientDisconnect(Reason reason, string reasonMsg)
 			=> SendNoResponsed(
@@ -508,8 +507,8 @@ namespace TS3Client.Full
 
 		public CmdR PokeClient(ClientIdT clientId, string msg)
 			=> SendNoResponsed(new Ts3Command("clientpoke", new List<ICommandPart> {
-				new CommandParameter("clid", clientId),
-				new CommandParameter("msg", msg) }));
+			new CommandParameter("clid", clientId),
+			new CommandParameter("msg", msg) }));
 
 		public void SendAudio(ReadOnlySpan<byte> data, Codec codec)
 		{

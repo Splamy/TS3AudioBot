@@ -18,7 +18,7 @@ namespace TS3AudioBot.CommandSystem.Text
 	{
 		private static readonly char[] SeparatorWeight = new char[] { '\n', ',', ' ' };
 
-		public static IEnumerable<string> Transform(string text, LongTextBehaviour behaviour, int limit = int.MaxValue)
+		public static IEnumerable<string> Transform(string text, LongTextBehaviour behaviour, int limit = int.MaxValue, int maxMessageSize = Ts3Const.MaxSizeTextMessage)
 		{
 			switch (behaviour)
 			{
@@ -30,7 +30,7 @@ namespace TS3AudioBot.CommandSystem.Text
 				{
 					var prevTokenCnt = tokenCnt;
 					tokenCnt += Ts3String.IsDoubleChar(text[i]) ? 2 : 1;
-					if (tokenCnt > Ts3Const.MaxSizeTextMessage) // TODO >= ??
+					if (tokenCnt > maxMessageSize) // TODO >= ??
 					{
 						if (behaviour == LongTextBehaviour.Drop)
 							yield break;
@@ -55,7 +55,7 @@ namespace TS3AudioBot.CommandSystem.Text
 					var prevTokenCnt = tokenCnt;
 					tokenCnt += Ts3String.IsDoubleChar(text[i]) ? 2 : 1;
 
-					if (tokenCnt > Ts3Const.MaxSizeTextMessage)
+					if (tokenCnt > maxMessageSize)
 					{
 						bool hasSplit = false;
 						for (int j = 0; j < SeparatorWeight.Length; j++)

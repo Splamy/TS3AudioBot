@@ -611,7 +611,7 @@ namespace TS3AudioBot
 			var curPlay = playManager.CurrentPlayData;
 			var queue = playlistManager.GetQueue();
 			var curList = playlistManager.CurrentList;
-			
+
 			var tmb = new TextModBuilder(confBot?.Commands.Color);
 
 			int plIndex = Math.Max(0, playlistManager.Index - 1);
@@ -818,7 +818,7 @@ namespace TS3AudioBot
 
 			if (index < 0 || index >= plist.Items.Count)
 				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
-			
+
 			plist.Items[index].Resource.ResourceTitle = title;
 		}
 

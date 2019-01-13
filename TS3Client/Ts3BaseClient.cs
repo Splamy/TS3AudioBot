@@ -153,8 +153,14 @@ namespace TS3Client
 			=> Send("gm",
 			new CommandParameter("msg", message));
 
+		public CmdR KickClientFromServer(ClientIdT clientId, string reasonMsg = null)
+			=> KickClient(new[] { clientId }, ReasonIdentifier.Server, reasonMsg);
+
 		public CmdR KickClientFromServer(ClientIdT[] clientIds, string reasonMsg = null)
 			=> KickClient(clientIds, ReasonIdentifier.Server, reasonMsg);
+
+		public CmdR KickClientFromChannel(ClientIdT clientId, string reasonMsg = null)
+			=> KickClient(new[] { clientId }, ReasonIdentifier.Channel, reasonMsg);
 
 		public CmdR KickClientFromChannel(ClientIdT[] clientIds, string reasonMsg = null)
 			=> KickClient(clientIds, ReasonIdentifier.Channel, reasonMsg);
@@ -168,9 +174,24 @@ namespace TS3Client
 				new CommandParameter("reasonid", (int)reasonId),
 				new CommandMultiParameter("clid", clientIds) });
 			if (reasonMsg != null)
-			{
 				cmd.AppendParameter(new CommandParameter("reasonmsg", reasonMsg));
-			}
+			return SendCommand<ResponseVoid>(cmd);
+		}
+
+		public CmdR BanClient(ClientIdT clientId, TimeSpan? duration = null, string reasonMsg = null)
+			=> BanClient(new CommandParameter("clid", clientId), reasonMsg, duration);
+
+		public CmdR BanClient(Uid clientUid = null, TimeSpan? duration = null, string reasonMsg = null)
+			=> BanClient(new CommandParameter("uid", clientUid), reasonMsg, duration);
+
+		private CmdR BanClient(ICommandPart clientIdentifier, string reasonMsg = null, TimeSpan? duration = null)
+		{
+			var cmd = new Ts3Command("banclient", new List<ICommandPart> { clientIdentifier });
+
+			if (reasonMsg != null)
+				cmd.AppendParameter(new CommandParameter("banreason", reasonMsg));
+			if (duration.HasValue)
+				cmd.AppendParameter(new CommandParameter("time", duration.Value.TotalSeconds));
 			return SendCommand<ResponseVoid>(cmd);
 		}
 
@@ -178,8 +199,8 @@ namespace TS3Client
 		/// The output can be modified using several command options.
 		/// Please note that the output will only contain clients which are currently in channels you're able to subscribe to.</summary>
 		public R<ClientData[], CommandError> ClientList(ClientListOptions options = 0)
-					=> Send<ClientData>("clientlist",
-					new CommandOption(options));
+			=> Send<ClientData>("clientlist",
+			new CommandOption(options));
 
 		/// <summary>Displays detailed database information about a client including unique ID, creation date, etc.</summary>
 		public R<ClientDbData, CommandError> ClientDbInfo(ClientDbIdT clDbId)
