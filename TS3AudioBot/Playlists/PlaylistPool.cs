@@ -319,16 +319,7 @@ namespace TS3AudioBot.Playlists
 				return;
 			}
 
-			try
-			{
-				rwLock.EnterWriteLock();
-
-				Task.Delay(FlushDelay).ContinueWith(t => Flush());
-			}
-			finally
-			{
-				rwLock.ExitWriteLock();
-			}
+			Task.Delay(FlushDelay).ContinueWith(t => Flush());
 		}
 
 		public void Flush()
@@ -353,6 +344,8 @@ namespace TS3AudioBot.Playlists
 
 		public void Dispose()
 		{
+			Flush();
+
 			rwLock.Dispose();
 		}
 	}

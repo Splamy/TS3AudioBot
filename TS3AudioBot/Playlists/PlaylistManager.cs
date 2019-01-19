@@ -155,6 +155,9 @@ namespace TS3AudioBot.Playlists
 
 		public R<Playlist, LocalStr> LoadPlaylist(string name)
 		{
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+
 			if (name.StartsWith(".", StringComparison.Ordinal))
 				return GetSpecialPlaylist(name);
 
@@ -182,10 +185,13 @@ namespace TS3AudioBot.Playlists
 		}
 
 		// todo local/shared_server/shared_global
-		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(config.Path, name ?? string.Empty));
+		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(config.Path, name));
 
 		public E<LocalStr> DeletePlaylist(string name, string requestingClientUid, bool force = false)
 		{
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+
 			var fi = GetFileInfo(name);
 			return PlaylistPool.Delete(fi, requestingClientUid, force);
 		}

@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Playlists
 {
+	using System;
 	using System.Collections.Generic;
 
 	public class Playlist
@@ -25,7 +26,7 @@ namespace TS3AudioBot.Playlists
 		public Playlist(string name, List<PlaylistItem> items, string ownerUid = null)
 		{
 			OwnerUid = ownerUid;
-			Name = name;
+			Name = name ?? throw new ArgumentNullException(nameof(name));
 			Items = new List<PlaylistItem>();
 		}
 
