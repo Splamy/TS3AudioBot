@@ -9,9 +9,8 @@
 
 namespace TS3AudioBot.Playlists
 {
-	enum PlaylistLocation
+	public enum PlaylistLocation
 	{
-		//User,
 		Bot,
 		//Server,
 		Global,

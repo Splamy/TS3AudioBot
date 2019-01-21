@@ -1655,7 +1655,7 @@ namespace TS3AudioBot
 			if (result)
 				return result.Value;
 
-			var newPlist = new Playlist(invoker.NickName, invoker.ClientUid);
+			var newPlist = new Playlist(invoker.NickName ?? "", invoker.ClientUid);
 			session.Set<PlaylistManager, Playlist>(newPlist);
 			return newPlist;
 		}

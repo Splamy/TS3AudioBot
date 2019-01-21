@@ -89,6 +89,7 @@ namespace TS3AudioBot
 				return "Could not create config";
 			ConfRoot config = configResult.Value;
 			Config.Deprecated.UpgradeScript.CheckAndUpgrade(config);
+			ConfigUpgrade2.Upgrade(config.Configs.BotsPath.Value);
 
 			var injector = new CoreInjector();
 

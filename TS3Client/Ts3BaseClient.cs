@@ -195,6 +195,10 @@ namespace TS3Client
 			return SendCommand<ResponseVoid>(cmd);
 		}
 
+		public R<ChannelData[], CommandError> ChannelList(ChannelListOptions options = 0)
+			=> Send<ChannelData>("channellist",
+			new CommandOption(options));
+
 		/// <summary>Displays a list of clients online on a virtual server including their ID, nickname, status flags, etc.
 		/// The output can be modified using several command options.
 		/// Please note that the output will only contain clients which are currently in channels you're able to subscribe to.</summary>

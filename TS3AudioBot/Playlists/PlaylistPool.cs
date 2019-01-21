@@ -91,7 +91,6 @@ namespace TS3AudioBot.Playlists
 
 				// Info: version:<num>
 				// Info: owner:<uid>
-				// Line: <kind>:<data,data,..>:<opt-title>
 
 				string line;
 				int version = 1;
@@ -216,6 +215,10 @@ namespace TS3AudioBot.Playlists
 				if (!tempList)
 					return tempList.OnlyError();
 			}
+
+			var dir = fi.Directory;
+			if (!dir.Exists)
+				dir.Create();
 
 			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Util.Utf8Encoder))
 			{

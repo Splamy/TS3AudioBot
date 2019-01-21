@@ -12,8 +12,6 @@
 
     <ApplicationIcon>Media\favicon.ico</ApplicationIcon>
 
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-
     <NeutralLanguage>en</NeutralLanguage>
 
     <StartupObject>TS3AudioBot.Core</StartupObject>
@@ -22,9 +20,7 @@
     <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-  </PropertyGroup>
 
-  <PropertyGroup>
     <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
@@ -37,8 +33,8 @@
     <PackageReference Condition="'$(TargetFramework)' != 'net46'" Include="GitVersionTask" Version="4.0.0" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
-    <PackageReference Include="Nett" Version="0.10.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Nett" Version="0.10.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
 
     <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp2.0'" Include="System.Runtime.Loader" Version="4.3.0" />

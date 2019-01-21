@@ -23,7 +23,9 @@ namespace TS3AudioBot.Playlists
 	public sealed class PlaylistManager
 	{
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
+		private const string LocalPlaylistDirectory = "playlists";
 
+		public ConfBot ConfBot { get; set; }
 		public PlaylistPool PlaylistPool { get; set; }
 
 		private readonly ConfPlaylists config;
@@ -184,8 +186,19 @@ namespace TS3AudioBot.Playlists
 			return R.Ok;
 		}
 
-		// todo local/shared_server/shared_global
-		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(config.Path, name));
+		private string GetPlaylistDirectory()
+		{
+			switch (config.Share.Value)
+			{
+			case PlaylistLocation.Bot:
+				return Path.Combine(ConfBot.LocalConfigDir, LocalPlaylistDirectory);
+			case PlaylistLocation.Global:
+				return config.Path;
+			default: throw Util.UnhandledDefault(config.Share.Value);
+			}
+		}
+
+		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(GetPlaylistDirectory(), name));
 
 		public E<LocalStr> DeletePlaylist(string name, string requestingClientUid, bool force = false)
 		{
@@ -212,7 +225,7 @@ namespace TS3AudioBot.Playlists
 		public IEnumerable<string> GetAvailablePlaylists() => GetAvailablePlaylists(null);
 		public IEnumerable<string> GetAvailablePlaylists(string pattern)
 		{
-			var di = new DirectoryInfo(config.Path);
+			var di = new DirectoryInfo(GetPlaylistDirectory());
 			if (!di.Exists)
 				return Array.Empty<string>();
 
