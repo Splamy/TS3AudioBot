@@ -694,6 +694,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachClientUpdated(that);
+					book?.UpdateClientUpdated(that);
 				}
 				break;
 			}

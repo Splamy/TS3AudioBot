@@ -4594,6 +4594,7 @@ namespace TS3Client.Messages
 		
 
 		public ClientId ClientId { get; set; }
+		public str Name { get; set; }
 		public u32 UnreadMessages { get; set; }
 		public str ClientVersion { get; set; }
 		public str ClientPlatform { get; set; }
@@ -4605,6 +4606,7 @@ namespace TS3Client.Messages
 		public i64 MonthlyDownloadQuota { get; set; }
 		public i64 TotalUploadQuota { get; set; }
 		public i64 TotalDownloadQuota { get; set; }
+		public bool InputMuted { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4612,6 +4614,7 @@ namespace TS3Client.Messages
 			{
 
 			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
 			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = oval; } break;
 			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
 			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
@@ -4623,6 +4626,7 @@ namespace TS3Client.Messages
 			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
 			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
 			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
+			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			
 			}
 
@@ -4637,6 +4641,7 @@ namespace TS3Client.Messages
 				{
 
 				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
 				case "client_unread_messages": foreach(var toi in toc) { toi.UnreadMessages = UnreadMessages; } break;
 				case "client_version": foreach(var toi in toc) { toi.ClientVersion = ClientVersion; } break;
 				case "client_platform": foreach(var toi in toc) { toi.ClientPlatform = ClientPlatform; } break;
@@ -4648,6 +4653,7 @@ namespace TS3Client.Messages
 				case "client_month_bytes_downloaded": foreach(var toi in toc) { toi.MonthlyDownloadQuota = MonthlyDownloadQuota; } break;
 				case "client_total_bytes_uploaded": foreach(var toi in toc) { toi.TotalUploadQuota = TotalUploadQuota; } break;
 				case "client_total_bytes_downloaded": foreach(var toi in toc) { toi.TotalDownloadQuota = TotalDownloadQuota; } break;
+				case "client_input_muted": foreach(var toi in toc) { toi.InputMuted = InputMuted; } break;
 				}
 			}
 
@@ -7259,6 +7265,7 @@ namespace TS3Client.Messages
 		public Uid InvokerUid { get; set; }
 		public Reason Reason { get; set; }
 		public str Name { get; set; }
+		public str Nickname { get; set; }
 		public CodecEncryptionMode CodecEncryptionMode { get; set; }
 		public ServerGroupId DefaultServerGroup { get; set; }
 		public ChannelGroupId DefaultChannelGroup { get; set; }
@@ -7284,6 +7291,7 @@ namespace TS3Client.Messages
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
 			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
+			case "virtualserver_nickname": Nickname = Ts3String.Unescape(value); break;
 			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
 			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) DefaultServerGroup = oval; } break;
 			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelGroup = oval; } break;
@@ -7316,6 +7324,7 @@ namespace TS3Client.Messages
 				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
 				case "reasonid": foreach(var toi in toc) { toi.Reason = Reason; } break;
 				case "virtualserver_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "virtualserver_nickname": foreach(var toi in toc) { toi.Nickname = Nickname; } break;
 				case "virtualserver_codec_encryption_mode": foreach(var toi in toc) { toi.CodecEncryptionMode = CodecEncryptionMode; } break;
 				case "virtualserver_default_server_group": foreach(var toi in toc) { toi.DefaultServerGroup = DefaultServerGroup; } break;
 				case "virtualserver_default_channel_group": foreach(var toi in toc) { toi.DefaultChannelGroup = DefaultChannelGroup; } break;

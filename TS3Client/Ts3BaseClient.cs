@@ -351,6 +351,8 @@ namespace TS3Client
 		public abstract R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission);
 
 		public abstract R<PermList[], CommandError> PermissionList();
+
+		public abstract R<ServerConnectionInfo, CommandError> GetServerConnectionInfo();
 		#endregion
 	}
 }

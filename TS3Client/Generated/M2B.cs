@@ -218,7 +218,6 @@ namespace TS3Client.Full.Book
 			obj.TalkPowerRequest = TalkPowerFun(msg);
 			obj.OptionalData = null;
 			obj.ConnectionData = null;
-			{ var tmp = BadgesFun(msg); if (tmp != null) obj.Badges.AddRange(tmp); }
 			obj.DatabaseId = msg.DatabaseId;
 			obj.Name = msg.Name;
 			obj.ClientType = msg.ClientType;
@@ -244,6 +243,7 @@ namespace TS3Client.Full.Book
 			obj.NeededServerqueryViewPower = msg.NeededServerqueryViewPower;
 			obj.IsChannelCommander = msg.IsChannelCommander;
 			obj.CountryCode = msg.CountryCode;
+			obj.Badges = msg.Badges;
 			SetClient(obj, msg.ClientId);
 			
 		}
@@ -315,6 +315,16 @@ namespace TS3Client.Full.Book
 		{
 			var obj = GetClient(msg.ClientId);
 			obj.ServerGroups.Add(msg.ServerGroupId);
+			
+		}
+
+	
+		public void UpdateClientUpdated(ClientUpdated msg)
+		{
+			var obj = GetClient(msg.ClientId);
+			obj.Name = msg.Name;
+			obj.UnreadMessages = msg.UnreadMessages;
+			obj.InputMuted = msg.InputMuted;
 			
 		}
 

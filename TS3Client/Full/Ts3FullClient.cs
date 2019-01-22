@@ -581,14 +581,20 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
+		public R<ClientUpdated, CommandError> GetServerVariables(ClientIdT clientId)
+			=> SendNotifyCommand(new Ts3Command("clientgetvariables", new List<ICommandPart> {
+				new CommandParameter("clid", clientId) }),
+				NotificationType.ClientUpdated).UnwrapNotification<ClientUpdated>().WrapSingle();
+
+		public R<ServerUpdated, CommandError> GetServerVariables()
+			=> SendNotifyCommand(new Ts3Command("servergetvariables"),
+				NotificationType.ServerUpdated).UnwrapNotification<ServerUpdated>().WrapSingle();
+
 		public CmdR SendPluginCommand(string name, string data, PluginTargetMode targetmode)
 			=> Send("plugincmd",
 			new CommandParameter("name", name),
 			new CommandParameter("data", data),
 			new CommandParameter("targetmode", (int)targetmode)).OnlyError();
-
-		// serverrequestconnectioninfo
-		// servergetvariables
 
 		// Splitted base commands
 
@@ -707,6 +713,10 @@ namespace TS3Client.Full
 		public override R<PermList[], CommandError> PermissionList()
 			=> SendNotifyCommand(new Ts3Command("permissionlist"),
 				NotificationType.PermList).UnwrapNotification<PermList>();
+
+		public override R<ServerConnectionInfo, CommandError> GetServerConnectionInfo()
+			=> SendNotifyCommand(new Ts3Command("serverrequestconnectioninfo"),
+				NotificationType.ServerConnectionInfo).UnwrapNotification<ServerConnectionInfo>().WrapSingle();
 
 		#endregion
 

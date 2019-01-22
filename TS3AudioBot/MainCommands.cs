@@ -1020,6 +1020,9 @@ namespace TS3AudioBot
 			return string.Format(strings.cmd_pm_hi, invoker.NickName ?? "Anonymous");
 		}
 
+		[Command("pm user")]
+		public static void CommandPmUser(Ts3Client ts3Client, ushort clientId, string message) => ts3Client.SendMessage(message, clientId).UnwrapThrow();
+
 		[Command("parse command")]
 		public static JsonValue<AstNode> CommandParse(string parameter)
 		{

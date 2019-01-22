@@ -314,6 +314,9 @@ namespace TS3Client.Query
 		public override R<PermList[], CommandError> PermissionList()
 			=> Send<PermList>("permissionlist");
 
+		public override R<ServerConnectionInfo, CommandError> GetServerConnectionInfo()
+			=> Send<ServerConnectionInfo>("serverrequestconnectioninfo").WrapSingle();
+
 		#endregion
 
 		public override void Dispose()
