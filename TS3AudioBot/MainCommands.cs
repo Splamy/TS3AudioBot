@@ -720,13 +720,14 @@ namespace TS3AudioBot
 			=> CommandListAdd(factoryManager, invoker, AutoGetPlaylist(session, invoker), link);
 
 		[Command("list add")]
-		public static void CommandListAdd(ResourceFactoryManager factoryManager, InvokerData invoker, PlaylistManager playlistManager, ApiCall _, string name, string link)
+		public static PlaylistItemGetData CommandListAdd(ResourceFactoryManager factoryManager, InvokerData invoker, PlaylistManager playlistManager, ApiCall _, string name, string link)
 			=> CommandListAdd(factoryManager, invoker, playlistManager.LoadPlaylist(name).UnwrapThrow(), link);
 
-		public static void CommandListAdd(ResourceFactoryManager factoryManager, InvokerData invoker, Playlist plist, string link)
+		public static PlaylistItemGetData CommandListAdd(ResourceFactoryManager factoryManager, InvokerData invoker, Playlist plist, string link)
 		{
 			var playResource = factoryManager.Load(link).UnwrapThrow();
 			plist.Items.Add(new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid }));
+			return PlaylistItemGetData.FromResource(playResource.BaseData);
 		}
 
 		[Command("list add")]
@@ -734,13 +735,14 @@ namespace TS3AudioBot
 			=> CommandListAdd(historyManager, invoker, AutoGetPlaylist(session, invoker), hid);
 
 		[Command("list add")]
-		public static void CommandListAdd(HistoryManager historyManager, InvokerData invoker, PlaylistManager playlistManager, ApiCall _, string name, uint hid)
+		public static PlaylistItemGetData CommandListAdd(HistoryManager historyManager, InvokerData invoker, PlaylistManager playlistManager, ApiCall _, string name, uint hid)
 			=> CommandListAdd(historyManager, invoker, playlistManager.LoadPlaylist(name).UnwrapThrow(), hid);
 
-		public static void CommandListAdd(HistoryManager historyManager, InvokerData invoker, Playlist plist, uint hid)
+		public static PlaylistItemGetData CommandListAdd(HistoryManager historyManager, InvokerData invoker, Playlist plist, uint hid)
 		{
 			var ale = historyManager.GetEntryById(hid).UnwrapThrow();
 			plist.Items.Add(new PlaylistItem(ale.AudioResource, new MetaData { ResourceOwnerUid = invoker.ClientUid }));
+			return PlaylistItemGetData.FromResource(ale.AudioResource);
 		}
 
 		[Command("list clear")]
@@ -783,11 +785,21 @@ namespace TS3AudioBot
 			=> playlistManager.DeletePlaylist(name, invoker.ClientUid, info.HasRights(RightDeleteAllPlaylists)).UnwrapThrow();
 
 		[Command("list get")]
-		public static JsonArray<PlaylistItem> CommandListGet(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string link)
+		public static JsonArray<PlaylistItemGetData> CommandListGet(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string link)
 		{
 			var playlist = factoryManager.LoadPlaylistFrom(link).UnwrapThrow();
 
 			playlist.OwnerUid = invoker.ClientUid;
+			session.Set<PlaylistManager, Playlist>(playlist);
+			return CommandListShow(playlist, null);
+		}
+
+		[Command("list get")]
+		public static JsonArray<PlaylistItemGetData> CommandListGet(PlaylistManager playlistManager, ResourceFactoryManager factoryManager, InvokerData invoker, ApiCall _, string name, string link)
+		{
+			var playlist = playlistManager.LoadPlaylist(name).UnwrapThrow();
+			var getList = factoryManager.LoadPlaylistFrom(link).UnwrapThrow();
+			
 			session.Set<PlaylistManager, Playlist>(playlist);
 			return CommandListShow(playlist, null);
 		}

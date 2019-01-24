@@ -59,7 +59,7 @@ namespace TS3AudioBot
 					address = Console.ReadLine();
 					if (address is null)
 						return;
-					if (TS3Client.TsDnsResolver.TryResolve(address, out var _))
+					if (TS3Client.TsDnsResolver.TryResolve(address, out _))
 						break;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
 					var cont = Console.ReadLine();
