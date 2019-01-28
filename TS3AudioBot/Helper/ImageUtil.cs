@@ -10,6 +10,8 @@
 namespace TS3AudioBot.Helper
 {
 	using SixLabors.ImageSharp;
+	using SixLabors.ImageSharp.Formats.Gif;
+	using SixLabors.ImageSharp.Formats.Jpeg;
 	using SixLabors.ImageSharp.PixelFormats;
 	using SixLabors.ImageSharp.Processing;
 	using System;
@@ -45,11 +47,11 @@ namespace TS3AudioBot.Helper
 			var mem = new MemoryStream();
 			if (img.Frames.Count > 1)
 			{
-				img.Save(mem, ImageFormats.Gif);
+				img.Save(mem, GifFormat.Instance);
 			}
 			else
 			{
-				img.Save(mem, ImageFormats.Jpeg);
+				img.Save(mem, JpegFormat.Instance);
 			}
 			return mem;
 		}

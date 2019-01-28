@@ -67,9 +67,12 @@ namespace TS3AudioBot.Playlists
 				if (result.Ok)
 				{
 					playlistCache.Add(fi.FullName, result.Value);
+					return result.Value;
 				}
-
-				return result;
+				else
+				{
+					return result.Error;
+				}
 			}
 			finally
 			{
@@ -113,19 +116,6 @@ namespace TS3AudioBot.Playlists
 						version = int.Parse(value);
 						if (version > 2)
 							return new LocalStr("The file version is too new and can't be read."); // LOC: TODO
-						break;
-
-					case "owner":
-						if (plist.OwnerUid != null)
-						{
-							Log.Warn("Invalid playlist file: duplicate userid");
-							return new LocalStr(strings.error_playlist_broken_file);
-						}
-
-						if (version == 2)
-						{
-							plist.OwnerUid = value;
-						}
 						break;
 					}
 				}
@@ -189,7 +179,7 @@ namespace TS3AudioBot.Playlists
 			}
 		}
 
-		public E<LocalStr> Write(Playlist list, FileInfo fi)
+		public E<LocalStr> Write(IReadOnlyPlaylist list, FileInfo fi)
 		{
 			try
 			{
@@ -207,15 +197,8 @@ namespace TS3AudioBot.Playlists
 			}
 		}
 
-		private E<LocalStr> WriteToFile(Playlist plist, FileInfo fi)
+		private E<LocalStr> WriteToFile(IReadOnlyPlaylist plist, FileInfo fi)
 		{
-			if (fi.Exists)
-			{
-				var tempList = LoadChecked(ReadInternal(fi, false, true), plist.OwnerUid);
-				if (!tempList)
-					return tempList.OnlyError();
-			}
-
 			var dir = fi.Directory;
 			if (!dir.Exists)
 				dir.Create();
@@ -223,13 +206,6 @@ namespace TS3AudioBot.Playlists
 			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Util.Utf8Encoder))
 			{
 				sw.WriteLine("version:2");
-				if (plist.OwnerUid != null)
-				{
-					sw.Write("owner:");
-					sw.Write(plist.OwnerUid);
-					sw.WriteLine();
-				}
-
 				sw.WriteLine();
 
 				using (var json = new JsonTextWriter(sw))
@@ -258,21 +234,12 @@ namespace TS3AudioBot.Playlists
 			return R.Ok;
 		}
 
-		private static R<Playlist, LocalStr> LoadChecked(in R<Playlist, LocalStr> loadResult, string ownerUid)
-		{
-			if (!loadResult)
-				return new LocalStr($"{strings.error_playlist_broken_file} ({loadResult.Error.Str})");
-			if (loadResult.Value.OwnerUid != null && loadResult.Value.OwnerUid != ownerUid)
-				return new LocalStr(strings.error_playlist_cannot_access_not_owned);
-			return loadResult;
-		}
-
-		public E<LocalStr> Delete(FileInfo fi, string requestingClientUid, bool force)
+		public E<LocalStr> Delete(FileInfo fi)
 		{
 			try
 			{
 				rwLock.EnterWriteLock();
-				return DeleteInternal(fi, requestingClientUid, force);
+				return DeleteInternal(fi);
 			}
 			finally
 			{
@@ -280,27 +247,12 @@ namespace TS3AudioBot.Playlists
 			}
 		}
 
-		private E<LocalStr> DeleteInternal(FileInfo fi, string requestingClientUid, bool force)
+		private E<LocalStr> DeleteInternal(FileInfo fi)
 		{
 			bool cached = playlistCache.TryGetValue(fi.FullName, out var playlist);
 
 			if (!cached && !fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);
-
-			if (!force)
-			{
-				if (!cached)
-				{
-					var result = ReadFromFile(fi, true);
-					if (!result)
-						return result.OnlyError();
-					playlist = result.Value;
-				}
-
-				var tempList = LoadChecked(playlist, requestingClientUid);
-				if (!tempList)
-					return tempList.OnlyError();
-			}
 
 			playlistCache.Remove(fi.FullName);
 			dirtyList.Remove(fi.FullName);
@@ -312,6 +264,39 @@ namespace TS3AudioBot.Playlists
 			}
 			catch (IOException) { return new LocalStr(strings.error_io_in_use); }
 			catch (System.Security.SecurityException) { return new LocalStr(strings.error_io_missing_permission); }
+		}
+
+		public E<LocalStr> Move(FileInfo fi, FileInfo fiNew)
+		{
+			try
+			{
+				rwLock.EnterWriteLock();
+				return MoveInternal(fi, fiNew);
+			}
+			finally
+			{
+				rwLock.ExitWriteLock();
+			}
+		}
+		public E<LocalStr> MoveInternal(FileInfo fi, FileInfo fiNew)
+		{
+			if (!fi.Exists)
+				return new LocalStr(strings.error_playlist_not_found);
+
+			if (playlistCache.ContainsKey(fi.FullName))
+			{
+				var playlist = playlistCache[fi.FullName];
+				var result = WriteToFile(playlist, fi);
+				if (!result)
+					return result.Error;
+				playlistCache[fiNew.FullName] = playlist;
+				playlistCache.Remove(fi.FullName);
+			}
+			else
+			{
+				fi.MoveTo(fiNew.FullName);
+			}
+			return R.Ok;
 		}
 
 		public void Dirty(FileInfo fi)

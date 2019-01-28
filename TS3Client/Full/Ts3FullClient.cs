@@ -581,7 +581,7 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public R<ClientUpdated, CommandError> GetServerVariables(ClientIdT clientId)
+		public R<ClientUpdated, CommandError> GetClientVariables(ClientIdT clientId)
 			=> SendNotifyCommand(new Ts3Command("clientgetvariables", new List<ICommandPart> {
 				new CommandParameter("clid", clientId) }),
 				NotificationType.ClientUpdated).UnwrapNotification<ClientUpdated>().WrapSingle();

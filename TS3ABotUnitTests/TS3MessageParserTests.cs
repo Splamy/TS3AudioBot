@@ -59,7 +59,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Deserializer5Test()
 		{
-			var notif = deserializer.GenerateResponse<ClientData>(Encoding.UTF8.GetBytes(
+			var notif = deserializer.GenerateResponse<ClientList>(Encoding.UTF8.GetBytes(
 				"clid=1 cid=1 client_database_id=2 client_nickname=TestBob1 client_type=0 client_unique_identifier=u\\/dFMOFFipxS9fJ8HKv0KH6WVzA="
 				+ "|clid=2 cid=4 client_database_id=2 client_nickname=TestBob client_type=0 client_unique_identifier=u\\/dFMOFFipxS9fJ8HKv0KH6WVzA="
 				+ "|clid=3 cid=4 client_database_id=6 client_nickname=Splamy client_type=0 client_unique_identifier=uA0U7t4PBxdJ5TLnarsOHQh4\\/tY="
@@ -68,10 +68,10 @@ namespace TS3ABotUnitTests
 			Assert.True(notif.Ok);
 			var notifv = notif.Value;
 			Assert.AreEqual(notifv.Length, 4);
-			AssertEx.PropertyValuesAreEquals(notifv[0], new ClientData() { ClientId = 1, ChannelId = 1, DatabaseId = 2, Name = "TestBob1", ClientType = ClientType.Full, Uid = "u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
-			AssertEx.PropertyValuesAreEquals(notifv[1], new ClientData() { ClientId = 2, ChannelId = 4, DatabaseId = 2, Name = "TestBob", ClientType = ClientType.Full, Uid = "u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
-			AssertEx.PropertyValuesAreEquals(notifv[2], new ClientData() { ClientId = 3, ChannelId = 4, DatabaseId = 6, Name = "Splamy", ClientType = ClientType.Full, Uid = "uA0U7t4PBxdJ5TLnarsOHQh4/tY=" });
-			AssertEx.PropertyValuesAreEquals(notifv[3], new ClientData() { ClientId = 4, ChannelId = 4, DatabaseId = 7, Name = "AudioBud", ClientType = ClientType.Full, Uid = "b+P0CqXms5I0C+A66HZ4Sbu/PNw=" });
+			AssertEx.PropertyValuesAreEquals(notifv[0], new ClientList() { ClientId = 1, ChannelId = 1, DatabaseId = 2, Name = "TestBob1", ClientType = ClientType.Full, Uid = "u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
+			AssertEx.PropertyValuesAreEquals(notifv[1], new ClientList() { ClientId = 2, ChannelId = 4, DatabaseId = 2, Name = "TestBob", ClientType = ClientType.Full, Uid = "u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
+			AssertEx.PropertyValuesAreEquals(notifv[2], new ClientList() { ClientId = 3, ChannelId = 4, DatabaseId = 6, Name = "Splamy", ClientType = ClientType.Full, Uid = "uA0U7t4PBxdJ5TLnarsOHQh4/tY=" });
+			AssertEx.PropertyValuesAreEquals(notifv[3], new ClientList() { ClientId = 4, ChannelId = 4, DatabaseId = 7, Name = "AudioBud", ClientType = ClientType.Full, Uid = "b+P0CqXms5I0C+A66HZ4Sbu/PNw=" });
 		}
 
 		[Test]

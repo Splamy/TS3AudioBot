@@ -110,6 +110,7 @@ namespace TS3Client.Full.Book
 			obj.ChannelType = ChannelTypeCcFun(msg);
 			obj.ForcedSilence = ReturnFalse(msg);
 			obj.IsPrivate = ReturnFalse(msg);
+			obj.Subscribed = ReturnFalse(msg);
 			obj.OptionalData = null;
 			obj.Order = msg.Order;
 			obj.Name = msg.Name;
@@ -172,6 +173,7 @@ namespace TS3Client.Full.Book
 			obj.MaxFamilyClients = tmp.Item2;
 			}
 			obj.ChannelType = ChannelTypeClFun(msg);
+			obj.Subscribed = ReturnFalse(msg);
 			obj.OptionalData = null;
 			obj.Name = msg.Name;
 			obj.Topic = msg.Topic;
@@ -198,6 +200,22 @@ namespace TS3Client.Full.Book
 			var obj = GetChannel(msg.ChannelId);
 			obj.Parent = msg.ChannelParentId;
 			obj.Order = msg.Order;
+			
+		}
+
+	
+		public void UpdateChannelSubscribed(ChannelSubscribed msg)
+		{
+			var obj = GetChannel(msg.ChannelId);
+			obj.Subscribed = ChannelSubscribeFun(msg);
+			
+		}
+
+	
+		public void UpdateChannelUnsubscribed(ChannelUnsubscribed msg)
+		{
+			var obj = GetChannel(msg.ChannelId);
+			obj.Subscribed = ChannelUnsubscribeFun(msg);
 			
 		}
 

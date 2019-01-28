@@ -125,16 +125,12 @@ namespace TS3Client
 		public R<WhoAmI, CommandError> WhoAmI() // Q ?
 			=> Send<WhoAmI>("whoami").WrapSingle();
 
-		public CmdR SendMessage(string message, ClientData client)
-			=> SendPrivateMessage(message, client.ClientId);
-		public CmdR SendPrivateMessage(string message, ushort clientId)
+		public CmdR SendPrivateMessage(string message, ClientIdT clientId)
 			=> SendMessage(message, TextMessageTargetMode.Private, clientId);
 
 		public CmdR SendChannelMessage(string message)
 			=> SendMessage(message, TextMessageTargetMode.Channel, 0);
 
-		public CmdR SendMessage(string message, ServerData server)
-			=> SendServerMessage(message, server.VirtualServerId);
 		public CmdR SendServerMessage(string message, ulong serverId)
 			=> SendMessage(message, TextMessageTargetMode.Server, serverId);
 
@@ -202,13 +198,13 @@ namespace TS3Client
 		/// <summary>Displays a list of clients online on a virtual server including their ID, nickname, status flags, etc.
 		/// The output can be modified using several command options.
 		/// Please note that the output will only contain clients which are currently in channels you're able to subscribe to.</summary>
-		public R<ClientData[], CommandError> ClientList(ClientListOptions options = 0)
-			=> Send<ClientData>("clientlist",
+		public R<ClientList[], CommandError> ClientList(ClientListOptions options = 0)
+			=> Send<ClientList>("clientlist",
 			new CommandOption(options));
 
 		/// <summary>Displays detailed database information about a client including unique ID, creation date, etc.</summary>
-		public R<ClientDbData, CommandError> ClientDbInfo(ClientDbIdT clDbId)
-			=> Send<ClientDbData>("clientdbinfo",
+		public R<ClientDbInfo, CommandError> ClientDbInfo(ClientDbIdT clDbId)
+			=> Send<ClientDbInfo>("clientdbinfo",
 			new CommandParameter("cldbid", clDbId)).WrapSingle();
 
 		/// <summary>Displays detailed configuration information about a client including unique ID, nickname, client version, etc.</summary>

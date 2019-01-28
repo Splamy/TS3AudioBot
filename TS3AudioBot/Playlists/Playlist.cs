@@ -12,30 +12,36 @@ namespace TS3AudioBot.Playlists
 	using System;
 	using System.Collections.Generic;
 
-	public class Playlist
+	public class Playlist : IReadOnlyPlaylist
 	{
-		// metainfo
 		public string Name { get; set; }
-		public string OwnerUid { get; set; }
 		public List<PlaylistItem> Items { get; }
+		IReadOnlyList<PlaylistItem> IReadOnlyPlaylist.Items => Items;
 
-		public Playlist(string name, string ownerUid = null) :
-			this(name, new List<PlaylistItem>(), ownerUid)
+		public Playlist(string name) :
+			this(name, new List<PlaylistItem>())
 		{ }
 
-		public Playlist(string name, List<PlaylistItem> items, string ownerUid = null)
+		public Playlist(string name, List<PlaylistItem> items)
 		{
-			OwnerUid = ownerUid;
 			Name = name ?? throw new ArgumentNullException(nameof(name));
-			Items = new List<PlaylistItem>();
+			Items = items ?? throw new ArgumentNullException(nameof(items));
 		}
+	}
 
-		public PlaylistItem GetResource(int index)
+	public interface IReadOnlyPlaylist
+	{
+		string Name { get; set; }
+		IReadOnlyList<PlaylistItem> Items { get; }
+	}
+
+	public static class PlaylistTrait {
+		public static PlaylistItem GetResource(this IReadOnlyPlaylist self, int index)
 		{
 			PlaylistItem item = null;
-			if (index >= 0 && index < Items.Count)
+			if (index >= 0 && index < self.Items.Count)
 			{
-				item = Items[index];
+				item = self.Items[index];
 				item.Meta.From = PlaySource.FromPlaylist;
 			}
 			return item;

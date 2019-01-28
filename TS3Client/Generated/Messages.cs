@@ -2258,6 +2258,7 @@ namespace TS3Client.Messages
 
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
+		public Uid InvokerUid { get; set; }
 		public ChannelGroupId ChannelGroup { get; set; }
 		public ChannelGroupId ChannelGroupIndex { get; set; }
 		public ChannelId ChannelId { get; set; }
@@ -2270,6 +2271,7 @@ namespace TS3Client.Messages
 
 			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
 			case "cgi": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroupIndex = oval; } break;
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
@@ -2289,6 +2291,7 @@ namespace TS3Client.Messages
 
 				case "invokerid": foreach(var toi in toc) { toi.InvokerId = InvokerId; } break;
 				case "invokername": foreach(var toi in toc) { toi.InvokerName = InvokerName; } break;
+				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
 				case "cgid": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
 				case "cgi": foreach(var toi in toc) { toi.ChannelGroupIndex = ChannelGroupIndex; } break;
 				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
@@ -2608,138 +2611,6 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientData : IResponse
-	{
-		
-		public string ReturnCode { get; set; }
-
-		public ClientId ClientId { get; set; }
-		public Uid Uid { get; set; }
-		public ChannelId ChannelId { get; set; }
-		public ClientDbId DatabaseId { get; set; }
-		public str Name { get; set; }
-		public ClientType ClientType { get; set; }
-
-		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
-		{
-			switch(name)
-			{
-
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
-			}
-
-		}
-
-		public void Expand(IMessage[] to, IEnumerable<string> flds)
-		{
-			var toc = (ClientData[])to;
-			foreach (var fld in flds)
-			{
-				switch(fld)
-				{
-
-				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
-				case "client_unique_identifier": foreach(var toi in toc) { toi.Uid = Uid; } break;
-				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
-				case "client_database_id": foreach(var toi in toc) { toi.DatabaseId = DatabaseId; } break;
-				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
-				case "client_type": foreach(var toi in toc) { toi.ClientType = ClientType; } break;
-				}
-			}
-
-		}
-	}
-
-	public sealed class ClientDbData : IResponse
-	{
-		
-		public string ReturnCode { get; set; }
-
-		public str LastIp { get; set; }
-		public ClientId ClientId { get; set; }
-		public Uid Uid { get; set; }
-		public ChannelId ChannelId { get; set; }
-		public ClientDbId DatabaseId { get; set; }
-		public str Name { get; set; }
-		public ClientType ClientType { get; set; }
-		public str AvatarHash { get; set; }
-		public str Description { get; set; }
-		public IconHash IconId { get; set; }
-		public DateTime CreationDate { get; set; }
-		public DateTime LastConnected { get; set; }
-		public i32 TotalConnections { get; set; }
-		public i64 MonthlyUploadQuota { get; set; }
-		public i64 MonthlyDownloadQuota { get; set; }
-		public i64 TotalUploadQuota { get; set; }
-		public i64 TotalDownloadQuota { get; set; }
-		public str Base64HashClientUid { get; set; }
-
-		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
-		{
-			switch(name)
-			{
-
-			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
-			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
-			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
-			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
-			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
-			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
-			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
-			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
-			}
-
-		}
-
-		public void Expand(IMessage[] to, IEnumerable<string> flds)
-		{
-			var toc = (ClientDbData[])to;
-			foreach (var fld in flds)
-			{
-				switch(fld)
-				{
-
-				case "client_lastip": foreach(var toi in toc) { toi.LastIp = LastIp; } break;
-				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
-				case "client_unique_identifier": foreach(var toi in toc) { toi.Uid = Uid; } break;
-				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
-				case "client_database_id": foreach(var toi in toc) { toi.DatabaseId = DatabaseId; } break;
-				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
-				case "client_type": foreach(var toi in toc) { toi.ClientType = ClientType; } break;
-				case "client_flag_avatar": foreach(var toi in toc) { toi.AvatarHash = AvatarHash; } break;
-				case "client_description": foreach(var toi in toc) { toi.Description = Description; } break;
-				case "client_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
-				case "client_created": foreach(var toi in toc) { toi.CreationDate = CreationDate; } break;
-				case "client_lastconnected": foreach(var toi in toc) { toi.LastConnected = LastConnected; } break;
-				case "client_totalconnections": foreach(var toi in toc) { toi.TotalConnections = TotalConnections; } break;
-				case "client_month_bytes_uploaded": foreach(var toi in toc) { toi.MonthlyUploadQuota = MonthlyUploadQuota; } break;
-				case "client_month_bytes_downloaded": foreach(var toi in toc) { toi.MonthlyDownloadQuota = MonthlyDownloadQuota; } break;
-				case "client_total_bytes_uploaded": foreach(var toi in toc) { toi.TotalUploadQuota = TotalUploadQuota; } break;
-				case "client_total_bytes_downloaded": foreach(var toi in toc) { toi.TotalDownloadQuota = TotalDownloadQuota; } break;
-				case "client_base64HashClientUID": foreach(var toi in toc) { toi.Base64HashClientUid = Base64HashClientUid; } break;
-				}
-			}
-
-		}
-	}
-
 	public sealed class ClientDbDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbDelete;
@@ -2947,6 +2818,90 @@ namespace TS3Client.Messages
 				{
 
 				case "cluid": foreach(var toi in toc) { toi.ClientUid = ClientUid; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientDbInfo : IResponse
+	{
+		
+		public string ReturnCode { get; set; }
+
+		public str LastIp { get; set; }
+		public ClientId ClientId { get; set; }
+		public Uid Uid { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId DatabaseId { get; set; }
+		public str Name { get; set; }
+		public ClientType ClientType { get; set; }
+		public str AvatarHash { get; set; }
+		public str Description { get; set; }
+		public IconHash IconId { get; set; }
+		public DateTime CreationDate { get; set; }
+		public DateTime LastConnected { get; set; }
+		public i32 TotalConnections { get; set; }
+		public i64 MonthlyUploadQuota { get; set; }
+		public i64 MonthlyDownloadQuota { get; set; }
+		public i64 TotalUploadQuota { get; set; }
+		public i64 TotalDownloadQuota { get; set; }
+		public str Base64HashClientUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
+			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
+			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
+			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
+			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
+			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
+			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
+			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientDbInfo[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "client_lastip": foreach(var toi in toc) { toi.LastIp = LastIp; } break;
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "client_unique_identifier": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "client_database_id": foreach(var toi in toc) { toi.DatabaseId = DatabaseId; } break;
+				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "client_type": foreach(var toi in toc) { toi.ClientType = ClientType; } break;
+				case "client_flag_avatar": foreach(var toi in toc) { toi.AvatarHash = AvatarHash; } break;
+				case "client_description": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "client_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
+				case "client_created": foreach(var toi in toc) { toi.CreationDate = CreationDate; } break;
+				case "client_lastconnected": foreach(var toi in toc) { toi.LastConnected = LastConnected; } break;
+				case "client_totalconnections": foreach(var toi in toc) { toi.TotalConnections = TotalConnections; } break;
+				case "client_month_bytes_uploaded": foreach(var toi in toc) { toi.MonthlyUploadQuota = MonthlyUploadQuota; } break;
+				case "client_month_bytes_downloaded": foreach(var toi in toc) { toi.MonthlyDownloadQuota = MonthlyDownloadQuota; } break;
+				case "client_total_bytes_uploaded": foreach(var toi in toc) { toi.TotalUploadQuota = TotalUploadQuota; } break;
+				case "client_total_bytes_downloaded": foreach(var toi in toc) { toi.TotalDownloadQuota = TotalDownloadQuota; } break;
+				case "client_base64HashClientUID": foreach(var toi in toc) { toi.Base64HashClientUid = Base64HashClientUid; } break;
 				}
 			}
 
@@ -3847,6 +3802,123 @@ namespace TS3Client.Messages
 				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
 				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
 				case "cfid": foreach(var toi in toc) { toi.SourceChannelId = SourceChannelId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientList : IResponse
+	{
+		
+		public string ReturnCode { get; set; }
+
+		public ClientId ClientId { get; set; }
+		public ChannelId ChannelId { get; set; }
+		public ClientDbId DatabaseId { get; set; }
+		public str Name { get; set; }
+		public ClientType ClientType { get; set; }
+		public Uid Uid { get; set; }
+		public bool IsAway { get; set; }
+		public str AwayMessage { get; set; }
+		public bool IsTalking { get; set; }
+		public bool InputMuted { get; set; }
+		public bool OutputMuted { get; set; }
+		public bool InputHardwareEnabled { get; set; }
+		public bool OutputHardwareEnabled { get; set; }
+		public i32 TalkPower { get; set; }
+		public bool TalkPowerGranted { get; set; }
+		public bool IsPrioritySpeaker { get; set; }
+		public bool IsRecording { get; set; }
+		public bool IsChannelCommander { get; set; }
+		public DurationMilliseconds ClientIdleTime { get; set; }
+		public DateTime CreationDate { get; set; }
+		public DateTime LastConnected { get; set; }
+		public ServerGroupId[] ServerGroups { get; set; }
+		public ChannelGroupId ChannelGroup { get; set; }
+		public ChannelId InheritedChannelGroupFromChannel { get; set; }
+		public str ClientVersion { get; set; }
+		public str ClientPlatform { get; set; }
+		public str CountryCode { get; set; }
+		public str Ip { get; set; }
+		public str Badges { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
+			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
+			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
+			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
+			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
+			case "client_flag_talking": IsTalking = value.Length > 0 && value[0] != '0'; break;
+			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
+			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
+			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
+			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
+			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
+			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
+			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
+			case "client_idle_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ClientIdleTime = TimeSpan.FromMilliseconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out ServerGroupId oval, out _)) ServerGroups[i] = oval; } if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) InheritedChannelGroupFromChannel = oval; } break;
+			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
+			case "client_country": CountryCode = Ts3String.Unescape(value); break;
+			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
+			case "client_badges": Badges = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientList[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "client_database_id": foreach(var toi in toc) { toi.DatabaseId = DatabaseId; } break;
+				case "client_nickname": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "client_type": foreach(var toi in toc) { toi.ClientType = ClientType; } break;
+				case "client_unique_identifier": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "client_away": foreach(var toi in toc) { toi.IsAway = IsAway; } break;
+				case "client_away_message": foreach(var toi in toc) { toi.AwayMessage = AwayMessage; } break;
+				case "client_flag_talking": foreach(var toi in toc) { toi.IsTalking = IsTalking; } break;
+				case "client_input_muted": foreach(var toi in toc) { toi.InputMuted = InputMuted; } break;
+				case "client_output_muted": foreach(var toi in toc) { toi.OutputMuted = OutputMuted; } break;
+				case "client_input_hardware": foreach(var toi in toc) { toi.InputHardwareEnabled = InputHardwareEnabled; } break;
+				case "client_output_hardware": foreach(var toi in toc) { toi.OutputHardwareEnabled = OutputHardwareEnabled; } break;
+				case "client_talk_power": foreach(var toi in toc) { toi.TalkPower = TalkPower; } break;
+				case "client_is_talker": foreach(var toi in toc) { toi.TalkPowerGranted = TalkPowerGranted; } break;
+				case "client_is_priority_speaker": foreach(var toi in toc) { toi.IsPrioritySpeaker = IsPrioritySpeaker; } break;
+				case "client_is_recording": foreach(var toi in toc) { toi.IsRecording = IsRecording; } break;
+				case "client_is_channel_commander": foreach(var toi in toc) { toi.IsChannelCommander = IsChannelCommander; } break;
+				case "client_idle_time": foreach(var toi in toc) { toi.ClientIdleTime = ClientIdleTime; } break;
+				case "client_created": foreach(var toi in toc) { toi.CreationDate = CreationDate; } break;
+				case "client_lastconnected": foreach(var toi in toc) { toi.LastConnected = LastConnected; } break;
+				case "client_servergroups": foreach(var toi in toc) { toi.ServerGroups = ServerGroups; } break;
+				case "client_channel_group_id": foreach(var toi in toc) { toi.ChannelGroup = ChannelGroup; } break;
+				case "client_channel_group_inherited_channel_id": foreach(var toi in toc) { toi.InheritedChannelGroupFromChannel = InheritedChannelGroupFromChannel; } break;
+				case "client_version": foreach(var toi in toc) { toi.ClientVersion = ClientVersion; } break;
+				case "client_platform": foreach(var toi in toc) { toi.ClientPlatform = ClientPlatform; } break;
+				case "client_country": foreach(var toi in toc) { toi.CountryCode = CountryCode; } break;
+				case "connection_client_ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
+				case "client_badges": foreach(var toi in toc) { toi.Badges = Badges; } break;
 				}
 			}
 

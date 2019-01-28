@@ -327,8 +327,7 @@ namespace TS3AudioBot.ResourceFactories
 			public void PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string url)
 			{
 				var playlist = factoryManager.LoadPlaylistFrom(url, factory).UnwrapThrow();
-
-				playlist.OwnerUid = invoker.ClientUid;
+				
 				session.Set<PlaylistManager, Playlist>(playlist);
 			}
 		}

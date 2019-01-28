@@ -31,7 +31,7 @@ namespace TS3AudioBot.Playlists
 		private readonly ConfPlaylists config;
 		private readonly ConcurrentQueue<PlaylistItem> playQueue;
 		private readonly Playlist mixList = new Playlist(".mix");
-		public Playlist CurrentList { get; private set; }
+		public IReadOnlyPlaylist CurrentList { get; private set; }
 
 		private IShuffleAlgorithm shuffle;
 
@@ -111,7 +111,7 @@ namespace TS3AudioBot.Playlists
 			return list.GetResource(index);
 		}
 
-		public void StartPlaylist(Playlist plist, int index = 0)
+		public void StartPlaylist(IReadOnlyPlaylist plist, int index = 0)
 		{
 			if (plist is null)
 				throw new ArgumentNullException(nameof(plist));
@@ -138,7 +138,7 @@ namespace TS3AudioBot.Playlists
 		}
 
 		// Returns true if all values are normalized
-		private (Playlist list, int index) NormalizeValues(Playlist list, int index)
+		private (IReadOnlyPlaylist list, int index) NormalizeValues(IReadOnlyPlaylist list, int index)
 		{
 			if (list == null || list.Items.Count == 0)
 				return (null, 0);
@@ -155,7 +155,21 @@ namespace TS3AudioBot.Playlists
 			return (list, index);
 		}
 
-		public R<Playlist, LocalStr> LoadPlaylist(string name)
+		private string GetPlaylistDirectory()
+		{
+			switch (config.Share.Value)
+			{
+			case PlaylistLocation.Bot:
+				return Path.Combine(ConfBot.LocalConfigDir, LocalPlaylistDirectory);
+			case PlaylistLocation.Global:
+				return config.Path;
+			default: throw Util.UnhandledDefault(config.Share.Value);
+			}
+		}
+
+		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(GetPlaylistDirectory(), name));
+
+		public R<IReadOnlyPlaylist, LocalStr> LoadPlaylist(string name)
 		{
 			if (name is null)
 				throw new ArgumentNullException(nameof(name));
@@ -164,10 +178,31 @@ namespace TS3AudioBot.Playlists
 				return GetSpecialPlaylist(name);
 
 			var fi = GetFileInfo(name);
-			return PlaylistPool.Read(fi);
+			var res = PlaylistPool.Read(fi);
+			if (!res.Ok)
+				return res.Error;
+			return res.Value;
 		}
 
-		public E<LocalStr> SavePlaylist(Playlist plist)
+		public E<LocalStr> ModifyPlaylist(string name, Action<Playlist> action)
+		{
+			var fi = GetFileInfo(name);
+			var res = PlaylistPool.Read(fi);
+			if (!res.Ok)
+				return res.Error;
+			action(res.Value);
+			// TODO dirty instead?
+			return PlaylistPool.Write(res.Value, fi);
+		}
+
+		public E<LocalStr> RenamePlaylist(string name, string newName)
+		{
+			var fiFrom = GetFileInfo(name);
+			var fiTo = GetFileInfo(newName);
+			return PlaylistPool.Move(fiFrom, fiTo);
+		}
+
+		public E<LocalStr> SavePlaylist(IReadOnlyPlaylist plist)
 		{
 			if (plist is null)
 				throw new ArgumentNullException(nameof(plist));
@@ -186,27 +221,13 @@ namespace TS3AudioBot.Playlists
 			return R.Ok;
 		}
 
-		private string GetPlaylistDirectory()
-		{
-			switch (config.Share.Value)
-			{
-			case PlaylistLocation.Bot:
-				return Path.Combine(ConfBot.LocalConfigDir, LocalPlaylistDirectory);
-			case PlaylistLocation.Global:
-				return config.Path;
-			default: throw Util.UnhandledDefault(config.Share.Value);
-			}
-		}
-
-		private FileInfo GetFileInfo(string name) => new FileInfo(Path.Combine(GetPlaylistDirectory(), name));
-
-		public E<LocalStr> DeletePlaylist(string name, string requestingClientUid, bool force = false)
+		public E<LocalStr> DeletePlaylist(string name)
 		{
 			if (name is null)
 				throw new ArgumentNullException(nameof(name));
 
 			var fi = GetFileInfo(name);
-			return PlaylistPool.Delete(fi, requestingClientUid, force);
+			return PlaylistPool.Delete(fi);
 		}
 
 		public static string CleanseName(string name)
@@ -238,7 +259,7 @@ namespace TS3AudioBot.Playlists
 			return fileEnu.Select(fi => fi.Name);
 		}
 
-		private R<Playlist, LocalStr> GetSpecialPlaylist(string name)
+		private R<IReadOnlyPlaylist, LocalStr> GetSpecialPlaylist(string name)
 		{
 			if (!name.StartsWith(".", StringComparison.Ordinal))
 				throw new ArgumentException("Not a reserved list type.", nameof(name));

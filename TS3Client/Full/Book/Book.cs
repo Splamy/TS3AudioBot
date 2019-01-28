@@ -139,7 +139,6 @@ namespace TS3Client.Full.Book
 
 		private str AwayFun(ClientEnterView msg) => default; // TODO
 		private TalkPowerRequest TalkPowerFun(ClientEnterView msg) => default; // TODO
-		private str[] BadgesFun(ClientEnterView msg) => Array.Empty<string>(); // TODO
 
 		private SocketAddr AddressFun(ClientConnectionInfo msg) => SocketAddr.Any; // TODO
 
@@ -147,6 +146,10 @@ namespace TS3Client.Full.Book
 		{
 			OwnClient = initServer.ClientId;
 		}
+
+		private bool ChannelSubscribeFun(ChannelSubscribed msg) => false; // TODO
+
+		private bool ChannelUnsubscribeFun(ChannelUnsubscribed msg) => false; // TODO
 
 		private static bool ReturnFalse<T>(T _) => false;
 		private static object ReturnNone<T>(T _) => null;

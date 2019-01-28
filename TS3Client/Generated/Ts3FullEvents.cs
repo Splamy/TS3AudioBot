@@ -389,6 +389,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachChannelSubscribed(that);
+					book?.UpdateChannelSubscribed(that);
 				}
 				break;
 			}
@@ -402,6 +403,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachChannelUnsubscribed(that);
+					book?.UpdateChannelUnsubscribed(that);
 				}
 				break;
 			}

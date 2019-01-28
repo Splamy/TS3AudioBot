@@ -40,14 +40,12 @@ namespace TS3Client.Helper
 			return R<T, CommandError>.Err(Util.NoResultCommandError);
 		}
 
-		internal static R<T[], CommandError> UnwrapNotification<T>(in this R<LazyNotification, CommandError> result) where T : class
+		public static R<T[], CommandError> UnwrapNotification<T>(in this R<LazyNotification, CommandError> result) where T : class
 		{
 			if (!result.Ok)
 				return result.Error;
 			return R<T[], CommandError>.OkR((T[])result.Value.Notifications);
 		}
-
-		internal static string NewString(in this ReadOnlySpan<char> span) => span.ToString();
 
 		// TODO add optional improvement when nc2.1 is available
 		internal static string NewUtf8String(this ReadOnlySpan<byte> span) => System.Text.Encoding.UTF8.GetString(span.ToArray());

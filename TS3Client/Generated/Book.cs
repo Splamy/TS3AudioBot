@@ -126,6 +126,7 @@ namespace TS3Client.Full.Book
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; set; }
 		public bool IsPrivate { get; set; }
+		public bool Subscribed { get; set; }
 		public OptionalChannelData OptionalData { get; internal set; }
 	}
 
