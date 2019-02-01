@@ -49,6 +49,10 @@ You will need to download a few things for the bot to run:
 Run `sudo apt-get install libopus-dev ffmpeg`
 * on **Arch Linux**:  
 Run `sudo pacman -S opus ffmpeg`
+* on **CentOS 7**:
+Run ```sudo yum -y install epel-release
+    sudo rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
+    sudo yum -y install ffmpeg opus-devel```
 * **manually**:
     1. Make sure you have a C compiler installed
     1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
