@@ -85,6 +85,8 @@ namespace TS3AudioBot
 				if (!langResult.Ok)
 					Log.Error("Failed to load language file ({0})", langResult.Error);
 			};
+			config.Events.IdleTime.Changed += (s, e) => EnableIdleTickWorker();
+			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
 
 			Injector.RegisterType<Bot>();
 			Injector.RegisterType<ConfBot>();
