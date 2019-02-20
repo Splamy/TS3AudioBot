@@ -249,7 +249,7 @@ namespace TS3AudioBot.Playlists
 
 		private E<LocalStr> DeleteInternal(FileInfo fi)
 		{
-			bool cached = playlistCache.TryGetValue(fi.FullName, out var playlist);
+			bool cached = playlistCache.ContainsKey(fi.FullName);
 
 			if (!cached && !fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);

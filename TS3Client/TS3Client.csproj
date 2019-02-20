@@ -15,11 +15,16 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.4" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
     <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
     <PackageReference Include="System.IO.Pipelines" Version="4.5.3" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Commands\Ts3CommandSugar.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Ts3CommandSugar.tt</DependentUpon>
+    </None>
     <None Include="Generated\BookParser.ttinclude" />
     <None Include="Generated\ErrorParser.ttinclude" />
     <None Include="Generated\M2BParser.ttinclude" />
@@ -30,6 +35,10 @@
       <DependentUpon>Ts3FullEvents.tt</DependentUpon>
     </None>
     <None Include="Generated\Util.ttinclude" />
+    <None Update="Commands\Ts3CommandSugar.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Ts3CommandSugar.cs</LastGenOutput>
+    </None>
     <None Update="Generated\Book.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Book.cs</LastGenOutput>
@@ -60,6 +69,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="Commands\Ts3CommandSugar.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Ts3CommandSugar.tt</DependentUpon>
+    </Compile>
     <Compile Update="Generated\Book.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

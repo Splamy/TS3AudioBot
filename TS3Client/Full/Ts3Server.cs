@@ -145,11 +145,11 @@ namespace TS3Client.Full
 		}
 
 		public CmdR InitIvExpand(string alpha, string beta, string omega)
-			=> SendNoResponsed(
-				new Ts3Command("initivexpand", new List<ICommandPart> {
-					new CommandParameter("alpha", alpha),
-					new CommandParameter("beta", beta),
-					new CommandParameter("omega", omega) }));
+			=> SendNoResponsed(new Ts3Command("initivexpand") {
+				{ "alpha", alpha },
+				{ "beta", beta },
+				{ "omega", omega }
+			});
 
 		public void Dispose()
 		{

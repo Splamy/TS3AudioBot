@@ -29,7 +29,7 @@ namespace TS3AudioBot.Config
 				if (Parent is null)
 					TomlObject = Toml.Create();
 				else
-					TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType);
+					TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType).Added;
 			}
 			else
 			{

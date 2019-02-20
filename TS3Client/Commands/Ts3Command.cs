@@ -11,43 +11,48 @@ namespace TS3Client.Commands
 {
 	using Helper;
 	using System;
+	using System.Collections;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.Linq;
 	using System.Text;
 	using System.Text.RegularExpressions;
 
 	/// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
-	public class Ts3Command
+	public partial class Ts3Command : IEnumerable, IEnumerable<ICommandPart>
 	{
-		private static readonly Regex CommandMatch = new Regex(@"[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
-		public static List<ICommandPart> NoParameter => new List<ICommandPart>();
+		private static readonly Regex CommandMatch = new Regex("[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 
 		protected string raw = null;
 		protected bool cached = false;
-		internal bool ExpectResponse { get; set; }
+		public bool ExpectResponse { get; set; }
 		public string Command { get; }
-		private readonly List<ICommandPart> parameter;
+		private ICollection<ICommandPart> parameter;
 
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
 		[DebuggerStepThrough]
-		public Ts3Command(string command) : this(command, NoParameter) { }
+		public Ts3Command(string command)
+		{
+			ExpectResponse = true;
+			Command = command;
+		}
+
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
 		/// <param name="parameter">The parameters to be added to this command.
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		[DebuggerStepThrough]
-		public Ts3Command(string command, List<ICommandPart> parameter)
+		public Ts3Command(string command, ICollection<ICommandPart> parameter) : this(command)
 		{
-			ExpectResponse = true;
-			Command = command;
 			this.parameter = parameter;
 		}
 
 		[DebuggerStepThrough]
-		public virtual Ts3Command AppendParameter(ICommandPart addParameter)
+		public virtual Ts3Command Add(ICommandPart addParameter)
 		{
 			cached = false;
+			parameter = parameter ?? new List<ICommandPart>();
 			parameter.Add(addParameter);
 			return this;
 		}
@@ -73,7 +78,7 @@ namespace TS3Client.Commands
 		{
 			if (!cached)
 			{
-				raw = BuildToString(Command, parameter);
+				raw = BuildToString(Command, GetParameter());
 				cached = true;
 			}
 			return raw;
@@ -147,6 +152,11 @@ namespace TS3Client.Commands
 
 			return strb.ToString();
 		}
+
+		private IEnumerable<ICommandPart> GetParameter() => parameter ?? Enumerable.Empty<ICommandPart>();
+
+		public IEnumerator GetEnumerator() => GetParameter().GetEnumerator();
+		IEnumerator<ICommandPart> IEnumerable<ICommandPart>.GetEnumerator() => GetParameter().GetEnumerator();
 	}
 
 	public class Ts3RawCommand : Ts3Command
@@ -157,7 +167,7 @@ namespace TS3Client.Commands
 			this.cached = true;
 		}
 
-		public override Ts3Command AppendParameter(ICommandPart addParameter)
+		public override Ts3Command Add(ICommandPart addParameter)
 		{
 			throw new InvalidOperationException("Raw commands cannot be extented");
 		}

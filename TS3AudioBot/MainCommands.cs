@@ -972,13 +972,6 @@ namespace TS3AudioBot
 			playlistManager.SavePlaylist(plist).UnwrapThrow();
 		}
 
-		[Command("list save")]
-		public static void CommandListSave(PlaylistManager playlistManager, ApiCall _, string name)
-		{
-			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
-			playlistManager.SavePlaylist(plist).UnwrapThrow();
-		}
-
 		[Command("list show")]
 		[Usage("<index>", "Lets you specify the staring index from which songs should be listed.")]
 		public static JsonArray<PlaylistItemGetData> CommandListShow(UserSession session, InvokerData invoker, int? offset = null)

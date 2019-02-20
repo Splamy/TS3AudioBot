@@ -14,7 +14,6 @@ namespace TS3Client.Query
 	using Messages;
 	using System;
 	using System.Buffers;
-	using System.Collections.Generic;
 	using System.IO;
 	using System.IO.Pipelines;
 	using System.Linq;
@@ -35,7 +34,7 @@ namespace TS3Client.Query
 		private StreamWriter tcpWriter;
 		private readonly SyncMessageProcessor msgProc;
 		private readonly IEventDispatcher dispatcher;
-		private Pipe dataPipe = new Pipe();
+		private readonly Pipe dataPipe = new Pipe();
 
 		public override ClientType ClientType => ClientType.Query;
 		public override bool Connected => tcpClient.Connected;
@@ -253,10 +252,10 @@ namespace TS3Client.Query
 		// Splitted base commands
 
 		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
-			=> Send<ServerGroupAddResponse>("servergroupadd",
-				type.HasValue
-				? new List<ICommandPart> { new CommandParameter("name", name), new CommandParameter("type", (int)type.Value) }
-				: new List<ICommandPart> { new CommandParameter("name", name) }).WrapSingle();
+			=> SendCommand<ServerGroupAddResponse>(new Ts3Command("servergroupadd") {
+				{ "name", name },
+				{ "type", (int?)type }
+			}).WrapSingle();
 
 		public override R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
 			=> Send<ServerGroupsByClientId>("servergroupsbyclientid",
