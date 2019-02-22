@@ -849,24 +849,7 @@ namespace TS3AudioBot
 			if (files.Length <= 0)
 				return new JsonArray<string>(files, strings.error_playlist_not_found);
 
-			return new JsonArray<string>(files, fi =>
-			{
-				var strb = new StringBuilder();
-				int tokenLen = 0;
-				foreach (var file in fi)
-				{
-					int newTokenLen = tokenLen + TS3Client.Commands.Ts3String.TokenLength(file) + 3;
-					if (newTokenLen >= TS3Client.Commands.Ts3Const.MaxSizeTextMessage)
-						break;
-
-					strb.Append(file).Append(", ");
-					tokenLen = newTokenLen;
-				}
-
-				if (strb.Length > 2)
-					strb.Length -= 2;
-				return strb.ToString();
-			});
+			return new JsonArray<string>(files, fi => string.Join(", ", fi));
 		}
 
 		[Command("list load")]

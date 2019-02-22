@@ -9,92 +9,99 @@
 
 namespace TS3AudioBot.CommandSystem.Text
 {
+	using System;
 	using System.Collections.Generic;
-	using TS3AudioBot.Helper;
+	using System.Linq;
+	using System.Text;
 	using TS3Client.Commands;
+	using TS3Client.Helper;
 
 	// TODO fix ts3 stupid byte counting...
 	public static class LongTextTransform
 	{
-		private static readonly char[] SeparatorWeight = new char[] { '\n', ',', ' ' };
+		private static readonly byte[] SeparatorWeight = new byte[] { (byte)'\n', (byte)',', (byte)' ' };
 
 		public static IEnumerable<string> Transform(string text, LongTextBehaviour behaviour, int limit = int.MaxValue, int maxMessageSize = Ts3Const.MaxSizeTextMessage)
 		{
-			switch (behaviour)
+			if (maxMessageSize < 4)
+				throw new ArgumentOutOfRangeException(nameof(maxMessageSize), "The minimum split length must be at least 4 bytes to fit all utf8 characters");
+
+			var list = new List<string>();
+			var bytes = Encoding.UTF8.GetBytes(text);
+			Span<Ind> splitIndices = stackalloc Ind[SeparatorWeight.Length];
+
+			var block = bytes.AsSpan();
+			while (block.Length > 0)
 			{
-			case LongTextBehaviour.Drop:
-			case LongTextBehaviour.SplitHard:
 				int tokenCnt = 0;
-				int lastSplit = 0;
-				for (int i = 0; i < text.Length; i++)
-				{
-					var prevTokenCnt = tokenCnt;
-					tokenCnt += Ts3String.IsDoubleChar(text[i]) ? 2 : 1;
-					if (tokenCnt > maxMessageSize) // TODO >= ??
-					{
-						if (behaviour == LongTextBehaviour.Drop)
-							yield break;
-						yield return text.Substring(lastSplit, i - lastSplit);
-						limit--;
-						if (limit == 0)
-							yield break;
-						lastSplit = i;
-						tokenCnt -= prevTokenCnt;
-					}
-				}
-				yield return text.Substring(lastSplit);
-				break;
+				int i = 0;
+				bool filled = false;
 
-			case LongTextBehaviour.Split:
-				tokenCnt = 0;
-				lastSplit = 0;
-				var splitIndices = new (int i, int tok)[SeparatorWeight.Length];
-
-				for (int i = 0; i < text.Length; i++)
+				for (; i < block.Length; i++)
 				{
-					var prevTokenCnt = tokenCnt;
-					tokenCnt += Ts3String.IsDoubleChar(text[i]) ? 2 : 1;
+					tokenCnt += Ts3String.IsDoubleChar(block[i]) ? 2 : 1;
 
 					if (tokenCnt > maxMessageSize)
 					{
-						bool hasSplit = false;
-						for (int j = 0; j < SeparatorWeight.Length; j++)
-						{
-							if (!hasSplit && splitIndices[j].i != 0)
-							{
-								yield return text.Substring(lastSplit, splitIndices[j].i - lastSplit);
-								tokenCnt = 0;
-								lastSplit = splitIndices[j].i;
-								i = lastSplit - 1;
-								hasSplit = true;
-							}
-							splitIndices[j] = (0, 0);
-						}
+						if (behaviour == LongTextBehaviour.Drop)
+							return Enumerable.Empty<string>();
 
-						if (!hasSplit)
-						{
-							yield return text.Substring(lastSplit, i - lastSplit);
-							tokenCnt -= prevTokenCnt;
-							lastSplit = i;
-						}
-
-						limit--;
-						if (limit == 0)
-							yield break;
+						filled = true;
+						break;
 					}
-					else
+
+					for (int j = 0; j < SeparatorWeight.Length; j++)
 					{
-						for (int j = 0; j < SeparatorWeight.Length; j++)
-							if (text[i] == SeparatorWeight[j])
-								splitIndices[j] = (i, tokenCnt);
+						if (block[i] == SeparatorWeight[j])
+						{
+							splitIndices[j] = new Ind { i = i, tok = tokenCnt };
+						}
 					}
 				}
-				yield return text.Substring(lastSplit);
-				break;
 
-			default:
-				throw Util.UnhandledDefault(behaviour);
+				if (!filled)
+				{
+					list.Add(block.NewUtf8String());
+					break;
+				}
+
+				bool hasSplit = false;
+				if (behaviour != LongTextBehaviour.SplitHard)
+				{
+					for (int j = 0; j < SeparatorWeight.Length; j++)
+					{
+						if (!hasSplit && splitIndices[j].i > 0)
+						{
+							list.Add(block.Slice(0, splitIndices[j].i + 1).NewUtf8String());
+							block = block.Slice(splitIndices[j].i + 1);
+							hasSplit = true;
+						}
+					}
+					splitIndices.Fill(new Ind());
+				}
+
+				if (!hasSplit)
+				{
+					// UTF-8 adjustment
+					while (i > 0 && (block[i] & 0xC0) == 0x80)
+						i--;
+
+					list.Add(block.Slice(0, i).NewUtf8String());
+					block = block.Slice(i);
+				}
+
+				if (--limit == 0)
+					break;
 			}
+			return list;
+		}
+
+		private struct Ind
+		{
+			public int i;
+			public int tok;
+
+			public override string ToString() => $"i:{i} tok:{tok}";
 		}
 	}
 }

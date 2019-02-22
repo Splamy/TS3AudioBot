@@ -113,5 +113,28 @@ namespace TS3Client.Commands
 				c == '\t' ||
 				c == '\v';
 		}
+
+		public static bool IsDoubleChar(byte c)
+		{
+			return c == '\\' ||
+				c == '/' ||
+				c == ' ' ||
+				c == '|' ||
+				c == '\f' ||
+				c == '\n' ||
+				c == '\r' ||
+				c == '\t' ||
+				c == '\v';
+
+			// SSE2 for dotnet core 3.0; might be hot :P
+
+			//using System.Runtime.Intrinsics.X86;
+			//Console.WriteLine(Sse2.IsSupported);
+			//var cmpVec = Sse2.SetVector128((byte)'\\', (byte)'/', (byte)' ', (byte)'|', (byte)'\f', (byte)'\n', (byte)'\r', (byte)'\t', (byte)'\v', 0, 0, 0, 0, 0, 0, 0);
+			//var inc = Sse2.SetAllVector128((byte)checkChar);
+			//var res = Sse2.CompareEqual(cmpVec, inc);
+			//var mask = Sse2.MoveMask(res);
+			//bool match = mask != 0;
+		}
 	}
 }
