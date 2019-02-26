@@ -16,6 +16,7 @@ namespace TS3AudioBot.CommandSystem
 	using System.Linq;
 	using System.Reflection;
 	using System.Text.RegularExpressions;
+	using TS3AudioBot.Localization;
 
 	/// <summary>Mangement for the bot command system.</summary>
 	public class CommandManager
@@ -24,6 +25,7 @@ namespace TS3AudioBot.CommandSystem
 		private static readonly Regex CommandNamespaceValidator =
 			new Regex("^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
+		private readonly Dictionary<string, AliasCommand> aliasPaths;
 		private readonly HashSet<string> commandPaths;
 		private readonly HashSet<ICommandBag> baggedCommands;
 
@@ -32,6 +34,7 @@ namespace TS3AudioBot.CommandSystem
 		public CommandManager()
 		{
 			CommandSystem = new XCommandSystem();
+			Util.Init(out aliasPaths);
 			Util.Init(out commandPaths);
 			Util.Init(out baggedCommands);
 		}
@@ -55,18 +58,17 @@ namespace TS3AudioBot.CommandSystem
 			CheckDistinct(bag.BagCommands);
 			baggedCommands.Add(bag);
 
-			try
+			foreach (var command in bag.BagCommands)
 			{
-				foreach (var command in bag.BagCommands)
-					LoadCommand(command);
-				RightsManager?.SetRightsList(AllRights);
+				var result = LoadCommand(command);
+				if (!result.Ok)
+				{
+					Log.Error("Failed to load command bag: " + result.Error);
+					UnregisterCollection(bag);
+					throw new InvalidOperationException(result.Error);
+				}
 			}
-			catch (Exception ex)
-			{
-				Log.Error(ex, "Failed to load command bag.");
-				UnregisterCollection(bag);
-				throw;
-			}
+			RightsManager?.SetRightsList(AllRights);
 		}
 
 		public void UnregisterCollection(ICommandBag bag)
@@ -80,6 +82,36 @@ namespace TS3AudioBot.CommandSystem
 				RightsManager?.SetRightsList(AllRights);
 			}
 		}
+
+		public E<LocalStr> RegisterAlias(string path, string command)
+		{
+			if (aliasPaths.ContainsKey(path))
+				return new LocalStr("Already exists"); // TODO
+
+			var dac = new AliasCommand(CommandSystem, command);
+			var res = LoadICommand(dac, path);
+			if (!res)
+				return new LocalStr(res.Error); // TODO
+
+			aliasPaths.Add(path, dac);
+			return R.Ok;
+		}
+
+		public E<LocalStr> UnregisterAlias(string path)
+		{
+			if (!aliasPaths.TryGetValue(path, out var com))
+				return new LocalStr("Does not exist"); // TODO
+
+			UnloadICommand(com, path);
+
+			aliasPaths.Remove(path);
+
+			return R.Ok;
+		}
+
+		public IEnumerable<string> AllAlias => aliasPaths.Keys;
+
+		public AliasCommand GetAlias(string path) => aliasPaths.TryGetValue(path, out var ali) ? ali : null;
 
 		public static IEnumerable<BotCommand> GetBotCommands(object obj, Type type = null) => GetBotCommands(GetCommandMethods(obj, type));
 
@@ -124,34 +156,37 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		private void LoadCommand(BotCommand com) // TODO test
+		private E<string> LoadCommand(BotCommand com) // TODO test
 		{
-			if (!CommandNamespaceValidator.IsMatch(com.InvokeName))
-				throw new InvalidOperationException("BotCommand has an invalid invoke name: " + com.InvokeName);
 			if (commandPaths.Contains(com.FullQualifiedName))
-				throw new InvalidOperationException("Command already exists: " + com.InvokeName);
+				return "Command already exists: " + com.InvokeName;
 
 			commandPaths.Add(com.FullQualifiedName);
-			LoadICommand(com, com.InvokeName);
+			return LoadICommand(com, com.InvokeName);
 		}
 
-		private void LoadICommand(ICommand com, string path)
+		private E<string> LoadICommand(ICommand com, string path)
 		{
+			if (!CommandNamespaceValidator.IsMatch(path))
+				return "Command has an invalid invoke name: " + path;
+
 			string[] comPath = path.Split(' ');
 
 			var buildResult = BuildAndGet(comPath.Take(comPath.Length - 1));
 			if (!buildResult)
-				GenerateError(buildResult.Error, com as BotCommand);
+				return GenerateError(buildResult.Error, com as BotCommand);
 
 			var result = InsertInto(buildResult.Value, com, comPath.Last());
 			if (!result)
-				GenerateError(result.Error, com as BotCommand);
+				return GenerateError(result.Error, com as BotCommand);
+
+			return R.Ok;
 		}
 
 		private R<CommandGroup, string> BuildAndGet(IEnumerable<string> comPath)
 		{
 			CommandGroup group = CommandSystem.RootCommand;
-			// this for loop iterates through the seperate names of
+			// this for loop iterates through the separate names of
 			// the command to be added.
 			foreach (var comPathPart in comPath)
 			{
@@ -166,9 +201,9 @@ namespace TS3AudioBot.CommandSystem
 					group = nextGroup;
 				}
 				// if the group already exists we can take it.
-				else if (currentCommand is CommandGroup)
+				else if (currentCommand is CommandGroup cgCommand)
 				{
-					group = (CommandGroup)currentCommand;
+					group = cgCommand;
 				}
 				// if the element is anything else, we have to replace it
 				// with a group and put the old element back into it.
@@ -177,12 +212,15 @@ namespace TS3AudioBot.CommandSystem
 					var subGroup = new CommandGroup();
 					group.RemoveCommand(comPathPart);
 					group.AddCommand(comPathPart, subGroup);
-					if (!InsertInto(group, currentCommand, comPathPart))
-						throw new InvalidOperationException("Unexpected group error");
+					var insertResult = InsertInto(group, currentCommand, comPathPart);
+					if (!insertResult.Ok)
+						return insertResult.Error;
 					group = subGroup;
 				}
 				else
+				{
 					return "An overloaded command cannot be replaced by a CommandGroup";
+				}
 			}
 
 			return group;
@@ -221,7 +259,7 @@ namespace TS3AudioBot.CommandSystem
 			switch (subCommand)
 			{
 			case FunctionCommand subFuncCommand:
-				// if we have is a simple function, we need to create a overlaoder
+				// if we have is a simple function, we need to create a overloader
 				// and then add both functions to it
 				group.RemoveCommand(name);
 				var overloader = new OverloadedFunctionCommand();
@@ -242,12 +280,11 @@ namespace TS3AudioBot.CommandSystem
 			return R.Ok;
 		}
 
-		private static void GenerateError(string msg, BotCommand involvedCom)
+		private static E<string> GenerateError(string msg, BotCommand involvedCom)
 		{
-			throw new InvalidOperationException(
-				$@"Command error path: {involvedCom?.InvokeName}
-					Command: {involvedCom?.FullQualifiedName}
-					Error: {msg}");
+			return $"Command error path: {involvedCom?.InvokeName}"
+				+ $"Command: {involvedCom?.FullQualifiedName}"
+				+ $"Error: {msg}";
 		}
 
 		private void UnloadCommand(BotCommand com)
@@ -255,7 +292,12 @@ namespace TS3AudioBot.CommandSystem
 			if (!commandPaths.Remove(com.FullQualifiedName))
 				return;
 
-			var comPath = com.InvokeName.Split(' ');
+			UnloadICommand(com, com.InvokeName);
+		}
+
+		private void UnloadICommand(ICommand com, string path)
+		{
+			var comPath = path.Split(' ');
 
 			var node = new CommandUnloadNode
 			{
@@ -280,14 +322,17 @@ namespace TS3AudioBot.CommandSystem
 			if (subGroup is null)
 				return;
 			// if the subnode is a plain FunctionCommand then we found our command to delete
-			else if (subGroup is FunctionCommand)
+			else if (subGroup is FunctionCommand || subGroup is AliasCommand)
 			{
 				node.Self.RemoveCommand(com);
 			}
 			// here we can delete our command from the overloader
 			else if (subGroup is OverloadedFunctionCommand subOverloadGroup)
 			{
-				subOverloadGroup.RemoveCommand(com);
+				if (com is FunctionCommand funcCom)
+					subOverloadGroup.RemoveCommand(funcCom);
+				else
+					return;
 			}
 			// now to the special case when a command gets inserted with an empty string
 			else if (subGroup is CommandGroup insertGroup)

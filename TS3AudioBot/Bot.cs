@@ -146,7 +146,7 @@ namespace TS3AudioBot
 			PlayManager.AfterResourceStarted += GenerateStatusImage;
 			PlayManager.AfterResourceStopped += GenerateStatusImage;
 			// Register callback for all messages happening
-			ClientConnection.OnMessageReceived += TextCallback;
+			ClientConnection.OnMessageReceived += OnMessageReceived;
 			// Register callback to remove open private sessions, when user disconnects
 			ClientConnection.OnClientDisconnect += OnClientDisconnect;
 			ClientConnection.OnBotConnected += OnBotConnected;
@@ -188,7 +188,7 @@ namespace TS3AudioBot
 			Dispose();
 		}
 
-		private void TextCallback(object sender, TextMessage textMessage)
+		private void OnMessageReceived(object sender, TextMessage textMessage)
 		{
 			var langResult = LocalizationManager.LoadLanguage(config.Language, false);
 			if (!langResult.Ok)
@@ -203,7 +203,7 @@ namespace TS3AudioBot
 			ClientConnection.InvalidateClientBuffer();
 
 			ulong? channelId = null, databaseId = null;
-			ulong[] channelGroups = null;
+			ulong[] serverGroups = null;
 			var clientResult = ClientConnection.GetCachedClientById(textMessage.InvokerId);
 			if (clientResult.Ok)
 			{
@@ -217,7 +217,7 @@ namespace TS3AudioBot
 				{
 					channelId = clientInfoResult.Value.ChannelId;
 					databaseId = clientInfoResult.Value.DatabaseId;
-					channelGroups = clientInfoResult.Value.ServerGroups;
+					serverGroups = clientInfoResult.Value.ServerGroups;
 				}
 				else
 				{
@@ -232,7 +232,7 @@ namespace TS3AudioBot
 				nickName: textMessage.InvokerName,
 				channelId: channelId,
 				databaseId: databaseId)
-			{ ServerGroups = channelGroups };
+			{ ServerGroups = serverGroups };
 
 			var session = SessionManager.GetOrCreateSession(textMessage.InvokerId);
 			var info = CreateExecInfo(invoker, session);
@@ -359,7 +359,11 @@ namespace TS3AudioBot
 		{
 			Log.Debug("Calling script (skipRights:{0}, answer:{1}): {2}", skipRights, answer, command);
 
-			info.AddDynamicObject(new CallerInfo(command, false) { SkipRightsChecks = skipRights });
+			info.AddDynamicObject(new CallerInfo(command, false)
+			{
+				SkipRightsChecks = skipRights,
+				CommandComplexityMax = config.Commands.CommandComplexity
+			});
 
 			TryCatchCommand(info, answer, () =>
 			{

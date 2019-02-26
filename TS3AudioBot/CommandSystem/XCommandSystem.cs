@@ -15,6 +15,7 @@ namespace TS3AudioBot.CommandSystem
 	using Helper;
 	using System;
 	using System.Collections.Generic;
+	using Text;
 
 	public class XCommandSystem
 	{
@@ -95,6 +96,65 @@ namespace TS3AudioBot.CommandSystem
 			if (result.ResultType == CommandResultType.Empty)
 				return null;
 			throw new CommandException("Expected a string or nothing as result", CommandExceptionReason.NoReturnMatch);
+		}
+
+		public static ICommandResult GetEmpty(IReadOnlyList<CommandResultType> resultTypes)
+		{
+			foreach (var item in resultTypes)
+			{
+				switch (item)
+				{
+				case CommandResultType.Empty:
+					return EmptyCommandResult.Instance;
+				case CommandResultType.Command:
+					break;
+				case CommandResultType.String:
+					return StringCommandResult.Empty;
+				case CommandResultType.Json:
+					break;
+				default:
+					throw Util.UnhandledDefault(item);
+				}
+			}
+			throw new CommandException("No empty return type available", CommandExceptionReason.NoReturnMatch);
+		}
+
+		public static string GetTree(ICommand com)
+		{
+			var strb = new TextModBuilder();
+			GetTree(com, strb, 0);
+			return strb.ToString();
+		}
+
+		private static void GetTree(ICommand com, TextModBuilder strb, int indent)
+		{
+			switch (com)
+			{
+			case CommandGroup group:
+				strb.AppendFormat("<group>\n".Mod().Color(Color.Red));
+				foreach (var subCom in group.Commands)
+				{
+					strb.Append(new string(' ', (indent + 1) * 2)).Append(subCom.Key);
+					GetTree(subCom.Value, strb, indent + 1);
+				}
+				break;
+
+			case FunctionCommand func:
+				strb.AppendFormat("<func>\n".Mod().Color(Color.Green));
+				break;
+
+			case OverloadedFunctionCommand ofunc:
+				strb.AppendFormat($"<overload({ofunc.Functions.Count})>\n".Mod().Color(Color.Blue));
+				break;
+
+			case AliasCommand alifunc:
+				strb.AppendFormat($"<alias>\n".Mod().Color(Color.Yellow));
+				break;
+
+			default:
+				strb.AppendFormat("\n");
+				break;
+			}
 		}
 	}
 }

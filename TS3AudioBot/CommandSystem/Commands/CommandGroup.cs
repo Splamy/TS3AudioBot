@@ -19,7 +19,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 	{
 		private readonly IDictionary<string, ICommand> commands = new Dictionary<string, ICommand>();
 
-		public void AddCommand(string name, ICommand command) => commands.Add(name, command);
+		public void AddCommand(string name, ICommand command) => commands.Add(name, command ?? throw new ArgumentNullException(nameof(command)));
 		public void RemoveCommand(string name) => commands.Remove(name);
 		// TODO: test if command does not exist
 		public void RemoveCommand(ICommand command) => commands.Remove(commands.FirstOrDefault(kvp => kvp.Value == command).Key);
@@ -66,7 +66,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return commandResults[0].Value.Execute(info, argSubList, returnTypes);
 		}
 
-		private string SuggestionsJoinTrim(IEnumerable<string> commands)
+		private static string SuggestionsJoinTrim(IEnumerable<string> commands)
 		{
 			var commandsArray = commands.Where(x => !string.IsNullOrEmpty(x)).ToArray();
 			var suggestions = string.Join(", ", commandsArray.Take(4));

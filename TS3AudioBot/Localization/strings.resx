@@ -942,4 +942,7 @@ with the id {1}?</value>
   <data name="cmd_list_item_name_help" xml:space="preserve">
     <value>Renames an item.</value>
   </data>
+  <data name="error_cmd_complexity_reached" xml:space="preserve">
+    <value>The command exceeded the maximum calling complexity.</value>
+  </data>
 </root>

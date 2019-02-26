@@ -62,6 +62,22 @@ namespace TS3AudioBot
 		public static void CommandAdd(PlayManager playManager, InvokerData invoker, string url)
 			=> playManager.Enqueue(invoker, url).UnwrapThrow();
 
+		[Command("alias add")]
+		public static void CommandAliasAdd(CommandManager commandManager, string commandName, string command)
+			=> commandManager.RegisterAlias(commandName, command).UnwrapThrow();
+
+		[Command("alias remove")]
+		public static void CommandAliasRemove(CommandManager commandManager, string commandName)
+			=> commandManager.UnregisterAlias(commandName).UnwrapThrow();
+
+		[Command("alias list")]
+		public static JsonArray<string> CommandAliasList(CommandManager commandManager, string commandName)
+			=> new JsonArray<string>(commandManager.AllAlias.ToArray(), x => string.Join(",", x));
+
+		[Command("alias show")]
+		public static string CommandAliasShow(CommandManager commandManager, string commandName)
+			=> commandManager.GetAlias(commandName)?.AliasString;
+
 		[Command("api token")]
 		[Usage("[<duration>]", "Optionally specifies a duration this key is valid in hours.")]
 		public static string CommandApiToken(TokenManager tokenManager, InvokerData invoker, double? validHours = null)
@@ -174,7 +190,7 @@ namespace TS3AudioBot
 		public static BotInfo CommandBotInfo(Bot bot) => bot.GetInfo();
 
 		[Command("bot info client", "_undocumented")]
-		public static JsonValue<ClientInfo> CommandBotInfoClient(Ts3Client ts3Client)
+		public static JsonValue<ClientInfo> CommandBotInfoClient(Ts3Client ts3Client, ApiCall _)
 			=> new JsonValue<ClientInfo>(ts3Client.GetSelf().UnwrapThrow(), string.Empty);
 
 		[Command("bot list")]
@@ -245,6 +261,22 @@ namespace TS3AudioBot
 
 		[Command("clear")]
 		public static void CommandClear(PlaylistManager playlistManager) => playlistManager.ClearQueue();
+
+		[Command("command parse", "parse_command_help")]
+		public static JsonValue<AstNode> CommandParse(string parameter)
+		{
+			var node = CommandParser.ParseCommandRequest(parameter);
+			var strb = new StringBuilder();
+			strb.AppendLine();
+			node.Write(strb, 0);
+			return new JsonValue<AstNode>(node, strb.ToString());
+		}
+
+		[Command("command tree", "_undocumented")]
+		public static string CommandTree(CommandManager commandManager)
+		{
+			return XCommandSystem.GetTree(commandManager.CommandSystem.RootCommand);
+		}
 
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
@@ -663,7 +695,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("json merge")]
-		public static JsonArray<object> CommandJsonMerge(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public static JsonArray<object> CommandJsonMerge(ExecutionInformation info, ApiCall _, IReadOnlyList<ICommand> arguments)
 		{
 			if (arguments.Count == 0)
 				return new JsonArray<object>(Array.Empty<object>(), string.Empty);
@@ -685,7 +717,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("json api", "_undocumented")]
-		public static JsonObject CommandJsonApi(CommandManager commandManager, BotManager botManager = null)
+		public static JsonObject CommandJsonApi(CommandManager commandManager, ApiCall _, BotManager botManager = null)
 		{
 			var bots = botManager?.GetBotInfolist() ?? Array.Empty<BotInfo>();
 			var api = OpenApiGenerator.Generate(commandManager, bots);
@@ -984,6 +1016,22 @@ namespace TS3AudioBot
 		public static void CommandNext(PlayManager playManager, InvokerData invoker)
 			=> playManager.Next(invoker).UnwrapThrow();
 
+		[Command("param")]
+		public static ICommandResult CommandParam(ExecutionInformation info, IReadOnlyList<CommandResultType> resultTypes, int index)
+		{
+			if (!info.TryGet<AliasContext>(out var ctx) || ctx.Arguments == null)
+				throw new CommandException("No parameter available", CommandExceptionReason.CommandError);
+
+			if (index < 0 || index >= ctx.Arguments.Count)
+				return XCommandSystem.GetEmpty(resultTypes);
+
+			var backup = ctx.Arguments;
+			ctx.Arguments = null;
+			var result = backup[index].Execute(info, Array.Empty<ICommand>(), resultTypes);
+			ctx.Arguments = backup;
+			return result;
+		}
+
 		[Command("pm")]
 		public static string CommandPm(CallerInfo caller, InvokerData invoker)
 		{
@@ -995,19 +1043,6 @@ namespace TS3AudioBot
 
 		[Command("pm user")]
 		public static void CommandPmUser(Ts3Client ts3Client, ushort clientId, string message) => ts3Client.SendMessage(message, clientId).UnwrapThrow();
-
-		[Command("parse command")]
-		public static JsonValue<AstNode> CommandParse(string parameter)
-		{
-			if (!parameter.TrimStart().StartsWith("!", StringComparison.Ordinal))
-				throw new CommandException("This is not a command", CommandExceptionReason.CommandError);
-
-			var node = CommandParser.ParseCommandRequest(parameter);
-			var strb = new StringBuilder();
-			strb.AppendLine();
-			node.Write(strb, 0);
-			return new JsonValue<AstNode>(node, strb.ToString());
-		}
 
 		[Command("pause")]
 		public static void CommandPause(Bot bot) => bot.PlayerConnection.Paused = !bot.PlayerConnection.Paused;

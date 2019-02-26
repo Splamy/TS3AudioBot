@@ -19,7 +19,7 @@ namespace TS3AudioBot.Localization {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class strings {
@@ -1743,6 +1743,15 @@ namespace TS3AudioBot.Localization {
         internal static string error_cmd_at_least_two_argument {
             get {
                 return ResourceManager.GetString("error_cmd_at_least_two_argument", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The command exceeded the maximum calling complexity..
+        /// </summary>
+        internal static string error_cmd_complexity_reached {
+            get {
+                return ResourceManager.GetString("error_cmd_complexity_reached", resourceCulture);
             }
         }
         

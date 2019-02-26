@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFrameworks>net46;netstandard2.0</TargetFrameworks>
@@ -20,11 +20,6 @@
     <PackageReference Include="System.IO.Pipelines" Version="4.5.3" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Commands\Ts3CommandSugar.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Ts3CommandSugar.tt</DependentUpon>
-    </None>
     <None Include="Generated\BookParser.ttinclude" />
     <None Include="Generated\ErrorParser.ttinclude" />
     <None Include="Generated\M2BParser.ttinclude" />

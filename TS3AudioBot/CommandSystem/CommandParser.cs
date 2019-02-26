@@ -20,12 +20,12 @@ namespace TS3AudioBot.CommandSystem
 		public const char DefaultDelimeterChar = ' ';
 
 		// This switch follows more or less a DEA to this EBNF
-		// COMMAND-EBNF := COMMAND
+		// COMMAND-EBNF := <COMMAND> | $.*^
 
-		// COMMAND      := (!ARGUMENT \s+ (ARGUMENT|\s)*)
-		// ARGUMENT     := COMMAND|FREESTRING|QUOTESTRING
+		// COMMAND      := '!' <ARGUMENT> (\s+ <ARGUMENT>)*
+		// ARGUMENT     := '(' <COMMAND> ')'? | <FREESTRING> | <QUOTESTRING>
 		// FREESTRING   := [^)]+
-		// QUOTESTRING  := "[<anything but ", \" is ok>]+"
+		// QUOTESTRING  := '"' [<anything but ", \" is ok>]* '"'
 
 		public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimeterChar = DefaultDelimeterChar)
 		{
@@ -34,6 +34,18 @@ namespace TS3AudioBot.CommandSystem
 			var build = BuildStatus.ParseCommand;
 			var strb = new StringBuilder();
 			var strPtr = new StringPtr(request);
+
+			var startTrim = request.AsSpan().TrimStart();
+			if (startTrim.IsEmpty || startTrim[0] != commandChar)
+			{
+				return new AstValue
+				{
+					FullRequest = request,
+					Length = request.Length,
+					Position = 0,
+					Value = request,
+				};
+			}
 
 			while (!strPtr.End)
 			{

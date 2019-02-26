@@ -11,9 +11,16 @@ namespace TS3AudioBot.CommandSystem
 {
 	public class CallerInfo
 	{
+		/// <summary>The original unmodified string which was received by the client.</summary>
 		public string TextMessage { get; }
+		/// <summary>Whether this call was initiated from the api.</summary>
 		public bool ApiCall { get; }
-		public bool SkipRightsChecks { get; set; }
+		/// <summary>Skips all permission checks when set to true.</summary>
+		public bool SkipRightsChecks { get; set; } = false;
+		/// <summary>Counts execution token for a single call to prevent endless loops.</summary>
+		public int CommandComplexityCurrent { get; set; } = 0;
+		/// <summary>The maximum execution token count for a single call.</summary>
+		public int CommandComplexityMax { get; set; } = 0;
 
 		public CallerInfo(string textMessage, bool isApi)
 		{

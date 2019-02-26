@@ -11,6 +11,11 @@
 
 
 
+
+
+
+
+
 namespace TS3Client.Commands
 {
 	using System;

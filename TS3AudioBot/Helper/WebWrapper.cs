@@ -83,16 +83,21 @@ namespace TS3AudioBot.Helper
 			try { request = WebRequest.Create(link); }
 			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
 
+			WebResponse response = null;
+			Stream stream = null;
 			try
 			{
 				request.Timeout = (int)timeout.TotalMilliseconds;
-				var stream = request.GetResponse().GetResponseStream();
+				response = request.GetResponse();
+				stream = response.GetResponseStream();
 				if (stream is null)
 					return new LocalStr(strings.error_net_empty_response);
 				return stream;
 			}
 			catch (Exception ex)
 			{
+				response?.Dispose();
+				stream?.Dispose();
 				return ToLoggedError(ex);
 			}
 		}
