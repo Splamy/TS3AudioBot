@@ -262,7 +262,7 @@ namespace TS3AudioBot
 		[Command("clear")]
 		public static void CommandClear(PlaylistManager playlistManager) => playlistManager.ClearQueue();
 
-		[Command("command parse", "parse_command_help")]
+		[Command("command parse", "cmd_parse_command_help")]
 		public static JsonValue<AstNode> CommandParse(string parameter)
 		{
 			var node = CommandParser.ParseCommandRequest(parameter);
@@ -1016,7 +1016,7 @@ namespace TS3AudioBot
 		public static void CommandNext(PlayManager playManager, InvokerData invoker)
 			=> playManager.Next(invoker).UnwrapThrow();
 
-		[Command("param")]
+		[Command("param", "_undocumented")] // TODO add documentation, when name decided
 		public static ICommandResult CommandParam(ExecutionInformation info, IReadOnlyList<CommandResultType> resultTypes, int index)
 		{
 			if (!info.TryGet<AliasContext>(out var ctx) || ctx.Arguments == null)

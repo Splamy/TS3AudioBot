@@ -41,6 +41,7 @@ namespace TS3AudioBot.Web.Api
 		private const string ErrorUnsupportedScheme = "Unsupported authentication scheme";
 
 		public bool AllowAnonymousRequest { get; set; } = true;
+		private ConfWebApi config;
 
 		public CoreInjector CoreInjector { get; set; }
 		public CommandManager CommandManager { get; set; }
@@ -50,6 +51,11 @@ namespace TS3AudioBot.Web.Api
 		{
 			NullValueHandling = NullValueHandling.Ignore,
 		};
+
+		public WebApi(ConfWebApi config)
+		{
+			this.config = config;
+		}
 
 		public override bool DispatchCall(HttpListenerContext context)
 		{
@@ -89,7 +95,7 @@ namespace TS3AudioBot.Web.Api
 			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
 
 			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
-			execInfo.AddDynamicObject(new CallerInfo(apirequest, true));
+			execInfo.AddDynamicObject(new CallerInfo(apirequest, true) { CommandComplexityMax = config.CommandComplexity });
 			execInfo.AddDynamicObject(invoker);
 			execInfo.AddDynamicObject(apiCallDummy);
 			// todo creating token usersessions is now possible

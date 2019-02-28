@@ -945,4 +945,19 @@ with the id {1}?</value>
   <data name="error_cmd_complexity_reached" xml:space="preserve">
     <value>The command exceeded the maximum calling complexity.</value>
   </data>
+  <data name="cmd_alias_add_help" xml:space="preserve">
+    <value>Creates a new command alias.</value>
+  </data>
+  <data name="cmd_alias_list_help" xml:space="preserve">
+    <value>Lists all currently registered alias.</value>
+  </data>
+  <data name="cmd_alias_remove_help" xml:space="preserve">
+    <value>Removes an existing alias.</value>
+  </data>
+  <data name="cmd_alias_show_help" xml:space="preserve">
+    <value>Shows the implementation of the alias.</value>
+  </data>
+  <data name="cmd_pm_user_help" xml:space="preserve">
+    <value>Writes a message to a particular user.</value>
+  </data>
 </root>

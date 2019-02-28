@@ -45,7 +45,7 @@ namespace TS3ABotUnitTests
 			Utils.FilterBy("ic3");
 			var output = CallCommand("!help");
 			Assert.AreEqual(output, CallCommand("!h"));
-			Assert.AreEqual(output, CallCommand("!eval h"));
+			Assert.AreEqual(output, CallCommand("!eval !h"));
 			Assert.AreEqual(output, CallCommand("!(!h)"));
 			output = CallCommand("!h help");
 			Assert.AreEqual(output, CallCommand("!(!h) h"));
@@ -243,7 +243,7 @@ namespace TS3ABotUnitTests
 		static Utils()
 		{
 			ExecInfo = new ExecutionInformation();
-			ExecInfo.AddDynamicObject(new CallerInfo(null, false) { SkipRightsChecks = true });
+			ExecInfo.AddDynamicObject(new CallerInfo(null, false) { SkipRightsChecks = true, CommandComplexityMax = int.MaxValue });
 			ExecInfo.AddDynamicObject(new InvokerData("InvokerUid"));
 			ExecInfo.AddDynamicObject(filter);
 		}

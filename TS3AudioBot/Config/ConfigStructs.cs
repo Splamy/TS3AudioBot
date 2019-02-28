@@ -101,6 +101,8 @@ namespace TS3AudioBot.Config
 	{
 		public ConfigValue<bool> Enabled { get; } = new ConfigValue<bool>("enabled", true,
 			"If you want to enable the web api.");
+		public ConfigValue<int> CommandComplexity { get; } = new ConfigValue<int>("command_complexity", 64,
+			"Limits the maximum command complexity to prevent endless loops.");
 	}
 
 	public class ConfWebInterface : ConfigTable

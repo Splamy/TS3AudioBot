@@ -19,7 +19,7 @@ namespace TS3AudioBot.Localization {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class strings {
@@ -75,6 +75,42 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_add_help {
             get {
                 return ResourceManager.GetString("cmd_add_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Creates a new command alias..
+        /// </summary>
+        internal static string cmd_alias_add_help {
+            get {
+                return ResourceManager.GetString("cmd_alias_add_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lists all currently registered alias..
+        /// </summary>
+        internal static string cmd_alias_list_help {
+            get {
+                return ResourceManager.GetString("cmd_alias_list_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Removes an existing alias..
+        /// </summary>
+        internal static string cmd_alias_remove_help {
+            get {
+                return ResourceManager.GetString("cmd_alias_remove_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shows the implementation of the alias..
+        /// </summary>
+        internal static string cmd_alias_show_help {
+            get {
+                return ResourceManager.GetString("cmd_alias_show_help", resourceCulture);
             }
         }
         
@@ -996,6 +1032,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_pm_hi {
             get {
                 return ResourceManager.GetString("cmd_pm_hi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Writes a message to a particular user..
+        /// </summary>
+        internal static string cmd_pm_user_help {
+            get {
+                return ResourceManager.GetString("cmd_pm_user_help", resourceCulture);
             }
         }
         
