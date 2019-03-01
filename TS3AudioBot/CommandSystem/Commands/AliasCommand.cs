@@ -16,19 +16,20 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 	public class AliasCommand : ICommand
 	{
-		private ICommand aliasCommand;
+		private readonly ICommand aliasCommand;
 		public string AliasString { get; }
-		
+
 		public AliasCommand(XCommandSystem root, string command)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
-			var cmd = root.AstToCommandResult(ast);
-			aliasCommand = cmd;
+			aliasCommand = root.AstToCommandResult(ast);
 			AliasString = command;
 		}
 
 		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
+			info.UseComplexityTokens(1);
+
 			IReadOnlyList<ICommand> backupArguments = null;
 			if (!info.TryGet<AliasContext>(out var aliasContext))
 			{

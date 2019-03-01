@@ -91,9 +91,7 @@ namespace TS3AudioBot.CommandSystem
 		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
 			// Check call complexity
-			if (!info.TryGet<CallerInfo>(out var caller) || caller.CommandComplexityCurrent >= caller.CommandComplexityMax)
-				throw new CommandException(strings.error_cmd_complexity_reached, CommandExceptionReason.CommandError);
-			caller.CommandComplexityCurrent++;
+			info.UseComplexityTokens(1);
 
 			// Check permissions
 			if (!info.HasRights(requiredRights))

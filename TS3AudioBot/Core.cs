@@ -98,8 +98,6 @@ namespace TS3AudioBot
 			injector.RegisterType<CoreInjector>();
 			injector.RegisterType<DbStore>();
 			injector.RegisterType<PluginManager>();
-			injector.RegisterType<CommandManager>();
-			injector.RegisterType<ResourceFactoryManager>();
 			injector.RegisterType<WebServer>();
 			injector.RegisterType<RightsManager>();
 			injector.RegisterType<BotManager>();
@@ -111,8 +109,6 @@ namespace TS3AudioBot
 			injector.RegisterModule(injector);
 			injector.RegisterModule(new DbStore(config.Db));
 			injector.RegisterModule(new PluginManager(config.Plugins));
-			injector.RegisterModule(new CommandManager(), x => x.Initialize());
-			injector.RegisterModule(new ResourceFactoryManager(config.Factories), x => x.Initialize());
 			injector.RegisterModule(new WebServer(config.Web), x => x.Initialize());
 			injector.RegisterModule(new RightsManager(config.Rights));
 			injector.RegisterModule(new BotManager());

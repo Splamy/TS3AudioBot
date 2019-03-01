@@ -71,7 +71,7 @@ namespace TS3AudioBot
 			=> commandManager.UnregisterAlias(commandName).UnwrapThrow();
 
 		[Command("alias list")]
-		public static JsonArray<string> CommandAliasList(CommandManager commandManager, string commandName)
+		public static JsonArray<string> CommandAliasList(CommandManager commandManager)
 			=> new JsonArray<string>(commandManager.AllAlias.ToArray(), x => string.Join(",", x));
 
 		[Command("alias show")]
@@ -1722,6 +1722,13 @@ namespace TS3AudioBot
 					return result;
 			}
 			return R.Ok;
+		}
+
+		public static void UseComplexityTokens(this ExecutionInformation info, int count)
+		{
+			if (!info.TryGet<CallerInfo>(out var caller) || caller.CommandComplexityCurrent + count > caller.CommandComplexityMax)
+				throw new CommandException(strings.error_cmd_complexity_reached, CommandExceptionReason.CommandError);
+			caller.CommandComplexityCurrent += count;
 		}
 	}
 }
