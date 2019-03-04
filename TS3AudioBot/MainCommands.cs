@@ -295,8 +295,11 @@ namespace TS3AudioBot
 			var args = ((StringCommandResult)arg0).Content;
 
 			// Add the rest of the arguments
-			args += string.Join(" ", arguments.Select(a =>
-				((StringCommandResult)a.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content));
+			if (leftArguments.Count > 0)
+			{
+				args += " " + string.Join(" ", leftArguments.Select(a =>
+					((StringCommandResult)a.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content));
+			}
 
 			var cmd = commandManager.CommandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(args));
 			return cmd.Execute(info, leftArguments, returnTypes);
