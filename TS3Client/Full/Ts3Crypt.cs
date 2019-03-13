@@ -797,7 +797,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private static R<byte[], string> Base64Decode(string str)
+		internal static R<byte[], string> Base64Decode(string str)
 		{
 			try { return Convert.FromBase64String(str); }
 			catch (FormatException) { return "Malformed base64 string"; }

@@ -65,13 +65,12 @@ If the bot can't play some youtube videos it might be due to some embedding rest
 You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source folder and specify the path in the config to try to bypass this.
 
 ## Suggested first time setup
-1. The first time you'll need to run `mono TS3AudioBot.exe` without parameter and
-it will ask you a few questions.
-1. Close the bot again and configure your `rights.toml` to your desires.
-You can use the template rules and assign your admin as suggested in the automatically generated file,
+1. Run the bot with `mono TS3AudioBot.exe` and follow the setup instructions.
+1. (Optional) Close the bot and configure your `rights.toml` to your desires.
+You can use the template rules as suggested in the automatically generated file,
 or dive into the rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
-1. Start the bot again.
-1. This step is optional but highly recommended for everything to work properly.
+Then start the bot again.
+1. (Optional, but highly recommended for everything to work properly).
    - Create a privilege key for the ServerAdmin group (or a group which has equivalent rights).
    - Send the bot in a private message `!bot setup <privilege key>`.
 1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).  

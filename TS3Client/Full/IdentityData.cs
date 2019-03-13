@@ -48,5 +48,13 @@ namespace TS3Client.Full
 			PrivateKey = privateKey ?? throw new ArgumentNullException(nameof(privateKey));
 			PublicKey = publicKey ?? Ts3Crypt.RestorePublicFromPrivateKey(privateKey);
 		}
+
+		public static bool IsUidValid(string uid)
+		{
+			if (uid == "anonymous" || uid == "serveradmin")
+				return true;
+			var result = Ts3Crypt.Base64Decode(uid);
+			return result.Ok && result.Value.Length == 20;
+		}
 	}
 }

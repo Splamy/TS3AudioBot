@@ -34,7 +34,7 @@
 	# Set your admin Group Ids here
 	groupid = [ 0 ]
 	# And/Or your admin Client Uids here
-	useruid = [ "" ]
+	useruid = [ "_admin_uid_" ]
 
 	"+" = "*"
 

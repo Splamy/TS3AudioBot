@@ -46,7 +46,6 @@ namespace TS3AudioBot.Rights
 			Util.Init(out registeredRights);
 			this.config = config;
 			needsRecalculation = true;
-			CreateFileIfNotExists();
 		}
 
 		public void SetRightsList(IEnumerable<string> rights)
@@ -229,7 +228,7 @@ namespace TS3AudioBot.Rights
 		{
 			try
 			{
-				CreateFileIfNotExists();
+				CreateDefaultConfigIfNotExists();
 
 				var table = Toml.ReadFile(config.Path);
 				var ctx = new ParseContext(registeredRights);
@@ -255,15 +254,71 @@ namespace TS3AudioBot.Rights
 			return null;
 		}
 
-		public void CreateFileIfNotExists()
+		public void CreateDefaultConfigIfNotExists()
 		{
-			if (!File.Exists(config.Path))
+			CreateConfig(new CreateFileSettings { OverwriteIfExists = false });
+		}
+
+		public void CreateConfig(CreateFileSettings settings)
+		{
+			if (!settings.OverwriteIfExists && File.Exists(config.Path))
+				return;
+
+			Log.Info("Creating new permission file ({@value1})", settings);
+
+			string toml = null;
+			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
+			using (var reader = new StreamReader(fs, Util.Utf8Encoder))
 			{
-				Log.Info("No rights file found. Creating default.");
-				using (var fs = File.OpenWrite(config.Path))
-				using (var data = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
-					data.CopyTo(fs);
+				toml = reader.ReadToEnd();
 			}
+
+			using (var fs = File.Open(config.Path, FileMode.Create, FileAccess.Write, FileShare.None))
+			using (var writer = new StreamWriter(fs, Util.Utf8Encoder))
+			{
+				string replaceAdminUids = settings.AdminUids != null
+					? string.Join(" ,", settings.AdminUids.Select(x => $"\"{x}\""))
+					: string.Empty;
+				toml = toml.Replace("\"_admin_uid_\"", replaceAdminUids);
+
+				writer.Write(toml);
+			}
+		}
+
+		public void CreateConfigIfNotExists(bool interactive = false)
+		{
+			if (File.Exists(config.Path))
+				return;
+
+			Log.Warn("No permission file found.");
+
+			var settings = new CreateFileSettings
+			{
+				OverwriteIfExists = false,
+			};
+
+			if (interactive)
+			{
+				Console.WriteLine("Do you want to set up an admin in the default permission file template? [Y/n]");
+				if (Interactive.UserAgree(defaultTo: true))
+				{
+					var adminUid = Interactive.LoopAction("Please enter an admin uid", uid =>
+					{
+						if(!TS3Client.Full.IdentityData.IsUidValid(uid))
+						{
+							Console.WriteLine("The uid seems to be invalid, continue anyway? [y/N]");
+							return Interactive.UserAgree(defaultTo: false);
+						}
+						return true;
+					});
+					if (adminUid is null)
+						return;
+
+					settings.AdminUids = new[] { adminUid };
+				}
+			}
+
+			CreateConfig(settings);
 		}
 
 		private static void RecalculateRights(TomlTable table, ParseContext parseCtx)

@@ -46,26 +46,21 @@ namespace TS3AudioBot
 					return;
 				}
 
-				Log.Info("It seems like there are no bots configured.");
-				Log.Info("Fill out this quick setup to get started.");
+				Console.WriteLine("It seems like there are no bots configured.");
+				Console.WriteLine("Fill out this quick setup to get started.");
 
 				var newBot = CreateNewBot();
 				newBot.Run.Value = true;
-
-				string address;
-				while (true)
+				
+				string address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
 				{
-					Console.WriteLine("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:");
-					address = Console.ReadLine();
-					if (address is null)
-						return;
-					if (TS3Client.TsDnsResolver.TryResolve(address, out _))
-						break;
+					if (TS3Client.TsDnsResolver.TryResolve(addr, out _))
+						return true;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
-					var cont = Console.ReadLine();
-					if (string.Equals(cont, "y", StringComparison.InvariantCultureIgnoreCase))
-						break;
-				}
+					return Interactive.UserAgree(defaultTo: false);
+				});
+				if (address is null)
+					return;
 				newBot.Connect.Address.Value = address;
 				Console.WriteLine("Please enter the server password (or leave empty for none):");
 				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine();

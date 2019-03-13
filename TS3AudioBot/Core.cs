@@ -9,7 +9,6 @@
 
 namespace TS3AudioBot
 {
-	using CommandSystem;
 	using Config;
 	using Dependency;
 	using Helper;
@@ -43,6 +42,8 @@ namespace TS3AudioBot
 		public WebServer WebManager { get; set; }
 		/// <summary>Management of conntected Bots.</summary>
 		public BotManager Bots { get; set; }
+		/// <summary>Permission management.</summary>
+		public RightsManager RightsManager { get; set; }
 
 		internal static void Main(string[] args)
 		{
@@ -127,6 +128,8 @@ namespace TS3AudioBot
 			}
 
 			YoutubeDlHelper.DataObj = config.Tools.YoutubeDl;
+
+			RightsManager.CreateConfigIfNotExists(interactive);
 
 			Bots.RunBots(interactive);
 
