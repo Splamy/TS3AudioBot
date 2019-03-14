@@ -1,5 +1,6 @@
 namespace TS3AudioBot
 {
+	using Helper;
 	using Helper.Environment;
 	using NLog;
 	using System;
@@ -27,15 +28,9 @@ namespace TS3AudioBot
 				if (LogManager.Configuration is null)
 				{
 					Console.WriteLine("Create a default config to prevent this step.");
-					Console.WriteLine("Do you want to continue? [Y/N]");
-					while (true)
-					{
-						var key = Console.ReadKey().Key;
-						if (key == ConsoleKey.N)
-							return false;
-						if (key == ConsoleKey.Y)
-							break;
-					}
+					Console.WriteLine("Do you want to continue? [y/N]");
+					if (!Interactive.UserAgree(defaultTo: false))
+						return false;
 				}
 			}
 			return true;
@@ -87,7 +82,6 @@ namespace TS3AudioBot
 				// > ffmpeg (apt-get)
 				// > youtube-dl (repo/apt-get)
 				// > check NLog.config exists
-				// > Ask for Uid/Group id to insert into rigths.toml template
 				// > Crete new bot (see --new-bot)
 
 				// --new-bot name={} address={} server_password={} ?
