@@ -64,8 +64,7 @@ namespace TS3AudioBot.Config.Deprecated
 			var qcd = from.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 
 			// Get all root stuff and save it
-
-			to.Web.Hosts.Value = web.HostAddress.Split(' ');
+			
 			to.Web.Port.Value = web.Port;
 			to.Web.Api.Enabled.Value = web.EnableApi;
 			to.Web.Interface.Enabled.Value = web.EnableWebinterface;

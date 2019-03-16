@@ -19,6 +19,7 @@ namespace TS3AudioBot
 	using Sessions;
 	using System;
 	using System.Threading;
+	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.Playlists;
 	using Web;
 
@@ -104,6 +105,7 @@ namespace TS3AudioBot
 			injector.RegisterType<BotManager>();
 			injector.RegisterType<TokenManager>();
 			injector.RegisterType<PlaylistPool>();
+			injector.RegisterType<CommandManager>();
 
 			injector.RegisterModule(this);
 			injector.RegisterModule(config);
@@ -115,6 +117,7 @@ namespace TS3AudioBot
 			injector.RegisterModule(new BotManager());
 			injector.RegisterModule(new TokenManager(), x => x.Initialize());
 			injector.RegisterModule(new PlaylistPool());
+			injector.RegisterModule(new CommandManager(), x => x.Initialize());
 
 			if (!injector.AllResolved())
 			{

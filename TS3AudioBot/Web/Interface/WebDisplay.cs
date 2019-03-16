@@ -77,7 +77,7 @@ namespace TS3AudioBot.Web.Interface
 			map.Map("/", new FileRedirect(map, "", "index.html"));
 		}
 
-		public override bool DispatchCall(HttpListenerContext context)
+		public override bool DispatchCall(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
 			// GetWebsite will always return either the found website or the default 404
 			var site = GetWebsite(context.Request.Url);

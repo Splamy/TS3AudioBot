@@ -10,7 +10,7 @@
 namespace TS3AudioBot.Web
 {
 	using System;
-	using System.Net;
+	using Unosquare.Labs.EmbedIO;
 
 	public abstract class WebComponent
 	{
@@ -19,6 +19,6 @@ namespace TS3AudioBot.Web
 		/// <summary>Processes a HTTP request.</summary>
 		/// <param name="context">The HTTP context for the call.</param>
 		/// <returns>True if the request was handled.</returns>
-		public abstract bool DispatchCall(HttpListenerContext context);
+		public abstract bool DispatchCall(IHttpContext context);
 	}
 }

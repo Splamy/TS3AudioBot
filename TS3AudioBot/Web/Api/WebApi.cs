@@ -57,13 +57,13 @@ namespace TS3AudioBot.Web.Api
 			this.config = config;
 		}
 
-		public override bool DispatchCall(HttpListenerContext context)
+		public override bool DispatchCall(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
-			using (var response = context.Response)
-			{
+			var response = context.Response;
+			
 				response.ContentType = "application/json";
 				response.Headers["Access-Control-Allow-Origin"] = "*";
-				response.Headers[HttpResponseHeader.CacheControl] = "no-cache, no-store, must-revalidate";
+				response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";
 
 				var authResult = Authenticate(context);
 				if (!authResult.Ok)
@@ -82,10 +82,9 @@ namespace TS3AudioBot.Web.Api
 				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
 				ProcessApiV1Call(requestUrl, response, authResult.Value);
 				return true;
-			}
 		}
 
-		private void ProcessApiV1Call(Uri uri, HttpListenerResponse response, InvokerData invoker)
+		private void ProcessApiV1Call(Uri uri, Unosquare.Labs.EmbedIO.IHttpResponse response, InvokerData invoker)
 		{
 			string apirequest = uri.OriginalString.Substring(uri.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
@@ -139,7 +138,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private static void ReturnError(CommandException ex, HttpListenerResponse response)
+		private static void ReturnError(CommandException ex, Unosquare.Labs.EmbedIO.IHttpResponse response)
 		{
 			var jsonError = new JsonError(ex.Message, ex.Reason);
 
@@ -225,7 +224,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private R<InvokerData, string> Authenticate(HttpListenerContext context)
+		private R<InvokerData, string> Authenticate(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
 			var identity = GetIdentity(context);
 			if (identity is null)
@@ -249,45 +248,12 @@ namespace TS3AudioBot.Web.Api
 
 				return invoker;
 
-			case "Digest":
-				var identityDigest = (HttpListenerDigestIdentity)identity;
-
-				if (!identityDigest.IsAuthenticated)
-				{
-					var newNonce = token.CreateNonce();
-					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{newNonce.Value}\"");
-					return InfoNonceAdded;
-				}
-
-				if (identityDigest.Realm != WebServer.WebRealm)
-					return ErrorUnknownRealm;
-
-				if (identityDigest.Uri != context.Request.RawUrl)
-					return ErrorAuthFailure;
-
-				//HA1=MD5(username:realm:password)
-				//HA2=MD5(method:digestURI)
-				//response=MD5(HA1:nonce:HA2)
-				var ha1 = HashString($"{identity.Name}:{identityDigest.Realm}:{token.Value}");
-				var ha2 = HashString($"{context.Request.HttpMethod}:{identityDigest.Uri}");
-				var response = HashString($"{ha1}:{identityDigest.Nonce}:{ha2}");
-
-				if (identityDigest.Hash != response)
-					return ErrorAuthFailure;
-
-				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
-				if (nextNonce is null)
-					return ErrorAuthFailure;
-				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{nextNonce.Value}\"");
-
-				return invoker;
-
 			default:
 				return ErrorUnsupportedScheme;
 			}
 		}
 
-		private static IIdentity GetIdentity(HttpListenerContext context)
+		private static IIdentity GetIdentity(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
 			IIdentity identity = context.User?.Identity;
 			if (identity != null)
@@ -326,17 +292,6 @@ namespace TS3AudioBot.Web.Api
 			}
 
 			return null;
-		}
-
-		private static string HashString(string input)
-		{
-			var bytes = Util.Utf8Encoder.GetBytes(input);
-			var hash = Md5Hash.ComputeHash(bytes);
-
-			var result = new StringBuilder(hash.Length * 2);
-			for (int i = 0; i < hash.Length; i++)
-				result.Append(hash[i].ToString("x2"));
-			return result.ToString();
 		}
 	}
 }

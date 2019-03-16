@@ -33,7 +33,7 @@ namespace TS3AudioBot.Web.Interface
 				MimeType = null;
 		}
 
-		public byte[] GetData(HttpListenerRequest request, HttpListenerResponse response)
+		public byte[] GetData(Unosquare.Labs.EmbedIO.IHttpRequest request, Unosquare.Labs.EmbedIO.IHttpResponse response)
 		{
 			LocalFile.Refresh();
 
@@ -77,16 +77,16 @@ namespace TS3AudioBot.Web.Interface
 			if (addCache > 0)
 			{
 				// Cache static files
-				response.Headers[HttpResponseHeader.CacheControl] = $"max-age={addCache},public";
-				response.Headers[HttpResponseHeader.Expires]
+				response.Headers["CacheControl"] = $"max-age={addCache},public";
+				response.Headers["Expires"]
 					= Util.GetNow().AddSeconds(addCache).ToUniversalTime().ToString("r");
-				response.Headers[HttpResponseHeader.LastModified]
+				response.Headers["LastModified"]
 					= lastWrite.ToUniversalTime().ToString("r");
-				response.Headers[HttpResponseHeader.ETag] = $"\"{lastWrite.ToUnix()}\"";
+				response.Headers["ETag"] = $"\"{lastWrite.ToUnix()}\"";
 			}
 
 			response.ContentLength64 = returnData.Length;
-			response.ContentEncoding = Encoding.UTF8;
+			//response.ContentEncoding = Encoding.UTF8; // TODO ???
 			response.ContentType = MimeType ?? "text/plain";
 
 			return returnData;

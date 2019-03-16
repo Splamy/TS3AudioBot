@@ -88,8 +88,6 @@ namespace TS3AudioBot.Config
 
 	public class ConfWeb : ConfigTable
 	{
-		public ConfigArray<string> Hosts { get; } = new ConfigArray<string>("hosts", new[] { "localhost", "127.0.0.1" },
-			"An array of all urls the web api should be possible to be accessed with.");
 		public ConfigValue<ushort> Port { get; } = new ConfigValue<ushort>("port", 58913,
 			"The port for the web server.");
 

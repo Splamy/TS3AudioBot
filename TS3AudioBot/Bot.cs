@@ -92,7 +92,6 @@ namespace TS3AudioBot
 			Injector.RegisterType<Bot>();
 			Injector.RegisterType<ConfBot>();
 			Injector.RegisterType<BotInjector>();
-			Injector.RegisterType<CommandManager>();
 			Injector.RegisterType<ResourceFactoryManager>();
 			Injector.RegisterType<PlaylistManager>();
 			Injector.RegisterType<Ts3Client>();
@@ -107,7 +106,6 @@ namespace TS3AudioBot
 			Injector.RegisterModule(this);
 			Injector.RegisterModule(config);
 			Injector.RegisterModule(Injector);
-			Injector.RegisterModule(new CommandManager(), x => x.Initialize());
 			Injector.RegisterModule(new ResourceFactoryManager(config.GetParent().Factories), x => x.Initialize()); // TODO fix structure
 			Injector.RegisterModule(new PlaylistManager(config.Playlists));
 			var teamspeakClient = new Ts3Client(config);

@@ -30,6 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EmbedIO" Version="2.2.9" />
     <PackageReference Condition="'$(TargetFramework)' == 'net46'" Include="GitVersionTask" Version="3.6.5" />
     <PackageReference Condition="'$(TargetFramework)' != 'net46'" Include="GitVersionTask" Version="5.0.0-beta2-6" />
     <PackageReference Include="LiteDB" Version="4.1.4" />

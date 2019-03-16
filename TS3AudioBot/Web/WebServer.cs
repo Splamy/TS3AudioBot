@@ -11,23 +11,18 @@ namespace TS3AudioBot.Web
 {
 	using Config;
 	using Dependency;
-	using Helper;
-	using Helper.Environment;
 	using System;
 	using System.Globalization;
-	using System.Net;
 	using System.Net.Sockets;
 	using System.Threading;
+	using Unosquare.Labs.EmbedIO;
 
 	public sealed class WebServer : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		public const string WebRealm = "ts3ab";
 
-		private Uri localhost;
-		private Uri[] hostPaths;
-
-		private HttpListener webListener;
+		private CancellationTokenSource cancelToken;
+		private IHttpListener webListener;
 		private Thread serverThread;
 		private bool startWebServer;
 		private readonly ConfWeb config;
@@ -47,6 +42,7 @@ namespace TS3AudioBot.Web
 			Injector.RegisterType<Api.WebApi>();
 			Injector.RegisterType<Interface.WebDisplay>();
 
+			Unosquare.Swan.Terminal.Settings.DisplayLoggingMessageType = Unosquare.Swan.LogMessageType.None;
 			InitializeSubcomponents();
 
 			StartServerThread();
@@ -73,57 +69,8 @@ namespace TS3AudioBot.Web
 
 			if (startWebServer)
 			{
-				webListener = new HttpListener
-				{
-					AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic,
-					Realm = WebRealm,
-					AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector,
-				};
+				webListener = HttpListenerFactory.Create(HttpListenerMode.EmbedIO);
 			}
-		}
-
-		private void ReloadHostPaths()
-		{
-			localhost = new Uri($"http://localhost:{config.Port.Value}/");
-
-			if (Util.IsAdmin || SystemData.IsLinux) // todo: hostlist
-			{
-				var addrs = config.Hosts.Value;
-				hostPaths = new Uri[addrs.Count + 1];
-				hostPaths[0] = localhost;
-
-				for (int i = 0; i < addrs.Count; i++)
-				{
-					var uriBuilder = new UriBuilder(addrs[i]) { Port = config.Port };
-					hostPaths[i + 1] = uriBuilder.Uri;
-				}
-			}
-			else
-			{
-				Log.Warn("App launched without elevated rights. Only localhost will be availbale as api server.");
-				hostPaths = new[] { localhost };
-			}
-
-			webListener.Prefixes.Clear();
-			foreach (var host in hostPaths)
-				webListener.Prefixes.Add(host.AbsoluteUri);
-		}
-
-		private static AuthenticationSchemes AuthenticationSchemeSelector(HttpListenerRequest httpRequest)
-		{
-			var headerVal = httpRequest.Headers["Authorization"];
-			if (string.IsNullOrEmpty(headerVal))
-				return AuthenticationSchemes.Anonymous;
-
-			var authParts = headerVal.SplitNoEmpty(' ');
-			if (authParts.Length < 2)
-				return AuthenticationSchemes.Anonymous;
-
-			var authType = authParts[0].ToUpperInvariant();
-			if (authType == "BASIC")
-				return AuthenticationSchemes.Basic;
-
-			return AuthenticationSchemes.Anonymous;
 		}
 
 		public void StartServerThread()
@@ -135,12 +82,16 @@ namespace TS3AudioBot.Web
 			serverThread.Start();
 		}
 
-		public void EnterWebLoop()
+		public async void EnterWebLoop()
 		{
 			if (!startWebServer)
 				return;
 
-			ReloadHostPaths();
+			cancelToken?.Dispose();
+			cancelToken = new CancellationTokenSource();
+
+			webListener.Prefixes.Clear();
+			webListener.AddPrefix($"http://*:{config.Port.Value}/");
 
 			try { webListener.Start(); }
 			catch (Exception ex)
@@ -148,19 +99,26 @@ namespace TS3AudioBot.Web
 				Log.Error(ex, "The webserver could not be started");
 				webListener = null;
 				return;
-			} // TODO
+			}
+
+			Log.Info("Started Webserver on port {0}", config.Port.Value);
 
 			Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
 			while (true)
 			{
-				HttpListenerContext context;
+				IHttpContext context = null;
 				try
 				{
 					if (!(webListener?.IsListening ?? false))
 						break;
 
-					context = webListener.GetContext();
+					context = await webListener.GetContextAsync(cancelToken.Token);
+
+					if (cancelToken.IsCancellationRequested)
+					{
+						break;
+					}
 				}
 				catch (Exception ex)
 				{
@@ -168,40 +126,35 @@ namespace TS3AudioBot.Web
 					break;
 				}
 
+				IHttpResponse response = context.Response;
 				try
 				{
-					using (var response = context.Response)
+					var remoteAddress = context.Request.RemoteEndPoint?.Address;
+					if (remoteAddress is null)
+						continue;
+					if (context.Request.IsLocal
+						&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
+						&& System.Net.IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
 					{
-						IPAddress remoteAddress;
-						try
-						{
-							remoteAddress = context.Request.RemoteEndPoint?.Address;
-							if (remoteAddress is null)
-								continue;
-							if (context.Request.IsLocal
-								&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
-								&& IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
-							{
-								remoteAddress = realIp;
-							}
-						}
-						// NRE catch handler is needed due to a strange mono race condition bug.
-						catch (NullReferenceException) { continue; }
+						remoteAddress = realIp;
+					}
 
-						var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
-						Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
+					var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
+					Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
 
-						bool handled = false;
-						if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
-							handled |= Api?.DispatchCall(context) ?? false;
-						else
-							handled |= Display?.DispatchCall(context) ?? false;
+					bool handled = false;
+					if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
+						handled |= Api?.DispatchCall(context) ?? false;
+					else
+						handled |= Display?.DispatchCall(context) ?? false;
 
-						if (!handled)
+					if (!handled)
+					{
+						using (var outputStream = response.OutputStream)
 						{
 							response.ContentLength64 = WebUtil.Default404Data.Length;
-							response.StatusCode = (int)HttpStatusCode.NotFound;
-							response.OutputStream.Write(WebUtil.Default404Data, 0, WebUtil.Default404Data.Length);
+							response.StatusCode = (int)System.Net.HttpStatusCode.NotFound;
+							outputStream.Write(WebUtil.Default404Data, 0, WebUtil.Default404Data.Length);
 						}
 					}
 				}
@@ -209,6 +162,10 @@ namespace TS3AudioBot.Web
 				catch (Exception ex) when (ex is SocketException || ex is System.IO.IOException) { Log.Debug(ex, "WebListener exception"); }
 				// Catch everything to keep the webserver running, but print a warning.
 				catch (Exception ex) { Log.Warn(ex, "WebListener exception"); }
+				finally
+				{
+					response.Close();
+				}
 			}
 
 			Log.Info("WebServer has closed");
@@ -219,19 +176,13 @@ namespace TS3AudioBot.Web
 			Display?.Dispose();
 			Display = null;
 
-			try
-			{
-				webListener?.Stop();
-				webListener?.Close();
-			}
-			catch (ObjectDisposedException) { }
-			webListener = null;
+			cancelToken?.Cancel();
+			cancelToken?.Dispose();
+			cancelToken = null;
 
-#if !NET46
-			// dotnet core for some reason doesn't exit the web loop
-			// when calling Stop or Close.
-			serverThread?.Abort();
-#endif
+			webListener?.Stop();
+			webListener?.Dispose();
+			webListener = null;
 		}
 	}
 }

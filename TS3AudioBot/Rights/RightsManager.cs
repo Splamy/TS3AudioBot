@@ -264,7 +264,7 @@ namespace TS3AudioBot.Rights
 			if (!settings.OverwriteIfExists && File.Exists(config.Path))
 				return;
 
-			Log.Info("Creating new permission file ({@value1})", settings);
+			Log.Info("Creating new permission file ({@settings})", settings);
 
 			string toml = null;
 			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))

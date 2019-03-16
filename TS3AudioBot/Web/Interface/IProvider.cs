@@ -9,14 +9,14 @@
 
 namespace TS3AudioBot.Web.Interface
 {
-	using System.Net;
+	using Unosquare.Labs.EmbedIO;
 
 	public interface IProvider { }
 
 	public interface ISiteProvider : IProvider
 	{
 		string MimeType { get; }
-		byte[] GetData(HttpListenerRequest request, HttpListenerResponse response);
+		byte[] GetData(IHttpRequest request, IHttpResponse response);
 	}
 
 	public interface IFolderProvider : IProvider
