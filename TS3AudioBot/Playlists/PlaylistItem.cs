@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Playlists
 {
+	using Audio;
 	using ResourceFactories;
 
 	public class PlaylistItem

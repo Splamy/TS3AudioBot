@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Playlists
 {
+	using Audio;
 	using System;
 	using System.Collections.Generic;
 
@@ -35,7 +36,8 @@ namespace TS3AudioBot.Playlists
 		IReadOnlyList<PlaylistItem> Items { get; }
 	}
 
-	public static class PlaylistTrait {
+	public static class PlaylistTrait
+	{
 		public static PlaylistItem GetResource(this IReadOnlyPlaylist self, int index)
 		{
 			PlaylistItem item = null;

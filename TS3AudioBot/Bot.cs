@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot
 {
+	using Audio;
 	using Algorithm;
 	using CommandSystem;
 	using CommandSystem.CommandResults;
@@ -92,7 +93,6 @@ namespace TS3AudioBot
 			Injector.RegisterType<Bot>();
 			Injector.RegisterType<ConfBot>();
 			Injector.RegisterType<BotInjector>();
-			Injector.RegisterType<ResourceFactoryManager>();
 			Injector.RegisterType<PlaylistManager>();
 			Injector.RegisterType<Ts3Client>();
 			Injector.RegisterType<SessionManager>();
@@ -106,7 +106,6 @@ namespace TS3AudioBot
 			Injector.RegisterModule(this);
 			Injector.RegisterModule(config);
 			Injector.RegisterModule(Injector);
-			Injector.RegisterModule(new ResourceFactoryManager(config.GetParent().Factories), x => x.Initialize()); // TODO fix structure
 			Injector.RegisterModule(new PlaylistManager(config.Playlists));
 			var teamspeakClient = new Ts3Client(config);
 			Injector.RegisterModule(teamspeakClient);
@@ -134,6 +133,7 @@ namespace TS3AudioBot
 			}
 
 			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
+			PlayerConnection.OnSongUpdated += (s, e) => PlayManager.Update(e);
 			// Update idle status events
 			PlayManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();
 			PlayManager.AfterResourceStopped += (s, e) => EnableIdleTickWorker();
@@ -142,6 +142,7 @@ namespace TS3AudioBot
 			// Update the own status text to the current song title
 			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
 			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
+			PlayManager.OnResourceUpdated += LoggedUpdateBotStatus;
 			// Log our resource in the history
 			if (historyManager != null)
 				PlayManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Invoker.ClientUid));

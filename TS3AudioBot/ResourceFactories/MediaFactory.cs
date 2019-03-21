@@ -18,6 +18,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
+	using System.Net;
 
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
@@ -53,6 +54,12 @@ namespace TS3AudioBot.ResourceFactories
 				return result.Error;
 
 			var resData = result.Value;
+
+			if(resData.IsIcyStream)
+			{
+				return new MediaPlayResource(resData.FullUri, resource.WithName(resData.Title), null, true);
+			}
+
 			AudioResource finalResource;
 			if (resource.ResourceTitle != null)
 				finalResource = resource;
@@ -60,7 +67,7 @@ namespace TS3AudioBot.ResourceFactories
 				finalResource = resource.WithName(resData.Title);
 			else
 				finalResource = resource.WithName(resource.ResourceId);
-			return new MediaPlayResource(resData.FullUri, finalResource, resData.Image);
+			return new MediaPlayResource(resData.FullUri, finalResource, resData.Image, false);
 		}
 
 		public string RestoreLink(string id) => id;
@@ -93,14 +100,34 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R<ResData, LocalStr> ValidateWeb(Uri link)
 		{
-			var result = WebWrapper.GetResponseUnsafe(link);
-			if (!result.Ok)
-				return result.Error;
+			WebRequest request;
+			try { request = WebRequest.Create(link); }
+			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
 
-			using (var stream = result.Value)
+			try
 			{
-				var headerData = GetStreamHeaderData(stream);
-				return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
+				request.Headers.Add("Icy-MetaData", "1");
+				request.Timeout = (int)WebWrapper.DefaultTimeout.TotalMilliseconds;
+				using (var response = request.GetResponse())
+				{
+					if (response.Headers["icy-metaint"] != null)
+					{
+						return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
+					}
+					else
+					{
+						using (var stream = response.GetResponseStream())
+						{
+							var headerData = GetStreamHeaderData(stream);
+							return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Failed to validate song");
+				return new LocalStr(strings.error_net_unknown);
 			}
 		}
 
@@ -185,11 +212,12 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else if (foundUri != null)
 			{
-				var status = WebWrapper.GetResponseUnsafe(foundUri);
-				if (status.Ok)
-					using (var stream = status.Value)
+				var status = WebWrapper.GetResponse(foundUri, response =>
+				{
+					using (var stream = response.GetResponseStream())
 						m3uResult = M3uReader.TryGetData(stream);
-				else
+				});
+				if (!status.Ok)
 					return status.Error;
 			}
 
@@ -249,6 +277,8 @@ namespace TS3AudioBot.ResourceFactories
 		public string Title { get; }
 		public byte[] Image { get; set; }
 
+		public bool IsIcyStream { get; set; } = false;
+
 		public ResData(string fullUri, string title)
 		{
 			FullUri = fullUri;
@@ -259,10 +289,12 @@ namespace TS3AudioBot.ResourceFactories
 	public class MediaPlayResource : PlayResource
 	{
 		public byte[] Image { get; }
+		public bool IsIcyStream { get; }
 
-		public MediaPlayResource(string uri, AudioResource baseData, byte[] image) : base(uri, baseData)
+		public MediaPlayResource(string uri, AudioResource baseData, byte[] image, bool isIcyStream) : base(uri, baseData)
 		{
 			Image = image;
+			IsIcyStream = isIcyStream;
 		}
 	}
 }

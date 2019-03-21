@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot
 {
+	using Audio;
 	using CommandSystem;
 	using CommandSystem.Ast;
 	using CommandSystem.CommandResults;
@@ -123,16 +124,14 @@ namespace TS3AudioBot
 
 			WebWrapper.GetResponse(uri, x =>
 			{
-				var stream = x.GetResponseStream();
-				if (stream is null)
-					throw new CommandException(strings.error_net_empty_response, CommandExceptionReason.CommandError);
+				using (var stream = x.GetResponseStream())
 				using (var image = ImageUtil.ResizeImage(stream))
 				{
 					if (image is null)
 						throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
 					ts3Client.UploadAvatar(image).UnwrapThrow();
 				}
-			});
+			}).UnwrapThrow();
 		}
 
 		[Command("bot avatar clear")]

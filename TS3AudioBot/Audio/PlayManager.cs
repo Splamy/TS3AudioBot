@@ -7,7 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot
+namespace TS3AudioBot.Audio
 {
 	using Config;
 	using Localization;
@@ -29,6 +29,7 @@ namespace TS3AudioBot
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
 
+		public event EventHandler<PlayInfoEventArgs> OnResourceUpdated;
 		public event EventHandler<PlayInfoEventArgs> BeforeResourceStarted;
 		public event EventHandler<PlayInfoEventArgs> AfterResourceStarted;
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
@@ -135,7 +136,7 @@ namespace TS3AudioBot
 			}
 
 			Log.Debug("AudioResource start: {0}", playResource);
-			var result = PlayerConnection.AudioStart(playResource.PlayUri);
+			var result = PlayerConnection.AudioStart(playResource);
 			if (!result)
 			{
 				Log.Error("Error return from player: {0}", result.Error);
@@ -216,97 +217,16 @@ namespace TS3AudioBot
 			CurrentPlayData = null;
 			AfterResourceStopped?.Invoke(this, EventArgs.Empty);
 		}
-	}
 
-	public sealed class MetaData
-	{
-		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
-		public string ResourceOwnerUid { get; set; }
-		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
-		public float? Volume { get; set; } = null;
-		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
-		public PlaySource From { get; set; } = PlaySource.PlayRequest;
-
-		public MetaData Clone() => new MetaData
+		public void Update(SongInfo newInfo)
 		{
-			ResourceOwnerUid = ResourceOwnerUid,
-			From = From,
-			Volume = Volume
-		};
-	}
-
-	public class SongEndEventArgs : EventArgs
-	{
-		public bool SongEndedByCallback { get; }
-		public SongEndEventArgs(bool songEndedByCallback) { SongEndedByCallback = songEndedByCallback; }
-	}
-
-	public sealed class PlayInfoEventArgs : EventArgs
-	{
-		public InvokerData Invoker { get; }
-		public PlayResource PlayResource { get; }
-		public AudioResource ResourceData => PlayResource.BaseData;
-		public MetaData MetaData { get; }
-		public string SourceLink { get; }
-
-		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, MetaData meta, string sourceLink)
-		{
-			Invoker = invoker;
-			PlayResource = playResource;
-			MetaData = meta;
-			SourceLink = sourceLink;
+			var data = CurrentPlayData;
+			if (data is null)
+				return;
+			if (newInfo.Title != null)
+				data.ResourceData.ResourceTitle = newInfo.Title;
+			// further properties...
+			OnResourceUpdated?.Invoke(this, data);
 		}
-	}
-
-	public sealed class InvokerData
-	{
-		public string ClientUid { get; }
-		public ulong? DatabaseId { get; }
-		public ulong? ChannelId { get; }
-		public ushort? ClientId { get; }
-		public string NickName { get; }
-		public string Token { get; }
-		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
-		// Lazy
-		public ulong[] ServerGroups { get; internal set; }
-		public bool IsAnonymous => ClientUid == AnonymousUid;
-
-		private const string AnonymousUid = "Anonymous";
-		public static readonly InvokerData Anonymous = new InvokerData(AnonymousUid);
-
-		public InvokerData(string clientUid, ulong? databaseId = null, ulong? channelId = null,
-			ushort? clientId = null, string nickName = null, string token = null,
-			TS3Client.TextMessageTargetMode? visibiliy = null)
-		{
-			ClientUid = clientUid ?? throw new ArgumentNullException(nameof(ClientUid));
-			DatabaseId = databaseId;
-			ChannelId = channelId;
-			ClientId = clientId;
-			NickName = nickName;
-			Token = token;
-			Visibiliy = visibiliy;
-		}
-
-		public override int GetHashCode() => ClientUid.GetHashCode();
-
-		public override bool Equals(object obj)
-		{
-			if (!(obj is InvokerData other))
-				return false;
-
-			return ClientUid == other.ClientUid;
-		}
-	}
-
-	public static class AudioValues
-	{
-		public const float MaxVolume = 100;
-	}
-
-	public enum PlaySource
-	{
-		PlayRequest,
-		FromQueue,
-		FromPlaylist,
 	}
 }

@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Audio;
 	using CommandSystem;
 	using Config;
 	using Helper;
@@ -17,11 +18,11 @@ namespace TS3AudioBot.ResourceFactories
 	using Sessions;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
-	using System.Diagnostics;
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
@@ -324,10 +325,10 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public void PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, InvokerData invoker, string url)
+			public void PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, string url)
 			{
 				var playlist = factoryManager.LoadPlaylistFrom(url, factory).UnwrapThrow();
-				
+
 				session.Set<PlaylistManager, Playlist>(playlist);
 			}
 		}

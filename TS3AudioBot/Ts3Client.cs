@@ -18,6 +18,7 @@ namespace TS3AudioBot
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using TS3AudioBot.ResourceFactories;
 	using TS3Client;
 	using TS3Client.Audio;
 	using TS3Client.Commands;
@@ -627,9 +628,19 @@ namespace TS3AudioBot
 			remove => ffmpegProducer.OnSongEnd -= value;
 		}
 
-		public E<string> AudioStart(string url)
+		public event EventHandler<SongInfo> OnSongUpdated
 		{
-			var result = ffmpegProducer.AudioStart(url);
+			add => ffmpegProducer.OnSongUpdated += value;
+			remove => ffmpegProducer.OnSongUpdated -= value;
+		}
+
+		public E<string> AudioStart(PlayResource res)
+		{
+			E<string> result;
+			if (res is MediaPlayResource mres && mres.IsIcyStream)
+				result = ffmpegProducer.AudioStartIcy(res.PlayUri);
+			else
+				result = ffmpegProducer.AudioStart(res.PlayUri);
 			if (result)
 				timePipe.Paused = false;
 			return result;
@@ -639,7 +650,8 @@ namespace TS3AudioBot
 		{
 			// TODO clean up all mixins
 			timePipe.Paused = true;
-			return ffmpegProducer.AudioStop();
+			ffmpegProducer.AudioStop();
+			return R.Ok;
 		}
 
 		public TimeSpan Length => ffmpegProducer.Length;

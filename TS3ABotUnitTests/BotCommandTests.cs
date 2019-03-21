@@ -18,6 +18,7 @@ namespace TS3ABotUnitTests
 	using System.Threading;
 	using TS3AudioBot;
 	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.Audio;
 	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.CommandSystem.CommandResults;
 	using TS3AudioBot.CommandSystem.Commands;

@@ -45,6 +45,15 @@ namespace TS3Client.Audio
 			}
 		}
 
+		public void Clear()
+		{
+			lock (listLock)
+			{
+				producerList.Clear();
+				changed = true;
+			}
+		}
+
 		public int Read(byte[] buffer, int offset, int length, out Meta meta)
 		{
 			if (changed)

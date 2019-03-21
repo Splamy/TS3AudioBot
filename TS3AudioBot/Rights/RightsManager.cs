@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Rights
 {
+	using Audio;
 	using CommandSystem;
 	using Config;
 	using Helper;
@@ -304,7 +305,7 @@ namespace TS3AudioBot.Rights
 				{
 					var adminUid = Interactive.LoopAction("Please enter an admin uid", uid =>
 					{
-						if(!TS3Client.Full.IdentityData.IsUidValid(uid))
+						if (!TS3Client.Full.IdentityData.IsUidValid(uid))
 						{
 							Console.WriteLine("The uid seems to be invalid, continue anyway? [y/N]");
 							return Interactive.UserAgree(defaultTo: false);
@@ -323,8 +324,6 @@ namespace TS3AudioBot.Rights
 
 		private static void RecalculateRights(TomlTable table, ParseContext parseCtx)
 		{
-			var localRules = Array.Empty<RightsRule>();
-
 			if (!parseCtx.RootRule.ParseChilden(table, parseCtx))
 				return;
 

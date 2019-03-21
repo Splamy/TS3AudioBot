@@ -107,7 +107,7 @@ namespace TS3AudioBot.Web
 
 			while (true)
 			{
-				IHttpContext context = null;
+				IHttpContext context;
 				try
 				{
 					if (!(webListener?.IsListening ?? false))

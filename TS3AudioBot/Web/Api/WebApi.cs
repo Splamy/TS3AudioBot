@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Web.Api
 {
+	using Audio;
 	using CommandSystem;
 	using CommandSystem.Ast;
 	using CommandSystem.CommandResults;
@@ -21,27 +22,22 @@ namespace TS3AudioBot.Web.Api
 	using System;
 	using System.IO;
 	using System.Net;
-	using System.Security.Cryptography;
 	using System.Security.Principal;
-	using System.Text;
 	using System.Text.RegularExpressions;
 
 	public sealed class WebApi : WebComponent
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
-		private static readonly MD5 Md5Hash = MD5.Create();
 		private static readonly ApiCall apiCallDummy = new ApiCall();
 
-		private const string InfoNonceAdded = "Added a nonce to your request";
-		private const string ErrorUnknownRealm = "Unknown realm";
 		private const string ErrorNoUserOrToken = "Unknown user or no active token found";
 		private const string ErrorAuthFailure = "Authentication failed";
 		private const string ErrorAnonymousDisabled = "This bot does not allow anonymous api requests";
 		private const string ErrorUnsupportedScheme = "Unsupported authentication scheme";
 
 		public bool AllowAnonymousRequest { get; set; } = true;
-		private ConfWebApi config;
+		private readonly ConfWebApi config;
 
 		public CoreInjector CoreInjector { get; set; }
 		public CommandManager CommandManager { get; set; }
@@ -60,28 +56,28 @@ namespace TS3AudioBot.Web.Api
 		public override bool DispatchCall(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
 			var response = context.Response;
-			
-				response.ContentType = "application/json";
-				response.Headers["Access-Control-Allow-Origin"] = "*";
-				response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";
 
-				var authResult = Authenticate(context);
-				if (!authResult.Ok)
-				{
-					Log.Debug("Authorization failed!");
-					ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
-					return true;
-				}
-				if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
-				{
-					Log.Debug("Unauthorized request!");
-					ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
-					return true;
-				}
+			response.ContentType = "application/json";
+			response.Headers["Access-Control-Allow-Origin"] = "*";
+			response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";
 
-				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
-				ProcessApiV1Call(requestUrl, response, authResult.Value);
+			var authResult = Authenticate(context);
+			if (!authResult.Ok)
+			{
+				Log.Debug("Authorization failed!");
+				ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
 				return true;
+			}
+			if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
+			{
+				Log.Debug("Unauthorized request!");
+				ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
+				return true;
+			}
+
+			var requestUrl = new Uri(Dummy, context.Request.RawUrl);
+			ProcessApiV1Call(requestUrl, response, authResult.Value);
+			return true;
 		}
 
 		private void ProcessApiV1Call(Uri uri, Unosquare.Labs.EmbedIO.IHttpResponse response, InvokerData invoker)

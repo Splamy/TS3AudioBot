@@ -100,14 +100,14 @@ namespace TS3AudioBot.Localization
 						languageDataInfo.TriedDownloading = true;
 						Directory.CreateDirectory(tryFile.DirectoryName);
 						Log.Info("Downloading the resource pack for the language '{0}'", currentResolveCulture.Name);
-						if (WebWrapper.GetResponseUnsafe(new Uri($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll")).GetOk(out var dataStream).UnwrapToLog(Log))
+						WebWrapper.GetResponse(new Uri($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll"), response => 
 						{
-							using (dataStream)
+							using (var dataStream = response.GetResponseStream())
 							using (var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None))
 							{
 								dataStream.CopyTo(fs);
 							}
-						}
+						}).UnwrapToLog(Log);
 					}
 					catch (Exception ex)
 					{
