@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EmbedIO" Version="2.2.9" />
+    <PackageReference Include="EmbedIO" Version="2.3.1" />
     <PackageReference Condition="'$(TargetFramework)' == 'net46'" Include="GitVersionTask" Version="3.6.5" />
     <PackageReference Condition="'$(TargetFramework)' != 'net46'" Include="GitVersionTask" Version="5.0.0-beta2-6" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
@@ -79,5 +79,9 @@
     <Copy SourceFiles="@(CopyLibs32)" DestinationFolder="$(OutputPath)\x86\" />
     <Copy SourceFiles="@(CopyLibs64)" DestinationFolder="$(OutputPath)\x64\" />
   </Target>
+
+  <ItemGroup>
+    <PackageReference Update="NLog" Version="4.6.0" />
+  </ItemGroup>
 
 </Project>

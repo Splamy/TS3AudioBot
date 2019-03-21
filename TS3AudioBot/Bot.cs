@@ -313,7 +313,10 @@ namespace TS3AudioBot
 				{
 					var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
 					if (!thumresult.Ok)
+					{
+						ClientConnection.DeleteAvatar();
 						return;
+					}
 
 					using (var image = ImageUtil.ResizeImage(thumresult.Value))
 					{

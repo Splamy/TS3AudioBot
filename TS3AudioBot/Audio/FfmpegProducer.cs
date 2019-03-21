@@ -432,7 +432,7 @@ namespace TS3AudioBot.Audio
 							readCount = 0;
 
 							var metaString = Encoding.UTF8.GetString(buffer, 0, metaByte);
-							Console.WriteLine("Meta: {0}", metaString);
+							Log.Debug("Meta: {0}", metaString);
 							OnMetaUpdated?.Invoke(ParseIcyMeta(metaString));
 						}
 					}
