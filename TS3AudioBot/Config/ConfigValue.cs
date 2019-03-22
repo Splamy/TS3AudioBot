@@ -79,7 +79,7 @@ namespace TS3AudioBot.Config
 			// - this value is set
 			// - or we explicitely want to write out default values
 			var selfToml = Parent.TomlObject.TryGetValue(Key);
-			if (hasValue || (writeDefaults && selfToml is null)) // TODO optimize: check if existing value is same as Own.Value
+			if (hasValue || (writeDefaults && selfToml is null))
 			{
 				selfToml = Parent.TomlObject.Set(Key, Value);
 			}

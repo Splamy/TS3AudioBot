@@ -101,7 +101,7 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelCreated(ChannelCreated msg)
 		{
 			var obj = new Channel();
-			obj.Parent = msg.ChannelParentId;
+			obj.Parent = msg.ParentId;
 			{
 			var tmp = MaxClientsCcFun(msg);
 			obj.MaxClients = tmp.Item1;
@@ -166,7 +166,7 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelList(ChannelList msg)
 		{
 			var obj = new Channel();
-			obj.Parent = msg.ChannelParentId;
+			obj.Parent = msg.ParentId;
 			{
 			var tmp = MaxClientsClFun(msg);
 			obj.MaxClients = tmp.Item1;
@@ -198,7 +198,7 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelMoved(ChannelMoved msg)
 		{
 			var obj = GetChannel(msg.ChannelId);
-			obj.Parent = msg.ChannelParentId;
+			obj.Parent = msg.ParentId;
 			obj.Order = msg.Order;
 			
 		}
@@ -343,6 +343,19 @@ namespace TS3Client.Full.Book
 			obj.Name = msg.Name;
 			obj.UnreadMessages = msg.UnreadMessages;
 			obj.InputMuted = msg.InputMuted;
+			obj.InputHardwareEnabled = msg.InputHardwareEnabled;
+			obj.OutputHardwareEnabled = msg.OutputHardwareEnabled;
+			obj.Description = msg.Description;
+			obj.IsPrioritySpeaker = msg.IsPrioritySpeaker;
+			obj.IsChannelCommander = msg.IsChannelCommander;
+			obj.AvatarHash = msg.AvatarHash;
+			obj.TalkPowerGranted = msg.TalkPowerGranted;
+			obj.PhoneticName = msg.PhoneticName;
+			obj.IsRecording = msg.IsRecording;
+			{ var tmp = msg.ServerGroups; if (tmp != null) obj.ServerGroups.AddRange(tmp); }
+			obj.Badges = msg.Badges;
+			obj.TalkPower = msg.TalkPower;
+			obj.IconId = msg.IconId;
 			
 		}
 

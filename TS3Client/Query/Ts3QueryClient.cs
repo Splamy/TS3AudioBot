@@ -20,10 +20,7 @@ namespace TS3Client.Query
 	using System.Net.Sockets;
 	using System.Threading.Tasks;
 	using ChannelIdT = System.UInt64;
-	using ClientDbIdT = System.UInt64;
 	using CmdR = System.E<Messages.CommandError>;
-	using TSFileInfo = Messages.FileInfo;
-	using Uid = System.String;
 
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
@@ -96,7 +93,7 @@ namespace TS3Client.Query
 
 		private void NetworkLoop(object ctx)
 		{
-			Task.WhenAll(ReadLoopAsync(tcpStream, dataPipe.Writer), WriteLoopAsync(tcpStream, dataPipe.Reader)).ConfigureAwait(false).GetAwaiter().GetResult();
+			Task.WhenAll(ReadLoopAsync(tcpStream, dataPipe.Writer), WriteLoopAsync(dataPipe.Reader)).ConfigureAwait(false).GetAwaiter().GetResult();
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
 		}
 
@@ -133,15 +130,14 @@ namespace TS3Client.Query
 			writer.Complete();
 		}
 
-		private async Task WriteLoopAsync(NetworkStream stream, PipeReader reader)
+		private async Task WriteLoopAsync(PipeReader reader)
 		{
-			var dataWriteBuffer = new byte[4096];
 			while (true)
 			{
 				var result = await reader.ReadAsync().ConfigureAwait(false);
 
 				ReadOnlySequence<byte> buffer = result.Buffer;
-				SequencePosition? position = null;
+				SequencePosition? position;
 
 				do
 				{
@@ -195,7 +191,7 @@ namespace TS3Client.Query
 			}
 		}
 
-		public override R<T[], CommandError> SendCommand<T>(Ts3Command com) // Synchronous
+		public override R<T[], CommandError> Send<T>(Ts3Command com) // Synchronous
 		{
 			using (var wb = new WaitBlock(msgProc.Deserializer, false))
 			{
@@ -209,6 +205,9 @@ namespace TS3Client.Query
 			}
 		}
 
+		public override R<T[], CommandError> SendHybrid<T>(Ts3Command com, NotificationType type)
+			=> Send<T>(com);
+
 		private void SendRaw(string data)
 		{
 			if (!tcpClient.Connected)
@@ -221,100 +220,66 @@ namespace TS3Client.Query
 
 		private static readonly string[] TargetTypeString = { "textprivate", "textchannel", "textserver", "channel", "server" };
 
-		public CmdR RegisterNotification(TextMessageTargetMode target, ChannelIdT channel)
-			=> RegisterNotification(TargetTypeString[(int)target], channel);
+		public CmdR RegisterNotification(TextMessageTargetMode target)
+			=> RegisterNotification(TargetTypeString[(int)target], null);
 
-		public CmdR RegisterNotification(ReasonIdentifier target, ChannelIdT channel)
-			=> RegisterNotification(TargetTypeString[(int)target], channel);
+		public CmdR RegisterNotificationChannel(ChannelIdT? channel = null)
+			=> RegisterNotification(TargetTypeString[(int)ReasonIdentifier.Channel], channel);
 
-		private CmdR RegisterNotification(string target, ChannelIdT channel)
-		{
-			var ev = new CommandParameter("event", target.ToLowerInvariant());
-			if (target == "channel")
-				return Send<ResponseVoid>("servernotifyregister", ev, new CommandParameter("id", channel));
-			else
-				return Send<ResponseVoid>("servernotifyregister", ev);
-		}
+		public CmdR RegisterNotificationServer()
+			=> RegisterNotification(TargetTypeString[(int)ReasonIdentifier.Server], null);
+
+		private CmdR RegisterNotification(string target, ChannelIdT? channel)
+			=> Send<ResponseVoid>(new Ts3Command("servernotifyregister") {
+				{ "event", target },
+				{ "id", channel },
+			});
 
 		public CmdR Login(string username, string password)
-			=> Send<ResponseVoid>("login",
-			new CommandParameter("client_login_name", username),
-			new CommandParameter("client_login_password", password));
+			=> Send<ResponseVoid>(new Ts3Command("login") {
+				{ "client_login_name", username },
+				{ "client_login_password", password },
+			});
 
 		public CmdR UseServer(int serverId)
-			=> Send<ResponseVoid>("use",
-			new CommandParameter("sid", serverId));
+			=> Send<ResponseVoid>(new Ts3Command("use") {
+				{ "sid", serverId },
+			});
 
 		public CmdR UseServerPort(ushort port)
-			=> Send<ResponseVoid>("use",
-			new CommandParameter("port", port));
+			=> Send<ResponseVoid>(new Ts3Command("use") {
+				{ "port", port },
+			});
 
 		// Splitted base commands
 
 		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
-			=> SendCommand<ServerGroupAddResponse>(new Ts3Command("servergroupadd") {
+			=> Send<ServerGroupAddResponse>(new Ts3Command("servergroupadd") {
 				{ "name", name },
 				{ "type", (int?)type }
 			}).WrapSingle();
 
-		public override R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ulong clDbId)
-			=> Send<ServerGroupsByClientId>("servergroupsbyclientid",
-			new CommandParameter("cldbid", clDbId));
-
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume)
-			=> Send<FileUpload>("ftinitupload",
-			new CommandParameter("cid", channelId),
-			new CommandParameter("name", path),
-			new CommandParameter("cpw", channelPassword),
-			new CommandParameter("clientftfid", clientTransferId),
-			new CommandParameter("size", fileSize),
-			new CommandParameter("overwrite", overwrite),
-			new CommandParameter("resume", resume)).WrapSingle();
+			=> Send<FileUpload>(new Ts3Command("ftinitupload") {
+				{ "cid", channelId },
+				{ "name", path },
+				{ "cpw", channelPassword },
+				{ "clientftfid", clientTransferId },
+				{ "size", fileSize },
+				{ "overwrite", overwrite },
+				{ "resume", resume }
+			}).WrapSingle();
 
 		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek)
-			=> Send<FileDownload>("ftinitdownload",
-			new CommandParameter("cid", channelId),
-			new CommandParameter("name", path),
-			new CommandParameter("cpw", channelPassword),
-			new CommandParameter("clientftfid", clientTransferId),
-			new CommandParameter("seekpos", seek)).WrapSingle();
-
-		public override R<FileTransfer[], CommandError> FileTransferList()
-			=> Send<FileTransfer>("ftlist");
-
-		public override R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
-			=> Send<FileList>("ftgetfilelist",
-			new CommandParameter("cid", channelId),
-			new CommandParameter("path", path),
-			new CommandParameter("cpw", channelPassword));
-
-		public override R<TSFileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
-			=> Send<TSFileInfo>("ftgetfileinfo",
-			new CommandParameter("cid", channelId),
-			new CommandParameter("cpw", channelPassword),
-			new CommandMultiParameter("name", path));
-
-		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
-			=> Send<ClientDbIdFromUid>("clientgetdbidfromuid",
-			new CommandParameter("cluid", clientUid)).WrapSingle();
-
-		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
-			=> Send<ClientIds>("clientgetids",
-			new CommandParameter("cluid", clientUid));
-
-		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission)
-			=> Send<PermOverview>("permoverview",
-			new CommandParameter("cldbid", clientDbId),
-			new CommandParameter("cid", channelId),
-			Ts3PermissionHelper.GetAsMultiParameter(msgProc.Deserializer.PermissionTransform, permission));
-
-		public override R<PermList[], CommandError> PermissionList()
-			=> Send<PermList>("permissionlist");
-
-		public override R<ServerConnectionInfo, CommandError> GetServerConnectionInfo()
-			=> Send<ServerConnectionInfo>("serverrequestconnectioninfo").WrapSingle();
+			=> Send<FileDownload>(new Ts3Command("ftinitdownload") {
+				{ "cid", channelId },
+				{ "name", path },
+				{ "cpw", channelPassword },
+				{ "clientftfid", clientTransferId },
+				{ "seekpos", seek }
+			}).WrapSingle();
 
 		#endregion
 

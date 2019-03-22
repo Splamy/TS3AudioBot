@@ -169,7 +169,7 @@ namespace TS3AudioBot
 			var botInfo = bots.RunBotTemplate(name);
 			if (!botInfo.Ok)
 				throw new CommandException(strings.error_could_not_create_bot + $" ({botInfo.Error})", CommandExceptionReason.CommandError);
-			return botInfo.Value; // TODO check value/object
+			return botInfo.Value;
 		}
 
 		[Command("bot connect to")]
@@ -182,7 +182,7 @@ namespace TS3AudioBot
 			var botInfo = bots.RunBot(botConf);
 			if (!botInfo.Ok)
 				throw new CommandException(strings.error_could_not_create_bot + $" ({botInfo.Error})", CommandExceptionReason.CommandError);
-			return botInfo.Value; // TODO check value/object
+			return botInfo.Value;
 		}
 
 		[Command("bot info")]

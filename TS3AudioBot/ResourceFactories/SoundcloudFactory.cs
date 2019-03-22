@@ -114,7 +114,7 @@ namespace TS3AudioBot.ResourceFactories
 		public R<Playlist, LocalStr> GetPlaylist(string url)
 		{
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uri)) // todo: a bit janky (no response <-> error response)
+			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return new LocalStr(strings.error_net_no_connection);
 
 			var parsedDict = ParseJson(jsonResponse);

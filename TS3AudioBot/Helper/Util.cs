@@ -24,32 +24,9 @@ namespace TS3AudioBot.Helper
 
 	public static class Util
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 
-		private static readonly Regex SafeFileNameMatcher = new Regex(@"^[\w-]+$", DefaultRegexConfig);
-
-		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
-		/// <param name="predicate">Check function that will be called every millisecond.</param>
-		/// <param name="timeout">Timeout in milliseconds.</param>
-		public static void WaitOrTimeout(Func<bool> predicate, TimeSpan timeout)
-		{
-			var msTimeout = (int)timeout.TotalMilliseconds;
-			while (!predicate() && msTimeout-- > 0)
-				Thread.Sleep(1);
-		}
-
-		public static void WaitForThreadEnd(Thread thread, TimeSpan timeout)
-		{
-			if (thread?.IsAlive == true)
-			{
-				WaitOrTimeout(() => thread.IsAlive, timeout);
-				if (thread.IsAlive)
-				{
-					thread.Abort();
-				}
-			}
-		}
+		private static readonly Regex SafeFileNameMatcher = new Regex(@"^[\w-_]+$", DefaultRegexConfig);
 
 		public static DateTime GetNow() => DateTime.Now;
 
@@ -62,31 +39,6 @@ namespace TS3AudioBot.Helper
 		public static Random Random { get; } = new Random();
 
 		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
-
-		public static bool IsAdmin
-		{
-			get
-			{
-#if NET46
-				try
-				{
-					using (var user = System.Security.Principal.WindowsIdentity.GetCurrent())
-					{
-						var principal = new System.Security.Principal.WindowsPrincipal(user);
-						return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-					}
-				}
-				catch (UnauthorizedAccessException) { return false; }
-				catch (Exception)
-				{
-					Log.Warn("Uncatched admin check.");
-					return false;
-				}
-#else
-				return false;
-#endif
-			}
-		}
 
 		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
 
@@ -155,7 +107,7 @@ namespace TS3AudioBot.Helper
 		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger)
 		{
 			if (!r.Ok)
-				logger.Warn("Could not write message: {0}", r.Error.Str);
+				logger.Warn("Action errored: {0}", r.Error.Str);
 			return r.Ok;
 		}
 

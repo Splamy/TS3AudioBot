@@ -199,6 +199,7 @@ namespace TS3Client.Messages
 		public str Ip { get; set; }
 		public str Name { get; set; }
 		public Uid Uid { get; set; }
+		public str MyTsId { get; set; }
 		public str LastNickname { get; set; }
 		public DateTime Created { get; set; }
 		public DurationSeconds Duration { get; set; }
@@ -206,7 +207,7 @@ namespace TS3Client.Messages
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 		public str Reason { get; set; }
-		public str Enforcements { get; set; }
+		public u32 Enforcements { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -217,6 +218,7 @@ namespace TS3Client.Messages
 			case "ip": Ip = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "uid": Uid = Ts3String.Unescape(value); break;
+			case "mytsid": MyTsId = Ts3String.Unescape(value); break;
 			case "lastnickname": LastNickname = Ts3String.Unescape(value); break;
 			case "created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Created = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "duration": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
@@ -224,7 +226,7 @@ namespace TS3Client.Messages
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "reason": Reason = Ts3String.Unescape(value); break;
-			case "enforcements": Enforcements = Ts3String.Unescape(value); break;
+			case "enforcements": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Enforcements = oval; } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -242,6 +244,7 @@ namespace TS3Client.Messages
 				case "ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
 				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
 				case "uid": foreach(var toi in toc) { toi.Uid = Uid; } break;
+				case "mytsid": foreach(var toi in toc) { toi.MyTsId = MyTsId; } break;
 				case "lastnickname": foreach(var toi in toc) { toi.LastNickname = LastNickname; } break;
 				case "created": foreach(var toi in toc) { toi.Created = Created; } break;
 				case "duration": foreach(var toi in toc) { toi.Duration = Duration; } break;
@@ -558,14 +561,52 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreate;
 		
 
+		public ChannelId ParentId { get; set; }
 		public str Name { get; set; }
+		public str Topic { get; set; }
+		public str Description { get; set; }
+		public str Password { get; set; }
+		public Codec Codec { get; set; }
+		public u8 CodecQuality { get; set; }
+		public i32 MaxClients { get; set; }
+		public i32 MaxFamilyClients { get; set; }
+		public i32 Order { get; set; }
+		public bool HasPassword { get; set; }
+		public bool IsUnencrypted { get; set; }
+		public DurationSeconds DeleteDelay { get; set; }
+		public bool IsMaxClientsUnlimited { get; set; }
+		public bool IsMaxFamilyClientsUnlimited { get; set; }
+		public bool InheritsMaxFamilyClients { get; set; }
+		public str PhoneticName { get; set; }
+		public bool IsPermanent { get; set; }
+		public bool IsSemiPermanent { get; set; }
+		public bool IsDefault { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
 			switch(name)
 			{
 
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "channel_description": Description = Ts3String.Unescape(value); break;
+			case "channel_password": Password = Ts3String.Unescape(value); break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
+			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
+			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
+			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			
 			}
 
@@ -579,7 +620,26 @@ namespace TS3Client.Messages
 				switch(fld)
 				{
 
+				case "cpid": foreach(var toi in toc) { toi.ParentId = ParentId; } break;
 				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "channel_topic": foreach(var toi in toc) { toi.Topic = Topic; } break;
+				case "channel_description": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "channel_password": foreach(var toi in toc) { toi.Password = Password; } break;
+				case "channel_codec": foreach(var toi in toc) { toi.Codec = Codec; } break;
+				case "channel_codec_quality": foreach(var toi in toc) { toi.CodecQuality = CodecQuality; } break;
+				case "channel_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
+				case "channel_maxfamilyclients": foreach(var toi in toc) { toi.MaxFamilyClients = MaxFamilyClients; } break;
+				case "channel_order": foreach(var toi in toc) { toi.Order = Order; } break;
+				case "channel_flag_password": foreach(var toi in toc) { toi.HasPassword = HasPassword; } break;
+				case "channel_codec_is_unencrypted": foreach(var toi in toc) { toi.IsUnencrypted = IsUnencrypted; } break;
+				case "channel_delete_delay": foreach(var toi in toc) { toi.DeleteDelay = DeleteDelay; } break;
+				case "channel_flag_maxclients_unlimited": foreach(var toi in toc) { toi.IsMaxClientsUnlimited = IsMaxClientsUnlimited; } break;
+				case "channel_flag_maxfamilyclients_unlimited": foreach(var toi in toc) { toi.IsMaxFamilyClientsUnlimited = IsMaxFamilyClientsUnlimited; } break;
+				case "channel_flag_maxfamilyclients_inherited": foreach(var toi in toc) { toi.InheritsMaxFamilyClients = InheritsMaxFamilyClients; } break;
+				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
+				case "channel_flag_permanent": foreach(var toi in toc) { toi.IsPermanent = IsPermanent; } break;
+				case "channel_flag_semi_permanent": foreach(var toi in toc) { toi.IsSemiPermanent = IsSemiPermanent; } break;
+				case "channel_flag_default": foreach(var toi in toc) { toi.IsDefault = IsDefault; } break;
 				}
 			}
 
@@ -615,7 +675,7 @@ namespace TS3Client.Messages
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
-		public ChannelId ChannelParentId { get; set; }
+		public ChannelId ParentId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -646,7 +706,7 @@ namespace TS3Client.Messages
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -684,7 +744,7 @@ namespace TS3Client.Messages
 				case "channel_flag_maxfamilyclients_unlimited": foreach(var toi in toc) { toi.IsMaxFamilyClientsUnlimited = IsMaxFamilyClientsUnlimited; } break;
 				case "channel_flag_maxfamilyclients_inherited": foreach(var toi in toc) { toi.InheritsMaxFamilyClients = InheritsMaxFamilyClients; } break;
 				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
-				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				case "cpid": foreach(var toi in toc) { toi.ParentId = ParentId; } break;
 				}
 			}
 
@@ -963,7 +1023,8 @@ namespace TS3Client.Messages
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
-		public ChannelId ChannelParentId { get; set; }
+		public ChannelId ParentId { get; set; }
+		public str Description { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -991,7 +1052,8 @@ namespace TS3Client.Messages
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
+			case "channel_description": Description = Ts3String.Unescape(value); break;
 			
 			}
 
@@ -1026,7 +1088,8 @@ namespace TS3Client.Messages
 				case "channel_flag_maxfamilyclients_unlimited": foreach(var toi in toc) { toi.IsMaxFamilyClientsUnlimited = IsMaxFamilyClientsUnlimited; } break;
 				case "channel_flag_maxfamilyclients_inherited": foreach(var toi in toc) { toi.InheritsMaxFamilyClients = InheritsMaxFamilyClients; } break;
 				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
-				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				case "cpid": foreach(var toi in toc) { toi.ParentId = ParentId; } break;
+				case "channel_description": foreach(var toi in toc) { toi.Description = Description; } break;
 				}
 			}
 
@@ -1063,7 +1126,8 @@ namespace TS3Client.Messages
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
-		public ChannelId ChannelParentId { get; set; }
+		public ChannelId ParentId { get; set; }
+		public str Description { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1095,7 +1159,8 @@ namespace TS3Client.Messages
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
 			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
+			case "channel_description": Description = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -1134,7 +1199,8 @@ namespace TS3Client.Messages
 				case "channel_flag_maxfamilyclients_unlimited": foreach(var toi in toc) { toi.IsMaxFamilyClientsUnlimited = IsMaxFamilyClientsUnlimited; } break;
 				case "channel_flag_maxfamilyclients_inherited": foreach(var toi in toc) { toi.InheritsMaxFamilyClients = InheritsMaxFamilyClients; } break;
 				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
-				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				case "cpid": foreach(var toi in toc) { toi.ParentId = ParentId; } break;
+				case "channel_description": foreach(var toi in toc) { toi.Description = Description; } break;
 				}
 			}
 
@@ -1714,7 +1780,7 @@ namespace TS3Client.Messages
 		
 
 		public ChannelId ChannelId { get; set; }
-		public ChannelId ChannelParentId { get; set; }
+		public ChannelId ParentId { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
 		public Codec Codec { get; set; }
@@ -1744,7 +1810,7 @@ namespace TS3Client.Messages
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
@@ -1781,7 +1847,7 @@ namespace TS3Client.Messages
 				{
 
 				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
-				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				case "cpid": foreach(var toi in toc) { toi.ParentId = ParentId; } break;
 				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
 				case "channel_topic": foreach(var toi in toc) { toi.Topic = Topic; } break;
 				case "channel_codec": foreach(var toi in toc) { toi.Codec = Codec; } break;
@@ -1846,7 +1912,7 @@ namespace TS3Client.Messages
 		
 
 		public ChannelId ChannelId { get; set; }
-		public ChannelId ChannelParentId { get; set; }
+		public ChannelId ParentId { get; set; }
 		public i32 Order { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -1855,7 +1921,7 @@ namespace TS3Client.Messages
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
 			case "order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
 			
 			}
@@ -1871,7 +1937,7 @@ namespace TS3Client.Messages
 				{
 
 				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
-				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				case "cpid": foreach(var toi in toc) { toi.ParentId = ParentId; } break;
 				case "order": foreach(var toi in toc) { toi.Order = Order; } break;
 				}
 			}
@@ -1890,7 +1956,7 @@ namespace TS3Client.Messages
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 		public Reason Reason { get; set; }
-		public ChannelId ChannelParentId { get; set; }
+		public ChannelId ParentId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1903,7 +1969,7 @@ namespace TS3Client.Messages
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelParentId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
 			
 			}
 
@@ -1923,7 +1989,7 @@ namespace TS3Client.Messages
 				case "invokername": foreach(var toi in toc) { toi.InvokerName = InvokerName; } break;
 				case "invokeruid": foreach(var toi in toc) { toi.InvokerUid = InvokerUid; } break;
 				case "reasonid": foreach(var toi in toc) { toi.Reason = Reason; } break;
-				case "cpid": foreach(var toi in toc) { toi.ChannelParentId = ChannelParentId; } break;
+				case "cpid": foreach(var toi in toc) { toi.ParentId = ParentId; } break;
 				}
 			}
 
@@ -3613,7 +3679,7 @@ namespace TS3Client.Messages
 		public bool OutputHardwareEnabled { get; set; }
 		public str DefaultChannel { get; set; }
 		public str DefaultChannelPassword { get; set; }
-		public str ServerPassword { get; set; }
+		public str Password { get; set; }
 		public str Metadata { get; set; }
 		public str ClientVersionSign { get; set; }
 		public u64 ClientKeyOffset { get; set; }
@@ -3633,7 +3699,7 @@ namespace TS3Client.Messages
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_default_channel": DefaultChannel = Ts3String.Unescape(value); break;
 			case "client_default_channel_password": DefaultChannelPassword = Ts3String.Unescape(value); break;
-			case "client_server_password": ServerPassword = Ts3String.Unescape(value); break;
+			case "client_server_password": Password = Ts3String.Unescape(value); break;
 			case "client_meta_data": Metadata = Ts3String.Unescape(value); break;
 			case "client_version_sign": ClientVersionSign = Ts3String.Unescape(value); break;
 			case "client_key_offset": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientKeyOffset = oval; } break;
@@ -3660,7 +3726,7 @@ namespace TS3Client.Messages
 				case "client_output_hardware": foreach(var toi in toc) { toi.OutputHardwareEnabled = OutputHardwareEnabled; } break;
 				case "client_default_channel": foreach(var toi in toc) { toi.DefaultChannel = DefaultChannel; } break;
 				case "client_default_channel_password": foreach(var toi in toc) { toi.DefaultChannelPassword = DefaultChannelPassword; } break;
-				case "client_server_password": foreach(var toi in toc) { toi.ServerPassword = ServerPassword; } break;
+				case "client_server_password": foreach(var toi in toc) { toi.Password = Password; } break;
 				case "client_meta_data": foreach(var toi in toc) { toi.Metadata = Metadata; } break;
 				case "client_version_sign": foreach(var toi in toc) { toi.ClientVersionSign = ClientVersionSign; } break;
 				case "client_key_offset": foreach(var toi in toc) { toi.ClientKeyOffset = ClientKeyOffset; } break;
@@ -4625,6 +4691,15 @@ namespace TS3Client.Messages
 		public bool OutputMuted { get; set; }
 		public bool IsAway { get; set; }
 		public str AwayMessage { get; set; }
+		public bool InputHardwareEnabled { get; set; }
+		public bool OutputHardwareEnabled { get; set; }
+		public bool IsChannelCommander { get; set; }
+		public str AvatarHash { get; set; }
+		public str PhoneticName { get; set; }
+		public DateTime TalkPowerRequestTime { get; set; }
+		public str TalkPowerRequestMessage { get; set; }
+		public bool IsRecording { get; set; }
+		public str Badges { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4636,6 +4711,15 @@ namespace TS3Client.Messages
 			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
+			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
+			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
+			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
+			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
+			case "client_badges": Badges = Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4654,6 +4738,15 @@ namespace TS3Client.Messages
 				case "client_output_muted": foreach(var toi in toc) { toi.OutputMuted = OutputMuted; } break;
 				case "client_away": foreach(var toi in toc) { toi.IsAway = IsAway; } break;
 				case "client_away_message": foreach(var toi in toc) { toi.AwayMessage = AwayMessage; } break;
+				case "client_input_hardware": foreach(var toi in toc) { toi.InputHardwareEnabled = InputHardwareEnabled; } break;
+				case "client_output_hardware": foreach(var toi in toc) { toi.OutputHardwareEnabled = OutputHardwareEnabled; } break;
+				case "client_is_channel_commander": foreach(var toi in toc) { toi.IsChannelCommander = IsChannelCommander; } break;
+				case "client_flag_avatar": foreach(var toi in toc) { toi.AvatarHash = AvatarHash; } break;
+				case "client_nickname_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
+				case "client_talk_request": foreach(var toi in toc) { toi.TalkPowerRequestTime = TalkPowerRequestTime; } break;
+				case "client_talk_request_msg": foreach(var toi in toc) { toi.TalkPowerRequestMessage = TalkPowerRequestMessage; } break;
+				case "client_is_recording": foreach(var toi in toc) { toi.IsRecording = IsRecording; } break;
+				case "client_badges": foreach(var toi in toc) { toi.Badges = Badges; } break;
 				}
 			}
 
@@ -4679,6 +4772,22 @@ namespace TS3Client.Messages
 		public i64 TotalUploadQuota { get; set; }
 		public i64 TotalDownloadQuota { get; set; }
 		public bool InputMuted { get; set; }
+		public bool InputHardwareEnabled { get; set; }
+		public bool OutputHardwareEnabled { get; set; }
+		public str Description { get; set; }
+		public bool IsPrioritySpeaker { get; set; }
+		public bool IsChannelCommander { get; set; }
+		public str AvatarHash { get; set; }
+		public DateTime TalkPowerRequestTime { get; set; }
+		public str TalkPowerRequestMessage { get; set; }
+		public bool TalkPowerGranted { get; set; }
+		public str PhoneticName { get; set; }
+		public bool IsRecording { get; set; }
+		public ServerGroupId[] ServerGroups { get; set; }
+		public str MyTeamSpeakId { get; set; }
+		public str Badges { get; set; }
+		public i32 TalkPower { get; set; }
+		public IconHash IconId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4699,6 +4808,22 @@ namespace TS3Client.Messages
 			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
 			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
+			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
+			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
+			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
+			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
+			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out ServerGroupId oval, out _)) ServerGroups[i] = oval; } if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_myteamspeak_id": MyTeamSpeakId = Ts3String.Unescape(value); break;
+			case "client_badges": Badges = Ts3String.Unescape(value); break;
+			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
+			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			
 			}
 
@@ -4726,6 +4851,22 @@ namespace TS3Client.Messages
 				case "client_total_bytes_uploaded": foreach(var toi in toc) { toi.TotalUploadQuota = TotalUploadQuota; } break;
 				case "client_total_bytes_downloaded": foreach(var toi in toc) { toi.TotalDownloadQuota = TotalDownloadQuota; } break;
 				case "client_input_muted": foreach(var toi in toc) { toi.InputMuted = InputMuted; } break;
+				case "client_input_hardware": foreach(var toi in toc) { toi.InputHardwareEnabled = InputHardwareEnabled; } break;
+				case "client_output_hardware": foreach(var toi in toc) { toi.OutputHardwareEnabled = OutputHardwareEnabled; } break;
+				case "client_description": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "client_is_priority_speaker": foreach(var toi in toc) { toi.IsPrioritySpeaker = IsPrioritySpeaker; } break;
+				case "client_is_channel_commander": foreach(var toi in toc) { toi.IsChannelCommander = IsChannelCommander; } break;
+				case "client_flag_avatar": foreach(var toi in toc) { toi.AvatarHash = AvatarHash; } break;
+				case "client_talk_request": foreach(var toi in toc) { toi.TalkPowerRequestTime = TalkPowerRequestTime; } break;
+				case "client_talk_request_msg": foreach(var toi in toc) { toi.TalkPowerRequestMessage = TalkPowerRequestMessage; } break;
+				case "client_is_talker": foreach(var toi in toc) { toi.TalkPowerGranted = TalkPowerGranted; } break;
+				case "client_nickname_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
+				case "client_is_recording": foreach(var toi in toc) { toi.IsRecording = IsRecording; } break;
+				case "client_servergroups": foreach(var toi in toc) { toi.ServerGroups = ServerGroups; } break;
+				case "client_myteamspeak_id": foreach(var toi in toc) { toi.MyTeamSpeakId = MyTeamSpeakId; } break;
+				case "client_badges": foreach(var toi in toc) { toi.Badges = Badges; } break;
+				case "client_talk_power": foreach(var toi in toc) { toi.TalkPower = TalkPower; } break;
+				case "client_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
 				}
 			}
 
@@ -7317,13 +7458,157 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ServerEdit;
 		
 
+		public u32 ServerId { get; set; }
+		public str Name { get; set; }
+		public str WelcomeMessage { get; set; }
+		public u16 MaxClients { get; set; }
+		public str ServerPassword { get; set; }
+		public str Hostmessage { get; set; }
+		public HostMessageMode HostmessageMode { get; set; }
+		public str HostbannerUrl { get; set; }
+		public str HostbannerGfxUrl { get; set; }
+		public DurationSeconds HostbannerGfxInterval { get; set; }
+		public str HostbuttonTooltip { get; set; }
+		public str HostbuttonUrl { get; set; }
+		public str HostbuttonGfxUrl { get; set; }
+		public IconHash IconId { get; set; }
+		public u16 ReservedSlots { get; set; }
+		public HostBannerMode HostbannerMode { get; set; }
+		public str Nickname { get; set; }
+		public u64 MaxDownloadTotalBandwidth { get; set; }
+		public u64 MaxUploadTotalBandwidth { get; set; }
+		public u64 DownloadQuota { get; set; }
+		public u64 UploadQuota { get; set; }
+		public u32 AntifloodPointsTickReduce { get; set; }
+		public u32 AntifloodPointsToCommandBlock { get; set; }
+		public u32 AntifloodPointsToIpBlock { get; set; }
+		public CodecEncryptionMode CodecEncryptionMode { get; set; }
+		public u8 IdentitySecurityLevel { get; set; }
+		public ServerGroupId DefaultServerGroup { get; set; }
+		public ChannelGroupId DefaultChannelGroup { get; set; }
+		public ChannelGroupId DefaultChannelAdminGroup { get; set; }
+		public u32 ComplainAutobanCount { get; set; }
+		public DurationSeconds ComplainAutobanTime { get; set; }
+		public DurationSeconds ComplainRemoveTime { get; set; }
+		public u32 MinClientsInChannelBeforeForcedSilence { get; set; }
+		public f32 PrioritySpeakerDimmModificator { get; set; }
+		public str PhoneticName { get; set; }
+		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
+		public bool WeblistEnabled { get; set; }
+		public bool LogClient { get; set; }
+		public bool LogQuery { get; set; }
+		public bool LogChannel { get; set; }
+		public bool LogPermissions { get; set; }
+		public bool LogServer { get; set; }
+		public bool LogFileTransfer { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
+			switch(name)
+			{
+
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
+			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
+			case "virtualserver_welcomemessage": WelcomeMessage = Ts3String.Unescape(value); break;
+			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
+			case "virtualserver_password": ServerPassword = Ts3String.Unescape(value); break;
+			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
+			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
+			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
+			case "virtualserver_reserved_slots": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ReservedSlots = oval; } break;
+			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
+			case "virtualserver_nickname": Nickname = Ts3String.Unescape(value); break;
+			case "virtualserver_max_download_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxDownloadTotalBandwidth = oval; } break;
+			case "virtualserver_max_upload_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxUploadTotalBandwidth = oval; } break;
+			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = oval; } break;
+			case "virtualserver_upload_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) UploadQuota = oval; } break;
+			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = oval; } break;
+			case "virtualserver_antiflood_points_needed_command_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToCommandBlock = oval; } break;
+			case "virtualserver_antiflood_points_needed_ip_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToIpBlock = oval; } break;
+			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
+			case "virtualserver_needed_identity_security_level": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) IdentitySecurityLevel = oval; } break;
+			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) DefaultServerGroup = oval; } break;
+			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelGroup = oval; } break;
+			case "virtualserver_default_channel_admin_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelAdminGroup = oval; } break;
+			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = oval; } break;
+			case "virtualserver_complain_autoban_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainAutobanTime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_complain_remove_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainRemoveTime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_min_clients_in_channel_before_forced_silence": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientsInChannelBeforeForcedSilence = oval; } break;
+			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = oval; } break;
+			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_weblist_enabled": WeblistEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_client": LogClient = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_query": LogQuery = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_channel": LogChannel = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_permissions": LogPermissions = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_server": LogServer = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_log_filetransfer": LogFileTransfer = value.Length > 0 && value[0] != '0'; break;
+			
+			}
+
 		}
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
+			var toc = (ServerEdit[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "sid": foreach(var toi in toc) { toi.ServerId = ServerId; } break;
+				case "virtualserver_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "virtualserver_welcomemessage": foreach(var toi in toc) { toi.WelcomeMessage = WelcomeMessage; } break;
+				case "virtualserver_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
+				case "virtualserver_password": foreach(var toi in toc) { toi.ServerPassword = ServerPassword; } break;
+				case "virtualserver_hostmessage": foreach(var toi in toc) { toi.Hostmessage = Hostmessage; } break;
+				case "virtualserver_hostmessage_mode": foreach(var toi in toc) { toi.HostmessageMode = HostmessageMode; } break;
+				case "virtualserver_hostbanner_url": foreach(var toi in toc) { toi.HostbannerUrl = HostbannerUrl; } break;
+				case "virtualserver_hostbanner_gfx_url": foreach(var toi in toc) { toi.HostbannerGfxUrl = HostbannerGfxUrl; } break;
+				case "virtualserver_hostbanner_gfx_interval": foreach(var toi in toc) { toi.HostbannerGfxInterval = HostbannerGfxInterval; } break;
+				case "virtualserver_hostbutton_tooltip": foreach(var toi in toc) { toi.HostbuttonTooltip = HostbuttonTooltip; } break;
+				case "virtualserver_hostbutton_url": foreach(var toi in toc) { toi.HostbuttonUrl = HostbuttonUrl; } break;
+				case "virtualserver_hostbutton_gfx_url": foreach(var toi in toc) { toi.HostbuttonGfxUrl = HostbuttonGfxUrl; } break;
+				case "virtualserver_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
+				case "virtualserver_reserved_slots": foreach(var toi in toc) { toi.ReservedSlots = ReservedSlots; } break;
+				case "virtualserver_hostbanner_mode": foreach(var toi in toc) { toi.HostbannerMode = HostbannerMode; } break;
+				case "virtualserver_nickname": foreach(var toi in toc) { toi.Nickname = Nickname; } break;
+				case "virtualserver_max_download_total_bandwidth": foreach(var toi in toc) { toi.MaxDownloadTotalBandwidth = MaxDownloadTotalBandwidth; } break;
+				case "virtualserver_max_upload_total_bandwidth": foreach(var toi in toc) { toi.MaxUploadTotalBandwidth = MaxUploadTotalBandwidth; } break;
+				case "virtualserver_download_quota": foreach(var toi in toc) { toi.DownloadQuota = DownloadQuota; } break;
+				case "virtualserver_upload_quota": foreach(var toi in toc) { toi.UploadQuota = UploadQuota; } break;
+				case "virtualserver_antiflood_points_tick_reduce": foreach(var toi in toc) { toi.AntifloodPointsTickReduce = AntifloodPointsTickReduce; } break;
+				case "virtualserver_antiflood_points_needed_command_block": foreach(var toi in toc) { toi.AntifloodPointsToCommandBlock = AntifloodPointsToCommandBlock; } break;
+				case "virtualserver_antiflood_points_needed_ip_block": foreach(var toi in toc) { toi.AntifloodPointsToIpBlock = AntifloodPointsToIpBlock; } break;
+				case "virtualserver_codec_encryption_mode": foreach(var toi in toc) { toi.CodecEncryptionMode = CodecEncryptionMode; } break;
+				case "virtualserver_needed_identity_security_level": foreach(var toi in toc) { toi.IdentitySecurityLevel = IdentitySecurityLevel; } break;
+				case "virtualserver_default_server_group": foreach(var toi in toc) { toi.DefaultServerGroup = DefaultServerGroup; } break;
+				case "virtualserver_default_channel_group": foreach(var toi in toc) { toi.DefaultChannelGroup = DefaultChannelGroup; } break;
+				case "virtualserver_default_channel_admin_group": foreach(var toi in toc) { toi.DefaultChannelAdminGroup = DefaultChannelAdminGroup; } break;
+				case "virtualserver_complain_autoban_count": foreach(var toi in toc) { toi.ComplainAutobanCount = ComplainAutobanCount; } break;
+				case "virtualserver_complain_autoban_time": foreach(var toi in toc) { toi.ComplainAutobanTime = ComplainAutobanTime; } break;
+				case "virtualserver_complain_remove_time": foreach(var toi in toc) { toi.ComplainRemoveTime = ComplainRemoveTime; } break;
+				case "virtualserver_min_clients_in_channel_before_forced_silence": foreach(var toi in toc) { toi.MinClientsInChannelBeforeForcedSilence = MinClientsInChannelBeforeForcedSilence; } break;
+				case "virtualserver_priority_speaker_dimm_modificator": foreach(var toi in toc) { toi.PrioritySpeakerDimmModificator = PrioritySpeakerDimmModificator; } break;
+				case "virtualserver_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
+				case "virtualserver_channel_temp_delete_delay_default": foreach(var toi in toc) { toi.TempChannelDefaultDeleteDelay = TempChannelDefaultDeleteDelay; } break;
+				case "virtualserver_weblist_enabled": foreach(var toi in toc) { toi.WeblistEnabled = WeblistEnabled; } break;
+				case "virtualserver_log_client": foreach(var toi in toc) { toi.LogClient = LogClient; } break;
+				case "virtualserver_log_query": foreach(var toi in toc) { toi.LogQuery = LogQuery; } break;
+				case "virtualserver_log_channel": foreach(var toi in toc) { toi.LogChannel = LogChannel; } break;
+				case "virtualserver_log_permissions": foreach(var toi in toc) { toi.LogPermissions = LogPermissions; } break;
+				case "virtualserver_log_server": foreach(var toi in toc) { toi.LogServer = LogServer; } break;
+				case "virtualserver_log_filetransfer": foreach(var toi in toc) { toi.LogFileTransfer = LogFileTransfer; } break;
+				}
+			}
+
 		}
 	}
 
@@ -9413,7 +9698,7 @@ namespace TS3Client.Messages
 		ClientNameFromDbId,
 		///<summary>[C2S] ntfy:clientgetnamefromdbid</summary>
 		ClientNameFromDbIdRequest,
-		///<summary>[S2C] ntfy:clientgetnamefromuid</summary>
+		///<summary>[S2C] ntfy:notifyclientnamefromuid</summary>
 		ClientNameFromUid,
 		///<summary>[C2S] ntfy:clientgetnamefromuid</summary>
 		ClientNameFromUidRequest,
@@ -9435,7 +9720,7 @@ namespace TS3Client.Messages
 		ClientSetServerQueryLogin,
 		///<summary>[C2S] ntfy:clientsetserverquerylogin</summary>
 		ClientSetServerQueryLoginRequest,
-		///<summary>[S2C] ntfy:clientgetuidfromclid</summary>
+		///<summary>[S2C] ntfy:notifyclientuidfromclid</summary>
 		ClientUidFromClid,
 		///<summary>[C2S] ntfy:clientgetuidfromclid</summary>
 		ClientUidFromClidRequest,
@@ -9713,14 +9998,14 @@ namespace TS3Client.Messages
 			case "notifyclientleftview": return NotificationType.ClientLeftView;
 			case "notifyclientmoved": return NotificationType.ClientMoved;
 			case "notifyclientnamefromdbid": return NotificationType.ClientNameFromDbId;
-			case "clientgetnamefromuid": return NotificationType.ClientNameFromUid;
+			case "notifyclientnamefromuid": return NotificationType.ClientNameFromUid;
 			case "notifyclientneededpermissions": return NotificationType.ClientNeededPermissions;
 			case "notifyclientpermlist": return NotificationType.ClientPermList;
 			case "notifyclientpoke": return NotificationType.ClientPoke;
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
 			case "notifyservergroupclientdeleted": return NotificationType.ClientServerGroupRemoved;
 			case "notifyclientserverqueryloginpassword": return NotificationType.ClientSetServerQueryLogin;
-			case "clientgetuidfromclid": return NotificationType.ClientUidFromClid;
+			case "notifyclientuidfromclid": return NotificationType.ClientUidFromClid;
 			case "notifyclientupdated": return NotificationType.ClientUpdated;
 			case "error": return NotificationType.CommandError;
 			case "notifycomplainlist": return NotificationType.ComplainList;

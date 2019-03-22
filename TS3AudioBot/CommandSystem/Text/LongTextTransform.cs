@@ -16,7 +16,6 @@ namespace TS3AudioBot.CommandSystem.Text
 	using TS3Client.Commands;
 	using TS3Client.Helper;
 
-	// TODO fix ts3 stupid byte counting...
 	public static class LongTextTransform
 	{
 		private static readonly byte[] SeparatorWeight = new byte[] { (byte)'\n', (byte)',', (byte)' ' };

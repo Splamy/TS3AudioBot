@@ -346,8 +346,7 @@ namespace TS3AudioBot
 
 		internal bool SetupRights(string key)
 		{
-			// TODO get own dbid !!!
-			var dbResult = TsFullClient.ClientGetDbIdFromUid(identity.ClientUid);
+			var dbResult = TsFullClient.GetClientDbIdFromUid(identity.ClientUid);
 			if (!dbResult.Ok)
 			{
 				Log.Error("Getting own dbid failed ({0})", dbResult.Error.ErrorFormat());

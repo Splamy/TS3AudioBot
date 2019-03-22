@@ -156,7 +156,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		private E<string> LoadCommand(BotCommand com) // TODO test
+		private E<string> LoadCommand(BotCommand com)
 		{
 			if (commandPaths.Contains(com.FullQualifiedName))
 				return "Command already exists: " + com.InvokeName;

@@ -86,7 +86,6 @@ namespace TS3AudioBot.Web.Interface
 			}
 
 			response.ContentLength64 = returnData.Length;
-			//response.ContentEncoding = Encoding.UTF8; // TODO ???
 			response.ContentType = MimeType ?? "text/plain";
 
 			return returnData;

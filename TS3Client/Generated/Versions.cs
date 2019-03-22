@@ -57,9 +57,12 @@ namespace TS3Client.Full
 
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		public static VersionSign VER_WIN_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", ClientPlatform.Windows, "DX5NIYLvfJEUjuIbCidnoeozxIDRRkpq3I9vVMBmE9L2qnekOoBzSenkzsg2lC9CMv8K5hkEzhr2TYUYSwUXCg==");
+		public static VersionSign VER_OSX_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", ClientPlatform.Osx, "SttEnjoWE8jqIM6BOHSfiZP9DGjW0EP/ajU4bdKqgGMV4aYq/kzwVA9gxbmdIzV4lbaokvXBqrRjfBHrTVh8Cg==");
 		public static VersionSign VER_IOS_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", ClientPlatform.Ios, "XrAf+Buq6Eb0ehEW/niFp06YX+nGGOS0Ke4MoUBzn+cX9q6G5C0A/d5XtgcNMe8r9jJgV/adIYVpsGS3pVlSAA==");
 		public static VersionSign VER_AND_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", ClientPlatform.Android, "AWb948BY32Z7bpIyoAlQguSmxOGcmjESPceQe1DpW5IZ4+AW1KfTk2VUIYNfUPsxReDJMCtlhVKslzhR2lf0AA==");
-		public static VersionSign VER_WIN_0_0_1 { get; } = new VersionSign("0.0.1 [Build: 1543414034]", ClientPlatform.Windows, "MoJT06d4BNOJrTlC9EnTi74rpu2rv8TKvXck1FlpNfB1IQO2DgZpHPjQbcpMnkstYFd6WBWVJvM2GAr71K+VAw==");
+		public static VersionSign VER_WIN_0_0_1 { get; } = new VersionSign("0.0.1 [Build: 1549713549]", ClientPlatform.Windows, "OgAHgZJmuhL/SMIbmWzGNqvJ47cOAWHSVAcYDxTJswU/B6zzEDD+kB711uqlyFH9JDZb1tbzbi45+NlcMwlJCA==");
+		public static VersionSign VER_OSX_0_0_1 { get; } = new VersionSign("0.0.1 [Build: 1549713549]", ClientPlatform.Osx, "xNaB5RLET+B+Y02CirR0S+qEKUqwhgQqOAbg3QHDeekc1bl+bJ68FDJUW0LZ5ewY23Vrm5LtXpRCloKIoDUrBA==");
+		public static VersionSign VER_LIN_0_0_1 { get; } = new VersionSign("0.0.1 [Build: 1549713549]", ClientPlatform.Linux, "7XvKmrk7uid2ixHFeERGqcC8vupeQqDypLtw2lY9slDNPojEv//F47UaDLG+TmVk4r6S0TseIKefzBpiRtLDAQ==");
 		public static VersionSign VER_IOS_3_2_3 { get; } = new VersionSign("3.2.3 [Build: 1538494750]", ClientPlatform.Ios, "YgRxbZGpaxVAPuC3bln8HiCdgyx8EgM37H+VCSjZnn+05+lo1w74P9LFHSVqr1NBuB5YtKNWp0xjHRbBZVJtDQ==");
 		public static VersionSign VER_WIN_3_2_3 { get; } = new VersionSign("3.2.3 [Build: 1538467030]", ClientPlatform.Windows, "dZ1i/CsCaAh4F7Pi2F/FfaBpdTmUuNVsAIRnqm86FUR3HhwBRn+xlmbwRF8gObgFMuwFMCLmawncFWplSILKAQ==");
 		public static VersionSign VER_OSX_3_2_3 { get; } = new VersionSign("3.2.3 [Build: 1538467030]", ClientPlatform.Osx, "yr8F54NuExnwarhvcJ27f3LvDop1wqwrhyqEVvpliRKi0hLD3e+cW2mJWRkq0eDjPRQ2kzPvBst9yNH1MsuYAQ==");

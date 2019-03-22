@@ -121,7 +121,7 @@ namespace TS3AudioBot.Rights
 					{
 						if (!databaseId.HasValue)
 						{
-							var resultDbId = ts.TsFullClient.ClientGetDbIdFromUid(invoker.ClientUid);
+							var resultDbId = ts.TsFullClient.GetClientDbIdFromUid(invoker.ClientUid);
 							if (resultDbId.Ok)
 							{
 								databaseId = resultDbId.Value.ClientDbId;

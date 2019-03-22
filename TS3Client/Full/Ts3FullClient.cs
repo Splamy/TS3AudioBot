@@ -20,10 +20,8 @@ namespace TS3Client.Full
 	using System.Threading;
 	using System.Threading.Tasks;
 	using ChannelIdT = System.UInt64;
-	using ClientDbIdT = System.UInt64;
 	using ClientIdT = System.UInt16;
 	using CmdR = System.E<Messages.CommandError>;
-	using Uid = System.String;
 
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed partial class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
@@ -346,14 +344,13 @@ namespace TS3Client.Full
 		/// <para>NOTE: Do not expect all commands to work exactly like in the query documentation.</para>
 		/// </summary>
 		/// <typeparam name="T">The type to deserialize the response to. Use <see cref="ResponseDictionary"/> for unknow response data.</typeparam>
-		/// <param name="com">The raw command to send.
+		/// <param name="com">The command to send.
 		/// <para>NOTE: By default does the command expect an answer from the server. Set <see cref="Ts3Command.ExpectResponse"/> to false
-		/// if the client hangs after a special command (<see cref="SendCommand{T}"/> will return <code>null</code> instead).</para></param>
+		/// if the client hangs after a special command (<see cref="Send{T}(Ts3Command)"/> will return a generic error instead).</para></param>
 		/// <returns>Returns <code>R(OK)</code> with an enumeration of the deserialized and split up in <see cref="T"/> objects data.
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
-		public override R<T[], CommandError> SendCommand<T>(Ts3Command com)
+		public override R<T[], CommandError> Send<T>(Ts3Command com)
 		{
-			// TODO: try using deserializer/msgproc as a factory
 			using (var wb = new WaitBlock(msgProc.Deserializer, false))
 			{
 				var result = SendCommandBase(wb, com);
@@ -362,11 +359,20 @@ namespace TS3Client.Full
 				if (com.ExpectResponse)
 					return wb.WaitForMessage<T>();
 				else
-					// This might not be the nicest way to return in this case
-					// but we don't know what the response is, so this acceptable.
-					return Util.NoResultCommandError;
+					return Array.Empty<T>();
 			}
 		}
+
+		/// <summary>
+		/// Sends a command without expecting a 'error' return code.
+		/// <para>NOTE: Do not use this method unless you are sure the ts3 command fits the criteria.</para>
+		/// </summary>
+		/// <param name="command">The command to send.</param>
+		public CmdR SendNoResponsed(Ts3Command command)
+			=> Send<ResponseVoid>(command.ExpectsResponse(false));
+
+		public override R<T[], CommandError> SendHybrid<T>(Ts3Command com, NotificationType type)
+			=> SendNotifyCommand(com, type).UnwrapNotification<T>();
 
 		public R<LazyNotification, CommandError> SendNotifyCommand(Ts3Command com, params NotificationType[] dependsOn)
 		{
@@ -466,7 +472,7 @@ namespace TS3Client.Full
 		#region FULLCLIENT SPECIFIC COMMANDS
 
 		public CmdR ChangeIsChannelCommander(bool isChannelCommander)
-			=> SendCommand<ResponseVoid>(new Ts3Command("clientupdate") {
+			=> Send<ResponseVoid>(new Ts3Command("clientupdate") {
 				{ "client_is_channel_commander", isChannelCommander },
 			});
 
@@ -503,15 +509,15 @@ namespace TS3Client.Full
 			});
 
 		public CmdR ChannelSubscribeAll()
-			=> SendCommand<ResponseVoid>(new Ts3Command("channelsubscribeall"));
+			=> Send<ResponseVoid>(new Ts3Command("channelsubscribeall"));
 
 		public CmdR ChannelUnsubscribeAll()
-			=> SendCommand<ResponseVoid>(new Ts3Command("channelunsubscribeall"));
+			=> Send<ResponseVoid>(new Ts3Command("channelunsubscribeall"));
 
-		public CmdR PokeClient(ClientIdT clientId, string msg)
+		public CmdR PokeClient(string message, ClientIdT clientId)
 			=> SendNoResponsed(new Ts3Command("clientpoke") {
 				{ "clid", clientId },
-				{ "msg", msg },
+				{ "msg", message },
 			});
 
 		public void SendAudio(in ReadOnlySpan<byte> data, Codec codec)
@@ -595,7 +601,7 @@ namespace TS3Client.Full
 				NotificationType.ServerUpdated).UnwrapNotification<ServerUpdated>().WrapSingle();
 
 		public CmdR SendPluginCommand(string name, string data, PluginTargetMode targetmode)
-			=> SendCommand<ResponseVoid>(new Ts3Command("plugincmd") {
+			=> Send<ResponseVoid>(new Ts3Command("plugincmd") {
 				{ "name", name },
 				{ "data", data },
 				{ "targetmode", (int)targetmode },
@@ -618,11 +624,6 @@ namespace TS3Client.Full
 				.Select(x => new ServerGroupAddResponse() { ServerGroupId = x.ServerGroupId })
 				.WrapSingle();
 		}
-
-		public override R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
-			=> SendNotifyCommand(new Ts3Command("servergroupsbyclientid") {
-				{ "cldbid", clDbId }
-			}, NotificationType.ServerGroupsByClientId).UnwrapNotification<ServerGroupsByClientId>();
 
 		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
@@ -670,58 +671,6 @@ namespace TS3Client.Full
 				return new CommandError() { Id = ftresult.Value.Status, Message = ftresult.Value.Message };
 			}
 		}
-
-		public override R<FileTransfer[], CommandError> FileTransferList()
-			=> SendNotifyCommand(new Ts3Command("ftlist"),
-				NotificationType.FileTransfer).UnwrapNotification<FileTransfer>();
-
-		public override R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
-			=> SendNotifyCommand(new Ts3Command("ftgetfilelist") {
-				{ "cid", channelId },
-				{ "path", path },
-				{ "cpw", channelPassword }
-			}, NotificationType.FileList).UnwrapNotification<FileList>();
-
-		public override R<FileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
-			=> SendNotifyCommand(new Ts3Command("ftgetfileinfo") {
-				{ "cid", channelId },
-				{ "cpw", channelPassword },
-				{ "name", path }
-			}, NotificationType.FileInfo).UnwrapNotification<FileInfo>();
-
-		public override R<ClientDbIdFromUid, CommandError> ClientGetDbIdFromUid(Uid clientUid)
-		{
-			var result = SendNotifyCommand(new Ts3Command("clientgetdbidfromuid") {
-				{ "cluid", clientUid }
-			}, NotificationType.ClientDbIdFromUid);
-			if (!result.Ok)
-				return result.Error;
-			return result.Value.Notifications
-				.Cast<ClientDbIdFromUid>()
-				.Where(x => x.ClientUid == clientUid)
-				.Take(1)
-				.WrapSingle();
-		}
-
-		public override R<ClientIds[], CommandError> GetClientIds(Uid clientUid)
-			=> SendNotifyCommand(new Ts3Command("clientgetids") {
-				{ "cluid", clientUid }
-			}, NotificationType.ClientIds).UnwrapNotification<ClientIds>();
-
-		public override R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission)
-			=> SendNotifyCommand(new Ts3Command("permoverview") {
-				{ "cldbid", clientDbId },
-				{ "cid", channelId },
-				Ts3PermissionHelper.GetAsMultiParameter(msgProc.Deserializer.PermissionTransform, permission)
-			}, NotificationType.PermOverview).UnwrapNotification<PermOverview>();
-
-		public override R<PermList[], CommandError> PermissionList()
-			=> SendNotifyCommand(new Ts3Command("permissionlist"),
-				NotificationType.PermList).UnwrapNotification<PermList>();
-
-		public override R<ServerConnectionInfo, CommandError> GetServerConnectionInfo()
-			=> SendNotifyCommand(new Ts3Command("serverrequestconnectioninfo"),
-				NotificationType.ServerConnectionInfo).UnwrapNotification<ServerConnectionInfo>().WrapSingle();
 
 		#endregion
 

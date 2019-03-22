@@ -21,8 +21,13 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 		public void AddCommand(string name, ICommand command) => commands.Add(name, command ?? throw new ArgumentNullException(nameof(command)));
 		public void RemoveCommand(string name) => commands.Remove(name);
-		// TODO: test if command does not exist
-		public void RemoveCommand(ICommand command) => commands.Remove(commands.FirstOrDefault(kvp => kvp.Value == command).Key);
+		public bool RemoveCommand(ICommand command)
+		{
+			var com = commands.FirstOrDefault(kvp => kvp.Value == command);
+			if (com.Key is null || com.Value is null)
+				return false;
+			return commands.Remove(com.Key);
+		}
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
 		public ICommand GetCommand(string name) => commands.TryGetValue(name, out var com) ? com : null;
 		public bool IsEmpty => commands.Count == 0;

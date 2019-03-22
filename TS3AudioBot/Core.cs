@@ -119,7 +119,6 @@ namespace TS3AudioBot
 			injector.RegisterModule(new TokenManager(), x => x.Initialize());
 			injector.RegisterModule(new PlaylistPool());
 			injector.RegisterModule(new CommandManager(), x => x.Initialize());
-			// TODO fix structure
 			// TODO fix interaction: rfm needs to be in the same injector as the commandsystem, otherwise duplicate error
 			// Also TODO find solution to move commandsystem to bot, without breaking api
 			injector.RegisterModule(new ResourceFactoryManager(config.Factories), x => x.Initialize());
