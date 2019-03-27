@@ -110,20 +110,24 @@ namespace TS3AudioBot.Web
 				IHttpContext context;
 				try
 				{
-					if (!(webListener?.IsListening ?? false))
+					if (cancelToken.IsCancellationRequested
+						|| !(webListener?.IsListening ?? false))
 						break;
 
 					context = await webListener.GetContextAsync(cancelToken.Token);
 
 					if (cancelToken.IsCancellationRequested)
-					{
 						break;
-					}
+				}
+				catch (OperationCanceledException ex)
+				{
+					Log.Debug(ex, "WebServer exit requested");
+					break;
 				}
 				catch (Exception ex)
 				{
-					Log.Debug(ex, "WebListener exception");
-					break;
+					Log.Error(ex, "WebServer exception");
+					continue;
 				}
 
 				IHttpResponse response = context.Response;
@@ -159,9 +163,9 @@ namespace TS3AudioBot.Web
 					}
 				}
 				// These seem to happen on connections which are closed too fast or failed to open correctly.
-				catch (Exception ex) when (ex is SocketException || ex is System.IO.IOException) { Log.Debug(ex, "WebListener exception"); }
+				catch (Exception ex) when (ex is SocketException || ex is System.IO.IOException) { Log.Debug(ex, "WebServer exception"); }
 				// Catch everything to keep the webserver running, but print a warning.
-				catch (Exception ex) { Log.Warn(ex, "WebListener exception"); }
+				catch (Exception ex) { Log.Warn(ex, "WebServer exception"); }
 				finally
 				{
 					response.Close();

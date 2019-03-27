@@ -22,7 +22,7 @@ namespace TS3AudioBot.Web.Api
 	using System;
 	using System.IO;
 	using System.Net;
-	using System.Security.Principal;
+	using System.Text;
 	using System.Text.RegularExpressions;
 
 	public sealed class WebApi : WebComponent
@@ -57,6 +57,8 @@ namespace TS3AudioBot.Web.Api
 		{
 			var response = context.Response;
 
+			// TOD0 rework responses to track length, so we can use keep-=alive
+			response.KeepAlive = false;
 			response.ContentType = "application/json";
 			response.Headers["Access-Control-Allow-Origin"] = "*";
 			response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";
@@ -198,7 +200,9 @@ namespace TS3AudioBot.Web.Api
 			}
 
 			using (var responseStream = new StreamWriter(response.OutputStream))
+			{
 				responseStream.Write(JsonConvert.SerializeObject(jsonError, ErrorSerializeSettings));
+			}
 		}
 
 		private static void UnescapeAstTree(AstNode node)
@@ -222,72 +226,40 @@ namespace TS3AudioBot.Web.Api
 
 		private R<InvokerData, string> Authenticate(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
-			var identity = GetIdentity(context);
-			if (identity is null)
-				return InvokerData.Anonymous;
-
-			var result = TokenManager.GetToken(identity.Name);
-			if (!result.Ok)
-				return ErrorNoUserOrToken;
-
-			var token = result.Value;
-			var invoker = new InvokerData(identity.Name,
-				token: token.Value);
-
-			switch (identity.AuthenticationType)
-			{
-			case "Basic":
-				var identityBasic = (HttpListenerBasicIdentity)identity;
-
-				if (token.Value != identityBasic.Password)
-					return ErrorAuthFailure;
-
-				return invoker;
-
-			default:
-				return ErrorUnsupportedScheme;
-			}
-		}
-
-		private static IIdentity GetIdentity(Unosquare.Labs.EmbedIO.IHttpContext context)
-		{
-			IIdentity identity = context.User?.Identity;
-			if (identity != null)
-				return identity;
-
 			var headerVal = context.Request.Headers["Authorization"];
 			if (string.IsNullOrEmpty(headerVal))
-				return null;
+				return InvokerData.Anonymous;
 
 			var authParts = headerVal.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 			if (authParts.Length < 2)
-				return null;
+				return ErrorAuthFailure;
 
-			if (string.Equals(authParts[0], "DIGEST", StringComparison.OrdinalIgnoreCase))
+			if (!string.Equals(authParts[0], "BASIC", StringComparison.OrdinalIgnoreCase))
+				return ErrorUnsupportedScheme;
+
+			string userUid;
+			string token;
+			try
 			{
-				string name = null;
-				string hash = null;
-				string nonce = null;
-				string realm = null;
-				string uri = null;
+				var data = Convert.FromBase64String(authParts[1]);
+				var index = Array.IndexOf(data, (byte)':');
 
-				for (var match = DigestMatch.Match(authParts[1]); match.Success; match = match.NextMatch())
-				{
-					var value = match.Groups[2].Value;
-					switch (match.Groups[1].Value.ToUpperInvariant())
-					{
-					case "USERNAME": name = value; break;
-					case "REALM": realm = value; break;
-					case "NONCE": nonce = value; break;
-					case "RESPONSE": hash = value; break;
-					case "URI": uri = value; break;
-					}
-				}
-
-				return new HttpListenerDigestIdentity(name, nonce, hash, realm, uri);
+				if (index < 0)
+					return ErrorAuthFailure;
+				userUid = Encoding.UTF8.GetString(data, 0, index);
+				token = Encoding.UTF8.GetString(data, index + 1, data.Length - (index + 1));
 			}
+			catch (Exception) { return "Malformed base64 string"; }
 
-			return null;
+			var result = TokenManager.GetToken(userUid);
+			if (!result.Ok)
+				return ErrorNoUserOrToken;
+
+			var dbToken = result.Value;
+			if (dbToken.Value != token)
+				return ErrorAuthFailure;
+
+			return new InvokerData(userUid, token: dbToken.Value);
 		}
 	}
 }

@@ -107,6 +107,8 @@ namespace TS3AudioBot.Web.Interface
 			{
 				try
 				{
+					if (response.ContentLength64 == 0)
+						response.KeepAlive = false;
 					responseStream.Write(data, 0, data.Length);
 				}
 				catch (IOException) { }
