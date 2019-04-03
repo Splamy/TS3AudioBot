@@ -10,7 +10,6 @@
 namespace TS3AudioBot.CommandSystem.Text
 {
 	using System;
-	using System.Collections.Generic;
 	using System.Text;
 	using System.Text.RegularExpressions;
 
@@ -44,8 +43,6 @@ namespace TS3AudioBot.CommandSystem.Text
 
 		public TextModBuilder AppendFormat(AppliedTextMod format, params AppliedTextMod[] para)
 		{
-			var mods = new Stack<TextModFlag>();
-
 			if (para.Length == 0)
 			{
 				Append(format);
@@ -72,7 +69,7 @@ namespace TS3AudioBot.CommandSystem.Text
 			var close = cur & ~mod;
 			var trimClose = GetShortest(close);
 			cur = End(strb, cur, trimClose);
-			cur = cur & (~(trimClose - 1) | mod);
+			cur &= (~(trimClose - 1) | mod);
 			cur = Start(strb, cur, mod, color);
 			strb.Append(text);
 		}

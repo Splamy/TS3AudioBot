@@ -111,10 +111,14 @@ namespace TS3AudioBot.Config
 
 		protected static T Create<T>(string key, ConfigEnumerable parent, TomlObject fromToml, string doc = "") where T : ConfigEnumerable, new()
 		{
-			var table = Create<T>(key, doc);
-			table.Parent = parent;
-			table.FromToml(fromToml);
-			return table;
+			return Init(Create<T>(key, doc), parent, fromToml);
+		}
+
+		protected static T Init<T>(T part, ConfigEnumerable parent, TomlObject fromToml) where T : ConfigPart
+		{
+			part.Parent = parent;
+			part.FromToml(fromToml);
+			return part;
 		}
 
 		public static T CreateRoot<T>() where T : ConfigEnumerable, new() => Create<T>(null, null, null, "");
@@ -124,7 +128,7 @@ namespace TS3AudioBot.Config
 			TomlTable rootToml;
 			try { rootToml = Toml.ReadFile(path); }
 			catch (Exception ex) { return ex; }
-			return Create<T>(null, null, rootToml);
+			return Init<T>(null, null, rootToml);
 		}
 
 		public E<Exception> Save(string path, bool writeDefaults, bool writeDocumentation = true)

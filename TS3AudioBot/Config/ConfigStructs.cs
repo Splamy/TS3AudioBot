@@ -152,6 +152,13 @@ namespace TS3AudioBot.Config
 			"Enables colors and text highlights for respones.");
 		public ConfigValue<int> CommandComplexity { get; } = new ConfigValue<int>("command_complexity", 64,
 			"Limits the maximum command complexity to prevent endless loops.");
+
+		public ConfCommandsAlias Alias { get; } = Create<ConfCommandsAlias>("alias");
+	}
+
+	public class ConfCommandsAlias : ConfigDynamicTable<ConfigValue<string>>
+	{
+		public ConfCommandsAlias() : base(key => new ConfigValue<string>(key, "")) { }
 	}
 
 	public class ConfConnect : ConfigTable

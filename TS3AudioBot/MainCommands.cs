@@ -64,12 +64,20 @@ namespace TS3AudioBot
 			=> playManager.Enqueue(invoker, url).UnwrapThrow();
 
 		[Command("alias add")]
-		public static void CommandAliasAdd(CommandManager commandManager, string commandName, string command)
-			=> commandManager.RegisterAlias(commandName, command).UnwrapThrow();
+		public static void CommandAliasAdd(CommandManager commandManager, string commandName, string command, ConfBot confBot = null)
+		{
+			commandManager.RegisterAlias(commandName, command).UnwrapThrow();
+			var confEntry = confBot?.Commands.Alias.GetOrCreateItem(commandName);
+			if (confEntry != null)
+				confEntry.Value = command;
+		}
 
 		[Command("alias remove")]
-		public static void CommandAliasRemove(CommandManager commandManager, string commandName)
-			=> commandManager.UnregisterAlias(commandName).UnwrapThrow();
+		public static void CommandAliasRemove(CommandManager commandManager, string commandName, ConfBot confBot = null)
+		{
+			commandManager.UnregisterAlias(commandName).UnwrapThrow();
+			confBot?.Commands.Alias.RemoveItem(commandName);
+		}
 
 		[Command("alias list")]
 		public static JsonArray<string> CommandAliasList(CommandManager commandManager)
@@ -391,18 +399,18 @@ namespace TS3AudioBot
 
 			switch (target)
 			{
-			case BotCommand targetB:
-				return new JsonValue<object>(targetB.AsJsonObj);
-			case CommandGroup targetCg:
-				var subList = targetCg.Commands.Select(g => g.Key).ToArray();
-				return new JsonArray<string>(subList, string.Format(strings.cmd_help_info_contains_subfunctions, string.Join(", ", subList)));
-			case OverloadedFunctionCommand targetOfc:
-				var strb = new StringBuilder();
-				foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
-					strb.Append(botCom);
-				return new JsonValue<string>(strb.ToString());
-			default:
-				throw new CommandException(strings.cmd_help_error_unknown_error, CommandExceptionReason.CommandError);
+				case BotCommand targetB:
+					return new JsonValue<object>(targetB.AsJsonObj);
+				case CommandGroup targetCg:
+					var subList = targetCg.Commands.Select(g => g.Key).ToArray();
+					return new JsonArray<string>(subList, string.Format(strings.cmd_help_info_contains_subfunctions, string.Join(", ", subList)));
+				case OverloadedFunctionCommand targetOfc:
+					var strb = new StringBuilder();
+					foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
+						strb.Append(botCom);
+					return new JsonValue<string>(strb.ToString());
+				default:
+					throw new CommandException(strings.cmd_help_error_unknown_error, CommandExceptionReason.CommandError);
 			}
 		}
 
@@ -569,11 +577,11 @@ namespace TS3AudioBot
 			DateTime tillTime;
 			switch (time.ToLowerInvariant())
 			{
-			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
-			case "today": tillTime = DateTime.Today; break;
-			case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
-			case "week": tillTime = DateTime.Today.AddDays(-7); break;
-			default: throw new CommandException(strings.error_unrecognized_descriptor, CommandExceptionReason.CommandError);
+				case "hour": tillTime = DateTime.Now.AddHours(-1); break;
+				case "today": tillTime = DateTime.Today; break;
+				case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
+				case "week": tillTime = DateTime.Today.AddDays(-7); break;
+				default: throw new CommandException(strings.error_unrecognized_descriptor, CommandExceptionReason.CommandError);
 			}
 			var query = new SeachQuery { LastInvokedAfter = tillTime };
 			var results = historyManager.Search(query).ToArray();
@@ -602,13 +610,13 @@ namespace TS3AudioBot
 			Func<double, double, bool> comparer;
 			switch (cmp)
 			{
-			case "<": comparer = (a, b) => a < b; break;
-			case ">": comparer = (a, b) => a > b; break;
-			case "<=": comparer = (a, b) => a <= b; break;
-			case ">=": comparer = (a, b) => a >= b; break;
-			case "==": comparer = (a, b) => Math.Abs(a - b) < 1e-6; break;
-			case "!=": comparer = (a, b) => Math.Abs(a - b) > 1e-6; break;
-			default: throw new CommandException(strings.cmd_if_unknown_operator, CommandExceptionReason.CommandError);
+				case "<": comparer = (a, b) => a < b; break;
+				case ">": comparer = (a, b) => a > b; break;
+				case "<=": comparer = (a, b) => a <= b; break;
+				case ">=": comparer = (a, b) => a >= b; break;
+				case "==": comparer = (a, b) => Math.Abs(a - b) < 1e-6; break;
+				case "!=": comparer = (a, b) => Math.Abs(a - b) > 1e-6; break;
+				default: throw new CommandException(strings.cmd_if_unknown_operator, CommandExceptionReason.CommandError);
 			}
 
 			bool cmpResult;
@@ -1630,17 +1638,17 @@ namespace TS3AudioBot
 				strb.AppendLine();
 				switch (x.SendMode)
 				{
-				case TargetSendMode.None: strb.Append(strings.cmd_whisper_list_target_none); break;
-				case TargetSendMode.Voice: strb.Append(strings.cmd_whisper_list_target_voice); break;
-				case TargetSendMode.Whisper:
-					strb.Append(strings.cmd_whisper_list_target_whisper_clients).Append(": [").Append(string.Join(",", x.WhisperClients)).Append("]\n");
-					strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", x.WhisperChannel)).Append("]");
-					break;
-				case TargetSendMode.WhisperGroup:
-					strb.AppendFormat(strings.cmd_whisper_list_target_whispergroup, x.GroupWhisper.Type, x.GroupWhisper.Target, x.GroupWhisper.TargetId);
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
+					case TargetSendMode.None: strb.Append(strings.cmd_whisper_list_target_none); break;
+					case TargetSendMode.Voice: strb.Append(strings.cmd_whisper_list_target_voice); break;
+					case TargetSendMode.Whisper:
+						strb.Append(strings.cmd_whisper_list_target_whisper_clients).Append(": [").Append(string.Join(",", x.WhisperClients)).Append("]\n");
+						strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", x.WhisperChannel)).Append("]");
+						break;
+					case TargetSendMode.WhisperGroup:
+						strb.AppendFormat(strings.cmd_whisper_list_target_whispergroup, x.GroupWhisper.Type, x.GroupWhisper.Target, x.GroupWhisper.TargetId);
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
 				}
 				return strb.ToString();
 			});
@@ -1707,17 +1715,17 @@ namespace TS3AudioBot
 				E<LocalStr> result;
 				switch (invoker.Visibiliy.Value)
 				{
-				case TextMessageTargetMode.Private:
-					result = ts3Client.SendMessage(msgPart, invoker.ClientId.Value);
-					break;
-				case TextMessageTargetMode.Channel:
-					result = ts3Client.SendChannelMessage(msgPart);
-					break;
-				case TextMessageTargetMode.Server:
-					result = ts3Client.SendServerMessage(msgPart);
-					break;
-				default:
-					throw Util.UnhandledDefault(invoker.Visibiliy.Value);
+					case TextMessageTargetMode.Private:
+						result = ts3Client.SendMessage(msgPart, invoker.ClientId.Value);
+						break;
+					case TextMessageTargetMode.Channel:
+						result = ts3Client.SendChannelMessage(msgPart);
+						break;
+					case TextMessageTargetMode.Server:
+						result = ts3Client.SendServerMessage(msgPart);
+						break;
+					default:
+						throw Util.UnhandledDefault(invoker.Visibiliy.Value);
 				}
 
 				if (!result.Ok)

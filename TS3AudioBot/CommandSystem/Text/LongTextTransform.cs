@@ -25,8 +25,18 @@ namespace TS3AudioBot.CommandSystem.Text
 			if (maxMessageSize < 4)
 				throw new ArgumentOutOfRangeException(nameof(maxMessageSize), "The minimum split length must be at least 4 bytes to fit all utf8 characters");
 
-			var list = new List<string>();
+			// Assuming worst case that each UTF-8 character which epands to 4 bytes.
+			// If the message is still shorter we can safely return in 1 block.
+			if (text.Length * 4 <= Ts3Const.MaxSizeTextMessage)
+				return new[] { text };
+
 			var bytes = Encoding.UTF8.GetBytes(text);
+
+			// If the entire text UTF-8 encoded fits in one message we can return early.
+			if(bytes.Length < Ts3Const.MaxSizeTextMessage)
+				return new[] { text };
+
+			var list = new List<string>();
 			Span<Ind> splitIndices = stackalloc Ind[SeparatorWeight.Length];
 
 			var block = bytes.AsSpan();
@@ -53,7 +63,7 @@ namespace TS3AudioBot.CommandSystem.Text
 					{
 						if (block[i] == SeparatorWeight[j])
 						{
-							splitIndices[j] = new Ind { i = i, tok = tokenCnt };
+							splitIndices[j] = new Ind(i, tokenCnt);
 						}
 					}
 				}
@@ -95,10 +105,16 @@ namespace TS3AudioBot.CommandSystem.Text
 			return list;
 		}
 
-		private struct Ind
+		private readonly struct Ind
 		{
-			public int i;
-			public int tok;
+			public readonly int i;
+			public readonly int tok;
+
+			public Ind(int i, int tok)
+			{
+				this.i = i;
+				this.tok = tok;
+			}
 
 			public override string ToString() => $"i:{i} tok:{tok}";
 		}

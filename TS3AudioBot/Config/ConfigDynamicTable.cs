@@ -16,13 +16,15 @@ namespace TS3AudioBot.Config
 	using System.Diagnostics;
 
 	[DebuggerDisplay("dyntable:{Key}")]
-	public class ConfigDynamicTable<T> : ConfigEnumerable, IDynamicTable where T : ConfigEnumerable, new()
+	public class ConfigDynamicTable<T> : ConfigEnumerable, IDynamicTable where T : ConfigPart
 	{
 		private readonly Dictionary<string, T> dynamicTables;
+		private readonly Func<string, T> createFactory;
 
-		public ConfigDynamicTable()
+		public ConfigDynamicTable(Func<string, T> createFactory)
 		{
 			Util.Init(out dynamicTables);
+			this.createFactory = createFactory;
 		}
 
 		public override void FromToml(TomlObject tomlObject)
@@ -38,7 +40,7 @@ namespace TS3AudioBot.Config
 
 				foreach (var child in tomlTable.Rows)
 				{
-					var childConfig = Create<T>(child.Key, this, child.Value);
+					var childConfig = Init(createFactory(child.Key), this, child.Value);
 					dynamicTables.Add(child.Key, childConfig);
 				}
 			}
@@ -52,7 +54,7 @@ namespace TS3AudioBot.Config
 
 		public override void Derive(ConfigPart derived)
 		{
-			// TODO
+			// TODO (or rather probably ignore, as deriving is a bit ambiguous)
 		}
 
 		public T GetItem(string key) => dynamicTables.TryGetValue(key, out var item) ? item : null;
@@ -61,12 +63,17 @@ namespace TS3AudioBot.Config
 
 		public T CreateItem(string key)
 		{
-			var childConfig = Create<T>(key, this, null);
+			var childConfig = Init(createFactory(key), this, null);
 			dynamicTables.Add(key, childConfig);
 			return childConfig;
 		}
 
 		public T GetOrCreateItem(string key) => GetItem(key) ?? CreateItem(key);
+
+		public void RemoveItem(string key)
+		{
+			dynamicTables.Remove(key);
+		}
 	}
 
 	public interface IDynamicTable

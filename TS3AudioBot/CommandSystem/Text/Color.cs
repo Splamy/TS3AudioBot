@@ -32,6 +32,7 @@ namespace TS3AudioBot.CommandSystem.Text
 		public static readonly Color Pink = new Color(255, 0, 255);
 		public static readonly Color Orange = new Color(255, 128, 0);
 		public static readonly Color White = new Color(255, 255, 255);
+		public static readonly Color Transparent = new Color(0, 0, 0, ColorFlags.Transparent);
 
 		private static readonly Dictionary<Color, string> ColorOptimizer = new Dictionary<Color, string>();
 
@@ -119,12 +120,12 @@ namespace TS3AudioBot.CommandSystem.Text
 		{
 			if (obj is Color col)
 			{
-				return R == col.R && G == col.G && B == col.B;
+				return R == col.R && G == col.G && B == col.B && Flags == col.Flags;
 			}
 			return false;
 		}
 
-		public override int GetHashCode() => R << 16 | G << 8 | B;
+		public override int GetHashCode() => (int)Flags << 24 | R << 16 | G << 8 | B;
 
 		public override string ToString()
 		{
