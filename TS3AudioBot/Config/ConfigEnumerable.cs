@@ -128,7 +128,7 @@ namespace TS3AudioBot.Config
 			TomlTable rootToml;
 			try { rootToml = Toml.ReadFile(path); }
 			catch (Exception ex) { return ex; }
-			return Init<T>(null, null, rootToml);
+			return Create<T>(null, null, rootToml);
 		}
 
 		public E<Exception> Save(string path, bool writeDefaults, bool writeDocumentation = true)

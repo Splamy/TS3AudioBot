@@ -23,12 +23,10 @@ namespace TS3AudioBot.Web.Api
 	using System.IO;
 	using System.Net;
 	using System.Text;
-	using System.Text.RegularExpressions;
 
 	public sealed class WebApi : WebComponent
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
 		private static readonly ApiCall apiCallDummy = new ApiCall();
 
 		private const string ErrorNoUserOrToken = "Unknown user or no active token found";

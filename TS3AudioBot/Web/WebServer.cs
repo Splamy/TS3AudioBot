@@ -13,6 +13,8 @@ namespace TS3AudioBot.Web
 	using Dependency;
 	using System;
 	using System.Globalization;
+	using System.Linq;
+	using System.Net;
 	using System.Net.Sockets;
 	using System.Threading;
 	using Unosquare.Labs.EmbedIO;
@@ -73,6 +75,24 @@ namespace TS3AudioBot.Web
 			}
 		}
 
+		private void ReloadHostPaths()
+		{
+			webListener.Prefixes.Clear();
+			var addrs = config.Hosts.Value;
+
+			if (addrs.Contains("*"))
+			{
+				webListener.AddPrefix($"http://*:{config.Port.Value}/");
+				return;
+			}
+
+			foreach (var uri in addrs)
+			{
+				var uriBuilder = new UriBuilder(uri) { Port = config.Port };
+				webListener.AddPrefix(uriBuilder.Uri.AbsoluteUri);
+			}
+		}
+
 		public void StartServerThread()
 		{
 			if (!startWebServer)
@@ -90,8 +110,7 @@ namespace TS3AudioBot.Web
 			cancelToken?.Dispose();
 			cancelToken = new CancellationTokenSource();
 
-			webListener.Prefixes.Clear();
-			webListener.AddPrefix($"http://*:{config.Port.Value}/");
+			ReloadHostPaths();
 
 			try { webListener.Start(); }
 			catch (Exception ex)
@@ -138,7 +157,7 @@ namespace TS3AudioBot.Web
 						continue;
 					if (context.Request.IsLocal
 						&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
-						&& System.Net.IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
+						&& IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
 					{
 						remoteAddress = realIp;
 					}
@@ -157,7 +176,7 @@ namespace TS3AudioBot.Web
 						using (var outputStream = response.OutputStream)
 						{
 							response.ContentLength64 = WebUtil.Default404Data.Length;
-							response.StatusCode = (int)System.Net.HttpStatusCode.NotFound;
+							response.StatusCode = (int)HttpStatusCode.NotFound;
 							outputStream.Write(WebUtil.Default404Data, 0, WebUtil.Default404Data.Length);
 						}
 					}

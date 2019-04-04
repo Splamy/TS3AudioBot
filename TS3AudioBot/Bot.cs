@@ -156,6 +156,10 @@ namespace TS3AudioBot
 			ClientConnection.OnBotConnected += OnBotConnected;
 			ClientConnection.OnBotDisconnect += OnBotDisconnect;
 
+			// Restore all alias from the config
+			foreach(var alias in config.Commands.Alias.GetAllItems())
+				CommandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
+
 			// Connect the query after everyting is set up
 			return ClientConnection.Connect();
 		}
