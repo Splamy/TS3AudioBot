@@ -51,7 +51,7 @@ namespace TS3AudioBot
 
 				var newBot = CreateNewBot();
 				newBot.Run.Value = true;
-				
+
 				string address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
 				{
 					if (TS3Client.TsDnsResolver.TryResolve(addr, out _))

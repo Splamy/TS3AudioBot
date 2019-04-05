@@ -55,7 +55,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			var resData = result.Value;
 
-			if(resData.IsIcyStream)
+			if (resData.IsIcyStream)
 			{
 				return new MediaPlayResource(resData.FullUri, resource.WithName(resData.Title), null, true);
 			}

@@ -36,14 +36,14 @@ namespace TS3AudioBot.Web.Interface
 
 			switch (provider)
 			{
-				case ISiteProvider site:
-					currentNode.fileMap.Add(nodesPath[nodesPath.Length - 1], site);
-					break;
-				case IFolderProvider folder:
-					currentNode.childFolder.Add(folder);
-					break;
-				default:
-					throw new InvalidOperationException($"Unknown web provider type: {provider.GetType()}");
+			case ISiteProvider site:
+				currentNode.fileMap.Add(nodesPath[nodesPath.Length - 1], site);
+				break;
+			case IFolderProvider folder:
+				currentNode.childFolder.Add(folder);
+				break;
+			default:
+				throw new InvalidOperationException($"Unknown web provider type: {provider.GetType()}");
 			}
 		}
 

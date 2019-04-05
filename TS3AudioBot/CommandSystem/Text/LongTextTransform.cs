@@ -33,7 +33,7 @@ namespace TS3AudioBot.CommandSystem.Text
 			var bytes = Encoding.UTF8.GetBytes(text);
 
 			// If the entire text UTF-8 encoded fits in one message we can return early.
-			if(bytes.Length < Ts3Const.MaxSizeTextMessage)
+			if (bytes.Length < Ts3Const.MaxSizeTextMessage)
 				return new[] { text };
 
 			var list = new List<string>();

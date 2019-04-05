@@ -32,7 +32,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Color4Test()
 		{
-			var res = TextMod.Format("Hello {0} but {1}".Mod().Color(new Color(0,0,1)).Bold(),
+			var res = TextMod.Format("Hello {0} but {1}".Mod().Color(new Color(0, 0, 1)).Bold(),
 				   "World".Mod().Bold().Italic(),
 				   ", How are you?".Mod().Underline());
 			Assert.AreEqual("[B][COLOR=#000001]Hello [/COLOR][I]World[/I][COLOR=#000001] but [/B][U], How are you?", res);

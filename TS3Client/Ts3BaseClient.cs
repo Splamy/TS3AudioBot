@@ -363,11 +363,11 @@ namespace TS3Client
 			}, NotificationType.ClientDbIdFromUid).WrapSingle();
 
 		public R<ClientUidFromClid, CommandError> GetClientUidFromClientId(ClientIdT clientId)
-		=> SendHybrid<ClientUidFromClid>(new Ts3Command("clientgetuidfromclid") {
-				{ "clid", clientId }
-		}, NotificationType.ClientUidFromClid).WrapSingle();
+			=> SendHybrid<ClientUidFromClid>(new Ts3Command("clientgetuidfromclid") {
+					{ "clid", clientId }
+			}, NotificationType.ClientUidFromClid).WrapSingle();
 
-		
+
 
 		public R<ClientNameFromUid, CommandError> GetClientNameFromUid(Uid clientUid)
 			=> SendHybrid<ClientNameFromUid>(new Ts3Command("clientgetnamefromuid")
