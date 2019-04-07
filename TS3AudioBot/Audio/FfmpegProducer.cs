@@ -278,16 +278,14 @@ namespace TS3AudioBot.Audio
 
 				return instance;
 			}
-			catch (Win32Exception ex)
-			{
-				var error = $"Ffmpeg could not be found ({ex.Message})";
-				Log.Warn(ex, error);
-				return error;
-			}
 			catch (Exception ex)
 			{
-				var error = $"Unable to create stream ({ex.Message})";
+				var error = ex is Win32Exception
+					? $"Ffmpeg could not be found ({ex.Message})"
+					: $"Unable to create stream ({ex.Message})";
 				Log.Warn(ex, error);
+				instance.Close();
+				StopFfmpegProcess();
 				return error;
 			}
 		}
@@ -389,6 +387,7 @@ namespace TS3AudioBot.Audio
 				const int IcyMaxMeta = 255 * 16;
 				const int ReadBufferSize = 4096;
 
+				int errorCount = 0;
 				var buffer = new byte[Math.Max(ReadBufferSize, IcyMaxMeta)];
 				int readCount = 0;
 
@@ -406,6 +405,7 @@ namespace TS3AudioBot.Audio
 							}
 							readCount += read;
 							FfmpegProcess.StandardInput.BaseStream.Write(buffer, 0, read);
+							errorCount = 0;
 						}
 						readCount = 0;
 
@@ -431,12 +431,31 @@ namespace TS3AudioBot.Audio
 							}
 							readCount = 0;
 
-							var metaString = Encoding.UTF8.GetString(buffer, 0, metaByte);
+							var metaString = Encoding.UTF8.GetString(buffer, 0, metaByte).TrimEnd('\0');
 							Log.Debug("Meta: {0}", metaString);
 							OnMetaUpdated?.Invoke(ParseIcyMeta(metaString));
 						}
 					}
-					catch (Exception ex) { Log.Warn(ex, "Stream read/write error"); }
+					catch (Exception ex)
+					{
+						errorCount++;
+						if (errorCount >= 50)
+						{
+							Log.Error(ex, "Failed too many times trying to access ffmpeg. Closing stream.");
+							Close();
+							return;
+						}
+
+						if (ex is InvalidOperationException)
+						{
+							Log.Warn(ex, "Waiting for ffmpeg");
+							Thread.Sleep(100);
+						}
+						else
+						{
+							Log.Warn(ex, "Stream read/write error");
+						}
+					}
 				}
 			}
 
