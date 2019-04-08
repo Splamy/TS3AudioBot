@@ -19,6 +19,11 @@ namespace TS3AudioBot.Helper
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
 
+		static WebWrapper()
+		{
+			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
+		}
+
 		public static E<LocalStr> DownloadString(out string site, Uri link, params (string name, string value)[] headers)
 		{
 			WebRequest request;
@@ -54,13 +59,12 @@ namespace TS3AudioBot.Helper
 		public static E<LocalStr> GetResponse(Uri link, Action<WebResponse> body) => GetResponse(link, body, DefaultTimeout);
 		public static E<LocalStr> GetResponse(Uri link, Action<WebResponse> body, TimeSpan timeout)
 		{
-			WebRequest request;
-			try { request = WebRequest.Create(link); }
-			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
+			var requestRes = CreateRequest(link, timeout);
+			if (!requestRes.Ok) return requestRes.Error;
+			var request = requestRes.Value;
 
 			try
 			{
-				request.Timeout = (int)timeout.TotalMilliseconds;
 				using (var response = request.GetResponse())
 				{
 					body?.Invoke(response);
@@ -75,13 +79,12 @@ namespace TS3AudioBot.Helper
 		public static R<T, LocalStr> GetResponse<T>(Uri link, Func<WebResponse, T> body) => GetResponse(link, body, DefaultTimeout);
 		public static R<T, LocalStr> GetResponse<T>(Uri link, Func<WebResponse, T> body, TimeSpan timeout)
 		{
-			WebRequest request;
-			try { request = WebRequest.Create(link); }
-			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
+			var requestRes = CreateRequest(link, timeout);
+			if (!requestRes.Ok) return requestRes.Error;
+			var request = requestRes.Value;
 
 			try
 			{
-				request.Timeout = (int)timeout.TotalMilliseconds;
 				using (var response = request.GetResponse())
 				{
 					return body.Invoke(response);
@@ -96,20 +99,17 @@ namespace TS3AudioBot.Helper
 		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link) => GetResponseUnsafe(link, DefaultTimeout);
 		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link, TimeSpan timeout)
 		{
-			WebRequest request;
-			try { request = WebRequest.Create(link); }
-			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
+			var requestRes = CreateRequest(link, timeout);
+			if (!requestRes.Ok) return requestRes.Error;
+			var request = requestRes.Value;
 
-			WebResponse response = null;
 			try
 			{
-				request.Timeout = (int)timeout.TotalMilliseconds;
-				response = request.GetResponse();
+				var response = request.GetResponse();
 				return response.GetResponseStream();
 			}
 			catch (Exception ex)
 			{
-				response?.Dispose();
 				return ToLoggedError(ex);
 			}
 		}
@@ -132,6 +132,24 @@ namespace TS3AudioBot.Helper
 
 			Log.Warn(ex, "Unknown request error");
 			return new LocalStr(strings.error_net_unknown);
+		}
+
+		public static R<WebRequest, LocalStr> CreateRequest(Uri link) => CreateRequest(link, DefaultTimeout);
+
+		private static R<WebRequest, LocalStr> CreateRequest(Uri link, TimeSpan timeout)
+		{
+			try
+			{
+				var request = WebRequest.Create(link);
+				request.Timeout = (int)timeout.TotalMilliseconds;
+				if (request is HttpWebRequest httpRequest)
+				{
+					httpRequest.UserAgent = "TS3AudioBot";
+					httpRequest.KeepAlive = false;
+				}
+				return request;
+			}
+			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
 		}
 	}
 }

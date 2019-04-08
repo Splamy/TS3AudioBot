@@ -209,9 +209,8 @@ namespace TS3AudioBot.Audio
 
 			try
 			{
-				var request = WebRequest.Create(url);
-				request.Headers.Add("Icy-MetaData", "1");
-				request.Timeout = (int)WebWrapper.DefaultTimeout.TotalMilliseconds;
+				var request = WebWrapper.CreateRequest(new Uri(url)).Unwrap();
+				request.Headers["Icy-MetaData"] = "1";
 
 				var response = request.GetResponse();
 				var stream = response.GetResponseStream();

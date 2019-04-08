@@ -133,8 +133,14 @@ namespace TS3AudioBot.Config
 
 		public E<Exception> Save(string path, bool writeDefaults, bool writeDocumentation = true)
 		{
-			ToToml(writeDefaults, writeDocumentation);
-			try { Toml.WriteFile(TomlObject, path); }
+			try
+			{
+				lock (this)
+				{
+					ToToml(writeDefaults, writeDocumentation);
+					Toml.WriteFile(TomlObject, path);
+				}
+			}
 			catch (Exception ex) { return ex; }
 			return R.Ok;
 		}

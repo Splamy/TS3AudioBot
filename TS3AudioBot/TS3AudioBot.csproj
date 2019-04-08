@@ -79,9 +79,4 @@
     <Copy SourceFiles="@(CopyLibs32)" DestinationFolder="$(OutputPath)\x86\" />
     <Copy SourceFiles="@(CopyLibs64)" DestinationFolder="$(OutputPath)\x64\" />
   </Target>
-
-  <ItemGroup>
-    <PackageReference Update="NLog" Version="4.6.0" />
-  </ItemGroup>
-
 </Project>

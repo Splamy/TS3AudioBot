@@ -100,14 +100,16 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static R<ResData, LocalStr> ValidateWeb(Uri link)
 		{
-			WebRequest request;
-			try { request = WebRequest.Create(link); }
-			catch (NotSupportedException) { return new LocalStr(strings.error_media_invalid_uri); }
+			var requestRes = WebWrapper.CreateRequest(link);
+			if (!requestRes.Ok) return requestRes.Error;
+			var request = requestRes.Value;
+			if (request is HttpWebRequest httpRequest)
+			{
+				httpRequest.Headers["Icy-MetaData"] = "1";
+			}
 
 			try
 			{
-				request.Headers.Add("Icy-MetaData", "1");
-				request.Timeout = (int)WebWrapper.DefaultTimeout.TotalMilliseconds;
 				using (var response = request.GetResponse())
 				{
 					if (response.Headers["icy-metaint"] != null)
@@ -179,6 +181,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Playlist, LocalStr> GetPlaylist(string url)
 		{
+			// TODO allow m3u from url
 			var foundUri = FindFile(url);
 
 			if (foundUri != null && Directory.Exists(foundUri.OriginalString))
