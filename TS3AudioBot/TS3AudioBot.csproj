@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -14,7 +14,7 @@
 
     <NeutralLanguage>en</NeutralLanguage>
 
-    <StartupObject>TS3AudioBot.Core</StartupObject>
+    <StartupObject>TS3AudioBot.AssemblyInit</StartupObject>
     <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
 
     <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>

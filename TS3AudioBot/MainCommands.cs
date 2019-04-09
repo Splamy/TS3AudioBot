@@ -249,6 +249,7 @@ namespace TS3AudioBot
 				throw new CommandException(strings.cmd_bot_setup_error, CommandExceptionReason.CommandError);
 		}
 
+		private static readonly Type[] DynamicCommandSysTypes = new[] { typeof(CallerInfo), typeof(InvokerData), typeof(UserSession), typeof(ApiCall) };
 		[Command("bot use")]
 		public static ICommandResult CommandBotUse(ExecutionInformation info, IReadOnlyList<CommandResultType> returnTypes, BotManager bots, int botId, ICommand cmd)
 		{
@@ -258,13 +259,9 @@ namespace TS3AudioBot
 					throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
 
 				var childInfo = new ExecutionInformation(botLock.Bot.Injector.CloneRealm<BotInjector>());
-				if (info.TryGet<CallerInfo>(out var caller))
-					childInfo.AddDynamicObject(caller);
-				if (info.TryGet<InvokerData>(out var invoker))
-					childInfo.AddDynamicObject(invoker);
-				if (info.TryGet<UserSession>(out var session))
-					childInfo.AddDynamicObject(session);
-
+				foreach (var type in DynamicCommandSysTypes)
+					if (info.TryGet(type, out var dep))
+						childInfo.AddDynamicObject(dep);
 				return cmd.Execute(childInfo, Array.Empty<ICommand>(), returnTypes);
 			}
 		}

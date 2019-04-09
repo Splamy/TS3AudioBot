@@ -122,7 +122,8 @@ namespace TS3AudioBot.Helper.Environment
 						CreateNoWindow = true,
 						UseShellExecute = false,
 						RedirectStandardOutput = true,
-					}
+					},
+					EnableRaisingEvents = true,
 				})
 				{
 					p.Start();

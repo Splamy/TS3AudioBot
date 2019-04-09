@@ -18,10 +18,22 @@ namespace TS3AudioBot
 	using Rights;
 	using Sessions;
 	using System;
+	using System.IO;
+	using System.Reflection;
 	using System.Threading;
 	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.Playlists;
 	using Web;
+
+	public static class AssemblyInit
+	{
+		internal static void Main(string[] args)
+		{
+			AppDomain.CurrentDomain.AssemblyResolve += (_, e)
+				=> Assembly.LoadFrom(Path.Combine(Directory.GetCurrentDirectory(), "bin", e.Name.Substring(0, e.Name.IndexOf(",")) + ".dll"));
+			Core.Init(args);
+		}
+	}
 
 	public sealed class Core : IDisposable
 	{
@@ -46,7 +58,7 @@ namespace TS3AudioBot
 		/// <summary>Permission management.</summary>
 		public RightsManager RightsManager { get; set; }
 
-		internal static void Main(string[] args)
+		internal static void Init(string[] args)
 		{
 			Thread.CurrentThread.Name = "TAB Main";
 

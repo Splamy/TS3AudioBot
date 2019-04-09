@@ -14,7 +14,6 @@ namespace TS3AudioBot.Helper
 	using System.Diagnostics;
 	using System.Threading;
 
-	[Serializable]
 	public static class TickPool
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -35,7 +34,7 @@ namespace TS3AudioBot.Helper
 		public static TickWorker RegisterTickOnce(Action method, TimeSpan? delay = null)
 		{
 			if (method is null) throw new ArgumentNullException(nameof(method));
-			if (delay.HasValue && delay.Value <= TimeSpan.Zero) throw new ArgumentException("The parameter must be greater than 0s", nameof(delay));
+			if (delay.HasValue && delay.Value < TimeSpan.Zero) throw new ArgumentException("The parameter must be greater than 0s", nameof(delay));
 			var worker = new TickWorker(method, delay ?? TimeSpan.Zero) { Active = true, TickOnce = true };
 			AddWorker(worker);
 			return worker;
@@ -44,7 +43,7 @@ namespace TS3AudioBot.Helper
 		public static TickWorker RegisterTick(Action method, TimeSpan interval, bool active)
 		{
 			if (method is null) throw new ArgumentNullException(nameof(method));
-			if (interval <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(interval));
+			if (interval < TimeSpan.FromMilliseconds(1)) throw new ArgumentException("The parameter must be greater than 1ms", nameof(interval));
 			var worker = new TickWorker(method, interval) { Active = active };
 			AddWorker(worker);
 			return worker;
