@@ -16,7 +16,6 @@ namespace TS3AudioBot.Audio
 	using System.Diagnostics;
 	using System.Globalization;
 	using System.IO;
-	using System.Net;
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Threading;
@@ -78,7 +77,15 @@ namespace TS3AudioBot.Audio
 			if (instance is null)
 				return 0;
 
-			read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
+			try
+			{
+				read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
+			}
+			catch (Exception ex)
+			{
+				read = 0;
+				Log.Debug(ex, "Can't read ffmpeg");
+			}
 
 			if (read == 0)
 			{
@@ -89,9 +96,9 @@ namespace TS3AudioBot.Audio
 				if (ret)
 					return 0;
 
-				if (instance.FfmpegProcess.HasExited)
+				if (instance.FfmpegProcess.HasExitedSafe())
 				{
-					Log.Trace("Ffmpeg has exited with {0}", instance.FfmpegProcess.ExitCode);
+					Log.Trace("Ffmpeg has exited");
 					AudioStop();
 					triggerEndSafe = true;
 				}
@@ -110,7 +117,7 @@ namespace TS3AudioBot.Audio
 
 		private (bool ret, bool trigger) OnReadEmpty(FfmpegInstance instance)
 		{
-			if (instance.FfmpegProcess.HasExited && !instance.HasTriedToReconnect)
+			if (instance.FfmpegProcess.HasExitedSafe() && !instance.HasTriedToReconnect)
 			{
 				var expectedStopLength = GetCurrentSongLength();
 				Log.Trace("Expected song length {0}", expectedStopLength);
@@ -141,7 +148,7 @@ namespace TS3AudioBot.Audio
 
 		private (bool ret, bool trigger) OnReadEmptyIcy(FfmpegInstance instance)
 		{
-			if (instance.FfmpegProcess.HasExited && !instance.HasTriedToReconnect)
+			if (instance.FfmpegProcess.HasExitedSafe() && !instance.HasTriedToReconnect)
 			{
 				Log.Debug("Connection to stream lost, retrying...");
 				instance.HasTriedToReconnect = true;
@@ -344,7 +351,7 @@ namespace TS3AudioBot.Audio
 
 				try
 				{
-					if (!FfmpegProcess.HasExited)
+					if (!FfmpegProcess.HasExitedSafe())
 						FfmpegProcess.Kill();
 					else
 						FfmpegProcess.Close();

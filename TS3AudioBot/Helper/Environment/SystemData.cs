@@ -39,7 +39,7 @@ namespace TS3AudioBot.Helper.Environment
 
 			return new BuildData
 			{
-				Version = (string)gitInfoType.GetField("SemVer", BindingFlags.Static | BindingFlags.Public)?.GetValue(null),
+				Version = (string)gitInfoType.GetField("FullSemVer", BindingFlags.Static | BindingFlags.Public)?.GetValue(null),
 				Branch = (string)gitInfoType.GetField("BranchName", BindingFlags.Static | BindingFlags.Public)?.GetValue(null),
 				CommitSha = (string)gitInfoType.GetField("Sha", BindingFlags.Static | BindingFlags.Public)?.GetValue(null),
 			};

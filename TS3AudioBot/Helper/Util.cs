@@ -15,12 +15,12 @@ namespace TS3AudioBot.Helper
 	using Newtonsoft.Json.Linq;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
 	using System.Text.RegularExpressions;
-	using System.Threading;
 
 	public static class Util
 	{
@@ -154,6 +154,12 @@ namespace TS3AudioBot.Helper
 
 		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector)
 			=> source.Select(selector).Where(x => x.Ok).Select(x => x.Value);
+
+		public static bool HasExitedSafe(this Process process)
+		{
+			try { return process.HasExited; }
+			catch { return true; }
+		}
 	}
 
 	public class MissingEnumCaseException : Exception
