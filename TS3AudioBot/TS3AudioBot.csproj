@@ -14,7 +14,7 @@
 
     <NeutralLanguage>en</NeutralLanguage>
 
-    <StartupObject>TS3AudioBot.AssemblyInit</StartupObject>
+    <StartupObject>TS3AudioBot.Core</StartupObject>
     <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
 
     <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
