@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -51,9 +51,15 @@
     <EmbeddedResource Include="Rights\DefaultRights.toml" />
     <None Include="Media\SleepingKitty.svg" />
     <EmbeddedResource Include="Media\SleepingKitty.png" />
+  </ItemGroup>
 
-    <CopyLibs32 Include="lib\x86\*.*" />
-    <CopyLibs64 Include="lib\x64\*.*" />
+  <ItemGroup>
+    <Content Include="lib\x64\libopus.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="lib\x86\libopus.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -74,9 +80,4 @@
       <LastGenOutput>strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-
-  <Target Name="CopyWindowsNativeLibs" AfterTargets="AfterBuild">
-    <Copy SourceFiles="@(CopyLibs32)" DestinationFolder="$(OutputPath)\x86\" />
-    <Copy SourceFiles="@(CopyLibs64)" DestinationFolder="$(OutputPath)\x64\" />
-  </Target>
 </Project>

@@ -39,7 +39,7 @@ namespace TS3Client.Helper
 			}
 			else
 			{
-				var libPath = Path.Combine(ArchFolder, lib);
+				var libPath = Path.Combine("lib", ArchFolder, lib);
 				Log.Debug("Loading \"{0}\" from \"{1}\"", lib, libPath);
 				var handle = LoadLibrary(libPath);
 				if (handle == IntPtr.Zero)
