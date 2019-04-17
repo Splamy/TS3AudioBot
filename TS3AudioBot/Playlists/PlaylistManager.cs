@@ -22,7 +22,7 @@ namespace TS3AudioBot.Playlists
 
 	public sealed class PlaylistManager
 	{
-		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-]", Util.DefaultRegexConfig);
+		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-_]", Util.DefaultRegexConfig);
 		private const string LocalPlaylistDirectory = "playlists";
 
 		public ConfBot ConfBot { get; set; }
@@ -234,9 +234,9 @@ namespace TS3AudioBot.Playlists
 		{
 			if (string.IsNullOrEmpty(name))
 				return "playlist";
-			if (name.Length >= 64)
-				name = name.Substring(0, 63);
 			name = CleansePlaylistName.Replace(name, "");
+			if (name.Length > 64)
+				name = name.Substring(0, 64);
 			if (!Util.IsSafeFileName(name))
 				name = "playlist";
 			return name;

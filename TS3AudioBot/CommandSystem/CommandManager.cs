@@ -23,7 +23,7 @@ namespace TS3AudioBot.CommandSystem
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex CommandNamespaceValidator =
-			new Regex("^[a-z]+( [a-z]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
+			new Regex(@"^[a-z\d]+( [a-z\d]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
 		private readonly Dictionary<string, AliasCommand> aliasPaths;
 		private readonly HashSet<string> commandPaths;

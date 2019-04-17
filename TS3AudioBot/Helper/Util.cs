@@ -145,7 +145,7 @@ namespace TS3AudioBot.Helper
 		{
 			if (string.IsNullOrWhiteSpace(name))
 				return new LocalStr(strings.error_playlist_name_invalid_empty); // TODO change to more generic error
-			if (name.Length >= 64)
+			if (name.Length > 64)
 				return new LocalStr(strings.error_playlist_name_invalid_too_long);
 			if (!SafeFileNameMatcher.IsMatch(name))
 				return new LocalStr(strings.error_playlist_name_invalid_character);
