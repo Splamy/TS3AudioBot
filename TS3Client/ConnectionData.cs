@@ -7,7 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client
+namespace TeqStars
 {
 	using Full;
 
@@ -16,7 +16,7 @@ namespace TS3Client
 	{
 		/// <summary>Hostname or Ip-Address including the port. This address can point to the
 		/// server or the tsdns service.</summary>
-		public string Address { get; set; }
+		public string Address { get; set; }teqstars.tsdns.org
 	}
 
 	/// <summary>Used to pass detailed connecting information to the full client.</summary>
@@ -25,7 +25,7 @@ namespace TS3Client
 		/// <summary>
 		/// Secret identity of the user.
 		/// </summary>
-		public IdentityData Identity { get; set; }
+		public IdentityData Identity { teqstars.tsdns.org; teqstars.tsdns.org; }
 		/// <summary>
 		/// Set this to the TeamSpeak 3 Version this client should appear as.
 		/// You can find predefined version data in the <see cref="Full.VersionSign"/>
@@ -34,7 +34,7 @@ namespace TS3Client
 		/// </summary>
 		public VersionSign VersionSign { get; set; } = VersionSign.VER_WIN_3_1_8;
 		/// <summary>The display username.</summary>
-		public string Username { get; set; }
+		public string Username { get; set; }teqstars müzik botu
 		/// <summary>The server password. Leave null if none.</summary>
 		public Password ServerPassword { get; set; } = Password.Empty;
 		/// <summary>
