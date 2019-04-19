@@ -20,6 +20,7 @@ namespace TS3ABotUnitTests
 	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Audio;
 	using TS3AudioBot.CommandSystem;
+	using TS3AudioBot.CommandSystem.Ast;
 	using TS3AudioBot.CommandSystem.CommandResults;
 	using TS3AudioBot.CommandSystem.Commands;
 
@@ -234,6 +235,35 @@ namespace TS3ABotUnitTests
 			{
 				Assert.IsFalse(string.IsNullOrEmpty(cmd.Description), $"Command {cmd.FullQualifiedName} has no documentation");
 			}
+		}
+
+		[Test]
+		public void CommandParserTest()
+		{
+			TestStringParsing("aaa", "aaa");
+			TestStringParsing("a\"aa", "a\"aa");
+			TestStringParsing("aaa\"", "aaa\"");
+			TestStringParsing("a'aa", "a'aa");
+			TestStringParsing("aaa'", "aaa'");
+			TestStringParsing("\"aaa\"", "aaa");
+			TestStringParsing("\"aaa", "aaa");
+			TestStringParsing("'aaa'", "aaa");
+			TestStringParsing("'aaa", "aaa");
+			TestStringParsing("\"a\"aa\"", "a");
+			TestStringParsing("'a'aa'", "a");
+			TestStringParsing("\"a'aa\"", "a'aa");
+			TestStringParsing("'a\"aa'", "a\"aa");
+			TestStringParsing("\"a\\'aa\"", "a\\'aa");
+			TestStringParsing("\"a\\\"aa\"", "a\"aa");
+			TestStringParsing("'a\\'aa'", "a'aa");
+			TestStringParsing("'a\\\"aa'", "a\\\"aa");
+		}
+
+		public void TestStringParsing(string inp, string outp)
+		{
+			var ast = CommandParser.ParseCommandRequest(inp);
+			Assert.IsAssignableFrom(typeof(AstValue), ast);
+			Assert.AreEqual(((AstValue)ast).Value, outp);
 		}
 	}
 

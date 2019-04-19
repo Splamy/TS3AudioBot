@@ -77,6 +77,7 @@ namespace TS3AudioBot.CommandSystem
 						switch (strPtr.Char)
 						{
 						case '"':
+						case '\'':
 							build = BuildStatus.ParseQuotedString;
 							//goto case BuildStatus.ParseQuotedString;
 							break;
@@ -141,7 +142,13 @@ namespace TS3AudioBot.CommandSystem
 				case BuildStatus.ParseQuotedString:
 					strb.Clear();
 
-					strPtr.Next('"');
+					char quoteChar;
+					if (strPtr.TryNext('"'))
+						quoteChar = '"';
+					else if (strPtr.TryNext('\''))
+						quoteChar = '\'';
+					else
+						throw new Exception("Parser error");
 
 					var valQuoAst = new AstValue();
 					using (strPtr.TrackNode(valQuoAst))
@@ -153,11 +160,18 @@ namespace TS3AudioBot.CommandSystem
 							{
 								escaped = true;
 							}
-							else if (strPtr.Char == '"')
+							else if (strPtr.Char == quoteChar)
 							{
-								if (escaped) { strb.Length--; }
-								else { strPtr.Next(); break; }
-								escaped = false;
+								if (!escaped)
+								{
+									strPtr.Next();
+									break;
+								}
+								else
+								{
+									strb.Length--;
+									escaped = false;
+								}
 							}
 							else
 							{
@@ -215,7 +229,15 @@ namespace TS3AudioBot.CommandSystem
 				Next();
 			}
 
-			public bool IsNext(char what) => text[index + 1] == what;
+			public bool TryNext(char mustBe)
+			{
+				if (Char != mustBe)
+					return false;
+				Next();
+				return true;
+			}
+
+			public bool IsNext(char what) => HasNext && text[index + 1] == what;
 
 			public void SkipChar(char c = ' ')
 			{
