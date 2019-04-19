@@ -240,30 +240,30 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void CommandParserTest()
 		{
-			TestStringParsing("aaa", "aaa");
-			TestStringParsing("a\"aa", "a\"aa");
-			TestStringParsing("aaa\"", "aaa\"");
-			TestStringParsing("a'aa", "a'aa");
-			TestStringParsing("aaa'", "aaa'");
-			TestStringParsing("\"aaa\"", "aaa");
-			TestStringParsing("\"aaa", "aaa");
-			TestStringParsing("'aaa'", "aaa");
-			TestStringParsing("'aaa", "aaa");
-			TestStringParsing("\"a\"aa\"", "a");
-			TestStringParsing("'a'aa'", "a");
-			TestStringParsing("\"a'aa\"", "a'aa");
-			TestStringParsing("'a\"aa'", "a\"aa");
-			TestStringParsing("\"a\\'aa\"", "a\\'aa");
-			TestStringParsing("\"a\\\"aa\"", "a\"aa");
-			TestStringParsing("'a\\'aa'", "a'aa");
-			TestStringParsing("'a\\\"aa'", "a\\\"aa");
+			TestStringParsing("!aaa", "aaa");
+			TestStringParsing("!a\"aa", "a\"aa");
+			TestStringParsing("!aaa\"", "aaa\"");
+			TestStringParsing("!a'aa", "a'aa");
+			TestStringParsing("!aaa'", "aaa'");
+			TestStringParsing("!\"aaa\"", "aaa");
+			TestStringParsing("!\"aaa", "aaa");
+			TestStringParsing("!'aaa'", "aaa");
+			TestStringParsing("!'aaa", "aaa");
+			TestStringParsing("!\"a\"aa\"", "a");
+			TestStringParsing("!'a'aa'", "a");
+			TestStringParsing("!\"a'aa\"", "a'aa");
+			TestStringParsing("!'a\"aa'", "a\"aa");
+			TestStringParsing("!\"a\\'aa\"", "a\\'aa");
+			TestStringParsing("!\"a\\\"aa\"", "a\"aa");
+			TestStringParsing("!'a\\'aa'", "a'aa");
+			TestStringParsing("!'a\\\"aa'", "a\\\"aa");
 		}
 
 		public void TestStringParsing(string inp, string outp)
 		{
-			var ast = CommandParser.ParseCommandRequest(inp);
-			Assert.IsAssignableFrom(typeof(AstValue), ast);
-			Assert.AreEqual(((AstValue)ast).Value, outp);
+			var astc = CommandParser.ParseCommandRequest(inp);
+			var ast = ((AstCommand)astc).Parameter[0];
+			Assert.AreEqual(outp, ((AstValue)ast).Value);
 		}
 	}
 

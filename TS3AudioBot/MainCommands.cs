@@ -216,7 +216,7 @@ namespace TS3AudioBot
 				if (infoList.ContainsKey(botConfig.Name))
 					continue;
 				infoList[botConfig.Name] = new BotInfo
-				{
+				{ 
 					Id = null,
 					Name = botConfig.Name,
 					Server = botConfig.Connect.Address,
@@ -1050,6 +1050,12 @@ namespace TS3AudioBot
 			invoker.Visibiliy = TextMessageTargetMode.Private;
 			return string.Format(strings.cmd_pm_hi, invoker.NickName ?? "Anonymous");
 		}
+
+		[Command("pm channel", "_undocumented")] // TODO
+		public static void CommandPmChannel(Ts3Client ts3Client, string message) => ts3Client.SendChannelMessage(message).UnwrapThrow();
+
+		[Command("pm server", "_undocumented")] // TODO
+		public static void CommandPmServer(Ts3Client ts3Client, string message) => ts3Client.SendServerMessage(message).UnwrapThrow();
 
 		[Command("pm user")]
 		public static void CommandPmUser(Ts3Client ts3Client, ushort clientId, string message) => ts3Client.SendMessage(message, clientId).UnwrapThrow();
