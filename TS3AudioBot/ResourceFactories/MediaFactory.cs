@@ -227,11 +227,8 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				if (File.Exists(url))
 				{
-					int index = url.LastIndexOf('.');
-					string anyId = index >= 0 ? url.Substring(index) : url;
-
 					using (var stream = File.OpenRead(url))
-						plistResult = GetPlaylistContent(stream, anyId);
+						plistResult = GetPlaylistContent(stream, url);
 				}
 				else if (TryGetUri(url).GetOk(out var uri))
 				{
@@ -242,7 +239,7 @@ namespace TS3AudioBot.ResourceFactories
 						string anyId = index >= 0 ? url.Substring(index) : url;
 
 						using (var stream = response.GetResponseStream())
-							plistResult = GetPlaylistContent(stream, contentType ?? anyId);
+							plistResult = GetPlaylistContent(stream, url, contentType);
 					});
 					if (!status.Ok)
 						return status.Error;
@@ -257,13 +254,15 @@ namespace TS3AudioBot.ResourceFactories
 			return plistResult;
 		}
 
-		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string anyId)
+		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string url, string mime = null)
 		{
 			string name = null;
 			List<PlaylistItem> items;
+			mime = mime.ToLowerInvariant();
+			url = url.ToLowerInvariant();
+			string anyId = mime ?? url;
 
 #if NETCOREAPP2_0 || NETSTANDARD2_0
-			anyId = anyId.ToLowerInvariant();
 			switch (anyId)
 			{
 			case ".m3u":
@@ -336,16 +335,31 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_media_file_not_found); // TODO Loc "media not supported"
 			}
 #else
-			var m3uResult = M3uReader.TryGetData(stream);
-			if (!m3uResult.Ok)
-				return new LocalStr(m3uResult.Error);
-			items = m3uResult.Value.ToList();
+			switch (mime ?? url)
+			{
+			case ".m3u":
+			case ".m3u8":
+			case "application/mpegurl":
+			case "application/x-mpegurl":
+			case "audio/mpegurl":
+			case "audio/x-mpegurl":
+			case "application/vnd.apple.mpegurl":
+			case "application/vnd.apple.mpegurl.audio":
+				var m3uResult = M3uReader.TryGetData(stream);
+				if (!m3uResult.Ok)
+					return new LocalStr(m3uResult.Error);
+				items = m3uResult.Value.ToList();
+				break;
+
+			default:
+				return new LocalStr(strings.error_media_file_not_found); // TODO Loc "media not supported"
+			}
 #endif
 
 			if (string.IsNullOrEmpty(name))
 			{
-				var index = anyId.LastIndexOfAny(new[] { '\\', '/' });
-				name = index >= 0 ? anyId.Substring(index) : anyId;
+				var index = url.LastIndexOfAny(new[] { '\\', '/' });
+				name = index >= 0 ? url.Substring(index) : url;
 			}
 			name = PlaylistManager.CleanseName(name);
 			return new Playlist(name, items);

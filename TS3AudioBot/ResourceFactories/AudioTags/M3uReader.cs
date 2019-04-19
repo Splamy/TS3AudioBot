@@ -20,6 +20,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int MaxLineLength = 4096;
+		private const int MaxListLength = 1000;
 		private static readonly byte[] ExtM3uLine = Encoding.UTF8.GetBytes("#EXTM3U");
 		private static readonly byte[] ExtInfLine = Encoding.UTF8.GetBytes("#EXTINF");
 
@@ -34,7 +35,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 
 			try
 			{
-				while (true)
+				for (int i = 0; i < MaxListLength; i++)
 				{
 					if (read > 0)
 					{
@@ -113,6 +114,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 						return data;
 					}
 				}
+				return "List too long";
 			}
 			catch { return "Unexpected m3u parsing error"; }
 		}
