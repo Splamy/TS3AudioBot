@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EmbedIO" Version="2.4.0" />
+    <PackageReference Include="EmbedIO" Version="2.5.0" />
     <PackageReference Condition="'$(TargetFramework)' == 'net46'" Include="GitVersionTask" Version="3.6.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>build</IncludeAssets>
@@ -42,7 +42,7 @@
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
     <PackageReference Include="Nett" Version="0.11.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />
 
     <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp2.0'" Include="System.Runtime.Loader" Version="4.3.0" />

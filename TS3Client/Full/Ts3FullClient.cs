@@ -476,6 +476,17 @@ namespace TS3Client.Full
 				{ "client_is_channel_commander", isChannelCommander },
 			});
 
+		public CmdR RequestTalkPower(string message = null)
+			=> Send<ResponseVoid>(new Ts3Command("clientupdate") {
+				{ "client_talk_request", true },
+				{ "client_talk_request_msg", message },
+			});
+
+		public CmdR CancelTalkPowerRequest()
+			=> Send<ResponseVoid>(new Ts3Command("clientupdate") {
+				{ "client_talk_request", false },
+			});
+
 		public CmdR ClientEk(string ek, string proof)
 			=> SendNoResponsed(new Ts3Command("clientek") {
 				{ "ek", ek },
