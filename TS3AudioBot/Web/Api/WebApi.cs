@@ -55,8 +55,6 @@ namespace TS3AudioBot.Web.Api
 		{
 			var response = context.Response;
 
-			// TOD0 rework responses to track length, so we can use keep-=alive
-			response.KeepAlive = false;
 			response.ContentType = "application/json";
 			response.Headers["Access-Control-Allow-Origin"] = "*";
 			response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";

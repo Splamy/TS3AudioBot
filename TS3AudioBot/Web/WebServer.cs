@@ -134,6 +134,7 @@ namespace TS3AudioBot.Web
 						break;
 
 					context = await webListener.GetContextAsync(cancelToken.Token);
+					context.Response.KeepAlive = false;
 
 					if (cancelToken.IsCancellationRequested)
 						break;
