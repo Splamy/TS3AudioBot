@@ -30,6 +30,21 @@ namespace TS3Client
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 		private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
+		private static readonly Resolver Resolver = new Resolver(new[]
+		{
+			// Google
+			new IPEndPoint(new IPAddress(new byte[] { 8,8,8,8 }), 53),
+			new IPEndPoint(new IPAddress(new byte[] { 8,8,4,4 }), 53),
+			// Cloudflare
+			new IPEndPoint(new IPAddress(new byte[] { 1,1,1,1 }), 53),
+			new IPEndPoint(new IPAddress(new byte[] { 1,0,0,1 }), 53),
+			// OpenDNS
+			new IPEndPoint(new IPAddress(new byte[] { 208,67,222,222 }), 53),
+			new IPEndPoint(new IPAddress(new byte[] { 208,67,220,220 }), 53),
+			// Freenom
+			new IPEndPoint(new IPAddress(new byte[] { 80,80,80,80 }), 53),
+			new IPEndPoint(new IPAddress(new byte[] { 80,80,81,81 }), 53),
+		});
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
@@ -45,11 +60,11 @@ namespace TS3Client
 			// if this address does not look like a domain it might be a nickname
 			if (!address.Contains(".") && !address.Contains(":") && address != "localhost")
 			{
-				Log.Trace("Resolving '{0}' as nickname", address);
+				Log.Debug("Resolving '{0}' as nickname", address);
 				var resolvedNickname = ResolveNickname(address);
 				if (resolvedNickname != null)
 				{
-					Log.Trace("Resolved nickname '{0}' as '{1}'", address, resolvedNickname);
+					Log.Debug("Resolved nickname '{0}' as '{1}'", address, resolvedNickname);
 					address = resolvedNickname;
 				}
 			}
@@ -57,38 +72,28 @@ namespace TS3Client
 			// host is specified as an IP (+ Port)
 			if ((endPoint = ParseIpEndPoint(address, defaultPort)) != null)
 			{
-				Log.Trace("Address is an ip: '{0}'", endPoint);
+				Log.Debug("Address is an ip: '{0}'", endPoint);
 				return true;
 			}
 
 			if (!Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
 			{
-				Log.Trace("Could not parse address as uri");
+				Log.Warn("Could not parse address as uri");
 				return false;
 			}
 
-			var hasUriPort = !string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped));
-
 			// host is a dns name
-			var resolver = new Resolver
-			{
-				Recursion = true,
-				Retries = 3,
-				//TimeOut = 1000, XXX
-				UseCache = true,
-				//DnsServer = "8.8.8.8", XXX
-				TransportType = Heijden.DNS.TransportType.Udp,
-			};
+			var hasUriPort = !string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped));
 
 			// Try resolve udp prefix
 			// Under this address we'll get ts3 voice server
-			var srvEndPoint = ResolveSrv(resolver, DnsPrefixUdp + uri.Host);
+			var srvEndPoint = ResolveSrv(Resolver, DnsPrefixUdp + uri.Host);
 			if (srvEndPoint != null)
 			{
 				if (hasUriPort)
 					srvEndPoint.Port = uri.Port;
 				endPoint = srvEndPoint;
-				Log.Trace("Address found using _udp prefix '{0}'", endPoint);
+				Log.Debug("Address found using _udp prefix '{0}'", endPoint);
 				return true;
 			}
 
@@ -108,7 +113,7 @@ namespace TS3Client
 			// Under this address we'll get the tsdns server
 			foreach (var domain in domainList)
 			{
-				srvEndPoint = ResolveSrv(resolver, DnsPrefixTcp + domain);
+				srvEndPoint = ResolveSrv(Resolver, DnsPrefixTcp + domain);
 				if (srvEndPoint is null)
 					continue;
 
@@ -117,7 +122,7 @@ namespace TS3Client
 				{
 					if (hasUriPort)
 						endPoint.Port = uri.Port;
-					Log.Trace("Address found using _tcp prefix '{0}'", endPoint);
+					Log.Debug("Address found using _tcp prefix '{0}'", endPoint);
 					return true;
 				}
 			}
@@ -193,7 +198,7 @@ namespace TS3Client
 			}
 			catch (Exception ex)
 			{
-				Log.Trace(ex, "Socket forcibly closed when checking '{0}', reason {1}", resolveAddress, ex.Message);
+				Log.Warn(ex, "Socket forcibly closed when checking '{0}', reason {1}", resolveAddress, ex.Message);
 				return null;
 			}
 
@@ -251,13 +256,13 @@ namespace TS3Client
 			}
 			catch (Exception ex)
 			{
-				Log.Debug(ex, "Failed to resolve nickname \"{0}\"", nickname);
+				Log.Warn(ex, "Failed to resolve nickname \"{0}\"", nickname);
 				return null;
 			}
 			var splits = result.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 			if (splits.Length == 0)
 			{
-				Log.Debug("Nickname \"{0}\" has no address entries", nickname);
+				Log.Warn("Nickname \"{0}\" has no address entries", nickname);
 				return null;
 			}
 
