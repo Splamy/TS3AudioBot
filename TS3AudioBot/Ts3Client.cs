@@ -160,11 +160,11 @@ namespace TS3AudioBot
 			}
 			else if (SystemData.IsLinux)
 			{
-				versionSign = VersionSign.VER_LIN_3_2_2;
+				versionSign = VersionSign.VER_LIN_3_2_5;
 			}
 			else
 			{
-				versionSign = VersionSign.VER_WIN_3_2_2;
+				versionSign = VersionSign.VER_WIN_3_2_5;
 			}
 
 			try

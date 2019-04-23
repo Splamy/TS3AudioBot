@@ -109,7 +109,7 @@ namespace TS3Client.Full.Book
 			}
 			obj.ChannelType = ChannelTypeCcFun(msg);
 			obj.ForcedSilence = ReturnFalse(msg);
-			obj.IsPrivate = ReturnFalse(msg);
+			obj.IsPrivate = null;
 			obj.Subscribed = ReturnFalse(msg);
 			obj.OptionalData = null;
 			obj.Order = msg.Order;

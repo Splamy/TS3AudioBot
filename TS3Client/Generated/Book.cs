@@ -116,16 +116,16 @@ namespace TS3Client.Full.Book
 		public MaxClients MaxFamilyClients { get; set; }
 		public i32 Order { get; set; }
 		public ChannelType ChannelType { get; set; }
-		public bool IsDefault { get; set; }
-		public bool HasPassword { get; set; }
+		public bool? IsDefault { get; set; }
+		public bool? HasPassword { get; set; }
 		public i32 CodecLatencyFactor { get; set; }
-		public bool IsUnencrypted { get; set; }
+		public bool? IsUnencrypted { get; set; }
 		public Duration DeleteDelay { get; set; }
 		public i32 NeededTalkPower { get; set; }
 		public bool ForcedSilence { get; internal set; }
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; set; }
-		public bool IsPrivate { get; set; }
+		public bool? IsPrivate { get; set; }
 		public bool Subscribed { get; set; }
 		public OptionalChannelData OptionalData { get; internal set; }
 	}

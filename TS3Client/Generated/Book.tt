@@ -58,7 +58,8 @@ foreach (var struc in gen.@struct)
 				Write($"Dictionary<{prop.key},{prop.type}>");
 				break;
 			default:
-				Write(prop.type);
+				// TODO better
+				Write($"{prop.type}{(prop.opt == true && (prop.type == "bool") ? "?" : "")}");
 				break;
 			}
 		#> <#= prop.name #> { <#= prop.get.Value?"":"internal " #>get; <#= prop.set.Value?"":"internal " #>set; }<# } #>

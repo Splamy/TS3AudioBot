@@ -3686,6 +3686,7 @@ namespace TS3Client.Messages
 		public str PhoneticName { get; set; }
 		public str DefaultToken { get; set; }
 		public str HardwareId { get; set; }
+		public str Badges { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3706,6 +3707,7 @@ namespace TS3Client.Messages
 			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
 			case "client_default_token": DefaultToken = Ts3String.Unescape(value); break;
 			case "hwid": HardwareId = Ts3String.Unescape(value); break;
+			case "client_badges": Badges = Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3733,6 +3735,7 @@ namespace TS3Client.Messages
 				case "client_nickname_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
 				case "client_default_token": foreach(var toi in toc) { toi.DefaultToken = DefaultToken; } break;
 				case "hwid": foreach(var toi in toc) { toi.HardwareId = HardwareId; } break;
+				case "client_badges": foreach(var toi in toc) { toi.Badges = Badges; } break;
 				}
 			}
 
