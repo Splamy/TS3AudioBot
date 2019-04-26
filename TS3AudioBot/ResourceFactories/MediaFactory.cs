@@ -19,9 +19,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.IO;
 	using System.Linq;
 	using System.Net;
-#if NETCOREAPP2_0 || NETSTANDARD2_0
 	using PlaylistsNET.Content;
-#endif
 
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
@@ -262,7 +260,6 @@ namespace TS3AudioBot.ResourceFactories
 			url = url.ToLowerInvariant();
 			string anyId = mime ?? url;
 
-#if NETCOREAPP2_0 || NETSTANDARD2_0
 			switch (anyId)
 			{
 			case ".m3u":
@@ -311,7 +308,7 @@ namespace TS3AudioBot.ResourceFactories
 
 					items = new List<PlaylistItem>(
 						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, null, FactoryFor))); // TODO check null allowed ?
+						select new PlaylistItem(new AudioResource(e.Path, e.TrackTitle, FactoryFor)));
 					name = list.Title;
 					break;
 				}
@@ -334,27 +331,6 @@ namespace TS3AudioBot.ResourceFactories
 			default:
 				return new LocalStr(strings.error_media_file_not_found); // TODO Loc "media not supported"
 			}
-#else
-			switch (mime ?? url)
-			{
-			case ".m3u":
-			case ".m3u8":
-			case "application/mpegurl":
-			case "application/x-mpegurl":
-			case "audio/mpegurl":
-			case "audio/x-mpegurl":
-			case "application/vnd.apple.mpegurl":
-			case "application/vnd.apple.mpegurl.audio":
-				var m3uResult = M3uReader.TryGetData(stream);
-				if (!m3uResult.Ok)
-					return new LocalStr(m3uResult.Error);
-				items = m3uResult.Value.ToList();
-				break;
-
-			default:
-				return new LocalStr(strings.error_media_file_not_found); // TODO Loc "media not supported"
-			}
-#endif
 
 			if (string.IsNullOrEmpty(name))
 			{
