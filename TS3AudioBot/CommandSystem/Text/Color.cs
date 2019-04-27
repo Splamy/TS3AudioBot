@@ -120,7 +120,7 @@ namespace TS3AudioBot.CommandSystem.Text
 		{
 			if (obj is Color col)
 			{
-				return R == col.R && G == col.G && B == col.B && Flags == col.Flags;
+				return this == col;
 			}
 			return false;
 		}
@@ -133,6 +133,10 @@ namespace TS3AudioBot.CommandSystem.Text
 			GetL(strb);
 			return strb.ToString();
 		}
+
+		public static bool operator ==(Color a, Color b) => a.R == b.R && a.G == b.G && a.B == b.B && a.Flags == b.Flags;
+
+		public static bool operator !=(Color a, Color b) => a.R != b.R || a.G != b.G || a.B != b.B || a.Flags != b.Flags;
 	}
 
 	[Flags]

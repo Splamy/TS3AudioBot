@@ -122,7 +122,7 @@ namespace TS3AudioBot.History
 					var createResult = CreateLogEntry(saveData);
 					if (!createResult.Ok)
 					{
-						Log.Warn("AudioLogEntry could not be created! ({0})", createResult.Error);
+						Log.Warn(createResult.Error, "AudioLogEntry could not be created!");
 						return R.Err;
 					}
 					ale = createResult.Value;
@@ -151,10 +151,10 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		private R<AudioLogEntry, string> CreateLogEntry(HistorySaveData saveData)
+		private R<AudioLogEntry, Exception> CreateLogEntry(HistorySaveData saveData)
 		{
 			if (string.IsNullOrWhiteSpace(saveData.Resource.ResourceTitle))
-				return "Track name is empty";
+				return new Exception("Track name is empty");
 
 			int nextHid;
 			if (config.FillDeletedIds && unusedIds.Count > 0)
@@ -174,8 +174,12 @@ namespace TS3AudioBot.History
 				PlayCount = 1,
 			};
 
-			audioLogEntries.Insert(ale);
-			return ale;
+			try
+			{
+				audioLogEntries.Insert(ale);
+				return ale;
+			}
+			catch (Exception ex) { return ex; }
 		}
 
 		private AudioLogEntry FindByUniqueId(string uniqueId) => audioLogEntries.FindOne(x => x.AudioResource.UniqueId == uniqueId);

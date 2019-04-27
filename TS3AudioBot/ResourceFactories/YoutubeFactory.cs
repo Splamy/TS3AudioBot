@@ -26,6 +26,8 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
+		private static readonly Regex StreamCodecMatch = new Regex(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
+		private static readonly Regex StreamBitrateMatch = new Regex(@"BANDWIDTH=(\d+)", Util.DefaultRegexConfig);
 		private const string YoutubeProjectId = "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs";
 
 		public string FactoryFor => "youtube";
@@ -63,6 +65,40 @@ namespace TS3AudioBot.ResourceFactories
 
 			var videoTypes = new List<VideoData>();
 			var dataParse = ParseQueryString(resulthtml);
+
+			if (dataParse.TryGetValue("player_response", out var playerData))
+			{
+				var parsed = JsonConvert.DeserializeObject<JSONPlayerResponse>(playerData[0]);
+				Log.Debug("Extracted data: {@playerData}", parsed);
+				if (parsed.videoDetails.isLive || parsed.videoDetails.isLiveContent)
+				{
+					var webListResponse = WebWrapper.GetResponse(new Uri(parsed.streamingData.hlsManifestUrl), response =>
+					{
+						return AudioTags.M3uReader.TryGetData(response.GetResponseStream()).OkOr(null);
+					});
+					if (webListResponse.Ok)
+					{
+						const string AacHe = "mp4a.40.5";
+						const string AacLc = "mp4a.40.2";
+
+						var webList = webListResponse.Value;
+						var streamPref = from item in webList
+										 let codecs = item.StreamMeta != null ? StreamCodecMatch.Match(item.StreamMeta).Groups[1].Value : ""
+										 let codecPref = codecs.Contains(AacLc) ? 0
+											 : codecs.Contains(AacHe) ? 1
+											 : 2
+										 let bitrate = item.StreamMeta != null ? int.Parse(StreamBitrateMatch.Match(item.StreamMeta).Groups[1].Value) : int.MaxValue
+										 orderby codecPref, bitrate ascending
+										 select item;
+						var streamSelect = streamPref.FirstOrDefault();
+						if (streamSelect != null)
+						{
+							return new PlayResource(streamSelect.TrackUrl, resource.ResourceTitle != null ? resource : resource.WithName(parsed.videoDetails.title));
+						}
+					}
+					return new LocalStr(strings.error_media_no_stream_extracted);
+				}
+			}
 
 			if (dataParse.TryGetValue("url_encoded_fmt_stream_map", out var videoDataUnsplit))
 			{
@@ -330,39 +366,51 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			public string nextPageToken;
 			public JsonItem[] items;
+		}
+		private class JsonItem
+		{
+			public JsonContentDetails contentDetails;
+			public JsonSnippet snippet;
+		}
+		private class JsonContentDetails
+		{
+			public string videoId;
+		}
+		private class JsonSnippet
+		{
+			public string title;
+			public JsonThumbnailList thumbnails;
+		}
+		private class JsonThumbnailList
+		{
+			public JsonThumbnail @default;
+			public JsonThumbnail medium;
+			public JsonThumbnail high;
+			public JsonThumbnail standard;
+			public JsonThumbnail maxres;
+		}
+		private class JsonThumbnail
+		{
+			public string url;
+			public int heigth;
+			public int width;
+		}
 
-			public class JsonItem
-			{
-				public JsonContentDetails contentDetails;
-				public JsonSnippet snippet;
-
-				public class JsonContentDetails
-				{
-					public string videoId;
-				}
-
-				public class JsonSnippet
-				{
-					public string title;
-					public JsonThumbnailList thumbnails;
-
-					public class JsonThumbnailList
-					{
-						public JsonThumbnail @default;
-						public JsonThumbnail medium;
-						public JsonThumbnail high;
-						public JsonThumbnail standard;
-						public JsonThumbnail maxres;
-
-						public class JsonThumbnail
-						{
-							public string url;
-							public int heigth;
-							public int width;
-						}
-					}
-				}
-			}
+		private class JSONPlayerResponse
+		{
+			public JSONStreamingData streamingData;
+			public JSONVideoDetails videoDetails;
+		}
+		private class JSONStreamingData
+		{
+			public string dashManifestUrl;
+			public string hlsManifestUrl;
+		}
+		private class JSONVideoDetails
+		{
+			public string title;
+			public bool isLive;
+			public bool isLiveContent;
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
 #pragma warning restore CS0649, CS0169

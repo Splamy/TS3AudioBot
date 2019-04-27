@@ -15,10 +15,10 @@ namespace TS3AudioBot.CommandSystem.Text
 	public enum TextModFlag
 	{
 		None = 0,
-		Bold = 1 << 0,
-		Italic = 1 << 1,
+		Color = 1 << 0,
+		Underline = 1 << 1,
 		Strike = 1 << 2,
-		Underline = 1 << 3,
-		Color = 1 << 4,
+		Italic = 1 << 3,
+		Bold = 1 << 4,
 	}
 }

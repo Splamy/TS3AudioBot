@@ -17,7 +17,7 @@ namespace TS3AudioBot.CommandSystem.Text
 	{
 		private readonly bool color;
 		private readonly StringBuilder strb;
-		private TextModFlag cur = 0;
+		private TextMod cur = TextMod.None;
 
 		public int Length { get => strb.Length; set => strb.Length = value; }
 
@@ -35,9 +35,23 @@ namespace TS3AudioBot.CommandSystem.Text
 		public TextModBuilder Append(string text, TextMod mod)
 		{
 			if (color)
-				StartText(strb, text, ref cur, mod.Flags, mod.HasColor);
+				StartText(strb, text, ref cur, mod);
 			else
 				strb.Append(text);
+			return this;
+		}
+
+		public TextModBuilder AppendLine(AppliedTextMod atm)
+		{
+			Append(atm.Text, atm.Mod);
+			strb.Append('\n');
+			return this;
+		}
+
+		public TextModBuilder AppendLine(string text, TextMod mod)
+		{
+			Append(text, mod);
+			strb.Append('\n');
 			return this;
 		}
 
@@ -62,21 +76,25 @@ namespace TS3AudioBot.CommandSystem.Text
 			return this;
 		}
 
-		private static void StartText(StringBuilder strb, string text, ref TextModFlag cur, TextModFlag mod, Color? color)
+		private static void StartText(StringBuilder strb, string text, ref TextMod cur, TextMod mod)
 		{
 			if (string.IsNullOrEmpty(text))
 				return;
-			var close = cur & ~mod;
+			var curFlags = cur.Flags;
+			var modFlags = mod.Flags;
+			var close = curFlags & ~modFlags;
+			if ((curFlags & modFlags).HasFlag(TextModFlag.Color) && cur.HasColor != mod.HasColor) close |= TextModFlag.Color;
 			var trimClose = GetShortest(close);
-			cur = End(strb, cur, trimClose);
-			cur &= (~(trimClose - 1) | mod);
-			cur = Start(strb, cur, mod, color);
+			curFlags = End(strb, curFlags, trimClose);
+			curFlags &= (~(trimClose - 1) | modFlags);
+			curFlags = Start(strb, curFlags, mod);
+			cur = new TextMod(curFlags, mod.HasColor);
 			strb.Append(text);
 		}
 
-		private static TextModFlag Start(StringBuilder strb, TextModFlag cur, TextModFlag mod, Color? color)
+		private static TextModFlag Start(StringBuilder strb, TextModFlag cur, TextMod mod)
 		{
-			var flag = ~cur & mod;
+			var flag = ~cur & mod.Flags;
 			if (flag.HasFlag(TextModFlag.Bold))
 				strb.Append("[B]");
 			if (flag.HasFlag(TextModFlag.Italic))
@@ -86,8 +104,8 @@ namespace TS3AudioBot.CommandSystem.Text
 			if (flag.HasFlag(TextModFlag.Underline))
 				strb.Append("[U]");
 			if (flag.HasFlag(TextModFlag.Color))
-				color.Value.GetL(strb);
-			return cur | mod;
+				mod.HasColor.Value.GetL(strb);
+			return cur | mod.Flags;
 		}
 
 		private static TextModFlag End(StringBuilder strb, TextModFlag cur, TextModFlag mod)

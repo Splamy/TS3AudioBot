@@ -4,7 +4,7 @@
 
 "+" = [
 	# Basic stuff
-	"cmd.help",
+	"cmd.help.*",
 	"cmd.pm",
 	"cmd.subscribe",
 	"cmd.unsubscribe",

@@ -198,6 +198,8 @@ namespace TS3AudioBot
 
 		private void OnMessageReceived(object sender, TextMessage textMessage)
 		{
+			Log.Debug("TextMessage: {@textMessage}", textMessage);
+
 			var langResult = LocalizationManager.LoadLanguage(config.Language, false);
 			if (!langResult.Ok)
 				Log.Error("Failed to load language file ({0})", langResult.Error);
@@ -373,7 +375,8 @@ namespace TS3AudioBot
 			info.AddDynamicObject(new CallerInfo(command, false)
 			{
 				SkipRightsChecks = skipRights,
-				CommandComplexityMax = config.Commands.CommandComplexity
+				CommandComplexityMax = config.Commands.CommandComplexity,
+				IsColor = config.Commands.Color,
 			});
 
 			TryCatchCommand(info, answer, () =>

@@ -21,6 +21,8 @@ namespace TS3AudioBot.CommandSystem
 		public int CommandComplexityCurrent { get; set; } = 0;
 		/// <summary>The maximum execution token count for a single call.</summary>
 		public int CommandComplexityMax { get; set; } = 0;
+		/// <summary>Whether the caller wants a colored output.</summary>
+		public bool IsColor { get; set; }
 
 		public CallerInfo(string textMessage, bool isApi)
 		{

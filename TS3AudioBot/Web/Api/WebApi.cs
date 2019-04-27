@@ -88,7 +88,12 @@ namespace TS3AudioBot.Web.Api
 			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
 
 			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
-			execInfo.AddDynamicObject(new CallerInfo(apirequest, true) { CommandComplexityMax = config.CommandComplexity });
+			execInfo.AddDynamicObject(new CallerInfo(apirequest, true)
+			{
+				SkipRightsChecks = false,
+				CommandComplexityMax = config.CommandComplexity,
+				IsColor = false,
+			});
 			execInfo.AddDynamicObject(invoker);
 			execInfo.AddDynamicObject(apiCallDummy);
 			// todo creating token usersessions is now possible

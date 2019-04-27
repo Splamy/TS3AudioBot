@@ -216,7 +216,7 @@ namespace TS3AudioBot
 				if (infoList.ContainsKey(botConfig.Name))
 					continue;
 				infoList[botConfig.Name] = new BotInfo
-				{ 
+				{
 					Id = null,
 					Name = botConfig.Name,
 					Server = botConfig.Connect.Address,
@@ -358,23 +358,45 @@ namespace TS3AudioBot
 		[Command("getuser uid bydbid")]
 		public static string CommandGetUidByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId(dbId).UnwrapThrow().Uid;
 
+		private static readonly TextMod HelpCommand = new TextMod(TextModFlag.Bold);
+		private static readonly TextMod HelpCommandParam = new TextMod(TextModFlag.Italic);
+
 		[Command("help")]
-		[Usage("[<command>]", "Any currently accepted command")]
-		public static JsonObject CommandHelp(CommandManager commandManager, CallerInfo caller, Algorithm.Filter filter = null, params string[] command)
+		public static string CommandHelp(CallerInfo callerInfo)
 		{
-			if (command.Length == 0 && !caller.ApiCall)
+			var tmb = new TextModBuilder(callerInfo.IsColor);
+			tmb.AppendLine("TS3AudioBot at your service!");
+			tmb.AppendLine("To get some basic help on how to get started use one of the following commands:");
+			tmb.Append("!help play", HelpCommand).AppendLine(" : basics for playing songs");
+			tmb.Append("!help playlists", HelpCommand).AppendLine(" : how to manage playlists");
+			tmb.Append("!help history", HelpCommand).AppendLine(" : viewing and accesing the play history");
+			tmb.Append("!help bot", HelpCommand).AppendLine(" : useful features to configure your bot");
+			tmb.Append("!help all", HelpCommand).AppendLine(" : show all commands");
+			tmb.Append("!help command", HelpCommand).Append(" <command path>", HelpCommandParam).AppendLine(" : help text of a specific command");
+			var str = tmb.ToString();
+			return str;
+		}
+
+		[Command("help all")]
+		public static JsonObject CommandHelpAll(CommandManager commandManager)
+		{
+			var botComList = commandManager.AllCommands.Select(c => c.InvokeName).OrderBy(x => x).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
+			return new JsonArray<string>(botComList, bcl =>
 			{
-				var botComList = commandManager.AllCommands.Select(c => c.InvokeName).OrderBy(x => x).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
-				return new JsonArray<string>(botComList, bcl =>
-				{
-					var strb = new StringBuilder();
-					strb.AppendLine();
-					strb.AppendLine(strings.cmd_help_header);
-					foreach (var botCom in bcl)
-						strb.Append(botCom).Append(", ");
-					strb.Length -= 2;
-					return strb.ToString();
-				});
+				var strb = new StringBuilder();
+				foreach (var botCom in bcl)
+					strb.Append(botCom).Append(", ");
+				strb.Length -= 2;
+				return strb.ToString();
+			});
+		}
+
+		[Command("help command")]
+		public static JsonObject CommandHelpCommand(CommandManager commandManager, Algorithm.Filter filter = null, params string[] command)
+		{
+			if (command.Length == 0)
+			{
+				return new JsonEmpty(strings.error_cmd_at_least_one_argument); 
 			}
 
 			CommandGroup group = commandManager.CommandSystem.RootCommand;
@@ -412,6 +434,12 @@ namespace TS3AudioBot
 			default:
 				throw new CommandException(strings.cmd_help_error_unknown_error, CommandExceptionReason.CommandError);
 			}
+		}
+
+		[Command("help play")]
+		public static string CommandHelpPlay()
+		{
+			return "";
 		}
 
 		[Command("history add")]
@@ -648,18 +676,18 @@ namespace TS3AudioBot
 		private static readonly TextMod SongCurrent = new TextMod(TextModFlag.Bold);
 
 		[Command("info")]
-		public static string CommandInfo(PlayManager playManager, PlaylistManager playlistManager, ConfBot confBot = null)
+		public static string CommandInfo(PlayManager playManager, PlaylistManager playlistManager, CallerInfo callerInfo)
 		{
 			var curPlay = playManager.CurrentPlayData;
 			var queue = playlistManager.GetQueue();
 			var curList = playlistManager.CurrentList;
 
-			var tmb = new TextModBuilder(confBot?.Commands.Color);
+			var tmb = new TextModBuilder(callerInfo.IsColor);
 
 			int plIndex = Math.Max(0, playlistManager.Index - 1);
 			int plUpper = Math.Min((curList?.Items.Count ?? 0) - 1, playlistManager.Index + 1);
 
-			string CurLine() => $"{plIndex}: {curList.Items[plIndex].DisplayString} \n";
+			string CurLine() => $"{plIndex}: {curList.Items[plIndex].DisplayString}";
 
 			if (curList?.Items.Count > 0)
 			{
@@ -669,9 +697,9 @@ namespace TS3AudioBot
 				{
 					var line = CurLine();
 					if (plIndex == playlistManager.Index && curPlay?.MetaData.From == PlaySource.FromPlaylist)
-						tmb.Append("> " + line, SongCurrent);
+						tmb.AppendLine("> " + line, SongCurrent);
 					else if (plIndex <= playlistManager.Index)
-						tmb.Append(line, SongDone);
+						tmb.AppendLine(line, SongDone);
 					else
 						break;
 				}
@@ -680,7 +708,7 @@ namespace TS3AudioBot
 			if (curPlay != null && (curPlay.MetaData.From == PlaySource.PlayRequest || curPlay.MetaData.From == PlaySource.FromQueue))
 			{
 				if (tmb.Length == 0) tmb.Append("\n");
-				tmb.Append("> " + curPlay.ResourceData.ResourceTitle + "\n", SongCurrent);
+				tmb.AppendLine("> " + curPlay.ResourceData.ResourceTitle, SongCurrent);
 			}
 
 			if (queue.Length > 0)

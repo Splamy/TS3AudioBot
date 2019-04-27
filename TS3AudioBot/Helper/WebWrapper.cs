@@ -87,7 +87,10 @@ namespace TS3AudioBot.Helper
 			{
 				using (var response = request.GetResponse())
 				{
-					return body.Invoke(response);
+					var result = body.Invoke(response);
+					if (result == null)
+						return new LocalStr(strings.error_net_unknown);
+					return result;
 				}
 			}
 			catch (Exception ex)
