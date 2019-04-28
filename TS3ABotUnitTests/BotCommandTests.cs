@@ -50,7 +50,7 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(output, CallCommand("!eval !h"));
 			Assert.AreEqual(output, CallCommand("!(!h)"));
 			output = CallCommand("!h help");
-			Assert.AreEqual(output, CallCommand("!(!h) h"));
+			Assert.AreEqual(output, CallCommand("!(!h) help"));
 			Assert.Throws<CommandException>(() => CallCommand("!"));
 
 			// Test random

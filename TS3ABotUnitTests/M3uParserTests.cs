@@ -22,13 +22,13 @@ namespace TS3ABotUnitTests
 			Assert.That(result.Ok);
 			Assert.AreEqual(3, result.Value.Count);
 
-			Assert.AreEqual("Delain - Delain - We Are The Others", result.Value[0].DisplayString);
-			Assert.AreEqual("MONO - MONO - The Hand That Holds the Truth", result.Value[1].DisplayString);
-			Assert.AreEqual("Deathstars - Deathstars - Opium", result.Value[2].DisplayString);
+			Assert.AreEqual("Delain - Delain - We Are The Others", result.Value[0].Title);
+			Assert.AreEqual("MONO - MONO - The Hand That Holds the Truth", result.Value[1].Title);
+			Assert.AreEqual("Deathstars - Deathstars - Opium", result.Value[2].Title);
 
-			Assert.AreEqual("/opt/music/bad/Delain.mp3", result.Value[0].Resource.ResourceId);
-			Assert.AreEqual("/opt/music/bad/MONO.mp3", result.Value[1].Resource.ResourceId);
-			Assert.AreEqual("/opt/music/bad/Opium.mp3", result.Value[2].Resource.ResourceId);
+			Assert.AreEqual("/opt/music/bad/Delain.mp3", result.Value[0].TrackUrl);
+			Assert.AreEqual("/opt/music/bad/MONO.mp3", result.Value[1].TrackUrl);
+			Assert.AreEqual("/opt/music/bad/Opium.mp3", result.Value[2].TrackUrl);
 		}
 
 		[Test]
@@ -44,11 +44,11 @@ C:\Windows\System32\firewall64.cpl"
 			Assert.That(result.Ok);
 			Assert.AreEqual(2, result.Value.Count);
 
-			Assert.AreEqual("Never gonna give you up", result.Value[0].DisplayString);
-			Assert.AreEqual("Never gonna let you down", result.Value[1].DisplayString);
+			Assert.AreEqual("Never gonna give you up", result.Value[0].Title);
+			Assert.AreEqual("Never gonna let you down", result.Value[1].Title);
 
-			Assert.AreEqual(@"C:\Windows\System32\firewall32.cpl", result.Value[0].Resource.ResourceId);
-			Assert.AreEqual(@"C:\Windows\System32\firewall64.cpl", result.Value[1].Resource.ResourceId);
+			Assert.AreEqual(@"C:\Windows\System32\firewall32.cpl", result.Value[0].TrackUrl);
+			Assert.AreEqual(@"C:\Windows\System32\firewall64.cpl", result.Value[1].TrackUrl);
 		}
 
 
@@ -64,11 +64,11 @@ C:\PepeHands.jpg
 			Assert.That(result.Ok);
 			Assert.AreEqual(2, result.Value.Count);
 
-			Assert.AreEqual(@"C:\PepeHands.jpg", result.Value[0].DisplayString);
-			Assert.AreEqual(@"./do/I/look/like/I/know/what/a/Jaypeg/is", result.Value[1].DisplayString);
+			Assert.AreEqual(null, result.Value[0].Title);
+			Assert.AreEqual(null, result.Value[1].Title);
 
-			Assert.AreEqual(@"C:\PepeHands.jpg", result.Value[0].Resource.ResourceId);
-			Assert.AreEqual(@"./do/I/look/like/I/know/what/a/Jaypeg/is", result.Value[1].Resource.ResourceId);
+			Assert.AreEqual(@"C:\PepeHands.jpg", result.Value[0].TrackUrl);
+			Assert.AreEqual(@"./do/I/look/like/I/know/what/a/Jaypeg/is", result.Value[1].TrackUrl);
 		}
 	}
 }

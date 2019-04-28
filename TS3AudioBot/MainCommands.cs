@@ -377,7 +377,7 @@ namespace TS3AudioBot
 			return str;
 		}
 
-		[Command("help all")]
+		[Command("help all", "_undocumented")]
 		public static JsonObject CommandHelpAll(CommandManager commandManager)
 		{
 			var botComList = commandManager.AllCommands.Select(c => c.InvokeName).OrderBy(x => x).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
@@ -391,7 +391,7 @@ namespace TS3AudioBot
 			});
 		}
 
-		[Command("help command")]
+		[Command("help command", "_undocumented")]
 		public static JsonObject CommandHelpCommand(CommandManager commandManager, Algorithm.Filter filter = null, params string[] command)
 		{
 			if (command.Length == 0)
@@ -436,7 +436,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		[Command("help play")]
+		[Command("help play", "_undocumented")]
 		public static string CommandHelpPlay()
 		{
 			return "";
