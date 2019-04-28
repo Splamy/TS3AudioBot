@@ -4,7 +4,6 @@ namespace TS3Client.Full
 	using Helper;
 	using Messages;
 	using System;
-	using System.Collections.Generic;
 	using System.Diagnostics;
 	using System.IO;
 	using System.Net;
@@ -49,7 +48,7 @@ namespace TS3Client.Full
 
 		public void Listen(IPEndPoint addr)
 		{
-			packetHandler.Listen(addr);
+			packetHandler.Listen(addr, null);
 			context = new ConnectionContext();
 			dispatcher.Init(NetworkLoop, InvokeEvent, context);
 			dispatcher.EnterEventLoop();

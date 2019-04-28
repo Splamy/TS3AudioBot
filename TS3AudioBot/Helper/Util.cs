@@ -160,6 +160,8 @@ namespace TS3AudioBot.Helper
 			try { return process.HasExited; }
 			catch { return true; }
 		}
+
+		internal static void SetLogId(string id) => NLog.MappedDiagnosticsContext.Set("BotId", id);
 	}
 
 	public class MissingEnumCaseException : Exception

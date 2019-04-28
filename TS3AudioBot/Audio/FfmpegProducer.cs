@@ -24,12 +24,12 @@ namespace TS3AudioBot.Audio
 	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		private readonly string id;
 		private static readonly Regex FindDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
 		private static readonly Regex IcyMetadataMacher = new Regex("((\\w+)='(.*?)';\\s*)+", Util.DefaultRegexConfig);
-		private const string PreLinkConf = "-hide_banner -nostats -i \"";
-		private const string PostLinkConf = "\" -threads 1 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
-		private const string PreLinkConfIcy = "-hide_banner -nostats -i pipe:0";
-		private const string PostLinkConfIcy = " -threads 1 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
+		private const string PreLinkConf = "-hide_banner -nostats -threads 1 -i \"";
+		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
+		private const string LinkConfIcy = "-hide_banner -nostats -threads 1 -i pipe:0 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
 		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 
 		private readonly ConfToolsFfmpeg config;
@@ -43,9 +43,10 @@ namespace TS3AudioBot.Audio
 		public int Channels { get; } = 2;
 		public int BitsPerSample { get; } = 16;
 
-		public FfmpegProducer(ConfToolsFfmpeg config)
+		public FfmpegProducer(ConfToolsFfmpeg config, string id)
 		{
 			this.config = config;
+			this.id = id;
 		}
 
 		public E<string> AudioStart(string url) => StartFfmpegProcess(url, TimeSpan.Zero);
@@ -239,11 +240,10 @@ namespace TS3AudioBot.Audio
 
 				new Thread(newInstance.ReadStreamLoop)
 				{
-					Name = "Icy stream reader",
+					Name = $"IcyStreamReader[${id}]",
 				}.Start();
 
-				var arguments = string.Concat(PreLinkConfIcy, url, PostLinkConfIcy);
-				return StartFfmpegProcessInternal(newInstance, arguments);
+				return StartFfmpegProcessInternal(newInstance, LinkConfIcy);
 			}
 			catch (Exception ex)
 			{

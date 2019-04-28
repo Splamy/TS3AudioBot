@@ -29,6 +29,7 @@ namespace TS3AudioBot
 	public sealed class Ts3Client : IPlayerConnection, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		private readonly string id;
 		private const Codec SendCodec = Codec.OpusMusic;
 
 		public event EventHandler<EventArgs> OnBotConnected;
@@ -72,12 +73,13 @@ namespace TS3AudioBot
 		private readonly EncoderPipe encoderPipe;
 		internal CustomTargetPipe TargetPipe { get; }
 
-		public Ts3Client(ConfBot config)
+		public Ts3Client(ConfBot config, string id = null)
 		{
+			this.id = id;
 			Util.Init(out clientDbNames);
 			Util.Init(out clientbuffer);
 
-			TsFullClient = new Ts3FullClient(EventDispatchType.DoubleThread);
+			TsFullClient = new Ts3FullClient();
 			TsFullClient.OnClientLeftView += ExtendedClientLeftView;
 			TsFullClient.OnClientEnterView += ExtendedClientEnterView;
 			TsFullClient.OnTextMessage += ExtendedTextMessage;
@@ -90,13 +92,13 @@ namespace TS3AudioBot
 			this.config = config;
 			this.config.Audio.Bitrate.Changed += (s, e) => encoderPipe.Bitrate = ScaleBitrate(e.NewValue);
 
-			ffmpegProducer = new FfmpegProducer(config.GetParent().Tools.Ffmpeg);
+			ffmpegProducer = new FfmpegProducer(config.GetParent().Tools.Ffmpeg, id);
 			stallCheckPipe = new StallCheckPipe();
 			volumePipe = new VolumePipe();
 			Volume = config.Audio.Volume.Default;
 			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ScaleBitrate(config.Audio.Bitrate) };
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
-			timePipe.Initialize(encoderPipe);
+			timePipe.Initialize(encoderPipe, id);
 			TargetPipe = new CustomTargetPipe(TsFullClient);
 			mergePipe = new PassiveMergePipe();
 
@@ -178,6 +180,7 @@ namespace TS3AudioBot
 					VersionSign = versionSign,
 					DefaultChannel = config.Connect.Channel,
 					DefaultChannelPassword = config.Connect.ChannelPassword.Get(),
+					InstanceTag = id,
 				};
 				config.SaveWhenExists();
 

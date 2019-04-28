@@ -262,7 +262,19 @@ namespace TS3AudioBot
 				foreach (var type in DynamicCommandSysTypes)
 					if (info.TryGet(type, out var dep))
 						childInfo.AddDynamicObject(dep);
-				return cmd.Execute(childInfo, Array.Empty<ICommand>(), returnTypes);
+
+				string backUpId = NLog.MappedDiagnosticsContext.Get("BotId");
+				try
+				{
+					using (NLog.MappedDiagnosticsContext.SetScoped("BotId", botId.ToString()))
+					{
+						return cmd.Execute(childInfo, Array.Empty<ICommand>(), returnTypes);
+					}
+				}
+				finally
+				{
+					NLog.MappedDiagnosticsContext.Set("BotId", backUpId);
+				}
 			}
 		}
 
@@ -396,7 +408,7 @@ namespace TS3AudioBot
 		{
 			if (command.Length == 0)
 			{
-				return new JsonEmpty(strings.error_cmd_at_least_one_argument); 
+				return new JsonEmpty(strings.error_cmd_at_least_one_argument);
 			}
 
 			CommandGroup group = commandManager.CommandSystem.RootCommand;

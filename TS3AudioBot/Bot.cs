@@ -41,7 +41,7 @@ namespace TS3AudioBot
 		internal bool IsDisposed { get; private set; }
 		internal BotInjector Injector { get; }
 
-		public int Id { get; internal set; }
+		public int Id { get; }
 		/// <summary>This is the template name. Can be null.</summary>
 		public string Name => config.Name;
 		public bool QuizMode { get; set; }
@@ -64,8 +64,9 @@ namespace TS3AudioBot
 		public IPlayerConnection PlayerConnection { get; private set; }
 		public Filter Filter { get; private set; }
 
-		public Bot(ConfBot config, BotInjector injector)
+		public Bot(int id, ConfBot config, BotInjector injector)
 		{
+			this.Id = id;
 			this.config = config;
 			this.Injector = injector;
 		}
@@ -107,7 +108,7 @@ namespace TS3AudioBot
 			Injector.RegisterModule(config);
 			Injector.RegisterModule(Injector);
 			Injector.RegisterModule(new PlaylistManager(config.Playlists));
-			var teamspeakClient = new Ts3Client(config);
+			var teamspeakClient = new Ts3Client(config, Id.ToString());
 			Injector.RegisterModule(teamspeakClient);
 			Injector.RegisterModule(teamspeakClient.TsFullClient);
 			Injector.RegisterModule(new SessionManager());

@@ -85,9 +85,9 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 		}
 
-		public void Connect(IPEndPoint address)
+		public void Connect(IPEndPoint address, string id)
 		{
-			Initialize(address, true);
+			Initialize(address, true, id);
 			// The old client used to send 'clientinitiv' as the first message.
 			// All newer servers still ack it but do not require it anymore.
 			// Therefore there is no use in sending it.
@@ -98,11 +98,11 @@ namespace TS3Client.Full
 			AddOutgoingPacket(ts3Crypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
 		}
 
-		public void Listen(IPEndPoint address)
+		public void Listen(IPEndPoint address, string id)
 		{
 			lock (sendLoopLock)
 			{
-				Initialize(address, false);
+				Initialize(address, false, id);
 				// dummy
 				initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>(Array.Empty<byte>(), 0, 0, 0))
 				{
@@ -112,9 +112,9 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void Initialize(IPEndPoint address, bool connect)
+		private void Initialize(IPEndPoint address, bool connect, string id)
 		{
-			var resendThread = new Thread(ResendLoop) { Name = "PacketHandler" };
+			var resendThread = new Thread(() => { Util.SetLogId(id); ResendLoop(); }) { Name = $"PacketHandler[${id}]" };
 			resendThreadId = resendThread.ManagedThreadId;
 
 			lock (sendLoopLock)

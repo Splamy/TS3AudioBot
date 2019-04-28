@@ -110,56 +110,57 @@ namespace TS3AudioBot
 
 		public R<BotInfo, string> RunBot(ConfBot config)
 		{
-			var bot = new Bot(config, CoreInjector.CloneRealm<BotInjector>());
-			if (!CoreInjector.TryInject(bot))
-				Log.Warn("Partial bot dependency loaded only");
+			Bot bot;
+
+			lock (lockObj)
+			{
+				var id = GetFreeId();
+				if (id == null)
+					return "BotManager is shutting down";
+
+				bot = new Bot(id.Value, config, CoreInjector.CloneRealm<BotInjector>());
+				if (!CoreInjector.TryInject(bot))
+					Log.Warn("Partial bot dependency loaded only");
+
+				InsertBot(bot);
+			}
 
 			lock (bot.SyncRoot)
 			{
 				var initializeResult = bot.InitializeBot();
-				var removeBot = false;
-				if (initializeResult.Ok)
-				{
-					lock (lockObj)
-					{
-						if (!InsertIntoFreeId(bot))
-							removeBot = true;
-					}
-				}
-				else
-				{
-					return $"Bot failed to connect ({initializeResult.Error})";
-				}
-
-				if (removeBot)
+				if (!initializeResult.Ok)
 				{
 					StopBot(bot);
-					return "BotManager is shutting down";
+					return $"Bot failed to connect ({initializeResult.Error})";
 				}
 			}
 			return bot.GetInfo();
 		}
 
 		// !! This method must be called with a lock on lockObj
-		private bool InsertIntoFreeId(Bot bot)
+		private void InsertBot(Bot bot)
+		{
+			activeBots[bot.Id] = bot;
+		}
+
+		// !! This method must be called with a lock on lockObj
+		// !! The id must be either used withing the same lock or considered invalid.
+		private int? GetFreeId()
 		{
 			if (activeBots is null)
-				return false;
+				return null;
 
 			for (int i = 0; i < activeBots.Count; i++)
 			{
 				if (activeBots[i] is null)
 				{
-					activeBots[i] = bot;
-					bot.Id = i;
-					return true;
+					return i;
 				}
 			}
 
 			// All slots are full, get a new slot
-			activeBots.Add(bot);
-			bot.Id = activeBots.Count - 1;
-			return true;
+			activeBots.Add(null);
+			return activeBots.Count - 1;
 		}
 
 		// !! This method must be called with a lock on lockObj

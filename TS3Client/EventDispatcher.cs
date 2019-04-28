@@ -9,10 +9,10 @@
 
 namespace TS3Client
 {
+	using Helper;
 	using System;
 	using System.Collections.Concurrent;
 	using System.Threading;
-	using Full;
 
 	using EvloopType = System.Action<object>;
 
@@ -36,6 +36,12 @@ namespace TS3Client
 			}
 			return dispatcher;
 		}
+
+		internal static string CreateLogThreadName(string threadName, string id) => threadName + (string.IsNullOrEmpty(id) ? "" : $"[{id}]");
+
+		internal static string CreateDispatcherTitle(string id) => CreateLogThreadName(DispatcherTitle, id);
+
+		internal static string CreateEventLoopTitle(string id) => CreateLogThreadName(DispatcherTitle, id);
 	}
 
 	/// <summary> Provides a function to run a receiving loop and asynchronously
@@ -48,7 +54,7 @@ namespace TS3Client
 		/// <param name="dispatcher">The method to call asynchronously when a new
 		/// notification comes in.</param>
 		/// <param name="ctx">The current connection context.</param>
-		void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx);
+		void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id = "");
 		/// <summary>Dispatches the notification.</summary>
 		/// <param name="lazyNotification"></param>
 		void Invoke(LazyNotification lazyNotification);
@@ -62,16 +68,22 @@ namespace TS3Client
 	internal sealed class CurrentThreadEventDisptcher : IEventDispatcher
 	{
 		private EvloopType eventLoop;
-		private ConnectionContext ctx;
 		private Action<LazyNotification> dispatcher;
+		private object ctx;
+		private string id;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
 		{
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;
 			this.ctx = ctx;
+			this.id = id;
 		}
-		public void EnterEventLoop() => eventLoop(ctx);
+		public void EnterEventLoop()
+		{
+			Util.SetLogId(id);
+			eventLoop(ctx);
+		}
 		public void Invoke(LazyNotification lazyNotification) => dispatcher.Invoke(lazyNotification);
 		public void DoWork() { }
 		public void Dispose() { }
@@ -80,19 +92,21 @@ namespace TS3Client
 	internal sealed class ExtraThreadEventDispatcher : IEventDispatcher
 	{
 		private EvloopType eventLoop;
-		private ConnectionContext ctx;
 		private Action<LazyNotification> dispatcher;
+		private object ctx;
+		private string id;
 		private Thread dispatchThread;
 		private readonly ConcurrentQueue<LazyNotification> eventQueue = new ConcurrentQueue<LazyNotification>();
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private volatile bool run;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
 		{
 			run = true;
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;
 			this.ctx = ctx;
+			this.id = id;
 		}
 
 		public void Invoke(LazyNotification lazyNotification)
@@ -103,9 +117,15 @@ namespace TS3Client
 
 		public void EnterEventLoop()
 		{
-			dispatchThread = new Thread(DispatchLoop) { Name = EventDispatcherHelper.DispatcherTitle };
+			dispatchThread = new Thread(() =>
+			{
+				Util.SetLogId(id);
+				DispatchLoop();
+			})
+			{ Name = EventDispatcherHelper.CreateDispatcherTitle(id) };
 			dispatchThread.Start();
 
+			Util.SetLogId(id);
 			eventLoop(ctx);
 		}
 
@@ -140,20 +160,22 @@ namespace TS3Client
 	internal sealed class DoubleThreadEventDispatcher : IEventDispatcher
 	{
 		private EvloopType eventLoop;
-		private ConnectionContext ctx;
 		private Action<LazyNotification> dispatcher;
+		private object ctx;
+		private string id;
 		private Thread eventLoopThread;
 		private Thread dispatchThread;
 		private readonly ConcurrentQueue<LazyNotification> eventQueue = new ConcurrentQueue<LazyNotification>();
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private volatile bool run;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
 		{
 			run = true;
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;
 			this.ctx = ctx;
+			this.id = id;
 		}
 
 		public void Invoke(LazyNotification lazyNotification)
@@ -164,9 +186,23 @@ namespace TS3Client
 
 		public void EnterEventLoop()
 		{
-			dispatchThread = new Thread(DispatchLoop) { Name = EventDispatcherHelper.DispatcherTitle };
+			dispatchThread = new Thread(() =>
+			{
+				Util.SetLogId(id);
+				DispatchLoop();
+			})
+			{
+				Name = EventDispatcherHelper.CreateDispatcherTitle(id)
+			};
 			dispatchThread.Start();
-			eventLoopThread = new Thread(() => eventLoop.Invoke(ctx)) { Name = EventDispatcherHelper.EventLoopTitle };
+			eventLoopThread = new Thread(() =>
+			{
+				Util.SetLogId(id);
+				eventLoop(ctx);
+			})
+			{
+				Name = EventDispatcherHelper.CreateEventLoopTitle(id)
+			};
 			eventLoopThread.Start();
 		}
 
@@ -200,7 +236,7 @@ namespace TS3Client
 
 	internal sealed class NoEventDispatcher : IEventDispatcher
 	{
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx) { }
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id) { }
 		public void EnterEventLoop() { }
 		public void Invoke(LazyNotification lazyNotification) { }
 		public void DoWork() { }
@@ -209,52 +245,75 @@ namespace TS3Client
 
 	internal sealed class AutoThreadPooledEventDispatcher : IEventDispatcher
 	{
-		private ConnectionContext ctx;
 		private EvloopType eventLoop;
 		private Action<LazyNotification> dispatcher;
+		private object ctx;
+		private string id;
 		private Thread eventLoopThread;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
 		{
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;
 			this.ctx = ctx;
+			this.id = id;
 		}
 
 		public void EnterEventLoop()
 		{
-			eventLoopThread = new Thread(() => eventLoop.Invoke(ctx)) { Name = EventDispatcherHelper.EventLoopTitle };
+			eventLoopThread = new Thread(() =>
+			{
+				Util.SetLogId(id);
+				eventLoop(ctx);
+			})
+			{ Name = EventDispatcherHelper.CreateEventLoopTitle(id) };
 			eventLoopThread.Start();
 		}
 		public void Invoke(LazyNotification lazyNotification) => ThreadPool.QueueUserWorkItem(Call, lazyNotification);
-		private void Call(object obj) => dispatcher.Invoke((LazyNotification)obj);
+		private void Call(object obj)
+		{
+			using (NLog.MappedDiagnosticsContext.SetScoped("BotId", id))
+				dispatcher.Invoke((LazyNotification)obj);
+		}
 		public void DoWork() { }
 		public void Dispose() { }
 	}
 
 	internal sealed class NewThreadEachEventDispatcher : IEventDispatcher
 	{
-		private ConnectionContext ctx;
 		private EvloopType eventLoop;
 		private Action<LazyNotification> dispatcher;
+		private object ctx;
+		private string id;
 		private Thread eventLoopThread;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, ConnectionContext ctx)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
 		{
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;
 			this.ctx = ctx;
+			this.id = id;
 		}
 
 		public void EnterEventLoop()
 		{
-			eventLoopThread = new Thread(() => eventLoop.Invoke(ctx)) { Name = EventDispatcherHelper.EventLoopTitle };
+			eventLoopThread = new Thread(() =>
+			{
+				Util.SetLogId(id);
+				eventLoop(ctx);
+			})
+			{ Name = EventDispatcherHelper.CreateEventLoopTitle(id) };
 			eventLoopThread.Start();
 		}
 
 		public void Invoke(LazyNotification lazyNotification)
 		{
-			eventLoopThread = new Thread(() => dispatcher.Invoke(lazyNotification)) { Name = "TS3 MessageDispatcher" };
+			eventLoopThread = new Thread(() =>
+			{
+				Util.SetLogId(id);
+				dispatcher(lazyNotification);
+			})
+			{ Name = EventDispatcherHelper.CreateLogThreadName("TS3 MessageDispatcher", id) };
 			eventLoopThread.Start();
 		}
 

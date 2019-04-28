@@ -18,6 +18,7 @@ namespace TS3Client.Query
 	using System.IO.Pipelines;
 	using System.Linq;
 	using System.Net.Sockets;
+	using System.Threading;
 	using System.Threading.Tasks;
 	using ChannelIdT = System.UInt64;
 	using CmdR = System.E<Messages.CommandError>;
@@ -29,6 +30,7 @@ namespace TS3Client.Query
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
 		private StreamWriter tcpWriter;
+		private CancellationTokenSource cts;
 		private readonly SyncMessageProcessor msgProc;
 		private readonly IEventDispatcher dispatcher;
 		private readonly Pipe dataPipe = new Pipe();
@@ -45,7 +47,7 @@ namespace TS3Client.Query
 		public override event EventHandler<EventArgs> OnConnected;
 		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
 
-		public Ts3QueryClient(EventDispatchType dispatcherType)
+		public Ts3QueryClient(EventDispatchType dispatcherType = EventDispatchType.DoubleThread)
 		{
 			connecting = false;
 			tcpClient = new TcpClient();
@@ -67,6 +69,7 @@ namespace TS3Client.Query
 				ConnectionData = conData;
 
 				tcpStream = tcpClient.GetStream();
+				// todo: remove reader and move logic into pipe read stream
 				tcpReader = new StreamReader(tcpStream, Util.Encoder);
 				tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
 
@@ -76,7 +79,8 @@ namespace TS3Client.Query
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
 			finally { connecting = false; }
 
-			dispatcher.Init(NetworkLoop, InvokeEvent, null);
+			cts = new CancellationTokenSource();
+			dispatcher.Init(NetworkLoop, InvokeEvent, null, conData.InstanceTag);
 			OnConnected?.Invoke(this, EventArgs.Empty);
 			dispatcher.EnterEventLoop();
 		}
@@ -86,6 +90,7 @@ namespace TS3Client.Query
 			lock (sendQueueLock)
 			{
 				SendRaw("quit");
+				cts.Cancel();
 				if (tcpClient.Connected)
 					tcpClient?.Dispose();
 			}
@@ -93,21 +98,21 @@ namespace TS3Client.Query
 
 		private void NetworkLoop(object ctx)
 		{
-			Task.WhenAll(ReadLoopAsync(tcpStream, dataPipe.Writer), WriteLoopAsync(dataPipe.Reader)).ConfigureAwait(false).GetAwaiter().GetResult();
+			Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cts.Token), PipeProcessorAsync(dataPipe.Reader, cts.Token)).ConfigureAwait(false).GetAwaiter().GetResult();
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
 		}
 
-		private async Task ReadLoopAsync(NetworkStream stream, PipeWriter writer)
+		private async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
 		{
 			const int minimumBufferSize = 4096;
 			var dataReadBuffer = new byte[4096];
 
-			while (true)
+			while (!cancellationToken.IsCancellationRequested)
 			{
 				try
 				{
 					var mem = writer.GetMemory(minimumBufferSize);
-					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length).ConfigureAwait(false);
+					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length, cancellationToken).ConfigureAwait(false);
 					if (bytesRead == 0)
 					{
 						break;
@@ -120,7 +125,7 @@ namespace TS3Client.Query
 				}
 				catch (IOException) { break; }
 
-				FlushResult result = await writer.FlushAsync().ConfigureAwait(false);
+				FlushResult result = await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 
 				if (result.IsCompleted)
 				{
@@ -130,11 +135,11 @@ namespace TS3Client.Query
 			writer.Complete();
 		}
 
-		private async Task WriteLoopAsync(PipeReader reader)
+		private async Task PipeProcessorAsync(PipeReader reader, CancellationToken cancelationToken = default)
 		{
-			while (true)
+			while (!cancelationToken.IsCancellationRequested)
 			{
-				var result = await reader.ReadAsync().ConfigureAwait(false);
+				var result = await reader.ReadAsync(cancelationToken).ConfigureAwait(false);
 
 				ReadOnlySequence<byte> buffer = result.Buffer;
 				SequencePosition? position;

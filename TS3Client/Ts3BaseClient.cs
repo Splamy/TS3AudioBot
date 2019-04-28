@@ -28,7 +28,7 @@ namespace TS3Client
 	/// <summary>A shared function base between the query and full client.</summary>
 	public abstract class Ts3BaseFunctions : IDisposable
 	{
-		protected static readonly NLog.Logger LogCmd = NLog.LogManager.GetLogger("TS3Client.Cmd");
+		protected readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		/// <summary>When this client receives any visible message.</summary>
 		public abstract event NotifyEventHandler<TextMessage> OnTextMessage;
 		/// <summary>When another client enters visiblility.</summary>

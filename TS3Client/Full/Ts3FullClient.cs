@@ -26,7 +26,6 @@ namespace TS3Client.Full
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed partial class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3Crypt ts3Crypt;
 		private readonly PacketHandler<S2C, C2S> packetHandler;
 		private readonly AsyncMessageProcessor msgProc;
@@ -60,7 +59,7 @@ namespace TS3Client.Full
 		/// <summary>Creates a new client. A client can manage one connection to a server.</summary>
 		/// <param name="dispatcherType">The message processing method for incomming notifications.
 		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
-		public Ts3FullClient(EventDispatchType dispatcherType)
+		public Ts3FullClient(EventDispatchType dispatcherType = EventDispatchType.DoubleThread)
 		{
 			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
@@ -98,8 +97,8 @@ namespace TS3Client.Full
 				ts3Crypt.Reset();
 				ts3Crypt.Identity = conDataFull.Identity;
 
-				packetHandler.Connect(remoteAddress);
-				dispatcher.Init(NetworkLoop, InvokeEvent, context);
+				packetHandler.Connect(remoteAddress, conData.InstanceTag);
+				dispatcher.Init(NetworkLoop, InvokeEvent, context, conData.InstanceTag);
 			}
 			dispatcher.EnterEventLoop();
 		}
@@ -184,7 +183,7 @@ namespace TS3Client.Full
 				{
 				case PacketType.Command:
 				case PacketType.CommandLow:
-					LogCmd.ConditionalDebug("[I] {0}", Util.Encoder.GetString(packet.Data));
+					Log.ConditionalDebug("[I] {0}", Util.Encoder.GetString(packet.Data));
 					var result = msgProc.PushMessage(packet.Data);
 					if (result.HasValue)
 						dispatcher.Invoke(result.Value);
@@ -404,7 +403,7 @@ namespace TS3Client.Full
 				}
 
 				var message = com.ToString();
-				LogCmd.Debug("[O] {0}", message);
+				Log.Debug("[O] {0}", message);
 				byte[] data = Util.Encoder.GetBytes(message);
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
@@ -697,5 +696,6 @@ namespace TS3Client.Full
 	internal class ConnectionContext
 	{
 		public bool WasExit { get; set; }
+		public string BotId { get; set; }
 	}
 }
