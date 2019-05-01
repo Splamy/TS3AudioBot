@@ -199,6 +199,11 @@ namespace TS3AudioBot
 
 		private void OnMessageReceived(object sender, TextMessage textMessage)
 		{
+			if(textMessage == null || textMessage.Message == null)
+			{
+				Log.Warn("Invalid TextMessage: {@textMessage}", textMessage);
+				return;
+			}
 			Log.Debug("TextMessage: {@textMessage}", textMessage);
 
 			var langResult = LocalizationManager.LoadLanguage(config.Language, false);
