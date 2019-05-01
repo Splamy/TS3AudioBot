@@ -30,23 +30,18 @@ namespace TS3AudioBot.ResourceFactories
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 
-		public CommandManager CommandManager { get; set; }
-
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
 		private readonly List<IResourceFactory> resFactories;
-		private readonly ConfFactories config;
+		private readonly CommandManager commandManager;
 
-		public ResourceFactoryManager(ConfFactories config)
+		public ResourceFactoryManager(ConfFactories config, CommandManager commandManager)
 		{
 			Util.Init(out allFacories);
 			Util.Init(out resFactories);
 			Util.Init(out listFactories);
-			this.config = config;
-		}
+			this.commandManager = commandManager;
 
-		public void Initialize()
-		{
 			AddFactory(new MediaFactory(config.Media));
 			AddFactory(new YoutubeFactory());
 			AddFactory(new SoundcloudFactory());
@@ -225,7 +220,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			var factoryInfo = new FactoryData(factory, commands.ToArray());
 			allFacories.Add(factory.FactoryFor, factoryInfo);
-			CommandManager.RegisterCollection(factoryInfo);
+			commandManager.RegisterCollection(factoryInfo);
 		}
 
 		public void RemoveFactory(IFactory factory)
@@ -240,7 +235,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (factory is IPlaylistFactory listFactory)
 				listFactories.Remove(listFactory);
 
-			CommandManager.UnregisterCollection(factoryInfo);
+			commandManager.UnregisterCollection(factoryInfo);
 		}
 
 		private static LocalStr CouldNotLoad(string reason = null)

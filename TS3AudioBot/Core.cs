@@ -22,6 +22,7 @@ namespace TS3AudioBot
 	using TS3AudioBot.CommandSystem;
 	using TS3AudioBot.Playlists;
 	using Web;
+	using Helper.Environment;
 
 	public sealed class Core : IDisposable
 	{
@@ -29,22 +30,7 @@ namespace TS3AudioBot
 		private const string DefaultConfigFileName = "ts3audiobot.toml";
 		private readonly string configFilePath;
 		private bool forceNextExit;
-
-		public DateTime StartTime { get; }
-		public Helper.Environment.SystemMonitor SystemMonitor { get; }
-
-		/// <summary>General purpose persistant storage for internal modules.</summary>
-		internal DbStore Database { get; set; }
-		/// <summary>Manages plugins, provides various loading and unloading mechanisms.</summary>
-		internal PluginManager PluginManager { get; set; }
-		/// <summary>Manages factories which can load resources.</summary>
-		public ResourceFactoryManager FactoryManager { get; set; }
-		/// <summary>Minimalistic webserver hosting the api and web-interface.</summary>
-		public WebServer WebManager { get; set; }
-		/// <summary>Management of conntected Bots.</summary>
-		public BotManager Bots { get; set; }
-		/// <summary>Permission management.</summary>
-		public RightsManager RightsManager { get; set; }
+		private readonly CoreInjector injector;
 
 		internal static void Main(string[] args)
 		{
@@ -79,9 +65,7 @@ namespace TS3AudioBot
 			// setting defaults
 			this.configFilePath = configFilePath ?? DefaultConfigFileName;
 
-			StartTime = Util.GetNow();
-			SystemMonitor = new Helper.Environment.SystemMonitor();
-			SystemMonitor.StartTimedSnapshots();
+			injector = new CoreInjector();
 		}
 
 		private E<string> Run(bool interactive = false)
@@ -93,52 +77,42 @@ namespace TS3AudioBot
 			Config.Deprecated.UpgradeScript.CheckAndUpgrade(config);
 			ConfigUpgrade2.Upgrade(config.Configs.BotsPath.Value);
 
-			var injector = new CoreInjector();
+			var builder = new DependencyBuilder(injector);
 
-			injector.RegisterType<Core>();
-			injector.RegisterType<ConfRoot>();
-			injector.RegisterType<CoreInjector>();
-			injector.RegisterType<DbStore>();
-			injector.RegisterType<PluginManager>();
-			injector.RegisterType<WebServer>();
-			injector.RegisterType<RightsManager>();
-			injector.RegisterType<BotManager>();
-			injector.RegisterType<TokenManager>();
-			injector.RegisterType<PlaylistPool>();
-			injector.RegisterType<CommandManager>();
-			injector.RegisterType<ResourceFactoryManager>();
-
-			injector.RegisterModule(this);
-			injector.RegisterModule(config);
-			injector.RegisterModule(injector);
-			injector.RegisterModule(new DbStore(config.Db));
-			injector.RegisterModule(new PluginManager(config.Plugins));
-			injector.RegisterModule(new WebServer(config.Web), x => x.Initialize());
-			injector.RegisterModule(new RightsManager(config.Rights));
-			injector.RegisterModule(new BotManager());
-			injector.RegisterModule(new TokenManager(), x => x.Initialize());
-			injector.RegisterModule(new PlaylistPool());
-			injector.RegisterModule(new CommandManager(), x => x.Initialize());
+			builder.AddModule(this);
+			builder.AddModule(config);
+			builder.AddModule(injector);
+			builder.AddModule(config.Db);
+			builder.RequestModule<SystemMonitor>();
+			builder.RequestModule<DbStore>();
+			builder.AddModule(config.Plugins);
+			builder.RequestModule<PluginManager>();
+			builder.AddModule(config.Web);
+			builder.RequestModule<WebServer>();
+			builder.AddModule(config.Rights);
+			builder.RequestModule<RightsManager>();
+			builder.RequestModule<BotManager>();
+			builder.RequestModule<TokenManager>();
+			builder.RequestModule<PlaylistPool>();
+			builder.RequestModule<CommandManager>();
+			builder.AddModule(config.Factories);
 			// TODO fix interaction: rfm needs to be in the same injector as the commandsystem, otherwise duplicate error
 			// Also TODO find solution to move commandsystem to bot, without breaking api
-			injector.RegisterModule(new ResourceFactoryManager(config.Factories), x => x.Initialize());
+			builder.RequestModule<ResourceFactoryManager>();
 
-			if (!injector.AllResolved())
+			if (!builder.Build())
 			{
-				Log.Debug("Cyclic core module dependency");
-				injector.ForceCyclicResolve();
-				if (!injector.AllResolved())
-				{
-					Log.Error("Missing core module dependency");
-					return "Could not load all core modules";
-				}
+				Log.Error("Missing core module dependency");
+				return "Could not load all core modules";
 			}
 
 			YoutubeDlHelper.DataObj = config.Tools.YoutubeDl;
 
-			RightsManager.CreateConfigIfNotExists(interactive);
-
-			Bots.RunBots(interactive);
+			builder.GetModule<SystemMonitor>().StartTimedSnapshots();
+			builder.GetModule<CommandManager>().RegisterCollection(MainCommands.Bag);
+			builder.GetModule<RightsManager>().CreateConfigIfNotExists(interactive);
+			builder.GetModule<BotManager>().RunBots(interactive);
+			builder.GetModule<WebServer>().Initialize();
 
 			return R.Ok;
 		}
@@ -173,21 +147,11 @@ namespace TS3AudioBot
 		{
 			Log.Info("TS3AudioBot shutting down.");
 
-			Bots?.Dispose();
-			Bots = null;
-
-			PluginManager?.Dispose(); // before: SessionManager,
-			PluginManager = null;
-
-			WebManager?.Dispose(); // before:
-			WebManager = null;
-
-			Database?.Dispose(); // before:
-			Database = null;
-
-			FactoryManager?.Dispose(); // before:
-			FactoryManager = null;
-
+			injector.GetModule<BotManager>()?.Dispose();
+			injector.GetModule<PluginManager>()?.Dispose();
+			injector.GetModule<WebServer>()?.Dispose();
+			injector.GetModule<DbStore>()?.Dispose();
+			injector.GetModule<ResourceFactoryManager>()?.Dispose();
 			TickPool.Close();
 		}
 	}

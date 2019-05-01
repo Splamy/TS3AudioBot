@@ -29,7 +29,7 @@ namespace TS3AudioBot
 	public sealed class Ts3Client : IPlayerConnection, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly string id;
+		private readonly Id id;
 		private const Codec SendCodec = Codec.OpusMusic;
 
 		public event EventHandler<EventArgs> OnBotConnected;
@@ -59,7 +59,7 @@ namespace TS3AudioBot
 		private static int MaxReconnects { get; } = LostConnectionReconnectDelay.Length;
 
 		private readonly ConfBot config;
-		internal Ts3FullClient TsFullClient { get; }
+		private readonly Ts3FullClient tsFullClient;
 		private IdentityData identity;
 		private List<ClientList> clientbuffer;
 		private bool clientbufferOutdated = true;
@@ -73,19 +73,22 @@ namespace TS3AudioBot
 		private readonly EncoderPipe encoderPipe;
 		internal CustomTargetPipe TargetPipe { get; }
 
-		public Ts3Client(ConfBot config, string id = null)
+		public bool Connected => tsFullClient.Connected;
+		public ConnectionData ConnectionData => tsFullClient.ConnectionData;
+
+		public Ts3Client(ConfBot config, Ts3FullClient tsFullClient, Id id)
 		{
 			this.id = id;
 			Util.Init(out clientDbNames);
 			Util.Init(out clientbuffer);
 
-			TsFullClient = new Ts3FullClient();
-			TsFullClient.OnClientLeftView += ExtendedClientLeftView;
-			TsFullClient.OnClientEnterView += ExtendedClientEnterView;
-			TsFullClient.OnTextMessage += ExtendedTextMessage;
-			TsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
-			TsFullClient.OnConnected += TsFullClient_OnConnected;
-			TsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
+			this.tsFullClient = tsFullClient;
+			tsFullClient.OnClientLeftView += ExtendedClientLeftView;
+			tsFullClient.OnClientEnterView += ExtendedClientEnterView;
+			tsFullClient.OnTextMessage += ExtendedTextMessage;
+			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
+			tsFullClient.OnConnected += TsFullClient_OnConnected;
+			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
 
 			int ScaleBitrate(int value) => Math.Min(Math.Max(1, value), 255) * 1000;
 
@@ -99,7 +102,7 @@ namespace TS3AudioBot
 			encoderPipe = new EncoderPipe(SendCodec) { Bitrate = ScaleBitrate(config.Audio.Bitrate) };
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
 			timePipe.Initialize(encoderPipe, id);
-			TargetPipe = new CustomTargetPipe(TsFullClient);
+			TargetPipe = new CustomTargetPipe(tsFullClient);
 			mergePipe = new PassiveMergePipe();
 
 			mergePipe.Add(ffmpegProducer);
@@ -138,7 +141,7 @@ namespace TS3AudioBot
 				Log.Warn("Invalid config value for 'Level', enter a number between '0' and '160' or '-1' to adapt automatically.");
 			config.SaveWhenExists();
 
-			TsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
+			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
 			return ConnectClient();
 		}
 
@@ -180,11 +183,11 @@ namespace TS3AudioBot
 					VersionSign = versionSign,
 					DefaultChannel = config.Connect.Channel,
 					DefaultChannelPassword = config.Connect.ChannelPassword.Get(),
-					InstanceTag = id,
+					LogId = id,
 				};
 				config.SaveWhenExists();
 
-				TsFullClient.Connect(connectionConfig);
+				tsFullClient.Connect(connectionConfig);
 				return R.Ok;
 			}
 			catch (Ts3Exception qcex)
@@ -226,39 +229,39 @@ namespace TS3AudioBot
 		{
 			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
 				return new LocalStr(strings.error_ts_msg_too_long);
-			return TsFullClient.SendPrivateMessage(message, clientId).FormatLocal();
+			return tsFullClient.SendPrivateMessage(message, clientId).FormatLocal();
 		}
 
 		public E<LocalStr> SendChannelMessage(string message)
 		{
 			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
 				return new LocalStr(strings.error_ts_msg_too_long);
-			return TsFullClient.SendChannelMessage(message).FormatLocal();
+			return tsFullClient.SendChannelMessage(message).FormatLocal();
 		}
 
 		public E<LocalStr> SendServerMessage(string message)
 		{
 			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
 				return new LocalStr(strings.error_ts_msg_too_long);
-			return TsFullClient.SendServerMessage(message, 1).FormatLocal();
+			return tsFullClient.SendServerMessage(message, 1).FormatLocal();
 		}
 
-		public E<LocalStr> KickClientFromServer(ushort clientId) => TsFullClient.KickClientFromServer(new[] { clientId }).FormatLocal();
-		public E<LocalStr> KickClientFromChannel(ushort clientId) => TsFullClient.KickClientFromChannel(new[] { clientId }).FormatLocal();
+		public E<LocalStr> KickClientFromServer(ushort clientId) => tsFullClient.KickClientFromServer(new[] { clientId }).FormatLocal();
+		public E<LocalStr> KickClientFromChannel(ushort clientId) => tsFullClient.KickClientFromChannel(new[] { clientId }).FormatLocal();
 
 		public E<LocalStr> ChangeDescription(string description)
-			=> TsFullClient.ChangeDescription(description, TsFullClient.ClientId).FormatLocal();
+			=> tsFullClient.ChangeDescription(description, tsFullClient.ClientId).FormatLocal();
 
 		public E<LocalStr> ChangeBadges(string badgesString)
 		{
 			if (!badgesString.StartsWith("overwolf=") && !badgesString.StartsWith("badges="))
 				badgesString = "overwolf=0:badges=" + badgesString;
-			return TsFullClient.ChangeBadges(badgesString).FormatLocal();
+			return tsFullClient.ChangeBadges(badgesString).FormatLocal();
 		}
 
 		public E<LocalStr> ChangeName(string name)
 		{
-			var result = TsFullClient.ChangeName(name);
+			var result = tsFullClient.ChangeName(name);
 			if (result.Ok)
 				return R.Ok;
 
@@ -276,7 +279,7 @@ namespace TS3AudioBot
 			if (result.Ok)
 				return result;
 			Log.Warn("Slow double request due to missing or wrong permission configuration!");
-			var result2 = TsFullClient.Send<ClientList>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
+			var result2 = tsFullClient.Send<ClientList>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
 			if (!result2.Ok)
 				return new LocalStr(strings.error_ts_no_client_found);
 			ClientList cd = result2.Value;
@@ -290,7 +293,7 @@ namespace TS3AudioBot
 			var refreshResult = RefreshClientBuffer(false);
 			if (!refreshResult)
 				return refreshResult.Error;
-			var clients = Algorithm.Filter.DefaultAlgorithm.Filter(
+			var clients = Algorithm.Filter.DefaultFilter.Filter(
 				clientbuffer.Select(cb => new KeyValuePair<string, ClientList>(cb.Name, cb)), name).ToArray();
 			if (clients.Length <= 0)
 				return new LocalStr(strings.error_ts_no_client_found);
@@ -312,7 +315,7 @@ namespace TS3AudioBot
 		{
 			if (clientbufferOutdated || force)
 			{
-				var result = TsFullClient.ClientList(ClientListOptions.uid);
+				var result = tsFullClient.ClientList(ClientListOptions.uid);
 				if (!result)
 				{
 					Log.Debug("Clientlist failed ({0})", result.Error.ErrorFormat());
@@ -326,7 +329,7 @@ namespace TS3AudioBot
 
 		public R<ulong[], LocalStr> GetClientServerGroups(ulong dbId)
 		{
-			var result = TsFullClient.ServerGroupsByClientDbId(dbId);
+			var result = tsFullClient.ServerGroupsByClientDbId(dbId);
 			if (!result.Ok)
 				return new LocalStr(strings.error_ts_no_client_found);
 			return result.Value.Select(csg => csg.ServerGroupId).ToArray();
@@ -337,7 +340,7 @@ namespace TS3AudioBot
 			if (clientDbNames.TryGetValue(clientDbId, out var clientData))
 				return clientData;
 
-			var result = TsFullClient.ClientDbInfo(clientDbId);
+			var result = tsFullClient.ClientDbInfo(clientDbId);
 			if (!result.Ok)
 				return new LocalStr(strings.error_ts_no_client_found);
 			clientData = result.Value;
@@ -345,11 +348,11 @@ namespace TS3AudioBot
 			return clientData;
 		}
 
-		public R<ClientInfo, LocalStr> GetClientInfoById(ushort id) => TsFullClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
+		public R<ClientInfo, LocalStr> GetClientInfoById(ushort id) => tsFullClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
 
 		internal bool SetupRights(string key)
 		{
-			var dbResult = TsFullClient.GetClientDbIdFromUid(identity.ClientUid);
+			var dbResult = tsFullClient.GetClientDbIdFromUid(identity.ClientUid);
 			if (!dbResult.Ok)
 			{
 				Log.Error("Getting own dbid failed ({0})", dbResult.Error.ErrorFormat());
@@ -364,7 +367,7 @@ namespace TS3AudioBot
 			// Add self to master group (via token)
 			if (!string.IsNullOrEmpty(key))
 			{
-				var privKeyUseResult = TsFullClient.PrivilegeKeyUse(key);
+				var privKeyUseResult = tsFullClient.PrivilegeKeyUse(key);
 				if (!privKeyUseResult.Ok)
 				{
 					Log.Error("Using privilege key failed ({0})", privKeyUseResult.Error.ErrorFormat());
@@ -384,13 +387,13 @@ namespace TS3AudioBot
 			if (config.BotGroupId == 0)
 			{
 				// Create new Bot group
-				var botGroup = TsFullClient.ServerGroupAdd("ServerBot");
+				var botGroup = tsFullClient.ServerGroupAdd("ServerBot");
 				if (botGroup.Ok)
 				{
 					config.BotGroupId.Value = botGroup.Value.ServerGroupId;
 
 					// Add self to new group
-					var grpresult = TsFullClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, myDbId);
+					var grpresult = tsFullClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, myDbId);
 					if (!grpresult.Ok)
 						Log.Error("Adding group failed ({0})", grpresult.Error.ErrorFormat());
 				}
@@ -400,7 +403,7 @@ namespace TS3AudioBot
 			const int ava = 500000; // max size in bytes for the avatar
 
 			// Add various rights to the bot group
-			var permresult = TsFullClient.ServerGroupAddPerm(config.BotGroupId.Value,
+			var permresult = tsFullClient.ServerGroupAddPerm(config.BotGroupId.Value,
 				new[] {
 					Ts3Permission.i_client_whisper_power, // + Required for whisper channel playing
 					Ts3Permission.i_client_private_textmessage_power, // + Communication
@@ -473,7 +476,7 @@ namespace TS3AudioBot
 			{
 				foreach (var grp in groupDiff)
 				{
-					var grpresult = TsFullClient.ServerGroupDelClient(grp, myDbId);
+					var grpresult = tsFullClient.ServerGroupDelClient(grp, myDbId);
 					if (!grpresult.Ok)
 						Log.Error("Removing group failed ({0})", grpresult.Error.ErrorFormat());
 				}
@@ -482,25 +485,25 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => TsFullClient.UploadAvatar(stream).FormatLocal();
+		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => tsFullClient.UploadAvatar(stream).FormatLocal();
 
-		public E<LocalStr> DeleteAvatar() => TsFullClient.DeleteAvatar().FormatLocal();
+		public E<LocalStr> DeleteAvatar() => tsFullClient.DeleteAvatar().FormatLocal();
 
 		public E<LocalStr> MoveTo(ulong channelId, string password = null)
-			=> TsFullClient.ClientMove(TsFullClient.ClientId, channelId, password).FormatLocal(() => strings.error_ts_cannot_move);
+			=> tsFullClient.ClientMove(tsFullClient.ClientId, channelId, password).FormatLocal(() => strings.error_ts_cannot_move);
 
 		public E<LocalStr> SetChannelCommander(bool isCommander)
-			=> TsFullClient.ChangeIsChannelCommander(isCommander).FormatLocal(() => strings.error_ts_cannot_set_commander);
+			=> tsFullClient.ChangeIsChannelCommander(isCommander).FormatLocal(() => strings.error_ts_cannot_set_commander);
 
 		public R<bool, LocalStr> IsChannelCommander()
 		{
-			var getInfoResult = GetClientInfoById(TsFullClient.ClientId);
+			var getInfoResult = GetClientInfoById(tsFullClient.ClientId);
 			if (!getInfoResult.Ok)
 				return getInfoResult.Error;
 			return getInfoResult.Value.IsChannelCommander;
 		}
 
-		public R<ClientInfo, LocalStr> GetSelf() => TsFullClient.ClientInfo(TsFullClient.ClientId).FormatLocal();
+		public R<ClientInfo, LocalStr> GetSelf() => tsFullClient.ClientInfo(tsFullClient.ClientId).FormatLocal();
 
 		public void InvalidateClientBuffer() => clientbufferOutdated = true;
 
@@ -592,7 +595,7 @@ namespace TS3AudioBot
 			foreach (var evData in eventArgs)
 			{
 				// Prevent loopback of own textmessages
-				if (evData.InvokerId == TsFullClient.ClientId)
+				if (evData.InvokerId == tsFullClient.ClientId)
 					continue;
 				OnMessageReceived?.Invoke(sender, evData);
 			}
@@ -695,7 +698,7 @@ namespace TS3AudioBot
 			timePipe?.Dispose();
 			ffmpegProducer?.Dispose();
 			encoderPipe?.Dispose();
-			TsFullClient.Dispose();
+			tsFullClient.Dispose();
 		}
 	}
 

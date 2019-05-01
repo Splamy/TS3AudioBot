@@ -97,8 +97,8 @@ namespace TS3Client.Full
 				ts3Crypt.Reset();
 				ts3Crypt.Identity = conDataFull.Identity;
 
-				packetHandler.Connect(remoteAddress, conData.InstanceTag);
-				dispatcher.Init(NetworkLoop, InvokeEvent, context, conData.InstanceTag);
+				packetHandler.Connect(remoteAddress, conData.LogId);
+				dispatcher.Init(NetworkLoop, InvokeEvent, context, conData.LogId);
 			}
 			dispatcher.EnterEventLoop();
 		}

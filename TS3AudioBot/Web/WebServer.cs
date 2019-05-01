@@ -28,23 +28,21 @@ namespace TS3AudioBot.Web
 		private Thread serverThread;
 		private bool startWebServer;
 		private readonly ConfWeb config;
-
-		public CoreInjector Injector { get; set; }
+		private readonly CoreInjector coreInjector;
 
 		public Api.WebApi Api { get; private set; }
 		public Interface.WebDisplay Display { get; private set; }
 
-		public WebServer(ConfWeb config)
+		public WebServer(ConfWeb config, CoreInjector coreInjector)
 		{
 			this.config = config;
+			this.coreInjector = coreInjector;
+			Unosquare.Swan.Terminal.Settings.DisplayLoggingMessageType = Unosquare.Swan.LogMessageType.None;
 		}
 
+		// TODO write server to be reloada-able
 		public void Initialize()
 		{
-			Injector.RegisterType<Api.WebApi>();
-			Injector.RegisterType<Interface.WebDisplay>();
-
-			Unosquare.Swan.Terminal.Settings.DisplayLoggingMessageType = Unosquare.Swan.LogMessageType.None;
 			InitializeSubcomponents();
 
 			StartServerThread();
@@ -56,7 +54,7 @@ namespace TS3AudioBot.Web
 			if (config.Interface.Enabled)
 			{
 				Display = new Interface.WebDisplay(config.Interface);
-				Injector.RegisterModule(Display);
+				coreInjector.AddModule(Display);
 				startWebServer = true;
 			}
 			if (config.Api.Enabled || config.Interface.Enabled)
@@ -65,7 +63,7 @@ namespace TS3AudioBot.Web
 					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to get rid this error message.");
 
 				Api = new Api.WebApi(config.Api);
-				Injector.RegisterModule(Api);
+				coreInjector.AddModule(Api);
 				startWebServer = true;
 			}
 

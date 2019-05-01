@@ -30,11 +30,10 @@ namespace TS3AudioBot.History
 		private readonly LinkedList<int> unusedIds;
 		private readonly object dbLock = new object();
 		private readonly ConfHistory config;
+		private readonly DbStore database;
 
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
-
-		public DbStore Database { get; set; }
 
 		static HistoryManager()
 		{
@@ -42,17 +41,20 @@ namespace TS3AudioBot.History
 				.Id(x => x.Id);
 		}
 
-		public HistoryManager(ConfHistory config)
+		public HistoryManager(ConfHistory config, DbStore database)
 		{
 			Formatter = new SmartHistoryFormatter();
 
 			Util.Init(out unusedIds);
 			this.config = config;
+			this.database = database;
+
+			Initialize();
 		}
 
-		public void Initialize()
+		private void Initialize()
 		{
-			var meta = Database.GetMetaData(AudioLogEntriesTable);
+			var meta = database.GetMetaData(AudioLogEntriesTable);
 
 			if (meta.Version > CurrentHistoryVersion)
 			{
@@ -61,7 +63,7 @@ namespace TS3AudioBot.History
 				return;
 			}
 
-			audioLogEntries = Database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
+			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
 			audioLogEntries.EnsureIndex(x => x.Timestamp);
 			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
@@ -74,7 +76,7 @@ namespace TS3AudioBot.History
 			if (audioLogEntries.Count() == 0)
 			{
 				meta.Version = CurrentHistoryVersion;
-				Database.UpdateMetaData(meta);
+				database.UpdateMetaData(meta);
 				return;
 			}
 
@@ -95,7 +97,7 @@ namespace TS3AudioBot.History
 				}
 				audioLogEntries.Update(all);
 				meta.Version = 1;
-				Database.UpdateMetaData(meta);
+				database.UpdateMetaData(meta);
 				goto default;
 
 			default:

@@ -199,7 +199,7 @@ namespace TS3AudioBot.Plugins
 			// on windows aymore after it's opened once.
 			var asmBin = System.IO.File.ReadAllBytes(File.FullName);
 			var assembly = Assembly.Load(asmBin);
-			return InitlializeAssembly(assembly);
+			return InitializeAssembly(assembly);
 		}
 
 		private PluginResponse PrepareSource()
@@ -226,7 +226,7 @@ namespace TS3AudioBot.Plugins
 				{
 					ms.Seek(0, SeekOrigin.Begin);
 					var assembly = Assembly.Load(ms.ToArray());
-					return InitlializeAssembly(assembly);
+					return InitializeAssembly(assembly);
 				}
 				else
 				{
@@ -250,7 +250,7 @@ namespace TS3AudioBot.Plugins
 			}
 		}
 
-		private PluginResponse InitlializeAssembly(Assembly assembly)
+		private PluginResponse InitializeAssembly(Assembly assembly)
 		{
 			try
 			{
@@ -303,12 +303,12 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (TypeLoadException tlex)
 			{
-				Log.Warn(nameof(InitlializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependecies ({1})", File.Name, tlex.Message);
+				Log.Warn(nameof(InitializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependecies ({1})", File.Name, tlex.Message);
 				return PluginResponse.MissingDependency;
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, nameof(InitlializeAssembly) + " failed: {0}", ex.Message);
+				Log.Error(ex, nameof(InitializeAssembly) + " failed: {0}", ex.Message);
 				return PluginResponse.Crash;
 			}
 		}
@@ -377,16 +377,14 @@ namespace TS3AudioBot.Plugins
 					if (pluginObjectList.Count == 0)
 						RegisterCommands(pluginInstance, coreType);
 					pluginObjectList.Add(bot, pluginInstance);
-					if (!bot.Injector.TryInject(pluginInstance))
-						Log.Warn("Some dependencies are missing for this plugin");
+					bot.Injector.FillProperties(pluginInstance);
 					pluginInstance.Initialize();
 					break;
 
 				case PluginType.CorePlugin:
 					pluginObject = (ICorePlugin)Activator.CreateInstance(coreType);
 					RegisterCommands(pluginObject, coreType);
-					if (!CoreInjector.TryInject(pluginObject))
-						Log.Warn("Some dependencies are missing for this plugin");
+					CoreInjector.FillProperties(pluginObject);
 					pluginObject.Initialize();
 					break;
 

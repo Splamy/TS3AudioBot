@@ -37,11 +37,11 @@ namespace TS3Client
 			return dispatcher;
 		}
 
-		internal static string CreateLogThreadName(string threadName, string id) => threadName + (string.IsNullOrEmpty(id) ? "" : $"[{id}]");
+		internal static string CreateLogThreadName(string threadName, Id id) => threadName + (id == Id.Null ? "" : $"[{id}]");
 
-		internal static string CreateDispatcherTitle(string id) => CreateLogThreadName(DispatcherTitle, id);
+		internal static string CreateDispatcherTitle(Id id) => CreateLogThreadName(DispatcherTitle, id);
 
-		internal static string CreateEventLoopTitle(string id) => CreateLogThreadName(DispatcherTitle, id);
+		internal static string CreateEventLoopTitle(Id id) => CreateLogThreadName(DispatcherTitle, id);
 	}
 
 	/// <summary> Provides a function to run a receiving loop and asynchronously
@@ -54,7 +54,7 @@ namespace TS3Client
 		/// <param name="dispatcher">The method to call asynchronously when a new
 		/// notification comes in.</param>
 		/// <param name="ctx">The current connection context.</param>
-		void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id = "");
+		void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, Id id);
 		/// <summary>Dispatches the notification.</summary>
 		/// <param name="lazyNotification"></param>
 		void Invoke(LazyNotification lazyNotification);
@@ -70,9 +70,9 @@ namespace TS3Client
 		private EvloopType eventLoop;
 		private Action<LazyNotification> dispatcher;
 		private object ctx;
-		private string id;
+		private Id id;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, Id id)
 		{
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;
@@ -94,13 +94,13 @@ namespace TS3Client
 		private EvloopType eventLoop;
 		private Action<LazyNotification> dispatcher;
 		private object ctx;
-		private string id;
+		private Id id;
 		private Thread dispatchThread;
 		private readonly ConcurrentQueue<LazyNotification> eventQueue = new ConcurrentQueue<LazyNotification>();
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private volatile bool run;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, Id id)
 		{
 			run = true;
 			this.eventLoop = eventLoop;
@@ -162,14 +162,14 @@ namespace TS3Client
 		private EvloopType eventLoop;
 		private Action<LazyNotification> dispatcher;
 		private object ctx;
-		private string id;
+		private Id id;
 		private Thread eventLoopThread;
 		private Thread dispatchThread;
 		private readonly ConcurrentQueue<LazyNotification> eventQueue = new ConcurrentQueue<LazyNotification>();
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private volatile bool run;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, Id id)
 		{
 			run = true;
 			this.eventLoop = eventLoop;
@@ -236,7 +236,7 @@ namespace TS3Client
 
 	internal sealed class NoEventDispatcher : IEventDispatcher
 	{
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id) { }
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, Id id) { }
 		public void EnterEventLoop() { }
 		public void Invoke(LazyNotification lazyNotification) { }
 		public void DoWork() { }
@@ -248,10 +248,10 @@ namespace TS3Client
 		private EvloopType eventLoop;
 		private Action<LazyNotification> dispatcher;
 		private object ctx;
-		private string id;
+		private Id id;
 		private Thread eventLoopThread;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, Id id)
 		{
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;
@@ -284,10 +284,10 @@ namespace TS3Client
 		private EvloopType eventLoop;
 		private Action<LazyNotification> dispatcher;
 		private object ctx;
-		private string id;
+		private Id id;
 		private Thread eventLoopThread;
 
-		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, string id)
+		public void Init(EvloopType eventLoop, Action<LazyNotification> dispatcher, object ctx, Id id)
 		{
 			this.eventLoop = eventLoop;
 			this.dispatcher = dispatcher;

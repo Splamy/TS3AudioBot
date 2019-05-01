@@ -11,6 +11,7 @@ namespace TS3AudioBot.Rights
 {
 	using Audio;
 	using CommandSystem;
+	using Dependency;
 	using Config;
 	using Helper;
 	using Matchers;
@@ -94,7 +95,7 @@ namespace TS3AudioBot.Rights
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
 
-				if (info.TryGet<Ts3Client>(out var ts))
+				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<Ts3BaseFunctions>(out var tsClient))
 				{
 					ulong[] serverGroups = invoker.ServerGroups;
 					ulong? channelId = invoker.ChannelId;
@@ -121,7 +122,7 @@ namespace TS3AudioBot.Rights
 					{
 						if (!databaseId.HasValue)
 						{
-							var resultDbId = ts.TsFullClient.GetClientDbIdFromUid(invoker.ClientUid);
+							var resultDbId = tsClient.GetClientDbIdFromUid(invoker.ClientUid);
 							if (resultDbId.Ok)
 							{
 								databaseId = resultDbId.Value.ClientDbId;
@@ -141,7 +142,7 @@ namespace TS3AudioBot.Rights
 					if (needsPermOverview.Length > 0 && databaseId.HasValue && channelId.HasValue)
 					{
 						// TODO check if there is any better way to only get the permissions needed.
-						var result = ts.TsFullClient.PermOverview(databaseId.Value, channelId.Value, 0);
+						var result = tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
 						if (result.Ok)
 						{
 							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(Ts3Permission)).Length];
@@ -180,7 +181,7 @@ namespace TS3AudioBot.Rights
 			foreach (var rule in execCtx.MatchingRules)
 				execCtx.DeclAdd.UnionWith(rule.DeclAdd);
 
-			info.AddDynamicObject(execCtx);
+			info.AddModule(execCtx);
 
 			return execCtx;
 		}

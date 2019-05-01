@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
+	using Dependency;
 	using CommandResults;
 	using Localization;
 	using System;
@@ -82,7 +83,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
-			var filterLazy = new Lazy<Algorithm.Filter>(() => info.TryGet<Algorithm.Filter>(out var filter) ? filter : Algorithm.Filter.DefaultFilter, false);
+			var filterLazy = new Lazy<Algorithm.IFilter>(() => info.GetFilter(), false);
 
 			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
@@ -119,7 +120,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
 					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-					parameters[p] = ConvertParam(argResultP, arg, filterLazy.Value.Current);
+					parameters[p] = ConvertParam(argResultP, arg, filterLazy.Value);
 
 					takenArguments++;
 					break;
@@ -132,7 +133,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
 						var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-						var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value.Current);
+						var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value);
 						args.SetValue(convResult, i);
 					}
 
@@ -287,7 +288,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
 		}
 
-		private static object ConvertParam(string value, Type targetType, Algorithm.IFilterAlgorithm filter)
+		private static object ConvertParam(string value, Type targetType, Algorithm.IFilter filter)
 		{
 			if (targetType == typeof(string))
 				return value;

@@ -48,9 +48,9 @@ namespace TS3Client.Full
 
 		public void Listen(IPEndPoint addr)
 		{
-			packetHandler.Listen(addr, null);
+			packetHandler.Listen(addr, Id.Null);
 			context = new ConnectionContext();
-			dispatcher.Init(NetworkLoop, InvokeEvent, context);
+			dispatcher.Init(NetworkLoop, InvokeEvent, context, Id.Null);
 			dispatcher.EnterEventLoop();
 		}
 

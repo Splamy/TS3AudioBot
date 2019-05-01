@@ -24,17 +24,19 @@ namespace TS3AudioBot
 		private List<Bot> activeBots;
 		private readonly object lockObj = new object();
 
-		public ConfRoot Config { get; set; }
-		public CoreInjector CoreInjector { get; set; }
+		private readonly ConfRoot confRoot;
+		private readonly CoreInjector coreInjector;
 
-		public BotManager()
+		public BotManager(ConfRoot confRoot, CoreInjector coreInjector)
 		{
 			Util.Init(out activeBots);
+			this.confRoot = confRoot;
+			this.coreInjector = coreInjector;
 		}
 
 		public void RunBots(bool interactive)
 		{
-			var botConfigList = Config.GetAllBots();
+			var botConfigList = confRoot.GetAllBots();
 			if (botConfigList is null)
 				return;
 
@@ -71,7 +73,7 @@ namespace TS3AudioBot
 					return;
 				}
 
-				if (!Config.Save())
+				if (!confRoot.Save())
 					Log.Error("Could not save root config. The bot won't start by default.");
 
 				var runResult = RunBot(newBot);
@@ -92,7 +94,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public ConfBot CreateNewBot() => Config.CreateBot();
+		public ConfBot CreateNewBot() => confRoot.CreateBot();
 
 		public R<BotInfo, string> CreateAndRunNewBot()
 		{
@@ -102,7 +104,7 @@ namespace TS3AudioBot
 
 		public R<BotInfo, string> RunBotTemplate(string name)
 		{
-			var config = Config.GetBotConfig(name);
+			var config = confRoot.GetBotConfig(name);
 			if (!config.Ok)
 				return config.Error.Message;
 			return RunBot(config.Value);
@@ -118,10 +120,13 @@ namespace TS3AudioBot
 				if (id == null)
 					return "BotManager is shutting down";
 
-				bot = new Bot(id.Value, config, CoreInjector.CloneRealm<BotInjector>());
-				if (!CoreInjector.TryInject(bot))
-					Log.Warn("Partial bot dependency loaded only");
-
+				// TODO change creation method
+				var botInjector = new BotInjector(coreInjector);
+				botInjector.AddModule(botInjector);
+				botInjector.AddModule(new TS3Client.Helper.Id(id.Value));
+				botInjector.AddModule(config);
+				if (!botInjector.TryCreate(out bot))
+					return "Failed to create new Bot";
 				InsertBot(bot);
 			}
 

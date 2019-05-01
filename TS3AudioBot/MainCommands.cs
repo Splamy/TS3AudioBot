@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot
 {
+	using Algorithm;
 	using Audio;
 	using CommandSystem;
 	using CommandSystem.Ast;
@@ -249,7 +250,6 @@ namespace TS3AudioBot
 				throw new CommandException(strings.cmd_bot_setup_error, CommandExceptionReason.CommandError);
 		}
 
-		private static readonly Type[] DynamicCommandSysTypes = new[] { typeof(CallerInfo), typeof(InvokerData), typeof(UserSession), typeof(ApiCall) };
 		[Command("bot use")]
 		public static ICommandResult CommandBotUse(ExecutionInformation info, IReadOnlyList<CommandResultType> returnTypes, BotManager bots, int botId, ICommand cmd)
 		{
@@ -258,22 +258,18 @@ namespace TS3AudioBot
 				if (botLock is null)
 					throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
 
-				var childInfo = new ExecutionInformation(botLock.Bot.Injector.CloneRealm<BotInjector>());
-				foreach (var type in DynamicCommandSysTypes)
-					if (info.TryGet(type, out var dep))
-						childInfo.AddDynamicObject(dep);
-
+				var backParent = info.ParentInjector;
+				info.ParentInjector = botLock.Bot.Injector;
 				string backUpId = NLog.MappedDiagnosticsContext.Get("BotId");
+				NLog.MappedDiagnosticsContext.Set("BotId", botId.ToString());
 				try
 				{
-					using (NLog.MappedDiagnosticsContext.SetScoped("BotId", botId.ToString()))
-					{
-						return cmd.Execute(childInfo, Array.Empty<ICommand>(), returnTypes);
-					}
+					return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
 				}
 				finally
 				{
 					NLog.MappedDiagnosticsContext.Set("BotId", backUpId);
+					info.ParentInjector = backParent;
 				}
 			}
 		}
@@ -404,7 +400,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("help command", "_undocumented")]
-		public static JsonObject CommandHelpCommand(CommandManager commandManager, Algorithm.Filter filter = null, params string[] command)
+		public static JsonObject CommandHelpCommand(CommandManager commandManager, IFilter filter = null, params string[] command)
 		{
 			if (command.Length == 0)
 			{
@@ -413,10 +409,10 @@ namespace TS3AudioBot
 
 			CommandGroup group = commandManager.CommandSystem.RootCommand;
 			ICommand target = group;
+			filter = filter ?? Filter.DefaultFilter;
 			for (int i = 0; i < command.Length; i++)
 			{
-				filter = filter ?? Algorithm.Filter.DefaultFilter;
-				var possibilities = filter.Current.Filter(group.Commands, command[i]).ToList();
+				var possibilities = filter.Filter(group.Commands, command[i]).ToList();
 				if (possibilities.Count <= 0)
 					throw new CommandException(strings.cmd_help_error_no_matching_command, CommandExceptionReason.CommandError);
 				if (possibilities.Count > 1)
@@ -1101,7 +1097,7 @@ namespace TS3AudioBot
 		public static void CommandPmUser(Ts3Client ts3Client, ushort clientId, string message) => ts3Client.SendMessage(message, clientId).UnwrapThrow();
 
 		[Command("pause")]
-		public static void CommandPause(Bot bot) => bot.PlayerConnection.Paused = !bot.PlayerConnection.Paused;
+		public static void CommandPause(IPlayerConnection playerConnection) => playerConnection.Paused = !playerConnection.Paused;
 
 		[Command("play")]
 		public static void CommandPlay(IPlayerConnection playerConnection)
@@ -1366,9 +1362,8 @@ namespace TS3AudioBot
 		{
 			if (bot != null)
 			{
-				var mod = bot.Injector.GetModule<ConfBot>();
-				if (mod != null)
-					return mod;
+				if (bot.Injector.TryGet<ConfBot>(out var conf))
+					return conf;
 				else
 					throw new CommandException(strings.error_call_unexpected_error, CommandExceptionReason.CommandError);
 			}
@@ -1484,14 +1479,14 @@ namespace TS3AudioBot
 		}
 
 		[Command("system info", "_undocumented")]
-		public static JsonValue CommandSystemInfo(Core core)
+		public static JsonValue CommandSystemInfo(SystemMonitor systemMonitor)
 		{
-			var sysInfo = core.SystemMonitor.GetReport();
+			var sysInfo = systemMonitor.GetReport();
 			return JsonValue.Create(new
 			{
 				memory = sysInfo.Memory,
 				cpu = sysInfo.Cpu,
-				starttime = core.StartTime,
+				starttime = systemMonitor.StartTime,
 			});
 		}
 

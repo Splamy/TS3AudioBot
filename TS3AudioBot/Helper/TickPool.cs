@@ -16,7 +16,6 @@ namespace TS3AudioBot.Helper
 
 	public static class TickPool
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static bool run;
 		private static readonly Thread tickThread;
 		private static readonly object tickLock = new object();

@@ -139,7 +139,7 @@ namespace TS3AudioBot.CommandSystem
 				}
 				break;
 
-			case FunctionCommand func:
+			case FunctionCommand _:
 				strb.AppendFormat("<func>\n".Mod().Color(Color.Green));
 				break;
 
@@ -147,7 +147,7 @@ namespace TS3AudioBot.CommandSystem
 				strb.AppendFormat($"<overload({ofunc.Functions.Count})>\n".Mod().Color(Color.Blue));
 				break;
 
-			case AliasCommand alifunc:
+			case AliasCommand _:
 				strb.AppendFormat($"<alias>\n".Mod().Color(Color.Yellow));
 				break;
 

@@ -13,7 +13,6 @@ namespace TS3AudioBot.Web.Interface
 	using System;
 	using System.IO;
 	using System.Net;
-	using System.Text;
 
 	public class FileProvider : ISiteProvider
 	{

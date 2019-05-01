@@ -53,7 +53,7 @@ namespace TS3Client.Helper
 
 		public static CommandError CustomError(string message) => new CommandError { Id = Ts3ErrorCode.custom_error, Message = message };
 
-		internal static void SetLogId(string id) => NLog.MappedDiagnosticsContext.Set("BotId", id);
+		internal static void SetLogId(Id id) => NLog.MappedDiagnosticsContext.Set("BotId", id.ToString());
 	}
 
 	internal sealed class MissingEnumCaseException : Exception

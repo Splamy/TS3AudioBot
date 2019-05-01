@@ -13,6 +13,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 	using System.Collections.Generic;
 	using System.Linq;
 	using TS3AudioBot.CommandSystem.CommandResults;
+	using TS3AudioBot.Dependency;
 
 	public class AliasCommand : ICommand
 	{
@@ -34,7 +35,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (!info.TryGet<AliasContext>(out var aliasContext))
 			{
 				aliasContext = new AliasContext();
-				info.AddDynamicObject(aliasContext);
+				info.AddModule(aliasContext);
 			}
 			else
 			{

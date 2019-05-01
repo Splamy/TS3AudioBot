@@ -80,7 +80,7 @@ namespace TS3Client.Query
 			finally { connecting = false; }
 
 			cts = new CancellationTokenSource();
-			dispatcher.Init(NetworkLoop, InvokeEvent, null, conData.InstanceTag);
+			dispatcher.Init(NetworkLoop, InvokeEvent, null, conData.LogId);
 			OnConnected?.Invoke(this, EventArgs.Empty);
 			dispatcher.EnterEventLoop();
 		}

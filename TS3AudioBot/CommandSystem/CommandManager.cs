@@ -11,6 +11,7 @@ namespace TS3AudioBot.CommandSystem
 {
 	using Commands;
 	using Helper;
+	using Rights;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
@@ -28,20 +29,15 @@ namespace TS3AudioBot.CommandSystem
 		private readonly Dictionary<string, AliasCommand> aliasPaths;
 		private readonly HashSet<string> commandPaths;
 		private readonly HashSet<ICommandBag> baggedCommands;
+		private readonly RightsManager rightsManager;
 
-		public Rights.RightsManager RightsManager { get; set; }
-
-		public CommandManager()
+		public CommandManager(RightsManager rightsManager)
 		{
 			CommandSystem = new XCommandSystem();
 			Util.Init(out aliasPaths);
 			Util.Init(out commandPaths);
 			Util.Init(out baggedCommands);
-		}
-
-		public void Initialize()
-		{
-			RegisterCollection(MainCommands.Bag);
+			this.rightsManager = rightsManager;
 		}
 
 		public XCommandSystem CommandSystem { get; }
@@ -68,7 +64,7 @@ namespace TS3AudioBot.CommandSystem
 					throw new InvalidOperationException(result.Error);
 				}
 			}
-			RightsManager?.SetRightsList(AllRights);
+			rightsManager?.SetRightsList(AllRights);
 		}
 
 		public void UnregisterCollection(ICommandBag bag)
@@ -79,7 +75,7 @@ namespace TS3AudioBot.CommandSystem
 				{
 					UnloadCommand(com);
 				}
-				RightsManager?.SetRightsList(AllRights);
+				rightsManager?.SetRightsList(AllRights);
 			}
 		}
 

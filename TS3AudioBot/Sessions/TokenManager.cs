@@ -20,24 +20,19 @@ namespace TS3AudioBot.Sessions
 		private const string TokenFormat = "{0}:{1}";
 
 		private const string ApiTokenTable = "apiToken";
-		private LiteCollection<DbApiToken> dbTokenList;
+		private readonly LiteCollection<DbApiToken> dbTokenList;
 		// Map: Uid => ApiToken
 		private readonly Dictionary<string, ApiToken> liveTokenList;
 
-		public DbStore Database { get; set; }
-
-		public TokenManager()
+		public TokenManager(DbStore database)
 		{
 			Util.Init(out liveTokenList);
-		}
 
-		public void Initialize()
-		{
-			dbTokenList = Database.GetCollection<DbApiToken>(ApiTokenTable);
+			dbTokenList = database.GetCollection<DbApiToken>(ApiTokenTable);
 			dbTokenList.EnsureIndex(x => x.UserUid, true);
 			dbTokenList.EnsureIndex(x => x.Token, true);
 
-			Database.GetMetaData(ApiTokenTable);
+			database.GetMetaData(ApiTokenTable);
 		}
 
 		public string GenerateToken(string uid, TimeSpan? timeout = null)

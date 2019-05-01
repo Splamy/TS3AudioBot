@@ -60,8 +60,7 @@ namespace TS3ABotUnitTests
 			void CreateDbStore()
 			{
 				db = new DbStore(confDb);
-				hf = new HistoryManager(confHistory) { Database = db };
-				hf.Initialize();
+				hf = new HistoryManager(confHistory, db);
 			}
 
 			CreateDbStore();

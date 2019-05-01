@@ -7,16 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.Dependency
 {
-	using Dependency;
+	using System;
 
-	public class ExecutionInformation : ChainedInjector<BasicInjector>
+	public class NullInjector : IInjector
 	{
-		public ExecutionInformation() : this(NullInjector.Instance) { }
-		public ExecutionInformation(IInjector parent) : base(parent, new BasicInjector())
-		{
-			this.AddModule(this);
-		}
+		public static readonly IInjector Instance = new NullInjector();
+		private NullInjector() { }
+		public object GetModule(Type type) => null;
+		public void AddModule(Type type, object obj) { }
 	}
 }

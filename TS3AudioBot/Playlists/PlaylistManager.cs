@@ -25,10 +25,10 @@ namespace TS3AudioBot.Playlists
 		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-_]", Util.DefaultRegexConfig);
 		private const string LocalPlaylistDirectory = "playlists";
 
-		public ConfBot ConfBot { get; set; }
-		public PlaylistPool PlaylistPool { get; set; }
 
 		private readonly ConfPlaylists config;
+		private readonly ConfBot confBot;
+		private readonly PlaylistPool playlistPool;
 		private readonly ConcurrentQueue<PlaylistItem> playQueue;
 		private readonly Playlist mixList = new Playlist(".mix");
 		public IReadOnlyPlaylist CurrentList { get; private set; }
@@ -63,9 +63,11 @@ namespace TS3AudioBot.Playlists
 		/// <summary>Loop mode for the current playlist.</summary>
 		public LoopMode Loop { get; set; } = LoopMode.Off;
 
-		public PlaylistManager(ConfPlaylists config)
+		public PlaylistManager(ConfPlaylists config, ConfBot confBot, PlaylistPool playlistPool)
 		{
 			this.config = config;
+			this.confBot = confBot;
+			this.playlistPool = playlistPool;
 			shuffle = NormalOrder;
 			Util.Init(out playQueue);
 		}
@@ -160,7 +162,7 @@ namespace TS3AudioBot.Playlists
 			switch (config.Share.Value)
 			{
 			case PlaylistLocation.Bot:
-				return Path.Combine(ConfBot.LocalConfigDir, LocalPlaylistDirectory);
+				return Path.Combine(confBot.LocalConfigDir, LocalPlaylistDirectory);
 			case PlaylistLocation.Global:
 				return config.Path;
 			default: throw Util.UnhandledDefault(config.Share.Value);
@@ -178,7 +180,7 @@ namespace TS3AudioBot.Playlists
 				return GetSpecialPlaylist(name);
 
 			var fi = GetFileInfo(name);
-			var res = PlaylistPool.Read(fi);
+			var res = playlistPool.Read(fi);
 			if (!res.Ok)
 				return res.Error;
 			return res.Value;
@@ -187,19 +189,19 @@ namespace TS3AudioBot.Playlists
 		public E<LocalStr> ModifyPlaylist(string name, Action<Playlist> action)
 		{
 			var fi = GetFileInfo(name);
-			var res = PlaylistPool.Read(fi);
+			var res = playlistPool.Read(fi);
 			if (!res.Ok)
 				return res.Error;
 			action(res.Value);
 			// TODO dirty instead?
-			return PlaylistPool.Write(res.Value, fi);
+			return playlistPool.Write(res.Value, fi);
 		}
 
 		public E<LocalStr> RenamePlaylist(string name, string newName)
 		{
 			var fiFrom = GetFileInfo(name);
 			var fiTo = GetFileInfo(newName);
-			return PlaylistPool.Move(fiFrom, fiTo);
+			return playlistPool.Move(fiFrom, fiTo);
 		}
 
 		public E<LocalStr> SavePlaylist(IReadOnlyPlaylist plist)
@@ -216,7 +218,7 @@ namespace TS3AudioBot.Playlists
 				return new LocalStr(strings.error_playlist_no_store_directory);
 
 			var fi = GetFileInfo(plist.Name);
-			PlaylistPool.Write(plist, fi);
+			playlistPool.Write(plist, fi);
 
 			return R.Ok;
 		}
@@ -227,7 +229,7 @@ namespace TS3AudioBot.Playlists
 				throw new ArgumentNullException(nameof(name));
 
 			var fi = GetFileInfo(name);
-			return PlaylistPool.Delete(fi);
+			return playlistPool.Delete(fi);
 		}
 
 		public static string CleanseName(string name)

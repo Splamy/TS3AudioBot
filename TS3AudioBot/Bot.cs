@@ -28,6 +28,8 @@ namespace TS3AudioBot
 	using TS3AudioBot.ResourceFactories;
 	using TS3Client;
 	using TS3Client.Messages;
+	using TS3Client.Helper;
+	using TS3Client.Full;
 
 	/// <summary>Core class managing all bots and utility modules.</summary>
 	public sealed class Bot : IDisposable
@@ -41,34 +43,27 @@ namespace TS3AudioBot
 		internal bool IsDisposed { get; private set; }
 		internal BotInjector Injector { get; }
 
-		public int Id { get; }
+		public Id Id { get; }
 		/// <summary>This is the template name. Can be null.</summary>
 		public string Name => config.Name;
 		public bool QuizMode { get; set; }
 
-		// Injected dependencies
+		private readonly ResourceFactoryManager factoryManager;
+		private readonly CommandManager commandManager;
+		private Ts3Client clientConnection;
+		private Ts3FullClient tsFullClient;
+		private SessionManager sessionManager;
+		private PlayManager playManager;
+		private IVoiceTarget targetManager;
+		private IPlayerConnection playerConnection;
 
-		public ConfRoot CoreConfig { get; set; }
-		public ResourceFactoryManager FactoryManager { get; set; }
-		public CommandManager CommandManager { get; set; }
-		public BotManager BotManager { get; set; }
-		public PluginManager PluginManager { get; set; }
-
-		// Own modules
-
-		/// <summary>Connection object for the current client.</summary>
-		public Ts3Client ClientConnection { get; set; }
-		public SessionManager SessionManager { get; set; }
-		public PlayManager PlayManager { get; set; }
-		public IVoiceTarget TargetManager { get; private set; }
-		public IPlayerConnection PlayerConnection { get; private set; }
-		public Filter Filter { get; private set; }
-
-		public Bot(int id, ConfBot config, BotInjector injector)
+		public Bot(Id id, ConfBot config, BotInjector injector, ResourceFactoryManager factoryManager, CommandManager commandManager)
 		{
 			this.Id = id;
 			this.config = config;
 			this.Injector = injector;
+			this.factoryManager = factoryManager;
+			this.commandManager = commandManager;
 		}
 
 		public E<string> InitializeBot()
@@ -76,12 +71,6 @@ namespace TS3AudioBot
 			Log.Info("Bot \"{0}\" connecting to \"{1}\"", config.Name, config.Connect.Address);
 
 			// Registering config changes
-			config.Commands.Matcher.Changed += (s, e) =>
-			{
-				var newMatcher = Filter.GetFilterByName(e.NewValue);
-				if (newMatcher.Ok)
-					Filter.Current = newMatcher.Value;
-			};
 			config.Language.Changed += (s, e) =>
 			{
 				var langResult = LocalizationManager.LoadLanguage(e.NewValue, true);
@@ -90,79 +79,71 @@ namespace TS3AudioBot
 			};
 			config.Events.IdleTime.Changed += (s, e) => EnableIdleTickWorker();
 			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
-
-			Injector.RegisterType<Bot>();
-			Injector.RegisterType<ConfBot>();
-			Injector.RegisterType<BotInjector>();
-			Injector.RegisterType<PlaylistManager>();
-			Injector.RegisterType<Ts3Client>();
-			Injector.RegisterType<SessionManager>();
-			Injector.RegisterType<HistoryManager>();
-			Injector.RegisterType<PlayManager>();
-			Injector.RegisterType<IPlayerConnection>();
-			Injector.RegisterType<IVoiceTarget>();
-			Injector.RegisterType<Ts3BaseFunctions>();
-			Injector.RegisterType<Filter>();
-
-			Injector.RegisterModule(this);
-			Injector.RegisterModule(config);
-			Injector.RegisterModule(Injector);
-			Injector.RegisterModule(new PlaylistManager(config.Playlists));
-			var teamspeakClient = new Ts3Client(config, Id.ToString());
-			Injector.RegisterModule(teamspeakClient);
-			Injector.RegisterModule(teamspeakClient.TsFullClient);
-			Injector.RegisterModule(new SessionManager());
-			HistoryManager historyManager = null;
+			
+			var builder = new DependencyBuilder(Injector);
+			builder.AddModule(this);
+			builder.AddModule(config);
+			builder.AddModule(Injector);
+			builder.AddModule(config.Playlists);
+			builder.RequestModule<PlaylistManager>();
+			builder.AddModule(Id);
+			builder.AddModule(new Ts3FullClient());
+			builder.RequestModule<Ts3BaseFunctions, Ts3FullClient>();
+			builder.RequestModule<Ts3Client>();
+			builder.RequestModule<IPlayerConnection, Ts3Client>();
+			builder.RequestModule<SessionManager>();
 			if (config.History.Enabled)
-				Injector.RegisterModule(historyManager = new HistoryManager(config.History), x => x.Initialize());
-			Injector.RegisterModule(new PlayManager());
-			Injector.RegisterModule(teamspeakClient.TargetPipe);
-
-			var filter = Filter.GetFilterByName(config.Commands.Matcher);
-			Injector.RegisterModule(new Filter { Current = filter.OkOr(Filter.DefaultAlgorithm) });
-			if (!filter.Ok) Log.Warn("Unknown command_matcher config. Using default.");
-
-			if (!Injector.AllResolved())
 			{
-				Log.Warn("Cyclic bot module dependency");
-				Injector.ForceCyclicResolve();
-				if (!Injector.AllResolved())
-				{
-					Log.Error("Missing bot module dependency");
-					return "Could not load all bot modules";
-				}
+				builder.AddModule(config.History);
+				builder.RequestModule<HistoryManager>();
+			}
+			builder.RequestModule<PlayManager>();
+
+			if (!builder.Build())
+			{
+				Log.Error("Missing bot module dependency");
+				return "Could not load all bot modules";
 			}
 
-			PlayerConnection.OnSongEnd += PlayManager.SongStoppedHook;
-			PlayerConnection.OnSongUpdated += (s, e) => PlayManager.Update(e);
+			tsFullClient = Injector.GetModule<Ts3FullClient>();
+			clientConnection = Injector.GetModule<Ts3Client>();
+			playerConnection = clientConnection;
+			Injector.AddModule<IVoiceTarget>(clientConnection.TargetPipe);
+
+			playManager = Injector.GetModule<PlayManager>();
+			targetManager = Injector.GetModule<IVoiceTarget>();
+			sessionManager = Injector.GetModule<SessionManager>();
+
+			playerConnection.OnSongEnd += playManager.SongStoppedHook;
+			playerConnection.OnSongUpdated += (s, e) => playManager.Update(e);
 			// Update idle status events
-			PlayManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();
-			PlayManager.AfterResourceStopped += (s, e) => EnableIdleTickWorker();
+			playManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();
+			playManager.AfterResourceStopped += (s, e) => EnableIdleTickWorker();
 			// Used for the voice_mode script
-			PlayManager.BeforeResourceStarted += BeforeResourceStarted;
+			playManager.BeforeResourceStarted += BeforeResourceStarted;
 			// Update the own status text to the current song title
-			PlayManager.AfterResourceStarted += LoggedUpdateBotStatus;
-			PlayManager.AfterResourceStopped += LoggedUpdateBotStatus;
-			PlayManager.OnResourceUpdated += LoggedUpdateBotStatus;
+			playManager.AfterResourceStarted += LoggedUpdateBotStatus;
+			playManager.AfterResourceStopped += LoggedUpdateBotStatus;
+			playManager.OnResourceUpdated += LoggedUpdateBotStatus;
 			// Log our resource in the history
-			if (historyManager != null)
-				PlayManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Invoker.ClientUid));
+			if (Injector.TryGet<HistoryManager>(out var historyManager))
+				playManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Invoker.ClientUid));
 			// Update our thumbnail
-			PlayManager.AfterResourceStarted += GenerateStatusImage;
-			PlayManager.AfterResourceStopped += GenerateStatusImage;
+			playManager.AfterResourceStarted += GenerateStatusImage;
+			playManager.AfterResourceStopped += GenerateStatusImage;
 			// Register callback for all messages happening
-			ClientConnection.OnMessageReceived += OnMessageReceived;
+			clientConnection.OnMessageReceived += OnMessageReceived;
 			// Register callback to remove open private sessions, when user disconnects
-			ClientConnection.OnClientDisconnect += OnClientDisconnect;
-			ClientConnection.OnBotConnected += OnBotConnected;
-			ClientConnection.OnBotDisconnect += OnBotDisconnect;
+			clientConnection.OnClientDisconnect += OnClientDisconnect;
+			clientConnection.OnBotConnected += OnBotConnected;
+			clientConnection.OnBotDisconnect += OnBotDisconnect;
 
 			// Restore all alias from the config
 			foreach (var alias in config.Commands.Alias.GetAllItems())
-				CommandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
+				commandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
 
 			// Connect the query after everyting is set up
-			return ClientConnection.Connect();
+			return clientConnection.Connect();
 		}
 
 		private void OnBotConnected(object sender, EventArgs e)
@@ -173,7 +154,7 @@ namespace TS3AudioBot
 
 			var badges = config.Connect.Badges.Value;
 			if (!string.IsNullOrEmpty(badges))
-				ClientConnection?.ChangeBadges(badges);
+				clientConnection?.ChangeBadges(badges);
 
 			var onStart = config.Events.OnConnect.Value;
 			if (!string.IsNullOrEmpty(onStart))
@@ -216,11 +197,11 @@ namespace TS3AudioBot
 
 			Log.Info("User {0} requested: {1}", textMessage.InvokerName, textMessage.Message);
 
-			ClientConnection.InvalidateClientBuffer();
+			clientConnection.InvalidateClientBuffer();
 
 			ulong? channelId = null, databaseId = null;
 			ulong[] serverGroups = null;
-			var clientResult = ClientConnection.GetCachedClientById(textMessage.InvokerId);
+			var clientResult = clientConnection.GetCachedClientById(textMessage.InvokerId);
 			if (clientResult.Ok)
 			{
 				channelId = clientResult.Value.ChannelId;
@@ -228,7 +209,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				var clientInfoResult = ClientConnection.GetClientInfoById(textMessage.InvokerId);
+				var clientInfoResult = clientConnection.GetClientInfoById(textMessage.InvokerId);
 				if (clientInfoResult.Ok)
 				{
 					channelId = clientInfoResult.Value.ChannelId;
@@ -250,7 +231,7 @@ namespace TS3AudioBot
 				databaseId: databaseId)
 			{ ServerGroups = serverGroups };
 
-			var session = SessionManager.GetOrCreateSession(textMessage.InvokerId);
+			var session = sessionManager.GetOrCreateSession(textMessage.InvokerId);
 			var info = CreateExecInfo(invoker, session);
 
 			using (session.GetLock())
@@ -274,8 +255,8 @@ namespace TS3AudioBot
 
 		private void OnClientDisconnect(object sender, ClientLeftView eventArgs)
 		{
-			TargetManager.WhisperClientUnsubscribe(eventArgs.ClientId);
-			SessionManager.RemoveSession(eventArgs.ClientId);
+			targetManager.WhisperClientUnsubscribe(eventArgs.ClientId);
+			sessionManager.RemoveSession(eventArgs.ClientId);
 		}
 
 		private void LoggedUpdateBotStatus(object sender, EventArgs e)
@@ -299,18 +280,18 @@ namespace TS3AudioBot
 				{
 					setString = overrideStr;
 				}
-				else if (PlayManager.IsPlaying)
+				else if (playManager.IsPlaying)
 				{
 					setString = QuizMode
 						? strings.info_botstatus_quiztime
-						: (PlayManager.CurrentPlayData.ResourceData.ResourceTitle);
+						: (playManager.CurrentPlayData.ResourceData.ResourceTitle);
 				}
 				else
 				{
 					setString = strings.info_botstatus_sleeping;
 				}
 
-				return ClientConnection.ChangeDescription(setString ?? "");
+				return clientConnection.ChangeDescription(setString ?? "");
 			}
 		}
 
@@ -323,10 +304,10 @@ namespace TS3AudioBot
 			{
 				Task.Run(() =>
 				{
-					var thumresult = FactoryManager.GetThumbnail(startEvent.PlayResource);
+					var thumresult = factoryManager.GetThumbnail(startEvent.PlayResource);
 					if (!thumresult.Ok)
 					{
-						ClientConnection.DeleteAvatar();
+						clientConnection.DeleteAvatar();
 						return;
 					}
 
@@ -334,7 +315,7 @@ namespace TS3AudioBot
 					{
 						if (image is null)
 							return;
-						var result = ClientConnection.UploadAvatar(image);
+						var result = clientConnection.UploadAvatar(image);
 						if (!result.Ok)
 							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
@@ -344,7 +325,7 @@ namespace TS3AudioBot
 			{
 				using (var sleepPic = Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png"))
 				{
-					var result = ClientConnection.UploadAvatar(sleepPic);
+					var result = clientConnection.UploadAvatar(sleepPic);
 					if (!result.Ok)
 						Log.Warn("Could not save avatar: {0}", result.Error);
 				}
@@ -378,7 +359,7 @@ namespace TS3AudioBot
 		{
 			Log.Debug("Calling script (skipRights:{0}, answer:{1}): {2}", skipRights, answer, command);
 
-			info.AddDynamicObject(new CallerInfo(command, false)
+			info.AddModule(new CallerInfo(command, false)
 			{
 				SkipRightsChecks = skipRights,
 				CommandComplexityMax = config.Commands.CommandComplexity,
@@ -388,7 +369,7 @@ namespace TS3AudioBot
 			TryCatchCommand(info, answer, () =>
 			{
 				// parse (and execute) the command
-				var res = CommandManager.CommandSystem.Execute(info, command);
+				var res = commandManager.CommandSystem.Execute(info, command);
 
 				if (!answer)
 					return;
@@ -414,9 +395,10 @@ namespace TS3AudioBot
 
 		private ExecutionInformation CreateExecInfo(InvokerData invoker = null, UserSession session = null)
 		{
-			var info = new ExecutionInformation(Injector.CloneRealm<DependencyRealm>());
-			info.AddDynamicObject(invoker ?? InvokerData.Anonymous);
-			info.AddDynamicObject(session ?? new AnonymousSession());
+			var info = new ExecutionInformation(Injector);
+			info.AddModule(invoker ?? InvokerData.Anonymous);
+			info.AddModule(session ?? new AnonymousSession());
+			info.AddModule(Filter.GetFilterByNameOrDefault(config.Commands.Matcher));
 			return info;
 		}
 
@@ -494,13 +476,13 @@ namespace TS3AudioBot
 		{
 			Id = Id,
 			Name = config.Name,
-			Server = ClientConnection.TsFullClient.ConnectionData.Address,
-			Status = ClientConnection.TsFullClient.Connected ? BotStatus.Connected : BotStatus.Connecting,
+			Server = tsFullClient.ConnectionData.Address,
+			Status = tsFullClient.Connected ? BotStatus.Connected : BotStatus.Connecting,
 		};
 
 		public void Dispose()
 		{
-			BotManager.RemoveBot(this);
+			Injector.GetModule<BotManager>()?.RemoveBot(this);
 
 			lock (SyncRoot)
 			{
@@ -511,16 +493,10 @@ namespace TS3AudioBot
 
 				DisableIdleTickWorker();
 
-				PluginManager.StopPlugins(this);
-
-				PlayManager.Stop();
-				PlayManager = null;
-
-				PlayerConnection.Dispose();
-				PlayerConnection = null;
-
-				ClientConnection.Dispose();
-				ClientConnection = null;
+				Injector.GetModule<PluginManager>()?.StopPlugins(this);
+				Injector.GetModule<PlayManager>()?.Stop();
+				Injector.GetModule<IPlayerConnection>()?.Dispose();
+				Injector.GetModule<Ts3Client>()?.Dispose();
 			}
 		}
 	}

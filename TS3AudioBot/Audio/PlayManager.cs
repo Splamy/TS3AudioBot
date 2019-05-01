@@ -21,10 +21,10 @@ namespace TS3AudioBot.Audio
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public ConfBot Config { get; set; }
-		public IPlayerConnection PlayerConnection { get; set; }
-		public PlaylistManager PlaylistManager { get; set; }
-		public ResourceFactoryManager ResourceFactoryManager { get; set; }
+		private readonly ConfBot confBot;
+		private readonly IPlayerConnection playerConnection;
+		private readonly PlaylistManager playlistManager;
+		private readonly ResourceFactoryManager resourceFactoryManager;
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
@@ -35,10 +35,18 @@ namespace TS3AudioBot.Audio
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
+		public PlayManager(ConfBot config, IPlayerConnection playerConnection, PlaylistManager playlistManager, ResourceFactoryManager resourceFactoryManager)
+		{
+			confBot = config;
+			this.playerConnection = playerConnection;
+			this.playlistManager = playlistManager;
+			this.resourceFactoryManager = resourceFactoryManager;
+		}
+
 		public E<LocalStr> Enqueue(InvokerData invoker, AudioResource ar) => Enqueue(invoker, new PlaylistItem(ar));
 		public E<LocalStr> Enqueue(InvokerData invoker, string message, string audioType = null)
 		{
-			var result = ResourceFactoryManager.Load(message, audioType);
+			var result = resourceFactoryManager.Load(message, audioType);
 			if (!result)
 				return result.Error;
 			return Enqueue(invoker, new PlaylistItem(result.Value.BaseData));
@@ -59,7 +67,7 @@ namespace TS3AudioBot.Audio
 		{
 			item.Meta.ResourceOwnerUid = invoker.ClientUid;
 			item.Meta.From = PlaySource.FromQueue;
-			PlaylistManager.QueueItem(item);
+			playlistManager.QueueItem(item);
 		}
 
 		private E<LocalStr> PostEnqueue(InvokerData invoker)
@@ -86,7 +94,7 @@ namespace TS3AudioBot.Audio
 			if (ar is null)
 				throw new ArgumentNullException(nameof(ar));
 
-			var result = ResourceFactoryManager.Load(ar);
+			var result = resourceFactoryManager.Load(ar);
 			if (!result)
 				return result.Error;
 			return Play(invoker, result.Value, meta ?? new MetaData());
@@ -99,7 +107,7 @@ namespace TS3AudioBot.Audio
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public E<LocalStr> Play(InvokerData invoker, string link, string audioType = null, MetaData meta = null)
 		{
-			var result = ResourceFactoryManager.Load(link, audioType);
+			var result = resourceFactoryManager.Load(link, audioType);
 			if (!result)
 				return result.Error;
 			return Play(invoker, result.Value, meta ?? new MetaData());
@@ -114,7 +122,7 @@ namespace TS3AudioBot.Audio
 			if (meta.From != PlaySource.FromPlaylist)
 				meta.ResourceOwnerUid = invoker.ClientUid;
 
-			var sourceLink = ResourceFactoryManager.RestoreLink(play.BaseData);
+			var sourceLink = resourceFactoryManager.RestoreLink(play.BaseData);
 			var playInfo = new PlayInfoEventArgs(invoker, play, meta, sourceLink);
 			BeforeResourceStarted?.Invoke(this, playInfo);
 
@@ -136,15 +144,15 @@ namespace TS3AudioBot.Audio
 			}
 
 			Log.Debug("AudioResource start: {0}", playResource);
-			var result = PlayerConnection.AudioStart(playResource);
+			var result = playerConnection.AudioStart(playResource);
 			if (!result)
 			{
 				Log.Error("Error return from player: {0}", result.Error);
 				return new LocalStr(strings.error_playmgr_internal_error);
 			}
 
-			PlayerConnection.Volume = meta.Volume
-				?? Math.Min(Math.Max(PlayerConnection.Volume, Config.Audio.Volume.Min), Config.Audio.Volume.Max);
+			playerConnection.Volume = meta.Volume
+				?? Math.Min(Math.Max(playerConnection.Volume, confBot.Audio.Volume.Min), confBot.Audio.Volume.Max);
 
 			return R.Ok;
 		}
@@ -154,7 +162,7 @@ namespace TS3AudioBot.Audio
 			PlaylistItem pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = PlaylistManager.Next(manually)) is null) break;
+				if ((pli = playlistManager.Next(manually)) is null) break;
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
@@ -174,12 +182,12 @@ namespace TS3AudioBot.Audio
 			{
 				if (skipPrev)
 				{
-					pli = PlaylistManager.Current;
+					pli = playlistManager.Current;
 					skipPrev = false;
 				}
 				else
 				{
-					pli = PlaylistManager.Previous(manually);
+					pli = playlistManager.Previous(manually);
 				}
 				if (pli is null) break;
 
@@ -211,7 +219,7 @@ namespace TS3AudioBot.Audio
 			}
 			else
 			{
-				PlayerConnection.AudioStop();
+				playerConnection.AudioStop();
 			}
 
 			CurrentPlayData = null;

@@ -20,11 +20,12 @@ namespace TS3AudioBot.Audio
 	using System.Text.RegularExpressions;
 	using System.Threading;
 	using TS3Client.Audio;
+	using TS3Client.Helper;
 
 	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly string id;
+		private readonly Id id;
 		private static readonly Regex FindDurationMatch = new Regex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
 		private static readonly Regex IcyMetadataMacher = new Regex("((\\w+)='(.*?)';\\s*)+", Util.DefaultRegexConfig);
 		private const string PreLinkConf = "-hide_banner -nostats -threads 1 -i \"";
@@ -43,7 +44,7 @@ namespace TS3AudioBot.Audio
 		public int Channels { get; } = 2;
 		public int BitsPerSample { get; } = 16;
 
-		public FfmpegProducer(ConfToolsFfmpeg config, string id)
+		public FfmpegProducer(ConfToolsFfmpeg config, Id id)
 		{
 			this.config = config;
 			this.id = id;
@@ -240,7 +241,7 @@ namespace TS3AudioBot.Audio
 
 				new Thread(newInstance.ReadStreamLoop)
 				{
-					Name = $"IcyStreamReader[${id}]",
+					Name = $"IcyStreamReader[{id}]",
 				}.Start();
 
 				return StartFfmpegProcessInternal(newInstance, LinkConfIcy);

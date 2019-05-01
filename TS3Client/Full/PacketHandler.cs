@@ -85,7 +85,7 @@ namespace TS3Client.Full
 			resendThreadId = -1;
 		}
 
-		public void Connect(IPEndPoint address, string id)
+		public void Connect(IPEndPoint address, Id id)
 		{
 			Initialize(address, true, id);
 			// The old client used to send 'clientinitiv' as the first message.
@@ -98,7 +98,7 @@ namespace TS3Client.Full
 			AddOutgoingPacket(ts3Crypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
 		}
 
-		public void Listen(IPEndPoint address, string id)
+		public void Listen(IPEndPoint address, Id id)
 		{
 			lock (sendLoopLock)
 			{
@@ -112,9 +112,9 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void Initialize(IPEndPoint address, bool connect, string id)
+		private void Initialize(IPEndPoint address, bool connect, Id id)
 		{
-			var resendThread = new Thread(() => { Util.SetLogId(id); ResendLoop(); }) { Name = $"PacketHandler[${id}]" };
+			var resendThread = new Thread(() => { Util.SetLogId(id); ResendLoop(); }) { Name = $"PacketHandler[{id}]" };
 			resendThreadId = resendThread.ManagedThreadId;
 
 			lock (sendLoopLock)
@@ -165,9 +165,11 @@ namespace TS3Client.Full
 
 		public void Stop(Reason closeReason = Reason.LeftServer)
 		{
+			Log.Debug("Stopping PacketHandler {@reason}", closeReason);
 			resendThreadId = -1;
 			lock (sendLoopLock)
 			{
+				udpClient?.Close();
 				udpClient?.Dispose();
 				if (!ExitReason.HasValue)
 					ExitReason = closeReason;
@@ -258,7 +260,7 @@ namespace TS3Client.Full
 			case PacketType.VoiceWhisper:
 				packet.PacketFlags |= PacketFlags.Unencrypted;
 				BinaryPrimitives.WriteUInt16BigEndian(packet.Data, packet.PacketId);
-				LoggerRawVoice.Trace("[O] {0}", packet);
+				LogRawVoice.Trace("[O] {0}", packet);
 				break;
 
 			case PacketType.Command:
@@ -266,34 +268,34 @@ namespace TS3Client.Full
 				packet.PacketFlags |= PacketFlags.Newprotocol;
 				var resendPacket = new ResendPacket<TOut>(packet);
 				packetAckManager.Add(packet.PacketId, resendPacket);
-				LoggerRaw.Debug("[O] {0}", packet);
+				LogRaw.Debug("[O] {0}", packet);
 				break;
 
 			case PacketType.Ping:
 				lastSentPingId = packet.PacketId;
 				packet.PacketFlags |= PacketFlags.Unencrypted;
-				LoggerRaw.Trace("[O] Ping {0}", packet.PacketId);
+				LogRaw.Trace("[O] Ping {0}", packet.PacketId);
 				break;
 
 			case PacketType.Pong:
 				packet.PacketFlags |= PacketFlags.Unencrypted;
-				LoggerRaw.Trace("[O] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+				LogRaw.Trace("[O] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 				break;
 
 			case PacketType.Ack:
-				LoggerRaw.Debug("[O] Acking Ack: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+				LogRaw.Debug("[O] Acking Ack: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 				break;
 
 			case PacketType.AckLow:
 				packet.PacketFlags |= PacketFlags.Unencrypted;
-				LoggerRaw.Debug("[O] Acking AckLow: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+				LogRaw.Debug("[O] Acking AckLow: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 				break;
 
 			case PacketType.Init1:
 				packet.PacketFlags |= PacketFlags.Unencrypted;
 				initPacketCheck = new ResendPacket<TOut>(packet);
-				LoggerRaw.Debug("[O] InitID: {0}", packet.Data[4]);
-				LoggerRaw.Trace("[O] {0}", packet);
+				LogRaw.Debug("[O] InitID: {0}", packet.Data[4]);
+				LogRaw.Trace("[O] {0}", packet);
 				break;
 
 			default: throw Util.UnhandledDefault(packet.PacketType);
@@ -340,19 +342,19 @@ namespace TS3Client.Full
 				// Invalid packet, ignore
 				if (optpacket is null)
 				{
-					LoggerRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
+					LogRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 					continue;
 				}
 				var packet = optpacket.Value;
 
 				// DebugToHex is costly and allocates, precheck before logging
-				if (LoggerRaw.IsTraceEnabled)
-					LoggerRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
+				if (LogRaw.IsTraceEnabled)
+					LogRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
 
 				FindIncommingGenerationId(ref packet);
 				if (!ts3Crypt.Decrypt(ref packet))
 				{
-					LoggerRaw.Warn("Dropping not decryptable packet: {0}", DebugUtil.DebugToHex(packet.Raw));
+					LogRaw.Warn("Dropping not decryptable packet: {0}", DebugUtil.DebugToHex(packet.Raw));
 					continue;
 				}
 
@@ -363,37 +365,37 @@ namespace TS3Client.Full
 				switch (packet.PacketType)
 				{
 				case PacketType.Voice:
-					LoggerRawVoice.Trace("[I] {0}", packet);
+					LogRawVoice.Trace("[I] {0}", packet);
 					passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoice);
 					break;
 				case PacketType.VoiceWhisper:
-					LoggerRawVoice.Trace("[I] {0}", packet);
+					LogRawVoice.Trace("[I] {0}", packet);
 					passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoiceWhisper);
 					break;
 				case PacketType.Command:
-					LoggerRaw.Debug("[I] {0}", packet);
+					LogRaw.Debug("[I] {0}", packet);
 					passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommand, PacketType.Ack);
 					break;
 				case PacketType.CommandLow:
-					LoggerRaw.Debug("[I] {0}", packet);
+					LogRaw.Debug("[I] {0}", packet);
 					passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommandLow, PacketType.AckLow);
 					break;
 				case PacketType.Ping:
-					LoggerRaw.Trace("[I] Ping {0}", packet.PacketId);
+					LogRaw.Trace("[I] Ping {0}", packet.PacketId);
 					ReceivePing(ref packet);
 					break;
 				case PacketType.Pong:
-					LoggerRaw.Trace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+					LogRaw.Trace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					passPacketToEvent = ReceivePong(ref packet);
 					break;
 				case PacketType.Ack:
-					LoggerRaw.Debug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+					LogRaw.Debug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 					passPacketToEvent = ReceiveAck(ref packet);
 					break;
 				case PacketType.AckLow: break;
 				case PacketType.Init1:
-					if (!LoggerRaw.IsTraceEnabled) LoggerRaw.Debug("[I] InitID: {0}", packet.Data[0]);
-					if (!LoggerRaw.IsDebugEnabled) LoggerRaw.Trace("[I] {0}", packet);
+					if (!LogRaw.IsTraceEnabled) LogRaw.Debug("[I] InitID: {0}", packet.Data[0]);
+					if (!LogRaw.IsDebugEnabled) LogRaw.Trace("[I] {0}", packet);
 					passPacketToEvent = ReceiveInitAck(ref packet);
 					break;
 				default: throw Util.UnhandledDefault(packet.PacketType);
@@ -512,7 +514,7 @@ namespace TS3Client.Full
 				}
 				catch (Exception ex)
 				{
-					LoggerRaw.Warn(ex, "Got invalid compressed data.");
+					LogRaw.Warn(ex, "Got invalid compressed data.");
 					return false;
 				}
 			}
@@ -592,7 +594,7 @@ namespace TS3Client.Full
 				var forwardData = ts3Crypt.ProcessInit1<TIn>(packet.Data);
 				if (!forwardData.Ok)
 				{
-					LoggerRaw.Debug("Error init: {0}", forwardData.Error);
+					LogRaw.Debug("Error init: {0}", forwardData.Error);
 					return false;
 				}
 				initPacketCheck = null;
@@ -617,7 +619,7 @@ namespace TS3Client.Full
 				smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
 			smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
 			currentRto = smoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
-			LoggerRtt.Debug("RTT SRTT:{0} RTTVAR:{1} RTO:{2}", smoothedRtt, smoothedRttVar, currentRto);
+			LogRtt.Debug("RTT SRTT:{0} RTTVAR:{1} RTO:{2}", smoothedRtt, smoothedRttVar, currentRto);
 		}
 
 		/// <summary>
@@ -661,7 +663,7 @@ namespace TS3Client.Full
 				var elapsed = lastMessageTimer.Elapsed;
 				if (elapsed > PacketTimeout)
 				{
-					LoggerTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
+					LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
 					Stop(Reason.Timeout);
 					return;
 				}
@@ -684,14 +686,14 @@ namespace TS3Client.Full
 			// Check if the packet timed out completely
 			if (packet.FirstSendTime < now - PacketTimeout)
 			{
-				LoggerTimeout.Debug("TIMEOUT: {0}", packet);
+				LogTimeout.Debug("TIMEOUT: {0}", packet);
 				return true;
 			}
 
 			// Check if we should retransmit a packet because it probably got lost
 			if (packet.LastSendTime < now - currentRto)
 			{
-				LoggerTimeout.Debug("RESEND: {0}", packet);
+				LogTimeout.Debug("RESEND: {0}", packet);
 				currentRto = currentRto + currentRto;
 				if (currentRto > MaxRetryInterval)
 					currentRto = MaxRetryInterval;
@@ -707,8 +709,8 @@ namespace TS3Client.Full
 			NetworkStats.LogOutPacket(ref packet);
 
 			// DebugToHex is costly and allocates, precheck before logging
-			if (LoggerRaw.IsTraceEnabled)
-				LoggerRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
+			if (LogRaw.IsTraceEnabled)
+				LogRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
 
 			try
 			{
@@ -717,7 +719,7 @@ namespace TS3Client.Full
 			}
 			catch (SocketException ex)
 			{
-				LoggerRaw.Warn(ex, "Failed to deliver packet (Err:{0})", ex.SocketErrorCode);
+				LogRaw.Warn(ex, "Failed to deliver packet (Err:{0})", ex.SocketErrorCode);
 				return "Socket send error";
 			}
 		}
@@ -725,10 +727,11 @@ namespace TS3Client.Full
 
 	internal class PacketHandler
 	{
-		protected static readonly Logger LoggerRtt = LogManager.GetLogger("TS3Client.PacketHandler.Rtt");
-		protected static readonly Logger LoggerRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
-		protected static readonly Logger LoggerRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
-		protected static readonly Logger LoggerTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
+		protected static readonly Logger Log = LogManager.GetLogger("TS3Client.PacketHandler");
+		protected static readonly Logger LogRtt = LogManager.GetLogger("TS3Client.PacketHandler.Rtt");
+		protected static readonly Logger LogRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
+		protected static readonly Logger LogRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
+		protected static readonly Logger LogTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
 
 		/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
 		protected static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(20);

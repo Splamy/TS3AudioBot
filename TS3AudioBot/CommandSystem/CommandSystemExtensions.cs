@@ -9,14 +9,16 @@
 
 namespace TS3AudioBot.CommandSystem
 {
+	using Algorithm;
 	using Dependency;
 
-	public class ExecutionInformation : ChainedInjector<BasicInjector>
+	public static class CommandSystemExtensions
 	{
-		public ExecutionInformation() : this(NullInjector.Instance) { }
-		public ExecutionInformation(IInjector parent) : base(parent, new BasicInjector())
+		public static IFilter GetFilter(this IInjector injector)
 		{
-			this.AddModule(this);
+			if (injector.TryGet<IFilter>(out var filter))
+				return filter;
+			return Filter.DefaultFilter;
 		}
 	}
 }

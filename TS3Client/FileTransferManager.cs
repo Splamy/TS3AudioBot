@@ -114,7 +114,7 @@ namespace TS3Client
 				if (threadEnd || workerThread is null || !workerThread.IsAlive)
 				{
 					threadEnd = false;
-					workerThread = new Thread(() => { Util.SetLogId(parent.ConnectionData.InstanceTag); TransferLoop(); }) { Name = $"FileTransfer[${parent.ConnectionData.InstanceTag}]" };
+					workerThread = new Thread(() => { Util.SetLogId(parent.ConnectionData.LogId); TransferLoop(); }) { Name = $"FileTransfer[{parent.ConnectionData.LogId}]" };
 					workerThread.Start();
 				}
 			}

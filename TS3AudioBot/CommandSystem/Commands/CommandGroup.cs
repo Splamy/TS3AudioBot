@@ -48,9 +48,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 				result = ((StringCommandResult)comResult).Content;
 			}
 
-			if (!info.TryGet<Algorithm.Filter>(out var filter))
-				filter = Algorithm.Filter.DefaultFilter;
-			var commandResults = filter.Current.Filter(commands, result).ToArray();
+			var filter = info.GetFilter();
+			var commandResults = filter.Filter(commands, result).ToArray();
 
 			// The special case when the command is empty and only might match because of fuzzy matching.
 			// We only allow this if the command explicitly allows an empty overload.

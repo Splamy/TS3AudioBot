@@ -10,56 +10,21 @@
 namespace TS3AudioBot.Dependency
 {
 	using System;
-	using System.Text;
+	using System.Linq;
 
 	internal class Module
 	{
-		public InitState Status { get; private set; }
-		public object Obj { get; }
-		public Type Type => Obj.GetType();
-		// object SyncContext;
-		private readonly Action<object> initializer;
+		public Type TImplementation { get; }
+		public Type TService { get; }
+		public Type[] ConstructorParam { get; }
 
-		public Module(object obj, Action<object> initializer)
+		public Module(Type tService, Type tImplementation)
 		{
-			Status = initializer is null ? InitState.SetOnly : InitState.SetAndInit;
-			this.initializer = initializer;
-			Obj = obj;
+			TService = tService;
+			TImplementation = tImplementation;
+			ConstructorParam = DependencyBuilder.GetContructorParam(TImplementation) ?? throw new ArgumentException("Invalid type");
 		}
 
-		public void SetInitalized()
-		{
-			if (Status == InitState.Initializing)
-				return;
-			if (Status == InitState.SetAndInit)
-			{
-				Status = InitState.Initializing;
-				initializer?.Invoke(Obj);
-			}
-			Status = InitState.Done;
-		}
-
-		public override string ToString()
-		{
-			var strb = new StringBuilder();
-			strb.Append(Type.Name);
-			switch (Status)
-			{
-			case InitState.Done: strb.Append("+"); break;
-			case InitState.SetOnly: strb.Append("*"); break;
-			case InitState.SetAndInit: strb.Append("-"); break;
-			case InitState.Initializing: strb.Append("-i"); break;
-			default: throw new ArgumentOutOfRangeException();
-			}
-			return strb.ToString();
-		}
-	}
-
-	internal enum InitState
-	{
-		Done,
-		SetOnly,
-		SetAndInit,
-		Initializing,
+		public override string ToString() => $"{TService.Name}({(TService != TImplementation ? TImplementation.Name : "-")}) => {string.Join(",", ConstructorParam.Select(x => x.Name))}";
 	}
 }
