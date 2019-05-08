@@ -47,6 +47,7 @@ namespace TS3AudioBot.Config
 				}
 			}
 		}
+		public Func<T, E<string>> Validator { get; set; }
 
 		public event EventHandler<ConfigChangedEventArgs<T>> Changed;
 
@@ -60,13 +61,23 @@ namespace TS3AudioBot.Config
 
 		public override void FromToml(TomlObject tomlObject)
 		{
-			if (tomlObject != null)
+			if (tomlObject == null)
+				return;
+
+			if (!tomlObject.TryGetValue<T>(out var tomlValue))
 			{
-				if (tomlObject.TryGetValue<T>(out var tomlValue))
-					Value = tomlValue;
-				else
-					Log.Warn("Failed to read '{0}', got {1} with {2}", Key, tomlObject.ReadableTypeName, tomlObject.DumpToJson());
+				Log.Warn("Failed to read '{0}', got {1} with {2}", Key, tomlObject.ReadableTypeName, tomlObject.DumpToJson());
+				return;
 			}
+
+			var validate = Validator?.Invoke(tomlValue) ?? R.Ok;
+			if(!validate.Ok)
+			{
+				Log.Warn("Invalid value in '{0}', {1}", Key, validate.Error);
+				return;
+			}
+
+			Value = tomlValue;
 		}
 
 		public override void ToToml(bool writeDefaults, bool writeDocumentation)

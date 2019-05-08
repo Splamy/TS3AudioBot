@@ -53,8 +53,11 @@ namespace TS3AudioBot.Web
 			startWebServer = false;
 			if (config.Interface.Enabled)
 			{
-				Display = new Interface.WebDisplay(config.Interface);
-				coreInjector.AddModule(Display);
+				if (!coreInjector.TryCreate<Interface.WebDisplay>(out var display))
+					throw new Exception();
+
+				Display = display;
+				coreInjector.AddModule(display);
 				startWebServer = true;
 			}
 			if (config.Api.Enabled || config.Interface.Enabled)
@@ -62,8 +65,12 @@ namespace TS3AudioBot.Web
 				if (!config.Api.Enabled)
 					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to get rid this error message.");
 
-				Api = new Api.WebApi(config.Api);
-				coreInjector.AddModule(Api);
+				if (!coreInjector.TryCreate<Api.WebApi>(out var api))
+					throw new Exception();
+
+				Api = api;
+				coreInjector.AddModule(api);
+
 				startWebServer = true;
 			}
 

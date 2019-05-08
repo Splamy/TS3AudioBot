@@ -51,12 +51,8 @@ namespace TS3AudioBot
 
 		private bool closed = false;
 		private TickWorker reconnectTick = null;
-		public static readonly TimeSpan TooManyClonesReconnectDelay = TimeSpan.FromSeconds(30);
 		private int reconnectCounter;
-		private static readonly TimeSpan[] LostConnectionReconnectDelay = new[] {
-			TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10),
-			TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5) };
-		private static int MaxReconnects { get; } = LostConnectionReconnectDelay.Length;
+		private ReconnectType? lastReconnect;
 
 		private readonly ConfBot config;
 		private readonly Ts3FullClient tsFullClient;
@@ -141,6 +137,8 @@ namespace TS3AudioBot
 				Log.Warn("Invalid config value for 'Level', enter a number between '0' and '160' or '-1' to adapt automatically.");
 			config.SaveWhenExists();
 
+			reconnectCounter = 0;
+			lastReconnect = null;
 			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
 			return ConnectClient();
 		}
@@ -509,7 +507,7 @@ namespace TS3AudioBot
 
 		#endregion
 
-		#region Event helper
+		#region Events
 
 		private void TsFullClient_OnErrorEvent(object sender, CommandError error)
 		{
@@ -548,17 +546,21 @@ namespace TS3AudioBot
 					break;
 
 				case Ts3ErrorCode.client_too_many_clones_connected:
-					if (reconnectCounter++ < MaxReconnects)
-					{
-						Log.Warn("Seems like another client with the same identity is already connected. Waiting {0:0} seconds to reconnect.",
-							TooManyClonesReconnectDelay.TotalSeconds);
-						reconnectTick = TickPool.RegisterTickOnce(() => ConnectClient(), TooManyClonesReconnectDelay);
-						return; // skip triggering event, we want to reconnect
-					}
+					Log.Warn("Seems like another client with the same identity is already connected.");
+					if (TryReconnect(ReconnectType.Error))
+						return;
+					break;
+
+				case Ts3ErrorCode.connect_failed_banned:
+					Log.Warn("This bot is banned.");
+					if (TryReconnect(ReconnectType.Ban))
+						return;
 					break;
 
 				default:
 					Log.Warn("Could not connect: {0}", error.ErrorFormat());
+					if (TryReconnect(ReconnectType.Error))
+						return;
 					break;
 				}
 			}
@@ -566,26 +568,57 @@ namespace TS3AudioBot
 			{
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 
-				if (reconnectCounter < LostConnectionReconnectDelay.Length && !closed)
-				{
-					var delay = LostConnectionReconnectDelay[reconnectCounter++];
-					Log.Info("Trying to reconnect. Delaying reconnect for {0:0} seconds", delay.TotalSeconds);
-					reconnectTick = TickPool.RegisterTickOnce(() => ConnectClient(), delay);
+				if (TryReconnect(
+						e.ExitReason == Reason.Timeout ? ReconnectType.Timeout :
+						e.ExitReason == Reason.KickedFromServer ? ReconnectType.Kick :
+						e.ExitReason == Reason.ServerShutdown || e.ExitReason == Reason.ServerStopped ? ReconnectType.ServerShutdown :
+						e.ExitReason == Reason.Banned ? ReconnectType.Ban :
+						ReconnectType.None))
 					return;
-				}
 			}
 
-			if (reconnectCounter >= LostConnectionReconnectDelay.Length)
-			{
-				Log.Warn("Could not (re)connect after {0} tries. Giving up.", reconnectCounter);
-			}
 			OnBotDisconnect?.Invoke(this, e);
+		}
+
+		private bool TryReconnect(ReconnectType type)
+		{
+			if (closed)
+				return false;
+
+			if (lastReconnect != type)
+				reconnectCounter = 0;
+			lastReconnect = type;
+
+			TimeSpan? delay;
+			switch (type)
+			{
+			case ReconnectType.Timeout: delay = config.Reconnect.OnTimeout.GetValueAsTime(reconnectCounter); break;
+			case ReconnectType.Kick: delay = config.Reconnect.OnKick.GetValueAsTime(reconnectCounter); break;
+			case ReconnectType.Ban: delay = config.Reconnect.OnBan.GetValueAsTime(reconnectCounter); break;
+			case ReconnectType.ServerShutdown: delay = config.Reconnect.OnShutdown.GetValueAsTime(reconnectCounter); break;
+			case ReconnectType.Error: delay = config.Reconnect.OnError.GetValueAsTime(reconnectCounter); break;
+			case ReconnectType.None:
+				return false;
+			default: throw Util.UnhandledDefault(type);
+			}
+			reconnectCounter++;
+
+			if (delay == null)
+			{
+				Log.Info("Reconnect strategy for '{0}' has reached the end. Closing instance.", type);
+				return false;
+			}
+
+			Log.Info("Trying to reconnect because of {0}. Delaying reconnect for {1:0} seconds", type, delay.Value.TotalSeconds);
+			reconnectTick = TickPool.RegisterTickOnce(() => ConnectClient(), delay);
+			return true;
 		}
 
 		private void TsFullClient_OnConnected(object sender, EventArgs e)
 		{
 			StopReconnectTickWorker();
 			reconnectCounter = 0;
+			lastReconnect = null;
 			OnBotConnected?.Invoke(this, EventArgs.Empty);
 		}
 
@@ -699,6 +732,16 @@ namespace TS3AudioBot
 			ffmpegProducer?.Dispose();
 			encoderPipe?.Dispose();
 			tsFullClient.Dispose();
+		}
+
+		enum ReconnectType
+		{
+			None,
+			Timeout,
+			Kick,
+			Ban,
+			ServerShutdown,
+			Error
 		}
 	}
 

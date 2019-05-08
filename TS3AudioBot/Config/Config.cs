@@ -77,7 +77,7 @@ namespace TS3AudioBot.Config
 			return true;
 		}
 
-		public bool Save() => Save(fileName, false);
+		public bool Save() => Save(fileName, true);
 
 		// apply root_path to input path
 		public string GetFilePath(string file)

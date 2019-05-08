@@ -78,7 +78,7 @@ namespace TS3Client.Full
 		/// <item><description>A libtomcrypt public+private key export. (+KeyOffset).</description></item>
 		/// <item><description>A TS3Client's private-only key export. (+KeyOffset).</description></item>
 		/// </list>
-		/// Keys with "(+KeyOffset)" should add the key offset for the security level in the seperate parameter.
+		/// Keys with "(+KeyOffset)" should add the key offset for the security level in the separate parameter.
 		/// </summary>
 		/// <param name="key">The identity string.</param>
 		/// <param name="keyOffset">A number which determines the security level of an identity.</param>

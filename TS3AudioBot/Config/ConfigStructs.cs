@@ -13,6 +13,9 @@ namespace TS3AudioBot.Config
 	using Nett;
 	using Playlists;
 	using System;
+	using System.Collections.Generic;
+	using System.Text.RegularExpressions;
+	using TS3AudioBot.Helper;
 
 	public partial class ConfRoot : ConfigTable
 	{
@@ -131,6 +134,7 @@ namespace TS3AudioBot.Config
 
 		public ConfCommands Commands { get; } = Create<ConfCommands>("commands");
 		public ConfConnect Connect { get; } = Create<ConfConnect>("connect");
+		public ConfReconnect Reconnect { get; } = Create<ConfReconnect>("reconnect");
 		public ConfAudio Audio { get; } = Create<ConfAudio>("audio");
 		public ConfPlaylists Playlists { get; } = Create<ConfPlaylists>("playlists");
 		public ConfHistory History { get; } = Create<ConfHistory>("history");
@@ -185,6 +189,16 @@ namespace TS3AudioBot.Config
 		public ConfIdentity Identity { get; } = Create<ConfIdentity>("identity");
 	}
 
+	public class ConfReconnect : ConfigTable
+	{
+		public ConfigArray<string> OnTimeout { get; } = new ConfigArray<string>("ontimeout", new[] { "1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last" }) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnKick { get; } = new ConfigArray<string>("onkick", Array.Empty<string>()) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnBan { get; } = new ConfigArray<string>("onban", Array.Empty<string>()) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnError { get; } = new ConfigArray<string>("onerror", new[] { "30s", "repeat last" }) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnShutdown { get; } = new ConfigArray<string>("onshutdown", new[] { "5m" }) { Validator = ConfTimeExtensions.ValidateTime };
+		//public ConfigValue<int> MaxReconnect { get; } = new ConfigValue<int>("max_combined_reconnects", -1, "Each reconnect kind has an own counter and resets when ");
+	}
+
 	public class ConfIdentity : ConfigTable
 	{
 		public ConfigValue<string> PrivateKey { get; } = new ConfigValue<string>("key", "",
@@ -226,13 +240,11 @@ namespace TS3AudioBot.Config
 
 	public class ConfPlaylists : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
-
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "playlists",
 			"Path to the folder where playlist files will be saved.");
 		public ConfigValue<PlaylistLocation> Share { get; } = new ConfigValue<PlaylistLocation>("share", PlaylistLocation.Bot,
-			" - Bot : Playlists per bot." +
-			" - Global : Playlists across all." +
+			" - Bot : Playlists per bot.\n" +
+			" - Global : Playlists across all.\n" +
 			" (- Server)");
 	}
 
@@ -297,5 +309,41 @@ namespace TS3AudioBot.Config
 		public ConfigValue<string> Build { get; } = new ConfigValue<string>("build", string.Empty);
 		public ConfigValue<string> Platform { get; } = new ConfigValue<string>("platform", string.Empty);
 		public ConfigValue<string> Sign { get; } = new ConfigValue<string>("sign", string.Empty);
+	}
+
+	public static class ConfTimeExtensions
+	{
+		public static TimeSpan? GetValueAsTime(this ConfigArray<string> conf, int index)
+		{
+			var value = conf.Value;
+			if (value.Count == 0)
+				return null;
+			var last = value[value.Count - 1];
+			var repeat = last == "repeat" || last == "repeat last"; // "repeat" might get removed for other loops, but for now keep as hidden alternative
+			var max = repeat ? value.Count - 2 : value.Count - 1;
+			if (index <= max)
+				return TomlTools.ParseTime(value[index]);
+			else
+				return TomlTools.ParseTime(value[max]);
+		}
+
+		public static E<string> ValidateTime(IReadOnlyList<string> value)
+		{
+			if (value.Count == 0)
+				return R.Ok;
+			var last = value[value.Count - 1];
+			var repeat = last == "repeat" || last == "repeat last";
+			if (repeat && value.Count == 1)
+				return $"Specified 'repeat' without any previous value.";
+
+			var max = repeat ? value.Count - 2 : value.Count - 1;
+			for (int i = 0; i <= max; i++)
+			{
+				var r = TomlTools.ValidateTime(value[i]);
+				if (!r.Ok)
+					return r;
+			}
+			return R.Ok;
+		}
 	}
 }

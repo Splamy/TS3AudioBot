@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <PackageReference Include="NLog" Version="4.6.2" />
+    <PackageReference Include="NLog" Version="4.6.3" />
     <PackageReference Include="System.Memory" Version="4.5.2" />
     <PackageReference Condition="'$(TargetFramework)'=='net46'" Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>

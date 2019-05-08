@@ -76,6 +76,7 @@ namespace TS3AudioBot
 			ConfRoot config = configResult.Value;
 			Config.Deprecated.UpgradeScript.CheckAndUpgrade(config);
 			ConfigUpgrade2.Upgrade(config.Configs.BotsPath.Value);
+			config.Save();
 
 			var builder = new DependencyBuilder(injector);
 
@@ -88,6 +89,8 @@ namespace TS3AudioBot
 			builder.AddModule(config.Plugins);
 			builder.RequestModule<PluginManager>();
 			builder.AddModule(config.Web);
+			builder.AddModule(config.Web.Interface);
+			builder.AddModule(config.Web.Api);
 			builder.RequestModule<WebServer>();
 			builder.AddModule(config.Rights);
 			builder.RequestModule<RightsManager>();

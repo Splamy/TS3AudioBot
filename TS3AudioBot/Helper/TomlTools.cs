@@ -16,10 +16,13 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Linq;
 	using System.Text;
+	using System.Text.RegularExpressions;
 	using System.Xml;
 
 	public static class TomlTools
 	{
+		private static readonly Regex TimeReg = new Regex(@"^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
+
 		// *** Convenience method for getting values out of a toml object. ***
 
 		public static T[] TryGetValueArray<T>(this TomlObject tomlObj)
@@ -122,7 +125,7 @@ namespace TS3AudioBot.Helper
 				{
 					try
 					{
-						value = (T)(object)XmlConvert.ToTimeSpan(((TomlString)tomlObj).Value);
+						value = (T)(object)ParseTime(((TomlString)tomlObj).Value);
 						return true;
 					}
 					catch (FormatException) { }
@@ -131,6 +134,42 @@ namespace TS3AudioBot.Helper
 			}
 			value = default;
 			return false;
+		}
+
+		public static TimeSpan? ParseTime(string value)
+		{
+			int AsNum(string svalue)
+			{
+				if (string.IsNullOrEmpty(svalue))
+					return 0;
+				return int.TryParse(svalue, out var num) ? num : 0;
+			}
+
+			var match = TimeReg.Match(value);
+			if (match.Success)
+			{
+				try
+				{
+					return new TimeSpan(0,
+						AsNum(match.Groups[1].Value),
+						AsNum(match.Groups[2].Value),
+						AsNum(match.Groups[3].Value),
+						AsNum(match.Groups[4].Value));
+				}
+				catch { }
+			}
+
+			try { return XmlConvert.ToTimeSpan(value); }
+			catch (FormatException) { }
+
+			return null;
+		}
+
+		public static E<string> ValidateTime(string value)
+		{
+			if (TimeReg.IsMatch(value))
+				return R.Ok;
+			return $"Value '{value}' is not a valid time.";
 		}
 
 		// *** Convenience method for setting values to a toml object. ***

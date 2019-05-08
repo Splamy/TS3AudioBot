@@ -120,7 +120,6 @@ namespace TS3AudioBot
 				if (id == null)
 					return "BotManager is shutting down";
 
-				// TODO change creation method
 				var botInjector = new BotInjector(coreInjector);
 				botInjector.AddModule(botInjector);
 				botInjector.AddModule(new TS3Client.Helper.Id(id.Value));

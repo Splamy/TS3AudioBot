@@ -37,19 +37,21 @@ namespace TS3AudioBot.Web.Api
 
 		public bool AllowAnonymousRequest { get; set; } = true;
 		private readonly ConfWebApi config;
-
-		public CoreInjector CoreInjector { get; set; }
-		public CommandManager CommandManager { get; set; }
-		public TokenManager TokenManager { get; set; }
+		private readonly CoreInjector coreInjector;
+		private readonly CommandManager commandManager;
+		private readonly TokenManager tokenManager;
 
 		private static readonly JsonSerializerSettings ErrorSerializeSettings = new JsonSerializerSettings
 		{
 			NullValueHandling = NullValueHandling.Ignore,
 		};
 
-		public WebApi(ConfWebApi config)
+		public WebApi(ConfWebApi config, CoreInjector coreInjector, CommandManager commandManager, TokenManager tokenManager)
 		{
 			this.config = config;
+			this.coreInjector = coreInjector;
+			this.commandManager = commandManager;
+			this.tokenManager = tokenManager;
 		}
 
 		public override bool DispatchCall(Unosquare.Labs.EmbedIO.IHttpContext context)
@@ -86,9 +88,9 @@ namespace TS3AudioBot.Web.Api
 			UnescapeAstTree(ast);
 			Log.Trace(ast.ToString);
 
-			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
+			var command = commandManager.CommandSystem.AstToCommandResult(ast);
 
-			var execInfo = new ExecutionInformation(CoreInjector);
+			var execInfo = new ExecutionInformation(coreInjector);
 			execInfo.AddModule(new CallerInfo(apirequest, true)
 			{
 				SkipRightsChecks = false,
@@ -253,7 +255,7 @@ namespace TS3AudioBot.Web.Api
 			}
 			catch (Exception) { return "Malformed base64 string"; }
 
-			var result = TokenManager.GetToken(userUid);
+			var result = tokenManager.GetToken(userUid);
 			if (!result.Ok)
 				return ErrorNoUserOrToken;
 
