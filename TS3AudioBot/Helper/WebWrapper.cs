@@ -99,8 +99,16 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link) => GetResponseUnsafe(link, DefaultTimeout);
-		internal static R<Stream, LocalStr> GetResponseUnsafe(Uri link, TimeSpan timeout)
+		public static R<Stream, LocalStr> GetResponseUnsafe(string link)
+		{
+			if(!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
+				return new LocalStr(strings.error_media_invalid_uri);
+
+			return GetResponseUnsafe(uri, DefaultTimeout);
+		}
+
+		public static R<Stream, LocalStr> GetResponseUnsafe(Uri link) => GetResponseUnsafe(link, DefaultTimeout);
+		public static R<Stream, LocalStr> GetResponseUnsafe(Uri link, TimeSpan timeout)
 		{
 			var requestRes = CreateRequest(link, timeout);
 			if (!requestRes.Ok) return requestRes.Error;

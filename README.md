@@ -43,7 +43,7 @@ Continue with downloading the dependencies.
 You will need to download a few things for the bot to run:
 
 #### Linux
-1. Mono: Get the latest version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-complete` or `mono-devel`
+1. Mono: Get the latest version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-complete`
 1. Other dependencies:
 * on **Ubuntu**:  
 Run `sudo apt-get install libopus-dev ffmpeg`
@@ -82,7 +82,7 @@ For further reading check out the [CommandSystem](https://github.com/Splamy/TS3A
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Get the latest mono version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-devel`
+1. Get the latest mono version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-complete`
 1. See if you have NuGet by just executing `nuget`.
    If not, get it with `sudo apt install nuget msbuild` (or the packet manager or your distribution),
    or manually with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`

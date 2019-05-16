@@ -173,9 +173,15 @@ namespace TS3AudioBot.Web
 
 					bool handled = false;
 					if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
+					{
+						context.Items.Add("ip", remoteAddress);
+						context.Items.Add("req", rawRequest);
 						handled |= Api?.DispatchCall(context) ?? false;
+					}
 					else
+					{
 						handled |= Display?.DispatchCall(context) ?? false;
+					}
 
 					if (!handled)
 					{

@@ -223,7 +223,7 @@ namespace TS3AudioBot
 				}
 			}
 
-			var invoker = new InvokerData(textMessage.InvokerUid,
+			var invoker = new ClientCall(textMessage.InvokerUid, textMessage.Message,
 				clientId: textMessage.InvokerId,
 				visibiliy: textMessage.Target,
 				nickName: textMessage.InvokerName,
@@ -359,7 +359,7 @@ namespace TS3AudioBot
 		{
 			Log.Debug("Calling script (skipRights:{0}, answer:{1}): {2}", skipRights, answer, command);
 
-			info.AddModule(new CallerInfo(command, false)
+			info.AddModule(new CallerInfo(false)
 			{
 				SkipRightsChecks = skipRights,
 				CommandComplexityMax = config.Commands.CommandComplexity,
@@ -396,6 +396,8 @@ namespace TS3AudioBot
 		private ExecutionInformation CreateExecInfo(InvokerData invoker = null, UserSession session = null)
 		{
 			var info = new ExecutionInformation(Injector);
+			if(invoker is ClientCall ci)
+				info.AddModule(ci);
 			info.AddModule(invoker ?? InvokerData.Anonymous);
 			info.AddModule(session ?? new AnonymousSession());
 			info.AddModule(Filter.GetFilterByNameOrDefault(config.Commands.Matcher));

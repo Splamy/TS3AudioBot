@@ -17,7 +17,6 @@ namespace TS3AudioBot.Web.Api
 	using Config;
 	using Dependency;
 	using Helper;
-	using Newtonsoft.Json;
 	using Sessions;
 	using System;
 	using System.IO;
@@ -28,7 +27,6 @@ namespace TS3AudioBot.Web.Api
 	public sealed class WebApi : WebComponent
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly ApiCall apiCallDummy = new ApiCall();
 
 		private const string ErrorNoUserOrToken = "Unknown user or no active token found";
 		private const string ErrorAuthFailure = "Authentication failed";
@@ -40,11 +38,6 @@ namespace TS3AudioBot.Web.Api
 		private readonly CoreInjector coreInjector;
 		private readonly CommandManager commandManager;
 		private readonly TokenManager tokenManager;
-
-		private static readonly JsonSerializerSettings ErrorSerializeSettings = new JsonSerializerSettings
-		{
-			NullValueHandling = NullValueHandling.Ignore,
-		};
 
 		public WebApi(ConfWebApi config, CoreInjector coreInjector, CommandManager commandManager, TokenManager tokenManager)
 		{
@@ -69,21 +62,27 @@ namespace TS3AudioBot.Web.Api
 				ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
 				return true;
 			}
-			if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
+			if (!AllowAnonymousRequest && string.IsNullOrEmpty(authResult.Value.uid))
 			{
 				Log.Debug("Unauthorized request!");
 				ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
 				return true;
 			}
 
-			var requestUrl = new Uri(Dummy, context.Request.RawUrl);
-			ProcessApiV1Call(requestUrl, response, authResult.Value);
+			var apiCallData = string.IsNullOrEmpty(authResult.Value.uid)
+				? ApiCall.CreateAnonymous()
+				: new ApiCall(authResult.Value.uid);
+			apiCallData.Token = authResult.Value.token;
+			apiCallData.ReuqestUrl = (Uri)context.Items["req"];
+			apiCallData.IpAddress = (IPAddress)context.Items["ip"];
+
+			ProcessApiV1Call(response, apiCallData);
 			return true;
 		}
 
-		private void ProcessApiV1Call(Uri uri, Unosquare.Labs.EmbedIO.IHttpResponse response, InvokerData invoker)
+		private void ProcessApiV1Call(Unosquare.Labs.EmbedIO.IHttpResponse response, ApiCall apiCallData)
 		{
-			string apirequest = uri.OriginalString.Substring(uri.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
+			string apirequest = apiCallData.ReuqestUrl.OriginalString.Substring(apiCallData.ReuqestUrl.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
 			Log.Trace(ast.ToString);
@@ -91,14 +90,14 @@ namespace TS3AudioBot.Web.Api
 			var command = commandManager.CommandSystem.AstToCommandResult(ast);
 
 			var execInfo = new ExecutionInformation(coreInjector);
-			execInfo.AddModule(new CallerInfo(apirequest, true)
+			execInfo.AddModule(new CallerInfo(true)
 			{
 				SkipRightsChecks = false,
 				CommandComplexityMax = config.CommandComplexity,
 				IsColor = false,
 			});
-			execInfo.AddModule(invoker);
-			execInfo.AddModule(apiCallDummy);
+			execInfo.AddModule<InvokerData>(apiCallData);
+			execInfo.AddModule(apiCallData);
 			execInfo.AddModule(Filter.GetFilterByNameOrDefault(config.Matcher));
 
 			try
@@ -121,7 +120,7 @@ namespace TS3AudioBot.Web.Api
 			catch (CommandException ex)
 			{
 				try { ReturnError(ex, response); }
-				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
+				catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
 			}
 			catch (Exception ex)
 			{
@@ -136,7 +135,7 @@ namespace TS3AudioBot.Web.Api
 					using (var responseStream = new StreamWriter(response.OutputStream))
 						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
 				}
-				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
+				catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
 			}
 		}
 
@@ -169,7 +168,7 @@ namespace TS3AudioBot.Web.Api
 			case CommandExceptionReason.MissingContext:
 				if (ex is MissingContextCommandException mcex)
 				{
-					if (mcex.MissingType == typeof(InvokerData))
+					if (mcex.MissingType == typeof(ClientCall))
 					{
 						jsonError.HelpMessage += "You have to authenticate yourself to call this method.";
 						jsonError.HelpLink = "https://github.com/Splamy/TS3AudioBot/wiki/WebAPI#authentication";
@@ -205,7 +204,7 @@ namespace TS3AudioBot.Web.Api
 
 			using (var responseStream = new StreamWriter(response.OutputStream))
 			{
-				responseStream.Write(JsonConvert.SerializeObject(jsonError, ErrorSerializeSettings));
+				responseStream.Write(jsonError.Serialize());
 			}
 		}
 
@@ -228,11 +227,11 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private R<InvokerData, string> Authenticate(Unosquare.Labs.EmbedIO.IHttpContext context)
+		private R<(string uid, string token), string> Authenticate(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
 			var headerVal = context.Request.Headers["Authorization"];
 			if (string.IsNullOrEmpty(headerVal))
-				return InvokerData.Anonymous;
+				return (null, null);
 
 			var authParts = headerVal.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 			if (authParts.Length < 2)
@@ -263,7 +262,7 @@ namespace TS3AudioBot.Web.Api
 			if (dbToken.Value != token)
 				return ErrorAuthFailure;
 
-			return new InvokerData(userUid, token: dbToken.Value);
+			return (userUid, dbToken.Value);
 		}
 	}
 }

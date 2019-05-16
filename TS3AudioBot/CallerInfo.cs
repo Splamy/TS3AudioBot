@@ -7,12 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot
 {
 	public class CallerInfo
 	{
-		/// <summary>The original unmodified string which was received by the client.</summary>
-		public string TextMessage { get; }
 		/// <summary>Whether this call was initiated from the api.</summary>
 		public bool ApiCall { get; }
 		/// <summary>Skips all permission checks when set to true.</summary>
@@ -24,9 +22,8 @@ namespace TS3AudioBot.CommandSystem
 		/// <summary>Whether the caller wants a colored output.</summary>
 		public bool IsColor { get; set; }
 
-		public CallerInfo(string textMessage, bool isApi)
+		public CallerInfo(bool isApi)
 		{
-			TextMessage = textMessage;
 			ApiCall = isApi;
 		}
 	}

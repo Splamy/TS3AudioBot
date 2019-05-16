@@ -11,6 +11,7 @@ namespace TS3AudioBot.Rights
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Net;
 	using TS3Client;
 	using TS3Client.Messages;
 
@@ -21,6 +22,7 @@ namespace TS3AudioBot.Rights
 		public ulong? ChannelGroupId { get; set; }
 		public string ClientUid { get; set; }
 		public bool IsApi { get; set; }
+		public IPAddress ApiCallerIp { get; set; }
 		public string ApiToken { get; set; }
 		public string Bot { get; set; }
 		public TextMessageTargetMode? Visibiliy { get; set; }

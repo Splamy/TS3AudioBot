@@ -9,5 +9,22 @@
 
 namespace TS3AudioBot.Web.Api
 {
-	public class ApiCall { }
+	using System;
+	using System.Net;
+
+	public class ApiCall : InvokerData
+	{
+		public string Token { get; set; }
+		public IPAddress IpAddress { get; set; }
+		public Uri ReuqestUrl { get; set; }
+
+		public static ApiCall CreateAnonymous() => new ApiCall(AnonymousUid);
+
+		public ApiCall(string clientUid, IPAddress ipAddress = null, Uri reuqestUrl = null, string token = null) : base(clientUid)
+		{
+			Token = token;
+			IpAddress = ipAddress;
+			ReuqestUrl = reuqestUrl;
+		}
+	}
 }

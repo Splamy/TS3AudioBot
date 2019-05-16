@@ -9,7 +9,6 @@
 
 namespace TS3AudioBot.Rights
 {
-	using Audio;
 	using CommandSystem;
 	using Dependency;
 	using Config;
@@ -22,6 +21,7 @@ namespace TS3AudioBot.Rights
 	using System.Linq;
 	using TS3Client;
 	using TS3Client.Messages;
+	using TS3AudioBot.Web.Api;
 
 	/// <summary>Permission system of the bot.</summary>
 	public class RightsManager
@@ -79,15 +79,14 @@ namespace TS3AudioBot.Rights
 			if (info.TryGet<ExecuteContext>(out var execCtx))
 				return execCtx;
 
-			if (info.TryGet<InvokerData>(out var invoker))
+			execCtx = new ExecuteContext();
+
+			if (info.TryGet<ClientCall>(out var clientCall))
 			{
-				execCtx = new ExecuteContext
-				{
-					ServerGroups = invoker.ServerGroups,
-					ClientUid = invoker.ClientUid,
-					Visibiliy = invoker.Visibiliy,
-					ApiToken = invoker.Token,
-				};
+				execCtx.ServerGroups = clientCall.ServerGroups;
+				execCtx.ClientUid = clientCall.ClientUid;
+				execCtx.Visibiliy = clientCall.Visibiliy;
+				execCtx.IsApi = false;
 
 				// Get Required Matcher Data:
 				// In this region we will iteratively go through different possibilities to obtain
@@ -97,18 +96,18 @@ namespace TS3AudioBot.Rights
 
 				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<Ts3BaseFunctions>(out var tsClient))
 				{
-					ulong[] serverGroups = invoker.ServerGroups;
-					ulong? channelId = invoker.ChannelId;
-					ulong? databaseId = invoker.DatabaseId;
+					ulong[] serverGroups = clientCall.ServerGroups;
+					ulong? channelId = clientCall.ChannelId;
+					ulong? databaseId = clientCall.DatabaseId;
 
-					if (invoker.ClientId.HasValue
+					if (clientCall.ClientId != null
 						&& ((needsAvailableGroups && serverGroups is null)
 							|| needsAvailableChanGroups
-							|| (needsPermOverview.Length > 0 && (!databaseId.HasValue || !channelId.HasValue))
+							|| (needsPermOverview.Length > 0 && (databaseId == null || channelId == null))
 						)
 					)
 					{
-						var result = ts.GetClientInfoById(invoker.ClientId.Value);
+						var result = ts.GetClientInfoById(clientCall.ClientId.Value);
 						if (result.Ok)
 						{
 							serverGroups = result.Value.ServerGroups;
@@ -120,16 +119,16 @@ namespace TS3AudioBot.Rights
 
 					if (needsAvailableGroups && serverGroups is null)
 					{
-						if (!databaseId.HasValue)
+						if (databaseId == null)
 						{
-							var resultDbId = tsClient.GetClientDbIdFromUid(invoker.ClientUid);
+							var resultDbId = tsClient.GetClientDbIdFromUid(clientCall.ClientUid);
 							if (resultDbId.Ok)
 							{
 								databaseId = resultDbId.Value.ClientDbId;
 							}
 						}
 
-						if (databaseId.HasValue)
+						if (databaseId != null)
 						{
 							var result = ts.GetClientServerGroups(databaseId.Value);
 							if (result.Ok)
@@ -139,7 +138,7 @@ namespace TS3AudioBot.Rights
 
 					execCtx.ServerGroups = serverGroups ?? Array.Empty<ulong>();
 
-					if (needsPermOverview.Length > 0 && databaseId.HasValue && channelId.HasValue)
+					if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)
 					{
 						// TODO check if there is any better way to only get the permissions needed.
 						var result = tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
@@ -157,13 +156,12 @@ namespace TS3AudioBot.Rights
 					}
 				}
 			}
-			else
+			else if (info.TryGet<ApiCall>(out var apiCallData))
 			{
-				execCtx = new ExecuteContext();
+				execCtx.ApiToken = apiCallData.Token;
+				execCtx.ApiCallerIp = apiCallData.IpAddress;
+				execCtx.IsApi = true;
 			}
-
-			if (info.TryGet<CallerInfo>(out var caller))
-				execCtx.IsApi = caller.ApiCall;
 
 			if (info.TryGet<Bot>(out var bot))
 			{

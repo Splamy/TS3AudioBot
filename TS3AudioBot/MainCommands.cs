@@ -93,12 +93,12 @@ namespace TS3AudioBot
 
 		[Command("api token")]
 		[Usage("[<duration>]", "Optionally specifies a duration this key is valid in hours.")]
-		public static string CommandApiToken(TokenManager tokenManager, InvokerData invoker, double? validHours = null)
+		public static string CommandApiToken(TokenManager tokenManager, ClientCall invoker, double? validHours = null)
 		{
 			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
 			if (invoker.IsAnonymous)
-				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(InvokerData));
+				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(ClientCall));
 
 			TimeSpan? validSpan = null;
 			try
@@ -114,12 +114,12 @@ namespace TS3AudioBot
 		}
 
 		[Command("api nonce")]
-		public static string CommandApiNonce(TokenManager tokenManager, InvokerData invoker)
+		public static string CommandApiNonce(TokenManager tokenManager, ClientCall invoker)
 		{
 			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
 			if (invoker.IsAnonymous)
-				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(InvokerData));
+				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(ClientCall));
 
 			var token = tokenManager.GetToken(invoker.ClientUid).UnwrapThrow();
 			var nonce = token.CreateNonce();
@@ -167,7 +167,7 @@ namespace TS3AudioBot
 		public static void CommandBotCommanderOff(Ts3Client ts3Client) => ts3Client.SetChannelCommander(false).UnwrapThrow();
 
 		[Command("bot come")]
-		public static void CommandBotCome(Ts3Client ts3Client, InvokerData invoker, string password = null)
+		public static void CommandBotCome(Ts3Client ts3Client, ClientCall invoker, string password = null)
 		{
 			var channel = invoker?.ChannelId;
 			if (!channel.HasValue)
@@ -321,23 +321,23 @@ namespace TS3AudioBot
 		}
 
 		[Command("getmy id")]
-		public static ushort CommandGetId(InvokerData invoker)
+		public static ushort CommandGetId(ClientCall invoker)
 			=> invoker.ClientId ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy uid")]
-		public static string CommandGetUid(InvokerData invoker)
+		public static string CommandGetUid(ClientCall invoker)
 			=> invoker.ClientUid ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy name")]
-		public static string CommandGetName(InvokerData invoker)
+		public static string CommandGetName(ClientCall invoker)
 			=> invoker.NickName ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy dbid")]
-		public static ulong CommandGetDbId(InvokerData invoker)
+		public static ulong CommandGetDbId(ClientCall invoker)
 			=> invoker.DatabaseId ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy channel")]
-		public static ulong CommandGetChannel(InvokerData invoker)
+		public static ulong CommandGetChannel(ClientCall invoker)
 			=> invoker.ChannelId ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy all")]
-		public static JsonValue<InvokerData> CommandGetUser(InvokerData invoker)
-			=> new JsonValue<InvokerData>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
+		public static JsonValue<ClientCall> CommandGetUser(ClientCall invoker)
+			=> new JsonValue<ClientCall>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
 
 		[Command("getuser uid byid")]
 		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().Uid;
@@ -771,18 +771,15 @@ namespace TS3AudioBot
 		}
 
 		[Command("kickme")]
-		public static void CommandKickme(Ts3Client ts3Client, InvokerData invoker, CallerInfo caller)
-			=> CommandKickme(ts3Client, invoker, caller, false);
+		public static void CommandKickme(Ts3Client ts3Client, ClientCall invoker)
+			=> CommandKickme(ts3Client, invoker, false);
 
 		[Command("kickme far", "cmd_kickme_help")]
-		public static void CommandKickmeFar(Ts3Client ts3Client, InvokerData invoker, CallerInfo caller)
-			=> CommandKickme(ts3Client, invoker, caller, true);
+		public static void CommandKickmeFar(Ts3Client ts3Client, ClientCall invoker)
+			=> CommandKickme(ts3Client, invoker, true);
 
-		private static void CommandKickme(Ts3Client ts3Client, InvokerData invoker, CallerInfo caller, bool far)
+		private static void CommandKickme(Ts3Client ts3Client, ClientCall invoker, bool far)
 		{
-			if (caller.ApiCall)
-				throw new CommandException(strings.error_not_available_from_api, CommandExceptionReason.NotSupported);
-
 			if (!invoker.ClientId.HasValue)
 				return;
 
@@ -1079,10 +1076,8 @@ namespace TS3AudioBot
 		}
 
 		[Command("pm")]
-		public static string CommandPm(CallerInfo caller, InvokerData invoker)
+		public static string CommandPm(ClientCall invoker)
 		{
-			if (caller.ApiCall)
-				throw new CommandException(strings.error_not_available_from_api, CommandExceptionReason.NotSupported);
 			invoker.Visibiliy = TextMessageTargetMode.Private;
 			return string.Format(strings.cmd_pm_hi, invoker.NickName ?? "Anonymous");
 		}
@@ -1163,9 +1158,9 @@ namespace TS3AudioBot
 			bot.UpdateBotStatus().UnwrapThrow();
 		}
 		[Command("quiz off")]
-		public static void CommandQuizOff(Bot bot, CallerInfo caller, InvokerData invoker)
+		public static void CommandQuizOff(Bot bot, ClientCall invoker = null)
 		{
-			if (!caller.ApiCall && invoker.Visibiliy.HasValue && invoker.Visibiliy == TextMessageTargetMode.Private)
+			if (invoker != null && invoker.Visibiliy.HasValue && invoker.Visibiliy == TextMessageTargetMode.Private)
 				throw new CommandException(strings.cmd_quiz_off_no_cheating, CommandExceptionReason.CommandError);
 			bot.QuizMode = false;
 			bot.UpdateBotStatus().UnwrapThrow();
@@ -1421,11 +1416,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("song")]
-		public static JsonObject CommandSong(PlayManager playManager, IPlayerConnection playerConnection, Bot bot, CallerInfo caller, InvokerData invoker = null)
+		public static JsonObject CommandSong(PlayManager playManager, IPlayerConnection playerConnection, Bot bot, ClientCall invoker = null)
 		{
 			if (playManager.CurrentPlayData is null)
 				throw new CommandException(strings.info_currently_not_playing, CommandExceptionReason.CommandError);
-			if (bot.QuizMode && !caller.ApiCall && (invoker is null || playManager.CurrentPlayData.Invoker.ClientId != invoker.ClientId))
+			if (bot.QuizMode && invoker != null && playManager.CurrentPlayData.Invoker.ClientUid != invoker.ClientUid)
 				throw new CommandException(strings.info_quizmode_is_active, CommandExceptionReason.CommandError);
 
 			return JsonValue.Create(
@@ -1456,14 +1451,14 @@ namespace TS3AudioBot
 		public static void CommandStop(PlayManager playManager) => playManager.Stop();
 
 		[Command("subscribe")]
-		public static void CommandSubscribe(IVoiceTarget targetManager, InvokerData invoker)
+		public static void CommandSubscribe(IVoiceTarget targetManager, ClientCall invoker)
 		{
 			if (invoker.ClientId.HasValue)
 				targetManager.WhisperClientSubscribe(invoker.ClientId.Value);
 		}
 
 		[Command("subscribe tempchannel")]
-		public static void CommandSubscribeTempChannel(IVoiceTarget targetManager, InvokerData invoker = null, ulong? channel = null)
+		public static void CommandSubscribeTempChannel(IVoiceTarget targetManager, ClientCall invoker = null, ulong? channel = null)
 		{
 			var subChan = channel ?? invoker?.ChannelId ?? 0;
 			if (subChan != 0)
@@ -1471,7 +1466,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("subscribe channel")]
-		public static void CommandSubscribeChannel(IVoiceTarget targetManager, InvokerData invoker = null, ulong? channel = null)
+		public static void CommandSubscribeChannel(IVoiceTarget targetManager, ClientCall invoker = null, ulong? channel = null)
 		{
 			var subChan = channel ?? invoker?.ChannelId ?? 0;
 			if (subChan != 0)
@@ -1565,14 +1560,14 @@ namespace TS3AudioBot
 		}
 
 		[Command("unsubscribe")]
-		public static void CommandUnsubscribe(IVoiceTarget targetManager, InvokerData invoker)
+		public static void CommandUnsubscribe(IVoiceTarget targetManager, ClientCall invoker)
 		{
 			if (invoker.ClientId.HasValue)
 				targetManager.WhisperClientUnsubscribe(invoker.ClientId.Value);
 		}
 
 		[Command("unsubscribe channel")]
-		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, InvokerData invoker = null, ulong? channel = null)
+		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, ClientCall invoker = null, ulong? channel = null)
 		{
 			var subChan = channel ?? invoker?.ChannelId;
 			if (subChan.HasValue)
@@ -1717,7 +1712,8 @@ namespace TS3AudioBot
 			if (result)
 				return result.Value;
 
-			var newPlist = new Playlist(invoker.NickName ?? "");
+			var name = (invoker is ClientCall ci ? ci.NickName : null) ?? "";
+			var newPlist = new Playlist(name);
 			session.Set<PlaylistManager, Playlist>(newPlist);
 			return newPlist;
 		}
@@ -1737,7 +1733,7 @@ namespace TS3AudioBot
 			if (!info.TryGet<Ts3Client>(out var ts3Client))
 				return new LocalStr(strings.error_no_teamspeak_in_context);
 
-			if (!info.TryGet<InvokerData>(out var invoker))
+			if (!info.TryGet<ClientCall>(out var invoker))
 				return new LocalStr(strings.error_no_invoker_in_context);
 
 			if (!invoker.Visibiliy.HasValue || !invoker.ClientId.HasValue)

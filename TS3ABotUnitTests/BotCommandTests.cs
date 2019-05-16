@@ -280,7 +280,7 @@ namespace TS3ABotUnitTests
 		public static ExecutionInformation GetExecInfo(string matcher)
 		{
 			var execInfo = new ExecutionInformation();
-			execInfo.AddModule(new CallerInfo(null, false) { SkipRightsChecks = true, CommandComplexityMax = int.MaxValue });
+			execInfo.AddModule(new CallerInfo(false) { SkipRightsChecks = true, CommandComplexityMax = int.MaxValue });
 			execInfo.AddModule(new InvokerData("InvokerUid"));
 			execInfo.AddModule(Filter.GetFilterByName(matcher));
 			execInfo.AddModule(cmdMgr);
