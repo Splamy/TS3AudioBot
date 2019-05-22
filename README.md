@@ -43,7 +43,7 @@ Continue with downloading the dependencies.
 You will need to download a few things for the bot to run:
 
 #### Linux
-1. Mono: Get the latest version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-complete`
+1. dotnet core: Get the latest `dotnet core 2.2` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
 1. Other dependencies:
 * on **Ubuntu**:  
 Run `sudo apt-get install libopus-dev ffmpeg`
@@ -54,18 +54,18 @@ Run `sudo pacman -S opus ffmpeg`
     1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
     1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-32bit-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-64bit-static.tar.xz) binary.
     1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-XXbit-static.tar.xz`
-    1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-64bit-static\ffmpeg` and copy it to `TS3AudioBot/bin/Release/`
+    1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-64bit-static/ffmpeg` and copy it to `TS3AudioBot/bin/Release/netcoreapp2.2`
 
 #### Windows
 1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
-1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static\bin\ffmpeg.exe` to `TS3AudioBot\bin\Release\net46`
+1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` to `TS3AudioBot/bin/Release/net472`
 
 ### Optional Dependencies
 If the bot can't play some youtube videos it might be due to some embedding restrictions which are blocking this.  
 You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source folder and specify the path in the config to try to bypass this.
 
 ## Suggested first time setup
-1. Run the bot with `mono TS3AudioBot.exe` and follow the setup instructions.
+1. Run the bot with `dotnet TS3AudioBot.dll` and follow the setup instructions.
 1. (Optional) Close the bot and configure your `rights.toml` to your desires.
 You can use the template rules as suggested in the automatically generated file,
 or dive into the rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
@@ -82,13 +82,10 @@ For further reading check out the [CommandSystem](https://github.com/Splamy/TS3A
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Get the latest mono version by following [this tutorial](https://www.mono-project.com/download/stable/#download-lin) and install `mono-complete`
-1. See if you have NuGet by just executing `nuget`.
-   If not, get it with `sudo apt install nuget msbuild` (or the packet manager or your distribution),
-   or manually with `wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe`
+1. Get the latest `dotnet core 2.2` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and choose your platform
 1. Go into the directory of the repository with `cd TS3AudioBot`
-1. Execute `nuget restore` or `mono ../nuget.exe restore` to download all dependencies
-1. Execute `msbuild /p:Configuration=Release /p:TargetFramework=net46 TS3AudioBot.sln` to build the AudioBot
+1. Execute `dotnet build --framework netcoreapp2.2 --configuration Release TS3AudioBot` to build the AudioBot
+1. The binary to run will be in `./TS3AudioBot/bin/Release/netcoreapp2.2` can can be called with `dotnet TS3AudioBot.dll`
 
 #### Windows
 1. Make sure you have installed `Visual Studio` and `.NET Framework 4.6` and the latest `dotnet core`

@@ -11,53 +11,47 @@ namespace TS3AudioBot.Web
 {
 	using Config;
 	using Dependency;
+	using Microsoft.AspNetCore.Builder;
+	using Microsoft.AspNetCore.Hosting;
+	using Microsoft.AspNetCore.Http;
+	using Microsoft.Extensions.DependencyInjection;
 	using System;
-	using System.Globalization;
+	using System.IO;
 	using System.Linq;
-	using System.Net;
-	using System.Net.Sockets;
 	using System.Threading;
-	using Unosquare.Labs.EmbedIO;
+	using System.Threading.Tasks;
 
 	public sealed class WebServer : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		private CancellationTokenSource cancelToken;
-		private IHttpListener webListener;
-		private bool startWebServer;
 		private readonly ConfWeb config;
 		private readonly CoreInjector coreInjector;
-
-		public Api.WebApi Api { get; private set; }
-		public Interface.WebDisplay Display { get; private set; }
+		private Api.WebApi api;
 
 		public WebServer(ConfWeb config, CoreInjector coreInjector)
 		{
 			this.config = config;
 			this.coreInjector = coreInjector;
-			Unosquare.Swan.Terminal.Settings.DisplayLoggingMessageType = Unosquare.Swan.LogMessageType.None;
 		}
 
-		// TODO write server to be reloada-able
-		public void Initialize()
+		// TODO write server to be reload-able
+		public void StartWebServer()
 		{
-			InitializeSubcomponents();
+			var startWebServer = false;
 
-			StartServerThread();
-		}
-
-		private void InitializeSubcomponents()
-		{
-			startWebServer = false;
 			if (config.Interface.Enabled)
 			{
-				if (!coreInjector.TryCreate<Interface.WebDisplay>(out var display))
-					throw new Exception();
-
-				Display = display;
-				coreInjector.AddModule(display);
-				startWebServer = true;
+				var baseDir = FindWebFolder();
+				if (baseDir is null)
+				{
+					Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+				}
+				else
+				{
+					startWebServer = true;
+				}
 			}
 			if (config.Api.Enabled || config.Interface.Enabled)
 			{
@@ -67,141 +61,103 @@ namespace TS3AudioBot.Web
 				if (!coreInjector.TryCreate<Api.WebApi>(out var api))
 					throw new Exception();
 
-				Api = api;
-				coreInjector.AddModule(api);
-
+				this.api = api;
 				startWebServer = true;
 			}
 
 			if (startWebServer)
 			{
-				webListener = HttpListenerFactory.Create(HttpListenerMode.EmbedIO);
+				StartWebServerInternal();
 			}
 		}
 
-		private void ReloadHostPaths()
+		private string FindWebFolder()
 		{
-			webListener.Prefixes.Clear();
-			var addrs = config.Hosts.Value;
-
-			if (addrs.Contains("*"))
+			var webData = config.Interface;
+			if (string.IsNullOrEmpty(webData.Path))
 			{
-				webListener.AddPrefix($"http://*:{config.Port.Value}/");
-				return;
+				for (int i = 0; i < 5; i++)
+				{
+					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
+					var checkDir = Path.Combine(up, "WebInterface");
+					if (Directory.Exists(checkDir))
+					{
+						return checkDir;
+					}
+				}
 			}
-
-			foreach (var uri in addrs)
+			else if (Directory.Exists(webData.Path))
 			{
-				var uriBuilder = new UriBuilder(uri) { Port = config.Port };
-				webListener.AddPrefix(uriBuilder.Uri.AbsoluteUri);
+				return webData.Path;
 			}
+
+			return null;
 		}
 
-		public void StartServerThread()
+		private void StartWebServerInternal()
 		{
-			if (!startWebServer)
-				return;
-
-			EnterWebLoop();
-		}
-
-		public async void EnterWebLoop()
-		{
-			if (!startWebServer)
-				return;
-
+			cancelToken?.Cancel();
 			cancelToken?.Dispose();
 			cancelToken = new CancellationTokenSource();
 
-			ReloadHostPaths();
+			var host = new WebHostBuilder()
+				.UseKestrel(kestrel =>
+				{
+					kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
+				})
+				.Configure(app =>
+				{
+					app.Map(new PathString("/api"), map =>
+					{
+						map.Run(ctx => Task.Run(() => api.ProcessApiV1Call(ctx)));
+					});
 
-			try { webListener.Start(); }
-			catch (Exception ex)
+					if (config.Interface.Enabled)
+					{
+						app.UseStaticFiles();
+					}
+				});
+
+			if (config.Interface.Enabled)
 			{
-				Log.Error(ex, "The webserver could not be started");
-				webListener = null;
-				return;
+				var baseDir = FindWebFolder();
+				if (baseDir is null)
+				{
+					Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+				}
+				else
+				{
+					host.UseWebRoot(baseDir);
+				}
 			}
 
-			Log.Info("Started Webserver on port {0}", config.Port.Value);
-
-			Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-
-			while (true)
+			var addrs = config.Hosts.Value;
+			if (addrs.Contains("*"))
 			{
-				IHttpContext context;
+				host.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); });
+			}
+			else if (addrs.Count == 1 && addrs[0] == "localhost")
+			{
+				host.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); });
+			}
+			else
+			{
+				host.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray());
+			}
+
+			new Func<Task>(async () =>
+			{
 				try
 				{
-					if (cancelToken.IsCancellationRequested
-						|| !(webListener?.IsListening ?? false))
-						break;
-
-					context = await webListener.GetContextAsync(cancelToken.Token);
-					context.Response.KeepAlive = false;
-
-					if (cancelToken.IsCancellationRequested)
-						break;
-				}
-				catch (OperationCanceledException ex)
-				{
-					Log.Debug(ex, "WebServer exit requested");
-					break;
+					await host.Build().RunAsync(cancelToken.Token);
 				}
 				catch (Exception ex)
 				{
-					Log.Error(ex, "WebServer exception");
-					continue;
+					Log.Error(ex, "The webserver could not be started");
+					return;
 				}
-
-				IHttpResponse response = context.Response;
-				try
-				{
-					var remoteAddress = context.Request.RemoteEndPoint?.Address;
-					if (remoteAddress is null)
-						continue;
-					if (context.Request.IsLocal
-						&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
-						&& IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
-					{
-						remoteAddress = realIp;
-					}
-
-					var rawRequest = new Uri(WebUtil.Dummy, context.Request.RawUrl);
-					Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
-
-					bool handled = false;
-					if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
-					{
-						context.Items.Add("ip", remoteAddress);
-						context.Items.Add("req", rawRequest);
-						handled |= Api?.DispatchCall(context) ?? false;
-					}
-					else
-					{
-						handled |= Display?.DispatchCall(context) ?? false;
-					}
-
-					if (!handled)
-					{
-						using (var outputStream = response.OutputStream)
-						{
-							response.ContentLength64 = WebUtil.Default404Data.Length;
-							response.StatusCode = (int)HttpStatusCode.NotFound;
-							outputStream.Write(WebUtil.Default404Data, 0, WebUtil.Default404Data.Length);
-						}
-					}
-				}
-				// These seem to happen on connections which are closed too fast or failed to open correctly.
-				catch (Exception ex) when (ex is SocketException || ex is System.IO.IOException) { Log.Debug(ex, "WebServer exception"); }
-				// Catch everything to keep the webserver running, but print a warning.
-				catch (Exception ex) { Log.Warn(ex, "WebServer exception"); }
-				finally
-				{
-					response.Close();
-				}
-			}
-
-			Log.Info("WebServer has closed");
+			})();
+			Log.Info("Started Webserver on port {0}", config.Port.Value);
 		}
 
 		public void Dispose()
@@ -210,9 +166,7 @@ namespace TS3AudioBot.Web
 			cancelToken?.Dispose();
 			cancelToken = null;
 
-			webListener?.Stop();
-			webListener?.Dispose();
-			webListener = null;
+			Log.Info("WebServer is closing");
 		}
 	}
 }

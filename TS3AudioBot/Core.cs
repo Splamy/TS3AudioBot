@@ -115,7 +115,7 @@ namespace TS3AudioBot
 			builder.GetModule<CommandManager>().RegisterCollection(MainCommands.Bag);
 			builder.GetModule<RightsManager>().CreateConfigIfNotExists(interactive);
 			builder.GetModule<BotManager>().RunBots(interactive);
-			builder.GetModule<WebServer>().Initialize();
+			builder.GetModule<WebServer>().StartWebServer();
 
 			return R.Ok;
 		}
