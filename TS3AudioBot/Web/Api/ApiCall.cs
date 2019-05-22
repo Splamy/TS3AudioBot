@@ -16,15 +16,17 @@ namespace TS3AudioBot.Web.Api
 	{
 		public string Token { get; set; }
 		public IPAddress IpAddress { get; set; }
-		public Uri ReuqestUrl { get; set; }
+		public Uri RequestUrl { get; set; }
+		public string Body { get; set; }
 
 		public static ApiCall CreateAnonymous() => new ApiCall(AnonymousUid);
 
-		public ApiCall(string clientUid, IPAddress ipAddress = null, Uri reuqestUrl = null, string token = null) : base(clientUid)
+		public ApiCall(string clientUid, IPAddress ipAddress = null, Uri requestUrl = null, string token = null, string body = null) : base(clientUid)
 		{
 			Token = token;
 			IpAddress = ipAddress;
-			ReuqestUrl = reuqestUrl;
+			RequestUrl = requestUrl;
+			Body = body;
 		}
 	}
 }

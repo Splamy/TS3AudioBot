@@ -15,7 +15,7 @@ namespace TS3AudioBot.Web.Interface
 	using System.Linq;
 	using System.Net;
 
-	public sealed class WebDisplay : WebComponent, IDisposable
+	public sealed class WebDisplay : IWebComponent
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly SiteMapper map = new SiteMapper();
@@ -77,7 +77,7 @@ namespace TS3AudioBot.Web.Interface
 			map.Map("/", new FileRedirect(map, "", "index.html"));
 		}
 
-		public override bool DispatchCall(Unosquare.Labs.EmbedIO.IHttpContext context)
+		public bool DispatchCall(Unosquare.Labs.EmbedIO.IHttpContext context)
 		{
 			// GetWebsite will always return either the found website or the default 404
 			var site = GetWebsite(context.Request.Url);
@@ -121,10 +121,6 @@ namespace TS3AudioBot.Web.Interface
 		{
 			if (url is null) return Site404;
 			return map.TryGetSite(url) ?? Site404;
-		}
-
-		public void Dispose()
-		{
 		}
 	}
 }

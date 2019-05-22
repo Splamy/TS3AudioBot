@@ -25,7 +25,6 @@ namespace TS3AudioBot.Web
 
 		private CancellationTokenSource cancelToken;
 		private IHttpListener webListener;
-		private Thread serverThread;
 		private bool startWebServer;
 		private readonly ConfWeb config;
 		private readonly CoreInjector coreInjector;
@@ -103,8 +102,7 @@ namespace TS3AudioBot.Web
 			if (!startWebServer)
 				return;
 
-			serverThread = new Thread(EnterWebLoop) { Name = "WebInterface" };
-			serverThread.Start();
+			EnterWebLoop();
 		}
 
 		public async void EnterWebLoop()
@@ -168,7 +166,7 @@ namespace TS3AudioBot.Web
 						remoteAddress = realIp;
 					}
 
-					var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
+					var rawRequest = new Uri(WebUtil.Dummy, context.Request.RawUrl);
 					Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
 
 					bool handled = false;
@@ -208,9 +206,6 @@ namespace TS3AudioBot.Web
 
 		public void Dispose()
 		{
-			Display?.Dispose();
-			Display = null;
-
 			cancelToken?.Cancel();
 			cancelToken?.Dispose();
 			cancelToken = null;

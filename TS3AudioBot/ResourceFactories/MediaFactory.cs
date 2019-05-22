@@ -35,12 +35,12 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(string uri) =>
 			File.Exists(uri)
-			? MatchCertainty.Maybe
+			? MatchCertainty.Always
 			: MatchCertainty.OnlyIfLast;
 
 		public MatchCertainty MatchPlaylist(string uri) =>
-			Directory.Exists(uri) ? MatchCertainty.Probably :
-			File.Exists(uri) ? MatchCertainty.Maybe
+			Directory.Exists(uri) ? MatchCertainty.Always :
+			File.Exists(uri) ? MatchCertainty.Always
 			: MatchCertainty.OnlyIfLast;
 
 		public R<PlayResource, LocalStr> GetResource(string uri)

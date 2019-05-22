@@ -82,7 +82,19 @@ namespace TS3AudioBot.Audio
 			if (item is null)
 				throw new ArgumentNullException(nameof(item));
 
-			return Play(invoker, item.Resource, item.Meta);
+			if (item.Resource != null)
+				return Play(invoker, item.Resource, item.Meta);
+
+			if (item.Uri != null)
+			{
+				var result = resourceFactoryManager.Load(item.Uri);
+				if (!result)
+					return result.Error;
+				item.Resolve(result.Value.BaseData);
+				return Play(invoker, result.Value, item.Meta);
+			}
+
+			throw new Exception("Invalid playlist item");
 		}
 		/// <summary>Tries to play the passed <see cref="AudioResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>

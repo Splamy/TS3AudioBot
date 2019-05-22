@@ -33,13 +33,11 @@ namespace TS3AudioBot.ResourceFactories
 		public string FactoryFor => "youtube";
 
 		MatchCertainty IResourceFactory.MatchResource(string uri) =>
-			LinkMatch.IsMatch(uri)
+			LinkMatch.IsMatch(uri) || IdMatch.IsMatch(uri)
 				? MatchCertainty.Always
-				: IdMatch.IsMatch(uri)
-					? MatchCertainty.Probably
-					: MatchCertainty.Never;
+				: MatchCertainty.Never;
 
-		MatchCertainty IPlaylistFactory.MatchPlaylist(string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Probably : MatchCertainty.Never;
+		MatchCertainty IPlaylistFactory.MatchPlaylist(string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Always : MatchCertainty.Never;
 
 		public R<PlayResource, LocalStr> GetResource(string uri)
 		{

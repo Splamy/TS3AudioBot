@@ -13,15 +13,15 @@ namespace TS3AudioBot.Web.Interface
 
 	internal class FileRedirect : IFolderProvider
 	{
-		private string source;
-		private SiteMapper map;
-		private Uri redirect;
+		private readonly string source;
+		private readonly SiteMapper map;
+		private readonly Uri redirect;
 
 		public FileRedirect(SiteMapper map, string source, string target)
 		{
 			this.source = source;
 			this.map = map;
-			redirect = new Uri(WebComponent.Dummy, target);
+			redirect = new Uri(WebUtil.Dummy, target);
 		}
 
 		public ISiteProvider GetFile(string subPath)

@@ -9,16 +9,13 @@
 
 namespace TS3AudioBot.Web
 {
-	using System;
 	using Unosquare.Labs.EmbedIO;
 
-	public abstract class WebComponent
+	public interface IWebComponent
 	{
-		internal static readonly Uri Dummy = new Uri("http://dummy/");
-
 		/// <summary>Processes a HTTP request.</summary>
 		/// <param name="context">The HTTP context for the call.</param>
 		/// <returns>True if the request was handled.</returns>
-		public abstract bool DispatchCall(IHttpContext context);
+		bool DispatchCall(IHttpContext context);
 	}
 }

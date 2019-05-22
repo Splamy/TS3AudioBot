@@ -149,6 +149,21 @@ namespace System
 
 		public static implicit operator E<TError>(TError result) => new E<TError>(result);
 
+		// Fluent get
+		public bool GetError(out TError value)
+		{
+			if (Ok)
+			{
+				value = default;
+				return false;
+			}
+			else
+			{
+				value = Error;
+				return true;
+			}
+		}
+
 		// Convenience casting
 		public static implicit operator E<TError>(_Ok _) => OkR;
 

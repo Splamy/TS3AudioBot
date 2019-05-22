@@ -160,9 +160,13 @@ namespace TS3AudioBot.Playlists
 						{
 							type = string.Empty,
 							resid = string.Empty,
-							title = string.Empty
+							title = string.Empty,
+							link = string.Empty,
 						});
-						plist.Items.Add(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
+						if (!string.IsNullOrEmpty(rsjdata.resid))
+							plist.Items.Add(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
+						else if (!string.IsNullOrEmpty(rsjdata.link))
+							plist.Items.Add(new PlaylistItem(rsjdata.link));
 						break;
 
 					case "id":
@@ -216,14 +220,22 @@ namespace TS3AudioBot.Playlists
 					{
 						sw.Write("rsj:");
 						json.WriteStartObject();
-						json.WritePropertyName("type");
-						json.WriteValue(pli.Resource.AudioType);
-						json.WritePropertyName("resid");
-						json.WriteValue(pli.Resource.ResourceId);
-						if (pli.Resource.ResourceTitle != null)
+						if (pli.Resource != null)
 						{
-							json.WritePropertyName("title");
-							json.WriteValue(pli.Resource.ResourceTitle);
+							json.WritePropertyName("type");
+							json.WriteValue(pli.Resource.AudioType);
+							json.WritePropertyName("resid");
+							json.WriteValue(pli.Resource.ResourceId);
+							if (pli.Resource.ResourceTitle != null)
+							{
+								json.WritePropertyName("title");
+								json.WriteValue(pli.Resource.ResourceTitle);
+							}
+						}
+						else if (pli.Uri != null)
+						{
+							json.WritePropertyName("link");
+							json.WriteValue(pli.Uri);
 						}
 						json.WriteEndObject();
 						json.Flush();

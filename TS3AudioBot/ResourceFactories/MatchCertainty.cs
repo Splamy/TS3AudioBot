@@ -15,10 +15,6 @@ namespace TS3AudioBot.ResourceFactories
 		Never = 0,
 		/// <summary>"OnlyIfLast" Only gets selected if no higher match was found.</summary>
 		OnlyIfLast,
-		/// <summary>"Maybe" has the lowest priority which also excludes all "OnlyIfLast" factories.</summary>
-		Maybe,
-		/// <summary>"Probably" will get prioritized over "Maybe" and excludes all "OnlyIfLast" factories.</summary>
-		Probably,
 		/// <summary>"Always" will reserve a link exclusively for all factories which also said "Always".</summary>
 		Always,
 	}

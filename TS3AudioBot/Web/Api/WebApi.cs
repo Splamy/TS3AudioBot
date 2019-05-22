@@ -23,8 +23,9 @@ namespace TS3AudioBot.Web.Api
 	using System.Net;
 	using System.Text;
 	using TS3AudioBot.Algorithm;
+	using Unosquare.Labs.EmbedIO;
 
-	public sealed class WebApi : WebComponent
+	public sealed class WebApi : IWebComponent
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
@@ -47,7 +48,7 @@ namespace TS3AudioBot.Web.Api
 			this.tokenManager = tokenManager;
 		}
 
-		public override bool DispatchCall(Unosquare.Labs.EmbedIO.IHttpContext context)
+		public bool DispatchCall(IHttpContext context)
 		{
 			var response = context.Response;
 
@@ -55,39 +56,42 @@ namespace TS3AudioBot.Web.Api
 			response.Headers["Access-Control-Allow-Origin"] = "*";
 			response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";
 
-			var authResult = Authenticate(context);
+			var authResult = Authenticate(context.Request);
 			if (!authResult.Ok)
 			{
 				Log.Debug("Authorization failed!");
 				ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
 				return true;
 			}
-			if (!AllowAnonymousRequest && string.IsNullOrEmpty(authResult.Value.uid))
+			if (!AllowAnonymousRequest && string.IsNullOrEmpty(authResult.Value.ClientUid))
 			{
 				Log.Debug("Unauthorized request!");
 				ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
 				return true;
 			}
 
-			var apiCallData = string.IsNullOrEmpty(authResult.Value.uid)
-				? ApiCall.CreateAnonymous()
-				: new ApiCall(authResult.Value.uid);
-			apiCallData.Token = authResult.Value.token;
-			apiCallData.ReuqestUrl = (Uri)context.Items["req"];
-			apiCallData.IpAddress = (IPAddress)context.Items["ip"];
-
-			ProcessApiV1Call(response, apiCallData);
+			ProcessApiV1Call(context, authResult.Value);
 			return true;
 		}
 
-		private void ProcessApiV1Call(Unosquare.Labs.EmbedIO.IHttpResponse response, ApiCall apiCallData)
+		private void ProcessApiV1Call(IHttpContext context, ApiCall apiCallData)
 		{
-			string apirequest = apiCallData.ReuqestUrl.OriginalString.Substring(apiCallData.ReuqestUrl.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
+			var request = context.Request;
+			var response = context.Response;
+			apiCallData.RequestUrl = (Uri)context.Items["req"];
+			apiCallData.IpAddress = (IPAddress)context.Items["ip"];
+
+			string apirequest = apiCallData.RequestUrl.OriginalString.Substring(apiCallData.RequestUrl.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
 			Log.Trace(ast.ToString);
-
 			var command = commandManager.CommandSystem.AstToCommandResult(ast);
+
+			if(ProcessBodyData(request, apiCallData).GetError(out var err))
+			{
+				ReturnError(err, response);
+				return;
+			}
 
 			var execInfo = new ExecutionInformation(coreInjector);
 			execInfo.AddModule(new CallerInfo(true)
@@ -119,27 +123,74 @@ namespace TS3AudioBot.Web.Api
 			}
 			catch (CommandException ex)
 			{
-				try { ReturnError(ex, response); }
-				catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
+				ReturnError(ex, response);
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Unexpected command error");
-				try
-				{
-					if (ex is NotImplementedException)
-						response.StatusCode = (int)HttpStatusCode.NotImplemented;
-					else
-						response.StatusCode = (int)HttpStatusCode.InternalServerError;
-
-					using (var responseStream = new StreamWriter(response.OutputStream))
-						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
-				}
-				catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
+				ReturnError(ex, response);
 			}
 		}
 
-		private static void ReturnError(CommandException ex, Unosquare.Labs.EmbedIO.IHttpResponse response)
+		private E<Exception> ProcessBodyData(IHttpRequest request, ApiCall apiCallData)
+		{
+			if (!request.HasEntityBody || request.ContentType != "application/json")
+				return R.Ok;
+
+			const int MaxRequestSize = 1024 * 1024; // 1 MB
+
+			if (request.ContentLength64 > MaxRequestSize)
+				return new EntityTooLargeException(MaxRequestSize);
+
+			try
+			{
+				using (var sr = new StreamReader(new LimitStream(request.InputStream, MaxRequestSize), request.ContentEncoding))
+					apiCallData.Body = sr.ReadToEnd();
+				return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Warn(ex, "Failed to parse request Body");
+				return ex;
+			}
+		}
+
+		private static void ReturnError(Exception ex, IHttpResponse response)
+		{
+			Log.Debug(ex, "Api Exception");
+
+			try
+			{
+				JsonError jsonError = null;
+
+				switch (ex)
+				{
+				case CommandException cex:
+					jsonError = ReturnCommandError(cex, response);
+					break;
+
+				case NotImplementedException _:
+					response.StatusCode = (int)HttpStatusCode.NotImplemented;
+					break;
+
+				case EntityTooLargeException _:
+					response.StatusCode = (int)HttpStatusCode.RequestEntityTooLarge;
+					break;
+
+				default:
+					Log.Error(ex, "Unexpected command error");
+					response.StatusCode = (int)HttpStatusCode.InternalServerError;
+					break;
+				}
+
+				jsonError = jsonError ?? new JsonError(ex.Message, CommandExceptionReason.Unknown);
+				using (var responseStream = new StreamWriter(response.OutputStream))
+					responseStream.Write(jsonError.Serialize());
+			}
+			catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
+		}
+
+		private static JsonError ReturnCommandError(CommandException ex, IHttpResponse response)
 		{
 			var jsonError = new JsonError(ex.Message, ex.Reason);
 
@@ -148,7 +199,7 @@ namespace TS3AudioBot.Web.Api
 			case CommandExceptionReason.Unknown:
 			case CommandExceptionReason.InternalError:
 				response.StatusCode = (int)HttpStatusCode.InternalServerError;
-				return;
+				break;
 
 			case CommandExceptionReason.Unauthorized:
 				response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -202,10 +253,7 @@ namespace TS3AudioBot.Web.Api
 				throw Util.UnhandledDefault(ex.Reason);
 			}
 
-			using (var responseStream = new StreamWriter(response.OutputStream))
-			{
-				responseStream.Write(jsonError.Serialize());
-			}
+			return jsonError;
 		}
 
 		private static void UnescapeAstTree(AstNode node)
@@ -227,11 +275,11 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private R<(string uid, string token), string> Authenticate(Unosquare.Labs.EmbedIO.IHttpContext context)
+		private R<ApiCall, string> Authenticate(IHttpRequest request)
 		{
-			var headerVal = context.Request.Headers["Authorization"];
+			var headerVal = request.Headers["Authorization"];
 			if (string.IsNullOrEmpty(headerVal))
-				return (null, null);
+				return ApiCall.CreateAnonymous();
 
 			var authParts = headerVal.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 			if (authParts.Length < 2)
@@ -262,7 +310,7 @@ namespace TS3AudioBot.Web.Api
 			if (dbToken.Value != token)
 				return ErrorAuthFailure;
 
-			return (userUid, dbToken.Value);
+			return new ApiCall(userUid, token: dbToken.Value);
 		}
 	}
 }

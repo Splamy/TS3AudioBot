@@ -49,12 +49,6 @@ namespace TS3AudioBot.ResourceFactories
 			AddFactory(new BandcampFactory());
 		}
 
-		// Load lookup stages
-		// PlayResource != null    => ret PlayResource
-		// ResourceData != null    => call RF.RestoreFromId
-		// TextMessage != null     => call RF.GetResoruce
-		// else                    => ret Error
-
 		private T GetFactoryByType<T>(string audioType) where T : class, IFactory =>
 			// ToLower for legacy reasons
 			allFacories.TryGetValue(audioType.ToLowerInvariant(), out var factoryInfo) && factoryInfo.Factory is T factory
