@@ -1032,24 +1032,24 @@ namespace TS3AudioBot
 			playlistManager.SavePlaylist(plist).UnwrapThrow();
 		}
 
-		[Command("list set")]
-		public static void CommandListSet(PlaylistManager playlistManager, PlayManager playManager, ApiCall apiCall, string name)
-		{
-			PlaylistItemSetData[] playlistData;
-			try
-			{
-				playlistData = Newtonsoft.Json.JsonConvert.DeserializeObject<PlaylistItemSetData[]>(apiCall.Body);
-			}
-			catch (Exception ex) { throw new CommandException("Invalid playlist body data", ex, CommandExceptionReason.CommandError); }
+		//[Command("list set")]
+		//public static void CommandListSet(PlaylistManager playlistManager, PlayManager playManager, ApiCall apiCall, string name)
+		//{
+		//	PlaylistItemSetData[] playlistData;
+		//	try
+		//	{
+		//		playlistData = Newtonsoft.Json.JsonConvert.DeserializeObject<PlaylistItemSetData[]>(apiCall.Body);
+		//	}
+		//	catch (Exception ex) { throw new CommandException("Invalid playlist body data", ex, CommandExceptionReason.CommandError); }
 
-			var list = new List<PlaylistItem>();
-			foreach (var item in playlistData)
-			{
+		//	var list = new List<PlaylistItem>();
+		//	foreach (var item in playlistData)
+		//	{
 
-			}
+		//	}
 
-			playlistManager.SavePlaylist(new Playlist(name, list)).UnwrapThrow();
-		}
+		//	playlistManager.SavePlaylist(new Playlist(name, list)).UnwrapThrow();
+		//}
 
 		[Command("list show")]
 		[Usage("<index>", "Lets you specify the staring index from which songs should be listed.")]

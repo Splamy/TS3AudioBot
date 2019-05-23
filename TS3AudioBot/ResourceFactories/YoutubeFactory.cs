@@ -23,7 +23,7 @@ namespace TS3AudioBot.ResourceFactories
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]+)", Util.DefaultRegexConfig);
+		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]{11})", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex StreamCodecMatch = new Regex(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
