@@ -15,6 +15,7 @@ namespace TS3AudioBot.Web
 	using Microsoft.AspNetCore.Hosting;
 	using Microsoft.AspNetCore.Http;
 	using Microsoft.Extensions.DependencyInjection;
+	using Microsoft.Extensions.Logging;
 	using System;
 	using System.IO;
 	using System.Linq;
@@ -101,6 +102,11 @@ namespace TS3AudioBot.Web
 			cancelToken = new CancellationTokenSource();
 
 			var host = new WebHostBuilder()
+				.SuppressStatusMessages(true)
+				.ConfigureLogging((context, logging) =>
+				{
+					logging.ClearProviders();
+				})
 				.UseKestrel(kestrel =>
 				{
 					kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
@@ -109,13 +115,17 @@ namespace TS3AudioBot.Web
 				{
 					app.Map(new PathString("/api"), map =>
 					{
-						map.Run(ctx => Task.Run(() => api.ProcessApiV1Call(ctx)));
+						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
 					});
 
 					if (config.Interface.Enabled)
 					{
+						app.UseDefaultFiles();
 						app.UseStaticFiles();
 					}
+
+					var applicationLifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
+					applicationLifetime.ApplicationStopping.Register(OnShutdown);
 				});
 
 			if (config.Interface.Enabled)
@@ -160,13 +170,18 @@ namespace TS3AudioBot.Web
 			Log.Info("Started Webserver on port {0}", config.Port.Value);
 		}
 
+		public void OnShutdown()
+		{
+			Log.Info("WebServer has closed");
+		}
+
 		public void Dispose()
 		{
+			Log.Info("WebServer is closing");
+
 			cancelToken?.Cancel();
 			cancelToken?.Dispose();
 			cancelToken = null;
-
-			Log.Info("WebServer is closing");
 		}
 	}
 }
