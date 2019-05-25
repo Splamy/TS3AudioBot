@@ -354,10 +354,12 @@ namespace TS3AudioBot.Audio
 				{
 					if (!FfmpegProcess.HasExitedSafe())
 						FfmpegProcess.Kill();
-					else
-						FfmpegProcess.Close();
 				}
-				catch (InvalidOperationException) { }
+				catch { }
+				try { FfmpegProcess.CancelErrorRead(); } catch { }
+				try { FfmpegProcess.StandardInput.Dispose(); } catch { }
+				try { FfmpegProcess.StandardOutput.Dispose(); } catch { }
+				try { FfmpegProcess.Dispose(); } catch { }
 
 				IcyStream?.Dispose();
 			}
