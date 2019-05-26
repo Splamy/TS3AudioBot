@@ -158,6 +158,7 @@ namespace TS3AudioBot.Rights
 			}
 			else if (info.TryGet<ApiCall>(out var apiCallData))
 			{
+				execCtx.ClientUid = apiCallData.ClientUid;
 				execCtx.ApiToken = apiCallData.Token;
 				execCtx.ApiCallerIp = apiCallData.IpAddress;
 				execCtx.IsApi = true;
