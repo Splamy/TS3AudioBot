@@ -154,7 +154,7 @@ namespace TS3Client.Full
 						socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 						socket.Bind(new IPEndPoint(IPAddress.Any, 0));
 						socketEventArgs.RemoteEndPoint = remoteAddress;
-						socket.ReceiveMessageFromAsync(socketEventArgs);
+						socket.ReceiveFromAsync(socketEventArgs);
 					}
 					else
 					{
