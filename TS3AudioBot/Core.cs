@@ -44,6 +44,9 @@ namespace TS3AudioBot
 			if (!setup.SkipVerifications && !Setup.VerifyAll())
 				return;
 
+			if (setup.Llgc)
+				Setup.EnableLlgc();
+
 			if (!setup.HideBanner)
 				Setup.LogHeader();
 
@@ -52,7 +55,7 @@ namespace TS3AudioBot
 			AppDomain.CurrentDomain.UnhandledException += core.ExceptionHandler;
 			Console.CancelKeyPress += core.ConsoleInterruptHandler;
 
-			var initResult = core.Run(!setup.NonInteractive);
+			var initResult = core.Run(setup.Interactive);
 			if (!initResult)
 			{
 				Log.Error("Core initialization failed: {0}", initResult.Error);

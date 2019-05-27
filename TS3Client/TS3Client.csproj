@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp2.2;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net472;netcoreapp2.2;netstandard2.0</TargetFrameworks>
     <LangVersion>7.3</LangVersion>
     <RootNamespace>TS3Client</RootNamespace>
     <AssemblyName>TS3Client</AssemblyName>
@@ -107,6 +107,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <!-- Transform all Templates tool -->
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 </Project>

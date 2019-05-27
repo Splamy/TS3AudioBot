@@ -38,7 +38,7 @@ namespace TS3Client.Full
 			lock (queueLock)
 			{
 				DropOver(outBytesTime, TimeMinute);
-				outBytesTime.Enqueue(new PacketData(packet.Raw.Length, Util.Now, kind));
+				outBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Util.Now, kind));
 			}
 		}
 
@@ -50,7 +50,7 @@ namespace TS3Client.Full
 			lock (queueLock)
 			{
 				DropOver(inBytesTime, TimeMinute);
-				inBytesTime.Enqueue(new PacketData(packet.Raw.Length, Util.Now, kind));
+				inBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Util.Now, kind));
 			}
 		}
 
@@ -199,7 +199,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private enum PacketKind
+		private enum PacketKind : ushort
 		{
 			Speech,
 			Keepalive,
@@ -208,11 +208,11 @@ namespace TS3Client.Full
 
 		private readonly struct PacketData
 		{
-			public int Size { get; }
 			public DateTime SendPoint { get; }
+			public ushort Size { get; }
 			public PacketKind Kind { get; }
 
-			public PacketData(int size, DateTime sendPoint, PacketKind kind) { Size = size; SendPoint = sendPoint; Kind = kind; }
+			public PacketData(ushort size, DateTime sendPoint, PacketKind kind) { Size = size; SendPoint = sendPoint; Kind = kind; }
 		}
 	}
 }

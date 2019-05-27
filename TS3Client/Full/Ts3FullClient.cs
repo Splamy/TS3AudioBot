@@ -59,13 +59,13 @@ namespace TS3Client.Full
 		/// <summary>Creates a new client. A client can manage one connection to a server.</summary>
 		/// <param name="dispatcherType">The message processing method for incomming notifications.
 		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
-		public Ts3FullClient(EventDispatchType dispatcherType = EventDispatchType.DoubleThread)
+		public Ts3FullClient()
 		{
 			status = Ts3ClientStatus.Disconnected;
 			ts3Crypt = new Ts3Crypt();
 			packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt);
 			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
-			dispatcher = EventDispatcherHelper.Create(dispatcherType);
+			dispatcher = EventDispatcherHelper.Create(EventDispatchType.ExtraDispatchThread);
 			context = new ConnectionContext { WasExit = true };
 		}
 
@@ -91,14 +91,16 @@ namespace TS3Client.Full
 			{
 				returnCode = 0;
 				status = Ts3ClientStatus.Connecting;
-				context = new ConnectionContext { WasExit = false };
 
 				VersionSign = conDataFull.VersionSign;
 				ts3Crypt.Reset();
 				ts3Crypt.Identity = conDataFull.Identity;
 
+				var ctx = new ConnectionContext { WasExit = false };
+				context = ctx;
+				packetHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
 				packetHandler.Connect(remoteAddress, conData.LogId);
-				dispatcher.Init(NetworkLoop, InvokeEvent, context, conData.LogId);
+				dispatcher.Init(_ => { }, InvokeEvent, ctx, conData.LogId);
 			}
 			dispatcher.EnterEventLoop();
 		}
@@ -157,19 +159,6 @@ namespace TS3Client.Full
 
 			if (triggerEventSafe)
 				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? Reason.LeftServer, error));
-		}
-
-		private void NetworkLoop(object ctxObject)
-		{
-			var ctx = (ConnectionContext)ctxObject;
-			packetHandler.PacketEvent += (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
-
-			packetHandler.FetchPackets();
-
-			lock (statusLock)
-			{
-				DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected);
-			}
 		}
 
 		private void PacketEvent(ConnectionContext ctx, ref Packet<S2C> packet)
