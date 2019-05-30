@@ -348,7 +348,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void FetchPackets(byte[] buffer)
+		private void FetchPackets(Span<byte> buffer)
 		{
 			var optpacket = Packet<TIn>.FromRaw(buffer);
 			// Invalid packet, ignore

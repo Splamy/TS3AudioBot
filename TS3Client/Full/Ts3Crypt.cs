@@ -15,7 +15,6 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Asn1;
 	using Org.BouncyCastle.Asn1.X9;
 	using Org.BouncyCastle.Crypto;
-	using Org.BouncyCastle.Crypto.Digests;
 	using Org.BouncyCastle.Crypto.Engines;
 	using Org.BouncyCastle.Crypto.Generators;
 	using Org.BouncyCastle.Crypto.Modes;
@@ -716,30 +715,18 @@ namespace TS3Client.Full
 				outBuf[i] = (byte)(a[i] ^ b[i]);
 		}
 
-		private static readonly System.Security.Cryptography.SHA1Managed Sha1HashInternal = new System.Security.Cryptography.SHA1Managed();
-		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
-		private static readonly Sha512Digest Sha512Hash = new Sha512Digest();
-		internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
-		internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
-		internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha512Hash, data, offset, len);
+		private static readonly System.Security.Cryptography.SHA1Managed Sha1Hash = new System.Security.Cryptography.SHA1Managed();
+		private static readonly System.Security.Cryptography.SHA256Managed Sha256Hash = new System.Security.Cryptography.SHA256Managed();
+		private static readonly System.Security.Cryptography.SHA512Managed Sha512Hash = new System.Security.Cryptography.SHA512Managed();
+		internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1Hash, data, offset, len);
+		internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha256Hash, data, offset, len);
+		internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha512Hash, data, offset, len);
 		private static byte[] HashItInternal(System.Security.Cryptography.HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			lock (hashAlgo)
 			{
 				return hashAlgo.ComputeHash(data, offset, len == 0 ? data.Length - offset : len);
 			}
-		}
-		private static byte[] HashIt(IDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
-		{
-			byte[] result;
-			lock (hashAlgo)
-			{
-				hashAlgo.Reset();
-				hashAlgo.BlockUpdate(data, offset, len == 0 ? data.Length - offset : len);
-				result = new byte[hashAlgo.GetDigestSize()];
-				hashAlgo.DoFinal(result, 0);
-			}
-			return result;
 		}
 
 		/// <summary>

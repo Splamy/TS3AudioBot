@@ -525,9 +525,9 @@ namespace TS3Client.Full
 			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
 			// > Y is the codec byte (see Enum)
-			var tmpBuffer = new byte[data.Length + 3]; // stackalloc
+			Span<byte> tmpBuffer = stackalloc byte[data.Length + 3];
 			tmpBuffer[2] = (byte)codec;
-			data.CopyTo(tmpBuffer.AsSpan(3));
+			data.CopyTo(tmpBuffer.Slice(3));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
 		}
@@ -543,16 +543,15 @@ namespace TS3Client.Full
 			// > U is a ulong in H2N order of each targeted channelId, (U...U) is repeated N times
 			// > T is a ushort in H2N order of each targeted clientId, (T...T) is repeated M times
 			int offset = 2 + 1 + 2 + channelIds.Count * 8 + clientIds.Count * 2;
-			var tmpBuffer = new byte[data.Length + offset];
-			var tmpBufferSpan = tmpBuffer.AsSpan(); // stackalloc
+			Span<byte> tmpBuffer = stackalloc byte[data.Length + offset];
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)channelIds.Count;
 			tmpBuffer[4] = (byte)clientIds.Count;
 			for (int i = 0; i < channelIds.Count; i++)
-				BinaryPrimitives.WriteUInt64BigEndian(tmpBufferSpan.Slice(5 + (i * 8)), channelIds[i]);
+				BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5 + (i * 8)), channelIds[i]);
 			for (int i = 0; i < clientIds.Count; i++)
-				BinaryPrimitives.WriteUInt16BigEndian(tmpBufferSpan.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i]);
-			data.CopyTo(tmpBufferSpan.Slice(offset));
+				BinaryPrimitives.WriteUInt16BigEndian(tmpBuffer.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i]);
+			data.CopyTo(tmpBuffer.Slice(offset));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
 		}
@@ -566,13 +565,12 @@ namespace TS3Client.Full
 			// > N is a byte, specifying the GroupWhisperType
 			// > M is a byte, specifying the GroupWhisperTarget
 			// > U is a ulong in H2N order for the targeted channelId or groupId (0 if not applicable)
-			var tmpBuffer = new byte[data.Length + 13];
-			var tmpBufferSpan = tmpBuffer.AsSpan(); // stackalloc
+			Span<byte> tmpBuffer = stackalloc byte[data.Length + 13];
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)type;
 			tmpBuffer[4] = (byte)target;
-			BinaryPrimitives.WriteUInt64BigEndian(tmpBufferSpan.Slice(5), targetId);
-			data.CopyTo(tmpBufferSpan.Slice(13));
+			BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5), targetId);
+			data.CopyTo(tmpBuffer.Slice(13));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
