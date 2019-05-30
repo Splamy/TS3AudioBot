@@ -17,7 +17,6 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using System.Text;
 	using System.Text.RegularExpressions;
 
 	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory

@@ -48,7 +48,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.1.0">
       <ExcludeAssets>analyzers</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Nett" Version="0.11.0" />
+    <PackageReference Include="Nett" Version="0.12.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="PlaylistsNET" Version="1.0.4" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />

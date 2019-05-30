@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFrameworks>net472;netcoreapp2.2;netstandard2.0</TargetFrameworks>
@@ -25,11 +25,6 @@
     <None Include="Generated\ErrorParser.ttinclude" />
     <None Include="Generated\M2BParser.ttinclude" />
     <None Include="Generated\MessageParser.ttinclude" />
-    <None Include="Generated\Ts3FullEvents.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Ts3FullEvents.tt</DependentUpon>
-    </None>
     <None Include="Generated\Util.ttinclude" />
     <None Update="Commands\Ts3CommandSugar.tt">
       <Generator>TextTemplatingFileGenerator</Generator>

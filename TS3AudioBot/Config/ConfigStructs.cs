@@ -14,7 +14,6 @@ namespace TS3AudioBot.Config
 	using Playlists;
 	using System;
 	using System.Collections.Generic;
-	using System.Text.RegularExpressions;
 	using TS3AudioBot.Helper;
 
 	public partial class ConfRoot : ConfigTable

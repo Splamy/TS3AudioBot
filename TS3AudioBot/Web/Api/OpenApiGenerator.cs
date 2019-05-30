@@ -21,7 +21,7 @@ namespace TS3AudioBot.Web.Api
 
 	public static class OpenApiGenerator
 	{
-		private static JsonSerializer seri = JsonSerializer.CreateDefault();
+		private static readonly JsonSerializer seri = JsonSerializer.CreateDefault();
 
 		static OpenApiGenerator()
 		{

@@ -1,5 +1,5 @@
 <#@ assembly name="System.Core" #>
-<#@ assembly name="%userprofile%/.nuget/packages/nett/0.9.0/lib/Net40/Nett.dll" #>
+<#@ assembly name="%userprofile%/.nuget/packages/nett/0.12.0/lib/Net40/Nett.dll" #>
 <#
 void Warn(string _warn) { WriteLine($"#warning {_warn}"); }
 
