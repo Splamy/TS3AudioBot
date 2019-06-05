@@ -184,10 +184,10 @@ namespace TS3AudioBot.ResourceFactories
 		private static int SelectStream(List<VideoData> list)
 		{
 #if DEBUG
-			var dbg = new StringBuilder("YT avail codecs: ");
+			var dbg = new System.Text.StringBuilder("YT avail codecs: ");
 			foreach (var yd in list)
 				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
-			Log.Trace(dbg.ToString());
+			Log.Trace("{0}", dbg);
 #endif
 
 			int autoselectIndex = list.FindIndex(t => t.Codec == VideoCodec.M4A);

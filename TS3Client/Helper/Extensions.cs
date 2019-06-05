@@ -47,8 +47,14 @@ namespace TS3Client.Helper
 			return R<T[], CommandError>.OkR((T[])result.Value.Notifications);
 		}
 
-		// TODO add optional improvement when dotnet core >=2.1 is available
-		public static string NewUtf8String(this ReadOnlySpan<byte> span) => System.Text.Encoding.UTF8.GetString(span.ToArray());
+		public static string NewUtf8String(this ReadOnlySpan<byte> span)
+		{
+#if NETCOREAPP2_2
+			return System.Text.Encoding.UTF8.GetString(span);
+#else
+			return System.Text.Encoding.UTF8.GetString(span.ToArray());
+#endif
+		}
 
 		public static string NewUtf8String(this Span<byte> span) => NewUtf8String((ReadOnlySpan<byte>)span);
 

@@ -13,6 +13,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Text;
+	using TS3Client.Helper;
 
 	public static class M3uReader
 	{
@@ -131,7 +132,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 
 		private static string AsString(ReadOnlySpan<byte> data)
 		{
-			return Encoding.UTF8.GetString(data.ToArray()); // TODO with nc 2.1
+			return data.NewUtf8String();
 		}
 	}
 
