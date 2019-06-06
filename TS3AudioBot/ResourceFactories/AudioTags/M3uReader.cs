@@ -78,7 +78,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 								var dataSlice = line.Slice(ExtInfLine.Length + 1);
 								var trackInfo = dataSlice.IndexOf((byte)',');
 								if (trackInfo >= 0)
-									trackTitle = AsString(dataSlice.Slice(trackInfo + 1));
+									trackTitle = dataSlice.Slice(trackInfo + 1).NewUtf8String();
 							}
 							else if (line.StartsWith(ExtM3uLine))
 							{
@@ -86,13 +86,13 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 							}
 							else if (line.StartsWith(ExtXStreamInfLine))
 							{
-								trackStreamMeta = AsString(line.Slice(ExtXStreamInfLine.Length + 1));
+								trackStreamMeta = line.Slice(ExtXStreamInfLine.Length + 1).NewUtf8String();
 							}
 							// else: unsupported m3u tag
 						}
 						else
 						{
-							var lineStr = AsString(line);
+							var lineStr = line.NewUtf8String();
 							if (Uri.TryCreate(lineStr, UriKind.RelativeOrAbsolute, out _))
 							{
 								data.Add(new M3uEntry()
@@ -128,11 +128,6 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 				return "List too long";
 			}
 			catch { return "Unexpected m3u parsing error"; }
-		}
-
-		private static string AsString(ReadOnlySpan<byte> data)
-		{
-			return data.NewUtf8String();
 		}
 	}
 

@@ -51,12 +51,21 @@ namespace TS3AudioBot.Localization
 				culture = Thread.CurrentThread.CurrentUICulture;
 			}
 
+			string str;
 			if (dynamicResourceSets.TryGetValue(culture.Name, out var set))
 			{
-				return set.GetString(name);
+				if ((str = set.GetString(name)) != null)
+					return str;
 			}
 
-			return base.GetString(name, culture);
+			if ((str = base.GetString(name, culture)) != null)
+				return str;
+
+			if ((str = base.GetString(name, CultureInfo.InvariantCulture)) != null)
+				return str;
+
+			//$"The localized entry {name} was not found"
+			return null;
 		}
 	}
 }
