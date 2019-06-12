@@ -47,12 +47,12 @@ namespace TS3Client.Query
 		public override event EventHandler<EventArgs> OnConnected;
 		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
 
-		public Ts3QueryClient(EventDispatchType dispatcherType = EventDispatchType.DoubleThread)
+		public Ts3QueryClient()
 		{
 			connecting = false;
 			tcpClient = new TcpClient();
 			msgProc = new SyncMessageProcessor(MessageHelper.GetToClientNotificationType);
-			dispatcher = EventDispatcherHelper.Create(dispatcherType);
+			dispatcher = new ExtraThreadEventDispatcher();
 		}
 
 		public override void Connect(ConnectionData conData)
@@ -80,9 +80,9 @@ namespace TS3Client.Query
 			finally { connecting = false; }
 
 			cts = new CancellationTokenSource();
-			dispatcher.Init(NetworkLoop, InvokeEvent, null, conData.LogId);
+			NetworkLoop(cts.Token).Start();
+			dispatcher.Init(InvokeEvent, conData.LogId);
 			OnConnected?.Invoke(this, EventArgs.Empty);
-			dispatcher.EnterEventLoop();
 		}
 
 		public override void Disconnect()
@@ -96,9 +96,9 @@ namespace TS3Client.Query
 			}
 		}
 
-		private void NetworkLoop(object ctx)
+		private async Task NetworkLoop(CancellationToken cancellationToken)
 		{
-			Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cts.Token), PipeProcessorAsync(dataPipe.Reader, cts.Token)).ConfigureAwait(false).GetAwaiter().GetResult();
+			await Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cancellationToken), PipeProcessorAsync(dataPipe.Reader, cancellationToken)).ConfigureAwait(false);
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
 		}
 

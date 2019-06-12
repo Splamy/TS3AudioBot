@@ -26,8 +26,8 @@ namespace TS3Client.Full
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed partial class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
-		private readonly Ts3Crypt ts3Crypt;
-		private readonly PacketHandler<S2C, C2S> packetHandler;
+		private Ts3Crypt ts3Crypt;
+		private PacketHandler<S2C, C2S> packetHandler;
 		private readonly AsyncMessageProcessor msgProc;
 
 		private readonly object statusLock = new object();
@@ -62,10 +62,8 @@ namespace TS3Client.Full
 		public Ts3FullClient()
 		{
 			status = Ts3ClientStatus.Disconnected;
-			ts3Crypt = new Ts3Crypt();
-			packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt);
 			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
-			dispatcher = EventDispatcherHelper.Create(EventDispatchType.ExtraDispatchThread);
+			dispatcher = new ExtraThreadEventDispatcher();
 			context = new ConnectionContext { WasExit = true };
 		}
 
@@ -93,16 +91,19 @@ namespace TS3Client.Full
 				status = Ts3ClientStatus.Connecting;
 
 				VersionSign = conDataFull.VersionSign;
-				ts3Crypt.Reset();
+				ts3Crypt = new Ts3Crypt();
 				ts3Crypt.Identity = conDataFull.Identity;
 
 				var ctx = new ConnectionContext { WasExit = false };
 				context = ctx;
+
+				if (packetHandler != null)
+					packetHandler.PacketEvent = null;
+				packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt, conData.LogId);
 				packetHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
-				packetHandler.Connect(remoteAddress, conData.LogId);
-				dispatcher.Init(_ => { }, InvokeEvent, ctx, conData.LogId);
+				packetHandler.Connect(remoteAddress);
+				dispatcher.Init(InvokeEvent, conData.LogId);
 			}
-			dispatcher.EnterEventLoop();
 		}
 
 		/// <summary>
@@ -683,6 +684,5 @@ namespace TS3Client.Full
 	internal class ConnectionContext
 	{
 		public bool WasExit { get; set; }
-		public string BotId { get; set; }
 	}
 }

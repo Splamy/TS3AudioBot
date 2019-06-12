@@ -445,7 +445,8 @@ namespace TS3AudioBot
 			}
 			catch (CommandException ex)
 			{
-				Log.Debug(ex, "Command Error ({0})", ex.Message);
+				NLog.LogLevel commandErrorLevel = answer ? NLog.LogLevel.Debug : NLog.LogLevel.Warn;
+				Log.Log(commandErrorLevel, ex, "Command Error ({0})", ex.Message);
 				if (answer)
 				{
 					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))

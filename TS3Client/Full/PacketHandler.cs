@@ -18,15 +18,12 @@ namespace TS3Client.Full
 	using System.Net;
 	using System.Net.Sockets;
 	using System.Threading;
+	using static PacketHandlerConst;
 
-	internal sealed class PacketHandler<TIn, TOut> : PacketHandler
+	internal sealed class PacketHandler<TIn, TOut>
 	{
-		/// <summary>Greatest allowed packet size, including the complete header.</summary>
-		private const int MaxOutPacketSize = 500;
 		private static readonly int OutHeaderSize = Ts3Crypt.MacLen + Packet<TOut>.HeaderLength;
 		private static readonly int MaxOutContentSize = MaxOutPacketSize - OutHeaderSize;
-		private const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
-		private const int ReceivePacketWindowSize = 128;
 
 		// Timout calculations
 		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
@@ -54,13 +51,13 @@ namespace TS3Client.Full
 		private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
 		// ====
 		private readonly object sendLoopLock = new object();
-		private readonly AutoResetEvent sendLoopPulse = new AutoResetEvent(false);
 		private readonly Ts3Crypt ts3Crypt;
-		private readonly SocketAsyncEventArgs socketEventArgs;
 		private Socket socket;
-		private int resendThreadId;
+		private Timer resendTimer;
+		private DateTime pingCheck;
+		private int pingCheckRunning;
 		// Log id
-		private Id id;
+		private readonly Id id;
 
 		public NetworkStats NetworkStats { get; }
 
@@ -71,7 +68,7 @@ namespace TS3Client.Full
 
 		public PacketEvent<TIn> PacketEvent;
 
-		public PacketHandler(Ts3Crypt ts3Crypt)
+		public PacketHandler(Ts3Crypt ts3Crypt, Id id)
 		{
 			Util.Init(out packetAckManager);
 			receiveQueueCommand = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
@@ -84,16 +81,12 @@ namespace TS3Client.Full
 			packetCounter = new ushort[Ts3Crypt.PacketTypeKinds];
 			generationCounter = new uint[Ts3Crypt.PacketTypeKinds];
 			this.ts3Crypt = ts3Crypt;
-			resendThreadId = -1;
-
-			socketEventArgs = new SocketAsyncEventArgs();
-			socketEventArgs.SetBuffer(new byte[4096], 0, 4096);
-			socketEventArgs.Completed += FetchPacketEvent;
+			this.id = id;
 		}
 
-		public void Connect(IPEndPoint address, Id id)
+		public void Connect(IPEndPoint address)
 		{
-			Initialize(address, true, id);
+			Initialize(address, true);
 			// The old client used to send 'clientinitiv' as the first message.
 			// All newer servers still ack it but do not require it anymore.
 			// Therefore there is no use in sending it.
@@ -104,11 +97,11 @@ namespace TS3Client.Full
 			AddOutgoingPacket(ts3Crypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
 		}
 
-		public void Listen(IPEndPoint address, Id id)
+		public void Listen(IPEndPoint address)
 		{
 			lock (sendLoopLock)
 			{
-				Initialize(address, false, id);
+				Initialize(address, false);
 				// dummy
 				initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>(Array.Empty<byte>(), 0, 0, 0))
 				{
@@ -118,14 +111,10 @@ namespace TS3Client.Full
 			}
 		}
 
-		private void Initialize(IPEndPoint address, bool connect, Id id)
+		private void Initialize(IPEndPoint address, bool connect)
 		{
-			var resendThread = new Thread(() => { Util.SetLogId(id); ResendLoop(); }) { Name = $"PacketHandler[{id}]" };
-			resendThreadId = resendThread.ManagedThreadId;
-
 			lock (sendLoopLock)
 			{
-				this.id = id;
 				ClientId = 0;
 				ExitReason = null;
 				smoothedRtt = MaxRetryInterval;
@@ -153,6 +142,11 @@ namespace TS3Client.Full
 						remoteAddress = address;
 						socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 						socket.Bind(new IPEndPoint(IPAddress.Any, 0));
+
+						var socketEventArgs = new SocketAsyncEventArgs();
+						socketEventArgs.SetBuffer(new byte[4096], 0, 4096);
+						socketEventArgs.Completed += FetchPacketEvent;
+						socketEventArgs.UserToken = this;
 						socketEventArgs.RemoteEndPoint = remoteAddress;
 						socket.ReceiveFromAsync(socketEventArgs);
 					}
@@ -161,28 +155,26 @@ namespace TS3Client.Full
 						remoteAddress = null;
 						socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 						socket.Bind(address);
+						// TODO init socketevargs stuff
 					}
 				}
 				catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
-			}
 
-			try
-			{
-				resendThread.Start();
+				pingCheckRunning = 0;
+				pingCheck = Util.Now;
+				if (resendTimer == null)
+					resendTimer = new Timer((_) => { using (MappedDiagnosticsContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
 			}
-			catch (SystemException ex) { throw new Ts3Exception("Error initializing internal stuctures", ex); }
 		}
 
 		public void Stop(Reason closeReason = Reason.LeftServer)
 		{
 			Log.Debug("Stopping PacketHandler {@reason}", closeReason);
-			resendThreadId = -1;
 			lock (sendLoopLock)
 			{
+				resendTimer.Dispose();
 				socket?.Dispose();
-				if (!ExitReason.HasValue)
-					ExitReason = closeReason;
-				sendLoopPulse.Set();
+				ExitReason = ExitReason ?? closeReason;
 			}
 		}
 
@@ -329,21 +321,29 @@ namespace TS3Client.Full
 
 		private static bool NeedsSplitting(int dataSize) => dataSize + OutHeaderSize > MaxOutPacketSize;
 
-		private void FetchPacketEvent(object _, SocketAsyncEventArgs args)
+		private static void FetchPacketEvent(object selfObj, SocketAsyncEventArgs args)
 		{
+			var self = (PacketHandler<TIn, TOut>)args.UserToken;
+
 			bool isAsync;
-			using (MappedDiagnosticsContext.SetScoped("BotId", id))
+			using (MappedDiagnosticsContext.SetScoped("BotId", self.id))
 			{
 				do
 				{
-					if (Closed)
+					if (self.Closed)
 						return;
 
-					FetchPackets(args.Buffer.AsSpan(0, args.BytesTransferred).ToArray()); // TODO Improve memory management
+					self.FetchPackets(args.Buffer.AsSpan(0, args.BytesTransferred));
 
-					try { isAsync = socket.ReceiveFromAsync(args); }
-					catch (SocketException) { return; }
-					catch (ObjectDisposedException) { return; }
+					lock (self.sendLoopLock)
+					{
+						if (self.Closed)
+							return;
+
+						try { isAsync = self.socket.ReceiveFromAsync(args); }
+						catch (SocketException) { return; }
+						catch (ObjectDisposedException) { return; }
+					}
 				} while (!isAsync);
 			}
 		}
@@ -454,13 +454,13 @@ namespace TS3Client.Full
 				return false;
 
 			packetQueue.Set(packet.PacketId, packet);
-			while (TryFetchPacket(packetQueue, out packet))
+			while (TryGetCommand(packetQueue, out packet))
 				PacketEvent?.Invoke(ref packet);
 
 			return false;
 		}
 
-		private static bool TryFetchPacket(RingQueue<Packet<TIn>> packetQueue, out Packet<TIn> packet)
+		private static bool TryGetCommand(RingQueue<Packet<TIn>> packetQueue, out Packet<TIn> packet)
 		{
 			if (packetQueue.Count <= 0) { packet = default; return false; }
 
@@ -639,48 +639,50 @@ namespace TS3Client.Full
 		/// </summary>
 		private void ResendLoop()
 		{
-			var pingCheck = Util.Now;
-
-			while (Thread.CurrentThread.ManagedThreadId == resendThreadId)
+			var wasRunning = Interlocked.Exchange(ref pingCheckRunning, 1);
+			if (wasRunning != 0)
 			{
-				var now = Util.Now;
-				lock (sendLoopLock)
-				{
-					if (Closed)
-						break;
+				Log.Warn("Previous resend tick didn't finish");
+				return;
+			}
 
-					if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
-						|| (initPacketCheck != null && ResendPacket(initPacketCheck)))
-					{
-						Stop(Reason.Timeout);
-						return;
-					}
-				}
+			lock (sendLoopLock)
+			{
+				if (Closed)
+					return;
 
-				var nextTest = now - pingCheck - PingInterval;
-				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
-				if (nextTest > TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
+				if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
+					|| (initPacketCheck != null && ResendPacket(initPacketCheck)))
 				{
-					// Check that the last ping is more than PingInterval but not more than
-					// 2*PingInterval away. This might happen for e.g. when the process was
-					// suspended. If it was too long ago, reset the ping tick to now.
-					if (nextTest > PingInterval)
-						pingCheck = now;
-					else
-						pingCheck += PingInterval;
-					SendPing();
-				}
-
-				var elapsed = lastMessageTimer.Elapsed;
-				if (elapsed > PacketTimeout)
-				{
-					LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
 					Stop(Reason.Timeout);
 					return;
 				}
-
-				sendLoopPulse.WaitOne(ClockResolution);
 			}
+
+			var now = Util.Now;
+			var nextTest = now - pingCheck - PingInterval;
+			// we need to check if CryptoInitComplete because while false packet ids won't be incremented
+			if (nextTest > TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
+			{
+				// Check that the last ping is more than PingInterval but not more than
+				// 2*PingInterval away. This might happen for e.g. when the process was
+				// suspended. If it was too long ago, reset the ping tick to now.
+				if (nextTest > PingInterval)
+					pingCheck = now;
+				else
+					pingCheck += PingInterval;
+				SendPing();
+			}
+
+			var elapsed = lastMessageTimer.Elapsed;
+			if (elapsed > PacketTimeout)
+			{
+				LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
+				Stop(Reason.Timeout);
+				return;
+			}
+
+			Interlocked.Exchange(ref pingCheckRunning, 0);
 		}
 
 		private bool ResendPackets(IEnumerable<ResendPacket<TOut>> packetList)
@@ -705,7 +707,7 @@ namespace TS3Client.Full
 			if (packet.LastSendTime < now - currentRto)
 			{
 				LogTimeout.Debug("RESEND: {0}", packet);
-				currentRto = currentRto + currentRto;
+				currentRto += currentRto;
 				if (currentRto > MaxRetryInterval)
 					currentRto = MaxRetryInterval;
 				packet.LastSendTime = Util.Now;
@@ -736,27 +738,30 @@ namespace TS3Client.Full
 		}
 	}
 
-	internal class PacketHandler
+	internal static class PacketHandlerConst
 	{
-		protected static readonly Logger Log = LogManager.GetLogger("TS3Client.PacketHandler");
-		protected static readonly Logger LogRtt = LogManager.GetLogger("TS3Client.PacketHandler.Rtt");
-		protected static readonly Logger LogRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
-		protected static readonly Logger LogRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
-		protected static readonly Logger LogTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
+		public static readonly Logger Log = LogManager.GetLogger("TS3Client.PacketHandler");
+		public static readonly Logger LogRtt = LogManager.GetLogger("TS3Client.PacketHandler.Rtt");
+		public static readonly Logger LogRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
+		public static readonly Logger LogRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
+		public static readonly Logger LogTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
 
 		/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
-		protected static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(20);
+		public static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(20);
 		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
-		protected const float AlphaSmooth = 0.125f;
+		public const float AlphaSmooth = 0.125f;
 		/// <summary>Smoothing factor for the SmoothedRttDev.</summary>
-		protected const float BetaSmooth = 0.25f;
+		public const float BetaSmooth = 0.25f;
 		/// <summary>The maximum wait time to retransmit a packet.</summary>
-		protected static readonly TimeSpan MaxRetryInterval = TimeSpan.FromMilliseconds(1000);
+		public static readonly TimeSpan MaxRetryInterval = TimeSpan.FromMilliseconds(1000);
 		/// <summary>The timeout check loop interval.</summary>
-		protected static readonly TimeSpan ClockResolution = TimeSpan.FromMilliseconds(100);
-		protected static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
+		public static readonly TimeSpan ClockResolution = TimeSpan.FromMilliseconds(100);
+		public static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
 
-		protected PacketHandler() { }
+		/// <summary>Greatest allowed packet size, including the complete header.</summary>
+		public const int MaxOutPacketSize = 500;
+		public const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
+		public const int ReceivePacketWindowSize = 128;
 	}
 
 	internal delegate void PacketEvent<TDir>(ref Packet<TDir> packet);

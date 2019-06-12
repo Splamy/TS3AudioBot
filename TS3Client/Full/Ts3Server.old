@@ -26,9 +26,9 @@ namespace TS3Client.Full
 		{
 			ts3Crypt = new Ts3Crypt();
 			ts3Crypt.Identity = Ts3Crypt.GenerateNewIdentity(0);
-			packetHandler = new PacketHandler<C2S, S2C>(ts3Crypt);
+			packetHandler = new PacketHandler<C2S, S2C>(ts3Crypt, Id.Null);
 			msgProc = new AsyncMessageProcessor(MessageHelper.GetToServerNotificationType);
-			dispatcher = EventDispatcherHelper.Create(EventDispatchType.ExtraDispatchThread);
+			dispatcher = new ExtraThreadEventDispatcher();
 		}
 
 		private void InvokeEvent(LazyNotification lazyNotification)
@@ -51,9 +51,8 @@ namespace TS3Client.Full
 			var ctx = new ConnectionContext();
 			context = ctx;
 			packetHandler.PacketEvent = (ref Packet<C2S> packet) => { PacketEvent(ctx, ref packet); };
-			packetHandler.Listen(addr, Id.Null);
-			dispatcher.Init(_ => { }, InvokeEvent, ctx, Id.Null);
-			dispatcher.EnterEventLoop();
+			packetHandler.Listen(addr);
+			dispatcher.Init(InvokeEvent, Id.Null);
 		}
 
 		private void PacketEvent(ConnectionContext ctx, ref Packet<C2S> packet)
