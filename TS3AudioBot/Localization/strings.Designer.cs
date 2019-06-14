@@ -1342,6 +1342,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Selects a song from a previous search and plays it..
+        /// </summary>
+        internal static string cmd_select_help {
+            get {
+                return ResourceManager.GetString("cmd_select_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Reloads the bot template configuration from the file..
         /// </summary>
         internal static string cmd_settings_bot_reload_help {

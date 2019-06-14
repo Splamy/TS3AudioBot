@@ -117,10 +117,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 					break;
 
 				case ParamKind.NormalParam:
+				case ParamKind.NormalTailString:
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
-					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-					parameters[p] = ConvertParam(argResultP, arg, filterLazy.Value);
+					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString);
+					if (CommandParameter[p].kind == ParamKind.NormalTailString && argResultP is TailStringCommandResult tailString)
+						parameters[p] = tailString.TailString;
+					else
+						parameters[p] = ConvertParam(((StringCommandResult)argResultP).Content, arg, filterLazy.Value);
 
 					takenArguments++;
 					break;
@@ -247,6 +251,10 @@ namespace TS3AudioBot.CommandSystem.Commands
 				else
 					paramInfo.kind = ParamKind.Dependency;
 			}
+
+			var tailStringIndex = Array.FindLastIndex(CommandParameter, c => c.kind == ParamKind.NormalParam);
+			if (tailStringIndex >= 0 && CommandParameter[tailStringIndex].type == typeof(string))
+				CommandParameter[tailStringIndex].kind = ParamKind.NormalTailString;
 		}
 
 		public static Type UnwrapParamType(Type type)
@@ -331,6 +339,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		NormalCommand,
 		NormalParam,
 		NormalArray,
+		NormalTailString,
 	}
 
 	public struct ParamInfo
@@ -350,6 +359,10 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 	public static class FunctionCommandExtensions
 	{
-		public static bool IsNormal(this ParamKind kind) => kind == ParamKind.NormalParam || kind == ParamKind.NormalArray || kind == ParamKind.NormalCommand;
+		public static bool IsNormal(this ParamKind kind)
+			=> kind == ParamKind.NormalParam
+			|| kind == ParamKind.NormalArray
+			|| kind == ParamKind.NormalCommand
+			|| kind == ParamKind.NormalTailString;
 	}
 }

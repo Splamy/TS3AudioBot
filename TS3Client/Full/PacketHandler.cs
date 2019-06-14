@@ -141,7 +141,7 @@ namespace TS3Client.Full
 					{
 						remoteAddress = address;
 						socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-						socket.Bind(new IPEndPoint(IPAddress.Any, 0));
+						socket.Bind(new IPEndPoint(address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any, 0));
 
 						var socketEventArgs = new SocketAsyncEventArgs();
 						socketEventArgs.SetBuffer(new byte[4096], 0, 4096);
@@ -172,7 +172,7 @@ namespace TS3Client.Full
 			Log.Debug("Stopping PacketHandler {@reason}", closeReason);
 			lock (sendLoopLock)
 			{
-				resendTimer.Dispose();
+				resendTimer?.Dispose();
 				socket?.Dispose();
 				ExitReason = ExitReason ?? closeReason;
 			}

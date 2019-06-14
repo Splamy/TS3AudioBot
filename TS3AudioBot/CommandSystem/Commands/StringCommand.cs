@@ -15,14 +15,18 @@ namespace TS3AudioBot.CommandSystem.Commands
 	public class StringCommand : ICommand
 	{
 		private readonly string content;
+		private readonly string tailContent;
 
-		public StringCommand(string contentArg)
+		public StringCommand(string content, string tailContent = null)
 		{
-			content = contentArg;
+			this.content = content;
+			this.tailContent = tailContent;
 		}
 
 		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
+			if (tailContent != null)
+				return new TailStringCommandResult(content, tailContent);
 			return new StringCommandResult(content);
 		}
 

@@ -56,7 +56,17 @@ namespace TS3AudioBot.CommandSystem
 			case AstType.Command:
 				var cmd = (AstCommand)node;
 				var arguments = new ICommand[cmd.Parameter.Count];
-				for (int i = 0; i < cmd.Parameter.Count; i++)
+				int tailCandidates = 0;
+				for (int i = cmd.Parameter.Count - 1; i >= 1; i--)
+				{
+					var para = cmd.Parameter[i];
+					if (!(para is AstValue astVal) || astVal.StringType != StringType.FreeString)
+						break;
+
+					arguments[i] = new StringCommand(astVal.Value, astVal.TailString);
+					tailCandidates++;
+				}
+				for (int i = 0; i < cmd.Parameter.Count - tailCandidates; i++)
 					arguments[i] = AstToCommandResult(cmd.Parameter[i]);
 				return new AppliedCommand(RootCommand, arguments);
 			case AstType.Value:

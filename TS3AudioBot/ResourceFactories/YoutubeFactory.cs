@@ -345,7 +345,7 @@ namespace TS3AudioBot.ResourceFactories
 		public R<IList<AudioResource>, LocalStr> Search(string keyword)
 		{
 			// TODO checkout https://developers.google.com/youtube/v3/docs/search/list ->relatedToVideoId for auto radio play
-			const int maxResults = 50;
+			const int maxResults = 10;
 			if (!WebWrapper.DownloadString(out string response,
 				new Uri("https://www.googleapis.com/youtube/v3/search"
 					+ "?part=snippet"
