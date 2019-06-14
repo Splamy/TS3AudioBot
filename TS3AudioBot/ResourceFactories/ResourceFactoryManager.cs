@@ -23,16 +23,20 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
+	using TS3AudioBot.CommandSystem.Text;
+	using TS3AudioBot.Web.Api;
 
 	public sealed class ResourceFactoryManager : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
+		private const string CmdSearchPrepath = "search from ";
 
 		private readonly Dictionary<string, FactoryData> allFacories;
 		private readonly List<IPlaylistFactory> listFactories;
 		private readonly List<IResourceFactory> resFactories;
+		private readonly List<ISearchFactory> searchFactories;
 		private readonly CommandManager commandManager;
 
 		public ResourceFactoryManager(ConfFactories config, CommandManager commandManager)
@@ -40,6 +44,7 @@ namespace TS3AudioBot.ResourceFactories
 			Util.Init(out allFacories);
 			Util.Init(out resFactories);
 			Util.Init(out listFactories);
+			Util.Init(out searchFactories);
 			this.commandManager = commandManager;
 
 			AddFactory(new MediaFactory(config.Media));
@@ -211,6 +216,11 @@ namespace TS3AudioBot.ResourceFactories
 				commands.Add(new PlayListCommand(listFactory, CmdListPrepath + listFactory.FactoryFor));
 				listFactories.Add(listFactory);
 			}
+			if (factory is ISearchFactory searchFactory)
+			{
+				commands.Add(new SearchCommand(searchFactory, CmdSearchPrepath + searchFactory.FactoryFor));
+				searchFactories.Add(searchFactory);
+			}
 
 			var factoryInfo = new FactoryData(factory, commands.ToArray());
 			allFacories.Add(factory.FactoryFor, factoryInfo);
@@ -228,6 +238,8 @@ namespace TS3AudioBot.ResourceFactories
 				resFactories.Remove(resFactory);
 			if (factory is IPlaylistFactory listFactory)
 				listFactories.Remove(listFactory);
+			if (factory is ISearchFactory searchFactory)
+				searchFactories.Remove(searchFactory);
 
 			commandManager.UnregisterCollection(factoryInfo);
 		}
@@ -280,7 +292,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private sealed class PlayCommand : FactoryCommand
 		{
-			private static readonly MethodInfo PlayMethod = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
+			private static readonly MethodInfo Method = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
 			private readonly string audioType;
 
 			public PlayCommand(string audioType, string cmdPath)
@@ -288,7 +300,7 @@ namespace TS3AudioBot.ResourceFactories
 				this.audioType = audioType;
 				var builder = new CommandBuildInfo(
 					this,
-					PlayMethod,
+					Method,
 					new CommandAttribute(cmdPath));
 				Command = new BotCommand(builder);
 			}
@@ -301,7 +313,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private sealed class PlayListCommand : FactoryCommand
 		{
-			private static readonly MethodInfo PlayMethod = typeof(PlayListCommand).GetMethod(nameof(PropagiateLoad));
+			private static readonly MethodInfo Method = typeof(PlayListCommand).GetMethod(nameof(PropagiateLoad));
 			private readonly IPlaylistFactory factory;
 
 			public PlayListCommand(IPlaylistFactory factory, string cmdPath)
@@ -309,7 +321,7 @@ namespace TS3AudioBot.ResourceFactories
 				this.factory = factory;
 				var builder = new CommandBuildInfo(
 					this,
-					PlayMethod,
+					Method,
 					new CommandAttribute(cmdPath));
 				Command = new BotCommand(builder);
 			}
@@ -318,7 +330,42 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var playlist = factoryManager.LoadPlaylistFrom(url, factory).UnwrapThrow();
 
-				session.Set<PlaylistManager, Playlist>(playlist);
+				session.Set(SessionConst.Playlist, playlist);
+			}
+		}
+
+		private sealed class SearchCommand : FactoryCommand
+		{
+			private static readonly MethodInfo Method = typeof(SearchCommand).GetMethod(nameof(PropagiateSearch));
+			private readonly ISearchFactory factory;
+
+			public SearchCommand(ISearchFactory factory, string cmdPath)
+			{
+				this.factory = factory;
+				var builder = new CommandBuildInfo(
+					this,
+					Method,
+					new CommandAttribute(cmdPath));
+				Command = new BotCommand(builder);
+			}
+
+			public JsonArray<AudioResource> PropagiateSearch(UserSession session, CallerInfo callerInfo, string keyword)
+			{
+				var result = factory.Search(keyword);
+				var list = result.UnwrapThrow();
+				session.Set(SessionConst.SearchResult, list);
+
+				return new JsonArray<AudioResource>(list, searchResults =>
+				{
+					var tmb = new TextModBuilder(callerInfo.IsColor);
+					tmb.AppendFormat(strings.cmd_search_header.Mod().Bold(), ("!select " + strings.info_number).Mod().Italic()).Append("\n");
+					for (int i = 0; i < searchResults.Count; i++)
+					{
+						tmb.AppendFormat("{0}: {1}\n", i.ToString().Mod().Bold(), searchResults[i].ResourceTitle);
+					}
+
+					return tmb.ToString();
+				});
 			}
 		}
 	}

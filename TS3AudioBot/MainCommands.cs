@@ -550,7 +550,7 @@ namespace TS3AudioBot
 		public static JsonValue<AudioLogEntry> CommandHistoryId(HistoryManager historyManager, uint id)
 		{
 			var result = historyManager.GetEntryById(id).UnwrapThrow();
-			return new JsonValue<AudioLogEntry>(result, historyManager.Format(result));
+			return new JsonValue<AudioLogEntry>(result, r => historyManager.Format(r));
 		}
 
 		[Command("history id", "cmd_history_id_string_help")]
@@ -864,7 +864,7 @@ namespace TS3AudioBot
 		{
 			var playlist = factoryManager.LoadPlaylistFrom(link).UnwrapThrow();
 
-			session.Set<PlaylistManager, Playlist>(playlist);
+			session.Set(SessionConst.Playlist, playlist);
 			return CommandListShow(playlist, null);
 		}
 
@@ -1163,7 +1163,7 @@ namespace TS3AudioBot
 			return new JsonArray<PlaylistItem>(playlistManager.GetQueue(),
 				x =>
 				{
-					if (x.Length > 0)
+					if (x.Count > 0)
 						return "\n" + string.Join("\n", x.Select(pli => pli.DisplayString));
 					else
 						return strings.info_empty;
@@ -1224,7 +1224,7 @@ namespace TS3AudioBot
 
 		[Command("rights can")]
 		public static JsonArray<string> CommandRightsCan(ExecutionInformation info, RightsManager rightsManager, params string[] rights)
-			=> new JsonArray<string>(rightsManager.GetRightsSubset(info, rights), r => r.Length > 0 ? string.Join(", ", r) : strings.info_empty);
+			=> new JsonArray<string>(rightsManager.GetRightsSubset(info, rights), r => r.Count > 0 ? string.Join(", ", r) : strings.info_empty);
 
 		[Command("rights reload")]
 		public static JsonEmpty CommandRightsReload(RightsManager rightsManager)
@@ -1293,6 +1293,19 @@ namespace TS3AudioBot
 				throw new CommandException(strings.cmd_seek_out_of_range, CommandExceptionReason.CommandError);
 			else
 				playerConnection.Position = span;
+		}
+
+		[Command("select")]
+		public static void CommandSelect(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
+		{
+			var result = session.Get<IList<AudioResource>>(SessionConst.SearchResult);
+			if (!result.Ok)
+				throw new CommandException(strings.error_select_empty, CommandExceptionReason.CommandError);
+
+			if (index < 0 || index >= result.Value.Count)
+				throw new CommandException(string.Format(strings.error_value_not_in_range, 0, result.Value.Count), CommandExceptionReason.CommandError);
+
+			playManager.Play(clientCall, result.Value[index]).UnwrapThrow();
 		}
 
 		[Command("settings")]
@@ -1729,12 +1742,12 @@ namespace TS3AudioBot
 		{
 			if (session is null)
 				throw new MissingContextCommandException(strings.error_no_session_in_context, typeof(UserSession));
-			var result = session.Get<PlaylistManager, Playlist>();
+			var result = session.Get<Playlist>(SessionConst.Playlist);
 			if (result)
 				return result.Value;
 
 			var newPlist = new Playlist(invoker.NickName ?? "");
-			session.Set<PlaylistManager, Playlist>(newPlist);
+			session.Set(SessionConst.Playlist, newPlist);
 			return newPlist;
 		}
 

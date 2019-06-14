@@ -69,7 +69,7 @@ namespace TS3Client.Full.Book
 			obj.Platform = msg.ServerPlatform;
 			obj.Version = msg.ServerVersion;
 			obj.Created = msg.ServerCreated;
-			{ var tmp = msg.ServerIp; if (tmp != null) obj.Ip.AddRange(tmp); }
+			{ var tmp = msg.ServerIp; if (tmp != null) obj.Ips.AddRange(tmp); }
 			SetClientDataFun(msg);
 			obj.WelcomeMessage = msg.WelcomeMessage;
 			obj.MaxClients = msg.MaxClients;

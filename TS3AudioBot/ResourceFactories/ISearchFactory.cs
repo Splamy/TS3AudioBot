@@ -7,16 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Web.Api
+namespace TS3AudioBot.ResourceFactories
 {
 	using System;
 	using System.Collections.Generic;
+	using TS3AudioBot.Localization;
 
-	public class JsonArray<T> : JsonValue<IList<T>>
+	public interface ISearchFactory : IFactory
 	{
-		public JsonArray(IList<T> value, string msg) : base(value, msg) { }
-		public JsonArray(IList<T> value, Func<IList<T>, string> asString = null)
-			: base(value, asString)
-		{ }
+		R<IList<AudioResource>, LocalStr> Search(string keyword);
 	}
 }

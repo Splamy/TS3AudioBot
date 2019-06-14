@@ -18,7 +18,7 @@ namespace TS3AudioBot.Sessions
 
 	public class UserSession
 	{
-		private Dictionary<Type, object> assocMap;
+		private Dictionary<string, object> assocMap;
 		protected bool lockToken;
 
 		public Response ResponseProcessor { get; private set; }
@@ -42,33 +42,30 @@ namespace TS3AudioBot.Sessions
 			ResponseProcessor = null;
 		}
 
-		public R<TData> Get<TAssoc, TData>()
+		public R<TData> Get<TData>(string key)
 		{
 			VerifyLock();
 
 			if (assocMap is null)
 				return R.Err;
 
-			if (!assocMap.TryGetValue(typeof(TAssoc), out object value))
+			if (!assocMap.TryGetValue(key, out object value))
 				return R.Err;
 
-			if (value?.GetType() != typeof(TData))
+			if (!(value is TData))
 				return R.Err;
 
 			return (TData)value;
 		}
 
-		public void Set<TAssoc, TData>(TData data)
+		public void Set<TData>(string key, TData data)
 		{
 			VerifyLock();
 
 			if (assocMap is null)
 				Util.Init(out assocMap);
 
-			if (assocMap.ContainsKey(typeof(TAssoc)))
-				assocMap[typeof(TAssoc)] = data;
-			else
-				assocMap.Add(typeof(TAssoc), data);
+			assocMap[key] = data;
 		}
 
 		public virtual SessionLock GetLock()

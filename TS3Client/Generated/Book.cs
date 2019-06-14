@@ -81,7 +81,6 @@ namespace TS3Client.Full.Book
 
 	
 		public str Path { get; set; }
-		public str Name { get; set; }
 		public i64 Size { get; set; }
 		public DateTime LastChanged { get; set; }
 		public bool IsFile { get; set; }
@@ -323,7 +322,7 @@ namespace TS3Client.Full.Book
 	{
 		public Server()
 		{
-			Ip = new List<str>();
+			Ips = new List<str>();
 			Clients = new Dictionary<ClientId,Client>();
 			Channels = new Dictionary<ChannelId,Channel>();
 			Groups = new Dictionary<ServerGroupId,ServerGroup>();
@@ -353,7 +352,7 @@ namespace TS3Client.Full.Book
 		public str HostbuttonGfxUrl { get; set; }
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; internal set; }
-		public List<str> Ip { get; internal set; }
+		public List<str> Ips { get; internal set; }
 		public bool AskForPrivilegekey { get; internal set; }
 		public HostBannerMode HostbannerMode { get; set; }
 		public Duration TempChannelDefaultDeleteDelay { get; set; }

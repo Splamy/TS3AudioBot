@@ -61,13 +61,16 @@ namespace TS3Client.Full
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		public static VersionSign VER_WIN_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000] DEBUG", "Windows", ClientPlatform.Windows, "FaA10gndI44f19ZThYJX2OSM8ESrx9/vJ2uY+rON4enzzPsPR9kiPhsUXtMcC5szzTu6F/vLCiNNEhCr70CKCQ==");
 		public static VersionSign VER_MAC_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", "OS X", ClientPlatform.MacOs, "SttEnjoWE8jqIM6BOHSfiZP9DGjW0EP/ajU4bdKqgGMV4aYq/kzwVA9gxbmdIzV4lbaokvXBqrRjfBHrTVh8Cg==");
+		public static VersionSign VER_LIN_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", "Linux", ClientPlatform.Linux, "Hjd+N58Gv3ENhoKmGYy2bNRBsNNgm5kpiaQWxOj5HN2DXttG6REjymSwJtpJ8muC2gSwRuZi0R+8Laan5ts5CQ==");
 		public static VersionSign VER_IOS_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", "iOS", ClientPlatform.Ios, "XrAf+Buq6Eb0ehEW/niFp06YX+nGGOS0Ke4MoUBzn+cX9q6G5C0A/d5XtgcNMe8r9jJgV/adIYVpsGS3pVlSAA==");
 		public static VersionSign VER_AND_3_X_X { get; } = new VersionSign("3.?.? [Build: 5680278000]", "Android", ClientPlatform.Android, "AWb948BY32Z7bpIyoAlQguSmxOGcmjESPceQe1DpW5IZ4+AW1KfTk2VUIYNfUPsxReDJMCtlhVKslzhR2lf0AA==");
-		public static VersionSign VER_WIN_5_0_0 { get; } = new VersionSign("5.0.0-alpha217 [Build: 1557239244]", "Windows", ClientPlatform.Windows, "r/rlz7JCCAVmV1FT5mhvu6plHA6Hnq50vkSd0nlgWuvZ42OtGtpklLkk+Toc3BW6f7roO8pgqbr5rKlry+KmDQ==");
-		public static VersionSign VER_MAC_5_0_0 { get; } = new VersionSign("5.0.0-alpha216 [Build: 1556918526]", "macOS", ClientPlatform.MacOs, "UoCCR0jcJHW0z3NuQsIG1XBipDMgPiHbD7zFZVnB97Q1RgsKwRyvOBumXrAeCL/SEAprkAmrU0ofYQBuR1NjAQ==");
-		public static VersionSign VER_WIN_3_3_0 { get; } = new VersionSign("3.3.0 [Build: 1556630414]", "Windows", ClientPlatform.Windows, "kKY5l53E4SLiSWqc00CiuCcfeNziXPLwcXDCVcACIV45tupxzCo+w+g58qP+Z5A83NoExD+50EIuOEPzK+8AAg==");
-		public static VersionSign VER_MAC_3_3_0 { get; } = new VersionSign("3.3.0 [Build: 1556630414]", "OS X", ClientPlatform.MacOs, "LCnJGOq+P+cY30Pn2oOOK488op2EXEun1MgeMiTXlmzj/tjuvpdrxoiXC9Vu8C97eoOBVRD4hj6fN7FODaklDA==");
-		public static VersionSign VER_LIN_5_0_0 { get; } = new VersionSign("5.0.0-alpha206 [Build: 1556530824]", "Linux", ClientPlatform.Linux, "jIng2diWQpiV/D0tMDJSoA24IB2kB1weMJi16NdXRVKaULISROJHhbZKVZwOvl7Dm2yQFneUXguxzUE5bHWXAA==");
+		public static VersionSign VER_WIN_3_3_0 { get; } = new VersionSign("3.3.0 [Build: 1560464251]", "Windows", ClientPlatform.Windows, "bkUu9ipgPnyMDOCbJG9rPTB87JWx4ZpCk3tKGut6dXnXgenYROA+BvPzN1k147kJ4Jdyh504E+2E7laxb8eFAQ==");
+		public static VersionSign VER_WIN_5_0_0 { get; } = new VersionSign("5.0.0-alpha243 [Build: 1560345924]", "Windows", ClientPlatform.Windows, "ijnSy4j+gfMrSheNHP1NLhGr9J+k/jvpIaxnkmI7iwDMNg1Gqn/SIjpDqWvcdztETrDlwJ4doYYwjteGubnxAQ==");
+		public static VersionSign VER_MAC_3_3_0 { get; } = new VersionSign("3.3.0 [Build: 1560265364]", "OS X", ClientPlatform.MacOs, "Qscrve6CfWXAshiOjvUSmshhHV8QKx1FsrUmkzaOmRAFrg+SZYvjLBQsdV+xSb4UyI0v77iyXQDv82Q4/l6eAg==");
+		public static VersionSign VER_MAC_5_0_0 { get; } = new VersionSign("5.0.0-alpha242 [Build: 1560169692]", "macOS", ClientPlatform.MacOs, "9AbGQKw34QuJg2gRcfzp0JkIdmyVWrRAUn0BOKVscQGo98CoiAEKJixVhQxsoDBb4YpgPhdTeBkGMuJy9BRVCQ==");
+		public static VersionSign VER_LIN_3_3_0 { get; } = new VersionSign("3.3.0 [Build: 1560032346]", "Linux", ClientPlatform.Linux, "X8sXjPPNm42tCNhFrfNhWb4OiZMlkx2HXaLOAOJilEiG+Vs77BR//AxUuB+iZa8crBOWLgrE66oh2u4q2QcuBQ==");
+		public static VersionSign VER_AND_3_3_0 { get; } = new VersionSign("3.3.0 [Build: 1559834030]", "Android", ClientPlatform.Android, "Ux59iejFFnEANHPjL4dmwUgXKhvnV7dPqjzAIqYMNs0RoF9RyhsgxEaJO72IgNt7D3yaD+4lGtYfcEFG8WDKCg==");
+		public static VersionSign VER_LIN_5_0_0 { get; } = new VersionSign("5.0.0-alpha232 [Build: 1558967089]", "Linux", ClientPlatform.Linux, "3T7hpgk1meh3GGXvZW72K/3uQolAUHFLKVM8RP90psN5oIwYmxFDgnAsoOIyktHUYyCdF6JqpUN6hl/yOYY7Dg==");
 		public static VersionSign VER_WIN_3_2_5 { get; } = new VersionSign("3.2.5 [Build: 1555517253]", "Windows", ClientPlatform.Windows, "iyy+8G7ksPHvXb45ijQ9Kfr8TMsCc3sGRKJLiPArx7YMPu8YV4GgYzM4+MpuMQUTlNkU7w5B0od9IJ/7E4nDDQ==");
 		public static VersionSign VER_MAC_3_2_5 { get; } = new VersionSign("3.2.5 [Build: 1555517253]", "OS X", ClientPlatform.MacOs, "xrP7+C0BjffIZf7FD21P/xYoCSTmq8nCa3w2q3McX2DlUIEjfMLAX7uepdeiNYZfspAWJmi9QIkpQCltNBwqAg==");
 		public static VersionSign VER_LIN_3_2_5 { get; } = new VersionSign("3.2.5 [Build: 1555517253]", "Linux", ClientPlatform.Linux, "+nqAMBv2NxHYfPwHyRmleALMU/2gpiv1LAV6dmrLjNXaTS3BwLBVuysSuqHsuiK3/Xff0IRRFANz8qT1ztJqDQ==");
@@ -118,6 +121,7 @@ namespace TS3Client.Full
 		public static VersionSign VER_MAC_3_1_5 { get; } = new VersionSign("3.1.5 [Build: 1500537355]", "OS X", ClientPlatform.MacOs, "oiS3ROFEy4r7zhkmCuj4cro2kIwntHNpuTFpFB+zV+AkfwX3Y2F51/JJPWG0J63tPR82n3ot/JiDkJqPKBJpDg==");
 		public static VersionSign VER_LIN_3_1_5 { get; } = new VersionSign("3.1.5 [Build: 1500537355]", "Linux", ClientPlatform.Linux, "Ea/9gUeh5HuXyiOZ+gRDPOn0rDHzXDVSYB70qy/BtczJPZn/0dDwQgRAF7/W6vHcaH67j+IF9AtUpuDCA6yzBw==");
 		public static VersionSign VER_WIN_3_1_4_2 { get; } = new VersionSign("3.1.4.2 [Build: 1498644101]", "Windows", ClientPlatform.Windows, "WtscrpvJG13kbF6aoVzsGwQuE/WwR1b8++ydDc8IpmiXLw+zFC6zFUvLinOeE0zZgh2Hs5Amp3DZoPJSynOWBg==");
+		public static VersionSign VER_MAC_3_1_4_2 { get; } = new VersionSign("3.1.4.2 [Build: 1498644101]", "OS X", ClientPlatform.MacOs, "MMVozpqhiRqPHFu+skm8ftODA2waeWJx2trAx205schgiJMz+H4KOLfoa92Fjrn8kAQZxpA3krUro/iBpJYkBw==");
 		public static VersionSign VER_LIN_3_1_4_2 { get; } = new VersionSign("3.1.4.2 [Build: 1498644101]", "Linux", ClientPlatform.Linux, "Rv3SzHDwLIkuUqySQhn279jf2b7PPzCQH2q53zHWH5qyFL/Qw4m/n7ZrXEF46/sUSpOPFPYjfKMKcN/9IRCoCQ==");
 		public static VersionSign VER_AND_3_1_3_1 { get; } = new VersionSign("3.1.3.1 [Build: 1493128735]", "Android", ClientPlatform.Android, "Me2oMSfwCsCCGsBtgDTy+TCidslmK66JxQVR2qFsKv0v6izk6o7jzuPIFdL8Fo4rVegdCyuXPbzmOPe9j71YCQ==");
 		public static VersionSign VER_WIN_3_1_4 { get; } = new VersionSign("3.1.4 [Build: 1491993378]", "Windows", ClientPlatform.Windows, "rwdyEwnJCzbVfNCqbxMrRyhL5BSYqYSzKQkeZ6m5KImc1F8VB8wEkwwwyxoG7SimC/sxIyy4h27CjBFP6rcgBQ==");
@@ -172,6 +176,7 @@ namespace TS3Client.Full
 		public static VersionSign VER_WIN_3_0_13 { get; } = new VersionSign("3.0.13 [Build: 1380283653]", "Windows", ClientPlatform.Windows, "7dA+6EbVyMevol4gE3/Cu1WonRjqu1C6pTWF+txApbaiTgKtZ/ky+NVxluPkSDnCxXN1pOR4uGdF6B7LUqQgDQ==");
 		public static VersionSign VER_WIN_3_0_12 { get; } = new VersionSign("3.0.12 [Build: 1378715177]", "Windows", ClientPlatform.Windows, "x6wFA5xqjenf6kbAh36IC4CkrbT8/uSBpgjM9juSt9oxGCXLqHOC2oaYlB1zZSJZjT4sOrnp0M+uOdVjYCzLCg==");
 		public static VersionSign VER_WIN_3_0_11_1 { get; } = new VersionSign("3.0.11.1 [Build: 1375773286]", "Windows", ClientPlatform.Windows, "Qfvcn4uQmKETDsD4LbtdbZR8rDetJ26Z/bVbu5SZJjMjGlYEMSbJnR4PtOBshdMSEwEsAJf1G+5tjx+onm2fDA==");
+		public static VersionSign VER_LIN_3_0_11_1 { get; } = new VersionSign("3.0.11.1 [Build: 1375773286]", "Linux", ClientPlatform.Linux, "JMTTCSHw+ibyhqCDCWRgby/oJ5uAYHk0/QOwqqI5rNHCKTkb+ce6N+4J38WXAnRmtcEaMb0s30s3ipQBokrqDw==");
 		public static VersionSign VER_WIN_3_0_11 { get; } = new VersionSign("3.0.11 [Build: 1375083581]", "Windows", ClientPlatform.Windows, "54wPDkfv0kT56UE0lv/LFkFJObH+Q4Irmo4Brfz1EcvjVhj8hJ+RCHcVTZsdKU2XvVvh+VLJpURulEHsAOsyBw==");
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}

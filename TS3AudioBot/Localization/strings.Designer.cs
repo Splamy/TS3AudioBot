@@ -19,7 +19,7 @@ namespace TS3AudioBot.Localization {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class strings {
@@ -1297,6 +1297,24 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Found the following songs. Use &quot;{0}&quot; to play..
+        /// </summary>
+        internal static string cmd_search_header {
+            get {
+                return ResourceManager.GetString("cmd_search_header", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Found no results for this query..
+        /// </summary>
+        internal static string cmd_search_no_result {
+            get {
+                return ResourceManager.GetString("cmd_search_no_result", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Jumps to a timemark within the current song..
         /// </summary>
         internal static string cmd_seek_help {
@@ -2305,6 +2323,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Nothing to select....
+        /// </summary>
+        internal static string error_select_empty {
+            get {
+                return ResourceManager.GetString("error_select_empty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot move there..
         /// </summary>
         internal static string error_ts_cannot_move {
@@ -2323,7 +2350,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Missing permissions..
+        ///   Looks up a localized string similar to Missing teamspeak permissions..
         /// </summary>
         internal static string error_ts_code_2568 {
             get {
@@ -2391,6 +2418,15 @@ namespace TS3AudioBot.Localization {
         internal static string error_use_private {
             get {
                 return ResourceManager.GetString("error_use_private", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your value is out of range. Select one between {0} and {1}..
+        /// </summary>
+        internal static string error_value_not_in_range {
+            get {
+                return ResourceManager.GetString("error_value_not_in_range", resourceCulture);
             }
         }
         
@@ -2490,6 +2526,15 @@ namespace TS3AudioBot.Localization {
         internal static string info_empty {
             get {
                 return ResourceManager.GetString("info_empty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;number&gt;.
+        /// </summary>
+        internal static string info_number {
+            get {
+                return ResourceManager.GetString("info_number", resourceCulture);
             }
         }
         

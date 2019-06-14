@@ -838,7 +838,7 @@ with the id {1}?</value>
     <value>Missing session context.</value>
   </data>
   <data name="error_ts_code_2568" xml:space="preserve">
-    <value>Missing permissions.</value>
+    <value>Missing teamspeak permissions.</value>
   </data>
   <data name="cmd_bot_connect_to_help" xml:space="preserve">
     <value>Connects a new bot to the given address.</value>
@@ -959,5 +959,20 @@ with the id {1}?</value>
   </data>
   <data name="cmd_pm_user_help" xml:space="preserve">
     <value>Writes a message to a particular user.</value>
+  </data>
+  <data name="cmd_search_header" xml:space="preserve">
+    <value>Found the following songs. Use "{0}" to play.</value>
+  </data>
+  <data name="cmd_search_no_result" xml:space="preserve">
+    <value>Found no results for this query.</value>
+  </data>
+  <data name="error_select_empty" xml:space="preserve">
+    <value>Nothing to select...</value>
+  </data>
+  <data name="error_value_not_in_range" xml:space="preserve">
+    <value>Your value is out of range. Select one between {0} and {1}.</value>
+  </data>
+  <data name="info_number" xml:space="preserve">
+    <value>&lt;number&gt;</value>
   </data>
 </root>

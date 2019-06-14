@@ -7,16 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Web.Api
+namespace TS3AudioBot.Helper
 {
-	using System;
-	using System.Collections.Generic;
-
-	public class JsonArray<T> : JsonValue<IList<T>>
+	internal static class SessionConst
 	{
-		public JsonArray(IList<T> value, string msg) : base(value, msg) { }
-		public JsonArray(IList<T> value, Func<IList<T>, string> asString = null)
-			: base(value, asString)
-		{ }
+		public const string Playlist = "tab_playlist";
+		public const string SearchResult = "tab_searchresult";
 	}
 }
