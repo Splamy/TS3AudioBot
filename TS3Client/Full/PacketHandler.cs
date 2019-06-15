@@ -55,18 +55,17 @@ namespace TS3Client.Full
 		private Socket socket;
 		private Timer resendTimer;
 		private DateTime pingCheck;
-		private int pingCheckRunning;
-		// Log id
-		private readonly Id id;
+		private int pingCheckRunning; // bool
+		private readonly Id id; // Log id
 
 		public NetworkStats NetworkStats { get; }
 
 		public ushort ClientId { get; set; }
 		private IPEndPoint remoteAddress;
-		public Reason? ExitReason { get; set; }
-		private bool Closed => ExitReason != null;
+		private int closed; // bool
 
 		public PacketEvent<TIn> PacketEvent;
+		public Action<Reason> StopEvent;
 
 		public PacketHandler(Ts3Crypt ts3Crypt, Id id)
 		{
@@ -116,7 +115,7 @@ namespace TS3Client.Full
 			lock (sendLoopLock)
 			{
 				ClientId = 0;
-				ExitReason = null;
+				closed = 0;
 				smoothedRtt = MaxRetryInterval;
 				smoothedRttVar = TimeSpan.Zero;
 				currentRto = MaxRetryInterval;
@@ -167,22 +166,27 @@ namespace TS3Client.Full
 			}
 		}
 
-		public void Stop(Reason closeReason = Reason.LeftServer)
+		public void Stop(Reason closeReason = Reason.Timeout)
 		{
-			Log.Debug("Stopping PacketHandler {@reason}", closeReason);
+			var wasClosed = Interlocked.Exchange(ref closed, 1);
+			if (wasClosed != 0)
+				return;
+			Log.Debug("Stopping PacketHandler {0}", closeReason);
+
 			lock (sendLoopLock)
 			{
 				resendTimer?.Dispose();
 				socket?.Dispose();
-				ExitReason = ExitReason ?? closeReason;
+				PacketEvent = null;
 			}
+			StopEvent?.Invoke(closeReason);
 		}
 
 		public E<string> AddOutgoingPacket(ReadOnlySpan<byte> packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
 			lock (sendLoopLock)
 			{
-				if (Closed)
+				if (closed != 0)
 					return "Connection closed";
 
 				if (NeedsSplitting(packet.Length) && packetType != PacketType.VoiceWhisper)
@@ -330,19 +334,29 @@ namespace TS3Client.Full
 			{
 				do
 				{
-					if (self.Closed)
+					if (self.closed != 0)
 						return;
 
-					self.FetchPackets(args.Buffer.AsSpan(0, args.BytesTransferred));
+					if (args.SocketError == SocketError.Success)
+					{
+						self.FetchPackets(args.Buffer.AsSpan(0, args.BytesTransferred));
+					}
+					else
+					{
+						Log.Debug("Socket error: {@args}", args);
+						if (args.SocketError == SocketError.ConnectionReset)
+						{
+							self.Stop();
+						}
+					}
 
 					lock (self.sendLoopLock)
 					{
-						if (self.Closed)
+						if (self.closed != 0)
 							return;
 
 						try { isAsync = self.socket.ReceiveFromAsync(args); }
-						catch (SocketException) { return; }
-						catch (ObjectDisposedException) { return; }
+						catch (Exception ex) { Log.Debug(ex, "Error starting socket receive"); return; }
 					}
 				} while (!isAsync);
 			}
@@ -646,17 +660,19 @@ namespace TS3Client.Full
 				return;
 			}
 
+			bool close = false;
 			lock (sendLoopLock)
 			{
-				if (Closed)
+				if (closed != 0)
 					return;
 
-				if ((packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
-					|| (initPacketCheck != null && ResendPacket(initPacketCheck)))
-				{
-					Stop(Reason.Timeout);
-					return;
-				}
+				close = (packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
+					|| (initPacketCheck != null && ResendPacket(initPacketCheck));
+			}
+			if(close)
+			{
+				Stop();
+				return;
 			}
 
 			var now = Util.Now;
@@ -678,7 +694,7 @@ namespace TS3Client.Full
 			if (elapsed > PacketTimeout)
 			{
 				LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
-				Stop(Reason.Timeout);
+				Stop();
 				return;
 			}
 

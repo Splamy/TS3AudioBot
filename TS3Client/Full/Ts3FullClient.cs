@@ -97,10 +97,9 @@ namespace TS3Client.Full
 				var ctx = new ConnectionContext { WasExit = false };
 				context = ctx;
 
-				if (packetHandler != null)
-					packetHandler.PacketEvent = null;
 				packetHandler = new PacketHandler<S2C, C2S>(ts3Crypt, conData.LogId);
 				packetHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
+				packetHandler.StopEvent = (closeReason) => { ctx.ExitReason = closeReason; DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected); };
 				packetHandler.Connect(remoteAddress);
 				dispatcher.Init(InvokeEvent, conData.LogId);
 			}
@@ -159,7 +158,7 @@ namespace TS3Client.Full
 			}
 
 			if (triggerEventSafe)
-				OnDisconnected?.Invoke(this, new DisconnectEventArgs(packetHandler.ExitReason ?? Reason.LeftServer, error));
+				OnDisconnected?.Invoke(this, new DisconnectEventArgs(ctx.ExitReason ?? Reason.LeftServer, error));
 		}
 
 		private void PacketEvent(ConnectionContext ctx, ref Packet<S2C> packet)
@@ -285,7 +284,7 @@ namespace TS3Client.Full
 		{
 			if (clientLeftView.ClientId == packetHandler.ClientId)
 			{
-				packetHandler.ExitReason = clientLeftView.Reason;
+				context.ExitReason = Reason.LeftServer;
 				DisconnectInternal(context, setStatus: Ts3ClientStatus.Disconnected);
 			}
 		}
@@ -420,7 +419,6 @@ namespace TS3Client.Full
 		public override void Dispose()
 		{
 			Disconnect();
-			dispatcher?.Dispose();
 		}
 
 		#region Audio
@@ -684,5 +682,6 @@ namespace TS3Client.Full
 	internal class ConnectionContext
 	{
 		public bool WasExit { get; set; }
+		public Reason? ExitReason { get; set; }
 	}
 }
