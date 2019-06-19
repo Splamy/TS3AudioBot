@@ -1511,7 +1511,7 @@ namespace TS3AudioBot
 				cpu = sysInfo.Cpu,
 				starttime = systemMonitor.StartTime,
 			}, x => new TextModBuilder().AppendFormat(
-				"\ncpu: {0}% \nmem: {1} \nstartime: {2}",
+				"\ncpu: {0}% \nmemory: {1} \nstartime: {2}".Mod().Bold(),
 					(x.cpu.Last() * 100).ToString("0.#"),
 					Util.FormatBytesHumanReadable(x.memory.Last()),
 					x.starttime.ToString(Thread.CurrentThread.CurrentCulture)).ToString()
@@ -1614,29 +1614,32 @@ namespace TS3AudioBot
 		public static JsonValue<BuildData> CommandVersion() => new JsonValue<BuildData>(SystemData.AssemblyData, d => d.ToLongString());
 
 		[Command("volume")]
+		public static JsonValue<float> CommandVolume(IPlayerConnection playerConnection)
+			=> new JsonValue<float>(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume.ToString("0.#")));
+
+		[Command("volume")]
 		[Usage("<level>", "A new volume level between 0 and 100.")]
 		[Usage("+/-<level>", "Adds or subtracts a value from the current volume.")]
-		public static JsonValue<float> CommandVolume(ExecutionInformation info, IPlayerConnection playerConnection, CallerInfo caller, ConfBot config, UserSession session = null, string volume = null)
+		public static JsonValue<float> CommandVolume(ExecutionInformation info, IPlayerConnection playerConnection, CallerInfo caller, ConfBot config, string volume, UserSession session = null)
 		{
-			if (string.IsNullOrEmpty(volume))
-				return new JsonValue<float>(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume.ToString("0.#")));
-
+			volume = volume.Trim();
 			bool relPos = volume.StartsWith("+", StringComparison.Ordinal);
 			bool relNeg = volume.StartsWith("-", StringComparison.Ordinal);
-			string numberString = (relPos || relNeg) ? volume.Remove(0, 1) : volume;
+			string numberString = (relPos || relNeg) ? volume.Remove(0, 1).TrimStart() : volume;
 
 			if (!float.TryParse(numberString, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedVolume))
 				throw new CommandException(strings.cmd_volume_parse_error, CommandExceptionReason.CommandError);
 
+			float curVolume = playerConnection.Volume;
 			float newVolume;
-			if (relPos) newVolume = playerConnection.Volume + parsedVolume;
-			else if (relNeg) newVolume = playerConnection.Volume - parsedVolume;
+			if (relPos) newVolume = curVolume + parsedVolume;
+			else if (relNeg) newVolume = curVolume - parsedVolume;
 			else newVolume = parsedVolume;
 
-			if (newVolume < 0 || newVolume > AudioValues.MaxVolume)
-				throw new CommandException(string.Format(strings.cmd_volume_is_limited, 0, AudioValues.MaxVolume), CommandExceptionReason.CommandError);
+			if (newVolume < AudioValues.MinVolume || newVolume > AudioValues.MaxVolume)
+				throw new CommandException(string.Format(strings.cmd_volume_is_limited, AudioValues.MinVolume, AudioValues.MaxVolume), CommandExceptionReason.CommandError);
 
-			if (newVolume <= config.Audio.MaxUserVolume || newVolume < playerConnection.Volume || caller.ApiCall)
+			if (newVolume <= config.Audio.MaxUserVolume || newVolume <= curVolume || caller.ApiCall)
 			{
 				playerConnection.Volume = newVolume;
 			}

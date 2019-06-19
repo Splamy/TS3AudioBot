@@ -215,7 +215,7 @@ namespace TS3AudioBot.Config
 			"When a new song starts the volume will be trimmed to between min and max.\n" +
 			"When the current volume already is between min and max nothing will happen.\n" +
 			"To completely or partially disable this feature, set min to 0 and/or max to 100.");
-		public ConfigValue<float> MaxUserVolume { get; } = new ConfigValue<float>("max_user_volume", 30,
+		public ConfigValue<float> MaxUserVolume { get; } = new ConfigValue<float>("max_user_volume", 100,
 			"The maximum volume a normal user can request. Only user with the 'ts3ab.admin.volume' permission can request higher volumes.");
 		public ConfigValue<int> Bitrate { get; } = new ConfigValue<int>("bitrate", 48,
 			"Specifies the bitrate (in kbps) for sending audio.\n" +
@@ -232,9 +232,9 @@ namespace TS3AudioBot.Config
 	{
 		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
-		public ConfigValue<float> Default { get; } = new ConfigValue<float>("default", 10);
-		public ConfigValue<float> Min { get; } = new ConfigValue<float>("min", 10);
-		public ConfigValue<float> Max { get; } = new ConfigValue<float>("max", 50);
+		public ConfigValue<float> Default { get; } = new ConfigValue<float>("default", 50);
+		public ConfigValue<float> Min { get; } = new ConfigValue<float>("min", 25);
+		public ConfigValue<float> Max { get; } = new ConfigValue<float>("max", 75);
 	}
 
 	public class ConfPlaylists : ConfigTable

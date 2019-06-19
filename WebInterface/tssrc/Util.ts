@@ -30,23 +30,6 @@ class Util {
 		return str;
 	}
 
-	private static readonly slmax: number = 7.0;
-	private static readonly scale: number = 100.0;
-
-	public static slider_to_volume(val: number): number {
-		if (val < 0) val = 0;
-		else if (val > Util.slmax) val = Util.slmax;
-
-		return (1.0 / Math.log10(10 - val) - 1) * (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1));
-	}
-
-	public static volume_to_slider(val: number): number {
-		if (val < 0) val = 0;
-		else if (val > Util.scale) val = Util.scale;
-
-		return 10 - Math.pow(10, 1.0 / (val / (Util.scale / (1.0 / Math.log10(10 - Util.slmax) - 1)) + 1));
-	}
-
 	public static getElementByIdSafe(elementId: string): HTMLElement {
 		return Util.nonNull(document.getElementById(elementId));
 	}

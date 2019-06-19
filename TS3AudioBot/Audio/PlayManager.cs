@@ -15,6 +15,7 @@ namespace TS3AudioBot.Audio
 	using ResourceFactories;
 	using System;
 	using System.Collections.Generic;
+	using TS3AudioBot.Helper;
 
 	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary> 
 	public class PlayManager
@@ -164,7 +165,7 @@ namespace TS3AudioBot.Audio
 			}
 
 			playerConnection.Volume = meta.Volume
-				?? Math.Min(Math.Max(playerConnection.Volume, confBot.Audio.Volume.Min), confBot.Audio.Volume.Max);
+				?? Util.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
 
 			return R.Ok;
 		}

@@ -55,6 +55,9 @@ namespace TS3AudioBot.Helper
 			return ret;
 		}
 
+		public static float Clamp(float value, float min, float max) => Math.Min(Math.Max(value, min), max);
+		public static int Clamp(int value, int min, int max) => Math.Min(Math.Max(value, min), max);
+
 		private static readonly string[] byteSuffix = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
 
 		public static string FormatBytesHumanReadable(long bytes)

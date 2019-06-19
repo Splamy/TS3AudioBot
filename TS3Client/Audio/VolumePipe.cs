@@ -15,22 +15,33 @@ namespace TS3Client.Audio
 	public class VolumePipe : IAudioPipe
 	{
 		public bool Active => OutStream?.Active ?? false;
-		public float Volume { get; set; } = 1;
+		private float volume;
+		/// <summary>Values are between including 0 and 1.</summary>
+		public float Volume
+		{
+			get => volume;
+			set
+			{
+				value = Math.Abs(value);
+				if (IsAbout(value, 1)) volume = 1;
+				else if (IsAbout(value, 0)) volume = 0;
+				else volume = value;
+			}
+		}
 		public IAudioPassiveConsumer OutStream { get; set; }
 
 		public static void AdjustVolume(Span<byte> audioSamples, float volume)
 		{
-			if (IsAbout(volume, 1)) { /* Do nothing */ }
-			else if (IsAbout(volume, 0))
+			if (volume == 1) { /* Do nothing */ }
+			else if (volume == 0)
 			{
 				audioSamples.Fill(0);
 			}
-			else if (IsAbout(volume, 0.5f))
+			else if (volume < 1) // Clipping cannot occour on mult <1
 			{
-				// fast calculation for *0.5 volume
 				var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
 				for (int i = 0; i < shortArr.Length; i++)
-					shortArr[i] = (short)(shortArr[i] >> 1);
+					shortArr[i] = (short)(shortArr[i] * volume);
 			}
 			else
 			{

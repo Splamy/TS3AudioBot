@@ -82,7 +82,7 @@ class PlayControls {
 		this.divVolumeSlider.onchange = async () => {
 			this.muteToggleVolume = 0;
 			this.divVolumeSlider.classList.add("loading");
-			await setVolume(Util.slider_to_volume(Number(this.divVolumeSlider.value)), false);
+			await setVolume(Number(this.divVolumeSlider.value), false);
 			this.divVolumeSlider.classList.remove("loading");
 		}
 
@@ -257,12 +257,11 @@ class PlayControls {
 
 	public showStateVolume(volume: number, applySlider: boolean = true) {
 		this.volume = volume;
-		const logaVolume = Util.volume_to_slider(volume);
 		if (applySlider)
-			this.divVolumeSlider.value = logaVolume.toString();
-		if (logaVolume <= 0.001)
+			this.divVolumeSlider.value = volume.toString();
+		if (volume <= 0.001)
 			Util.setIcon(this.divVolumeMute, "volume-off");
-		else if (logaVolume <= 7.0 / 2)
+		else if (volume <= 50)
 			Util.setIcon(this.divVolumeMute, "volume-low");
 		else
 			Util.setIcon(this.divVolumeMute, "volume-high");

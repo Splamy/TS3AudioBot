@@ -9,8 +9,42 @@
 
 namespace TS3AudioBot.Audio
 {
+	using System;
+
 	public static class AudioValues
 	{
+		public const float MinVolume = 0;
 		public const float MaxVolume = 100;
+
+		// Reference explanation for the logarithmic scale
+		// https://www.dr-lex.be/info-stuff/volumecontrols.html#table1
+		// Adjusted values for 40dB
+
+		private const float fact_a = 1e-2f;
+		private const float fact_b = 4.6051f;
+
+		public static float HumanVolumeToFactor(float value)
+		{
+			if (value < MinVolume) return 0;
+			if (value > MaxVolume) return 1;
+
+			// Map input values from [MinVolume, MaxVolume] to [0, 1]
+			value = (value - MinVolume) / (MaxVolume - MinVolume);
+
+			// Scale the value logarithmically
+			return (float)(fact_a * Math.Exp(fact_b * value));
+		}
+
+		public static float FactorToHumanVolume(float value)
+		{
+			if (value < 0) return MinVolume;
+			if (value > 1) return MaxVolume;
+
+			// Undo logarithmical scale
+			value = (float)(Math.Log(value / fact_a) / fact_b);
+
+			// Map input values from [0, 1] to [MinVolume, MaxVolume]
+			return (value * (MaxVolume - MinVolume)) + MinVolume;
+		}
 	}
 }

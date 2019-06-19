@@ -86,7 +86,7 @@ namespace TS3AudioBot
 			tsFullClient.OnConnected += TsFullClient_OnConnected;
 			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
 
-			int ScaleBitrate(int value) => Math.Min(Math.Max(1, value), 255) * 1000;
+			int ScaleBitrate(int value) => Util.Clamp(value, 1, 255) * 1000;
 
 			this.config = config;
 			this.config.Audio.Bitrate.Changed += (s, e) => encoderPipe.Bitrate = ScaleBitrate(e.NewValue);
@@ -702,16 +702,8 @@ namespace TS3AudioBot
 
 		public float Volume
 		{
-			get => volumePipe.Volume * AudioValues.MaxVolume;
-			set
-			{
-				if (value < 0)
-					volumePipe.Volume = 0;
-				else if (value > AudioValues.MaxVolume)
-					volumePipe.Volume = AudioValues.MaxVolume;
-				else
-					volumePipe.Volume = value / AudioValues.MaxVolume;
-			}
+			get => AudioValues.FactorToHumanVolume(volumePipe.Volume);
+			set => volumePipe.Volume = AudioValues.HumanVolumeToFactor(value);
 		}
 
 		public bool Paused
