@@ -55,6 +55,16 @@ namespace TS3AudioBot.Helper
 			return ret;
 		}
 
+		private static readonly string[] byteSuffix = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
+
+		public static string FormatBytesHumanReadable(long bytes)
+		{
+			if (bytes == 0)
+				return "0B";
+			int order = (int)Math.Log(Math.Abs(bytes), 1024);
+			return (bytes >> (10 * order)) + byteSuffix[order];
+		}
+
 		public static string FromSeed(int seed)
 		{
 			var seedstr = new char[7];

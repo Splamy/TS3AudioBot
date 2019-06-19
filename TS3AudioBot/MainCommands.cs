@@ -33,6 +33,7 @@ namespace TS3AudioBot
 	using System.Globalization;
 	using System.Linq;
 	using System.Text;
+	using System.Threading;
 	using TS3Client;
 	using TS3Client.Audio;
 	using TS3Client.Messages;
@@ -1509,7 +1510,12 @@ namespace TS3AudioBot
 				memory = sysInfo.Memory,
 				cpu = sysInfo.Cpu,
 				starttime = systemMonitor.StartTime,
-			});
+			}, x => new TextModBuilder().AppendFormat(
+				"\ncpu: {0}% \nmem: {1} \nstartime: {2}",
+					(x.cpu.Last() * 100).ToString("0.#"),
+					Util.FormatBytesHumanReadable(x.memory.Last()),
+					x.starttime.ToString(Thread.CurrentThread.CurrentCulture)).ToString()
+			);
 		}
 
 		[Command("system quit", "cmd_quit_help")]
@@ -1613,7 +1619,7 @@ namespace TS3AudioBot
 		public static JsonValue<float> CommandVolume(ExecutionInformation info, IPlayerConnection playerConnection, CallerInfo caller, ConfBot config, UserSession session = null, string volume = null)
 		{
 			if (string.IsNullOrEmpty(volume))
-				return new JsonValue<float>(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume));
+				return new JsonValue<float>(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume.ToString("0.#")));
 
 			bool relPos = volume.StartsWith("+", StringComparison.Ordinal);
 			bool relNeg = volume.StartsWith("-", StringComparison.Ordinal);
