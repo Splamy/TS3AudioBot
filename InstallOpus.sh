@@ -2,7 +2,7 @@
 
 baseDir=`pwd`
 
-OpusBaseName="opus-1.2.1"
+OpusBaseName="opus-1.3.1"
 OpusFileName="$OpusBaseName.tar.gz"
 
 # Download the Opus library
