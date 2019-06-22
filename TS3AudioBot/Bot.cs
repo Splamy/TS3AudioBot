@@ -282,9 +282,15 @@ namespace TS3AudioBot
 				}
 				else if (playManager.IsPlaying)
 				{
-					setString = QuizMode
-						? strings.info_botstatus_quiztime
-						: (playManager.CurrentPlayData.ResourceData.ResourceTitle);
+					if (QuizMode)
+					{
+						setString = strings.info_botstatus_quiztime;
+
+					}
+					else if (playManager.CurrentPlayData.ResourceData.ResourceTitle != null)
+					{
+						setString = playManager.CurrentPlayData.ResourceData.ResourceTitle;
+					}
 				}
 				else
 				{
