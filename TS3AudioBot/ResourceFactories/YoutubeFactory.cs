@@ -67,7 +67,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var parsed = JsonConvert.DeserializeObject<JsonPlayerResponse>(playerData[0]);
 				Log.Debug("Extracted data: {@playerData}", parsed);
-				if (parsed.videoDetails.isLive || parsed.videoDetails.isLiveContent)
+				if (parsed.videoDetails.isLive && parsed.streamingData.hlsManifestUrl != null)
 				{
 					var webListResponse = WebWrapper.GetResponse(new Uri(parsed.streamingData.hlsManifestUrl), response =>
 					{
@@ -94,6 +94,10 @@ namespace TS3AudioBot.ResourceFactories
 						}
 					}
 					return new LocalStr(strings.error_media_no_stream_extracted);
+				}
+				else if (parsed.videoDetails.isLive)
+				{
+					Log.Warn("Live stream without hls stream data");
 				}
 			}
 
@@ -366,69 +370,69 @@ namespace TS3AudioBot.ResourceFactories
 
 		public void Dispose() { }
 
-#pragma warning disable CS0649, CS0169
+#pragma warning disable CS0649, CS0169, IDE1006
 		// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
 		private class JsonVideoListResponse // # youtube#videoListResponse
 		{
-			public string nextPageToken;
-			public JsonVideo[] items;
+			public string nextPageToken { get; set; }
+			public JsonVideo[] items { get; set; }
 		}
 		private class JsonVideo // youtube#video
 		{
-			public JsonContentDetails contentDetails;
-			public JsonSnippet snippet;
+			public JsonContentDetails contentDetails { get; set; }
+			public JsonSnippet snippet { get; set; }
 		}
 		private class JsonSearchListResponse // youtube#searchListResponse
 		{
-			public JsonSearchResult[] items;
+			public JsonSearchResult[] items { get; set; }
 		}
 		private class JsonSearchResult // youtube#searchResult
 		{
-			public JsonContentDetails id;
-			public JsonSnippet snippet;
+			public JsonContentDetails id { get; set; }
+			public JsonSnippet snippet { get; set; }
 		}
 		private class JsonContentDetails
 		{
-			public string videoId;
+			public string videoId { get; set; }
 		}
 		private class JsonSnippet
 		{
-			public string title;
-			public JsonThumbnailList thumbnails;
+			public string title { get; set; }
+			public JsonThumbnailList thumbnails { get; set; }
 		}
 		private class JsonThumbnailList
 		{
-			public JsonThumbnail @default;
-			public JsonThumbnail medium;
-			public JsonThumbnail high;
-			public JsonThumbnail standard;
-			public JsonThumbnail maxres;
+			public JsonThumbnail @default { get; set; }
+			public JsonThumbnail medium { get; set; }
+			public JsonThumbnail high { get; set; }
+			public JsonThumbnail standard { get; set; }
+			public JsonThumbnail maxres { get; set; }
 		}
 		private class JsonThumbnail
 		{
-			public string url;
-			public int heigth;
-			public int width;
+			public string url { get; set; }
+			public int heigth { get; set; }
+			public int width { get; set; }
 		}
 
 		private class JsonPlayerResponse
 		{
-			public JsonStreamingData streamingData;
-			public JsonVideoDetails videoDetails;
+			public JsonStreamingData streamingData { get; set; }
+			public JsonVideoDetails videoDetails { get; set; }
 		}
 		private class JsonStreamingData
 		{
-			public string dashManifestUrl;
-			public string hlsManifestUrl;
+			public string dashManifestUrl { get; set; }
+			public string hlsManifestUrl { get; set; }
 		}
 		private class JsonVideoDetails
 		{
-			public string title;
-			public bool isLive;
-			public bool isLiveContent;
+			public string title { get; set; }
+			public bool isLive { get; set; }
+			public bool isLiveContent { get; set; }
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
-#pragma warning restore CS0649, CS0169
+#pragma warning restore CS0649, CS0169, IDE1006
 	}
 
 	public sealed class VideoData

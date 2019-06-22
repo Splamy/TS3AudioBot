@@ -313,7 +313,7 @@ namespace TS3Client.Full
 						buildPermissions.Add(Ts3Permission.undefined);
 				}
 			}
-			msgProc.Deserializer.PermissionTransform = new TablePermissionTransform(buildPermissions.ToArray());
+			Deserializer.PermissionTransform = new TablePermissionTransform(buildPermissions.ToArray());
 		}
 
 		// ***

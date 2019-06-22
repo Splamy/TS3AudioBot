@@ -9,8 +9,9 @@
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using Dependency;
 	using CommandResults;
+	using Dependency;
+	using Helper;
 	using Localization;
 	using System;
 	using System.Collections.Generic;
@@ -145,7 +146,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					break;
 
 				default:
-					throw new ArgumentOutOfRangeException();
+					throw Util.UnhandledDefault(CommandParameter[p].kind);
 				}
 			}
 

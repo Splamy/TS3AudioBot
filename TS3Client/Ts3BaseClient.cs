@@ -367,8 +367,6 @@ namespace TS3Client
 					{ "clid", clientId }
 			}, NotificationType.ClientUidFromClid).WrapSingle();
 
-
-
 		public R<ClientNameFromUid, CommandError> GetClientNameFromUid(Uid clientUid)
 			=> SendHybrid<ClientNameFromUid>(new Ts3Command("clientgetnamefromuid")
 			{
