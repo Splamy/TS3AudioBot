@@ -117,10 +117,10 @@ namespace TS3AudioBot.Helper
 				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
-		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger)
+		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel level = null)
 		{
 			if (!r.Ok)
-				logger.Warn("Action errored: {0}", r.Error.Str);
+				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.Str);
 			return r.Ok;
 		}
 

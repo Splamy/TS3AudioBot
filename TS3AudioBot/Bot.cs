@@ -79,7 +79,7 @@ namespace TS3AudioBot
 			};
 			config.Events.IdleTime.Changed += (s, e) => EnableIdleTickWorker();
 			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
-			
+
 			var builder = new DependencyBuilder(Injector);
 			builder.AddModule(this);
 			builder.AddModule(config);
@@ -180,7 +180,7 @@ namespace TS3AudioBot
 
 		private void OnMessageReceived(object sender, TextMessage textMessage)
 		{
-			if(textMessage == null || textMessage.Message == null)
+			if (textMessage?.Message == null)
 			{
 				Log.Warn("Invalid TextMessage: {@textMessage}", textMessage);
 				return;
@@ -263,9 +263,7 @@ namespace TS3AudioBot
 		{
 			if (IsDisposed)
 				return;
-			var result = UpdateBotStatus();
-			if (!result)
-				Log.Warn(result.Error.Str);
+			UpdateBotStatus().UnwrapToLog(Log);
 		}
 
 		public E<LocalStr> UpdateBotStatus(string overrideStr = null)
@@ -273,26 +271,23 @@ namespace TS3AudioBot
 			if (!config.SetStatusDescription)
 				return R.Ok;
 
-			lock (SyncRoot)
+			string setString;
+			if (overrideStr != null)
 			{
-				string setString;
-				if (overrideStr != null)
-				{
-					setString = overrideStr;
-				}
-				else if (playManager.IsPlaying)
-				{
-					setString = QuizMode
-						? strings.info_botstatus_quiztime
-						: (playManager.CurrentPlayData.ResourceData.ResourceTitle);
-				}
-				else
-				{
-					setString = strings.info_botstatus_sleeping;
-				}
-
-				return clientConnection.ChangeDescription(setString ?? "");
+				setString = overrideStr;
 			}
+			else if (playManager.IsPlaying)
+			{
+				setString = QuizMode
+					? strings.info_botstatus_quiztime
+					: playManager.CurrentPlayData?.ResourceData?.ResourceTitle;
+			}
+			else
+			{
+				setString = strings.info_botstatus_sleeping;
+			}
+
+			return clientConnection.ChangeDescription(setString ?? "");
 		}
 
 		private void GenerateStatusImage(object sender, EventArgs e)
@@ -396,7 +391,7 @@ namespace TS3AudioBot
 		private ExecutionInformation CreateExecInfo(InvokerData invoker = null, UserSession session = null)
 		{
 			var info = new ExecutionInformation(Injector);
-			if(invoker is ClientCall ci)
+			if (invoker is ClientCall ci)
 				info.AddModule(ci);
 			info.AddModule(invoker ?? InvokerData.Anonymous);
 			info.AddModule(session ?? new AnonymousSession());
