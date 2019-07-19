@@ -259,7 +259,7 @@ namespace TS3ABotUnitTests
 			TestStringParsing("!'a\\\"aa'", "a\\\"aa");
 		}
 
-		public void TestStringParsing(string inp, string outp)
+		public static void TestStringParsing(string inp, string outp)
 		{
 			var astc = CommandParser.ParseCommandRequest(inp);
 			var ast = ((AstCommand)astc).Parameter[0];

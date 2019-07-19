@@ -141,7 +141,7 @@ namespace TS3AudioBot.Helper
 				}
 			}
 
-			Log.Warn(ex, "Unknown request error");
+			Log.Debug(ex, "Unknown request error");
 			return new LocalStr(strings.error_net_unknown);
 		}
 

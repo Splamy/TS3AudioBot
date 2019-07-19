@@ -148,7 +148,16 @@ namespace TS3Client
 		private static IPEndPoint ResolveSrv(Resolver resolver, string domain)
 		{
 			Log.Trace("Resolving srv record '{0}'", domain);
-			var response = resolver.Query(domain, QType.SRV, QClass.IN).ConfigureAwait(false).GetAwaiter().GetResult();
+			Response response;
+			try
+			{
+				response = resolver.Query(domain, QType.SRV, QClass.IN).ConfigureAwait(false).GetAwaiter().GetResult();
+			}
+			catch (Exception ex)
+			{
+				Log.Warn(ex, "Unexcepted dns resolve error.");
+				return null;
+			}
 
 			if (response.RecordsSRV.Length > 0)
 			{

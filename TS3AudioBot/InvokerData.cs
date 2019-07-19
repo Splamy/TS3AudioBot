@@ -21,7 +21,7 @@ namespace TS3AudioBot
 
 		public InvokerData(string clientUid)
 		{
-			ClientUid = clientUid ?? throw new ArgumentNullException(nameof(ClientUid));
+			ClientUid = clientUid ?? throw new ArgumentNullException(nameof(clientUid));
 		}
 	}
 }

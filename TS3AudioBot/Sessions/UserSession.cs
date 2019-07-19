@@ -68,7 +68,7 @@ namespace TS3AudioBot.Sessions
 			assocMap[key] = data;
 		}
 
-		public virtual SessionLock GetLock()
+		public virtual IDisposable GetLock()
 		{
 			var sessionToken = new SessionLock(this);
 			sessionToken.Take();
@@ -81,13 +81,13 @@ namespace TS3AudioBot.Sessions
 				throw new InvalidOperationException("No access lock is currently active");
 		}
 
-		public class SessionLock : IDisposable
+		private class SessionLock : IDisposable
 		{
 			private readonly UserSession session;
 			public SessionLock(UserSession session) { this.session = session; }
 
-			public virtual void Take() { Monitor.Enter(session); session.lockToken = true; }
-			public virtual void Free() { Monitor.Exit(session); session.lockToken = false; }
+			public void Take() { Monitor.Enter(session); session.lockToken = true; }
+			public void Free() { Monitor.Exit(session); session.lockToken = false; }
 			public void Dispose() => Free();
 		}
 	}
