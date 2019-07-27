@@ -69,7 +69,7 @@ class PlayControls {
 			if (!DisplayError.check(res, "Failed to apply volume"))
 				return this.showStateVolume(this.volume, true);
 			this.showStateVolume(res[1], applySlider);
-		}
+		};
 		this.divVolumeMute.onclick = async () => {
 			if (this.muteToggleVolume !== 0 && this.volume === 0) {
 				await setVolume(this.muteToggleVolume, true);
@@ -78,13 +78,13 @@ class PlayControls {
 				this.muteToggleVolume = this.volume;
 				await setVolume(0, true);
 			}
-		}
+		};
 		this.divVolumeSlider.onchange = async () => {
 			this.muteToggleVolume = 0;
 			this.divVolumeSlider.classList.add("loading");
 			await setVolume(Number(this.divVolumeSlider.value), false);
 			this.divVolumeSlider.classList.remove("loading");
-		}
+		};
 
 		this.divNext.onclick = async () => {
 			Util.setIcon(this.divNext, "cog-work");
@@ -93,7 +93,7 @@ class PlayControls {
 			if (!DisplayError.check(res, "Failed to skip forward"))
 				return;
 			this.startEcho();
-		}
+		};
 
 		this.divPrev.onclick = async () => {
 			Util.setIcon(this.divPrev, "cog-work");
@@ -102,7 +102,7 @@ class PlayControls {
 			if (!DisplayError.check(res, "Failed to skip backward"))
 				return;
 			this.startEcho();
-		}
+		};
 
 		this.divPlay.onclick = async () => {
 			let songRet: ApiErr | [void, CmdSong | null];
@@ -135,7 +135,7 @@ class PlayControls {
 
 			this.startEcho();
 			this.showStatePlaying(songRet[1]);
-		}
+		};
 
 		this.divPositionSlider.onchange = async () => {
 			if (this.playing === PlayState.Off)
@@ -145,7 +145,7 @@ class PlayControls {
 			this.playTick.stop();
 			this.divPositionSlider.classList.add("loading");
 			const targetSeconds = Math.floor(Number(this.divPositionSlider.value));
-			let res = await bot(
+			const res = await bot(
 				cmd<void>("seek", targetSeconds.toString())
 			).get();
 			this.divPositionSlider.classList.remove("loading");
@@ -155,7 +155,7 @@ class PlayControls {
 
 			if (wasRunning) this.playTick.start();
 			this.showStatePosition(targetSeconds);
-		}
+		};
 
 		this.playTick = new Timer(() => {
 			if (this.trackPosition < this.trackLength) {

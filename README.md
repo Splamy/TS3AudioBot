@@ -63,7 +63,7 @@ Run `sudo pacman -S opus ffmpeg`
 
 #### Windows
 1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
-1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` to `TS3AudioBot/bin/Release/net472`
+1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` to `TS3AudioBot/bin/Release/netcoreapp2.2`
 
 ### Optional Dependencies
 If the bot can't play some youtube videos it might be due to some embedding restrictions which are blocking this.  

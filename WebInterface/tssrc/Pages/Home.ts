@@ -1,5 +1,5 @@
 class Home implements IPage {
-	//private dummyOffset: number = 0;
+	// private dummyOffset: number = 0;
 	private ticker: Timer = new Timer(async () => await this.refresh(), 1000);
 	private static readonly graphLen = 60;
 
@@ -16,7 +16,7 @@ class Home implements IPage {
 		scale: Graph.memTrim,
 	};
 
-	async init() {
+	public async init() {
 		const res = await cmd<{ Version: string, Branch: string, CommitSha: string }>("version").get();
 
 		if (!DisplayError.check(res, "Failed to get system information"))
@@ -29,7 +29,7 @@ class Home implements IPage {
 		this.ticker.start();
 	}
 
-	async refresh() {
+	public async refresh() {
 		const res = await cmd<{ memory: number[], cpu: number[], starttime: string }>("system", "info").get();
 
 		if (!DisplayError.check(res, "Failed to get system information")) {
@@ -47,7 +47,7 @@ class Home implements IPage {
 		res.memory = Home.padArray(res.memory, Home.graphLen, 0);
 		Graph.buildPath(res.memory, Util.getElementByIdSafe("data_memgraph"), Home.memGraphOptions);
 
-		const timeDiff = Util.formatSecondsToTime((Date.now() - <any>new Date(res.starttime)) / 1000);
+		const timeDiff = Util.formatSecondsToTime((Date.now() - (new Date(res.starttime) as any)) / 1000);
 		Util.getElementByIdSafe("data_uptime").innerText = timeDiff;
 	}
 
@@ -58,7 +58,7 @@ class Home implements IPage {
 		return arr;
 	}
 
-	async close() {
+	public async close() {
 		this.ticker.stop();
 	}
 }

@@ -13,7 +13,7 @@ class Bots implements IPage {
 	private static createBotCard?: HTMLElement;
 
 	private getCreateCard(): HTMLElement {
-		if (!Bots.createBotCard) {
+		if (Bots.createBotCard === undefined) {
 			Bots.createBotCard = <div class="formbox flex flexhorizontal">
 				<div class="flexmax flex flexvertical" onclick={() => this.CardCreateBot()}>
 					<div class="formheader centerText">Create</div>
@@ -23,7 +23,7 @@ class Bots implements IPage {
 					<div class="formheader centerText">Connect</div>
 					<div class="flexmax imageCard" style="background-image: url(media/icons/bolt.svg)"></div>
 				</div>
-			</div >
+			</div>;
 		}
 		return Bots.createBotCard;
 	}
@@ -68,7 +68,7 @@ class Bots implements IPage {
 	}
 
 	private showBotCard(botInfo: CmdBotInfo, oldDiv?: HTMLElement) {
-		let divStartStopButton: IJsxGet = {};
+		const divStartStopButton: IJsxGet = {};
 		const statusIndicator = botInfo.Status === BotStatus.Connected ? " botConnected"
 			: botInfo.Status === BotStatus.Connecting ? " botConnecting" : "";
 
@@ -91,7 +91,7 @@ class Bots implements IPage {
 				<div class="flex2">
 					<div>
 						<a when={botInfo.Status === BotStatus.Connected} class="jslink button buttonMedium"
-							href={"index.html?page=bot.html&bot_id=" + botInfo.Id}
+							href={"index.html?page=bot.html&bot_id=" + String(botInfo.Id)}
 							style="background-image: url(media/icons/list-rich.svg)"></a>
 					</div>
 
@@ -117,7 +117,7 @@ class Bots implements IPage {
 					</div>
 				</div>
 			</div>
-		</div >
+		</div>;
 
 		if (oldDiv !== undefined) {
 			this.divBots.replaceChild(div, oldDiv);
@@ -171,7 +171,7 @@ class Bots implements IPage {
 				action: async () => {
 					const res = await cmd<void>("settings", "delete", name).get();
 					if (DisplayError.check(res, "Error deleting bot")) {
-						this.refresh();
+						await this.refresh();
 					}
 				}
 			},
@@ -190,7 +190,7 @@ class Bots implements IPage {
 				action: async (i) => {
 					const res = await cmd<void>("settings", "copy", name, i.target).get();
 					if (DisplayError.check(res, "Error copying bot")) {
-						this.refresh();
+						await this.refresh();
 					}
 				}
 			},
@@ -209,7 +209,7 @@ class Bots implements IPage {
 				action: async (i) => {
 					const res = await cmd<void>("settings", "create", i.name).get();
 					if (DisplayError.check(res, "Error creating bot")) {
-						this.refresh();
+						await this.refresh();
 					}
 				}
 			},
@@ -228,7 +228,7 @@ class Bots implements IPage {
 				action: async (i) => {
 					const res = await cmd<void>("bot", "connect", "to", i.address).get();
 					if (DisplayError.check(res, "Error connecting bot")) {
-						this.refresh();
+						await this.refresh();
 					}
 				}
 			},
@@ -247,7 +247,7 @@ class Bots implements IPage {
 				action: async (i) => {
 					const res = await bot(cmd<void>("bot", "save", i.name), botId).get();
 					if (DisplayError.check(res, "Error saving bot")) {
-						this.refresh();
+						await this.refresh();
 					}
 				}
 			},

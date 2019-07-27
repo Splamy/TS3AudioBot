@@ -29,7 +29,7 @@ function cmd<T extends ApiRet>(...params: (string | Api)[]) {
 }
 
 function bot<T extends ApiRet>(param: Api<T>, id: number | string | undefined = Main.state["bot_id"]) {
-	if(id === undefined) {
+	if (id === undefined) {
 		throw new Error("The bot id was not set");
 	} else if (typeof id === "number") {
 		id = id.toString();

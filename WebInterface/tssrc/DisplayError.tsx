@@ -12,9 +12,8 @@ class DisplayError {
 		return true;
 	}
 
-	//public static push(msg: string): void;
 	public static push(err?: ApiErr, msg?: string): void {
-		let additional: string | undefined = undefined;
+		let additional: string | undefined;
 		let hasAdditional = false;
 		if (msg !== undefined) {
 			if (err !== undefined) {
@@ -29,8 +28,8 @@ class DisplayError {
 		}
 
 		const divErrors = document.getElementById("errors");
-		if (divErrors) {
-			let addError = <div class="displayError">
+		if (divErrors !== null) {
+			const addError = <div class="displayError">
 				<div class="formdatablock">
 					<div>Error:</div>
 					<div>{msg}</div>

@@ -1,9 +1,9 @@
 interface IPage {
-    divNav?: HTMLElement
+	divNav?: HTMLElement;
 
-    readonly title?: string;
+	readonly title?: string;
 
-    init(): Promise<void>;
-    refresh(): Promise<void>;
-    close?(): Promise<void>;
+	init(): Promise<void>;
+	refresh(): Promise<void>;
+	close?(): Promise<void>;
 }

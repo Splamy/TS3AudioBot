@@ -1,14 +1,14 @@
 class Bot implements IPage {
 	public async init() {
 		// Set up all asynchronous calls
-		let refreshPromise = this.refresh();
+		const refreshPromise = this.refresh();
 
 		// Fill 'Play' Block and assign Play-Controls data
 		const divPlayNew = Util.getElementByIdSafe("data_play_new") as HTMLInputElement;
 		const btnPlayNew = Util.getElementByIdSafe("post_play_new");
 
 		btnPlayNew.onclick = async () => {
-			if (divPlayNew.value) {
+			if (divPlayNew.value.length > 0) {
 				Util.setIcon(btnPlayNew, "cog-work");
 				const res = await bot(cmd("play", divPlayNew.value)).get();
 				Util.setIcon(btnPlayNew, "media-play");
@@ -28,7 +28,7 @@ class Bot implements IPage {
 				return false;
 			}
 			return true;
-		}
+		};
 
 		await refreshPromise;
 	}
@@ -41,7 +41,7 @@ class Bot implements IPage {
 			cmd<boolean>("random"),
 			cmd<number>("volume"),
 			cmd<CmdBotInfo>("bot", "info"),
-			cmd<CmdServerTreeServer>("server", "tree")
+			cmd<CmdServerTreeServer>("server", "tree"),
 		)).get();
 
 		if (!DisplayError.check(res, "Failed to get bot information"))
@@ -52,9 +52,9 @@ class Bot implements IPage {
 		const divId = Util.getElementByIdSafe("data_id");
 		const divServer = Util.getElementByIdSafe("data_server");
 
-		let botInfo = res[5];
-		divTemplate.innerText = botInfo.Name === null ? "<temporary>" : botInfo.Name;
-		divId.innerText = botInfo.Id + "";
+		const botInfo = res[5];
+		divTemplate.innerText = botInfo.Name == undefined ? "<temporary>" : botInfo.Name;
+		divId.innerText = String(botInfo.Id);
 		divServer.innerText = botInfo.Server;
 
 		// Fill server tree
@@ -69,27 +69,27 @@ class Bot implements IPage {
 	}
 
 	public setServerTree(tree: CmdServerTreeServer) {
-		let divTree = Util.getElementByIdSafe("server_tree");
+		const divTree = Util.getElementByIdSafe("server_tree");
 
 		tree.Channels[0] = { Id: 0, Name: tree.Name, Order: 0, Parent: -1, HasPassword: false };
 
-		for (let chan in tree.Channels) {
-			let chanV: any = tree.Channels[chan];
+		for (const chan in tree.Channels) {
+			const chanV: any = tree.Channels[chan];
 			chanV.Children = [];
 			chanV.User = [];
 		}
-		for (let chan in tree.Channels) {
-			let chanV = tree.Channels[chan];
+		for (const chan in tree.Channels) {
+			const chanV = tree.Channels[chan];
 			if (chanV.Parent !== -1) {
 				(tree.Channels[chanV.Parent] as any).Children.push(chanV);
 			}
 		}
-		for (let client in tree.Clients) {
-			let clientV = tree.Clients[client];
+		for (const client in tree.Clients) {
+			const clientV = tree.Clients[client];
 			(tree.Channels[clientV.Channel] as any).User.push(clientV);
 		}
 
-		let genTree = this.createTreeChannel(tree, tree.Channels[0]);
+		const genTree = this.createTreeChannel(tree, tree.Channels[0]);
 		genTree.classList.add("channel_root");
 
 		Util.clearChildren(divTree);
@@ -99,15 +99,15 @@ class Bot implements IPage {
 	private createTreeChannel(tree: CmdServerTreeServer, channel: CmdServerTreeChannel): HTMLElement {
 		const nameSpacer = /^\[(c|r|\*|)spacer[\w\d]*\](.*)$/.exec(channel.Name);
 		let spacer = "";
-		if (nameSpacer) {
-			if (nameSpacer[1] == "*") {
+		if (nameSpacer != undefined) {
+			if (nameSpacer[1] === "*") {
 				spacer = " spacer spacer_fill";
 				nameSpacer[2] = nameSpacer[2].repeat(50 / nameSpacer[2].length);
-			}
-			else if (nameSpacer[1] == "c")
+			} else if (nameSpacer[1] === "c") {
 				spacer = " spacer spacer_center";
-			else if (nameSpacer[1] == "r")
+			} else if (nameSpacer[1] === "r") {
 				spacer = " spacer spacer_right";
+			}
 			channel.Name = nameSpacer[2];
 		}
 
@@ -118,14 +118,10 @@ class Bot implements IPage {
 				<div class="channel_name">{channel.Name}</div>
 			</div>
 			<div class="channel_user">
-				{(channel as any).User.map((child: CmdServerTreeUser) =>
-					this.createTreeUser(child)
-				)}
+				{(channel as any).User.map((child: CmdServerTreeUser) => Bot.createTreeUser(child))}
 			</div>
 			<div class="channel_children">
-				{(channel as any).Children.map((child: CmdServerTreeChannel) =>
-					this.createTreeChannel(tree, child)
-				)}
+				{(channel as any).Children.map((child: CmdServerTreeChannel) => this.createTreeChannel(tree, child))}
 			</div>
 		</div>;
 	}
@@ -139,7 +135,7 @@ class Bot implements IPage {
 		} else {
 			await ModalBox.show("", "This channel is password protected",
 				{
-					inputs: { name: "Enter password" }
+					inputs: { name: "Enter password" },
 				},
 				{
 					text: "Ok",
@@ -147,22 +143,22 @@ class Bot implements IPage {
 					action: async (i) => {
 						const res = await bot(cmd<void>("bot", "move", String(channel.Id), i.name)).get();
 						if (DisplayError.check(res, "Failed to move")) {
-							this.refresh();
+							await this.refresh();
 						}
-					}
+					},
 				},
 				{
 					text: "Abort",
-				}
+				},
 			);
 		}
 	}
 
-	private createTreeUser(user: CmdServerTreeUser) {
+	private static createTreeUser(user: CmdServerTreeUser) {
 		return <div class="user user_content">
 			<div class="user_img"></div>
 			<div class="user_id">{user.Id}</div>
 			<div class="user_name">{user.Name}</div>
-		</div>
+		</div>;
 	}
 }

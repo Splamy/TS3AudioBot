@@ -22,7 +22,7 @@ class Util {
 		let str = "";
 		let hasOne = false;
 		for (const dat in data) {
-			if (!data[dat])
+			if (data[dat] == undefined)
 				continue;
 			str += (hasOne ? "&" : "?") + dat + "=" + data[dat];
 			hasOne = true;
@@ -105,4 +105,4 @@ type icons
 	| "trash"
 	| "volume-off" | "volume-low" | "volume-high";
 
-interface Dict<T = any> { [key: string]: T | undefined; };
+interface Dict<T = any> { [key: string]: T | undefined; }
