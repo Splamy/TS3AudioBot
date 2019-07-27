@@ -1,0 +1,81 @@
+// main: styles.less
+
+#server_tree {
+    font-family: monospace;
+
+    .channel, .user {
+        margin: 0.3em 0;
+    }
+
+    .channel_children, .channel_user {
+        margin-left: 1em;
+    }
+
+    .channel_id, .user_id {
+        margin-right: 0.5em;
+    }
+
+    .channel_img, .user_img {
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 70%;
+
+        width: 1em;
+        height: 1em;
+        margin: auto 0;
+    }
+
+    .channel_img {
+        background-image: url("media/icons/folder.svg");
+    }
+
+    .user_img {
+        background-image: url("media/icons/person.svg");
+    }
+
+    .channel_root > .channel_content {
+        .channel_id {
+            display: none;
+        }
+        .channel_img {
+            background-image: url("media/icons/browser.svg");
+        }
+    }
+
+    .spacer {
+        .channel_img, .channel_id {
+            opacity: 0;
+        }
+
+        &:hover {
+            .channel_img, .channel_id {
+                opacity: 1;
+            }
+        }
+    }
+    .spacer_right {
+        justify-content: flex-end;
+    }
+    .spacer_center {
+        justify-content: center;
+    }
+    .spacer_fill {
+        justify-content: center;
+        .channel_name {
+            overflow: hidden;
+        }
+    }
+
+    .channel_content, .user_content {
+        display: flex;
+    }
+
+    .channel_content, .user_content {
+        .unselectable();
+        cursor: pointer;
+
+        &:hover {
+            background-color: lighten(@backgroundcolor3, 20%);
+        }
+    }
+}

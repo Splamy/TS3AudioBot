@@ -36,6 +36,8 @@ namespace TS3AudioBot
 	using System.Threading;
 	using TS3Client;
 	using TS3Client.Audio;
+	using TS3Client.Full;
+	using TS3Client.Full.Book;
 	using TS3Client.Messages;
 	using Web.Api;
 
@@ -1300,6 +1302,12 @@ namespace TS3AudioBot
 				throw new CommandException(string.Format(strings.error_value_not_in_range, 0, result.Value.Count), CommandExceptionReason.CommandError);
 
 			playManager.Play(clientCall, result.Value[index]).UnwrapThrow();
+		}
+
+		[Command("server tree")]
+		public static JsonValue<Server> CommandServerTree(Ts3FullClient ts3FullClient)
+		{
+			return JsonValue.Create(ts3FullClient.Book.Server);
 		}
 
 		[Command("settings")]

@@ -50,7 +50,7 @@ namespace TS3Client.Full
 		public override bool Connecting { get { lock (statusLock) return status == Ts3ClientStatus.Connecting; } }
 		protected override Deserializer Deserializer => msgProc.Deserializer;
 		private ConnectionDataFull connectionDataFull;
-		public Book.Connection Book { get; set; } //= new Book.Connection();
+		public Book.Connection Book { get; set; } = new Book.Connection();
 
 		public override event EventHandler<EventArgs> OnConnected;
 		public override event EventHandler<DisconnectEventArgs> OnDisconnected;

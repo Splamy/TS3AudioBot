@@ -21,3 +21,27 @@ interface ApiError {
     ErrorName: string;
     HelpLink?: string;
 }
+
+interface CmdServerTreeServer {
+    Name: string;
+    Clients: { [id: number]: CmdServerTreeUser };
+    Channels: { [id: number]: CmdServerTreeChannel };
+    // ...
+}
+
+interface CmdServerTreeUser {
+    Id: number;
+    Uid: string;
+    Name: string;
+    Channel: number;
+    // ...
+}
+
+interface CmdServerTreeChannel {
+    Id: number;
+    Name: string;
+    Parent: number;
+    Order: number;
+    HasPassword:boolean;
+    // ...
+}

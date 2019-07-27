@@ -1,7 +1,37 @@
 <#@ assembly name="System.Core" #>
-<#@ assembly name="%userprofile%/.nuget/packages/nett/0.12.0/lib/Net40/Nett.dll" #>
-<#
-void Warn(string _warn) { WriteLine($"#warning {_warn}"); }
+<#@ assembly name="%userprofile%/.nuget/packages/nett/0.13.0/lib/Net40/Nett.dll" #>
+<#+
+public void Warn(string _warn) { WriteLine($"#warning {_warn}"); }
+
+public static bool NullType(string type) {
+	return type == "i8"
+		|| type == "u8"
+		|| type == "i16"
+		|| type == "u16"
+		|| type == "i32"
+		|| type == "u32"
+		|| type == "i64"
+		|| type == "u64"
+		|| type == "f32"
+		|| type == "f64"
+		|| type == "bool"
+		|| type == "ClientDbId"
+		|| type == "ClientId"
+		|| type == "ChannelId"
+		|| type == "ServerGroupId"
+		|| type == "ChannelGroupId"
+		|| type == "IconHash"
+		|| type == "ConnectionId"
+		|| type == "DateTime"
+		|| type == "Duration"
+		|| type == "DurationSeconds"
+		|| type == "DurationMilliseconds"
+		|| type == "Codec"
+		|| type == "HostMessageMode"
+		|| type == "CodecEncryptionMode"
+		|| type == "HostBannerMode"
+		;
+}
 
 const string ConversionSet = 
 @"#pragma warning disable CS8019 // Ignore unused imports
@@ -17,6 +47,7 @@ const string ConversionSet =
 	using f64 = System.Double;
 	using str = System.String;
 
+	using DateTime = System.DateTime;
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;

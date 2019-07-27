@@ -43,6 +43,7 @@ namespace TS3Client.Messages
 	using f64 = System.Double;
 	using str = System.String;
 
+	using DateTime = System.DateTime;
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
@@ -66,7 +67,7 @@ namespace TS3Client.Messages
 		public str Ip { get; set; }
 		public str Name { get; set; }
 		public Uid Uid { get; set; }
-		public DurationSeconds Time { get; set; }
+		public DurationSeconds? Time { get; set; }
 		public str BanReason { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -109,7 +110,7 @@ namespace TS3Client.Messages
 		
 
 		public ClientId ClientId { get; set; }
-		public DurationSeconds Time { get; set; }
+		public DurationSeconds? Time { get; set; }
 		public str BanReason { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -561,26 +562,26 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreate;
 		
 
-		public ChannelId ParentId { get; set; }
+		public ChannelId? ParentId { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
 		public str Description { get; set; }
 		public str Password { get; set; }
-		public Codec Codec { get; set; }
-		public u8 CodecQuality { get; set; }
-		public i32 MaxClients { get; set; }
-		public i32 MaxFamilyClients { get; set; }
-		public i32 Order { get; set; }
-		public bool HasPassword { get; set; }
-		public bool IsUnencrypted { get; set; }
-		public DurationSeconds DeleteDelay { get; set; }
-		public bool IsMaxClientsUnlimited { get; set; }
-		public bool IsMaxFamilyClientsUnlimited { get; set; }
-		public bool InheritsMaxFamilyClients { get; set; }
+		public Codec? Codec { get; set; }
+		public u8? CodecQuality { get; set; }
+		public i32? MaxClients { get; set; }
+		public i32? MaxFamilyClients { get; set; }
+		public i32? Order { get; set; }
+		public bool? HasPassword { get; set; }
+		public bool? IsUnencrypted { get; set; }
+		public DurationSeconds? DeleteDelay { get; set; }
+		public bool? IsMaxClientsUnlimited { get; set; }
+		public bool? IsMaxFamilyClientsUnlimited { get; set; }
+		public bool? InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
-		public bool IsPermanent { get; set; }
-		public bool IsSemiPermanent { get; set; }
-		public bool IsDefault { get; set; }
+		public bool? IsPermanent { get; set; }
+		public bool? IsSemiPermanent { get; set; }
+		public bool? IsDefault { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -658,22 +659,22 @@ namespace TS3Client.Messages
 		public i32 Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
-		public bool IsDefault { get; set; }
-		public bool HasPassword { get; set; }
-		public bool IsPermanent { get; set; }
-		public bool IsSemiPermanent { get; set; }
-		public Codec Codec { get; set; }
-		public u8 CodecQuality { get; set; }
-		public i32 NeededTalkPower { get; set; }
-		public IconHash IconId { get; set; }
-		public i32 MaxClients { get; set; }
-		public i32 MaxFamilyClients { get; set; }
-		public i32 CodecLatencyFactor { get; set; }
-		public bool IsUnencrypted { get; set; }
-		public DurationSeconds DeleteDelay { get; set; }
-		public bool IsMaxClientsUnlimited { get; set; }
+		public bool? IsDefault { get; set; }
+		public bool? HasPassword { get; set; }
+		public bool? IsPermanent { get; set; }
+		public bool? IsSemiPermanent { get; set; }
+		public Codec? Codec { get; set; }
+		public u8? CodecQuality { get; set; }
+		public i32? NeededTalkPower { get; set; }
+		public IconHash? IconId { get; set; }
+		public i32? MaxClients { get; set; }
+		public i32? MaxFamilyClients { get; set; }
+		public i32? CodecLatencyFactor { get; set; }
+		public bool? IsUnencrypted { get; set; }
+		public DurationSeconds? DeleteDelay { get; set; }
+		public bool? IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
-		public bool InheritsMaxFamilyClients { get; set; }
+		public bool? InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
 		public ChannelId ParentId { get; set; }
 
@@ -1003,27 +1004,27 @@ namespace TS3Client.Messages
 		
 
 		public ChannelId ChannelId { get; set; }
-		public i32 Order { get; set; }
+		public i32? Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
-		public bool IsDefault { get; set; }
-		public bool HasPassword { get; set; }
-		public bool IsPermanent { get; set; }
-		public bool IsSemiPermanent { get; set; }
-		public Codec Codec { get; set; }
-		public u8 CodecQuality { get; set; }
-		public i32 NeededTalkPower { get; set; }
-		public IconHash IconId { get; set; }
-		public i32 MaxClients { get; set; }
-		public i32 MaxFamilyClients { get; set; }
-		public i32 CodecLatencyFactor { get; set; }
-		public bool IsUnencrypted { get; set; }
-		public DurationSeconds DeleteDelay { get; set; }
-		public bool IsMaxClientsUnlimited { get; set; }
-		public bool IsMaxFamilyClientsUnlimited { get; set; }
-		public bool InheritsMaxFamilyClients { get; set; }
+		public bool? IsDefault { get; set; }
+		public bool? HasPassword { get; set; }
+		public bool? IsPermanent { get; set; }
+		public bool? IsSemiPermanent { get; set; }
+		public Codec? Codec { get; set; }
+		public u8? CodecQuality { get; set; }
+		public i32? NeededTalkPower { get; set; }
+		public IconHash? IconId { get; set; }
+		public i32? MaxClients { get; set; }
+		public i32? MaxFamilyClients { get; set; }
+		public i32? CodecLatencyFactor { get; set; }
+		public bool? IsUnencrypted { get; set; }
+		public DurationSeconds? DeleteDelay { get; set; }
+		public bool? IsMaxClientsUnlimited { get; set; }
+		public bool? IsMaxFamilyClientsUnlimited { get; set; }
+		public bool? InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
-		public ChannelId ParentId { get; set; }
+		public ChannelId? ParentId { get; set; }
 		public str Description { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -1102,31 +1103,31 @@ namespace TS3Client.Messages
 		public string ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
-		public ClientId InvokerId { get; set; }
+		public ClientId? InvokerId { get; set; }
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 		public Reason Reason { get; set; }
-		public i32 Order { get; set; }
+		public i32? Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
-		public bool IsDefault { get; set; }
-		public bool HasPassword { get; set; }
-		public bool IsPermanent { get; set; }
-		public bool IsSemiPermanent { get; set; }
-		public Codec Codec { get; set; }
-		public u8 CodecQuality { get; set; }
-		public i32 NeededTalkPower { get; set; }
-		public IconHash IconId { get; set; }
-		public i32 MaxClients { get; set; }
-		public i32 MaxFamilyClients { get; set; }
-		public i32 CodecLatencyFactor { get; set; }
-		public bool IsUnencrypted { get; set; }
-		public DurationSeconds DeleteDelay { get; set; }
-		public bool IsMaxClientsUnlimited { get; set; }
-		public bool IsMaxFamilyClientsUnlimited { get; set; }
-		public bool InheritsMaxFamilyClients { get; set; }
+		public bool? IsDefault { get; set; }
+		public bool? HasPassword { get; set; }
+		public bool? IsPermanent { get; set; }
+		public bool? IsSemiPermanent { get; set; }
+		public Codec? Codec { get; set; }
+		public u8? CodecQuality { get; set; }
+		public i32? NeededTalkPower { get; set; }
+		public IconHash? IconId { get; set; }
+		public i32? MaxClients { get; set; }
+		public i32? MaxFamilyClients { get; set; }
+		public i32? CodecLatencyFactor { get; set; }
+		public bool? IsUnencrypted { get; set; }
+		public DurationSeconds? DeleteDelay { get; set; }
+		public bool? IsMaxClientsUnlimited { get; set; }
+		public bool? IsMaxFamilyClientsUnlimited { get; set; }
+		public bool? InheritsMaxFamilyClients { get; set; }
 		public str PhoneticName { get; set; }
-		public ChannelId ParentId { get; set; }
+		public ChannelId? ParentId { get; set; }
 		public str Description { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -1398,9 +1399,9 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupClientListRequest;
 		
 
-		public ChannelId ChannelId { get; set; }
-		public ClientDbId ClientDbId { get; set; }
-		public ChannelGroupId ChannelGroup { get; set; }
+		public ChannelId? ChannelId { get; set; }
+		public ClientDbId? ClientDbId { get; set; }
+		public ChannelGroupId? ChannelGroup { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1563,7 +1564,7 @@ namespace TS3Client.Messages
 		public GroupNamingMode NamingMode { get; set; }
 		public i32 NeededModifyPower { get; set; }
 		public i32 NeededMemberAddPower { get; set; }
-		public i32 NeededMemberRemovePower { get; set; }
+		public i32? NeededMemberRemovePower { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1802,7 +1803,7 @@ namespace TS3Client.Messages
 		public bool ForcedSilence { get; set; }
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; set; }
-		public bool IsPrivate { get; set; }
+		public bool? IsPrivate { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1913,7 +1914,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 		public ChannelId ParentId { get; set; }
-		public i32 Order { get; set; }
+		public i32? Order { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2161,7 +2162,7 @@ namespace TS3Client.Messages
 		
 
 		public ChannelId ChannelId { get; set; }
-		public DurationSeconds EmptySince { get; set; }
+		public DurationSeconds? EmptySince { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3066,8 +3067,8 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbListRequest;
 		
 
-		public u32 Offset { get; set; }
-		public u32 Limit { get; set; }
+		public u32? Offset { get; set; }
+		public u32? Limit { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3143,7 +3144,7 @@ namespace TS3Client.Messages
 
 		public ClientId ClientId { get; set; }
 		public str Description { get; set; }
-		public bool TalkPowerGranted { get; set; }
+		public bool? TalkPowerGranted { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3182,7 +3183,7 @@ namespace TS3Client.Messages
 
 		public Reason Reason { get; set; }
 		public ChannelId TargetChannelId { get; set; }
-		public ClientId InvokerId { get; set; }
+		public ClientId? InvokerId { get; set; }
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 		public ClientId ClientId { get; set; }
@@ -3826,10 +3827,10 @@ namespace TS3Client.Messages
 		
 
 		public str ReasonMessage { get; set; }
-		public DurationSeconds BanTime { get; set; }
+		public DurationSeconds? BanTime { get; set; }
 		public Reason Reason { get; set; }
 		public ChannelId TargetChannelId { get; set; }
-		public ClientId InvokerId { get; set; }
+		public ClientId? InvokerId { get; set; }
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 		public ClientId ClientId { get; set; }
@@ -3888,24 +3889,24 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public ClientType ClientType { get; set; }
 		public Uid Uid { get; set; }
-		public bool IsAway { get; set; }
+		public bool? IsAway { get; set; }
 		public str AwayMessage { get; set; }
-		public bool IsTalking { get; set; }
-		public bool InputMuted { get; set; }
-		public bool OutputMuted { get; set; }
-		public bool InputHardwareEnabled { get; set; }
-		public bool OutputHardwareEnabled { get; set; }
-		public i32 TalkPower { get; set; }
-		public bool TalkPowerGranted { get; set; }
-		public bool IsPrioritySpeaker { get; set; }
-		public bool IsRecording { get; set; }
-		public bool IsChannelCommander { get; set; }
-		public DurationMilliseconds ClientIdleTime { get; set; }
-		public DateTime CreationDate { get; set; }
-		public DateTime LastConnected { get; set; }
+		public bool? IsTalking { get; set; }
+		public bool? InputMuted { get; set; }
+		public bool? OutputMuted { get; set; }
+		public bool? InputHardwareEnabled { get; set; }
+		public bool? OutputHardwareEnabled { get; set; }
+		public i32? TalkPower { get; set; }
+		public bool? TalkPowerGranted { get; set; }
+		public bool? IsPrioritySpeaker { get; set; }
+		public bool? IsRecording { get; set; }
+		public bool? IsChannelCommander { get; set; }
+		public DurationMilliseconds? ClientIdleTime { get; set; }
+		public DateTime? CreationDate { get; set; }
+		public DateTime? LastConnected { get; set; }
 		public ServerGroupId[] ServerGroups { get; set; }
-		public ChannelGroupId ChannelGroup { get; set; }
-		public ChannelId InheritedChannelGroupFromChannel { get; set; }
+		public ChannelGroupId? ChannelGroup { get; set; }
+		public ChannelId? InheritedChannelGroupFromChannel { get; set; }
 		public str ClientVersion { get; set; }
 		public str ClientPlatform { get; set; }
 		public str CountryCode { get; set; }
@@ -4056,7 +4057,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public Reason Reason { get; set; }
 		public ChannelId TargetChannelId { get; set; }
-		public ClientId InvokerId { get; set; }
+		public ClientId? InvokerId { get; set; }
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 		public str ReasonMessage { get; set; }
@@ -4249,7 +4250,7 @@ namespace TS3Client.Messages
 		
 
 		public Ts3Permission PermissionId { get; set; }
-		public i32 PermissionValue { get; set; }
+		public i32? PermissionValue { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4580,7 +4581,7 @@ namespace TS3Client.Messages
 
 		public str LoginName { get; set; }
 		public str LoginPassword { get; set; }
-		public ClientDbId ClientDbId { get; set; }
+		public ClientDbId? ClientDbId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4690,18 +4691,18 @@ namespace TS3Client.Messages
 		
 
 		public str Name { get; set; }
-		public bool InputMuted { get; set; }
-		public bool OutputMuted { get; set; }
-		public bool IsAway { get; set; }
+		public bool? InputMuted { get; set; }
+		public bool? OutputMuted { get; set; }
+		public bool? IsAway { get; set; }
 		public str AwayMessage { get; set; }
-		public bool InputHardwareEnabled { get; set; }
-		public bool OutputHardwareEnabled { get; set; }
-		public bool IsChannelCommander { get; set; }
+		public bool? InputHardwareEnabled { get; set; }
+		public bool? OutputHardwareEnabled { get; set; }
+		public bool? IsChannelCommander { get; set; }
 		public str AvatarHash { get; set; }
 		public str PhoneticName { get; set; }
-		public DateTime TalkPowerRequestTime { get; set; }
+		public DateTime? TalkPowerRequestTime { get; set; }
 		public str TalkPowerRequestMessage { get; set; }
-		public bool IsRecording { get; set; }
+		public bool? IsRecording { get; set; }
 		public str Badges { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -4763,34 +4764,34 @@ namespace TS3Client.Messages
 
 		public ClientId ClientId { get; set; }
 		public str Name { get; set; }
-		public u32 UnreadMessages { get; set; }
+		public u32? UnreadMessages { get; set; }
 		public str ClientVersion { get; set; }
 		public str ClientPlatform { get; set; }
 		public str LoginName { get; set; }
-		public DateTime CreationDate { get; set; }
-		public DateTime LastConnected { get; set; }
-		public i32 TotalConnections { get; set; }
-		public i64 MonthlyUploadQuota { get; set; }
-		public i64 MonthlyDownloadQuota { get; set; }
-		public i64 TotalUploadQuota { get; set; }
-		public i64 TotalDownloadQuota { get; set; }
-		public bool InputMuted { get; set; }
-		public bool InputHardwareEnabled { get; set; }
-		public bool OutputHardwareEnabled { get; set; }
+		public DateTime? CreationDate { get; set; }
+		public DateTime? LastConnected { get; set; }
+		public i32? TotalConnections { get; set; }
+		public i64? MonthlyUploadQuota { get; set; }
+		public i64? MonthlyDownloadQuota { get; set; }
+		public i64? TotalUploadQuota { get; set; }
+		public i64? TotalDownloadQuota { get; set; }
+		public bool? InputMuted { get; set; }
+		public bool? InputHardwareEnabled { get; set; }
+		public bool? OutputHardwareEnabled { get; set; }
 		public str Description { get; set; }
-		public bool IsPrioritySpeaker { get; set; }
-		public bool IsChannelCommander { get; set; }
+		public bool? IsPrioritySpeaker { get; set; }
+		public bool? IsChannelCommander { get; set; }
 		public str AvatarHash { get; set; }
-		public DateTime TalkPowerRequestTime { get; set; }
+		public DateTime? TalkPowerRequestTime { get; set; }
 		public str TalkPowerRequestMessage { get; set; }
-		public bool TalkPowerGranted { get; set; }
+		public bool? TalkPowerGranted { get; set; }
 		public str PhoneticName { get; set; }
-		public bool IsRecording { get; set; }
+		public bool? IsRecording { get; set; }
 		public ServerGroupId[] ServerGroups { get; set; }
 		public str MyTeamSpeakId { get; set; }
 		public str Badges { get; set; }
-		public i32 TalkPower { get; set; }
-		public IconHash IconId { get; set; }
+		public i32? TalkPower { get; set; }
+		public IconHash? IconId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5112,7 +5113,7 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ComplainListRequest;
 		
 
-		public ClientDbId TargetClientDbId { get; set; }
+		public ClientDbId? TargetClientDbId { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5927,7 +5928,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
-		public ChannelId TargetChannelId { get; set; }
+		public ChannelId? TargetChannelId { get; set; }
 		public str TargetChannelPassword { get; set; }
 		public str OldName { get; set; }
 		public str NewName { get; set; }
@@ -6384,10 +6385,10 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.LogView;
 		
 
-		public u32 Lines { get; set; }
-		public bool Reverse { get; set; }
-		public bool InstanceLog { get; set; }
-		public u64 Offset { get; set; }
+		public u32? Lines { get; set; }
+		public bool? Reverse { get; set; }
+		public bool? InstanceLog { get; set; }
+		public u64? Offset { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7204,7 +7205,7 @@ namespace TS3Client.Messages
 		
 
 		public TextMessageTargetMode Target { get; set; }
-		public ClientId TargetClientId { get; set; }
+		public ClientId? TargetClientId { get; set; }
 		public str Message { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -7464,46 +7465,46 @@ namespace TS3Client.Messages
 		public u32 ServerId { get; set; }
 		public str Name { get; set; }
 		public str WelcomeMessage { get; set; }
-		public u16 MaxClients { get; set; }
+		public u16? MaxClients { get; set; }
 		public str ServerPassword { get; set; }
 		public str Hostmessage { get; set; }
-		public HostMessageMode HostmessageMode { get; set; }
+		public HostMessageMode? HostmessageMode { get; set; }
 		public str HostbannerUrl { get; set; }
 		public str HostbannerGfxUrl { get; set; }
-		public DurationSeconds HostbannerGfxInterval { get; set; }
+		public DurationSeconds? HostbannerGfxInterval { get; set; }
 		public str HostbuttonTooltip { get; set; }
 		public str HostbuttonUrl { get; set; }
 		public str HostbuttonGfxUrl { get; set; }
-		public IconHash IconId { get; set; }
-		public u16 ReservedSlots { get; set; }
-		public HostBannerMode HostbannerMode { get; set; }
+		public IconHash? IconId { get; set; }
+		public u16? ReservedSlots { get; set; }
+		public HostBannerMode? HostbannerMode { get; set; }
 		public str Nickname { get; set; }
-		public u64 MaxDownloadTotalBandwidth { get; set; }
-		public u64 MaxUploadTotalBandwidth { get; set; }
-		public u64 DownloadQuota { get; set; }
-		public u64 UploadQuota { get; set; }
-		public u32 AntifloodPointsTickReduce { get; set; }
-		public u32 AntifloodPointsToCommandBlock { get; set; }
-		public u32 AntifloodPointsToIpBlock { get; set; }
-		public CodecEncryptionMode CodecEncryptionMode { get; set; }
-		public u8 IdentitySecurityLevel { get; set; }
-		public ServerGroupId DefaultServerGroup { get; set; }
-		public ChannelGroupId DefaultChannelGroup { get; set; }
-		public ChannelGroupId DefaultChannelAdminGroup { get; set; }
-		public u32 ComplainAutobanCount { get; set; }
-		public DurationSeconds ComplainAutobanTime { get; set; }
-		public DurationSeconds ComplainRemoveTime { get; set; }
-		public u32 MinClientsInChannelBeforeForcedSilence { get; set; }
-		public f32 PrioritySpeakerDimmModificator { get; set; }
+		public u64? MaxDownloadTotalBandwidth { get; set; }
+		public u64? MaxUploadTotalBandwidth { get; set; }
+		public u64? DownloadQuota { get; set; }
+		public u64? UploadQuota { get; set; }
+		public u32? AntifloodPointsTickReduce { get; set; }
+		public u32? AntifloodPointsToCommandBlock { get; set; }
+		public u32? AntifloodPointsToIpBlock { get; set; }
+		public CodecEncryptionMode? CodecEncryptionMode { get; set; }
+		public u8? IdentitySecurityLevel { get; set; }
+		public ServerGroupId? DefaultServerGroup { get; set; }
+		public ChannelGroupId? DefaultChannelGroup { get; set; }
+		public ChannelGroupId? DefaultChannelAdminGroup { get; set; }
+		public u32? ComplainAutobanCount { get; set; }
+		public DurationSeconds? ComplainAutobanTime { get; set; }
+		public DurationSeconds? ComplainRemoveTime { get; set; }
+		public u32? MinClientsInChannelBeforeForcedSilence { get; set; }
+		public f32? PrioritySpeakerDimmModificator { get; set; }
 		public str PhoneticName { get; set; }
-		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
-		public bool WeblistEnabled { get; set; }
-		public bool LogClient { get; set; }
-		public bool LogQuery { get; set; }
-		public bool LogChannel { get; set; }
-		public bool LogPermissions { get; set; }
-		public bool LogServer { get; set; }
-		public bool LogFileTransfer { get; set; }
+		public DurationSeconds? TempChannelDefaultDeleteDelay { get; set; }
+		public bool? WeblistEnabled { get; set; }
+		public bool? LogClient { get; set; }
+		public bool? LogQuery { get; set; }
+		public bool? LogChannel { get; set; }
+		public bool? LogPermissions { get; set; }
+		public bool? LogServer { get; set; }
+		public bool? LogFileTransfer { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7626,20 +7627,20 @@ namespace TS3Client.Messages
 		public Reason Reason { get; set; }
 		public str Name { get; set; }
 		public str Nickname { get; set; }
-		public CodecEncryptionMode CodecEncryptionMode { get; set; }
-		public ServerGroupId DefaultServerGroup { get; set; }
-		public ChannelGroupId DefaultChannelGroup { get; set; }
+		public CodecEncryptionMode? CodecEncryptionMode { get; set; }
+		public ServerGroupId? DefaultServerGroup { get; set; }
+		public ChannelGroupId? DefaultChannelGroup { get; set; }
 		public str HostbannerUrl { get; set; }
 		public str HostbannerGfxUrl { get; set; }
-		public DurationSeconds HostbannerGfxInterval { get; set; }
-		public f32 PrioritySpeakerDimmModificator { get; set; }
+		public DurationSeconds? HostbannerGfxInterval { get; set; }
+		public f32? PrioritySpeakerDimmModificator { get; set; }
 		public str HostbuttonTooltip { get; set; }
 		public str HostbuttonUrl { get; set; }
 		public str HostbuttonGfxUrl { get; set; }
 		public str PhoneticName { get; set; }
-		public IconHash IconId { get; set; }
-		public HostBannerMode HostbannerMode { get; set; }
-		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
+		public IconHash? IconId { get; set; }
+		public HostBannerMode? HostbannerMode { get; set; }
+		public DurationSeconds? TempChannelDefaultDeleteDelay { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8187,7 +8188,7 @@ namespace TS3Client.Messages
 		public GroupNamingMode NamingMode { get; set; }
 		public i32 NeededModifyPower { get; set; }
 		public i32 NeededMemberAddPower { get; set; }
-		public i32 NeededMemberRemovePower { get; set; }
+		public i32? NeededMemberRemovePower { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8545,7 +8546,7 @@ namespace TS3Client.Messages
 		
 
 		public str EventType { get; set; }
-		public ChannelId Id { get; set; }
+		public ChannelId? Id { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9104,7 +9105,7 @@ namespace TS3Client.Messages
 
 		public TextMessageTargetMode Target { get; set; }
 		public str Message { get; set; }
-		public ClientId TargetClientId { get; set; }
+		public ClientId? TargetClientId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
@@ -9408,8 +9409,8 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.Use;
 		
 
-		public u32 ServerId { get; set; }
-		public u16 Port { get; set; }
+		public u32? ServerId { get; set; }
+		public u16? Port { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{

@@ -122,7 +122,7 @@ foreach(var msg in gen.GetOrderedMsg())
 		<#= isResponse ? "public string ReturnCode { get; set; }" : "" #>
 <#
 	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) { #>
-		public <#= genField.typeFin #> <#= genField.pretty #> { get; set; }<# } #>
+		public <#= genField.TypeFin(optional) #> <#= genField.pretty #> { get; set; }<# } #>
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{<#

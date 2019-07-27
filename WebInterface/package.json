@@ -31,11 +31,11 @@
   "author": "Splamy",
   "license": "OSL-3.0",
   "devDependencies": {
-    "clean-css-cli": "^4.2.1",
-    "copyfiles": "^2.1.0",
+    "clean-css-cli": "^4.3.0",
+    "copyfiles": "^2.1.1",
     "del-cli": "^1.1.0",
-    "less": "^3.8.1",
-    "typescript": "^3.1.1",
+    "less": "^3.9.0",
+    "typescript": "^3.5.3",
     "uglify-es": "^3.3.9"
   }
 }

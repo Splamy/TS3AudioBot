@@ -44,6 +44,7 @@ namespace TS3Client.Full.Book
 	using f64 = System.Double;
 	using str = System.String;
 
+	using DateTime = System.DateTime;
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
@@ -66,33 +67,33 @@ namespace TS3Client.Full.Book
 		public void UpdateInitServer(InitServer msg)
 		{
 			var obj = new Server();
-			obj.Platform = msg.ServerPlatform;
-			obj.Version = msg.ServerVersion;
-			obj.Created = msg.ServerCreated;
-			{ var tmp = msg.ServerIp; if (tmp != null) obj.Ips.AddRange(tmp); }
+			{ var tmpv = msg.ServerPlatform; if (tmpv != null) obj.Platform = (str)tmpv; }
+			{ var tmpv = msg.ServerVersion; if (tmpv != null) obj.Version = (str)tmpv; }
+			{ var tmpv = msg.ServerCreated; if (tmpv != null) obj.Created = (DateTime)tmpv; }
+			{ var tmpa = msg.ServerIp; if (tmpa != null) obj.Ips.AddRange(tmpa); }
 			SetClientDataFun(msg);
-			obj.WelcomeMessage = msg.WelcomeMessage;
-			obj.MaxClients = msg.MaxClients;
-			obj.Hostmessage = msg.Hostmessage;
-			obj.HostmessageMode = msg.HostmessageMode;
-			obj.VirtualServerId = msg.VirtualServerId;
-			obj.AskForPrivilegekey = msg.AskForPrivilegekey;
-			obj.ProtocolVersion = msg.ProtocolVersion;
-			obj.Name = msg.Name;
-			obj.CodecEncryptionMode = msg.CodecEncryptionMode;
-			obj.DefaultServerGroup = msg.DefaultServerGroup;
-			obj.DefaultChannelGroup = msg.DefaultChannelGroup;
-			obj.HostbannerUrl = msg.HostbannerUrl;
-			obj.HostbannerGfxUrl = msg.HostbannerGfxUrl;
-			obj.HostbannerGfxInterval = msg.HostbannerGfxInterval;
-			obj.PrioritySpeakerDimmModificator = msg.PrioritySpeakerDimmModificator;
-			obj.HostbuttonTooltip = msg.HostbuttonTooltip;
-			obj.HostbuttonUrl = msg.HostbuttonUrl;
-			obj.HostbuttonGfxUrl = msg.HostbuttonGfxUrl;
-			obj.PhoneticName = msg.PhoneticName;
-			obj.IconId = msg.IconId;
-			obj.HostbannerMode = msg.HostbannerMode;
-			obj.TempChannelDefaultDeleteDelay = msg.TempChannelDefaultDeleteDelay;
+			{ var tmpv = msg.WelcomeMessage; if (tmpv != null) obj.WelcomeMessage = (str)tmpv; }
+			{ var tmpv = msg.MaxClients; if (tmpv != null) obj.MaxClients = (u16)tmpv; }
+			{ var tmpv = msg.Hostmessage; if (tmpv != null) obj.Hostmessage = (str)tmpv; }
+			{ var tmpv = msg.HostmessageMode; if (tmpv != null) obj.HostmessageMode = (HostMessageMode)tmpv; }
+			{ var tmpv = msg.VirtualServerId; if (tmpv != null) obj.VirtualServerId = (u64)tmpv; }
+			{ var tmpv = msg.AskForPrivilegekey; if (tmpv != null) obj.AskForPrivilegekey = (bool)tmpv; }
+			{ var tmpv = msg.ProtocolVersion; if (tmpv != null) obj.ProtocolVersion = (u16)tmpv; }
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.CodecEncryptionMode; if (tmpv != null) obj.CodecEncryptionMode = (CodecEncryptionMode)tmpv; }
+			{ var tmpv = msg.DefaultServerGroup; if (tmpv != null) obj.DefaultServerGroup = (ServerGroupId)tmpv; }
+			{ var tmpv = msg.DefaultChannelGroup; if (tmpv != null) obj.DefaultChannelGroup = (ChannelGroupId)tmpv; }
+			{ var tmpv = msg.HostbannerUrl; if (tmpv != null) obj.HostbannerUrl = (str)tmpv; }
+			{ var tmpv = msg.HostbannerGfxUrl; if (tmpv != null) obj.HostbannerGfxUrl = (str)tmpv; }
+			{ var tmpv = msg.HostbannerGfxInterval; if (tmpv != null) obj.HostbannerGfxInterval = (Duration)tmpv; }
+			{ var tmpv = msg.PrioritySpeakerDimmModificator; if (tmpv != null) obj.PrioritySpeakerDimmModificator = (f32)tmpv; }
+			{ var tmpv = msg.HostbuttonTooltip; if (tmpv != null) obj.HostbuttonTooltip = (str)tmpv; }
+			{ var tmpv = msg.HostbuttonUrl; if (tmpv != null) obj.HostbuttonUrl = (str)tmpv; }
+			{ var tmpv = msg.HostbuttonGfxUrl; if (tmpv != null) obj.HostbuttonGfxUrl = (str)tmpv; }
+			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
+			{ var tmpv = msg.HostbannerMode; if (tmpv != null) obj.HostbannerMode = (HostBannerMode)tmpv; }
+			{ var tmpv = msg.TempChannelDefaultDeleteDelay; if (tmpv != null) obj.TempChannelDefaultDeleteDelay = (Duration)tmpv; }
 			SetServer(obj);
 			
 		}
@@ -101,30 +102,30 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelCreated(ChannelCreated msg)
 		{
 			var obj = new Channel();
-			obj.Parent = msg.ParentId;
+			{ var tmpv = msg.ParentId; if (tmpv != null) obj.Parent = (ChannelId)tmpv; }
 			{
 			var tmp = MaxClientsCcFun(msg);
-			obj.MaxClients = tmp.Item1;
-			obj.MaxFamilyClients = tmp.Item2;
+			{ var tmpv = tmp.Item1; if (tmpv != null) obj.MaxClients = (MaxClients)tmpv; }
+			{ var tmpv = tmp.Item2; if (tmpv != null) obj.MaxFamilyClients = (MaxClients)tmpv; }
 			}
-			obj.ChannelType = ChannelTypeCcFun(msg);
-			obj.ForcedSilence = ReturnFalse(msg);
+			{ var tmpv = ChannelTypeCcFun(msg); if (tmpv != null) obj.ChannelType = (ChannelType)tmpv; }
+			{ var tmpv = ReturnFalse(msg); if (tmpv != null) obj.ForcedSilence = (bool)tmpv; }
 			obj.IsPrivate = null;
-			obj.Subscribed = ReturnFalse(msg);
+			{ var tmpv = ReturnFalse(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
 			obj.OptionalData = null;
-			obj.Order = msg.Order;
-			obj.Name = msg.Name;
-			obj.Topic = msg.Topic;
-			obj.IsDefault = msg.IsDefault;
-			obj.HasPassword = msg.HasPassword;
-			obj.Codec = msg.Codec;
-			obj.CodecQuality = msg.CodecQuality;
-			obj.NeededTalkPower = msg.NeededTalkPower;
-			obj.IconId = msg.IconId;
-			obj.CodecLatencyFactor = msg.CodecLatencyFactor;
-			obj.IsUnencrypted = msg.IsUnencrypted;
-			obj.DeleteDelay = msg.DeleteDelay;
-			obj.PhoneticName = msg.PhoneticName;
+			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.Topic; if (tmpv != null) obj.Topic = (str)tmpv; }
+			{ var tmpv = msg.IsDefault; if (tmpv != null) obj.IsDefault = (bool)tmpv; }
+			{ var tmpv = msg.HasPassword; if (tmpv != null) obj.HasPassword = (bool)tmpv; }
+			{ var tmpv = msg.Codec; if (tmpv != null) obj.Codec = (Codec)tmpv; }
+			{ var tmpv = msg.CodecQuality; if (tmpv != null) obj.CodecQuality = (u8)tmpv; }
+			{ var tmpv = msg.NeededTalkPower; if (tmpv != null) obj.NeededTalkPower = (i32)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
+			{ var tmpv = msg.CodecLatencyFactor; if (tmpv != null) obj.CodecLatencyFactor = (i32)tmpv; }
+			{ var tmpv = msg.IsUnencrypted; if (tmpv != null) obj.IsUnencrypted = (bool)tmpv; }
+			{ var tmpv = msg.DeleteDelay; if (tmpv != null) obj.DeleteDelay = (Duration)tmpv; }
+			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
 			SetChannel(obj, msg.ChannelId);
 			
 		}
@@ -140,25 +141,29 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelEdited(ChannelEdited msg)
 		{
 			var obj = GetChannel(msg.ChannelId);
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ChannelEdited' has no local object ({$msg})", msg);
+				return;
+			}
 			{
 			var tmp = MaxClientsCeFun(msg);
-			obj.MaxClients = tmp.Item1;
-			obj.MaxFamilyClients = tmp.Item2;
+			{ var tmpv = tmp.Item1; if (tmpv != null) obj.MaxClients = (MaxClients)tmpv; }
+			{ var tmpv = tmp.Item2; if (tmpv != null) obj.MaxFamilyClients = (MaxClients)tmpv; }
 			}
-			obj.ChannelType = ChannelTypeCeFun(msg);
-			obj.Order = msg.Order;
-			obj.Name = msg.Name;
-			obj.Topic = msg.Topic;
-			obj.IsDefault = msg.IsDefault;
-			obj.HasPassword = msg.HasPassword;
-			obj.Codec = msg.Codec;
-			obj.CodecQuality = msg.CodecQuality;
-			obj.NeededTalkPower = msg.NeededTalkPower;
-			obj.IconId = msg.IconId;
-			obj.CodecLatencyFactor = msg.CodecLatencyFactor;
-			obj.IsUnencrypted = msg.IsUnencrypted;
-			obj.DeleteDelay = msg.DeleteDelay;
-			obj.PhoneticName = msg.PhoneticName;
+			{ var tmpv = ChannelTypeCeFun(msg); if (tmpv != null) obj.ChannelType = (ChannelType)tmpv; }
+			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.Topic; if (tmpv != null) obj.Topic = (str)tmpv; }
+			{ var tmpv = msg.IsDefault; if (tmpv != null) obj.IsDefault = (bool)tmpv; }
+			{ var tmpv = msg.HasPassword; if (tmpv != null) obj.HasPassword = (bool)tmpv; }
+			{ var tmpv = msg.Codec; if (tmpv != null) obj.Codec = (Codec)tmpv; }
+			{ var tmpv = msg.CodecQuality; if (tmpv != null) obj.CodecQuality = (u8)tmpv; }
+			{ var tmpv = msg.NeededTalkPower; if (tmpv != null) obj.NeededTalkPower = (i32)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
+			{ var tmpv = msg.CodecLatencyFactor; if (tmpv != null) obj.CodecLatencyFactor = (i32)tmpv; }
+			{ var tmpv = msg.IsUnencrypted; if (tmpv != null) obj.IsUnencrypted = (bool)tmpv; }
+			{ var tmpv = msg.DeleteDelay; if (tmpv != null) obj.DeleteDelay = (Duration)tmpv; }
+			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
 			
 		}
 
@@ -166,30 +171,30 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelList(ChannelList msg)
 		{
 			var obj = new Channel();
-			obj.Parent = msg.ParentId;
+			{ var tmpv = msg.ParentId; if (tmpv != null) obj.Parent = (ChannelId)tmpv; }
 			{
 			var tmp = MaxClientsClFun(msg);
-			obj.MaxClients = tmp.Item1;
-			obj.MaxFamilyClients = tmp.Item2;
+			{ var tmpv = tmp.Item1; if (tmpv != null) obj.MaxClients = (MaxClients)tmpv; }
+			{ var tmpv = tmp.Item2; if (tmpv != null) obj.MaxFamilyClients = (MaxClients)tmpv; }
 			}
-			obj.ChannelType = ChannelTypeClFun(msg);
-			obj.Subscribed = ReturnFalse(msg);
+			{ var tmpv = ChannelTypeClFun(msg); if (tmpv != null) obj.ChannelType = (ChannelType)tmpv; }
+			{ var tmpv = ReturnFalse(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
 			obj.OptionalData = null;
-			obj.Name = msg.Name;
-			obj.Topic = msg.Topic;
-			obj.Codec = msg.Codec;
-			obj.CodecQuality = msg.CodecQuality;
-			obj.Order = msg.Order;
-			obj.IsDefault = msg.IsDefault;
-			obj.HasPassword = msg.HasPassword;
-			obj.CodecLatencyFactor = msg.CodecLatencyFactor;
-			obj.IsUnencrypted = msg.IsUnencrypted;
-			obj.DeleteDelay = msg.DeleteDelay;
-			obj.NeededTalkPower = msg.NeededTalkPower;
-			obj.ForcedSilence = msg.ForcedSilence;
-			obj.PhoneticName = msg.PhoneticName;
-			obj.IconId = msg.IconId;
-			obj.IsPrivate = msg.IsPrivate;
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.Topic; if (tmpv != null) obj.Topic = (str)tmpv; }
+			{ var tmpv = msg.Codec; if (tmpv != null) obj.Codec = (Codec)tmpv; }
+			{ var tmpv = msg.CodecQuality; if (tmpv != null) obj.CodecQuality = (u8)tmpv; }
+			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
+			{ var tmpv = msg.IsDefault; if (tmpv != null) obj.IsDefault = (bool)tmpv; }
+			{ var tmpv = msg.HasPassword; if (tmpv != null) obj.HasPassword = (bool)tmpv; }
+			{ var tmpv = msg.CodecLatencyFactor; if (tmpv != null) obj.CodecLatencyFactor = (i32)tmpv; }
+			{ var tmpv = msg.IsUnencrypted; if (tmpv != null) obj.IsUnencrypted = (bool)tmpv; }
+			{ var tmpv = msg.DeleteDelay; if (tmpv != null) obj.DeleteDelay = (Duration)tmpv; }
+			{ var tmpv = msg.NeededTalkPower; if (tmpv != null) obj.NeededTalkPower = (i32)tmpv; }
+			{ var tmpv = msg.ForcedSilence; if (tmpv != null) obj.ForcedSilence = (bool)tmpv; }
+			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
+			{ var tmpv = msg.IsPrivate; if (tmpv != null) obj.IsPrivate = (bool)tmpv; }
 			SetChannel(obj, msg.ChannelId);
 			
 		}
@@ -198,8 +203,12 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelMoved(ChannelMoved msg)
 		{
 			var obj = GetChannel(msg.ChannelId);
-			obj.Parent = msg.ParentId;
-			obj.Order = msg.Order;
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ChannelMoved' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = msg.ParentId; if (tmpv != null) obj.Parent = (ChannelId)tmpv; }
+			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
 			
 		}
 
@@ -207,7 +216,11 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelSubscribed(ChannelSubscribed msg)
 		{
 			var obj = GetChannel(msg.ChannelId);
-			obj.Subscribed = ChannelSubscribeFun(msg);
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ChannelSubscribed' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = ChannelSubscribeFun(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
 			
 		}
 
@@ -215,7 +228,11 @@ namespace TS3Client.Full.Book
 		public void UpdateChannelUnsubscribed(ChannelUnsubscribed msg)
 		{
 			var obj = GetChannel(msg.ChannelId);
-			obj.Subscribed = ChannelUnsubscribeFun(msg);
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ChannelUnsubscribed' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = ChannelUnsubscribeFun(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
 			
 		}
 
@@ -223,7 +240,11 @@ namespace TS3Client.Full.Book
 		public void UpdateClientChannelGroupChanged(ClientChannelGroupChanged msg)
 		{
 			var obj = GetClient(msg.ClientId);
-			obj.ChannelGroup = msg.ChannelGroup;
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ClientChannelGroupChanged' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = msg.ChannelGroup; if (tmpv != null) obj.ChannelGroup = (ChannelGroupId)tmpv; }
 			
 		}
 
@@ -231,37 +252,37 @@ namespace TS3Client.Full.Book
 		public void UpdateClientEnterView(ClientEnterView msg)
 		{
 			var obj = new Client();
-			obj.Channel = msg.TargetChannelId;
-			obj.AwayMessage = AwayFun(msg);
-			obj.TalkPowerRequest = TalkPowerFun(msg);
+			{ var tmpv = msg.TargetChannelId; if (tmpv != null) obj.Channel = (ChannelId)tmpv; }
+			{ var tmpv = AwayFun(msg); if (tmpv != null) obj.AwayMessage = (str)tmpv; }
+			{ var tmpv = TalkPowerFun(msg); if (tmpv != null) obj.TalkPowerRequest = (TalkPowerRequest)tmpv; }
 			obj.OptionalData = null;
 			obj.ConnectionData = null;
-			obj.DatabaseId = msg.DatabaseId;
-			obj.Name = msg.Name;
-			obj.ClientType = msg.ClientType;
-			obj.Uid = msg.Uid;
-			obj.AvatarHash = msg.AvatarHash;
-			obj.Description = msg.Description;
-			obj.IconId = msg.IconId;
-			obj.InputMuted = msg.InputMuted;
-			obj.OutputMuted = msg.OutputMuted;
-			obj.OutputOnlyMuted = msg.OutputOnlyMuted;
-			obj.InputHardwareEnabled = msg.InputHardwareEnabled;
-			obj.OutputHardwareEnabled = msg.OutputHardwareEnabled;
-			obj.Metadata = msg.Metadata;
-			obj.IsRecording = msg.IsRecording;
-			obj.ChannelGroup = msg.ChannelGroup;
-			obj.InheritedChannelGroupFromChannel = msg.InheritedChannelGroupFromChannel;
-			{ var tmp = msg.ServerGroups; if (tmp != null) obj.ServerGroups.AddRange(tmp); }
-			obj.TalkPower = msg.TalkPower;
-			obj.TalkPowerGranted = msg.TalkPowerGranted;
-			obj.IsPrioritySpeaker = msg.IsPrioritySpeaker;
-			obj.UnreadMessages = msg.UnreadMessages;
-			obj.PhoneticName = msg.PhoneticName;
-			obj.NeededServerqueryViewPower = msg.NeededServerqueryViewPower;
-			obj.IsChannelCommander = msg.IsChannelCommander;
-			obj.CountryCode = msg.CountryCode;
-			obj.Badges = msg.Badges;
+			{ var tmpv = msg.DatabaseId; if (tmpv != null) obj.DatabaseId = (ClientDbId)tmpv; }
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.ClientType; if (tmpv != null) obj.ClientType = (ClientType)tmpv; }
+			{ var tmpv = msg.Uid; if (tmpv != null) obj.Uid = (Uid)tmpv; }
+			{ var tmpv = msg.AvatarHash; if (tmpv != null) obj.AvatarHash = (str)tmpv; }
+			{ var tmpv = msg.Description; if (tmpv != null) obj.Description = (str)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
+			{ var tmpv = msg.InputMuted; if (tmpv != null) obj.InputMuted = (bool)tmpv; }
+			{ var tmpv = msg.OutputMuted; if (tmpv != null) obj.OutputMuted = (bool)tmpv; }
+			{ var tmpv = msg.OutputOnlyMuted; if (tmpv != null) obj.OutputOnlyMuted = (bool)tmpv; }
+			{ var tmpv = msg.InputHardwareEnabled; if (tmpv != null) obj.InputHardwareEnabled = (bool)tmpv; }
+			{ var tmpv = msg.OutputHardwareEnabled; if (tmpv != null) obj.OutputHardwareEnabled = (bool)tmpv; }
+			{ var tmpv = msg.Metadata; if (tmpv != null) obj.Metadata = (str)tmpv; }
+			{ var tmpv = msg.IsRecording; if (tmpv != null) obj.IsRecording = (bool)tmpv; }
+			{ var tmpv = msg.ChannelGroup; if (tmpv != null) obj.ChannelGroup = (ChannelGroupId)tmpv; }
+			{ var tmpv = msg.InheritedChannelGroupFromChannel; if (tmpv != null) obj.InheritedChannelGroupFromChannel = (ChannelId)tmpv; }
+			{ var tmpa = msg.ServerGroups; if (tmpa != null) obj.ServerGroups.AddRange(tmpa); }
+			{ var tmpv = msg.TalkPower; if (tmpv != null) obj.TalkPower = (i32)tmpv; }
+			{ var tmpv = msg.TalkPowerGranted; if (tmpv != null) obj.TalkPowerGranted = (bool)tmpv; }
+			{ var tmpv = msg.IsPrioritySpeaker; if (tmpv != null) obj.IsPrioritySpeaker = (bool)tmpv; }
+			{ var tmpv = msg.UnreadMessages; if (tmpv != null) obj.UnreadMessages = (u32)tmpv; }
+			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
+			{ var tmpv = msg.NeededServerqueryViewPower; if (tmpv != null) obj.NeededServerqueryViewPower = (i32)tmpv; }
+			{ var tmpv = msg.IsChannelCommander; if (tmpv != null) obj.IsChannelCommander = (bool)tmpv; }
+			{ var tmpv = msg.CountryCode; if (tmpv != null) obj.CountryCode = (str)tmpv; }
+			{ var tmpv = msg.Badges; if (tmpv != null) obj.Badges = (str)tmpv; }
 			SetClient(obj, msg.ClientId);
 			
 		}
@@ -277,7 +298,11 @@ namespace TS3Client.Full.Book
 		public void UpdateClientMoved(ClientMoved msg)
 		{
 			var obj = GetClient(msg.ClientId);
-			obj.Channel = msg.TargetChannelId;
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ClientMoved' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = msg.TargetChannelId; if (tmpv != null) obj.Channel = (ChannelId)tmpv; }
 			
 		}
 
@@ -285,45 +310,45 @@ namespace TS3Client.Full.Book
 		public void UpdateClientConnectionInfo(ClientConnectionInfo msg)
 		{
 			var obj = new ConnectionClientData();
-			obj.ClientAddress = AddressFun(msg);
-			obj.Ping = msg.Ping;
-			obj.PingDeviation = msg.PingDeviation;
-			obj.ConnectedTime = msg.ConnectedTime;
-			obj.PacketsSentSpeech = msg.PacketsSentSpeech;
-			obj.PacketsSentKeepalive = msg.PacketsSentKeepalive;
-			obj.PacketsSentControl = msg.PacketsSentControl;
-			obj.BytesSentSpeech = msg.BytesSentSpeech;
-			obj.BytesSentKeepalive = msg.BytesSentKeepalive;
-			obj.BytesSentControl = msg.BytesSentControl;
-			obj.PacketsReceivedSpeech = msg.PacketsReceivedSpeech;
-			obj.PacketsReceivedKeepalive = msg.PacketsReceivedKeepalive;
-			obj.PacketsReceivedControl = msg.PacketsReceivedControl;
-			obj.BytesReceivedSpeech = msg.BytesReceivedSpeech;
-			obj.BytesReceivedKeepalive = msg.BytesReceivedKeepalive;
-			obj.BytesReceivedControl = msg.BytesReceivedControl;
-			obj.ServerToClientPacketlossSpeech = msg.ServerToClientPacketlossSpeech;
-			obj.ServerToClientPacketlossKeepalive = msg.ServerToClientPacketlossKeepalive;
-			obj.ServerToClientPacketlossControl = msg.ServerToClientPacketlossControl;
-			obj.ServerToClientPacketlossTotal = msg.ServerToClientPacketlossTotal;
-			obj.ClientToServerPacketlossSpeech = msg.ClientToServerPacketlossSpeech;
-			obj.ClientToServerPacketlossKeepalive = msg.ClientToServerPacketlossKeepalive;
-			obj.ClientToServerPacketlossControl = msg.ClientToServerPacketlossControl;
-			obj.ClientToServerPacketlossTotal = msg.ClientToServerPacketlossTotal;
-			obj.BandwidthSentLastSecondSpeech = msg.BandwidthSentLastSecondSpeech;
-			obj.BandwidthSentLastSecondKeepalive = msg.BandwidthSentLastSecondKeepalive;
-			obj.BandwidthSentLastSecondControl = msg.BandwidthSentLastSecondControl;
-			obj.BandwidthSentLastMinuteSpeech = msg.BandwidthSentLastMinuteSpeech;
-			obj.BandwidthSentLastMinuteKeepalive = msg.BandwidthSentLastMinuteKeepalive;
-			obj.BandwidthSentLastMinuteControl = msg.BandwidthSentLastMinuteControl;
-			obj.BandwidthReceivedLastSecondSpeech = msg.BandwidthReceivedLastSecondSpeech;
-			obj.BandwidthReceivedLastSecondKeepalive = msg.BandwidthReceivedLastSecondKeepalive;
-			obj.BandwidthReceivedLastSecondControl = msg.BandwidthReceivedLastSecondControl;
-			obj.BandwidthReceivedLastMinuteSpeech = msg.BandwidthReceivedLastMinuteSpeech;
-			obj.BandwidthReceivedLastMinuteKeepalive = msg.BandwidthReceivedLastMinuteKeepalive;
-			obj.BandwidthReceivedLastMinuteControl = msg.BandwidthReceivedLastMinuteControl;
-			obj.FiletransferBandwidthSent = msg.FiletransferBandwidthSent;
-			obj.FiletransferBandwidthReceived = msg.FiletransferBandwidthReceived;
-			obj.IdleTime = msg.IdleTime;
+			{ var tmpv = AddressFun(msg); if (tmpv != null) obj.ClientAddress = (SocketAddr)tmpv; }
+			{ var tmpv = msg.Ping; if (tmpv != null) obj.Ping = (Duration)tmpv; }
+			{ var tmpv = msg.PingDeviation; if (tmpv != null) obj.PingDeviation = (Duration)tmpv; }
+			{ var tmpv = msg.ConnectedTime; if (tmpv != null) obj.ConnectedTime = (Duration)tmpv; }
+			{ var tmpv = msg.PacketsSentSpeech; if (tmpv != null) obj.PacketsSentSpeech = (u64)tmpv; }
+			{ var tmpv = msg.PacketsSentKeepalive; if (tmpv != null) obj.PacketsSentKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.PacketsSentControl; if (tmpv != null) obj.PacketsSentControl = (u64)tmpv; }
+			{ var tmpv = msg.BytesSentSpeech; if (tmpv != null) obj.BytesSentSpeech = (u64)tmpv; }
+			{ var tmpv = msg.BytesSentKeepalive; if (tmpv != null) obj.BytesSentKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.BytesSentControl; if (tmpv != null) obj.BytesSentControl = (u64)tmpv; }
+			{ var tmpv = msg.PacketsReceivedSpeech; if (tmpv != null) obj.PacketsReceivedSpeech = (u64)tmpv; }
+			{ var tmpv = msg.PacketsReceivedKeepalive; if (tmpv != null) obj.PacketsReceivedKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.PacketsReceivedControl; if (tmpv != null) obj.PacketsReceivedControl = (u64)tmpv; }
+			{ var tmpv = msg.BytesReceivedSpeech; if (tmpv != null) obj.BytesReceivedSpeech = (u64)tmpv; }
+			{ var tmpv = msg.BytesReceivedKeepalive; if (tmpv != null) obj.BytesReceivedKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.BytesReceivedControl; if (tmpv != null) obj.BytesReceivedControl = (u64)tmpv; }
+			{ var tmpv = msg.ServerToClientPacketlossSpeech; if (tmpv != null) obj.ServerToClientPacketlossSpeech = (f32)tmpv; }
+			{ var tmpv = msg.ServerToClientPacketlossKeepalive; if (tmpv != null) obj.ServerToClientPacketlossKeepalive = (f32)tmpv; }
+			{ var tmpv = msg.ServerToClientPacketlossControl; if (tmpv != null) obj.ServerToClientPacketlossControl = (f32)tmpv; }
+			{ var tmpv = msg.ServerToClientPacketlossTotal; if (tmpv != null) obj.ServerToClientPacketlossTotal = (f32)tmpv; }
+			{ var tmpv = msg.ClientToServerPacketlossSpeech; if (tmpv != null) obj.ClientToServerPacketlossSpeech = (f32)tmpv; }
+			{ var tmpv = msg.ClientToServerPacketlossKeepalive; if (tmpv != null) obj.ClientToServerPacketlossKeepalive = (f32)tmpv; }
+			{ var tmpv = msg.ClientToServerPacketlossControl; if (tmpv != null) obj.ClientToServerPacketlossControl = (f32)tmpv; }
+			{ var tmpv = msg.ClientToServerPacketlossTotal; if (tmpv != null) obj.ClientToServerPacketlossTotal = (f32)tmpv; }
+			{ var tmpv = msg.BandwidthSentLastSecondSpeech; if (tmpv != null) obj.BandwidthSentLastSecondSpeech = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthSentLastSecondKeepalive; if (tmpv != null) obj.BandwidthSentLastSecondKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthSentLastSecondControl; if (tmpv != null) obj.BandwidthSentLastSecondControl = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthSentLastMinuteSpeech; if (tmpv != null) obj.BandwidthSentLastMinuteSpeech = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthSentLastMinuteKeepalive; if (tmpv != null) obj.BandwidthSentLastMinuteKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthSentLastMinuteControl; if (tmpv != null) obj.BandwidthSentLastMinuteControl = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthReceivedLastSecondSpeech; if (tmpv != null) obj.BandwidthReceivedLastSecondSpeech = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthReceivedLastSecondKeepalive; if (tmpv != null) obj.BandwidthReceivedLastSecondKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthReceivedLastSecondControl; if (tmpv != null) obj.BandwidthReceivedLastSecondControl = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthReceivedLastMinuteSpeech; if (tmpv != null) obj.BandwidthReceivedLastMinuteSpeech = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthReceivedLastMinuteKeepalive; if (tmpv != null) obj.BandwidthReceivedLastMinuteKeepalive = (u64)tmpv; }
+			{ var tmpv = msg.BandwidthReceivedLastMinuteControl; if (tmpv != null) obj.BandwidthReceivedLastMinuteControl = (u64)tmpv; }
+			{ var tmpv = msg.FiletransferBandwidthSent; if (tmpv != null) obj.FiletransferBandwidthSent = (u64)tmpv; }
+			{ var tmpv = msg.FiletransferBandwidthReceived; if (tmpv != null) obj.FiletransferBandwidthReceived = (u64)tmpv; }
+			{ var tmpv = msg.IdleTime; if (tmpv != null) obj.IdleTime = (Duration)tmpv; }
 			SetConnectionClientData(obj, msg.ClientId);
 			
 		}
@@ -332,6 +357,10 @@ namespace TS3Client.Full.Book
 		public void UpdateClientServerGroupAdded(ClientServerGroupAdded msg)
 		{
 			var obj = GetClient(msg.ClientId);
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ClientServerGroupAdded' has no local object ({$msg})", msg);
+				return;
+			}
 			obj.ServerGroups.Add(msg.ServerGroupId);
 			
 		}
@@ -340,22 +369,26 @@ namespace TS3Client.Full.Book
 		public void UpdateClientUpdated(ClientUpdated msg)
 		{
 			var obj = GetClient(msg.ClientId);
-			obj.Name = msg.Name;
-			obj.UnreadMessages = msg.UnreadMessages;
-			obj.InputMuted = msg.InputMuted;
-			obj.InputHardwareEnabled = msg.InputHardwareEnabled;
-			obj.OutputHardwareEnabled = msg.OutputHardwareEnabled;
-			obj.Description = msg.Description;
-			obj.IsPrioritySpeaker = msg.IsPrioritySpeaker;
-			obj.IsChannelCommander = msg.IsChannelCommander;
-			obj.AvatarHash = msg.AvatarHash;
-			obj.TalkPowerGranted = msg.TalkPowerGranted;
-			obj.PhoneticName = msg.PhoneticName;
-			obj.IsRecording = msg.IsRecording;
-			{ var tmp = msg.ServerGroups; if (tmp != null) obj.ServerGroups.AddRange(tmp); }
-			obj.Badges = msg.Badges;
-			obj.TalkPower = msg.TalkPower;
-			obj.IconId = msg.IconId;
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ClientUpdated' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.UnreadMessages; if (tmpv != null) obj.UnreadMessages = (u32)tmpv; }
+			{ var tmpv = msg.InputMuted; if (tmpv != null) obj.InputMuted = (bool)tmpv; }
+			{ var tmpv = msg.InputHardwareEnabled; if (tmpv != null) obj.InputHardwareEnabled = (bool)tmpv; }
+			{ var tmpv = msg.OutputHardwareEnabled; if (tmpv != null) obj.OutputHardwareEnabled = (bool)tmpv; }
+			{ var tmpv = msg.Description; if (tmpv != null) obj.Description = (str)tmpv; }
+			{ var tmpv = msg.IsPrioritySpeaker; if (tmpv != null) obj.IsPrioritySpeaker = (bool)tmpv; }
+			{ var tmpv = msg.IsChannelCommander; if (tmpv != null) obj.IsChannelCommander = (bool)tmpv; }
+			{ var tmpv = msg.AvatarHash; if (tmpv != null) obj.AvatarHash = (str)tmpv; }
+			{ var tmpv = msg.TalkPowerGranted; if (tmpv != null) obj.TalkPowerGranted = (bool)tmpv; }
+			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
+			{ var tmpv = msg.IsRecording; if (tmpv != null) obj.IsRecording = (bool)tmpv; }
+			{ var tmpa = msg.ServerGroups; if (tmpa != null) obj.ServerGroups.AddRange(tmpa); }
+			{ var tmpv = msg.Badges; if (tmpv != null) obj.Badges = (str)tmpv; }
+			{ var tmpv = msg.TalkPower; if (tmpv != null) obj.TalkPower = (i32)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
 			
 		}
 
@@ -363,15 +396,15 @@ namespace TS3Client.Full.Book
 		public void UpdateServerGroupList(ServerGroupList msg)
 		{
 			var obj = new ServerGroup();
-			obj.Name = msg.Name;
-			obj.GroupType = msg.GroupType;
-			obj.IconId = msg.IconId;
-			obj.IsPermanent = msg.IsPermanent;
-			obj.SortId = msg.SortId;
-			obj.NamingMode = msg.NamingMode;
-			obj.NeededModifyPower = msg.NeededModifyPower;
-			obj.NeededMemberAddPower = msg.NeededMemberAddPower;
-			obj.NeededMemberRemovePower = msg.NeededMemberRemovePower;
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.GroupType; if (tmpv != null) obj.GroupType = (GroupType)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
+			{ var tmpv = msg.IsPermanent; if (tmpv != null) obj.IsPermanent = (bool)tmpv; }
+			{ var tmpv = msg.SortId; if (tmpv != null) obj.SortId = (i32)tmpv; }
+			{ var tmpv = msg.NamingMode; if (tmpv != null) obj.NamingMode = (GroupNamingMode)tmpv; }
+			{ var tmpv = msg.NeededModifyPower; if (tmpv != null) obj.NeededModifyPower = (i32)tmpv; }
+			{ var tmpv = msg.NeededMemberAddPower; if (tmpv != null) obj.NeededMemberAddPower = (i32)tmpv; }
+			{ var tmpv = msg.NeededMemberRemovePower; if (tmpv != null) obj.NeededMemberRemovePower = (i32)tmpv; }
 			SetServerGroup(obj, msg.ServerGroupId);
 			
 		}
@@ -380,21 +413,25 @@ namespace TS3Client.Full.Book
 		public void UpdateServerEdited(ServerEdited msg)
 		{
 			var obj = GetServer();
-			obj.Name = msg.Name;
-			obj.CodecEncryptionMode = msg.CodecEncryptionMode;
-			obj.DefaultServerGroup = msg.DefaultServerGroup;
-			obj.DefaultChannelGroup = msg.DefaultChannelGroup;
-			obj.HostbannerUrl = msg.HostbannerUrl;
-			obj.HostbannerGfxUrl = msg.HostbannerGfxUrl;
-			obj.HostbannerGfxInterval = msg.HostbannerGfxInterval;
-			obj.PrioritySpeakerDimmModificator = msg.PrioritySpeakerDimmModificator;
-			obj.HostbuttonTooltip = msg.HostbuttonTooltip;
-			obj.HostbuttonUrl = msg.HostbuttonUrl;
-			obj.HostbuttonGfxUrl = msg.HostbuttonGfxUrl;
-			obj.PhoneticName = msg.PhoneticName;
-			obj.IconId = msg.IconId;
-			obj.HostbannerMode = msg.HostbannerMode;
-			obj.TempChannelDefaultDeleteDelay = msg.TempChannelDefaultDeleteDelay;
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ServerEdited' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+			{ var tmpv = msg.CodecEncryptionMode; if (tmpv != null) obj.CodecEncryptionMode = (CodecEncryptionMode)tmpv; }
+			{ var tmpv = msg.DefaultServerGroup; if (tmpv != null) obj.DefaultServerGroup = (ServerGroupId)tmpv; }
+			{ var tmpv = msg.DefaultChannelGroup; if (tmpv != null) obj.DefaultChannelGroup = (ChannelGroupId)tmpv; }
+			{ var tmpv = msg.HostbannerUrl; if (tmpv != null) obj.HostbannerUrl = (str)tmpv; }
+			{ var tmpv = msg.HostbannerGfxUrl; if (tmpv != null) obj.HostbannerGfxUrl = (str)tmpv; }
+			{ var tmpv = msg.HostbannerGfxInterval; if (tmpv != null) obj.HostbannerGfxInterval = (Duration)tmpv; }
+			{ var tmpv = msg.PrioritySpeakerDimmModificator; if (tmpv != null) obj.PrioritySpeakerDimmModificator = (f32)tmpv; }
+			{ var tmpv = msg.HostbuttonTooltip; if (tmpv != null) obj.HostbuttonTooltip = (str)tmpv; }
+			{ var tmpv = msg.HostbuttonUrl; if (tmpv != null) obj.HostbuttonUrl = (str)tmpv; }
+			{ var tmpv = msg.HostbuttonGfxUrl; if (tmpv != null) obj.HostbuttonGfxUrl = (str)tmpv; }
+			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
+			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
+			{ var tmpv = msg.HostbannerMode; if (tmpv != null) obj.HostbannerMode = (HostBannerMode)tmpv; }
+			{ var tmpv = msg.TempChannelDefaultDeleteDelay; if (tmpv != null) obj.TempChannelDefaultDeleteDelay = (Duration)tmpv; }
 			
 		}
 

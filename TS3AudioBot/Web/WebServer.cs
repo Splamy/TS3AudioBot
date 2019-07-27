@@ -15,6 +15,7 @@ namespace TS3AudioBot.Web
 	using Microsoft.AspNetCore.Hosting;
 	using Microsoft.AspNetCore.Http;
 	using Microsoft.Extensions.DependencyInjection;
+	using Microsoft.Extensions.FileProviders;
 	using Microsoft.Extensions.Logging;
 	using System;
 	using System.IO;
@@ -118,10 +119,25 @@ namespace TS3AudioBot.Web
 						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
 					});
 
+					// TODO AS DEBUG MODE !!!!!!!!!!!!!!!!!!
+					app.Map(new PathString("/html"), map =>
+					{
+						var baseDir = FindWebFolder();
+						map.UseFileServer(new FileServerOptions
+						{
+							RequestPath = "",
+							FileProvider = new PhysicalFileProvider(baseDir + "/html")
+						});
+						map.UseFileServer(new FileServerOptions
+						{
+							RequestPath = "",
+							FileProvider = new PhysicalFileProvider(baseDir + "/out")
+						});
+					});
+
 					if (config.Interface.Enabled)
 					{
-						app.UseDefaultFiles();
-						app.UseStaticFiles();
+						app.UseFileServer();
 					}
 
 					var applicationLifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();

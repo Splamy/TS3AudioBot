@@ -1,6 +1,6 @@
 /// <reference path="Get.ts"/>
 /// <reference path="Pages/IPage.ts"/>
-/// <reference path="Pages/Bot.ts"/>
+/// <reference path="Pages/Bot.tsx"/>
 /// <reference path="Pages/Bots.tsx"/>
 /// <reference path="Pages/Commands.tsx"/>
 /// <reference path="Pages/Dummy.ts"/>

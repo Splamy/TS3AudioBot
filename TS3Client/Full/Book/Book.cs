@@ -47,6 +47,8 @@ namespace TS3Client.Full.Book
 
 	public partial class Connection
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		// TODO
 		// Many operations can be checked if they were successful (like remove or get).
 		// In cases which this fails we should print an error.
@@ -65,6 +67,7 @@ namespace TS3Client.Full.Book
 
 		private void SetChannel(Channel channel, ChannelId id)
 		{
+			channel.Id = id;
 			Server.Channels[id] = channel;
 		}
 
@@ -82,6 +85,7 @@ namespace TS3Client.Full.Book
 
 		private void SetClient(Client client, ClientId id)
 		{
+			client.Id = id;
 			Server.Clients[id] = client;
 		}
 
@@ -109,26 +113,26 @@ namespace TS3Client.Full.Book
 
 		// Manual move functions
 
-		private (MaxClients, MaxClients) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (MaxClients, MaxClients) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (MaxClients, MaxClients) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (MaxClients, MaxClients) MaxClientsFun(i32 MaxClients, bool IsMaxClientsUnlimited, i32 MaxFamilyClients, bool IsMaxFamilyClientsUnlimited, bool InheritsMaxFamilyClients)
+		private (MaxClients?, MaxClients?) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private (MaxClients?, MaxClients?) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private (MaxClients?, MaxClients?) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private (MaxClients?, MaxClients?) MaxClientsFun(i32? MaxClients, bool? IsMaxClientsUnlimited, i32? MaxFamilyClients, bool? IsMaxFamilyClientsUnlimited, bool? InheritsMaxFamilyClients)
 		{
 			var chn = new MaxClients();
-			if (IsMaxClientsUnlimited) chn.LimitKind = MaxClientsKind.Unlimited;
+			if (IsMaxClientsUnlimited == true) chn.LimitKind = MaxClientsKind.Unlimited;
 			else
 			{
 				chn.LimitKind = MaxClientsKind.Limited;
-				chn.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxClients), 0);
+				chn.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxClients ?? ushort.MaxValue), 0);
 			}
 
 			var fam = new MaxClients();
-			if (IsMaxFamilyClientsUnlimited) fam.LimitKind = MaxClientsKind.Unlimited;
-			else if (InheritsMaxFamilyClients) fam.LimitKind = MaxClientsKind.Inherited;
+			if (IsMaxFamilyClientsUnlimited == true) fam.LimitKind = MaxClientsKind.Unlimited;
+			else if (InheritsMaxFamilyClients == true) fam.LimitKind = MaxClientsKind.Inherited;
 			else
 			{
 				fam.LimitKind = MaxClientsKind.Limited;
-				fam.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxFamilyClients), 0);
+				fam.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxFamilyClients ?? ushort.MaxValue), 0);
 			}
 			return (chn, fam);
 		}
@@ -138,7 +142,7 @@ namespace TS3Client.Full.Book
 		private ChannelType ChannelTypeClFun(ChannelList msg) => default; // TODO
 
 		private str AwayFun(ClientEnterView msg) => default; // TODO
-		private TalkPowerRequest TalkPowerFun(ClientEnterView msg) => default; // TODO
+		private TalkPowerRequest? TalkPowerFun(ClientEnterView msg) => default; // TODO
 
 		private SocketAddr AddressFun(ClientConnectionInfo msg) => SocketAddr.Any; // TODO
 

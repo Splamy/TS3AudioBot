@@ -195,10 +195,15 @@ class PlayControls {
 		this.showState(botInfo as any /*TODO:iter*/);
 	}
 
-	public showState(botInfo: [CmdSong | null, CmdSongPosition, RepeatKind, boolean, number]) {
+	public showState(botInfo: [CmdSong | null, CmdSongPosition | null, RepeatKind, boolean, number]) {
 		this.showStatePlaying(botInfo[0]);
-		this.showStateLength(Util.parseTimeToSeconds(botInfo[1].length));
-		this.showStatePosition(Util.parseTimeToSeconds(botInfo[1].position));
+		if (botInfo[1]) {
+			this.showStateLength(Util.parseTimeToSeconds(botInfo[1].length));
+			this.showStatePosition(Util.parseTimeToSeconds(botInfo[1].position));
+		} else {
+			this.showStateLength(0);
+			this.showStatePosition(0);
+		}
 		this.showStateRepeat(botInfo[2]);
 		this.showStateRandom(botInfo[3]);
 		this.showStateVolume(botInfo[4]);
@@ -284,12 +289,12 @@ class PlayControls {
 	}
 
 	public showStatePlaying(song: CmdSong | null, playing: PlayState = song ? PlayState.Playing : PlayState.Off) {
-		if(song !== null) {
+		if (song !== null) {
 			this.currentSong = song;
 			this.divNowPlaying.innerText = this.currentSong.title;
 		} else {
 			this.currentSong = null;
-			this.divNowPlaying.innerText =  "Nothing...";
+			this.divNowPlaying.innerText = "Nothing...";
 		}
 		this.playing = playing;
 		switch (playing) {

@@ -49,7 +49,11 @@ namespace TS3Client.Full.Book
 			if (rule.operation == "add")
 				WriteLine($"var obj = new {rule.to}();");
 			else
-				WriteLine($"var obj = Get{rule.to}({idStr});");
+				WriteLine($@"var obj = Get{rule.to}({idStr});
+			if (obj == null) {{
+				Log.Warn(""Internal Book protocol error. Update '{msg.name}' has no local object ({{$msg}})"", msg);
+				return;
+			}}");
 
 			foreach (var prop in rule.properties) {
 				void WriteMove(string from, string to) {
@@ -61,9 +65,12 @@ namespace TS3Client.Full.Book
 
 					if (prop.operation is null) {
 						if (bookProp.mod is null) {
-							WriteLine($"obj.{to} = {from};");
+							if (from == "null")
+								WriteLine($"obj.{to} = null;");
+							else
+								WriteLine($"{{ var tmpv = {from}; if (tmpv != null) obj.{to} = ({bookProp.type})tmpv; }}");
 						} else if (bookProp.mod == "array") {
-							WriteLine($"{{ var tmp = {from}; if (tmp != null) obj.{to}.AddRange(tmp); }}");
+							WriteLine($"{{ var tmpa = {from}; if (tmpa != null) obj.{to}.AddRange(tmpa); }}");
 						} else {
 							throw new Exception("Unknown mod type: " + bookProp.mod);
 						}
@@ -75,10 +82,9 @@ namespace TS3Client.Full.Book
 						throw new Exception("Unknown operation: " + prop.operation);
 				}
 
-				if (prop.from != null)
-				{
+				if (prop.from != null) {
 					WriteMove($"msg.{prop.from}", prop.to);
-				} else /* function */ {
+				} else { /* function */
 					if (prop.function == "ReturnNone")
 						WriteMove($"null", prop.tolist[0]);
 					else if (prop.function == "VoidFun") { /* Do Nothing */ }

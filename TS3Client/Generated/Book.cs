@@ -37,6 +37,7 @@ namespace TS3Client.Full.Book
 	using f64 = System.Double;
 	using str = System.String;
 
+	using DateTime = System.DateTime;
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
