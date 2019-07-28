@@ -70,13 +70,22 @@ namespace TS3Client.Full.Book
 							else
 								WriteLine($"{{ var tmpv = {from}; if (tmpv != null) obj.{to} = ({bookProp.type})tmpv; }}");
 						} else if (bookProp.mod == "array") {
-							WriteLine($"{{ var tmpa = {from}; if (tmpa != null) obj.{to}.AddRange(tmpa); }}");
+							//WriteLine($"obj.{to}.Add({from});");
+							if (prop.operation == "add")
+								WriteLine($"{{ var tmpa = {from}; if (tmpa != null) obj.{to}.UnionWith(tmpa); }}");
+							else
+								WriteLine($"{{ var tmpa = {from}; if (tmpa != null) {{ obj.{to}.Clear(); obj.{to}.UnionWith(tmpa); }} }}");
 						} else {
 							throw new Exception("Unknown mod type: " + bookProp.mod);
 						}
 					} else if (prop.operation == "add") {
+						// Currently hacky; Better check:
+						//  [update:single->single]
+						//  [add/remove/update:single->array]
+						//  [update:array->array]
 						WriteLine($"obj.{to}.Add({from});");
 					} else if (prop.operation == "remove") {
+						// Same here
 						WriteLine($"obj.{to}.Remove({from});");
 					} else
 						throw new Exception("Unknown operation: " + prop.operation);

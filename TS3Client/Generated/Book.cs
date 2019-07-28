@@ -41,7 +41,7 @@ namespace TS3Client.Full.Book
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
-	using SocketAddr = System.Net.IPAddress;
+	using SocketAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;
@@ -203,7 +203,7 @@ namespace TS3Client.Full.Book
 	{
 		public Client()
 		{
-			ServerGroups = new List<ServerGroupId>();
+			ServerGroups = new HashSet<ServerGroupId>();
 			
 		}
 
@@ -222,7 +222,7 @@ namespace TS3Client.Full.Book
 		public bool IsRecording { get; set; }
 		public ClientDbId DatabaseId { get; internal set; }
 		public ChannelGroupId ChannelGroup { get; set; }
-		public List<ServerGroupId> ServerGroups { get; set; }
+		public HashSet<ServerGroupId> ServerGroups { get; set; }
 		public str AwayMessage { get; set; }
 		public ClientType ClientType { get; internal set; }
 		public str AvatarHash { get; internal set; }
@@ -323,7 +323,7 @@ namespace TS3Client.Full.Book
 	{
 		public Server()
 		{
-			Ips = new List<str>();
+			Ips = new HashSet<SocketAddr>();
 			Clients = new Dictionary<ClientId,Client>();
 			Channels = new Dictionary<ChannelId,Channel>();
 			Groups = new Dictionary<ServerGroupId,ServerGroup>();
@@ -353,7 +353,7 @@ namespace TS3Client.Full.Book
 		public str HostbuttonGfxUrl { get; set; }
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; internal set; }
-		public List<str> Ips { get; internal set; }
+		public HashSet<SocketAddr> Ips { get; internal set; }
 		public bool AskForPrivilegekey { get; internal set; }
 		public HostBannerMode HostbannerMode { get; set; }
 		public Duration TempChannelDefaultDeleteDelay { get; set; }

@@ -48,7 +48,7 @@ namespace TS3Client.Full.Book
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
-	using SocketAddr = System.Net.IPAddress;
+	using SocketAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;
@@ -70,7 +70,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.ServerPlatform; if (tmpv != null) obj.Platform = (str)tmpv; }
 			{ var tmpv = msg.ServerVersion; if (tmpv != null) obj.Version = (str)tmpv; }
 			{ var tmpv = msg.ServerCreated; if (tmpv != null) obj.Created = (DateTime)tmpv; }
-			{ var tmpa = msg.ServerIp; if (tmpa != null) obj.Ips.AddRange(tmpa); }
+			{ var tmpa = msg.ServerIp; if (tmpa != null) { obj.Ips.Clear(); obj.Ips.UnionWith(tmpa); } }
 			SetClientDataFun(msg);
 			{ var tmpv = msg.WelcomeMessage; if (tmpv != null) obj.WelcomeMessage = (str)tmpv; }
 			{ var tmpv = msg.MaxClients; if (tmpv != null) obj.MaxClients = (u16)tmpv; }
@@ -273,7 +273,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.IsRecording; if (tmpv != null) obj.IsRecording = (bool)tmpv; }
 			{ var tmpv = msg.ChannelGroup; if (tmpv != null) obj.ChannelGroup = (ChannelGroupId)tmpv; }
 			{ var tmpv = msg.InheritedChannelGroupFromChannel; if (tmpv != null) obj.InheritedChannelGroupFromChannel = (ChannelId)tmpv; }
-			{ var tmpa = msg.ServerGroups; if (tmpa != null) obj.ServerGroups.AddRange(tmpa); }
+			{ var tmpa = msg.ServerGroups; if (tmpa != null) { obj.ServerGroups.Clear(); obj.ServerGroups.UnionWith(tmpa); } }
 			{ var tmpv = msg.TalkPower; if (tmpv != null) obj.TalkPower = (i32)tmpv; }
 			{ var tmpv = msg.TalkPowerGranted; if (tmpv != null) obj.TalkPowerGranted = (bool)tmpv; }
 			{ var tmpv = msg.IsPrioritySpeaker; if (tmpv != null) obj.IsPrioritySpeaker = (bool)tmpv; }
@@ -361,7 +361,17 @@ namespace TS3Client.Full.Book
 				Log.Warn("Internal Book protocol error. Update 'ClientServerGroupAdded' has no local object ({$msg})", msg);
 				return;
 			}
-			obj.ServerGroups.Add(msg.ServerGroupId);
+			
+		}
+
+	
+		public void UpdateClientServerGroupRemoved(ClientServerGroupRemoved msg)
+		{
+			var obj = GetClient(msg.ClientId);
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ClientServerGroupRemoved' has no local object ({$msg})", msg);
+				return;
+			}
 			
 		}
 
@@ -385,7 +395,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.TalkPowerGranted; if (tmpv != null) obj.TalkPowerGranted = (bool)tmpv; }
 			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
 			{ var tmpv = msg.IsRecording; if (tmpv != null) obj.IsRecording = (bool)tmpv; }
-			{ var tmpa = msg.ServerGroups; if (tmpa != null) obj.ServerGroups.AddRange(tmpa); }
+			{ var tmpa = msg.ServerGroups; if (tmpa != null) { obj.ServerGroups.Clear(); obj.ServerGroups.UnionWith(tmpa); } }
 			{ var tmpv = msg.Badges; if (tmpv != null) obj.Badges = (str)tmpv; }
 			{ var tmpv = msg.TalkPower; if (tmpv != null) obj.TalkPower = (i32)tmpv; }
 			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }

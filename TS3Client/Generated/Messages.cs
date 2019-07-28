@@ -47,7 +47,7 @@ namespace TS3Client.Messages
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
-	using SocketAddr = System.Net.IPAddress;
+	using SocketAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;

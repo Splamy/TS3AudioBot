@@ -33,7 +33,7 @@ namespace TS3Client.Full.Book
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
-	using SocketAddr = System.Net.IPAddress;
+	using SocketAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;
@@ -137,25 +137,36 @@ namespace TS3Client.Full.Book
 			return (chn, fam);
 		}
 
-		private ChannelType ChannelTypeCcFun(ChannelCreated msg) => default; // TODO
-		private ChannelType ChannelTypeCeFun(ChannelEdited msg) => default; // TODO
-		private ChannelType ChannelTypeClFun(ChannelList msg) => default; // TODO
+		private ChannelType ChannelTypeCcFun(ChannelCreated msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
+		private ChannelType ChannelTypeCeFun(ChannelEdited msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
+		private ChannelType ChannelTypeClFun(ChannelList msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
+		private ChannelType ChannelTypeFun(bool? semi, bool? perma)
+		{
+			if (semi == true) return ChannelType.SemiPermanent;
+			else if (perma == true) return ChannelType.Permanent;
+			else return ChannelType.Temporary;
+		}
 
 		private str AwayFun(ClientEnterView msg) => default; // TODO
 		private TalkPowerRequest? TalkPowerFun(ClientEnterView msg) => default; // TODO
 
-		private SocketAddr AddressFun(ClientConnectionInfo msg) => SocketAddr.Any; // TODO
+		private SocketAddr AddressFun(ClientConnectionInfo msg) => msg.Ip;
 
 		private void SetClientDataFun(InitServer initServer)
 		{
 			OwnClient = initServer.ClientId;
 		}
 
-		private bool ChannelSubscribeFun(ChannelSubscribed msg) => false; // TODO
+		private bool ChannelSubscribeFun(ChannelSubscribed msg) => true;
 
-		private bool ChannelUnsubscribeFun(ChannelUnsubscribed msg) => false; // TODO
+		private bool ChannelUnsubscribeFun(ChannelUnsubscribed msg)
+		{
+			var goneClients = Server.Clients.Values.Where(client => client.Channel == msg.ChannelId).ToArray();
+			foreach (var clid in goneClients)
+				Server.Clients.Remove(clid.Id);
+			return false;
+		}
 
 		private static bool ReturnFalse<T>(T _) => false;
-		private static object ReturnNone<T>(T _) => null;
 	}
 }

@@ -1,4 +1,7 @@
 class Bot implements IPage {
+	private ticker: Timer = new Timer(async () => await this.refresh(), 5000);
+	private infoCollapse: Dict<boolean> = {};
+
 	public async init() {
 		// Set up all asynchronous calls
 		const refreshPromise = this.refresh();
@@ -31,6 +34,8 @@ class Bot implements IPage {
 		};
 
 		await refreshPromise;
+
+		this.ticker.start();
 	}
 
 	public async refresh() {
@@ -71,33 +76,52 @@ class Bot implements IPage {
 	public setServerTree(tree: CmdServerTreeServer) {
 		const divTree = Util.getElementByIdSafe("server_tree");
 
-		tree.Channels[0] = { Id: 0, Name: tree.Name, Order: 0, Parent: -1, HasPassword: false };
+		const nodes: IChannelBuildNode[] = [];
+		nodes[0] = { own: { Id: 0, Name: tree.Name, Order: 0, Parent: -1, HasPassword: false }, children: [], user: [] };
 
+		// Create structure
 		for (const chan in tree.Channels) {
 			const chanV: any = tree.Channels[chan];
-			chanV.Children = [];
-			chanV.User = [];
+			nodes[chanV.Id] = { own: chanV, children: [], user: [] };
 		}
+		// Create subchannel tree
 		for (const chan in tree.Channels) {
 			const chanV = tree.Channels[chan];
-			if (chanV.Parent !== -1) {
-				(tree.Channels[chanV.Parent] as any).Children.push(chanV);
-			}
+			nodes[chanV.Parent].children.push(nodes[chanV.Id]);
+			nodes[chanV.Order].after = nodes[chanV.Id];
 		}
+		// Order children
+		for (const node of nodes) {
+			if (node.children.length === 0)
+				continue;
+			let cur = node.children.find(n => n.own.Order === 0);
+			let reorder = [];
+			while (cur !== undefined) {
+				reorder.push(cur);
+				cur = cur.after;
+			}
+			if (reorder.length !== node.children.length)
+				console.log("Ordering error");
+			else
+				node.children = reorder;
+		}
+		// Add all users
 		for (const client in tree.Clients) {
 			const clientV = tree.Clients[client];
-			(tree.Channels[clientV.Channel] as any).User.push(clientV);
+			nodes[clientV.Channel].user.push(clientV);
 		}
 
-		const genTree = this.createTreeChannel(tree, tree.Channels[0]);
+		const genTree = this.createTreeChannel(nodes[0]);
 		genTree.classList.add("channel_root");
 
 		Util.clearChildren(divTree);
 		divTree.appendChild(genTree);
 	}
 
-	private createTreeChannel(tree: CmdServerTreeServer, channel: CmdServerTreeChannel): HTMLElement {
+	private createTreeChannel(channelNode: IChannelBuildNode): HTMLElement {
+		const channel = channelNode.own;
 		const nameSpacer = /^\[(c|r|\*|)spacer[\w\d]*\](.*)$/.exec(channel.Name);
+		const localId = "channel" + String(channel.Id);
 		let spacer = "";
 		if (nameSpacer != undefined) {
 			if (nameSpacer[1] === "*") {
@@ -111,54 +135,131 @@ class Bot implements IPage {
 			channel.Name = nameSpacer[2];
 		}
 
+		const detailNode = Bot.createDetailList(channel);
+		this.applyDetailsCollapsed(detailNode, localId);
+
 		return <div class="channel">
-			<div class={"channel_content" + spacer} onclick={() => this.changeChannel(channel)}>
-				<div class="channel_img"></div>
+			<div class={"channel_content" + spacer}>
+				<div class="channel_img" style="background-image: url(media/icons/folder.svg)"></div>
 				<div class="channel_id">{channel.Id}</div>
 				<div class="channel_name">{channel.Name}</div>
+				<div class="tool_img"
+					onclick={() => this.changeChannel(channel)}
+					style="background-image: url(media/icons/share.svg)"></div>
+				<div class="tool_img"
+					onclick={(e) => this.toggleDetailsCollapsed(e, detailNode, localId)}
+					style="background-image: url(media/icons/info.svg)"></div>
 			</div>
+			{detailNode}
 			<div class="channel_user">
-				{(channel as any).User.map((child: CmdServerTreeUser) => Bot.createTreeUser(child))}
+				{channelNode.user.map((user) => this.createTreeUser(user))}
 			</div>
 			<div class="channel_children">
-				{(channel as any).Children.map((child: CmdServerTreeChannel) => this.createTreeChannel(tree, child))}
+				{channelNode.children.map((child) => this.createTreeChannel(child))}
 			</div>
 		</div>;
 	}
 
-	private async changeChannel(channel: CmdServerTreeChannel) {
+	private createTreeUser(user: CmdServerTreeUser) {
+		const localId = "user" + String(user.Id);
+
+		const detailNode = Bot.createDetailList(user);
+		this.applyDetailsCollapsed(detailNode, localId);
+
+		return <div class="user">
+			<div class="user_content">
+				<div class="user_img" style="background-image: url(media/icons/person.svg)"></div>
+				<div class="user_id">{user.Id}</div>
+				<div class="user_name">{user.Name}</div>
+				<div class="tool_img"
+					onclick={(e) => this.toggleDetailsCollapsed(e, detailNode, localId)}
+					style="background-image: url(media/icons/info.svg)"></div>
+			</div>
+			{detailNode}
+		</div>;
+	}
+
+	private isDetailsCollapsed(localId: string): boolean {
+		let val = this.infoCollapse[localId];
+		if (val === undefined)
+			val = true;
+		return val;
+	}
+
+	private applyDetailsCollapsed(elem: HTMLElement, localId: string) {
+		if (this.isDetailsCollapsed(localId)) {
+			elem.classList.add("details_collapsed");
+		} else {
+			elem.classList.remove("details_collapsed");
+		}
+	}
+
+	private toggleDetailsCollapsed(e: MouseEvent, elem: HTMLElement, localId: string) {
+		const nval = !this.isDetailsCollapsed(localId);
+		this.infoCollapse[localId] = nval;
+		this.applyDetailsCollapsed(elem, localId);
+		e.stopPropagation();
+	}
+
+	public async changeChannel(channel: CmdServerTreeChannel) {
+		if (channel.Id === 0)
+			return;
+
 		if (!channel.HasPassword) {
 			const res = await bot(cmd<void>("bot", "move", String(channel.Id))).get();
 			if (DisplayError.check(res, "Failed to move")) {
 				await this.refresh();
 			}
-		} else {
-			await ModalBox.show("", "This channel is password protected",
-				{
-					inputs: { name: "Enter password" },
-				},
-				{
-					text: "Ok",
-					default: true,
-					action: async (i) => {
-						const res = await bot(cmd<void>("bot", "move", String(channel.Id), i.name)).get();
-						if (DisplayError.check(res, "Failed to move")) {
-							await this.refresh();
-						}
-					},
-				},
-				{
-					text: "Abort",
-				},
-			);
+			return;
 		}
+
+		await ModalBox.show("", "This channel is password protected",
+			{
+				inputs: { name: "Enter password" },
+			},
+			{
+				text: "Ok",
+				default: true,
+				action: async (i) => {
+					const res = await bot(cmd<void>("bot", "move", String(channel.Id), i.name)).get();
+					if (DisplayError.check(res, "Failed to move")) {
+						await this.refresh();
+					}
+				},
+			},
+			{
+				text: "Abort",
+			},
+		);
 	}
 
-	private static createTreeUser(user: CmdServerTreeUser) {
-		return <div class="user user_content">
-			<div class="user_img"></div>
-			<div class="user_id">{user.Id}</div>
-			<div class="user_name">{user.Name}</div>
-		</div>;
+	private static createDetailList(obj: any): HTMLElement {
+		const details = <div class="details"></div>;
+		for (const key in obj) {
+			let value = obj[key];
+			if (value === null) {
+				value = "";
+			} else if (typeof value === "object") {
+				value = JSON.stringify(value);
+			}
+			details.appendChild(
+				<div class="detail_entry">
+					<div class="detail_key">{key}</div>
+					<div class="detail_value">{value}</div>
+				</div>
+			);
+		}
+		return details;
 	}
+
+	public async close() {
+		this.ticker.stop();
+	}
+}
+
+interface IChannelBuildNode {
+	own: CmdServerTreeChannel;
+	after?: IChannelBuildNode;
+	children: IChannelBuildNode[];
+	user: CmdServerTreeUser[];
 }

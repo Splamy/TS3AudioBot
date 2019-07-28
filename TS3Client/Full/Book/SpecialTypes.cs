@@ -24,7 +24,9 @@ namespace TS3Client.Full.Book
 
 	public enum ChannelType
 	{
-
+		Temporary,
+		SemiPermanent,
+		Permanent,
 	}
 
 	public struct TalkPowerRequest

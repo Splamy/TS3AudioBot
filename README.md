@@ -5,10 +5,10 @@ This is a open-source TeamSpeak3 bot, playing music and much more.
 - **Got questions?** Check out our [Wiki](https://github.com/Splamy/TS3AudioBot/wiki), [FAQ](https://github.com/Splamy/TS3AudioBot/wiki/FAQ), or ask on our [![Join Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
 - **Something's broken or it's complicated?** [Open an issue](https://github.com/Splamy/TS3AudioBot/issues/new/choose)
   - Please use and fill out one of the templates we provide unless they are not applicable or you have a good reason not to.  
-    This helps us getting around techincal stuff faster
+    This helps us getting through the technical stuff faster
   - Please keep issues in english, this makes it easier for everyone to participate and keeps issues relevant to link to.
 - **Want to support this Project?**
-  - You can discuss and suggest features. However the [backlog](https://github.com/Splamy/TS3AudioBot/projects/2) is large and feature request will probably take time
+  - You can discuss and suggest features. However the [backlog](https://github.com/Splamy/TS3AudioBot/projects/2) is large and feature requests will probably take time
   - You can contribute code. This is always appreciated, please open an issue or contact a maintainer to discuss *before* you start.
   - You can support me on [![Patreon][patreon-badge]][patreon-link] or [![Paypal][paypal-badge]][paypal-link]
 
