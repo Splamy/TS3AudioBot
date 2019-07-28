@@ -70,7 +70,7 @@ namespace TS3Client.Full.Book
 		public GroupNamingMode NamingMode { get; set; }
 		public i32 NeededModifyPower { get; set; }
 		public i32 NeededMemberAddPower { get; set; }
-		public i32 NeededMemberRemovePower { get; set; }
+		public i32? NeededMemberRemovePower { get; set; }
 	}
 
 	public sealed partial class File
@@ -110,21 +110,21 @@ namespace TS3Client.Full.Book
 		public ChannelId Parent { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
-		public Codec Codec { get; set; }
-		public u8 CodecQuality { get; set; }
+		public Codec? Codec { get; set; }
+		public u8? CodecQuality { get; set; }
 		public MaxClients MaxClients { get; set; }
 		public MaxClients MaxFamilyClients { get; set; }
 		public i32 Order { get; set; }
 		public ChannelType ChannelType { get; set; }
 		public bool? IsDefault { get; set; }
 		public bool? HasPassword { get; set; }
-		public i32 CodecLatencyFactor { get; set; }
+		public i32? CodecLatencyFactor { get; set; }
 		public bool? IsUnencrypted { get; set; }
-		public Duration DeleteDelay { get; set; }
-		public i32 NeededTalkPower { get; set; }
+		public Duration? DeleteDelay { get; set; }
+		public i32? NeededTalkPower { get; set; }
 		public bool ForcedSilence { get; internal set; }
 		public str PhoneticName { get; set; }
-		public IconHash IconId { get; set; }
+		public IconHash? IconId { get; set; }
 		public bool? IsPrivate { get; set; }
 		public bool Subscribed { get; set; }
 		public OptionalChannelData OptionalData { get; internal set; }
@@ -227,7 +227,7 @@ namespace TS3Client.Full.Book
 		public ClientType ClientType { get; internal set; }
 		public str AvatarHash { get; internal set; }
 		public i32 TalkPower { get; internal set; }
-		public TalkPowerRequest TalkPowerRequest { get; internal set; }
+		public TalkPowerRequest? TalkPowerRequest { get; internal set; }
 		public str Description { get; set; }
 		public bool IsPrioritySpeaker { get; set; }
 		public u32 UnreadMessages { get; internal set; }

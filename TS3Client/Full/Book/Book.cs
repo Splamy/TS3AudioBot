@@ -9,15 +9,12 @@
 
 namespace TS3Client.Full.Book
 {
+	using Helper;
 	using Messages;
+	using System;
+	using System.Linq;
 
 #pragma warning disable CS8019
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
-	using System.Threading.Tasks;
-
 	using i8 = System.SByte;
 	using u8 = System.Byte;
 	using i16 = System.Int16;
@@ -147,8 +144,24 @@ namespace TS3Client.Full.Book
 			else return ChannelType.Temporary;
 		}
 
-		private str AwayFun(ClientEnterView msg) => default; // TODO
-		private TalkPowerRequest? TalkPowerFun(ClientEnterView msg) => default; // TODO
+		private str AwayCevFun(ClientEnterView msg) => default;
+		private str AwayCuFun(ClientUpdated msg) => default;
+
+		private TalkPowerRequest? TalkPowerCevFun(ClientEnterView msg)
+		{
+			if (msg.TalkPowerRequestTime != Util.UnixTimeStart)
+				return new TalkPowerRequest() { Time = msg.TalkPowerRequestTime, Message = msg.TalkPowerRequestMessage ?? "" };
+			return null;
+		}
+		private TalkPowerRequest? TalkPowerCuFun(ClientUpdated msg) => TalkPowerFun(msg.TalkPowerRequestTime, msg.TalkPowerRequestMessage);
+		private TalkPowerRequest? TalkPowerFun(DateTime? time, str message)
+		{
+			if (time != null && time != Util.UnixTimeStart) // TODO
+				return new TalkPowerRequest() { Time = time.Value, Message = message ?? "" };
+			return null;
+		}
+
+		
 
 		private SocketAddr AddressFun(ClientConnectionInfo msg) => msg.Ip;
 

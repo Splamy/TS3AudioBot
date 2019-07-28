@@ -31,7 +31,7 @@ namespace TS3Client.Full.Book
 
 	public partial class Connection
 	{
-#pragma warning disable IDE0017 // Ignore "Object initialization can be simplified"
+#pragma warning disable IDE0017, CS0472 // Ignore "Object initialization can be simplified", "Something with == and null..."
 	<# foreach (var rule in genm2b.rule) {
 		var msg = genmsg.NotifiesSorted.First(x => x.name == rule.from);
 		var bookItem = genbook.@struct.First(x => x.name == rule.to);
@@ -123,6 +123,6 @@ namespace TS3Client.Full.Book
 		}
 
 	<# } #>
-#pragma warning restore IDE0017
+#pragma warning restore IDE0017, CS0472
 	}
 }

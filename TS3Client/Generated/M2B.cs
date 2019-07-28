@@ -62,7 +62,7 @@ namespace TS3Client.Full.Book
 
 	public partial class Connection
 	{
-#pragma warning disable IDE0017 // Ignore "Object initialization can be simplified"
+#pragma warning disable IDE0017, CS0472 // Ignore "Object initialization can be simplified", "Something with == and null..."
 	
 		public void UpdateInitServer(InitServer msg)
 		{
@@ -253,8 +253,8 @@ namespace TS3Client.Full.Book
 		{
 			var obj = new Client();
 			{ var tmpv = msg.TargetChannelId; if (tmpv != null) obj.Channel = (ChannelId)tmpv; }
-			{ var tmpv = AwayFun(msg); if (tmpv != null) obj.AwayMessage = (str)tmpv; }
-			{ var tmpv = TalkPowerFun(msg); if (tmpv != null) obj.TalkPowerRequest = (TalkPowerRequest)tmpv; }
+			{ var tmpv = AwayCevFun(msg); if (tmpv != null) obj.AwayMessage = (str)tmpv; }
+			{ var tmpv = TalkPowerCevFun(msg); if (tmpv != null) obj.TalkPowerRequest = (TalkPowerRequest)tmpv; }
 			obj.OptionalData = null;
 			obj.ConnectionData = null;
 			{ var tmpv = msg.DatabaseId; if (tmpv != null) obj.DatabaseId = (ClientDbId)tmpv; }
@@ -361,6 +361,7 @@ namespace TS3Client.Full.Book
 				Log.Warn("Internal Book protocol error. Update 'ClientServerGroupAdded' has no local object ({$msg})", msg);
 				return;
 			}
+			obj.ServerGroups.Add(msg.ServerGroupId);
 			
 		}
 
@@ -372,6 +373,7 @@ namespace TS3Client.Full.Book
 				Log.Warn("Internal Book protocol error. Update 'ClientServerGroupRemoved' has no local object ({$msg})", msg);
 				return;
 			}
+			obj.ServerGroups.Remove(msg.ServerGroupId);
 			
 		}
 
@@ -383,6 +385,8 @@ namespace TS3Client.Full.Book
 				Log.Warn("Internal Book protocol error. Update 'ClientUpdated' has no local object ({$msg})", msg);
 				return;
 			}
+			{ var tmpv = AwayCuFun(msg); if (tmpv != null) obj.AwayMessage = (str)tmpv; }
+			{ var tmpv = TalkPowerCuFun(msg); if (tmpv != null) obj.TalkPowerRequest = (TalkPowerRequest)tmpv; }
 			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
 			{ var tmpv = msg.UnreadMessages; if (tmpv != null) obj.UnreadMessages = (u32)tmpv; }
 			{ var tmpv = msg.InputMuted; if (tmpv != null) obj.InputMuted = (bool)tmpv; }
@@ -446,6 +450,6 @@ namespace TS3Client.Full.Book
 		}
 
 	
-#pragma warning restore IDE0017
+#pragma warning restore IDE0017, CS0472
 	}
 }

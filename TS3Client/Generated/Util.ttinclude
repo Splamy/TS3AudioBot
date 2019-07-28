@@ -30,6 +30,7 @@ public static bool NullType(string type) {
 		|| type == "HostMessageMode"
 		|| type == "CodecEncryptionMode"
 		|| type == "HostBannerMode"
+		|| type == "TalkPowerRequest"
 		;
 }
 

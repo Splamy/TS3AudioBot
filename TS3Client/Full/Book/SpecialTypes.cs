@@ -9,6 +9,8 @@
 
 namespace TS3Client.Full.Book
 {
+	using System;
+
 	public struct MaxClients
 	{
 		public ushort Count { get; internal set; }
@@ -31,5 +33,7 @@ namespace TS3Client.Full.Book
 
 	public struct TalkPowerRequest
 	{
+		public DateTime Time { get; internal set; }
+		public string Message { get; internal set; }
 	}
 }
