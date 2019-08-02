@@ -76,7 +76,7 @@ class Bot implements IPage {
 	public setServerTree(tree: CmdServerTreeServer) {
 		const divTree = Util.getElementByIdSafe("server_tree");
 
-		const nodes: IChannelBuildNode[] = [];
+		const nodes: Dict<IChannelBuildNode> = {};
 		nodes[0] = { own: { Id: 0, Name: tree.Name, Order: 0, Parent: -1, HasPassword: false }, children: [], user: [] };
 
 		// Create structure
@@ -87,15 +87,16 @@ class Bot implements IPage {
 		// Create subchannel tree
 		for (const chan in tree.Channels) {
 			const chanV = tree.Channels[chan];
-			nodes[chanV.Parent].children.push(nodes[chanV.Id]);
-			nodes[chanV.Order].after = nodes[chanV.Id];
+			nodes[chanV.Parent]!.children.push(nodes[chanV.Id]!);
+			nodes[chanV.Order]!.after = nodes[chanV.Id];
 		}
 		// Order children
-		for (const node of nodes) {
+		for (const nodeId of Object.keys(nodes)) {
+			const node: IChannelBuildNode = nodes[nodeId]!;
 			if (node.children.length === 0)
 				continue;
-			let cur = node.children.find(n => n.own.Order === 0);
-			let reorder = [];
+			let cur = node.children.find((n) => n.own.Order === 0);
+			const reorder = [];
 			while (cur !== undefined) {
 				reorder.push(cur);
 				cur = cur.after;
@@ -108,10 +109,10 @@ class Bot implements IPage {
 		// Add all users
 		for (const client in tree.Clients) {
 			const clientV = tree.Clients[client];
-			nodes[clientV.Channel].user.push(clientV);
+			nodes[clientV.Channel]!.user.push(clientV);
 		}
 
-		const genTree = this.createTreeChannel(nodes[0]);
+		const genTree = this.createTreeChannel(nodes[0]!);
 		genTree.classList.add("channel_root");
 
 		Util.clearChildren(divTree);
