@@ -11,6 +11,7 @@ namespace TS3Client.Audio
 {
 	using Opus;
 	using System;
+	using System.Collections.Generic;
 
 	public class DecoderPipe : IAudioPipe, IDisposable, ISampleInfo
 	{
@@ -22,8 +23,8 @@ namespace TS3Client.Audio
 		public int BitsPerSample { get; } = 16;
 
 		// opus
-		private OpusDecoder opusVoiceDecoder;
-		private OpusDecoder opusMusicDecoder;
+		private readonly Dictionary<ushort, OpusDecoder> voiceDecoders = new Dictionary<ushort, OpusDecoder>();
+		private readonly Dictionary<ushort, OpusDecoder> musicDecoders = new Dictionary<ushort, OpusDecoder>();
 
 		private readonly byte[] decodedBuffer;
 
@@ -53,8 +54,8 @@ namespace TS3Client.Audio
 
 			case Codec.OpusVoice:
 				{
-					opusVoiceDecoder = opusVoiceDecoder ?? OpusDecoder.Create(48000, 1);
-					var decodedData = opusVoiceDecoder.Decode(data, decodedBuffer.AsSpan(0, decodedBuffer.Length / 2));
+					var decoder = GetVoiceDecoder(meta.In.Sender);
+					var decodedData = decoder.Decode(data, decodedBuffer.AsSpan(0, decodedBuffer.Length / 2));
 					int dataLength = decodedData.Length;
 					if (!AudioTools.TryMonoToStereo(decodedBuffer, ref dataLength))
 						return;
@@ -64,8 +65,8 @@ namespace TS3Client.Audio
 
 			case Codec.OpusMusic:
 				{
-					opusMusicDecoder = opusMusicDecoder ?? OpusDecoder.Create(48000, 2);
-					var decodedData = opusMusicDecoder.Decode(data, decodedBuffer);
+					var decoder = GetMusicDecoder(meta.In.Sender);
+					var decodedData = decoder.Decode(data, decodedBuffer);
 					OutStream?.Write(decodedData, meta);
 				}
 				break;
@@ -78,8 +79,41 @@ namespace TS3Client.Audio
 
 		public void Dispose()
 		{
-			opusVoiceDecoder?.Dispose();
-			opusMusicDecoder?.Dispose();
+			foreach (var decoder in voiceDecoders.Values)
+			{
+				decoder.Dispose();
+			}
+
+			foreach (var decoder in musicDecoders.Values)
+			{
+				decoder.Dispose();
+			}
+		}
+
+		private OpusDecoder GetVoiceDecoder(ushort sender)
+		{
+			if (voiceDecoders.TryGetValue(sender, out var decoder))
+			{
+				return decoder;
+			}
+
+			decoder = OpusDecoder.Create(SampleRate, 1);
+			voiceDecoders.Add(sender, decoder);
+
+			return decoder;
+		}
+
+		private OpusDecoder GetMusicDecoder(ushort sender)
+		{
+			if (musicDecoders.TryGetValue(sender, out var decoder))
+			{
+				return decoder;
+			}
+
+			decoder = OpusDecoder.Create(SampleRate, 2);
+			musicDecoders.Add(sender, decoder);
+
+			return decoder;
 		}
 	}
 }
