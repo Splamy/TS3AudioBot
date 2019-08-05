@@ -22,14 +22,13 @@ namespace TS3Client.Audio
 		public int Channels { get; } = 2;
 		public int BitsPerSample { get; } = 16;
 
-		// opus
-		private readonly Dictionary<ushort, OpusDecoder> voiceDecoders = new Dictionary<ushort, OpusDecoder>();
-		private readonly Dictionary<ushort, OpusDecoder> musicDecoders = new Dictionary<ushort, OpusDecoder>();
+		// TOOO:
+		// - Add some sort of decoder reuse to reduce concurrent amount of decoders (see ctl 'reset')
+		// - Clean up decoders after some time (Control: Tick?)
+		// - Make dispose threadsafe OR redefine thread safety requirements for pipes.
 
+		private readonly Dictionary<ushort, (OpusDecoder, Codec)> decoders = new Dictionary<ushort, (OpusDecoder, Codec)>();
 		private readonly byte[] decodedBuffer;
-
-		public IAudioPassiveConsumer OpusVoicePipeOut { get; set; }
-		public IAudioActiveProducer OpusVoicePipeIn { get; set; }
 
 		public DecoderPipe()
 		{
@@ -43,29 +42,20 @@ namespace TS3Client.Audio
 
 			switch (meta.Codec.Value)
 			{
-			case Codec.SpeexNarrowband:
-				throw new NotSupportedException();
-			case Codec.SpeexWideband:
-				throw new NotSupportedException();
-			case Codec.SpeexUltraWideband:
-				throw new NotSupportedException();
-			case Codec.CeltMono:
-				throw new NotSupportedException();
-
 			case Codec.OpusVoice:
 				{
-					var decoder = GetVoiceDecoder(meta.In.Sender);
+					var decoder = GetDecoder(meta.In.Sender, Codec.OpusVoice);
 					var decodedData = decoder.Decode(data, decodedBuffer.AsSpan(0, decodedBuffer.Length / 2));
 					int dataLength = decodedData.Length;
 					if (!AudioTools.TryMonoToStereo(decodedBuffer, ref dataLength))
-						return;
+						break;
 					OutStream?.Write(decodedBuffer.AsSpan(0, dataLength), meta);
 				}
 				break;
 
 			case Codec.OpusMusic:
 				{
-					var decoder = GetMusicDecoder(meta.In.Sender);
+					var decoder = GetDecoder(meta.In.Sender, Codec.OpusMusic);
 					var decodedData = decoder.Decode(data, decodedBuffer);
 					OutStream?.Write(decodedData, meta);
 				}
@@ -73,47 +63,43 @@ namespace TS3Client.Audio
 
 			default:
 				// Cannot decode
-				return;
+				break;
 			}
+		}
+
+		private OpusDecoder GetDecoder(ushort sender, Codec codec)
+		{
+			if (decoders.TryGetValue(sender, out var decoder))
+			{
+				if (decoder.Item2 == codec)
+					return decoder.Item1;
+				else
+					decoder.Item1.Dispose();
+			}
+
+			var newDecoder = CreateDecoder(codec);
+			decoders[sender] = (newDecoder, codec);
+			return newDecoder;
+		}
+
+		private OpusDecoder CreateDecoder(Codec codec)
+		{
+			switch (codec)
+			{
+			case Codec.OpusVoice:
+				return OpusDecoder.Create(SampleRate, 1);
+			case Codec.OpusMusic:
+				return OpusDecoder.Create(SampleRate, 2);
+			}
+			return null;
 		}
 
 		public void Dispose()
 		{
-			foreach (var decoder in voiceDecoders.Values)
+			foreach (var (decoder, _) in decoders.Values)
 			{
 				decoder.Dispose();
 			}
-
-			foreach (var decoder in musicDecoders.Values)
-			{
-				decoder.Dispose();
-			}
-		}
-
-		private OpusDecoder GetVoiceDecoder(ushort sender)
-		{
-			if (voiceDecoders.TryGetValue(sender, out var decoder))
-			{
-				return decoder;
-			}
-
-			decoder = OpusDecoder.Create(SampleRate, 1);
-			voiceDecoders.Add(sender, decoder);
-
-			return decoder;
-		}
-
-		private OpusDecoder GetMusicDecoder(ushort sender)
-		{
-			if (musicDecoders.TryGetValue(sender, out var decoder))
-			{
-				return decoder;
-			}
-
-			decoder = OpusDecoder.Create(SampleRate, 2);
-			musicDecoders.Add(sender, decoder);
-
-			return decoder;
 		}
 	}
 }

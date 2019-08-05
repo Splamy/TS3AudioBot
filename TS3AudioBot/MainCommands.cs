@@ -1304,8 +1304,8 @@ namespace TS3AudioBot
 			playManager.Play(clientCall, result.Value[index]).UnwrapThrow();
 		}
 
-		[Command("server tree")]
-		public static JsonValue<Server> CommandServerTree(Ts3FullClient ts3FullClient)
+		[Command("server tree", "_undocumented")]
+		public static JsonValue<Server> CommandServerTree(Ts3FullClient ts3FullClient, ApiCall _)
 		{
 			return JsonValue.Create(ts3FullClient.Book.Server);
 		}

@@ -120,20 +120,20 @@ namespace TS3AudioBot.Web
 					});
 
 					// TODO AS DEBUG MODE !!!!!!!!!!!!!!!!!!
-					app.Map(new PathString("/html"), map =>
-					{
-						var baseDir = FindWebFolder();
-						map.UseFileServer(new FileServerOptions
-						{
-							RequestPath = "",
-							FileProvider = new PhysicalFileProvider(baseDir + "/html")
-						});
-						map.UseFileServer(new FileServerOptions
-						{
-							RequestPath = "",
-							FileProvider = new PhysicalFileProvider(baseDir + "/out")
-						});
-					});
+					//app.Map(new PathString("/html"), map =>
+					//{
+					//	var baseDir = FindWebFolder();
+					//	map.UseFileServer(new FileServerOptions
+					//	{
+					//		RequestPath = "",
+					//		FileProvider = new PhysicalFileProvider(baseDir + "/html")
+					//	});
+					//	map.UseFileServer(new FileServerOptions
+					//	{
+					//		RequestPath = "",
+					//		FileProvider = new PhysicalFileProvider(baseDir + "/out")
+					//	});
+					//});
 
 					if (config.Interface.Enabled)
 					{
