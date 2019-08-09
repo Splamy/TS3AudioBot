@@ -152,6 +152,9 @@ namespace TS3AudioBot
 		[Command("bot avatar clear")]
 		public static void CommandBotAvatarClear(Ts3Client ts3Client) => ts3Client.DeleteAvatar().UnwrapThrow();
 
+		[Command("bot badges")]
+		public static void CommandBotBadges(Ts3Client ts3Client, string badges) => ts3Client.ChangeBadges(badges).UnwrapThrow();
+
 		[Command("bot description set")]
 		public static void CommandBotDescriptionSet(Ts3Client ts3Client, string description) => ts3Client.ChangeDescription(description).UnwrapThrow();
 
@@ -237,9 +240,6 @@ namespace TS3AudioBot
 		[Command("bot name")]
 		public static void CommandBotName(Ts3Client ts3Client, string name) => ts3Client.ChangeName(name).UnwrapThrow();
 
-		[Command("bot badges")]
-		public static void CommandBotBadges(Ts3Client ts3Client, string badges) => ts3Client.ChangeBadges(badges).UnwrapThrow();
-
 		[Command("bot save")]
 		public static void CommandBotSetup(ConfBot botConfig, string name)
 		{
@@ -253,27 +253,37 @@ namespace TS3AudioBot
 				throw new CommandException(strings.cmd_bot_setup_error, CommandExceptionReason.CommandError);
 		}
 
+		[Command("bot template", "cmd_bot_use_help")]
+		public static ICommandResult CommandBotTemplate(ExecutionInformation info, IReadOnlyList<CommandResultType> returnTypes, BotManager bots, string botName, ICommand cmd)
+		{
+			using (var botLock = bots.GetBotLock(botName))
+				return CommandBotUseInternal(info, returnTypes, botLock, cmd);
+		}
+
 		[Command("bot use")]
 		public static ICommandResult CommandBotUse(ExecutionInformation info, IReadOnlyList<CommandResultType> returnTypes, BotManager bots, int botId, ICommand cmd)
 		{
 			using (var botLock = bots.GetBotLock(botId))
-			{
-				if (botLock is null)
-					throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
+				return CommandBotUseInternal(info, returnTypes, botLock, cmd);
+		}
 
-				var backParent = info.ParentInjector;
-				info.ParentInjector = botLock.Bot.Injector;
-				string backUpId = NLog.MappedDiagnosticsContext.Get("BotId");
-				NLog.MappedDiagnosticsContext.Set("BotId", botId.ToString());
-				try
-				{
-					return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
-				}
-				finally
-				{
-					NLog.MappedDiagnosticsContext.Set("BotId", backUpId);
-					info.ParentInjector = backParent;
-				}
+		private static ICommandResult CommandBotUseInternal(ExecutionInformation info, IReadOnlyList<CommandResultType> returnTypes, BotLock botLock, ICommand cmd)
+		{
+			if (botLock is null)
+				throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
+
+			var backParent = info.ParentInjector;
+			info.ParentInjector = botLock.Bot.Injector;
+			string backUpId = NLog.MappedDiagnosticsContext.Get("BotId");
+			NLog.MappedDiagnosticsContext.Set("BotId", botLock.Bot.Id.ToString());
+			try
+			{
+				return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
+			}
+			finally
+			{
+				NLog.MappedDiagnosticsContext.Set("BotId", backUpId);
+				info.ParentInjector = backParent;
 			}
 		}
 
