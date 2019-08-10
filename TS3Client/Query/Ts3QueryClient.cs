@@ -80,8 +80,8 @@ namespace TS3Client.Query
 			finally { connecting = false; }
 
 			cts = new CancellationTokenSource();
-			NetworkLoop(cts.Token).Start();
 			dispatcher.Init(InvokeEvent, conData.LogId);
+			NetworkLoop(cts.Token).ConfigureAwait(false);
 			OnConnected?.Invoke(this, EventArgs.Empty);
 		}
 

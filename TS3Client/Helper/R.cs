@@ -167,6 +167,9 @@ namespace System
 		// Convenience casting
 		public static implicit operator E<TError>(_Ok _) => OkR;
 
+		// Unwrapping
+		public void Unwrap() { if (!Ok) throw new InvalidOperationException("Called upwrap on error"); }
+
 		// Upwrapping
 		/// <summary>
 		/// Adds a success value to the result.
