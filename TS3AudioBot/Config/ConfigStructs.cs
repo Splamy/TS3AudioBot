@@ -244,7 +244,7 @@ namespace TS3AudioBot.Config
 		public ConfigValue<PlaylistLocation> Share { get; } = new ConfigValue<PlaylistLocation>("share", PlaylistLocation.Bot,
 			" - Bot : Playlists per bot.\n" +
 			" - Global : Playlists across all.\n" +
-			" (- Server)");
+			" (- Server : Not Implemented)");
 	}
 
 	public class ConfHistory : ConfigTable

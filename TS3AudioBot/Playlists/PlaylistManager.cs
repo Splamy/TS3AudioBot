@@ -126,10 +126,11 @@ namespace TS3AudioBot.Playlists
 
 		public void ClearQueue()
 		{
-			// Starting with dotnet core 2.1 available
-			// playQueue.Clear();
-
+#if NETCOREAPP2_2 || NETCOREAPP3_0
+			playQueue.Clear();
+#else
 			while (playQueue.TryDequeue(out _)) ;
+#endif
 		}
 
 		public PlaylistItem[] GetQueue() => playQueue.ToArray();

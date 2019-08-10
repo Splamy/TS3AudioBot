@@ -223,7 +223,7 @@ namespace TS3Client.Query
 
 		#region QUERY SPECIFIC COMMANDS
 
-		private static readonly string[] TargetTypeString = { "textprivate", "textchannel", "textserver", "channel", "server" };
+		private static readonly string[] TargetTypeString = { "(dummy)", "textprivate", "textchannel", "textserver", "channel", "server" };
 
 		public CmdR RegisterNotification(TextMessageTargetMode target)
 			=> RegisterNotification(TargetTypeString[(int)target], null);

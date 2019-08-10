@@ -255,12 +255,12 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var queryString =
 					new Uri("https://www.googleapis.com/youtube/v3/playlistItems"
-							+ "?part=contentDetails,snippet"
-							+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
-							+ "&maxResults=50"
-							+ "&playlistId=" + id
-							+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
-							+ "&key=" + YoutubeProjectId);
+						+ "?part=contentDetails,snippet"
+						+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
+						+ "&maxResults=50"
+						+ "&playlistId=" + id
+						+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
+						+ "&key=" + YoutubeProjectId);
 
 				if (!WebWrapper.DownloadString(out string response, queryString))
 					return new LocalStr(strings.error_net_unknown);
