@@ -69,11 +69,12 @@ namespace TS3Client.Query
 				ConnectionData = conData;
 
 				tcpStream = tcpClient.GetStream();
-				// todo: remove reader and move logic into pipe read stream
 				tcpReader = new StreamReader(tcpStream, Util.Encoder);
 				tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
 
-				for (int i = 0; i < 3; i++)
+				if(tcpReader.ReadLine() != "TS3")
+					throw new Ts3Exception("Protocol violation. The stream must start with 'TS3'");
+				if (string.IsNullOrEmpty(tcpReader.ReadLine()))
 					tcpReader.ReadLine();
 			}
 			catch (SocketException ex) { throw new Ts3Exception("Could not connect.", ex); }
@@ -105,32 +106,30 @@ namespace TS3Client.Query
 		private async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
 		{
 			const int minimumBufferSize = 4096;
-			var dataReadBuffer = new byte[4096];
+#if !(NETCOREAPP2_2 || NETCOREAPP3_0)
+			var dataReadBuffer = new byte[minimumBufferSize];
+#endif
 
 			while (!cancellationToken.IsCancellationRequested)
 			{
 				try
 				{
 					var mem = writer.GetMemory(minimumBufferSize);
+#if NETCOREAPP2_2 || NETCOREAPP3_0
+					int bytesRead = await stream.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
+#else
 					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length, cancellationToken).ConfigureAwait(false);
-					if (bytesRead == 0)
-					{
-						break;
-					}
-
 					dataReadBuffer.CopyTo(mem);
-					//await writer.WriteAsync(dataReadBuffer.AsMemory(0, bytesRead));
-					//await writer.FlushAsync();
+#endif
+					if (bytesRead == 0)
+						break;
 					writer.Advance(bytesRead);
 				}
 				catch (IOException) { break; }
 
-				FlushResult result = await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-				if (result.IsCompleted)
-				{
+				var result = await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+				if (result.IsCompleted || result.IsCanceled)
 					break;
-				}
 			}
 			writer.Complete();
 		}
@@ -141,7 +140,7 @@ namespace TS3Client.Query
 			{
 				var result = await reader.ReadAsync(cancelationToken).ConfigureAwait(false);
 
-				ReadOnlySequence<byte> buffer = result.Buffer;
+				var buffer = result.Buffer;
 				SequencePosition? position;
 
 				do
@@ -162,11 +161,8 @@ namespace TS3Client.Query
 				} while (position != null);
 
 				reader.AdvanceTo(buffer.Start, buffer.End);
-
-				if (result.IsCompleted)
-				{
+				if (result.IsCompleted || result.IsCanceled)
 					break;
-				}
 			}
 
 			reader.Complete();
