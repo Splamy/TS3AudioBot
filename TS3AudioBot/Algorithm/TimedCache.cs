@@ -7,20 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Helper
+namespace TS3AudioBot.Algorithm
 {
 	using System;
 	using System.Collections.Concurrent;
 	using System.Linq;
+	using TS3AudioBot.Helper;
 
-	public class Cache<TK, TV>
+	public class TimedCache<TK, TV>
 	{
 		public TimeSpan Timeout { get; }
 		private readonly ConcurrentDictionary<TK, TimedData> cachedData;
 
-		public Cache() : this(TimeSpan.FromSeconds(3)) { }
+		public TimedCache() : this(TimeSpan.FromSeconds(3)) { }
 
-		public Cache(TimeSpan timeout)
+		public TimedCache(TimeSpan timeout)
 		{
 			Timeout = timeout;
 			cachedData = new ConcurrentDictionary<TK, TimedData>();
@@ -39,12 +40,12 @@ namespace TS3AudioBot.Helper
 			return true;
 		}
 
-		public void Store(TK key, TV value)
+		public void Set(TK key, TV value)
 		{
 			cachedData[key] = new TimedData { Data = value, Timestamp = Util.GetNow() };
 		}
 
-		public void Invalidate()
+		public void Clear()
 		{
 			cachedData.Clear();
 		}

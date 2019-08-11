@@ -18,6 +18,7 @@ namespace TS3AudioBot
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.ResourceFactories;
 	using TS3Client;
 	using TS3Client.Audio;
@@ -35,8 +36,6 @@ namespace TS3AudioBot
 		public event EventHandler<EventArgs> OnBotConnected;
 		public event EventHandler<DisconnectEventArgs> OnBotDisconnect;
 		public event EventHandler<TextMessage> OnMessageReceived;
-		public event EventHandler<ClientEnterView> OnClientConnect;
-		public event EventHandler<ClientLeftView> OnClientDisconnect;
 
 		private static readonly string[] QuitMessages = {
 			"I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
@@ -46,7 +45,7 @@ namespace TS3AudioBot
 			"?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
 			"connection lost", "disconnected", "Requested by API.",
 			"Robert'); DROP TABLE students;--", "It works!! No, wait...",
-			"Notice me, senpai", ":wq"
+			"Notice me, senpai", ":wq", "Soon™"
 		};
 
 		private bool closed = false;
@@ -59,7 +58,10 @@ namespace TS3AudioBot
 		private IdentityData identity;
 		private List<ClientList> clientbuffer;
 		private bool clientbufferOutdated = true;
-		private readonly Cache<ulong, ClientDbInfo> clientDbNames;
+		// dbid -> DbData
+		private readonly TimedCache<ulong, ClientDbInfo> clientDbNames;
+		// uid -> dbid
+		private readonly LruCache<string, ulong> dbIdCache;
 
 		private readonly StallCheckPipe stallCheckPipe;
 		private readonly VolumePipe volumePipe;
@@ -77,11 +79,10 @@ namespace TS3AudioBot
 			this.id = id;
 			Util.Init(out clientDbNames);
 			Util.Init(out clientbuffer);
+			dbIdCache = new LruCache<string, ulong>(1024);
 
 			this.tsFullClient = tsFullClient;
-			tsFullClient.OnClientLeftView += ExtendedClientLeftView;
-			tsFullClient.OnClientEnterView += ExtendedClientEnterView;
-			tsFullClient.OnTextMessage += ExtendedTextMessage;
+			tsFullClient.OnEachTextMessage += ExtendedTextMessage;
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			tsFullClient.OnConnected += TsFullClient_OnConnected;
 			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
@@ -140,6 +141,7 @@ namespace TS3AudioBot
 			reconnectCounter = 0;
 			lastReconnect = null;
 			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
+			ClearAllCaches();
 			return ConnectClient();
 		}
 
@@ -342,11 +344,24 @@ namespace TS3AudioBot
 			if (!result.Ok)
 				return new LocalStr(strings.error_ts_no_client_found);
 			clientData = result.Value;
-			clientDbNames.Store(clientDbId, clientData);
+			clientDbNames.Set(clientDbId, clientData);
 			return clientData;
 		}
 
 		public R<ClientInfo, LocalStr> GetClientInfoById(ushort id) => tsFullClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
+
+		public R<ulong, LocalStr> GetClientDbIdByUid(string uid)
+		{
+			if (dbIdCache.TryGetValue(uid, out var dbid))
+				return dbid;
+
+			var result = tsFullClient.GetClientDbIdFromUid(uid);
+			if (!result.Ok)
+				return new LocalStr(strings.error_ts_no_client_found);
+
+			dbIdCache.Set(result.Value.ClientUid, result.Value.ClientDbId);
+			return result.Value.ClientDbId;
+		}
 
 		internal bool SetupRights(string key)
 		{
@@ -505,6 +520,13 @@ namespace TS3AudioBot
 
 		public void InvalidateClientBuffer() => clientbufferOutdated = true;
 
+		private void ClearAllCaches()
+		{
+			InvalidateClientBuffer();
+			dbIdCache.Clear();
+			clientDbNames.Clear();
+		}
+
 		#endregion
 
 		#region Events
@@ -622,38 +644,12 @@ namespace TS3AudioBot
 			OnBotConnected?.Invoke(this, EventArgs.Empty);
 		}
 
-		private void ExtendedTextMessage(object sender, IEnumerable<TextMessage> eventArgs)
+		private void ExtendedTextMessage(object sender, TextMessage textMessage)
 		{
-			if (OnMessageReceived is null) return;
-			foreach (var evData in eventArgs)
-			{
-				// Prevent loopback of own textmessages
-				if (evData.InvokerId == tsFullClient.ClientId)
-					continue;
-				OnMessageReceived?.Invoke(sender, evData);
-			}
-		}
-
-		private void ExtendedClientEnterView(object sender, IEnumerable<ClientEnterView> eventArgs)
-		{
-			clientbufferOutdated = true;
-			if (OnClientConnect is null) return;
-			foreach (var evData in eventArgs)
-			{
-				clientbufferOutdated = true;
-				OnClientConnect?.Invoke(sender, evData);
-			}
-		}
-
-		private void ExtendedClientLeftView(object sender, IEnumerable<ClientLeftView> eventArgs)
-		{
-			clientbufferOutdated = true;
-			if (OnClientDisconnect is null) return;
-			foreach (var evData in eventArgs)
-			{
-				clientbufferOutdated = true;
-				OnClientDisconnect?.Invoke(sender, evData);
-			}
+			// Prevent loopback of own textmessages
+			if (textMessage.InvokerId == tsFullClient.ClientId)
+				return;
+			OnMessageReceived?.Invoke(sender, textMessage);
 		}
 
 		#endregion

@@ -99,10 +99,11 @@ namespace TS3AudioBot.Rights
 					ulong[] serverGroups = clientCall.ServerGroups;
 					ulong? channelId = clientCall.ChannelId;
 					ulong? databaseId = clientCall.DatabaseId;
+					ulong? channelGroup = clientCall.ChannelGroup;
 
 					if (clientCall.ClientId != null
 						&& ((needsAvailableGroups && serverGroups is null)
-							|| needsAvailableChanGroups
+							|| (needsAvailableChanGroups && channelGroup is null)
 							|| (needsPermOverview.Length > 0 && (databaseId == null || channelId == null))
 						)
 					)
@@ -111,7 +112,7 @@ namespace TS3AudioBot.Rights
 						if (result.Ok)
 						{
 							serverGroups = result.Value.ServerGroups;
-							execCtx.ChannelGroupId = result.Value.ChannelGroup;
+							channelGroup = result.Value.ChannelGroup;
 							databaseId = result.Value.DatabaseId;
 							channelId = result.Value.ChannelId;
 						}
@@ -121,10 +122,10 @@ namespace TS3AudioBot.Rights
 					{
 						if (databaseId == null)
 						{
-							var resultDbId = tsClient.GetClientDbIdFromUid(clientCall.ClientUid);
+							var resultDbId = ts.GetClientDbIdByUid(clientCall.ClientUid);
 							if (resultDbId.Ok)
 							{
-								databaseId = resultDbId.Value.ClientDbId;
+								databaseId = resultDbId.Value;
 							}
 						}
 
@@ -136,6 +137,7 @@ namespace TS3AudioBot.Rights
 						}
 					}
 
+					execCtx.ChannelGroupId = channelGroup;
 					execCtx.ServerGroups = serverGroups ?? Array.Empty<ulong>();
 
 					if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)

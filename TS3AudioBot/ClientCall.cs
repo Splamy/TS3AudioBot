@@ -18,13 +18,13 @@ namespace TS3AudioBot
 		public ulong? ChannelId { get; }
 		public ushort? ClientId { get; }
 		public string NickName { get; }
+		public ulong[] ServerGroups { get; }
+		public ulong? ChannelGroup { get; }
 		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
-		// Lazy
-		public ulong[] ServerGroups { get; internal set; }
 
 		public ClientCall(string clientUid, string textMessage, ulong? databaseId = null, ulong? channelId = null,
-			ushort? clientId = null, string nickName = null,
-			TS3Client.TextMessageTargetMode? visibiliy = null) : base(clientUid)
+			ushort? clientId = null, string nickName = null, TS3Client.TextMessageTargetMode? visibiliy = null,
+			ulong[] serverGroups = null, ulong? channelGroup = null) : base(clientUid)
 		{
 			TextMessage = textMessage;
 			DatabaseId = databaseId;
@@ -32,6 +32,8 @@ namespace TS3AudioBot
 			ClientId = clientId;
 			NickName = nickName;
 			Visibiliy = visibiliy;
+			ServerGroups = serverGroups;
+			ChannelGroup = channelGroup;
 		}
 	}
 }

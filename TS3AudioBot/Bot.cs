@@ -23,6 +23,7 @@ namespace TS3AudioBot
 	using Plugins;
 	using Sessions;
 	using System;
+	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using TS3AudioBot.ResourceFactories;
@@ -134,7 +135,7 @@ namespace TS3AudioBot
 			// Register callback for all messages happening
 			clientConnection.OnMessageReceived += OnMessageReceived;
 			// Register callback to remove open private sessions, when user disconnects
-			clientConnection.OnClientDisconnect += OnClientDisconnect;
+			tsFullClient.OnEachClientLeftView += OnClientLeftView;
 			clientConnection.OnBotConnected += OnBotConnected;
 			clientConnection.OnBotDisconnect += OnBotDisconnect;
 
@@ -199,28 +200,36 @@ namespace TS3AudioBot
 
 			clientConnection.InvalidateClientBuffer();
 
-			ulong? channelId = null, databaseId = null;
+			ulong? channelId = null, databaseId = null, channelGroup = null;
 			ulong[] serverGroups = null;
-			var clientResult = clientConnection.GetCachedClientById(textMessage.InvokerId);
-			if (clientResult.Ok)
+
+			if (tsFullClient.Book.Server.Clients.TryGetValue(textMessage.InvokerId, out var bookClient))
 			{
-				channelId = clientResult.Value.ChannelId;
-				databaseId = clientResult.Value.DatabaseId;
+				channelId = bookClient.Channel;
+				databaseId = bookClient.DatabaseId;
+				serverGroups = bookClient.ServerGroups.ToArray();
+				channelGroup = bookClient.ChannelGroup;
+			}
+			else if (!clientConnection.GetClientInfoById(textMessage.InvokerId).GetOk(out var infoClient).GetError(out var infoClientError))
+			{
+				channelId = infoClient.ChannelId;
+				databaseId = infoClient.DatabaseId;
+				serverGroups = infoClient.ServerGroups;
+				channelGroup = infoClient.ChannelGroup;
+			}
+			else if (!clientConnection.GetCachedClientById(textMessage.InvokerId).GetOk(out var cachedClient).GetError(out var cachedClientError))
+			{
+				channelId = cachedClient.ChannelId;
+				databaseId = cachedClient.DatabaseId;
+				channelGroup = cachedClient.ChannelGroup;
 			}
 			else
 			{
-				var clientInfoResult = clientConnection.GetClientInfoById(textMessage.InvokerId);
-				if (clientInfoResult.Ok)
-				{
-					channelId = clientInfoResult.Value.ChannelId;
-					databaseId = clientInfoResult.Value.DatabaseId;
-					serverGroups = clientInfoResult.Value.ServerGroups;
-				}
-				else
-				{
-					Log.Warn("Bot is not correctly set up. Some commands might not work or are slower (clientlist:{0}, clientinfo:{1}).",
-						clientResult.Error.Str, clientInfoResult.Error.Str);
-				}
+				Log.Warn(
+					"The bot is missing teamspeak permissions to view the communicating client. " +
+					"Some commands or permission checks might not work " +
+					"(clientlist:{0}, clientinfo:{1}).",
+					cachedClientError.Str, infoClientError.Str);
 			}
 
 			var invoker = new ClientCall(textMessage.InvokerUid, textMessage.Message,
@@ -228,8 +237,9 @@ namespace TS3AudioBot
 				visibiliy: textMessage.Target,
 				nickName: textMessage.InvokerName,
 				channelId: channelId,
-				databaseId: databaseId)
-			{ ServerGroups = serverGroups };
+				databaseId: databaseId,
+				serverGroups: serverGroups,
+				channelGroup: channelGroup);
 
 			var session = sessionManager.GetOrCreateSession(textMessage.InvokerId);
 			var info = CreateExecInfo(invoker, session);
@@ -253,7 +263,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void OnClientDisconnect(object sender, ClientLeftView eventArgs)
+		private void OnClientLeftView(object sender, ClientLeftView eventArgs)
 		{
 			targetManager.WhisperClientUnsubscribe(eventArgs.ClientId);
 			sessionManager.RemoveSession(eventArgs.ClientId);
