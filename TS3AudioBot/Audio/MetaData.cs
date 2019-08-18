@@ -13,8 +13,6 @@ namespace TS3AudioBot.Audio
 	{
 		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
 		public string ResourceOwnerUid { get; set; }
-		/// <summary>Defaults to: AudioFramwork.Defaultvolume - Overrides the starting volume.</summary>
-		public float? Volume { get; set; } = null;
 		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
 		public PlaySource From { get; set; } = PlaySource.PlayRequest;
 
@@ -22,7 +20,6 @@ namespace TS3AudioBot.Audio
 		{
 			ResourceOwnerUid = ResourceOwnerUid,
 			From = From,
-			Volume = Volume
 		};
 	}
 }

@@ -590,7 +590,7 @@ namespace TS3AudioBot
 			{
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 
-				if (TryReconnect(
+				if (TryReconnect( // TODO c# 8.0 switch expression
 						e.ExitReason == Reason.Timeout ? ReconnectType.Timeout :
 						e.ExitReason == Reason.KickedFromServer ? ReconnectType.Kick :
 						e.ExitReason == Reason.ServerShutdown || e.ExitReason == Reason.ServerStopped ? ReconnectType.ServerShutdown :

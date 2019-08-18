@@ -99,12 +99,11 @@ namespace TS3AudioBot
 			builder.RequestModule<RightsManager>();
 			builder.RequestModule<BotManager>();
 			builder.RequestModule<TokenManager>();
-			builder.RequestModule<PlaylistPool>();
 			builder.RequestModule<CommandManager>();
 			builder.AddModule(config.Factories);
 			// TODO fix interaction: rfm needs to be in the same injector as the commandsystem, otherwise duplicate error
 			// Also TODO find solution to move commandsystem to bot, without breaking api
-			builder.RequestModule<ResourceFactoryManager>();
+			builder.RequestModule<ResourceFactory>();
 
 			if (!builder.Build())
 			{
@@ -157,7 +156,7 @@ namespace TS3AudioBot
 			injector.GetModule<PluginManager>()?.Dispose();
 			injector.GetModule<WebServer>()?.Dispose();
 			injector.GetModule<DbStore>()?.Dispose();
-			injector.GetModule<ResourceFactoryManager>()?.Dispose();
+			injector.GetModule<ResourceFactory>()?.Dispose();
 			TickPool.Close();
 		}
 	}

@@ -486,7 +486,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("history clean removedefective")]
-		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, ResourceFactoryManager resourceFactory, CallerInfo caller, UserSession session = null)
+		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, ResourceFactory resourceFactory, CallerInfo caller, UserSession session = null)
 		{
 			if (caller.ApiCall)
 			{
@@ -796,50 +796,33 @@ namespace TS3AudioBot
 				throw new CommandException(strings.cmd_kickme_missing_permission, CommandExceptionReason.CommandError);
 		}
 
-		[Command("list add")]
-		public static void CommandListAdd(ResourceFactoryManager factoryManager, ClientCall invoker, UserSession session, string link)
-			=> CommandListAdd(factoryManager, invoker, AutoGetPlaylist(session, invoker), link);
+
+
+		// *************************************
 
 		[Command("list add")]
-		public static PlaylistItemGetData CommandListAdd(ResourceFactoryManager factoryManager, ApiCall invoker, PlaylistManager playlistManager, string name, string link)
+		public static void CommandListAdd(ResourceFactory resourceFactory, ClientCall invoker, UserSession session, string link)
+			=> CommandListAdd(resourceFactory, invoker, AutoGetPlaylist(session, invoker), link);
+
+		[Command("list add")]
+		public static PlaylistItemGetData CommandListAdd(ResourceFactory resourceFactory, ApiCall invoker, PlaylistManager playlistManager, string name, string link)
 		{
 			PlaylistItemGetData dat = null;
 			playlistManager.ModifyPlaylist(name, plist =>
 			{
-				dat = CommandListAdd(factoryManager, invoker, plist, link);
+				dat = CommandListAdd(resourceFactory, invoker, plist, link);
 			}).UnwrapThrow();
 			return dat;
 		}
 
-		public static PlaylistItemGetData CommandListAdd(ResourceFactoryManager factoryManager, InvokerData invoker, Playlist plist, string link)
+		public static PlaylistItemGetData CommandListAdd(ResourceFactory resourceFactory, InvokerData invoker, Playlist plist, string link)
 		{
-			var playResource = factoryManager.Load(link).UnwrapThrow();
+			var playResource = resourceFactory.Load(link).UnwrapThrow();
 			var item = new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid });
 			plist.Items.Add(item);
-			return PlaylistItemGetData.FromResource(item);
-		}
-
-		[Command("list add")]
-		public static void CommandListAdd(HistoryManager historyManager, ClientCall invoker, UserSession session, uint hid)
-			=> CommandListAdd(historyManager, invoker, AutoGetPlaylist(session, invoker), hid);
-
-		[Command("list add")]
-		public static PlaylistItemGetData CommandListAdd(HistoryManager historyManager, ApiCall invoker, PlaylistManager playlistManager, string name, uint hid)
-		{
-			PlaylistItemGetData dat = null;
-			playlistManager.ModifyPlaylist(name, plist =>
-			{
-				dat = CommandListAdd(historyManager, invoker, plist, hid);
-			}).UnwrapThrow();
-			return dat;
-		}
-
-		public static PlaylistItemGetData CommandListAdd(HistoryManager historyManager, InvokerData invoker, Playlist plist, uint hid)
-		{
-			var ale = historyManager.GetEntryById(hid).UnwrapThrow();
-			var item = new PlaylistItem(ale.AudioResource, new MetaData { ResourceOwnerUid = invoker.ClientUid });
-			plist.Items.Add(item);
-			return PlaylistItemGetData.FromResource(item);
+			var getData = resourceFactory.ToApiFormat(item);
+			//getData.Index = plist.Items.Count - 1;
+			return getData;
 		}
 
 		[Command("list clear")]
@@ -865,26 +848,28 @@ namespace TS3AudioBot
 		public static void CommandListDelete(PlaylistManager playlistManager, ApiCall _, string name)
 			=> playlistManager.DeletePlaylist(name).UnwrapThrow();
 
-		[Command("list get")]
-		public static JsonArray<PlaylistItemGetData> CommandListGet(ResourceFactoryManager factoryManager, UserSession session, string link)
+		[Command("list get")] // TODO 'import' ?
+		public static JsonValue<PlaylistInfo> CommandListGet(ResourceFactory resourceFactory, UserSession session, string link)
 		{
-			var playlist = factoryManager.LoadPlaylistFrom(link).UnwrapThrow();
+			var playlist = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
 
 			session.Set(SessionConst.Playlist, playlist);
-			return CommandListShow(playlist, null);
+			return CommandListShow(resourceFactory, playlist, null, null);
 		}
 
 		[Command("list get")]
-		public static void CommandListGet(PlaylistManager playlistManager, ResourceFactoryManager factoryManager, ApiCall _, string name, string link)
+		public static void CommandListGet(PlaylistManager playlistManager, ResourceFactory resourceFactory, ApiCall _, string name, string link)
 		{
-			var getList = factoryManager.LoadPlaylistFrom(link).UnwrapThrow();
+			var getList = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
 			playlistManager.ModifyPlaylist(name, playlist =>
 			{
 				CommandListMerge(playlist, getList);
 			}).UnwrapThrow();
 		}
 
-		[Command("list item move")]
+		// list info: get PlaylistInfo of single list by name
+
+		[Command("list item move")] // TODO api
 		public static void CommandListItemMove(UserSession session, ClientCall invoker, int from, int to)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
@@ -926,16 +911,16 @@ namespace TS3AudioBot
 
 		[Command("list list")]
 		[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
-		public static JsonArray<string> CommandListList(PlaylistManager playlistManager, string pattern = null)
+		public static JsonArray<PlaylistInfo> CommandListList(PlaylistManager playlistManager, string pattern = null)
 		{
-			var files = playlistManager.GetAvailablePlaylists(pattern).ToArray();
+			var files = playlistManager.GetAvailablePlaylists(pattern).UnwrapThrow();
 			if (files.Length <= 0)
-				return new JsonArray<string>(files, strings.error_playlist_not_found);
+				return new JsonArray<PlaylistInfo>(files, strings.error_playlist_not_found);
 
-			return new JsonArray<string>(files, fi => string.Join(", ", fi));
+			return new JsonArray<PlaylistInfo>(files, fi => string.Join(", ", fi.Select(x => x.FileName)));
 		}
 
-		[Command("list load")]
+		[Command("list load")] // TODO remove, replace with 'list edit' and 'list create'
 		public static string CommandListLoad(PlaylistManager playlistManager, UserSession session, ClientCall invoker, string name)
 		{
 			var ownList = AutoGetPlaylist(session, invoker);
@@ -971,7 +956,7 @@ namespace TS3AudioBot
 			self.Items.AddRange(other.Items);
 		}
 
-		[Command("list name")]
+		[Command("list name")] // TODO check
 		public static string CommandListName(UserSession session, ClientCall invoker, string name = null)
 		{
 			var plist = AutoGetPlaylist(session, invoker);
@@ -990,7 +975,7 @@ namespace TS3AudioBot
 			=> playlistManager.RenamePlaylist(oldName, newName).UnwrapThrow();
 
 		[Command("list play")]
-		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, ApiCall invoker, string name, int? index = null)
+		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name, int? index = null)
 			=> CommandListPlay(playlistManager, playManager, invoker, playlistManager.LoadPlaylist(name).UnwrapThrow(), index);
 
 		[Command("list play")]
@@ -1019,7 +1004,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list queue")]
-		public static void CommandListQueue(PlaylistManager playlistManager, PlayManager playManager, ApiCall invoker, string name)
+		public static void CommandListQueue(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name)
 		{
 			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
 			playManager.Enqueue(invoker, plist.Items).UnwrapThrow();
@@ -1038,49 +1023,44 @@ namespace TS3AudioBot
 			playlistManager.SavePlaylist(plist).UnwrapThrow();
 		}
 
-		//[Command("list set")]
-		//public static void CommandListSet(PlaylistManager playlistManager, PlayManager playManager, ApiCall apiCall, string name)
-		//{
-		//	PlaylistItemSetData[] playlistData;
-		//	try
-		//	{
-		//		playlistData = Newtonsoft.Json.JsonConvert.DeserializeObject<PlaylistItemSetData[]>(apiCall.Body);
-		//	}
-		//	catch (Exception ex) { throw new CommandException("Invalid playlist body data", ex, CommandExceptionReason.CommandError); }
-
-		//	var list = new List<PlaylistItem>();
-		//	foreach (var item in playlistData)
-		//	{
-
-		//	}
-
-		//	playlistManager.SavePlaylist(new Playlist(name, list)).UnwrapThrow();
-		//}
-
 		[Command("list show")]
 		[Usage("<index>", "Lets you specify the staring index from which songs should be listed.")]
-		public static JsonArray<PlaylistItemGetData> CommandListShow(UserSession session, ClientCall invoker, int? offset = null)
-			=> CommandListShow(AutoGetPlaylist(session, invoker), offset);
+		public static JsonValue<PlaylistInfo> CommandListShow(ResourceFactory resourceFactory, UserSession session, ClientCall invoker, int? offset = null, int? count = null)
+			=> CommandListShow(resourceFactory, AutoGetPlaylist(session, invoker), offset, count);
 
 		[Command("list show")]
 		[Usage("<name> <index>", "Lets you specify the starting index from which songs should be listed.")]
-		public static JsonArray<PlaylistItemGetData> CommandListShow(PlaylistManager playlistManager, string name, int? offset = null)
-			=> CommandListShow(playlistManager.LoadPlaylist(name).UnwrapThrow(), offset);
+		public static JsonValue<PlaylistInfo> CommandListShow(ResourceFactory resourceFactory, PlaylistManager playlistManager, string name, int? offset = null, int? count = null)
+			=> CommandListShow(resourceFactory, playlistManager.LoadPlaylist(name).UnwrapThrow(), offset, count);
 
-		private static JsonArray<PlaylistItemGetData> CommandListShow(IReadOnlyPlaylist plist, int? offset)
+		private static JsonValue<PlaylistInfo> CommandListShow(ResourceFactory resourceFactory, IReadOnlyPlaylist plist, int? offset, int? count)
 		{
-			int from = Math.Max(offset ?? 0, 0);
-			var items = plist.Items.Skip(from).Select(x => PlaylistItemGetData.FromResource(x)).ToArray();
+			int offsetV = Util.Clamp(offset ?? 0, 0, plist.Items.Count);
+			int countV = Util.Clamp(count ?? 20, 0, Math.Min(20, plist.Items.Count - offsetV));
+			var items = plist.Items.Skip(offsetV).Take(countV).Select(x => resourceFactory.ToApiFormat(x)).ToArray();
+			var plInfo = new PlaylistInfo
+			{
+				Items = items,
+				FileName = plist.Name,
+				SongCount = plist.Items.Count,
+				DisplayOffset = offsetV,
+				DisplayCount = countV,
+			};
 
-			return new JsonArray<PlaylistItemGetData>(items, it =>
+			return JsonValue.Create(plInfo, x =>
 			{
 				var strb = new StringBuilder();
-				strb.AppendFormat(strings.cmd_list_show_header, plist.Name, plist.Items.Count).AppendLine();
-				foreach (var plitem in it)
-					strb.Append(from++).Append(": ").AppendLine(plitem.Title);
+				strb.AppendFormat(strings.cmd_list_show_header, x.FileName, x.SongCount).AppendLine();
+				foreach (var plitem in x.Items)
+					strb.Append(offsetV++).Append(": ").AppendLine(plitem.Title);
 				return strb.ToString();
 			});
 		}
+
+
+		// *************************************
+
+
 
 		[Command("next")]
 		public static void CommandNext(PlayManager playManager, InvokerData invoker)
@@ -1315,9 +1295,9 @@ namespace TS3AudioBot
 		}
 
 		[Command("server tree", "_undocumented")]
-		public static JsonValue<Server> CommandServerTree(Ts3FullClient ts3FullClient, ApiCall _)
+		public static JsonValue<Server> CommandServerTree(Connection book, ApiCall _)
 		{
-			return JsonValue.Create(ts3FullClient.Book.Server);
+			return JsonValue.Create(book.Server);
 		}
 
 		[Command("settings")]

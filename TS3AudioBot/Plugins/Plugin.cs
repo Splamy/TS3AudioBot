@@ -29,7 +29,7 @@ namespace TS3AudioBot.Plugins
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		public CoreInjector CoreInjector { get; set; }
-		public ResourceFactoryManager FactoryManager { get; set; }
+		public ResourceFactory ResourceFactory { get; set; }
 		public CommandManager CommandManager { get; set; }
 
 		private byte[] md5CacheSum;
@@ -393,7 +393,7 @@ namespace TS3AudioBot.Plugins
 
 				case PluginType.Factory:
 					factoryObject = (IFactory)Activator.CreateInstance(coreType);
-					FactoryManager.AddFactory(factoryObject);
+					ResourceFactory.AddFactory(factoryObject);
 					break;
 
 				case PluginType.Commands:
@@ -478,7 +478,7 @@ namespace TS3AudioBot.Plugins
 				break;
 
 			case PluginType.Factory:
-				FactoryManager.RemoveFactory(factoryObject);
+				ResourceFactory.RemoveFactory(factoryObject);
 				break;
 
 			case PluginType.Commands:

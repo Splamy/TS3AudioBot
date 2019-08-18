@@ -36,7 +36,7 @@ namespace TS3AudioBot.Playlists
 		IReadOnlyList<PlaylistItem> Items { get; }
 	}
 
-	public static class PlaylistTrait
+	public static class PlaylistExtensions
 	{
 		public static PlaylistItem GetResource(this IReadOnlyPlaylist self, int index)
 		{

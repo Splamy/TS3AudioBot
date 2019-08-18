@@ -9,33 +9,45 @@
 
 namespace TS3AudioBot.Playlists
 {
+	using LiteDB;
 	using Newtonsoft.Json;
+	using Org.BouncyCastle.Utilities.Collections;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
+	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
+	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.Localization;
 	using TS3AudioBot.ResourceFactories;
 
-	public class PlaylistPool : IDisposable
+	public class PlaylistIO : IDisposable
 	{
+		private readonly ConfBot confBot;
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Dictionary<string, Playlist> playlistCache;
-		private readonly Dictionary<string, FileInfo> dirtyList;
+		private readonly HashSet<string> dirtyList;
 		private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
-		private readonly TimeSpan FlushDelay = TimeSpan.FromSeconds(30);
+		private const string PlaylistsFolder = "playlists";
+		private string PlaylistsPath => Path.Combine(confBot.LocalConfigDir, PlaylistsFolder);
 
-		public PlaylistPool()
+		public PlaylistIO(ConfBot confBot)
 		{
+			this.confBot = confBot;
 			Util.Init(out playlistCache);
 			Util.Init(out dirtyList);
 		}
 
-		public R<Playlist, LocalStr> Read(FileInfo fi) => ReadInternal(fi, false, false);
+		private FileInfo NameToFile(string name)
+		{
+			return new FileInfo(Path.Combine(confBot.LocalConfigDir, PlaylistsFolder, name));
+		}
 
-		private R<Playlist, LocalStr> ReadInternal(FileInfo fi, bool hasReadLock, bool hasWriteLock)
+		public R<Playlist, LocalStr> Read(string name) => ReadInternal(name, false, false);
+
+		private R<Playlist, LocalStr> ReadInternal(string name, bool hasReadLock, bool hasWriteLock)
 		{
 			try
 			{
@@ -45,7 +57,7 @@ namespace TS3AudioBot.Playlists
 					hasReadLock = true;
 				}
 
-				if (playlistCache.TryGetValue(fi.FullName, out var playlist))
+				if (playlistCache.TryGetValue(name, out var playlist))
 				{
 					return playlist;
 				}
@@ -62,11 +74,11 @@ namespace TS3AudioBot.Playlists
 					hasWriteLock = true;
 				}
 
-				var result = ReadFromFile(fi);
+				var result = ReadFromFile(name);
 
 				if (result.Ok)
 				{
-					playlistCache.Add(fi.FullName, result.Value);
+					playlistCache.Add(name, result.Value);
 					return result.Value;
 				}
 				else
@@ -83,14 +95,15 @@ namespace TS3AudioBot.Playlists
 			}
 		}
 
-		private R<Playlist, LocalStr> ReadFromFile(FileInfo fi, bool headOnly = false)
+		private R<Playlist, LocalStr> ReadFromFile(string name, bool headOnly = false)
 		{
+			var fi = NameToFile(name);
 			if (!fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);
 
-			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Util.Utf8Encoder))
+			using (var sr = new StreamReader(fi.Open(System.IO.FileMode.Open, FileAccess.Read, FileShare.Read), Util.Utf8Encoder))
 			{
-				var plist = new Playlist(fi.Name);
+				var plist = new Playlist(name);
 
 				// Info: version:<num>
 				// Info: owner:<uid>
@@ -161,12 +174,8 @@ namespace TS3AudioBot.Playlists
 							type = string.Empty,
 							resid = string.Empty,
 							title = string.Empty,
-							link = string.Empty,
 						});
-						if (!string.IsNullOrEmpty(rsjdata.resid))
-							plist.Items.Add(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
-						else if (!string.IsNullOrEmpty(rsjdata.link))
-							plist.Items.Add(new PlaylistItem(rsjdata.link));
+						plist.Items.Add(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
 						break;
 
 					case "id":
@@ -183,16 +192,14 @@ namespace TS3AudioBot.Playlists
 			}
 		}
 
-		public E<LocalStr> Write(IReadOnlyPlaylist list, FileInfo fi)
+		public E<LocalStr> Write(string name, IReadOnlyPlaylist list)
 		{
 			try
 			{
 				rwLock.EnterWriteLock();
 
-				// todo flush cache
-
-				var result = WriteToFile(list, fi);
-				dirtyList.Remove(fi.FullName);
+				var result = WriteToFile(name, list);
+				dirtyList.Remove(name);
 				return result;
 			}
 			finally
@@ -201,13 +208,14 @@ namespace TS3AudioBot.Playlists
 			}
 		}
 
-		private E<LocalStr> WriteToFile(IReadOnlyPlaylist plist, FileInfo fi)
+		private E<LocalStr> WriteToFile(string name, IReadOnlyPlaylist plist)
 		{
+			var fi = NameToFile(name);
 			var dir = fi.Directory;
 			if (!dir.Exists)
 				dir.Create();
 
-			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Util.Utf8Encoder))
+			using (var sw = new StreamWriter(fi.Open(System.IO.FileMode.Create, FileAccess.Write, FileShare.Read), Util.Utf8Encoder))
 			{
 				sw.WriteLine("version:2");
 				sw.WriteLine();
@@ -220,22 +228,14 @@ namespace TS3AudioBot.Playlists
 					{
 						sw.Write("rsj:");
 						json.WriteStartObject();
-						if (pli.Resource != null)
+						json.WritePropertyName("type");
+						json.WriteValue(pli.Resource.AudioType);
+						json.WritePropertyName("resid");
+						json.WriteValue(pli.Resource.ResourceId);
+						if (pli.Resource.ResourceTitle != null)
 						{
-							json.WritePropertyName("type");
-							json.WriteValue(pli.Resource.AudioType);
-							json.WritePropertyName("resid");
-							json.WriteValue(pli.Resource.ResourceId);
-							if (pli.Resource.ResourceTitle != null)
-							{
-								json.WritePropertyName("title");
-								json.WriteValue(pli.Resource.ResourceTitle);
-							}
-						}
-						else if (pli.Uri != null)
-						{
-							json.WritePropertyName("link");
-							json.WriteValue(pli.Uri);
+							json.WritePropertyName("title");
+							json.WriteValue(pli.Resource.ResourceTitle);
 						}
 						json.WriteEndObject();
 						json.Flush();
@@ -246,12 +246,12 @@ namespace TS3AudioBot.Playlists
 			return R.Ok;
 		}
 
-		public E<LocalStr> Delete(FileInfo fi)
+		public E<LocalStr> Delete(string name)
 		{
 			try
 			{
 				rwLock.EnterWriteLock();
-				return DeleteInternal(fi);
+				return DeleteInternal(name);
 			}
 			finally
 			{
@@ -259,15 +259,16 @@ namespace TS3AudioBot.Playlists
 			}
 		}
 
-		private E<LocalStr> DeleteInternal(FileInfo fi)
+		private E<LocalStr> DeleteInternal(string name)
 		{
-			bool cached = playlistCache.ContainsKey(fi.FullName);
+			var fi = NameToFile(name);
+			bool cached = playlistCache.ContainsKey(name);
 
 			if (!cached && !fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);
 
-			playlistCache.Remove(fi.FullName);
-			dirtyList.Remove(fi.FullName);
+			playlistCache.Remove(name);
+			dirtyList.Remove(name);
 
 			try
 			{
@@ -278,48 +279,64 @@ namespace TS3AudioBot.Playlists
 			catch (System.Security.SecurityException) { return new LocalStr(strings.error_io_missing_permission); }
 		}
 
-		public E<LocalStr> Move(FileInfo fi, FileInfo fiNew)
+		public E<LocalStr> Move(string name, string newName)
 		{
 			try
 			{
 				rwLock.EnterWriteLock();
-				return MoveInternal(fi, fiNew);
+				return MoveInternal(name, newName);
 			}
 			finally
 			{
 				rwLock.ExitWriteLock();
 			}
 		}
-		public E<LocalStr> MoveInternal(FileInfo fi, FileInfo fiNew)
-		{
-			if (!fi.Exists)
-				return new LocalStr(strings.error_playlist_not_found);
 
-			if (playlistCache.ContainsKey(fi.FullName))
+		private E<LocalStr> MoveInternal(string name, string newName)
+		{
+			var cached = playlistCache.ContainsKey(name);
+			var dirty = cached && dirtyList.Contains(name);
+
+			if (cached && dirty)
 			{
-				var playlist = playlistCache[fi.FullName];
-				var result = WriteToFile(playlist, fi);
+				var playlist = playlistCache[name];
+				var result = WriteToFile(name, playlist);
 				if (!result)
 					return result.Error;
-				playlistCache[fiNew.FullName] = playlist;
-				playlistCache.Remove(fi.FullName);
+				playlistCache[newName] = playlist;
+
+				DeleteInternal(name);
 			}
 			else
 			{
+				if (cached)
+				{
+					playlistCache[newName] = playlistCache[name];
+					playlistCache.Remove(name);
+				}
+
+				var fi = NameToFile(name);
+				if (!fi.Exists)
+					return new LocalStr(strings.error_playlist_not_found);
+				var fiNew = NameToFile(newName);
 				fi.MoveTo(fiNew.FullName);
 			}
 			return R.Ok;
 		}
 
-		public void Dirty(FileInfo fi)
+		public R<PlaylistInfo[], LocalStr> ListPlaylists(string pattern)
 		{
-			if (FlushDelay == TimeSpan.Zero)
-			{
-				Flush();
-				return;
-			}
+			var di = new DirectoryInfo(PlaylistsPath);
+			if (!di.Exists)
+				return Array.Empty<PlaylistInfo>();
 
-			Task.Delay(FlushDelay).ContinueWith(t => Flush());
+			IEnumerable<FileInfo> fileEnu;
+			if (string.IsNullOrEmpty(pattern))
+				fileEnu = di.EnumerateFiles();
+			else
+				fileEnu = di.EnumerateFiles(pattern, SearchOption.TopDirectoryOnly); // TODO exceptions
+
+			return fileEnu.Select(fi => new PlaylistInfo { FileName = fi.Name }).ToArray();
 		}
 
 		public void Flush()
@@ -328,10 +345,10 @@ namespace TS3AudioBot.Playlists
 			{
 				rwLock.EnterWriteLock();
 
-				foreach (var kvp in dirtyList)
+				foreach (var name in dirtyList)
 				{
-					var plist = playlistCache[kvp.Key];
-					WriteToFile(plist, kvp.Value);
+					var plist = playlistCache[name];
+					WriteToFile(name, plist);
 				}
 
 				dirtyList.Clear();
@@ -348,5 +365,22 @@ namespace TS3AudioBot.Playlists
 
 			rwLock.Dispose();
 		}
+	}
+
+	public class DbPlaylistV1
+	{
+		public ObjectId Id { get; set; }
+		public string Name { get; set; }
+		public string Bot { get; set; }
+
+		//public PlaylistLocation Share { get; set; }
+
+		public List<DbPlaylistEntryV1> Data { get; set; } = new List<DbPlaylistEntryV1>();
+	}
+
+	public class DbPlaylistEntryV1
+	{
+		public string Title { get; set; }
+		public string Url { get; set; }
 	}
 }

@@ -239,12 +239,6 @@ namespace TS3AudioBot.Config
 
 	public class ConfPlaylists : ConfigTable
 	{
-		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "playlists",
-			"Path to the folder where playlist files will be saved.");
-		public ConfigValue<PlaylistLocation> Share { get; } = new ConfigValue<PlaylistLocation>("share", PlaylistLocation.Bot,
-			" - Bot : Playlists per bot.\n" +
-			" - Global : Playlists across all.\n" +
-			" (- Server : Not Implemented)");
 	}
 
 	public class ConfHistory : ConfigTable

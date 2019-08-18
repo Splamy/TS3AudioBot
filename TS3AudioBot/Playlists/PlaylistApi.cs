@@ -7,6 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using TS3AudioBot.ResourceFactories;
+
 namespace TS3AudioBot.Playlists
 {
 	public class PlaylistItemGetData
@@ -18,32 +20,36 @@ namespace TS3AudioBot.Playlists
 		public string AudioType { get; set; }
 		// Link
 		// AlbumCover
+	}
 
-		public static PlaylistItemGetData FromResource(PlaylistItem item)
+	public static class PlaylistApiExtensions
+	{
+		public static PlaylistItemGetData ToApiFormat(this ResourceFactory resourceFactory, PlaylistItem item)
 		{
-			if (item.Resource != null)
+			var resource = item.Resource;
+			return new PlaylistItemGetData
 			{
-				var resource = item.Resource;
-				return new PlaylistItemGetData
-				{
-					Title = resource.ResourceTitle,
-					AudioType = resource.AudioType,
-				};
-			}
-			else
-			{
-				return new PlaylistItemGetData
-				{
-					Link = item.Uri,
-				};
-			}
+				Link = resourceFactory.RestoreLink(resource),
+				Title = resource.ResourceTitle,
+				AudioType = resource.AudioType,
+			};
 		}
 	}
 
-	public class PlaylistItemSetData
+	public class PlaylistInfo
 	{
-		public int Index { get; set; }
-		public string Title { get; set; }
-		public string Link { get; set; }
+		public string FileName { get; set; }
+		public string PlaylistName { get; set; }
+
+		/// <summary>How many songs are in the entire playlist</summary>
+		public int SongCount { get; set; }
+		/// <summary>From which index the itemization begins.</summary>
+		public int DisplayOffset { get; set; }
+		/// <summary>How many items are returned.</summary>
+		public int DisplayCount { get; set; }
+		/// <summary>The playlist items for the request.
+		/// This might only be a part of the entire playlist.
+		/// Check <see cref="SongCount"> for the entire count.</summary>
+		public PlaylistItemGetData[] Items { get; set; }
 	}
 }

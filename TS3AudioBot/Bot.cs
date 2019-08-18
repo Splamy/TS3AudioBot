@@ -49,7 +49,7 @@ namespace TS3AudioBot
 		public string Name => config.Name;
 		public bool QuizMode { get; set; }
 
-		private readonly ResourceFactoryManager factoryManager;
+		private readonly ResourceFactory resourceFactory;
 		private readonly CommandManager commandManager;
 		private Ts3Client clientConnection;
 		private Ts3FullClient tsFullClient;
@@ -58,12 +58,12 @@ namespace TS3AudioBot
 		private IVoiceTarget targetManager;
 		private IPlayerConnection playerConnection;
 
-		public Bot(Id id, ConfBot config, BotInjector injector, ResourceFactoryManager factoryManager, CommandManager commandManager)
+		public Bot(Id id, ConfBot config, BotInjector injector, ResourceFactory resourceFactory, CommandManager commandManager)
 		{
 			this.Id = id;
 			this.config = config;
 			this.Injector = injector;
-			this.factoryManager = factoryManager;
+			this.resourceFactory = resourceFactory;
 			this.commandManager = commandManager;
 		}
 
@@ -86,6 +86,7 @@ namespace TS3AudioBot
 			builder.AddModule(config);
 			builder.AddModule(Injector);
 			builder.AddModule(config.Playlists);
+			builder.RequestModule<PlaylistIO>();
 			builder.RequestModule<PlaylistManager>();
 			builder.AddModule(Id);
 			builder.AddModule(new Ts3FullClient());
@@ -110,6 +111,7 @@ namespace TS3AudioBot
 			clientConnection = Injector.GetModule<Ts3Client>();
 			playerConnection = clientConnection;
 			Injector.AddModule<IVoiceTarget>(clientConnection.TargetPipe);
+			Injector.AddModule(tsFullClient.Book);
 
 			playManager = Injector.GetModule<PlayManager>();
 			targetManager = Injector.GetModule<IVoiceTarget>();
@@ -309,7 +311,7 @@ namespace TS3AudioBot
 			{
 				Task.Run(() =>
 				{
-					var thumresult = factoryManager.GetThumbnail(startEvent.PlayResource);
+					var thumresult = resourceFactory.GetThumbnail(startEvent.PlayResource);
 					if (!thumresult.Ok)
 					{
 						clientConnection.DeleteAvatar();

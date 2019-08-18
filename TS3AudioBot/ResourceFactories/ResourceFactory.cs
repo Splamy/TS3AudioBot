@@ -26,7 +26,7 @@ namespace TS3AudioBot.ResourceFactories
 	using TS3AudioBot.CommandSystem.Text;
 	using TS3AudioBot.Web.Api;
 
-	public sealed class ResourceFactoryManager : IDisposable
+	public sealed class ResourceFactory : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string CmdResPrepath = "from ";
@@ -39,7 +39,7 @@ namespace TS3AudioBot.ResourceFactories
 		private readonly List<ISearchFactory> searchFactories;
 		private readonly CommandManager commandManager;
 
-		public ResourceFactoryManager(ConfFactories config, CommandManager commandManager)
+		public ResourceFactory(ConfFactories config, CommandManager commandManager)
 		{
 			Util.Init(out allFacories);
 			Util.Init(out resFactories);
@@ -326,9 +326,9 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public void PropagiateLoad(ResourceFactoryManager factoryManager, UserSession session, string url)
+			public void PropagiateLoad(ResourceFactory resourceFactory, UserSession session, string url)
 			{
-				var playlist = factoryManager.LoadPlaylistFrom(url, factory).UnwrapThrow();
+				var playlist = resourceFactory.LoadPlaylistFrom(url, factory).UnwrapThrow();
 
 				session.Set(SessionConst.Playlist, playlist);
 			}
