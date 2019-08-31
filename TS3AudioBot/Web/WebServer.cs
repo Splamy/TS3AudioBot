@@ -58,10 +58,10 @@ namespace TS3AudioBot.Web
 			if (config.Api.Enabled || config.Interface.Enabled)
 			{
 				if (!config.Api.Enabled)
-					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to get rid this error message.");
+					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to remove this warning.");
 
 				if (!coreInjector.TryCreate<Api.WebApi>(out var api))
-					throw new Exception();
+					throw new Exception("Could not create Api object.");
 
 				this.api = api;
 				startWebServer = true;
@@ -115,6 +115,11 @@ namespace TS3AudioBot.Web
 				.Configure(app =>
 				{
 					app.Map(new PathString("/api"), map =>
+					{
+						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
+					});
+
+					app.Map(new PathString("/data"), map =>
 					{
 						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
 					});

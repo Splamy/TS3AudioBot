@@ -93,6 +93,8 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "LogLevel":
 	case "PluginTargetMode":
 	case "PermissionType":
+	case "ChannelPermissionHint":
+	case "ClientPermissionHint":
 		if(!BackingTypes.TryGetValue(fld.type, out var backType))
 			backType = "i32";
 		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";

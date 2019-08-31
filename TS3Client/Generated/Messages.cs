@@ -2030,6 +2030,42 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed class ChannelPermissionHints : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ChannelPermissionHints;
+		
+
+		public ChannelId ChannelId { get; set; }
+		public ChannelPermissionHint Flags { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Flags = (ChannelPermissionHint)oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelPermissionHints[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "flags": foreach(var toi in toc) { toi.Flags = Flags; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed class ChannelPermList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPermList;
@@ -4274,6 +4310,42 @@ namespace TS3Client.Messages
 
 				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
 				case "permvalue": foreach(var toi in toc) { toi.PermissionValue = PermissionValue; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed class ClientPermissionHints : INotification
+	{
+		public NotificationType NotifyType { get; } = NotificationType.ClientPermissionHints;
+		
+
+		public ClientId ClientId { get; set; }
+		public ClientPermissionHint Flags { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Flags = (ClientPermissionHint)oval; } break;
+			
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ClientPermissionHints[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "clid": foreach(var toi in toc) { toi.ClientId = ClientId; } break;
+				case "flags": foreach(var toi in toc) { toi.Flags = Flags; } break;
 				}
 			}
 
@@ -9620,6 +9692,8 @@ namespace TS3Client.Messages
 		ChannelMoved,
 		///<summary>[S2C] ntfy:notifychannelpasswordchanged</summary>
 		ChannelPasswordChanged,
+		///<summary>[S2C] ntfy:notifychannelpermhints</summary>
+		ChannelPermissionHints,
 		///<summary>[S2C] ntfy:notifychannelpermlist</summary>
 		ChannelPermList,
 		///<summary>[C2S] ntfy:channelpermlist</summary>
@@ -9708,6 +9782,8 @@ namespace TS3Client.Messages
 		ClientNameFromUidRequest,
 		///<summary>[S2C] ntfy:notifyclientneededpermissions</summary>
 		ClientNeededPermissions,
+		///<summary>[S2C] ntfy:notifyclientpermhints</summary>
+		ClientPermissionHints,
 		///<summary>[S2C] ntfy:notifyclientpermlist</summary>
 		ClientPermList,
 		///<summary>[C2S] ntfy:clientpermlist</summary>
@@ -9986,6 +10062,7 @@ namespace TS3Client.Messages
 			case "channellistfinished": return NotificationType.ChannelListFinished;
 			case "notifychannelmoved": return NotificationType.ChannelMoved;
 			case "notifychannelpasswordchanged": return NotificationType.ChannelPasswordChanged;
+			case "notifychannelpermhints": return NotificationType.ChannelPermissionHints;
 			case "notifychannelpermlist": return NotificationType.ChannelPermList;
 			case "notifychannelsubscribed": return NotificationType.ChannelSubscribed;
 			case "notifychannelunsubscribed": return NotificationType.ChannelUnsubscribed;
@@ -10004,6 +10081,7 @@ namespace TS3Client.Messages
 			case "notifyclientnamefromdbid": return NotificationType.ClientNameFromDbId;
 			case "notifyclientnamefromuid": return NotificationType.ClientNameFromUid;
 			case "notifyclientneededpermissions": return NotificationType.ClientNeededPermissions;
+			case "notifyclientpermhints": return NotificationType.ClientPermissionHints;
 			case "notifyclientpermlist": return NotificationType.ClientPermList;
 			case "notifyclientpoke": return NotificationType.ClientPoke;
 			case "notifyservergroupclientadded": return NotificationType.ClientServerGroupAdded;
@@ -10244,6 +10322,7 @@ namespace TS3Client.Messages
 			case NotificationType.ChannelMove: return new ChannelMove();
 			case NotificationType.ChannelMoved: return new ChannelMoved();
 			case NotificationType.ChannelPasswordChanged: return new ChannelPasswordChanged();
+			case NotificationType.ChannelPermissionHints: return new ChannelPermissionHints();
 			case NotificationType.ChannelPermList: return new ChannelPermList();
 			case NotificationType.ChannelPermListRequest: return new ChannelPermListRequest();
 			case NotificationType.ChannelSubscribe: return new ChannelSubscribe();
@@ -10288,6 +10367,7 @@ namespace TS3Client.Messages
 			case NotificationType.ClientNameFromUid: return new ClientNameFromUid();
 			case NotificationType.ClientNameFromUidRequest: return new ClientNameFromUidRequest();
 			case NotificationType.ClientNeededPermissions: return new ClientNeededPermissions();
+			case NotificationType.ClientPermissionHints: return new ClientPermissionHints();
 			case NotificationType.ClientPermList: return new ClientPermList();
 			case NotificationType.ClientPermListRequest: return new ClientPermListRequest();
 			case NotificationType.ClientPoke: return new ClientPoke();
@@ -10467,6 +10547,7 @@ namespace TS3Client.Messages
 			case NotificationType.ChannelMove: { var arr = new ChannelMove[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelMove(); return arr; }
 			case NotificationType.ChannelMoved: { var arr = new ChannelMoved[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelMoved(); return arr; }
 			case NotificationType.ChannelPasswordChanged: { var arr = new ChannelPasswordChanged[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPasswordChanged(); return arr; }
+			case NotificationType.ChannelPermissionHints: { var arr = new ChannelPermissionHints[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPermissionHints(); return arr; }
 			case NotificationType.ChannelPermList: { var arr = new ChannelPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPermList(); return arr; }
 			case NotificationType.ChannelPermListRequest: { var arr = new ChannelPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelPermListRequest(); return arr; }
 			case NotificationType.ChannelSubscribe: { var arr = new ChannelSubscribe[len]; for (int i = 0; i < len; i++) arr[i] = new ChannelSubscribe(); return arr; }
@@ -10511,6 +10592,7 @@ namespace TS3Client.Messages
 			case NotificationType.ClientNameFromUid: { var arr = new ClientNameFromUid[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNameFromUid(); return arr; }
 			case NotificationType.ClientNameFromUidRequest: { var arr = new ClientNameFromUidRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNameFromUidRequest(); return arr; }
 			case NotificationType.ClientNeededPermissions: { var arr = new ClientNeededPermissions[len]; for (int i = 0; i < len; i++) arr[i] = new ClientNeededPermissions(); return arr; }
+			case NotificationType.ClientPermissionHints: { var arr = new ClientPermissionHints[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPermissionHints(); return arr; }
 			case NotificationType.ClientPermList: { var arr = new ClientPermList[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPermList(); return arr; }
 			case NotificationType.ClientPermListRequest: { var arr = new ClientPermListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPermListRequest(); return arr; }
 			case NotificationType.ClientPoke: { var arr = new ClientPoke[len]; for (int i = 0; i < len; i++) arr[i] = new ClientPoke(); return arr; }

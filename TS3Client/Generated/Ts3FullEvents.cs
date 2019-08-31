@@ -60,6 +60,8 @@ namespace TS3Client.Full
 		public event EventHandler<ChannelMoved> OnEachChannelMoved;
 		public event NotifyEventHandler<ChannelPasswordChanged> OnChannelPasswordChanged;
 		public event EventHandler<ChannelPasswordChanged> OnEachChannelPasswordChanged;
+		public event NotifyEventHandler<ChannelPermissionHints> OnChannelPermissionHints;
+		public event EventHandler<ChannelPermissionHints> OnEachChannelPermissionHints;
 		public event NotifyEventHandler<ChannelPermList> OnChannelPermList;
 		public event EventHandler<ChannelPermList> OnEachChannelPermList;
 		public event NotifyEventHandler<ChannelSubscribed> OnChannelSubscribed;
@@ -96,6 +98,8 @@ namespace TS3Client.Full
 		public event EventHandler<ClientNameFromUid> OnEachClientNameFromUid;
 		public event NotifyEventHandler<ClientNeededPermissions> OnClientNeededPermissions;
 		public event EventHandler<ClientNeededPermissions> OnEachClientNeededPermissions;
+		public event NotifyEventHandler<ClientPermissionHints> OnClientPermissionHints;
+		public event EventHandler<ClientPermissionHints> OnEachClientPermissionHints;
 		public event NotifyEventHandler<ClientPermList> OnClientPermList;
 		public event EventHandler<ClientPermList> OnEachClientPermList;
 		public event NotifyEventHandler<ClientPoke> OnClientPoke;
@@ -367,6 +371,19 @@ namespace TS3Client.Full
 				break;
 			}
 			
+			case NotificationType.ChannelPermissionHints: {
+				var ntfc = (ChannelPermissionHints[])ntf;
+				ProcessChannelPermissionHints(ntfc);
+				OnChannelPermissionHints?.Invoke(this, ntfc);
+				var ev = OnEachChannelPermissionHints;
+				var book = Book;
+				foreach(var that in ntfc) {
+					ev?.Invoke(this, that);
+					ProcessEachChannelPermissionHints(that);
+				}
+				break;
+			}
+			
 			case NotificationType.ChannelPermList: {
 				var ntfc = (ChannelPermList[])ntf;
 				ProcessChannelPermList(ntfc);
@@ -604,6 +621,19 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachClientNeededPermissions(that);
+				}
+				break;
+			}
+			
+			case NotificationType.ClientPermissionHints: {
+				var ntfc = (ClientPermissionHints[])ntf;
+				ProcessClientPermissionHints(ntfc);
+				OnClientPermissionHints?.Invoke(this, ntfc);
+				var ev = OnEachClientPermissionHints;
+				var book = Book;
+				foreach(var that in ntfc) {
+					ev?.Invoke(this, that);
+					ProcessEachClientPermissionHints(that);
 				}
 				break;
 			}
@@ -1142,6 +1172,8 @@ namespace TS3Client.Full
 		partial void ProcessEachChannelMoved(ChannelMoved notifies);
 		partial void ProcessChannelPasswordChanged(ChannelPasswordChanged[] notifies);
 		partial void ProcessEachChannelPasswordChanged(ChannelPasswordChanged notifies);
+		partial void ProcessChannelPermissionHints(ChannelPermissionHints[] notifies);
+		partial void ProcessEachChannelPermissionHints(ChannelPermissionHints notifies);
 		partial void ProcessChannelPermList(ChannelPermList[] notifies);
 		partial void ProcessEachChannelPermList(ChannelPermList notifies);
 		partial void ProcessChannelSubscribed(ChannelSubscribed[] notifies);
@@ -1178,6 +1210,8 @@ namespace TS3Client.Full
 		partial void ProcessEachClientNameFromUid(ClientNameFromUid notifies);
 		partial void ProcessClientNeededPermissions(ClientNeededPermissions[] notifies);
 		partial void ProcessEachClientNeededPermissions(ClientNeededPermissions notifies);
+		partial void ProcessClientPermissionHints(ClientPermissionHints[] notifies);
+		partial void ProcessEachClientPermissionHints(ClientPermissionHints notifies);
 		partial void ProcessClientPermList(ClientPermList[] notifies);
 		partial void ProcessEachClientPermList(ClientPermList notifies);
 		partial void ProcessClientPoke(ClientPoke[] notifies);

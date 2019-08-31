@@ -38,7 +38,7 @@ namespace TS3Client.Full
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly byte[] Initversion = { 0x09, 0x83, 0x8C, 0xCF }; // 3.1.8 [Stable]
+		private static readonly uint InitVersion = 1566914096; // 3.5.0 [Stable]
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 		private static readonly Regex IdentityRegex = new Regex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
 
@@ -400,7 +400,7 @@ namespace TS3Client.Full
 			// the normal client responds by starting again
 			case null:
 				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
-				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion); // initVersion
 				sendData[versionLen] = 0x00; // initType
 				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen), Util.UnixNow); // 4byte timestamp
 				BinaryPrimitives.WriteInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen + 4), Util.Random.Next()); // 4byte random
@@ -419,12 +419,12 @@ namespace TS3Client.Full
 				{
 				case 21:
 					sendData = new byte[versionLen + initTypeLen + 16 + 4];
-					Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+					BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion); // initVersion
 					sendData[versionLen] = 0x02; // initType
 					Array.Copy(data, initTypeLen, sendData, versionLen + initTypeLen, 20);
 					return sendData;
 				case 5:
-					var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(initTypeLen));
+					var errorNum = BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(initTypeLen));
 					if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
 						return $"Got Init1(1) error: {(Ts3ErrorCode)errorNum}";
 					return $"Got Init1(1) undefined error code: {errorNum}";
@@ -464,8 +464,8 @@ namespace TS3Client.Full
 
 				// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
 				sendData = new byte[versionLen + initTypeLen + 64 + 64 + 4 + 100 + 64 + textBytes.Length];
-				// Copy this.Version
-				Array.Copy(Initversion, 0, sendData, 0, versionLen);
+				// Copy initVersion
+				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion);
 				// Write InitType
 				sendData[versionLen] = 0x04;
 				// Copy data

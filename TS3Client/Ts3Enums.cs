@@ -250,5 +250,47 @@ namespace TS3Client
 		Client,
 		///<summary>Send to all subscribed clients in current channel.</summary>
 		CurrentChannelSubscribedClients,
-	};
+	}
+
+	// notifychannelpermhints
+	[Flags]
+	public enum ChannelPermissionHint
+	{
+		None = 0,
+
+		Join = 1 << 0, // b_channel_join_*
+		Modify = 1 << 1, // i_channel_modify_power
+		ForceDelete = 1 << 2, // b_channel_delete_flag_force
+		Delete = 1 << 3, // b_channel_delete_*
+		Subscribe = 1 << 4, // i_channel_subscribe_power
+		ViewDescription = 1 << 5, // i_channel_description_view_power
+		FileUpload = 1 << 6, // i_ft_file_upload_power
+		FileDownload = 1 << 7, // i_ft_needed_file_download_power
+		FileDelete = 1 << 8, // i_ft_file_delete_power
+		FileRename = 1 << 9, // i_ft_file_rename_power
+		FileBrowse = 1 << 10, // i_ft_file_browse_power
+		FileDirectoryCreate = 1 << 11, // i_ft_directory_create_power
+		ModifyPermissions = 1 << 12, // i_channel_permission_modify_power
+
+		All = (1 << 13) - 1,
+	}
+
+	// notifyclientpermhints
+	[Flags]
+	public enum ClientPermissionHint
+	{
+		None = 0,
+
+		KickServer = 1 << 0, // i_client_kick_from_server_power
+		KickChannel = 1 << 1, // i_client_kick_from_channel_power
+		Ban = 1 << 2, // i_client_ban_power
+		MoveClient = 1 << 3, // i_client_move_power
+		PrivateMessage = 1 << 4, // i_client_private_textmessage_power
+		Poke = 1 << 5, // i_client_poke_power
+		Whisper = 1 << 6, // i_client_whisper_power
+		Complain = 1 << 7, // i_client_complain_power
+		ModifyPermissions = 1 << 8, // i_client_permission_modify_power
+
+		All = (1 << 9) - 1,
+	}
 }
