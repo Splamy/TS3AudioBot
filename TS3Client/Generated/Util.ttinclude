@@ -31,6 +31,8 @@ public static bool NullType(string type) {
 		|| type == "CodecEncryptionMode"
 		|| type == "HostBannerMode"
 		|| type == "TalkPowerRequest"
+		|| type == "ChannelPermissionHint"
+		|| type == "ClientPermissionHints"
 		;
 }
 

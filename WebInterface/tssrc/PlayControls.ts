@@ -1,3 +1,6 @@
+/// <reference path="Model/RepeatKind.ts"/>
+/// <reference path="Model/PlayState.ts"/>
+
 class PlayControls {
 	private currentSong: CmdSong | null = null;
 	private playing: PlayState = PlayState.Off;
@@ -316,16 +319,4 @@ class PlayControls {
 				break;
 		}
 	}
-}
-
-enum RepeatKind {
-	Off = 0,
-	One,
-	All,
-}
-
-enum PlayState {
-	Off,
-	Playing,
-	Paused,
 }

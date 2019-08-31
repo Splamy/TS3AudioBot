@@ -111,8 +111,8 @@ interface IModalButton<T extends IModalInput> {
 
 interface IModalOptions<T extends IModalInput> {
 	onCancel?: () => void;
-	inputs?: T
+	inputs?: T;
 }
 
-interface IModalInput { [name: string]: string }
-interface IModalOutput { [name: string]: HTMLInputElement }
+interface IModalInput { [name: string]: string; }
+interface IModalOutput { [name: string]: HTMLInputElement; }

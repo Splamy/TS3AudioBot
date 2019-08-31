@@ -33,9 +33,9 @@
   "devDependencies": {
     "clean-css-cli": "^4.3.0",
     "copyfiles": "^2.1.1",
-    "del-cli": "^1.1.0",
+    "del-cli": "^2.0.0",
     "less": "^3.9.0",
-    "typescript": "^3.5.3",
+    "typescript": "^3.6.2",
     "uglify-es": "^3.3.9"
   }
 }

@@ -127,6 +127,7 @@ namespace TS3Client.Full.Book
 		public IconHash? IconId { get; set; }
 		public bool? IsPrivate { get; set; }
 		public bool Subscribed { get; set; }
+		public ChannelPermissionHint? PermissionHints { get; set; }
 		public OptionalChannelData OptionalData { get; internal set; }
 	}
 
@@ -238,6 +239,7 @@ namespace TS3Client.Full.Book
 		public str CountryCode { get; internal set; }
 		public ChannelId InheritedChannelGroupFromChannel { get; internal set; }
 		public str Badges { get; set; }
+		public ChannelPermissionHint? PermissionHints { get; set; }
 		public OptionalClientData OptionalData { get; internal set; }
 		public ConnectionClientData ConnectionData { get; internal set; }
 	}

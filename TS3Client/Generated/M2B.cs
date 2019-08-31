@@ -450,6 +450,30 @@ namespace TS3Client.Full.Book
 		}
 
 	
+		public void UpdateChannelPermissionHints(ChannelPermissionHints msg)
+		{
+			var obj = GetChannel(msg.ChannelId);
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ChannelPermissionHints' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = msg.Flags; if (tmpv != null) obj.PermissionHints = (ChannelPermissionHint)tmpv; }
+			
+		}
+
+	
+		public void UpdateClientPermissionHints(ClientPermissionHints msg)
+		{
+			var obj = GetClient(msg.ClientId);
+			if (obj == null) {
+				Log.Warn("Internal Book protocol error. Update 'ClientPermissionHints' has no local object ({$msg})", msg);
+				return;
+			}
+			{ var tmpv = msg.Flags; if (tmpv != null) obj.PermissionHints = (ChannelPermissionHint)tmpv; }
+			
+		}
+
+	
 #pragma warning restore IDE0017, CS0472
 	}
 }

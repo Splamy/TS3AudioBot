@@ -380,6 +380,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachChannelPermissionHints(that);
+					book?.UpdateChannelPermissionHints(that);
 				}
 				break;
 			}
@@ -634,6 +635,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachClientPermissionHints(that);
+					book?.UpdateClientPermissionHints(that);
 				}
 				break;
 			}

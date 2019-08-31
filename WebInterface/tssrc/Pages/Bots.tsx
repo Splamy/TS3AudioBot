@@ -1,3 +1,5 @@
+/// <reference path="../Model/BotStatus.ts"/>
+
 class Bots implements IPage {
 	private divBots!: HTMLElement;
 	private hasConnectingBots: boolean = false;
@@ -265,8 +267,4 @@ interface IBotTag {
 	info?: CmdBotInfo;
 }
 
-enum BotStatus {
-	Offline,
-	Connecting,
-	Connected,
-}
+
