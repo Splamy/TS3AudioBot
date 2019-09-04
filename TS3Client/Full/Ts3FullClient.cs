@@ -35,7 +35,7 @@ namespace TS3Client.Full
 		private int returnCode;
 		private ConnectionContext context;
 
-		private readonly IEventDispatcher dispatcher;
+		private IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
 		/// <summary>The client id given to this connection by the server.</summary>
 		public ushort ClientId => packetHandler.ClientId;
@@ -63,7 +63,6 @@ namespace TS3Client.Full
 		{
 			status = Ts3ClientStatus.Disconnected;
 			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
-			dispatcher = new ExtraThreadEventDispatcher();
 			context = new ConnectionContext { WasExit = true };
 		}
 
@@ -101,6 +100,7 @@ namespace TS3Client.Full
 				packetHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
 				packetHandler.StopEvent = (closeReason) => { ctx.ExitReason = closeReason; DisconnectInternal(ctx, setStatus: Ts3ClientStatus.Disconnected); };
 				packetHandler.Connect(remoteAddress);
+				dispatcher = new ExtraThreadEventDispatcher();
 				dispatcher.Init(InvokeEvent, conData.LogId);
 			}
 		}
@@ -144,6 +144,7 @@ namespace TS3Client.Full
 					packetHandler.Stop();
 					msgProc.DropQueue();
 					dispatcher.Dispose();
+					dispatcher = null;
 					triggerEventSafe = true;
 					break;
 				case Ts3ClientStatus.Disconnecting:
