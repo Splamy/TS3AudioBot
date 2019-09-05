@@ -339,6 +339,27 @@ namespace TS3AudioBot.Playlists
 			return fileEnu.Select(fi => new PlaylistInfo { FileName = fi.Name }).ToArray();
 		}
 
+		public bool Exists(string name)
+		{
+			try
+			{
+				rwLock.EnterWriteLock();
+				return ExistsInternal(name);
+			}
+			finally
+			{
+				rwLock.ExitWriteLock();
+			}
+		}
+
+		public bool ExistsInternal(string name)
+		{
+			if (playlistCache.ContainsKey(name))
+				return true;
+			var fi = NameToFile(name);
+			return fi.Exists;
+		}
+
 		public void Flush()
 		{
 			try

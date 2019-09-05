@@ -42,7 +42,7 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		private static MemoryStream SaveAdaptive(Image<Rgba32> img)
+		private static MemoryStream SaveAdaptive(Image img)
 		{
 			var mem = new MemoryStream();
 			if (img.Frames.Count > 1)

@@ -46,6 +46,9 @@ namespace TS3Client.Full.Book
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
+		public Client Self => Server.Clients[OwnClient];
+		public Channel CurrentChannel => Server.Channels[Server.Clients[OwnClient].Channel];
+
 		// TODO
 		// Many operations can be checked if they were successful (like remove or get).
 		// In cases which this fails we should print an error.
@@ -161,7 +164,7 @@ namespace TS3Client.Full.Book
 			return null;
 		}
 
-		
+
 
 		private SocketAddr AddressFun(ClientConnectionInfo msg) => msg.Ip;
 

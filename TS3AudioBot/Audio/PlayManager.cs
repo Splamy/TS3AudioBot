@@ -126,7 +126,7 @@ namespace TS3AudioBot.Audio
 			if (meta.From != PlaySource.FromPlaylist)
 				meta.ResourceOwnerUid = invoker.ClientUid;
 
-			var sourceLink = resourceFactory.RestoreLink(play.BaseData);
+			var sourceLink = resourceFactory.RestoreLink(play.BaseData).OkOr(null);
 			var playInfo = new PlayInfoEventArgs(invoker, play, meta, sourceLink);
 			BeforeResourceStarted?.Invoke(this, playInfo);
 

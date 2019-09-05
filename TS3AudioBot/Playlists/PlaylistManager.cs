@@ -165,9 +165,15 @@ namespace TS3AudioBot.Playlists
 			return res.Value;
 		}
 
-		// TODO create playlists
+		public E<LocalStr> CreatePlaylist(string name)
+		{
+			var checkName = Util.IsSafeFileName(name);
+			if (!checkName.Ok)
+				return checkName;
+			return playlistPool.Write(name, new Playlist(name));
+		}
 
-		// TODO modify / move should only work when playlist exists
+		public bool ExistsPlaylist(string name) => playlistPool.Exists(name);
 
 		public E<LocalStr> ModifyPlaylist(string name, Action<Playlist> action)
 		{
@@ -179,7 +185,17 @@ namespace TS3AudioBot.Playlists
 			return playlistPool.Write(name, plist);
 		}
 
-		public E<LocalStr> RenamePlaylist(string name, string newName) => playlistPool.Move(name, newName);
+		public E<LocalStr> RenamePlaylist(string name, string newName)
+		{
+			var checkName = Util.IsSafeFileName(name);
+			if (!checkName.Ok)
+				return checkName;
+			var checkNewName = Util.IsSafeFileName(newName);
+			if (!checkNewName.Ok)
+				return checkNewName;
+
+			return playlistPool.Move(name, newName);
+		}
 
 		public E<LocalStr> SavePlaylist(IReadOnlyPlaylist plist) // TODO remove in favor of action based edit
 		{

@@ -34,9 +34,9 @@ namespace TS3AudioBot
 	using System.Linq;
 	using System.Text;
 	using System.Threading;
+	using TS3AudioBot.Helper.Diagnose;
 	using TS3Client;
 	using TS3Client.Audio;
-	using TS3Client.Full;
 	using TS3Client.Full.Book;
 	using TS3Client.Messages;
 	using Web.Api;
@@ -157,6 +157,25 @@ namespace TS3AudioBot
 
 		[Command("bot description set")]
 		public static void CommandBotDescriptionSet(Ts3Client ts3Client, string description) => ts3Client.ChangeDescription(description).UnwrapThrow();
+
+		[Command("bot diagnose")]
+		public static JsonArray<SelfDiagnoseMessage> CommandBotDiagnose(IPlayerConnection player, Connection book)
+		{
+			var problems = new List<SelfDiagnoseMessage>();
+			// ** Diagnose common playback problems and more **
+
+			// Check talk power
+			if (!book.Self.TalkPowerGranted && book.Self.TalkPower < book.CurrentChannel.NeededTalkPower)
+				problems.Add(new SelfDiagnoseMessage { Description = "The bot does not have enough talk power.", LevelValue = SelfDiagnoseLevel.Warning });
+
+			// Check volume 0
+			if (player.Volume == 0)
+				problems.Add(new SelfDiagnoseMessage { Description = "The volume level is a 0.", LevelValue = SelfDiagnoseLevel.Warning });
+
+			// ... more
+
+			return new JsonArray<SelfDiagnoseMessage>(problems, x => string.Join("\n", x.Select(problem => problem.Description)));
+		}
 
 		[Command("bot disconnect")]
 		public static void CommandBotDisconnect(BotManager bots, Bot bot) => bots.StopBot(bot);
@@ -801,35 +820,26 @@ namespace TS3AudioBot
 		// *************************************
 
 		[Command("list add")]
-		public static void CommandListAdd(ResourceFactory resourceFactory, ClientCall invoker, UserSession session, string link)
-			=> CommandListAdd(resourceFactory, invoker, AutoGetPlaylist(session, invoker), link);
-
-		[Command("list add")]
-		public static PlaylistItemGetData CommandListAdd(ResourceFactory resourceFactory, ApiCall invoker, PlaylistManager playlistManager, string name, string link)
+		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, string link /* TODO param */) //>DONE
 		{
-			PlaylistItemGetData dat = null;
+			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(name, plist =>
 			{
-				dat = CommandListAdd(resourceFactory, invoker, plist, link);
+				var playResource = resourceFactory.Load(link).UnwrapThrow();
+				var item = new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid });
+				plist.Items.Add(item);
+				getData = resourceFactory.ToApiFormat(item);
+				//getData.Index = plist.Items.Count - 1;
 			}).UnwrapThrow();
-			return dat;
-		}
-
-		public static PlaylistItemGetData CommandListAdd(ResourceFactory resourceFactory, InvokerData invoker, Playlist plist, string link)
-		{
-			var playResource = resourceFactory.Load(link).UnwrapThrow();
-			var item = new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid });
-			plist.Items.Add(item);
-			var getData = resourceFactory.ToApiFormat(item);
-			//getData.Index = plist.Items.Count - 1;
 			return getData;
 		}
 
-		[Command("list clear")]
-		public static void CommandListClear(UserSession session, ClientCall invoker) => AutoGetPlaylist(session, invoker).Items.Clear();
+		[Command("list create")]
+		public static void CommandListCreate(PlaylistManager playlistManager, string name) //>DONE
+			=> playlistManager.CreatePlaylist(name).UnwrapThrow();
 
 		[Command("list delete")]
-		public static JsonEmpty CommandListDelete(PlaylistManager playlistManager, UserSession session, string name)
+		public static JsonEmpty CommandListDelete(PlaylistManager playlistManager, UserSession session, string name) //>DONE
 		{
 			string ResponseListDelete(string message)
 			{
@@ -845,73 +855,79 @@ namespace TS3AudioBot
 		}
 
 		[Command("list delete")]
-		public static void CommandListDelete(PlaylistManager playlistManager, ApiCall _, string name)
+		public static void CommandListDelete(PlaylistManager playlistManager, ApiCall _, string name) //>DONE
 			=> playlistManager.DeletePlaylist(name).UnwrapThrow();
 
-		[Command("list get")] // TODO 'import' ?
-		public static JsonValue<PlaylistInfo> CommandListGet(ResourceFactory resourceFactory, UserSession session, string link)
-		{
-			var playlist = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
-
-			session.Set(SessionConst.Playlist, playlist);
-			return CommandListShow(resourceFactory, playlist, null, null);
-		}
-
-		[Command("list get")]
-		public static void CommandListGet(PlaylistManager playlistManager, ResourceFactory resourceFactory, ApiCall _, string name, string link)
+		[Command("list import")]
+		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResourceFactory resourceFactory, string name, string link) //>DONE
 		{
 			var getList = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
+			if (string.IsNullOrEmpty(name))
+				name = getList.Name;
+
+			if (!playlistManager.ExistsPlaylist(name))
+				playlistManager.SavePlaylist(new Playlist(name));
+
 			playlistManager.ModifyPlaylist(name, playlist =>
 			{
-				CommandListMerge(playlist, getList);
+				playlist.Items.AddRange(getList.Items);
 			}).UnwrapThrow();
+
+			return CommandListShow(playlistManager, resourceFactory, name, null, null);
 		}
 
 		// list info: get PlaylistInfo of single list by name
 
-		[Command("list item move")] // TODO api
-		public static void CommandListItemMove(UserSession session, ClientCall invoker, int from, int to)
+		[Command("list item move")] // TODO return modified elements
+		public static void CommandListItemMove(PlaylistManager playlistManager, string name, int from, int to) //>DONE
 		{
-			var plist = AutoGetPlaylist(session, invoker);
-			if (from < 0 || from >= plist.Items.Count
-				|| to < 0 || to >= plist.Items.Count)
+			playlistManager.ModifyPlaylist(name, playlist =>
 			{
-				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
-			}
+				if (from < 0 || from >= playlist.Items.Count
+					|| to < 0 || to >= playlist.Items.Count)
+				{
+					throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
+				}
 
-			if (from == to)
-				return;
+				if (from == to)
+					return;
 
-			var plitem = plist.GetResource(from);
-			plist.Items.RemoveAt(from);
-			plist.Items.Insert(to > from ? to - 1 : to, plitem);
+				var plitem = playlist.GetResource(from);
+				playlist.Items.RemoveAt(from);
+				playlist.Items.Insert(to, plitem);
+			}).UnwrapThrow();
 		}
 
-		[Command("list item delete")]
-		public static JsonEmpty CommandListItemDelete(UserSession session, ClientCall invoker, int index)
+		[Command("list item delete")] // TODO return modified elements
+		public static JsonEmpty CommandListItemDelete(PlaylistManager playlistManager, string name, int index /* TODO param */) //>DONE
 		{
-			var plist = AutoGetPlaylist(session, invoker);
-			if (index < 0 || index >= plist.Items.Count)
-				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
+			PlaylistItem deletedItem = null;
+			playlistManager.ModifyPlaylist(name, plist =>
+			{
+				if (index < 0 || index >= plist.Items.Count)
+					throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
-			var deletedItem = plist.GetResource(index);
-			plist.Items.RemoveAt(index);
+				deletedItem = plist.GetResource(index);
+				plist.Items.RemoveAt(index);
+			}).UnwrapThrow();
 			return new JsonEmpty(string.Format(strings.info_removed, deletedItem.DisplayString));
 		}
 
-		[Command("list item name")]
-		public static void CommandListItemName(UserSession session, ClientCall invoker, int index, string title)
+		[Command("list item name")] // TODO return modified elements
+		public static void CommandListItemName(PlaylistManager playlistManager, string name, int index, string title) //>DONE
 		{
-			var plist = AutoGetPlaylist(session, invoker);
-			if (index < 0 || index >= plist.Items.Count)
-				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
+			playlistManager.ModifyPlaylist(name, plist =>
+			{
+				if (index < 0 || index >= plist.Items.Count)
+					throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
-			plist.Items[index].Resource.ResourceTitle = title;
+				plist.Items[index].Resource.ResourceTitle = title;
+			}).UnwrapThrow();
 		}
 
 		[Command("list list")]
 		[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
-		public static JsonArray<PlaylistInfo> CommandListList(PlaylistManager playlistManager, string pattern = null)
+		public static JsonArray<PlaylistInfo> CommandListList(PlaylistManager playlistManager, string pattern = null) //>DONE
 		{
 			var files = playlistManager.GetAvailablePlaylists(pattern).UnwrapThrow();
 			if (files.Length <= 0)
@@ -920,70 +936,37 @@ namespace TS3AudioBot
 			return new JsonArray<PlaylistInfo>(files, fi => string.Join(", ", fi.Select(x => x.FileName)));
 		}
 
-		[Command("list load")] // TODO remove, replace with 'list edit' and 'list create'
-		public static string CommandListLoad(PlaylistManager playlistManager, UserSession session, ClientCall invoker, string name)
-		{
-			var ownList = AutoGetPlaylist(session, invoker);
-			var otherList = playlistManager.LoadPlaylist(name).UnwrapThrow();
+		//[Command("list load")] // TODO remove, replace with 'list edit' and 'list create'
+		//public static string CommandListLoad(PlaylistManager playlistManager, UserSession session, ClientCall invoker, string name)
+		//{
+		//	var ownList = AutoGetPlaylist(session, invoker);
+		//	var otherList = playlistManager.LoadPlaylist(name).UnwrapThrow();
 
-			ownList.Items.Clear();
-			ownList.Items.AddRange(otherList.Items);
-			ownList.Name = otherList.Name;
-			return string.Format(strings.cmd_list_load_response, name, ownList.Items.Count);
-		}
-
-		[Command("list merge")]
-		public static void CommandListMerge(PlaylistManager playlistManager, UserSession session, ClientCall invoker, string name)
-		{
-			var ownList = AutoGetPlaylist(session, invoker);
-			var otherList = playlistManager.LoadPlaylist(name).UnwrapThrow();
-
-			CommandListMerge(ownList, otherList);
-		}
+		//	ownList.Items.Clear();
+		//	ownList.Items.AddRange(otherList.Items);
+		//	ownList.Name = otherList.Name;
+		//	return string.Format(strings.cmd_list_load_response, name, ownList.Items.Count);
+		//}
 
 		[Command("list merge")]
-		public static void CommandListMerge(PlaylistManager playlistManager, ApiCall _, string baseList, string mergeList)
+		public static void CommandListMerge(PlaylistManager playlistManager, string baseListName, string mergeListName) //>DONE // future overload?: (IROP, IROP) -> IROP
 		{
-			var otherList = playlistManager.LoadPlaylist(mergeList).UnwrapThrow();
-			playlistManager.ModifyPlaylist(baseList, playlist =>
+			var otherList = playlistManager.LoadPlaylist(mergeListName).UnwrapThrow();
+			playlistManager.ModifyPlaylist(baseListName, playlist =>
 			{
-				CommandListMerge(playlist, otherList);
+				playlist.Items.AddRange(otherList.Items);
 			}).UnwrapThrow();
 		}
 
-		public static void CommandListMerge(Playlist self, IReadOnlyPlaylist other)
-		{
-			self.Items.AddRange(other.Items);
-		}
-
-		[Command("list name")] // TODO check
-		public static string CommandListName(UserSession session, ClientCall invoker, string name = null)
-		{
-			var plist = AutoGetPlaylist(session, invoker);
-			if (string.IsNullOrEmpty(name))
-				return plist.Name;
-
-			Util.IsSafeFileName(name).UnwrapThrow();
-
-			plist.Name = name;
-			return null;
-		}
-
-		// todo rename over api should move the file
 		[Command("list name")]
-		public static void CommandListName(PlaylistManager playlistManager, string oldName, string newName)
-			=> playlistManager.RenamePlaylist(oldName, newName).UnwrapThrow();
+		public static void CommandListName(PlaylistManager playlistManager, string currentName, string newName) //>DONE
+			=> playlistManager.RenamePlaylist(currentName, newName).UnwrapThrow();
 
 		[Command("list play")]
-		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name, int? index = null)
-			=> CommandListPlay(playlistManager, playManager, invoker, playlistManager.LoadPlaylist(name).UnwrapThrow(), index);
-
-		[Command("list play")]
-		public static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, ClientCall invoker, UserSession session, int? index = null)
-			=> CommandListPlay(playlistManager, playManager, invoker, AutoGetPlaylist(session, invoker), index);
-
-		private static void CommandListPlay(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, IReadOnlyPlaylist plist, int? index)
+		public static void CommandListPlayInternal(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name, int? index = null) //>DONE
 		{
+			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
+
 			if (index.HasValue && (index.Value < 0 || index.Value >= plist.Items.Count))
 				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
@@ -997,44 +980,17 @@ namespace TS3AudioBot
 		}
 
 		[Command("list queue")]
-		public static void CommandListQueue(PlayManager playManager, UserSession session, ClientCall invoker)
-		{
-			var plist = AutoGetPlaylist(session, invoker);
-			playManager.Enqueue(invoker, plist.Items).UnwrapThrow();
-		}
-
-		[Command("list queue")]
-		public static void CommandListQueue(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name)
+		public static void CommandListQueue(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name) //>DONE
 		{
 			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
 			playManager.Enqueue(invoker, plist.Items).UnwrapThrow();
 		}
 
-		[Command("list save")]
-		public static void CommandListSave(PlaylistManager playlistManager, UserSession session, ClientCall invoker, string optNewName = null)
-		{
-			var plist = AutoGetPlaylist(session, invoker);
-			if (!string.IsNullOrEmpty(optNewName))
-			{
-				Util.IsSafeFileName(optNewName).UnwrapThrow();
-				plist.Name = optNewName;
-			}
-
-			playlistManager.SavePlaylist(plist).UnwrapThrow();
-		}
-
-		[Command("list show")]
-		[Usage("<index>", "Lets you specify the staring index from which songs should be listed.")]
-		public static JsonValue<PlaylistInfo> CommandListShow(ResourceFactory resourceFactory, UserSession session, ClientCall invoker, int? offset = null, int? count = null)
-			=> CommandListShow(resourceFactory, AutoGetPlaylist(session, invoker), offset, count);
-
 		[Command("list show")]
 		[Usage("<name> <index>", "Lets you specify the starting index from which songs should be listed.")]
-		public static JsonValue<PlaylistInfo> CommandListShow(ResourceFactory resourceFactory, PlaylistManager playlistManager, string name, int? offset = null, int? count = null)
-			=> CommandListShow(resourceFactory, playlistManager.LoadPlaylist(name).UnwrapThrow(), offset, count);
-
-		private static JsonValue<PlaylistInfo> CommandListShow(ResourceFactory resourceFactory, IReadOnlyPlaylist plist, int? offset, int? count)
+		public static JsonValue<PlaylistInfo> CommandListShow(PlaylistManager playlistManager, ResourceFactory resourceFactory, string name, int? offset = null, int? count = null) //>DONE
 		{
+			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
 			int offsetV = Util.Clamp(offset ?? 0, 0, plist.Items.Count);
 			int countV = Util.Clamp(count ?? 20, 0, Math.Min(20, plist.Items.Count - offsetV));
 			var items = plist.Items.Skip(offsetV).Take(countV).Select(x => resourceFactory.ToApiFormat(x)).ToArray();
@@ -1057,9 +1013,7 @@ namespace TS3AudioBot
 			});
 		}
 
-
 		// *************************************
-
 
 
 		[Command("next")]
@@ -1738,18 +1692,16 @@ namespace TS3AudioBot
 		}
 		// ReSharper enable UnusedMember.Global
 
-		private static Playlist AutoGetPlaylist(UserSession session, ClientCall invoker)
-		{
-			if (session is null)
-				throw new MissingContextCommandException(strings.error_no_session_in_context, typeof(UserSession));
-			var result = session.Get<Playlist>(SessionConst.Playlist);
-			if (result)
-				return result.Value;
+		//private static string GetEditPlaylist(this UserSession session)
+		//{
+		//	if (session is null)
+		//		throw new MissingContextCommandException(strings.error_no_session_in_context, typeof(UserSession));
+		//	var result = session.Get<string>(SessionConst.Playlist);
+		//	if (result)
+		//		return result.Value;
 
-			var newPlist = new Playlist(invoker.NickName ?? "");
-			session.Set(SessionConst.Playlist, newPlist);
-			return newPlist;
-		}
+		//	throw new CommandException("You are currently not editing any playlist.", CommandExceptionReason.CommandError); // TODO: Loc
+		//}
 
 		public static bool HasRights(this ExecutionInformation info, params string[] rights)
 		{

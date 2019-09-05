@@ -180,9 +180,11 @@ namespace TS3AudioBot.ResourceFactories
 			return ToErrorString(errors);
 		}
 
-		public string RestoreLink(AudioResource res)
+		public R<string, LocalStr> RestoreLink(AudioResource res)
 		{
 			var factory = GetFactoryByType<IResourceFactory>(res.AudioType);
+			if (factory is null)
+				return CouldNotLoad();
 			return factory.RestoreLink(res.ResourceId);
 		}
 
