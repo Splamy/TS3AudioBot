@@ -158,7 +158,7 @@ namespace TS3AudioBot
 		[Command("bot description set")]
 		public static void CommandBotDescriptionSet(Ts3Client ts3Client, string description) => ts3Client.ChangeDescription(description).UnwrapThrow();
 
-		[Command("bot diagnose")]
+		[Command("bot diagnose", "_undocumented")]
 		public static JsonArray<SelfDiagnoseMessage> CommandBotDiagnose(IPlayerConnection player, Connection book)
 		{
 			var problems = new List<SelfDiagnoseMessage>();
@@ -820,7 +820,7 @@ namespace TS3AudioBot
 		// *************************************
 
 		[Command("list add")]
-		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, string link /* TODO param */) //>DONE
+		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(name, plist =>
@@ -834,12 +834,12 @@ namespace TS3AudioBot
 			return getData;
 		}
 
-		[Command("list create")]
-		public static void CommandListCreate(PlaylistManager playlistManager, string name) //>DONE
+		[Command("list create", "_undocumented")]
+		public static void CommandListCreate(PlaylistManager playlistManager, string name)
 			=> playlistManager.CreatePlaylist(name).UnwrapThrow();
 
 		[Command("list delete")]
-		public static JsonEmpty CommandListDelete(PlaylistManager playlistManager, UserSession session, string name) //>DONE
+		public static JsonEmpty CommandListDelete(PlaylistManager playlistManager, UserSession session, string name)
 		{
 			string ResponseListDelete(string message)
 			{
@@ -855,11 +855,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("list delete")]
-		public static void CommandListDelete(PlaylistManager playlistManager, ApiCall _, string name) //>DONE
+		public static void CommandListDelete(PlaylistManager playlistManager, ApiCall _, string name)
 			=> playlistManager.DeletePlaylist(name).UnwrapThrow();
 
-		[Command("list import")]
-		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResourceFactory resourceFactory, string name, string link) //>DONE
+		[Command("list import", "cmd_list_get_help")] // TODO readjust help texts
+		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResourceFactory resourceFactory, string name, string link)
 		{
 			var getList = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
 			if (string.IsNullOrEmpty(name))
@@ -879,7 +879,7 @@ namespace TS3AudioBot
 		// list info: get PlaylistInfo of single list by name
 
 		[Command("list item move")] // TODO return modified elements
-		public static void CommandListItemMove(PlaylistManager playlistManager, string name, int from, int to) //>DONE
+		public static void CommandListItemMove(PlaylistManager playlistManager, string name, int from, int to)
 		{
 			playlistManager.ModifyPlaylist(name, playlist =>
 			{
@@ -899,7 +899,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list item delete")] // TODO return modified elements
-		public static JsonEmpty CommandListItemDelete(PlaylistManager playlistManager, string name, int index /* TODO param */) //>DONE
+		public static JsonEmpty CommandListItemDelete(PlaylistManager playlistManager, string name, int index /* TODO param */)
 		{
 			PlaylistItem deletedItem = null;
 			playlistManager.ModifyPlaylist(name, plist =>
@@ -914,7 +914,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list item name")] // TODO return modified elements
-		public static void CommandListItemName(PlaylistManager playlistManager, string name, int index, string title) //>DONE
+		public static void CommandListItemName(PlaylistManager playlistManager, string name, int index, string title)
 		{
 			playlistManager.ModifyPlaylist(name, plist =>
 			{
@@ -927,7 +927,7 @@ namespace TS3AudioBot
 
 		[Command("list list")]
 		[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
-		public static JsonArray<PlaylistInfo> CommandListList(PlaylistManager playlistManager, string pattern = null) //>DONE
+		public static JsonArray<PlaylistInfo> CommandListList(PlaylistManager playlistManager, string pattern = null)
 		{
 			var files = playlistManager.GetAvailablePlaylists(pattern).UnwrapThrow();
 			if (files.Length <= 0)
@@ -949,7 +949,7 @@ namespace TS3AudioBot
 		//}
 
 		[Command("list merge")]
-		public static void CommandListMerge(PlaylistManager playlistManager, string baseListName, string mergeListName) //>DONE // future overload?: (IROP, IROP) -> IROP
+		public static void CommandListMerge(PlaylistManager playlistManager, string baseListName, string mergeListName) // future overload?: (IROP, IROP) -> IROP
 		{
 			var otherList = playlistManager.LoadPlaylist(mergeListName).UnwrapThrow();
 			playlistManager.ModifyPlaylist(baseListName, playlist =>
@@ -959,11 +959,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("list name")]
-		public static void CommandListName(PlaylistManager playlistManager, string currentName, string newName) //>DONE
+		public static void CommandListName(PlaylistManager playlistManager, string currentName, string newName)
 			=> playlistManager.RenamePlaylist(currentName, newName).UnwrapThrow();
 
 		[Command("list play")]
-		public static void CommandListPlayInternal(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name, int? index = null) //>DONE
+		public static void CommandListPlayInternal(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name, int? index = null)
 		{
 			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
 
@@ -980,7 +980,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list queue")]
-		public static void CommandListQueue(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name) //>DONE
+		public static void CommandListQueue(PlaylistManager playlistManager, PlayManager playManager, InvokerData invoker, string name)
 		{
 			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
 			playManager.Enqueue(invoker, plist.Items).UnwrapThrow();
@@ -988,7 +988,7 @@ namespace TS3AudioBot
 
 		[Command("list show")]
 		[Usage("<name> <index>", "Lets you specify the starting index from which songs should be listed.")]
-		public static JsonValue<PlaylistInfo> CommandListShow(PlaylistManager playlistManager, ResourceFactory resourceFactory, string name, int? offset = null, int? count = null) //>DONE
+		public static JsonValue<PlaylistInfo> CommandListShow(PlaylistManager playlistManager, ResourceFactory resourceFactory, string name, int? offset = null, int? count = null)
 		{
 			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
 			int offsetV = Util.Clamp(offset ?? 0, 0, plist.Items.Count);
