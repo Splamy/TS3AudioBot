@@ -40,6 +40,7 @@ namespace TS3AudioBot.Config
 		public abstract void Derive(ConfigPart derived);
 		public abstract E<string> FromJson(JsonReader reader);
 		public abstract void ToJson(JsonWriter writer);
+		public abstract void ClearEvents();
 
 		protected void CreateDocumentation(TomlObject tomlObject)
 		{
@@ -57,6 +58,8 @@ namespace TS3AudioBot.Config
 
 		public IEnumerable<ConfigPart> ByPath(string path)
 		{
+			if (string.IsNullOrEmpty(path))
+				return new[] { this };
 			var pathM = path.AsMemory();
 			return ProcessIdentifier(pathM);
 		}

@@ -234,7 +234,7 @@ namespace TS3AudioBot.Config
 	{
 		public string Name { get; set; }
 
-		public string LocalConfigDir => Path.Combine(GetParent().Configs.BotsPath.Value, Name);
+		public string LocalConfigDir => Name is null ? null : Path.Combine(GetParent().Configs.BotsPath.Value, Name);
 
 		public E<LocalStr> SaveNew(string name)
 		{

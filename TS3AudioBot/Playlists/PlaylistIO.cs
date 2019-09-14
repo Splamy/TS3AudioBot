@@ -31,7 +31,6 @@ namespace TS3AudioBot.Playlists
 		private readonly HashSet<string> dirtyList;
 		private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
 		private const string PlaylistsFolder = "playlists";
-		private string PlaylistsPath => Path.Combine(confBot.LocalConfigDir, PlaylistsFolder);
 
 		public PlaylistIO(ConfBot confBot)
 		{
@@ -326,7 +325,10 @@ namespace TS3AudioBot.Playlists
 
 		public R<PlaylistInfo[], LocalStr> ListPlaylists(string pattern)
 		{
-			var di = new DirectoryInfo(PlaylistsPath);
+			if (confBot.LocalConfigDir is null)
+				return new LocalStr("Temporary bots cannot have playlists"); // TODO do this for all other methods too
+
+			var di = new DirectoryInfo(Path.Combine(confBot.LocalConfigDir, PlaylistsFolder));
 			if (!di.Exists)
 				return Array.Empty<PlaylistInfo>();
 

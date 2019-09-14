@@ -59,6 +59,8 @@ namespace TS3AudioBot.Config
 
 		private void InvokeChange(object sender, ConfigChangedEventArgs<T> args) => Changed?.Invoke(sender, args);
 
+		public override void ClearEvents() => Changed = null;
+
 		public override void FromToml(TomlObject tomlObject)
 		{
 			if (tomlObject == null)

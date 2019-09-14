@@ -22,6 +22,12 @@ namespace TS3AudioBot.Config
 		public TomlTable TomlObject { get; set; }
 		public override bool ExpectsString => false;
 
+		public override void ClearEvents()
+		{
+			foreach (var child in GetAllChildren())
+				child.ClearEvents();
+		}
+
 		public override void FromToml(TomlObject tomlObject)
 		{
 			if (tomlObject is null)

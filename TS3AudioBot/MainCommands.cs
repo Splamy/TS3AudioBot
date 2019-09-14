@@ -1268,7 +1268,7 @@ namespace TS3AudioBot
 		public static void CommandSettingsDelete(ConfRoot config, string name) => config.DeleteBotConfig(name).UnwrapThrow();
 
 		[Command("settings get")]
-		public static ConfigPart CommandSettingsGet(ConfBot config, string path)
+		public static ConfigPart CommandSettingsGet(ConfBot config, string path = "")
 			=> SettingsGet(config, path);
 
 		[Command("settings set")]
@@ -1312,7 +1312,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings global get")]
-		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path)
+		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path = "")
 			=> SettingsGet(config, path);
 
 		[Command("settings global set")]

@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Audio
 {
+	using Helper;
 	using System;
 
 	public static class AudioValues
@@ -21,7 +22,7 @@ namespace TS3AudioBot.Audio
 		// Adjusted values for 40dB
 
 		private const float fact_a = 1e-2f;
-		private const float fact_b = 4.6051f;
+		private const float fact_b = 4.61512f;
 
 		public static float HumanVolumeToFactor(float value)
 		{
@@ -32,7 +33,7 @@ namespace TS3AudioBot.Audio
 			value = (value - MinVolume) / (MaxVolume - MinVolume);
 
 			// Scale the value logarithmically
-			return (float)(fact_a * Math.Exp(fact_b * value));
+			return Util.Clamp((float)(fact_a * Math.Exp(fact_b * value)) - fact_a, 0, 1);
 		}
 
 		public static float FactorToHumanVolume(float value)
@@ -41,7 +42,7 @@ namespace TS3AudioBot.Audio
 			if (value > 1) return MaxVolume;
 
 			// Undo logarithmical scale
-			value = (float)(Math.Log(value / fact_a) / fact_b);
+			value = Util.Clamp((float)(Math.Log((value + fact_a) / fact_a) / fact_b), 0, 1);
 
 			// Map input values from [0, 1] to [MinVolume, MaxVolume]
 			return (value * (MaxVolume - MinVolume)) + MinVolume;

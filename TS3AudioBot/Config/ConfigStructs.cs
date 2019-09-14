@@ -114,8 +114,6 @@ namespace TS3AudioBot.Config
 			"If you want to enable the webinterface.");
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "",
 			"The webinterface folder to host. Leave empty to let the bot look for default locations.");
-		public ConfigValue<bool> DevelopMode { get; } = new ConfigValue<bool>("_developer_mode", false,
-			"Hosts the default develop folders.");
 	}
 
 	public partial class ConfBot : ConfigTable

@@ -116,6 +116,13 @@ namespace TS3AudioBot
 
 			lock (lockObj)
 			{
+				if (!string.IsNullOrEmpty(config.Name))
+				{
+					bot = GetBotSave(config.Name);
+					if (bot != null)
+						return bot.GetInfo();
+				}
+
 				var id = GetFreeId();
 				if (id == null)
 					return "BotManager is shutting down";

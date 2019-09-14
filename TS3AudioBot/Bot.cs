@@ -507,6 +507,7 @@ namespace TS3AudioBot
 				Injector.GetModule<PlayManager>()?.Stop();
 				Injector.GetModule<IPlayerConnection>()?.Dispose();
 				Injector.GetModule<Ts3Client>()?.Dispose();
+				config.ClearEvents();
 			}
 		}
 	}

@@ -124,24 +124,6 @@ namespace TS3AudioBot.Web
 						map.Run(ctx => Task.Run(() => Log.Swallow(() => { /* TODO */ })));
 					});
 
-					if (config.Interface.DevelopMode)
-					{
-						app.Map(new PathString(""), map =>
-						{
-							var baseDir = FindWebFolder();
-							map.UseFileServer(new FileServerOptions
-							{
-								RequestPath = "",
-								FileProvider = new PhysicalFileProvider(baseDir + "/html")
-							});
-							map.UseFileServer(new FileServerOptions
-							{
-								RequestPath = "",
-								FileProvider = new PhysicalFileProvider(baseDir + "/out")
-							});
-						});
-					}
-
 					if (config.Interface.Enabled)
 					{
 						app.UseFileServer();
