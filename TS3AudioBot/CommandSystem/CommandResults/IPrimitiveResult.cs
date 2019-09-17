@@ -9,19 +9,13 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	using Commands;
-
-	public class CommandCommandResult : ICommandResult
+	/// <summary>
+	/// A result which can safely used as a primitive like a string.
+	/// 
+	/// The complete list of primitive types is <see cref="XCommandSystem.BasicTypes"/>.
+	/// </summary>
+	public interface IPrimitiveResult<T>
 	{
-		public CommandResultType ResultType => CommandResultType.Command;
-
-		public virtual ICommand Command { get; }
-
-		public CommandCommandResult(ICommand commandArg)
-		{
-			Command = commandArg;
-		}
-
-		public override string ToString() => "CommandCommandResult can't be converted into a string";
+		T Get();
 	}
 }

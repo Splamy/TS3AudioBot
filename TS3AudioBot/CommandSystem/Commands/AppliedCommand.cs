@@ -9,8 +9,9 @@
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
+	using System;
 	using System.Collections.Generic;
+	using CommandResults;
 
 	public class AppliedCommand : ICommand
 	{
@@ -23,7 +24,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			internArguments = arguments;
 		}
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			var merged = new ICommand[internArguments.Count + arguments.Count];
 			internArguments.CopyTo(0, merged, 0);

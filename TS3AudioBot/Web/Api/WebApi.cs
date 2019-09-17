@@ -109,15 +109,14 @@ namespace TS3AudioBot.Web.Api
 				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 				var res = command.Execute(execInfo, Array.Empty<ICommand>(), XCommandSystem.ReturnJsonOrNothing);
 
-				if (res.ResultType == CommandResultType.Empty)
+				if (res == null)
 				{
 					response.StatusCode = (int)HttpStatusCode.NoContent;
 				}
-				else if (res.ResultType == CommandResultType.Json)
+				else if (res is JsonObject json)
 				{
 					response.StatusCode = (int)HttpStatusCode.OK;
-					var returnJson = (JsonCommandResult)res;
-					var returnString = returnJson.JsonObject.Serialize();
+					var returnString = json.Serialize();
 					using (var responseStream = new StreamWriter(response.Body))
 						responseStream.Write(returnString);
 				}
