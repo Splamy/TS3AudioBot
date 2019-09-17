@@ -271,6 +271,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 					|| XCommandSystem.BasicTypes.Contains(arg)
 					|| XCommandSystem.BasicTypes.Contains(UnwrapParamType(arg)))
 					paramInfo.kind = ParamKind.NormalParam;
+				// TODO How to distinguish between special type and dependency?
+				else if (XCommandSystem.AdvancedTypes.Contains(arg))
+					paramInfo.kind = ParamKind.NormalParam;
 				else
 					paramInfo.kind = ParamKind.Dependency;
 			}
@@ -357,6 +360,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			try { return Convert.ChangeType(value, unwrappedTargetType, CultureInfo.InvariantCulture); }
 			catch (FormatException ex) { throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, unwrappedTargetType.Name), ex, CommandExceptionReason.MissingParameter); }
 			catch (OverflowException ex) { throw new CommandException(strings.error_cmd_number_too_big, ex, CommandExceptionReason.MissingParameter); }
+			catch (InvalidCastException ex) { throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, unwrappedTargetType.Name), ex, CommandExceptionReason.MissingParameter); }
 		}
 
 		private static IReadOnlyList<Type> GetTypes(Type targetType)
@@ -366,8 +370,10 @@ namespace TS3AudioBot.CommandSystem.Commands
 			var unwrappedTargetType = UnwrapParamType(targetType);
 			if (unwrappedTargetType != targetType)
 				types.Add(unwrappedTargetType);
+
 			// Allow fallbacks to string
-			types.Add(typeof(string));
+			if (!types.Contains(typeof(string)))
+				types.Add(typeof(string));
 			return types;
 		}
 

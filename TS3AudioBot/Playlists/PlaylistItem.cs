@@ -18,8 +18,6 @@ namespace TS3AudioBot.Playlists
 		public MetaData Meta { get; }
 		public AudioResource Resource { get; private set; }
 
-		public string DisplayString => Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";
-
 		private PlaylistItem(MetaData meta) { Meta = meta ?? new MetaData(); }
 		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { Resource = resource; }
 
@@ -27,5 +25,7 @@ namespace TS3AudioBot.Playlists
 		{
 			Resource = resource ?? throw new ArgumentNullException(nameof(resource));
 		}
+
+		public override string ToString() => Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";
 	}
 }

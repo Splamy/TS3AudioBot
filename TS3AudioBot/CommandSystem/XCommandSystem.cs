@@ -27,9 +27,9 @@ namespace TS3AudioBot.CommandSystem
 		public static readonly Type[] ReturnCommandOrString = { typeof(ICommand), typeof(string) };
 		public static readonly Type[] ReturnAnyPreferNothing = { null, typeof(string), typeof(JsonObject), typeof(ICommand) };
 
-		// TODO Should not contained types be higher?
 		/// <summary>
-		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
+		/// The order of types, the first item has the highest priority,
+		/// items not in the list have higher priority as they are special types.
 		/// </summary>
 		public static readonly Type[] TypeOrder = {
 			typeof(bool),
@@ -41,6 +41,12 @@ namespace TS3AudioBot.CommandSystem
 			typeof(TimeSpan), typeof(DateTime),
 			typeof(string) };
 		public static readonly HashSet<Type> BasicTypes = new HashSet<Type>(TypeOrder);
+
+		public static readonly HashSet<Type> AdvancedTypes = new HashSet<Type>(new Type[] {
+			typeof(ResourceFactories.AudioResource),
+			typeof(History.AudioLogEntry),
+			typeof(Playlists.PlaylistItem),
+		});
 
 		public RootCommand RootCommand { get; }
 

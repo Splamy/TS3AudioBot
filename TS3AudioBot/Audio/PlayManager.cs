@@ -17,7 +17,7 @@ namespace TS3AudioBot.Audio
 	using System.Collections.Generic;
 	using TS3AudioBot.Helper;
 
-	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary> 
+	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary>
 	public class PlayManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -169,7 +169,7 @@ namespace TS3AudioBot.Audio
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
-				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
+				Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
 			}
 			if (pli is null)
 				return new LocalStr(strings.info_playmgr_no_next_song);
@@ -197,7 +197,7 @@ namespace TS3AudioBot.Audio
 				var result = Play(invoker, pli);
 				if (result.Ok)
 					return result;
-				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
+				Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
 			}
 			if (pli is null)
 				return new LocalStr(strings.info_playmgr_no_previous_song);

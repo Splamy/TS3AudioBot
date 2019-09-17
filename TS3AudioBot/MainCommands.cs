@@ -67,6 +67,18 @@ namespace TS3AudioBot
 		public static void CommandAdd(PlayManager playManager, InvokerData invoker, string url)
 			=> playManager.Enqueue(invoker, url).UnwrapThrow();
 
+		[Command("add")]
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, AudioLogEntry ale)
+			=> CommandAdd(playManager, invoker, ale.AudioResource);
+
+		[Command("add")]
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, PlaylistItem plItem)
+			=> CommandAdd(playManager, invoker, plItem.Resource);
+
+		[Command("add")]
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, AudioResource rsc)
+			=> playManager.Enqueue(invoker, rsc).UnwrapThrow();
+
 		[Command("alias add")]
 		public static void CommandAliasAdd(CommandManager commandManager, ConfBot confBot, string commandName, string command)
 		{
@@ -721,7 +733,7 @@ namespace TS3AudioBot
 			int plIndex = Math.Max(0, playlistManager.Index - 1);
 			int plUpper = Math.Min((curList?.Items.Count ?? 0) - 1, playlistManager.Index + 1);
 
-			string CurLine() => $"{plIndex}: {curList.Items[plIndex].DisplayString}";
+			string CurLine() => $"{plIndex}: {curList.Items[plIndex]}";
 
 			if (curList?.Items.Count > 0)
 			{
@@ -749,7 +761,7 @@ namespace TS3AudioBot
 			{
 				foreach (var pli in queue.Take(3))
 				{
-					tmb.Append("   " + pli.DisplayString + "\n");
+					tmb.Append($"   {pli}\n");
 				}
 
 				if (queue.Length > 3)
@@ -823,11 +835,29 @@ namespace TS3AudioBot
 		[Command("list add")]
 		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, string link /* TODO param */)
 		{
+			var playResource = resourceFactory.Load(link).UnwrapThrow();
+			return CommandListAddInternal(resourceFactory, invoker, playlistManager, name, playResource.BaseData);
+		}
+
+		[Command("list add")]
+		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, AudioLogEntry ale)
+		{
+			return CommandListAddInternal(resourceFactory, invoker, playlistManager, name, ale.AudioResource);
+		}
+
+		[Command("list add")]
+		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, PlaylistItem plItem)
+		{
+			return CommandListAddInternal(resourceFactory, invoker, playlistManager, name, plItem.Resource);
+		}
+
+		[Command("list add")]
+		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, AudioResource rsc)
+		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(name, plist =>
 			{
-				var playResource = resourceFactory.Load(link).UnwrapThrow();
-				var item = new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid });
+				var item = new PlaylistItem(rsc, new MetaData { ResourceOwnerUid = invoker.ClientUid });
 				plist.Items.Add(item);
 				getData = resourceFactory.ToApiFormat(item);
 				//getData.Index = plist.Items.Count - 1;
@@ -879,6 +909,16 @@ namespace TS3AudioBot
 
 		// list info: get PlaylistInfo of single list by name
 
+		[Command("list item get")]
+		public static PlaylistItem CommandListItemMove(PlaylistManager playlistManager, string name, int index)
+		{
+			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
+			if (index < 0 || index >= plist.Items.Count)
+				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
+
+			return plist.GetResource(index);
+		}
+
 		[Command("list item move")] // TODO return modified elements
 		public static void CommandListItemMove(PlaylistManager playlistManager, string name, int from, int to)
 		{
@@ -911,7 +951,7 @@ namespace TS3AudioBot
 				deletedItem = plist.GetResource(index);
 				plist.Items.RemoveAt(index);
 			}).UnwrapThrow();
-			return new JsonEmpty(string.Format(strings.info_removed, deletedItem.DisplayString));
+			return new JsonEmpty(string.Format(strings.info_removed, deletedItem));
 		}
 
 		[Command("list item name")] // TODO return modified elements
@@ -1064,6 +1104,18 @@ namespace TS3AudioBot
 		public static void CommandPlay(PlayManager playManager, InvokerData invoker, string url)
 			=> playManager.Play(invoker, url).UnwrapThrow();
 
+		[Command("play")]
+		public static void CommandPlay(PlayManager playManager, InvokerData invoker, AudioLogEntry ale)
+			=> CommandPlay(playManager, invoker, ale.AudioResource);
+
+		[Command("play")]
+		public static void CommandPlay(PlayManager playManager, InvokerData invoker, PlaylistItem plItem)
+			=> CommandPlay(playManager, invoker, plItem.Resource);
+
+		[Command("play")]
+		public static void CommandPlay(PlayManager playManager, InvokerData invoker, AudioResource rsc)
+			=> playManager.Play(invoker, rsc).UnwrapThrow();
+
 		[Command("plugin list")]
 		public static JsonArray<PluginStatusInfo> CommandPluginList(PluginManager pluginManager, Bot bot = null)
 			=> new JsonArray<PluginStatusInfo>(pluginManager.GetPluginOverview(bot), PluginManager.FormatOverview);
@@ -1105,7 +1157,7 @@ namespace TS3AudioBot
 				x =>
 				{
 					if (x.Count > 0)
-						return "\n" + string.Join("\n", x.Select(pli => pli.DisplayString));
+						return "\n" + string.Join("\n", x.Select(pli => pli.ToString()));
 					else
 						return strings.info_empty;
 				});
@@ -1237,7 +1289,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("select")]
-		public static void CommandSelect(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
+		public static AudioResource CommandSelect(PlayManager playManager, ClientCall clientCall, UserSession session, IReadOnlyList<Type> returnTypes, int index)
 		{
 			var result = session.Get<IList<AudioResource>>(SessionConst.SearchResult);
 			if (!result.Ok)
@@ -1246,7 +1298,15 @@ namespace TS3AudioBot
 			if (index < 0 || index >= result.Value.Count)
 				throw new CommandException(string.Format(strings.error_value_not_in_range, 0, result.Value.Count), CommandExceptionReason.CommandError);
 
-			playManager.Play(clientCall, result.Value[index]).UnwrapThrow();
+			var resVal = result.Value[index];
+			var emptyI = returnTypes.Count(x => x != null);
+			if (emptyI != returnTypes.Count)
+			{
+				var arI = returnTypes.Count(x => x != typeof(AudioResource));
+				if (emptyI < arI)
+					playManager.Play(clientCall, resVal).UnwrapThrow();
+			}
+			return resVal;
 		}
 
 		[Command("server tree", "_undocumented")]
