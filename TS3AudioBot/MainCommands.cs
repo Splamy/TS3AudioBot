@@ -164,8 +164,11 @@ namespace TS3AudioBot
 			var problems = new List<SelfDiagnoseMessage>();
 			// ** Diagnose common playback problems and more **
 
+			var self = book.Self();
+			var curChan = book.CurrentChannel();
+
 			// Check talk power
-			if (!book.Self.TalkPowerGranted && book.Self.TalkPower < book.CurrentChannel.NeededTalkPower)
+			if (!self.TalkPowerGranted && self.TalkPower < curChan.NeededTalkPower)
 				problems.Add(new SelfDiagnoseMessage { Description = "The bot does not have enough talk power.", LevelValue = SelfDiagnoseLevel.Warning });
 
 			// Check volume 0
@@ -260,10 +263,7 @@ namespace TS3AudioBot
 		public static void CommandBotName(Ts3Client ts3Client, string name) => ts3Client.ChangeName(name).UnwrapThrow();
 
 		[Command("bot save")]
-		public static void CommandBotSetup(ConfBot botConfig, string name)
-		{
-			botConfig.SaveNew(name).UnwrapThrow();
-		}
+		public static void CommandBotSetup(ConfBot botConfig, string name) => botConfig.SaveNew(name).UnwrapThrow();
 
 		[Command("bot setup")]
 		public static void CommandBotSetup(Ts3Client ts3Client, string adminToken = null)
@@ -1177,7 +1177,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("rng")]
-		[Usage("", "Gets a number between 0 and 2147483647")]
+		[Usage("", "Gets a number between 0 and 100")]
 		[Usage("<max>", "Gets a number between 0 and <max>")]
 		[Usage("<min> <max>", "Gets a number between <min> and <max>")]
 		public static int CommandRng(int? first = null, int? second = null)
@@ -1194,7 +1194,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				return Util.Random.Next();
+				return Util.Random.Next(0, 100);
 			}
 		}
 
@@ -1249,9 +1249,9 @@ namespace TS3AudioBot
 		}
 
 		[Command("server tree", "_undocumented")]
-		public static JsonValue<Server> CommandServerTree(Connection book, ApiCall _)
+		public static JsonValue<Connection> CommandServerTree(Connection book, ApiCall _)
 		{
-			return JsonValue.Create(book.Server);
+			return JsonValue.Create(book);
 		}
 
 		[Command("settings")]
@@ -1283,7 +1283,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings bot get", "cmd_settings_get_help")]
-		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path)
+		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path = "")
 		{
 			using (var botlock = bots.GetBotLock(bot))
 			{

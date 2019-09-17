@@ -114,7 +114,7 @@ namespace TS3Client.Full.Book
 		public u8? CodecQuality { get; set; }
 		public MaxClients MaxClients { get; set; }
 		public MaxClients MaxFamilyClients { get; set; }
-		public i32 Order { get; set; }
+		public ChannelId Order { get; set; }
 		public ChannelType ChannelType { get; set; }
 		public bool? IsDefault { get; set; }
 		public bool? HasPassword { get; set; }
@@ -326,9 +326,6 @@ namespace TS3Client.Full.Book
 		public Server()
 		{
 			Ips = new HashSet<SocketAddr>();
-			Clients = new Dictionary<ClientId,Client>();
-			Channels = new Dictionary<ChannelId,Channel>();
-			Groups = new Dictionary<ServerGroupId,ServerGroup>();
 			
 		}
 
@@ -363,21 +360,24 @@ namespace TS3Client.Full.Book
 		public LicenseType License { get; internal set; }
 		public OptionalServerData OptionalData { get; internal set; }
 		public ConnectionServerData ConnectionData { get; internal set; }
-		public Dictionary<ClientId,Client> Clients { get; internal set; }
-		public Dictionary<ChannelId,Channel> Channels { get; internal set; }
-		public Dictionary<ServerGroupId,ServerGroup> Groups { get; internal set; }
 	}
 
 	public sealed partial class Connection
 	{
 		public Connection()
 		{
+			Clients = new Dictionary<ClientId,Client>();
+			Channels = new Dictionary<ChannelId,Channel>();
+			Groups = new Dictionary<ServerGroupId,ServerGroup>();
 			
 		}
 
 	
 		public ClientId OwnClient { get; internal set; }
 		public Server Server { get; internal set; }
+		public Dictionary<ClientId,Client> Clients { get; internal set; }
+		public Dictionary<ChannelId,Channel> Channels { get; internal set; }
+		public Dictionary<ServerGroupId,ServerGroup> Groups { get; internal set; }
 	}
 
 	public sealed partial class ChatEntry

@@ -46,8 +46,14 @@ namespace TS3Client.Full.Book
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public Client Self => Server.Clients[OwnClient];
-		public Channel CurrentChannel => Server.Channels[Server.Clients[OwnClient].Channel];
+		public Client Self() => GetClient(OwnClient);
+		public Channel CurrentChannel()
+		{
+			var self = Self();
+			if (self == null)
+				return null;
+			return GetChannel(self.Channel);
+		}
 
 		// TODO
 		// Many operations can be checked if they were successful (like remove or get).
@@ -60,7 +66,7 @@ namespace TS3Client.Full.Book
 
 		private Channel GetChannel(ChannelId id)
 		{
-			if (Server.Channels.TryGetValue(id, out var channel))
+			if (Channels.TryGetValue(id, out var channel))
 				return channel;
 			return null;
 		}
@@ -68,17 +74,19 @@ namespace TS3Client.Full.Book
 		private void SetChannel(Channel channel, ChannelId id)
 		{
 			channel.Id = id;
-			Server.Channels[id] = channel;
+			Channels[id] = channel;
 		}
 
 		private void RemoveChannel(ChannelId id)
 		{
-			Server.Channels.Remove(id);
+			var cur = Channels[id];
+			Channels.Remove(id);
+			ChannelOrderRemove(id, cur.Order);
 		}
 
 		private Client GetClient(ClientId id)
 		{
-			if (Server.Clients.TryGetValue(id, out var client))
+			if (Clients.TryGetValue(id, out var client))
 				return client;
 			return null;
 		}
@@ -86,24 +94,24 @@ namespace TS3Client.Full.Book
 		private void SetClient(Client client, ClientId id)
 		{
 			client.Id = id;
-			Server.Clients[id] = client;
+			Clients[id] = client;
 		}
 
 		private void RemoveClient(ClientId id)
 		{
-			Server.Clients.Remove(id);
+			Clients.Remove(id);
 		}
 
 		private void SetConnectionClientData(ConnectionClientData connectionClientData, ClientId id)
 		{
-			if (!Server.Clients.TryGetValue(id, out var client))
+			if (!Clients.TryGetValue(id, out var client))
 				return;
 			client.ConnectionData = connectionClientData;
 		}
 
 		private void SetServerGroup(ServerGroup serverGroup, ServerGroupId id)
 		{
-			Server.Groups[id] = serverGroup;
+			Groups[id] = serverGroup;
 		}
 
 		private Server GetServer()
@@ -113,10 +121,10 @@ namespace TS3Client.Full.Book
 
 		// Manual move functions
 
-		private (MaxClients?, MaxClients?) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (MaxClients?, MaxClients?) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (MaxClients?, MaxClients?) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private (MaxClients?, MaxClients?) MaxClientsFun(i32? MaxClients, bool? IsMaxClientsUnlimited, i32? MaxFamilyClients, bool? IsMaxFamilyClientsUnlimited, bool? InheritsMaxFamilyClients)
+		private static (MaxClients?, MaxClients?) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private static (MaxClients?, MaxClients?) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private static (MaxClients?, MaxClients?) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
+		private static (MaxClients?, MaxClients?) MaxClientsFun(i32? MaxClients, bool? IsMaxClientsUnlimited, i32? MaxFamilyClients, bool? IsMaxFamilyClientsUnlimited, bool? InheritsMaxFamilyClients)
 		{
 			var chn = new MaxClients();
 			if (IsMaxClientsUnlimited == true) chn.LimitKind = MaxClientsKind.Unlimited;
@@ -137,10 +145,10 @@ namespace TS3Client.Full.Book
 			return (chn, fam);
 		}
 
-		private ChannelType ChannelTypeCcFun(ChannelCreated msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
-		private ChannelType ChannelTypeCeFun(ChannelEdited msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
-		private ChannelType ChannelTypeClFun(ChannelList msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
-		private ChannelType ChannelTypeFun(bool? semi, bool? perma)
+		private static ChannelType ChannelTypeCcFun(ChannelCreated msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
+		private static ChannelType ChannelTypeCeFun(ChannelEdited msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
+		private static ChannelType ChannelTypeClFun(ChannelList msg) => ChannelTypeFun(msg.IsSemiPermanent, msg.IsPermanent);
+		private static ChannelType ChannelTypeFun(bool? semi, bool? perma)
 		{
 			if (semi == true) return ChannelType.SemiPermanent;
 			else if (perma == true) return ChannelType.Permanent;
@@ -150,23 +158,86 @@ namespace TS3Client.Full.Book
 		private str AwayCevFun(ClientEnterView msg) => default;
 		private str AwayCuFun(ClientUpdated msg) => default;
 
-		private TalkPowerRequest? TalkPowerCevFun(ClientEnterView msg)
+		private static TalkPowerRequest? TalkPowerCevFun(ClientEnterView msg)
 		{
 			if (msg.TalkPowerRequestTime != Util.UnixTimeStart)
 				return new TalkPowerRequest() { Time = msg.TalkPowerRequestTime, Message = msg.TalkPowerRequestMessage ?? "" };
 			return null;
 		}
-		private TalkPowerRequest? TalkPowerCuFun(ClientUpdated msg) => TalkPowerFun(msg.TalkPowerRequestTime, msg.TalkPowerRequestMessage);
-		private TalkPowerRequest? TalkPowerFun(DateTime? time, str message)
+		private static TalkPowerRequest? TalkPowerCuFun(ClientUpdated msg) => TalkPowerFun(msg.TalkPowerRequestTime, msg.TalkPowerRequestMessage);
+		private static TalkPowerRequest? TalkPowerFun(DateTime? time, str message)
 		{
 			if (time != null && time != Util.UnixTimeStart) // TODO
 				return new TalkPowerRequest() { Time = time.Value, Message = message ?? "" };
 			return null;
 		}
 
+		private ChannelId ChannelOrderCcFun(ChannelCreated msg)
+		{
+			ChannelOrderInsert(msg.ChannelId, msg.Order, msg.ParentId);
+			return msg.Order;
+		}
+		private ChannelId ChannelOrderCmFun(ChannelMoved msg) => ChannelOrderMoveFun(msg.ChannelId, msg.Order, msg.ParentId);
+		private ChannelId? ChannelOrderCeFun(ChannelEdited msg)
+		{
+			if (msg.Order == null)
+				return null;
+			return ChannelOrderMoveFun(msg.ChannelId, msg.Order.Value, msg.ParentId);
+		}
 
+		private ChannelId ChannelOrderMoveFun(ChannelId id, ChannelId newOrder, ChannelId? parent)
+		{
+			// [ C:4 | O:0 ]
+			// [ C:5 | O:4 ]──┐
+			// [ C:7 | O:5 ]  │ (Up1: O -> 4)
+			// [            <─┘ (Chg: C:5 | O:7)
+			// [ C:8 | O:7 ]    (Up2: O -> 5)
 
-		private SocketAddr AddressFun(ClientConnectionInfo msg) => msg.Ip;
+			var cur = Channels[id];
+			var oldOrder = cur.Order;
+			var newParent = parent ?? cur.Parent;
+
+			ChannelOrderRemove(id, oldOrder); // Up1
+			ChannelOrderInsert(id, newOrder, newParent); // Up2
+			return newOrder;
+		}
+
+		private void ChannelOrderRemove(ChannelId id, ChannelId oldOrder)
+		{
+			// [ C:7 | O:_ ]
+			// [ C:5 | O:7 ] ─>X
+			// [ C:_ | O:5 ]     (Upd: O -> 7)
+
+			var chan = Channels.Values.FirstOrDefault(x => x.Order == id);
+			if (chan != null) chan.Order = oldOrder;
+		}
+
+		private void ChannelOrderInsert(ChannelId id, ChannelId newOrder, ChannelId parent)
+		{
+			Channel chan;
+			if (newOrder == 0)
+			{
+				// [ C:_ | O:_ ]     
+				//  ├ [            <── (New: C:5 | O:0)
+				//  └ [ C:_ | O:0 ]    (Upd: O -> 5)
+
+				// Multiple channel with Order:0 might exist,
+				// we need to find one with the same parent as the inserted channel
+				chan = Channels.Values.FirstOrDefault(x => x.Parent == parent && x.Order == 0);
+				if (chan != null) chan.Order = id;
+			}
+			else
+			{
+				// [ C:7 | O:_ ]
+				// [            <── (New: C:5 | O:7)
+				// [ C:_ | O:7 ]    (Upd: O -> 5)
+
+				chan = Channels.Values.FirstOrDefault(x => x.Order == newOrder);
+				if (chan != null) chan.Order = id;
+			}
+		}
+
+		private static SocketAddr AddressFun(ClientConnectionInfo msg) => msg.Ip;
 
 		private void SetClientDataFun(InitServer initServer)
 		{
@@ -177,9 +248,9 @@ namespace TS3Client.Full.Book
 
 		private bool ChannelUnsubscribeFun(ChannelUnsubscribed msg)
 		{
-			var goneClients = Server.Clients.Values.Where(client => client.Channel == msg.ChannelId).ToArray();
+			var goneClients = Clients.Values.Where(client => client.Channel == msg.ChannelId).ToArray();
 			foreach (var clid in goneClients)
-				Server.Clients.Remove(clid.Id);
+				Clients.Remove(clid.Id);
 			return false;
 		}
 

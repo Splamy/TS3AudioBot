@@ -113,7 +113,7 @@ namespace TS3Client.Full.Book
 			obj.IsPrivate = null;
 			{ var tmpv = ReturnFalse(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
 			obj.OptionalData = null;
-			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
+			{ var tmpv = ChannelOrderCcFun(msg); if (tmpv != null) obj.Order = (ChannelId)tmpv; }
 			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
 			{ var tmpv = msg.Topic; if (tmpv != null) obj.Topic = (str)tmpv; }
 			{ var tmpv = msg.IsDefault; if (tmpv != null) obj.IsDefault = (bool)tmpv; }
@@ -151,7 +151,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = tmp.Item2; if (tmpv != null) obj.MaxFamilyClients = (MaxClients)tmpv; }
 			}
 			{ var tmpv = ChannelTypeCeFun(msg); if (tmpv != null) obj.ChannelType = (ChannelType)tmpv; }
-			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
+			{ var tmpv = ChannelOrderCeFun(msg); if (tmpv != null) obj.Order = (ChannelId)tmpv; }
 			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
 			{ var tmpv = msg.Topic; if (tmpv != null) obj.Topic = (str)tmpv; }
 			{ var tmpv = msg.IsDefault; if (tmpv != null) obj.IsDefault = (bool)tmpv; }
@@ -184,7 +184,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.Topic; if (tmpv != null) obj.Topic = (str)tmpv; }
 			{ var tmpv = msg.Codec; if (tmpv != null) obj.Codec = (Codec)tmpv; }
 			{ var tmpv = msg.CodecQuality; if (tmpv != null) obj.CodecQuality = (u8)tmpv; }
-			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
+			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (ChannelId)tmpv; }
 			{ var tmpv = msg.IsDefault; if (tmpv != null) obj.IsDefault = (bool)tmpv; }
 			{ var tmpv = msg.HasPassword; if (tmpv != null) obj.HasPassword = (bool)tmpv; }
 			{ var tmpv = msg.CodecLatencyFactor; if (tmpv != null) obj.CodecLatencyFactor = (i32)tmpv; }
@@ -208,7 +208,7 @@ namespace TS3Client.Full.Book
 				return;
 			}
 			{ var tmpv = msg.ParentId; if (tmpv != null) obj.Parent = (ChannelId)tmpv; }
-			{ var tmpv = msg.Order; if (tmpv != null) obj.Order = (i32)tmpv; }
+			{ var tmpv = ChannelOrderCmFun(msg); if (tmpv != null) obj.Order = (ChannelId)tmpv; }
 			
 		}
 

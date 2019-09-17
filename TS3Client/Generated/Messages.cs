@@ -571,7 +571,7 @@ namespace TS3Client.Messages
 		public u8? CodecQuality { get; set; }
 		public i32? MaxClients { get; set; }
 		public i32? MaxFamilyClients { get; set; }
-		public i32? Order { get; set; }
+		public ChannelId? Order { get; set; }
 		public bool? HasPassword { get; set; }
 		public bool? IsUnencrypted { get; set; }
 		public DurationSeconds? DeleteDelay { get; set; }
@@ -597,7 +597,7 @@ namespace TS3Client.Messages
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
@@ -656,7 +656,7 @@ namespace TS3Client.Messages
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
-		public i32 Order { get; set; }
+		public ChannelId Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
 		public bool? IsDefault { get; set; }
@@ -687,7 +687,7 @@ namespace TS3Client.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
@@ -763,7 +763,7 @@ namespace TS3Client.Messages
 		public i32 TotalFamilyClients { get; set; }
 		public i32 TotalClients { get; set; }
 		public i32 NeededSubscribePower { get; set; }
-		public i32 Order { get; set; }
+		public ChannelId Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
 		public bool IsDefault { get; set; }
@@ -788,7 +788,7 @@ namespace TS3Client.Messages
 			case "total_clients_family": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalFamilyClients = oval; } break;
 			case "total_clients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalClients = oval; } break;
 			case "channel_needed_subscribe_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededSubscribePower = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
@@ -1004,7 +1004,7 @@ namespace TS3Client.Messages
 		
 
 		public ChannelId ChannelId { get; set; }
-		public i32? Order { get; set; }
+		public ChannelId? Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
 		public bool? IsDefault { get; set; }
@@ -1033,7 +1033,7 @@ namespace TS3Client.Messages
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
@@ -1107,7 +1107,7 @@ namespace TS3Client.Messages
 		public str InvokerName { get; set; }
 		public Uid InvokerUid { get; set; }
 		public Reason Reason { get; set; }
-		public i32? Order { get; set; }
+		public ChannelId? Order { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
 		public bool? IsDefault { get; set; }
@@ -1140,7 +1140,7 @@ namespace TS3Client.Messages
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
 			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			case "channel_name": Name = Ts3String.Unescape(value); break;
 			case "channel_topic": Topic = Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
@@ -1788,7 +1788,7 @@ namespace TS3Client.Messages
 		public u8 CodecQuality { get; set; }
 		public i32 MaxClients { get; set; }
 		public i32 MaxFamilyClients { get; set; }
-		public i32 Order { get; set; }
+		public ChannelId Order { get; set; }
 		public bool IsPermanent { get; set; }
 		public bool IsSemiPermanent { get; set; }
 		public bool IsDefault { get; set; }
@@ -1818,7 +1818,7 @@ namespace TS3Client.Messages
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
@@ -1914,7 +1914,7 @@ namespace TS3Client.Messages
 
 		public ChannelId ChannelId { get; set; }
 		public ChannelId ParentId { get; set; }
-		public i32? Order { get; set; }
+		public ChannelId? Order { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1923,7 +1923,7 @@ namespace TS3Client.Messages
 
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
-			case "order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			
 			}
 
@@ -1951,7 +1951,7 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMoved;
 		
 
-		public i32 Order { get; set; }
+		public ChannelId Order { get; set; }
 		public ChannelId ChannelId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
@@ -1964,7 +1964,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "order": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Order = oval; } break;
+			case "order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;

@@ -205,7 +205,7 @@ namespace TS3AudioBot
 			ulong? channelId = null, databaseId = null, channelGroup = null;
 			ulong[] serverGroups = null;
 
-			if (tsFullClient.Book.Server.Clients.TryGetValue(textMessage.InvokerId, out var bookClient))
+			if (tsFullClient.Book.Clients.TryGetValue(textMessage.InvokerId, out var bookClient))
 			{
 				channelId = bookClient.Channel;
 				databaseId = bookClient.DatabaseId;
