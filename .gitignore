@@ -27,6 +27,8 @@ cov-int/
 cov-int.zip
 latex/
 
+/WebInterface/dist
+
 # C++ Build results
 *.o
 *.obj

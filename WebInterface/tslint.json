@@ -46,6 +46,7 @@
         "forin": false,
         "indent": [true, "tabs", 4],
         "trailing-comma": [true, {"multiline": "ignore", "singleline": "never"}],
-        "triple-equals": [true, "allow-undefined-check"]
+        "triple-equals": [true, "allow-undefined-check"],
+        "max-classes-per-file": false
     }
 }
