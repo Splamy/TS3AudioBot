@@ -16,6 +16,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 	/// <summary>
 	/// A special group command that also accepts commands as first parameter and executes them on the left over parameters.
+	///
+	/// This command is needed to enable easy use of higher order functions.
+	/// E.g. `!(!if 1 > 2 (!vol) (!print)) 10`
 	/// </summary>
 	public class RootCommand : CommandGroup
 	{

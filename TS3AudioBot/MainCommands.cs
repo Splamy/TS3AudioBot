@@ -329,13 +329,6 @@ namespace TS3AudioBot
 			return XCommandSystem.GetTree(commandManager.CommandSystem.RootCommand);
 		}
 
-		[Command("convert")]
-		[Usage("<input>", "A string to convert to any type")]
-		public static object CommandConvert(string input, ExecutionInformation info, IReadOnlyList<Type> returnTypes)
-		{
-			return new AutoConvertResultCommand(input).Execute(info, Array.Empty<ICommand>(), returnTypes);
-		}
-
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
 		[Usage("<strings...>", "Concat the strings and execute them with the command system")]
@@ -354,6 +347,19 @@ namespace TS3AudioBot
 
 			cmd = commandManager.CommandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(args));
 			return cmd.Execute(info, leftArguments, returnTypes);
+		}
+
+		[Command("get")]
+		[Usage("<index> <list...>", "Get an element out of a list")]
+		public static object CommandGet(uint index, System.Collections.IEnumerable list)
+		{
+			foreach (var i in list)
+			{
+				if (index == 0)
+					return i;
+				index--;
+			}
+			return null;
 		}
 
 		[Command("getmy id")]

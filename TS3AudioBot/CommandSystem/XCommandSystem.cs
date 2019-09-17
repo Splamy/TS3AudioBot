@@ -44,6 +44,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public static readonly HashSet<Type> AdvancedTypes = new HashSet<Type>(new Type[] {
 			typeof(IAudioResourceResult),
+			typeof(System.Collections.IEnumerable),
 			typeof(ResourceFactories.AudioResource),
 			typeof(History.AudioLogEntry),
 			typeof(Playlists.PlaylistItem),

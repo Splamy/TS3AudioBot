@@ -23,13 +23,13 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// <param name="returnTypes">
 		/// The possible return types that should be returned by this execution.
 		/// They are ordered by priority so, if possible, the first return type should be picked, then the second and so on.
-		/// 
+		///
 		/// These types can contain primitive types, the actual return value will then be wrapped into a <see cref="CommandResults.IPrimitiveResult{T}"/>.
 		/// null inside the list allows an empty result.
 		/// </param>
 		/// <returns>
 		/// The result of this command.
-		/// 
+		///
 		/// null is an empty result.
 		/// Primitive types are a special case, it should always implement <see cref="CommandResults.IPrimitiveResult{T}"/>, e.g. through the <see cref="CommandResults.PrimitiveResult{T}"/> class.
 		/// The complete list of primitive types is <see cref="XCommandSystem.BasicTypes"/>.
