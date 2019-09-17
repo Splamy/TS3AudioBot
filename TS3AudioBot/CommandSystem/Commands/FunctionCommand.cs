@@ -123,11 +123,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case ParamKind.NormalTailString:
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
-					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString);
+					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), GetTypes(arg));
 					if (CommandParameter[p].kind == ParamKind.NormalTailString && argResultP is TailString tailString)
 						parameters[p] = tailString.Tail;
 					else
-						parameters[p] = ConvertParam(((IPrimitiveResult<string>)argResultP).Get(), arg, filterLazy.Value);
+						parameters[p] = ConvertParam(UnwrapPrimitive(argResultP), arg, filterLazy.Value);
 
 					takenArguments++;
 					break;
@@ -139,8 +139,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 					var args = Array.CreateInstance(typeArr, arguments.Count - takenArguments);
 					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
-						var argResultA = ((IPrimitiveResult<string>)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
-						var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value);
+						var argResultA = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), GetTypes(typeArr));
+						var convResult = ConvertParam(UnwrapPrimitive(argResultA), typeArr, filterLazy.Value);
 						args.SetValue(convResult, i);
 					}
 
@@ -193,6 +193,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 					return new AppliedCommand(this, arguments);
 			}
 
+			var rets = string.Join(", ", returnTypes.Select(t => $"{t}"));
+			Log.Debug($"Iterating over return types [{rets}]");
+
 			var result = ExecuteFunction(parameters);
 			if (ResultHelper.IsValidResult(result, returnTypes))
 			{
@@ -202,7 +205,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 			if (result == null)
 				throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name, CommandExceptionReason.NoReturnMatch);
+			var result2 = UnwrapReturn(result);
 			var resultType = result.GetType();
+			var resultType2 = result2.GetType();
 
 			// Take first fitting command result
 			foreach (var returnType in returnTypes)
@@ -212,12 +217,29 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 				if (returnType.IsAssignableFrom(resultType))
 					return ResultHelper.ToResult(returnType, result);
+				else if (returnType.IsAssignableFrom(resultType2))
+					return ResultHelper.ToResult(returnType, result2);
 				else if (returnType == typeof(string))
 				{
 					Log.Debug($"Convert {result} to a string");
 					var resultStr = result.ToString();
 					if (!string.IsNullOrEmpty(resultStr))
 						return new PrimitiveResult<string>(resultStr);
+				}
+				else if (XCommandSystem.BasicTypes.Contains(returnType))
+				{
+					if (XCommandSystem.BasicTypes.Contains(resultType2) && resultType2 != typeof(string))
+					{
+						// Automatically try to convert between primitive types
+						try
+						{
+							return ResultHelper.ToResult(resultType,
+								Convert.ChangeType(result2, returnType, CultureInfo.InvariantCulture));
+						}
+						catch
+						{
+						}
+					}
 				}
 				else if (returnType == typeof(JsonObject))
 				{
@@ -280,6 +302,25 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return type;
 		}
 
+		private static object UnwrapReturn(object value)
+		{
+			if (value == null)
+				return value;
+
+			var type = value.GetType();
+			if (type.IsConstructedGenericType)
+			{
+				var genDef = type.GetGenericTypeDefinition();
+				if (genDef == typeof(Nullable<>))
+					return type.GetProperty("Value").GetValue(value);
+				if (genDef == typeof(JsonValue<>))
+					return type.GetProperty("Value").GetValue(value);
+				if (genDef == typeof(JsonArray<>))
+					return type.GetProperty("Value").GetValue(value);
+			}
+			return value;
+		}
+
 		public static CommandException ThrowAtLeastNArguments(int count)
 		{
 			if (count <= 0)
@@ -297,24 +338,50 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
 		}
 
-		private static object ConvertParam(string value, Type targetType, Algorithm.IFilter filter)
+		private static object ConvertParam(object value, Type targetType, Algorithm.IFilter filter)
 		{
-			if (targetType == typeof(string))
+			if (targetType.IsAssignableFrom(value.GetType()))
 				return value;
 			if (targetType.IsEnum)
 			{
+				var strValue = value.ToString();
 				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
-				var result = filter.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), value).Select(x => x.Value).FirstOrDefault();
+				var result = filter.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), strValue).Select(x => x.Value).FirstOrDefault();
 				if (result is null)
-					throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, targetType.Name), CommandExceptionReason.MissingParameter);
+					throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, strValue, targetType.Name), CommandExceptionReason.MissingParameter);
 				return result;
 			}
 			var unwrappedTargetType = UnwrapParamType(targetType);
 
-			// TODO Do not convert
+			// Autoconvert
 			try { return Convert.ChangeType(value, unwrappedTargetType, CultureInfo.InvariantCulture); }
 			catch (FormatException ex) { throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, unwrappedTargetType.Name), ex, CommandExceptionReason.MissingParameter); }
 			catch (OverflowException ex) { throw new CommandException(strings.error_cmd_number_too_big, ex, CommandExceptionReason.MissingParameter); }
+		}
+
+		private static IReadOnlyList<Type> GetTypes(Type targetType)
+		{
+			var types = new List<Type>();
+			types.Add(targetType);
+			var unwrappedTargetType = UnwrapParamType(targetType);
+			if (unwrappedTargetType != targetType)
+				types.Add(unwrappedTargetType);
+			// Allow fallbacks to string
+			types.Add(typeof(string));
+			return types;
+		}
+
+		private static object UnwrapPrimitive(object o)
+		{
+			var primVal = o.GetType().GetInterfaces().FirstOrDefault(i =>
+				i.IsConstructedGenericType && i.GetGenericTypeDefinition() == typeof(IPrimitiveResult<>));
+			if (primVal != null)
+			{
+				var meth = primVal.GetMethod(nameof(IPrimitiveResult<object>.Get));
+				return meth.Invoke(o, Array.Empty<object>());
+			}
+			else
+				return o;
 		}
 
 		private static object GetDefault(Type type)

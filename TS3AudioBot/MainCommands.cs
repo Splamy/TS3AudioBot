@@ -325,6 +325,13 @@ namespace TS3AudioBot
 			return XCommandSystem.GetTree(commandManager.CommandSystem.RootCommand);
 		}
 
+		[Command("convert")]
+		[Usage("<input>", "A string to convert to any type")]
+		public static object CommandConvert(string input, ExecutionInformation info, IReadOnlyList<Type> returnTypes)
+		{
+			return new AutoConvertResultCommand(input).Execute(info, Array.Empty<ICommand>(), returnTypes);
+		}
+
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
 		[Usage("<strings...>", "Concat the strings and execute them with the command system")]
@@ -660,14 +667,8 @@ namespace TS3AudioBot
 		[Command("if")]
 		[Usage("<argument0> <comparator> <argument1> <then>", "Compares the two arguments and returns or executes the then-argument")]
 		[Usage("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false")]
-		public static object CommandIf(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public static object CommandIf(ExecutionInformation info, IReadOnlyList<Type> returnTypes, string arg0, string cmp, string arg1, ICommand then, ICommand other = null)
 		{
-			if (arguments.Count < 4)
-				throw new CommandException(strings.error_cmd_at_least_four_argument, CommandExceptionReason.MissingParameter);
-			var arg0 = ((IPrimitiveResult<string>)arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
-			var cmp = ((IPrimitiveResult<string>)arguments[1].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
-			var arg1 = ((IPrimitiveResult<string>)arguments[2].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
-
 			Func<double, double, bool> comparer;
 			switch (cmp)
 			{
@@ -694,10 +695,10 @@ namespace TS3AudioBot
 
 			// If branch
 			if (cmpResult)
-				return arguments[3].Execute(info, Array.Empty<ICommand>(), returnTypes);
+				return then.Execute(info, Array.Empty<ICommand>(), returnTypes);
 			// Else branch
-			if (arguments.Count > 4)
-				return arguments[4].Execute(info, Array.Empty<ICommand>(), returnTypes);
+			if (other != null)
+				return other.Execute(info, Array.Empty<ICommand>(), returnTypes);
 
 			// Try to return nothing
 			if (returnTypes.Contains(null))
