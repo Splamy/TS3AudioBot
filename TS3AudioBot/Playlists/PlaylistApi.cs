@@ -26,7 +26,7 @@ namespace TS3AudioBot.Playlists
 	{
 		public static PlaylistItemGetData ToApiFormat(this ResourceFactory resourceFactory, PlaylistItem item)
 		{
-			var resource = item.Resource;
+			var resource = item.AudioResource;
 			return new PlaylistItemGetData
 			{
 				Link = resourceFactory.RestoreLink(resource).OkOr(null),

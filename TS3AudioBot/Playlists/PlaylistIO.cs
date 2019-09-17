@@ -228,13 +228,13 @@ namespace TS3AudioBot.Playlists
 						sw.Write("rsj:");
 						json.WriteStartObject();
 						json.WritePropertyName("type");
-						json.WriteValue(pli.Resource.AudioType);
+						json.WriteValue(pli.AudioResource.AudioType);
 						json.WritePropertyName("resid");
-						json.WriteValue(pli.Resource.ResourceId);
-						if (pli.Resource.ResourceTitle != null)
+						json.WriteValue(pli.AudioResource.ResourceId);
+						if (pli.AudioResource.ResourceTitle != null)
 						{
 							json.WritePropertyName("title");
-							json.WriteValue(pli.Resource.ResourceTitle);
+							json.WriteValue(pli.AudioResource.ResourceTitle);
 						}
 						json.WriteEndObject();
 						json.Flush();

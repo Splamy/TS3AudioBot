@@ -68,16 +68,8 @@ namespace TS3AudioBot
 			=> playManager.Enqueue(invoker, url).UnwrapThrow();
 
 		[Command("add")]
-		public static void CommandAdd(PlayManager playManager, InvokerData invoker, AudioLogEntry ale)
-			=> CommandAdd(playManager, invoker, ale.AudioResource);
-
-		[Command("add")]
-		public static void CommandAdd(PlayManager playManager, InvokerData invoker, PlaylistItem plItem)
-			=> CommandAdd(playManager, invoker, plItem.Resource);
-
-		[Command("add")]
-		public static void CommandAdd(PlayManager playManager, InvokerData invoker, AudioResource rsc)
-			=> playManager.Enqueue(invoker, rsc).UnwrapThrow();
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, IAudioResourceResult rsc)
+			=> playManager.Enqueue(invoker, rsc.AudioResource).UnwrapThrow();
 
 		[Command("alias add")]
 		public static void CommandAliasAdd(CommandManager commandManager, ConfBot confBot, string commandName, string command)
@@ -840,24 +832,12 @@ namespace TS3AudioBot
 		}
 
 		[Command("list add")]
-		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, AudioLogEntry ale)
-		{
-			return CommandListAddInternal(resourceFactory, invoker, playlistManager, name, ale.AudioResource);
-		}
-
-		[Command("list add")]
-		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, PlaylistItem plItem)
-		{
-			return CommandListAddInternal(resourceFactory, invoker, playlistManager, name, plItem.Resource);
-		}
-
-		[Command("list add")]
-		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, AudioResource rsc)
+		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, IAudioResourceResult rsc)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(name, plist =>
 			{
-				var item = new PlaylistItem(rsc, new MetaData { ResourceOwnerUid = invoker.ClientUid });
+				var item = new PlaylistItem(rsc.AudioResource, new MetaData { ResourceOwnerUid = invoker.ClientUid });
 				plist.Items.Add(item);
 				getData = resourceFactory.ToApiFormat(item);
 				//getData.Index = plist.Items.Count - 1;
@@ -962,7 +942,7 @@ namespace TS3AudioBot
 				if (index < 0 || index >= plist.Items.Count)
 					throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
-				plist.Items[index].Resource.ResourceTitle = title;
+				plist.Items[index].AudioResource.ResourceTitle = title;
 			}).UnwrapThrow();
 		}
 
@@ -1105,16 +1085,8 @@ namespace TS3AudioBot
 			=> playManager.Play(invoker, url).UnwrapThrow();
 
 		[Command("play")]
-		public static void CommandPlay(PlayManager playManager, InvokerData invoker, AudioLogEntry ale)
-			=> CommandPlay(playManager, invoker, ale.AudioResource);
-
-		[Command("play")]
-		public static void CommandPlay(PlayManager playManager, InvokerData invoker, PlaylistItem plItem)
-			=> CommandPlay(playManager, invoker, plItem.Resource);
-
-		[Command("play")]
-		public static void CommandPlay(PlayManager playManager, InvokerData invoker, AudioResource rsc)
-			=> playManager.Play(invoker, rsc).UnwrapThrow();
+		public static void CommandPlay(PlayManager playManager, InvokerData invoker, IAudioResourceResult rsc)
+			=> playManager.Play(invoker, rsc.AudioResource).UnwrapThrow();
 
 		[Command("plugin list")]
 		public static JsonArray<PluginStatusInfo> CommandPluginList(PluginManager pluginManager, Bot bot = null)

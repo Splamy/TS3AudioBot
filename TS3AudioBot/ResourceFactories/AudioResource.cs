@@ -9,6 +9,8 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using CommandSystem.CommandResults;
+
 	public class PlayResource
 	{
 		public AudioResource BaseData { get; }
@@ -23,7 +25,7 @@ namespace TS3AudioBot.ResourceFactories
 		public override string ToString() => BaseData.ToString();
 	}
 
-	public class AudioResource
+	public class AudioResource : IAudioResourceResult
 	{
 		/// <summary>The resource type.</summary>
 		public string AudioType { get; set; }
@@ -33,6 +35,8 @@ namespace TS3AudioBot.ResourceFactories
 		public string ResourceTitle { get; set; }
 		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and resource type string of a factory.</summary>
 		public string UniqueId => ResourceId + AudioType;
+
+		AudioResource IAudioResourceResult.AudioResource => this;
 
 		public AudioResource() { }
 
