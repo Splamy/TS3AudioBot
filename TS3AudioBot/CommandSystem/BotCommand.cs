@@ -63,7 +63,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public object AsJsonObj => cachedAsJsonObj ?? (cachedAsJsonObj = new CommadSerializeObj(this));
+		public object AsJsonObj => cachedAsJsonObj ?? (cachedAsJsonObj = new CommandSerializeObj(this));
 
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{
@@ -100,7 +100,7 @@ namespace TS3AudioBot.CommandSystem
 			return base.Execute(info, arguments, returnTypes);
 		}
 
-		private class CommadSerializeObj
+		private class CommandSerializeObj
 		{
 			private readonly BotCommand botCmd;
 			public string Name => botCmd.InvokeName;
@@ -109,7 +109,7 @@ namespace TS3AudioBot.CommandSystem
 			public string[] Modules { get; }
 			public string Return { get; }
 
-			public CommadSerializeObj(BotCommand botCmd)
+			public CommandSerializeObj(BotCommand botCmd)
 			{
 				this.botCmd = botCmd;
 				Parameter = (

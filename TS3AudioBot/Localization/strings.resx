@@ -160,7 +160,7 @@
     <value>Sets all teamspeak rights for the bot to be fully functional.</value>
   </data>
   <data name="cmd_bot_use_help" xml:space="preserve">
-    <value>Switches the conetext to the requested bot.</value>
+    <value>Switches the context to the requested bot.</value>
   </data>
   <data name="cmd_clear_help" xml:space="preserve">
     <value>Removes all songs from the current playlist.</value>

@@ -11,13 +11,11 @@ namespace TS3AudioBot.Playlists
 {
 	using LiteDB;
 	using Newtonsoft.Json;
-	using Org.BouncyCastle.Utilities.Collections;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
 	using System.Threading;
-	using System.Threading.Tasks;
 	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.Localization;

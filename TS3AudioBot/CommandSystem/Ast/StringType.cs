@@ -12,6 +12,6 @@ namespace TS3AudioBot.CommandSystem.Ast
 	enum StringType
 	{
 		FreeString,
-		QueotedString,
+		QuotedString,
 	}
 }

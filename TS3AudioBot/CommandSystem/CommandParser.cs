@@ -153,7 +153,7 @@ namespace TS3AudioBot.CommandSystem
 					else
 						throw new Exception("Parser error");
 
-					var valQuoAst = new AstValue() { FullRequest = request, StringType = StringType.QueotedString };
+					var valQuoAst = new AstValue() { FullRequest = request, StringType = StringType.QuotedString };
 					using (strPtr.TrackNode(valQuoAst))
 					{
 						bool escaped = false;

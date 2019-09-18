@@ -304,7 +304,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Switches the conetext to the requested bot..
+        ///   Looks up a localized string similar to Switches the context to the requested bot..
         /// </summary>
         internal static string cmd_bot_use_help {
             get {
