@@ -214,27 +214,20 @@ namespace TS3Client.Full.Book
 
 		private void ChannelOrderInsert(ChannelId id, ChannelId newOrder, ChannelId parent)
 		{
-			Channel chan;
-			if (newOrder == 0)
-			{
-				// [ C:_ | O:_ ]     
-				//  ├ [            <── (New: C:5 | O:0)
-				//  └ [ C:_ | O:0 ]    (Upd: O -> 5)
+			// [ C:7 | O:_ ]
+			// [            <── (New: C:5 | O:7)
+			// [ C:_ | O:7 ]    (Upd: O -> 5)
 
-				// Multiple channel with Order:0 might exist,
-				// we need to find one with the same parent as the inserted channel
-				chan = Channels.Values.FirstOrDefault(x => x.Parent == parent && x.Order == 0);
-				if (chan != null) chan.Order = id;
-			}
-			else
-			{
-				// [ C:7 | O:_ ]
-				// [            <── (New: C:5 | O:7)
-				// [ C:_ | O:7 ]    (Upd: O -> 5)
+			// or
 
-				chan = Channels.Values.FirstOrDefault(x => x.Order == newOrder);
-				if (chan != null) chan.Order = id;
-			}
+			// [ C:_ | O:_ ]     
+			//  ├ [            <── (New: C:5 | O:0)
+			//  └ [ C:_ | O:0 ]    (Upd: O -> 5)
+
+			// Multiple channel with Order:0 might exist,
+			// we need to find one with the same parent as the inserted channel
+			var chan = Channels.Values.FirstOrDefault(x => x.Order == newOrder && x.Parent == parent);
+			if (chan != null) chan.Order = id;
 		}
 
 		private static SocketAddr AddressFun(ClientConnectionInfo msg) => msg.Ip;
