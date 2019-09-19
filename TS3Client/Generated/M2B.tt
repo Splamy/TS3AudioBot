@@ -18,7 +18,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#
-var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/BookDeclarations.toml"));
+var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml"));
 var genmsg = Messages.Parse(Host.ResolvePath("../Declarations/Messages.toml"));
 var genm2b = M2BDeclarations.Parse(Host.ResolvePath("../Declarations/MessagesToBook.toml"), genmsg, genbook);
 #>

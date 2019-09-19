@@ -24,7 +24,7 @@ namespace TS3Client.Full
 	public sealed partial class Ts3FullClient
 	{
 		<#
-		var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/BookDeclarations.toml"));
+		var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml"));
 		var genmsg = Messages.Parse(Host.ResolvePath("../Declarations/Messages.toml"));
 		var genm2b = M2BDeclarations.Parse(Host.ResolvePath("../Declarations/MessagesToBook.toml"), genmsg, genbook);
 		var shared = new HashSet<string> {

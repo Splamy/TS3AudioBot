@@ -23,7 +23,7 @@ namespace TS3Client.Full.Book
 
 	<#= ConversionSet #>
 <#
-var gen = BookDeclarations.Parse(Host.ResolvePath("../Declarations/BookDeclarations.toml"));
+var gen = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml"));
 
 foreach (var struc in gen.@struct)
 {
