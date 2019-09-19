@@ -254,10 +254,10 @@ namespace TS3AudioBot
 					TryCatchCommand(info, answer: true, () =>
 					{
 						var msg = session.ResponseProcessor(textMessage.Message);
-						session.ClearResponse();
 						if (!string.IsNullOrEmpty(msg))
 							info.Write(msg).UnwrapToLog(Log);
 					});
+					session.ClearResponse();
 					return;
 				}
 
