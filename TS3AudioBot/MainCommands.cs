@@ -349,7 +349,7 @@ namespace TS3AudioBot
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
-		[Command("get")]
+		[Command("get", "_undocumented")]
 		[Usage("<index> <list...>", "Get an element out of a list")]
 		public static object CommandGet(uint index, System.Collections.IEnumerable list)
 		{
@@ -895,7 +895,7 @@ namespace TS3AudioBot
 
 		// list info: get PlaylistInfo of single list by name
 
-		[Command("list item get")]
+		[Command("list item get", "_undocumented")]
 		public static PlaylistItem CommandListItemMove(PlaylistManager playlistManager, string name, int index)
 		{
 			var plist = playlistManager.LoadPlaylist(name).UnwrapThrow();
