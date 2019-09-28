@@ -6,10 +6,9 @@
 			</header>
 			<section class="modal-card-body">
 				<b-field label="Ip/Domain/Nickname">
-					<b-input v-model="address" placeholder="e.g. ts3.teamspeak.com" required></b-input>
+					<b-input v-model="address" placeholder="e.g. ts3.teamspeak.com" required v-focus></b-input>
 				</b-field>
 			</section>
-			<!-- <n-input :data=‘data’ :type=‘modalType’ @success-response=“successAction($event)”> -->
 			<footer class="modal-card-foot">
 				<button class="button" type="button" @click="$parent.close()">Close</button>
 				<button class="button is-primary" type="submit">Connect</button>

@@ -6,7 +6,7 @@
 			</header>
 			<section class="modal-card-body">
 				<b-field label="Password">
-					<b-input v-model="password" type="password" required></b-input>
+					<b-input v-model="password" type="password" required v-focus></b-input>
 				</b-field>
 			</section>
 			<footer class="modal-card-foot">

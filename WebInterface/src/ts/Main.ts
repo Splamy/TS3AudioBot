@@ -3,9 +3,9 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import Buefy from "buefy";
 // Css
-import '@mdi/font/css/materialdesignicons.css';
-import 'buefy/dist/buefy.css';
-import '../less/styles_formdata.less';
+import "@mdi/font/css/materialdesignicons.css";
+import "buefy/dist/buefy.css";
+import "../less/styles_formdata.less";
 // Pages
 import App from "./App.vue";
 import Bot from "./Pages/Bot.vue";
@@ -37,27 +37,47 @@ import UiTests from "./Pages/UiTests.vue";
 
 Vue.use(VueRouter);
 Vue.use(Buefy);
+Vue.directive("focus", {
+	inserted(el) {
+		let ichild = el as HTMLInputElement;
+		if (ichild.tagName !== "input") {
+			ichild = el.querySelector("input")!;
+		}
+
+		if (ichild) {
+			ichild.focus();
+			ichild.setSelectionRange(0, ichild.value.length);
+			return;
+		}
+
+		el.focus();
+	}
+});
 
 const router = new VueRouter({
 	routes: [
 		{ path: "/", component: Home },
 		//{ path: "/openapi", component: Commands },
 		{ path: "/overview", component: Overview },
-		{ path: "/bots", component: Bots },
+		{ path: "/bots", component: Bots, name: "r_bots" },
 		{ path: "/uitests", component: UiTests },
 		{
-			path: "/bot/:id", component: Bot,
+			path: "/bot/:id",
+			component: Bot,
 			props: { online: true },
 			children: [
 				{
+					name: "r_server",
 					path: "server",
 					component: BotServer
 				},
 				{
-					path: "playlists",
-					component: Playlists
+					name: "r_playlists",
+					path: "playlists/:playlist",
+					component: Playlists,
 				},
 				{
+					name: "r_settings",
 					path: "settings",
 					component: BotSettings,
 					props: { online: true }
@@ -69,6 +89,7 @@ const router = new VueRouter({
 			props: { online: false },
 			children: [
 				{
+					name: "r_settings_offline",
 					path: "settings",
 					component: BotSettings,
 					props: { online: false }
@@ -79,13 +100,8 @@ const router = new VueRouter({
 });
 
 export default new Vue({
-	el: '#app',
-	template: '<App/>',
-	data: {
-		message: 'Hello Vue.js!',
-	},
-	methods: {
-	},
+	el: "#app",
+	template: "<App/>",
 	components: {
 		App
 	},

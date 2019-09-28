@@ -122,12 +122,14 @@ namespace TS3AudioBot.ResourceFactories
 			if (codec < 0)
 				return new LocalStr(strings.error_media_no_stream_extracted);
 
-			return new PlayResource(dataList[codec].Url, resource.ResourceTitle != null ? resource : resource.WithName($"Twitch channel: {channel}"));
+			if (resource.ResourceTitle == null)
+				resource.ResourceTitle = $"Twitch channel: {channel}";
+			return new PlayResource(dataList[codec].Url, resource);
 		}
 
 		private static int SelectStream(List<StreamData> list) => list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
 
-		public string RestoreLink(string id) => "https://www.twitch.tv/" + id;
+		public string RestoreLink(AudioResource resource) => "https://www.twitch.tv/" + resource.ResourceId;
 
 		public void Dispose() { }
 	}

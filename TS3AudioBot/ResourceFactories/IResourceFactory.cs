@@ -29,6 +29,6 @@ namespace TS3AudioBot.ResourceFactories
 		/// <summary>Gets a link to the original site/location. This may differ from the link the resource was orininally created.</summary>
 		/// <param name="id">The unique id for a song this factory is responsible for.</param>
 		/// <returns>The (close to) original link if successful, null otherwise.</returns>
-		string RestoreLink(string id);
+		string RestoreLink(AudioResource resource);
 	}
 }

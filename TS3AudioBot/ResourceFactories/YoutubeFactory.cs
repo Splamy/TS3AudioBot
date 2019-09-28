@@ -67,101 +67,30 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var parsed = JsonConvert.DeserializeObject<JsonPlayerResponse>(playerData[0]);
 				Log.Debug("Extracted data: {@playerData}", parsed);
-				if (parsed.videoDetails.isLive && parsed.streamingData.hlsManifestUrl != null)
-				{
-					var webListResponse = WebWrapper.GetResponse(new Uri(parsed.streamingData.hlsManifestUrl), response =>
-					{
-						return AudioTags.M3uReader.TryGetData(response.GetResponseStream()).OkOr(null);
-					});
-					if (webListResponse.Ok)
-					{
-						const string AacHe = "mp4a.40.5";
-						const string AacLc = "mp4a.40.2";
 
-						var webList = webListResponse.Value;
-						var streamPref = from item in webList
-										 let codecs = item.StreamMeta != null ? StreamCodecMatch.Match(item.StreamMeta).Groups[1].Value : ""
-										 let codecPref = codecs.Contains(AacLc) ? 0
-											 : codecs.Contains(AacHe) ? 1
-											 : 2
-										 let bitrate = item.StreamMeta != null ? int.Parse(StreamBitrateMatch.Match(item.StreamMeta).Groups[1].Value) : int.MaxValue
-										 orderby codecPref, bitrate ascending
-										 select item;
-						var streamSelect = streamPref.FirstOrDefault();
-						if (streamSelect != null)
-						{
-							return new PlayResource(streamSelect.TrackUrl, resource.ResourceTitle != null ? resource : resource.WithName(parsed.videoDetails.title));
-						}
-					}
-					return new LocalStr(strings.error_media_no_stream_extracted);
-				}
-				else if (parsed.videoDetails.isLive)
+				if (parsed?.videoDetails != null)
 				{
-					Log.Warn("Live stream without hls stream data");
+					resource.ResourceTitle = resource.ResourceTitle ?? parsed.videoDetails.title;
+
+					bool isLive = parsed.videoDetails.isLive ?? false;
+					if (isLive && parsed.streamingData?.hlsManifestUrl != null)
+					{
+						return ParseLiveData(resource, parsed);
+					}
+					else if (isLive)
+					{
+						Log.Warn("Live stream without hls stream data");
+					}
+
+					ParsePlayerData(parsed, videoTypes);
 				}
 			}
 
 			if (dataParse.TryGetValue("url_encoded_fmt_stream_map", out var videoDataUnsplit))
-			{
-				string[] videoData = videoDataUnsplit[0].Split(',');
-
-				foreach (string vdat in videoData)
-				{
-					var videoparse = ParseQueryString(vdat);
-
-					if (!videoparse.TryGetValue("url", out var vLink))
-						continue;
-
-					if (!videoparse.TryGetValue("type", out var vType))
-						continue;
-
-					if (!videoparse.TryGetValue("quality", out var vQuality))
-						continue;
-
-					var vt = new VideoData()
-					{
-						Link = vLink[0],
-						Codec = GetCodec(vType[0]),
-						Qualitydesciption = vQuality[0]
-					};
-					videoTypes.Add(vt);
-				}
-			}
+				ParseEncodedFmt(videoDataUnsplit, videoTypes);
 
 			if (dataParse.TryGetValue("adaptive_fmts", out videoDataUnsplit))
-			{
-				string[] videoData = videoDataUnsplit[0].Split(',');
-
-				foreach (string vdat in videoData)
-				{
-					var videoparse = ParseQueryString(vdat);
-
-					if (!videoparse.TryGetValue("type", out var vTypeArr))
-						continue;
-					var vType = vTypeArr[0];
-
-					bool audioOnly = false;
-					if (vType.StartsWith("video/", StringComparison.Ordinal))
-						continue;
-					else if (vType.StartsWith("audio/", StringComparison.Ordinal))
-						audioOnly = true;
-
-					if (!videoparse.TryGetValue("url", out var vLink))
-						continue;
-
-					var vt = new VideoData()
-					{
-						Codec = GetCodec(vType),
-						Qualitydesciption = vType,
-						Link = vLink[0]
-					};
-					if (audioOnly)
-						vt.AudioOnly = true;
-					else
-						vt.VideoOnly = true;
-					videoTypes.Add(vt);
-				}
-			}
+				ParseAdaptiveFmt(videoDataUnsplit, videoTypes);
 
 			// Validation Process
 
@@ -176,14 +105,115 @@ namespace TS3AudioBot.ResourceFactories
 			if (!result.Ok)
 				return result.Error;
 
-			var title = dataParse.TryGetValue("title", out var titleArr)
-				? titleArr[0]
-				: $"<YT - no title : {resource.ResourceTitle}>";
+			resource.ResourceTitle = resource.ResourceTitle ?? $"<YT - no title : {resource.ResourceId}>";
 
-			return new PlayResource(videoTypes[codec].Link, resource.ResourceTitle != null ? resource : resource.WithName(title));
+			return new PlayResource(videoTypes[codec].Link, resource);
 		}
 
-		public string RestoreLink(string id) => "https://youtu.be/" + id;
+		private static R<PlayResource, LocalStr> ParseLiveData(AudioResource resource, JsonPlayerResponse parsed)
+		{
+			var webListResponse = WebWrapper.GetResponse(new Uri(parsed.streamingData.hlsManifestUrl), response =>
+			{
+				return AudioTags.M3uReader.TryGetData(response.GetResponseStream()).OkOr(null);
+			});
+			if (webListResponse.Ok)
+			{
+				const string AacHe = "mp4a.40.5";
+				const string AacLc = "mp4a.40.2";
+
+				var webList = webListResponse.Value;
+				var streamPref = from item in webList
+								 let codecs = item.StreamMeta != null ? StreamCodecMatch.Match(item.StreamMeta).Groups[1].Value : ""
+								 let codecPref = codecs.Contains(AacLc) ? 0
+									 : codecs.Contains(AacHe) ? 1
+									 : 2
+								 let bitrate = item.StreamMeta != null ? int.Parse(StreamBitrateMatch.Match(item.StreamMeta).Groups[1].Value) : int.MaxValue
+								 orderby codecPref, bitrate ascending
+								 select item;
+				var streamSelect = streamPref.FirstOrDefault();
+				if (streamSelect != null)
+				{
+					if (resource.ResourceTitle == null)
+						resource.ResourceTitle = parsed.videoDetails.title;
+					return new PlayResource(streamSelect.TrackUrl, resource);
+				}
+			}
+			return new LocalStr(strings.error_media_no_stream_extracted);
+		}
+
+		private static void ParsePlayerData(JsonPlayerResponse data, List<VideoData> videoTypes)
+		{
+			// TODO
+		}
+
+		private static void ParseEncodedFmt(List<string> videoDataUnsplit, List<VideoData> videoTypes)
+		{
+			if (videoDataUnsplit.Count == 0)
+				return;
+			string[] videoData = videoDataUnsplit[0].Split(',');
+
+			foreach (string vdat in videoData)
+			{
+				var videoparse = ParseQueryString(vdat);
+
+				if (!videoparse.TryGetValue("url", out var vLink))
+					continue;
+
+				if (!videoparse.TryGetValue("type", out var vType))
+					continue;
+
+				if (!videoparse.TryGetValue("quality", out var vQuality))
+					continue;
+
+				var vt = new VideoData()
+				{
+					Link = vLink[0],
+					Codec = GetCodec(vType[0]),
+					Qualitydesciption = vQuality[0]
+				};
+				videoTypes.Add(vt);
+			}
+		}
+
+		private static void ParseAdaptiveFmt(List<string> videoDataUnsplit, List<VideoData> videoTypes)
+		{
+			if (videoDataUnsplit.Count == 0)
+				return;
+
+			string[] videoData = videoDataUnsplit[0].Split(',');
+
+			foreach (string vdat in videoData)
+			{
+				var videoparse = ParseQueryString(vdat);
+
+				if (!videoparse.TryGetValue("type", out var vTypeArr))
+					continue;
+				var vType = vTypeArr[0];
+
+				bool audioOnly = false;
+				if (vType.StartsWith("video/", StringComparison.Ordinal))
+					continue;
+				else if (vType.StartsWith("audio/", StringComparison.Ordinal))
+					audioOnly = true;
+
+				if (!videoparse.TryGetValue("url", out var vLink))
+					continue;
+
+				var vt = new VideoData()
+				{
+					Codec = GetCodec(vType),
+					Qualitydesciption = vType,
+					Link = vLink[0]
+				};
+				if (audioOnly)
+					vt.AudioOnly = true;
+				else
+					vt.VideoOnly = true;
+				videoTypes.Add(vt);
+			}
+		}
+
+		public string RestoreLink(AudioResource resource) => "https://youtu.be/" + resource.ResourceId;
 
 		private static int SelectStream(List<VideoData> list)
 		{
@@ -309,8 +339,10 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
 				return new LocalStr(strings.error_ytdl_empty_response);
 
+			resource.ResourceTitle = title;
+
 			Log.Debug("youtube-dl succeeded!");
-			return new PlayResource(url, resource.WithName(title));
+			return new PlayResource(url, resource);
 		}
 
 		public static Dictionary<string, List<string>> ParseQueryString(string requestQueryString)
@@ -414,7 +446,7 @@ namespace TS3AudioBot.ResourceFactories
 			public int heigth { get; set; }
 			public int width { get; set; }
 		}
-
+		// Custom json
 		private class JsonPlayerResponse
 		{
 			public JsonStreamingData streamingData { get; set; }
@@ -428,8 +460,16 @@ namespace TS3AudioBot.ResourceFactories
 		private class JsonVideoDetails
 		{
 			public string title { get; set; }
-			public bool isLive { get; set; }
+			public bool? isLive { get; set; }
+			public bool useCipher { get; set; }
 			public bool isLiveContent { get; set; }
+		}
+		private class JsonPlayFormat
+		{
+			public string mimeType { get; set; }
+			public int bitrate { get; set; }
+			public string cipher { get; set; }
+			public string url { get; set; }
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
 #pragma warning restore CS0649, CS0169, IDE1006

@@ -2,13 +2,13 @@ import { ApiAuth } from "./ApiAuth";
 import { ApiEndpoint } from "./ApiEndpoint";
 import { ApiError } from "./ApiObjects";
 
-export class ErrorObject<T=any> {
+export class ErrorObject<T = any> {
 	constructor(public obj: T) { }
 }
 
 export class Get {
 	public static AuthData: ApiAuth = ApiAuth.Anonymous;
-	public static EndpointData: ApiEndpoint = ApiEndpoint.Splamy;
+	public static EndpointData: ApiEndpoint = ApiEndpoint.Localhost;
 
 	public static async site(site: string): Promise<string> {
 		const response = await fetch(site);
@@ -62,13 +62,17 @@ export class Get {
 export class Api<T extends ApiRet = ApiRet> {
 	public constructor(private buildAddr: string) { }
 
-	public static call<T>(...params: (string | Api)[]) {
+	public static call<T>(...params: (string | number | Api)[]) {
 		let buildStr = "";
 		for (const param of params) {
 			if (typeof param === "string") {
 				buildStr += "/" + encodeURIComponent(param).replace(/\(/, "%28").replace(/\)/, "%29");
-			} else {
+			} else if (typeof param === "number") {
+				buildStr += "/" + param.toString();
+			} else if (param instanceof Api) {
 				buildStr += "/(" + param.done() + ")";
+			} else {
+				throw new Error(`Go unknown api object: ${typeof param} ${param}`);
 			}
 		}
 		return new Api<T>(buildStr);
@@ -83,7 +87,7 @@ export class Api<T extends ApiRet = ApiRet> {
 	}
 }
 
-export function cmd<T extends ApiRet>(...params: (string | Api)[]) {
+export function cmd<T extends ApiRet>(...params: (string | number | Api)[]) {
 	return Api.call<T>(...params);
 }
 

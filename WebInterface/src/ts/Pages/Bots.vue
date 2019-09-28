@@ -46,7 +46,13 @@
 					{{ props.row.Id }}
 				</b-table-column>
 				<b-table-column field="Name" label="Name">{{ props.row.Name }}</b-table-column>
-				<b-table-column field="Server" label="Server">{{ props.row.Server }}</b-table-column>
+				<b-table-column field="Server" label="Server">
+					<edi-text
+						:text="props.row.Server"
+						@onedit="editBotServer($event, props.row)"
+						:editable="props.row.Name && props.row.Status == BotStatus.Offline"
+					/>
+				</b-table-column>
 				<b-table-column field="Status" label="Status">
 					<span :class="'tag ' + statusToColor(props.row.Status)">{{BotStatus[props.row.Status]}}</span>
 				</b-table-column>
@@ -66,7 +72,9 @@
 							<b-button
 								:disabled="props.row.Id == null"
 								tag="router-link"
-								:to="`/bot/${props.row.Id}/server`"
+								:to="props.row.Id != null
+									? { name: 'r_server', params: { id: props.row.Id } }
+									: { name: 'r_bots' }"
 								type="is-info"
 							>
 								<b-icon icon="file-tree" />
@@ -75,7 +83,9 @@
 						<b-tooltip class="control" label="Jump to Settings" :delay="helpDelay">
 							<b-button
 								tag="router-link"
-								:to="props.row.Id == null ? `/bot_offline/${props.row.Name}/settings` : `/bot/${props.row.Id}/settings`"
+								:to="props.row.Id != null
+									? { name: 'r_settings', params: { id: props.row.Id } } 
+									: { name: 'r_settings_offline', params: { name: props.row.Name } }"
 								type="is-info"
 							>
 								<b-icon icon="settings" />
@@ -130,6 +140,7 @@ import { Util } from "../Util";
 import QuickConnectModal from "../Modals/QuickConnectModal.vue";
 import DeleteBotModal from "../Modals/DeleteBotModal.vue";
 import CreateBotModal from "../Modals/CreateBotModal.vue";
+import EditableText from "../Components/EditableText.vue";
 
 export default Vue.extend({
 	data() {
@@ -270,12 +281,34 @@ export default Vue.extend({
 			}
 			this.modalCreateBot = false;
 			await this.refresh();
+		},
+		async editBotServer(server: string, bot: CmdBotInfo) {
+			if (!bot.Name) {
+				// TODO: popup warning
+				return;
+			}
+
+			const res = await cmd<void>(
+				"settings",
+				"bot",
+				"set",
+				bot.Name,
+				"connect.address",
+				server
+			).get();
+
+			if (!Util.check(this, res, "Error setting server")) {
+				return;
+			}
+
+			await this.refresh();
 		}
 	},
 	components: {
 		CreateBotModal,
 		DeleteBotModal,
-		QuickConnectModal
+		QuickConnectModal,
+		EditableText
 	}
 });
 

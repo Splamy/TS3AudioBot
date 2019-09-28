@@ -144,6 +144,7 @@ namespace TS3AudioBot.Playlists
 
 					switch (key)
 					{
+					// Legacy entry
 					case "rs":
 						{
 							var rskvp = value.Split(new[] { ':' }, 2);
@@ -166,13 +167,8 @@ namespace TS3AudioBot.Playlists
 						}
 
 					case "rsj":
-						var rsjdata = JsonConvert.DeserializeAnonymousType(value, new
-						{
-							type = string.Empty,
-							resid = string.Empty,
-							title = string.Empty,
-						});
-						plist.Items.Add(new PlaylistItem(new AudioResource(rsjdata.resid, rsjdata.title, rsjdata.type)));
+						var res = JsonConvert.DeserializeObject<AudioResource>(value);
+						plist.Items.Add(new PlaylistItem(res));
 						break;
 
 					case "id":
@@ -217,27 +213,16 @@ namespace TS3AudioBot.Playlists
 				sw.WriteLine("version:2");
 				sw.WriteLine();
 
-				using (var json = new JsonTextWriter(sw))
+				var serializer = new Newtonsoft.Json.JsonSerializer
 				{
-					json.Formatting = Formatting.None;
-
-					foreach (var pli in plist.Items)
-					{
-						sw.Write("rsj:");
-						json.WriteStartObject();
-						json.WritePropertyName("type");
-						json.WriteValue(pli.Resource.AudioType);
-						json.WritePropertyName("resid");
-						json.WriteValue(pli.Resource.ResourceId);
-						if (pli.Resource.ResourceTitle != null)
-						{
-							json.WritePropertyName("title");
-							json.WriteValue(pli.Resource.ResourceTitle);
-						}
-						json.WriteEndObject();
-						json.Flush();
-						sw.WriteLine();
-					}
+					Formatting = Formatting.None,
+				};
+				
+				foreach (var pli in plist.Items)
+				{
+					sw.Write("rsj:");
+					serializer.Serialize(sw, pli.Resource);
+					sw.WriteLine();
 				}
 			}
 			return R.Ok;

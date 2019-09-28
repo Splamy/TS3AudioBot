@@ -5,40 +5,17 @@
 				<div class="b-tabs">
 					<div class="tabs is-boxed is-fullwidth">
 						<ul>
-							<bot-nav-item
-								label="Server"
-								icon="file-tree"
-								:route="pageBase + '/server'"
-								:active="page == 'server'"
-								:disabled="!online"
-							/>
-							<bot-nav-item
-								label="Settings"
-								icon="settings"
-								:route="pageBase + '/settings'"
-								:active="page == 'settings'"
-							/>
+							<bot-nav-item label="Server" icon="file-tree" page="r_server" :disabled="!online" />
+							<bot-nav-item label="Settings" icon="settings" page="r_settings" />
 							<bot-nav-item
 								label="Playlists"
 								icon="playlist-music"
-								:route="pageBase + '/playlists'"
-								:active="page == 'playlists'"
+								page="r_playlists"
+								:props="{ playlist: '<none>' }"
 								:disabled="!online"
 							/>
-							<bot-nav-item
-								label="History [WIP]"
-								icon="history"
-								:route="pageBase + '/history'"
-								:active="page == 'history'"
-								disabled
-							/>
-							<bot-nav-item
-								label="Search [WIP]"
-								icon="cloud-search"
-								:route="pageBase + '/search'"
-								:active="page == 'search'"
-								disabled
-							/>
+							<bot-nav-item label="History [WIP]" icon="history" page disabled />
+							<bot-nav-item label="Search [WIP]" icon="cloud-search" page disabled />
 						</ul>
 					</div>
 				</div>
@@ -115,6 +92,9 @@ export default Vue.extend({
 		botId(): number {
 			return Number(this.$route.params.id);
 		},
+		botName(): string {
+			return this.$route.params.name;
+		},
 		page(): string {
 			return this.$route.path.substring(
 				this.$route.path.lastIndexOf("/") + 1
@@ -129,14 +109,21 @@ export default Vue.extend({
 	},
 	methods: {
 		async refresh() {
-			const res = await bot(
-				cmd<CmdBotInfo>("bot", "info"),
-				this.botId
-			).get();
+			if (this.online) {
+				const res = await bot(
+					cmd<CmdBotInfo>("bot", "info"),
+					this.botId
+				).get();
 
-			if (!Util.check(this, res, "Failed to get bot information")) return;
+				if (!Util.check(this, res, "Failed to get bot information"))
+					return;
 
-			this.botInfo = res;
+				this.botInfo = res;
+			} else {
+				this.botInfo.Id = "N/A" as any as number;
+				this.botInfo.Name = this.botName;
+				this.botInfo.Status = BotStatus.Offline;
+			}
 		},
 		startNewSong() {}
 	},

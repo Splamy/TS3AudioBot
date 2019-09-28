@@ -6,7 +6,7 @@
 			</header>
 			<section class="modal-card-body">
 				<b-field label="Bot name">
-					<b-input v-model="botName" placeholder="e.g. my_cool_bot" required></b-input>
+					<b-input v-model="botName" placeholder="e.g. my_cool_bot" required v-focus></b-input>
 				</b-field>
 			</section>
 			<footer class="modal-card-foot">

@@ -820,7 +820,7 @@ namespace TS3AudioBot
 		// *************************************
 
 		[Command("list add")]
-		public static PlaylistItemGetData CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, string link /* TODO param */)
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(name, plist =>
@@ -831,12 +831,12 @@ namespace TS3AudioBot
 				getData = resourceFactory.ToApiFormat(item);
 				//getData.Index = plist.Items.Count - 1;
 			}).UnwrapThrow();
-			return getData;
+			return JsonValue.Create(getData, strings.info_ok);
 		}
 
 		[Command("list create", "_undocumented")]
-		public static void CommandListCreate(PlaylistManager playlistManager, string name)
-			=> playlistManager.CreatePlaylist(name).UnwrapThrow();
+		public static void CommandListCreate(PlaylistManager playlistManager, string name, string title)
+			=> playlistManager.CreatePlaylist(name, title).UnwrapThrow();
 
 		[Command("list delete")]
 		public static JsonEmpty CommandListDelete(PlaylistManager playlistManager, UserSession session, string name)
@@ -861,12 +861,13 @@ namespace TS3AudioBot
 		[Command("list import", "cmd_list_get_help")] // TODO readjust help texts
 		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResourceFactory resourceFactory, string name, string link)
 		{
+			// TODO preserve original name and save as title
 			var getList = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
 			if (string.IsNullOrEmpty(name))
 				name = getList.Name;
 
 			if (!playlistManager.ExistsPlaylist(name))
-				playlistManager.SavePlaylist(new Playlist(name));
+				playlistManager.CreatePlaylist(name);
 
 			playlistManager.ModifyPlaylist(name, playlist =>
 			{
@@ -874,6 +875,24 @@ namespace TS3AudioBot
 			}).UnwrapThrow();
 
 			return CommandListShow(playlistManager, resourceFactory, name, null, null);
+		}
+
+		[Command("list insert")]
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string name, int index, string link /* TODO param */)
+		{
+			PlaylistItemGetData getData = null;
+			playlistManager.ModifyPlaylist(name, plist =>
+			{
+				if (index < 0 || index >= plist.Items.Count)
+					throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
+
+				var playResource = resourceFactory.Load(link).UnwrapThrow();
+				var item = new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid });
+				plist.Items.Insert(index, item);
+				getData = resourceFactory.ToApiFormat(item);
+				//getData.Index = plist.Items.Count - 1;
+			}).UnwrapThrow();
+			return JsonValue.Create(getData, strings.info_ok);
 		}
 
 		// list info: get PlaylistInfo of single list by name
@@ -935,18 +954,6 @@ namespace TS3AudioBot
 
 			return new JsonArray<PlaylistInfo>(files, fi => string.Join(", ", fi.Select(x => x.FileName)));
 		}
-
-		//[Command("list load")] // TODO remove, replace with 'list edit' and 'list create'
-		//public static string CommandListLoad(PlaylistManager playlistManager, UserSession session, ClientCall invoker, string name)
-		//{
-		//	var ownList = AutoGetPlaylist(session, invoker);
-		//	var otherList = playlistManager.LoadPlaylist(name).UnwrapThrow();
-
-		//	ownList.Items.Clear();
-		//	ownList.Items.AddRange(otherList.Items);
-		//	ownList.Name = otherList.Name;
-		//	return string.Format(strings.cmd_list_load_response, name, ownList.Items.Count);
-		//}
 
 		[Command("list merge")]
 		public static void CommandListMerge(PlaylistManager playlistManager, string baseListName, string mergeListName) // future overload?: (IROP, IROP) -> IROP

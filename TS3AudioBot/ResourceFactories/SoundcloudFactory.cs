@@ -25,6 +25,9 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex SoundcloudLink = new Regex(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
 		private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
 
+		private const string AddArtist = "artist";
+		private const string AddTrack = "track";
+
 		public string FactoryFor => "soundcloud";
 
 		public MatchCertainty MatchResource(string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
@@ -40,8 +43,8 @@ namespace TS3AudioBot.ResourceFactories
 					return new LocalStr(strings.error_media_invalid_uri);
 				return YoutubeDlWrapped(uri);
 			}
-			var parsedDict = ParseJson(jsonResponse);
-			var resource = ParseJObjectToResource(parsedDict);
+			var track = JsonConvert.DeserializeObject<JsonTrackInfo>(jsonResponse);
+			var resource = CheckAndGet(track);
 			if (resource is null)
 				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 			return GetResourceById(resource, false);
@@ -57,7 +60,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (resource.ResourceTitle is null)
 			{
 				if (!allowNullName) return new LocalStr(strings.error_media_internal_missing + " (title)");
-				string link = RestoreLink(resource.ResourceId);
+				string link = RestoreLink(resource);
 				if (link is null) return new LocalStr(strings.error_media_internal_missing + " (link)");
 				return GetResource(link);
 			}
@@ -66,16 +69,15 @@ namespace TS3AudioBot.ResourceFactories
 			return new PlayResource(finalRequest, resource);
 		}
 
-		public string RestoreLink(string id)
+		public string RestoreLink(AudioResource resource)
 		{
-			if (SoundcloudLink.IsMatch(id))
-				return id;
+			var artistName = resource.Get(AddArtist);
+			var trackName = resource.Get(AddTrack);
 
-			var uri = new Uri($"https://api.soundcloud.com/tracks/{id}?client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
-				return null;
-			var jobj = ParseJson(jsonResponse);
-			return jobj.TryCast<string>("permalink_url").OkOr(null);
+			if (artistName != null && trackName != null)
+				return $"https://soundcloud.com/{artistName}/{trackName}";
+
+			return "https://soundcloud.com";
 		}
 
 		private static JToken ParseJson(string jsonResponse)
@@ -84,14 +86,21 @@ namespace TS3AudioBot.ResourceFactories
 			catch (JsonReaderException) { return null; }
 		}
 
-		private AudioResource ParseJObjectToResource(JToken jobj)
+		private AudioResource CheckAndGet(JsonTrackInfo track)
 		{
-			if (jobj is null) return null;
-			var id = jobj.TryCast<int>("id");
-			if (!id.Ok) return null;
-			var title = jobj.TryCast<string>("title");
-			if (!title.Ok) return null;
-			return new AudioResource(id.Value.ToString(CultureInfo.InvariantCulture), title.Value, FactoryFor);
+			if (track == null || track.id == 0 || track.title == null
+				|| track.permalink == null || track.user?.permalink == null)
+			{
+				Log.Debug("Parts of track response are empty: {@json}", track);
+				return null;
+			}
+
+			return new AudioResource(
+				track.id.ToString(CultureInfo.InvariantCulture),
+				track.title,
+				FactoryFor)
+				.Add(AddArtist, track.user.permalink)
+				.Add(AddTrack, track.permalink);
 		}
 
 		private R<PlayResource, LocalStr> YoutubeDlWrapped(string link)
@@ -117,20 +126,18 @@ namespace TS3AudioBot.ResourceFactories
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
 				return new LocalStr(strings.error_net_no_connection);
 
-			var parsedDict = ParseJson(jsonResponse);
-			if (parsedDict is null)
-				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
-
-			string name = PlaylistManager.CleanseName(parsedDict.TryCast<string>("title").OkOr(null));
-			var plist = new Playlist(name);
-
-			var tracksJobj = parsedDict["tracks"];
-			if (tracksJobj is null)
-				return new LocalStr(strings.error_media_internal_missing + "(tracks)");
-
-			foreach (var track in tracksJobj)
+			var playlist = JsonConvert.DeserializeObject<JsonPlaylist>(jsonResponse);
+			if (playlist is null || playlist.title is null || playlist.tracks is null)
 			{
-				var resource = ParseJObjectToResource(track);
+				Log.Debug("Parts of playlist response are empty: {@json}", playlist);
+				return new LocalStr(strings.error_media_internal_missing + " (playlist)");
+			}
+
+			var plist = new Playlist(PlaylistManager.CleanseName(playlist.title));
+
+			foreach (var track in playlist.tracks)
+			{
+				var resource = CheckAndGet(track);
 				if (resource is null)
 					continue;
 
@@ -165,5 +172,26 @@ namespace TS3AudioBot.ResourceFactories
 		}
 
 		public void Dispose() { }
+
+#pragma warning disable CS0649, CS0169, IDE1006
+		// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
+		private class JsonTrackInfo
+		{
+			public int id;
+			public string title;
+			public string permalink;
+			public JsonTrackUser user;
+		}
+		private class JsonTrackUser
+		{
+			public string permalink;
+		}
+		private class JsonPlaylist
+		{
+			public string title;
+			public JsonTrackInfo[] tracks;
+		}
+		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
+#pragma warning restore CS0649, CS0169, IDE1006
 	}
 }

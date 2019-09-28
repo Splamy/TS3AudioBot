@@ -185,7 +185,7 @@ namespace TS3AudioBot.ResourceFactories
 			var factory = GetFactoryByType<IResourceFactory>(res.AudioType);
 			if (factory is null)
 				return CouldNotLoad();
-			return factory.RestoreLink(res.ResourceId);
+			return factory.RestoreLink(res);
 		}
 
 		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)

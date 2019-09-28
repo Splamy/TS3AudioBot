@@ -11,7 +11,7 @@
 			</label>
 		</div>
 		<div class="field-body">
-			<b-field>
+			<b-field :grouped="grouped">
 				<slot />
 			</b-field>
 		</div>
@@ -27,7 +27,8 @@ export default Vue.component("settings-field", {
 		filter: { type: String, required: false },
 		path: { type: String, required: true },
 		label: { type: String, required: true },
-		expert: { type: Boolean, required: false, default: false }
+		expert: { type: Boolean, required: false, default: false },
+		grouped: { type: Boolean, required: false, default: false }
 	},
 	created() {
 		this.parentIndex = this.parent_arr.length;

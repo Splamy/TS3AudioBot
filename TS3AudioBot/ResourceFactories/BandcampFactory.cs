@@ -26,6 +26,9 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex TrackArtRegex = new Regex(@"""art_id""\s*:\s*(\d+)\s*,", Util.DefaultRegexConfig);
 		private static readonly Regex TrackMainJsonRegex = new Regex(@"trackinfo\s*:(.*),(\r|\n)", Util.DefaultRegexConfig);
 
+		private const string AddArtist = "artist";
+		private const string AddTrack = "track";
+
 		public string FactoryFor => "bandcamp";
 
 		public MatchCertainty MatchResource(string uri) => BandcampUrlRegex.IsMatch(uri).ToMatchCertainty();
@@ -61,7 +64,11 @@ namespace TS3AudioBot.ResourceFactories
 			if (id is null || title is null || trackObj is null)
 				return new LocalStr(strings.error_media_no_stream_extracted);
 
-			return new BandcampPlayResource(trackObj, new AudioResource(id, title, FactoryFor), GetTrackArtId(webSite));
+			return new BandcampPlayResource(trackObj,
+				new AudioResource(id, title, FactoryFor)
+					.Add(AddArtist, artistName)
+					.Add(AddTrack, trackName),
+				GetTrackArtId(webSite));
 		}
 
 		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
@@ -85,18 +92,16 @@ namespace TS3AudioBot.ResourceFactories
 			return new BandcampPlayResource(match.Groups[1].Value, resource, GetTrackArtId(webSite));
 		}
 
-		public string RestoreLink(string id)
+		public string RestoreLink(AudioResource resource)
 		{
-			var result = DownloadEmbeddedSite(id);
-			if (result.Ok)
-			{
-				var webSite = result.Value;
-				var match = TrackRestoreRegex.Match(webSite);
-				if (match.Success)
-					return match.Groups[1].Value;
-			}
+			var artistName = resource.Get(AddArtist);
+			var trackName = resource.Get(AddTrack);
+
+			if (artistName != null && trackName != null)
+				return $"https://{artistName}.bandcamp.com/track/{trackName}";
+
 			// backup when something's wrong with the website
-			return "https://bandcamp.com/EmbeddedPlayer/v=2/track={id}";
+			return $"https://bandcamp.com/EmbeddedPlayer/v=2/track={resource.ResourceId}";
 		}
 
 		private static R<string, LocalStr> DownloadEmbeddedSite(string id)

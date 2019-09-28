@@ -2,6 +2,7 @@ import Vue from "vue";
 import { ApiErr, ErrorObject } from "./Api";
 
 export class Util {
+	private static readonly UrlReg = /(https?|ftp):\/\/[^\s\/$.?#].[^\s]*/;
 
 	public static parseQuery(query: string): Dict<string> {
 		const search = /(?:[?&])([^&=]+)=([^&]*)/g;
@@ -41,16 +42,6 @@ export class Util {
 		if (elem === null) // tslint:disable-line no-null-keyword
 			throw new Error(`Missing html element ${error}`);
 		return elem;
-	}
-
-	public static clearChildren(elem: HTMLElement) {
-		while (elem.firstChild) {
-			elem.removeChild(elem.firstChild);
-		}
-	}
-
-	public static clearIcon(elem: HTMLElement) {
-		elem.style.backgroundImage = "none";
 	}
 
 	public static asError(err: any): ErrorObject {
@@ -109,6 +100,83 @@ export class Util {
 			return false;
 		}
 		return true;
+	}
+
+	public static findParent(elem: Node, match: string): HTMLElement {
+		let curElement: Node | HTMLElement | null = elem;
+		while (curElement != undefined) {
+			if ("matches" in curElement && curElement.matches(match)) {
+				return curElement;
+			}
+			curElement = curElement.parentElement;
+		}
+		throw new Error("Could not find");
+	}
+
+	public static findDropLink(data: DataTransfer): string | undefined {
+		const plain = data.getData("text/plain");
+		const plainRes = this.UrlReg.exec(plain);
+		if (plainRes) {
+			return plainRes[0];
+		}
+
+		const html = data.getData("text/html");
+		if (html.length > 0) {
+			console.log(html);
+			const parser = new DOMParser();
+			const htmlDoc = parser.parseFromString(html, "text/html");
+			const linkElements = htmlDoc.getElementsByTagName("a");
+			if (linkElements.length > 0) {
+				return linkElements[0].href;
+			}
+
+			const htmlRes = this.UrlReg.exec(html);
+			if (htmlRes) {
+				return htmlRes[0];
+			}
+		}
+		return undefined;
+	}
+
+	public static genImage(name: string, ctx: CanvasRenderingContext2D, width: number = 200, height: number = 200) {
+
+		const size = 5;
+		const iter = size * size;
+		const cmul = 5;
+		const nums: number[] = new Array(cmul).fill(0);
+		for (let i = 0; i < name.length; i++) {
+			nums[i % cmul] = (nums[i % cmul] + name.charCodeAt(i)) % 17;
+		}
+		let c = 0;
+		let x = 0;
+		let y = 0;
+		let r = 127;
+		let g = 127;
+		let b = 127;
+		const f: boolean[] = new Array(iter).fill(false);
+		for (let i = 0; i < iter; i++) {
+			r = (r + Math.cos(nums[c % nums.length]) * 5 + nums[c % nums.length] * Math.sin(c++)) % 255;
+			g = (g + Math.cos(nums[c % nums.length]) * 5 + nums[c % nums.length] * Math.sin(c++)) % 255;
+			b = (b + Math.cos(nums[c % nums.length]) * 5 + nums[c % nums.length] * Math.sin(c++)) % 255;
+
+			x += (nums[c++ % nums.length] % 3);
+			x = (x + size) % size;
+			y += (nums[c++ % nums.length] % 3);
+			y = (y + size) % size;
+
+			scan: for (let ox = 0; ox < size; ox++) {
+				for (let oy = 0; oy < size; oy++) {
+					if (!f[x * size + y]) break scan;
+					y = (y + 1) % size;
+				}
+				x = (x + 1) % size;
+			}
+
+			f[x * size + y] = true;
+
+			ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+			ctx.fillRect(x * (width / size), y * (height / size), (width / size), (height / size));
+		}
 	}
 }
 

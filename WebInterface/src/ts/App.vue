@@ -17,13 +17,13 @@ export default {
 		return {};
 	},
 	components: {
-		Navbar
+		Navbar,
 	}
 };
 </script>
 
 <style lang="less">
 html {
-	overflow-y: auto !important;
+	//overflow-y: auto !important;
 }
 </style>

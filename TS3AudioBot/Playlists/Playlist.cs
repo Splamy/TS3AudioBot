@@ -16,6 +16,7 @@ namespace TS3AudioBot.Playlists
 	public class Playlist : IReadOnlyPlaylist
 	{
 		public string Name { get; set; }
+		public string Title { get; private set; }
 		public List<PlaylistItem> Items { get; }
 		IReadOnlyList<PlaylistItem> IReadOnlyPlaylist.Items => Items;
 
@@ -27,6 +28,14 @@ namespace TS3AudioBot.Playlists
 		{
 			Name = name ?? throw new ArgumentNullException(nameof(name));
 			Items = items ?? throw new ArgumentNullException(nameof(items));
+			Title = string.Empty;
+		}
+
+		public Playlist SetTitle(string newTitle)
+		{
+			newTitle = newTitle.Replace("\r", "").Replace("\n", "");
+			Title = newTitle.Substring(0, Math.Min(newTitle.Length, 256));
+			return this;
 		}
 	}
 

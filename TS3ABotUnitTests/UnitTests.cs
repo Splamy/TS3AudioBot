@@ -231,7 +231,7 @@ namespace TS3ABotUnitTests
 				Assert.AreNotEqual(rfac.MatchResource(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
 
 				// restoring links
-				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink("robqdGEhQWo"));
+				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(new AudioResource { ResourceId = "robqdGEhQWo" }));
 			}
 		}
 

@@ -1,5 +1,16 @@
 <template>
 	<div>
+		<div v-for="n in 10" :key="n">
+			<pre>
+				dsaf
+				dfsg
+				df
+				g
+				dfsgdsf
+				gds
+				f
+				</pre>
+		</div>
 	</div>
 </template>
 
@@ -7,7 +18,12 @@
 import Vue from "vue";
 
 export default Vue.extend({
-	components: {
-	}
+	components: {}
 });
 </script>
+
+<style>
+.test {
+	height: 100px;
+}
+</style>

@@ -165,12 +165,12 @@ namespace TS3AudioBot.Playlists
 			return res.Value;
 		}
 
-		public E<LocalStr> CreatePlaylist(string name)
+		public E<LocalStr> CreatePlaylist(string name, string title = "")
 		{
 			var checkName = Util.IsSafeFileName(name);
 			if (!checkName.Ok)
 				return checkName;
-			return playlistPool.Write(name, new Playlist(name));
+			return playlistPool.Write(name, new Playlist(name).SetTitle(title));
 		}
 
 		public bool ExistsPlaylist(string name) => playlistPool.Exists(name);

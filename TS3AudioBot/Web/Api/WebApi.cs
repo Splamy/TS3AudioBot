@@ -115,9 +115,9 @@ namespace TS3AudioBot.Web.Api
 				}
 				else if (res.ResultType == CommandResultType.Json)
 				{
-					response.StatusCode = (int)HttpStatusCode.OK;
 					var returnJson = (JsonCommandResult)res;
 					var returnString = returnJson.JsonObject.Serialize();
+					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
 					using (var responseStream = new StreamWriter(response.Body))
 						responseStream.Write(returnString);
 				}

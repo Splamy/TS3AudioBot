@@ -241,9 +241,6 @@ export default Vue.component("server-tree-node", {
 .normal-cursor {
 	cursor: default;
 }
-.clicky-cursor {
-	cursor: pointer;
-}
 
 // overwrite to prevent right stacking
 .menu-list li ul {

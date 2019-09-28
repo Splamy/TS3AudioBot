@@ -457,12 +457,12 @@ namespace TS3AudioBot.Audio
 
 						if (ex is InvalidOperationException)
 						{
-							Log.Warn(ex, "Waiting for ffmpeg");
+							Log.Debug(ex, "Waiting for ffmpeg");
 							Thread.Sleep(100);
 						}
 						else
 						{
-							Log.Warn(ex, "Stream read/write error");
+							Log.Debug(ex, "Stream read/write error");
 						}
 					}
 				}

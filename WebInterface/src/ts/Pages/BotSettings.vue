@@ -1,7 +1,7 @@
 <template>
 	<section>
-		<b-field label="Filter">
-			<b-input v-model="filter"></b-input>
+		<b-field>
+			<b-input icon="magnify" v-model="filter" placeholder="Filter..." />
 		</b-field>
 
 		<settings-group :filter="filter" label="General">
@@ -29,12 +29,13 @@
 		</settings-group>
 
 		<settings-group :filter="filter" label="Connection">
-			<settings-field :filter="filter" path="connect.name" label="Bot name">
-				<b-input v-model="model.connect.name" minlength="3" maxlength="30" required></b-input>
+			<settings-field :filter="filter" path="connect.name" label="Bot name" grouped>
+				<b-input v-model="model.connect.name" minlength="3" maxlength="30" expanded required></b-input>
+				<b-button class="control">Apply to bot now (TODO)</b-button>
 			</settings-field>
-			<settings-field :filter="filter" path="connect.address" label="Server address">
+			<settings-field :filter="filter" path="connect.address" label="Server address" grouped>
 				<b-input v-model="model.connect.address" expanded required></b-input>
-				<b-button>Test (TODO)</b-button>
+				<b-button class="control">Test (TODO)</b-button>
 			</settings-field>
 
 			<settings-field
@@ -45,15 +46,17 @@
 		</settings-group>
 
 		<settings-group :filter="filter" label="Audio">
-			<settings-field :filter="filter" label="Default volume" path="audio.volume.default">
-				<b-slider v-model="model.audio.volume.default" :min="0" :max="100" expanded lazy></b-slider>
-				<b-button @click="model.audio.volume.default = 42">Apply current volume (TODO)</b-button>
+			<settings-field :filter="filter" label="Default volume" path="audio.volume.default" grouped>
+				<div class="control is-expanded">
+					<b-slider v-model="model.audio.volume.default" :min="0" :max="100" lazy></b-slider>
+				</div>
+				<b-button class="control" @click="model.audio.volume.default = 42">Apply current volume (TODO)</b-button>
 			</settings-field>
 
 			<settings-field :filter="filter" label="Reset volume" path="audio.volume">
 				<b-slider v-model="bind_volume_reset" :min="0" :max="100" lazy></b-slider>
 			</settings-field>
-			<settings-field :filter="filter" label="Bitrate" path="audio.bitrate">
+			<settings-field :filter="filter" label="Bitrate" path="audio.bitrate" grouped>
 				<b-field>
 					<b-radio-button v-model="model.audio.bitrate" :native-value="16" type="is-danger">Very Poor</b-radio-button>
 					<b-radio-button v-model="model.audio.bitrate" :native-value="24" type="is-danger">Poor</b-radio-button>
@@ -95,7 +98,11 @@
 				label="In how many messages a message can be split max"
 				path="commands.long_message_split_limit"
 			>
-				<b-numberinput v-model="model.commands.long_message_split_limit" controls-position="compact" :disabled="model.commands.long_message == 0" />
+				<b-numberinput
+					v-model="model.commands.long_message_split_limit"
+					controls-position="compact"
+					:disabled="model.commands.long_message == 0"
+				/>
 			</settings-field>
 		</settings-group>
 	</section>
@@ -125,7 +132,7 @@ export default Vue.extend({
 					bitrate: 0
 				},
 				connect: {},
-				commands: {},
+				commands: {}
 			} as any
 		};
 	},
