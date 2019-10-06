@@ -1,11 +1,11 @@
 <template>
-	<b-collapse v-show="is_visible" class="card" aria-id="contentIdForA11y3">
+	<b-collapse v-show="is_visible" class="card" aria-id="settings_box">
 		<div
 			slot="trigger"
 			slot-scope="props"
 			class="card-header"
 			role="button"
-			aria-controls="contentIdForA11y3"
+			aria-controls="settings_box"
 		>
 			<p class="card-header-title">{{label}}</p>
 			<a class="card-header-icon">
@@ -26,10 +26,6 @@ import { get } from "lodash-es";
 
 export default Vue.component("settings-group", {
 	props: {
-		filter: {
-			type: String,
-			required: false
-		},
 		label: {
 			type: String,
 			required: false
@@ -40,7 +36,6 @@ export default Vue.component("settings-group", {
 			children: [] as boolean[]
 		};
 	},
-	created() {},
 	computed: {
 		is_visible(): boolean {
 			return this.children.find(x => x) === true;

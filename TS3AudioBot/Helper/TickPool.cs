@@ -16,19 +16,12 @@ namespace TS3AudioBot.Helper
 
 	public static class TickPool
 	{
-		private static bool run;
-		private static readonly Thread tickThread;
+		private static bool run = false;
+		private static readonly Thread tickThread = new Thread(Tick) { Name = "TickPool" };
 		private static readonly object tickLock = new object();
 		private static readonly TimeSpan MinTick = TimeSpan.FromMilliseconds(1000);
-		private static readonly List<TickWorker> workList;
+		private static readonly List<TickWorker> workList = new List<TickWorker>();
 		private static readonly AutoResetEvent tickLoopPulse = new AutoResetEvent(false);
-
-		static TickPool()
-		{
-			run = false;
-			Util.Init(out workList);
-			tickThread = new Thread(Tick) { Name = "TickPool" };
-		}
 
 		public static TickWorker RegisterTickOnce(Action method, TimeSpan? delay = null)
 		{

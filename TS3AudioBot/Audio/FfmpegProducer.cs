@@ -36,7 +36,7 @@ namespace TS3AudioBot.Audio
 		private readonly ConfToolsFfmpeg config;
 
 		public event EventHandler OnSongEnd;
-		public event EventHandler<SongInfo> OnSongUpdated;
+		public event EventHandler<SongInfoChanged> OnSongUpdated;
 
 		private FfmpegInstance ffmpegInstance;
 
@@ -273,7 +273,7 @@ namespace TS3AudioBot.Audio
 					EnableRaisingEvents = true,
 				};
 
-				Log.Trace("Starting ffmpeg with {0}", arguments);
+				Log.Debug("Starting ffmpeg with {0}", arguments);
 				instance.FfmpegProcess.ErrorDataReceived += instance.FfmpegProcess_ErrorDataReceived;
 				instance.FfmpegProcess.Start();
 				instance.FfmpegProcess.BeginErrorReadLine();
@@ -290,7 +290,7 @@ namespace TS3AudioBot.Audio
 				var error = ex is Win32Exception
 					? $"Ffmpeg could not be found ({ex.Message})"
 					: $"Unable to create stream ({ex.Message})";
-				Log.Warn(ex, error);
+				Log.Error(ex, error);
 				instance.Close();
 				StopFfmpegProcess();
 				return error;
@@ -335,7 +335,7 @@ namespace TS3AudioBot.Audio
 			public int IcyMetaInt { get; set; }
 			public bool Closed { get; set; }
 
-			public Action<SongInfo> OnMetaUpdated;
+			public Action<SongInfoChanged> OnMetaUpdated;
 
 			public FfmpegInstance(string url, PreciseAudioTimer timer, bool isIcyStream)
 			{
@@ -468,9 +468,9 @@ namespace TS3AudioBot.Audio
 				}
 			}
 
-			private static SongInfo ParseIcyMeta(string metaString)
+			private static SongInfoChanged ParseIcyMeta(string metaString)
 			{
-				var songInfo = new SongInfo();
+				var songInfo = new SongInfoChanged();
 				var match = IcyMetadataMacher.Match(metaString);
 				if (match.Success)
 				{

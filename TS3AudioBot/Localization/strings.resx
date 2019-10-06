@@ -961,7 +961,7 @@ with the id {1}?</value>
     <value>Writes a message to a particular user.</value>
   </data>
   <data name="cmd_search_header" xml:space="preserve">
-    <value>Found the following songs. Use "{0}" to play.</value>
+    <value>Found the following songs. Use "{0}" to play. Use "{1}" to queue.</value>
   </data>
   <data name="cmd_search_no_result" xml:space="preserve">
     <value>Found no results for this query.</value>

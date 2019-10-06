@@ -662,7 +662,7 @@ namespace TS3AudioBot
 			remove => ffmpegProducer.OnSongEnd -= value;
 		}
 
-		public event EventHandler<SongInfo> OnSongUpdated
+		public event EventHandler<SongInfoChanged> OnSongUpdated
 		{
 			add => ffmpegProducer.OnSongUpdated += value;
 			remove => ffmpegProducer.OnSongUpdated -= value;

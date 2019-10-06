@@ -117,7 +117,7 @@ namespace TS3AudioBot
 			targetManager = Injector.GetModule<IVoiceTarget>();
 			sessionManager = Injector.GetModule<SessionManager>();
 
-			playerConnection.OnSongEnd += playManager.SongStoppedHook;
+			playerConnection.OnSongEnd += playManager.SongStoppedEvent;
 			playerConnection.OnSongUpdated += (s, e) => playManager.Update(e);
 			// Update idle status events
 			playManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();

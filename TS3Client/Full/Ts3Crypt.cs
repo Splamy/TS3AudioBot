@@ -872,6 +872,7 @@ namespace TS3Client.Full
 
 		private static int GetLeadingZeroBits(byte[] data)
 		{
+			// TODO dnc 3.0 sse ?
 			int curr = 0;
 			int i;
 			for (i = 0; i < data.Length; i++)
@@ -882,36 +883,6 @@ namespace TS3Client.Full
 					if ((data[i] & (1 << bit)) == 0) curr++;
 					else break;
 			return curr;
-		}
-
-		/// <summary>
-		/// This is the reference function from the TS3 Server for checking if a hashcash offset
-		/// is sufficient for the required level.
-		/// </summary>
-		/// <param name="data">The sha1 result from the current offset calculation</param>
-		/// <param name="reqLevel">The required level to reach.</param>
-		/// <returns>True if the hash meets the requirement, false otherwise.</returns>
-		private static bool ValidateHash(byte[] data, int reqLevel)
-		{
-			var levelMask = 1 << (reqLevel % 8) - 1;
-
-			if (reqLevel < 8)
-			{
-				return (data[0] & levelMask) == 0;
-			}
-			else
-			{
-				var v9 = reqLevel / 8;
-				var v10 = 0;
-				while (data[v10] == 0)
-				{
-					if (++v10 >= v9)
-					{
-						return (data[v9] & levelMask) == 0;
-					}
-				}
-				return false;
-			}
 		}
 
 		#endregion

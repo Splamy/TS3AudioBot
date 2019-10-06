@@ -51,6 +51,7 @@ namespace TS3Client.Full
 		private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
 		// ====
 		private readonly object sendLoopLock = new object();
+		private readonly LockTrace sendLoopLockTrace;
 		private readonly Ts3Crypt ts3Crypt;
 		private Socket socket;
 		private Timer resendTimer;
@@ -70,6 +71,7 @@ namespace TS3Client.Full
 		public PacketHandler(Ts3Crypt ts3Crypt, Id id)
 		{
 			Util.Init(out packetAckManager);
+			sendLoopLockTrace = new LockTrace(sendLoopLock, LogLock);
 			receiveQueueCommand = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			receiveQueueCommandLow = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			receiveWindowVoice = new GenerationWindow(ushort.MaxValue + 1);
@@ -98,7 +100,7 @@ namespace TS3Client.Full
 
 		public void Listen(IPEndPoint address)
 		{
-			lock (sendLoopLock)
+			using (sendLoopLockTrace.Get())
 			{
 				Initialize(address, false);
 				// dummy
@@ -112,7 +114,7 @@ namespace TS3Client.Full
 
 		private void Initialize(IPEndPoint address, bool connect)
 		{
-			lock (sendLoopLock)
+			using (sendLoopLockTrace.Get())
 			{
 				ClientId = 0;
 				closed = 0;
@@ -173,7 +175,7 @@ namespace TS3Client.Full
 				return;
 			Log.Debug("Stopping PacketHandler {0}", closeReason);
 
-			lock (sendLoopLock)
+			using (sendLoopLockTrace.Get())
 			{
 				resendTimer?.Dispose();
 				socket?.Dispose();
@@ -184,7 +186,7 @@ namespace TS3Client.Full
 
 		public E<string> AddOutgoingPacket(ReadOnlySpan<byte> packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
-			lock (sendLoopLock)
+			using (sendLoopLockTrace.Get())
 			{
 				if (closed != 0)
 					return "Connection closed";
@@ -350,7 +352,7 @@ namespace TS3Client.Full
 						}
 					}
 
-					lock (self.sendLoopLock)
+					using (self.sendLoopLockTrace.Get())
 					{
 						if (self.closed != 0)
 							return;
@@ -561,7 +563,7 @@ namespace TS3Client.Full
 			if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var packetId))
 				return false;
 
-			lock (sendLoopLock)
+			using (sendLoopLockTrace.Get())
 			{
 				if (packetAckManager.TryGetValue(packetId, out var ackPacket))
 				{
@@ -611,7 +613,7 @@ namespace TS3Client.Full
 
 		private bool ReceiveInitAck(ref Packet<TIn> packet)
 		{
-			lock (sendLoopLock)
+			using (sendLoopLockTrace.Get())
 			{
 				if (initPacketCheck is null)
 					return true;
@@ -660,45 +662,50 @@ namespace TS3Client.Full
 				return;
 			}
 
-			bool close = false;
-			lock (sendLoopLock)
+			try
 			{
-				if (closed != 0)
+				bool close = false;
+				using (sendLoopLockTrace.Get())
+				{
+					if (closed != 0)
+						return;
+
+					close = (packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
+						|| (initPacketCheck != null && ResendPacket(initPacketCheck));
+				}
+				if (close)
+				{
+					Stop();
 					return;
+				}
 
-				close = (packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
-					|| (initPacketCheck != null && ResendPacket(initPacketCheck));
+				var now = Util.Now;
+				var nextTest = now - pingCheck - PingInterval;
+				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
+				if (nextTest > TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
+				{
+					// Check that the last ping is more than PingInterval but not more than
+					// 2*PingInterval away. This might happen for e.g. when the process was
+					// suspended. If it was too long ago, reset the ping tick to now.
+					if (nextTest > PingInterval)
+						pingCheck = now;
+					else
+						pingCheck += PingInterval;
+					SendPing();
+				}
+
+				var elapsed = lastMessageTimer.Elapsed;
+				if (elapsed > PacketTimeout)
+				{
+					LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
+					Stop();
+					return;
+				}
 			}
-			if(close)
+			finally
 			{
-				Stop();
-				return;
+				Interlocked.Exchange(ref pingCheckRunning, 0);
 			}
-
-			var now = Util.Now;
-			var nextTest = now - pingCheck - PingInterval;
-			// we need to check if CryptoInitComplete because while false packet ids won't be incremented
-			if (nextTest > TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
-			{
-				// Check that the last ping is more than PingInterval but not more than
-				// 2*PingInterval away. This might happen for e.g. when the process was
-				// suspended. If it was too long ago, reset the ping tick to now.
-				if (nextTest > PingInterval)
-					pingCheck = now;
-				else
-					pingCheck += PingInterval;
-				SendPing();
-			}
-
-			var elapsed = lastMessageTimer.Elapsed;
-			if (elapsed > PacketTimeout)
-			{
-				LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
-				Stop();
-				return;
-			}
-
-			Interlocked.Exchange(ref pingCheckRunning, 0);
 		}
 
 		private bool ResendPackets(IEnumerable<ResendPacket<TOut>> packetList)
@@ -761,6 +768,7 @@ namespace TS3Client.Full
 		public static readonly Logger LogRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
 		public static readonly Logger LogRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
 		public static readonly Logger LogTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
+		public static readonly Logger LogLock = LogManager.GetLogger("TS3Client.PacketHandler.Lock");
 
 		/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
 		public static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(20);

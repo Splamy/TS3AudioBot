@@ -5,6 +5,7 @@
 				:botId="botId"
 				:selectedPlaylist="selectedPlaylist"
 				@deletePlaylist="deletePlaylistClick"
+				@startPlaylist="startPlaylist"
 			/>
 		</div>
 		<div v-else>
@@ -14,38 +15,36 @@
 
 			<div class="playlist-container">
 				<div class="playlist-card">
-					<a class="pc-content" @click="modalCreatePlaylist = true">
-						<div class="pc-pad-box">
+					<div class="pc-content">
+						<a class="square-box shadow-box" @click="modalCreatePlaylist = true">
 							<div class="pc-center">
 								<b-icon icon="plus" size="is-large" />
 							</div>
-							<div class="pc-bottom">
-								<p class="card-title title is-5">Create</p>
-							</div>
-						</div>
-					</a>
+						</a>
+						<p class="card-title title is-5">Create</p>
+					</div>
 				</div>
 
-				<div v-for="list in playlists_filter" :key="list.FileName" class="playlist-card">
+				<div v-for="list in playlists_filter" :key="list.Id" class="playlist-card">
 					<div class="pc-content">
-						<div class="pc-pad-box">
-							<!-- Padded box -->
+						<div class="square-box shadow-box">
 							<div class="pc-back">
-								<router-link :to="{ name: 'r_playlists', params: { 'playlist': list.FileName }}">
-									<v-canvas :width="5" :height="5" @draw="genImage(list.FileName, $event)" />
+								<router-link :to="{ name: 'r_playlists', params: { 'playlist': list.Id }}">
+									<v-canvas :width="5" :height="5" @draw="genImage(list.Id, $event)" />
 									<!-- <img src="https://bulma.io/images/placeholders/128x128.png" /> -->
 								</router-link>
 							</div>
-							<div class="pc-center">
-								<div class="button is-large is-primary" style="border-radius: 100%;">
+							<div class="pc-center pc-hover">
+								<a
+									class="button is-large is-primary"
+									style="border-radius: 100%;"
+									@click="startPlaylist(list.Id)"
+								>
 									<b-icon icon="play" size="is-large" />
-								</div>
-							</div>
-							<div class="pc-bottom">
-								<p class="card-title title is-5">{{ list.FileName }}</p>
+								</a>
 							</div>
 						</div>
-						test
+						<p class="card-title title is-5">{{ list.Title }}</p>
 					</div>
 				</div>
 			</div>
@@ -54,7 +53,7 @@
 		<b-modal :active.sync="modalCreatePlaylist">
 			<CreatePlaylistModal
 				@callback="createPlaylist"
-				:existingFiles="playlists.map(x => x.FileName.toLowerCase())"
+				:existingFiles="playlists.map(x => x.Id.toLowerCase())"
 			/>
 		</b-modal>
 	</div>
@@ -104,11 +103,11 @@ export default Vue.extend({
 
 			this.playlists = res;
 		},
-		async createPlaylist(fileName: string, title: string) {
+		async createPlaylist(listId: string, title: string) {
 			this.modalCreatePlaylist = false;
 
 			const res = await bot(
-				cmd<void>("list", "create", fileName, title),
+				cmd<void>("list", "create", listId, title),
 				this.botId
 			).get();
 
@@ -118,7 +117,7 @@ export default Vue.extend({
 
 			this.$router.push({
 				name: "r_playlists",
-				params: { playlist: fileName }
+				params: { playlist: listId }
 			});
 
 			// update playlists in the background
@@ -143,7 +142,7 @@ export default Vue.extend({
 			this.modalDeletePlaylist = false;
 
 			const res = await bot(
-				cmd<void>("list", "delete", list.FileName),
+				cmd<void>("list", "delete", list.Id),
 				this.botId
 			).get();
 
@@ -158,6 +157,16 @@ export default Vue.extend({
 
 			// update playlists in the background
 			await this.refresh();
+		},
+		async startPlaylist(fileName: string) {
+			const res = await bot(
+				cmd<void>("list", "play", fileName),
+				this.botId
+			).get();
+
+			if (!Util.check(this, res, "Failed to start playlist")) {
+				return;
+			}
 		},
 		genImage(name: string, ev: any) {
 			Util.genImage(name, ev.ctx, ev.width, ev.height);
@@ -178,10 +187,14 @@ export default Vue.extend({
 			const lc_filter = this.filter.toLowerCase();
 			return this.playlists.filter(
 				list =>
-					list.FileName.toLowerCase().includes(lc_filter) ||
-					(list.PlaylistName &&
-						list.PlaylistName.toLowerCase().includes(lc_filter))
+					list.Id.toLowerCase().includes(lc_filter) ||
+					(list.Title && list.Title.toLowerCase().includes(lc_filter))
 			);
+		}
+	},
+	watch: {
+		editMode(val: boolean) {
+			if (!val) this.refresh();
 		}
 	}
 });
@@ -195,6 +208,10 @@ export default Vue.extend({
 
 .playlist-card {
 	width: 25%;
+}
+
+.square-box {
+	display: block;
 	position: relative;
 
 	&:after {
@@ -204,22 +221,20 @@ export default Vue.extend({
 	}
 }
 
-.pc-content {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-
-	padding: 0.5em;
-}
-
-.pc-pad-box {
-	position: relative;
-	width: 100%;
-	height: 100%;
-
+.shadow-box {
 	&:hover {
 		box-shadow: 0px 0px 10px 3px lightgray;
 	}
+	&:not(:hover) {
+		.pc-hover {
+			display: none;
+		}
+	}
+}
+
+.pc-content {
+	display: block;
+	padding: 0.5em;
 }
 
 .fill() {
@@ -257,12 +272,10 @@ export default Vue.extend({
 }
 
 .card-title {
-	position: absolute;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	overflow: hidden;
-	padding: 0.5em;
-	width: 100%;
+	padding: 0.5em 0;
 	text-align: center;
 }
 </style>

@@ -49,7 +49,7 @@ namespace TS3Client.Helper
 
 		public static string NewUtf8String(this ReadOnlySpan<byte> span)
 		{
-#if NETCOREAPP2_2
+#if NETCOREAPP2_2 || NETCOREAPP3_0
 			return System.Text.Encoding.UTF8.GetString(span);
 #else
 			return System.Text.Encoding.UTF8.GetString(span.ToArray());

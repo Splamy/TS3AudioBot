@@ -67,8 +67,8 @@ export default Vue.component("play-controls", {
 				this.playTick.stop();
 				return;
 			}
-			if (this.song.position < this.song.length) {
-				this.song.position += 1;
+			if (this.song.Position < this.song.Length) {
+				this.song.Position += 1;
 			} else {
 				this.playTick.stop();
 				this.startEcho();
@@ -102,11 +102,11 @@ export default Vue.component("play-controls", {
 			repeat: RepeatKind.Off,
 			shuffle: false,
 			song: {
-				title: "",
-				source: "",
-				length: 0,
-				position: 0,
-				paused: false
+				Title: "",
+				Source: "",
+				Length: 0,
+				Position: 0,
+				Paused: false
 			} as CmdSong | null,
 
 			echoCounter: 0,
@@ -118,27 +118,27 @@ export default Vue.component("play-controls", {
 		song_pos_safe: {
 			get(): number {
 				if (!this.song) return 0;
-				return this.song.position;
+				return this.song.Position;
 			},
 			set(val: number) {
-				if (this.song) this.song.position = val;
+				if (this.song) this.song.Position = val;
 			}
 		},
 		song_length_safe(): number {
 			if (!this.song) return 0;
-			return this.song.length;
+			return this.song.Length;
 		},
 		song_position_human(): string {
 			if (!this.song) return "--:--";
-			return Util.formatSecondsToTime(this.song.position);
+			return Util.formatSecondsToTime(this.song.Position);
 		},
 		song_length_human(): string {
 			if (!this.song) return "--:--";
-			return Util.formatSecondsToTime(this.song.length);
+			return Util.formatSecondsToTime(this.song.Length);
 		},
 		playing(): PlayState {
 			if (!this.song) return PlayState.Off;
-			else if (this.song.paused) return PlayState.Paused;
+			else if (this.song.Paused) return PlayState.Paused;
 			else return PlayState.Playing;
 		},
 		play_icon() {
@@ -285,7 +285,7 @@ export default Vue.component("play-controls", {
 			if (!Util.check(this, res, "Failed to seek")) return;
 
 			if (wasRunning) this.playTick.start();
-			if (this.song) this.song.position = targetSeconds;
+			if (this.song) this.song.Position = targetSeconds;
 		},
 		startEcho() {
 			this.echoCounter = 0;

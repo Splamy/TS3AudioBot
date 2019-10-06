@@ -12,7 +12,6 @@ namespace TS3AudioBot.Helper
 	using SixLabors.ImageSharp;
 	using SixLabors.ImageSharp.Formats.Gif;
 	using SixLabors.ImageSharp.Formats.Jpeg;
-	using SixLabors.ImageSharp.PixelFormats;
 	using SixLabors.ImageSharp.Processing;
 	using System;
 	using System.IO;

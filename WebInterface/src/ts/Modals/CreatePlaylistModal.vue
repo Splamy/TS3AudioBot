@@ -14,7 +14,7 @@
 					:message="is_taken ? 'File aready exists. Please enter a name.' : ''"
 				>
 					<b-field>
-						<b-input v-model="fileName" :placeholder="autoFileName" expanded></b-input>
+						<b-input v-model="fileName" :placeholder="autoId" expanded></b-input>
 						<span class="button is-static">.ts3ablist</span>
 					</b-field>
 				</b-field>
@@ -41,13 +41,13 @@ export default Vue.extend({
 	data() {
 		return {
 			title: "",
-			fileName: ""
+			id: ""
 		};
 	},
 	computed: {
-		autoFileName(): string {
-			if (this.fileName.length > 0) {
-				return this.fileName;
+		autoId(): string {
+			if (this.id.length > 0) {
+				return this.id;
 			}
 			return this.title
 				.replace(/\s/g, "_")
@@ -55,13 +55,13 @@ export default Vue.extend({
 				.substring(0, 64);
 		},
 		is_taken(): boolean {
-			return this.existingFiles.includes(this.autoFileName.toLowerCase());
+			return this.existingFiles.includes(this.autoId.toLowerCase());
 		}
 	},
 	methods: {
 		trySubmit() {
-			if (this.autoFileName.length == 0 || this.is_taken) return;
-			this.$emit("callback", this.autoFileName, this.title);
+			if (this.autoId.length == 0 || this.is_taken) return;
+			this.$emit("callback", this.autoId, this.title);
 		}
 	}
 });

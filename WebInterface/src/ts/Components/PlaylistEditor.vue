@@ -1,19 +1,23 @@
+
 <template>
 	<div>
 		<article class="media">
 			<figure class="media-left">
-				<p class="button is-large is-primary" style="border-radius: 100%;">
+				<a
+					class="button is-large is-primary"
+					style="border-radius: 100%;"
+					@click="$emit('startPlaylist', playlistData.Id)"
+				>
 					<b-icon icon="play" size="is-large" />
-				</p>
+				</a>
 			</figure>
 			<div class="media-content">
 				<div class="content">
 					<div class="is-size-2">
-						<edi-text text="cool Playlist name" onedit />
+						<edi-text :text="playlistData.Title" @onedit="setPlaylistTitle" />
 					</div>
 					<div class="is-size-4 is-flex">
-						Filename:
-						<edi-text :text="playlistData.FileName" onedit />
+						<span>File: {{playlistData.Id}}</span>
 					</div>
 				</div>
 			</div>
@@ -45,7 +49,10 @@
 		>
 			<template slot-scope="props">
 				<b-table-column label=" " class="is-flex uni-hover">
-					<b-icon :icon="typeIcon(props.row.AudioType)" :style="colorIcon(props.row.AudioType)"></b-icon>
+					<b-icon
+						:icon="typeIcon(props.row.AudioType)"
+						:style="colorIcon(props.row.AudioType)"
+					></b-icon>
 					<span>
 						<edi-text
 							:text="props.row.Title"
@@ -91,7 +98,7 @@
 						<p>Drop a link here to add it...</p>
 					</div>
 					<div v-else class="content has-text-grey has-text-centered">
-						<p>&lt;- Select a playlist or create a new one to get started.</p>
+						<p>Select a playlist or create a new one to get started.</p>
 					</div>
 				</section>
 			</template>
@@ -145,11 +152,10 @@ export default Vue.component("playlist-editor", {
 			addSongLink: "",
 
 			playlistData: {
-				FileName: "",
-				PlaylistName: "",
+				Id: "",
+				Title: "",
 				SongCount: 0,
 				DisplayOffset: 0,
-				DisplayCount: 0,
 				Items: []
 			} as CmdPlaylist
 		};
@@ -163,38 +169,6 @@ export default Vue.component("playlist-editor", {
 		this.fetchPlaylist();
 	},
 	methods: {
-		typeIcon(type: string): string {
-			switch (type) {
-				case "media":
-					return "file-music";
-				case "youtube":
-					return "youtube";
-				case "soundcloud":
-					return "soundcloud";
-				case "twitch":
-					return "twitch";
-				case "bandcamp":
-					return "bandcamp";
-				default:
-					return "file-question";
-			}
-		},
-		colorIcon(type: string): string {
-			switch (type) {
-				case "media":
-					return "";
-				case "youtube":
-					return "color:#FF0000";
-				case "soundcloud":
-					return "color:#FE5000";
-				case "twitch":
-					return "color:#6441A4";
-				case "bandcamp":
-					return "color:#1DA0C3";
-				default:
-					return "";
-			}
-		},
 		async fetchPlaylist() {
 			if (!this.selectedPlaylist || this.selectedPlaylist == this.none) {
 				this.loading = false;
@@ -221,6 +195,16 @@ export default Vue.component("playlist-editor", {
 			this.page = res.DisplayOffset / this.perPage + 1;
 			this.total = res.SongCount;
 			this.playlistData = res;
+		},
+		async setPlaylistTitle(title: string) {
+			const res = await bot(
+				cmd<CmdPlaylist>("list", "name", this.selectedPlaylist, title),
+				this.botId
+			).get();
+
+			if (!Util.check(this, res, "Failed to rename playlist")) return;
+
+			this.playlistData.Title = title;
 		},
 		addItemClick() {
 			this.addItem(this.addSongLink);
@@ -380,7 +364,9 @@ export default Vue.component("playlist-editor", {
 					});
 				}
 			}
-		}
+		},
+		typeIcon: Util.typeIcon,
+		colorIcon: Util.colorIcon
 	},
 	computed: {}
 });
@@ -390,9 +376,5 @@ export default Vue.component("playlist-editor", {
 [draggable="true"] {
 	-khtml-user-drag: element;
 	-webkit-user-drag: element;
-}
-
-tr:not(:hover) .song-options {
-	//opacity: 0 !important;
 }
 </style>

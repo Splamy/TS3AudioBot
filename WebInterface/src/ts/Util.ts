@@ -178,6 +178,40 @@ export class Util {
 			ctx.fillRect(x * (width / size), y * (height / size), (width / size), (height / size));
 		}
 	}
+
+	public static typeIcon(type: string): string {
+		switch (type) {
+			case "media":
+				return "file-music";
+			case "youtube":
+				return "youtube";
+			case "soundcloud":
+				return "soundcloud";
+			case "twitch":
+				return "twitch";
+			case "bandcamp":
+				return "bandcamp";
+			default:
+				return "file-question";
+		}
+	}
+
+	public static colorIcon(type: string): string {
+		switch (type) {
+			case "media":
+				return "";
+			case "youtube":
+				return "color:#FF0000";
+			case "soundcloud":
+				return "color:#FE5000";
+			case "twitch":
+				return "color:#6441A4";
+			case "bandcamp":
+				return "color:#1DA0C3";
+			default:
+				return "";
+		}
+	}
 }
 
 export interface Dict<T = any> { [key: string]: T | undefined; }

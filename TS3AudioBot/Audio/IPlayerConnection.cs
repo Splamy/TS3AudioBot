@@ -16,7 +16,7 @@ namespace TS3AudioBot.Audio
 	public interface IPlayerConnection : IDisposable
 	{
 		event EventHandler OnSongEnd;
-		event EventHandler<SongInfo> OnSongUpdated;
+		event EventHandler<SongInfoChanged> OnSongUpdated;
 
 		float Volume { get; set; }
 		TimeSpan Position { get; set; }

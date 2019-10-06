@@ -1,10 +1,16 @@
 <template>
 	<section>
-		<b-field>
-			<b-input icon="magnify" v-model="filter" placeholder="Filter..." />
+		<b-field grouped>
+			<b-input icon="magnify" v-model="filter.text" placeholder="Filter..." expanded />
+
+			<b-field>
+				<b-radio-button v-model="filter.level" :native-value="0" type="is-success">Simple</b-radio-button>
+				<b-radio-button v-model="filter.level" :native-value="1" type="is-warning">Advanced</b-radio-button>
+				<b-radio-button v-model="filter.level" :native-value="2" type="is-danger">Expert</b-radio-button>
+			</b-field>
 		</b-field>
 
-		<settings-group :filter="filter" label="General">
+		<settings-group label="General">
 			<settings-field :filter="filter" path="run" label="Connect when TS3AudioBot starts">
 				<b-switch v-model="model.run" size="is-medium"></b-switch>
 			</settings-field>
@@ -28,7 +34,7 @@
 			</settings-field>
 		</settings-group>
 
-		<settings-group :filter="filter" label="Connection">
+		<settings-group label="Connection">
 			<settings-field :filter="filter" path="connect.name" label="Bot name" grouped>
 				<b-input v-model="model.connect.name" minlength="3" maxlength="30" expanded required></b-input>
 				<b-button class="control">Apply to bot now (TODO)</b-button>
@@ -45,7 +51,7 @@
 			>(Cool dropdown i guess)</settings-field>
 		</settings-group>
 
-		<settings-group :filter="filter" label="Audio">
+		<settings-group label="Audio">
 			<settings-field :filter="filter" label="Default volume" path="audio.volume.default" grouped>
 				<div class="control is-expanded">
 					<b-slider v-model="model.audio.volume.default" :min="0" :max="100" lazy></b-slider>
@@ -53,10 +59,15 @@
 				<b-button class="control" @click="model.audio.volume.default = 42">Apply current volume (TODO)</b-button>
 			</settings-field>
 
-			<settings-field :filter="filter" label="Reset volume" path="audio.volume">
+			<settings-field :filter="filter" label="New song volume" path="audio.volume" advanced>
 				<b-slider v-model="bind_volume_reset" :min="0" :max="100" lazy></b-slider>
 			</settings-field>
-			<settings-field :filter="filter" label="Bitrate" path="audio.bitrate" grouped>
+
+			<settings-field :filter="filter" label="Max user volume" path="audio.max_user_volume" advanced>
+				<b-slider v-model="model.audio.max_user_volume" :min="0" :max="100" lazy></b-slider>
+			</settings-field>
+
+			<settings-field :filter="filter" label="Bitrate" path="audio.bitrate" grouped advanced>
 				<b-field>
 					<b-radio-button v-model="model.audio.bitrate" :native-value="16" type="is-danger">Very Poor</b-radio-button>
 					<b-radio-button v-model="model.audio.bitrate" :native-value="24" type="is-danger">Poor</b-radio-button>
@@ -71,7 +82,7 @@
 			</settings-field>
 		</settings-group>
 
-		<settings-group :filter="filter" label="Commands">
+		<settings-group label="Commands">
 			<settings-field :filter="filter" label="Matcher" path="commands.matcher" expert>
 				<b-select v-model="model.commands.matcher" placeholder="Select your matcher">
 					<option value="ic3">IC3</option>
@@ -84,6 +95,7 @@
 				:filter="filter"
 				label="How the bot treats long messages"
 				path="commands.long_message"
+				advanced
 			>
 				<b-select
 					v-model="model.commands.long_message"
@@ -97,12 +109,24 @@
 				:filter="filter"
 				label="In how many messages a message can be split max"
 				path="commands.long_message_split_limit"
+				advanced
 			>
 				<b-numberinput
 					v-model="model.commands.long_message_split_limit"
 					controls-position="compact"
 					:disabled="model.commands.long_message == 0"
 				/>
+			</settings-field>
+			<settings-field
+				:filter="filter"
+				label="Max command complexity"
+				path="commands.command_complexity"
+				expert
+			>
+				<b-numberinput v-model="model.commands.command_complexity" controls-position="compact" />
+			</settings-field>
+			<settings-field :filter="filter" label="Colored chat messages" path="commands.color" advanced>
+				<b-switch v-model="model.commands.color" size="is-medium"></b-switch>
 			</settings-field>
 		</settings-group>
 	</section>
@@ -117,6 +141,20 @@ import { Util } from "../Util";
 import Lang from "../Model/Languge";
 import { debounce } from "lodash-es";
 
+// missing:
+// - channel password
+// - server password
+// - client version
+// - identity
+
+// - send_mode
+
+// - events
+
+// - reconnect
+
+// - aliases
+
 export default Vue.extend({
 	props: {
 		online: { type: Boolean, required: true }
@@ -125,7 +163,10 @@ export default Vue.extend({
 		return {
 			Lang,
 
-			filter: "",
+			filter: {
+				text: "",
+				level: 0 // 0 simple, 1 advanced, 2 expert
+			},
 			model: {
 				audio: {
 					volume: {},

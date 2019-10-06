@@ -11,7 +11,6 @@ namespace TS3AudioBot.Config
 {
 	using CommandSystem.Text;
 	using Nett;
-	using Playlists;
 	using System;
 	using System.Collections.Generic;
 	using TS3AudioBot.Helper;

@@ -1297,7 +1297,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Found the following songs. Use &quot;{0}&quot; to play..
+        ///   Looks up a localized string similar to Found the following songs. Use &quot;{0}&quot; to play. Use &quot;{1}&quot; to queue..
         /// </summary>
         internal static string cmd_search_header {
             get {

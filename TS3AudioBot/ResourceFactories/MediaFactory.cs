@@ -202,14 +202,14 @@ namespace TS3AudioBot.ResourceFactories
 				try
 				{
 					var di = new DirectoryInfo(url);
-					var plist = new Playlist(PlaylistManager.CleanseName(di.Name));
+					var plist = new Playlist().SetTitle(di.Name);
 					var resources = from file in di.EnumerateFiles()
 									select ValidateFromString(file.FullName) into result
 									where result.Ok
 									select result.Value into val
 									select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, FactoryFor) into res
 									select new PlaylistItem(res);
-					plist.Items.AddRange(resources);
+					plist.AddRange(resources);
 
 					return plist;
 				}
@@ -338,8 +338,7 @@ namespace TS3AudioBot.ResourceFactories
 				var index = url.LastIndexOfAny(new[] { '\\', '/' });
 				name = index >= 0 ? url.Substring(index) : url;
 			}
-			name = PlaylistManager.CleanseName(name);
-			return new Playlist(name, items);
+			return new Playlist(items).SetTitle(name);
 		}
 
 		private static R<Stream, LocalStr> GetStreamFromUriUnsafe(Uri uri)

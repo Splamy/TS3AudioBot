@@ -14,7 +14,6 @@ namespace TS3Client.Full
 	using System;
 	using System.Buffers.Binary;
 	using System.Collections.Generic;
-	using System.Text;
 
 	public class Licenses
 	{

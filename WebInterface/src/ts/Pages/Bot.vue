@@ -44,18 +44,40 @@
 					</div>
 				</div>
 
-				<div class="notification">
-					<div class="formheader">Play</div>
-					<div class="formcontent">
-						<div class="formdatablock">
-							<div>Currently Playing:</div>
-							<div>(song here)</div>
-						</div>
-						<div class="formdatablock">
-							<b-input type="text" class="formdatablock_fill" placeholder="New song link" />
-							<b-button type="is-success" icon-right="play" @click="startNewSong" />
+				<div class="">
+					<b-field style="margin-bottom: 1em;" groupd>
+						<b-input v-model="loadSongUrl" type="text" placeholder="New song link" expanded />
+						<b-button type="is-primary" icon-right="plus" @click="addNewSong" />
+						<b-button type="is-primary" icon-right="play" @click="playNewSong" />
+					</b-field>
+
+					<div v-if="currentSong != null" class="media" style="margin-bottom: 1em;">
+						<figure class="media-left">
+							<p class="image is-64x64">
+								<img src="https://bulma.io/images/placeholders/128x128.png" />
+							</p>
+						</figure>
+						<div class="media-content">
+							<div class="field">
+								<a :href="currentSong.Link" target="_blank">
+									<b-icon :icon="typeIcon(currentSong.AudioType)" :style="colorIcon(currentSong.AudioType)"></b-icon>
+									<strong>{{currentSong.Title}}</strong>
+								</a>
+							</div>
 						</div>
 					</div>
+
+					<div class="title is-5" style="margin-bottom: 0.5em;">Up Next:</div>
+
+					<b-table :data="nowPlaying.Items" style="margin-bottom: 1em;" striped hoverable>
+						<template slot-scope="props">
+							<b-table-column label=" " class="is-flex uni-hover">
+								<b-icon :icon="typeIcon(props.row.AudioType)" :style="colorIcon(props.row.AudioType)"></b-icon>
+								<span>{{props.row.Title}}</span>
+							</b-table-column>
+						</template>
+						<template slot="empty">Nothing...</template>
+					</b-table>
 				</div>
 			</div>
 		</div>
@@ -68,8 +90,8 @@
 import Vue from "vue";
 import PlayControls from "../Components/PlayControls.vue";
 import BotNavbarItem from "../Components/BotNavbarItem.vue";
-import { CmdBotInfo } from "../ApiObjects";
-import { bot, cmd } from "../Api";
+import { CmdBotInfo, CmdPlaylist, CmdSong, CmdQueueInfo } from "../ApiObjects";
+import { bot, cmd, jmerge } from "../Api";
 import { Util } from "../Util";
 import { BotStatus } from "../Model/BotStatus";
 
@@ -83,9 +105,14 @@ export default Vue.extend({
 	data() {
 		return {
 			BotStatus,
-			"test prop": "",
 
-			botInfo: {} as CmdBotInfo
+			loadSongUrl: "",
+
+			botInfo: {} as CmdBotInfo,
+			nowPlaying: {
+				Items: [] as any[]
+			} as CmdQueueInfo,
+			currentSong: {} as CmdSong | null
 		};
 	},
 	computed: {
@@ -94,38 +121,52 @@ export default Vue.extend({
 		},
 		botName(): string {
 			return this.$route.params.name;
-		},
-		page(): string {
-			return this.$route.path.substring(
-				this.$route.path.lastIndexOf("/") + 1
-			);
-		},
-		pageBase(): string {
-			return this.$route.path.substring(
-				0,
-				this.$route.path.lastIndexOf("/")
-			);
 		}
 	},
 	methods: {
 		async refresh() {
 			if (this.online) {
 				const res = await bot(
-					cmd<CmdBotInfo>("bot", "info"),
+					jmerge(
+						cmd<CmdBotInfo>("bot", "info"),
+						cmd<CmdQueueInfo>("info", "@1", "5"),
+						cmd<CmdSong>("song")
+					),
 					this.botId
 				).get();
 
 				if (!Util.check(this, res, "Failed to get bot information"))
 					return;
 
-				this.botInfo = res;
+				this.botInfo = res[0];
+				this.nowPlaying = res[1];
+				this.currentSong = res[2];
 			} else {
-				this.botInfo.Id = "N/A" as any as number;
+				this.botInfo.Id = ("N/A" as any) as number;
 				this.botInfo.Name = this.botName;
 				this.botInfo.Status = BotStatus.Offline;
 			}
 		},
-		startNewSong() {}
+		playNewSong() {
+			return this.newSong("play");
+		},
+		addNewSong() {
+			return this.newSong("add");
+		},
+		async newSong(action: string) {
+			const song = this.loadSongUrl;
+			this.loadSongUrl = "";
+			const res = await bot(
+				cmd<CmdBotInfo>(action, song),
+				this.botId
+			).get();
+
+			if (!Util.check(this, res, "Failed to start song")) return;
+
+			await this.refresh();
+		},
+		typeIcon: Util.typeIcon,
+		colorIcon: Util.colorIcon
 	},
 	components: {
 		PlayControls,

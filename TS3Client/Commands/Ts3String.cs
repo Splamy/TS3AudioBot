@@ -12,6 +12,11 @@ namespace TS3Client.Commands
 	using System;
 	using System.Linq;
 	using System.Text;
+#if NETCOREAPP3_0
+	using System.Runtime.Intrinsics;
+	using System.Runtime.Intrinsics.X86;
+#endif
+
 
 	public static class Ts3String
 	{
@@ -101,40 +106,33 @@ namespace TS3Client.Commands
 
 		public static int TokenLength(string str) => Encoding.UTF8.GetByteCount(str) + str.Count(IsDoubleChar);
 
-		public static bool IsDoubleChar(char c)
-		{
-			return c == '\\' ||
-				c == '/' ||
-				c == ' ' ||
-				c == '|' ||
-				c == '\f' ||
-				c == '\n' ||
-				c == '\r' ||
-				c == '\t' ||
-				c == '\v';
-		}
+		public static bool IsDoubleChar(char c) => IsDoubleChar(unchecked((byte)c));
+
+#if NETCOREAPP3_0
+		private static readonly Vector128<byte> doubleVec = Vector128.Create((byte)'\\', (byte)'/', (byte)' ', (byte)'|', (byte)'\f', (byte)'\n', (byte)'\r', (byte)'\t', (byte)'\v', 0, 0, 0, 0, 0, 0, 0);
+#endif
 
 		public static bool IsDoubleChar(byte c)
 		{
-			return c == '\\' ||
+#if NETCOREAPP3_0
+			if (Sse2.IsSupported)
+			{
+				var inc = Vector128.Create(c);
+				var res = Sse2.CompareEqual(doubleVec, inc);
+				var mask = Sse2.MoveMask(res);
+				return mask != 0;
+			}
+#endif
+
+			return c == ' ' ||
 				c == '/' ||
-				c == ' ' ||
 				c == '|' ||
-				c == '\f' ||
+				c == '\\' ||
 				c == '\n' ||
 				c == '\r' ||
+				c == '\f' ||
 				c == '\t' ||
 				c == '\v';
-
-			// SSE2 for dotnet core 3.0; might be hot :P
-
-			//using System.Runtime.Intrinsics.X86;
-			//Console.WriteLine(Sse2.IsSupported);
-			//var cmpVec = Sse2.SetVector128((byte)'\\', (byte)'/', (byte)' ', (byte)'|', (byte)'\f', (byte)'\n', (byte)'\r', (byte)'\t', (byte)'\v', 0, 0, 0, 0, 0, 0, 0);
-			//var inc = Sse2.SetAllVector128((byte)checkChar);
-			//var res = Sse2.CompareEqual(cmpVec, inc);
-			//var mask = Sse2.MoveMask(res);
-			//bool match = mask != 0;
 		}
 	}
 }

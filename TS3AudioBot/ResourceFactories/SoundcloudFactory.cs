@@ -17,6 +17,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System;
 	using System.Globalization;
 	using System.IO;
+	using System.Linq;
 	using System.Text.RegularExpressions;
 
 	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
@@ -133,16 +134,17 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_media_internal_missing + " (playlist)");
 			}
 
-			var plist = new Playlist(PlaylistManager.CleanseName(playlist.title));
-
-			foreach (var track in playlist.tracks)
-			{
-				var resource = CheckAndGet(track);
-				if (resource is null)
-					continue;
-
-				plist.Items.Add(new PlaylistItem(resource));
-			}
+			var plist = new Playlist().SetTitle(playlist.title);
+			plist.AddRange(
+				playlist.tracks.Select(track =>
+				{
+					var resource = CheckAndGet(track);
+					if (resource is null)
+						return null;
+					return new PlaylistItem(resource);
+				})
+				.Where(track => track != null)
+			);
 
 			return plist;
 		}

@@ -104,7 +104,16 @@ namespace TS3AudioBot.ResourceFactories
 				return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resource.AudioType));
 
 			var sw = Stopwatch.StartNew();
-			var result = factory.GetResourceById(resource);
+			R<PlayResource, LocalStr> result;
+			try
+			{
+				result = factory.GetResourceById(resource);
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "Resource factory '{0}' threw while trying to resolve '{@resource}'", factory.FactoryFor, resource);
+				return CouldNotLoad(strings.error_playmgr_internal_error);
+			}
 			if (!result.Ok)
 				return CouldNotLoad(result.Error.Str);
 			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
@@ -359,8 +368,14 @@ namespace TS3AudioBot.ResourceFactories
 
 				return new JsonArray<AudioResource>(list, searchResults =>
 				{
+					if (searchResults.Count == 0)
+						return strings.cmd_search_no_result;
+
 					var tmb = new TextModBuilder(callerInfo.IsColor);
-					tmb.AppendFormat(strings.cmd_search_header.Mod().Bold(), ("!select " + strings.info_number).Mod().Italic()).Append("\n");
+					tmb.AppendFormat(
+						strings.cmd_search_header.Mod().Bold(),
+						("!select " + strings.info_number).Mod().Italic(),
+						("!queue " + strings.info_number).Mod().Italic()).Append("\n");
 					for (int i = 0; i < searchResults.Count; i++)
 					{
 						tmb.AppendFormat("{0}: {1}\n", i.ToString().Mod().Bold(), searchResults[i].ResourceTitle);

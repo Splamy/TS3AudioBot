@@ -25,22 +25,6 @@
 				<b-icon icon="radioactive"></b-icon>
 				<span>Ui Tests</span>
 			</b-navbar-item>
-
-			<!-- Bot specific -->
-			<b-navbar-dropdown v-if="botIdParam != null" hoverable label="CurrentBot">
-				<b-navbar-item tag="router-link" :to="{ path: `/bot/${botIdParam}/server` }" href="#">
-					<b-icon icon="file-tree"></b-icon>
-					<span>Server</span>
-				</b-navbar-item>
-				<b-navbar-item tag="router-link" :to="{ path: `/bot/${botIdParam}/settings` }" href="#">
-					<b-icon icon="settings"></b-icon>
-					<span>Settings</span>
-				</b-navbar-item>
-				<b-navbar-item tag="router-link" :to="{ path: `/bot/${botIdParam}/playlists` }" href="#">
-					<b-icon icon="playlist-music"></b-icon>
-					<span>Playlists</span>
-				</b-navbar-item>
-			</b-navbar-dropdown>
 		</template>
 
 		<template slot="end">
@@ -100,25 +84,7 @@
 <script lang="ts">
 import Vue from "vue";
 
-export default Vue.extend({
-	data() {
-		return {
-			lastBotId: null as number | null
-		};
-	},
-	computed: {
-		botIdParam(): string | undefined {
-			return this.$route.params.id;
-		}
-	},
-	watch: {
-		botIdParam(val: string | undefined) {
-			if (val != null) {
-				this.lastBotId = Number(val);
-			}
-		}
-	}
-});
+export default Vue.extend({});
 </script>
 
 <style lang="less">

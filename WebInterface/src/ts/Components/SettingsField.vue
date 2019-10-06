@@ -1,15 +1,9 @@
 <template>
-	<div v-show="is_visible" class="field settings-field is-horizontal is-grouped">
-		<div class="field-label">
-			<label class="label">
-				<span v-if="expert">
-					<b-tooltip label="Expert setting" type="is-danger">
-						<b-icon icon="alert-circle" type="is-danger"></b-icon>
-					</b-tooltip>
-				</span>
-				<span>{{label}}</span>
-			</label>
-		</div>
+	<div v-show="is_visible" class="field settings-field">
+		<label class="label">{{label}}</label>
+		<!-- <div class="field-label is-normal">
+			<label class="label">{{label}}</label>
+		</div> -->
 		<div class="field-body">
 			<b-field :grouped="grouped">
 				<slot />
@@ -24,10 +18,14 @@ import SettingsGroup from "./SettingsGroup.vue";
 
 export default Vue.component("settings-field", {
 	props: {
-		filter: { type: String, required: false },
+		filter: {
+			type: Object as () => { text: string; level: number },
+			required: false
+		},
 		path: { type: String, required: true },
 		label: { type: String, required: true },
 		expert: { type: Boolean, required: false, default: false },
+		advanced: { type: Boolean, required: false, default: false },
 		grouped: { type: Boolean, required: false, default: false }
 	},
 	created() {
@@ -36,7 +34,9 @@ export default Vue.component("settings-field", {
 	},
 	computed: {
 		is_visible(): boolean {
-			const low_filter = this.filter.toLowerCase();
+			if (this.advanced && this.filter.level < 1) return false;
+			if (this.expert && this.filter.level < 2) return false;
+			const low_filter = this.filter.text.toLowerCase();
 			return (
 				this.path.toLowerCase().indexOf(low_filter) >= 0 ||
 				this.label.toLowerCase().indexOf(low_filter) >= 0

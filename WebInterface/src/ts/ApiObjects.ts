@@ -1,6 +1,8 @@
 import { BotStatus } from "./Model/BotStatus";
 import { TargetSendMode } from "./Model/TargetSendMode";
 
+// tslint:disable: interface-name
+
 export interface CmdBotInfo {
 	Id: number | null;
 	Name: string | null;
@@ -9,11 +11,11 @@ export interface CmdBotInfo {
 }
 
 export interface CmdSong {
-	title: string;
-	source: string;
-	length: number;
-	position: number;
-	paused: boolean;
+	Title: string;
+	Source: string;
+	Length: number;
+	Position: number;
+	Paused: boolean;
 }
 
 export interface ApiError {
@@ -54,19 +56,24 @@ export interface CmdServerTreeChannel {
 }
 
 export interface CmdPlaylistInfo {
-	FileName: string;
-	PlaylistName: string;
+	Id: string;
+	Title: string;
 	SongCount: number;
 	DisplayOffset: number;
-	DisplayCount: number;
-	// TODO
 }
 
 export interface CmdPlaylist extends CmdPlaylistInfo {
-	Items: {
-		Link: string;
+	Items: PlaylistItemGetData[];
+}
 
-	}[];
+export interface PlaylistItemGetData {
+	Link: string;
+	Title: string;
+	AudioType: string
+}
+
+export interface CmdQueueInfo extends CmdPlaylist {
+	PlaybackIndex: number;
 }
 
 export interface CmdWhisperList {

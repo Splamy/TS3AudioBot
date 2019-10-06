@@ -6,7 +6,7 @@
 			</header>
 			<section
 				class="modal-card-body"
-			>Do you really want to delete the playlist '{{list.PlaylistName}}'?</section>
+			>Do you really want to delete the playlist '{{list.Title}}' ({{list.Id}})?</section>
 			<footer class="modal-card-foot">
 				<button class="button" type="button" @click="$parent.close()">Cancel</button>
 				<button class="button is-danger" type="submit">Delete</button>

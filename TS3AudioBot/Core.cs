@@ -12,6 +12,7 @@ namespace TS3AudioBot
 	using Config;
 	using Dependency;
 	using Helper;
+	using Helper.Environment;
 	using NLog;
 	using Plugins;
 	using ResourceFactories;
@@ -20,9 +21,7 @@ namespace TS3AudioBot
 	using System;
 	using System.Threading;
 	using TS3AudioBot.CommandSystem;
-	using TS3AudioBot.Playlists;
 	using Web;
-	using Helper.Environment;
 
 	public sealed class Core : IDisposable
 	{

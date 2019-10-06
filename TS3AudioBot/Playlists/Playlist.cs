@@ -12,49 +12,92 @@ namespace TS3AudioBot.Playlists
 	using Audio;
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
+	using TS3AudioBot.Localization;
 
 	public class Playlist : IReadOnlyPlaylist
 	{
-		public string Name { get; set; }
-		public string Title { get; private set; }
-		public List<PlaylistItem> Items { get; }
-		IReadOnlyList<PlaylistItem> IReadOnlyPlaylist.Items => Items;
+		private const int MaxSongs = 1000;
+		private string title;
+		public string Title { get => title; set => SetTitle(value); }
+		private readonly List<PlaylistItem> items;
+		public IReadOnlyList<PlaylistItem> Items => items;
 
-		public Playlist(string name) :
-			this(name, new List<PlaylistItem>())
+		public PlaylistItem this[int i] => this.Get(i);
+
+		public Playlist() :
+			this(new List<PlaylistItem>())
 		{ }
 
-		public Playlist(string name, List<PlaylistItem> items)
+		public Playlist(List<PlaylistItem> items)
 		{
-			Name = name ?? throw new ArgumentNullException(nameof(name));
-			Items = items ?? throw new ArgumentNullException(nameof(items));
-			Title = string.Empty;
+			this.items = items ?? throw new ArgumentNullException(nameof(items));
+			title = string.Empty;
 		}
 
 		public Playlist SetTitle(string newTitle)
 		{
 			newTitle = newTitle.Replace("\r", "").Replace("\n", "");
-			Title = newTitle.Substring(0, Math.Min(newTitle.Length, 256));
+			title = newTitle.Substring(0, Math.Min(newTitle.Length, 256));
 			return this;
 		}
+
+		private int GetMaxAdd(int amount)
+		{
+			int remainingSlots = Math.Max(MaxSongs - items.Count, 0);
+			return Math.Min(amount, remainingSlots);
+		}
+
+		public E<LocalStr> Add(PlaylistItem song)
+		{
+			if (GetMaxAdd(1) > 0)
+			{
+				items.Add(song);
+				return R.Ok;
+			}
+			return ErrorFull;
+		}
+
+		public E<LocalStr> AddRange(IEnumerable<PlaylistItem> songs)
+		{
+			var maxAddCount = GetMaxAdd(MaxSongs);
+			if (maxAddCount > 0)
+			{
+				items.AddRange(songs.Take(maxAddCount));
+				return R.Ok;
+			}
+			return ErrorFull;
+		}
+
+		public void RemoveAt(int index) => items.RemoveAt(index);
+
+		public E<LocalStr> Insert(int index, PlaylistItem song)
+		{
+			if (GetMaxAdd(1) > 0)
+			{
+				items.Insert(index, song);
+				return R.Ok;
+			}
+			return ErrorFull;
+		}
+
+		public void Clear() => items.Clear();
+
+		private static readonly E<LocalStr> ErrorFull = new LocalStr("Playlist is full");
 	}
 
 	public interface IReadOnlyPlaylist
 	{
-		string Name { get; set; }
+		string Title { get; }
 		IReadOnlyList<PlaylistItem> Items { get; }
 	}
 
 	public static class PlaylistExtensions
 	{
-		public static PlaylistItem GetResource(this IReadOnlyPlaylist self, int index)
+		public static PlaylistItem Get(this IReadOnlyPlaylist self, int index)
 		{
-			PlaylistItem item = null;
-			if (index >= 0 && index < self.Items.Count)
-			{
-				item = self.Items[index];
-				item.Meta.From = PlaySource.FromPlaylist;
-			}
+			var item = self.Items[index];
+			item.Meta.From = PlaySource.FromPlaylist;
 			return item;
 		}
 	}

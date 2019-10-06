@@ -66,11 +66,7 @@ namespace TS3Client.Full
 		private void BufferPop()
 		{
 			ringBufferSet[currentStart] = false;
-			// clear data to allow them to be collected by gc
-			// when in debug it might be nice to see what was there
-#if !DEBUG
 			ringBuffer[currentStart] = default;
-#endif
 			currentStart = (currentStart + 1) % ringBuffer.Length;
 			Count--;
 		}

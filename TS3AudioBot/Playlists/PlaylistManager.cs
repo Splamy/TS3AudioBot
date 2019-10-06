@@ -14,26 +14,24 @@ namespace TS3AudioBot.Playlists
 	using Localization;
 	using Shuffle;
 	using System;
-	using System.Collections.Concurrent;
 	using System.Collections.Generic;
-	using System.Text.RegularExpressions;
+	using TS3AudioBot.Web.Model;
 
 	public sealed class PlaylistManager
 	{
-		private static readonly Regex CleansePlaylistName = new Regex(@"[^\w-_]", Util.DefaultRegexConfig);
-
 		private readonly ConfPlaylists config;
 		private readonly PlaylistIO playlistPool;
-		private readonly ConcurrentQueue<PlaylistItem> playQueue;
-		private readonly Playlist mixList = new Playlist(".mix");
-		public IReadOnlyPlaylist CurrentList { get; private set; }
+		private const string mixName = ".mix";
+		private readonly Playlist mixList = new Playlist() { Title = "Now Playing" };
+		private readonly object listLock = new object();
+		public IReadOnlyPlaylist CurrentList => mixList;
 
 		private IShuffleAlgorithm shuffle;
 
 		private readonly IShuffleAlgorithm NormalOrder = new NormalOrder();
 		private readonly IShuffleAlgorithm RandomOrder = new LinearFeedbackShiftRegister();
 
-		public int Index => shuffle.Index;
+		public int Index { get => shuffle.Index; set => shuffle.Index = value; }
 
 		public PlaylistItem Current => MoveIndex(null, true);
 
@@ -63,187 +61,153 @@ namespace TS3AudioBot.Playlists
 			this.config = config;
 			this.playlistPool = playlistPool;
 			shuffle = NormalOrder;
-			Util.Init(out playQueue);
 		}
 
 		public PlaylistItem Next(bool manually = true) => MoveIndex(forward: true, manually);
 
 		public PlaylistItem Previous(bool manually = true) => MoveIndex(forward: false, manually);
 
-		private PlaylistItem MoveIndex(bool? forward, bool manually)
+		internal PlaylistItem MoveIndex(bool? forward, bool manually)
 		{
-			if (forward == true && playQueue.TryDequeue(out var pli))
-				return pli;
+			lock (listLock)
+			{
+				if (mixList.Items.Count == 0)
+					return null;
 
-			var (list, index) = NormalizeValues(CurrentList, shuffle.Index);
-			if (list == null)
-				return null;
+				if (shuffle.Length != mixList.Items.Count)
+					shuffle.Length = mixList.Items.Count;
+				if (shuffle.Index < 0 || shuffle.Index >= mixList.Items.Count)
+					shuffle.Index = 0;
 
-			// When next/prev was requested manually (via command) we ignore the loop one
-			// mode and instead move the index.
-			if ((Loop == LoopMode.One && !manually) || !forward.HasValue)
-				return list.GetResource(index);
+				var loop = Loop;
 
-			bool listEnded;
-			if (forward == true)
-				listEnded = shuffle.Next();
-			else if (forward == false)
-				listEnded = shuffle.Prev();
-			else
-				listEnded = false;
+				// When next/prev was requested manually (via command) we ignore the loop one
+				// mode and instead move the index.
+				if ((Loop == LoopMode.One && !manually) || !forward.HasValue)
+					return mixList[shuffle.Index];
 
-			// Get a new seed when one play-through ended.
-			if (listEnded && Random)
-				SetRandomSeed();
+				bool listEnded;
+				if (forward == true)
+					listEnded = shuffle.Next();
+				else if (forward == false)
+					listEnded = shuffle.Prev();
+				else
+					listEnded = false;
 
-			// If a next/prev request goes over the bounds of the list while loop mode is off
-			// but was requested manually we act as if the list was looped.
-			// This will give a more intuitive behaviour when the list is shuffeled (and also if not)
-			// as the end might not be clear or visible.
-			if (Loop == LoopMode.Off && listEnded && !manually)
-				return null;
+				// Get a new seed when one play-through ended.
+				if (listEnded && Random)
+					SetRandomSeed();
 
-			(list, index) = NormalizeValues(list, shuffle.Index);
-			return list.GetResource(index);
+				// If a next/prev request goes over the bounds of the list while loop mode is off
+				// but was requested manually we act as if the list was looped.
+				// This will give a more intuitive behaviour when the list is shuffeled (and also if not)
+				// as the end might not be clear or visible.
+				if (Loop == LoopMode.Off && listEnded && !manually)
+					return null;
+
+				return mixList[shuffle.Index];
+			}
 		}
 
-		public void StartPlaylist(IReadOnlyPlaylist plist, int index = 0)
-		{
-			if (plist is null)
-				throw new ArgumentNullException(nameof(plist));
+		public void Queue(PlaylistItem item)
+			=> ModifyPlaylist(mixName, mix => mix.Add(item).UnwrapThrow());
 
-			(CurrentList, _) = NormalizeValues(plist, index);
-			SetRandomSeed();
-		}
+		public void Queue(IEnumerable<PlaylistItem> items)
+			=> ModifyPlaylist(mixName, mix => mix.AddRange(items).UnwrapThrow());
 
-		public void QueueItem(PlaylistItem item) => playQueue.Enqueue(item);
-
-		public void ClearQueue()
-		{
-#if NETCOREAPP2_2 || NETCOREAPP3_0
-			playQueue.Clear();
-#else
-			while (playQueue.TryDequeue(out _)) ;
-#endif
-		}
-
-		public PlaylistItem[] GetQueue() => playQueue.ToArray();
+		public void Clear()
+			=> ModifyPlaylist(mixName, mix => mix.Clear());
 
 		private void SetRandomSeed()
 		{
 			shuffle.Seed = Util.Random.Next();
 		}
 
-		private (IReadOnlyPlaylist list, int index) NormalizeValues(IReadOnlyPlaylist list, int index)
+		public R<IReadOnlyPlaylist, LocalStr> LoadPlaylist(string listId)
 		{
-			if (list == null || list.Items.Count == 0)
-				return (null, 0);
+			R<Playlist, LocalStr> res;
+			if (listId.StartsWith(".", StringComparison.Ordinal))
+			{
+				res = GetSpecialPlaylist(listId);
+			}
+			else
+			{
+				var checkName = Util.IsSafeFileName(listId);
+				if (!checkName.Ok)
+					return checkName.Error;
+				res = playlistPool.Read(listId);
+			}
 
-			if (shuffle.Length != list.Items.Count)
-				shuffle.Length = list.Items.Count;
-
-			if (index < 0 || index >= list.Items.Count)
-				index = Util.MathMod(index, list.Items.Count);
-
-			if (shuffle.Index != index)
-				shuffle.Index = index;
-
-			return (list, index);
-		}
-
-		public R<IReadOnlyPlaylist, LocalStr> LoadPlaylist(string name)
-		{
-			if (name is null)
-				throw new ArgumentNullException(nameof(name));
-
-			if (name.StartsWith(".", StringComparison.Ordinal))
-				return GetSpecialPlaylist(name);
-
-			var res = playlistPool.Read(name);
 			if (!res.Ok)
 				return res.Error;
 			return res.Value;
 		}
 
-		public E<LocalStr> CreatePlaylist(string name, string title = "")
+		public E<LocalStr> CreatePlaylist(string listId, string title = null)
 		{
-			var checkName = Util.IsSafeFileName(name);
+			var checkName = Util.IsSafeFileName(listId);
 			if (!checkName.Ok)
 				return checkName;
-			return playlistPool.Write(name, new Playlist(name).SetTitle(title));
+			if (playlistPool.Exists(listId))
+				return new LocalStr("Already exists");
+			return playlistPool.Write(listId, new Playlist().SetTitle(title ?? listId));
 		}
 
-		public bool ExistsPlaylist(string name) => playlistPool.Exists(name);
-
-		public E<LocalStr> ModifyPlaylist(string name, Action<Playlist> action)
+		public bool ExistsPlaylist(string listId)
 		{
-			var res = playlistPool.Read(name);
-			if (!res.Ok)
-				return res.Error;
-			var plist = res.Value;
-			action(plist);
-			return playlistPool.Write(name, plist);
-		}
-
-		public E<LocalStr> RenamePlaylist(string name, string newName)
-		{
-			var checkName = Util.IsSafeFileName(name);
+			if (GetSpecialPlaylist(listId))
+				return true;
+			var checkName = Util.IsSafeFileName(listId);
 			if (!checkName.Ok)
-				return checkName;
-			var checkNewName = Util.IsSafeFileName(newName);
-			if (!checkNewName.Ok)
-				return checkNewName;
-
-			return playlistPool.Move(name, newName);
+				return false;
+			return playlistPool.Exists(listId);
 		}
 
-		public E<LocalStr> SavePlaylist(IReadOnlyPlaylist plist) // TODO remove in favor of action based edit
+		public E<LocalStr> ModifyPlaylist(string listId, Action<Playlist> action)
 		{
-			if (plist is null)
-				throw new ArgumentNullException(nameof(plist));
-
-			var nameCheck = Util.IsSafeFileName(plist.Name);
-			if (!nameCheck)
-				return nameCheck.Error;
-
-			var result = playlistPool.Write(plist.Name, plist);
-			if (!result)
-				return result;
-
-			return R.Ok;
+			var res = GetSpecialPlaylist(listId);
+			if (res)
+			{
+				var plist = res.Value;
+				lock (listLock)
+				{
+					action(plist);
+				}
+				return R.Ok;
+			}
+			else
+			{
+				var checkName = Util.IsSafeFileName(listId);
+				if (!checkName.Ok)
+					return checkName.Error;
+				res = playlistPool.Read(listId);
+				if (!res.Ok)
+					return res.Error;
+				var plist = res.Value;
+				lock (listLock)
+				{
+					action(plist);
+				}
+				return playlistPool.Write(listId, plist);
+			}
 		}
 
-		public E<LocalStr> DeletePlaylist(string name)
+		public E<LocalStr> DeletePlaylist(string listId)
 		{
-			if (name is null)
-				throw new ArgumentNullException(nameof(name));
+			var checkName = Util.IsSafeFileName(listId);
+			if (!checkName.Ok)
+				return checkName.Error;
 
-			return playlistPool.Delete(name);
-		}
-
-		public static string CleanseName(string name)
-		{
-			if (string.IsNullOrEmpty(name))
-				return "playlist";
-			name = CleansePlaylistName.Replace(name, "");
-			if (name.Length > 64)
-				name = name.Substring(0, 64);
-			if (!Util.IsSafeFileName(name))
-				name = "playlist";
-			return name;
+			return playlistPool.Delete(listId);
 		}
 
 		public R<PlaylistInfo[], LocalStr> GetAvailablePlaylists(string pattern = null) => playlistPool.ListPlaylists(pattern);
 
-		private R<IReadOnlyPlaylist, LocalStr> GetSpecialPlaylist(string name)
+		private R<Playlist, LocalStr> GetSpecialPlaylist(string listId)
 		{
-			if (!name.StartsWith(".", StringComparison.Ordinal))
-				throw new ArgumentException("Not a reserved list type.", nameof(name));
-
-			switch (name)
+			switch (listId)
 			{
-			case ".queue": return new Playlist(".queue", new List<PlaylistItem>(playQueue));
-			case ".mix": return mixList;
+			case mixName: return mixList;
 			default: return new LocalStr(strings.error_playlist_special_not_found);
 			}
 		}

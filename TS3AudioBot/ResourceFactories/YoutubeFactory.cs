@@ -217,12 +217,13 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static int SelectStream(List<VideoData> list)
 		{
-#if DEBUG
-			var dbg = new System.Text.StringBuilder("YT avail codecs: ");
-			foreach (var yd in list)
-				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
-			Log.Trace("{0}", dbg);
-#endif
+			if (Log.IsTraceEnabled)
+			{
+				var dbg = new System.Text.StringBuilder("YT avail codecs: ");
+				foreach (var yd in list)
+					dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
+				Log.Trace("{0}", dbg);
+			}
 
 			int autoselectIndex = list.FindIndex(t => t.Codec == VideoCodec.M4A);
 			if (autoselectIndex == -1)
@@ -278,7 +279,7 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_media_failed_to_parse_id);
 
 			string id = matchYtId.Groups[2].Value;
-			var plist = new Playlist(id);
+			var plist = new Playlist().SetTitle(id); // TODO TITLE !!!!!!!!!
 
 			string nextToken = null;
 			do
@@ -296,13 +297,17 @@ namespace TS3AudioBot.ResourceFactories
 					return new LocalStr(strings.error_net_unknown);
 				var parsed = JsonConvert.DeserializeObject<JsonVideoListResponse>(response);
 				var videoItems = parsed.items;
-				for (int i = 0; i < videoItems.Length; i++)
-				{
-					plist.Items.Add(new PlaylistItem(new AudioResource(
-						videoItems[i].contentDetails.videoId,
-						videoItems[i].snippet.title,
-						FactoryFor)));
-				}
+				if (!plist.AddRange(
+					videoItems.Select(item =>
+						new PlaylistItem(
+							new AudioResource(
+								item.contentDetails.videoId,
+								item.snippet.title,
+								FactoryFor
+							)
+						)
+					)
+				)) break;
 
 				nextToken = parsed.nextPageToken;
 			} while (nextToken != null);
@@ -353,6 +358,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				if (string.IsNullOrEmpty(row)) continue;
 				int index = row.IndexOf('=');
+				if (index < 0) continue;
 				var param = Uri.UnescapeDataString(row.Substring(0, index).Replace('+', ' '));
 				if (!rc.TryGetValue(param, out var list))
 				{

@@ -9,7 +9,9 @@
 
 namespace TS3AudioBot.Audio
 {
-	public class SongInfo
+	using System;
+
+	public class SongInfoChanged : EventArgs
 	{
 		public string Title { get; set; }
 	}

@@ -22,7 +22,6 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex BandcampUrlRegex = new Regex(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);
 		private static readonly Regex TrackLinkRegex = new Regex(@"""mp3-128""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
 		private static readonly Regex TrackNameRegex = new Regex(@"""title""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
-		private static readonly Regex TrackRestoreRegex = new Regex(@"""linkback""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
 		private static readonly Regex TrackArtRegex = new Regex(@"""art_id""\s*:\s*(\d+)\s*,", Util.DefaultRegexConfig);
 		private static readonly Regex TrackMainJsonRegex = new Regex(@"trackinfo\s*:(.*),(\r|\n)", Util.DefaultRegexConfig);
 
