@@ -374,8 +374,8 @@ namespace TS3AudioBot.ResourceFactories
 					var tmb = new TextModBuilder(callerInfo.IsColor);
 					tmb.AppendFormat(
 						strings.cmd_search_header.Mod().Bold(),
-						("!select " + strings.info_number).Mod().Italic(),
-						("!queue " + strings.info_number).Mod().Italic()).Append("\n");
+						("!search play " + strings.info_number).Mod().Italic(),
+						("!search add " + strings.info_number).Mod().Italic()).Append("\n");
 					for (int i = 0; i < searchResults.Count; i++)
 					{
 						tmb.AppendFormat("{0}: {1}\n", i.ToString().Mod().Bold(), searchResults[i].ResourceTitle);

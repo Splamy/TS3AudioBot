@@ -49,6 +49,7 @@ namespace TS3Client.Full.Book
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
 	using SocketAddr = System.String;
+	using IpAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;
@@ -112,6 +113,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = ReturnFalse(msg); if (tmpv != null) obj.ForcedSilence = (bool)tmpv; }
 			obj.IsPrivate = null;
 			{ var tmpv = ReturnFalse(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
+			obj.PermissionHints = null;
 			obj.OptionalData = null;
 			{ var tmpv = ChannelOrderCcFun(msg); if (tmpv != null) obj.Order = (ChannelId)tmpv; }
 			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
@@ -179,6 +181,7 @@ namespace TS3Client.Full.Book
 			}
 			{ var tmpv = ChannelTypeClFun(msg); if (tmpv != null) obj.ChannelType = (ChannelType)tmpv; }
 			{ var tmpv = ReturnFalse(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
+			obj.PermissionHints = null;
 			obj.OptionalData = null;
 			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
 			{ var tmpv = msg.Topic; if (tmpv != null) obj.Topic = (str)tmpv; }
@@ -255,6 +258,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.TargetChannelId; if (tmpv != null) obj.Channel = (ChannelId)tmpv; }
 			{ var tmpv = AwayCevFun(msg); if (tmpv != null) obj.AwayMessage = (str)tmpv; }
 			{ var tmpv = TalkPowerCevFun(msg); if (tmpv != null) obj.TalkPowerRequest = (TalkPowerRequest)tmpv; }
+			obj.PermissionHints = null;
 			obj.OptionalData = null;
 			obj.ConnectionData = null;
 			{ var tmpv = msg.DatabaseId; if (tmpv != null) obj.DatabaseId = (ClientDbId)tmpv; }
@@ -469,7 +473,7 @@ namespace TS3Client.Full.Book
 				Log.Warn("Internal Book protocol error. Update 'ClientPermissionHints' has no local object ({$msg})", msg);
 				return;
 			}
-			{ var tmpv = msg.Flags; if (tmpv != null) obj.PermissionHints = (ChannelPermissionHint)tmpv; }
+			{ var tmpv = msg.Flags; if (tmpv != null) obj.PermissionHints = (ClientPermissionHint)tmpv; }
 			
 		}
 

@@ -16,24 +16,8 @@ import Home from "./Pages/Home.vue";
 import Overview from "./Pages/Overview.vue";
 import Playlists from "./Pages/Playlists.vue";
 import UiTests from "./Pages/UiTests.vue";
-
-// export class Main {
-// 	private static divAuthToken: HTMLInputElement;
-
-// 	private static loadAuth() {
-// 		const auth = window.localStorage.getItem("api_auth");
-// 		if (auth) {
-// 			Main.AuthData = ApiAuth.Create(auth);
-// 			Main.divAuthToken.value = auth;
-// 		}
-// 	}
-
-// 	private static authChanged() {
-// 		Get.AuthData = ApiAuth.Create(Main.divAuthToken.value);
-// 		window.localStorage.setItem("api_auth", Get.AuthData.getFullAuth());
-// 		// todo do test auth
-// 	}
-// }
+import { Get } from "./Api";
+import { ApiAuth } from "./ApiAuth";
 
 Vue.use(VueRouter);
 Vue.use(Buefy);
@@ -53,6 +37,11 @@ Vue.directive("focus", {
 		el.focus();
 	}
 });
+
+const auth = window.localStorage.getItem("api_auth");
+if (auth != null) {
+	Get.AuthData = ApiAuth.Create(auth);
+}
 
 const router = new VueRouter({
 	routes: [

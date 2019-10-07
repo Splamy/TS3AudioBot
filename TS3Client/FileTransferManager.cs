@@ -141,7 +141,7 @@ namespace TS3Client
 						return result.Error;
 					var request = result.Value;
 					token.ServerTransferId = request.ServerFileTransferId;
-					token.SeekPosition = request.SeekPosistion;
+					token.SeekPosition = (long)request.SeekPosition;
 					token.Port = request.Port;
 					token.TransferKey = request.FileTransferKey;
 				}
@@ -311,13 +311,13 @@ namespace TS3Client
 		public FileTransferToken(Stream localStream, FileUpload upload, ChannelIdT channelId,
 			string path, string channelPassword, long size, bool createMd5)
 			: this(localStream, upload.ClientFileTransferId, upload.ServerFileTransferId, TransferDirection.Upload,
-				channelId, path, channelPassword, upload.Port, upload.SeekPosistion, upload.FileTransferKey, size, createMd5)
+				channelId, path, channelPassword, upload.Port, (long)upload.SeekPosition, upload.FileTransferKey, size, createMd5)
 		{ }
 
 		public FileTransferToken(Stream localStream, FileDownload download, ChannelIdT channelId,
 			string path, string channelPassword, long seekPos)
 			: this(localStream, download.ClientFileTransferId, download.ServerFileTransferId, TransferDirection.Download,
-				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, download.Size, false)
+				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, (long)download.Size, false)
 		{ }
 
 		public FileTransferToken(Stream localStream, ushort cftid, ushort sftid,

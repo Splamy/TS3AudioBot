@@ -889,7 +889,7 @@ namespace TS3AudioBot
 			return CommandListShow(playlistManager, resourceFactory, listId, null, null);
 		}
 
-		[Command("list insert")]
+		[Command("list insert", "_undocumented")]  // TODO Doc
 		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string listId, int index, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
@@ -1247,11 +1247,11 @@ namespace TS3AudioBot
 			return result.Value[index];
 		}
 
-		[Command("search add")]
+		[Command("search add", "_undocumented")] // TODO Doc
 		public static void CommandSelect(PlayManager playManager, InvokerData invoker, UserSession session, int index)
 			=> playManager.Enqueue(invoker, session.GetSearchResult(index)).UnwrapThrow();
 
-		[Command("search play")]
+		[Command("search play", "_undocumented")] // TODO Doc
 		public static void CommandSelect(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
 			=> playManager.Play(clientCall, session.GetSearchResult(index)).UnwrapThrow();
 

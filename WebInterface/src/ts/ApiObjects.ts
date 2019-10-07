@@ -86,3 +86,38 @@ export interface CmdWhisperList {
 	WhisperClients: number[];
 	WhisperChannel: number[];
 }
+
+export class Empty {
+
+	public static CmdBotInfo(): CmdBotInfo {
+		return {
+			Id: null,
+			Name: null,
+			Server: "",
+			Status: BotStatus.Offline,
+		};
+	}
+
+	public static CmdPlaylistInfo(): CmdPlaylistInfo {
+		return {
+			Id: "",
+			Title: "",
+			SongCount: 0,
+			DisplayOffset: 0,
+		};
+	}
+
+	public static CmdPlaylist(): CmdPlaylist {
+		return {
+			...this.CmdPlaylistInfo(),
+			Items: []
+		};
+	}
+
+	public static CmdQueueInfo(): CmdQueueInfo {
+		return {
+			...this.CmdPlaylist(),
+			PlaybackIndex: 0
+		};
+	}
+}

@@ -239,7 +239,7 @@ namespace TS3AudioBot.Audio
 				};
 				newInstance.OnMetaUpdated = e => OnSongUpdated(this, e);
 
-				new Thread(newInstance.ReadStreamLoop)
+				new Thread(() => newInstance.ReadStreamLoop(id))
 				{
 					Name = $"IcyStreamReader[{id}]",
 				}.Start();
@@ -391,8 +391,9 @@ namespace TS3AudioBot.Audio
 				//}
 			}
 
-			public void ReadStreamLoop()
+			public void ReadStreamLoop(Id id)
 			{
+				Util.SetLogId(id.ToString());
 				const int IcyMaxMeta = 255 * 16;
 				const int ReadBufferSize = 4096;
 

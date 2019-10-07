@@ -42,6 +42,7 @@ namespace TS3Client.Full.Book
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
 	using SocketAddr = System.String;
+	using IpAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;
@@ -239,7 +240,7 @@ namespace TS3Client.Full.Book
 		public str CountryCode { get; internal set; }
 		public ChannelId InheritedChannelGroupFromChannel { get; internal set; }
 		public str Badges { get; set; }
-		public ChannelPermissionHint? PermissionHints { get; set; }
+		public ClientPermissionHint? PermissionHints { get; set; }
 		public OptionalClientData OptionalData { get; internal set; }
 		public ConnectionClientData ConnectionData { get; internal set; }
 	}
@@ -325,7 +326,7 @@ namespace TS3Client.Full.Book
 	{
 		public Server()
 		{
-			Ips = new HashSet<SocketAddr>();
+			Ips = new HashSet<IpAddr>();
 			
 		}
 
@@ -352,7 +353,7 @@ namespace TS3Client.Full.Book
 		public str HostbuttonGfxUrl { get; set; }
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; internal set; }
-		public HashSet<SocketAddr> Ips { get; internal set; }
+		public HashSet<IpAddr> Ips { get; internal set; }
 		public bool AskForPrivilegekey { get; internal set; }
 		public HostBannerMode HostbannerMode { get; set; }
 		public Duration TempChannelDefaultDeleteDelay { get; set; }

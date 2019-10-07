@@ -48,6 +48,7 @@ namespace TS3Client.Messages
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
 	using SocketAddr = System.String;
+	using IpAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;
@@ -64,7 +65,7 @@ namespace TS3Client.Messages
 		public NotificationType NotifyType { get; } = NotificationType.BanAdd;
 		
 
-		public str Ip { get; set; }
+		public IpAddr Ip { get; set; }
 		public str Name { get; set; }
 		public Uid Uid { get; set; }
 		public DurationSeconds? Time { get; set; }
@@ -197,7 +198,7 @@ namespace TS3Client.Messages
 		public string ReturnCode { get; set; }
 
 		public u32 BanId { get; set; }
-		public str Ip { get; set; }
+		public IpAddr Ip { get; set; }
 		public str Name { get; set; }
 		public Uid Uid { get; set; }
 		public str MyTsId { get; set; }
@@ -3786,7 +3787,7 @@ namespace TS3Client.Messages
 
 		public str Alpha { get; set; }
 		public str Omega { get; set; }
-		public str Ip { get; set; }
+		public IpAddr Ip { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5402,8 +5403,9 @@ namespace TS3Client.Messages
 		public u16 ServerFileTransferId { get; set; }
 		public str FileTransferKey { get; set; }
 		public u16 Port { get; set; }
-		public i64 Size { get; set; }
-		public str Message { get; set; }
+		public u64 Size { get; set; }
+		public u8 Protocol { get; set; }
+		public IpAddr Ip { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5414,8 +5416,9 @@ namespace TS3Client.Messages
 			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
 			case "ftkey": FileTransferKey = Ts3String.Unescape(value); break;
 			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
-			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
-			case "msg": Message = Ts3String.Unescape(value); break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
+			case "ip": Ip = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -5434,7 +5437,8 @@ namespace TS3Client.Messages
 				case "ftkey": foreach(var toi in toc) { toi.FileTransferKey = FileTransferKey; } break;
 				case "port": foreach(var toi in toc) { toi.Port = Port; } break;
 				case "size": foreach(var toi in toc) { toi.Size = Size; } break;
-				case "msg": foreach(var toi in toc) { toi.Message = Message; } break;
+				case "proto": foreach(var toi in toc) { toi.Protocol = Protocol; } break;
+				case "ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
 				}
 			}
 
@@ -5449,7 +5453,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public str Path { get; set; }
 		public str Name { get; set; }
-		public i64 Size { get; set; }
+		public u64 Size { get; set; }
 		public DateTime DateTime { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -5460,7 +5464,7 @@ namespace TS3Client.Messages
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
 			case "datetime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -5494,7 +5498,7 @@ namespace TS3Client.Messages
 		public ChannelId ChannelId { get; set; }
 		public str Path { get; set; }
 		public str Name { get; set; }
-		public i64 Size { get; set; }
+		public u64 Size { get; set; }
 		public DateTime DateTime { get; set; }
 		public bool IsFile { get; set; }
 
@@ -5506,7 +5510,7 @@ namespace TS3Client.Messages
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
 			case "datetime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
 			case "type": IsFile = value.Length > 0 && value[0] != '0'; break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
@@ -5578,7 +5582,7 @@ namespace TS3Client.Messages
 		public ClientId ClientId { get; set; }
 		public str Path { get; set; }
 		public str Name { get; set; }
-		public i64 Size { get; set; }
+		public u64 Size { get; set; }
 		public i64 SizeDone { get; set; }
 		public u16 ClientFileTransferId { get; set; }
 		public u16 ServerFileTransferId { get; set; }
@@ -5596,7 +5600,7 @@ namespace TS3Client.Messages
 			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
 			case "sizedone": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) SizeDone = oval; } break;
 			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
 			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
@@ -5644,7 +5648,7 @@ namespace TS3Client.Messages
 		public u16 ClientFileTransferId { get; set; }
 		public Ts3ErrorCode Status { get; set; }
 		public str Message { get; set; }
-		public i64 Size { get; set; }
+		public u64 Size { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5654,7 +5658,7 @@ namespace TS3Client.Messages
 			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
 			case "status": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Status = (Ts3ErrorCode)oval; } break;
 			case "msg": Message = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
 			
 			}
 
@@ -5687,8 +5691,9 @@ namespace TS3Client.Messages
 		public u16 ServerFileTransferId { get; set; }
 		public str FileTransferKey { get; set; }
 		public u16 Port { get; set; }
-		public i64 SeekPosistion { get; set; }
-		public str Message { get; set; }
+		public u64 SeekPosition { get; set; }
+		public u8 Protocol { get; set; }
+		public IpAddr Ip { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5699,8 +5704,9 @@ namespace TS3Client.Messages
 			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
 			case "ftkey": FileTransferKey = Ts3String.Unescape(value); break;
 			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
-			case "seekpos": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) SeekPosistion = oval; } break;
-			case "msg": Message = Ts3String.Unescape(value); break;
+			case "seekpos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SeekPosition = oval; } break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
+			case "ip": Ip = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -5718,8 +5724,9 @@ namespace TS3Client.Messages
 				case "serverftfid": foreach(var toi in toc) { toi.ServerFileTransferId = ServerFileTransferId; } break;
 				case "ftkey": foreach(var toi in toc) { toi.FileTransferKey = FileTransferKey; } break;
 				case "port": foreach(var toi in toc) { toi.Port = Port; } break;
-				case "seekpos": foreach(var toi in toc) { toi.SeekPosistion = SeekPosistion; } break;
-				case "msg": foreach(var toi in toc) { toi.Message = Message; } break;
+				case "seekpos": foreach(var toi in toc) { toi.SeekPosition = SeekPosition; } break;
+				case "proto": foreach(var toi in toc) { toi.Protocol = Protocol; } break;
+				case "ip": foreach(var toi in toc) { toi.Ip = Ip; } break;
 				}
 			}
 
@@ -5891,7 +5898,8 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
-		public i64 SeekPosistion { get; set; }
+		public u64 SeekPosition { get; set; }
+		public u8 Protocol { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5902,7 +5910,8 @@ namespace TS3Client.Messages
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "seekpos": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) SeekPosistion = oval; } break;
+			case "seekpos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SeekPosition = oval; } break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
 			
 			}
 
@@ -5920,7 +5929,8 @@ namespace TS3Client.Messages
 				case "name": foreach(var toi in toc) { toi.Name = Name; } break;
 				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
 				case "cpw": foreach(var toi in toc) { toi.ChannelPassword = ChannelPassword; } break;
-				case "seekpos": foreach(var toi in toc) { toi.SeekPosistion = SeekPosistion; } break;
+				case "seekpos": foreach(var toi in toc) { toi.SeekPosition = SeekPosition; } break;
+				case "proto": foreach(var toi in toc) { toi.Protocol = Protocol; } break;
 				}
 			}
 
@@ -5936,9 +5946,10 @@ namespace TS3Client.Messages
 		public str Name { get; set; }
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
-		public i64 Size { get; set; }
+		public u64 Size { get; set; }
 		public bool Overwrite { get; set; }
 		public bool Resume { get; set; }
+		public u8 Protocol { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5949,9 +5960,10 @@ namespace TS3Client.Messages
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
 			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) Size = oval; } break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
 			case "overwrite": Overwrite = value.Length > 0 && value[0] != '0'; break;
 			case "resume": Resume = value.Length > 0 && value[0] != '0'; break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
 			
 			}
 
@@ -5972,6 +5984,7 @@ namespace TS3Client.Messages
 				case "size": foreach(var toi in toc) { toi.Size = Size; } break;
 				case "overwrite": foreach(var toi in toc) { toi.Overwrite = Overwrite; } break;
 				case "resume": foreach(var toi in toc) { toi.Resume = Resume; } break;
+				case "proto": foreach(var toi in toc) { toi.Protocol = Protocol; } break;
 				}
 			}
 
@@ -6225,7 +6238,7 @@ namespace TS3Client.Messages
 		public str Hostmessage { get; set; }
 		public HostMessageMode HostmessageMode { get; set; }
 		public u64 VirtualServerId { get; set; }
-		public str[] ServerIp { get; set; }
+		public IpAddr[] ServerIp { get; set; }
 		public bool AskForPrivilegekey { get; set; }
 		public str ClientName { get; set; }
 		public ClientId ClientId { get; set; }
@@ -6262,7 +6275,7 @@ namespace TS3Client.Messages
 			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = oval; } break;
-			case "virtualserver_ip": { if(value.Length == 0) ServerIp = Array.Empty<str>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new str[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
+			case "virtualserver_ip": { if(value.Length == 0) ServerIp = Array.Empty<IpAddr>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new IpAddr[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
 			case "virtualserver_ask_for_privilegekey": AskForPrivilegekey = value.Length > 0 && value[0] != '0'; break;
 			case "acn": ClientName = Ts3String.Unescape(value); break;
 			case "aclid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;

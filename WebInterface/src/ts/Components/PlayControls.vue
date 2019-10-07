@@ -28,7 +28,7 @@
 							v-model="song_pos_safe"
 							:tooltip="false"
 							:max="song_length_safe"
-							:disabled="!song"
+							:disabled="!info.song"
 							rounded
 							lazy
 						></b-slider>
@@ -39,7 +39,7 @@
 						<b-icon :icon="volume_icom" />
 					</b-button>
 					<b-field class="control">
-						<b-slider v-model="volume" :min="0" :max="100" style="width:10em;"></b-slider>
+						<b-slider v-model="info.volume" :min="0" :max="100" style="width:10em;"></b-slider>
 					</b-field>
 				</b-field>
 			</div>
@@ -56,19 +56,21 @@ import { PlayState } from "../Model/PlayState";
 import { CmdSong } from "../ApiObjects";
 import { Timer } from "../Timer";
 import { debounce } from "lodash-es";
+import { BotInfoSync } from "../Model/BotInfoSync";
 
 export default Vue.component("play-controls", {
 	props: {
-		botId: { type: Number, required: true }
+		botId: { type: Number, required: true },
+		info: { type: Object as () => BotInfoSync, required: true }
 	},
 	async created() {
 		this.playTick = new Timer(() => {
-			if (!this.song) {
+			if (!this.info.song) {
 				this.playTick.stop();
 				return;
 			}
-			if (this.song.Position < this.song.Length) {
-				this.song.Position += 1;
+			if (this.info.song.Position < this.info.song.Length) {
+				this.info.song.Position += 1;
 			} else {
 				this.playTick.stop();
 				this.startEcho();
@@ -89,25 +91,15 @@ export default Vue.component("play-controls", {
 			}
 		}, 1000);
 
-		await this.refresh();
+		this.$watch("info.song", this.updateTimers, { deep: true });
 	},
 	data() {
 		return {
 			RepeatKind,
 			PlayState,
 
-			volume: 0,
 			volume_old: 0,
 			muteToggleVolume: 0,
-			repeat: RepeatKind.Off,
-			shuffle: false,
-			song: {
-				Title: "",
-				Source: "",
-				Length: 0,
-				Position: 0,
-				Paused: false
-			} as CmdSong | null,
 
 			echoCounter: 0,
 			echoTick: undefined! as Timer,
@@ -117,28 +109,28 @@ export default Vue.component("play-controls", {
 	computed: {
 		song_pos_safe: {
 			get(): number {
-				if (!this.song) return 0;
-				return this.song.Position;
+				if (!this.info.song) return 0;
+				return this.info.song.Position;
 			},
 			set(val: number) {
-				if (this.song) this.song.Position = val;
+				if (this.info.song) this.info.song.Position = val;
 			}
 		},
 		song_length_safe(): number {
-			if (!this.song) return 0;
-			return this.song.Length;
+			if (!this.info.song) return 0;
+			return this.info.song.Length;
 		},
 		song_position_human(): string {
-			if (!this.song) return "--:--";
-			return Util.formatSecondsToTime(this.song.Position);
+			if (!this.info.song) return "--:--";
+			return Util.formatSecondsToTime(this.info.song.Position);
 		},
 		song_length_human(): string {
-			if (!this.song) return "--:--";
-			return Util.formatSecondsToTime(this.song.Length);
+			if (!this.info.song) return "--:--";
+			return Util.formatSecondsToTime(this.info.song.Length);
 		},
 		playing(): PlayState {
-			if (!this.song) return PlayState.Off;
-			else if (this.song.Paused) return PlayState.Paused;
+			if (!this.info.song) return PlayState.Off;
+			else if (this.info.song.Paused) return PlayState.Paused;
 			else return PlayState.Playing;
 		},
 		play_icon() {
@@ -154,7 +146,7 @@ export default Vue.component("play-controls", {
 			}
 		},
 		repeat_icon() {
-			switch (this.repeat) {
+			switch (this.info.repeat) {
 				case RepeatKind.Off:
 					return "repeat-off";
 				case RepeatKind.One:
@@ -166,12 +158,12 @@ export default Vue.component("play-controls", {
 			}
 		},
 		shuffle_icon(): string {
-			return this.shuffle ? "shuffle" : "shuffle-disabled";
+			return this.info.shuffle ? "shuffle" : "shuffle-disabled";
 		},
 		volume_icom(): string {
-			if (this.volume <= 0.001) return "volume-off";
-			else if (this.volume <= 33) return "volume-low";
-			else if (this.volume <= 66) return "volume-medium";
+			if (this.info.volume <= 0.001) return "volume-off";
+			else if (this.info.volume <= 33) return "volume-low";
+			else if (this.info.volume <= 66) return "volume-medium";
 			else return "volume-high";
 		},
 		setVD(): Function {
@@ -186,7 +178,7 @@ export default Vue.component("play-controls", {
 				jmerge(
 					cmd<void>(
 						"repeat",
-						RepeatKind[(this.repeat + 1) % 3].toLowerCase()
+						RepeatKind[(this.info.repeat + 1) % 3].toLowerCase()
 					),
 					cmd<RepeatKind>("repeat")
 				),
@@ -194,26 +186,26 @@ export default Vue.component("play-controls", {
 			).get();
 			if (!Util.check(this, res, "Failed to apply repeat mode")) return;
 
-			this.repeat = res[1];
+			this.info.repeat = res[1];
 		},
 		async clickShuffle() {
 			const res = await bot(
 				jmerge(
-					cmd<void>("random", !this.shuffle ? "on" : "off"),
+					cmd<void>("random", !this.info.shuffle ? "on" : "off"),
 					cmd<boolean>("random")
 				),
 				this.botId
 			).get();
 			if (!Util.check(this, res, "Failed to apply random mode")) return;
 
-			this.shuffle = res[1];
+			this.info.shuffle = res[1];
 		},
 		async clickVolume() {
-			if (this.muteToggleVolume !== 0 && this.volume === 0) {
+			if (this.muteToggleVolume !== 0 && this.info.volume === 0) {
 				await this.setVolume(this.muteToggleVolume);
 				this.muteToggleVolume = 0;
 			} else {
-				this.muteToggleVolume = this.volume;
+				this.muteToggleVolume = this.info.volume;
 				await this.setVolume(0);
 			}
 		},
@@ -226,19 +218,20 @@ export default Vue.component("play-controls", {
 				this.botId
 			).get();
 			if (!Util.check(this, res, "Failed to apply volume")) {
-				this.volume = this.volume_old;
+				this.info.volume = this.volume_old;
 				return;
 			}
-			this.volume_old = this.volume;
-			//this.volume = Math.floor(res[1]);
+			this.volume_old = this.info.volume;
 		},
 		async clickTrackNext() {
 			const res = await bot(cmd<void>("next"), this.botId).get();
 			if (!Util.check(this, res, "Failed to skip forward")) return;
+			this.startEcho();
 		},
 		async clickTrackPrev() {
 			const res = await bot(cmd<void>("previous"), this.botId).get();
 			if (!Util.check(this, res, "Failed to skip forward")) return;
+			this.startEcho();
 		},
 		async clickPlay() {
 			let songRet: ApiErr | [void, CmdSong | null];
@@ -268,7 +261,7 @@ export default Vue.component("play-controls", {
 
 			if (!Util.check(this, songRet)) return;
 
-			this.song = songRet[1];
+			this.info.song = songRet[1];
 			this.startEcho();
 		},
 		async setPosition(value: number) {
@@ -285,30 +278,16 @@ export default Vue.component("play-controls", {
 			if (!Util.check(this, res, "Failed to seek")) return;
 
 			if (wasRunning) this.playTick.start();
-			if (this.song) this.song.Position = targetSeconds;
+			if (this.info.song) this.info.song.Position = targetSeconds;
 		},
 		startEcho() {
 			this.echoCounter = 0;
 			this.echoTick.start();
 		},
 		async refresh() {
-			const botInfo = await bot(
-				jmerge(
-					cmd<CmdSong | null>("song"),
-					cmd<RepeatKind>("repeat"),
-					cmd<boolean>("random"),
-					cmd<number>("volume")
-				),
-				this.botId
-			).get();
-
-			if (!Util.check(this, botInfo)) return;
-
-			this.song = botInfo[0];
-			this.repeat = botInfo[1];
-			this.shuffle = botInfo[2];
-			this.volume = Math.floor(botInfo[3]);
-
+			this.$emit("requestRefresh");
+		}, 
+		updateTimers() {
 			if (this.playing == PlayState.Playing) this.playTick.start();
 			else this.playTick.stop();
 		}

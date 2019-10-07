@@ -30,7 +30,7 @@ export default Vue.component("settings-field", {
 	},
 	created() {
 		this.parentIndex = this.parent_arr.length;
-		this.parent_arr.push(true);
+		this.parent_arr.push(this.is_visible);
 	},
 	computed: {
 		is_visible(): boolean {

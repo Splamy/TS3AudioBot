@@ -72,7 +72,7 @@
 			</b-tooltip>
 
 			<b-tooltip label="Login" position="is-bottom">
-				<b-navbar-item>
+				<b-navbar-item tag="router-link" :to="{ path: '/' }">
 					<b-icon icon="shield-key"></b-icon>
 					<span class="is-hidden-desktop">Login</span>
 				</b-navbar-item>

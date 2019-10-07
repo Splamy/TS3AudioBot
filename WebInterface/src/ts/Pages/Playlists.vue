@@ -167,6 +167,8 @@ export default Vue.extend({
 			if (!Util.check(this, res, "Failed to start playlist")) {
 				return;
 			}
+
+			this.$emit("requestRefresh");
 		},
 		genImage(name: string, ev: any) {
 			Util.genImage(name, ev.ctx, ev.width, ev.height);

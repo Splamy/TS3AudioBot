@@ -8,7 +8,7 @@ export class ErrorObject<T = any> {
 
 export class Get {
 	public static AuthData: ApiAuth = ApiAuth.Anonymous;
-	public static EndpointData: ApiEndpoint = ApiEndpoint.Localhost;
+	public static EndpointData: ApiEndpoint = ApiEndpoint.SameAddress;
 
 	public static async site(site: string): Promise<string> {
 		const response = await fetch(site);
@@ -22,13 +22,16 @@ export class Get {
 		// TODO endpoint parameter
 
 		const requestData: RequestInit = {
+			method: "GET",
+			mode: "cors",
 			cache: "no-cache",
+			credentials: "same-origin"
 		};
 
 		if (!login.IsAnonymous) {
-			requestData.headers = {
-				Authorization: login.getBasic(),
-			};
+			requestData.headers = new Headers({
+				"Authorization": login.getBasic(),
+			});
 		}
 
 		const apiSite = ep.baseAddress + site.done();
@@ -44,6 +47,8 @@ export class Get {
 			json = {};
 		} else {
 			try {
+				// let txt = await response.text();
+				// json = JSON.parse(txt);
 				json = await response.json();
 			} catch (err) {
 				return new ErrorObject(err);

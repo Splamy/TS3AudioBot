@@ -32,7 +32,7 @@ public static bool NullType(string type) {
 		|| type == "HostBannerMode"
 		|| type == "TalkPowerRequest"
 		|| type == "ChannelPermissionHint"
-		|| type == "ClientPermissionHints"
+		|| type == "ClientPermissionHint"
 		;
 }
 
@@ -55,6 +55,7 @@ const string ConversionSet =
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
 	using SocketAddr = System.String;
+	using IpAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;

@@ -150,7 +150,12 @@ namespace TS3AudioBot.Helper
 			var value = token.SelectToken(key);
 			if (value is null)
 				return R.Err;
-			try { return value.ToObject<T>(); }
+			try {
+				var t = value.ToObject<T>();
+				if ((object)t is null)
+					return R.Err;
+				return t;
+			}
 			catch (JsonReaderException) { return R.Err; }
 		}
 

@@ -38,7 +38,7 @@ export default Vue.component("settings-group", {
 	},
 	computed: {
 		is_visible(): boolean {
-			return this.children.find(x => x) === true;
+			return this.children.length > 0 && this.children.find(x => x) === true;
 		}
 	}
 });

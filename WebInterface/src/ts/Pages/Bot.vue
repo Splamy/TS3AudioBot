@@ -20,7 +20,7 @@
 					</div>
 				</div>
 				<div class="container">
-					<router-view />
+					<router-view @requestRefresh="refresh" />
 				</div>
 			</div>
 
@@ -28,30 +28,30 @@
 				<div class="notification is-info">
 					<div class="formdatablock">
 						<div>ID:</div>
-						<div>{{botInfo.Id}}</div>
+						<div>{{info.botInfo.Id}}</div>
 					</div>
 					<div class="formdatablock">
 						<div>Name:</div>
-						<div>{{botInfo.Name}}</div>
+						<div>{{info.botInfo.Name}}</div>
 					</div>
 					<div class="formdatablock">
 						<div>Server:</div>
-						<div>{{botInfo.Server}}</div>
+						<div>{{info.botInfo.Server}}</div>
 					</div>
 					<div class="formdatablock">
 						<div>Status:</div>
-						<div>{{BotStatus[botInfo.Status]}}</div>
+						<div>{{BotStatus[info.botInfo.Status]}}</div>
 					</div>
 				</div>
 
-				<div class="">
+				<div class="box">
 					<b-field style="margin-bottom: 1em;" groupd>
 						<b-input v-model="loadSongUrl" type="text" placeholder="New song link" expanded />
 						<b-button type="is-primary" icon-right="plus" @click="addNewSong" />
 						<b-button type="is-primary" icon-right="play" @click="playNewSong" />
 					</b-field>
 
-					<div v-if="currentSong != null" class="media" style="margin-bottom: 1em;">
+					<div v-if="info.song != null" class="media" style="margin-bottom: 1em;">
 						<figure class="media-left">
 							<p class="image is-64x64">
 								<img src="https://bulma.io/images/placeholders/128x128.png" />
@@ -59,9 +59,9 @@
 						</figure>
 						<div class="media-content">
 							<div class="field">
-								<a :href="currentSong.Link" target="_blank">
-									<b-icon :icon="typeIcon(currentSong.AudioType)" :style="colorIcon(currentSong.AudioType)"></b-icon>
-									<strong>{{currentSong.Title}}</strong>
+								<a :href="info.song.Link" target="_blank">
+									<b-icon :icon="typeIcon(info.song.AudioType)" :style="colorIcon(info.song.AudioType)"></b-icon>
+									<strong>{{info.song.Title}}</strong>
 								</a>
 							</div>
 						</div>
@@ -69,9 +69,16 @@
 
 					<div class="title is-5" style="margin-bottom: 0.5em;">Up Next:</div>
 
-					<b-table :data="nowPlaying.Items" style="margin-bottom: 1em;" striped hoverable>
+					<b-table :data="info.nowPlaying.Items" style="margin-bottom: 1em;" hoverable>
 						<template slot-scope="props">
-							<b-table-column label=" " class="is-flex uni-hover">
+							<b-table-column
+								label=" "
+								class="is-flex uni-hover"
+								:class="{
+									'is-selected': (info.nowPlaying.DisplayOffset + props.index) == info.nowPlaying.PlaybackIndex,
+									'is-light': (info.nowPlaying.DisplayOffset + props.index) < info.nowPlaying.PlaybackIndex
+								}"
+							>
 								<b-icon :icon="typeIcon(props.row.AudioType)" :style="colorIcon(props.row.AudioType)"></b-icon>
 								<span>{{props.row.Title}}</span>
 							</b-table-column>
@@ -82,7 +89,7 @@
 			</div>
 		</div>
 
-		<play-controls v-if="online" :botId="botId" />
+		<play-controls v-if="online" :botId="botId" :info="info" @requestRefresh="refresh" />
 	</div>
 </template>
 
@@ -93,7 +100,9 @@ import BotNavbarItem from "../Components/BotNavbarItem.vue";
 import { CmdBotInfo, CmdPlaylist, CmdSong, CmdQueueInfo } from "../ApiObjects";
 import { bot, cmd, jmerge } from "../Api";
 import { Util } from "../Util";
+import { RepeatKind } from "../Model/RepeatKind";
 import { BotStatus } from "../Model/BotStatus";
+import { BotInfoSync } from "../Model/BotInfoSync";
 
 export default Vue.extend({
 	props: {
@@ -108,11 +117,7 @@ export default Vue.extend({
 
 			loadSongUrl: "",
 
-			botInfo: {} as CmdBotInfo,
-			nowPlaying: {
-				Items: [] as any[]
-			} as CmdQueueInfo,
-			currentSong: {} as CmdSong | null
+			info: new BotInfoSync()
 		};
 	},
 	computed: {
@@ -124,13 +129,20 @@ export default Vue.extend({
 		}
 	},
 	methods: {
+		track(val: any) {
+			console.log(val);
+			return val;
+		},
 		async refresh() {
 			if (this.online) {
 				const res = await bot(
 					jmerge(
 						cmd<CmdBotInfo>("bot", "info"),
-						cmd<CmdQueueInfo>("info", "@1", "5"),
-						cmd<CmdSong>("song")
+						cmd<CmdQueueInfo>("info", "@-1", "5"),
+						cmd<CmdSong | null>("song"),
+						cmd<RepeatKind>("repeat"),
+						cmd<boolean>("random"),
+						cmd<number>("volume")
 					),
 					this.botId
 				).get();
@@ -138,13 +150,16 @@ export default Vue.extend({
 				if (!Util.check(this, res, "Failed to get bot information"))
 					return;
 
-				this.botInfo = res[0];
-				this.nowPlaying = res[1];
-				this.currentSong = res[2];
+				this.info.botInfo = res[0];
+				this.info.nowPlaying = res[1];
+				this.info.song = res[2];
+				this.info.repeat = res[3];
+				this.info.shuffle = res[4];
+				this.info.volume = Math.floor(res[5]);
 			} else {
-				this.botInfo.Id = ("N/A" as any) as number;
-				this.botInfo.Name = this.botName;
-				this.botInfo.Status = BotStatus.Offline;
+				this.info.botInfo.Id = ("N/A" as any) as number;
+				this.info.botInfo.Name = this.botName;
+				this.info.botInfo.Status = BotStatus.Offline;
 			}
 		},
 		playNewSong() {

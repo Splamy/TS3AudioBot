@@ -1,19 +1,8 @@
 {
   "name": "ts3abweb",
-  "version": "0.1.0",
+  "version": "2.0.0-alpha",
   "description": "Provides a ui to control the TS3AudioBot",
   "scripts": {
-    "build:all": "npm run build:tsc && npm run build:less",
-    "build:tsc": "tsc --build",
-    "build:less": "lessc --source-map=out/styles.css.map less/styles.less out/styles.css",
-    "publish:webdata": "copyfiles -u 1 \"html/**/*\" build",
-    "publish:tsc": "uglifyjs out/script.js -c -o build/script.js",
-    "publish:less": "cleancss out/styles.css -o build/styles.css -O2 --skip-rebase",
-    "publish:all": "npm run publish:webdata && npm run publish:tsc && npm run publish:less",
-    "publish:tsc-raw": "copyfiles -u 1 out/script.js build/",
-    "publish:less-raw": "copyfiles -u 1 out/styles.css build/",
-    "publish:all-raw": "npm run publish:webdata && npm run publish:tsc-raw && npm run publish:less-raw",
-    "publish": "npm run build:all && npm run publish:all-raw",
     "build": "webpack",
     "start": "webpack-dev-server --mode development"
   },

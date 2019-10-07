@@ -111,8 +111,21 @@ namespace TS3AudioBot.Web
 				{
 					kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
 				})
+				.ConfigureServices(services =>
+				{
+					services.AddCors(options =>
+					{
+						options.AddPolicy("TS3AB", builder =>
+						{
+							builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+						});
+					});
+
+				})
 				.Configure(app =>
 				{
+					app.UseCors("TS3AB");
+
 					app.Map(new PathString("/api"), map =>
 					{
 						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
