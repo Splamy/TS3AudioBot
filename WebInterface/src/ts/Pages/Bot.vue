@@ -97,7 +97,13 @@
 import Vue from "vue";
 import PlayControls from "../Components/PlayControls.vue";
 import BotNavbarItem from "../Components/BotNavbarItem.vue";
-import { CmdBotInfo, CmdPlaylist, CmdSong, CmdQueueInfo } from "../ApiObjects";
+import {
+	CmdBotInfo,
+	CmdPlaylist,
+	CmdSong,
+	CmdQueueInfo,
+	Empty
+} from "../ApiObjects";
 import { bot, cmd, jmerge } from "../Api";
 import { Util } from "../Util";
 import { RepeatKind } from "../Model/RepeatKind";
@@ -150,8 +156,8 @@ export default Vue.extend({
 				if (!Util.check(this, res, "Failed to get bot information"))
 					return;
 
-				this.info.botInfo = res[0];
-				this.info.nowPlaying = res[1];
+				this.info.botInfo = res[0] || Empty.CmdBotInfo();
+				this.info.nowPlaying = res[1] || Empty.CmdQueueInfo();
 				this.info.song = res[2];
 				this.info.repeat = res[3];
 				this.info.shuffle = res[4];

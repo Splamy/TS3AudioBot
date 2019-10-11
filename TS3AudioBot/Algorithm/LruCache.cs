@@ -50,6 +50,8 @@ namespace TS3AudioBot.Algorithm
 			cacheDict.Add(key, node);
 		}
 
+		public void Remove(TK key) => cacheDict.Remove(key);
+
 		private void Renew(LinkedListNode<(TK, TV)> node)
 		{
 			lruList.Remove(node);

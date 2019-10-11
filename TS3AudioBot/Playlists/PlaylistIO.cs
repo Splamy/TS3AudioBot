@@ -15,6 +15,7 @@ namespace TS3AudioBot.Playlists
 	using System.IO;
 	using System.Linq;
 	using System.Threading;
+	using TS3AudioBot.Algorithm;
 	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
 	using TS3AudioBot.Localization;
@@ -26,7 +27,7 @@ namespace TS3AudioBot.Playlists
 		private readonly ConfBot confBot;
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Dictionary<string, PlaylistMeta> playlistInfo;
-		private readonly Dictionary<string, Playlist> playlistCache;
+		private readonly LruCache<string, Playlist> playlistCache;
 		private readonly HashSet<string> dirtyList;
 		private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
 		private const string PlaylistsFolder = "playlists";
@@ -36,8 +37,8 @@ namespace TS3AudioBot.Playlists
 		public PlaylistIO(ConfBot confBot)
 		{
 			this.confBot = confBot;
+			playlistCache = new LruCache<string, Playlist>(16);
 			Util.Init(out playlistInfo);
-			Util.Init(out playlistCache);
 			Util.Init(out dirtyList);
 		}
 
@@ -79,7 +80,7 @@ namespace TS3AudioBot.Playlists
 
 				if (result.Ok)
 				{
-					playlistCache.Add(listId, result.Value);
+					playlistCache.Set(listId, result.Value);
 					return result.Value;
 				}
 				else
@@ -382,8 +383,8 @@ namespace TS3AudioBot.Playlists
 
 				foreach (var name in dirtyList)
 				{
-					var plist = playlistCache[name];
-					WriteToFile(name, plist);
+					if (playlistCache.TryGetValue(name, out var plist))
+						WriteToFile(name, plist);
 				}
 
 				dirtyList.Clear();
