@@ -16,6 +16,7 @@ namespace TS3ABotUnitTests
 	using System.IO;
 	using System.Linq;
 	using System.Text.RegularExpressions;
+	using System.Threading;
 	using TS3AudioBot;
 	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
@@ -65,7 +66,7 @@ namespace TS3ABotUnitTests
 
 			CreateDbStore();
 
-			hf.LogAudioResource(data1);
+			hf.LogAudioResourceDelayed(data1);
 
 			var lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
@@ -80,8 +81,8 @@ namespace TS3ABotUnitTests
 			lastEntry = lastXEntries.First();
 			Assert.AreEqual(ar1, lastEntry.AudioResource);
 
-			hf.LogAudioResource(data1);
-			hf.LogAudioResource(data2);
+			hf.LogAudioResourceDelayed(data1);
+			hf.LogAudioResourceDelayed(data2);
 
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
@@ -99,7 +100,7 @@ namespace TS3ABotUnitTests
 
 			var ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 
 			db.Dispose();
@@ -113,14 +114,14 @@ namespace TS3ABotUnitTests
 
 			var ale2 = hf.FindEntryByResource(ar2);
 			hf.RenameEntry(ale2, "me_ar2_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 			hf.RenameEntry(ale2, "me_ar2_exxxxxtra_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			db.Dispose();
 
@@ -140,7 +141,7 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(1, lastXEntriesArray.Length);
 
 			// .. store new entry to check correct stream position writes
-			hf.LogAudioResource(data3);
+			hf.LogAudioResourceDelayed(data3);
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -249,6 +250,12 @@ namespace TS3ABotUnitTests
 		public static IEnumerable<AudioLogEntry> GetLastXEntrys(this HistoryManager hf, int num)
 		{
 			return hf.Search(new SeachQuery { MaxResults = num });
+		}
+
+		public static void LogAudioResourceDelayed(this HistoryManager hf, HistorySaveData data)
+		{
+			Thread.Sleep(1);
+			hf.LogAudioResource(data);
 		}
 	}
 }
