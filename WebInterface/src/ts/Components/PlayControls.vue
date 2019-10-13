@@ -36,7 +36,7 @@
 					<span class="tag is-light control">{{song_length_human}}</span>
 					<!-- Volume -->
 					<b-button class="control is-text" @click="clickVolume">
-						<b-icon :icon="volume_icom" />
+						<b-icon :icon="volume_icon" />
 					</b-button>
 					<b-field class="control">
 						<b-slider v-model="info.volume" :min="0" :max="100" style="width:10em;"></b-slider>
@@ -160,7 +160,7 @@ export default Vue.component("play-controls", {
 		shuffle_icon(): string {
 			return this.info.shuffle ? "shuffle" : "shuffle-disabled";
 		},
-		volume_icom(): string {
+		volume_icon(): string {
 			if (this.info.volume <= 0.001) return "volume-off";
 			else if (this.info.volume <= 33) return "volume-low";
 			else if (this.info.volume <= 66) return "volume-medium";
@@ -293,7 +293,7 @@ export default Vue.component("play-controls", {
 		}
 	},
 	watch: {
-		volume(value: number) {
+		"info.volume"(value: number) {
 			this.setVD(value);
 		}
 	}

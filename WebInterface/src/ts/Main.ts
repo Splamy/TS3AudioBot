@@ -15,7 +15,6 @@ import BotSettings from "./Pages/BotSettings.vue";
 import Home from "./Pages/Home.vue";
 import Overview from "./Pages/Overview.vue";
 import Playlists from "./Pages/Playlists.vue";
-import UiTests from "./Pages/UiTests.vue";
 import { Get } from "./Api";
 import { ApiAuth } from "./ApiAuth";
 
@@ -49,7 +48,6 @@ const router = new VueRouter({
 		//{ path: "/openapi", component: Commands },
 		{ path: "/overview", component: Overview },
 		{ path: "/bots", component: Bots, name: "r_bots" },
-		{ path: "/uitests", component: UiTests },
 		{
 			path: "/bot/:id",
 			component: Bot,

@@ -21,10 +21,6 @@
 				<b-icon icon="api"></b-icon>
 				<span>Api</span>
 			</b-navbar-item>
-			<b-navbar-item tag="router-link" :to="{ path: '/uitests' }">
-				<b-icon icon="radioactive"></b-icon>
-				<span>Ui Tests</span>
-			</b-navbar-item>
 		</template>
 
 		<template slot="end">
