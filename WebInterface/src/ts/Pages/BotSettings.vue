@@ -27,9 +27,17 @@
 
 			<settings-field :filter="filter" path="language" label="Bot Language">
 				<b-select v-model="model.language" placeholder="Select your language">
+					<option value="cs">Czech</option>
+					<option value="da">Danish</option>
 					<option value="en">English</option>
-					<option value="de">Deutsch (German)</option>
-					<option value="ru">Русский (Russian)</option>
+					<option value="fr">French</option>
+					<option value="de">German [Deutsch]</option>
+					<option value="hu">Hungarian</option>
+					<option value="pl">Polish</option>
+					<option value="ru">Russian [Русский]</option>
+					<option value="es">Spanish</option>
+					<option value="es-ar">Spanish (Argentinia)</option>
+					<option value="th">Thai</option>
 				</b-select>
 			</settings-field>
 		</settings-group>
@@ -44,11 +52,22 @@
 				<b-button class="control">Test (TODO)</b-button>
 			</settings-field>
 
+			<!-- Server password -->
+
 			<settings-field
 				:filter="filter"
 				path="connect.channel"
 				label="Default channel"
-			>(Cool dropdown i guess)</settings-field>
+			>(Cool dropdown i guess)
+			</settings-field>
+
+			<!-- Channel password -->
+
+			<settings-field :filter="filter" path="connect.client_version" label="Emulated client version">
+				<b-select v-model="model.connect" placeholder="Select version">
+				</b-select>
+			</settings-field>
+
 		</settings-group>
 
 		<settings-group label="Audio">
@@ -163,6 +182,7 @@ export default Vue.extend({
 		return {
 			Lang,
 
+			versions,
 			filter: {
 				text: "",
 				level: 0 // 0 simple, 1 advanced, 2 expert
@@ -179,6 +199,15 @@ export default Vue.extend({
 	},
 	async created() {
 		const res = await this.requestModel();
+		// fetch("https://raw.githubusercontent.com/ReSpeak/tsdeclarations/master/Versions.csv")
+		// 	.then(v => n.text())
+		// 	.then(csv => {
+		// 		this.versions = csv.split(/\n/gm).slice(1).map(line => line.split(/,/g)).map(parts => {
+		// 			build: parts[0],
+		// 			platform: parts[1],
+		// 			sign: parts[2],
+		// 		})
+		// 	});
 
 		if (!Util.check(this, res, "Failed to retrieve settings")) return;
 
@@ -202,6 +231,14 @@ export default Vue.extend({
 			set(value: [number, number]) {
 				this.model.audio.volume.min = value[0];
 				this.model.audio.volume.max = value[1];
+			}
+		},
+		bind_bot_version: {
+			get(): { build: string, platform: string, sign: string } {
+
+			},
+			set(val: { build: string, platform: string, sign: string }) {
+
 			}
 		}
 	},
