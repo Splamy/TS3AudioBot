@@ -3,6 +3,12 @@ import { TargetSendMode } from "./Model/TargetSendMode";
 
 // tslint:disable: interface-name
 
+export interface IVersion {
+	build: string;
+	platform: string;
+	sign: string;
+}
+
 export interface CmdBotInfo {
 	Id: number | null;
 	Name: string | null;

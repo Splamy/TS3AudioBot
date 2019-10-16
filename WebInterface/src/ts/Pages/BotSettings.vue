@@ -64,7 +64,11 @@
 			<!-- Channel password -->
 
 			<settings-field :filter="filter" path="connect.client_version" label="Emulated client version">
-				<b-select v-model="model.connect" placeholder="Select version">
+				<b-select v-model="bind_bot_version" placeholder="Select version">
+					<option
+						v-for="ver in versions"
+						:key="ver.build"
+						:value="ver">{{ver.build}} : {{ver.platform}}</option>
 				</b-select>
 			</settings-field>
 
@@ -156,6 +160,7 @@ import Vue from "vue";
 import SettingsField from "../Components/SettingsField.vue";
 import SettingsGroup from "../Components/SettingsGroup.vue";
 import { bot, cmd } from "../Api";
+import { IVersion } from "../ApiObjects";
 import { Util } from "../Util";
 import Lang from "../Model/Languge";
 import { debounce } from "lodash-es";
@@ -182,7 +187,7 @@ export default Vue.extend({
 		return {
 			Lang,
 
-			versions,
+			versions: [] as IVersion[],
 			filter: {
 				text: "",
 				level: 0 // 0 simple, 1 advanced, 2 expert
@@ -199,15 +204,15 @@ export default Vue.extend({
 	},
 	async created() {
 		const res = await this.requestModel();
-		// fetch("https://raw.githubusercontent.com/ReSpeak/tsdeclarations/master/Versions.csv")
-		// 	.then(v => n.text())
-		// 	.then(csv => {
-		// 		this.versions = csv.split(/\n/gm).slice(1).map(line => line.split(/,/g)).map(parts => {
-		// 			build: parts[0],
-		// 			platform: parts[1],
-		// 			sign: parts[2],
-		// 		})
-		// 	});
+		fetch("https://raw.githubusercontent.com/ReSpeak/tsdeclarations/master/Versions.csv")
+			.then(v => v.text())
+			.then(csv => {
+				this.versions = csv.split(/\n/gm).slice(1).map(line => line.split(/,/g)).map(parts => { return {
+					build: parts[0],
+					platform: parts[1],
+					sign: parts[2],
+				}})
+			});
 
 		if (!Util.check(this, res, "Failed to retrieve settings")) return;
 
@@ -234,11 +239,11 @@ export default Vue.extend({
 			}
 		},
 		bind_bot_version: {
-			get(): { build: string, platform: string, sign: string } {
-
+			get(): IVersion {
+				return this.model.connect.client_version;
 			},
-			set(val: { build: string, platform: string, sign: string }) {
-
+			set(val: IVersion) {
+				 this.model.connect.client_version = val;
 			}
 		}
 	},
