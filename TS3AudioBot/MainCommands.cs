@@ -1275,11 +1275,11 @@ namespace TS3AudioBot
 		public static void CommandSettingsDelete(ConfRoot config, string name) => config.DeleteBotConfig(name).UnwrapThrow();
 
 		[Command("settings get")]
-		public static ConfigPart CommandSettingsGet(ConfBot config, string path = "")
+		public static ConfigPart CommandSettingsGet(ConfBot config, string path = null)
 			=> SettingsGet(config, path);
 
 		[Command("settings set")]
-		public static void CommandSettingsSet(ConfBot config, string path, string value = "")
+		public static void CommandSettingsSet(ConfBot config, string path, string value = null)
 		{
 			SettingsSet(config, path, value);
 			if (!config.SaveWhenExists())
@@ -1290,7 +1290,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings bot get", "cmd_settings_get_help")]
-		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path = "")
+		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path = null)
 		{
 			using (var botlock = bots.GetBotLock(bot))
 			{
@@ -1300,7 +1300,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings bot set", "cmd_settings_set_help")]
-		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string value = "")
+		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string value = null)
 		{
 			using (var botlock = bots.GetBotLock(bot))
 			{
@@ -1319,11 +1319,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings global get")]
-		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path = "")
+		public static ConfigPart CommandSettingsGlobalGet(ConfRoot config, string path = null)
 			=> SettingsGet(config, path);
 
 		[Command("settings global set")]
-		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value = "")
+		public static void CommandSettingsGlobalSet(ConfRoot config, string path, string value = null)
 		{
 			SettingsSet(config, path, value);
 			if (!config.Save())
@@ -1358,14 +1358,14 @@ namespace TS3AudioBot
 			}
 		}
 
-		private static ConfigPart SettingsGet(ConfigPart config, string path) => config.ByPathAsArray(path).SettingsGetSingle();
+		private static ConfigPart SettingsGet(ConfigPart config, string path = null) => config.ByPathAsArray(path ?? "").SettingsGetSingle();
 
 		private static void SettingsSet(ConfigPart config, string path, string value)
 		{
 			var setConfig = config.ByPathAsArray(path).SettingsGetSingle();
 			if (setConfig is IJsonSerializable jsonConfig)
 			{
-				var result = jsonConfig.FromJson(value);
+				var result = jsonConfig.FromJson(value ?? "");
 				if (!result.Ok)
 					throw new CommandException($"Failed to set the value ({result.Error}).", CommandExceptionReason.CommandError); // LOC: TODO
 			}

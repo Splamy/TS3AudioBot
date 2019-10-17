@@ -8,7 +8,7 @@ export class ErrorObject<T = any> {
 
 export class Get {
 	public static AuthData: ApiAuth = ApiAuth.Anonymous;
-	public static EndpointData: ApiEndpoint = ApiEndpoint.SameAddress;
+	public static EndpointData: ApiEndpoint = ApiEndpoint.Localhost;
 
 	public static async site(site: string): Promise<string> {
 		const response = await fetch(site);
@@ -67,12 +67,12 @@ export class Get {
 export class Api<T extends ApiRet = ApiRet> {
 	public constructor(private buildAddr: string) { }
 
-	public static call<T>(...params: (string | number | Api)[]) {
+	public static call<T>(...params: (string | number | boolean | Api)[]) {
 		let buildStr = "";
 		for (const param of params) {
 			if (typeof param === "string") {
 				buildStr += "/" + encodeURIComponent(param).replace(/\(/, "%28").replace(/\)/, "%29");
-			} else if (typeof param === "number") {
+			} else if (typeof param === "number" || typeof param === "boolean") {
 				buildStr += "/" + param.toString();
 			} else if (param instanceof Api) {
 				buildStr += "/(" + param.done() + ")";

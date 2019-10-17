@@ -22,12 +22,10 @@ namespace TS3AudioBot.Sessions
 		private const string ApiTokenTable = "apiToken";
 		private readonly LiteCollection<DbApiToken> dbTokenList;
 		// Map: Uid => ApiToken
-		private readonly Dictionary<string, ApiToken> liveTokenList;
+		private readonly Dictionary<string, ApiToken> liveTokenList = new Dictionary<string, ApiToken>();
 
 		public TokenManager(DbStore database)
 		{
-			Util.Init(out liveTokenList);
-
 			dbTokenList = database.GetCollection<DbApiToken>(ApiTokenTable);
 			dbTokenList.EnsureIndex(x => x.UserUid, true);
 			dbTokenList.EnsureIndex(x => x.Token, true);

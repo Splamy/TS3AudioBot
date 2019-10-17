@@ -1,13 +1,19 @@
 import { BotStatus } from "./Model/BotStatus";
 import { TargetSendMode } from "./Model/TargetSendMode";
 
-// tslint:disable: interface-name
-
 export interface IVersion {
 	build: string;
 	platform: string;
 	sign: string;
 }
+
+export interface IPassword {
+	pw: string;
+	hashed: false;
+	autohash: false;
+}
+
+// tslint:disable: interface-name
 
 export interface CmdBotInfo {
 	Id: number | null;

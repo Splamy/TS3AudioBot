@@ -52,26 +52,34 @@
 				<b-button class="control">Test (TODO)</b-button>
 			</settings-field>
 
-			<!-- Server password -->
+			<settings-field :filter="filter" path="connect.server_password" label="Server password">
+				<settings-password :filter="filter" v-model="model.connect.server_password" />
+			</settings-field>
 
 			<settings-field
 				:filter="filter"
 				path="connect.channel"
 				label="Default channel"
-			>(Cool dropdown i guess)
+			>(TODO)</settings-field>
+
+			<settings-field :filter="filter" path="connect.channel_password" label="Channel password">
+				<settings-password :filter="filter" v-model="model.connect.channel_password" />
 			</settings-field>
 
-			<!-- Channel password -->
-
-			<settings-field :filter="filter" path="connect.client_version" label="Emulated client version">
-				<b-select v-model="bind_bot_version" placeholder="Select version">
+			<settings-field
+				:filter="filter"
+				path="connect.client_version"
+				label="Emulated client version"
+				advanced
+			>
+				<b-select v-model="model.connect.client_version" placeholder="Select version">
 					<option
 						v-for="ver in versions"
-						:key="ver.build"
-						:value="ver">{{ver.build}} : {{ver.platform}}</option>
+						:key="ver.build + ver.platform"
+						:value="ver"
+					>{{ver.build}} : {{ver.platform}}</option>
 				</b-select>
 			</settings-field>
-
 		</settings-group>
 
 		<settings-group label="Audio">
@@ -159,6 +167,7 @@
 import Vue from "vue";
 import SettingsField from "../Components/SettingsField.vue";
 import SettingsGroup from "../Components/SettingsGroup.vue";
+import SettingsPassword from "../Components/SettingsPassword.vue";
 import { bot, cmd } from "../Api";
 import { IVersion } from "../ApiObjects";
 import { Util } from "../Util";
@@ -197,21 +206,35 @@ export default Vue.extend({
 					volume: {},
 					bitrate: 0
 				},
-				connect: {},
+				connect: {
+					server_password: {},
+					channel_password: {}
+				},
 				commands: {}
 			} as any
 		};
 	},
 	async created() {
 		const res = await this.requestModel();
-		fetch("https://raw.githubusercontent.com/ReSpeak/tsdeclarations/master/Versions.csv")
+		fetch(
+			"https://raw.githubusercontent.com/ReSpeak/tsdeclarations/master/Versions.csv"
+		)
 			.then(v => v.text())
 			.then(csv => {
-				this.versions = csv.split(/\n/gm).slice(1).map(line => line.split(/,/g)).map(parts => { return {
-					build: parts[0],
-					platform: parts[1],
-					sign: parts[2],
-				}})
+				this.versions = csv
+					.split(/\n/gm)
+					.slice(1)
+					.map(line => line.split(/,/g))
+					.map(parts => ({
+						build: parts[0],
+						platform: parts[1],
+						sign: parts[2]
+					}))
+					.filter(ver => {
+						const buildM = ver.build.match(/\[Build: (\d+)\]/);
+						if (buildM == null) return true;
+						return Number(buildM[1]) > 1513163251; // > 3.1.7 required
+					});
 			});
 
 		if (!Util.check(this, res, "Failed to retrieve settings")) return;
@@ -237,14 +260,6 @@ export default Vue.extend({
 				this.model.audio.volume.min = value[0];
 				this.model.audio.volume.max = value[1];
 			}
-		},
-		bind_bot_version: {
-			get(): IVersion {
-				return this.model.connect.client_version;
-			},
-			set(val: IVersion) {
-				 this.model.connect.client_version = val;
-			}
 		}
 	},
 	methods: {
@@ -259,10 +274,11 @@ export default Vue.extend({
 					this.botId.toString()
 				).get();
 		},
-		sendValue(confVal: string, val: string | number) {
+		sendValue(confVal: string, val: string | number | object) {
+			if (typeof val === "object") val = JSON.stringify(val);
 			if (this.online)
 				return bot(
-					cmd<void>("settings", "set", confVal, val.toString()),
+					cmd<void>("settings", "set", confVal, val),
 					this.botId
 				).get();
 			else
@@ -272,17 +288,23 @@ export default Vue.extend({
 					"set",
 					this.botId.toString(),
 					confVal,
-					val.toString()
+					val
 				).get();
+		},
+		isSettingsObjectGroup(path: string): boolean {
+			return path.startsWith("connect.client_version");
 		},
 		bindRecursive(path: string, obj: any) {
 			for (const childKey of Object.keys(obj)) {
 				var child: any = obj[childKey];
 				var childPath = (path ? path + "." : "") + childKey;
-				if (typeof child === "object" && !Array.isArray(child)) {
+				if (
+					typeof child === "object" &&
+					!Array.isArray(child) &&
+					!this.isSettingsObjectGroup(childPath)
+				) {
 					this.bindRecursive(childPath, child);
-				} /*if (typeof child === "number" || typeof child === "string") */ else {
-					//console.log("binding", childPath);
+				} else {
 					this.doWatch(childPath, child);
 				}
 			}
@@ -325,7 +347,8 @@ export default Vue.extend({
 	},
 	components: {
 		SettingsField,
-		SettingsGroup
+		SettingsGroup,
+		SettingsPassword
 	}
 });
 </script>

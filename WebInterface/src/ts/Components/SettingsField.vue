@@ -15,11 +15,12 @@
 <script lang="ts">
 import Vue from "vue";
 import SettingsGroup from "./SettingsGroup.vue";
+import { SettLevel, ISettFilter } from "../Model/SettingsLevel";
 
 export default Vue.component("settings-field", {
 	props: {
 		filter: {
-			type: Object as () => { text: string; level: number },
+			type: Object as () => ISettFilter,
 			required: false
 		},
 		path: { type: String, required: true },
@@ -34,8 +35,8 @@ export default Vue.component("settings-field", {
 	},
 	computed: {
 		is_visible(): boolean {
-			if (this.advanced && this.filter.level < 1) return false;
-			if (this.expert && this.filter.level < 2) return false;
+			if (this.advanced && this.filter.level < SettLevel.Advanced) return false;
+			if (this.expert && this.filter.level < SettLevel.Expert) return false;
 			const low_filter = this.filter.text.toLowerCase();
 			return (
 				this.path.toLowerCase().indexOf(low_filter) >= 0 ||
@@ -53,6 +54,8 @@ export default Vue.component("settings-field", {
 	},
 	data() {
 		return {
+			SettLevel,
+
 			parentIndex: 0
 		};
 	},

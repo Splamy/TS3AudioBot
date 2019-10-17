@@ -22,7 +22,6 @@
 
 <script lang="ts">
 import Vue from "vue";
-import { get } from "lodash-es";
 
 export default Vue.component("settings-group", {
 	props: {
