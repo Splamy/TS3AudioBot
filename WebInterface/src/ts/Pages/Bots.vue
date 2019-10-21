@@ -96,11 +96,11 @@
 								<b-icon icon="dots-horizontal" />
 							</button>
 
-							<b-dropdown-item :disabled="props.row.Name == null" aria-role="listitem">
+							<b-dropdown-item v-show="false" :disabled="props.row.Name == null" aria-role="listitem">
 								<b-icon icon="content-copy" />
 								<span>Copy</span>
 							</b-dropdown-item>
-							<b-dropdown-item :disabled="props.row.Name == null" aria-role="listitem">
+							<b-dropdown-item v-show="false" :disabled="props.row.Name == null" aria-role="listitem">
 								<b-icon icon="pencil" />
 								<span>Rename</span>
 							</b-dropdown-item>
@@ -108,7 +108,7 @@
 								<b-icon icon="delete" type="is-danger" />
 								<span>Delete</span>
 							</b-dropdown-item>
-							<b-dropdown-item v-else>
+							<b-dropdown-item v-show="false" v-else>
 								<b-icon icon="content-save" type="is-success" />
 								<span>Save</span>
 							</b-dropdown-item>

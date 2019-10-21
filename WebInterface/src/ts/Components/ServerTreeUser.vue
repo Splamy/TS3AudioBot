@@ -10,7 +10,14 @@
 					<span>
 						<b-icon :icon="node.Id == own_client.Id ? 'robot' : 'account'"></b-icon>
 					</span>
-					<span class="entry-expand">{{node.Name}}</span>
+					<span class="entry-expand">
+						<edi-text
+							v-if="node.Id == own_client.Id"
+							:text="node.Name"
+							@onedit="botRename($event)"
+						/>
+						<div v-else>{{node.Name}}</div>
+					</span>
 
 					<b-icon v-if="playing_here" icon="volume-high" />
 
@@ -43,6 +50,7 @@ import { IChannelBuildNode } from "./ServerTree.vue";
 import { TargetSendMode } from "../Model/TargetSendMode";
 import { bot, cmd } from "../Api";
 import { Util } from "../Util";
+import EditableText from "../Components/EditableText.vue";
 
 export default Vue.component("server-tree-user", {
 	props: {
@@ -86,7 +94,20 @@ export default Vue.component("server-tree-user", {
 
 			if (!Util.check(this, res, "Failed to change mode")) return;
 			this.meta.refresh();
+		},
+		// Duplicated method! (BotSettings) combine somehere maybe
+		async botRename(name: string) {
+			const res = await bot(
+				cmd<void>("bot", "name", name),
+				this.botId
+			).get();
+
+			if (!Util.check(this, res, "Failed to set name")) return;
+			this.meta.refresh();
 		}
+	},
+	components: {
+		EditableText
 	}
 });
 </script>

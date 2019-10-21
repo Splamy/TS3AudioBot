@@ -8,7 +8,7 @@ export class ErrorObject<T = any> {
 
 export class Get {
 	public static AuthData: ApiAuth = ApiAuth.Anonymous;
-	public static EndpointData: ApiEndpoint = ApiEndpoint.Localhost;
+	public static EndpointData: ApiEndpoint = ApiEndpoint.SameAddress;
 
 	public static async site(site: string): Promise<string> {
 		const response = await fetch(site);

@@ -45,7 +45,7 @@
 		<settings-group label="Connection">
 			<settings-field :filter="filter" path="connect.name" label="Bot name" grouped>
 				<b-input v-model="model.connect.name" minlength="3" maxlength="30" expanded required></b-input>
-				<b-button class="control">Apply to bot now (TODO)</b-button>
+				<b-button v-if="online" class="control" @click="botRename(model.connect.name)">Apply to bot now</b-button>
 			</settings-field>
 			<settings-field :filter="filter" path="connect.address" label="Server address" grouped>
 				<b-input v-model="model.connect.address" expanded required></b-input>
@@ -56,11 +56,7 @@
 				<settings-password :filter="filter" v-model="model.connect.server_password" />
 			</settings-field>
 
-			<settings-field
-				:filter="filter"
-				path="connect.channel"
-				label="Default channel"
-			>(TODO)</settings-field>
+			<settings-field :filter="filter" path="connect.channel" label="Default channel">(TODO)</settings-field>
 
 			<settings-field :filter="filter" path="connect.channel_password" label="Channel password">
 				<settings-password :filter="filter" v-model="model.connect.channel_password" />
@@ -343,6 +339,14 @@ export default Vue.extend({
 					}
 				];
 			}
+		},
+		async botRename(name: string) {
+			const res = await bot(
+				cmd<void>("bot", "name", name),
+				this.botId
+			).get();
+
+			if (!Util.check(this, res, "Failed to set name")) return;
 		}
 	},
 	components: {
