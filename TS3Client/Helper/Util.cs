@@ -28,8 +28,6 @@ namespace TS3Client.Helper
 
 		public static IEnumerable<Enum> GetFlags(this Enum input) => Enum.GetValues(input.GetType()).Cast<Enum>().Where(input.HasFlag);
 
-		public static void Init<T>(out T fld) where T : new() => fld = new T();
-
 		public static Encoding Encoder { get; } = new UTF8Encoding(false, false);
 
 		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);

@@ -43,7 +43,7 @@ namespace TS3Client.Full
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
 		private ResendPacket<TOut> initPacketCheck;
-		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager;
+		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager = new Dictionary<ushort, ResendPacket<TOut>>();
 		// In Packets
 		private readonly GenerationWindow receiveWindowVoice;
 		private readonly GenerationWindow receiveWindowVoiceWhisper;
@@ -51,7 +51,6 @@ namespace TS3Client.Full
 		private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
 		// ====
 		private readonly object sendLoopLock = new object();
-		private readonly LockTrace sendLoopLockTrace;
 		private readonly Ts3Crypt ts3Crypt;
 		private Socket socket;
 		private Timer resendTimer;
@@ -70,8 +69,6 @@ namespace TS3Client.Full
 
 		public PacketHandler(Ts3Crypt ts3Crypt, Id id)
 		{
-			Util.Init(out packetAckManager);
-			sendLoopLockTrace = new LockTrace(sendLoopLock, LogLock);
 			receiveQueueCommand = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			receiveQueueCommandLow = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			receiveWindowVoice = new GenerationWindow(ushort.MaxValue + 1);
@@ -100,7 +97,7 @@ namespace TS3Client.Full
 
 		public void Listen(IPEndPoint address)
 		{
-			using (sendLoopLockTrace.Get())
+			lock (sendLoopLock)
 			{
 				Initialize(address, false);
 				// dummy
@@ -114,7 +111,7 @@ namespace TS3Client.Full
 
 		private void Initialize(IPEndPoint address, bool connect)
 		{
-			using (sendLoopLockTrace.Get())
+			lock (sendLoopLock)
 			{
 				ClientId = 0;
 				closed = 0;
@@ -175,7 +172,7 @@ namespace TS3Client.Full
 				return;
 			Log.Debug("Stopping PacketHandler {0}", closeReason);
 
-			using (sendLoopLockTrace.Get())
+			lock (sendLoopLock)
 			{
 				resendTimer?.Dispose();
 				socket?.Dispose();
@@ -186,7 +183,7 @@ namespace TS3Client.Full
 
 		public E<string> AddOutgoingPacket(ReadOnlySpan<byte> packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
 		{
-			using (sendLoopLockTrace.Get())
+			lock (sendLoopLock)
 			{
 				if (closed != 0)
 					return "Connection closed";
@@ -352,7 +349,7 @@ namespace TS3Client.Full
 						}
 					}
 
-					using (self.sendLoopLockTrace.Get())
+					lock (self.sendLoopLock)
 					{
 						if (self.closed != 0)
 							return;
@@ -563,7 +560,7 @@ namespace TS3Client.Full
 			if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var packetId))
 				return false;
 
-			using (sendLoopLockTrace.Get())
+			lock (sendLoopLock)
 			{
 				if (packetAckManager.TryGetValue(packetId, out var ackPacket))
 				{
@@ -613,7 +610,7 @@ namespace TS3Client.Full
 
 		private bool ReceiveInitAck(ref Packet<TIn> packet)
 		{
-			using (sendLoopLockTrace.Get())
+			lock (sendLoopLock)
 			{
 				if (initPacketCheck is null)
 					return true;
@@ -665,7 +662,7 @@ namespace TS3Client.Full
 			try
 			{
 				bool close = false;
-				using (sendLoopLockTrace.Get())
+				lock (sendLoopLock)
 				{
 					if (closed != 0)
 						return;
@@ -768,7 +765,6 @@ namespace TS3Client.Full
 		public static readonly Logger LogRaw = LogManager.GetLogger("TS3Client.PacketHandler.Raw");
 		public static readonly Logger LogRawVoice = LogManager.GetLogger("TS3Client.PacketHandler.Raw.Voice");
 		public static readonly Logger LogTimeout = LogManager.GetLogger("TS3Client.PacketHandler.Timeout");
-		public static readonly Logger LogLock = LogManager.GetLogger("TS3Client.PacketHandler.Lock");
 
 		/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
 		public static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(20);

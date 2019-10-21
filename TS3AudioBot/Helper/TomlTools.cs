@@ -21,7 +21,7 @@ namespace TS3AudioBot.Helper
 
 	public static class TomlTools
 	{
-		private static readonly Regex TimeReg = new Regex(@"^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
+		private static readonly Regex TimeReg = new Regex(@"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
 
 		// *** Convenience method for getting values out of a toml object. ***
 
@@ -150,11 +150,12 @@ namespace TS3AudioBot.Helper
 			{
 				try
 				{
-					return new TimeSpan(0,
+					return new TimeSpan(
 						AsNum(match.Groups[1].Value),
 						AsNum(match.Groups[2].Value),
 						AsNum(match.Groups[3].Value),
-						AsNum(match.Groups[4].Value));
+						AsNum(match.Groups[4].Value),
+						AsNum(match.Groups[5].Value));
 				}
 				catch { }
 			}
@@ -170,6 +171,25 @@ namespace TS3AudioBot.Helper
 			if (TimeReg.IsMatch(value))
 				return R.Ok;
 			return $"Value '{value}' is not a valid time.";
+		}
+
+		public static string SerializeTime(TimeSpan time)
+		{
+			var strb = new StringBuilder();
+			if (time.TotalDays > 1)
+			{
+				strb.Append(time.TotalDays.ToString("F0")).Append('d');
+				time -= TimeSpan.FromDays(time.Days);
+			}
+			if (time.Hours > 0)
+				strb.Append(time.Hours).Append("h");
+			if (time.Minutes > 0)
+				strb.Append(time.Minutes).Append("m");
+			if (time.Seconds > 0)
+				strb.Append(time.Seconds).Append("s");
+			if (time.Milliseconds > 0)
+				strb.Append(time.Milliseconds).Append("ms");
+			return strb.ToString();
 		}
 
 		// *** Convenience method for setting values to a toml object. ***
@@ -194,7 +214,7 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(int)) return tomlTable.Add(key, (int)(object)value).Added;
 				else if (typeof(T) == typeof(long)) return tomlTable.Add(key, (long)(object)value).Added;
 				else if (typeof(T) == typeof(ulong)) return tomlTable.Add(key, (long)(ulong)(object)value).Added;
-				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, XmlConvert.ToString((TimeSpan)(object)value)).Added;
+				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, SerializeTime((TimeSpan)(object)value)).Added;
 				else if (typeof(T) == typeof(DateTime)) return tomlTable.Add(key, (DateTime)(object)value).Added;
 				else if (typeof(T).IsEnum) return tomlTable.Add(key, value.ToString()).Added;
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Add(key, enubool).Added;
@@ -205,7 +225,7 @@ namespace TS3AudioBot.Helper
 				else if (value is IEnumerable<int> enuint) return tomlTable.Add(key, enuint).Added;
 				else if (value is IEnumerable<long> enulong) return tomlTable.Add(key, enulong).Added;
 				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Add(key, enuulong.Select(x => (long)x)).Added;
-				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Add(key, enuTimeSpan.Select(XmlConvert.ToString)).Added;
+				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Add(key, enuTimeSpan.Select(SerializeTime)).Added;
 				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Add(key, enuDateTime).Added;
 			}
 			else
@@ -221,7 +241,7 @@ namespace TS3AudioBot.Helper
 				else if (typeof(T) == typeof(int)) retobj = tomlTable.Update(key, /*auto*/(int)(object)value).Added;
 				else if (typeof(T) == typeof(long)) retobj = tomlTable.Update(key, (long)(object)value).Added;
 				else if (typeof(T) == typeof(ulong)) retobj = tomlTable.Update(key, (long)(ulong)(object)value).Added;
-				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, XmlConvert.ToString((TimeSpan)(object)value)).Added;
+				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, SerializeTime((TimeSpan)(object)value)).Added;
 				else if (typeof(T) == typeof(DateTime)) retobj = tomlTable.Update(key, (DateTime)(object)value).Added;
 				else if (typeof(T).IsEnum) retobj = tomlTable.Update(key, value.ToString()).Added;
 				else if (value is IEnumerable<bool> enubool) return tomlTable.Update(key, enubool).Added;
@@ -232,7 +252,7 @@ namespace TS3AudioBot.Helper
 				else if (value is IEnumerable<int> enuint) return tomlTable.Update(key, enuint).Added;
 				else if (value is IEnumerable<long> enulong) return tomlTable.Update(key, enulong).Added;
 				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Update(key, enuulong.Select(x => (long)x)).Added;
-				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Update(key, enuTimeSpan.Select(XmlConvert.ToString)).Added;
+				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Update(key, enuTimeSpan.Select(SerializeTime)).Added;
 				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Update(key, enuDateTime).Added;
 				else throw new NotSupportedException("The type is not supported");
 				if (docs != null)

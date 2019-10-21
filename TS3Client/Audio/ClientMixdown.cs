@@ -10,12 +10,7 @@ namespace TS3Client.Audio
 
 		private const int BufferSize = 4096 * 8;
 
-		private readonly Dictionary<ushort, ClientMix> mixdownBuffer;
-
-		public ClientMixdown()
-		{
-			Util.Init(out mixdownBuffer);
-		}
+		private readonly Dictionary<ushort, ClientMix> mixdownBuffer = new Dictionary<ushort, ClientMix>();
 
 		public void Write(Span<byte> data, Meta meta)
 		{

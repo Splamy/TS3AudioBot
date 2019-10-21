@@ -28,7 +28,7 @@ namespace TS3Client
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3BaseFunctions parent;
-		private readonly Queue<FileTransferToken> transferQueue;
+		private readonly Queue<FileTransferToken> transferQueue = new Queue<FileTransferToken>();
 		private Thread workerThread;
 		private bool threadEnd;
 		private ushort transferIdCnt;
@@ -37,7 +37,6 @@ namespace TS3Client
 		{
 			parent = ts3Connection;
 			//ts3connection.OnFileTransferStatus += FileStatusNotification;
-			Util.Init(out transferQueue);
 		}
 
 		/// <summary>Initiate a file upload to the server.</summary>
