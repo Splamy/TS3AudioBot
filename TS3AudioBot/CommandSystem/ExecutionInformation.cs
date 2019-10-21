@@ -10,33 +10,13 @@
 namespace TS3AudioBot.CommandSystem
 {
 	using Dependency;
-	using System;
 
-	public class ExecutionInformation
+	public class ExecutionInformation : ChainedInjector<BasicInjector>
 	{
-		private readonly IInjector dynamicObjects;
-
-		public ExecutionInformation() : this(new BasicInjector()) { }
-
-		public ExecutionInformation(IInjector injector)
+		public ExecutionInformation() : this(NullInjector.Instance) { }
+		public ExecutionInformation(IInjector parent) : base(parent, new BasicInjector())
 		{
-			dynamicObjects = injector;
-			AddDynamicObject(this);
-		}
-
-		public void AddDynamicObject(object obj) => dynamicObjects.AddModule(obj);
-
-		public bool TryGet<T>(out T obj)
-		{
-			var ok = TryGet(typeof(T), out var oobj);
-			if (ok) obj = (T)oobj;
-			else obj = default;
-			return ok;
-		}
-		public bool TryGet(Type t, out object obj)
-		{
-			obj = dynamicObjects.GetModule(t);
-			return obj != null;
+			this.AddModule(this);
 		}
 	}
 }

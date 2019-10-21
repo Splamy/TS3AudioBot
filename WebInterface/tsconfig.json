@@ -1,11 +1,11 @@
 {
     "compilerOptions": {
         "target": "es6",
-        "module": "amd",
+        "module": "es2015",
+        "moduleResolution": "node",
         "sourceMap": true,
         "watch": false,
-        "rootDir": "tssrc",
-        "outFile": "out/script.js",
+        "rootDir": "src/ts",
 
         "removeComments": true,
         "noImplicitAny": true,
@@ -14,7 +14,7 @@
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
-        "noUnusedLocals": true,
+        //"noUnusedLocals": true,
         //,"noUnusedParameters": true
         "strictPropertyInitialization": true,
         "strictFunctionTypes": true,
@@ -24,3 +24,4 @@
         "jsxFactory": "createElement"
     }
 }
+ 

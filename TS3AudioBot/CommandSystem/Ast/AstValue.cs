@@ -13,12 +13,34 @@ namespace TS3AudioBot.CommandSystem.Ast
 
 	internal class AstValue : AstNode
 	{
-		public override AstType Type => AstType.Value;
-		public string Value { get; set; }
+		private string value;
+		private string tailString;
 
-		public void BuildValue()
+		public override AstType Type => AstType.Value;
+
+		public StringType StringType { get; set; }
+
+		public int TailLength { get; set; }
+
+		public string Value
 		{
-			Value = FullRequest.Substring(Position, Length);
+			get => value = (value ?? FullRequest.Substring(Position, Length));
+			set { this.value = value; tailString = value; }
+		}
+
+		public string TailString
+		{
+			get
+			{
+				if (tailString == null)
+				{
+					if (TailLength == 0)
+						tailString = FullRequest.Substring(Position);
+					else
+						tailString = FullRequest.Substring(Position, TailLength);
+				}
+				return tailString;
+			}
 		}
 
 		public override void Write(StringBuilder strb, int depth) => strb.Space(depth).Append(Value);

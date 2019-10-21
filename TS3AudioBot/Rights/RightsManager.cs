@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Rights
 {
 	using CommandSystem;
+	using Dependency;
 	using Config;
 	using Helper;
 	using Matchers;
@@ -20,6 +21,7 @@ namespace TS3AudioBot.Rights
 	using System.Linq;
 	using TS3Client;
 	using TS3Client.Messages;
+	using TS3AudioBot.Web.Api;
 
 	/// <summary>Permission system of the bot.</summary>
 	public class RightsManager
@@ -46,7 +48,6 @@ namespace TS3AudioBot.Rights
 			Util.Init(out registeredRights);
 			this.config = config;
 			needsRecalculation = true;
-			CreateFileIfNotExists();
 		}
 
 		public void SetRightsList(IEnumerable<string> rights)
@@ -78,15 +79,14 @@ namespace TS3AudioBot.Rights
 			if (info.TryGet<ExecuteContext>(out var execCtx))
 				return execCtx;
 
-			if (info.TryGet<InvokerData>(out var invoker))
+			execCtx = new ExecuteContext();
+
+			if (info.TryGet<ClientCall>(out var clientCall))
 			{
-				execCtx = new ExecuteContext
-				{
-					ServerGroups = invoker.ServerGroups,
-					ClientUid = invoker.ClientUid,
-					Visibiliy = invoker.Visibiliy,
-					ApiToken = invoker.Token,
-				};
+				execCtx.ServerGroups = clientCall.ServerGroups;
+				execCtx.ClientUid = clientCall.ClientUid;
+				execCtx.Visibiliy = clientCall.Visibiliy;
+				execCtx.IsApi = false;
 
 				// Get Required Matcher Data:
 				// In this region we will iteratively go through different possibilities to obtain
@@ -94,24 +94,25 @@ namespace TS3AudioBot.Rights
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
 
-				if (info.TryGet<Ts3Client>(out var ts))
+				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<Ts3BaseFunctions>(out var tsClient))
 				{
-					ulong[] serverGroups = invoker.ServerGroups;
-					ulong? channelId = invoker.ChannelId;
-					ulong? databaseId = invoker.DatabaseId;
+					ulong[] serverGroups = clientCall.ServerGroups;
+					ulong? channelId = clientCall.ChannelId;
+					ulong? databaseId = clientCall.DatabaseId;
+					ulong? channelGroup = clientCall.ChannelGroup;
 
-					if (invoker.ClientId.HasValue
+					if (clientCall.ClientId != null
 						&& ((needsAvailableGroups && serverGroups is null)
-							|| needsAvailableChanGroups
-							|| (needsPermOverview.Length > 0 && (!databaseId.HasValue || !channelId.HasValue))
+							|| (needsAvailableChanGroups && channelGroup is null)
+							|| (needsPermOverview.Length > 0 && (databaseId == null || channelId == null))
 						)
 					)
 					{
-						var result = ts.GetClientInfoById(invoker.ClientId.Value);
+						var result = ts.GetClientInfoById(clientCall.ClientId.Value);
 						if (result.Ok)
 						{
 							serverGroups = result.Value.ServerGroups;
-							execCtx.ChannelGroupId = result.Value.ChannelGroup;
+							channelGroup = result.Value.ChannelGroup;
 							databaseId = result.Value.DatabaseId;
 							channelId = result.Value.ChannelId;
 						}
@@ -119,16 +120,16 @@ namespace TS3AudioBot.Rights
 
 					if (needsAvailableGroups && serverGroups is null)
 					{
-						if (!databaseId.HasValue)
+						if (databaseId == null)
 						{
-							var resultDbId = ts.TsFullClient.ClientGetDbIdFromUid(invoker.ClientUid);
+							var resultDbId = ts.GetClientDbIdByUid(clientCall.ClientUid);
 							if (resultDbId.Ok)
 							{
-								databaseId = resultDbId.Value.ClientDbId;
+								databaseId = resultDbId.Value;
 							}
 						}
 
-						if (databaseId.HasValue)
+						if (databaseId != null)
 						{
 							var result = ts.GetClientServerGroups(databaseId.Value);
 							if (result.Ok)
@@ -136,12 +137,13 @@ namespace TS3AudioBot.Rights
 						}
 					}
 
+					execCtx.ChannelGroupId = channelGroup;
 					execCtx.ServerGroups = serverGroups ?? Array.Empty<ulong>();
 
-					if (needsPermOverview.Length > 0 && databaseId.HasValue && channelId.HasValue)
+					if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)
 					{
 						// TODO check if there is any better way to only get the permissions needed.
-						var result = ts.TsFullClient.PermOverview(databaseId.Value, channelId.Value, 0);
+						var result = tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
 						if (result.Ok)
 						{
 							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(Ts3Permission)).Length];
@@ -156,13 +158,13 @@ namespace TS3AudioBot.Rights
 					}
 				}
 			}
-			else
+			else if (info.TryGet<ApiCall>(out var apiCallData))
 			{
-				execCtx = new ExecuteContext();
+				execCtx.ClientUid = apiCallData.ClientUid;
+				execCtx.ApiToken = apiCallData.Token;
+				execCtx.ApiCallerIp = apiCallData.IpAddress;
+				execCtx.IsApi = true;
 			}
-
-			if (info.TryGet<CallerInfo>(out var caller))
-				execCtx.IsApi = caller.ApiCall;
 
 			if (info.TryGet<Bot>(out var bot))
 			{
@@ -180,7 +182,7 @@ namespace TS3AudioBot.Rights
 			foreach (var rule in execCtx.MatchingRules)
 				execCtx.DeclAdd.UnionWith(rule.DeclAdd);
 
-			info.AddDynamicObject(execCtx);
+			info.AddModule(execCtx);
 
 			return execCtx;
 		}
@@ -229,7 +231,7 @@ namespace TS3AudioBot.Rights
 		{
 			try
 			{
-				CreateFileIfNotExists();
+				CreateDefaultConfigIfNotExists();
 
 				var table = Toml.ReadFile(config.Path);
 				var ctx = new ParseContext(registeredRights);
@@ -255,21 +257,75 @@ namespace TS3AudioBot.Rights
 			return null;
 		}
 
-		public void CreateFileIfNotExists()
+		public void CreateDefaultConfigIfNotExists()
 		{
-			if (!File.Exists(config.Path))
+			CreateConfig(new CreateFileSettings { OverwriteIfExists = false });
+		}
+
+		public void CreateConfig(CreateFileSettings settings)
+		{
+			if (!settings.OverwriteIfExists && File.Exists(config.Path))
+				return;
+
+			Log.Info("Creating new permission file ({@settings})", settings);
+
+			string toml = null;
+			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
+			using (var reader = new StreamReader(fs, Util.Utf8Encoder))
 			{
-				Log.Info("No rights file found. Creating default.");
-				using (var fs = File.OpenWrite(config.Path))
-				using (var data = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
-					data.CopyTo(fs);
+				toml = reader.ReadToEnd();
 			}
+
+			using (var fs = File.Open(config.Path, FileMode.Create, FileAccess.Write, FileShare.None))
+			using (var writer = new StreamWriter(fs, Util.Utf8Encoder))
+			{
+				string replaceAdminUids = settings.AdminUids != null
+					? string.Join(" ,", settings.AdminUids.Select(x => $"\"{x}\""))
+					: string.Empty;
+				toml = toml.Replace("\"_admin_uid_\"", replaceAdminUids);
+
+				writer.Write(toml);
+			}
+		}
+
+		public void CreateConfigIfNotExists(bool interactive = false)
+		{
+			if (File.Exists(config.Path))
+				return;
+
+			Log.Warn("No permission file found.");
+
+			var settings = new CreateFileSettings
+			{
+				OverwriteIfExists = false,
+			};
+
+			if (interactive)
+			{
+				Console.WriteLine("Do you want to set up an admin in the default permission file template? [Y/n]");
+				if (Interactive.UserAgree(defaultTo: true))
+				{
+					var adminUid = Interactive.LoopAction("Please enter an admin uid", uid =>
+					{
+						if (!TS3Client.Full.IdentityData.IsUidValid(uid))
+						{
+							Console.WriteLine("The uid seems to be invalid, continue anyway? [y/N]");
+							return Interactive.UserAgree(defaultTo: false);
+						}
+						return true;
+					});
+					if (adminUid is null)
+						return;
+
+					settings.AdminUids = new[] { adminUid };
+				}
+			}
+
+			CreateConfig(settings);
 		}
 
 		private static void RecalculateRights(TomlTable table, ParseContext parseCtx)
 		{
-			var localRules = Array.Empty<RightsRule>();
-
 			if (!parseCtx.RootRule.ParseChilden(table, parseCtx))
 				return;
 

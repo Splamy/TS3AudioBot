@@ -60,6 +60,8 @@ namespace TS3Client.Full
 		public event EventHandler<ChannelMoved> OnEachChannelMoved;
 		public event NotifyEventHandler<ChannelPasswordChanged> OnChannelPasswordChanged;
 		public event EventHandler<ChannelPasswordChanged> OnEachChannelPasswordChanged;
+		public event NotifyEventHandler<ChannelPermissionHints> OnChannelPermissionHints;
+		public event EventHandler<ChannelPermissionHints> OnEachChannelPermissionHints;
 		public event NotifyEventHandler<ChannelPermList> OnChannelPermList;
 		public event EventHandler<ChannelPermList> OnEachChannelPermList;
 		public event NotifyEventHandler<ChannelSubscribed> OnChannelSubscribed;
@@ -96,12 +98,16 @@ namespace TS3Client.Full
 		public event EventHandler<ClientNameFromUid> OnEachClientNameFromUid;
 		public event NotifyEventHandler<ClientNeededPermissions> OnClientNeededPermissions;
 		public event EventHandler<ClientNeededPermissions> OnEachClientNeededPermissions;
+		public event NotifyEventHandler<ClientPermissionHints> OnClientPermissionHints;
+		public event EventHandler<ClientPermissionHints> OnEachClientPermissionHints;
 		public event NotifyEventHandler<ClientPermList> OnClientPermList;
 		public event EventHandler<ClientPermList> OnEachClientPermList;
 		public event NotifyEventHandler<ClientPoke> OnClientPoke;
 		public event EventHandler<ClientPoke> OnEachClientPoke;
 		public event NotifyEventHandler<ClientServerGroupAdded> OnClientServerGroupAdded;
 		public event EventHandler<ClientServerGroupAdded> OnEachClientServerGroupAdded;
+		public event NotifyEventHandler<ClientServerGroupRemoved> OnClientServerGroupRemoved;
+		public event EventHandler<ClientServerGroupRemoved> OnEachClientServerGroupRemoved;
 		public event NotifyEventHandler<ClientSetServerQueryLogin> OnClientSetServerQueryLogin;
 		public event EventHandler<ClientSetServerQueryLogin> OnEachClientSetServerQueryLogin;
 		public event NotifyEventHandler<ClientUidFromClid> OnClientUidFromClid;
@@ -365,6 +371,20 @@ namespace TS3Client.Full
 				break;
 			}
 			
+			case NotificationType.ChannelPermissionHints: {
+				var ntfc = (ChannelPermissionHints[])ntf;
+				ProcessChannelPermissionHints(ntfc);
+				OnChannelPermissionHints?.Invoke(this, ntfc);
+				var ev = OnEachChannelPermissionHints;
+				var book = Book;
+				foreach(var that in ntfc) {
+					ev?.Invoke(this, that);
+					ProcessEachChannelPermissionHints(that);
+					book?.UpdateChannelPermissionHints(that);
+				}
+				break;
+			}
+			
 			case NotificationType.ChannelPermList: {
 				var ntfc = (ChannelPermList[])ntf;
 				ProcessChannelPermList(ntfc);
@@ -387,6 +407,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachChannelSubscribed(that);
+					book?.UpdateChannelSubscribed(that);
 				}
 				break;
 			}
@@ -400,6 +421,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachChannelUnsubscribed(that);
+					book?.UpdateChannelUnsubscribed(that);
 				}
 				break;
 			}
@@ -604,6 +626,20 @@ namespace TS3Client.Full
 				break;
 			}
 			
+			case NotificationType.ClientPermissionHints: {
+				var ntfc = (ClientPermissionHints[])ntf;
+				ProcessClientPermissionHints(ntfc);
+				OnClientPermissionHints?.Invoke(this, ntfc);
+				var ev = OnEachClientPermissionHints;
+				var book = Book;
+				foreach(var that in ntfc) {
+					ev?.Invoke(this, that);
+					ProcessEachClientPermissionHints(that);
+					book?.UpdateClientPermissionHints(that);
+				}
+				break;
+			}
+			
 			case NotificationType.ClientPermList: {
 				var ntfc = (ClientPermList[])ntf;
 				ProcessClientPermList(ntfc);
@@ -644,6 +680,20 @@ namespace TS3Client.Full
 				break;
 			}
 			
+			case NotificationType.ClientServerGroupRemoved: {
+				var ntfc = (ClientServerGroupRemoved[])ntf;
+				ProcessClientServerGroupRemoved(ntfc);
+				OnClientServerGroupRemoved?.Invoke(this, ntfc);
+				var ev = OnEachClientServerGroupRemoved;
+				var book = Book;
+				foreach(var that in ntfc) {
+					ev?.Invoke(this, that);
+					ProcessEachClientServerGroupRemoved(that);
+					book?.UpdateClientServerGroupRemoved(that);
+				}
+				break;
+			}
+			
 			case NotificationType.ClientSetServerQueryLogin: {
 				var ntfc = (ClientSetServerQueryLogin[])ntf;
 				ProcessClientSetServerQueryLogin(ntfc);
@@ -679,6 +729,7 @@ namespace TS3Client.Full
 				foreach(var that in ntfc) {
 					ev?.Invoke(this, that);
 					ProcessEachClientUpdated(that);
+					book?.UpdateClientUpdated(that);
 				}
 				break;
 			}
@@ -1123,6 +1174,8 @@ namespace TS3Client.Full
 		partial void ProcessEachChannelMoved(ChannelMoved notifies);
 		partial void ProcessChannelPasswordChanged(ChannelPasswordChanged[] notifies);
 		partial void ProcessEachChannelPasswordChanged(ChannelPasswordChanged notifies);
+		partial void ProcessChannelPermissionHints(ChannelPermissionHints[] notifies);
+		partial void ProcessEachChannelPermissionHints(ChannelPermissionHints notifies);
 		partial void ProcessChannelPermList(ChannelPermList[] notifies);
 		partial void ProcessEachChannelPermList(ChannelPermList notifies);
 		partial void ProcessChannelSubscribed(ChannelSubscribed[] notifies);
@@ -1159,12 +1212,16 @@ namespace TS3Client.Full
 		partial void ProcessEachClientNameFromUid(ClientNameFromUid notifies);
 		partial void ProcessClientNeededPermissions(ClientNeededPermissions[] notifies);
 		partial void ProcessEachClientNeededPermissions(ClientNeededPermissions notifies);
+		partial void ProcessClientPermissionHints(ClientPermissionHints[] notifies);
+		partial void ProcessEachClientPermissionHints(ClientPermissionHints notifies);
 		partial void ProcessClientPermList(ClientPermList[] notifies);
 		partial void ProcessEachClientPermList(ClientPermList notifies);
 		partial void ProcessClientPoke(ClientPoke[] notifies);
 		partial void ProcessEachClientPoke(ClientPoke notifies);
 		partial void ProcessClientServerGroupAdded(ClientServerGroupAdded[] notifies);
 		partial void ProcessEachClientServerGroupAdded(ClientServerGroupAdded notifies);
+		partial void ProcessClientServerGroupRemoved(ClientServerGroupRemoved[] notifies);
+		partial void ProcessEachClientServerGroupRemoved(ClientServerGroupRemoved notifies);
 		partial void ProcessClientSetServerQueryLogin(ClientSetServerQueryLogin[] notifies);
 		partial void ProcessEachClientSetServerQueryLogin(ClientSetServerQueryLogin notifies);
 		partial void ProcessClientUidFromClid(ClientUidFromClid[] notifies);

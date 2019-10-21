@@ -34,13 +34,15 @@ namespace TS3Client.Full.Book
 	using i64 = System.Int64;
 	using u64 = System.UInt64;
 	using f32 = System.Single;
-	using d64 = System.Double;
+	using f64 = System.Double;
 	using str = System.String;
 
+	using DateTime = System.DateTime;
 	using Duration = System.TimeSpan;
 	using DurationSeconds = System.TimeSpan;
 	using DurationMilliseconds = System.TimeSpan;
-	using SocketAddr = System.Net.IPAddress;
+	using SocketAddr = System.String;
+	using IpAddr = System.String;
 
 	using Uid = System.String;
 	using ClientDbId = System.UInt64;
@@ -69,7 +71,7 @@ namespace TS3Client.Full.Book
 		public GroupNamingMode NamingMode { get; set; }
 		public i32 NeededModifyPower { get; set; }
 		public i32 NeededMemberAddPower { get; set; }
-		public i32 NeededMemberRemovePower { get; set; }
+		public i32? NeededMemberRemovePower { get; set; }
 	}
 
 	public sealed partial class File
@@ -81,7 +83,6 @@ namespace TS3Client.Full.Book
 
 	
 		public str Path { get; set; }
-		public str Name { get; set; }
 		public i64 Size { get; set; }
 		public DateTime LastChanged { get; set; }
 		public bool IsFile { get; set; }
@@ -110,22 +111,24 @@ namespace TS3Client.Full.Book
 		public ChannelId Parent { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
-		public Codec Codec { get; set; }
-		public u8 CodecQuality { get; set; }
-		public u16 MaxClients { get; set; }
-		public MaxFamilyClients MaxFamilyClients { get; set; }
-		public i32 Order { get; set; }
+		public Codec? Codec { get; set; }
+		public u8? CodecQuality { get; set; }
+		public MaxClients MaxClients { get; set; }
+		public MaxClients MaxFamilyClients { get; set; }
+		public ChannelId Order { get; set; }
 		public ChannelType ChannelType { get; set; }
-		public bool IsDefault { get; set; }
-		public bool HasPassword { get; set; }
-		public i32 CodecLatencyFactor { get; set; }
-		public bool IsUnencrypted { get; set; }
-		public Duration DeleteDelay { get; set; }
-		public i32 NeededTalkPower { get; set; }
+		public bool? IsDefault { get; set; }
+		public bool? HasPassword { get; set; }
+		public i32? CodecLatencyFactor { get; set; }
+		public bool? IsUnencrypted { get; set; }
+		public Duration? DeleteDelay { get; set; }
+		public i32? NeededTalkPower { get; set; }
 		public bool ForcedSilence { get; internal set; }
 		public str PhoneticName { get; set; }
-		public IconHash IconId { get; set; }
-		public bool IsPrivate { get; set; }
+		public IconHash? IconId { get; set; }
+		public bool? IsPrivate { get; set; }
+		public bool Subscribed { get; set; }
+		public ChannelPermissionHint? PermissionHints { get; set; }
 		public OptionalChannelData OptionalData { get; internal set; }
 	}
 
@@ -202,8 +205,7 @@ namespace TS3Client.Full.Book
 	{
 		public Client()
 		{
-			ServerGroups = new List<ServerGroupId>();
-			Badges = new List<str>();
+			ServerGroups = new HashSet<ServerGroupId>();
 			
 		}
 
@@ -222,12 +224,12 @@ namespace TS3Client.Full.Book
 		public bool IsRecording { get; set; }
 		public ClientDbId DatabaseId { get; internal set; }
 		public ChannelGroupId ChannelGroup { get; set; }
-		public List<ServerGroupId> ServerGroups { get; set; }
+		public HashSet<ServerGroupId> ServerGroups { get; set; }
 		public str AwayMessage { get; set; }
 		public ClientType ClientType { get; internal set; }
 		public str AvatarHash { get; internal set; }
 		public i32 TalkPower { get; internal set; }
-		public TalkPowerRequest TalkPowerRequest { get; internal set; }
+		public TalkPowerRequest? TalkPowerRequest { get; internal set; }
 		public str Description { get; set; }
 		public bool IsPrioritySpeaker { get; set; }
 		public u32 UnreadMessages { get; internal set; }
@@ -237,7 +239,8 @@ namespace TS3Client.Full.Book
 		public bool IsChannelCommander { get; set; }
 		public str CountryCode { get; internal set; }
 		public ChannelId InheritedChannelGroupFromChannel { get; internal set; }
-		public List<str> Badges { get; set; }
+		public str Badges { get; set; }
+		public ClientPermissionHint? PermissionHints { get; set; }
 		public OptionalClientData OptionalData { get; internal set; }
 		public ConnectionClientData ConnectionData { get; internal set; }
 	}
@@ -323,10 +326,7 @@ namespace TS3Client.Full.Book
 	{
 		public Server()
 		{
-			Ip = new List<str>();
-			Clients = new Dictionary<ClientId,Client>();
-			Channels = new Dictionary<ChannelId,Channel>();
-			Groups = new Dictionary<ServerGroupId,ServerGroup>();
+			Ips = new HashSet<IpAddr>();
 			
 		}
 
@@ -353,7 +353,7 @@ namespace TS3Client.Full.Book
 		public str HostbuttonGfxUrl { get; set; }
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; internal set; }
-		public List<str> Ip { get; internal set; }
+		public HashSet<IpAddr> Ips { get; internal set; }
 		public bool AskForPrivilegekey { get; internal set; }
 		public HostBannerMode HostbannerMode { get; set; }
 		public Duration TempChannelDefaultDeleteDelay { get; set; }
@@ -361,21 +361,24 @@ namespace TS3Client.Full.Book
 		public LicenseType License { get; internal set; }
 		public OptionalServerData OptionalData { get; internal set; }
 		public ConnectionServerData ConnectionData { get; internal set; }
-		public Dictionary<ClientId,Client> Clients { get; internal set; }
-		public Dictionary<ChannelId,Channel> Channels { get; internal set; }
-		public Dictionary<ServerGroupId,ServerGroup> Groups { get; internal set; }
 	}
 
 	public sealed partial class Connection
 	{
 		public Connection()
 		{
+			Clients = new Dictionary<ClientId,Client>();
+			Channels = new Dictionary<ChannelId,Channel>();
+			Groups = new Dictionary<ServerGroupId,ServerGroup>();
 			
 		}
 
 	
 		public ClientId OwnClient { get; internal set; }
 		public Server Server { get; internal set; }
+		public Dictionary<ClientId,Client> Clients { get; internal set; }
+		public Dictionary<ChannelId,Channel> Channels { get; internal set; }
+		public Dictionary<ServerGroupId,ServerGroup> Groups { get; internal set; }
 	}
 
 	public sealed partial class ChatEntry

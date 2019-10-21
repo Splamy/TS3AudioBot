@@ -9,23 +9,24 @@
 
 namespace TS3AudioBot.Sessions
 {
+	using System;
+
 	internal class AnonymousSession : UserSession
 	{
-		private static readonly SessionLock DummyLock = new AnonymousSessionLock();
+		private static readonly IDisposable DummyLock = new AnonymousSessionLock();
 
 		public AnonymousSession()
 		{
 			lockToken = true;
 		}
 
-		public override SessionLock GetLock() => DummyLock;
+		public override IDisposable GetLock() => DummyLock;
 
-		public class AnonymousSessionLock : SessionLock
+		protected class AnonymousSessionLock : IDisposable
 		{
-			public AnonymousSessionLock() : base(null) { }
+			public AnonymousSessionLock() { }
 
-			public override void Take() { }
-			public override void Free() { }
+			public void Dispose() { }
 		}
 	}
 }

@@ -160,7 +160,7 @@
     <value>Sets all teamspeak rights for the bot to be fully functional.</value>
   </data>
   <data name="cmd_bot_use_help" xml:space="preserve">
-    <value>Switches the conetext to the requested bot.</value>
+    <value>Switches the context to the requested bot.</value>
   </data>
   <data name="cmd_clear_help" xml:space="preserve">
     <value>Removes all songs from the current playlist.</value>
@@ -838,7 +838,7 @@ with the id {1}?</value>
     <value>Missing session context.</value>
   </data>
   <data name="error_ts_code_2568" xml:space="preserve">
-    <value>Missing permissions.</value>
+    <value>Missing teamspeak permissions.</value>
   </data>
   <data name="cmd_bot_connect_to_help" xml:space="preserve">
     <value>Connects a new bot to the given address.</value>
@@ -941,5 +941,41 @@ with the id {1}?</value>
   </data>
   <data name="cmd_list_item_name_help" xml:space="preserve">
     <value>Renames an item.</value>
+  </data>
+  <data name="error_cmd_complexity_reached" xml:space="preserve">
+    <value>The command exceeded the maximum calling complexity.</value>
+  </data>
+  <data name="cmd_alias_add_help" xml:space="preserve">
+    <value>Creates a new command alias.</value>
+  </data>
+  <data name="cmd_alias_list_help" xml:space="preserve">
+    <value>Lists all currently registered alias.</value>
+  </data>
+  <data name="cmd_alias_remove_help" xml:space="preserve">
+    <value>Removes an existing alias.</value>
+  </data>
+  <data name="cmd_alias_show_help" xml:space="preserve">
+    <value>Shows the implementation of the alias.</value>
+  </data>
+  <data name="cmd_pm_user_help" xml:space="preserve">
+    <value>Writes a message to a particular user.</value>
+  </data>
+  <data name="cmd_search_header" xml:space="preserve">
+    <value>Found the following songs. Use "{0}" to play. Use "{1}" to queue.</value>
+  </data>
+  <data name="cmd_search_no_result" xml:space="preserve">
+    <value>Found no results for this query.</value>
+  </data>
+  <data name="error_select_empty" xml:space="preserve">
+    <value>Nothing to select...</value>
+  </data>
+  <data name="error_value_not_in_range" xml:space="preserve">
+    <value>Your value is out of range. Select one between {0} and {1}.</value>
+  </data>
+  <data name="info_number" xml:space="preserve">
+    <value>&lt;number&gt;</value>
+  </data>
+  <data name="cmd_select_help" xml:space="preserve">
+    <value>Selects a song from a previous search and plays it.</value>
   </data>
 </root>

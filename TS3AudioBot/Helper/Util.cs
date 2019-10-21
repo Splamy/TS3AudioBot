@@ -15,41 +15,18 @@ namespace TS3AudioBot.Helper
 	using Newtonsoft.Json.Linq;
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.IO;
 	using System.Linq;
 	using System.Reflection;
 	using System.Text;
 	using System.Text.RegularExpressions;
-	using System.Threading;
 
 	public static class Util
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 
-		private static readonly Regex SafeFileNameMatcher = new Regex(@"^[\w-]+$", DefaultRegexConfig);
-
-		/// <summary>Blocks the thread while the predicate returns false or until the timeout runs out.</summary>
-		/// <param name="predicate">Check function that will be called every millisecond.</param>
-		/// <param name="timeout">Timeout in milliseconds.</param>
-		public static void WaitOrTimeout(Func<bool> predicate, TimeSpan timeout)
-		{
-			var msTimeout = (int)timeout.TotalMilliseconds;
-			while (!predicate() && msTimeout-- > 0)
-				Thread.Sleep(1);
-		}
-
-		public static void WaitForThreadEnd(Thread thread, TimeSpan timeout)
-		{
-			if (thread?.IsAlive == true)
-			{
-				WaitOrTimeout(() => thread.IsAlive, timeout);
-				if (thread.IsAlive)
-				{
-					thread.Abort();
-				}
-			}
-		}
+		private static readonly Regex SafeFileNameMatcher = new Regex(@"^[\w-_]+$", DefaultRegexConfig);
 
 		public static DateTime GetNow() => DateTime.Now;
 
@@ -62,31 +39,6 @@ namespace TS3AudioBot.Helper
 		public static Random Random { get; } = new Random();
 
 		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
-
-		public static bool IsAdmin
-		{
-			get
-			{
-#if NET46
-				try
-				{
-					using (var user = System.Security.Principal.WindowsIdentity.GetCurrent())
-					{
-						var principal = new System.Security.Principal.WindowsPrincipal(user);
-						return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-					}
-				}
-				catch (UnauthorizedAccessException) { return false; }
-				catch (Exception)
-				{
-					Log.Warn("Uncatched admin check.");
-					return false;
-				}
-#else
-				return false;
-#endif
-			}
-		}
 
 		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
 
@@ -101,6 +53,19 @@ namespace TS3AudioBot.Helper
 				pow >>= 1;
 			}
 			return ret;
+		}
+
+		public static float Clamp(float value, float min, float max) => Math.Min(Math.Max(value, min), max);
+		public static int Clamp(int value, int min, int max) => Math.Min(Math.Max(value, min), max);
+
+		private static readonly string[] byteSuffix = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
+
+		public static string FormatBytesHumanReadable(long bytes)
+		{
+			if (bytes == 0)
+				return "0B";
+			int order = (int)Math.Log(Math.Abs(bytes), 1024);
+			return (bytes >> (10 * order)) + byteSuffix[order];
 		}
 
 		public static string FromSeed(int seed)
@@ -152,10 +117,10 @@ namespace TS3AudioBot.Helper
 				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
-		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger)
+		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel level = null)
 		{
 			if (!r.Ok)
-				logger.Warn("Could not write message: {0}", r.Error.Str);
+				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.Str);
 			return r.Ok;
 		}
 
@@ -185,7 +150,12 @@ namespace TS3AudioBot.Helper
 			var value = token.SelectToken(key);
 			if (value is null)
 				return R.Err;
-			try { return value.ToObject<T>(); }
+			try {
+				var t = value.ToObject<T>();
+				if ((object)t is null)
+					return R.Err;
+				return t;
+			}
 			catch (JsonReaderException) { return R.Err; }
 		}
 
@@ -193,7 +163,7 @@ namespace TS3AudioBot.Helper
 		{
 			if (string.IsNullOrWhiteSpace(name))
 				return new LocalStr(strings.error_playlist_name_invalid_empty); // TODO change to more generic error
-			if (name.Length >= 64)
+			if (name.Length > 64)
 				return new LocalStr(strings.error_playlist_name_invalid_too_long);
 			if (!SafeFileNameMatcher.IsMatch(name))
 				return new LocalStr(strings.error_playlist_name_invalid_character);
@@ -202,6 +172,14 @@ namespace TS3AudioBot.Helper
 
 		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector)
 			=> source.Select(selector).Where(x => x.Ok).Select(x => x.Value);
+
+		public static bool HasExitedSafe(this Process process)
+		{
+			try { return process.HasExited; }
+			catch { return true; }
+		}
+
+		internal static void SetLogId(string id) => NLog.MappedDiagnosticsContext.Set("BotId", id);
 	}
 
 	public class MissingEnumCaseException : Exception

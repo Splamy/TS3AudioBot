@@ -10,6 +10,8 @@
 namespace TS3AudioBot.CommandSystem.Commands
 {
 	using CommandResults;
+	using Dependency;
+	using Helper;
 	using Localization;
 	using System;
 	using System.Collections.Generic;
@@ -82,7 +84,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
-			var filterLazy = new Lazy<Algorithm.Filter>(() => info.TryGet<Algorithm.Filter>(out var filter) ? filter : Algorithm.Filter.DefaultFilter, false);
+			var filterLazy = new Lazy<Algorithm.IFilter>(() => info.GetFilter(), false);
 
 			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
@@ -116,10 +118,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 					break;
 
 				case ParamKind.NormalParam:
+				case ParamKind.NormalTailString:
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
-					var argResultP = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-					parameters[p] = ConvertParam(argResultP, arg, filterLazy.Value.Current);
+					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString);
+					if (CommandParameter[p].kind == ParamKind.NormalTailString && argResultP is TailStringCommandResult tailString)
+						parameters[p] = tailString.TailString;
+					else
+						parameters[p] = ConvertParam(((StringCommandResult)argResultP).Content, arg, filterLazy.Value);
 
 					takenArguments++;
 					break;
@@ -132,7 +138,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
 						var argResultA = ((StringCommandResult)arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Content;
-						var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value.Current);
+						var convResult = ConvertParam(argResultA, typeArr, filterLazy.Value);
 						args.SetValue(convResult, i);
 					}
 
@@ -140,7 +146,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					break;
 
 				default:
-					throw new ArgumentOutOfRangeException();
+					throw Util.UnhandledDefault(CommandParameter[p].kind);
 				}
 			}
 
@@ -246,6 +252,10 @@ namespace TS3AudioBot.CommandSystem.Commands
 				else
 					paramInfo.kind = ParamKind.Dependency;
 			}
+
+			var tailStringIndex = Array.FindLastIndex(CommandParameter, c => c.kind == ParamKind.NormalParam);
+			if (tailStringIndex >= 0 && CommandParameter[tailStringIndex].type == typeof(string))
+				CommandParameter[tailStringIndex].kind = ParamKind.NormalTailString;
 		}
 
 		public static Type UnwrapParamType(Type type)
@@ -287,7 +297,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
 		}
 
-		private static object ConvertParam(string value, Type targetType, Algorithm.IFilterAlgorithm filter)
+		private static object ConvertParam(string value, Type targetType, Algorithm.IFilter filter)
 		{
 			if (targetType == typeof(string))
 				return value;
@@ -330,6 +340,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		NormalCommand,
 		NormalParam,
 		NormalArray,
+		NormalTailString,
 	}
 
 	public struct ParamInfo
@@ -349,6 +360,10 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 	public static class FunctionCommandExtensions
 	{
-		public static bool IsNormal(this ParamKind kind) => kind == ParamKind.NormalParam || kind == ParamKind.NormalArray || kind == ParamKind.NormalCommand;
+		public static bool IsNormal(this ParamKind kind)
+			=> kind == ParamKind.NormalParam
+			|| kind == ParamKind.NormalArray
+			|| kind == ParamKind.NormalCommand
+			|| kind == ParamKind.NormalTailString;
 	}
 }

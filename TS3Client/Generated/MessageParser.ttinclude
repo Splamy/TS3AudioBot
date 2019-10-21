@@ -62,18 +62,15 @@ public class Messages
 		public string doc { get; set; }
 
 		public bool isArray => mod == "array";
-		public string typeFin 
+		public string TypeFin(bool optional)
 		{
-			get
+			string ltype;
+			switch(type)
 			{
-				string ltype;
-				switch(type)
-				{
-					case "PermissionId": ltype = "Ts3Permission"; break;
-					default: ltype = type; break;
-				}
-				return ltype + (isArray ? "[]" : "");
+				case "PermissionId": ltype = "Ts3Permission"; break;
+				default: ltype = type; break;
 			}
+			return ltype + (isArray ? "[]" : "") + (optional && NullType(type) && !isArray ? "?" : "");
 		}
 	}
 

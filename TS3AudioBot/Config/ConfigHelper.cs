@@ -76,7 +76,7 @@ namespace TS3AudioBot.Config
 					(ex is InvalidCastException
 					|| ex is OverflowException
 					|| ex is FormatException)
-				{ /* TODO */ }
+				{ }
 			}
 			value = default;
 			return $"Wrong type, expected {typeof(T).Name}, got {reader.TokenType}";

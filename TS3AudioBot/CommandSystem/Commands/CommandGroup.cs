@@ -19,10 +19,15 @@ namespace TS3AudioBot.CommandSystem.Commands
 	{
 		private readonly IDictionary<string, ICommand> commands = new Dictionary<string, ICommand>();
 
-		public void AddCommand(string name, ICommand command) => commands.Add(name, command);
+		public void AddCommand(string name, ICommand command) => commands.Add(name, command ?? throw new ArgumentNullException(nameof(command)));
 		public void RemoveCommand(string name) => commands.Remove(name);
-		// TODO: test if command does not exist
-		public void RemoveCommand(ICommand command) => commands.Remove(commands.FirstOrDefault(kvp => kvp.Value == command).Key);
+		public bool RemoveCommand(ICommand command)
+		{
+			var com = commands.FirstOrDefault(kvp => kvp.Value == command);
+			if (com.Key is null || com.Value is null)
+				return false;
+			return commands.Remove(com.Key);
+		}
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
 		public ICommand GetCommand(string name) => commands.TryGetValue(name, out var com) ? com : null;
 		public bool IsEmpty => commands.Count == 0;
@@ -43,9 +48,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 				result = ((StringCommandResult)comResult).Content;
 			}
 
-			if (!info.TryGet<Algorithm.Filter>(out var filter))
-				filter = Algorithm.Filter.DefaultFilter;
-			var commandResults = filter.Current.Filter(commands, result).ToArray();
+			var filter = info.GetFilter();
+			var commandResults = filter.Filter(commands, result).ToArray();
 
 			// The special case when the command is empty and only might match because of fuzzy matching.
 			// We only allow this if the command explicitly allows an empty overload.
@@ -66,7 +70,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return commandResults[0].Value.Execute(info, argSubList, returnTypes);
 		}
 
-		private string SuggestionsJoinTrim(IEnumerable<string> commands)
+		private static string SuggestionsJoinTrim(IEnumerable<string> commands)
 		{
 			var commandsArray = commands.Where(x => !string.IsNullOrEmpty(x)).ToArray();
 			var suggestions = string.Join(", ", commandsArray.Take(4));

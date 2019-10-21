@@ -65,7 +65,6 @@ namespace TS3AudioBot.Config.Deprecated
 
 			// Get all root stuff and save it
 
-			to.Web.Hosts.Value = web.HostAddress.Split(' ');
 			to.Web.Port.Value = web.Port;
 			to.Web.Api.Enabled.Value = web.EnableApi;
 			to.Web.Interface.Enabled.Value = web.EnableWebinterface;
@@ -91,7 +90,6 @@ namespace TS3AudioBot.Config.Deprecated
 			bot.Commands.Matcher.Value = mbd.CommandMatching;
 			bot.History.Enabled.Value = hmd.EnableHistory;
 			bot.History.FillDeletedIds.Value = hmd.FillDeletedIds;
-			bot.Playlists.Path.Value = pld.PlaylistPath;
 			bot.Audio.Volume.Default.Value = afd.DefaultVolume;
 			bot.Audio.MaxUserVolume.Value = afd.MaxUserVolume;
 			bot.Audio.SendMode.Value = afd.AudioMode;

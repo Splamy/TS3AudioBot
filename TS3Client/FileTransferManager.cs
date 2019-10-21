@@ -28,7 +28,7 @@ namespace TS3Client
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Ts3BaseFunctions parent;
-		private readonly Queue<FileTransferToken> transferQueue;
+		private readonly Queue<FileTransferToken> transferQueue = new Queue<FileTransferToken>();
 		private Thread workerThread;
 		private bool threadEnd;
 		private ushort transferIdCnt;
@@ -37,7 +37,6 @@ namespace TS3Client
 		{
 			parent = ts3Connection;
 			//ts3connection.OnFileTransferStatus += FileStatusNotification;
-			Util.Init(out transferQueue);
 		}
 
 		/// <summary>Initiate a file upload to the server.</summary>
@@ -114,7 +113,7 @@ namespace TS3Client
 				if (threadEnd || workerThread is null || !workerThread.IsAlive)
 				{
 					threadEnd = false;
-					workerThread = new Thread(TransferLoop);
+					workerThread = new Thread(() => { Util.SetLogId(parent.ConnectionData.LogId); TransferLoop(); }) { Name = $"FileTransfer[{parent.ConnectionData.LogId}]" };
 					workerThread.Start();
 				}
 			}
@@ -141,7 +140,7 @@ namespace TS3Client
 						return result.Error;
 					var request = result.Value;
 					token.ServerTransferId = request.ServerFileTransferId;
-					token.SeekPosition = request.SeekPosistion;
+					token.SeekPosition = (long)request.SeekPosition;
 					token.Port = request.Port;
 					token.TransferKey = request.FileTransferKey;
 				}
@@ -311,13 +310,13 @@ namespace TS3Client
 		public FileTransferToken(Stream localStream, FileUpload upload, ChannelIdT channelId,
 			string path, string channelPassword, long size, bool createMd5)
 			: this(localStream, upload.ClientFileTransferId, upload.ServerFileTransferId, TransferDirection.Upload,
-				channelId, path, channelPassword, upload.Port, upload.SeekPosistion, upload.FileTransferKey, size, createMd5)
+				channelId, path, channelPassword, upload.Port, (long)upload.SeekPosition, upload.FileTransferKey, size, createMd5)
 		{ }
 
 		public FileTransferToken(Stream localStream, FileDownload download, ChannelIdT channelId,
 			string path, string channelPassword, long seekPos)
 			: this(localStream, download.ClientFileTransferId, download.ServerFileTransferId, TransferDirection.Download,
-				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, download.Size, false)
+				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, (long)download.Size, false)
 		{ }
 
 		public FileTransferToken(Stream localStream, ushort cftid, ushort sftid,

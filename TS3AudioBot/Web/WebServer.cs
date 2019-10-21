@@ -11,216 +11,194 @@ namespace TS3AudioBot.Web
 {
 	using Config;
 	using Dependency;
-	using Helper;
-	using Helper.Environment;
+	using Microsoft.AspNetCore.Builder;
+	using Microsoft.AspNetCore.Hosting;
+	using Microsoft.AspNetCore.Http;
+	using Microsoft.Extensions.DependencyInjection;
+	using Microsoft.Extensions.Logging;
 	using System;
-	using System.Globalization;
-	using System.Net;
-	using System.Net.Sockets;
+	using System.IO;
+	using System.Linq;
 	using System.Threading;
+	using System.Threading.Tasks;
 
 	public sealed class WebServer : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		public const string WebRealm = "ts3ab";
 
-		private Uri localhost;
-		private Uri[] hostPaths;
-
-		private HttpListener webListener;
-		private Thread serverThread;
-		private bool startWebServer;
+		private CancellationTokenSource cancelToken;
 		private readonly ConfWeb config;
+		private readonly CoreInjector coreInjector;
+		private Api.WebApi api;
 
-		public CoreInjector Injector { get; set; }
-
-		public Api.WebApi Api { get; private set; }
-		public Interface.WebDisplay Display { get; private set; }
-
-		public WebServer(ConfWeb config)
+		public WebServer(ConfWeb config, CoreInjector coreInjector)
 		{
 			this.config = config;
+			this.coreInjector = coreInjector;
 		}
 
-		public void Initialize()
+		// TODO write server to be reload-able
+		public void StartWebServer()
 		{
-			Injector.RegisterType<Api.WebApi>();
-			Injector.RegisterType<Interface.WebDisplay>();
+			var startWebServer = false;
 
-			InitializeSubcomponents();
-
-			StartServerThread();
-		}
-
-		private void InitializeSubcomponents()
-		{
-			startWebServer = false;
 			if (config.Interface.Enabled)
 			{
-				Display = new Interface.WebDisplay(config.Interface);
-				Injector.RegisterModule(Display);
-				startWebServer = true;
+				var baseDir = FindWebFolder();
+				if (baseDir is null)
+				{
+					Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+				}
+				else
+				{
+					startWebServer = true;
+				}
 			}
 			if (config.Api.Enabled || config.Interface.Enabled)
 			{
 				if (!config.Api.Enabled)
-					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to get rid this error message.");
+					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to remove this warning.");
 
-				Api = new Api.WebApi();
-				Injector.RegisterModule(Api);
+				if (!coreInjector.TryCreate<Api.WebApi>(out var api))
+					throw new Exception("Could not create Api object.");
+
+				this.api = api;
 				startWebServer = true;
 			}
 
 			if (startWebServer)
 			{
-				webListener = new HttpListener
-				{
-					AuthenticationSchemes = AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic,
-					Realm = WebRealm,
-					AuthenticationSchemeSelectorDelegate = AuthenticationSchemeSelector,
-				};
+				StartWebServerInternal();
 			}
 		}
 
-		private void ReloadHostPaths()
+		private string FindWebFolder()
 		{
-			localhost = new Uri($"http://localhost:{config.Port.Value}/");
-
-			if (Util.IsAdmin || SystemData.IsLinux) // todo: hostlist
+			var webData = config.Interface;
+			if (string.IsNullOrEmpty(webData.Path))
 			{
-				var addrs = config.Hosts.Value;
-				hostPaths = new Uri[addrs.Count + 1];
-				hostPaths[0] = localhost;
-
-				for (int i = 0; i < addrs.Count; i++)
+				for (int i = 0; i < 5; i++)
 				{
-					var uriBuilder = new UriBuilder(addrs[i]) { Port = config.Port };
-					hostPaths[i + 1] = uriBuilder.Uri;
+					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
+					var checkDir = Path.Combine(up, "WebInterface");
+					if (Directory.Exists(checkDir))
+					{
+						return checkDir;
+					}
 				}
+			}
+			else if (Directory.Exists(webData.Path))
+			{
+				return webData.Path;
+			}
+
+			return null;
+		}
+
+		private void StartWebServerInternal()
+		{
+			cancelToken?.Cancel();
+			cancelToken?.Dispose();
+			cancelToken = new CancellationTokenSource();
+
+			var host = new WebHostBuilder()
+				.SuppressStatusMessages(true)
+				.ConfigureLogging((context, logging) =>
+				{
+					logging.ClearProviders();
+				})
+				.UseKestrel(kestrel =>
+				{
+					kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
+				})
+				.ConfigureServices(services =>
+				{
+					services.AddCors(options =>
+					{
+						options.AddPolicy("TS3AB", builder =>
+						{
+							builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+						});
+					});
+
+				})
+				.Configure(app =>
+				{
+					app.UseCors("TS3AB");
+
+					app.Map(new PathString("/api"), map =>
+					{
+						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
+					});
+
+					app.Map(new PathString("/data"), map =>
+					{
+						map.Run(ctx => Task.Run(() => Log.Swallow(() => { /* TODO */ })));
+					});
+
+					if (config.Interface.Enabled)
+					{
+						app.UseFileServer();
+					}
+
+					var applicationLifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
+					applicationLifetime.ApplicationStopping.Register(OnShutdown);
+				});
+
+			if (config.Interface.Enabled)
+			{
+				var baseDir = FindWebFolder();
+				if (baseDir is null)
+				{
+					Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+				}
+				else
+				{
+					host.UseWebRoot(baseDir);
+				}
+			}
+
+			var addrs = config.Hosts.Value;
+			if (addrs.Contains("*"))
+			{
+				host.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); });
+			}
+			else if (addrs.Count == 1 && addrs[0] == "localhost")
+			{
+				host.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); });
 			}
 			else
 			{
-				Log.Warn("App launched without elevated rights. Only localhost will be availbale as api server.");
-				hostPaths = new[] { localhost };
+				host.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray());
 			}
 
-			webListener.Prefixes.Clear();
-			foreach (var host in hostPaths)
-				webListener.Prefixes.Add(host.AbsoluteUri);
-		}
-
-		private static AuthenticationSchemes AuthenticationSchemeSelector(HttpListenerRequest httpRequest)
-		{
-			var headerVal = httpRequest.Headers["Authorization"];
-			if (string.IsNullOrEmpty(headerVal))
-				return AuthenticationSchemes.Anonymous;
-
-			var authParts = headerVal.SplitNoEmpty(' ');
-			if (authParts.Length < 2)
-				return AuthenticationSchemes.Anonymous;
-
-			var authType = authParts[0].ToUpperInvariant();
-			if (authType == "BASIC")
-				return AuthenticationSchemes.Basic;
-
-			return AuthenticationSchemes.Anonymous;
-		}
-
-		public void StartServerThread()
-		{
-			if (!startWebServer)
-				return;
-
-			serverThread = new Thread(EnterWebLoop) { Name = "WebInterface" };
-			serverThread.Start();
-		}
-
-		public void EnterWebLoop()
-		{
-			if (!startWebServer)
-				return;
-
-			ReloadHostPaths();
-
-			try { webListener.Start(); }
-			catch (Exception ex)
-			{
-				Log.Error(ex, "The webserver could not be started");
-				webListener = null;
-				return;
-			} // TODO
-
-			Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-
-			while (webListener?.IsListening ?? false)
+			new Func<Task>(async () =>
 			{
 				try
 				{
-					var context = webListener.GetContext();
-					using (var response = context.Response)
-					{
-						IPAddress remoteAddress;
-						try
-						{
-							remoteAddress = context.Request.RemoteEndPoint?.Address;
-							if (remoteAddress is null)
-								continue;
-							if (context.Request.IsLocal
-								&& !string.IsNullOrEmpty(context.Request.Headers["X-Real-IP"])
-								&& IPAddress.TryParse(context.Request.Headers["X-Real-IP"], out var realIp))
-							{
-								remoteAddress = realIp;
-							}
-						}
-						// NRE catch handler is needed due to a strange mono race condition bug.
-						catch (NullReferenceException) { continue; }
-
-						var rawRequest = new Uri(WebComponent.Dummy, context.Request.RawUrl);
-						Log.Info("{0} Requested: {1}", remoteAddress, rawRequest.PathAndQuery);
-
-						bool handled = false;
-						if (rawRequest.AbsolutePath.StartsWith("/api/", true, CultureInfo.InvariantCulture))
-							handled |= Api?.DispatchCall(context) ?? false;
-						else
-							handled |= Display?.DispatchCall(context) ?? false;
-
-						if (!handled)
-						{
-							response.ContentLength64 = WebUtil.Default404Data.Length;
-							response.StatusCode = (int)HttpStatusCode.NotFound;
-							response.OutputStream.Write(WebUtil.Default404Data, 0, WebUtil.Default404Data.Length);
-						}
-					}
+					await host.Build().RunAsync(cancelToken.Token);
 				}
-				// These can be raised when the webserver has been closed/disposed.
-				catch (Exception ex) when (ex is InvalidOperationException || ex is ObjectDisposedException) { Log.Debug(ex, "WebListener exception"); break; }
-				// These seem to happen on connections which are closed too fast or failed to open correctly.
-				catch (Exception ex) when (ex is SocketException || ex is HttpListenerException || ex is System.IO.IOException) { Log.Debug(ex, "WebListener exception"); }
-				// Catch everything else to keep the webserver running, but print a warning.
-				catch (Exception ex) { Log.Warn(ex, "WebListener error"); }
-			}
+				catch (Exception ex)
+				{
+					Log.Error(ex, "The webserver could not be started");
+					return;
+				}
+			})();
+			Log.Info("Started Webserver on port {0}", config.Port.Value);
+		}
 
+		public void OnShutdown()
+		{
 			Log.Info("WebServer has closed");
 		}
 
 		public void Dispose()
 		{
-			Display?.Dispose();
-			Display = null;
+			Log.Info("WebServer is closing");
 
-			try
-			{
-				webListener?.Stop();
-				webListener?.Close();
-			}
-			catch (ObjectDisposedException) { }
-			webListener = null;
-
-#if !NET46
-			// dotnet core for some reason doesn't exit the web loop
-			// when calling Stop or Close.
-			serverThread?.Abort();
-#endif
+			cancelToken?.Cancel();
+			cancelToken?.Dispose();
+			cancelToken = null;
 		}
 	}
 }

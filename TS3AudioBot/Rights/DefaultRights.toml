@@ -4,7 +4,7 @@
 
 "+" = [
 	# Basic stuff
-	"cmd.help",
+	"cmd.help.*",
 	"cmd.pm",
 	"cmd.subscribe",
 	"cmd.unsubscribe",
@@ -31,19 +31,21 @@
 
 # Admin rule
 [[rule]]
-	# Set your admin Group Ids here
-	groupid = [ 0 ]
+	# Set your admin Group Ids here, ex: [ 13, 42 ]
+	groupid = []
 	# And/Or your admin Client Uids here
-	useruid = [ "" ]
+	useruid = [ "_admin_uid_" ]
+	# By default treat requests from localhost as admin
+	ip = [ "127.0.0.1", "::1" ]
 
 	"+" = "*"
 
 # Playing rights
 [[rule]]
-	# Set Group Ids you want to allow here
-	groupid = [ 0 ]
-	# And/Or Client Uids here
-	useruid = [ "" ]
+	# Set Group Ids you want to allow here, ex: [ 13, 42 ]
+	groupid = []
+	# And/Or Client Uids here, ex [ "uA0U7t4PBxdJ5TLnarsOHQh4/tY=", "8CnUQzwT/d9nHNeUaed0RPsDxxk=" ]
+	useruid = []
 	# Or remove groupid and useruid to allow for everyone
 
 	"+" = [

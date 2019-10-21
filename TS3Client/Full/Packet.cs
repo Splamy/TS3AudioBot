@@ -88,13 +88,13 @@ namespace TS3Client.Full
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static Packet<TDir>? FromRaw(byte[] raw)
+		public static Packet<TDir>? FromRaw(ReadOnlySpan<byte> raw)
 		{
 			if (raw.Length < HeaderLength + Ts3Crypt.MacLen)
 				return null;
 			var packet = new Packet<TDir>
 			{
-				Raw = raw,
+				Raw = raw.ToArray(),
 				Header = new byte[HeaderLength],
 			};
 			packet.FromHeader();

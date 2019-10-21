@@ -11,6 +11,7 @@ namespace TS3Client.Audio
 {
 	using System;
 	using System.Threading;
+	using TS3Client.Helper;
 
 	public class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProducer, IDisposable
 	{
@@ -99,7 +100,7 @@ namespace TS3Client.Audio
 			}
 		}
 
-		public void Initialize(ISampleInfo info)
+		public void Initialize(ISampleInfo info, Id id)
 		{
 			lock (lockObject)
 			{
@@ -110,7 +111,7 @@ namespace TS3Client.Audio
 					return;
 
 				running = true;
-				tickThread = new Thread(ReadLoop);
+				tickThread = new Thread(() => { Util.SetLogId(id); ReadLoop(); }) { Name = $"AudioPipe[{id}]" };
 				tickThread.Start();
 			}
 		}

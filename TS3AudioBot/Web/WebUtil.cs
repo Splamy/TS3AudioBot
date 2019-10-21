@@ -9,8 +9,12 @@
 
 namespace TS3AudioBot.Web
 {
+	using System;
+
 	internal static class WebUtil
 	{
+		public static readonly Uri Dummy = new Uri("http://dummy/");
+
 		public const string Default404 =
 @"<!doctype html>
 

@@ -13,5 +13,7 @@ indent_size = tab
 tab_width = 4
 trim_trailing_whitespace = true
 
+csharp_indent_switch_labels = false
+
 [*.{tt,ttinclude}]
 insert_final_newline = false

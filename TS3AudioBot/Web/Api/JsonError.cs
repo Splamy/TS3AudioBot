@@ -10,9 +10,15 @@
 namespace TS3AudioBot.Web.Api
 {
 	using CommandSystem;
+	using Newtonsoft.Json;
 
 	public class JsonError : JsonObject
 	{
+		private static readonly JsonSerializerSettings ErrorSerializeSettings = new JsonSerializerSettings
+		{
+			NullValueHandling = NullValueHandling.Ignore,
+		};
+
 		private readonly CommandExceptionReason reason;
 		public int ErrorCode => (int)reason;
 		public string ErrorName => reason.ToString();
@@ -25,5 +31,7 @@ namespace TS3AudioBot.Web.Api
 			ErrorMessage = msg;
 			this.reason = reason;
 		}
+
+		public override string Serialize() => JsonConvert.SerializeObject(GetSerializeObject(), ErrorSerializeSettings);
 	}
 }

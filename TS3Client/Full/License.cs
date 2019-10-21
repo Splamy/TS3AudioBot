@@ -14,7 +14,6 @@ namespace TS3Client.Full
 	using System;
 	using System.Buffers.Binary;
 	using System.Collections.Generic;
-	using System.Text;
 
 	public class Licenses
 	{
@@ -130,9 +129,9 @@ namespace TS3Client.Full
 
 		private static R<(string str, int read), string> ReadNullString(ReadOnlySpan<byte> data)
 		{
-			var termIndex = data.IndexOf((byte)0); // C# what?
+			var termIndex = data.IndexOf((byte)0);
 			if (termIndex >= 0)
-				return (Encoding.UTF8.GetString(data.Slice(0, termIndex).ToArray()), termIndex); // TODO without ToArray?
+				return (data.Slice(0, termIndex).NewUtf8String(), termIndex);
 			return "Non-null-terminated issuer string";
 		}
 

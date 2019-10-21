@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Plugins
 {
 	using Config;
+	using Dependency;
 	using Helper;
 	using System;
 	using System.Collections.Generic;
@@ -32,20 +33,18 @@ namespace TS3AudioBot.Plugins
 
 	public class PluginManager : IDisposable
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-
-		public Dependency.CoreInjector CoreInjector { get; set; }
-
 		private readonly ConfPlugins config;
+		private readonly CoreInjector coreInjector;
 		private readonly Dictionary<string, Plugin> plugins;
 		private readonly HashSet<int> usedIds;
 		private readonly object pluginsLock = new object();
 
-		public PluginManager(ConfPlugins config)
+		public PluginManager(ConfPlugins config, CoreInjector coreInjector)
 		{
 			Util.Init(out plugins);
 			Util.Init(out usedIds);
 			this.config = config;
+			this.coreInjector = coreInjector;
 		}
 
 		private void CheckAndClearPlugins(Bot bot)
@@ -95,7 +94,7 @@ namespace TS3AudioBot.Plugins
 						continue;
 					}
 
-					CoreInjector.TryInject(plugin);
+					coreInjector.FillProperties(plugin);
 					plugins.Add(file.Name, plugin);
 				}
 			}

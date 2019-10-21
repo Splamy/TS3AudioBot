@@ -10,6 +10,7 @@
 namespace TS3Client
 {
 	using Full;
+	using Helper;
 
 	/// <summary>Used to pass basic connecting information. (Usually for the query)</summary>
 	public class ConnectionData
@@ -17,6 +18,8 @@ namespace TS3Client
 		/// <summary>Hostname or Ip-Address including the port. This address can point to the
 		/// server or the tsdns service.</summary>
 		public string Address { get; set; }
+		/// <summary>Attaches a name to log evets and threads. Useful for debugging.</summary>
+		public Id LogId { get; set; } = Id.Null;
 	}
 
 	/// <summary>Used to pass detailed connecting information to the full client.</summary>

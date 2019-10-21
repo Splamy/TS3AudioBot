@@ -15,9 +15,10 @@ namespace TS3Client.Audio
 
 	public class Meta
 	{
-		public Codec? Codec;
+		public Codec? Codec { get; set; }
 		public MetaIn In;
-		public MetaOut Out;
+		public MetaOut Out { get; set; }
+		//public PipeControl Control { get; set; }
 	}
 
 	public struct MetaIn
@@ -42,5 +43,11 @@ namespace TS3Client.Audio
 		Voice,
 		Whisper,
 		WhisperGroup,
+	}
+
+	public enum PipeControl
+	{
+		Data,
+		EmptyTick,
 	}
 }

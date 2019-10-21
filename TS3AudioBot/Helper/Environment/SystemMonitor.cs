@@ -18,6 +18,8 @@ namespace TS3AudioBot.Helper.Environment
 		private DateTime lastSnapshotTime = DateTime.MinValue;
 		private TimeSpan lastCpuTime = TimeSpan.Zero;
 
+		public DateTime StartTime { get; } = Util.GetNow();
+
 		public void StartTimedSnapshots()
 		{
 			if (ticker != null)

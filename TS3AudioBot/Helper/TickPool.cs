@@ -14,28 +14,19 @@ namespace TS3AudioBot.Helper
 	using System.Diagnostics;
 	using System.Threading;
 
-	[Serializable]
 	public static class TickPool
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static bool run;
-		private static readonly Thread tickThread;
+		private static bool run = false;
+		private static readonly Thread tickThread = new Thread(Tick) { Name = "TickPool" };
 		private static readonly object tickLock = new object();
 		private static readonly TimeSpan MinTick = TimeSpan.FromMilliseconds(1000);
-		private static readonly List<TickWorker> workList;
+		private static readonly List<TickWorker> workList = new List<TickWorker>();
 		private static readonly AutoResetEvent tickLoopPulse = new AutoResetEvent(false);
-
-		static TickPool()
-		{
-			run = false;
-			Util.Init(out workList);
-			tickThread = new Thread(Tick) { Name = "TickPool" };
-		}
 
 		public static TickWorker RegisterTickOnce(Action method, TimeSpan? delay = null)
 		{
 			if (method is null) throw new ArgumentNullException(nameof(method));
-			if (delay.HasValue && delay.Value <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(delay));
+			if (delay.HasValue && delay.Value < TimeSpan.Zero) throw new ArgumentException("The parameter must be greater than 0s", nameof(delay));
 			var worker = new TickWorker(method, delay ?? TimeSpan.Zero) { Active = true, TickOnce = true };
 			AddWorker(worker);
 			return worker;
@@ -44,7 +35,7 @@ namespace TS3AudioBot.Helper
 		public static TickWorker RegisterTick(Action method, TimeSpan interval, bool active)
 		{
 			if (method is null) throw new ArgumentNullException(nameof(method));
-			if (interval <= TimeSpan.Zero) throw new ArgumentException("The parameter must be at least '1'", nameof(interval));
+			if (interval < TimeSpan.FromMilliseconds(1)) throw new ArgumentException("The parameter must be greater than 1ms", nameof(interval));
 			var worker = new TickWorker(method, interval) { Active = active };
 			AddWorker(worker);
 			return worker;
@@ -117,19 +108,11 @@ namespace TS3AudioBot.Helper
 		{
 			run = false;
 			tickLoopPulse.Set();
-			bool lockTaken = false;
-			Monitor.TryEnter(workList, TimeSpan.FromSeconds(1), ref lockTaken);
-			if (lockTaken)
+			lock (tickLock)
 			{
 				workList.Clear();
-				Monitor.Exit(workList);
-			}
-			else
-			{
-				Log.Warn("TickPool could not close correctly.");
 			}
 			tickLoopPulse.Set();
-			Util.WaitForThreadEnd(tickThread, MinTick);
 		}
 	}
 

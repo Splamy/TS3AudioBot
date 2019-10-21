@@ -13,8 +13,6 @@ namespace TS3Client.Audio
 
 	public interface IAudioStream { }
 
-	// TODO add static codec info
-
 	/// <summary>Passive producer will serve audio data that must be requested manually.</summary>
 	public interface IAudioPassiveProducer : IAudioStream
 	{

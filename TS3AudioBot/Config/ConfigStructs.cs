@@ -12,6 +12,8 @@ namespace TS3AudioBot.Config
 	using CommandSystem.Text;
 	using Nett;
 	using System;
+	using System.Collections.Generic;
+	using TS3AudioBot.Helper;
 
 	public partial class ConfRoot : ConfigTable
 	{
@@ -33,7 +35,7 @@ namespace TS3AudioBot.Config
 	public class ConfConfigs : ConfigTable
 	{
 		//public ConfigValue<string> RootPath { get; } = new ConfigValue<string>("root_path", "."); // TODO enable when done
-		public ConfigValue<string> BotsPath { get; } = new ConfigValue<string>("bots_path", "Bots",
+		public ConfigValue<string> BotsPath { get; } = new ConfigValue<string>("bots_path", "bots",
 			"Path to a folder where the configuration files for each bot template will be stored.");
 	}
 
@@ -72,7 +74,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfPlugins : ConfigTable
 	{
-		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "Plugins",
+		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "plugins",
 			"The path to the plugins folder.");
 		public ConfigValue<bool> WriteStatusFiles { get; } = new ConfigValue<bool>("write_status_files", false,
 			"Write to .status files to store a plugin enable status persistently and restart them on launch."); // TODO deprecate
@@ -87,8 +89,8 @@ namespace TS3AudioBot.Config
 
 	public class ConfWeb : ConfigTable
 	{
-		public ConfigArray<string> Hosts { get; } = new ConfigArray<string>("hosts", new[] { "localhost", "127.0.0.1" },
-			"An array of all urls the web api should be possible to be accessed with.");
+		public ConfigArray<string> Hosts { get; } = new ConfigArray<string>("hosts", new[] { "*" },
+				"An array of all urls the web api should be possible to be accessed with.");
 		public ConfigValue<ushort> Port { get; } = new ConfigValue<ushort>("port", 58913,
 			"The port for the web server.");
 
@@ -100,11 +102,14 @@ namespace TS3AudioBot.Config
 	{
 		public ConfigValue<bool> Enabled { get; } = new ConfigValue<bool>("enabled", true,
 			"If you want to enable the web api.");
+		public ConfigValue<int> CommandComplexity { get; } = new ConfigValue<int>("command_complexity", 64,
+			"Limits the maximum command complexity to prevent endless loops.");
+		public ConfigValue<string> Matcher { get; } = new ConfigValue<string>("matcher", "exact", "See: bot.commands.matcher");
 	}
 
 	public class ConfWebInterface : ConfigTable
 	{
-		public ConfigValue<bool> Enabled { get; } = new ConfigValue<bool>("enabled", false,
+		public ConfigValue<bool> Enabled { get; } = new ConfigValue<bool>("enabled", true,
 			"If you want to enable the webinterface.");
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "",
 			"The webinterface folder to host. Leave empty to let the bot look for default locations.");
@@ -127,6 +132,7 @@ namespace TS3AudioBot.Config
 
 		public ConfCommands Commands { get; } = Create<ConfCommands>("commands");
 		public ConfConnect Connect { get; } = Create<ConfConnect>("connect");
+		public ConfReconnect Reconnect { get; } = Create<ConfReconnect>("reconnect");
 		public ConfAudio Audio { get; } = Create<ConfAudio>("audio");
 		public ConfPlaylists Playlists { get; } = Create<ConfPlaylists>("playlists");
 		public ConfHistory History { get; } = Create<ConfHistory>("history");
@@ -149,6 +155,15 @@ namespace TS3AudioBot.Config
 			"Limits the split count for long messages. When for example set to 1 the message will simply be trimmed to one message.");
 		public ConfigValue<bool> Color { get; } = new ConfigValue<bool>("color", true,
 			"Enables colors and text highlights for respones.");
+		public ConfigValue<int> CommandComplexity { get; } = new ConfigValue<int>("command_complexity", 64,
+			"Limits the maximum command complexity to prevent endless loops.");
+
+		public ConfCommandsAlias Alias { get; } = Create<ConfCommandsAlias>("alias");
+	}
+
+	public class ConfCommandsAlias : ConfigDynamicTable<ConfigValue<string>>
+	{
+		public ConfCommandsAlias() : base(key => new ConfigValue<string>(key, "")) { }
 	}
 
 	public class ConfConnect : ConfigTable
@@ -156,8 +171,8 @@ namespace TS3AudioBot.Config
 		public ConfigValue<string> Address { get; } = new ConfigValue<string>("address", "",
 			"The address, ip or nickname (and port; default: 9987) of the TeamSpeak3 server");
 		public ConfigValue<string> Channel { get; } = new ConfigValue<string>("channel", "",
-			"Default channel when connecting. Use a channel path or '/<id>'.\n" +
-			"Examples: 'Home/Lobby', '/5', 'Home/Afk \\\\/ Not Here'.");
+			"Default channel when connecting. Use a channel path or \"/<id>\".\n" +
+			"Examples: \"Home/Lobby\", \"/5\", \"Home/Afk \\\\/ Not Here\".");
 		public ConfigValue<string> Badges { get; } = new ConfigValue<string>("badges", "",
 			"The client badges. You can set a comma seperated string with max three GUID's. Here is a list: http://yat.qa/ressourcen/abzeichen-badges/");
 		public ConfigValue<string> Name { get; } = new ConfigValue<string>("name",
@@ -170,6 +185,16 @@ namespace TS3AudioBot.Config
 		public ConfTsVersion ClientVersion { get; } = Create<ConfTsVersion>("client_version",
 			"Overrides the displayed version for the ts3 client. Leave empty for default.");
 		public ConfIdentity Identity { get; } = Create<ConfIdentity>("identity");
+	}
+
+	public class ConfReconnect : ConfigTable
+	{
+		public ConfigArray<string> OnTimeout { get; } = new ConfigArray<string>("ontimeout", new[] { "1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last" }) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnKick { get; } = new ConfigArray<string>("onkick", Array.Empty<string>()) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnBan { get; } = new ConfigArray<string>("onban", Array.Empty<string>()) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnError { get; } = new ConfigArray<string>("onerror", new[] { "30s", "repeat last" }) { Validator = ConfTimeExtensions.ValidateTime };
+		public ConfigArray<string> OnShutdown { get; } = new ConfigArray<string>("onshutdown", new[] { "5m" }) { Validator = ConfTimeExtensions.ValidateTime };
+		//public ConfigValue<int> MaxReconnect { get; } = new ConfigValue<int>("max_combined_reconnects", -1, "Each reconnect kind has an own counter and resets when ");
 	}
 
 	public class ConfIdentity : ConfigTable
@@ -189,7 +214,7 @@ namespace TS3AudioBot.Config
 			"When a new song starts the volume will be trimmed to between min and max.\n" +
 			"When the current volume already is between min and max nothing will happen.\n" +
 			"To completely or partially disable this feature, set min to 0 and/or max to 100.");
-		public ConfigValue<float> MaxUserVolume { get; } = new ConfigValue<float>("max_user_volume", 30,
+		public ConfigValue<float> MaxUserVolume { get; } = new ConfigValue<float>("max_user_volume", 100,
 			"The maximum volume a normal user can request. Only user with the 'ts3ab.admin.volume' permission can request higher volumes.");
 		public ConfigValue<int> Bitrate { get; } = new ConfigValue<int>("bitrate", 48,
 			"Specifies the bitrate (in kbps) for sending audio.\n" +
@@ -206,17 +231,14 @@ namespace TS3AudioBot.Config
 	{
 		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
 
-		public ConfigValue<float> Default { get; } = new ConfigValue<float>("default", 10);
-		public ConfigValue<float> Min { get; } = new ConfigValue<float>("min", 10);
-		public ConfigValue<float> Max { get; } = new ConfigValue<float>("max", 50);
+		public ConfigValue<float> Default { get; } = new ConfigValue<float>("default", 50);
+		public ConfigValue<float> Min { get; } = new ConfigValue<float>("min", 25);
+		public ConfigValue<float> Max { get; } = new ConfigValue<float>("max", 75);
 	}
 
 	public class ConfPlaylists : ConfigTable
 	{
-		protected override TomlTable.TableTypes TableType => TomlTable.TableTypes.Inline;
-
-		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "Playlists",
-			"Path to the folder where playlist files will be saved.");
+		public ConfigValue<int> MaxItemCount { get; } = new ConfigValue<int>("max_item_count", 1000); // TODO
 	}
 
 	public class ConfHistory : ConfigTable
@@ -225,6 +247,11 @@ namespace TS3AudioBot.Config
 			"Enable or disable history features completely to save resources.");
 		public ConfigValue<bool> FillDeletedIds { get; } = new ConfigValue<bool>("fill_deleted_ids", true,
 			"Whether or not deleted history ids should be filled up with new songs.");
+	}
+
+	public class ConfData : ConfigTable
+	{
+		public ConfigValue<string> MaxItemCount { get; } = new ConfigValue<string>("disk_data", "1M"); // TODO
 	}
 
 	public class ConfEvents : ConfigTable
@@ -280,5 +307,41 @@ namespace TS3AudioBot.Config
 		public ConfigValue<string> Build { get; } = new ConfigValue<string>("build", string.Empty);
 		public ConfigValue<string> Platform { get; } = new ConfigValue<string>("platform", string.Empty);
 		public ConfigValue<string> Sign { get; } = new ConfigValue<string>("sign", string.Empty);
+	}
+
+	public static class ConfTimeExtensions
+	{
+		public static TimeSpan? GetValueAsTime(this ConfigArray<string> conf, int index)
+		{
+			var value = conf.Value;
+			if (value.Count == 0)
+				return null;
+			var last = value[value.Count - 1];
+			var repeat = last == "repeat" || last == "repeat last"; // "repeat" might get removed for other loops, but for now keep as hidden alternative
+			var max = repeat ? value.Count - 2 : value.Count - 1;
+			if (index <= max)
+				return TomlTools.ParseTime(value[index]);
+			else
+				return TomlTools.ParseTime(value[max]);
+		}
+
+		public static E<string> ValidateTime(IReadOnlyList<string> value)
+		{
+			if (value.Count == 0)
+				return R.Ok;
+			var last = value[value.Count - 1];
+			var repeat = last == "repeat" || last == "repeat last";
+			if (repeat && value.Count == 1)
+				return $"Specified 'repeat' without any previous value.";
+
+			var max = repeat ? value.Count - 2 : value.Count - 1;
+			for (int i = 0; i <= max; i++)
+			{
+				var r = TomlTools.ValidateTime(value[i]);
+				if (!r.Ok)
+					return r;
+			}
+			return R.Ok;
+		}
 	}
 }

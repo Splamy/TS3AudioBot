@@ -9,16 +9,23 @@
 
 namespace TS3AudioBot.Playlists
 {
+	using System;
+	using Audio;
 	using ResourceFactories;
 
 	public class PlaylistItem
 	{
 		public MetaData Meta { get; }
-		public AudioResource Resource { get; }
+		public AudioResource Resource { get; private set; }
 
 		public string DisplayString => Resource.ResourceTitle ?? $"{Resource.AudioType}: {Resource.ResourceId}";
 
 		private PlaylistItem(MetaData meta) { Meta = meta ?? new MetaData(); }
 		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { Resource = resource; }
+
+		public void Resolve(AudioResource resource)
+		{
+			Resource = resource ?? throw new ArgumentNullException(nameof(resource));
+		}
 	}
 }

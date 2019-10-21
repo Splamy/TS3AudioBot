@@ -20,12 +20,12 @@ namespace TS3AudioBot.CommandSystem
 		public const char DefaultDelimeterChar = ' ';
 
 		// This switch follows more or less a DEA to this EBNF
-		// COMMAND-EBNF := COMMAND
+		// COMMAND-EBNF := <COMMAND> | $.*^
 
-		// COMMAND      := (!ARGUMENT \s+ (ARGUMENT|\s)*)
-		// ARGUMENT     := COMMAND|FREESTRING|QUOTESTRING
+		// COMMAND      := '!' <ARGUMENT> (\s+ <ARGUMENT>)*
+		// ARGUMENT     := '(' <COMMAND> ')'? | <FREESTRING> | <QUOTESTRING>
 		// FREESTRING   := [^)]+
-		// QUOTESTRING  := "[<anything but ", \" is ok>]+"
+		// QUOTESTRING  := '"' [<anything but ", \" is ok>]* '"'
 
 		public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimeterChar = DefaultDelimeterChar)
 		{
@@ -34,6 +34,19 @@ namespace TS3AudioBot.CommandSystem
 			var build = BuildStatus.ParseCommand;
 			var strb = new StringBuilder();
 			var strPtr = new StringPtr(request);
+
+			var startTrim = request.AsSpan().TrimStart();
+			if (startTrim.IsEmpty || startTrim[0] != commandChar)
+			{
+				return new AstValue
+				{
+					FullRequest = request,
+					Length = request.Length,
+					Position = 0,
+					Value = request,
+					StringType = StringType.FreeString,
+				};
+			}
 
 			while (!strPtr.End)
 			{
@@ -65,6 +78,7 @@ namespace TS3AudioBot.CommandSystem
 						switch (strPtr.Char)
 						{
 						case '"':
+						case '\'':
 							build = BuildStatus.ParseQuotedString;
 							//goto case BuildStatus.ParseQuotedString;
 							break;
@@ -92,7 +106,10 @@ namespace TS3AudioBot.CommandSystem
 							}
 							else
 							{
-								comAst.Pop();
+								buildCom = comAst.Pop();
+								foreach (var param in buildCom.Parameter)
+									if (param is AstValue astVal)
+										astVal.TailLength = strPtr.Index - param.Position;
 								if (comAst.Count <= 0)
 									build = BuildStatus.End;
 							}
@@ -107,7 +124,7 @@ namespace TS3AudioBot.CommandSystem
 					break;
 
 				case BuildStatus.ParseFreeString:
-					var valFreeAst = new AstValue();
+					var valFreeAst = new AstValue() { FullRequest = request, StringType = StringType.FreeString };
 					using (strPtr.TrackNode(valFreeAst))
 					{
 						for (; !strPtr.End; strPtr.Next())
@@ -120,7 +137,6 @@ namespace TS3AudioBot.CommandSystem
 							}
 						}
 					}
-					valFreeAst.BuildValue();
 					buildCom = comAst.Peek();
 					buildCom.Parameter.Add(valFreeAst);
 					build = BuildStatus.SelectParam;
@@ -129,9 +145,15 @@ namespace TS3AudioBot.CommandSystem
 				case BuildStatus.ParseQuotedString:
 					strb.Clear();
 
-					strPtr.Next('"');
+					char quoteChar;
+					if (strPtr.TryNext('"'))
+						quoteChar = '"';
+					else if (strPtr.TryNext('\''))
+						quoteChar = '\'';
+					else
+						throw new Exception("Parser error");
 
-					var valQuoAst = new AstValue();
+					var valQuoAst = new AstValue() { FullRequest = request, StringType = StringType.QuotedString };
 					using (strPtr.TrackNode(valQuoAst))
 					{
 						bool escaped = false;
@@ -141,11 +163,18 @@ namespace TS3AudioBot.CommandSystem
 							{
 								escaped = true;
 							}
-							else if (strPtr.Char == '"')
+							else if (strPtr.Char == quoteChar)
 							{
-								if (escaped) { strb.Length--; }
-								else { strPtr.Next(); break; }
-								escaped = false;
+								if (!escaped)
+								{
+									strPtr.Next();
+									break;
+								}
+								else
+								{
+									strb.Length--;
+									escaped = false;
+								}
 							}
 							else
 							{
@@ -175,25 +204,21 @@ namespace TS3AudioBot.CommandSystem
 		private class StringPtr
 		{
 			private readonly string text;
-			private int index;
-			private AstNode astnode;
-			private NodeTracker curTrack;
 
-			public char Char => text[index];
-			public bool End => index >= text.Length;
-			public bool HasNext => index + 1 < text.Length;
+			public char Char => text[Index];
+			public bool End => Index >= text.Length;
+			public bool HasNext => Index + 1 < text.Length;
+			public int Index { get; private set; }
 
 			public StringPtr(string str)
 			{
 				text = str;
-				index = 0;
+				Index = 0;
 			}
 
 			public void Next()
 			{
-				index++;
-				if (astnode != null)
-					astnode.Length++;
+				Index++;
 			}
 
 			public void Next(char mustBe)
@@ -203,42 +228,50 @@ namespace TS3AudioBot.CommandSystem
 				Next();
 			}
 
-			public bool IsNext(char what) => text[index + 1] == what;
+			public bool TryNext(char mustBe)
+			{
+				if (Char != mustBe)
+					return false;
+				Next();
+				return true;
+			}
+
+			public bool IsNext(char what) => HasNext && text[Index + 1] == what;
 
 			public void SkipChar(char c = ' ')
 			{
-				while (index < text.Length && text[index] == c)
-					index++;
+				while (Index < text.Length && text[Index] == c)
+					Index++;
 			}
 
-			public void JumpToEnd() => index = text.Length + 1;
+			public void JumpToEnd() => Index = text.Length + 1;
 
-			public NodeTracker TrackNode(AstNode node)
+			public NodeTracker TrackNode(AstNode node = null)
 			{
-				if (curTrack != null)
-					throw new InvalidOperationException("Previous tracker must be freed");
-
-				astnode = node;
-				if (node != null)
-				{
-					astnode.FullRequest = text;
-					astnode.Position = index;
-					astnode.Length = 0;
-				}
-				return curTrack = new NodeTracker(this);
+				return new NodeTracker(this, node);
 			}
 
-			private void UntrackNode()
+			public struct NodeTracker : IDisposable
 			{
-				curTrack = null;
-				astnode = null;
-			}
-
-			public class NodeTracker : IDisposable
-			{
+				private readonly int indexStart;
 				private readonly StringPtr parent;
-				public NodeTracker(StringPtr p) { parent = p; }
-				public void Dispose() => parent.UntrackNode();
+				private readonly AstNode node;
+				public NodeTracker(StringPtr p, AstNode node = null)
+				{
+					parent = p;
+					indexStart = parent.Index;
+					this.node = node;
+				}
+
+				public void Apply(AstNode node)
+				{
+					node.Position = indexStart;
+					node.Length = parent.Index - indexStart;
+				}
+
+				public (int start, int end) Done() => (indexStart, parent.Index);
+
+				public void Dispose() { if (node != null) Apply(node); }
 			}
 		}
 

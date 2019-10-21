@@ -15,7 +15,6 @@ namespace TS3Client.Full
 	using Org.BouncyCastle.Asn1;
 	using Org.BouncyCastle.Asn1.X9;
 	using Org.BouncyCastle.Crypto;
-	using Org.BouncyCastle.Crypto.Digests;
 	using Org.BouncyCastle.Crypto.Engines;
 	using Org.BouncyCastle.Crypto.Generators;
 	using Org.BouncyCastle.Crypto.Modes;
@@ -39,7 +38,7 @@ namespace TS3Client.Full
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly byte[] Initversion = { 0x09, 0x83, 0x8C, 0xCF }; // 3.1.8 [Stable]
+		private static readonly uint InitVersion = 1566914096; // 3.5.0 [Stable]
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 		private static readonly Regex IdentityRegex = new Regex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
 
@@ -78,7 +77,7 @@ namespace TS3Client.Full
 		/// <item><description>A libtomcrypt public+private key export. (+KeyOffset).</description></item>
 		/// <item><description>A TS3Client's private-only key export. (+KeyOffset).</description></item>
 		/// </list>
-		/// Keys with "(+KeyOffset)" should add the key offset for the security level in the seperate parameter.
+		/// Keys with "(+KeyOffset)" should add the key offset for the security level in the separate parameter.
 		/// </summary>
 		/// <param name="key">The identity string.</param>
 		/// <param name="keyOffset">A number which determines the security level of an identity.</param>
@@ -258,7 +257,7 @@ namespace TS3Client.Full
 				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
 
 			var alphaBytes = Base64Decode(alpha);
-			if (!alphaBytes.Ok) return "alpha parameter is invalid";
+			if (!alphaBytes.Ok) return "alphaBytes parameter is invalid";
 			var betaBytes = Base64Decode(beta);
 			if (!alphaBytes.Ok) return "betaBytes parameter is invalid";
 			var omegaBytes = Base64Decode(omega);
@@ -401,7 +400,7 @@ namespace TS3Client.Full
 			// the normal client responds by starting again
 			case null:
 				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
-				Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion); // initVersion
 				sendData[versionLen] = 0x00; // initType
 				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen), Util.UnixNow); // 4byte timestamp
 				BinaryPrimitives.WriteInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen + 4), Util.Random.Next()); // 4byte random
@@ -420,12 +419,12 @@ namespace TS3Client.Full
 				{
 				case 21:
 					sendData = new byte[versionLen + initTypeLen + 16 + 4];
-					Array.Copy(Initversion, 0, sendData, 0, versionLen); // initVersion
+					BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion); // initVersion
 					sendData[versionLen] = 0x02; // initType
 					Array.Copy(data, initTypeLen, sendData, versionLen + initTypeLen, 20);
 					return sendData;
 				case 5:
-					var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(initTypeLen));
+					var errorNum = BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(initTypeLen));
 					if (Enum.IsDefined(typeof(Ts3ErrorCode), errorNum))
 						return $"Got Init1(1) error: {(Ts3ErrorCode)errorNum}";
 					return $"Got Init1(1) undefined error code: {errorNum}";
@@ -465,8 +464,8 @@ namespace TS3Client.Full
 
 				// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
 				sendData = new byte[versionLen + initTypeLen + 64 + 64 + 4 + 100 + 64 + textBytes.Length];
-				// Copy this.Version
-				Array.Copy(Initversion, 0, sendData, 0, versionLen);
+				// Copy initVersion
+				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion);
 				// Write InitType
 				sendData[versionLen] = 0x04;
 				// Copy data
@@ -716,30 +715,18 @@ namespace TS3Client.Full
 				outBuf[i] = (byte)(a[i] ^ b[i]);
 		}
 
-		private static readonly System.Security.Cryptography.SHA1Managed Sha1HashInternal = new System.Security.Cryptography.SHA1Managed();
-		private static readonly Sha256Digest Sha256Hash = new Sha256Digest();
-		private static readonly Sha512Digest Sha512Hash = new Sha512Digest();
-		internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1HashInternal, data, offset, len);
-		internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha256Hash, data, offset, len);
-		internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashIt(Sha512Hash, data, offset, len);
+		private static readonly System.Security.Cryptography.SHA1Managed Sha1Hash = new System.Security.Cryptography.SHA1Managed();
+		private static readonly System.Security.Cryptography.SHA256Managed Sha256Hash = new System.Security.Cryptography.SHA256Managed();
+		private static readonly System.Security.Cryptography.SHA512Managed Sha512Hash = new System.Security.Cryptography.SHA512Managed();
+		internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1Hash, data, offset, len);
+		internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha256Hash, data, offset, len);
+		internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha512Hash, data, offset, len);
 		private static byte[] HashItInternal(System.Security.Cryptography.HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
 		{
 			lock (hashAlgo)
 			{
 				return hashAlgo.ComputeHash(data, offset, len == 0 ? data.Length - offset : len);
 			}
-		}
-		private static byte[] HashIt(IDigest hashAlgo, byte[] data, int offset = 0, int len = 0)
-		{
-			byte[] result;
-			lock (hashAlgo)
-			{
-				hashAlgo.Reset();
-				hashAlgo.BlockUpdate(data, offset, len == 0 ? data.Length - offset : len);
-				result = new byte[hashAlgo.GetDigestSize()];
-				hashAlgo.DoFinal(result, 0);
-			}
-			return result;
 		}
 
 		/// <summary>
@@ -797,7 +784,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		private static R<byte[], string> Base64Decode(string str)
+		internal static R<byte[], string> Base64Decode(string str)
 		{
 			try { return Convert.FromBase64String(str); }
 			catch (FormatException) { return "Malformed base64 string"; }
@@ -885,6 +872,7 @@ namespace TS3Client.Full
 
 		private static int GetLeadingZeroBits(byte[] data)
 		{
+			// TODO dnc 3.0 sse ?
 			int curr = 0;
 			int i;
 			for (i = 0; i < data.Length; i++)
@@ -895,36 +883,6 @@ namespace TS3Client.Full
 					if ((data[i] & (1 << bit)) == 0) curr++;
 					else break;
 			return curr;
-		}
-
-		/// <summary>
-		/// This is the reference function from the TS3 Server for checking if a hashcash offset
-		/// is sufficient for the required level.
-		/// </summary>
-		/// <param name="data">The sha1 result from the current offset calculation</param>
-		/// <param name="reqLevel">The required level to reach.</param>
-		/// <returns>True if the hash meets the requirement, false otherwise.</returns>
-		private static bool ValidateHash(byte[] data, int reqLevel)
-		{
-			var levelMask = 1 << (reqLevel % 8) - 1;
-
-			if (reqLevel < 8)
-			{
-				return (data[0] & levelMask) == 0;
-			}
-			else
-			{
-				var v9 = reqLevel / 8;
-				var v10 = 0;
-				while (data[v10] == 0)
-				{
-					if (++v10 >= v9)
-					{
-						return (data[v9] & levelMask) == 0;
-					}
-				}
-				return false;
-			}
 		}
 
 		#endregion

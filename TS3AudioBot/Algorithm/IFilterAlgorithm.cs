@@ -9,44 +9,41 @@
 
 namespace TS3AudioBot.Algorithm
 {
-	using System;
 	using System.Collections.Generic;
 	using System.Linq;
 
-	public interface IFilterAlgorithm
+	public interface IFilter
 	{
 		IEnumerable<KeyValuePair<string, T>> Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter);
 	}
 
-	public sealed class Filter
+	public static class Filter
 	{
-		public IFilterAlgorithm Current { get; set; }
+		public static IFilter DefaultFilter { get; } = Ic3Filter.Instance;
 
-		public static IFilterAlgorithm DefaultAlgorithm { get; } = Ic3Filter.Instance;
-		public static Filter DefaultFilter { get; } = new Filter { Current = DefaultAlgorithm };
-
-		public static R<IFilterAlgorithm> GetFilterByName(string filter)
+		public static IFilter GetFilterByName(string filter)
 		{
-			R<IFilterAlgorithm> ToR(IFilterAlgorithm obj) => R<IFilterAlgorithm>.OkR(obj);
 			switch (filter)
 			{
-			case "exact": return ToR(ExactFilter.Instance);
-			case "substring": return ToR(SubstringFilter.Instance);
-			case "ic3": return ToR(Ic3Filter.Instance);
-			case "hamming": return ToR(HammingFilter.Instance);
-			default: return R.Err;
+			case "exact": return ExactFilter.Instance;
+			case "substring": return SubstringFilter.Instance;
+			case "ic3": return Ic3Filter.Instance;
+			case "hamming": return HammingFilter.Instance;
+			default: return null;
 			}
 		}
+
+		public static IFilter GetFilterByNameOrDefault(string filter) => GetFilterByName(filter) ?? DefaultFilter;
 	}
 
 	/// <summary>Interleaved continuous character chain.</summary>
-	internal sealed class Ic3Filter : IFilterAlgorithm
+	internal sealed class Ic3Filter : IFilter
 	{
 		private Ic3Filter() { }
 
-		public static IFilterAlgorithm Instance { get; } = new Ic3Filter();
+		public static IFilter Instance { get; } = new Ic3Filter();
 
-		IEnumerable<KeyValuePair<string, T>> IFilterAlgorithm.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
+		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			// Convert result to list because it can be enumerated multiple times
 			var possibilities = list.Select(t => (Name: t.Key, Value: t.Value, Index: 0)).ToList();
@@ -70,37 +67,37 @@ namespace TS3AudioBot.Algorithm
 		}
 	}
 
-	internal sealed class ExactFilter : IFilterAlgorithm
+	internal sealed class ExactFilter : IFilter
 	{
 		private ExactFilter() { }
 
-		public static IFilterAlgorithm Instance { get; } = new ExactFilter();
+		public static IFilter Instance { get; } = new ExactFilter();
 
-		IEnumerable<KeyValuePair<string, T>> IFilterAlgorithm.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
+		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			return list.Where(x => x.Key == filter);
 		}
 	}
 
-	internal sealed class HammingFilter : IFilterAlgorithm
+	internal sealed class HammingFilter : IFilter
 	{
 		private HammingFilter() { }
 
-		public static IFilterAlgorithm Instance { get; } = new HammingFilter();
+		public static IFilter Instance { get; } = new HammingFilter();
 
-		IEnumerable<KeyValuePair<string, T>> IFilterAlgorithm.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
+		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			throw new System.NotImplementedException();
 		}
 	}
 
-	internal sealed class SubstringFilter : IFilterAlgorithm
+	internal sealed class SubstringFilter : IFilter
 	{
 		private SubstringFilter() { }
 
-		public static IFilterAlgorithm Instance { get; } = new SubstringFilter();
+		public static IFilter Instance { get; } = new SubstringFilter();
 
-		IEnumerable<KeyValuePair<string, T>> IFilterAlgorithm.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
+		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			var result = list.Where(x => x.Key.StartsWith(filter));
 			using (var enu = result.GetEnumerator())

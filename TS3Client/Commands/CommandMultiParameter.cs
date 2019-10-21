@@ -34,7 +34,7 @@ namespace TS3Client.Commands
 		[DebuggerStepThrough] public CommandMultiParameter(string key, IEnumerable<float> value) { Key = key; Values = value.Select(CommandParameter.Serialize).ToArray(); }
 		[DebuggerStepThrough] public CommandMultiParameter(string key, IEnumerable<double> value) { Key = key; Values = value.Select(CommandParameter.Serialize).ToArray(); }
 		[DebuggerStepThrough] public CommandMultiParameter(string key, IEnumerable<string> value) { Key = key; Values = value.Select(CommandParameter.Serialize).ToArray(); }
-		[DebuggerStepThrough] public CommandMultiParameter(string key, IEnumerable<TimeSpan> value) { Key = key; Values = value.Select(CommandParameter.Serialize).ToArray(); }
+		//[DebuggerStepThrough] public CommandMultiParameter(string key, IEnumerable<TimeSpan> value) { Key = key; Values = value.Select(CommandParameter.Serialize).ToArray(); } // Ambiguous
 		[DebuggerStepThrough] public CommandMultiParameter(string key, IEnumerable<DateTime> value) { Key = key; Values = value.Select(CommandParameter.Serialize).ToArray(); }
 	}
 }

@@ -14,14 +14,8 @@ namespace TS3AudioBot.Helper
 	using System.Text;
 	using System.Text.RegularExpressions;
 
-	[Serializable]
 	public static class TextUtil
 	{
-		public static string[] SplitNoEmpty(this string value, char splitChar)
-		{
-			return value.Split(new[] { splitChar }, StringSplitOptions.RemoveEmptyEntries);
-		}
-
 		public static Answer GetAnswer(string answer)
 		{
 			if (string.IsNullOrEmpty(answer))

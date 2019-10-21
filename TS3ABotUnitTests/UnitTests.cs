@@ -16,6 +16,7 @@ namespace TS3ABotUnitTests
 	using System.IO;
 	using System.Linq;
 	using System.Text.RegularExpressions;
+	using System.Threading;
 	using TS3AudioBot;
 	using TS3AudioBot.Config;
 	using TS3AudioBot.Helper;
@@ -38,8 +39,8 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-			var inv1 = new ClientData { ClientId = 10, Uid = "Uid1", Name = "Invoker1" };
-			var inv2 = new ClientData { ClientId = 20, Uid = "Uid2", Name = "Invoker2" };
+			var inv1 = new ClientList { ClientId = 10, Uid = "Uid1", Name = "Invoker1" };
+			var inv2 = new ClientList { ClientId = 20, Uid = "Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
@@ -60,13 +61,12 @@ namespace TS3ABotUnitTests
 			void CreateDbStore()
 			{
 				db = new DbStore(confDb);
-				hf = new HistoryManager(confHistory) { Database = db };
-				hf.Initialize();
+				hf = new HistoryManager(confHistory, db);
 			}
 
 			CreateDbStore();
 
-			hf.LogAudioResource(data1);
+			hf.LogAudioResourceDelayed(data1);
 
 			var lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
@@ -81,8 +81,8 @@ namespace TS3ABotUnitTests
 			lastEntry = lastXEntries.First();
 			Assert.AreEqual(ar1, lastEntry.AudioResource);
 
-			hf.LogAudioResource(data1);
-			hf.LogAudioResource(data2);
+			hf.LogAudioResourceDelayed(data1);
+			hf.LogAudioResourceDelayed(data2);
 
 			lastXEntries = hf.GetLastXEntrys(1);
 			Assert.True(lastXEntries.Any());
@@ -100,7 +100,7 @@ namespace TS3ABotUnitTests
 
 			var ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 
 			db.Dispose();
@@ -114,14 +114,14 @@ namespace TS3ABotUnitTests
 
 			var ale2 = hf.FindEntryByResource(ar2);
 			hf.RenameEntry(ale2, "me_ar2_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
 
 			hf.RenameEntry(ale2, "me_ar2_exxxxxtra_loong1");
-			hf.LogAudioResource(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
 
 			db.Dispose();
 
@@ -141,7 +141,7 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(1, lastXEntriesArray.Length);
 
 			// .. store new entry to check correct stream position writes
-			hf.LogAudioResource(data3);
+			hf.LogAudioResourceDelayed(data3);
 
 			lastXEntriesArray = hf.GetLastXEntrys(3).ToArray();
 			Assert.AreEqual(2, lastXEntriesArray.Length);
@@ -232,7 +232,7 @@ namespace TS3ABotUnitTests
 				Assert.AreNotEqual(rfac.MatchResource(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
 
 				// restoring links
-				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink("robqdGEhQWo"));
+				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(new AudioResource { ResourceId = "robqdGEhQWo" }));
 			}
 		}
 
@@ -250,6 +250,12 @@ namespace TS3ABotUnitTests
 		public static IEnumerable<AudioLogEntry> GetLastXEntrys(this HistoryManager hf, int num)
 		{
 			return hf.Search(new SeachQuery { MaxResults = num });
+		}
+
+		public static void LogAudioResourceDelayed(this HistoryManager hf, HistorySaveData data)
+		{
+			Thread.Sleep(1);
+			hf.LogAudioResource(data);
 		}
 	}
 }

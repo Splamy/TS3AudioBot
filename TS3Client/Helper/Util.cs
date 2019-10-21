@@ -28,8 +28,6 @@ namespace TS3Client.Helper
 
 		public static IEnumerable<Enum> GetFlags(this Enum input) => Enum.GetValues(input.GetType()).Cast<Enum>().Where(input.HasFlag);
 
-		public static void Init<T>(out T fld) where T : new() => fld = new T();
-
 		public static Encoding Encoder { get; } = new UTF8Encoding(false, false);
 
 		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
@@ -52,11 +50,13 @@ namespace TS3Client.Helper
 		public static CommandError ParserCommandError { get; } = CustomError("Result could not be parsed");
 
 		public static CommandError CustomError(string message) => new CommandError { Id = Ts3ErrorCode.custom_error, Message = message };
+
+		internal static void SetLogId(Id id) => NLog.MappedDiagnosticsContext.Set("BotId", id.ToString());
 	}
 
 	internal sealed class MissingEnumCaseException : Exception
 	{
-		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The the switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
+		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
 		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
 	}
 

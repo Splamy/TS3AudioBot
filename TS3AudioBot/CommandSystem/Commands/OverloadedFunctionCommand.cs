@@ -102,5 +102,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(contextException).Throw();
 			throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.MissingParameter);
 		}
+
+		public override string ToString() => "<overload>";
 	}
 }

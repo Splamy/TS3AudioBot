@@ -9,6 +9,9 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using Newtonsoft.Json;
+	using System.Collections.Generic;
+
 	public class PlayResource
 	{
 		public AudioResource BaseData { get; }
@@ -26,24 +29,45 @@ namespace TS3AudioBot.ResourceFactories
 	public class AudioResource
 	{
 		/// <summary>The resource type.</summary>
+		[JsonProperty(PropertyName = "type")]
 		public string AudioType { get; set; }
 		/// <summary>An identifier to create the song. This id is uniqe among all resources with the same resource type string of a factory.</summary>
+		[JsonProperty(PropertyName = "resid")]
 		public string ResourceId { get; set; }
 		/// <summary>The display title.</summary>
+		[JsonProperty(PropertyName = "title")]
 		public string ResourceTitle { get; set; }
+		/// <summary>Additional data to resolve the link.</summary>
+		[JsonProperty(PropertyName = "add", NullValueHandling = NullValueHandling.Ignore)]
+		public Dictionary<string, string> AdditionalData { get; set; }
 		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and resource type string of a factory.</summary>
+		[JsonIgnore]
 		public string UniqueId => ResourceId + AudioType;
 
 		public AudioResource() { }
 
-		public AudioResource(string resourceId, string resourceTitle, string audioType)
+		public AudioResource(string resourceId, string resourceTitle, string audioType, Dictionary<string, string> additionalData = null)
 		{
 			ResourceId = resourceId;
 			ResourceTitle = resourceTitle;
 			AudioType = audioType;
+			AdditionalData = additionalData;
 		}
 
-		public AudioResource WithName(string newName) => new AudioResource(ResourceId, newName, AudioType);
+		public AudioResource Add(string key, string value)
+		{
+			if (AdditionalData == null)
+				AdditionalData = new Dictionary<string, string>();
+			AdditionalData.Add(key, value);
+			return this;
+		}
+
+		public string Get(string key)
+		{
+			if (AdditionalData == null)
+				return null;
+			return AdditionalData.TryGetValue(key, out var value) ? value : null;
+		}
 
 		public override bool Equals(object obj)
 		{

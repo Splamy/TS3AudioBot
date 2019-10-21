@@ -21,6 +21,7 @@ namespace TS3AudioBot.Web.Api
 		static JsonObject()
 		{
 			DefaultSettigs.Converters.Add(new IJsonSerializableConverter());
+			DefaultSettigs.Converters.Add(new TimeSpanConverter());
 		}
 
 		protected JsonObject(string stringResult)

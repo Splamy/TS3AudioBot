@@ -14,6 +14,7 @@ namespace TS3AudioBot.Rights
 	using Nett;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Net;
 	using TS3Client;
 
 	// Adding a new Matcher:
@@ -100,6 +101,20 @@ namespace TS3AudioBot.Rights
 			case "isapi":
 				if (!tomlObj.TryGetValue<bool>(out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");
 				else Matcher.Add(new MatchIsApi(isapi));
+				return true;
+			case "ip":
+				var ip = tomlObj.TryGetValueArray<string>();
+				if (ip is null) ctx.Errors.Add("<ip> Field has invalid data.");
+				else
+				{
+					Matcher.Add(new MatchApiCallerIp(ip.Select(x =>
+					{
+						if (IPAddress.TryParse(x, out var ipa))
+							return ipa;
+						ctx.Errors.Add($"<ip> Field value '{x}' could not be parsed.");
+						return null;
+					}).Where(x => x != null)));
+				}
 				return true;
 			case "visibility":
 				var visibility = tomlObj.TryGetValueArray<TextMessageTargetMode>();

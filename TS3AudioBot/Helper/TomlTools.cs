@@ -16,10 +16,13 @@ namespace TS3AudioBot.Helper
 	using System.IO;
 	using System.Linq;
 	using System.Text;
+	using System.Text.RegularExpressions;
 	using System.Xml;
 
 	public static class TomlTools
 	{
+		private static readonly Regex TimeReg = new Regex(@"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
+
 		// *** Convenience method for getting values out of a toml object. ***
 
 		public static T[] TryGetValueArray<T>(this TomlObject tomlObj)
@@ -122,7 +125,7 @@ namespace TS3AudioBot.Helper
 				{
 					try
 					{
-						value = (T)(object)XmlConvert.ToTimeSpan(((TomlString)tomlObj).Value);
+						value = (T)(object)ParseTime(((TomlString)tomlObj).Value);
 						return true;
 					}
 					catch (FormatException) { }
@@ -131,6 +134,62 @@ namespace TS3AudioBot.Helper
 			}
 			value = default;
 			return false;
+		}
+
+		public static TimeSpan? ParseTime(string value)
+		{
+			int AsNum(string svalue)
+			{
+				if (string.IsNullOrEmpty(svalue))
+					return 0;
+				return int.TryParse(svalue, out var num) ? num : 0;
+			}
+
+			var match = TimeReg.Match(value);
+			if (match.Success)
+			{
+				try
+				{
+					return new TimeSpan(
+						AsNum(match.Groups[1].Value),
+						AsNum(match.Groups[2].Value),
+						AsNum(match.Groups[3].Value),
+						AsNum(match.Groups[4].Value),
+						AsNum(match.Groups[5].Value));
+				}
+				catch { }
+			}
+
+			try { return XmlConvert.ToTimeSpan(value); }
+			catch (FormatException) { }
+
+			return null;
+		}
+
+		public static E<string> ValidateTime(string value)
+		{
+			if (TimeReg.IsMatch(value))
+				return R.Ok;
+			return $"Value '{value}' is not a valid time.";
+		}
+
+		public static string SerializeTime(TimeSpan time)
+		{
+			var strb = new StringBuilder();
+			if (time.TotalDays > 1)
+			{
+				strb.Append(time.TotalDays.ToString("F0")).Append('d');
+				time -= TimeSpan.FromDays(time.Days);
+			}
+			if (time.Hours > 0)
+				strb.Append(time.Hours).Append("h");
+			if (time.Minutes > 0)
+				strb.Append(time.Minutes).Append("m");
+			if (time.Seconds > 0)
+				strb.Append(time.Seconds).Append("s");
+			if (time.Milliseconds > 0)
+				strb.Append(time.Milliseconds).Append("ms");
+			return strb.ToString();
 		}
 
 		// *** Convenience method for setting values to a toml object. ***
@@ -147,54 +206,54 @@ namespace TS3AudioBot.Helper
 			TomlObject retobj = tomlTable.TryGetValue(key);
 			if (retobj is null)
 			{
-				if (typeof(T) == typeof(bool)) return tomlTable.Add(key, (bool)(object)value);
-				else if (typeof(T) == typeof(string)) return tomlTable.Add(key, (string)(object)value);
-				else if (typeof(T) == typeof(double)) return tomlTable.Add(key, (double)(object)value);
-				else if (typeof(T) == typeof(float)) return tomlTable.Add(key, (float)(object)value);
-				else if (typeof(T) == typeof(ushort)) return tomlTable.Add(key, /*auto*/(ushort)(object)value);
-				else if (typeof(T) == typeof(int)) return tomlTable.Add(key, (int)(object)value);
-				else if (typeof(T) == typeof(long)) return tomlTable.Add(key, (long)(object)value);
-				else if (typeof(T) == typeof(ulong)) return tomlTable.Add(key, (long)(ulong)(object)value);
-				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, XmlConvert.ToString((TimeSpan)(object)value));
-				else if (typeof(T) == typeof(DateTime)) return tomlTable.Add(key, (DateTime)(object)value);
-				else if (typeof(T).IsEnum) return tomlTable.Add(key, value.ToString());
-				else if (value is IEnumerable<bool> enubool) return tomlTable.Add(key, enubool);
-				else if (value is IEnumerable<string> enustring) return tomlTable.Add(key, enustring);
-				else if (value is IEnumerable<double> enudouble) return tomlTable.Add(key, enudouble);
-				else if (value is IEnumerable<float> enufloat) return tomlTable.Add(key, enufloat);
-				else if (value is IEnumerable<ushort> enuushort) return tomlTable.Add(key, enuushort.Select(x => (int)x));
-				else if (value is IEnumerable<int> enuint) return tomlTable.Add(key, enuint);
-				else if (value is IEnumerable<long> enulong) return tomlTable.Add(key, enulong);
-				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Add(key, enuulong.Select(x => (long)x));
-				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Add(key, enuTimeSpan.Select(XmlConvert.ToString));
-				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Add(key, enuDateTime);
+				if (typeof(T) == typeof(bool)) return tomlTable.Add(key, (bool)(object)value).Added;
+				else if (typeof(T) == typeof(string)) return tomlTable.Add(key, (string)(object)value).Added;
+				else if (typeof(T) == typeof(double)) return tomlTable.Add(key, (double)(object)value).Added;
+				else if (typeof(T) == typeof(float)) return tomlTable.Add(key, (float)(object)value).Added;
+				else if (typeof(T) == typeof(ushort)) return tomlTable.Add(key, /*auto*/(ushort)(object)value).Added;
+				else if (typeof(T) == typeof(int)) return tomlTable.Add(key, (int)(object)value).Added;
+				else if (typeof(T) == typeof(long)) return tomlTable.Add(key, (long)(object)value).Added;
+				else if (typeof(T) == typeof(ulong)) return tomlTable.Add(key, (long)(ulong)(object)value).Added;
+				else if (typeof(T) == typeof(TimeSpan)) return tomlTable.Add(key, SerializeTime((TimeSpan)(object)value)).Added;
+				else if (typeof(T) == typeof(DateTime)) return tomlTable.Add(key, (DateTime)(object)value).Added;
+				else if (typeof(T).IsEnum) return tomlTable.Add(key, value.ToString()).Added;
+				else if (value is IEnumerable<bool> enubool) return tomlTable.Add(key, enubool).Added;
+				else if (value is IEnumerable<string> enustring) return tomlTable.Add(key, enustring).Added;
+				else if (value is IEnumerable<double> enudouble) return tomlTable.Add(key, enudouble).Added;
+				else if (value is IEnumerable<float> enufloat) return tomlTable.Add(key, enufloat).Added;
+				else if (value is IEnumerable<ushort> enuushort) return tomlTable.Add(key, enuushort.Select(x => (int)x)).Added;
+				else if (value is IEnumerable<int> enuint) return tomlTable.Add(key, enuint).Added;
+				else if (value is IEnumerable<long> enulong) return tomlTable.Add(key, enulong).Added;
+				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Add(key, enuulong.Select(x => (long)x)).Added;
+				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Add(key, enuTimeSpan.Select(SerializeTime)).Added;
+				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Add(key, enuDateTime).Added;
 			}
 			else
 			{
 				TomlComment[] docs = null;
 				if (retobj.Comments.Any())
 					docs = retobj.Comments.ToArray();
-				if (typeof(T) == typeof(bool)) retobj = tomlTable.Update(key, (bool)(object)value);
-				else if (typeof(T) == typeof(string)) retobj = tomlTable.Update(key, (string)(object)value);
-				else if (typeof(T) == typeof(double)) retobj = tomlTable.Update(key, (double)(object)value);
-				else if (typeof(T) == typeof(float)) retobj = tomlTable.Update(key, (float)(object)value);
-				else if (typeof(T) == typeof(ushort)) retobj = tomlTable.Update(key, /*auto*/(ushort)(object)value);
-				else if (typeof(T) == typeof(int)) retobj = tomlTable.Update(key, /*auto*/(int)(object)value);
-				else if (typeof(T) == typeof(long)) retobj = tomlTable.Update(key, (long)(object)value);
-				else if (typeof(T) == typeof(ulong)) retobj = tomlTable.Update(key, (long)(ulong)(object)value);
-				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, XmlConvert.ToString((TimeSpan)(object)value));
-				else if (typeof(T) == typeof(DateTime)) retobj = tomlTable.Update(key, (DateTime)(object)value);
-				else if (typeof(T).IsEnum) retobj = tomlTable.Update(key, value.ToString());
-				else if (value is IEnumerable<bool> enubool) return tomlTable.Update(key, enubool);
-				else if (value is IEnumerable<string> enustring) return tomlTable.Update(key, enustring);
-				else if (value is IEnumerable<double> enudouble) return tomlTable.Update(key, enudouble);
-				else if (value is IEnumerable<float> enufloat) return tomlTable.Update(key, enufloat);
-				else if (value is IEnumerable<ushort> enuushort) return tomlTable.Update(key, enuushort.Select(x => (int)x));
-				else if (value is IEnumerable<int> enuint) return tomlTable.Update(key, enuint);
-				else if (value is IEnumerable<long> enulong) return tomlTable.Update(key, enulong);
-				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Update(key, enuulong.Select(x => (long)x));
-				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Update(key, enuTimeSpan.Select(XmlConvert.ToString));
-				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Update(key, enuDateTime);
+				if (typeof(T) == typeof(bool)) retobj = tomlTable.Update(key, (bool)(object)value).Added;
+				else if (typeof(T) == typeof(string)) retobj = tomlTable.Update(key, (string)(object)value).Added;
+				else if (typeof(T) == typeof(double)) retobj = tomlTable.Update(key, (double)(object)value).Added;
+				else if (typeof(T) == typeof(float)) retobj = tomlTable.Update(key, (float)(object)value).Added;
+				else if (typeof(T) == typeof(ushort)) retobj = tomlTable.Update(key, /*auto*/(ushort)(object)value).Added;
+				else if (typeof(T) == typeof(int)) retobj = tomlTable.Update(key, /*auto*/(int)(object)value).Added;
+				else if (typeof(T) == typeof(long)) retobj = tomlTable.Update(key, (long)(object)value).Added;
+				else if (typeof(T) == typeof(ulong)) retobj = tomlTable.Update(key, (long)(ulong)(object)value).Added;
+				else if (typeof(T) == typeof(TimeSpan)) retobj = tomlTable.Update(key, SerializeTime((TimeSpan)(object)value)).Added;
+				else if (typeof(T) == typeof(DateTime)) retobj = tomlTable.Update(key, (DateTime)(object)value).Added;
+				else if (typeof(T).IsEnum) retobj = tomlTable.Update(key, value.ToString()).Added;
+				else if (value is IEnumerable<bool> enubool) return tomlTable.Update(key, enubool).Added;
+				else if (value is IEnumerable<string> enustring) return tomlTable.Update(key, enustring).Added;
+				else if (value is IEnumerable<double> enudouble) return tomlTable.Update(key, enudouble).Added;
+				else if (value is IEnumerable<float> enufloat) return tomlTable.Update(key, enufloat).Added;
+				else if (value is IEnumerable<ushort> enuushort) return tomlTable.Update(key, enuushort.Select(x => (int)x)).Added;
+				else if (value is IEnumerable<int> enuint) return tomlTable.Update(key, enuint).Added;
+				else if (value is IEnumerable<long> enulong) return tomlTable.Update(key, enulong).Added;
+				else if (value is IEnumerable<ulong> enuulong) return tomlTable.Update(key, enuulong.Select(x => (long)x)).Added;
+				else if (value is IEnumerable<TimeSpan> enuTimeSpan) return tomlTable.Update(key, enuTimeSpan.Select(SerializeTime)).Added;
+				else if (value is IEnumerable<DateTime> enuDateTime) return tomlTable.Update(key, enuDateTime).Added;
 				else throw new NotSupportedException("The type is not supported");
 				if (docs != null)
 					retobj.AddComments(docs);
@@ -230,15 +289,15 @@ namespace TS3AudioBot.Helper
 					else if (IsDot(rest.Span))
 						return obj.GetAllSubItems().SelectMany(x => ProcessDot(x, rest));
 					else
-						throw new ArgumentException(nameof(path), "Invalid expression after wildcard");
+						throw new ArgumentException("Invalid expression after wildcard", nameof(pathM));
 				}
 
 			case '[':
-				throw new ArgumentException(nameof(path), "Invalid array open bracket");
+				throw new ArgumentException("Invalid array open bracket", nameof(pathM));
 			case ']':
-				throw new ArgumentException(nameof(path), "Invalid array close bracket");
+				throw new ArgumentException("Invalid array close bracket", nameof(pathM));
 			case '.':
-				throw new ArgumentException(nameof(path), "Invalid dot");
+				throw new ArgumentException("Invalid dot", nameof(pathM));
 
 			default:
 				{
@@ -249,7 +308,7 @@ namespace TS3AudioBot.Helper
 					{
 						// todo allow in future
 						if (path[i] == '*')
-							throw new ArgumentException(nameof(path), "Invalid wildcard position");
+							throw new ArgumentException("Invalid wildcard position", nameof(pathM));
 
 						var currentSub = path.Slice(i);
 						if (!IsIdentifier(currentSub)) // if (!IsName)
@@ -271,7 +330,7 @@ namespace TS3AudioBot.Helper
 						else if (IsDot(rest.Span))
 							return ProcessDot(item, rest);
 						else
-							throw new ArgumentException(nameof(path), "Invalid expression name identifier");
+							throw new ArgumentException("Invalid expression name identifier", nameof(pathM));
 					}
 					return new[] { item };
 				}
@@ -282,13 +341,13 @@ namespace TS3AudioBot.Helper
 		{
 			var path = pathM.Span;
 			if (path[0] != '[')
-				throw new ArgumentException(nameof(path), "Expected array open breacket");
+				throw new ArgumentException("Expected array open breacket", nameof(pathM));
 			for (int i = 1; i < path.Length; i++)
 			{
 				if (path[i] == ']')
 				{
 					if (i == 0)
-						throw new ArgumentException(nameof(path), "Empty array indexer");
+						throw new ArgumentException("Empty array indexer", nameof(pathM));
 					var indexer = path.Slice(1, i - 1);
 					var rest = pathM.Slice(i + 1);
 					bool cont = rest.Length > 0;
@@ -304,7 +363,7 @@ namespace TS3AudioBot.Helper
 							else if (IsDot(rest.Span))
 								return ret.SelectMany(x => ProcessDot(x, rest));
 							else
-								throw new ArgumentException(nameof(path), "Invalid expression after array indexer");
+								throw new ArgumentException("Invalid expression after array indexer", nameof(pathM));
 						}
 
 						return ret;
@@ -322,24 +381,24 @@ namespace TS3AudioBot.Helper
 							else if (IsDot(rest.Span))
 								return ProcessDot(ret, rest);
 							else
-								throw new ArgumentException(nameof(path), "Invalid expression after array indexer");
+								throw new ArgumentException("Invalid expression after array indexer", nameof(pathM));
 						}
 						return new[] { ret };
 					}
 				}
 			}
-			throw new ArgumentException(nameof(path), "Missing array close bracket");
+			throw new ArgumentException("Missing array close bracket", nameof(pathM));
 		}
 
 		private static IEnumerable<TomlObject> ProcessDot(TomlObject obj, ReadOnlyMemory<char> pathM)
 		{
 			var path = pathM.Span;
 			if (!IsDot(path))
-				throw new ArgumentException(nameof(path), "Expected dot");
+				throw new ArgumentException("Expected dot", nameof(pathM));
 
 			var rest = pathM.Slice(1);
 			if (!IsIdentifier(rest.Span))
-				throw new ArgumentException(nameof(path), "Expected identifier after dot");
+				throw new ArgumentException("Expected identifier after dot", nameof(pathM));
 
 			return ProcessIdentifier(obj, rest);
 		}

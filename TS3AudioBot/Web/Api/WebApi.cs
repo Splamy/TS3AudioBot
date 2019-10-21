@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.Web.Api
 {
+	using Audio;
 	using CommandSystem;
 	using CommandSystem.Ast;
 	using CommandSystem.CommandResults;
@@ -16,84 +17,96 @@ namespace TS3AudioBot.Web.Api
 	using Config;
 	using Dependency;
 	using Helper;
-	using Newtonsoft.Json;
+	using Microsoft.AspNetCore.Http;
+	using Microsoft.AspNetCore.Http.Features;
 	using Sessions;
 	using System;
+	using System.Globalization;
 	using System.IO;
 	using System.Net;
-	using System.Security.Cryptography;
-	using System.Security.Principal;
 	using System.Text;
-	using System.Text.RegularExpressions;
+	using System.Threading;
+	using TS3AudioBot.Algorithm;
+	using TS3AudioBot.Localization;
 
-	public sealed class WebApi : WebComponent
+	public sealed class WebApi
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex DigestMatch = new Regex(@"\s*(\w+)\s*=\s*""([^""]*)""\s*,?", Util.DefaultRegexConfig);
-		private static readonly MD5 Md5Hash = MD5.Create();
 
-		private const string InfoNonceAdded = "Added a nonce to your request";
-		private const string ErrorUnknownRealm = "Unknown realm";
 		private const string ErrorNoUserOrToken = "Unknown user or no active token found";
 		private const string ErrorAuthFailure = "Authentication failed";
 		private const string ErrorAnonymousDisabled = "This bot does not allow anonymous api requests";
 		private const string ErrorUnsupportedScheme = "Unsupported authentication scheme";
 
 		public bool AllowAnonymousRequest { get; set; } = true;
+		private readonly ConfWebApi config;
+		private readonly CoreInjector coreInjector;
+		private readonly CommandManager commandManager;
+		private readonly TokenManager tokenManager;
 
-		public CoreInjector CoreInjector { get; set; }
-		public CommandManager CommandManager { get; set; }
-		public TokenManager TokenManager { get; set; }
-
-		private static readonly JsonSerializerSettings ErrorSerializeSettings = new JsonSerializerSettings
+		public WebApi(ConfWebApi config, CoreInjector coreInjector, CommandManager commandManager, TokenManager tokenManager)
 		{
-			NullValueHandling = NullValueHandling.Ignore,
-		};
-
-		public override bool DispatchCall(HttpListenerContext context)
-		{
-			using (var response = context.Response)
-			{
-				response.ContentType = "application/json";
-				response.Headers["Access-Control-Allow-Origin"] = "*";
-				response.Headers[HttpResponseHeader.CacheControl] = "no-cache, no-store, must-revalidate";
-
-				var authResult = Authenticate(context);
-				if (!authResult.Ok)
-				{
-					Log.Debug("Authorization failed!");
-					ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
-					return true;
-				}
-				if (!AllowAnonymousRequest && authResult.Value.IsAnonymous)
-				{
-					Log.Debug("Unauthorized request!");
-					ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
-					return true;
-				}
-
-				var requestUrl = new Uri(Dummy, context.Request.RawUrl);
-				ProcessApiV1Call(requestUrl, response, authResult.Value);
-				return true;
-			}
+			this.config = config;
+			this.coreInjector = coreInjector;
+			this.commandManager = commandManager;
+			this.tokenManager = tokenManager;
 		}
 
-		private void ProcessApiV1Call(Uri uri, HttpListenerResponse response, InvokerData invoker)
+		public void ProcessApiV1Call(HttpContext context)
 		{
-			string apirequest = uri.OriginalString.Substring(uri.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
-			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
-			UnescapeAstTree(ast);
-			Log.Trace(ast.ToString);
+			var request = context.Request;
+			var response = context.Response;
 
-			var command = CommandManager.CommandSystem.AstToCommandResult(ast);
+			response.ContentType = "application/json";
+			response.Headers["Access-Control-Allow-Origin"] = "*";
+			response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";
 
-			var execInfo = new ExecutionInformation(CoreInjector.CloneRealm<CoreInjector>());
-			execInfo.AddDynamicObject(new CallerInfo(apirequest, true));
-			execInfo.AddDynamicObject(invoker);
-			// todo creating token usersessions is now possible
+			var authResult = Authenticate(context.Request);
+			if (!authResult.Ok)
+			{
+				Log.Debug("Authorization failed!");
+				ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
+				return;
+			}
+			if (!AllowAnonymousRequest && string.IsNullOrEmpty(authResult.Value.ClientUid))
+			{
+				Log.Debug("Unauthorized request!");
+				ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
+				return;
+			}
+
+			var apiCallData = authResult.Value;
+			var remoteAddress = context.Connection?.RemoteIpAddress;
+			if (remoteAddress is null)
+			{
+				Log.Warn("Remote has no IP, ignoring request");
+				return;
+			}
+
+			if (IPAddress.IsLoopback(remoteAddress)
+				&& request.Headers.TryGetValue("X-Real-IP", out var realIpStr)
+				&& IPAddress.TryParse(realIpStr, out var realIp))
+			{
+				remoteAddress = realIp;
+			}
+			apiCallData.IpAddress = remoteAddress;
+			apiCallData.RequestUrl = new Uri(WebUtil.Dummy, context.Features.Get<IHttpRequestFeature>().RawTarget);
+
+			Log.Info("{0} Requested: {1}", remoteAddress, apiCallData.RequestUrl.PathAndQuery);
+
+			var command = BuildCommand(apiCallData.RequestUrl);
+
+			if (ProcessBodyData(request, apiCallData).GetError(out var err))
+			{
+				ReturnError(err, response);
+				return;
+			}
+
+			var execInfo = BuildContext(apiCallData);
 
 			try
 			{
+				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 				var res = command.Execute(execInfo, Array.Empty<ICommand>(), XCommandSystem.ReturnJsonOrNothing);
 
 				if (res.ResultType == CommandResultType.Empty)
@@ -102,35 +115,102 @@ namespace TS3AudioBot.Web.Api
 				}
 				else if (res.ResultType == CommandResultType.Json)
 				{
-					response.StatusCode = (int)HttpStatusCode.OK;
 					var returnJson = (JsonCommandResult)res;
 					var returnString = returnJson.JsonObject.Serialize();
-					using (var responseStream = new StreamWriter(response.OutputStream))
+					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
+					using (var responseStream = new StreamWriter(response.Body))
 						responseStream.Write(returnString);
 				}
 			}
 			catch (CommandException ex)
 			{
-				try { ReturnError(ex, response); }
-				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
+				ReturnError(ex, response);
 			}
 			catch (Exception ex)
 			{
-				if (ex is NotImplementedException)
-					response.StatusCode = (int)HttpStatusCode.NotImplemented;
-				else
-					response.StatusCode = (int)HttpStatusCode.InternalServerError;
 				Log.Error(ex, "Unexpected command error");
-				try
-				{
-					using (var responseStream = new StreamWriter(response.OutputStream))
-						responseStream.Write(new JsonError(ex.Message, CommandExceptionReason.Unknown).Serialize());
-				}
-				catch (Exception htex) { Log.Error(htex, "Failed to respond to HTTP request."); }
+				ReturnError(ex, response);
 			}
 		}
 
-		private static void ReturnError(CommandException ex, HttpListenerResponse response)
+		private ICommand BuildCommand(Uri requestUrl)
+		{
+			string apirequest = requestUrl.OriginalString.Substring(requestUrl.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
+			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
+			UnescapeAstTree(ast);
+			Log.Trace(ast.ToString);
+			return commandManager.CommandSystem.AstToCommandResult(ast);
+		}
+
+		private ExecutionInformation BuildContext(ApiCall apiCallData)
+		{
+			var execInfo = new ExecutionInformation(coreInjector);
+			execInfo.AddModule(new CallerInfo(true)
+			{
+				SkipRightsChecks = false,
+				CommandComplexityMax = config.CommandComplexity,
+				IsColor = false,
+			});
+			execInfo.AddModule<InvokerData>(apiCallData);
+			execInfo.AddModule(apiCallData);
+			execInfo.AddModule(Filter.GetFilterByNameOrDefault(config.Matcher));
+			return execInfo;
+		}
+
+		private E<Exception> ProcessBodyData(HttpRequest request, ApiCall apiCallData)
+		{
+			if (request.ContentType != "application/json")
+				return R.Ok;
+
+			try
+			{
+				using (var sr = new StreamReader(request.Body, Util.Utf8Encoder))
+					apiCallData.Body = sr.ReadToEnd();
+				return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				Log.Warn(ex, "Failed to parse request Body");
+				return ex;
+			}
+		}
+
+		private static void ReturnError(Exception ex, HttpResponse response)
+		{
+			Log.Debug(ex, "Api Exception");
+
+			try
+			{
+				JsonError jsonError = null;
+
+				switch (ex)
+				{
+				case CommandException cex:
+					jsonError = ReturnCommandError(cex, response);
+					break;
+
+				case NotImplementedException _:
+					response.StatusCode = (int)HttpStatusCode.NotImplemented;
+					break;
+
+				case EntityTooLargeException _:
+					response.StatusCode = (int)HttpStatusCode.RequestEntityTooLarge;
+					break;
+
+				default:
+					Log.Error(ex, "Unexpected command error");
+					response.StatusCode = (int)HttpStatusCode.InternalServerError;
+					break;
+				}
+
+				jsonError = jsonError ?? new JsonError(ex.Message, CommandExceptionReason.Unknown);
+				using (var responseStream = new StreamWriter(response.Body))
+					responseStream.Write(jsonError.Serialize());
+			}
+			catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
+		}
+
+		private static JsonError ReturnCommandError(CommandException ex, HttpResponse response)
 		{
 			var jsonError = new JsonError(ex.Message, ex.Reason);
 
@@ -139,9 +219,11 @@ namespace TS3AudioBot.Web.Api
 			case CommandExceptionReason.Unknown:
 			case CommandExceptionReason.InternalError:
 				response.StatusCode = (int)HttpStatusCode.InternalServerError;
-				return;
+				break;
 
 			case CommandExceptionReason.Unauthorized:
+				jsonError.HelpMessage += "You have to authenticate yourself to call this method.";
+				jsonError.HelpLink = "https://github.com/Splamy/TS3AudioBot/wiki/WebAPI#authentication";
 				response.StatusCode = (int)HttpStatusCode.Unauthorized;
 				break;
 
@@ -159,10 +241,9 @@ namespace TS3AudioBot.Web.Api
 			case CommandExceptionReason.MissingContext:
 				if (ex is MissingContextCommandException mcex)
 				{
-					if (mcex.MissingType == typeof(InvokerData))
+					if (mcex.MissingType == typeof(ClientCall))
 					{
-						jsonError.HelpMessage += "You have to authenticate yourself to call this method.";
-						jsonError.HelpLink = "https://github.com/Splamy/TS3AudioBot/wiki/WebAPI#authentication";
+						jsonError.HelpMessage += strings.error_not_available_from_api;
 					}
 					else if (mcex.MissingType == typeof(UserSession))
 					{
@@ -193,8 +274,7 @@ namespace TS3AudioBot.Web.Api
 				throw Util.UnhandledDefault(ex.Reason);
 			}
 
-			using (var responseStream = new StreamWriter(response.OutputStream))
-				responseStream.Write(JsonConvert.SerializeObject(jsonError, ErrorSerializeSettings));
+			return jsonError;
 		}
 
 		private static void UnescapeAstTree(AstNode node)
@@ -216,118 +296,41 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private R<InvokerData, string> Authenticate(HttpListenerContext context)
+		private R<ApiCall, string> Authenticate(HttpRequest request)
 		{
-			var identity = GetIdentity(context);
-			if (identity is null)
-				return InvokerData.Anonymous;
+			if (!request.Headers.TryGetValue("Authorization", out var headerVal))
+				return ApiCall.CreateAnonymous();
 
-			var result = TokenManager.GetToken(identity.Name);
+			var authParts = headerVal.ToString().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+			if (authParts.Length < 2)
+				return ErrorAuthFailure;
+
+			if (!string.Equals(authParts[0], "BASIC", StringComparison.OrdinalIgnoreCase))
+				return ErrorUnsupportedScheme;
+
+			string userUid;
+			string token;
+			try
+			{
+				var data = Convert.FromBase64String(authParts[1]);
+				var index = Array.IndexOf(data, (byte)':');
+
+				if (index < 0)
+					return ErrorAuthFailure;
+				userUid = Encoding.UTF8.GetString(data, 0, index);
+				token = Encoding.UTF8.GetString(data, index + 1, data.Length - (index + 1));
+			}
+			catch (Exception) { return "Malformed base64 string"; }
+
+			var result = tokenManager.GetToken(userUid);
 			if (!result.Ok)
 				return ErrorNoUserOrToken;
 
-			var token = result.Value;
-			var invoker = new InvokerData(identity.Name,
-				token: token.Value);
+			var dbToken = result.Value;
+			if (dbToken.Value != token)
+				return ErrorAuthFailure;
 
-			switch (identity.AuthenticationType)
-			{
-			case "Basic":
-				var identityBasic = (HttpListenerBasicIdentity)identity;
-
-				if (token.Value != identityBasic.Password)
-					return ErrorAuthFailure;
-
-				return invoker;
-
-			case "Digest":
-				var identityDigest = (HttpListenerDigestIdentity)identity;
-
-				if (!identityDigest.IsAuthenticated)
-				{
-					var newNonce = token.CreateNonce();
-					context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{newNonce.Value}\"");
-					return InfoNonceAdded;
-				}
-
-				if (identityDigest.Realm != WebServer.WebRealm)
-					return ErrorUnknownRealm;
-
-				if (identityDigest.Uri != context.Request.RawUrl)
-					return ErrorAuthFailure;
-
-				//HA1=MD5(username:realm:password)
-				//HA2=MD5(method:digestURI)
-				//response=MD5(HA1:nonce:HA2)
-				var ha1 = HashString($"{identity.Name}:{identityDigest.Realm}:{token.Value}");
-				var ha2 = HashString($"{context.Request.HttpMethod}:{identityDigest.Uri}");
-				var response = HashString($"{ha1}:{identityDigest.Nonce}:{ha2}");
-
-				if (identityDigest.Hash != response)
-					return ErrorAuthFailure;
-
-				ApiNonce nextNonce = token.UseNonce(identityDigest.Nonce);
-				if (nextNonce is null)
-					return ErrorAuthFailure;
-				context.Response.AddHeader("WWW-Authenticate", $"Digest realm=\"{WebServer.WebRealm}\", nonce=\"{nextNonce.Value}\"");
-
-				return invoker;
-
-			default:
-				return ErrorUnsupportedScheme;
-			}
-		}
-
-		private static IIdentity GetIdentity(HttpListenerContext context)
-		{
-			IIdentity identity = context.User?.Identity;
-			if (identity != null)
-				return identity;
-
-			var headerVal = context.Request.Headers["Authorization"];
-			if (string.IsNullOrEmpty(headerVal))
-				return null;
-
-			var authParts = headerVal.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-			if (authParts.Length < 2)
-				return null;
-
-			if (string.Equals(authParts[0], "DIGEST", StringComparison.OrdinalIgnoreCase))
-			{
-				string name = null;
-				string hash = null;
-				string nonce = null;
-				string realm = null;
-				string uri = null;
-
-				for (var match = DigestMatch.Match(authParts[1]); match.Success; match = match.NextMatch())
-				{
-					var value = match.Groups[2].Value;
-					switch (match.Groups[1].Value.ToUpperInvariant())
-					{
-					case "USERNAME": name = value; break;
-					case "REALM": realm = value; break;
-					case "NONCE": nonce = value; break;
-					case "RESPONSE": hash = value; break;
-					case "URI": uri = value; break;
-					}
-				}
-
-				return new HttpListenerDigestIdentity(name, nonce, hash, realm, uri);
-			}
-
-			return null;
-		}
-
-		private static string HashString(string input)
-		{
-			var bytes = Util.Utf8Encoder.GetBytes(input);
-			var hash = Md5Hash.ComputeHash(bytes);
-
-			var result = new StringBuilder(hash.Length * 2);
-			for (int i = 0; i < hash.Length; i++)
-				result.Append(hash[i].ToString("x2"));
-			return result.ToString();
+			return new ApiCall(userUid, token: dbToken.Value);
 		}
 	}
 }

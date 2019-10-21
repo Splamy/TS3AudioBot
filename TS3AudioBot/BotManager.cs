@@ -24,17 +24,19 @@ namespace TS3AudioBot
 		private List<Bot> activeBots;
 		private readonly object lockObj = new object();
 
-		public ConfRoot Config { get; set; }
-		public CoreInjector CoreInjector { get; set; }
+		private readonly ConfRoot confRoot;
+		private readonly CoreInjector coreInjector;
 
-		public BotManager()
+		public BotManager(ConfRoot confRoot, CoreInjector coreInjector)
 		{
 			Util.Init(out activeBots);
+			this.confRoot = confRoot;
+			this.coreInjector = coreInjector;
 		}
 
 		public void RunBots(bool interactive)
 		{
-			var botConfigList = Config.GetAllBots();
+			var botConfigList = confRoot.GetAllBots();
 			if (botConfigList is null)
 				return;
 
@@ -46,26 +48,21 @@ namespace TS3AudioBot
 					return;
 				}
 
-				Log.Info("It seems like there are no bots configured.");
-				Log.Info("Fill out this quick setup to get started.");
+				Console.WriteLine("It seems like there are no bots configured.");
+				Console.WriteLine("Fill out this quick setup to get started.");
 
 				var newBot = CreateNewBot();
 				newBot.Run.Value = true;
 
-				string address;
-				while (true)
+				string address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
 				{
-					Console.WriteLine("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:");
-					address = Console.ReadLine();
-					if (address is null)
-						return;
-					if (TS3Client.TsDnsResolver.TryResolve(address, out var _))
-						break;
+					if (TS3Client.TsDnsResolver.TryResolve(addr, out _))
+						return true;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
-					var cont = Console.ReadLine();
-					if (string.Equals(cont, "y", StringComparison.InvariantCultureIgnoreCase))
-						break;
-				}
+					return Interactive.UserAgree(defaultTo: false);
+				});
+				if (address is null)
+					return;
 				newBot.Connect.Address.Value = address;
 				Console.WriteLine("Please enter the server password (or leave empty for none):");
 				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine();
@@ -76,7 +73,7 @@ namespace TS3AudioBot
 					return;
 				}
 
-				if (!Config.Save())
+				if (!confRoot.Save())
 					Log.Error("Could not save root config. The bot won't start by default.");
 
 				var runResult = RunBot(newBot);
@@ -97,7 +94,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public ConfBot CreateNewBot() => Config.CreateBot();
+		public ConfBot CreateNewBot() => confRoot.CreateBot();
 
 		public R<BotInfo, string> CreateAndRunNewBot()
 		{
@@ -107,7 +104,7 @@ namespace TS3AudioBot
 
 		public R<BotInfo, string> RunBotTemplate(string name)
 		{
-			var config = Config.GetBotConfig(name);
+			var config = confRoot.GetBotConfig(name);
 			if (!config.Ok)
 				return config.Error.Message;
 			return RunBot(config.Value);
@@ -115,56 +112,66 @@ namespace TS3AudioBot
 
 		public R<BotInfo, string> RunBot(ConfBot config)
 		{
-			var bot = new Bot(config, CoreInjector.CloneRealm<BotInjector>());
-			if (!CoreInjector.TryInject(bot))
-				Log.Warn("Partial bot dependency loaded only");
+			Bot bot;
+
+			lock (lockObj)
+			{
+				if (!string.IsNullOrEmpty(config.Name))
+				{
+					bot = GetBotSave(config.Name);
+					if (bot != null)
+						return bot.GetInfo();
+				}
+
+				var id = GetFreeId();
+				if (id == null)
+					return "BotManager is shutting down";
+
+				var botInjector = new BotInjector(coreInjector);
+				botInjector.AddModule(botInjector);
+				botInjector.AddModule(new TS3Client.Helper.Id(id.Value));
+				botInjector.AddModule(config);
+				if (!botInjector.TryCreate(out bot))
+					return "Failed to create new Bot";
+				InsertBot(bot);
+			}
 
 			lock (bot.SyncRoot)
 			{
 				var initializeResult = bot.InitializeBot();
-				var removeBot = false;
-				if (initializeResult.Ok)
-				{
-					lock (lockObj)
-					{
-						if (!InsertIntoFreeId(bot))
-							removeBot = true;
-					}
-				}
-				else
-				{
-					return $"Bot failed to connect ({initializeResult.Error})";
-				}
-
-				if (removeBot)
+				if (!initializeResult.Ok)
 				{
 					StopBot(bot);
-					return "BotManager is shutting down";
+					return $"Bot failed to connect ({initializeResult.Error})";
 				}
 			}
 			return bot.GetInfo();
 		}
 
 		// !! This method must be called with a lock on lockObj
-		private bool InsertIntoFreeId(Bot bot)
+		private void InsertBot(Bot bot)
+		{
+			activeBots[bot.Id] = bot;
+		}
+
+		// !! This method must be called with a lock on lockObj
+		// !! The id must be either used withing the same lock or considered invalid.
+		private int? GetFreeId()
 		{
 			if (activeBots is null)
-				return false;
+				return null;
 
 			for (int i = 0; i < activeBots.Count; i++)
 			{
 				if (activeBots[i] is null)
 				{
-					activeBots[i] = bot;
-					bot.Id = i;
-					return true;
+					return i;
 				}
 			}
 
 			// All slots are full, get a new slot
-			activeBots.Add(bot);
-			bot.Id = activeBots.Count - 1;
-			return true;
+			activeBots.Add(null);
+			return activeBots.Count - 1;
 		}
 
 		// !! This method must be called with a lock on lockObj

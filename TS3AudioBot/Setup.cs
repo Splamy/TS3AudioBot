@@ -1,8 +1,10 @@
 namespace TS3AudioBot
 {
+	using Helper;
 	using Helper.Environment;
 	using NLog;
 	using System;
+	using System.Runtime;
 
 	internal static class Setup
 	{
@@ -27,15 +29,9 @@ namespace TS3AudioBot
 				if (LogManager.Configuration is null)
 				{
 					Console.WriteLine("Create a default config to prevent this step.");
-					Console.WriteLine("Do you want to continue? [Y/N]");
-					while (true)
-					{
-						var key = Console.ReadKey().Key;
-						if (key == ConsoleKey.N)
-							return false;
-						if (key == ConsoleKey.Y)
-							break;
-					}
+					Console.WriteLine("Do you want to continue? [y/N]");
+					if (!Interactive.UserAgree(defaultTo: false))
+						return false;
 				}
 			}
 			return true;
@@ -51,9 +47,9 @@ namespace TS3AudioBot
 					Log.Warn("This version might not work properly.");
 					Log.Warn("If you encounter any problems, try installing the latest mono version by following https://www.mono-project.com/download/");
 				}
-				else if (SystemData.RuntimeData.SemVer < new Version(5, 0, 0))
+				else if (SystemData.RuntimeData.SemVer < new Version(5, 18, 0))
 				{
-					Log.Error("You are running a mono version below 5.0.0!");
+					Log.Error("You are running a mono version below 5.18.0!");
 					Log.Error("This version is not supported and will not work properly.");
 					Log.Error("Install the latest mono version by following https://www.mono-project.com/download/");
 					return false;
@@ -72,7 +68,11 @@ namespace TS3AudioBot
 
 		public static ParameterData ReadParameter(string[] args)
 		{
-			var data = new ParameterData { Exit = ExitType.No, };
+			var data = new ParameterData {
+				Interactive = true,
+				Llgc = true,
+				Exit = ExitType.No,
+			};
 
 			ParameterData Cancel() { data.Exit = ExitType.Immediately; return data; }
 
@@ -87,7 +87,6 @@ namespace TS3AudioBot
 				// > ffmpeg (apt-get)
 				// > youtube-dl (repo/apt-get)
 				// > check NLog.config exists
-				// > Ask for Uid/Group id to insert into rigths.toml template
 				// > Crete new bot (see --new-bot)
 
 				// --new-bot name={} address={} server_password={} ?
@@ -124,7 +123,11 @@ namespace TS3AudioBot
 					break;
 
 				case "--non-interactive":
-					data.NonInteractive = true;
+					data.Interactive = false;
+					break;
+
+				case "--no-llgc":
+					data.Llgc = false;
 					break;
 
 				case "-V":
@@ -140,14 +143,19 @@ namespace TS3AudioBot
 			return data;
 		}
 
+		public static void EnableLlgc()
+		{
+			GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+		}
+
 		public static void LogHeader()
 		{
 			Log.Info("[============ TS3AudioBot started =============]");
-			Log.Info("[=== Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
-			Log.Info("[=== Version: {0}", SystemData.AssemblyData);
-			Log.Info("[=== Platform: {0}", SystemData.PlatformData);
-			Log.Info("[=== Runtime: {0}", SystemData.RuntimeData.FullName);
-			Log.Info("[=== Opus: {0}", TS3Client.Audio.Opus.NativeMethods.Info);
+			Log.Info("[ Date/Time: {0} {1}", DateTime.Now.ToLongDateString(), DateTime.Now.ToLongTimeString());
+			Log.Info("[ Version: {0}", SystemData.AssemblyData);
+			Log.Info("[ Platform: {0}", SystemData.PlatformData);
+			Log.Info("[ Runtime: {0} ServerGC:{1} GC:{2}", SystemData.RuntimeData.FullName, GCSettings.IsServerGC, GCSettings.LatencyMode);
+			Log.Info("[ Opus: {0}", TS3Client.Audio.Opus.NativeMethods.Info);
 			// ffmpeg
 			// youtube-dl
 			Log.Info("[==============================================]");
@@ -160,7 +168,8 @@ namespace TS3AudioBot
 		public string ConfigFile { get; set; }
 		public bool SkipVerifications { get; set; }
 		public bool HideBanner { get; set; }
-		public bool NonInteractive { get; set; }
+		public bool Interactive { get; set; }
+		public bool Llgc { get; set; }
 	}
 
 	internal enum ExitType

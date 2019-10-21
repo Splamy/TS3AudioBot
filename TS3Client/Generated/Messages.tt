@@ -77,6 +77,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 		return $"{{ if(Utf8Parser.TryParse({input}, out f64 oval, out _)) {output} = Util.UnixTimeStart.AddSeconds(oval); }}";
 	case "str":
 	case "Uid":
+	case "IpAddr":
 		return $"{output} = Ts3String.Unescape({input});";
 	case "HostMessageMode":
 	case "CodecEncryptionMode":
@@ -93,11 +94,13 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "LogLevel":
 	case "PluginTargetMode":
 	case "PermissionType":
+	case "ChannelPermissionHint":
+	case "ClientPermissionHint":
 		if(!BackingTypes.TryGetValue(fld.type, out var backType))
 			backType = "i32";
 		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
 	case "IconHash":
-		return $"{{ if(Utf8Parser.TryParse({input}, out i64 oval, out _)) {output} = unchecked((i32)oval); }}";
+		return $"{{ if(!{input}.IsEmpty && {input}[0] == (u8)'-') {{ if(Utf8Parser.TryParse({input}, out i32 oval, out _)) {output} = oval; }} else {{ if(Utf8Parser.TryParse({input}, out u64 oval, out _)) {output} = unchecked((i32)oval); }} }}";
 	case "PermissionId":
 		return $"{{ if(Utf8Parser.TryParse({input}, out u16 oval, out _)) {output} = ser.PermissionTransform.GetName(oval); }}";
 	default:
@@ -122,7 +125,7 @@ foreach(var msg in gen.GetOrderedMsg())
 		<#= isResponse ? "public string ReturnCode { get; set; }" : "" #>
 <#
 	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) { #>
-		public <#= genField.typeFin #> <#= genField.pretty #> { get; set; }<# } #>
+		public <#= genField.TypeFin(optional) #> <#= genField.pretty #> { get; set; }<# } #>
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{<#

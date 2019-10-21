@@ -23,7 +23,7 @@ namespace TS3Client.Full.Book
 
 	<#= ConversionSet #>
 <#
-var gen = BookDeclarations.Parse(Host.ResolvePath("../Declarations/BookDeclarations.toml"));
+var gen = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml"));
 
 foreach (var struc in gen.@struct)
 {
@@ -37,7 +37,7 @@ foreach (var struc in gen.@struct)
 			foreach(var prop in struc.properties) {
 				switch(prop.mod) {
 				case "array":
-					WriteLine($"{prop.name} = new List<{prop.type}>();");
+					WriteLine($"{prop.name} = new HashSet<{prop.type}>();");
 					break;
 				case "map":
 					WriteLine($"{prop.name} = new Dictionary<{prop.key},{prop.type}>();");
@@ -52,13 +52,14 @@ foreach (var struc in gen.@struct)
 		public <#
 			switch(prop.mod) {
 			case "array":
-				Write($"List<{prop.type}>");
+				Write($"HashSet<{prop.type}>");
 				break;
 			case "map":
 				Write($"Dictionary<{prop.key},{prop.type}>");
 				break;
 			default:
-				Write(prop.type);
+				// TODO better
+				Write($"{prop.type}{(prop.opt == true && NullType(prop.type) ? "?" : "")}");
 				break;
 			}
 		#> <#= prop.name #> { <#= prop.get.Value?"":"internal " #>get; <#= prop.set.Value?"":"internal " #>set; }<# } #>

@@ -40,6 +40,8 @@ namespace TS3AudioBot.CommandSystem
 					var strb = new StringBuilder();
 					strb.Append(InvokeName);
 					strb.Append(" (");
+					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.kind.IsNormal()).Select(p => p.type.FullName).OrderBy(p => p)));
+					strb.Append("|");
 					strb.Append(string.Join(", ", CommandParameter.Where(p => p.kind.IsNormal()).Select(p => p.type.FullName)));
 					strb.Append(")");
 					cachedFullQualifiedName = strb.ToString();
@@ -61,15 +63,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public object AsJsonObj
-		{
-			get
-			{
-				if (cachedAsJsonObj is null)
-					cachedAsJsonObj = new CommadSerializeObj(this);
-				return cachedAsJsonObj;
-			}
-		}
+		public object AsJsonObj => cachedAsJsonObj ?? (cachedAsJsonObj = new CommandSerializeObj(this));
 
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{
@@ -96,14 +90,17 @@ namespace TS3AudioBot.CommandSystem
 
 		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
 		{
+			// Check call complexity
+			info.UseComplexityTokens(1);
+
+			// Check permissions
 			if (!info.HasRights(requiredRights))
-				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight),
-					CommandExceptionReason.MissingRights);
+				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
 
 			return base.Execute(info, arguments, returnTypes);
 		}
 
-		private class CommadSerializeObj
+		private class CommandSerializeObj
 		{
 			private readonly BotCommand botCmd;
 			public string Name => botCmd.InvokeName;
@@ -112,7 +109,7 @@ namespace TS3AudioBot.CommandSystem
 			public string[] Modules { get; }
 			public string Return { get; }
 
-			public CommadSerializeObj(BotCommand botCmd)
+			public CommandSerializeObj(BotCommand botCmd)
 			{
 				this.botCmd = botCmd;
 				Parameter = (

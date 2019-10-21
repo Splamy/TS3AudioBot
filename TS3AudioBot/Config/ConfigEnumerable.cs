@@ -22,6 +22,12 @@ namespace TS3AudioBot.Config
 		public TomlTable TomlObject { get; set; }
 		public override bool ExpectsString => false;
 
+		public override void ClearEvents()
+		{
+			foreach (var child in GetAllChildren())
+				child.ClearEvents();
+		}
+
 		public override void FromToml(TomlObject tomlObject)
 		{
 			if (tomlObject is null)
@@ -29,7 +35,7 @@ namespace TS3AudioBot.Config
 				if (Parent is null)
 					TomlObject = Toml.Create();
 				else
-					TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType);
+					TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType).Added;
 			}
 			else
 			{
@@ -111,10 +117,14 @@ namespace TS3AudioBot.Config
 
 		protected static T Create<T>(string key, ConfigEnumerable parent, TomlObject fromToml, string doc = "") where T : ConfigEnumerable, new()
 		{
-			var table = Create<T>(key, doc);
-			table.Parent = parent;
-			table.FromToml(fromToml);
-			return table;
+			return Init(Create<T>(key, doc), parent, fromToml);
+		}
+
+		protected static T Init<T>(T part, ConfigEnumerable parent, TomlObject fromToml) where T : ConfigPart
+		{
+			part.Parent = parent;
+			part.FromToml(fromToml);
+			return part;
 		}
 
 		public static T CreateRoot<T>() where T : ConfigEnumerable, new() => Create<T>(null, null, null, "");
@@ -129,8 +139,14 @@ namespace TS3AudioBot.Config
 
 		public E<Exception> Save(string path, bool writeDefaults, bool writeDocumentation = true)
 		{
-			ToToml(writeDefaults, writeDocumentation);
-			try { Toml.WriteFile(TomlObject, path); }
+			try
+			{
+				lock (this)
+				{
+					ToToml(writeDefaults, writeDocumentation);
+					Toml.WriteFile(TomlObject, path);
+				}
+			}
 			catch (Exception ex) { return ex; }
 			return R.Ok;
 		}

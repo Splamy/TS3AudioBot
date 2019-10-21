@@ -1,4 +1,3 @@
-// tslint.json
 {
     "extends": "tslint:recommended",
     "rules": {
@@ -16,34 +15,38 @@
         "no-conditional-assignment": true,
         "no-construct": true,
         "no-duplicate-super": true,
-        "no-for-in-array": true, // TI
-        "no-floating-promises": true, // TI
+        "no-for-in-array": true,
+        "no-floating-promises": true,
         "no-invalid-this": [ true, "check-function-in-method" ],
         "no-misused-new": true,
         "no-null-keyword": true,
         "no-reference": false,
         "no-object-literal-type-assertion": true,
-        "object-literal-sort-keys": true,
+        "object-literal-sort-keys": false,
         "no-shadowed-variable": true,
         "no-sparse-arrays": true,
         "no-string-literal": true,
         "no-string-throw": true,
         "no-switch-case-fall-through": true,
-        "no-unbound-method": [true, "ignore-static"], // TI
+        "no-unbound-method": [true, "ignore-static"],
         "no-unsafe-finally": true,
         "no-unused-expression": true,
-        "no-unused-variable": true, // TI
-        "no-use-before-declare": true, // TI
+        "no-unused-variable": true,
+        "no-use-before-declare": true,
         "no-var-keyword": true,
-        "no-void-expression": true, // TI
-        "restrict-plus-operands": true, // TI
-        "strict-boolean-expressions": true, // TI
-        "strict-type-predicates": true, // TI
+        "no-void-expression": true,
+        "restrict-plus-operands": true,
+        "strict-boolean-expressions": true,
+        "strict-type-predicates": true,
         "array-type": [ true, "array" ],
         "unified-signatures": true,
         "prefer-switch": true,
         "prefer-function-over-method": true,
         "member-ordering": [ false ],
-        "forin": false, // Usually for my state vaiable
+        "forin": false,
+        "indent": [true, "tabs", 4],
+        "trailing-comma": [true, {"multiline": "ignore", "singleline": "never"}],
+        "triple-equals": [true, "allow-undefined-check"],
+        "max-classes-per-file": false
     }
 }

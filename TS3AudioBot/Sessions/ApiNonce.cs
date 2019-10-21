@@ -22,7 +22,7 @@ namespace TS3AudioBot.Sessions
 			Timeout = useTime;
 		}
 
-		public override bool Equals(object obj) => Value.Equals((obj as ApiNonce)?.Value);
+		public override bool Equals(object obj) => Value.Equals((obj as ApiNonce)?.Value, StringComparison.Ordinal);
 		public override int GetHashCode() => Value.GetHashCode();
 	}
 }

@@ -18,7 +18,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#
-var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/BookDeclarations.toml"));
+var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml"));
 var genmsg = Messages.Parse(Host.ResolvePath("../Declarations/Messages.toml"));
 var genm2b = M2BDeclarations.Parse(Host.ResolvePath("../Declarations/MessagesToBook.toml"), genmsg, genbook);
 #>
@@ -31,7 +31,7 @@ namespace TS3Client.Full.Book
 
 	public partial class Connection
 	{
-#pragma warning disable IDE0017 // Ignore "Object initialization can be simplified"
+#pragma warning disable IDE0017, CS0472 // Ignore "Object initialization can be simplified", "Something with == and null..."
 	<# foreach (var rule in genm2b.rule) {
 		var msg = genmsg.NotifiesSorted.First(x => x.name == rule.from);
 		var bookItem = genbook.@struct.First(x => x.name == rule.to);
@@ -49,7 +49,11 @@ namespace TS3Client.Full.Book
 			if (rule.operation == "add")
 				WriteLine($"var obj = new {rule.to}();");
 			else
-				WriteLine($"var obj = Get{rule.to}({idStr});");
+				WriteLine($@"var obj = Get{rule.to}({idStr});
+			if (obj == null) {{
+				Log.Warn(""Internal Book protocol error. Update '{msg.name}' has no local object ({{$msg}})"", msg);
+				return;
+			}}");
 
 			foreach (var prop in rule.properties) {
 				void WriteMove(string from, string to) {
@@ -61,24 +65,35 @@ namespace TS3Client.Full.Book
 
 					if (prop.operation is null) {
 						if (bookProp.mod is null) {
-							WriteLine($"obj.{to} = {from};");
+							if (from == "null")
+								WriteLine($"obj.{to} = null;");
+							else
+								WriteLine($"{{ var tmpv = {from}; if (tmpv != null) obj.{to} = ({bookProp.type})tmpv; }}");
 						} else if (bookProp.mod == "array") {
-							WriteLine($"{{ var tmp = {from}; if (tmp != null) obj.{to}.AddRange(tmp); }}");
+							//WriteLine($"obj.{to}.Add({from});");
+							if (prop.operation == "add")
+								WriteLine($"{{ var tmpa = {from}; if (tmpa != null) obj.{to}.UnionWith(tmpa); }}");
+							else
+								WriteLine($"{{ var tmpa = {from}; if (tmpa != null) {{ obj.{to}.Clear(); obj.{to}.UnionWith(tmpa); }} }}");
 						} else {
 							throw new Exception("Unknown mod type: " + bookProp.mod);
 						}
 					} else if (prop.operation == "add") {
+						// Currently hacky; Better check:
+						//  [update:single->single]
+						//  [add/remove/update:single->array]
+						//  [update:array->array]
 						WriteLine($"obj.{to}.Add({from});");
 					} else if (prop.operation == "remove") {
+						// Same here
 						WriteLine($"obj.{to}.Remove({from});");
 					} else
 						throw new Exception("Unknown operation: " + prop.operation);
 				}
 
-				if (prop.from != null)
-				{
+				if (prop.from != null) {
 					WriteMove($"msg.{prop.from}", prop.to);
-				} else /* function */ {
+				} else { /* function */
 					if (prop.function == "ReturnNone")
 						WriteMove($"null", prop.tolist[0]);
 					else if (prop.function == "VoidFun") { /* Do Nothing */ }
@@ -108,6 +123,6 @@ namespace TS3Client.Full.Book
 		}
 
 	<# } #>
-#pragma warning restore IDE0017
+#pragma warning restore IDE0017, CS0472
 	}
 }

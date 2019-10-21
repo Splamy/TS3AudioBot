@@ -29,7 +29,8 @@ using (TextFieldParser parser = new TextFieldParser(declFilePath))
 var dict = new Dictionary<string, Ver> {
 	{ "Windows", new Ver { plat = "WIN", enu = "Windows" } },
 	{ "Linux", new Ver { plat = "LIN", enu = "Linux" } },
-	{ "OS X", new Ver { plat = "OSX", enu = "Osx" } },
+	{ "OS X", new Ver { plat = "MAC", enu = "MacOs" } },
+	{ "macOS", new Ver { plat = "MAC", enu = "MacOs" } },
 	{ "Android", new Ver { plat = "AND", enu = "Android" } },
 	{ "iOS", new Ver { plat = "IOS", enu = "Ios" } },
 };
@@ -43,7 +44,7 @@ string BuildToFld(string build)
 
 namespace TS3Client.Full
 {
-	using System;
+	using System.Collections.Generic;
 
 	/// <summary>
 	/// Describes a triple of version, platform and a cryptographical signature (usually distributed by "TeamSpeak Systems").
@@ -51,28 +52,31 @@ namespace TS3Client.Full
 	/// </summary>
 	public sealed class VersionSign
 	{
-		private static readonly string[] Platforms = { null, "Windows", "Linux", "OS X", "Android", "iOS" };
+		private static readonly Dictionary<string, ClientPlatform> Platforms = new Dictionary<string, ClientPlatform> {
+			{ "Windows", ClientPlatform.Windows },
+			{ "Linux", ClientPlatform.Linux },
+			{ "OS X", ClientPlatform.MacOs },
+			{ "macOS", ClientPlatform.MacOs },
+			{ "Android", ClientPlatform.Android },
+			{ "iOS", ClientPlatform.Ios },
+		};
 
 		public string Sign { get; }
 		public string Name { get; }
 		public ClientPlatform Platform { get; }
 		public string PlatformName { get; }
 
-		public VersionSign(string name, ClientPlatform platform, string sign)
-		{
-			if (platform == ClientPlatform.Other)
-				throw new ArgumentException(nameof(platform));
-			Name = name;
-			Sign = sign;
-			Platform = platform;
-			PlatformName = Platforms[(int)platform];
-		}
+		private static ClientPlatform GetPlatform(string platform)
+			=> Platforms.TryGetValue(platform, out var enu) ? enu : ClientPlatform.Other;
 
 		public VersionSign(string name, string platform, string sign)
+			: this(name, platform, GetPlatform(platform), sign) { }
+
+		public VersionSign(string name, string platform, ClientPlatform platformType, string sign)
 		{
 			Name = name;
 			Sign = sign;
-			Platform = ClientPlatform.Other;
+			Platform = platformType;
 			PlatformName = platform;
 		}
 
@@ -93,7 +97,8 @@ namespace TS3Client.Full
 				continue;
 			duplicates.Add(fldName);
 		#>
-		public static VersionSign <#= fldName #> { get; } = new VersionSign("<#= line[iname] #>", ClientPlatform.<#= ver.enu #>, "<#= line[ihash] #>");<# } #>
+		public static VersionSign <#= fldName #> { get; } = new VersionSign("<#= line[iname] #>", "<#= line[iplat] #>", ClientPlatform.<#= ver.enu #>, "<#= line[ihash] #>");<#
+		} #>
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
 	}
 
@@ -102,7 +107,7 @@ namespace TS3Client.Full
 		Other = 0,
 		Windows,
 		Linux,
-		Osx,
+		MacOs,
 		Android,
 		Ios,
 	}

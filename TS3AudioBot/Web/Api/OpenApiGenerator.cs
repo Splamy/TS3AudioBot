@@ -21,7 +21,7 @@ namespace TS3AudioBot.Web.Api
 
 	public static class OpenApiGenerator
 	{
-		private static JsonSerializer seri = JsonSerializer.CreateDefault();
+		private static readonly JsonSerializer seri = JsonSerializer.CreateDefault();
 
 		static OpenApiGenerator()
 		{
@@ -110,6 +110,7 @@ namespace TS3AudioBot.Web.Api
 				case ParamKind.NormalCommand:
 				case ParamKind.NormalParam:
 				case ParamKind.NormalArray:
+				case ParamKind.NormalTailString:
 					if (param.kind == ParamKind.NormalArray)
 						pathBuilder.Append("/{").Append(param.param.Name).Append("}...");
 					else

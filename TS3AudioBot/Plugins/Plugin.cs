@@ -29,7 +29,7 @@ namespace TS3AudioBot.Plugins
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		public CoreInjector CoreInjector { get; set; }
-		public ResourceFactoryManager FactoryManager { get; set; }
+		public ResourceFactory ResourceFactory { get; set; }
 		public CommandManager CommandManager { get; set; }
 
 		private byte[] md5CacheSum;
@@ -199,7 +199,7 @@ namespace TS3AudioBot.Plugins
 			// on windows aymore after it's opened once.
 			var asmBin = System.IO.File.ReadAllBytes(File.FullName);
 			var assembly = Assembly.Load(asmBin);
-			return InitlializeAssembly(assembly);
+			return InitializeAssembly(assembly);
 		}
 
 		private PluginResponse PrepareSource()
@@ -209,48 +209,51 @@ namespace TS3AudioBot.Plugins
 				.Select(asm => MetadataReference.CreateFromFile(asm.Location))
 				.Concat(new[] { MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location) }).ToArray();
 
-			var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(System.IO.File.OpenRead(File.FullName)));
-
-			var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Util.Random.Next()}")
-				.WithOptions(new CSharpCompilationOptions(
-					outputKind: OutputKind.DynamicallyLinkedLibrary,
-					optimizationLevel: OptimizationLevel.Release))
-				.AddReferences(param)
-				.AddSyntaxTrees(sourceTree);
-
-			using (var ms = new MemoryStream())
+			using (var pluginFileStream = System.IO.File.OpenRead(File.FullName))
 			{
-				var result = compilation.Emit(ms);
+				var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(pluginFileStream));
 
-				if (result.Success)
+				var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Util.Random.Next()}")
+					.WithOptions(new CSharpCompilationOptions(
+						outputKind: OutputKind.DynamicallyLinkedLibrary,
+						optimizationLevel: OptimizationLevel.Release))
+					.AddReferences(param)
+					.AddSyntaxTrees(sourceTree);
+
+				using (var ms = new MemoryStream())
 				{
-					ms.Seek(0, SeekOrigin.Begin);
-					var assembly = Assembly.Load(ms.ToArray());
-					return InitlializeAssembly(assembly);
-				}
-				else
-				{
-					bool containsErrors = false;
-					var strb = new StringBuilder();
-					strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
-					foreach (var error in result.Diagnostics)
+					var result = compilation.Emit(ms);
+
+					if (result.Success)
 					{
-						var position = error.Location.GetLineSpan();
-						containsErrors |= error.WarningLevel == 0;
-						strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
-							error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
-							position.StartLinePosition.Line + 1,
-							position.StartLinePosition.Character,
-							error.GetMessage());
+						ms.Seek(0, SeekOrigin.Begin);
+						var assembly = Assembly.Load(ms.ToArray());
+						return InitializeAssembly(assembly);
 					}
-					strb.Length--; // remove last linebreak
-					Log.Warn(strb.ToString());
-					return PluginResponse.CompileError;
+					else
+					{
+						bool containsErrors = false;
+						var strb = new StringBuilder();
+						strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
+						foreach (var error in result.Diagnostics)
+						{
+							var position = error.Location.GetLineSpan();
+							containsErrors |= error.WarningLevel == 0;
+							strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
+								error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
+								position.StartLinePosition.Line + 1,
+								position.StartLinePosition.Character,
+								error.GetMessage());
+						}
+						strb.Length--; // remove last linebreak
+						Log.Warn(strb.ToString());
+						return PluginResponse.CompileError;
+					}
 				}
 			}
 		}
 
-		private PluginResponse InitlializeAssembly(Assembly assembly)
+		private PluginResponse InitializeAssembly(Assembly assembly)
 		{
 			try
 			{
@@ -261,12 +264,12 @@ namespace TS3AudioBot.Plugins
 
 				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length > 1)
 				{
-					Log.Warn("Any source or binary plugin file may contain one plugin or factory at most.");
+					Log.Warn("Any source or binary plugin file may contain one plugin or factory at most. ({})", Name);
 					return PluginResponse.TooManyPlugins;
 				}
 				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length == 0)
 				{
-					Log.Warn("Any source or binary plugin file must contain at least one plugin or factory.");
+					Log.Warn("Any source or binary plugin file must contain at least one plugin or factory. ({})", Name);
 					return PluginResponse.NoTypeMatch;
 				}
 
@@ -303,12 +306,12 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (TypeLoadException tlex)
 			{
-				Log.Warn(nameof(InitlializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependecies ({1})", File.Name, tlex.Message);
+				Log.Warn(nameof(InitializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependecies ({1})", File.Name, tlex.Message);
 				return PluginResponse.MissingDependency;
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, nameof(InitlializeAssembly) + " failed: {0}", ex.Message);
+				Log.Error(ex, nameof(InitializeAssembly) + " failed: {0}", ex.Message);
 				return PluginResponse.Crash;
 			}
 		}
@@ -377,22 +380,20 @@ namespace TS3AudioBot.Plugins
 					if (pluginObjectList.Count == 0)
 						RegisterCommands(pluginInstance, coreType);
 					pluginObjectList.Add(bot, pluginInstance);
-					if (!bot.Injector.TryInject(pluginInstance))
-						Log.Warn("Some dependencies are missing for this plugin");
+					bot.Injector.FillProperties(pluginInstance);
 					pluginInstance.Initialize();
 					break;
 
 				case PluginType.CorePlugin:
 					pluginObject = (ICorePlugin)Activator.CreateInstance(coreType);
 					RegisterCommands(pluginObject, coreType);
-					if (!CoreInjector.TryInject(pluginObject))
-						Log.Warn("Some dependencies are missing for this plugin");
+					CoreInjector.FillProperties(pluginObject);
 					pluginObject.Initialize();
 					break;
 
 				case PluginType.Factory:
 					factoryObject = (IFactory)Activator.CreateInstance(coreType);
-					FactoryManager.AddFactory(factoryObject);
+					ResourceFactory.AddFactory(factoryObject);
 					break;
 
 				case PluginType.Commands:
@@ -477,7 +478,7 @@ namespace TS3AudioBot.Plugins
 				break;
 
 			case PluginType.Factory:
-				FactoryManager.RemoveFactory(factoryObject);
+				ResourceFactory.RemoveFactory(factoryObject);
 				break;
 
 			case PluginType.Commands:

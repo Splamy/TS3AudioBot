@@ -11,6 +11,8 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 {
 	public class StringCommandResult : ICommandResult
 	{
+		public static readonly StringCommandResult Empty = new StringCommandResult(string.Empty);
+
 		public CommandResultType ResultType => CommandResultType.String;
 		public virtual string Content { get; }
 
