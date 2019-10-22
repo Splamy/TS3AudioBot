@@ -27,7 +27,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			AliasString = command;
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			info.UseComplexityTokens(1);
 

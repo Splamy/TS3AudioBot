@@ -9,11 +9,12 @@
 
 namespace TS3AudioBot.History
 {
+	using CommandSystem.CommandResults;
 	using ResourceFactories;
 	using System;
 	using System.Globalization;
 
-	public class AudioLogEntry
+	public class AudioLogEntry : IAudioResourceResult
 	{
 		/// <summary>A unique id for each <see cref="ResourceFactories.AudioResource"/>, given by the history system.</summary>
 		public int Id { get; set; }

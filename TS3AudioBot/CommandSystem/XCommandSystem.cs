@@ -16,18 +16,20 @@ namespace TS3AudioBot.CommandSystem
 	using System;
 	using System.Collections.Generic;
 	using Text;
+	using Web.Api;
 
 	public class XCommandSystem
 	{
-		public static readonly CommandResultType[] ReturnJson = { CommandResultType.Json };
-		public static readonly CommandResultType[] ReturnJsonOrNothing = { CommandResultType.Json, CommandResultType.Empty };
-		public static readonly CommandResultType[] ReturnString = { CommandResultType.String };
-		public static readonly CommandResultType[] ReturnStringOrNothing = { CommandResultType.String, CommandResultType.Empty };
-		public static readonly CommandResultType[] ReturnCommandOrString = { CommandResultType.Command, CommandResultType.String };
-		public static readonly CommandResultType[] ReturnAnyPreferNothing = { CommandResultType.Empty, CommandResultType.String, CommandResultType.Json, CommandResultType.Command };
+		public static readonly Type[] ReturnJson = { typeof(JsonObject) };
+		public static readonly Type[] ReturnJsonOrNothing = { typeof(JsonObject), null };
+		public static readonly Type[] ReturnString = { typeof(string) };
+		public static readonly Type[] ReturnStringOrNothing = { typeof(string), null };
+		public static readonly Type[] ReturnCommandOrString = { typeof(ICommand), typeof(string) };
+		public static readonly Type[] ReturnAnyPreferNothing = { null, typeof(string), typeof(JsonObject), typeof(ICommand) };
 
 		/// <summary>
-		/// The order of types, the first item has the highest priority, items not in the list have lower priority.
+		/// The order of types, the first item has the highest priority,
+		/// items not in the list have higher priority as they are special types.
 		/// </summary>
 		public static readonly Type[] TypeOrder = {
 			typeof(bool),
@@ -39,6 +41,14 @@ namespace TS3AudioBot.CommandSystem
 			typeof(TimeSpan), typeof(DateTime),
 			typeof(string) };
 		public static readonly HashSet<Type> BasicTypes = new HashSet<Type>(TypeOrder);
+
+		public static readonly HashSet<Type> AdvancedTypes = new HashSet<Type>(new Type[] {
+			typeof(IAudioResourceResult),
+			typeof(System.Collections.IEnumerable),
+			typeof(ResourceFactories.AudioResource),
+			typeof(History.AudioLogEntry),
+			typeof(Playlists.PlaylistItem),
+		});
 
 		public RootCommand RootCommand { get; }
 
@@ -63,37 +73,42 @@ namespace TS3AudioBot.CommandSystem
 					if (!(para is AstValue astVal) || astVal.StringType != StringType.FreeString)
 						break;
 
-					arguments[i] = new StringCommand(astVal.Value, astVal.TailString);
+					arguments[i] = new TailStringAutoConvertCommand(new TailString(astVal.Value, astVal.TailString));
 					tailCandidates++;
 				}
 				for (int i = 0; i < cmd.Parameter.Count - tailCandidates; i++)
 					arguments[i] = AstToCommandResult(cmd.Parameter[i]);
 				return new AppliedCommand(RootCommand, arguments);
 			case AstType.Value:
-				return new StringCommand(((AstValue)node).Value);
+				AstValue astNode = (AstValue)node;
+				// Quoted strings are always strings, the rest gets automatically converted
+				if (astNode.StringType == StringType.FreeString)
+					return new AutoConvertResultCommand(astNode.Value);
+				else
+					return new ResultCommand(new PrimitiveResult<string>(astNode.Value));
 			default:
 				throw Util.UnhandledDefault(node.Type);
 			}
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, string command)
+		public object Execute(ExecutionInformation info, string command)
 		{
 			return Execute(info, command, ReturnStringOrNothing);
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, string command, IReadOnlyList<CommandResultType> returnTypes)
+		public object Execute(ExecutionInformation info, string command, IReadOnlyList<Type> returnTypes)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
 			return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			return Execute(info, arguments, ReturnStringOrNothing);
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			return RootCommand.Execute(info, arguments, returnTypes);
 		}
@@ -101,30 +116,21 @@ namespace TS3AudioBot.CommandSystem
 		public string ExecuteCommand(ExecutionInformation info, string command)
 		{
 			var result = Execute(info, command);
-			if (result.ResultType == CommandResultType.String)
-				return result.ToString();
-			if (result.ResultType == CommandResultType.Empty)
+			if (result is IPrimitiveResult<string> s)
+				return s.Get();
+			if (result == null)
 				return null;
 			throw new CommandException("Expected a string or nothing as result", CommandExceptionReason.NoReturnMatch);
 		}
 
-		public static ICommandResult GetEmpty(IReadOnlyList<CommandResultType> resultTypes)
+		public static object GetEmpty(IReadOnlyList<Type> resultTypes)
 		{
 			foreach (var item in resultTypes)
 			{
-				switch (item)
-				{
-				case CommandResultType.Empty:
-					return EmptyCommandResult.Instance;
-				case CommandResultType.Command:
-					break;
-				case CommandResultType.String:
-					return StringCommandResult.Empty;
-				case CommandResultType.Json:
-					break;
-				default:
-					throw Util.UnhandledDefault(item);
-				}
+				if (item == null)
+					return null;
+				else if (item == typeof(string))
+					return string.Empty;
 			}
 			throw new CommandException("No empty return type available", CommandExceptionReason.NoReturnMatch);
 		}

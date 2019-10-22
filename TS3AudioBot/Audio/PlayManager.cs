@@ -18,7 +18,7 @@ namespace TS3AudioBot.Audio
 	using System.Linq;
 	using TS3AudioBot.Helper;
 
-	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary> 
+	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary>
 	public class PlayManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -122,9 +122,8 @@ namespace TS3AudioBot.Audio
 			if (item is null)
 				throw new ArgumentNullException(nameof(item));
 
-			if (item.Resource is null)
+			if (item.AudioResource is null)
 				throw new Exception("Invalid playlist item");
-
 			playlistManager.Clear();
 			playlistManager.Queue(item);
 			playlistManager.Index = 0;
@@ -147,7 +146,7 @@ namespace TS3AudioBot.Audio
 
 		private E<LocalStr> StartResource(InvokerData invoker, PlaylistItem item)
 		{
-			var result = resourceFactory.Load(item.Resource);
+			var result = resourceFactory.Load(item.AudioResource);
 			if (!result)
 				return result.Error;
 
@@ -192,7 +191,7 @@ namespace TS3AudioBot.Audio
 			var result = StartResource(invoker, pli);
 			if (result.Ok)
 				return result;
-			Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
+			Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
 			return Next(invoker, manually);
 		}
 
@@ -205,7 +204,7 @@ namespace TS3AudioBot.Audio
 				var result = StartResource(invoker, pli);
 				if (result.Ok)
 					return result;
-				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
+				Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
 			}
 			if (pli is null)
 				return new LocalStr(strings.info_playmgr_no_next_song);
@@ -233,7 +232,7 @@ namespace TS3AudioBot.Audio
 				var result = StartResource(invoker, pli);
 				if (result.Ok)
 					return result;
-				Log.Warn("Skipping: {0} because {1}", pli.DisplayString, result.Error.Str);
+				Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
 			}
 			if (pli is null)
 				return new LocalStr(strings.info_playmgr_no_previous_song);

@@ -9,11 +9,10 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	public enum CommandResultType
+	using ResourceFactories;
+
+	public interface IAudioResourceResult
 	{
-		Empty,
-		Command,
-		String,
-		Json,
+		AudioResource AudioResource { get; }
 	}
 }

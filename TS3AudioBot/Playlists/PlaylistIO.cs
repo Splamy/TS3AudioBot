@@ -258,7 +258,7 @@ namespace TS3AudioBot.Playlists
 				foreach (var pli in plist.Items)
 				{
 					sw.Write("rsj:");
-					serializer.Serialize(sw, pli.Resource);
+					serializer.Serialize(sw, pli.AudioResource);
 					sw.WriteLine();
 				}
 			}

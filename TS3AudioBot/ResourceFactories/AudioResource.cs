@@ -9,6 +9,7 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
+	using CommandSystem.CommandResults;
 	using Newtonsoft.Json;
 	using System.Collections.Generic;
 
@@ -26,7 +27,7 @@ namespace TS3AudioBot.ResourceFactories
 		public override string ToString() => BaseData.ToString();
 	}
 
-	public class AudioResource
+	public class AudioResource : IAudioResourceResult
 	{
 		/// <summary>The resource type.</summary>
 		[JsonProperty(PropertyName = "type")]
@@ -43,6 +44,8 @@ namespace TS3AudioBot.ResourceFactories
 		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and resource type string of a factory.</summary>
 		[JsonIgnore]
 		public string UniqueId => ResourceId + AudioType;
+		[JsonIgnore]
+		AudioResource IAudioResourceResult.AudioResource => this;
 
 		public AudioResource() { }
 

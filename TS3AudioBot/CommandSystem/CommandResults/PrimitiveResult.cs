@@ -9,19 +9,15 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	using Web.Api;
-
-	public class JsonCommandResult : ICommandResult
+	public class PrimitiveResult<T> : IPrimitiveResult<T>
 	{
-		public CommandResultType ResultType => CommandResultType.Json;
+		public T Content { get; }
 
-		public JsonObject JsonObject { get; }
-
-		public JsonCommandResult(JsonObject jsonObj)
+		public PrimitiveResult(T contentArg)
 		{
-			JsonObject = jsonObj;
+			Content = contentArg;
 		}
 
-		public override string ToString() => "JsonCommandResult can't be converted into a string";
+		public virtual T Get() => Content;
 	}
 }

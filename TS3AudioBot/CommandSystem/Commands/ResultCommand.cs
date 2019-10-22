@@ -9,37 +9,36 @@
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
+	using CommandResults;
+	using Localization;
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
-	using CommandResults;
 
-	public class LazyCommand : ICommand
+	/// <summary>
+	/// A command that stores a result and returns it.
+	/// </summary>
+	public class ResultCommand : ICommand
 	{
-		private readonly ICommand innerCommand;
-		private bool executed = false;
-		/// <summary>
-		/// The cached result, if available.
-		/// </summary>
-		private object result;
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public LazyCommand(ICommand innerCommandArg)
+		public object Content { get; }
+
+		public ResultCommand(object contentArg)
 		{
-			innerCommand = innerCommandArg;
+			Content = contentArg;
 		}
 
 		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
-			if (!executed)
+			if (!ResultHelper.IsValidResult(Content, returnTypes))
 			{
-				result = innerCommand.Execute(info, arguments, returnTypes);
-				return result;
+				Log.Debug($"Failed to return {Content.GetType()} ({Content})");
+				throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.NoReturnMatch);
 			}
-			if (!ResultHelper.IsValidResult(result, returnTypes))
-				throw new CommandException("The cached result can't be returned", CommandExceptionReason.NoReturnMatch);
-			return result;
+			return Content;
 		}
 
-		public override string ToString() => $"L({innerCommand})";
+		public override string ToString() => "<result>";
 	}
 }
