@@ -37,13 +37,13 @@ namespace TS3AudioBot.CommandSystem.Commands
 				try
 				{
 					var result = Convert.ChangeType(Content, type, CultureInfo.InvariantCulture);
-					Log.Debug($"Converting command result {Content} to {type} returns {result}");
+					Log.Debug("Converting command result {0} to {1} returns {2}", Content, type, result);
 
 					return ResultHelper.ToResult(type, result);
 				}
 				catch
 				{
-					Log.Debug($"Converting command result {Content} to {type} failed");
+					Log.Debug("Converting command result {0} to {1} failed", Content, type);
 				}
 			}
 			throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.NoReturnMatch);

@@ -193,13 +193,12 @@ namespace TS3AudioBot.CommandSystem.Commands
 					return new AppliedCommand(this, arguments);
 			}
 
-			var rets = string.Join(", ", returnTypes.Select(t => $"{t}"));
-			Log.Debug($"Iterating over return types [{rets}]");
+			Log.Debug("Iterating over return types [{@returnTypes}]", returnTypes);
 
 			var result = ExecuteFunction(parameters);
 			if (ResultHelper.IsValidResult(result, returnTypes))
 			{
-				Log.Debug($"{result} can be directly returned");
+				Log.Debug("{0} can be directly returned", result);
 				return result;
 			}
 
@@ -221,7 +220,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					return ResultHelper.ToResult(returnType, result2);
 				else if (returnType == typeof(string))
 				{
-					Log.Debug($"Convert {result} to a string");
+					Log.Debug("Convert {0} to a string", result);
 					var resultStr = result.ToString();
 					if (!string.IsNullOrEmpty(resultStr))
 						return new PrimitiveResult<string>(resultStr);

@@ -329,6 +329,28 @@ namespace TS3AudioBot
 			return XCommandSystem.GetTree(commandManager.CommandSystem.RootCommand);
 		}
 
+		[Command("data song cover")]
+		public static DataStream CommandData(ResourceFactory resourceFactory, PlayManager playManager)
+		{
+			var cur = playManager.CurrentPlayData;
+			if (cur == null)
+				return null;
+			return new DataStream(response =>
+			{
+				if(resourceFactory.GetThumbnail(cur.PlayResource).GetOk(out var stream))
+				{
+					using (var stream = x.GetResponseStream())
+					using (var image = ImageUtil.ResizeImage(stream))
+					{
+						if (image is null)
+							throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
+						ts3Client.UploadAvatar(image).UnwrapThrow();
+					}
+				}
+			});
+		}
+
+
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
 		[Usage("<strings...>", "Concat the strings and execute them with the command system")]

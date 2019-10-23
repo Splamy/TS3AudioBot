@@ -107,7 +107,7 @@ namespace TS3AudioBot.Web.Api
 			try
 			{
 				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-				var res = command.Execute(execInfo, Array.Empty<ICommand>(), XCommandSystem.ReturnJsonOrNothing);
+				var res = command.Execute(execInfo, Array.Empty<ICommand>(), XCommandSystem.ReturnJsonOrDataOrNothing);
 
 				if (res == null)
 				{
@@ -119,6 +119,17 @@ namespace TS3AudioBot.Web.Api
 					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
 					using (var responseStream = new StreamWriter(response.Body))
 						responseStream.Write(returnString);
+				}
+				else if (res is DataStream data)
+				{
+					response.StatusCode = (int)HttpStatusCode.OK;
+					if (!string.IsNullOrEmpty(data.Mime))
+						response.ContentType = data.Mime;
+					using (var stream = data.Get())
+					using (response.Body)
+					{
+						stream.CopyTo(response.Body);
+					}
 				}
 			}
 			catch (CommandException ex)

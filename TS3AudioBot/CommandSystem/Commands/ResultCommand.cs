@@ -33,7 +33,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		{
 			if (!ResultHelper.IsValidResult(Content, returnTypes))
 			{
-				Log.Debug($"Failed to return {Content.GetType()} ({Content})");
+				Log.Debug("Failed to return {0} ({1})", Content.GetType(), Content);
 				throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.NoReturnMatch);
 			}
 			return Content;
