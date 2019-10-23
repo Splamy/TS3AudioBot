@@ -450,7 +450,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("help all", "_undocumented")]
-		public static JsonObject CommandHelpAll(CommandManager commandManager)
+		public static JsonArray<string> CommandHelpAll(CommandManager commandManager)
 		{
 			var botComList = commandManager.AllCommands.Select(c => c.InvokeName).OrderBy(x => x).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
 			return new JsonArray<string>(botComList, bcl =>

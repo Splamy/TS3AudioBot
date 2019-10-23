@@ -378,13 +378,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 		private static object UnwrapPrimitive(object o)
 		{
-			var primVal = o.GetType().GetInterfaces().FirstOrDefault(i =>
-				i.IsConstructedGenericType && i.GetGenericTypeDefinition() == typeof(IPrimitiveResult<>));
-			if (primVal != null)
-			{
-				var meth = primVal.GetMethod(nameof(IPrimitiveResult<object>.Get));
-				return meth.Invoke(o, Array.Empty<object>());
-			}
+			if (o is IPrimitiveResult prim)
+				return prim.Get();
 			else
 				return o;
 		}

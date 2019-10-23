@@ -176,7 +176,7 @@ namespace TS3AudioBot.Helper
 		public static string SerializeTime(TimeSpan time)
 		{
 			var strb = new StringBuilder();
-			if (time.TotalDays > 1)
+			if (time.TotalDays >= 1)
 			{
 				strb.Append(time.TotalDays.ToString("F0")).Append('d');
 				time -= TimeSpan.FromDays(time.Days);

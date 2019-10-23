@@ -14,8 +14,13 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 	/// 
 	/// The complete list of primitive types is <see cref="XCommandSystem.BasicTypes"/>.
 	/// </summary>
-	public interface IPrimitiveResult<T>
+	public interface IPrimitiveResult<T> : IPrimitiveResult
 	{
-		T Get();
+		new T Get();
+	}
+
+	public interface IPrimitiveResult
+	{
+		object Get();
 	}
 }

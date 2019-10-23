@@ -19,5 +19,7 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 		}
 
 		public virtual T Get() => Content;
+
+		object IPrimitiveResult.Get() => Content;
 	}
 }

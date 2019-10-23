@@ -33,6 +33,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (!executed)
 			{
 				result = innerCommand.Execute(info, arguments, returnTypes);
+				executed = true;
 				return result;
 			}
 			if (!ResultHelper.IsValidResult(result, returnTypes))
