@@ -14,7 +14,7 @@
 					:message="is_taken ? 'File aready exists. Please enter a name.' : ''"
 				>
 					<b-field>
-						<b-input v-model="fileName" :placeholder="autoId" expanded></b-input>
+						<b-input v-model="id" :placeholder="autoId" expanded></b-input>
 						<span class="button is-static">.ts3ablist</span>
 					</b-field>
 				</b-field>
