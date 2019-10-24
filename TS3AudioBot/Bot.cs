@@ -9,8 +9,8 @@
 
 namespace TS3AudioBot
 {
-	using Audio;
 	using Algorithm;
+	using Audio;
 	using CommandSystem;
 	using CommandSystem.CommandResults;
 	using CommandSystem.Text;
@@ -23,14 +23,15 @@ namespace TS3AudioBot
 	using Plugins;
 	using Sessions;
 	using System;
+	using System.IO;
 	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using TS3AudioBot.ResourceFactories;
 	using TS3Client;
-	using TS3Client.Messages;
-	using TS3Client.Helper;
 	using TS3Client.Full;
+	using TS3Client.Helper;
+	using TS3Client.Messages;
 
 	/// <summary>Core class managing all bots and utility modules.</summary>
 	public sealed class Bot : IDisposable
@@ -307,18 +308,42 @@ namespace TS3AudioBot
 			if (!config.GenerateStatusAvatar || IsDisposed)
 				return;
 
-			if (e is PlayInfoEventArgs startEvent)
+			Stream GetRandomFile(string prefix)
 			{
-				Task.Run(() =>
+				try
 				{
-					var thumresult = resourceFactory.GetThumbnail(startEvent.PlayResource);
-					if (!thumresult.Ok)
+					if (string.IsNullOrEmpty(config.LocalConfigDir))
+						return null;
+					var avatarPath = new DirectoryInfo(Path.Combine(config.LocalConfigDir, BotPaths.Avatars));
+					if (!avatarPath.Exists)
+						return null;
+					var avatars = avatarPath.EnumerateFiles(prefix).ToArray();
+					if (avatars.Length == 0)
+						return null;
+					var pickedAvatar = Util.PickRandom(avatars);
+					return pickedAvatar.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+				}
+				catch (Exception ex)
+				{
+					Log.Warn(ex, "Failed to load local avatar");
+					return null;
+				}
+			}
+
+			Task.Run(() =>
+			{
+				if (e is PlayInfoEventArgs startEvent)
+				{
+					var origImage = resourceFactory.GetThumbnail(startEvent.PlayResource).OkOr(null);
+					origImage = origImage ?? GetRandomFile("play*");
+
+					if (origImage is null)
 					{
 						clientConnection.DeleteAvatar();
 						return;
 					}
 
-					using (var image = ImageUtil.ResizeImage(thumresult.Value))
+					using (var image = ImageUtil.ResizeImage(origImage))
 					{
 						if (image is null)
 							return;
@@ -326,17 +351,20 @@ namespace TS3AudioBot
 						if (!result.Ok)
 							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
-				});
-			}
-			else
-			{
-				using (var sleepPic = Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png"))
-				{
-					var result = clientConnection.UploadAvatar(sleepPic);
-					if (!result.Ok)
-						Log.Warn("Could not save avatar: {0}", result.Error);
 				}
-			}
+				else
+				{
+					var origImage = GetRandomFile("sleep*");
+					origImage = origImage ?? Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
+
+					using (var image = ImageUtil.ResizeImage(origImage))
+					{
+						var result = clientConnection.UploadAvatar(image);
+						if (!result.Ok)
+							Log.Warn("Could not save avatar: {0}", result.Error);
+					}
+				}
+			});
 		}
 
 		private void BeforeResourceStarted(object sender, PlayInfoEventArgs e)

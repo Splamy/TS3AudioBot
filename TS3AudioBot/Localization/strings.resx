@@ -123,9 +123,6 @@
   <data name="cmd_api_token_help" xml:space="preserve">
     <value>Generates an api token.</value>
   </data>
-  <data name="cmd_api_nonce_help" xml:space="preserve">
-    <value>Generates an api nonce.</value>
-  </data>
   <data name="cmd_bot_commander_help" xml:space="preserve">
     <value>Gets the status of the channel commander mode.</value>
   </data>

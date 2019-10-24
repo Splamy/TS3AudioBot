@@ -115,15 +115,6 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Generates an api nonce..
-        /// </summary>
-        internal static string cmd_api_nonce_help {
-            get {
-                return ResourceManager.GetString("cmd_api_nonce_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Generates an api token..
         /// </summary>
         internal static string cmd_api_token_help {

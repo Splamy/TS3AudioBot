@@ -116,19 +116,6 @@ namespace TS3AudioBot
 			return tokenManager.GenerateToken(invoker.ClientUid, validSpan);
 		}
 
-		[Command("api nonce")]
-		public static string CommandApiNonce(TokenManager tokenManager, ClientCall invoker)
-		{
-			if (invoker.Visibiliy.HasValue && invoker.Visibiliy != TextMessageTargetMode.Private)
-				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
-			if (invoker.IsAnonymous)
-				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(ClientCall));
-
-			var token = tokenManager.GetToken(invoker.ClientUid).UnwrapThrow();
-			var nonce = token.CreateNonce();
-			return nonce.Value;
-		}
-
 		[Command("bot avatar set")]
 		public static void CommandBotAvatarSet(Ts3Client ts3Client, string url)
 		{

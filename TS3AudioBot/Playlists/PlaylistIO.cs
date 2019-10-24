@@ -30,7 +30,6 @@ namespace TS3AudioBot.Playlists
 		private readonly LruCache<string, Playlist> playlistCache;
 		private readonly HashSet<string> dirtyList;
 		private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
-		private const string PlaylistsFolder = "playlists";
 		private bool reloadFolderCache = true;
 		private const int FileVersion = 3;
 
@@ -44,7 +43,7 @@ namespace TS3AudioBot.Playlists
 
 		private FileInfo NameToFile(string listId)
 		{
-			return new FileInfo(Path.Combine(confBot.LocalConfigDir, PlaylistsFolder, listId));
+			return new FileInfo(Path.Combine(confBot.LocalConfigDir, BotPaths.Playlists, listId));
 		}
 
 		public R<Playlist, LocalStr> Read(string listId) => ReadInternal(listId, false, false);
@@ -312,7 +311,7 @@ namespace TS3AudioBot.Playlists
 					rwLock.EnterWriteLock();
 					hasWriteLock = true;
 
-					var di = new DirectoryInfo(Path.Combine(confBot.LocalConfigDir, PlaylistsFolder));
+					var di = new DirectoryInfo(Path.Combine(confBot.LocalConfigDir, BotPaths.Playlists));
 					if (!di.Exists)
 						return Array.Empty<PlaylistInfo>();
 

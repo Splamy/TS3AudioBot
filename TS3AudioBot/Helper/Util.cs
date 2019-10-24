@@ -38,6 +38,12 @@ namespace TS3AudioBot.Helper
 
 		public static Random Random { get; } = new Random();
 
+		public static T PickRandom<T>(IReadOnlyList<T> collection)
+		{
+			int pick = Random.Next(0, collection.Count);
+			return collection[pick];
+		}
+
 		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
 
 		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
