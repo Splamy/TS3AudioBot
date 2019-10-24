@@ -70,28 +70,40 @@ namespace TS3AudioBot.Playlists.Shuffle
 			return register == startRegister;
 		}
 
-		public bool Prev()
-		{
-			if (Length <= 0) return false;
-			Recalc();
-			for (int i = 0; i < maskLength; i++)
-			{
-				if (NextOf(i) == register)
-				{
-					register = i;
-					return register == startRegister;
-				}
-			}
-
-			throw new InvalidOperationException();
-		}
-
 		private int NextOf(int val)
 		{
 			var lsb = val & 1;
 			val >>= 1;
 			val ^= -lsb & mask;
 			return val;
+		}
+
+		public bool Prev()
+		{
+			if (Length <= 0) return false;
+			Recalc();
+			do
+			{
+				register = PrevOf(register);
+			} while ((uint)register > Length);
+			return register == startRegister;
+		}
+
+		private int PrevOf(int val)
+		{
+			var v0 = PrevOfTest(val, 0);
+			var v1 = PrevOfTest(val, 1);
+			if (v0 < maskLength && NextOf(v0) == val)
+				return v0;
+			if (v1 < maskLength && NextOf(v1) == val)
+				return v1;
+			throw new InvalidOperationException();
+		}
+
+		private int PrevOfTest(int val, int lsb)
+		{
+			var pval = (-lsb & mask) ^ val;
+			return (pval << 1) | lsb;
 		}
 
 		private static int GenerateGaloisMask(int bits, int seedOffset)
@@ -131,6 +143,10 @@ namespace TS3AudioBot.Playlists.Shuffle
 
 		private static int NumberOfSetBits(int i)
 		{
+#if NETCOREAPP3_0
+			if (System.Runtime.Intrinsics.X86.Popcnt.IsSupported)
+				return unchecked((int)System.Runtime.Intrinsics.X86.Popcnt.PopCount((uint)i));
+#endif
 			i -= ((i >> 1) & 0x55555555);
 			i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
 			return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;

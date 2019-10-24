@@ -183,22 +183,28 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void NormalOrderTest()
 		{
-			TestShuffleAlgorithm(new NormalOrder());
+			TestShuffleAlgorithmBiDir(new NormalOrder());
 		}
 
 		[Test]
 		public void ListedShuffleTest()
 		{
-			TestShuffleAlgorithm(new ListedShuffle());
+			TestShuffleAlgorithmBiDir(new ListedShuffle());
 		}
 
 		[Test]
 		public void LinearFeedbackShiftRegisterTest()
 		{
-			TestShuffleAlgorithm(new LinearFeedbackShiftRegister());
+			TestShuffleAlgorithmBiDir(new LinearFeedbackShiftRegister());
 		}
 
-		private static void TestShuffleAlgorithm(IShuffleAlgorithm algo)
+		private static void TestShuffleAlgorithmBiDir(IShuffleAlgorithm algo)
+		{
+			TestShuffleAlgorithm(algo, true);
+			TestShuffleAlgorithm(algo, false);
+		}
+
+		private static void TestShuffleAlgorithm(IShuffleAlgorithm algo, bool forward)
 		{
 			for (int i = 1; i < 1000; i++)
 			{
@@ -209,7 +215,8 @@ namespace TS3ABotUnitTests
 
 				for (int j = 0; j < i; j++)
 				{
-					algo.Next();
+					if (forward) algo.Next();
+					else algo.Prev();
 					int shufNum = algo.Index;
 					if (checkNumbers.Get(shufNum))
 						Assert.Fail("Duplicate number");
