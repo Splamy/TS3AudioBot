@@ -194,8 +194,8 @@ namespace TS3Client
 				{ "time", duration?.TotalSeconds },
 			});
 
-		public R<ChannelData[], CommandError> ChannelList(ChannelListOptions options = 0)
-			=> Send<ChannelData>("channellist",
+		public R<ChannelListResponse[], CommandError> ChannelList(ChannelListOptions options = 0)
+			=> Send<ChannelListResponse>("channellist",
 			new CommandOption(options));
 
 		/// <summary>Displays a list of clients online on a virtual server including their ID, nickname, status flags, etc.

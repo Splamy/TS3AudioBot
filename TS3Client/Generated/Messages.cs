@@ -753,93 +753,6 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelData : IResponse
-	{
-		
-		public string ReturnCode { get; set; }
-
-		public ChannelId Id { get; set; }
-		public ChannelId ParentChannelId { get; set; }
-		public DurationSeconds DurationEmpty { get; set; }
-		public i32 TotalFamilyClients { get; set; }
-		public i32 TotalClients { get; set; }
-		public i32 NeededSubscribePower { get; set; }
-		public ChannelId Order { get; set; }
-		public str Name { get; set; }
-		public str Topic { get; set; }
-		public bool IsDefault { get; set; }
-		public bool HasPassword { get; set; }
-		public bool IsPermanent { get; set; }
-		public bool IsSemiPermanent { get; set; }
-		public Codec Codec { get; set; }
-		public u8 CodecQuality { get; set; }
-		public i32 NeededTalkPower { get; set; }
-		public IconHash IconId { get; set; }
-		public i32 MaxClients { get; set; }
-		public i32 MaxFamilyClients { get; set; }
-
-		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
-		{
-			switch(name)
-			{
-
-			case "id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Id = oval; } break;
-			case "pid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentChannelId = oval; } break;
-			case "seconds_empty": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DurationEmpty = TimeSpan.FromSeconds(oval); } break;
-			case "total_clients_family": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalFamilyClients = oval; } break;
-			case "total_clients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalClients = oval; } break;
-			case "channel_needed_subscribe_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededSubscribePower = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "channel_topic": Topic = Ts3String.Unescape(value); break;
-			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
-			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
-			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
-			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
-			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
-			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
-			}
-
-		}
-
-		public void Expand(IMessage[] to, IEnumerable<string> flds)
-		{
-			var toc = (ChannelData[])to;
-			foreach (var fld in flds)
-			{
-				switch(fld)
-				{
-
-				case "id": foreach(var toi in toc) { toi.Id = Id; } break;
-				case "pid": foreach(var toi in toc) { toi.ParentChannelId = ParentChannelId; } break;
-				case "seconds_empty": foreach(var toi in toc) { toi.DurationEmpty = DurationEmpty; } break;
-				case "total_clients_family": foreach(var toi in toc) { toi.TotalFamilyClients = TotalFamilyClients; } break;
-				case "total_clients": foreach(var toi in toc) { toi.TotalClients = TotalClients; } break;
-				case "channel_needed_subscribe_power": foreach(var toi in toc) { toi.NeededSubscribePower = NeededSubscribePower; } break;
-				case "channel_order": foreach(var toi in toc) { toi.Order = Order; } break;
-				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
-				case "channel_topic": foreach(var toi in toc) { toi.Topic = Topic; } break;
-				case "channel_flag_default": foreach(var toi in toc) { toi.IsDefault = IsDefault; } break;
-				case "channel_flag_password": foreach(var toi in toc) { toi.HasPassword = HasPassword; } break;
-				case "channel_flag_permanent": foreach(var toi in toc) { toi.IsPermanent = IsPermanent; } break;
-				case "channel_flag_semi_permanent": foreach(var toi in toc) { toi.IsSemiPermanent = IsSemiPermanent; } break;
-				case "channel_codec": foreach(var toi in toc) { toi.Codec = Codec; } break;
-				case "channel_codec_quality": foreach(var toi in toc) { toi.CodecQuality = CodecQuality; } break;
-				case "channel_needed_talk_power": foreach(var toi in toc) { toi.NeededTalkPower = NeededTalkPower; } break;
-				case "channel_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
-				case "channel_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
-				case "channel_maxfamilyclients": foreach(var toi in toc) { toi.MaxFamilyClients = MaxFamilyClients; } break;
-				}
-			}
-
-		}
-	}
-
 	public sealed class ChannelDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDelete;
@@ -1905,6 +1818,93 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
+		}
+	}
+
+	public sealed class ChannelListResponse : IResponse
+	{
+		
+		public string ReturnCode { get; set; }
+
+		public ChannelId ChannelId { get; set; }
+		public ChannelId ParentChannelId { get; set; }
+		public ChannelId Order { get; set; }
+		public str Name { get; set; }
+		public i32 TotalClients { get; set; }
+		public i32 NeededSubscribePower { get; set; }
+		public str Topic { get; set; }
+		public bool? IsDefault { get; set; }
+		public bool? HasPassword { get; set; }
+		public bool? IsPermanent { get; set; }
+		public bool? IsSemiPermanent { get; set; }
+		public Codec? Codec { get; set; }
+		public u8? CodecQuality { get; set; }
+		public i32? NeededTalkPower { get; set; }
+		public i32? TotalFamilyClients { get; set; }
+		public i32? MaxClients { get; set; }
+		public i32? MaxFamilyClients { get; set; }
+		public IconHash? IconId { get; set; }
+		public DurationSeconds? DurationEmpty { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "pid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentChannelId = oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
+			case "channel_name": Name = Ts3String.Unescape(value); break;
+			case "total_clients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalClients = oval; } break;
+			case "channel_needed_subscribe_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededSubscribePower = oval; } break;
+			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
+			case "total_clients_family": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalFamilyClients = oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
+			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
+			case "seconds_empty": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DurationEmpty = TimeSpan.FromSeconds(oval); } break;
+			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelListResponse[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "pid": foreach(var toi in toc) { toi.ParentChannelId = ParentChannelId; } break;
+				case "channel_order": foreach(var toi in toc) { toi.Order = Order; } break;
+				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "total_clients": foreach(var toi in toc) { toi.TotalClients = TotalClients; } break;
+				case "channel_needed_subscribe_power": foreach(var toi in toc) { toi.NeededSubscribePower = NeededSubscribePower; } break;
+				case "channel_topic": foreach(var toi in toc) { toi.Topic = Topic; } break;
+				case "channel_flag_default": foreach(var toi in toc) { toi.IsDefault = IsDefault; } break;
+				case "channel_flag_password": foreach(var toi in toc) { toi.HasPassword = HasPassword; } break;
+				case "channel_flag_permanent": foreach(var toi in toc) { toi.IsPermanent = IsPermanent; } break;
+				case "channel_flag_semi_permanent": foreach(var toi in toc) { toi.IsSemiPermanent = IsSemiPermanent; } break;
+				case "channel_codec": foreach(var toi in toc) { toi.Codec = Codec; } break;
+				case "channel_codec_quality": foreach(var toi in toc) { toi.CodecQuality = CodecQuality; } break;
+				case "channel_needed_talk_power": foreach(var toi in toc) { toi.NeededTalkPower = NeededTalkPower; } break;
+				case "total_clients_family": foreach(var toi in toc) { toi.TotalFamilyClients = TotalFamilyClients; } break;
+				case "channel_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
+				case "channel_maxfamilyclients": foreach(var toi in toc) { toi.MaxFamilyClients = MaxFamilyClients; } break;
+				case "channel_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
+				case "seconds_empty": foreach(var toi in toc) { toi.DurationEmpty = DurationEmpty; } break;
+				}
+			}
+
 		}
 	}
 
