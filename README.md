@@ -12,10 +12,10 @@ This is a open-source TeamSpeak3 bot, playing music and much more.
   - You can contribute code. This is always appreciated, please open an issue or contact a maintainer to discuss *before* you start.
   - You can support me on [![Patreon][patreon-badge]][patreon-link] or [![Paypal][paypal-badge]][paypal-link]
 
-[patreon-badge]: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.herokuapp.com%2FSplamy&style=flat-square
+[patreon-badge]: https://img.shields.io/badge/Patreon-Donate!-F96854.svg?logo=patreon&style=flat-square
 [patreon-link]: https://patreon.com/Splamy
 
-[paypal-badge]: https://img.shields.io/badge/Paypal-Donate!-%2300457C.svg?logo=paypal&style=flat-square
+[paypal-badge]: https://img.shields.io/badge/Paypal-Donate!-00457C.svg?logo=paypal&style=flat-square
 [paypal-link]: https://paypal.me/Splamy
 
 ## Features
