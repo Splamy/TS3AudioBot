@@ -54,7 +54,7 @@
 					<div v-if="info.song != null" class="media" style="margin-bottom: 1em;">
 						<figure class="media-left">
 							<p class="image is-64x64">
-								<img src="https://bulma.io/images/placeholders/128x128.png" />
+								<img :src="getCoverUrl()" />
 							</p>
 						</figure>
 						<div class="media-content">
@@ -104,7 +104,7 @@ import {
 	CmdQueueInfo,
 	Empty
 } from "../ApiObjects";
-import { bot, cmd, jmerge } from "../Api";
+import { Get, bot, cmd, jmerge } from "../Api";
 import { Util } from "../Util";
 import { RepeatKind } from "../Model/RepeatKind";
 import { BotStatus } from "../Model/BotStatus";
@@ -187,7 +187,13 @@ export default Vue.extend({
 			await this.refresh();
 		},
 		typeIcon: Util.typeIcon,
-		colorIcon: Util.colorIcon
+		colorIcon: Util.colorIcon,
+		getCoverUrl(): string {
+			return (
+				Get.EndpointData.baseAddress +
+				bot(cmd("data", "song", "cover", "get"), this.botId).done()
+			);
+		}
 	},
 	components: {
 		PlayControls,

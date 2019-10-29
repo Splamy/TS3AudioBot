@@ -131,7 +131,7 @@ namespace TS3AudioBot
 			WebWrapper.GetResponse(uri, x =>
 			{
 				using (var stream = x.GetResponseStream())
-				using (var image = ImageUtil.ResizeImage(stream, out _))
+				using (var image = ImageUtil.ResizeImageSave(stream, out _))
 				{
 					if (image is null)
 						throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
@@ -316,28 +316,27 @@ namespace TS3AudioBot
 			return XCommandSystem.GetTree(commandManager.CommandSystem.RootCommand);
 		}
 
-		[Command("data song cover")]
-		public static DataStream CommandData(ResourceFactory resourceFactory, PlayManager playManager)
-		{
-			var cur = playManager.CurrentPlayData;
-			if (cur == null)
-				return null;
-			return new DataStream(response =>
+		[Command("data song cover get", "_undocumented")]
+		public static DataStream CommandData(ResourceFactory resourceFactory, PlayManager playManager) =>
+			new DataStream(response =>
 			{
+				var cur = playManager.CurrentPlayData;
+				if (cur == null)
+					return false;
 				if (resourceFactory.GetThumbnail(cur.PlayResource).GetOk(out var stream))
 				{
-					using (var limitStream = new LimitStream(stream, Limits.MaxImageStreamSize))
-					using (var image = ImageUtil.ResizeImage(limitStream, out var mime))
+					using (var image = ImageUtil.ResizeImageSave(stream, out var mime))
 					{
 						if (image is null)
-							throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
+							return false;
+
 						response.ContentType = mime;
 						image.CopyTo(response.Body);
+						return true;
 					}
 				}
+				return false;
 			});
-		}
-
 
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]

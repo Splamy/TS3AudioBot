@@ -26,7 +26,7 @@ namespace TS3AudioBot.Helper
 		public long IOBytes { get; private set; }
 
 		public override bool CanRead => baseStream.CanRead;
-		public override bool CanSeek => baseStream.CanSeek;
+		public override bool CanSeek => false;
 		public override bool CanWrite => baseStream.CanWrite;
 		public override long Length => baseStream.Length;
 		public override long Position { get => baseStream.Position; set => baseStream.Position = value; }

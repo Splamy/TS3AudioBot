@@ -10,16 +10,15 @@ namespace TS3AudioBot.Web.Api
 {
 	public class DataStream
 	{
-		private Action<HttpResponse> writeFunc;
+		private readonly Func<HttpResponse, bool> writeFunc;
 
-		public DataStream(Action<HttpResponse> writeFunc)
+		public DataStream(Func<HttpResponse, bool> writeFunc)
 		{
 			this.writeFunc = writeFunc;
 		}
 
-		public void WriteOut(HttpResponse response)
-		{
-			writeFunc(response);
-		}
+		public bool WriteOut(HttpResponse response) => writeFunc(response);
+
+		public override string ToString() => null;
 	}
 }

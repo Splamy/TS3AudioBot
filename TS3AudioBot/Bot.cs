@@ -330,39 +330,39 @@ namespace TS3AudioBot
 				}
 			}
 
-			Task.Run(() =>
+			void Upload(Stream setStream)
 			{
-				if (e is PlayInfoEventArgs startEvent)
+				if (setStream != null)
 				{
-					var origImage = resourceFactory.GetThumbnail(startEvent.PlayResource).OkOr(null);
-					origImage = origImage ?? GetRandomFile("play*");
-
-					if (origImage is null)
+					using (setStream)
 					{
-						clientConnection.DeleteAvatar();
-						return;
-					}
-
-					using (var image = ImageUtil.ResizeImage(origImage, out _))
-					{
-						if (image is null)
-							return;
-						var result = clientConnection.UploadAvatar(image);
+						var result = clientConnection.UploadAvatar(setStream);
 						if (!result.Ok)
 							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
 				}
+			}
+
+			Task.Run(() =>
+			{
+				Stream setStream = null;
+				if (e is PlayInfoEventArgs startEvent)
+				{
+					setStream = ImageUtil.ResizeImageSave(resourceFactory.GetThumbnail(startEvent.PlayResource).OkOr(null), out _);
+					setStream = setStream ?? GetRandomFile("play*");
+					Upload(setStream);
+				}
 				else
 				{
-					var origImage = GetRandomFile("sleep*");
-					origImage = origImage ?? Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
+					setStream = GetRandomFile("sleep*");
+					setStream = setStream ?? Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
+					Upload(setStream);
+				}
 
-					using (var image = ImageUtil.ResizeImage(origImage, out _))
-					{
-						var result = clientConnection.UploadAvatar(image);
-						if (!result.Ok)
-							Log.Warn("Could not save avatar: {0}", result.Error);
-					}
+				if (setStream is null)
+				{
+					clientConnection.DeleteAvatar();
+					return;
 				}
 			});
 		}

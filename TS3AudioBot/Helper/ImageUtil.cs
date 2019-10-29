@@ -19,35 +19,50 @@ namespace TS3AudioBot.Helper
 
 	internal static class ImageUtil
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		public const int ResizeMaxWidthDefault = 320;
 
-		public static Stream ResizeImage(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
+		public static Stream ResizeImageSave(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
 			mime = null;
+			if (imgStream == null)
+				return null;
 			try
 			{
-				using (var img = Image.Load(imgStream))
-				{
-					if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
-						|| img.Width == 0 || img.Height == 0)
-						return null;
-
-					if (img.Width <= resizeMaxWidth)
-						return SaveAdaptive(img, out mime);
-
-					float ratio = img.Width / (float)img.Height;
-					img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
-
-					return SaveAdaptive(img, out mime);
-				}
+				using (var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize))
+					return ResizeImage(limitStream, out mime, resizeMaxWidth);
 			}
 			catch (NotSupportedException)
 			{
+				Log.Debug("Dropping image because of unknown format");
+				return null;
+			}
+			catch (EntityTooLargeException)
+			{
+				Log.Debug("Dropping image because too large");
 				return null;
 			}
 		}
 
+		private static Stream ResizeImage(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
+		{
+			mime = null;
+			using (var img = Image.Load(imgStream))
+			{
+				if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
+					|| img.Width == 0 || img.Height == 0)
+					return null;
 
+				if (img.Width <= resizeMaxWidth)
+					return SaveAdaptive(img, out mime);
+
+				float ratio = img.Width / (float)img.Height;
+				img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
+
+				return SaveAdaptive(img, out mime);
+			}
+		}
 
 		private static Stream SaveAdaptive(Image img, out string mime)
 		{

@@ -125,7 +125,8 @@ namespace TS3AudioBot.Web.Api
 					response.StatusCode = (int)HttpStatusCode.OK;
 					using (response.Body)
 					{
-						data.WriteOut(response);
+						if (!data.WriteOut(response))
+							response.StatusCode = (int)HttpStatusCode.NotFound;
 					}
 				}
 			}
