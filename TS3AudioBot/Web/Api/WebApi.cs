@@ -123,12 +123,9 @@ namespace TS3AudioBot.Web.Api
 				else if (res is DataStream data)
 				{
 					response.StatusCode = (int)HttpStatusCode.OK;
-					if (!string.IsNullOrEmpty(data.Mime))
-						response.ContentType = data.Mime;
-					using (var stream = data.Get())
 					using (response.Body)
 					{
-						stream.CopyTo(response.Body);
+						data.WriteOut(response);
 					}
 				}
 			}

@@ -318,7 +318,7 @@ namespace TS3AudioBot
 						return;
 					}
 
-					using (var image = ImageUtil.ResizeImage(thumresult.Value))
+					using (var image = ImageUtil.ResizeImage(thumresult.Value, out _))
 					{
 						if (image is null)
 							return;

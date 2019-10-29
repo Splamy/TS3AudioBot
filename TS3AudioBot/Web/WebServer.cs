@@ -131,11 +131,6 @@ namespace TS3AudioBot.Web
 						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
 					});
 
-					app.Map(new PathString("/data"), map =>
-					{
-						map.Run(ctx => Task.Run(() => Log.Swallow(() => { /* TODO */ })));
-					});
-
 					if (config.Interface.Enabled)
 					{
 						app.UseFileServer();

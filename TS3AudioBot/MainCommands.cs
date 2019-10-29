@@ -144,7 +144,7 @@ namespace TS3AudioBot
 			WebWrapper.GetResponse(uri, x =>
 			{
 				using (var stream = x.GetResponseStream())
-				using (var image = ImageUtil.ResizeImage(stream))
+				using (var image = ImageUtil.ResizeImage(stream, out _))
 				{
 					if (image is null)
 						throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
@@ -337,14 +337,15 @@ namespace TS3AudioBot
 				return null;
 			return new DataStream(response =>
 			{
-				if(resourceFactory.GetThumbnail(cur.PlayResource).GetOk(out var stream))
+				if (resourceFactory.GetThumbnail(cur.PlayResource).GetOk(out var stream))
 				{
-					using (var stream = x.GetResponseStream())
-					using (var image = ImageUtil.ResizeImage(stream))
+					using (var limitStream = new LimitStream(stream, Limits.MaxImageStreamSize))
+					using (var image = ImageUtil.ResizeImage(limitStream, out var mime))
 					{
 						if (image is null)
 							throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
-						ts3Client.UploadAvatar(image).UnwrapThrow();
+						response.ContentType = mime;
+						image.CopyTo(response.Body);
 					}
 				}
 			});
