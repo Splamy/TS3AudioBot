@@ -343,7 +343,7 @@ namespace TS3AudioBot
 						return;
 					}
 
-					using (var image = ImageUtil.ResizeImage(origImage))
+					using (var image = ImageUtil.ResizeImage(origImage, out _))
 					{
 						if (image is null)
 							return;
@@ -357,7 +357,7 @@ namespace TS3AudioBot
 					var origImage = GetRandomFile("sleep*");
 					origImage = origImage ?? Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
 
-					using (var image = ImageUtil.ResizeImage(origImage))
+					using (var image = ImageUtil.ResizeImage(origImage, out _))
 					{
 						var result = clientConnection.UploadAvatar(image);
 						if (!result.Ok)
@@ -410,20 +410,15 @@ namespace TS3AudioBot
 					return;
 
 				// Write result to user
-				switch (res.ResultType)
+				if (res is IPrimitiveResult<string> sRes)
 				{
-				case CommandResultType.String:
-					var sRes = (StringCommandResult)res;
-					if (!string.IsNullOrEmpty(sRes.Content))
-						info.Write(sRes.Content).UnwrapToLog(Log);
-					break;
-
-				case CommandResultType.Empty:
-					break;
-
-				default:
-					Log.Warn("Got result which is not a string/empty. Result: {0}", res.ToString());
-					break;
+					var s = sRes.Get();
+					if (!string.IsNullOrEmpty(s))
+						info.Write(s).UnwrapToLog(Log);
+				}
+				else if (res != null)
+				{
+					Log.Warn($"Got result which is not a string/empty. Result: {res}");
 				}
 			});
 		}

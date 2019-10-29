@@ -9,19 +9,10 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	using Commands;
+	using ResourceFactories;
 
-	public class CommandCommandResult : ICommandResult
+	public interface IAudioResourceResult
 	{
-		public CommandResultType ResultType => CommandResultType.Command;
-
-		public virtual ICommand Command { get; }
-
-		public CommandCommandResult(ICommand commandArg)
-		{
-			Command = commandArg;
-		}
-
-		public override string ToString() => "CommandCommandResult can't be converted into a string";
+		AudioResource AudioResource { get; }
 	}
 }

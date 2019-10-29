@@ -9,32 +9,34 @@
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
+	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using CommandResults;
 
 	public class LazyCommand : ICommand
 	{
 		private readonly ICommand innerCommand;
+		private bool executed = false;
 		/// <summary>
 		/// The cached result, if available.
 		/// </summary>
-		private ICommandResult result;
+		private object result;
 
 		public LazyCommand(ICommand innerCommandArg)
 		{
 			innerCommand = innerCommandArg;
 		}
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
-			if (result is null)
+			if (!executed)
 			{
 				result = innerCommand.Execute(info, arguments, returnTypes);
+				executed = true;
 				return result;
 			}
-			// Check if we can return that type
-			if (!returnTypes.Contains(result.ResultType))
+			if (!ResultHelper.IsValidResult(result, returnTypes))
 				throw new CommandException("The cached result can't be returned", CommandExceptionReason.NoReturnMatch);
 			return result;
 		}

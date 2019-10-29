@@ -10,6 +10,7 @@
 namespace TS3AudioBot.Helper
 {
 	using SixLabors.ImageSharp;
+	using SixLabors.ImageSharp.Formats;
 	using SixLabors.ImageSharp.Formats.Gif;
 	using SixLabors.ImageSharp.Formats.Jpeg;
 	using SixLabors.ImageSharp.Processing;
@@ -20,19 +21,24 @@ namespace TS3AudioBot.Helper
 	{
 		public const int ResizeMaxWidthDefault = 320;
 
-		public static Stream ResizeImage(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
+		public static Stream ResizeImage(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
+			mime = null;
 			try
 			{
 				using (var img = Image.Load(imgStream))
 				{
+					if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
+						|| img.Width == 0 || img.Height == 0)
+						return null;
+
 					if (img.Width <= resizeMaxWidth)
-						return SaveAdaptive(img);
+						return SaveAdaptive(img, out mime);
 
 					float ratio = img.Width / (float)img.Height;
 					img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
 
-					return SaveAdaptive(img);
+					return SaveAdaptive(img, out mime);
 				}
 			}
 			catch (NotSupportedException)
@@ -41,17 +47,23 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		private static MemoryStream SaveAdaptive(Image img)
+
+
+		private static Stream SaveAdaptive(Image img, out string mime)
 		{
-			var mem = new MemoryStream();
+			IImageFormat format;
 			if (img.Frames.Count > 1)
 			{
-				img.Save(mem, GifFormat.Instance);
+				format = GifFormat.Instance;
 			}
 			else
 			{
-				img.Save(mem, JpegFormat.Instance);
+				format = JpegFormat.Instance;
 			}
+			mime = format.DefaultMimeType;
+			var mem = new MemoryStream();
+			img.Save(mem, format);
+			mem.Seek(0, SeekOrigin.Begin);
 			return mem;
 		}
 	}

@@ -154,8 +154,8 @@ namespace TS3ABotUnitTests
 			group.AddCommand("optional", new FunctionCommand(GetType().GetMethod(nameof(OptionalFunc), BindingFlags.NonPublic | BindingFlags.Static)));
 
 			// Basic tests
-			Assert.AreEqual("ONE", ((StringCommandResult)commandSystem.Execute(execInfo,
-				 new ICommand[] { new StringCommand("one") })).Content);
+			Assert.AreEqual("ONE", ((IPrimitiveResult<string>)commandSystem.Execute(execInfo,
+				 new ICommand[] { new ResultCommand(new PrimitiveResult<string>("one")) })).Get());
 			Assert.AreEqual("ONE", commandSystem.ExecuteCommand(execInfo, "!one"));
 			Assert.AreEqual("TWO", commandSystem.ExecuteCommand(execInfo, "!t"));
 			Assert.AreEqual("TEST", commandSystem.ExecuteCommand(execInfo, "!e TEST"));

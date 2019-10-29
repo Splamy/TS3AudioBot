@@ -88,7 +88,7 @@ namespace TS3AudioBot.CommandSystem
 			return strb.ToString();
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public override object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			// Check call complexity
 			info.UseComplexityTokens(1);

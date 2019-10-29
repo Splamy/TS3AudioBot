@@ -235,7 +235,7 @@ namespace TS3AudioBot.Web.Api
 			else if (type == typeof(DateTime)) return OApiSchema.FromBasic("string", "date-time");
 			else if (type == typeof(string)) return OApiSchema.FromBasic("string", null);
 			else if (type == typeof(JsonEmpty) || type == typeof(void)) return null;
-			else if (type == typeof(JsonObject) || type == typeof(object) || type == typeof(ICommandResult)) return OApiSchema.FromBasic("object");
+			else if (type == typeof(JsonObject) || type == typeof(object)) return OApiSchema.FromBasic("object");
 			else if (type == typeof(ICommand)) return OApiSchema.FromBasic("λ");
 			else
 			{

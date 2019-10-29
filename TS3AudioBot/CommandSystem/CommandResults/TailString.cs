@@ -9,13 +9,13 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	public class TailStringCommandResult : StringCommandResult
+	public class TailString : PrimitiveResult<string>
 	{
-		public string TailString { get; }
+		public string Tail { get; }
 
-		public TailStringCommandResult(string contentArg, string tailArg) : base(contentArg)
+		public TailString(string contentArg, string tailArg) : base(contentArg)
 		{
-			TailString = tailArg;
+			Tail = tailArg;
 		}
 	}
 }

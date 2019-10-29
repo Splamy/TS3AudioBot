@@ -9,30 +9,34 @@
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
 	using System;
 	using System.Collections.Generic;
+	using CommandResults;
+	using Localization;
 
 	/// <summary>
 	/// A special group command that also accepts commands as first parameter and executes them on the left over parameters.
+	///
+	/// This command is needed to enable easy use of higher order functions.
+	/// E.g. `!(!if 1 > 2 (!vol) (!print)) 10`
 	/// </summary>
 	public class RootCommand : CommandGroup
 	{
-		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public override object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			if (arguments.Count == 0)
 				return base.Execute(info, arguments, returnTypes);
 
 			var result = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
-			if (result.ResultType == CommandResultType.String)
+			if (result is IPrimitiveResult<string>)
 			{
 				// Use cached result so we don't execute the first argument twice
 				var passArgs = new ICommand[arguments.Count];
-				passArgs[0] = new StringCommand(((StringCommandResult)result).Content);
+				passArgs[0] = new ResultCommand(result);
 				arguments.CopyTo(1, passArgs, 1);
 				return base.Execute(info, passArgs, returnTypes);
 			}
-			return ((CommandCommandResult)result).Command.Execute(info, arguments.TrySegment(1), returnTypes);
+			return ((ICommand)result).Execute(info, arguments.TrySegment(1), returnTypes);
 		}
 
 		public override string ToString() => "<root>";

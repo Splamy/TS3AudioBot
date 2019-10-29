@@ -9,11 +9,17 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	public enum CommandResultType
+	public class PrimitiveResult<T> : IPrimitiveResult<T>
 	{
-		Empty,
-		Command,
-		String,
-		Json,
+		public T Content { get; }
+
+		public PrimitiveResult(T contentArg)
+		{
+			Content = contentArg;
+		}
+
+		public virtual T Get() => Content;
+
+		object IPrimitiveResult.Get() => Content;
 	}
 }

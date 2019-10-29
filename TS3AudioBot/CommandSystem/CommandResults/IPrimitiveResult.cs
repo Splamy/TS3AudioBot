@@ -9,19 +9,18 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	using Web.Api;
-
-	public class JsonCommandResult : ICommandResult
+	/// <summary>
+	/// A result which can safely used as a primitive like a string.
+	/// 
+	/// The complete list of primitive types is <see cref="XCommandSystem.BasicTypes"/>.
+	/// </summary>
+	public interface IPrimitiveResult<T> : IPrimitiveResult
 	{
-		public CommandResultType ResultType => CommandResultType.Json;
+		new T Get();
+	}
 
-		public JsonObject JsonObject { get; }
-
-		public JsonCommandResult(JsonObject jsonObj)
-		{
-			JsonObject = jsonObj;
-		}
-
-		public override string ToString() => "JsonCommandResult can't be converted into a string";
+	public interface IPrimitiveResult
+	{
+		object Get();
 	}
 }

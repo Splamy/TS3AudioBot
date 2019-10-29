@@ -33,19 +33,19 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public bool IsEmpty => commands.Count == 0;
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			string result;
 			if (arguments.Count == 0)
 			{
-				if (returnTypes.Contains(CommandResultType.Command))
-					return new CommandCommandResult(this);
+				if (returnTypes.Contains(typeof(ICommand)))
+					return this;
 				result = string.Empty;
 			}
 			else
 			{
 				var comResult = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString);
-				result = ((StringCommandResult)comResult).Content;
+				result = ((IPrimitiveResult<string>)comResult).Get();
 			}
 
 			var filter = info.GetFilter();
