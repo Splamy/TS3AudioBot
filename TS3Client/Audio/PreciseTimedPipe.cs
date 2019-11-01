@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Threading;
+using TS3Client.Helper;
+
 namespace TS3Client.Audio
 {
-	using System;
-	using System.Threading;
-	using TS3Client.Helper;
-
 	public class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProducer, IDisposable
 	{
 		public PreciseAudioTimer AudioTimer { get; private set; }
@@ -111,7 +111,7 @@ namespace TS3Client.Audio
 					return;
 
 				running = true;
-				tickThread = new Thread(() => { Util.SetLogId(id); ReadLoop(); }) { Name = $"AudioPipe[{id}]" };
+				tickThread = new Thread(() => { Tools.SetLogId(id); ReadLoop(); }) { Name = $"AudioPipe[{id}]" };
 				tickThread.Start();
 			}
 		}

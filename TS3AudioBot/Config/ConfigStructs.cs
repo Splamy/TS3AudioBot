@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using System;
+using System.Collections.Generic;
+using TS3AudioBot.CommandSystem.Text;
+using TS3AudioBot.Helper;
+
 namespace TS3AudioBot.Config
 {
-	using CommandSystem.Text;
-	using Nett;
-	using System;
-	using System.Collections.Generic;
-	using TS3AudioBot.Helper;
-
 	public partial class ConfRoot : ConfigTable
 	{
 		public ConfBot Bot { get; } = Create<ConfBot>("bot",
@@ -262,8 +262,13 @@ namespace TS3AudioBot.Config
 			"Called when the bot gets disconnected.");
 		public ConfigValue<string> OnIdle { get; } = new ConfigValue<string>("onidle", "",
 			"Called when the bot does not play anything for a certain amount of time.");
-		public ConfigValue<TimeSpan> IdleTime { get; } = new ConfigValue<TimeSpan>("idletime", TimeSpan.FromMinutes(5),
+		public ConfigValue<TimeSpan> IdleDelay { get; } = new ConfigValue<TimeSpan>("idletime", TimeSpan.Zero,
 			"Specifies how long the bot has to be idle until the 'onidle' event gets fired.\n" +
+			"You can specify the time in the ISO-8601 format with quotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
+		public ConfigValue<string> OnAlone { get; } = new ConfigValue<string>("onalone", "",
+			"Called when the bot is left alone in his channel for a certain amount of time.");
+		public ConfigValue<TimeSpan> AloneDelay { get; } = new ConfigValue<TimeSpan>("alone_delay", TimeSpan.Zero,
+			"Specifies how long the bot has to be alone until the 'onalone' event gets fired.\n" +
 			"You can specify the time in the ISO-8601 format with quotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
 	}
 

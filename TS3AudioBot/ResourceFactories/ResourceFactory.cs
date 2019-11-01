@@ -7,25 +7,25 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using TS3AudioBot.Audio;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.CommandSystem.Text;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists;
+using TS3AudioBot.Sessions;
+using TS3AudioBot.Web.Api;
+
 namespace TS3AudioBot.ResourceFactories
 {
-	using Audio;
-	using CommandSystem;
-	using Config;
-	using Helper;
-	using Localization;
-	using Playlists;
-	using Sessions;
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.IO;
-	using System.Linq;
-	using System.Reflection;
-	using System.Text;
-	using TS3AudioBot.CommandSystem.Text;
-	using TS3AudioBot.Web.Api;
-
 	public sealed class ResourceFactory : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -33,18 +33,14 @@ namespace TS3AudioBot.ResourceFactories
 		private const string CmdListPrepath = "list from ";
 		private const string CmdSearchPrepath = "search from ";
 
-		private readonly Dictionary<string, FactoryData> allFacories;
-		private readonly List<IPlaylistFactory> listFactories;
-		private readonly List<IResourceFactory> resFactories;
-		private readonly List<ISearchFactory> searchFactories;
+		private readonly Dictionary<string, FactoryData> allFacories = new Dictionary<string, FactoryData>();
+		private readonly List<IPlaylistFactory> listFactories = new List<IPlaylistFactory>();
+		private readonly List<IResourceFactory> resFactories = new List<IResourceFactory>();
+		private readonly List<ISearchFactory> searchFactories = new List<ISearchFactory>();
 		private readonly CommandManager commandManager;
 
 		public ResourceFactory(ConfFactories config, CommandManager commandManager)
 		{
-			Util.Init(out allFacories);
-			Util.Init(out resFactories);
-			Util.Init(out listFactories);
-			Util.Init(out searchFactories);
 			this.commandManager = commandManager;
 
 			AddFactory(new MediaFactory(config.Media));

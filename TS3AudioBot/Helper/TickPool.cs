@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+
 namespace TS3AudioBot.Helper
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Threading;
-
 	public static class TickPool
 	{
 		private static bool run = false;

@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using TS3Client.Full;
+using TS3Client.Helper;
+
 namespace TS3Client
 {
-	using Full;
-	using Helper;
-
 	/// <summary>Used to pass basic connecting information. (Usually for the query)</summary>
 	public class ConnectionData
 	{

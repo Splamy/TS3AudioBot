@@ -7,10 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+
 namespace TS3Client.Full
 {
-	using System;
-
 	/// <summary>Provides a ring queue with packet offset and direct item access functionality.</summary>
 	/// <typeparam name="T">Item type</typeparam>
 	public sealed class RingQueue<T>

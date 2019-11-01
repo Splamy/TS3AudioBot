@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Config;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists;
+using TS3AudioBot.ResourceFactories;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Audio
 {
-	using Config;
-	using Localization;
-	using Playlists;
-	using ResourceFactories;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using TS3AudioBot.Helper;
-
 	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary>
 	public class PlayManager
 	{
@@ -176,7 +176,7 @@ namespace TS3AudioBot.Audio
 				return new LocalStr(strings.error_playmgr_internal_error);
 			}
 
-			playerConnection.Volume = Util.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
+			playerConnection.Volume = Tools.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
 			CurrentPlayData = playInfo; // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, playInfo);
 

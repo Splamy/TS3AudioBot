@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace TS3AudioBot.CommandSystem.Text
 {
-	using System;
-	using System.Text;
-	using System.Text.RegularExpressions;
-
 	public class TextModBuilder
 	{
 		private readonly bool color;

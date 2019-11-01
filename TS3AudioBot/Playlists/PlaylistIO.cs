@@ -7,28 +7,28 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using TS3AudioBot.Algorithm;
+using TS3AudioBot.Config;
+using TS3AudioBot.Localization;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.Web.Model;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Playlists
 {
-	using Newtonsoft.Json;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Threading;
-	using TS3AudioBot.Algorithm;
-	using TS3AudioBot.Config;
-	using TS3AudioBot.Helper;
-	using TS3AudioBot.Localization;
-	using TS3AudioBot.ResourceFactories;
-	using TS3AudioBot.Web.Model;
-
 	public class PlaylistIO : IDisposable
 	{
 		private readonly ConfBot confBot;
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly Dictionary<string, PlaylistMeta> playlistInfo;
-		private readonly LruCache<string, Playlist> playlistCache;
-		private readonly HashSet<string> dirtyList;
+		private readonly Dictionary<string, PlaylistMeta> playlistInfo = new Dictionary<string, PlaylistMeta>();
+		private readonly LruCache<string, Playlist> playlistCache = new LruCache<string, Playlist>(16);
+		private readonly HashSet<string> dirtyList = new HashSet<string>();
 		private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
 		private bool reloadFolderCache = true;
 		private const int FileVersion = 3;
@@ -36,9 +36,6 @@ namespace TS3AudioBot.Playlists
 		public PlaylistIO(ConfBot confBot)
 		{
 			this.confBot = confBot;
-			playlistCache = new LruCache<string, Playlist>(16);
-			Util.Init(out playlistInfo);
-			Util.Init(out dirtyList);
 		}
 
 		private FileInfo NameToFile(string listId)
@@ -102,7 +99,7 @@ namespace TS3AudioBot.Playlists
 			if (!fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);
 
-			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Util.Utf8Encoder))
+			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Tools.Utf8Encoder))
 			{
 				var metaRes = ReadHeadStream(sr);
 				if (!metaRes.Ok)
@@ -231,7 +228,7 @@ namespace TS3AudioBot.Playlists
 			if (!dir.Exists)
 				dir.Create();
 
-			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Util.Utf8Encoder))
+			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Tools.Utf8Encoder))
 			{
 				var serializer = new JsonSerializer
 				{

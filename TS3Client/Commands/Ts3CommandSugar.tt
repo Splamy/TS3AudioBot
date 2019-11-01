@@ -20,12 +20,12 @@ var types = new [] {"bool", "sbyte", "byte", "short", "ushort", "int", "uint", "
 var classTypes = new [] { "string" };
 #>
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+
 namespace TS3Client.Commands
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-
 	public partial class Ts3Command
 	{
 <# foreach (var type in types) { #>

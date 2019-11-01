@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+
 namespace TS3Client.Helper
 {
-	using System;
-	using System.IO;
-	using System.Runtime.InteropServices;
-
 	internal static class NativeLibraryLoader
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -22,7 +22,7 @@ namespace TS3Client.Helper
 
 		public static bool DirectLoadLibrary(string lib, Action dummyLoad = null)
 		{
-			if (Util.IsLinux)
+			if (Tools.IsLinux)
 			{
 				if (dummyLoad != null)
 				{

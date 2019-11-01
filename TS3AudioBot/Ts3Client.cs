@@ -7,26 +7,25 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Algorithm;
+using TS3AudioBot.Audio;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.RExtensions;
+using TS3Client;
+using TS3Client.Audio;
+using TS3Client.Commands;
+using TS3Client.Full;
+using TS3Client.Helper;
+using TS3Client.Messages;
+
 namespace TS3AudioBot
 {
-	using Audio;
-	using Config;
-	using Helper;
-	using Helper.Environment;
-	using Localization;
-	using RExtensions;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using TS3AudioBot.Algorithm;
-	using TS3AudioBot.ResourceFactories;
-	using TS3Client;
-	using TS3Client.Audio;
-	using TS3Client.Commands;
-	using TS3Client.Full;
-	using TS3Client.Helper;
-	using TS3Client.Messages;
-
 	public sealed class Ts3Client : IPlayerConnection, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -36,6 +35,7 @@ namespace TS3AudioBot
 		public event EventHandler<EventArgs> OnBotConnected;
 		public event EventHandler<DisconnectEventArgs> OnBotDisconnect;
 		public event EventHandler<TextMessage> OnMessageReceived;
+		public event EventHandler<AloneChanged> OnAloneChanged;
 
 		private static readonly string[] QuitMessages = {
 			"I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
@@ -56,12 +56,13 @@ namespace TS3AudioBot
 		private readonly ConfBot config;
 		private readonly Ts3FullClient tsFullClient;
 		private IdentityData identity;
-		private List<ClientList> clientbuffer;
+		private List<ClientList> clientbuffer = new List<ClientList>();
 		private bool clientbufferOutdated = true;
 		// dbid -> DbData
-		private readonly TimedCache<ulong, ClientDbInfo> clientDbNames;
+		private readonly TimedCache<ulong, ClientDbInfo> clientDbNames = new TimedCache<ulong, ClientDbInfo>();
 		// uid -> dbid
-		private readonly LruCache<string, ulong> dbIdCache;
+		private readonly LruCache<string, ulong> dbIdCache = new LruCache<string, ulong>(1024);
+		private bool alone = true;
 
 		private readonly StallCheckPipe stallCheckPipe;
 		private readonly VolumePipe volumePipe;
@@ -77,17 +78,17 @@ namespace TS3AudioBot
 		public Ts3Client(ConfBot config, Ts3FullClient tsFullClient, Id id)
 		{
 			this.id = id;
-			Util.Init(out clientDbNames);
-			Util.Init(out clientbuffer);
-			dbIdCache = new LruCache<string, ulong>(1024);
 
 			this.tsFullClient = tsFullClient;
 			tsFullClient.OnEachTextMessage += ExtendedTextMessage;
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			tsFullClient.OnConnected += TsFullClient_OnConnected;
 			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
+			tsFullClient.OnEachClientMoved += (s, e) => ChannelClientsChanged(e.TargetChannelId);
+			tsFullClient.OnEachClientEnterView += (s, e) => ChannelClientsChanged(e.TargetChannelId);
+			tsFullClient.OnEachClientLeftView += (s, e) => ChannelClientsChanged(e.SourceChannelId);
 
-			int ScaleBitrate(int value) => Util.Clamp(value, 1, 255) * 1000;
+			int ScaleBitrate(int value) => Tools.Clamp(value, 1, 255) * 1000;
 
 			this.config = config;
 			this.config.Audio.Bitrate.Changed += (s, e) => encoderPipe.Bitrate = ScaleBitrate(e.NewValue);
@@ -140,7 +141,7 @@ namespace TS3AudioBot
 
 			reconnectCounter = 0;
 			lastReconnect = null;
-			tsFullClient.QuitMessage = QuitMessages[Util.Random.Next(0, QuitMessages.Length)];
+			tsFullClient.QuitMessage = Tools.PickRandom(QuitMessages);
 			ClearAllCaches();
 			return ConnectClient();
 		}
@@ -163,7 +164,7 @@ namespace TS3AudioBot
 					versionSign = VersionSign.VER_WIN_3_X_X;
 				}
 			}
-			else if (SystemData.IsLinux)
+			else if (Tools.IsLinux)
 			{
 				versionSign = VersionSign.VER_LIN_3_X_X;
 			}
@@ -621,7 +622,7 @@ namespace TS3AudioBot
 			case ReconnectType.Error: delay = config.Reconnect.OnError.GetValueAsTime(reconnectCounter); break;
 			case ReconnectType.None:
 				return false;
-			default: throw Util.UnhandledDefault(type);
+			default: throw Tools.UnhandledDefault(type);
 			}
 			reconnectCounter++;
 
@@ -650,6 +651,24 @@ namespace TS3AudioBot
 			if (textMessage.InvokerId == tsFullClient.ClientId)
 				return;
 			OnMessageReceived?.Invoke(sender, textMessage);
+		}
+
+		private void ChannelClientsChanged(ulong channelId)
+		{
+			if (channelId != tsFullClient.Book.Self().Channel)
+				return;
+			IsAloneRecheck();
+		}
+
+		private void IsAloneRecheck()
+		{
+			var ownChannel = tsFullClient.Book.Self().Channel;
+			var newAlone = !tsFullClient.Book.Clients.Values.Any(c => c.Channel == ownChannel);
+			if (newAlone != alone)
+			{
+				alone = newAlone;
+				OnAloneChanged?.Invoke(this, new AloneChanged(newAlone));
+			}
 		}
 
 		#endregion
@@ -730,6 +749,16 @@ namespace TS3AudioBot
 			Ban,
 			ServerShutdown,
 			Error
+		}
+	}
+
+	public class AloneChanged : EventArgs
+	{
+		public bool Alone { get; }
+
+		public AloneChanged(bool alone)
+		{
+			Alone = alone;
 		}
 	}
 

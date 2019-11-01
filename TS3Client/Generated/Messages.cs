@@ -16,51 +16,46 @@
 
 
 
+using System;
+using System.Collections.Generic;
+using System.Buffers.Text;
+using TS3Client.Commands;
+using TS3Client.Helper;
 
+#pragma warning disable CS8019 // Ignore unused imports
+using i8  = System.SByte;
+using u8  = System.Byte;
+using i16 = System.Int16;
+using u16 = System.UInt16;
+using i32 = System.Int32;
+using u32 = System.UInt32;
+using i64 = System.Int64;
+using u64 = System.UInt64;
+using f32 = System.Single;
+using f64 = System.Double;
+using str = System.String;
 
+using DateTime = System.DateTime;
+using Duration = System.TimeSpan;
+using DurationSeconds = System.TimeSpan;
+using DurationMilliseconds = System.TimeSpan;
+using SocketAddr = System.String;
+using IpAddr = System.String;
 
-
-
+using Uid = System.String;
+using ClientDbId = System.UInt64;
+using ClientId = System.UInt16;
+using ChannelId = System.UInt64;
+using ServerGroupId = System.UInt64;
+using ChannelGroupId = System.UInt64;
+using IconHash = System.Int32;
+using ConnectionId = System.UInt32;
+#pragma warning restore CS8019
 
 namespace TS3Client.Messages
 {
-	using Commands;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Buffers.Text;
 
-	#pragma warning disable CS8019 // Ignore unused imports
-	using i8  = System.SByte;
-	using u8  = System.Byte;
-	using i16 = System.Int16;
-	using u16 = System.UInt16;
-	using i32 = System.Int32;
-	using u32 = System.UInt32;
-	using i64 = System.Int64;
-	using u64 = System.UInt64;
-	using f32 = System.Single;
-	using f64 = System.Double;
-	using str = System.String;
-
-	using DateTime = System.DateTime;
-	using Duration = System.TimeSpan;
-	using DurationSeconds = System.TimeSpan;
-	using DurationMilliseconds = System.TimeSpan;
-	using SocketAddr = System.String;
-	using IpAddr = System.String;
-
-	using Uid = System.String;
-	using ClientDbId = System.UInt64;
-	using ClientId = System.UInt16;
-	using ChannelId = System.UInt64;
-	using ServerGroupId = System.UInt64;
-	using ChannelGroupId = System.UInt64;
-	using IconHash = System.Int32;
-	using ConnectionId = System.UInt32;
-#pragma warning restore CS8019
-
-	public sealed class BanAdd : INotification
+	public sealed partial class BanAdd : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.BanAdd;
 		
@@ -105,7 +100,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class BanClient : INotification
+	public sealed partial class BanClient : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.BanClient;
 		
@@ -144,7 +139,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class BanDel : INotification
+	public sealed partial class BanDel : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.BanDel;
 		
@@ -177,7 +172,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class BanDelAll : INotification
+	public sealed partial class BanDelAll : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.BanDelAll;
 		
@@ -192,7 +187,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class BanList : INotification, IResponse
+	public sealed partial class BanList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.BanList;
 		public string ReturnCode { get; set; }
@@ -222,7 +217,7 @@ namespace TS3Client.Messages
 			case "uid": Uid = Ts3String.Unescape(value); break;
 			case "mytsid": MyTsId = Ts3String.Unescape(value); break;
 			case "lastnickname": LastNickname = Ts3String.Unescape(value); break;
-			case "created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Created = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Created = Tools.FromUnix(oval); } break;
 			case "duration": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
 			case "invokercldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) InvokerDatabaseId = oval; } break;
 			case "invokername": InvokerName = Ts3String.Unescape(value); break;
@@ -261,7 +256,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class BanListRequest : INotification
+	public sealed partial class BanListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.BanListRequest;
 		
@@ -276,7 +271,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class BindingList : INotification
+	public sealed partial class BindingList : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.BindingList;
 		
@@ -309,7 +304,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelAddPerm : INotification
+	public sealed partial class ChannelAddPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelAddPerm;
 		
@@ -351,7 +346,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelChanged : INotification
+	public sealed partial class ChannelChanged : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelChanged;
 		
@@ -384,7 +379,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelClientAddPerm : INotification
+	public sealed partial class ChannelClientAddPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientAddPerm;
 		
@@ -429,7 +424,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelClientDelPerm : INotification
+	public sealed partial class ChannelClientDelPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientDelPerm;
 		
@@ -471,7 +466,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelClientPermList : INotification, IResponse
+	public sealed partial class ChannelClientPermList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientPermList;
 		public string ReturnCode { get; set; }
@@ -522,7 +517,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelClientPermListRequest : INotification
+	public sealed partial class ChannelClientPermListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientPermListRequest;
 		
@@ -558,7 +553,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelCreate : INotification
+	public sealed partial class ChannelCreate : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreate;
 		
@@ -648,7 +643,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelCreated : INotification, IResponse
+	public sealed partial class ChannelCreated : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreated;
 		public string ReturnCode { get; set; }
@@ -753,7 +748,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelDelete : INotification
+	public sealed partial class ChannelDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDelete;
 		
@@ -789,7 +784,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelDeleted : INotification, IResponse
+	public sealed partial class ChannelDeleted : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDeleted;
 		public string ReturnCode { get; set; }
@@ -831,7 +826,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelDelPerm : INotification
+	public sealed partial class ChannelDelPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDelPerm;
 		
@@ -846,7 +841,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelDescriptionChanged : INotification
+	public sealed partial class ChannelDescriptionChanged : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDescriptionChanged;
 		
@@ -879,7 +874,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelDescriptionRequest : INotification
+	public sealed partial class ChannelDescriptionRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDescriptionRequest;
 		
@@ -912,7 +907,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelEdit : INotification
+	public sealed partial class ChannelEdit : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelEdit;
 		
@@ -1011,7 +1006,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelEdited : INotification, IResponse
+	public sealed partial class ChannelEdited : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelEdited;
 		public string ReturnCode { get; set; }
@@ -1122,7 +1117,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelFind : IResponse
+	public sealed partial class ChannelFind : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -1158,7 +1153,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelFindRequest : INotification
+	public sealed partial class ChannelFindRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelFindRequest;
 		
@@ -1191,7 +1186,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupAdd : INotification
+	public sealed partial class ChannelGroupAdd : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupAdd;
 		
@@ -1227,7 +1222,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupAddPerm : INotification
+	public sealed partial class ChannelGroupAddPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupAddPerm;
 		
@@ -1269,7 +1264,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupClientList : INotification, IResponse
+	public sealed partial class ChannelGroupClientList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupClientList;
 		public string ReturnCode { get; set; }
@@ -1308,7 +1303,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupClientListRequest : INotification
+	public sealed partial class ChannelGroupClientListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupClientListRequest;
 		
@@ -1347,7 +1342,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupCopy : INotification
+	public sealed partial class ChannelGroupCopy : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupCopy;
 		
@@ -1389,7 +1384,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupDel : INotification
+	public sealed partial class ChannelGroupDel : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupDel;
 		
@@ -1425,7 +1420,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupDelPerm : INotification
+	public sealed partial class ChannelGroupDelPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupDelPerm;
 		
@@ -1464,7 +1459,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupList : INotification, IResponse
+	public sealed partial class ChannelGroupList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupList;
 		public string ReturnCode { get; set; }
@@ -1524,7 +1519,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupListRequest : INotification
+	public sealed partial class ChannelGroupListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupListRequest;
 		
@@ -1539,7 +1534,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupPermList : INotification, IResponse
+	public sealed partial class ChannelGroupPermList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupPermList;
 		public string ReturnCode { get; set; }
@@ -1587,7 +1582,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupPermListRequest : INotification
+	public sealed partial class ChannelGroupPermListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupPermListRequest;
 		
@@ -1620,7 +1615,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelGroupRename : INotification
+	public sealed partial class ChannelGroupRename : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupRename;
 		
@@ -1656,7 +1651,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelInfoRequest : INotification
+	public sealed partial class ChannelInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelInfoRequest;
 		
@@ -1689,7 +1684,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelList : INotification
+	public sealed partial class ChannelList : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelList;
 		
@@ -1791,7 +1786,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelListFinished : INotification
+	public sealed partial class ChannelListFinished : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelListFinished;
 		
@@ -1806,7 +1801,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelListRequest : INotification
+	public sealed partial class ChannelListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelListRequest;
 		
@@ -1821,7 +1816,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelListResponse : IResponse
+	public sealed partial class ChannelListResponse : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -1908,7 +1903,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelMove : INotification
+	public sealed partial class ChannelMove : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMove;
 		
@@ -1947,7 +1942,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelMoved : INotification
+	public sealed partial class ChannelMoved : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMoved;
 		
@@ -1998,7 +1993,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelPasswordChanged : INotification
+	public sealed partial class ChannelPasswordChanged : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPasswordChanged;
 		
@@ -2031,7 +2026,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelPermissionHints : INotification
+	public sealed partial class ChannelPermissionHints : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPermissionHints;
 		
@@ -2067,7 +2062,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelPermList : INotification, IResponse
+	public sealed partial class ChannelPermList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPermList;
 		public string ReturnCode { get; set; }
@@ -2112,7 +2107,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelPermListRequest : INotification
+	public sealed partial class ChannelPermListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPermListRequest;
 		
@@ -2145,7 +2140,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelSubscribe : INotification
+	public sealed partial class ChannelSubscribe : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribe;
 		
@@ -2178,7 +2173,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelSubscribeAll : INotification
+	public sealed partial class ChannelSubscribeAll : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribeAll;
 		
@@ -2193,7 +2188,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelSubscribed : INotification
+	public sealed partial class ChannelSubscribed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribed;
 		
@@ -2229,7 +2224,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelUnsubscribe : INotification
+	public sealed partial class ChannelUnsubscribe : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribe;
 		
@@ -2262,7 +2257,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelUnsubscribeAll : INotification
+	public sealed partial class ChannelUnsubscribeAll : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribeAll;
 		
@@ -2277,7 +2272,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ChannelUnsubscribed : INotification
+	public sealed partial class ChannelUnsubscribed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribed;
 		
@@ -2310,7 +2305,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientAddPerm : INotification
+	public sealed partial class ClientAddPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientAddPerm;
 		
@@ -2355,7 +2350,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientChannelGroupChanged : INotification
+	public sealed partial class ClientChannelGroupChanged : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChannelGroupChanged;
 		
@@ -2406,7 +2401,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientChatClose : INotification
+	public sealed partial class ClientChatClose : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatClose;
 		
@@ -2442,7 +2437,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientChatClosed : INotification
+	public sealed partial class ClientChatClosed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatClosed;
 		
@@ -2478,7 +2473,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientChatComposing : INotification
+	public sealed partial class ClientChatComposing : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatComposing;
 		
@@ -2514,7 +2509,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientConnectionInfo : INotification
+	public sealed partial class ClientConnectionInfo : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfo;
 		
@@ -2667,7 +2662,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientConnectionInfoRequest : INotification
+	public sealed partial class ClientConnectionInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfoRequest;
 		
@@ -2700,7 +2695,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientConnectionInfoUpdateRequest : INotification
+	public sealed partial class ClientConnectionInfoUpdateRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfoUpdateRequest;
 		
@@ -2715,7 +2710,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbDelete : INotification
+	public sealed partial class ClientDbDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbDelete;
 		
@@ -2748,7 +2743,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbEdit : INotification
+	public sealed partial class ClientDbEdit : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbEdit;
 		
@@ -2781,7 +2776,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbFind : INotification, IResponse
+	public sealed partial class ClientDbFind : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbFind;
 		public string ReturnCode { get; set; }
@@ -2800,7 +2795,7 @@ namespace TS3Client.Messages
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -2826,7 +2821,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbFindRequest : INotification
+	public sealed partial class ClientDbFindRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbFindRequest;
 		
@@ -2859,7 +2854,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbIdFromUid : INotification, IResponse
+	public sealed partial class ClientDbIdFromUid : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbIdFromUid;
 		public string ReturnCode { get; set; }
@@ -2895,7 +2890,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbIdFromUidRequest : INotification
+	public sealed partial class ClientDbIdFromUidRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbIdFromUidRequest;
 		
@@ -2928,7 +2923,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbInfo : IResponse
+	public sealed partial class ClientDbInfo : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -2967,8 +2962,8 @@ namespace TS3Client.Messages
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
 			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
 			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
@@ -3012,7 +3007,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbInfoRequest : INotification
+	public sealed partial class ClientDbInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbInfoRequest;
 		
@@ -3045,7 +3040,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbList : INotification, IResponse
+	public sealed partial class ClientDbList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbList;
 		public string ReturnCode { get; set; }
@@ -3067,8 +3062,8 @@ namespace TS3Client.Messages
 			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
 			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
 			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_description": Description = Ts3String.Unescape(value); break;
 			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
@@ -3099,7 +3094,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDbListRequest : INotification
+	public sealed partial class ClientDbListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbListRequest;
 		
@@ -3135,7 +3130,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientDelPerm : INotification
+	public sealed partial class ClientDelPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientDelPerm;
 		
@@ -3174,7 +3169,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientEdit : INotification
+	public sealed partial class ClientEdit : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientEdit;
 		
@@ -3213,7 +3208,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientEnterView : INotification
+	public sealed partial class ClientEnterView : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientEnterView;
 		
@@ -3288,7 +3283,7 @@ namespace TS3Client.Messages
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
 			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
-			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
@@ -3354,7 +3349,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientFindRequest : INotification
+	public sealed partial class ClientFindRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientFindRequest;
 		
@@ -3387,7 +3382,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientIds : INotification, IResponse
+	public sealed partial class ClientIds : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientIds;
 		public string ReturnCode { get; set; }
@@ -3426,7 +3421,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientIdsRequest : INotification
+	public sealed partial class ClientIdsRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientIdsRequest;
 		
@@ -3459,7 +3454,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientInfo : IResponse
+	public sealed partial class ClientInfo : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -3569,7 +3564,7 @@ namespace TS3Client.Messages
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
 			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
 			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
-			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
@@ -3579,8 +3574,8 @@ namespace TS3Client.Messages
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
 			case "client_country": CountryCode = Ts3String.Unescape(value); break;
 			case "client_badges": Badges = Ts3String.Unescape(value); break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
 			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
@@ -3672,7 +3667,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientInfoRequest : INotification
+	public sealed partial class ClientInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientInfoRequest;
 		
@@ -3705,7 +3700,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientInit : INotification
+	public sealed partial class ClientInit : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientInit;
 		
@@ -3780,7 +3775,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientInitIv : INotification
+	public sealed partial class ClientInitIv : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientInitIv;
 		
@@ -3819,7 +3814,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientKick : INotification
+	public sealed partial class ClientKick : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientKick;
 		
@@ -3858,7 +3853,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientLeftView : INotification
+	public sealed partial class ClientLeftView : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientLeftView;
 		
@@ -3915,7 +3910,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientList : IResponse
+	public sealed partial class ClientList : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -3974,8 +3969,8 @@ namespace TS3Client.Messages
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
 			case "client_idle_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ClientIdleTime = TimeSpan.FromMilliseconds(oval); } break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
 			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out ServerGroupId oval, out _)) ServerGroups[i] = oval; } if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
 			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) InheritedChannelGroupFromChannel = oval; } break;
@@ -4032,7 +4027,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientListRequest : INotification
+	public sealed partial class ClientListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientListRequest;
 		
@@ -4047,7 +4042,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientMove : INotification
+	public sealed partial class ClientMove : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientMove;
 		
@@ -4086,7 +4081,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientMoved : INotification
+	public sealed partial class ClientMoved : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientMoved;
 		
@@ -4137,7 +4132,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientNameFromDbId : INotification, IResponse
+	public sealed partial class ClientNameFromDbId : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromDbId;
 		public string ReturnCode { get; set; }
@@ -4176,7 +4171,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientNameFromDbIdRequest : INotification
+	public sealed partial class ClientNameFromDbIdRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromDbIdRequest;
 		
@@ -4209,7 +4204,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientNameFromUid : INotification, IResponse
+	public sealed partial class ClientNameFromUid : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromUid;
 		public string ReturnCode { get; set; }
@@ -4248,7 +4243,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientNameFromUidRequest : INotification
+	public sealed partial class ClientNameFromUidRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromUidRequest;
 		
@@ -4281,7 +4276,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientNeededPermissions : INotification
+	public sealed partial class ClientNeededPermissions : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientNeededPermissions;
 		
@@ -4317,7 +4312,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientPermissionHints : INotification
+	public sealed partial class ClientPermissionHints : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientPermissionHints;
 		
@@ -4353,7 +4348,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientPermList : INotification, IResponse
+	public sealed partial class ClientPermList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientPermList;
 		public string ReturnCode { get; set; }
@@ -4401,7 +4396,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientPermListRequest : INotification
+	public sealed partial class ClientPermListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientPermListRequest;
 		
@@ -4434,7 +4429,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientPoke : INotification
+	public sealed partial class ClientPoke : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientPoke;
 		
@@ -4476,7 +4471,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientPokeRequest : INotification
+	public sealed partial class ClientPokeRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientPokeRequest;
 		
@@ -4512,7 +4507,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientServerGroupAdded : INotification
+	public sealed partial class ClientServerGroupAdded : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroupAdded;
 		
@@ -4563,7 +4558,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientServerGroupRemoved : INotification
+	public sealed partial class ClientServerGroupRemoved : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroupRemoved;
 		
@@ -4614,7 +4609,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientSetServerQueryLogin : INotification, IResponse
+	public sealed partial class ClientSetServerQueryLogin : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientSetServerQueryLogin;
 		public string ReturnCode { get; set; }
@@ -4647,7 +4642,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientSetServerQueryLoginRequest : INotification
+	public sealed partial class ClientSetServerQueryLoginRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientSetServerQueryLoginRequest;
 		
@@ -4686,7 +4681,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientUidFromClid : INotification, IResponse
+	public sealed partial class ClientUidFromClid : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientUidFromClid;
 		public string ReturnCode { get; set; }
@@ -4725,7 +4720,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientUidFromClidRequest : INotification
+	public sealed partial class ClientUidFromClidRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientUidFromClidRequest;
 		
@@ -4758,7 +4753,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientUpdate : INotification
+	public sealed partial class ClientUpdate : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientUpdate;
 		
@@ -4793,7 +4788,7 @@ namespace TS3Client.Messages
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
 			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
 			case "client_badges": Badges = Ts3String.Unescape(value); break;
@@ -4830,7 +4825,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientUpdated : INotification
+	public sealed partial class ClientUpdated : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientUpdated;
 		
@@ -4877,8 +4872,8 @@ namespace TS3Client.Messages
 			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
 			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
 			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
-			case "client_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) CreationDate = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) LastConnected = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
+			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
 			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
 			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
@@ -4891,7 +4886,7 @@ namespace TS3Client.Messages
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
 			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
-			case "client_talk_request": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TalkPowerRequestTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
@@ -4950,7 +4945,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ClientVariablesRequest : INotification
+	public sealed partial class ClientVariablesRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ClientVariablesRequest;
 		
@@ -4983,7 +4978,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class CommandError : INotification
+	public sealed partial class CommandError : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.CommandError;
 		
@@ -5028,7 +5023,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ComplainAdd : INotification
+	public sealed partial class ComplainAdd : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ComplainAdd;
 		
@@ -5064,7 +5059,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ComplainDel : INotification
+	public sealed partial class ComplainDel : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ComplainDel;
 		
@@ -5100,7 +5095,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ComplainDelAll : INotification
+	public sealed partial class ComplainDelAll : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ComplainDelAll;
 		
@@ -5133,7 +5128,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ComplainList : INotification, IResponse
+	public sealed partial class ComplainList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ComplainList;
 		public string ReturnCode { get; set; }
@@ -5155,7 +5150,7 @@ namespace TS3Client.Messages
 			case "fcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) FromClientDbId = oval; } break;
 			case "fname": FromName = Ts3String.Unescape(value); break;
 			case "message": Message = Ts3String.Unescape(value); break;
-			case "timestamp": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Timestamp = Tools.FromUnix(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -5181,7 +5176,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ComplainListRequest : INotification
+	public sealed partial class ComplainListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ComplainListRequest;
 		
@@ -5214,7 +5209,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class CustomDelete : INotification
+	public sealed partial class CustomDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.CustomDelete;
 		
@@ -5250,7 +5245,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class CustomInfoRequest : INotification
+	public sealed partial class CustomInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.CustomInfoRequest;
 		
@@ -5283,7 +5278,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class CustomSearch : INotification
+	public sealed partial class CustomSearch : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.CustomSearch;
 		
@@ -5319,7 +5314,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class CustomSet : INotification
+	public sealed partial class CustomSet : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.CustomSet;
 		
@@ -5358,7 +5353,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class Disconnect : INotification
+	public sealed partial class Disconnect : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.Disconnect;
 		
@@ -5394,7 +5389,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileDownload : INotification, IResponse
+	public sealed partial class FileDownload : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FileDownload;
 		public string ReturnCode { get; set; }
@@ -5445,7 +5440,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileInfo : INotification, IResponse
+	public sealed partial class FileInfo : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FileInfo;
 		public string ReturnCode { get; set; }
@@ -5465,7 +5460,7 @@ namespace TS3Client.Messages
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
-			case "datetime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "datetime": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) DateTime = Tools.FromUnix(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -5490,7 +5485,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileList : INotification, IResponse
+	public sealed partial class FileList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FileList;
 		public string ReturnCode { get; set; }
@@ -5511,7 +5506,7 @@ namespace TS3Client.Messages
 			case "path": Path = Ts3String.Unescape(value); break;
 			case "name": Name = Ts3String.Unescape(value); break;
 			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
-			case "datetime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "datetime": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) DateTime = Tools.FromUnix(oval); } break;
 			case "type": IsFile = value.Length > 0 && value[0] != '0'; break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -5538,7 +5533,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileListFinished : INotification
+	public sealed partial class FileListFinished : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FileListFinished;
 		
@@ -5574,7 +5569,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileTransfer : INotification, IResponse
+	public sealed partial class FileTransfer : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FileTransfer;
 		public string ReturnCode { get; set; }
@@ -5640,7 +5635,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileTransferStatus : INotification
+	public sealed partial class FileTransferStatus : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FileTransferStatus;
 		
@@ -5682,7 +5677,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FileUpload : INotification, IResponse
+	public sealed partial class FileUpload : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FileUpload;
 		public string ReturnCode { get; set; }
@@ -5733,7 +5728,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtCreateDir : INotification
+	public sealed partial class FtCreateDir : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtCreateDir;
 		
@@ -5772,7 +5767,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtDeleteFile : INotification
+	public sealed partial class FtDeleteFile : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtDeleteFile;
 		
@@ -5811,7 +5806,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtFileInfoRequest : INotification
+	public sealed partial class FtFileInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtFileInfoRequest;
 		
@@ -5850,7 +5845,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtFileListRequest : INotification
+	public sealed partial class FtFileListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtFileListRequest;
 		
@@ -5889,7 +5884,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtInitDownload : INotification
+	public sealed partial class FtInitDownload : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtInitDownload;
 		
@@ -5937,7 +5932,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtInitUpload : INotification
+	public sealed partial class FtInitUpload : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtInitUpload;
 		
@@ -5991,7 +5986,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtList : INotification
+	public sealed partial class FtList : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtList;
 		
@@ -6006,7 +6001,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtRenameFile : INotification
+	public sealed partial class FtRenameFile : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtRenameFile;
 		
@@ -6054,7 +6049,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class FtStop : INotification
+	public sealed partial class FtStop : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.FtStop;
 		
@@ -6090,7 +6085,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class GlobalMessage : INotification
+	public sealed partial class GlobalMessage : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.GlobalMessage;
 		
@@ -6123,7 +6118,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class HostInfoRequest : INotification
+	public sealed partial class HostInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.HostInfoRequest;
 		
@@ -6138,7 +6133,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class InitIvExpand : INotification
+	public sealed partial class InitIvExpand : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand;
 		
@@ -6177,7 +6172,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class InitIvExpand2 : INotification
+	public sealed partial class InitIvExpand2 : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand2;
 		
@@ -6225,7 +6220,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class InitServer : INotification
+	public sealed partial class InitServer : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InitServer;
 		
@@ -6271,7 +6266,7 @@ namespace TS3Client.Messages
 			case "virtualserver_platform": ServerPlatform = Ts3String.Unescape(value); break;
 			case "virtualserver_version": ServerVersion = Ts3String.Unescape(value); break;
 			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
-			case "virtualserver_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ServerCreated = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "virtualserver_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerCreated = Tools.FromUnix(oval); } break;
 			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = oval; } break;
@@ -6348,7 +6343,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class InstanceEdit : INotification
+	public sealed partial class InstanceEdit : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InstanceEdit;
 		
@@ -6363,7 +6358,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class InstanceInfo : INotification
+	public sealed partial class InstanceInfo : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.InstanceInfo;
 		
@@ -6378,7 +6373,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class LogAdd : INotification
+	public sealed partial class LogAdd : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.LogAdd;
 		
@@ -6414,7 +6409,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class Login : INotification
+	public sealed partial class Login : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.Login;
 		
@@ -6450,7 +6445,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class Logout : INotification
+	public sealed partial class Logout : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.Logout;
 		
@@ -6465,7 +6460,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class LogView : INotification
+	public sealed partial class LogView : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.LogView;
 		
@@ -6507,7 +6502,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class OfflineMessage : INotification, IResponse
+	public sealed partial class OfflineMessage : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessage;
 		public string ReturnCode { get; set; }
@@ -6527,7 +6522,7 @@ namespace TS3Client.Messages
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			case "subject": Subject = Ts3String.Unescape(value); break;
 			case "message": Message = Ts3String.Unescape(value); break;
-			case "timestamp": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Timestamp = Tools.FromUnix(oval); } break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
 
@@ -6552,7 +6547,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class OfflineMessageAdd : INotification
+	public sealed partial class OfflineMessageAdd : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageAdd;
 		
@@ -6591,7 +6586,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class OfflineMessageDel : INotification
+	public sealed partial class OfflineMessageDel : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageDel;
 		
@@ -6624,7 +6619,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class OfflineMessageGet : INotification
+	public sealed partial class OfflineMessageGet : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageGet;
 		
@@ -6657,7 +6652,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class OfflineMessageList : INotification, IResponse
+	public sealed partial class OfflineMessageList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageList;
 		public string ReturnCode { get; set; }
@@ -6676,7 +6671,7 @@ namespace TS3Client.Messages
 			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
 			case "cluid": ClientUid = Ts3String.Unescape(value); break;
 			case "subject": Subject = Ts3String.Unescape(value); break;
-			case "timestamp": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Timestamp = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "timestamp": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Timestamp = Tools.FromUnix(oval); } break;
 			case "flag_read": IsRead = value.Length > 0 && value[0] != '0'; break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -6702,7 +6697,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class OfflineMessageListRequest : INotification
+	public sealed partial class OfflineMessageListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageListRequest;
 		
@@ -6717,7 +6712,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class OfflineMessageUpdateFlag : INotification
+	public sealed partial class OfflineMessageUpdateFlag : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageUpdateFlag;
 		
@@ -6753,7 +6748,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermFind : INotification, IResponse
+	public sealed partial class PermFind : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermFind;
 		public string ReturnCode { get; set; }
@@ -6795,7 +6790,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermFindRequest : INotification
+	public sealed partial class PermFindRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermFindRequest;
 		
@@ -6831,7 +6826,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermIdByNameRequest : INotification
+	public sealed partial class PermIdByNameRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermIdByNameRequest;
 		
@@ -6864,7 +6859,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermList : INotification, IResponse
+	public sealed partial class PermList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermList;
 		public string ReturnCode { get; set; }
@@ -6906,7 +6901,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermListRequest : INotification
+	public sealed partial class PermListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermListRequest;
 		
@@ -6921,7 +6916,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermOverview : INotification, IResponse
+	public sealed partial class PermOverview : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermOverview;
 		public string ReturnCode { get; set; }
@@ -6978,7 +6973,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermOverviewRequest : INotification
+	public sealed partial class PermOverviewRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermOverviewRequest;
 		
@@ -7020,7 +7015,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermRequest : INotification
+	public sealed partial class PermRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermRequest;
 		
@@ -7053,7 +7048,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PermReset : INotification
+	public sealed partial class PermReset : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PermReset;
 		
@@ -7068,7 +7063,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PluginCommand : INotification
+	public sealed partial class PluginCommand : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PluginCommand;
 		
@@ -7104,7 +7099,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PluginCommandRequest : INotification
+	public sealed partial class PluginCommandRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PluginCommandRequest;
 		
@@ -7143,7 +7138,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PrivilegeKeyAddRequest : INotification
+	public sealed partial class PrivilegeKeyAddRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyAddRequest;
 		
@@ -7188,7 +7183,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PrivilegeKeyDelete : INotification
+	public sealed partial class PrivilegeKeyDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyDelete;
 		
@@ -7221,7 +7216,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PrivilegeKeyListRequest : INotification
+	public sealed partial class PrivilegeKeyListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyListRequest;
 		
@@ -7236,7 +7231,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class PrivilegeKeyUse : INotification
+	public sealed partial class PrivilegeKeyUse : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyUse;
 		
@@ -7269,7 +7264,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class Quit : INotification
+	public sealed partial class Quit : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.Quit;
 		
@@ -7284,7 +7279,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class SendTextMessage : INotification
+	public sealed partial class SendTextMessage : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.SendTextMessage;
 		
@@ -7323,7 +7318,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerConnectionInfo : INotification, IResponse
+	public sealed partial class ServerConnectionInfo : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerConnectionInfo;
 		public string ReturnCode { get; set; }
@@ -7398,7 +7393,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerConnectionInfoRequest : INotification
+	public sealed partial class ServerConnectionInfoRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerConnectionInfoRequest;
 		
@@ -7413,7 +7408,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerCreate : INotification
+	public sealed partial class ServerCreate : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerCreate;
 		
@@ -7446,7 +7441,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerData : IResponse
+	public sealed partial class ServerData : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -7509,7 +7504,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerDelete : INotification
+	public sealed partial class ServerDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerDelete;
 		
@@ -7542,7 +7537,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerEdit : INotification
+	public sealed partial class ServerEdit : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerEdit;
 		
@@ -7701,7 +7696,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerEdited : INotification
+	public sealed partial class ServerEdited : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerEdited;
 		
@@ -7791,7 +7786,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupAdd : INotification
+	public sealed partial class ServerGroupAdd : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAdd;
 		
@@ -7827,7 +7822,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupAddClient : INotification
+	public sealed partial class ServerGroupAddClient : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAddClient;
 		
@@ -7863,7 +7858,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupAddPerm : INotification
+	public sealed partial class ServerGroupAddPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAddPerm;
 		
@@ -7911,7 +7906,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupAddResponse : IResponse
+	public sealed partial class ServerGroupAddResponse : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -7944,7 +7939,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupAutoAddPerm : INotification
+	public sealed partial class ServerGroupAutoAddPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAutoAddPerm;
 		
@@ -7992,7 +7987,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupAutoDelPerm : INotification
+	public sealed partial class ServerGroupAutoDelPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAutoDelPerm;
 		
@@ -8031,7 +8026,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupClientList : INotification, IResponse
+	public sealed partial class ServerGroupClientList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupClientList;
 		public string ReturnCode { get; set; }
@@ -8073,7 +8068,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupClientListRequest : INotification
+	public sealed partial class ServerGroupClientListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupClientListRequest;
 		
@@ -8106,7 +8101,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupCopy : INotification
+	public sealed partial class ServerGroupCopy : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupCopy;
 		
@@ -8148,7 +8143,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupDel : INotification
+	public sealed partial class ServerGroupDel : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDel;
 		
@@ -8184,7 +8179,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupDelClient : INotification
+	public sealed partial class ServerGroupDelClient : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDelClient;
 		
@@ -8220,7 +8215,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupDelPerm : INotification
+	public sealed partial class ServerGroupDelPerm : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDelPerm;
 		
@@ -8259,7 +8254,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupList : INotification, IResponse
+	public sealed partial class ServerGroupList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupList;
 		public string ReturnCode { get; set; }
@@ -8319,7 +8314,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupListRequest : INotification
+	public sealed partial class ServerGroupListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupListRequest;
 		
@@ -8334,7 +8329,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupPermList : INotification, IResponse
+	public sealed partial class ServerGroupPermList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupPermList;
 		public string ReturnCode { get; set; }
@@ -8382,7 +8377,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupPermListRequest : INotification
+	public sealed partial class ServerGroupPermListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupPermListRequest;
 		
@@ -8415,7 +8410,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupRename : INotification
+	public sealed partial class ServerGroupRename : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupRename;
 		
@@ -8451,7 +8446,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupsByClientId : INotification, IResponse
+	public sealed partial class ServerGroupsByClientId : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientId;
 		public string ReturnCode { get; set; }
@@ -8490,7 +8485,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerGroupsByClientIdRequest : INotification
+	public sealed partial class ServerGroupsByClientIdRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientIdRequest;
 		
@@ -8523,7 +8518,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerIdGetByPort : INotification
+	public sealed partial class ServerIdGetByPort : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerIdGetByPort;
 		
@@ -8556,7 +8551,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerInfo : INotification
+	public sealed partial class ServerInfo : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerInfo;
 		
@@ -8571,7 +8566,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerList : INotification
+	public sealed partial class ServerList : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerList;
 		
@@ -8586,7 +8581,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerLog : INotification, IResponse
+	public sealed partial class ServerLog : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerLog;
 		public string ReturnCode { get; set; }
@@ -8625,7 +8620,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerNotifyRegister : INotification
+	public sealed partial class ServerNotifyRegister : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerNotifyRegister;
 		
@@ -8661,7 +8656,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerNotifyUnregister : INotification
+	public sealed partial class ServerNotifyUnregister : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerNotifyUnregister;
 		
@@ -8676,7 +8671,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerProcessStop : INotification
+	public sealed partial class ServerProcessStop : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerProcessStop;
 		
@@ -8709,7 +8704,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerSnapshotCreate : INotification
+	public sealed partial class ServerSnapshotCreate : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerSnapshotCreate;
 		
@@ -8724,7 +8719,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerSnapshotDeploy : INotification
+	public sealed partial class ServerSnapshotDeploy : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerSnapshotDeploy;
 		
@@ -8739,7 +8734,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerStart : INotification
+	public sealed partial class ServerStart : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerStart;
 		
@@ -8772,7 +8767,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerStop : INotification
+	public sealed partial class ServerStop : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerStop;
 		
@@ -8808,7 +8803,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerTempPasswordAdd : INotification
+	public sealed partial class ServerTempPasswordAdd : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordAdd;
 		
@@ -8853,7 +8848,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerTempPasswordDel : INotification
+	public sealed partial class ServerTempPasswordDel : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordDel;
 		
@@ -8886,7 +8881,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerTempPasswordList : INotification
+	public sealed partial class ServerTempPasswordList : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordList;
 		
@@ -8909,8 +8904,8 @@ namespace TS3Client.Messages
 			case "uid": Uid = Ts3String.Unescape(value); break;
 			case "desc": Description = Ts3String.Unescape(value); break;
 			case "pw_clear": PasswordClear = Ts3String.Unescape(value); break;
-			case "start": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Start = Util.UnixTimeStart.AddSeconds(oval); } break;
-			case "end": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) End = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "start": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Start = Tools.FromUnix(oval); } break;
+			case "end": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) End = Tools.FromUnix(oval); } break;
 			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
 			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
 			
@@ -8940,7 +8935,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerTempPasswordListRequest : INotification
+	public sealed partial class ServerTempPasswordListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordListRequest;
 		
@@ -8955,7 +8950,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerUpdated : INotification
+	public sealed partial class ServerUpdated : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerUpdated;
 		
@@ -9129,7 +9124,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class ServerVariablesRequest : INotification
+	public sealed partial class ServerVariablesRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerVariablesRequest;
 		
@@ -9144,7 +9139,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class SetClientChannelGroup : INotification
+	public sealed partial class SetClientChannelGroup : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.SetClientChannelGroup;
 		
@@ -9183,7 +9178,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TextMessage : INotification, IResponse
+	public sealed partial class TextMessage : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TextMessage;
 		public string ReturnCode { get; set; }
@@ -9231,7 +9226,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenAdd : INotification, IResponse
+	public sealed partial class TokenAdd : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenAdd;
 		public string ReturnCode { get; set; }
@@ -9264,7 +9259,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenAddRequest : INotification
+	public sealed partial class TokenAddRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenAddRequest;
 		
@@ -9309,7 +9304,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenDelete : INotification
+	public sealed partial class TokenDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenDelete;
 		
@@ -9342,7 +9337,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenList : INotification, IResponse
+	public sealed partial class TokenList : INotification, IResponse
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenList;
 		public string ReturnCode { get; set; }
@@ -9363,7 +9358,7 @@ namespace TS3Client.Messages
 			case "token_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
 			case "token_id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
 			case "token_id2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
-			case "token_created": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TokenCreateTime = Util.UnixTimeStart.AddSeconds(oval); } break;
+			case "token_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TokenCreateTime = Tools.FromUnix(oval); } break;
 			case "token_description": TokenDescription = Ts3String.Unescape(value); break;
 			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
 			}
@@ -9390,7 +9385,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenListRequest : INotification
+	public sealed partial class TokenListRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenListRequest;
 		
@@ -9405,7 +9400,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenUse : INotification
+	public sealed partial class TokenUse : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenUse;
 		
@@ -9438,7 +9433,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class TokenUsed : INotification
+	public sealed partial class TokenUsed : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.TokenUsed;
 		
@@ -9489,7 +9484,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class Use : INotification
+	public sealed partial class Use : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.Use;
 		
@@ -9525,7 +9520,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class VersionRequest : INotification
+	public sealed partial class VersionRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.VersionRequest;
 		
@@ -9540,7 +9535,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class WhoAmI : IResponse
+	public sealed partial class WhoAmI : IResponse
 	{
 		
 		public string ReturnCode { get; set; }
@@ -9603,7 +9598,7 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed class WhoAmIRequest : INotification
+	public sealed partial class WhoAmIRequest : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.WhoAmIRequest;
 		
@@ -10510,7 +10505,7 @@ namespace TS3Client.Messages
 			case NotificationType.VersionRequest: return new VersionRequest();
 			case NotificationType.WhoAmIRequest: return new WhoAmIRequest();
 			case NotificationType.Unknown:
-			default: throw Util.UnhandledDefault(name);
+			default: throw Tools.UnhandledDefault(name);
 			}
 		}
 
@@ -10735,7 +10730,7 @@ namespace TS3Client.Messages
 			case NotificationType.VersionRequest: { var arr = new VersionRequest[len]; for (int i = 0; i < len; i++) arr[i] = new VersionRequest(); return arr; }
 			case NotificationType.WhoAmIRequest: { var arr = new WhoAmIRequest[len]; for (int i = 0; i < len; i++) arr[i] = new WhoAmIRequest(); return arr; }
 			case NotificationType.Unknown:
-			default: throw Util.UnhandledDefault(name);
+			default: throw Tools.UnhandledDefault(name);
 			}
 		}
 	}

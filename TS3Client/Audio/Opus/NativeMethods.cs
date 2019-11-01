@@ -19,12 +19,12 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+using System;
+using System.Runtime.InteropServices;
+using TS3Client.Helper;
+
 namespace TS3Client.Audio.Opus
 {
-	using Helper;
-	using System;
-	using System.Runtime.InteropServices;
-
 	/// <summary>
 	/// Wraps the Opus API.
 	/// </summary>

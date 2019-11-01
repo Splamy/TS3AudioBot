@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using LiteDB;
+using System;
+using System.IO;
+using TS3AudioBot.Config;
+
 namespace TS3AudioBot
 {
-	using Config;
-	using LiteDB;
-	using System;
-	using System.IO;
-
 	public class DbStore : IDisposable
 	{
 		private const string DbMetaInformationTable = "dbmeta";

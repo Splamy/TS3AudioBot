@@ -7,10 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+
 namespace TS3Client.Full.Book
 {
-	using System;
-
 	public struct MaxClients
 	{
 		public ushort Count { get; internal set; }

@@ -7,16 +7,16 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
+using System;
+using System.IO;
+
 namespace TS3AudioBot.Helper
 {
-	using SixLabors.ImageSharp;
-	using SixLabors.ImageSharp.Formats;
-	using SixLabors.ImageSharp.Formats.Gif;
-	using SixLabors.ImageSharp.Formats.Jpeg;
-	using SixLabors.ImageSharp.Processing;
-	using System;
-	using System.IO;
-
 	internal static class ImageUtil
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

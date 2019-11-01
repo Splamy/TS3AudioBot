@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3Client.Commands;
+using TS3Client.Helper;
+
 namespace TS3Client.Full
 {
-	using Commands;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-
 	// TODO include udp/ip header size to get correct values
 	/// <summary>Provides connection stats by logging packets.</summary>
 	public sealed class NetworkStats
@@ -38,7 +38,7 @@ namespace TS3Client.Full
 			lock (queueLock)
 			{
 				DropOver(outBytesTime, TimeMinute);
-				outBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Util.Now, kind));
+				outBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Tools.Now, kind));
 			}
 		}
 
@@ -50,7 +50,7 @@ namespace TS3Client.Full
 			lock (queueLock)
 			{
 				DropOver(inBytesTime, TimeMinute);
-				inBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Util.Now, kind));
+				inBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Tools.Now, kind));
 			}
 		}
 
@@ -92,7 +92,7 @@ namespace TS3Client.Full
 
 		private static long[] GetWithin(Queue<PacketData> queue, TimeSpan time)
 		{
-			var now = Util.Now;
+			var now = Tools.Now;
 			var bandwidth = new long[3];
 			foreach (var pack in queue.Reverse())
 				if (now - pack.SendPoint <= time)
@@ -106,7 +106,7 @@ namespace TS3Client.Full
 
 		private static void DropOver(Queue<PacketData> queue, TimeSpan time)
 		{
-			var now = Util.Now;
+			var now = Tools.Now;
 			while (queue.Count > 0 && now - queue.Peek().SendPoint > time)
 				queue.Dequeue();
 		}

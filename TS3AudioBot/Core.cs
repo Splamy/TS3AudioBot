@@ -7,22 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using NLog;
+using System;
+using System.Threading;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Helper.Environment;
+using TS3AudioBot.Plugins;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.Rights;
+using TS3AudioBot.Sessions;
+using TS3AudioBot.Web;
+
 namespace TS3AudioBot
 {
-	using Config;
-	using Dependency;
-	using Helper;
-	using Helper.Environment;
-	using NLog;
-	using Plugins;
-	using ResourceFactories;
-	using Rights;
-	using Sessions;
-	using System;
-	using System.Threading;
-	using TS3AudioBot.CommandSystem;
-	using Web;
-
 	public sealed class Core : IDisposable
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();

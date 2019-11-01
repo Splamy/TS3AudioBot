@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.IO;
+using System.Net;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.Helper
 {
-	using Localization;
-	using System;
-	using System.IO;
-	using System.Net;
-
 	public static class WebWrapper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -101,7 +101,7 @@ namespace TS3AudioBot.Helper
 
 		public static R<Stream, LocalStr> GetResponseUnsafe(string link)
 		{
-			if(!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
+			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
 				return new LocalStr(strings.error_media_invalid_uri);
 
 			return GetResponseUnsafe(uri, DefaultTimeout);

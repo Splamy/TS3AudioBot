@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using System.Resources;
+using System.Threading;
+
 namespace TS3AudioBot.Localization
 {
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Reflection;
-	using System.Resources;
-	using System.Threading;
-
 	internal class DynamicResourceManager : ResourceManager
 	{
 		private readonly Dictionary<string, ResourceSet> dynamicResourceSets = new Dictionary<string, ResourceSet>();

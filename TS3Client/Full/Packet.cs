@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+using TS3Client.Helper;
+
 namespace TS3Client.Full
 {
-	using Helper;
-	using System;
-	using System.Buffers.Binary;
-	using System.Runtime.CompilerServices;
-
 	internal struct Packet<TDir>
 	{
 		public static bool FromServer { get; } = typeof(TDir) == typeof(S2C);
@@ -170,7 +170,7 @@ namespace TS3Client.Full
 		public ResendPacket(Packet<T> packet)
 		{
 			Packet = packet;
-			var now = Util.Now;
+			var now = Tools.Now;
 			FirstSendTime = now;
 			LastSendTime = now;
 		}

@@ -1,47 +1,23 @@
 // TS3Client - A free TeamSpeak3 client implementation
 // Copyright (C) 2017  TS3Client contributors
 //
-// This program is free software: you can redistribute it and/or modify
+// This program is free software: you can redistringibute it and/or modify
 // it under the terms of the Open Software License v. 3.0
 //
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Linq;
+using TS3Client.Helper;
+using TS3Client.Messages;
+using ChannelId = System.UInt64;
+using ClientId = System.UInt16;
+using ServerGroupId = System.UInt64;
+using SocketAddr = System.String;
+
 namespace TS3Client.Full.Book
 {
-	using Helper;
-	using Messages;
-	using System;
-	using System.Linq;
-
-#pragma warning disable CS8019
-	using i8 = System.SByte;
-	using u8 = System.Byte;
-	using i16 = System.Int16;
-	using u16 = System.UInt16;
-	using i32 = System.Int32;
-	using u32 = System.UInt32;
-	using i64 = System.Int64;
-	using u64 = System.UInt64;
-	using f32 = System.Single;
-	using d64 = System.Double;
-	using str = System.String;
-
-	using Duration = System.TimeSpan;
-	using DurationSeconds = System.TimeSpan;
-	using DurationMilliseconds = System.TimeSpan;
-	using SocketAddr = System.String;
-
-	using Uid = System.String;
-	using ClientDbId = System.UInt64;
-	using ClientId = System.UInt16;
-	using ChannelId = System.UInt64;
-	using ServerGroupId = System.UInt64;
-	using ChannelGroupId = System.UInt64;
-	using IconHash = System.Int32;
-	using ConnectionId = System.UInt32;
-#pragma warning restore CS8019
-
 	public partial class Connection
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -124,14 +100,14 @@ namespace TS3Client.Full.Book
 		private static (MaxClients?, MaxClients?) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
 		private static (MaxClients?, MaxClients?) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
 		private static (MaxClients?, MaxClients?) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private static (MaxClients?, MaxClients?) MaxClientsFun(i32? MaxClients, bool? IsMaxClientsUnlimited, i32? MaxFamilyClients, bool? IsMaxFamilyClientsUnlimited, bool? InheritsMaxFamilyClients)
+		private static (MaxClients?, MaxClients?) MaxClientsFun(int? MaxClients, bool? IsMaxClientsUnlimited, int? MaxFamilyClients, bool? IsMaxFamilyClientsUnlimited, bool? InheritsMaxFamilyClients)
 		{
 			var chn = new MaxClients();
 			if (IsMaxClientsUnlimited == true) chn.LimitKind = MaxClientsKind.Unlimited;
 			else
 			{
 				chn.LimitKind = MaxClientsKind.Limited;
-				chn.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxClients ?? ushort.MaxValue), 0);
+				chn.Count = (ushort)Math.Max(Math.Min(ushort.MaxValue, MaxClients ?? ushort.MaxValue), 0);
 			}
 
 			var fam = new MaxClients();
@@ -140,7 +116,7 @@ namespace TS3Client.Full.Book
 			else
 			{
 				fam.LimitKind = MaxClientsKind.Limited;
-				fam.Count = (u16)Math.Max(Math.Min(ushort.MaxValue, MaxFamilyClients ?? ushort.MaxValue), 0);
+				fam.Count = (ushort)Math.Max(Math.Min(ushort.MaxValue, MaxFamilyClients ?? ushort.MaxValue), 0);
 			}
 			return (chn, fam);
 		}
@@ -155,19 +131,19 @@ namespace TS3Client.Full.Book
 			else return ChannelType.Temporary;
 		}
 
-		private str AwayCevFun(ClientEnterView msg) => default;
-		private str AwayCuFun(ClientUpdated msg) => default;
+		private string AwayCevFun(ClientEnterView msg) => default;
+		private string AwayCuFun(ClientUpdated msg) => default;
 
 		private static TalkPowerRequest? TalkPowerCevFun(ClientEnterView msg)
 		{
-			if (msg.TalkPowerRequestTime != Util.UnixTimeStart)
+			if (msg.TalkPowerRequestTime != Tools.UnixTimeStart)
 				return new TalkPowerRequest() { Time = msg.TalkPowerRequestTime, Message = msg.TalkPowerRequestMessage ?? "" };
 			return null;
 		}
 		private static TalkPowerRequest? TalkPowerCuFun(ClientUpdated msg) => TalkPowerFun(msg.TalkPowerRequestTime, msg.TalkPowerRequestMessage);
-		private static TalkPowerRequest? TalkPowerFun(DateTime? time, str message)
+		private static TalkPowerRequest? TalkPowerFun(DateTime? time, string message)
 		{
-			if (time != null && time != Util.UnixTimeStart) // TODO
+			if (time != null && time != Tools.UnixTimeStart) // TODO
 				return new TalkPowerRequest() { Time = time.Value, Message = message ?? "" };
 			return null;
 		}

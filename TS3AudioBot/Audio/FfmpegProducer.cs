@@ -7,21 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TS3Client.Audio;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Audio
 {
-	using Config;
-	using Helper;
-	using System;
-	using System.ComponentModel;
-	using System.Diagnostics;
-	using System.Globalization;
-	using System.IO;
-	using System.Text;
-	using System.Text.RegularExpressions;
-	using System.Threading;
-	using TS3Client.Audio;
-	using TS3Client.Helper;
-
 	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -393,7 +393,7 @@ namespace TS3AudioBot.Audio
 
 			public void ReadStreamLoop(Id id)
 			{
-				Util.SetLogId(id.ToString());
+				Tools.SetLogId(id.ToString());
 				const int IcyMaxMeta = 255 * 16;
 				const int ReadBufferSize = 4096;
 

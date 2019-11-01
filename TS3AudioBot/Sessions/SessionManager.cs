@@ -7,24 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+
 namespace TS3AudioBot.Sessions
 {
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-
 	/// <summary>Management for clients talking with the bot.</summary>
 	public class SessionManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		// Map: Id => UserSession
-		private readonly Dictionary<ushort, UserSession> openSessions;
-
-		public SessionManager()
-		{
-			Util.Init(out openSessions);
-		}
+		private readonly Dictionary<ushort, UserSession> openSessions = new Dictionary<ushort, UserSession>();
 
 		public UserSession GetOrCreateSession(ushort clientId)
 		{

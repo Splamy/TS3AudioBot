@@ -7,16 +7,16 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Rights.Matchers;
+using TS3Client;
+
 namespace TS3AudioBot.Rights
 {
-	using Helper;
-	using Matchers;
-	using Nett;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Net;
-	using TS3Client;
-
 	// Adding a new Matcher:
 	// 1) Add public MatchHashSet
 	// 2) Add To Has Matches condition when empty

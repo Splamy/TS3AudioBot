@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Math.EC;
+using System;
+
 namespace TS3Client.Full
 {
-	using Org.BouncyCastle.Math;
-	using Org.BouncyCastle.Math.EC;
-	using System;
-
 	/// <summary>Represents the identity of a user.
 	/// To generate new identities use <see cref="Ts3Crypt.GenerateNewIdentity"/>.
 	/// To improve the security level of this identity use <see cref="Ts3Crypt.ImproveSecurity"/>.</summary>

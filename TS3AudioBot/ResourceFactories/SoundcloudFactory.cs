@@ -7,19 +7,19 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists;
+
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
-	using Localization;
-	using Newtonsoft.Json;
-	using Newtonsoft.Json.Linq;
-	using Playlists;
-	using System;
-	using System.Globalization;
-	using System.IO;
-	using System.Linq;
-	using System.Text.RegularExpressions;
-
 	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

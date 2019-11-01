@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+
 namespace TS3Client.Commands
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Linq;
-
 	/// <summary>Represents an array of data. Will be expanded to a pipe seperated list when sent.
 	/// Multiple <see cref="CommandMultiParameter"/> will be merged automatically but will need the same array length.</summary>
 	public sealed class CommandMultiParameter : ICommandPart

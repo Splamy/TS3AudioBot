@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using System;
+
 namespace TS3AudioBot.Web.Api
 {
-	using Newtonsoft.Json;
-	using System;
-
 	internal class TimeSpanConverter : JsonConverter<TimeSpan>
 	{
 		public override void WriteJson(JsonWriter writer, TimeSpan value, JsonSerializer serializer)

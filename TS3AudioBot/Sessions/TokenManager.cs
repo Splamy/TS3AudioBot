@@ -7,14 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using LiteDB;
+using System;
+using System.Collections.Generic;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Sessions
 {
-	using Helper;
-	using LiteDB;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-
 	public class TokenManager
 	{
 		private const string TokenFormat = "{0}:{1}";
@@ -48,9 +49,9 @@ namespace TS3AudioBot.Sessions
 			if (timeout.HasValue)
 				token.Timeout = timeout.Value == TimeSpan.MaxValue
 					? DateTime.MaxValue
-					: AddTimeSpanSafe(Util.GetNow(), timeout.Value);
+					: AddTimeSpanSafe(Tools.Now, timeout.Value);
 			else
-				token.Timeout = AddTimeSpanSafe(Util.GetNow(), ApiToken.DefaultTokenTimeout);
+				token.Timeout = AddTimeSpanSafe(Tools.Now, ApiToken.DefaultTokenTimeout);
 
 			dbTokenList.Upsert(new DbApiToken
 			{
@@ -88,7 +89,7 @@ namespace TS3AudioBot.Sessions
 			if (dbToken is null)
 				return new LocalStr(strings.error_no_active_token);
 
-			if (dbToken.ValidUntil < Util.GetNow())
+			if (dbToken.ValidUntil < Tools.Now)
 			{
 				dbTokenList.Delete(uid);
 				return new LocalStr(strings.error_no_active_token);

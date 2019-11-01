@@ -7,16 +7,16 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
-	using Localization;
-	using Newtonsoft.Json.Linq;
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Text.RegularExpressions;
-
 	public sealed class TwitchFactory : IResourceFactory
 	{
 		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);

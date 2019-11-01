@@ -7,22 +7,23 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Rights.Matchers;
+using TS3AudioBot.Web.Api;
+using TS3Client;
+using TS3Client.Helper;
+using TS3Client.Messages;
+
 namespace TS3AudioBot.Rights
 {
-	using CommandSystem;
-	using Dependency;
-	using Config;
-	using Helper;
-	using Matchers;
-	using Nett;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using TS3Client;
-	using TS3Client.Messages;
-	using TS3AudioBot.Web.Api;
-
 	/// <summary>Permission system of the bot.</summary>
 	public class RightsManager
 	{
@@ -32,7 +33,7 @@ namespace TS3AudioBot.Rights
 		private bool needsRecalculation;
 		private readonly ConfRights config;
 		private RightsRule rootRule;
-		private readonly HashSet<string> registeredRights;
+		private readonly HashSet<string> registeredRights = new HashSet<string>();
 		private readonly object rootRuleLock = new object();
 
 		// Required Matcher Data:
@@ -45,7 +46,6 @@ namespace TS3AudioBot.Rights
 
 		public RightsManager(ConfRights config)
 		{
-			Util.Init(out registeredRights);
 			this.config = config;
 			needsRecalculation = true;
 		}
@@ -271,13 +271,13 @@ namespace TS3AudioBot.Rights
 
 			string toml = null;
 			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
-			using (var reader = new StreamReader(fs, Util.Utf8Encoder))
+			using (var reader = new StreamReader(fs, Tools.Utf8Encoder))
 			{
 				toml = reader.ReadToEnd();
 			}
 
 			using (var fs = File.Open(config.Path, FileMode.Create, FileAccess.Write, FileShare.None))
-			using (var writer = new StreamWriter(fs, Util.Utf8Encoder))
+			using (var writer = new StreamWriter(fs, Tools.Utf8Encoder))
 			{
 				string replaceAdminUids = settings.AdminUids != null
 					? string.Join(" ,", settings.AdminUids.Select(x => $"\"{x}\""))

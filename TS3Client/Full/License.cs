@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Chaos.NaCl.Ed25519Ref10;
+using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using TS3Client.Helper;
+
 namespace TS3Client.Full
 {
-	using Chaos.NaCl.Ed25519Ref10;
-	using Helper;
-	using System;
-	using System.Buffers.Binary;
-	using System.Collections.Generic;
-
 	public class Licenses
 	{
 		public static readonly byte[] LicenseRootKey =
@@ -113,8 +113,8 @@ namespace TS3Client.Full
 				return $"Invalid license block type {data[33]}";
 			}
 
-			block.NotValidBefore = Util.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(34)) + 0x50e22700uL);
-			block.NotValidAfter = Util.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38)) + 0x50e22700uL);
+			block.NotValidBefore = Tools.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(34)) + 0x50e22700uL);
+			block.NotValidAfter = Tools.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38)) + 0x50e22700uL);
 			if (block.NotValidAfter < block.NotValidBefore)
 				return "License times are invalid";
 

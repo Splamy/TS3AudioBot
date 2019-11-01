@@ -7,10 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Text.RegularExpressions;
+
 namespace TS3Client
 {
-	using System.Text.RegularExpressions;
-
 	public readonly struct Ts3Version
 	{
 		private static readonly Regex versionMatch = new Regex(@"([\d\.]+) \[Build: (\d)+\]", RegexOptions.ECMAScript | RegexOptions.Compiled | RegexOptions.IgnoreCase);

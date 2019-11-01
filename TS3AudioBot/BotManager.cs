@@ -7,21 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TS3Client.Helper;
+
 namespace TS3AudioBot
 {
-	using Config;
-	using Dependency;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
-
 	public class BotManager : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private List<Bot> activeBots;
+		private List<Bot> activeBots = new List<Bot>();
 		private readonly object lockObj = new object();
 
 		private readonly ConfRoot confRoot;
@@ -29,7 +30,6 @@ namespace TS3AudioBot
 
 		public BotManager(ConfRoot confRoot, CoreInjector coreInjector)
 		{
-			Util.Init(out activeBots);
 			this.confRoot = confRoot;
 			this.coreInjector = coreInjector;
 		}
@@ -129,7 +129,7 @@ namespace TS3AudioBot
 
 				var botInjector = new BotInjector(coreInjector);
 				botInjector.AddModule(botInjector);
-				botInjector.AddModule(new TS3Client.Helper.Id(id.Value));
+				botInjector.AddModule(new Id(id.Value));
 				botInjector.AddModule(config);
 				if (!botInjector.TryCreate(out bot))
 					return "Failed to create new Bot";

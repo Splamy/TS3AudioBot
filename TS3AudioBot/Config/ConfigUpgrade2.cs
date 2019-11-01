@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.IO;
+using System.Text.RegularExpressions;
+using TS3AudioBot.Helper;
+
 namespace TS3AudioBot.Config
 {
-	using Helper;
-	using System;
-	using System.IO;
-	using System.Text.RegularExpressions;
-
 	internal static class ConfigUpgrade2
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

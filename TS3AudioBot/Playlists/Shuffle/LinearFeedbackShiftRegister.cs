@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Playlists.Shuffle
 {
-	using Helper;
-	using System;
-
 	public class LinearFeedbackShiftRegister : IShuffleAlgorithm
 	{
 		private int register = 1; // aka index
@@ -30,14 +30,14 @@ namespace TS3AudioBot.Playlists.Shuffle
 			{
 				if (Length <= 0)
 					return -1;
-				return Util.MathMod(register + Seed, Length);
+				return Tools.MathMod(register + Seed, Length);
 			}
 			set
 			{
 				if (Length <= 0)
 					return;
 				Recalc();
-				register = Util.MathMod(value - Seed, Length);
+				register = Tools.MathMod(value - Seed, Length);
 				startRegister = register;
 			}
 		}
@@ -117,7 +117,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 
 			for (int i = 0; i < diff; i++)
 			{
-				int checkMask = Util.MathMod(i + seedOffset, diff) + start;
+				int checkMask = Tools.MathMod(i + seedOffset, diff) + start;
 				if (NumberOfSetBits(checkMask) % 2 != 0) continue;
 
 				if (TestLfsr(checkMask, end))

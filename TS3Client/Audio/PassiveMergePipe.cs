@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+
 namespace TS3Client.Audio
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Runtime.InteropServices;
-
 	public class PassiveMergePipe : IAudioPassiveProducer
 	{
 		private readonly List<IAudioPassiveProducer> safeProducerList = new List<IAudioPassiveProducer>();

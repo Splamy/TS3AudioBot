@@ -7,25 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using TS3Client.Helper;
+using PlatformVersion = System.ValueTuple<TS3AudioBot.Helper.Environment.Runtime, string, System.Version>;
+
 namespace TS3AudioBot.Helper.Environment
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.IO;
-	using System.Reflection;
-	using System.Text.RegularExpressions;
-	using PlatformVersion = System.ValueTuple<Runtime, string, System.Version>;
-
 	public static class SystemData
 	{
 		private static readonly Regex PlatformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
-
-		public static bool IsLinux { get; }
-			= Environment.OSVersion.Platform == PlatformID.Unix
-			|| Environment.OSVersion.Platform == PlatformID.MacOSX
-			|| ((int)Environment.OSVersion.Platform == 128);
 
 		public static BuildData AssemblyData { get; } = GenAssemblyData();
 		private static BuildData GenAssemblyData()
@@ -50,9 +46,9 @@ namespace TS3AudioBot.Helper.Environment
 		{
 			string platform = null;
 			string version = null;
-			string bitness = Environment.Is64BitProcess ? "64bit" : "32bit";
+			string bitness = System.Environment.Is64BitProcess ? "64bit" : "32bit";
 
-			if (IsLinux)
+			if (Tools.IsLinux)
 			{
 				var values = new Dictionary<string, string>();
 
@@ -103,7 +99,7 @@ namespace TS3AudioBot.Helper.Environment
 			else
 			{
 				platform = "Windows";
-				version = Environment.OSVersion.Version.ToString();
+				version = System.Environment.OSVersion.Version.ToString();
 			}
 
 			return $"{platform} {version} ({bitness})";
@@ -180,7 +176,7 @@ namespace TS3AudioBot.Helper.Environment
 
 		private static PlatformVersion? GetNetFrameworkVersion()
 		{
-			var version = Environment.Version.ToString();
+			var version = System.Environment.Version.ToString();
 			var semVer = ParseToSemVer(version);
 			return (Runtime.Net, $".NET Framework {version}", semVer);
 		}

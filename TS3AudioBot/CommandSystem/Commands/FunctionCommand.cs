@@ -7,19 +7,19 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Web.Api;
+using TS3Client.Helper;
+using TS3AudioBot.CommandSystem.CommandResults;
+
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
-	using Dependency;
-	using Helper;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Linq;
-	using System.Reflection;
-	using Web.Api;
-
 	public class FunctionCommand : ICommand
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -148,7 +148,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					break;
 
 				default:
-					throw Util.UnhandledDefault(CommandParameter[p].kind);
+					throw Tools.UnhandledDefault(CommandParameter[p].kind);
 				}
 			}
 

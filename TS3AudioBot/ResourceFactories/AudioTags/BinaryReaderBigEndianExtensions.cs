@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.IO;
+using System.Runtime.InteropServices;
+
 namespace TS3AudioBot.ResourceFactories.AudioTags
 {
-	using System.IO;
-	using System.Runtime.InteropServices;
-
 	internal static class BinaryReaderBigEndianExtensions
 	{
 		public static short ReadInt16Be(this BinaryReader br)

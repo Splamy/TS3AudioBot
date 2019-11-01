@@ -7,41 +7,42 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using TS3AudioBot.Algorithm;
+using TS3AudioBot.Audio;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.CommandSystem.Ast;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.CommandSystem.Commands;
+using TS3AudioBot.CommandSystem.Text;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Helper.Diagnose;
+using TS3AudioBot.Helper.Environment;
+using TS3AudioBot.History;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists;
+using TS3AudioBot.Plugins;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.Rights;
+using TS3AudioBot.Sessions;
+using TS3AudioBot.Web.Api;
+using TS3AudioBot.Web.Model;
+using TS3Client;
+using TS3Client.Audio;
+using TS3Client.Full.Book;
+using TS3Client.Helper;
+using TS3Client.Messages;
+
 namespace TS3AudioBot
 {
-	using Algorithm;
-	using Audio;
-	using CommandSystem;
-	using CommandSystem.Ast;
-	using CommandSystem.CommandResults;
-	using CommandSystem.Commands;
-	using CommandSystem.Text;
-	using Config;
-	using Dependency;
-	using Helper;
-	using Helper.Environment;
-	using History;
-	using Localization;
-	using Newtonsoft.Json.Linq;
-	using Playlists;
-	using Plugins;
-	using ResourceFactories;
-	using Rights;
-	using Sessions;
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Linq;
-	using System.Text;
-	using System.Threading;
-	using TS3AudioBot.Helper.Diagnose;
-	using TS3AudioBot.Web.Model;
-	using TS3Client;
-	using TS3Client.Audio;
-	using TS3Client.Full.Book;
-	using TS3Client.Messages;
-	using Web.Api;
-
 	public static class MainCommands
 	{
 		internal static ICommandBag Bag { get; } = new MainCommandsBag();
@@ -761,8 +762,8 @@ namespace TS3AudioBot
 			const int maxSongs = 20;
 			var playIndex = playlistManager.Index;
 			var plist = playlistManager.CurrentList;
-			int offsetV = Util.Clamp(offset, 0, plist.Items.Count);
-			int countV = Util.Clamp(count ?? 3, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
+			int offsetV = Tools.Clamp(offset, 0, plist.Items.Count);
+			int countV = Tools.Clamp(count ?? 3, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
 			var items = plist.Items.Skip(offsetV).Take(countV).Select(x => resourceFactory.ToApiFormat(x)).ToArray();
 
 			var plInfo = new QueueInfo
@@ -1036,8 +1037,8 @@ namespace TS3AudioBot
 		{
 			const int maxSongs = 20;
 			var plist = playlistManager.LoadPlaylist(listId).UnwrapThrow();
-			int offsetV = Util.Clamp(offset ?? 0, 0, plist.Items.Count);
-			int countV = Util.Clamp(count ?? maxSongs, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
+			int offsetV = Tools.Clamp(offset ?? 0, 0, plist.Items.Count);
+			int countV = Tools.Clamp(count ?? maxSongs, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
 			var items = plist.Items.Skip(offsetV).Take(countV).Select(x => resourceFactory.ToApiFormat(x)).ToArray();
 			var plInfo = new PlaylistInfo
 			{
@@ -1188,7 +1189,7 @@ namespace TS3AudioBot
 			=> new JsonValue<LoopMode>(playlistManager.Loop, x =>
 				x == LoopMode.Off ? strings.cmd_repeat_info_off :
 				x == LoopMode.One ? strings.cmd_repeat_info_one :
-				x == LoopMode.All ? strings.cmd_repeat_info_all : throw Util.UnhandledDefault(playlistManager.Loop));
+				x == LoopMode.All ? strings.cmd_repeat_info_all : throw Tools.UnhandledDefault(playlistManager.Loop));
 		[Command("repeat off")]
 		public static void CommandRepeatOff(PlaylistManager playlistManager) => playlistManager.Loop = LoopMode.Off;
 		[Command("repeat one")]
@@ -1218,17 +1219,17 @@ namespace TS3AudioBot
 		{
 			if (first.HasValue && second.HasValue)
 			{
-				return Util.Random.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
+				return Tools.Random.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
 			}
 			else if (first.HasValue)
 			{
 				if (first.Value <= 0)
 					throw new CommandException(strings.cmd_rng_value_must_be_positive, CommandExceptionReason.CommandError);
-				return Util.Random.Next(first.Value);
+				return Tools.Random.Next(first.Value);
 			}
 			else
 			{
-				return Util.Random.Next(0, 100);
+				return Tools.Random.Next(0, 100);
 			}
 		}
 
@@ -1791,7 +1792,7 @@ namespace TS3AudioBot
 					result = ts3Client.SendServerMessage(msgPart);
 					break;
 				default:
-					throw Util.UnhandledDefault(invoker.Visibiliy.Value);
+					throw Tools.UnhandledDefault(invoker.Visibiliy.Value);
 				}
 
 				if (!result.Ok)

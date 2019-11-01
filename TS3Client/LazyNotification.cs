@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Linq;
+using TS3Client.Messages;
+
 namespace TS3Client
 {
-	using Messages;
-	using System;
-	using System.Linq;
-
 	public readonly struct LazyNotification
 	{
 		public readonly INotification[] Notifications;

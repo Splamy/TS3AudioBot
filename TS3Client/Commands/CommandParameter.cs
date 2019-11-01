@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Diagnostics;
+using System.Globalization;
+using TS3Client.Helper;
+
 namespace TS3Client.Commands
 {
-	using Helper;
-	using System;
-	using System.Diagnostics;
-	using System.Globalization;
-
 	/// <summary>Simple parameter which will be expanded to "Key=Value" and automatically escaped.</summary>
 	public class CommandParameter : ICommandPart
 	{
@@ -34,7 +34,7 @@ namespace TS3Client.Commands
 		[DebuggerStepThrough] public static string Serialize(double value) { return value.ToString(CultureInfo.InvariantCulture); }
 		[DebuggerStepThrough] public static string Serialize(string value) { return Ts3String.Escape(value); }
 		//[DebuggerStepThrough] public static string Serialize(TimeSpan value) { return value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); } // ambiguous
-		[DebuggerStepThrough] public static string Serialize(DateTime value) { return (value - Util.UnixTimeStart).TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); }
+		[DebuggerStepThrough] public static string Serialize(DateTime value) { return Tools.ToUnix(value).ToString(CultureInfo.InvariantCulture); }
 
 		[DebuggerStepThrough] public CommandParameter(string key, bool value) { Key = key; Value = Serialize(value); }
 		[DebuggerStepThrough] public CommandParameter(string key, sbyte value) { Key = key; Value = Serialize(value); }

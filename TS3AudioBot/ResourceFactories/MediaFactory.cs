@@ -7,20 +7,20 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using PlaylistsNET.Content;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists;
+using TS3AudioBot.ResourceFactories.AudioTags;
+
 namespace TS3AudioBot.ResourceFactories
 {
-	using AudioTags;
-	using Config;
-	using Helper;
-	using Localization;
-	using Playlists;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Net;
-	using PlaylistsNET.Content;
-
 	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

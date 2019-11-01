@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using TS3AudioBot.CommandSystem.Ast;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.CommandSystem.Commands;
+using TS3AudioBot.CommandSystem.Text;
+using TS3AudioBot.Web.Api;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.CommandSystem
 {
-	using Ast;
-	using CommandResults;
-	using Commands;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using Text;
-	using Web.Api;
-
 	public class XCommandSystem
 	{
 		public static readonly Type[] ReturnJson = { typeof(JsonObject) };
@@ -87,7 +87,7 @@ namespace TS3AudioBot.CommandSystem
 				else
 					return new ResultCommand(new PrimitiveResult<string>(astNode.Value));
 			default:
-				throw Util.UnhandledDefault(node.Type);
+				throw Tools.UnhandledDefault(node.Type);
 			}
 		}
 

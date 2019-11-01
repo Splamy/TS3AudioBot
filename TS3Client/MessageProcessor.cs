@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using TS3Client.Helper;
+using TS3Client.Messages;
+
 namespace TS3Client
 {
-	using Helper;
-	using Messages;
-	using System;
-	using System.Collections.Concurrent;
-	using System.Collections.Generic;
-
 	internal abstract class BaseMessageProcessor
 	{
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -92,7 +92,7 @@ namespace TS3Client
 			}
 
 			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.CommandError);
-			var errorStatus = result.Ok ? (CommandError)result.Value : Util.CustomError("Invalid Error code");
+			var errorStatus = result.Ok ? (CommandError)result.Value : CommandError.Custom("Invalid Error code");
 
 			return PushMessageInternal(errorStatus, ntfyType);
 		}
@@ -157,12 +157,12 @@ namespace TS3Client
 			lock (waitBlockLock)
 			{
 				foreach (var wb in requestDict.Values)
-					wb.SetAnswer(Util.TimeOutCommandError);
+					wb.SetAnswer(CommandError.TimeOut);
 				requestDict.Clear();
 
 				foreach (var block in dependingBlocks)
 				{
-					block?.ForEach(wb => wb.SetAnswer(Util.TimeOutCommandError));
+					block?.ForEach((Action<WaitBlock>)(wb => wb.SetAnswer(CommandError.TimeOut)));
 					block?.Clear();
 				}
 			}
@@ -198,7 +198,7 @@ namespace TS3Client
 		public override void DropQueue()
 		{
 			while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
-				waitBlock.SetAnswer(Util.TimeOutCommandError);
+				waitBlock.SetAnswer(CommandError.TimeOut);
 		}
 	}
 }

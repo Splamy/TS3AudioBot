@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Net;
+using TS3Client;
+using TS3Client.Messages;
+
 namespace TS3AudioBot.Rights
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Net;
-	using TS3Client;
-	using TS3Client.Messages;
-
 	internal class ExecuteContext
 	{
 		public string Host { get; set; }

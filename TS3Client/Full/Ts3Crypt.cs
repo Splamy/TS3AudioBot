@@ -7,28 +7,28 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Chaos.NaCl.Ed25519Ref10;
+using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Generators;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Math.EC;
+using Org.BouncyCastle.Security;
+using System;
+using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using TS3Client.Commands;
+using TS3Client.Helper;
+
 namespace TS3Client.Full
 {
-	using Chaos.NaCl.Ed25519Ref10;
-	using Commands;
-	using Helper;
-	using Org.BouncyCastle.Asn1;
-	using Org.BouncyCastle.Asn1.X9;
-	using Org.BouncyCastle.Crypto;
-	using Org.BouncyCastle.Crypto.Engines;
-	using Org.BouncyCastle.Crypto.Generators;
-	using Org.BouncyCastle.Crypto.Modes;
-	using Org.BouncyCastle.Crypto.Parameters;
-	using Org.BouncyCastle.Math;
-	using Org.BouncyCastle.Math.EC;
-	using Org.BouncyCastle.Security;
-	using System;
-	using System.Buffers.Binary;
-	using System.Diagnostics;
-	using System.Linq;
-	using System.Text;
-	using System.Text.RegularExpressions;
-
 	/// <summary>Provides all cryptographic functions needed for the low- and high level TeamSpeak protocol usage.</summary>
 	public sealed class Ts3Crypt
 	{
@@ -402,8 +402,8 @@ namespace TS3Client.Full
 				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion); // initVersion
 				sendData[versionLen] = 0x00; // initType
-				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen), Util.UnixNow); // 4byte timestamp
-				BinaryPrimitives.WriteInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen + 4), Util.Random.Next()); // 4byte random
+				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen), Tools.UnixNow); // 4byte timestamp
+				BinaryPrimitives.WriteInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen + 4), Tools.Random.Next()); // 4byte random
 				return sendData;
 
 			case 0:
@@ -446,7 +446,7 @@ namespace TS3Client.Full
 				if (data.Length != initTypeLen + 64 + 64 + 4 + 100)
 					return packetInvalidLength;
 				alphaTmp = new byte[10];
-				Util.Random.NextBytes(alphaTmp);
+				Tools.Random.NextBytes(alphaTmp);
 				var alpha = Convert.ToBase64String(alphaTmp);
 				string initAdd = Ts3Command.BuildToString("clientinitiv",
 					new ICommandPart[] {
@@ -454,7 +454,7 @@ namespace TS3Client.Full
 						new CommandParameter("omega", Identity.PublicKeyString),
 						new CommandParameter("ot", 1),
 						new CommandParameter("ip", string.Empty) });
-				var textBytes = Util.Encoder.GetBytes(initAdd);
+				var textBytes = Tools.Utf8Encoder.GetBytes(initAdd);
 
 				// Prepare solution
 				int level = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(initTypeLen + 128));
@@ -739,7 +739,7 @@ namespace TS3Client.Full
 		{
 			if (string.IsNullOrEmpty(password))
 				return string.Empty;
-			var bytes = Util.Encoder.GetBytes(password);
+			var bytes = Tools.Utf8Encoder.GetBytes(password);
 			var hashed = Hash1It(bytes);
 			return Convert.ToBase64String(hashed);
 		}

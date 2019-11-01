@@ -1,9 +1,9 @@
+using NUnit.Framework;
+using System;
+using TS3Client.Full;
+
 namespace TS3ABotUnitTests
 {
-	using NUnit.Framework;
-	using System;
-	using TS3Client.Full;
-
 	[TestFixture]
 	class RingQueueTest
 	{

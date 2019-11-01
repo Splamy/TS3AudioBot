@@ -16,19 +16,12 @@
 
 
 
-
-
-
-
-
-
+using System;
+using TS3Client.Helper;
+using TS3Client.Messages;
 
 namespace TS3Client.Full
 {
-	using Helper;
-	using Messages;
-	using System;
-
 	public sealed partial class Ts3FullClient
 	{
 		
@@ -1142,7 +1135,7 @@ namespace TS3Client.Full
 			
 			case NotificationType.Unknown:
 			default:
-				throw Util.UnhandledDefault(lazyNotification.NotifyType);
+				throw Tools.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
 

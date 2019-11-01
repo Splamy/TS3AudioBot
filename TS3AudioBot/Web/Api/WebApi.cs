@@ -7,31 +7,33 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Net;
+using System.Text;
+using System.Threading;
+using TS3AudioBot.Algorithm;
+using TS3AudioBot.Audio;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.CommandSystem.Ast;
+using TS3AudioBot.CommandSystem.Commands;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Sessions;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Web.Api
 {
-	using Audio;
-	using CommandSystem;
-	using CommandSystem.Ast;
-	using CommandSystem.CommandResults;
-	using CommandSystem.Commands;
-	using Config;
-	using Dependency;
-	using Helper;
-	using Microsoft.AspNetCore.Http;
-	using Microsoft.AspNetCore.Http.Features;
-	using Sessions;
-	using System;
-	using System.Globalization;
-	using System.IO;
-	using System.Net;
-	using System.Text;
-	using System.Threading;
-	using TS3AudioBot.Algorithm;
-	using TS3AudioBot.Localization;
-
 	public sealed class WebApi
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
+		private static readonly Uri Dummy = new Uri("http://dummy/");
 
 		private const string ErrorNoUserOrToken = "Unknown user or no active token found";
 		private const string ErrorAuthFailure = "Authentication failed";
@@ -90,7 +92,7 @@ namespace TS3AudioBot.Web.Api
 				remoteAddress = realIp;
 			}
 			apiCallData.IpAddress = remoteAddress;
-			apiCallData.RequestUrl = new Uri(WebUtil.Dummy, context.Features.Get<IHttpRequestFeature>().RawTarget);
+			apiCallData.RequestUrl = new Uri(Dummy, context.Features.Get<IHttpRequestFeature>().RawTarget);
 
 			Log.Info("{0} Requested: {1}", remoteAddress, apiCallData.RequestUrl.PathAndQuery);
 
@@ -172,7 +174,7 @@ namespace TS3AudioBot.Web.Api
 
 			try
 			{
-				using (var sr = new StreamReader(request.Body, Util.Utf8Encoder))
+				using (var sr = new StreamReader(request.Body, Tools.Utf8Encoder))
 					apiCallData.Body = sr.ReadToEnd();
 				return R.Ok;
 			}
@@ -279,7 +281,7 @@ namespace TS3AudioBot.Web.Api
 				break;
 
 			default:
-				throw Util.UnhandledDefault(ex.Reason);
+				throw Tools.UnhandledDefault(ex.Reason);
 			}
 
 			return jsonError;
@@ -300,7 +302,7 @@ namespace TS3AudioBot.Web.Api
 				break;
 			case AstType.Error: break;
 			default:
-				throw Util.UnhandledDefault(node.Type);
+				throw Tools.UnhandledDefault(node.Type);
 			}
 		}
 

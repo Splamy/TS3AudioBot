@@ -16,12 +16,12 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
+using System.Collections.Generic;
+
+<#= ConversionSet #>
+
 namespace TS3Client.Full.Book
 {
-	using System;
-	using System.Collections.Generic;
-
-	<#= ConversionSet #>
 <#
 var gen = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml"));
 

@@ -7,22 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using TS3Client.Commands;
+using TS3Client.Messages;
+using ChannelIdT = System.UInt64;
+using ClientDbIdT = System.UInt64;
+using ClientIdT = System.UInt16;
+using CmdR = System.E<TS3Client.Messages.CommandError>;
+using ServerGroupIdT = System.UInt64;
+using Uid = System.String;
+
 namespace TS3Client
 {
-	using Commands;
-	using Helper;
-	using Messages;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Net;
-	using ChannelIdT = System.UInt64;
-	using ClientDbIdT = System.UInt64;
-	using ClientIdT = System.UInt16;
-	using CmdR = System.E<Messages.CommandError>;
-	using ServerGroupIdT = System.UInt64;
-	using Uid = System.String;
-
 	public delegate void NotifyEventHandler<in TEventArgs>(object sender, IEnumerable<TEventArgs> e) where TEventArgs : INotification;
 
 	/// <summary>A shared function base between the query and full client.</summary>
@@ -301,7 +300,7 @@ namespace TS3Client
 				return token.Error;
 			token.Value.Wait();
 			if (token.Value.Status != TransferStatus.Done)
-				return Util.CustomError("Avatar upload failed");
+				return CommandError.Custom("Avatar upload failed");
 			var md5 = string.Concat(token.Value.Md5Sum.Select(x => x.ToString("x2")));
 			return Send<ResponseVoid>(new Ts3Command("clientupdate") { { "client_flag_avatar", md5 } });
 		}

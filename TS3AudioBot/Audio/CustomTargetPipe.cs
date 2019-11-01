@@ -7,16 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3Client;
+using TS3Client.Audio;
+using TS3Client.Full;
+
 namespace TS3AudioBot.Audio
 {
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using TS3Client;
-	using TS3Client.Audio;
-	using TS3Client.Full;
-
 	internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 	{
 		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
@@ -50,8 +49,8 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup;
-		private readonly HashSet<ushort> clientSubscriptionsSetup;
+		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup = new Dictionary<ulong, bool>();
+		private readonly HashSet<ushort> clientSubscriptionsSetup = new HashSet<ushort>();
 		private ulong[] channelSubscriptionsCache;
 		private ushort[] clientSubscriptionsCache;
 		private bool subscriptionSetupChanged;
@@ -62,8 +61,6 @@ namespace TS3AudioBot.Audio
 		public CustomTargetPipe(Ts3FullClient client)
 		{
 			this.client = client;
-			Util.Init(out channelSubscriptionsSetup);
-			Util.Init(out clientSubscriptionsSetup);
 			subscriptionSetupChanged = true;
 		}
 

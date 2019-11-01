@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace TS3AudioBot.Helper
 {
-	using System;
-	using System.Security.Cryptography;
-	using System.Text;
-	using System.Text.RegularExpressions;
-
 	public static class TextUtil
 	{
 		public static Answer GetAnswer(string answer)

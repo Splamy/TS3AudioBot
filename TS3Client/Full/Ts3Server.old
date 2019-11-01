@@ -7,7 +7,7 @@ namespace TS3Client.Full
 	using System.Diagnostics;
 	using System.IO;
 	using System.Net;
-	using CmdR = System.E<Messages.CommandError>;
+	using CmdR = System.E<CommandError>;
 
 	public class Ts3Server : IDisposable
 	{
@@ -42,7 +42,7 @@ namespace TS3Client.Full
 			case NotificationType.ClientInit: { var result = lazyNotification.WrapSingle<ClientInit>(); if (result.Ok) ProcessClientInit(result.Value); } break;
 			case NotificationType.ClientInitIv: { var result = lazyNotification.WrapSingle<ClientInitIv>(); if (result.Ok) ProcessClientInitIv(result.Value); } break;
 			case NotificationType.Unknown:
-				throw Util.UnhandledDefault(lazyNotification.NotifyType);
+				throw Tools.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
 
@@ -120,7 +120,7 @@ namespace TS3Client.Full
 					return;
 
 				var beta = new byte[10];
-				Util.Random.NextBytes(beta);
+				Tools.Random.NextBytes(beta);
 				var betaStr = Convert.ToBase64String(beta);
 
 				InitIvExpand(clientInitIv.Alpha, betaStr, ts3Crypt.Identity.PublicKeyString);

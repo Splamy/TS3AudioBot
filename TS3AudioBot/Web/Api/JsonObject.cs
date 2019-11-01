@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using TS3AudioBot.Helper;
+
 namespace TS3AudioBot.Web.Api
 {
-	using Newtonsoft.Json;
-	using TS3AudioBot.Helper;
-
 	public abstract class JsonObject
 	{
 		private static readonly JsonSerializerSettings DefaultSettigs = new JsonSerializerSettings();

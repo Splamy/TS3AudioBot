@@ -7,18 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using TS3AudioBot.CommandSystem.Commands;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Rights;
+
 namespace TS3AudioBot.CommandSystem
 {
-	using Commands;
-	using Helper;
-	using Rights;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Reflection;
-	using System.Text.RegularExpressions;
-	using TS3AudioBot.Localization;
-
 	/// <summary>Mangement for the bot command system.</summary>
 	public class CommandManager
 	{
@@ -26,21 +26,17 @@ namespace TS3AudioBot.CommandSystem
 		private static readonly Regex CommandNamespaceValidator =
 			new Regex(@"^[a-z\d]+( [a-z\d]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
-		private readonly Dictionary<string, AliasCommand> aliasPaths;
-		private readonly HashSet<string> commandPaths;
-		private readonly HashSet<ICommandBag> baggedCommands;
+		private readonly Dictionary<string, AliasCommand> aliasPaths = new Dictionary<string, AliasCommand>();
+		private readonly HashSet<string> commandPaths = new HashSet<string>();
+		private readonly HashSet<ICommandBag> baggedCommands = new HashSet<ICommandBag>();
 		private readonly RightsManager rightsManager;
+
+		public XCommandSystem CommandSystem { get; } = new XCommandSystem();
 
 		public CommandManager(RightsManager rightsManager)
 		{
-			CommandSystem = new XCommandSystem();
-			Util.Init(out aliasPaths);
-			Util.Init(out commandPaths);
-			Util.Init(out baggedCommands);
 			this.rightsManager = rightsManager;
 		}
-
-		public XCommandSystem CommandSystem { get; }
 
 		public IEnumerable<BotCommand> AllCommands => baggedCommands.SelectMany(x => x.BagCommands);
 

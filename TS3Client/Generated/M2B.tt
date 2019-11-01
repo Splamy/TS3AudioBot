@@ -22,13 +22,12 @@ var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml
 var genmsg = Messages.Parse(Host.ResolvePath("../Declarations/Messages.toml"));
 var genm2b = M2BDeclarations.Parse(Host.ResolvePath("../Declarations/MessagesToBook.toml"), genmsg, genbook);
 #>
+using TS3Client.Messages;
+
+<#= ConversionSet #>
 
 namespace TS3Client.Full.Book
 {
-	using Messages;
-
-	<#= ConversionSet #>
-
 	public partial class Connection
 	{
 #pragma warning disable IDE0017, CS0472 // Ignore "Object initialization can be simplified", "Something with == and null..."

@@ -17,11 +17,10 @@
 
 
 
+using System.Collections.Generic;
 
 namespace TS3Client.Full
 {
-	using System.Collections.Generic;
-
 	/// <summary>
 	/// Describes a triple of version, platform and a cryptographical signature (usually distributed by "TeamSpeak Systems").
 	/// Each triple has to match and is not interchangeable with other triple parts.

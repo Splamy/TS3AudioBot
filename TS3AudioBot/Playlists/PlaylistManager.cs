@@ -7,16 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists.Shuffle;
+using TS3AudioBot.Web.Model;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Playlists
 {
-	using Config;
-	using Helper;
-	using Localization;
-	using Shuffle;
-	using System;
-	using System.Collections.Generic;
-	using TS3AudioBot.Web.Model;
-
 	public sealed class PlaylistManager
 	{
 		private readonly ConfPlaylists config;
@@ -120,7 +121,7 @@ namespace TS3AudioBot.Playlists
 
 		private void SetRandomSeed()
 		{
-			shuffle.Seed = Util.Random.Next();
+			shuffle.Seed = Tools.Random.Next();
 		}
 
 		public R<IReadOnlyPlaylist, LocalStr> LoadPlaylist(string listId)

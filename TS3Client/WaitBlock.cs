@@ -7,14 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3Client.Messages;
+
 namespace TS3Client
 {
-	using Helper;
-	using Messages;
-	using System;
-	using System.Threading;
-	using System.Threading.Tasks;
-
 	// TODO check maybe splittable into 'WaitBlockSync' and 'WaitBlockAsync'
 	internal sealed class WaitBlock : IDisposable
 	{
@@ -53,7 +52,7 @@ namespace TS3Client
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (!answerWaiter.WaitOne(CommandTimeout))
-				return Util.TimeOutCommandError;
+				return CommandError.TimeOut;
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
@@ -61,7 +60,7 @@ namespace TS3Client
 			if (result.Ok)
 				return result.Value;
 			else
-				return Util.ParserCommandError;
+				return CommandError.Parser;
 		}
 
 		public async Task<R<T[], CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
@@ -71,7 +70,7 @@ namespace TS3Client
 			var timeOut = Task.Delay(CommandTimeout);
 			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut).ConfigureAwait(false);
 			if (res == timeOut)
-				return Util.TimeOutCommandError;
+				return CommandError.TimeOut;
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 
@@ -79,7 +78,7 @@ namespace TS3Client
 			if (result.Ok)
 				return result.Value;
 			else
-				return Util.ParserCommandError;
+				return CommandError.Parser;
 		}
 
 		public R<LazyNotification, CommandError> WaitForNotification()
@@ -89,11 +88,11 @@ namespace TS3Client
 			if (DependsOn is null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			if (!answerWaiter.WaitOne(CommandTimeout))
-				return Util.TimeOutCommandError;
+				return CommandError.TimeOut;
 			if (commandError.Id != Ts3ErrorCode.ok)
 				return commandError;
 			if (!notificationWaiter.WaitOne(CommandTimeout))
-				return Util.TimeOutCommandError;
+				return CommandError.TimeOut;
 
 			return notification;
 		}

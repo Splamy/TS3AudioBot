@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TS3AudioBot.ResourceFactories;
+
 namespace TS3AudioBot.Audio
 {
-	using System;
-	using TS3AudioBot.ResourceFactories;
-
 	/// <summary>Slim interface to control the audio player.</summary>
 	public interface IPlayerConnection : IDisposable
 	{

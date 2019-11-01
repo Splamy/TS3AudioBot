@@ -7,22 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Buffers;
+using System.IO;
+using System.IO.Pipelines;
+using System.Linq;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3Client.Commands;
+using TS3Client.Helper;
+using TS3Client.Messages;
+using ChannelIdT = System.UInt64;
+using CmdR = System.E<TS3Client.Messages.CommandError>;
+
 namespace TS3Client.Query
 {
-	using Commands;
-	using Helper;
-	using Messages;
-	using System;
-	using System.Buffers;
-	using System.IO;
-	using System.IO.Pipelines;
-	using System.Linq;
-	using System.Net.Sockets;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using ChannelIdT = System.UInt64;
-	using CmdR = System.E<Messages.CommandError>;
-
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
 		private readonly object sendQueueLock = new object();
@@ -69,10 +69,10 @@ namespace TS3Client.Query
 				ConnectionData = conData;
 
 				tcpStream = tcpClient.GetStream();
-				tcpReader = new StreamReader(tcpStream, Util.Encoder);
-				tcpWriter = new StreamWriter(tcpStream, Util.Encoder) { NewLine = "\n" };
+				tcpReader = new StreamReader(tcpStream, Tools.Utf8Encoder);
+				tcpWriter = new StreamWriter(tcpStream, Tools.Utf8Encoder) { NewLine = "\n" };
 
-				if(tcpReader.ReadLine() != "TS3")
+				if (tcpReader.ReadLine() != "TS3")
 					throw new Ts3Exception("Protocol violation. The stream must start with 'TS3'");
 				if (string.IsNullOrEmpty(tcpReader.ReadLine()))
 					tcpReader.ReadLine();
@@ -188,7 +188,7 @@ namespace TS3Client.Query
 			// special
 			case NotificationType.CommandError: break;
 			case NotificationType.Unknown:
-			default: throw Util.UnhandledDefault(lazyNotification.NotifyType);
+			default: throw Tools.UnhandledDefault(lazyNotification.NotifyType);
 			}
 		}
 

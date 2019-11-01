@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using TS3Client.Helper;
+
 namespace TS3Client.Commands
 {
-	using Helper;
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Linq;
-	using System.Text;
-	using System.Text.RegularExpressions;
-
 	/// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
 	public partial class Ts3Command : IEnumerable, IEnumerable<ICommandPart>
 	{
@@ -120,7 +120,7 @@ namespace TS3Client.Commands
 					optionList.Add((CommandOption)param);
 					break;
 				default:
-					throw Util.UnhandledDefault(param.Type);
+					throw Tools.UnhandledDefault(param.Type);
 				}
 			}
 

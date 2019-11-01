@@ -7,10 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Diagnostics;
+
 namespace System
 {
-	using System.Diagnostics;
-
 	/// <summary>
 	/// Provides a safe alternative to Exceptions for error and result wrapping.
 	/// This type represents either success or an error + message.

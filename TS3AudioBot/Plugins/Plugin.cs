@@ -7,23 +7,23 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.ResourceFactories;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Plugins
 {
-	using CommandSystem;
-	using Dependency;
-	using Helper;
-	using Microsoft.CodeAnalysis;
-	using Microsoft.CodeAnalysis.CSharp;
-	using Microsoft.CodeAnalysis.Text;
-	using ResourceFactories;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Reflection;
-	using System.Security.Cryptography;
-	using System.Text;
-
 	internal class Plugin : ICommandBag
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -78,7 +78,7 @@ namespace TS3AudioBot.Plugins
 				case PluginType.None:
 					return $"{File.Name} (Unknown)";
 				default:
-					throw Util.UnhandledDefault(Type);
+					throw Tools.UnhandledDefault(Type);
 				}
 			}
 		}
@@ -116,7 +116,7 @@ namespace TS3AudioBot.Plugins
 				return pluginObjectList.ContainsKey(bot) ? PluginStatus.Active : PluginStatus.Ready;
 			if (status == PluginStatus.Active)
 				throw new InvalidOperationException("BotPlugin must not be active");
-			throw Util.UnhandledDefault(status);
+			throw Tools.UnhandledDefault(status);
 		}
 
 		public PluginResponse Load()
@@ -213,7 +213,7 @@ namespace TS3AudioBot.Plugins
 			{
 				var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(pluginFileStream));
 
-				var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Util.Random.Next()}")
+				var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Tools.Random.Next()}")
 					.WithOptions(new CSharpCompilationOptions(
 						outputKind: OutputKind.DynamicallyLinkedLibrary,
 						optimizationLevel: OptimizationLevel.Release))
@@ -279,7 +279,7 @@ namespace TS3AudioBot.Plugins
 					if (typeof(IBotPlugin).IsAssignableFrom(coreType))
 					{
 						Type = PluginType.BotPlugin;
-						Util.Init(out pluginObjectList);
+						pluginObjectList = new Dictionary<Bot, IBotPlugin>();
 					}
 					else
 					{
@@ -401,7 +401,7 @@ namespace TS3AudioBot.Plugins
 					break;
 
 				default:
-					throw Util.UnhandledDefault(Type);
+					throw Tools.UnhandledDefault(Type);
 				}
 			}
 			catch (Exception ex)
@@ -486,7 +486,7 @@ namespace TS3AudioBot.Plugins
 				break;
 
 			default:
-				throw Util.UnhandledDefault(Type);
+				throw Tools.UnhandledDefault(Type);
 			}
 
 			status = PluginStatus.Ready;

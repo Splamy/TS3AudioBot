@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Generic;
+using ChannelIdT = System.UInt64;
+using ClientIdT = System.UInt16;
+
 namespace TS3Client.Audio
 {
-	using System.Collections.Generic;
-	using ClientIdT = System.UInt16;
-	using ChannelIdT = System.UInt64;
-
 	public class Meta
 	{
 		public Codec? Codec { get; set; }

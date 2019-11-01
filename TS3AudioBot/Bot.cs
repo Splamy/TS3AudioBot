@@ -7,32 +7,32 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3AudioBot.Algorithm;
+using TS3AudioBot.Audio;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.CommandSystem.Text;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TS3AudioBot.History;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists;
+using TS3AudioBot.Plugins;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.Sessions;
+using TS3Client;
+using TS3Client.Full;
+using TS3Client.Helper;
+using TS3Client.Messages;
+
 namespace TS3AudioBot
 {
-	using Algorithm;
-	using Audio;
-	using CommandSystem;
-	using CommandSystem.CommandResults;
-	using CommandSystem.Text;
-	using Config;
-	using Dependency;
-	using Helper;
-	using History;
-	using Localization;
-	using Playlists;
-	using Plugins;
-	using Sessions;
-	using System;
-	using System.IO;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using TS3AudioBot.ResourceFactories;
-	using TS3Client;
-	using TS3Client.Full;
-	using TS3Client.Helper;
-	using TS3Client.Messages;
-
 	/// <summary>Core class managing all bots and utility modules.</summary>
 	public sealed class Bot : IDisposable
 	{
@@ -79,7 +79,7 @@ namespace TS3AudioBot
 				if (!langResult.Ok)
 					Log.Error("Failed to load language file ({0})", langResult.Error);
 			};
-			config.Events.IdleTime.Changed += (s, e) => EnableIdleTickWorker();
+			config.Events.IdleDelay.Changed += (s, e) => EnableIdleTickWorker();
 			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
 
 			var builder = new DependencyBuilder(Injector);
@@ -141,6 +141,8 @@ namespace TS3AudioBot
 			tsFullClient.OnEachClientLeftView += OnClientLeftView;
 			clientConnection.OnBotConnected += OnBotConnected;
 			clientConnection.OnBotDisconnect += OnBotDisconnect;
+			// Alone mode
+			clientConnection.OnAloneChanged += OnAloneChanged;
 
 			// Restore all alias from the config
 			foreach (var alias in config.Commands.Alias.GetAllItems())
@@ -272,6 +274,11 @@ namespace TS3AudioBot
 			sessionManager.RemoveSession(eventArgs.ClientId);
 		}
 
+		private void OnAloneChanged(object sender, AloneChanged e)
+		{
+
+		}
+
 		private void LoggedUpdateBotStatus(object sender, EventArgs e)
 		{
 			if (IsDisposed)
@@ -320,7 +327,7 @@ namespace TS3AudioBot
 					var avatars = avatarPath.EnumerateFiles(prefix).ToArray();
 					if (avatars.Length == 0)
 						return null;
-					var pickedAvatar = Util.PickRandom(avatars);
+					var pickedAvatar = Tools.PickRandom(avatars);
 					return pickedAvatar.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
 				}
 				catch (Exception ex)
@@ -448,7 +455,7 @@ namespace TS3AudioBot
 
 		private void EnableIdleTickWorker()
 		{
-			var idleTime = config.Events.IdleTime.Value;
+			var idleTime = config.Events.IdleDelay.Value;
 			if (idleTime <= TimeSpan.Zero || string.IsNullOrEmpty(config.Events.OnIdle.Value))
 				return;
 			var newWorker = TickPool.RegisterTick(OnIdle, idleTime, false);

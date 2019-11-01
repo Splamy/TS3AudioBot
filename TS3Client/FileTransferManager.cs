@@ -7,22 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3Client.Helper;
+using TS3Client.Messages;
+using ChannelIdT = System.UInt64;
+using IOFileInfo = System.IO.FileInfo;
+
 namespace TS3Client
 {
-	using Helper;
-	using Messages;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Net.Sockets;
-	using System.Security.Cryptography;
-	using System.Text;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using ChannelIdT = System.UInt64;
-	using IOFileInfo = System.IO.FileInfo;
-
 	/// <summary>Queues and manages up- and downloads.</summary>
 	public sealed class FileTransferManager
 	{
@@ -113,7 +113,7 @@ namespace TS3Client
 				if (threadEnd || workerThread is null || !workerThread.IsAlive)
 				{
 					threadEnd = false;
-					workerThread = new Thread(() => { Util.SetLogId(parent.ConnectionData.LogId); TransferLoop(); }) { Name = $"FileTransfer[{parent.ConnectionData.LogId}]" };
+					workerThread = new Thread(() => { Tools.SetLogId(parent.ConnectionData.LogId); TransferLoop(); }) { Name = $"FileTransfer[{parent.ConnectionData.LogId}]" };
 					workerThread.Start();
 				}
 			}
@@ -131,7 +131,7 @@ namespace TS3Client
 			lock (token)
 			{
 				if (token.Status != TransferStatus.Cancelled)
-					return Util.CustomError("Only cancelled transfers can be resumed");
+					return CommandError.Custom("Only cancelled transfers can be resumed");
 
 				if (token.Direction == TransferDirection.Upload)
 				{
@@ -188,7 +188,7 @@ namespace TS3Client
 			lock (token)
 			{
 				if (token.Status != TransferStatus.Transfering)
-					return Util.CustomError("No transfer found");
+					return CommandError.Custom("No transfer found");
 			}
 			var result = parent.FileTransferList();
 			if (result.Ok)

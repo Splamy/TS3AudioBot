@@ -1,31 +1,22 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
-// Copyright (C) 2017  TS3AudioBot contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the Open Software License v. 3.0
-//
-// You should have received a copy of the Open Software License along with this
-// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+using NUnit.Framework;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using TS3AudioBot;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TS3AudioBot.History;
+using TS3AudioBot.Playlists.Shuffle;
+using TS3AudioBot.ResourceFactories;
+using TS3Client.Full;
+using TS3Client.Messages;
 
 namespace TS3ABotUnitTests
 {
-	using NUnit.Framework;
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Text.RegularExpressions;
-	using System.Threading;
-	using TS3AudioBot;
-	using TS3AudioBot.Config;
-	using TS3AudioBot.Helper;
-	using TS3AudioBot.History;
-	using TS3AudioBot.Playlists.Shuffle;
-	using TS3AudioBot.ResourceFactories;
-	using TS3Client.Full;
-	using TS3Client.Messages;
-
 	[TestFixture]
 	public class UnitTests
 	{

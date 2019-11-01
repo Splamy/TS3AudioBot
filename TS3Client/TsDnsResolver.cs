@@ -7,18 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Heijden.Dns.Portable;
+using Heijden.DNS;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace TS3Client
 {
-	using Heijden.Dns.Portable;
-	using Heijden.DNS;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Net;
-	using System.Net.Sockets;
-	using System.Text;
-	using System.Text.RegularExpressions;
-
 	/// <summary>Provides methods to resolve TSDNS, SRV redirects and nicknames</summary>
 	public static class TsDnsResolver
 	{

@@ -7,15 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Linq;
-
 	/// <summary>
 	/// A command that stores a result and returns it.
 	/// </summary>
@@ -41,9 +40,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 					return ResultHelper.ToResult(type, result);
 				}
-				catch
+				catch(Exception ex)
 				{
-					Log.Debug("Converting command result {0} to {1} failed", Content, type);
+					Log.Debug(ex, "Converting command result {0} to {1} failed", Content, type);
 				}
 			}
 			throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.NoReturnMatch);

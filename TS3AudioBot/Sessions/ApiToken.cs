@@ -7,12 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Sessions
 {
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-
 	internal class ApiToken
 	{
 		public const int TokenLen = 32;
@@ -20,7 +19,7 @@ namespace TS3AudioBot.Sessions
 
 		public string Value { get; set; }
 		public DateTime Timeout { get; set; }
-		public bool ApiTokenActive => Value != null && Timeout > Util.GetNow();
+		public bool ApiTokenActive => Value != null && Timeout > Tools.Now;
 
 		public ApiToken()
 		{

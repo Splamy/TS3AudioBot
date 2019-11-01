@@ -7,22 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3Client.Audio;
+using TS3Client.Commands;
+using TS3Client.Helper;
+using TS3Client.Messages;
+using ChannelIdT = System.UInt64;
+using ClientIdT = System.UInt16;
+using CmdR = System.E<TS3Client.Messages.CommandError>;
+
 namespace TS3Client.Full
 {
-	using Audio;
-	using Commands;
-	using Helper;
-	using Messages;
-	using System;
-	using System.Buffers.Binary;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using ChannelIdT = System.UInt64;
-	using ClientIdT = System.UInt16;
-	using CmdR = System.E<Messages.CommandError>;
-
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed partial class Ts3FullClient : Ts3BaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
@@ -154,7 +154,7 @@ namespace TS3Client.Full
 					status = Ts3ClientStatus.Disconnecting;
 					break;
 				default:
-					throw Util.UnhandledDefault(status);
+					throw Tools.UnhandledDefault(status);
 				}
 			}
 
@@ -173,7 +173,7 @@ namespace TS3Client.Full
 				{
 				case PacketType.Command:
 				case PacketType.CommandLow:
-					Log.ConditionalDebug("[I] {0}", Util.Encoder.GetString(packet.Data));
+					Log.ConditionalDebug("[I] {0}", Tools.Utf8Encoder.GetString(packet.Data));
 					var result = msgProc.PushMessage(packet.Data);
 					if (result.HasValue)
 						dispatcher.Invoke(result.Value);
@@ -215,7 +215,7 @@ namespace TS3Client.Full
 			var result = ts3Crypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			if (!result)
 			{
-				DisconnectInternal(context, Util.CustomError($"Failed to calculate shared secret: {result.Error}"));
+				DisconnectInternal(context, CommandError.Custom($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
 
@@ -240,7 +240,7 @@ namespace TS3Client.Full
 			var result = ts3Crypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
 			if (!result)
 			{
-				DisconnectInternal(context, Util.CustomError($"Failed to calculate shared secret: {result.Error}"));
+				DisconnectInternal(context, CommandError.Custom($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
 
@@ -382,7 +382,7 @@ namespace TS3Client.Full
 			lock (statusLock)
 			{
 				if (context.WasExit || (!Connected && com.ExpectResponse))
-					return Util.TimeOutCommandError;
+					return CommandError.TimeOut;
 
 				if (com.ExpectResponse)
 				{
@@ -394,7 +394,7 @@ namespace TS3Client.Full
 
 				var message = com.ToString();
 				Log.Debug("[O] {0}", message);
-				byte[] data = Util.Encoder.GetBytes(message);
+				byte[] data = Tools.Utf8Encoder.GetBytes(message);
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
 			return R.Ok;
@@ -412,7 +412,7 @@ namespace TS3Client.Full
 				else
 					// This might not be the nicest way to return in this case
 					// but we don't know what the response is, so this acceptable.
-					return Util.NoResultCommandError;
+					return CommandError.NoResult;
 			}
 		}
 

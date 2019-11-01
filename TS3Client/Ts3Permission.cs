@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Linq;
+using TS3Client.Commands;
+using TS3Client.Helper;
+using TS3Client.Messages;
+
 namespace TS3Client
 {
-	using System.Linq;
-	using TS3Client.Commands;
-	using TS3Client.Helper;
-	using TS3Client.Messages;
-
 	public static partial class Ts3PermissionHelper
 	{
 		public static ICommandPart GetAsParameter(IPermissionTransform permissionTransform, Ts3Permission permission)
@@ -60,7 +60,7 @@ namespace TS3Client
 						return other;
 
 				default:
-					throw Util.UnhandledDefault(perm.PermissionType);
+					throw Tools.UnhandledDefault(perm.PermissionType);
 				}
 
 			case PermissionType.GlobalClient:
@@ -83,7 +83,7 @@ namespace TS3Client
 					return other;
 
 				default:
-					throw Util.UnhandledDefault(perm.PermissionType);
+					throw Tools.UnhandledDefault(perm.PermissionType);
 				}
 
 			case PermissionType.Channel:
@@ -101,7 +101,7 @@ namespace TS3Client
 					return other;
 
 				default:
-					throw Util.UnhandledDefault(perm.PermissionType);
+					throw Tools.UnhandledDefault(perm.PermissionType);
 				}
 
 			case PermissionType.ChannelGroup:
@@ -119,7 +119,7 @@ namespace TS3Client
 					return other;
 
 				default:
-					throw Util.UnhandledDefault(perm.PermissionType);
+					throw Tools.UnhandledDefault(perm.PermissionType);
 				}
 
 			case PermissionType.ChannelClient:
@@ -135,11 +135,11 @@ namespace TS3Client
 					return perm.PermissionValue > other.PermissionValue ? perm : other;
 
 				default:
-					throw Util.UnhandledDefault(perm.PermissionType);
+					throw Tools.UnhandledDefault(perm.PermissionType);
 				}
 
 			default:
-				throw Util.UnhandledDefault(perm.PermissionType);
+				throw Tools.UnhandledDefault(perm.PermissionType);
 			}
 		}
 	}

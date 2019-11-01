@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TS3AudioBot.Audio;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.ResourceFactories;
+
 namespace TS3AudioBot.Playlists
 {
-	using System;
-	using Audio;
-	using CommandSystem.CommandResults;
-	using ResourceFactories;
-
 	public class PlaylistItem : IAudioResourceResult
 	{
 		public MetaData Meta { get; }

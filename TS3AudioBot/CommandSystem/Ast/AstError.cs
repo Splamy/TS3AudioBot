@@ -7,10 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Text;
+
 namespace TS3AudioBot.CommandSystem.Ast
 {
-	using System.Text;
-
 	internal class AstError : AstNode
 	{
 		public override AstType Type => AstType.Error;

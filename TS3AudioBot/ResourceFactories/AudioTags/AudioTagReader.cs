@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+
 namespace TS3AudioBot.ResourceFactories.AudioTags
 {
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Text;
-
 	internal static class AudioTagReader
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

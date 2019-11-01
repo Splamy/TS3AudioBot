@@ -7,19 +7,19 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using NLog;
+using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using TS3Client.Helper;
+using static TS3Client.Full.PacketHandlerConst;
+
 namespace TS3Client.Full
 {
-	using Helper;
-	using NLog;
-	using System;
-	using System.Buffers.Binary;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Net;
-	using System.Net.Sockets;
-	using System.Threading;
-	using static PacketHandlerConst;
-
 	internal sealed class PacketHandler<TIn, TOut>
 	{
 		private static readonly int OutHeaderSize = Ts3Crypt.MacLen + Packet<TOut>.HeaderLength;
@@ -159,7 +159,7 @@ namespace TS3Client.Full
 				catch (SocketException ex) { throw new Ts3Exception("Could not connect", ex); }
 
 				pingCheckRunning = 0;
-				pingCheck = Util.Now;
+				pingCheck = Tools.Now;
 				if (resendTimer == null)
 					resendTimer = new Timer((_) => { using (MappedDiagnosticsContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
 			}
@@ -302,7 +302,7 @@ namespace TS3Client.Full
 				LogRaw.Trace("[O] {0}", packet);
 				break;
 
-			default: throw Util.UnhandledDefault(packet.PacketType);
+			default: throw Tools.UnhandledDefault(packet.PacketType);
 			}
 
 			ts3Crypt.Encrypt(ref packet);
@@ -423,7 +423,7 @@ namespace TS3Client.Full
 				if (!LogRaw.IsDebugEnabled) LogRaw.Trace("[I] {0}", packet);
 				passPacketToEvent = ReceiveInitAck(ref packet);
 				break;
-			default: throw Util.UnhandledDefault(packet.PacketType);
+			default: throw Tools.UnhandledDefault(packet.PacketType);
 			}
 
 			if (passPacketToEvent)
@@ -564,7 +564,7 @@ namespace TS3Client.Full
 			{
 				if (packetAckManager.TryGetValue(packetId, out var ackPacket))
 				{
-					UpdateRto(Util.Now - ackPacket.LastSendTime);
+					UpdateRto(Tools.Now - ackPacket.LastSendTime);
 					packetAckManager.Remove(packetId);
 				}
 			}
@@ -642,7 +642,7 @@ namespace TS3Client.Full
 			else
 				smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
 			smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
-			currentRto = smoothedRtt + Util.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
+			currentRto = smoothedRtt + Tools.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
 			LogRtt.Debug("RTT SRTT:{0} RTTVAR:{1} RTO:{2}", smoothedRtt, smoothedRttVar, currentRto);
 		}
 
@@ -676,7 +676,7 @@ namespace TS3Client.Full
 					return;
 				}
 
-				var now = Util.Now;
+				var now = Tools.Now;
 				var nextTest = now - pingCheck - PingInterval;
 				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
 				if (nextTest > TimeSpan.Zero && ts3Crypt.CryptoInitComplete)
@@ -715,7 +715,7 @@ namespace TS3Client.Full
 
 		private bool ResendPacket(ResendPacket<TOut> packet)
 		{
-			var now = Util.Now;
+			var now = Tools.Now;
 			// Check if the packet timed out completely
 			if (packet.FirstSendTime < now - PacketTimeout)
 			{
@@ -730,7 +730,7 @@ namespace TS3Client.Full
 				currentRto += currentRto;
 				if (currentRto > MaxRetryInterval)
 					currentRto = MaxRetryInterval;
-				packet.LastSendTime = Util.Now;
+				packet.LastSendTime = Tools.Now;
 				SendRaw(ref packet.Packet);
 			}
 

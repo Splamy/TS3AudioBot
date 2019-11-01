@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.Web.Model;
+
 namespace TS3AudioBot.Playlists
 {
-	using TS3AudioBot.ResourceFactories;
-	using TS3AudioBot.Web.Model;
-
 	public static class PlaylistApiExtensions
 	{
 		public static PlaylistItemGetData ToApiFormat(this ResourceFactory resourceFactory, PlaylistItem item)

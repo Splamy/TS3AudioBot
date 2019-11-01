@@ -7,15 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.Config
 {
-	using Helper;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-
 	public partial class ConfRoot
 	{
 		private const string BotFileName = "bot.toml";

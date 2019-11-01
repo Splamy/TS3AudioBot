@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TS3Client.Audio.Opus;
+
 namespace TS3Client.Audio
 {
-	using Opus;
-	using System;
-
 	public class EncoderPipe : IAudioPipe, IDisposable, ISampleInfo
 	{
 		public bool Active => OutStream?.Active ?? false;
@@ -33,7 +33,7 @@ namespace TS3Client.Audio
 		private byte[] notEncodedBuffer = Array.Empty<byte>();
 		private int notEncodedLength;
 		// https://tools.ietf.org/html/rfc6716#section-3.2.1
-		private const int max_encoded_size = 255*4+255;
+		private const int max_encoded_size = 255 * 4 + 255;
 		private readonly byte[] encodedBuffer = new byte[max_encoded_size];
 
 		public EncoderPipe(Codec codec)

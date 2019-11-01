@@ -7,14 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using TS3AudioBot.Helper;
+using TS3Client;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Rights.Matchers
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Text.RegularExpressions;
-	using TS3AudioBot.Helper;
-	using TS3Client;
-
 	internal class MatchPermission : Matcher
 	{
 		private static readonly Regex expressionMatch = new Regex(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", Util.DefaultRegexConfig);
@@ -95,7 +96,7 @@ namespace TS3AudioBot.Rights.Matchers
 					case PermCompare.GreaterOrEqual: if (value >= compare.value) return true; break;
 					case PermCompare.Less: if (value < compare.value) return true; break;
 					case PermCompare.LessOrEqual: if (value <= compare.value) return true; break;
-					default: throw Util.UnhandledDefault(compare.op);
+					default: throw Tools.UnhandledDefault(compare.op);
 					}
 				}
 			}

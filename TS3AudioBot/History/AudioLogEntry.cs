@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Globalization;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.ResourceFactories;
+
 namespace TS3AudioBot.History
 {
-	using CommandSystem.CommandResults;
-	using ResourceFactories;
-	using System;
-	using System.Globalization;
-
 	public class AudioLogEntry : IAudioResourceResult
 	{
 		/// <summary>A unique id for each <see cref="ResourceFactories.AudioResource"/>, given by the history system.</summary>

@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Concurrent;
+using System.Threading;
+using TS3Client.Helper;
+
 namespace TS3Client
 {
-	using Helper;
-	using System;
-	using System.Collections.Concurrent;
-	using System.Threading;
-
 	internal static class EventDispatcherHelper
 	{
 		public const string DispatcherTitle = "TS3 Dispatcher";
@@ -56,7 +56,7 @@ namespace TS3Client
 
 			dispatchThread = new Thread(() =>
 			{
-				Util.SetLogId(id);
+				Tools.SetLogId(id);
 				DispatchLoop();
 			})
 			{ Name = EventDispatcherHelper.CreateDispatcherTitle(id) };

@@ -26,10 +26,10 @@ using (TextFieldParser parser = new TextFieldParser(declFilePath))
 		data.Add(parser.ReadFields());
 }
 #>
+using TS3Client.Helper;
+
 namespace TS3Client
 {
-	using Helper;
-
 	// Source: https://www.tsviewer.com/index.php?page=faq&id=12&newlanguage=en
 	public enum Ts3Permission
 	{
@@ -47,8 +47,8 @@ namespace TS3Client
 			switch (permid)
 			{
 			case Ts3Permission.undefined: return "Undefined permission";<# foreach (var line in data.Skip(1)) { #>
-			case Ts3Permission.<#= line[0] #> : return "<#= line[1] #>";<# } #>
-			default: throw Util.UnhandledDefault(permid);
+			case Ts3Permission.<#= line[0] #>: return "<#= line[1] #>";<# } #>
+			default: throw Tools.UnhandledDefault(permid);
 			}
 		}
 	}

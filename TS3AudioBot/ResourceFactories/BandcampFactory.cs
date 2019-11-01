@@ -7,16 +7,16 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.IO;
+using System.Text.RegularExpressions;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.ResourceFactories
 {
-	using Helper;
-	using Localization;
-	using Newtonsoft.Json;
-	using Newtonsoft.Json.Linq;
-	using System;
-	using System.IO;
-	using System.Text.RegularExpressions;
-
 	public class BandcampFactory : IResourceFactory, IThumbnailFactory
 	{
 		private static readonly Regex BandcampUrlRegex = new Regex(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);

@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using System;
+using TS3AudioBot.CommandSystem;
+
 namespace TS3AudioBot.Web.Api
 {
-	using CommandSystem;
-	using Newtonsoft.Json;
-	using System;
-
 	public class JsonValue<T> : JsonValue
 	{
 		protected Func<T, string> AsString { get; }

@@ -7,17 +7,16 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3Client.Commands
-{
-	using System;
-	using System.Linq;
-	using System.Text;
+using System;
+using System.Linq;
+using System.Text;
 #if NETCOREAPP3_0
 	using System.Runtime.Intrinsics;
 	using System.Runtime.Intrinsics.X86;
 #endif
 
-
+namespace TS3Client.Commands
+{
 	public static class Ts3String
 	{
 		public static string Escape(string stringToEscape) => Escape(stringToEscape.AsSpan());

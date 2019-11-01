@@ -7,15 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using TS3Client.Helper;
+using KeyType = System.String;
+using ValueType = System.String;
+
 namespace TS3Client.Messages
 {
-	using Helper;
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-	using KeyType = System.String;
-	using ValueType = System.String;
-
 	public class ResponseDictionary : IDictionary<KeyType, ValueType>, IResponse
 	{
 		private readonly IDictionary<KeyType, ValueType> data;

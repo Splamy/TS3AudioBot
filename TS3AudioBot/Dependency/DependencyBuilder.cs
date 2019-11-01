@@ -7,13 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace TS3AudioBot.Dependency
 {
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-
 	public sealed class CoreInjector : BasicInjector { }
 	public sealed class BotInjector : ChainedInjector<BasicInjector>
 	{
@@ -27,11 +26,10 @@ namespace TS3AudioBot.Dependency
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		private readonly IInjector injector;
-		private readonly LinkedList<Module> modules;
+		private readonly LinkedList<Module> modules = new LinkedList<Module>();
 
 		public DependencyBuilder(IInjector injector)
 		{
-			Util.Init(out modules);
 			this.injector = injector;
 		}
 

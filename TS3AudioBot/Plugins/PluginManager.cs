@@ -7,18 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Plugins
 {
-	using Config;
-	using Dependency;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.IO;
-	using System.Linq;
-	using System.Text;
-
 	// Start Plugin:
 	// ! Start plugins before rights system to ensure all rights are loaded
 	// - Get all commands
@@ -35,14 +35,12 @@ namespace TS3AudioBot.Plugins
 	{
 		private readonly ConfPlugins config;
 		private readonly CoreInjector coreInjector;
-		private readonly Dictionary<string, Plugin> plugins;
-		private readonly HashSet<int> usedIds;
+		private readonly Dictionary<string, Plugin> plugins = new Dictionary<string, Plugin>();
+		private readonly HashSet<int> usedIds = new HashSet<int>();
 		private readonly object pluginsLock = new object();
 
 		public PluginManager(ConfPlugins config, CoreInjector coreInjector)
 		{
-			Util.Init(out plugins);
-			Util.Init(out usedIds);
 			this.config = config;
 			this.coreInjector = coreInjector;
 		}
@@ -78,7 +76,7 @@ namespace TS3AudioBot.Plugins
 						plugin.Load();
 						break;
 					default:
-						throw Util.UnhandledDefault(status);
+						throw Tools.UnhandledDefault(status);
 					}
 				}
 				else
@@ -209,7 +207,7 @@ namespace TS3AudioBot.Plugins
 				case PluginStatus.Disabled: strb.Append("UNL"); break;
 				case PluginStatus.Error: strb.Append("ERR"); break;
 				case PluginStatus.NotAvailable: strb.Append("N/A"); break;
-				default: throw Util.UnhandledDefault(plugin.Status);
+				default: throw Tools.UnhandledDefault(plugin.Status);
 				}
 				strb.Append('|').AppendLine(plugin.Name ?? "<not loaded>");
 			}

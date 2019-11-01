@@ -7,18 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.CommandSystem.Commands;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Web.Api
 {
-	using Newtonsoft.Json;
-	using Newtonsoft.Json.Linq;
-	using System;
-	using System.Collections.Generic;
-	using System.Text;
-	using TS3AudioBot.CommandSystem;
-	using TS3AudioBot.CommandSystem.CommandResults;
-	using TS3AudioBot.CommandSystem.Commands;
-	using TS3AudioBot.Helper;
-
 	public static class OpenApiGenerator
 	{
 		private static readonly JsonSerializer seri = JsonSerializer.CreateDefault();
@@ -129,7 +128,7 @@ namespace TS3AudioBot.Web.Api
 					parameters.Add(addparam);
 					break;
 				default:
-					throw Util.UnhandledDefault(param.kind);
+					throw Tools.UnhandledDefault(param.kind);
 				}
 			}
 

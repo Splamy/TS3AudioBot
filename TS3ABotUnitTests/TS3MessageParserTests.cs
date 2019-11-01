@@ -1,12 +1,12 @@
+using NUnit.Framework;
+using System.Collections;
+using System.Reflection;
+using System.Text;
+using TS3Client;
+using TS3Client.Messages;
+
 namespace TS3ABotUnitTests
 {
-	using NUnit.Framework;
-	using System.Collections;
-	using System.Reflection;
-	using System.Text;
-	using TS3Client;
-	using TS3Client.Messages;
-
 	[TestFixture]
 	public class TS3MessageParserTests
 	{

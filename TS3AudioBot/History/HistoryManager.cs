@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using LiteDB;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Config;
+using TS3AudioBot.Localization;
+using TS3AudioBot.ResourceFactories;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.History
 {
-	using Config;
-	using Helper;
-	using LiteDB;
-	using Localization;
-	using ResourceFactories;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-
 	/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
 	public sealed class HistoryManager
 	{
@@ -27,7 +27,7 @@ namespace TS3AudioBot.History
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
 		private LiteCollection<AudioLogEntry> audioLogEntries;
-		private readonly LinkedList<int> unusedIds;
+		private readonly LinkedList<int> unusedIds = new LinkedList<int>();
 		private readonly object dbLock = new object();
 		private readonly ConfHistory config;
 		private readonly DbStore database;
@@ -45,7 +45,6 @@ namespace TS3AudioBot.History
 		{
 			Formatter = new SmartHistoryFormatter();
 
-			Util.Init(out unusedIds);
 			this.config = config;
 			this.database = database;
 
@@ -146,7 +145,7 @@ namespace TS3AudioBot.History
 				throw new ArgumentNullException(nameof(ale));
 
 			// update the playtime
-			ale.Timestamp = Util.GetNow();
+			ale.Timestamp = Tools.Now;
 			// update the playcount
 			ale.PlayCount++;
 
@@ -172,7 +171,7 @@ namespace TS3AudioBot.History
 			var ale = new AudioLogEntry(nextHid, saveData.Resource)
 			{
 				UserUid = saveData.InvokerUid,
-				Timestamp = Util.GetNow(),
+				Timestamp = Tools.Now,
 				PlayCount = 1,
 			};
 

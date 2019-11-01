@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Buffers.Binary;
+using System.IO;
+using System.Runtime.CompilerServices;
+
 namespace TS3Client.Full
 {
-	using System;
-	using System.Buffers.Binary;
-	using System.IO;
-	using System.Runtime.CompilerServices;
-
 	/// <summary>An alternative QuickLZ compression implementation for C#.</summary>
 	public static class QuickerLz
 	{

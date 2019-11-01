@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Helper;
+
 namespace TS3AudioBot.Rights
 {
-	using Helper;
-	using Nett;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-
 	internal abstract class RightsDecl
 	{
 		public int Id { get; private set; }

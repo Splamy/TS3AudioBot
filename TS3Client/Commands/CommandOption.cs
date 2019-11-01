@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Linq;
+using System.Text;
+using TS3Client.Helper;
+
 namespace TS3Client.Commands
 {
-	using Helper;
-	using System;
-	using System.Linq;
-	using System.Text;
-
 	/// <summary>Command options which will be added with "-name" at the and.</summary>
 	public class CommandOption : ICommandPart
 	{

@@ -7,15 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Linq;
-
 	/// <summary>
 	/// A command that stores a result and returns it.
 	/// </summary>

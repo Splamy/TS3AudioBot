@@ -15,16 +15,16 @@
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+using System;
+using System.Collections.Generic;
+using System.Buffers.Text;
+using TS3Client.Commands;
+using TS3Client.Helper;
+
+<#= ConversionSet #>
 
 namespace TS3Client.Messages
 {
-	using Commands;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Buffers.Text;
-
-	<#= ConversionSet #>
 <#
 var gen = Messages.Parse(Host.ResolvePath("../Declarations/Messages.toml"));
 
@@ -74,7 +74,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "DurationMilliseconds":
 		return $"{{ if(Utf8Parser.TryParse({input}, out f64 oval, out _)) {output} = TimeSpan.FromMilliseconds(oval); }}";
 	case "DateTime":
-		return $"{{ if(Utf8Parser.TryParse({input}, out f64 oval, out _)) {output} = Util.UnixTimeStart.AddSeconds(oval); }}";
+		return $"{{ if(Utf8Parser.TryParse({input}, out u32 oval, out _)) {output} = Tools.FromUnix(oval); }}";
 	case "str":
 	case "Uid":
 	case "IpAddr":
@@ -113,7 +113,7 @@ foreach(var msg in gen.GetOrderedMsg())
 {
 	//if(!msg.s2c.Value) continue;
 #>
-	public sealed class <#= msg.name #><#
+	public sealed partial class <#= msg.name #><#
 		bool isNotify = msg.notify != null;
 		bool isResponse = msg.response.Value;
 		if (isNotify && isResponse) Write(" : INotification, IResponse");
@@ -214,7 +214,7 @@ foreach(var msg in gen.GetOrderedMsg())
 	}
 #>
 			case NotificationType.Unknown:
-			default: throw Util.UnhandledDefault(name);
+			default: throw Tools.UnhandledDefault(name);
 			}
 		}
 
@@ -230,7 +230,7 @@ foreach(var msg in gen.GetOrderedMsg())
 	}
 #>
 			case NotificationType.Unknown:
-			default: throw Util.UnhandledDefault(name);
+			default: throw Tools.UnhandledDefault(name);
 			}
 		}
 	}

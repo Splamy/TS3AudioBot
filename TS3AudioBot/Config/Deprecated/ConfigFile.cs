@@ -7,18 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using TS3AudioBot.Localization;
+using TS3Client.Helper;
+
 namespace TS3AudioBot.Config.Deprecated
 {
-	using Helper;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.ComponentModel;
-	using System.Globalization;
-	using System.IO;
-	using System.Linq;
-	using System.Reflection;
-
 	public abstract class ConfigFile
 	{
 		private const char SplitChar = '=';
@@ -27,12 +27,7 @@ namespace TS3AudioBot.Config.Deprecated
 		private static readonly string[] CommentSeqArr = { CommentSeq, ";", "//" };
 		private const string NameSeperator = "::";
 		private bool changed;
-		private readonly Dictionary<string, ConfigData> confObjects;
-
-		protected ConfigFile()
-		{
-			Util.Init(out confObjects);
-		}
+		private readonly Dictionary<string, ConfigData> confObjects = new Dictionary<string, ConfigData>();
 
 		public static ConfigFile OpenOrCreate(string path)
 		{
@@ -180,7 +175,7 @@ namespace TS3AudioBot.Config.Deprecated
 				}
 				open = true;
 
-				var strLines = File.ReadAllLines(path, Util.Utf8Encoder);
+				var strLines = File.ReadAllLines(path, Tools.Utf8Encoder);
 				fileLines.Clear();
 				for (int i = 0; i < strLines.Length; i++)
 				{
